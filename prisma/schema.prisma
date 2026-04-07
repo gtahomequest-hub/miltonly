@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Listing {
+  id             String    @id @default(cuid())
+  mlsNumber      String    @unique
+  address        String
+  streetSlug     String
+  neighbourhood  String
+  city           String    @default("Milton")
+  price          Int
+  bedrooms       Int
+  bathrooms      Float
+  parking        Int
+  basement       Boolean
+  sqft           Int?
+  propertyType   String // detached|semi|townhouse|condo
+  status         String // active|sold|rented|expired
+  soldPrice      Int?
+  soldDate       DateTime?
+  daysOnMarket   Int?
+  photos         String[]
+  description    String?
+  latitude       Float
+  longitude      Float
+  schoolZone     String?
+  goWalkMinutes  Int?
+  condoBuilding  String?
+  maintenanceFee Int?
+  listedAt       DateTime
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+
+  @@index([streetSlug])
+  @@index([neighbourhood])
+  @@index([status])
+  @@index([propertyType])
+  @@index([price])
+}
+
+model Lead {
+  id              String    @id @default(cuid())
+  firstName       String
+  email           String
+  phone           String?
+  intent          String // buyer|seller|renter|investor
+  score           String // hot|warm|cold
+  scorePoints     Int       @default(0)
+  hasAgent        Boolean?
+  isAgent         Boolean?
+  street          String?
+  bedrooms        Int?
+  bathrooms       Float?
+  parking         Int?
+  basement        Boolean?
+  timeline        String?
+  priceRangeMin   Int?
+  priceRangeMax   Int?
+  neighbourhoods  String[]
+  propertyType    String?
+  condoBuilding   String?
+  savedListings   String[]
+  comparisonsMade String[]
+  source          String // hero|seller_tool|buyer_alert|investor_report|street_page|condo_page|comparison|popup|chat|partner
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmKeyword      String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastContactAt   DateTime?
+  convertedAt     DateTime?
+  cookieId        String?
+
+  @@index([email])
+  @@index([intent])
+  @@index([score])
+  @@index([createdAt])
+}
+
+model VisitorProfile {
+  id                      String   @id @default(cuid())
+  cookieId                String   @unique
+  viewedListings          String[]
+  savedListings           String[]
+  pillsClicked            String[]
+  comparisonsMade         String[]
+  streetsPreviewed        String[]
+  buildingsPreviewed      String[]
+  priceRangeMin           Int?
+  priceRangeMax           Int?
+  preferredNeighbourhoods String[]
+  propertyType            String?
+  bedrooms                Int?
+  intent                  String?
+  viewCount               Int      @default(0)
+  searchCount             Int      @default(0)
+  timeOnSiteSeconds       Int      @default(0)
+  lastVisit               DateTime
+  firstVisit              DateTime @default(now())
+  leadId                  String?
+}
+
+model StreetData {
+  id              String   @id @default(cuid())
+  streetName      String
+  streetSlug      String   @unique
+  neighbourhood   String
+  avgSoldPrice    Int
+  avgPricePerSqft Int?
+  soldCount12mo   Int
+  avgDaysOnMarket Int
+  soldVsAskPct    Float
+  priceChange3mo  Float
+  priceChange6mo  Float
+  priceChange1yr  Float
+  activeListings  Int
+  schoolZone      String?
+  goWalkMinutes   Int?
+  lastUpdated     DateTime
+
+  @@index([neighbourhood])
+}
+
+model CondoBuilding {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  address           String
+  neighbourhood     String
+  yearBuilt         Int?
+  totalUnits        Int?
+  managementCo      String?
+  amenities         String[]
+  petFriendly       Boolean?
+  latitude          Float
+  longitude         Float
+  goWalkMinutes     Int?
+  avgSalePrice1bd   Int?
+  avgSalePrice2bd   Int?
+  avgSalePrice3bd   Int?
+  avgRent1bd        Int?
+  avgRent2bd        Int?
+  avgRent3bd        Int?
+  avgMaintenanceFee Int?
+  ownerRatioPct     Float?
+  avgCapRate        Float?
+  priceGrowth1yr    Float?
+  activeForSale     Int      @default(0)
+  activeForRent     Int      @default(0)
+  lastUpdated       DateTime
+
+  @@index([neighbourhood])
+}
+
+model Partner {
+  id      String  @id @default(cuid())
+  name    String
+  type    String // mortgage|lawyer|inspector|mover|contractor
+  company String
+  phone   String
+  email   String
+  website String?
+  bio     String?
+  active  Boolean @default(true)
+}
