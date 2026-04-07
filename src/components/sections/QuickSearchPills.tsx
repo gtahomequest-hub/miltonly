@@ -20,6 +20,7 @@ export default function QuickSearchPills() {
   return (
     <section className="bg-neutral-50/50">
       <div className="section-container py-8 sm:py-10">
+        <h2 className="sr-only">Popular Milton real estate searches</h2>
         <p className="section-label text-neutral-400 text-center mb-5">
           Popular searches in Milton
         </p>

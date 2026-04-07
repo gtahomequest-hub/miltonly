@@ -2,6 +2,7 @@ export default function TrustBarSection() {
   return (
     <section className="bg-white border-b border-neutral-100">
       <div className="section-container py-10">
+        <h2 className="sr-only">Milton market at a glance</h2>
         {/* Trust indicators */}
         <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 text-sm text-neutral-500 mb-8">
           <span className="flex items-center gap-2.5">

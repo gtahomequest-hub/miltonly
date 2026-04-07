@@ -2,6 +2,7 @@ export default function BuyerAlertSection() {
   return (
     <section className="bg-gradient-to-br from-brand-50 via-white to-brand-50/50">
       <div className="section-container py-14 lg:py-16">
+        <h2 className="sr-only">Get Milton listing alerts</h2>
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
           {/* Left — Listing alert */}
           <div className="card p-6 sm:p-8 border-brand-100">

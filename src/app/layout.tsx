@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Navbar from "@/components/Navbar";
 import CrispChat from "@/components/CrispChat";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -15,38 +16,57 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0A1628",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://miltonly.com"),
   title: {
-    default: "Miltonly — Milton Ontario Real Estate | Homes For Sale, Sold Prices & Market Data",
+    default:
+      "Milton Ontario Real Estate — Homes For Sale, Street Data & Market Intelligence | Miltonly.com",
     template: "%s | Miltonly.com",
   },
   description:
-    "Milton Ontario's only dedicated real estate platform. Search homes for sale, sold prices, street intelligence, school zones, GO commute times, and neighbourhood comparisons. Updated daily from TREB.",
+    "Milton Ontario's only dedicated real estate platform. Search homes for sale, compare streets and neighbourhoods, get your home value, and access street-level market data. Live TREB listings updated daily.",
   keywords: [
-    "Milton homes for sale",
     "Milton Ontario real estate",
-    "Milton sold prices",
+    "Milton homes for sale",
+    "Milton real estate listings",
+    "Milton Ontario homes",
+    "buy home Milton",
+    "sell home Milton",
+    "Milton real estate market",
     "Milton neighbourhood comparison",
-    "homes near Milton GO station",
-    "Milton school zones",
-    "Milton condo buildings",
-    "Milton street prices",
-    "sell my home Milton",
-    "Milton market report",
   ],
+  alternates: {
+    canonical: "https://miltonly.com",
+  },
   openGraph: {
     type: "website",
     locale: "en_CA",
     siteName: "Miltonly",
-    title: "Miltonly — Milton Ontario Real Estate",
+    title: "Milton Ontario Real Estate | Miltonly.com",
     description:
-      "Milton Ontario's only dedicated real estate platform. Homes for sale, sold data, street intelligence, and market reports.",
+      "The only real estate platform built exclusively for Milton Ontario. Street intelligence, school zones, GO commute data, and live TREB listings.",
+    url: "https://miltonly.com",
+    images: [
+      {
+        url: "https://miltonly.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Miltonly — Milton Ontario real estate platform",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Miltonly — Milton Ontario Real Estate",
+    title: "Milton Ontario Real Estate | Miltonly.com",
     description:
-      "Milton Ontario's only dedicated real estate platform. Homes for sale, sold data, street intelligence, and market reports.",
+      "The only real estate platform built exclusively for Milton Ontario. Street intelligence, school zones, GO commute data, and live TREB listings.",
+    images: ["https://miltonly.com/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -64,6 +84,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <GoogleAnalytics />
         <Navbar />
         {children}
         <CrispChat />

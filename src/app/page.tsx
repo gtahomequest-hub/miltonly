@@ -1,3 +1,12 @@
+import SchemaScript from "@/components/SchemaScript";
+import {
+  generateLocalBusinessSchema,
+  generateWebSiteSchema,
+  generateFAQSchema,
+  generateBreadcrumbSchema,
+} from "@/lib/schema";
+import { homepageFAQs } from "@/lib/faqs";
+
 import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
 import QuickSearchPills from "@/components/sections/QuickSearchPills";
@@ -10,41 +19,40 @@ import NeighbourhoodSection from "@/components/sections/NeighbourhoodSection";
 import SellerSection from "@/components/sections/SellerSection";
 import InvestorSection from "@/components/sections/InvestorSection";
 import SocialProofSection from "@/components/sections/SocialProofSection";
+import FAQSection from "@/components/sections/FAQSection";
 import PartnerSection from "@/components/sections/PartnerSection";
 import FooterSection from "@/components/sections/FooterSection";
 
 export default function HomePage() {
+  const schemas = [
+    generateLocalBusinessSchema(),
+    generateWebSiteSchema(),
+    generateFAQSchema(homepageFAQs),
+    generateBreadcrumbSchema([
+      { name: "Milton Real Estate", url: "https://miltonly.com" },
+    ]),
+  ];
+
   return (
-    <main>
-      {/* Section 1: Navbar is in layout.tsx */}
-      {/* Section 2 */}
-      <HeroSection />
-      {/* Section 3 */}
-      <TrustBarSection />
-      {/* Section 4 */}
-      <QuickSearchPills />
-      {/* Section 5 */}
-      <IntelligenceCentre />
-      {/* Section 6 */}
-      <FeaturedListings />
-      {/* Section 7 */}
-      <BuyerAlertSection />
-      {/* Section 8 */}
-      <MapSection />
-      {/* Section 9 */}
-      <SchoolGoSection />
-      {/* Section 10 */}
-      <NeighbourhoodSection />
-      {/* Section 11 */}
-      <SellerSection />
-      {/* Section 12 */}
-      <InvestorSection />
-      {/* Section 13 */}
-      <SocialProofSection />
-      {/* Section 14 */}
-      <PartnerSection />
-      {/* Section 15: Final CTA + Footer */}
-      <FooterSection />
-    </main>
+    <>
+      <SchemaScript schemas={schemas} />
+      <main>
+        <HeroSection />
+        <TrustBarSection />
+        <QuickSearchPills />
+        <IntelligenceCentre />
+        <FeaturedListings />
+        <BuyerAlertSection />
+        <MapSection />
+        <SchoolGoSection />
+        <NeighbourhoodSection />
+        <SellerSection />
+        <InvestorSection />
+        <SocialProofSection />
+        <FAQSection />
+        <PartnerSection />
+        <FooterSection />
+      </main>
+    </>
   );
 }
