@@ -17,7 +17,10 @@ export default function IntelligenceCentre() {
   const [activeMode, setActiveMode] = useState(compareModes[0]);
 
   return (
-    <section className="relative bg-neutral-900 overflow-hidden">
+    <section className="relative overflow-hidden">
+      {/* Match hero background exactly */}
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-800 to-neutral-900" />
+      <div className="absolute inset-0 bg-black/30" />
       {/* Subtle gradient glow behind content */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-accent-500/8 rounded-full blur-[100px] pointer-events-none" />
