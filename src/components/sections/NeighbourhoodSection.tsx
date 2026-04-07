@@ -16,51 +16,53 @@ export default function NeighbourhoodSection() {
   return (
     <section className="bg-white">
       <div className="section-container section-padding">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl lg:text-4xl font-bold text-neutral-900">
+        <div className="text-center mb-12">
+          <span className="section-label text-brand-500">Neighbourhoods</span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-navy mt-2">
             Explore Milton Neighbourhoods
           </h2>
-          <p className="text-neutral-600 mt-2">
+          <p className="text-neutral-500 mt-3 max-w-lg mx-auto">
             Every neighbourhood at a glance — prices, schools, commute times, and
             active listings.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {neighbourhoods.map((n) => (
             <Link
               key={n.name}
               href={`/neighbourhoods/${n.name.toLowerCase().replace(/\s+/g, "-")}`}
-              className="group bg-white rounded-xl border border-neutral-200 overflow-hidden hover:shadow-lg transition-shadow"
+              className="group relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[3/2]"
             >
-              {/* Photo placeholder */}
-              <div className="aspect-[16/9] bg-gradient-to-br from-brand-100 to-brand-50 relative flex items-center justify-center">
-                <span className="text-brand-300 text-lg font-semibold">
-                  {n.name}
-                </span>
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-bold text-neutral-900 group-hover:text-brand-600 transition-colors">
-                  {n.name}
-                </h3>
-                <div className="grid grid-cols-2 gap-y-2 mt-3 text-sm">
-                  <div>
-                    <p className="text-neutral-400 text-xs">Avg. Price</p>
-                    <p className="font-semibold text-neutral-800">{n.avgPrice}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs">Active Listings</p>
-                    <p className="font-semibold text-neutral-800">{n.activeListings}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs">Top School</p>
-                    <p className="font-medium text-neutral-700 text-xs">{n.topSchool}</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs">GO Walk</p>
-                    <p className="font-semibold text-neutral-800">{n.goWalkMin} min</p>
+              {/* Background gradient (photo placeholder) */}
+              <div className="absolute inset-0 bg-gradient-to-br from-navy via-brand-800 to-navy-700 transition-all duration-500 group-hover:scale-105" />
+              {/* Dark overlay */}
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all duration-300" />
+
+              {/* Content overlaid */}
+              <div className="relative h-full flex flex-col justify-between p-5 sm:p-6">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-white">
+                    {n.name}
+                  </h3>
+                  <p className="text-white/60 text-sm mt-1">
+                    {n.activeListings} active listings
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white">
+                    {n.avgPrice}
+                  </p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
+                    <span>{n.topSchool}</span>
+                    <span>{n.goWalkMin} min to GO</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Hover arrow */}
+              <div className="absolute top-5 right-5 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
               </div>
             </Link>
           ))}

@@ -13,7 +13,6 @@
     @apply bg-white text-neutral-900 font-sans;
   }
 
-  /* Mobile-first: prevent horizontal scroll */
   html,
   body {
     @apply overflow-x-hidden;
@@ -21,24 +20,48 @@
 }
 
 @layer components {
+  /* Buttons */
   .btn-primary {
-    @apply bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200;
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-neutral-50 text-brand-600 font-semibold px-6 py-3 rounded-lg border border-brand-200 transition-colors duration-200;
+    @apply bg-white hover:bg-neutral-50 text-brand-600 font-semibold px-6 py-3 rounded-lg border border-neutral-200 transition-all duration-200 hover:border-brand-300;
   }
 
   .btn-accent {
-    @apply bg-accent-500 hover:bg-accent-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200;
+    @apply bg-accent-500 hover:bg-accent-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
   }
 
+  .btn-outline-white {
+    @apply bg-transparent hover:bg-white/10 text-white font-semibold px-6 py-3 rounded-lg border border-white/30 hover:border-white/60 transition-all duration-200;
+  }
+
+  /* Layout */
   .section-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-7xl mx-auto px-5 sm:px-6 lg:px-8;
   }
 
   .section-padding {
     @apply py-12 sm:py-16 lg:py-20;
+  }
+
+  .section-padding-lg {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+
+  /* Section label */
+  .section-label {
+    @apply text-xs font-bold uppercase tracking-[0.15em];
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white rounded-2xl border border-neutral-100 shadow-card transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:shadow-card-hover hover:-translate-y-1;
   }
 }
 
