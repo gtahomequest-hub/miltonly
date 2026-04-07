@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Navbar from "@/components/Navbar";
+import CrispChat from "@/components/CrispChat";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -62,7 +64,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <Navbar />
         {children}
+        <CrispChat />
       </body>
     </html>
   );
