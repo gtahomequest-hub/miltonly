@@ -1,45 +1,39 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
 const pills = [
-  { label: "Detached in Willmott", href: "/listings?type=detached&neighbourhood=willmott" },
-  { label: "4-Bed Under $1.1M", href: "/listings?beds=4&maxPrice=1100000" },
-  { label: "Near Craig Kielburger", href: "/school-zones/craig-kielburger" },
-  { label: "Walk to Milton GO", href: "/go-train" },
-  { label: "Open Houses This Weekend", href: "/listings?openHouse=true" },
-  { label: "New Builds", href: "/listings?type=new-build" },
-  { label: "Price Reduced", href: "/listings?priceReduced=true" },
-  { label: "Condos Under $700K", href: "/listings?type=condo&maxPrice=700000" },
+  { label: "Detached in Willmott", hot: true, href: "/listings?type=detached&neighbourhood=willmott" },
+  { label: "4-bed under $1.1M", hot: false, href: "/listings?beds=4&maxPrice=1100000" },
+  { label: "Near Craig Kielburger", hot: false, href: "/school-zones/craig-kielburger" },
+  { label: "Walk to GO station", hot: false, href: "/go-train" },
+  { label: "Open houses this weekend", hot: true, href: "/listings?openHouse=true" },
+  { label: "New builds Milton", hot: false, href: "/listings?type=new-build" },
+  { label: "Condos under $700K", hot: false, href: "/listings?type=condo&maxPrice=700000" },
+  { label: "Price reduced this week", hot: false, href: "/listings?priceReduced=true" },
 ];
 
 export default function QuickSearchPills() {
-  const [active, setActive] = useState<string | null>(null);
-
   return (
-    <section className="bg-neutral-50/50">
-      <div className="section-container py-8 sm:py-10">
-        <h2 className="sr-only">Popular Milton real estate searches</h2>
-        <p className="section-label text-neutral-400 text-center mb-5">
-          Popular searches in Milton
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          {pills.map((pill) => (
-            <Link
-              key={pill.label}
-              href={pill.href}
-              onClick={() => setActive(pill.label)}
-              className={`px-5 py-2.5 text-sm font-semibold rounded-full border transition-all duration-200 ${
-                active === pill.label
-                  ? "bg-brand-500 border-brand-500 text-white shadow-md"
-                  : "bg-white border-neutral-200 text-neutral-600 hover:border-brand-300 hover:text-brand-600 hover:shadow-sm"
-              }`}
-            >
-              {pill.label}
-            </Link>
-          ))}
-        </div>
+    <section className="bg-white border-b border-[#f1f5f9]">
+      <h2 className="sr-only">Popular Milton real estate searches</h2>
+      <div className="flex items-center flex-wrap gap-2 px-5 sm:px-11 py-5">
+        <span className="text-[11px] text-[#94a3b8] font-semibold uppercase tracking-[0.08em] shrink-0 mr-1">
+          Popular searches
+        </span>
+        {pills.map((p) => (
+          <Link
+            key={p.label}
+            href={p.href}
+            className={`text-[12px] font-medium px-[14px] py-[6px] rounded-full border transition-colors ${
+              p.hot
+                ? "bg-[#fef3c7] text-[#92400e] border-[#f59e0b] font-bold hover:bg-[#fde68a]"
+                : "bg-[#f8fafc] text-[#475569] border-[#e2e8f0] hover:border-[#94a3b8]"
+            }`}
+          >
+            {p.label}
+          </Link>
+        ))}
       </div>
     </section>
   );

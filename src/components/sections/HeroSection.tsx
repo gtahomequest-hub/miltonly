@@ -1,97 +1,267 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 
 const searchTabs = ["Buy", "Rent", "Sold"] as const;
+const pills = [
+  "Detached in Willmott", "4-bed under $1.1M", "Near Craig Kielburger",
+  "Walk to Milton GO", "Open houses", "New builds", "Condos under $700K", "Price reduced",
+];
+const propertyTypes = [
+  { id: "detached", label: "Detached", icon: "🏠", avg: "$1.24M" },
+  { id: "semi", label: "Semi", icon: "🏘", avg: "$960K" },
+  { id: "townhouse", label: "Townhouse", icon: "🏗", avg: "$810K" },
+  { id: "condo", label: "Condo", icon: "🏢", avg: "$650K" },
+];
+const streetPills = ["Derry Rd", "Main St E", "Thompson Rd", "Laurier Ave", "Louis St. Laurent"];
 
 export default function HeroSection() {
   const [activeTab, setActiveTab] = useState<(typeof searchTabs)[number]>("Buy");
+  const [selectedType, setSelectedType] = useState("detached");
+  const [streetName, setStreetName] = useState("");
+  const [showCapture, setShowCapture] = useState(false);
+  const [capturedStreet, setCapturedStreet] = useState("");
+
+  const typeData = useMemo(() => propertyTypes.find((t) => t.id === selectedType)!, [selectedType]);
+  const buttonText = streetName
+    ? `Show what ${typeData.label.toLowerCase()} homes fetch on ${streetName} →`
+    : `Show what ${typeData.label.toLowerCase()} homes are fetching →`;
+
+  const handleFetch = () => {
+    setCapturedStreet(streetName || "your street");
+    setShowCapture(true);
+  };
+
+  const handlePillClick = (street: string) => {
+    setStreetName(street);
+  };
 
   return (
-    <section className="relative min-h-[600px] lg:min-h-[720px] flex items-center">
-      {/* Rich deep navy gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#152D52_0%,#0A1628_50%,#060E1A_100%)]" />
-      {/* Subtle light sweep */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent" />
+    <section className="flex flex-col lg:flex-row min-h-[560px]">
+      {/* ═══ LEFT — BuyersHood (dark navy) ═══ */}
+      <div className="flex-1 bg-[#07111f] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
+        <p className="text-[10px] font-bold text-[#1e3a5f] uppercase tracking-[0.14em] mb-2.5">
+          For buyers · renters · investors
+        </p>
+        <h1 className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
+          <span className="text-[#f1f5f9]">Buyers</span>
+          <span className="text-[#f59e0b]">Hood</span>
+        </h1>
+        <p className="text-[13px] text-[#334155] leading-[1.65] mb-6 sm:mb-[30px] max-w-md">
+          Browse every Milton home for sale, rent or sold — live TREB data, updated daily.
+        </p>
 
-      <div className="relative section-container w-full py-28 lg:py-36">
-        <div className="grid lg:grid-cols-5 gap-10 lg:gap-14 items-center">
-          {/* LEFT — headline + search */}
-          <div className="lg:col-span-3 space-y-8">
-            <div className="space-y-5">
-              <h1 className="text-[2.75rem] sm:text-display lg:text-display-lg text-white leading-[1.08] text-balance">
-                Find your perfect<br />Milton home
-              </h1>
-              <p className="text-lg sm:text-xl text-white/60 max-w-lg leading-relaxed">
-                The only real estate platform built exclusively for Milton, Ontario.
-                Street intelligence, school zones, and GO commute data.
-              </p>
+        {/* Search tabs */}
+        <div className="flex gap-1.5 mb-[11px]">
+          {searchTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`text-[12px] font-semibold rounded-full px-[18px] py-[6px] transition-all ${
+                activeTab === tab
+                  ? "bg-[#f59e0b] text-[#07111f]"
+                  : "text-[#334155] hover:text-[#64748b]"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Search bar */}
+        <div className="flex bg-[#0c1e35] border-2 border-[#1e3a5f] rounded-[13px] overflow-hidden focus-within:border-[#f59e0b] transition-colors mb-[14px]">
+          <input
+            type="text"
+            placeholder="Address, street, neighbourhood, MLS#..."
+            className="flex-1 bg-transparent text-[14px] text-[#cbd5e1] placeholder:text-[#1e3a5f] px-4 py-[14px] outline-none"
+          />
+          <button className="bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-[22px] py-[14px] shrink-0 hover:bg-[#eab308] transition-colors">
+            Search
+          </button>
+        </div>
+
+        {/* Quick pills */}
+        <div className="flex flex-wrap gap-[6px] mb-6">
+          {pills.map((p) => (
+            <span key={p} className="text-[11px] text-[#334155] bg-[#0c1e35] border border-[#1e3a5f] rounded-full px-3 py-[5px] cursor-pointer hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors">
+              {p}
+            </span>
+          ))}
+        </div>
+
+        {/* 4 stat boxes — pushed to bottom */}
+        <div className="grid grid-cols-2 gap-2 mt-auto">
+          {[
+            { value: "$1.24M", label: "Avg sold price", trend: "↑ 4.2% this month" },
+            { value: "47", label: "Listed today", trend: "↑ 5 new this morning" },
+            { value: "11 days", label: "Avg to sell", trend: "↓ selling faster" },
+            { value: "102%", label: "Sold vs asking", trend: "↑ selling above ask" },
+          ].map((s) => (
+            <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
+              <p className="text-[22px] font-extrabold text-[#f59e0b]">{s.value}</p>
+              <p className="text-[11px] text-[#334155] mt-[3px]">{s.label}</p>
+              <p className="text-[10px] text-[#22c55e] font-semibold mt-[3px]">{s.trend}</p>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Search bar — white, elevated */}
-            <div className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.25)] overflow-hidden max-w-xl">
-              <div className="flex border-b border-neutral-100">
-                {searchTabs.map((tab) => (
+      {/* ═══ AMBER DIVIDER ═══ */}
+      <div className="hidden lg:flex w-[3px] bg-[#f59e0b] relative items-center justify-center">
+        <div className="absolute bg-[#07111f] border-[1.5px] border-[#f59e0b] rounded-full px-[9px] py-[6px] -rotate-90">
+          <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em] whitespace-nowrap">Milton · ON</span>
+        </div>
+      </div>
+      {/* Mobile horizontal divider */}
+      <div className="lg:hidden h-[3px] bg-[#f59e0b] flex items-center justify-center relative">
+        <div className="absolute bg-[#07111f] border-[1.5px] border-[#f59e0b] rounded-full px-3 py-1">
+          <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">Milton · ON</span>
+        </div>
+      </div>
+
+      {/* ═══ RIGHT — Miltonly Intelligence (amber) ═══ */}
+      <div className="flex-1 bg-[#fbbf24] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
+        <p className="text-[10px] font-bold text-[#92400e] uppercase tracking-[0.14em] mb-2.5">
+          For sellers · investors · researchers
+        </p>
+        <p className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
+          <span className="text-[#07111f]">Miltonly </span>
+          <span className="text-[#1d4ed8]">Intelligence</span>
+        </p>
+        <p className="text-[13px] text-[#78350f] leading-[1.65] mb-5">
+          Street price data, home valuations and market comparisons — only in Milton.
+        </p>
+
+        {/* ── WHITE INTELLIGENCE CARD ── */}
+        <div className="bg-white rounded-2xl border border-black/5 p-[22px] mb-3">
+          {!showCapture ? (
+            <>
+              {/* Eyebrow */}
+              <div className="flex items-center gap-[7px] mb-3">
+                <span className="w-[7px] h-[7px] rounded-full bg-[#f59e0b]" />
+                <span className="text-[10px] font-bold text-[#b45309] uppercase tracking-[0.1em]">Live street prices</span>
+              </div>
+              <p className="text-[15px] font-bold text-[#07111f] leading-[1.3] mb-[5px]">What are homes fetching on your street?</p>
+              <p className="text-[12px] text-[#64748b] leading-[1.5] mb-4">Pick a home type and enter your street name — see exactly what they&apos;re fetching right now.</p>
+
+              {/* Step 1 */}
+              <div className="flex items-center gap-[9px] mb-2.5">
+                <span className="w-5 h-5 rounded-full bg-[#07111f] text-[#f59e0b] text-[10px] font-extrabold flex items-center justify-center shrink-0">1</span>
+                <span className="text-[10px] font-bold text-[#07111f] uppercase tracking-[0.08em]">What type of home?</span>
+              </div>
+              <div className="grid grid-cols-4 gap-[5px] mb-[14px]">
+                {propertyTypes.map((t) => (
                   <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
-                      activeTab === tab
-                        ? "text-brand-500 border-b-2 border-brand-500 bg-brand-50/50"
-                        : "text-neutral-400 hover:text-neutral-600"
+                    key={t.id}
+                    onClick={() => setSelectedType(t.id)}
+                    className={`text-center rounded-[10px] py-2.5 px-1 border transition-all ${
+                      selectedType === t.id
+                        ? "bg-[#fef3c7] border-2 border-[#07111f]"
+                        : "bg-[#f8fafc] border-[1.5px] border-[#e2e8f0] hover:border-[#cbd5e1]"
                     }`}
                   >
-                    {tab}
+                    <span className="text-[15px] block mb-[3px]">{t.icon}</span>
+                    <span className={`text-[10px] ${selectedType === t.id ? "text-[#07111f] font-bold" : "text-[#64748b]"}`}>{t.label}</span>
                   </button>
                 ))}
               </div>
-              <div className="p-4">
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input
-                      type="text"
-                      placeholder="Address, street, neighbourhood, MLS#..."
-                      className="w-full pl-11 pr-4 py-3.5 text-neutral-800 bg-neutral-50 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent focus:bg-white placeholder:text-neutral-400"
-                    />
-                  </div>
-                  <button className="btn-primary shrink-0 !rounded-xl !px-7">
-                    Search
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* RIGHT — seller CTA — glowing card */}
-          <div className="lg:col-span-2">
-            <div className="relative">
-              {/* Glow */}
-              <div className="absolute -inset-1 bg-gradient-to-br from-brand-400/30 to-accent-400/20 rounded-[20px] blur-lg" />
-              <div className="relative bg-white/[0.07] backdrop-blur-md rounded-2xl p-8 border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-                <div className="space-y-5">
-                  <div className="inline-flex items-center gap-2 bg-accent-500/15 text-accent-400 text-xs font-bold px-3 py-1.5 rounded-full tracking-wide uppercase">
-                    <span className="w-1.5 h-1.5 bg-accent-400 rounded-full animate-pulse" />
-                    Free Instant Estimate
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-                    What&apos;s my<br />home worth?
-                  </h2>
-                  <p className="text-white/50 text-sm leading-relaxed">
-                    Get your Milton home&apos;s value in 30 seconds.
-                    Based on real sold data from your street.
-                  </p>
-                  <Link
-                    href="/sell"
-                    className="block text-center w-full py-4 bg-accent-500 hover:bg-accent-600 text-white text-lg font-bold rounded-xl transition-all shadow-glow-accent"
-                  >
-                    See My Home Value
-                  </Link>
-                </div>
+              {/* Step 2 */}
+              <div className="flex items-center gap-[9px] mb-2.5">
+                <span className="w-5 h-5 rounded-full bg-[#07111f] text-[#f59e0b] text-[10px] font-extrabold flex items-center justify-center shrink-0">2</span>
+                <span className="text-[10px] font-bold text-[#07111f] uppercase tracking-[0.08em]">Street name only</span>
               </div>
+              <div className="flex bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[10px] overflow-hidden focus-within:border-[#07111f] transition-colors mb-[5px]">
+                <div className="flex items-center gap-1.5 px-[11px] border-r border-[#e2e8f0] shrink-0">
+                  <svg className="w-3.5 h-3.5 text-[#94a3b8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span className="text-[11px] text-[#94a3b8] whitespace-nowrap">Milton street</span>
+                </div>
+                <input
+                  type="text"
+                  value={streetName}
+                  onChange={(e) => setStreetName(e.target.value)}
+                  placeholder="e.g. Laurier Ave"
+                  className="flex-1 px-3 py-[11px] text-[13px] font-medium text-[#07111f] placeholder:text-[#d1d5db] outline-none bg-transparent"
+                />
+              </div>
+              <p className="text-[10px] text-[#a16207] font-semibold mb-2">No house number needed — street name only</p>
+
+              {/* Street pills */}
+              <div className="flex flex-wrap gap-[5px] mb-[13px]">
+                {streetPills.map((s) => (
+                  <button key={s} onClick={() => handlePillClick(s)} className="text-[11px] text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] rounded-full px-2.5 py-1 hover:border-[#f59e0b] hover:text-[#92400e] transition-colors">
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Fetch button */}
+              <button
+                onClick={handleFetch}
+                className="w-full bg-[#07111f] text-[#f59e0b] text-[13px] font-extrabold rounded-[10px] py-[13px] hover:bg-[#0c1e35] transition-colors"
+              >
+                {buttonText}
+              </button>
+
+              {/* 3 mini stats */}
+              <div className="grid grid-cols-3 gap-[5px] mt-3 pt-3 border-t border-[#f1f5f9]">
+                {[
+                  { value: typeData.avg, label: "Avg fetching", trend: "↑ 4.2%" },
+                  { value: "11 days", label: "To sell", trend: "↓ faster" },
+                  { value: "102%", label: "Of asking", trend: "↑ over ask" },
+                ].map((s) => (
+                  <div key={s.label} className="bg-[#f8fafc] rounded-lg p-[9px_6px] text-center">
+                    <p className="text-[13px] font-extrabold text-[#07111f]">{s.value}</p>
+                    <p className="text-[9px] text-[#94a3b8] mt-[2px]">{s.label}</p>
+                    <p className="text-[9px] text-[#16a34a] font-bold mt-[2px]">{s.trend}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* ── EMAIL CAPTURE STATE ── */
+            <div className="py-2">
+              <p className="text-[15px] font-bold text-[#07111f] leading-[1.3] mb-1">
+                Get notified when prices change on{" "}
+                <span className="text-[#f59e0b]">{capturedStreet}</span>
+              </p>
+              <p className="text-[12px] text-[#64748b] leading-[1.5] mb-5">
+                We&apos;ll email you whenever a home sells on your street — free, no spam.
+              </p>
+              <input
+                type="email"
+                placeholder="Your email address"
+                className="w-full px-4 py-3 text-[13px] bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[10px] outline-none focus:border-[#07111f] mb-3"
+              />
+              <button className="w-full bg-[#07111f] text-[#f59e0b] text-[13px] font-extrabold rounded-[10px] py-[13px] mb-2 hover:bg-[#0c1e35] transition-colors">
+                Yes, keep me updated →
+              </button>
+              <button className="w-full text-[12px] text-[#64748b] border border-[#e2e8f0] rounded-[10px] py-[11px] mb-3 hover:bg-[#f8fafc] transition-colors">
+                Skip — just show me the prices
+              </button>
+              <button
+                onClick={() => setShowCapture(false)}
+                className="text-[11px] text-[#f59e0b] font-semibold hover:underline"
+              >
+                ← Change street or home type
+              </button>
             </div>
+          )}
+        </div>
+
+        {/* ── DARK HOME VALUE CARD ── */}
+        <div className="bg-[#07111f] rounded-[14px] p-[16px_18px] flex items-center gap-[14px]">
+          <div className="w-[42px] h-[42px] bg-[#f59e0b] rounded-[10px] flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-[#f1f5f9] mb-[3px]">What&apos;s my home worth?</p>
+            <p className="text-[11px] text-[#475569]">30 sec · real TREB data · free estimate</p>
+          </div>
+          <Link href="/sell" className="bg-[#f59e0b] text-[#07111f] text-[12px] font-extrabold px-4 py-2.5 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors">
+            Get estimate →
+          </Link>
         </div>
       </div>
     </section>
