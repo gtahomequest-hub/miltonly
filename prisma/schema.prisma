@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,8 +25,8 @@ model Listing {
   soldPrice      Int?
   soldDate       DateTime?
   daysOnMarket   Int?
-  photos         String[]
-  description    String?
+  photos         Json      @default("[]")
+  description    String?   @db.Text
   latitude       Float
   longitude      Float
   schoolZone     String?
@@ -62,17 +62,17 @@ model Lead {
   timeline        String?
   priceRangeMin   Int?
   priceRangeMax   Int?
-  neighbourhoods  String[]
+  neighbourhoods  Json      @default("[]")
   propertyType    String?
   condoBuilding   String?
-  savedListings   String[]
-  comparisonsMade String[]
+  savedListings   Json      @default("[]")
+  comparisonsMade Json      @default("[]")
   source          String // hero|seller_tool|buyer_alert|investor_report|street_page|condo_page|comparison|popup|chat|partner
   utmSource       String?
   utmMedium       String?
   utmCampaign     String?
   utmKeyword      String?
-  notes           String?
+  notes           String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   lastContactAt   DateTime?
@@ -88,15 +88,15 @@ model Lead {
 model VisitorProfile {
   id                      String   @id @default(cuid())
   cookieId                String   @unique
-  viewedListings          String[]
-  savedListings           String[]
-  pillsClicked            String[]
-  comparisonsMade         String[]
-  streetsPreviewed        String[]
-  buildingsPreviewed      String[]
+  viewedListings          Json     @default("[]")
+  savedListings           Json     @default("[]")
+  pillsClicked            Json     @default("[]")
+  comparisonsMade         Json     @default("[]")
+  streetsPreviewed        Json     @default("[]")
+  buildingsPreviewed      Json     @default("[]")
   priceRangeMin           Int?
   priceRangeMax           Int?
-  preferredNeighbourhoods String[]
+  preferredNeighbourhoods Json     @default("[]")
   propertyType            String?
   bedrooms                Int?
   intent                  String?
@@ -138,7 +138,7 @@ model CondoBuilding {
   yearBuilt         Int?
   totalUnits        Int?
   managementCo      String?
-  amenities         String[]
+  amenities         Json     @default("[]")
   petFriendly       Boolean?
   latitude          Float
   longitude         Float
@@ -168,6 +168,6 @@ model Partner {
   phone   String
   email   String
   website String?
-  bio     String?
+  bio     String? @db.Text
   active  Boolean @default(true)
 }
