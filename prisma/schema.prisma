@@ -160,6 +160,19 @@ model CondoBuilding {
   @@index([neighbourhood])
 }
 
+model StreetContent {
+  id              String   @id @default(cuid())
+  streetSlug      String   @unique
+  streetName      String
+  description     String
+  metaTitle       String?
+  metaDescription String?
+  needsReview     Boolean  @default(false)
+  generatedAt     DateTime @default(now())
+  marketDataHash  String?
+  updatedAt       DateTime @updatedAt
+}
+
 model Partner {
   id      String  @id @default(cuid())
   name    String
