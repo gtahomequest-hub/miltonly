@@ -9,7 +9,6 @@ import { homepageFAQs } from "@/lib/faqs";
 
 import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
-import QuickSearchPills from "@/components/sections/QuickSearchPills";
 import IntelligenceCentre from "@/components/sections/IntelligenceCentre";
 import FeaturedListings from "@/components/sections/FeaturedListings";
 import FooterSection from "@/components/sections/FooterSection";
@@ -30,7 +29,6 @@ export default function HomePage() {
       <main>
         <HeroSection />
         <TrustBarSection />
-        <QuickSearchPills />
         <IntelligenceCentre />
         <FeaturedListings />
       </main>
