@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { formatPrice } from "@/lib/format";
 
 const searchTabs = ["Buy", "Rent", "Sold"] as const;
 const pills = [
@@ -9,21 +10,41 @@ const pills = [
   "Walk to Milton GO", "Open houses", "New builds", "Condos under $700K", "Price reduced",
 ];
 const propertyTypes = [
-  { id: "detached", label: "Detached", icon: "🏠", avg: "$1.24M" },
-  { id: "semi", label: "Semi", icon: "🏘", avg: "$960K" },
-  { id: "townhouse", label: "Townhouse", icon: "🏗", avg: "$810K" },
-  { id: "condo", label: "Condo", icon: "🏢", avg: "$650K" },
+  { id: "detached", label: "Detached", icon: "🏠" },
+  { id: "semi", label: "Semi", icon: "🏘" },
+  { id: "townhouse", label: "Townhouse", icon: "🏗" },
+  { id: "condo", label: "Condo", icon: "🏢" },
 ];
 const streetPills = ["Derry Rd", "Main St E", "Thompson Rd", "Laurier Ave", "Louis St. Laurent"];
 
-export default function HeroSection() {
+interface Props {
+  stats: {
+    avgActivePrice: number;
+    avgSoldPrice: number;
+    listedToday: number;
+    avgSoldDOM: number;
+    soldVsAsk: number;
+  };
+  typeStats: Record<string, { avgPrice: number; avgDOM: number; soldVsAsk: number }>;
+}
+
+export default function HeroSection({ stats, typeStats }: Props) {
   const [activeTab, setActiveTab] = useState<(typeof searchTabs)[number]>("Buy");
   const [selectedType, setSelectedType] = useState("detached");
   const [streetName, setStreetName] = useState("");
   const [showCapture, setShowCapture] = useState(false);
   const [capturedStreet, setCapturedStreet] = useState("");
 
-  const typeData = useMemo(() => propertyTypes.find((t) => t.id === selectedType)!, [selectedType]);
+  const typeData = useMemo(() => {
+    const s = typeStats[selectedType];
+    return {
+      label: propertyTypes.find((t) => t.id === selectedType)!.label,
+      avgPrice: s ? formatPrice(s.avgPrice) : "$0",
+      avgDOM: s ? s.avgDOM + " days" : "—",
+      soldVsAsk: s ? s.soldVsAsk + "%" : "—",
+    };
+  }, [selectedType, typeStats]);
+
   const buttonText = streetName
     ? `Show what ${typeData.label.toLowerCase()} homes fetch on ${streetName} →`
     : `Show what ${typeData.label.toLowerCase()} homes are fetching →`;
@@ -31,10 +52,6 @@ export default function HeroSection() {
   const handleFetch = () => {
     setCapturedStreet(streetName || "your street");
     setShowCapture(true);
-  };
-
-  const handlePillClick = (street: string) => {
-    setStreetName(street);
   };
 
   return (
@@ -90,13 +107,13 @@ export default function HeroSection() {
           ))}
         </div>
 
-        {/* 4 stat boxes — pushed to bottom */}
+        {/* 4 stat boxes — REAL DATA */}
         <div className="grid grid-cols-2 gap-2 mt-auto">
           {[
-            { value: "$1.24M", label: "Avg sold price", trend: "↑ 4.2% this month" },
-            { value: "47", label: "Listed today", trend: "↑ 5 new this morning" },
-            { value: "11 days", label: "Avg to sell", trend: "↓ selling faster" },
-            { value: "102%", label: "Sold vs asking", trend: "↑ selling above ask" },
+            { value: formatPrice(stats.avgSoldPrice || stats.avgActivePrice), label: "Avg sold price", trend: "↑ live from TREB" },
+            { value: String(stats.listedToday || "0"), label: "Listed today", trend: "↑ updated daily" },
+            { value: (stats.avgSoldDOM || "��") + " days", label: "Avg to sell", trend: "↓ live data" },
+            { value: stats.soldVsAsk + "%", label: "Sold vs asking", trend: stats.soldVsAsk >= 100 ? "↑ above ask" : "↓ below ask" },
           ].map((s) => (
             <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
               <p className="text-[22px] font-extrabold text-[#f8f9fb]">{s.value}</p>
@@ -113,7 +130,6 @@ export default function HeroSection() {
           <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em] whitespace-nowrap">Milton · ON</span>
         </div>
       </div>
-      {/* Mobile horizontal divider */}
       <div className="lg:hidden h-[3px] bg-[#f59e0b] flex items-center justify-center relative">
         <div className="absolute bg-[#07111f] border-[1.5px] border-[#f59e0b] rounded-full px-3 py-1">
           <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">Milton · ON</span>
@@ -133,11 +149,10 @@ export default function HeroSection() {
           Street price data, home valuations and market comparisons — only in Milton.
         </p>
 
-        {/* ── WHITE INTELLIGENCE CARD ── */}
+        {/* White intelligence card */}
         <div className="bg-white rounded-2xl border border-black/5 p-[22px] mb-3">
           {!showCapture ? (
             <>
-              {/* Eyebrow */}
               <div className="flex items-center gap-[7px] mb-3">
                 <span className="w-[7px] h-[7px] rounded-full bg-[#f59e0b]" />
                 <span className="text-[10px] font-bold text-[#b45309] uppercase tracking-[0.1em]">Live street prices</span>
@@ -187,16 +202,14 @@ export default function HeroSection() {
               </div>
               <p className="text-[10px] text-[#a16207] font-semibold mb-2">No house number needed — street name only</p>
 
-              {/* Street pills */}
               <div className="flex flex-wrap gap-[5px] mb-[13px]">
                 {streetPills.map((s) => (
-                  <button key={s} onClick={() => handlePillClick(s)} className="text-[11px] text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] rounded-full px-2.5 py-1 hover:border-[#f59e0b] hover:text-[#92400e] transition-colors">
+                  <button key={s} onClick={() => setStreetName(s)} className="text-[11px] text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] rounded-full px-2.5 py-1 hover:border-[#f59e0b] hover:text-[#92400e] transition-colors">
                     {s}
                   </button>
                 ))}
               </div>
 
-              {/* Fetch button */}
               <button
                 onClick={handleFetch}
                 className="w-full bg-[#07111f] text-[#f59e0b] text-[13px] font-extrabold rounded-[10px] py-[13px] hover:bg-[#0c1e35] transition-colors"
@@ -204,12 +217,12 @@ export default function HeroSection() {
                 {buttonText}
               </button>
 
-              {/* 3 mini stats */}
+              {/* Mini stats — REAL DATA */}
               <div className="grid grid-cols-3 gap-[5px] mt-3 pt-3 border-t border-[#f1f5f9]">
                 {[
-                  { value: typeData.avg, label: "Avg fetching", trend: "↑ 4.2%" },
-                  { value: "11 days", label: "To sell", trend: "↓ faster" },
-                  { value: "102%", label: "Of asking", trend: "↑ over ask" },
+                  { value: typeData.avgPrice, label: "Avg fetching", trend: "↑ live" },
+                  { value: typeData.avgDOM, label: "To sell", trend: "↓ live" },
+                  { value: typeData.soldVsAsk, label: "Of asking", trend: "↑ live" },
                 ].map((s) => (
                   <div key={s.label} className="bg-[#f8fafc] rounded-lg p-[9px_6px] text-center">
                     <p className="text-[13px] font-extrabold text-[#07111f]">{s.value}</p>
@@ -220,7 +233,6 @@ export default function HeroSection() {
               </div>
             </>
           ) : (
-            /* ── EMAIL CAPTURE STATE ── */
             <div className="py-2">
               <p className="text-[15px] font-bold text-[#07111f] leading-[1.3] mb-1">
                 Get notified when prices change on{" "}
@@ -229,28 +241,15 @@ export default function HeroSection() {
               <p className="text-[12px] text-[#64748b] leading-[1.5] mb-5">
                 We&apos;ll email you whenever a home sells on your street — free, no spam.
               </p>
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="w-full px-4 py-3 text-[13px] bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[10px] outline-none focus:border-[#07111f] mb-3"
-              />
-              <button className="w-full bg-[#07111f] text-[#f59e0b] text-[13px] font-extrabold rounded-[10px] py-[13px] mb-2 hover:bg-[#0c1e35] transition-colors">
-                Yes, keep me updated →
-              </button>
-              <button className="w-full text-[12px] text-[#64748b] border border-[#e2e8f0] rounded-[10px] py-[11px] mb-3 hover:bg-[#f8fafc] transition-colors">
-                Skip — just show me the prices
-              </button>
-              <button
-                onClick={() => setShowCapture(false)}
-                className="text-[11px] text-[#f59e0b] font-semibold hover:underline"
-              >
-                ← Change street or home type
-              </button>
+              <input type="email" placeholder="Your email address" className="w-full px-4 py-3 text-[13px] bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[10px] outline-none focus:border-[#07111f] mb-3" />
+              <button className="w-full bg-[#07111f] text-[#f59e0b] text-[13px] font-extrabold rounded-[10px] py-[13px] mb-2 hover:bg-[#0c1e35] transition-colors">Yes, keep me updated →</button>
+              <button className="w-full text-[12px] text-[#64748b] border border-[#e2e8f0] rounded-[10px] py-[11px] mb-3 hover:bg-[#f8fafc] transition-colors">Skip — just show me the prices</button>
+              <button onClick={() => setShowCapture(false)} className="text-[11px] text-[#f59e0b] font-semibold hover:underline">← Change street or home type</button>
             </div>
           )}
         </div>
 
-        {/* ── DARK HOME VALUE CARD ── */}
+        {/* Dark home value card */}
         <div className="bg-[#07111f] rounded-[14px] p-[16px_18px] flex items-center gap-[14px]">
           <div className="w-[42px] h-[42px] bg-[#f59e0b] rounded-[10px] flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
