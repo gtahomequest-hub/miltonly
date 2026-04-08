@@ -41,14 +41,14 @@ export default function HeroSection() {
     <section className="flex flex-col lg:flex-row min-h-[560px]">
       {/* ═══ LEFT — BuyersHood (dark navy) ═══ */}
       <div className="flex-1 bg-[#07111f] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
-        <p className="text-[10px] font-bold text-[#1e3a5f] uppercase tracking-[0.14em] mb-2.5">
+        <p className="text-[10px] font-bold text-[rgba(248,249,251,0.6)] uppercase tracking-[0.14em] mb-2.5">
           For buyers · renters · investors
         </p>
         <h1 className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
-          <span className="text-[#f1f5f9]">Buyers</span>
-          <span className="text-[#f59e0b]">Hood</span>
+          <span className="text-[#f8f9fb]">Buyers</span>
+          <span className="text-[#f8f9fb]">Hood</span>
         </h1>
-        <p className="text-[13px] text-[#334155] leading-[1.65] mb-6 sm:mb-[30px] max-w-md">
+        <p className="text-[13px] text-[rgba(248,249,251,0.6)] leading-[1.65] mb-6 sm:mb-[30px] max-w-md">
           Browse every Milton home for sale, rent or sold — live TREB data, updated daily.
         </p>
 
@@ -61,7 +61,7 @@ export default function HeroSection() {
               className={`text-[12px] font-semibold rounded-full px-[18px] py-[6px] transition-all ${
                 activeTab === tab
                   ? "bg-[#f59e0b] text-[#07111f]"
-                  : "text-[#334155] hover:text-[#64748b]"
+                  : "text-[rgba(248,249,251,0.5)] hover:text-[rgba(248,249,251,0.7)]"
               }`}
             >
               {tab}
@@ -74,7 +74,7 @@ export default function HeroSection() {
           <input
             type="text"
             placeholder="Address, street, neighbourhood, MLS#..."
-            className="flex-1 bg-transparent text-[14px] text-[#cbd5e1] placeholder:text-[#1e3a5f] px-4 py-[14px] outline-none"
+            className="flex-1 bg-transparent text-[14px] text-[#f8f9fb] placeholder:text-[rgba(248,249,251,0.25)] px-4 py-[14px] outline-none"
           />
           <button className="bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-[22px] py-[14px] shrink-0 hover:bg-[#eab308] transition-colors">
             Search
@@ -84,7 +84,7 @@ export default function HeroSection() {
         {/* Quick pills */}
         <div className="flex flex-wrap gap-[6px] mb-6">
           {pills.map((p) => (
-            <span key={p} className="text-[11px] text-[#334155] bg-[#0c1e35] border border-[#1e3a5f] rounded-full px-3 py-[5px] cursor-pointer hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors">
+            <span key={p} className="text-[11px] text-[rgba(248,249,251,0.5)] bg-[#0c1e35] border border-[#1e3a5f] rounded-full px-3 py-[5px] cursor-pointer hover:border-[#f59e0b] hover:text-[#f8f9fb] transition-colors">
               {p}
             </span>
           ))}
@@ -99,8 +99,8 @@ export default function HeroSection() {
             { value: "102%", label: "Sold vs asking", trend: "↑ selling above ask" },
           ].map((s) => (
             <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
-              <p className="text-[22px] font-extrabold text-[#f59e0b]">{s.value}</p>
-              <p className="text-[11px] text-[#334155] mt-[3px]">{s.label}</p>
+              <p className="text-[22px] font-extrabold text-[#f8f9fb]">{s.value}</p>
+              <p className="text-[11px] text-[rgba(248,249,251,0.5)] mt-[3px]">{s.label}</p>
               <p className="text-[10px] text-[#22c55e] font-semibold mt-[3px]">{s.trend}</p>
             </div>
           ))}
@@ -256,8 +256,8 @@ export default function HeroSection() {
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[#f1f5f9] mb-[3px]">What&apos;s my home worth?</p>
-            <p className="text-[11px] text-[#475569]">30 sec · real TREB data · free estimate</p>
+            <p className="text-[13px] font-bold text-[#f8f9fb] mb-[3px]">What&apos;s my home worth?</p>
+            <p className="text-[11px] text-[rgba(248,249,251,0.6)]">30 sec · real TREB data · free estimate</p>
           </div>
           <Link href="/sell" className="bg-[#f59e0b] text-[#07111f] text-[12px] font-extrabold px-4 py-2.5 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors">
             Get estimate →

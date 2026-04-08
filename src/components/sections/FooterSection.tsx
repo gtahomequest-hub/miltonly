@@ -18,7 +18,7 @@ export default function FooterSection() {
         {/* Logo */}
         <Link href="/" className="shrink-0">
           <span className="text-[18px] font-extrabold">
-            <span className="text-[#f1f5f9]">miltonly</span>
+            <span className="text-[#f8f9fb]">miltonly</span>
             <span className="text-[#f59e0b]">.</span>
           </span>
         </Link>
@@ -26,14 +26,14 @@ export default function FooterSection() {
         {/* Links */}
         <nav className="flex flex-wrap justify-center gap-x-[22px] gap-y-2">
           {footerLinks.map((l) => (
-            <Link key={l.href} href={l.href} className="text-[12px] text-[#334155] hover:text-[#64748b] transition-colors">
+            <Link key={l.href} href={l.href} className="text-[12px] text-[rgba(248,249,251,0.5)] hover:text-[rgba(248,249,251,0.7)] transition-colors">
               {l.label}
             </Link>
           ))}
         </nav>
 
         {/* Copyright */}
-        <p className="text-[11px] text-[#1e3a5f] text-center sm:text-right shrink-0">
+        <p className="text-[11px] text-[rgba(248,249,251,0.3)] text-center sm:text-right shrink-0">
           © 2025 Miltonly.com · Milton Ontario · TREB data disclaimer
         </p>
       </div>
