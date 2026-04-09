@@ -103,9 +103,9 @@ export default function IntelligenceCentre() {
               </div>
 
               {/* CTA */}
-              <button className="w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold rounded-xl py-3.5 mb-5 hover:bg-[#eab308] transition-colors">
+              <Link href="/compare" className="block w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold rounded-xl py-3.5 mb-5 hover:bg-[#eab308] transition-colors text-center">
                 Compare Now
-              </button>
+              </Link>
 
               {/* Dimensions */}
               <p className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold mb-2">Dimensions compared</p>
