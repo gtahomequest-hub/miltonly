@@ -26,21 +26,8 @@ export function extractStreetName(fullAddress: string): string {
   // Step 6: Remove anything in parentheses — (Lower), (Upper), (UPPER LEVELS), etc.
   address = address.replace(/\s*\([^)]*\)\s*/g, " ");
 
-  // Step 7: Remove trailing junk suffixes that aren't part of the street name
-  // Strips: Basement, Lower, Upper, Main, Suite, Garden, BSMT, N/A, and trailing unit numbers
-  address = address.replace(
-    /\s+(Basement|BASEMENT|Bsmt|BSMT|Basemen|Lower|LOWER|Upper|UPPER|Main|MAIN|Suite|Garden|N\/A|Apt\.?|bonus)\s*\w*$/i,
-    ""
-  );
-
-  // Step 8: Remove trailing bare unit/floor numbers like "Derry Rd 1004" or "Rose Way 105"
-  // Only strip if the number follows a known street type suffix
-  address = address.replace(
-    /\b(Ave|Rd|St|Blvd|Crt|Dr|Cres|Pl|Trl|Cir|Ln|Terr|Grv|Hts|Hllw|Way|Point|Gate|Landing|Line|Close|Crossing|Gardens)\s+\d+[A-Z]?$/i,
-    "$1"
-  );
-
-  // Step 9: Normalize street type suffixes to abbreviations
+  // Step 7: Normalize street type suffixes to abbreviations FIRST
+  // (so subsequent steps can match abbreviated forms)
   const suffixes: Record<string, string> = {
     Avenue: "Ave",
     Road: "Rd",
@@ -63,16 +50,31 @@ export function extractStreetName(fullAddress: string): string {
     address = address.replace(regex, abbr);
   }
 
-  // Step 10: Normalize case — title case the street name
+  // Step 8: Remove trailing junk suffixes (run twice to catch chained junk like "Basement Apt.")
+  const junkRegex =
+    /\s+(Basement|BASEMENT|Bsmt|BSMT|Basemen|Bsmnt|Lower|LOWER|Upper|UPPER|Main|MAIN|Suite|Garden|N\/A|Apt\.?|bonus|SS\d*|Parking\s*\w*)[\s.]*\w*$/i;
+  address = address.replace(junkRegex, "");
+  address = address.replace(junkRegex, ""); // second pass for chained junk
+
+  // Step 9: Remove trailing bare unit/floor numbers like "Derry Rd 1004" or "Main St E 107"
+  // Matches: suffix + optional direction (N/S/E/W) + number
+  address = address.replace(
+    /\b(Ave|Rd|St|Blvd|Crt|Dr|Cres|Pl|Trl|Cir|Ln|Terr|Grv|Hts|Hllw|Way|Point|Gate|Landing|Line|Close|Crossing|Gardens)(\s+[NSEW])?\s+#?\d+[A-Z]?$/i,
+    "$1$2"
+  );
+
+  // Step 10: Normalize case — proper title case
   address = address
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/\b[A-Z]{2,}\b/g, (word) => {
-      // Keep directional suffixes uppercase-ish: E, W, N, S
-      if (/^[NSEW]$/.test(word)) return word;
-      // Title-case all-caps words like "CAMPBELL" → "Campbell"
-      return word.charAt(0) + word.slice(1).toLowerCase();
-    });
+    .split(" ")
+    .map((word) => {
+      // Keep single-letter directional suffixes: E, W, N, S
+      if (/^[NSEWnsew]$/.test(word)) return word.toUpperCase();
+      // Title-case any word (handles ALL-CAPS and all-lowercase)
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
 
   return address.trim();
 }
