@@ -131,7 +131,7 @@ export default async function ListingsPage({ searchParams }: Props) {
                     {/* Photo count */}
                     {l.photos.length > 1 && <span className="absolute bottom-2.5 right-2.5 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-md">{l.photos.length} 📷</span>}
                     {/* Favourite */}
-                    <button className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-[14px] transition-all opacity-0 group-hover:opacity-100" onClick={(e) => e.preventDefault()}>♡</button>
+                    <span className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-[14px] opacity-0 group-hover:opacity-100">♡</span>
                   </div>
 
                   {/* Body */}
