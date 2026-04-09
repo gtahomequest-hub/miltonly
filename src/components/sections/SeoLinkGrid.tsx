@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
+import { extractStreetName } from "@/lib/streetUtils";
 
 interface StreetLink {
   slug: string;
@@ -21,15 +22,10 @@ const getSeoData = unstable_cache(
     const streets: StreetLink[] = await Promise.all(
       streetGroups.map(async (s) => {
         const sample = await prisma.listing.findFirst({
-          where: { streetSlug: s.streetSlug },
-          select: { address: true },
+          where: { streetSlug: s.streetSlug, streetName: { not: null } },
+          select: { streetName: true, address: true },
         });
-        const name = (sample?.address || s.streetSlug)
-          .replace(/^\d+\s*/, "")
-          .replace(/,\s*Milton.*$/i, "")
-          .replace(/,\s*ON.*$/i, "")
-          .replace(/\s+\d+\s*,.*$/, "")
-          .trim();
+        const name = sample?.streetName || extractStreetName(sample?.address || s.streetSlug);
         return { slug: s.streetSlug, name, count: s._count };
       })
     );
