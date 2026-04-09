@@ -2,11 +2,12 @@ import { prisma } from "../src/lib/prisma";
 import { extractStreetName } from "../src/lib/streetUtils";
 
 async function fixStreetNames() {
+  // Always re-extract from the raw address field — never from streetName
   const listings = await prisma.listing.findMany({
     select: { id: true, address: true, streetName: true },
   });
 
-  console.log(`Found ${listings.length} listings to process`);
+  console.log(`Processing ${listings.length} listings from raw address field`);
 
   let updated = 0;
   let unchanged = 0;
@@ -20,7 +21,7 @@ async function fixStreetNames() {
         data: { streetName: cleanName },
       });
       updated++;
-      if (updated <= 20) {
+      if (updated <= 30) {
         console.log(`  "${listing.address}" → "${cleanName}" (was: "${listing.streetName}")`);
       }
     } else {
@@ -28,26 +29,26 @@ async function fixStreetNames() {
     }
   }
 
-  console.log(`\nDone: ${updated} updated, ${unchanged} unchanged`);
+  console.log(`\n${updated} updated, ${unchanged} unchanged`);
 
-  // Show unique street names
+  // Show final unique street names
   const distinct = await prisma.listing.findMany({
     distinct: ["streetName"],
     select: { streetName: true },
     where: { streetName: { not: null } },
     orderBy: { streetName: "asc" },
   });
-  console.log(`\n${distinct.length} unique street names after cleanup`);
+  console.log(`${distinct.length} unique street names`);
 
-  // Clear dirty StreetQueue entries so backfill can re-queue cleanly
-  const deleted = await prisma.streetQueue.deleteMany({});
-  console.log(`Cleared ${deleted.count} StreetQueue entries`);
+  // Clear StreetQueue so backfill starts fresh
+  const qDeleted = await prisma.streetQueue.deleteMany({});
+  console.log(`Cleared ${qDeleted.count} StreetQueue entries`);
 
-  // Also clear any draft StreetContent that was generated with dirty names
-  const draftDeleted = await prisma.streetContent.deleteMany({
-    where: { status: "draft", aiGenerated: true },
+  // Clear draft StreetContent (keep published)
+  const cDeleted = await prisma.streetContent.deleteMany({
+    where: { status: "draft" },
   });
-  console.log(`Cleared ${draftDeleted.count} dirty draft StreetContent entries`);
+  console.log(`Cleared ${cDeleted.count} draft StreetContent entries`);
 }
 
 fixStreetNames()

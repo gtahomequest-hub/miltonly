@@ -15,10 +15,15 @@ export function extractStreetName(fullAddress: string): string {
   address = address.replace(/^\d{1,6}-/, "");
 
   // Step 3: Remove slash-format multi-house numbers like "225/269"
-  address = address.replace(/^\d+\/\d+\s+/, "");
+  // Also handles partial slash leftovers like "/269"
+  address = address.replace(/^\d*\/\d+\s+/, "");
 
   // Step 4: Remove leading house number (digits at start)
   address = address.replace(/^\d+\s+/, "");
+
+  // Step 4b: Remove leading "E " artifact from addresses like "1050 E Main Street"
+  // (the house number was stripped but the leading direction stayed)
+  address = address.replace(/^([NSEW])\s+(?=[A-Z])/i, "$1 ");
 
   // Step 5: Remove trailing city/province info (", Milton, ON ...")
   address = address.replace(/,\s*(Milton|ON|Ontario).*/i, "");

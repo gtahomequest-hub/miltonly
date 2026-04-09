@@ -19,23 +19,17 @@ export default async function StreetsIndexPage() {
     orderBy: { _count: { streetSlug: "desc" } },
   });
 
-  // Get the street name for each slug by querying one listing per slug
+  // Get the clean street name for each slug from the Listing table
   const streetData = await Promise.all(
     streets.slice(0, 100).map(async (s) => {
       const sample = await prisma.listing.findFirst({
-        where: { streetSlug: s.streetSlug },
-        select: { address: true, neighbourhood: true },
+        where: { streetSlug: s.streetSlug, streetName: { not: null } },
+        select: { streetName: true, neighbourhood: true },
       });
-      // Extract street name from address (remove number and city)
-      const streetName = sample?.address
-        ?.replace(/^\d+\s*/, "")
-        .replace(/,\s*Milton.*$/i, "")
-        .replace(/,\s*ON.*$/i, "")
-        .trim() || s.streetSlug;
 
       return {
         slug: s.streetSlug,
-        name: streetName,
+        name: sample?.streetName || s.streetSlug,
         neighbourhood: sample?.neighbourhood || "Milton",
         count: s._count,
         avgPrice: Math.round(s._avg.price || 0),
