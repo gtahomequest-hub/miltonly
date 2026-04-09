@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
+import { extractStreetName as cleanStreetName } from "@/lib/streetUtils";
 
 export interface StreetPageData {
   slug: string;
@@ -33,13 +34,7 @@ export interface StreetPageData {
 }
 
 function extractStreetName(address: string): string {
-  return address
-    .replace(/^\d+\s*/, "")
-    .replace(/,\s*Milton.*$/i, "")
-    .replace(/,\s*ON.*$/i, "")
-    .replace(/\s+\d+\s*,.*$/, "")
-    .replace(/\s+Unit.*$/i, "")
-    .trim();
+  return cleanStreetName(address);
 }
 
 export const getStreetPageData = unstable_cache(
@@ -54,7 +49,7 @@ export const getStreetPageData = unstable_cache(
     const active = allListings.filter((l) => l.status === "active");
     const sold = allListings.filter((l) => l.status === "sold");
     const rented = allListings.filter((l) => l.status === "rented");
-    const streetName = extractStreetName(allListings[0].address);
+    const streetName = allListings[0].streetName || extractStreetName(allListings[0].address);
     const neighbourhoods = Array.from(new Set(allListings.map((l) => l.neighbourhood)));
 
     // Prices
@@ -143,11 +138,11 @@ export const getStreetPageData = unstable_cache(
       nearbyRaw.map(async (s) => {
         const sample = await prisma.listing.findFirst({
           where: { streetSlug: s.streetSlug },
-          select: { address: true },
+          select: { streetName: true, address: true },
         });
         return {
           slug: s.streetSlug,
-          name: extractStreetName(sample?.address || s.streetSlug),
+          name: sample?.streetName || extractStreetName(sample?.address || s.streetSlug),
           avgPrice: Math.round(s._avg.price || 0),
           count: s._count,
         };
