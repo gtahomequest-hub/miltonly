@@ -190,7 +190,7 @@ export default async function ListingsPage({ searchParams }: Props) {
               <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-1">All homes avg.</p>
               <p className="text-[26px] font-extrabold text-[#07111f]">{formatPriceFull(avg)}</p>
             </div>
-            {typeBreakdown.sort((a, b) => (b._avg.price || 0) - (a._avg.price || 0)).map((t) => (
+            {[...typeBreakdown].sort((a, b) => (b._avg.price || 0) - (a._avg.price || 0)).map((t) => (
               <div key={t.propertyType} className="bg-white rounded-xl border border-[#e2e8f0] p-5">
                 <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-1 capitalize">{t.propertyType} avg.</p>
                 <p className="text-[26px] font-extrabold text-[#07111f]">{formatPriceFull(Math.round(t._avg.price || 0))}</p>
@@ -230,7 +230,7 @@ export default async function ListingsPage({ searchParams }: Props) {
               { step: "2", title: "Search & shortlist", desc: "Browse listings on Miltonly — filter by neighbourhood, price, bedrooms, and property type. Save your favourites and set up alerts." },
               { step: "3", title: "Book showings", desc: "See homes in person. On Miltonly, you can book showings directly — we respond within 15 minutes, guaranteed." },
               { step: "4", title: "Make an offer", desc: "Your agent prepares a competitive offer. In Milton, homes sell at an average of 100% of asking price within 18 days." },
-              { step: "5", title: "Home inspection", desc: "Protect your investment with a professional inspection. Milton homes average " + (typeBreakdown.find(t => t.propertyType === "detached")?._avg.price ? formatPriceFull(Math.round(typeBreakdown.find(t => t.propertyType === "detached")!._avg.price || 0)) : formatPriceFull(avg)) + " for detached — inspection is essential." },
+              { step: "5", title: "Home inspection", desc: "Protect your investment with a professional inspection. Milton homes average " + formatPriceFull(avg) + " — inspection is essential at this price point." },
               { step: "6", title: "Close & move in", desc: "Your lawyer handles closing. Typical Milton closing takes 30-60 days. Welcome to Milton — one of Canada&apos;s best places to live." },
             ].map((item) => (
               <div key={item.step} className="flex gap-4">
