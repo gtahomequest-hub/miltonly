@@ -14,6 +14,9 @@ const SELECT_FIELDS = [
   "ParkingTotal", "TaxAnnualAmount",
   "PublicRemarks", "OriginalEntryTimestamp",
   "ListOfficeName", "UnparsedAddress", "Latitude", "Longitude",
+  "PetsAllowed", "RentIncludes", "LaundryFeatures",
+  "Cooling", "HeatType", "Furnished", "PossessionDetails",
+  "MinimumRentalTermMonths", "Locker",
 ].join(",");
 
 interface AmpProperty {
@@ -43,6 +46,15 @@ interface AmpProperty {
   UnparsedAddress: string | null;
   Latitude: number | null;
   Longitude: number | null;
+  PetsAllowed: string[] | null;
+  RentIncludes: string[] | null;
+  LaundryFeatures: string[] | null;
+  Cooling: string[] | null;
+  HeatType: string | null;
+  Furnished: string | null;
+  PossessionDetails: string | null;
+  MinimumRentalTermMonths: number | null;
+  Locker: string | null;
 }
 
 export interface SyncResult {
@@ -187,6 +199,16 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           latitude: item.Latitude || 0,
           longitude: item.Longitude || 0,
           photos: await fetchPhotos(item.ListingKey),
+          transactionType: item.TransactionType || null,
+          petsAllowed: Array.isArray(item.PetsAllowed) ? item.PetsAllowed.join(", ") : (item.PetsAllowed as unknown as string) || null,
+          rentIncludes: Array.isArray(item.RentIncludes) ? item.RentIncludes : [],
+          laundryFeatures: Array.isArray(item.LaundryFeatures) ? item.LaundryFeatures.join(", ") : null,
+          cooling: Array.isArray(item.Cooling) ? item.Cooling.join(", ") : null,
+          heatType: item.HeatType || null,
+          furnished: item.Furnished || null,
+          possessionDetails: item.PossessionDetails || null,
+          minLeaseTerm: item.MinimumRentalTermMonths || null,
+          locker: item.Locker || null,
           listedAt: item.OriginalEntryTimestamp
             ? new Date(item.OriginalEntryTimestamp)
             : new Date(),

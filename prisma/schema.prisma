@@ -31,17 +31,28 @@ model Listing {
   longitude      Float
   schoolZone     String?
   goWalkMinutes  Int?
-  condoBuilding  String?
-  maintenanceFee Int?
-  listedAt       DateTime
-  updatedAt      DateTime  @updatedAt
-  createdAt      DateTime  @default(now())
+  condoBuilding     String?
+  maintenanceFee    Int?
+  transactionType   String?   // For Sale|For Lease
+  petsAllowed       String?   // Yes|No|Restricted
+  rentIncludes      String[]  // ["Building Insurance","Parking","Heat"]
+  laundryFeatures   String?   // Ensuite|Shared|None
+  cooling           String?   // Central Air|Window|None
+  heatType          String?   // Forced Air|Baseboard|Radiant
+  furnished         String?   // Furnished|Unfurnished|Partially
+  possessionDetails String?   // Immediate|30-59 Days|TBA
+  minLeaseTerm      Int?      // months
+  locker            String?   // Exclusive|Shared|None
+  listedAt          DateTime
+  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime  @default(now())
 
   @@index([streetSlug])
   @@index([neighbourhood])
   @@index([status])
   @@index([propertyType])
   @@index([price])
+  @@index([transactionType])
 }
 
 model Lead {

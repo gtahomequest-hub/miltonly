@@ -8,21 +8,23 @@ export const metadata = genMeta({
   canonical: "https://miltonly.com/rentals",
 });
 
+export const revalidate = 3600; // ISR: refresh every hour
+
 export default async function RentalsPage() {
-  // Only rental/lease listings — status "rented" in our DB means lease/rental transaction
+  // Only real "For Lease" listings from TREB
   const listings = await prisma.listing.findMany({
-    where: { status: "rented", city: "Milton" },
+    where: { transactionType: "For Lease", city: "Milton" },
     orderBy: { listedAt: "desc" },
-    take: 24,
+    take: 48,
   });
 
   const totalRentals = await prisma.listing.count({
-    where: { status: "rented", city: "Milton" },
+    where: { transactionType: "For Lease", city: "Milton" },
   });
 
-  // Avg rent — only rental listings under $10K/month (filters out mis-priced)
+  // Avg rent — real lease listings only, filter out mis-priced
   const avgRent = await prisma.listing.aggregate({
-    where: { status: "rented", city: "Milton", price: { gt: 500, lt: 10000 } },
+    where: { transactionType: "For Lease", city: "Milton", price: { gt: 500, lt: 10000 } },
     _avg: { price: true },
   });
 

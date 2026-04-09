@@ -18,6 +18,17 @@ interface Listing {
   listedAt: string;
   neighbourhood: string;
   description: string | null;
+  transactionType: string | null;
+  petsAllowed: string | null;
+  rentIncludes: string[];
+  laundryFeatures: string | null;
+  cooling: string | null;
+  heatType: string | null;
+  furnished: string | null;
+  possessionDetails: string | null;
+  minLeaseTerm: number | null;
+  locker: string | null;
+  basement: boolean;
 }
 
 interface Props {
@@ -631,16 +642,13 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
             {filteredListings.map((l) => {
               const days = daysAgo(new Date(l.listedAt));
               const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
-              const hasBasement = l.description?.toLowerCase().includes("basement");
-              const hasPets = l.description?.toLowerCase().includes("pet");
-              const hasUtils = l.description?.toLowerCase().includes("utilit") || l.description?.toLowerCase().includes("hydro incl") || l.description?.toLowerCase().includes("heat incl");
               return (
                 <div key={l.mlsNumber} className="lcard">
                   <Link href={`/listings/${l.mlsNumber}`}>
                     <div className="lcard-img" style={{ background: l.photos[0] ? `url(${l.photos[0]}) center/cover` : "#e0f2fe" }}>
                       {!l.photos[0] && <span style={{ fontSize: 44 }}>{typeIcons[l.propertyType] || "🏠"}</span>}
                       <span className="lbadge">{days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d ago`}</span>
-                      <span className="avail-tag">Available now</span>
+                      <span className="avail-tag">{l.possessionDetails === "Vacant" || l.possessionDetails === "Immediate" ? "Available now" : l.possessionDetails || "Available"}</span>
                     </div>
                     <div className="lbody">
                       <div className="lprice">{formatPriceFull(l.price)} <span>/ month</span></div>
@@ -652,25 +660,37 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                         <span style={{ textTransform: "capitalize" }}>{l.propertyType}</span>
                       </div>
 
-                      {/* ── LIST VIEW EXTRAS ── */}
+                      {/* ── LIST VIEW EXTRAS — ALL REAL DATA ── */}
                       {viewMode === "list" && (
                         <div className="lv-extras">
-                          {/* Feature tags */}
+                          {/* Feature tags — from real TREB fields */}
                           <div className="lfeats">
-                            {hasUtils && <span className="lf lf-util-y">💡 Utilities incl.</span>}
-                            {!hasUtils && <span className="lf lf-util-n">💡 Tenant pays utils</span>}
-                            <span className="lf lf-go">🚂 Milton GO access</span>
-                            {hasPets && <span className="lf lf-pet">🐾 Pets OK</span>}
-                            {hasBasement && <span className="lf lf-lease">🏠 Basement</span>}
-                            <span className="lf lf-lease">📋 MLS {l.mlsNumber}</span>
+                            {l.rentIncludes && l.rentIncludes.length > 0 ? (
+                              <span className="lf lf-util-y">💡 Incl: {l.rentIncludes.join(", ")}</span>
+                            ) : (
+                              <span className="lf lf-util-n">💡 Tenant pays utilities</span>
+                            )}
+                            {l.petsAllowed && l.petsAllowed.toLowerCase() !== "no" && l.petsAllowed !== "" ? (
+                              <span className="lf lf-pet">🐾 Pets: {l.petsAllowed}</span>
+                            ) : l.petsAllowed === "No" ? (
+                              <span className="lf lf-util-n">🚫 No pets</span>
+                            ) : null}
+                            {l.laundryFeatures && <span className="lf lf-go">🧺 {l.laundryFeatures}</span>}
+                            {l.furnished && l.furnished !== "Unfurnished" && <span className="lf lf-pet">🛋 {l.furnished}</span>}
+                            {l.basement && <span className="lf lf-lease">🏠 Basement</span>}
+                            {l.cooling && <span className="lf lf-go">❄️ {l.cooling}</span>}
+                            {l.heatType && <span className="lf lf-lease">🔥 {l.heatType}</span>}
+                            {l.locker && l.locker !== "None" && <span className="lf lf-lease">🔒 Locker: {l.locker}</span>}
+                            {l.minLeaseTerm && <span className="lf lf-lease">📋 {l.minLeaseTerm}mo lease</span>}
                           </div>
 
-                          {/* Commute box */}
+                          {/* Possession + details */}
                           <div className="commute">
-                            <div className="com-hd">🚂 Commute from here</div>
-                            <div className="com-row"><span className="com-l">Milton GO station</span><span className="com-v">Nearby</span></div>
-                            <div className="com-row"><span className="com-l">GO to Union Station</span><span className="com-v">~55 min</span></div>
-                            <div className="com-row"><span className="com-l">Highway 401</span><span className="com-v">5–10 min</span></div>
+                            <div className="com-hd">📋 Rental details</div>
+                            {l.possessionDetails && <div className="com-row"><span className="com-l">Move-in</span><span className="com-v">{l.possessionDetails}</span></div>}
+                            {l.furnished && <div className="com-row"><span className="com-l">Furnished</span><span className="com-v">{l.furnished}</span></div>}
+                            <div className="com-row"><span className="com-l">Parking</span><span className="com-v">{l.parking > 0 ? l.parking + " space" + (l.parking > 1 ? "s" : "") : "None"}</span></div>
+                            <div className="com-row"><span className="com-l">MLS #</span><span className="com-v">{l.mlsNumber}</span></div>
                           </div>
 
                           {/* Description preview */}
