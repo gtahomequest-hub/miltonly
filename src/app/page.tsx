@@ -12,6 +12,7 @@ import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
 import IntelligenceCentre from "@/components/sections/IntelligenceCentre";
 import FeaturedListings from "@/components/sections/FeaturedListings";
+import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
 import FooterSection from "@/components/sections/FooterSection";
 
 export default async function HomePage() {
@@ -38,6 +39,7 @@ export default async function HomePage() {
         <TrustBarSection stats={stats} />
         <IntelligenceCentre />
         <FeaturedListings listings={featured} />
+        <SeoLinkGrid />
       </main>
       <FooterSection />
     </>
