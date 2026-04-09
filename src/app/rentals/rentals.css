@@ -140,7 +140,7 @@
 
 /* FILTER BAR */
 .rentals-page .filter-bar{background:var(--mid);border-bottom:2px solid var(--nb);padding:0 48px;z-index:200;transition:box-shadow .2s;}
-.rentals-page .filter-bar.stuck{position:fixed;left:0;right:0;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.rentals-page .filter-bar.stuck{position:fixed;top:0 !important;left:0;right:0;box-shadow:0 4px 20px rgba(0,0,0,.3);}
 .rentals-page .fb-placeholder{height:0;transition:height .1s;}
 .rentals-page .fb-top{display:flex;align-items:center;justify-content:space-between;padding:12px 0 10px;}
 .rentals-page .fb-count{font-size:14px;font-weight:700;color:var(--pearl);}
