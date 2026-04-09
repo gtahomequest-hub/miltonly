@@ -54,19 +54,30 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [, setBookingMls] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterStuck, setFilterStuck] = useState(false);
+  const [navH, setNavH] = useState(0);
   const filterBarRef = useRef<HTMLDivElement>(null);
   const filterPlaceholderRef = useRef<HTMLDivElement>(null);
 
-  // JS-based sticky for filter bar (CSS sticky breaks with overflow-x:hidden on body)
   useEffect(() => {
+    const nav = document.querySelector("header");
+    const h = nav?.offsetHeight || 0;
+    setNavH(h);
+
     const handleScroll = () => {
-      if (!filterPlaceholderRef.current) return;
-      const rect = filterPlaceholderRef.current.getBoundingClientRect();
-      setFilterStuck(rect.top <= 62);
+      if (!filterPlaceholderRef.current || !filterBarRef.current) return;
+      const placeholderTop = filterPlaceholderRef.current.getBoundingClientRect().top;
+      const shouldStick = placeholderTop <= h;
+      setFilterStuck(shouldStick);
+      if (shouldStick) {
+        filterPlaceholderRef.current.style.height = filterBarRef.current.offsetHeight + "px";
+      } else {
+        filterPlaceholderRef.current.style.height = "0px";
+      }
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [filtersOpen]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -464,7 +475,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
 
       {/* ═══ STICKY FILTER BAR ═══ */}
       <div ref={filterPlaceholderRef} className={filterStuck ? "fb-placeholder" : ""} />
-      <div ref={filterBarRef} className={`filter-bar${filterStuck ? " stuck" : ""}`} id="filter-bar">
+      <div ref={filterBarRef} className={`filter-bar${filterStuck ? " stuck" : ""}`} id="filter-bar" style={filterStuck ? { top: navH + "px" } : undefined}>
         <div className="fb-top">
           <div className="fb-count">
             <em>{totalRentals}</em> Milton rentals
