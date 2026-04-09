@@ -23,8 +23,12 @@ export async function makeStreetDecision(
   const activeCount = await prisma.listing.count({
     where: { streetSlug, status: "active" },
   });
+  const totalListings = await prisma.listing.count({
+    where: { streetSlug },
+  });
 
-  if (soldCount < 3 && activeCount < 2) {
+  // Need at least 1 listing of any kind to build a page
+  if (totalListings === 0 || (soldCount < 1 && activeCount < 1)) {
     await prisma.streetQueue.updateMany({
       where: { streetSlug },
       data: { status: "ineligible" },
@@ -79,24 +83,39 @@ export async function getStreetStats(streetSlug: string) {
     },
   });
 
-  if (soldListings.length === 0) return null;
+  // Fall back to active listings if no sold data
+  const activeListings = await prisma.listing.findMany({
+    where: { streetSlug, status: "active" },
+    select: {
+      price: true,
+      propertyType: true,
+      daysOnMarket: true,
+    },
+  });
 
-  const soldPrices = soldListings.map((l) => l.soldPrice || l.price).filter(Boolean);
-  const avgSoldPrice = soldPrices.length > 0
-    ? Math.round(soldPrices.reduce((a, b) => a + b, 0) / soldPrices.length)
+  if (soldListings.length === 0 && activeListings.length === 0) return null;
+
+  // Use sold prices if available, otherwise use active list prices
+  const priceSources = soldListings.length > 0
+    ? soldListings.map((l) => l.soldPrice || l.price).filter(Boolean)
+    : activeListings.map((l) => l.price).filter(Boolean);
+
+  const avgSoldPrice = priceSources.length > 0
+    ? Math.round(priceSources.reduce((a, b) => a + b, 0) / priceSources.length)
     : 0;
 
-  const sortedPrices = [...soldPrices].sort((a, b) => a - b);
+  const sortedPrices = [...priceSources].sort((a, b) => a - b);
   const medianSoldPrice = sortedPrices.length > 0
     ? sortedPrices[Math.floor(sortedPrices.length / 2)]
     : 0;
 
-  const doms = soldListings.map((l) => l.daysOnMarket).filter((d): d is number => d !== null);
+  const allListingsForDOM = [...soldListings, ...activeListings];
+  const doms = allListingsForDOM.map((l) => l.daysOnMarket).filter((d): d is number => d !== null);
   const avgDOM = doms.length > 0
     ? Math.round(doms.reduce((a, b) => a + b, 0) / doms.length)
     : 0;
 
-  // Sold vs ask percentage
+  // Sold vs ask percentage (only meaningful with sold data)
   const ratios = soldListings
     .filter((l) => l.soldPrice && l.price && l.price > 0)
     .map((l) => ((l.soldPrice || 0) / l.price) * 100);
@@ -104,9 +123,10 @@ export async function getStreetStats(streetSlug: string) {
     ? Math.round((ratios.reduce((a, b) => a + b, 0) / ratios.length) * 10) / 10
     : 100;
 
-  // Property type breakdown
+  // Property type breakdown — use sold if available, otherwise active
+  const typeSource = soldListings.length > 0 ? soldListings : activeListings;
   const typeCounts: Record<string, number> = {};
-  for (const l of soldListings) {
+  for (const l of typeSource) {
     typeCounts[l.propertyType] = (typeCounts[l.propertyType] || 0) + 1;
   }
   const typeBreakdown = Object.entries(typeCounts)
@@ -114,10 +134,7 @@ export async function getStreetStats(streetSlug: string) {
     .map(([type, count]) => ({ propertyType: type, cnt: count }));
   const dominantPropertyType = typeBreakdown[0]?.propertyType || "detached";
 
-  // Active listings
-  const activeCount = await prisma.listing.count({
-    where: { streetSlug, status: "active" },
-  });
+  const activeCount = activeListings.length;
 
   // 6-month splits for price direction
   const sixMonthsAgo = new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000);
