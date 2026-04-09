@@ -343,12 +343,13 @@ export async function POST(request: NextRequest) {
       if (result.status === "fulfilled") {
         built.push(item.streetName);
       } else {
-        failed.push(item.streetName);
+        const errMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        failed.push(`${item.streetName}: ${errMsg}`);
         await prisma.streetQueue.updateMany({
           where: { streetSlug: item.streetSlug },
           data: {
             status: "failed",
-            lastError: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            lastError: errMsg,
             attempts: { increment: 1 },
           },
         });
