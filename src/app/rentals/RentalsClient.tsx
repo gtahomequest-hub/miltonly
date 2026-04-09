@@ -468,12 +468,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
             )}
           </div>
           <div className="fb-right">
-            <button
-              className={`fb-toggle${filtersOpen ? " open" : ""}`}
-              onClick={() => setFiltersOpen(!filtersOpen)}
-            >
-              {filtersOpen ? "Hide filters ✕" : "Filters ▾"}
-            </button>
             <div className="view-toggle">
               <div className={`vtab${viewMode === "grid" ? " on" : ""}`} onClick={() => setViewMode("grid")} title="Grid view">⊞</div>
               <div className={`vtab${viewMode === "list" ? " on" : ""}`} onClick={() => setViewMode("list")} title="List view">☰</div>
@@ -602,6 +596,12 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           <div className="fchip on">🚿 <span>{filters.baths === "Any" ? "Any baths" : filters.baths + " bath" + (filters.baths === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
           <div className="fchip on">💰 <span>${priceMin.toLocaleString()}–${priceMax.toLocaleString()}</span> <span className="fchip-x">✕</span></div>
           <div className="fchip on">📅 <span>{filters.avail === "Now" ? "Available now" : "Move in " + filters.avail}</span> <span className="fchip-x">✕</span></div>
+          <button
+            className={`fb-toggle${filtersOpen ? " open" : ""}`}
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            {filtersOpen ? "✕ Close" : "☰ More filters"}
+          </button>
           {searchQuery && <div className="fchip on">🔍 <span>&quot;{searchQuery}&quot;</span> <span className="fchip-x" onClick={() => setSearchQuery("")}>✕</span></div>}
         </div>
       </div>
