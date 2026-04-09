@@ -162,11 +162,34 @@
 .rentals-page .ls-sub{font-size:13px;color:var(--t3);}
 .rentals-page .lgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:32px;}
 .rentals-page .lgrid.list-view{grid-template-columns:1fr;gap:12px;}
-.rentals-page .lgrid.list-view .lcard{display:grid;grid-template-columns:240px 1fr;grid-template-rows:1fr auto;align-items:stretch;}
-.rentals-page .lgrid.list-view .lcard>a{display:grid;grid-template-columns:240px 1fr;grid-column:1/-1;}
-.rentals-page .lgrid.list-view .lcard-img{height:100%;min-height:170px;border-radius:14px 0 0 0;}
-.rentals-page .lgrid.list-view .lbody{display:flex;flex-direction:column;justify-content:center;}
-.rentals-page .lgrid.list-view .lbtns{grid-column:1/-1;display:flex;gap:8px;padding:0 16px 14px !important;}
+.rentals-page .lgrid.list-view .lcard{display:grid;grid-template-columns:260px 1fr;align-items:stretch;}
+.rentals-page .lgrid.list-view .lcard>a{display:grid;grid-template-columns:260px 1fr;grid-column:1/-1;}
+.rentals-page .lgrid.list-view .lcard-img{height:100%;min-height:200px;border-radius:14px 0 0 0;}
+.rentals-page .lgrid.list-view .lbody{display:flex;flex-direction:column;justify-content:center;padding:16px 20px;}
+.rentals-page .lgrid.list-view .lbtns-wrap{grid-column:1/-1;display:flex;gap:8px;padding:0 20px 14px;}
+
+/* LIST VIEW EXTRAS */
+.rentals-page .lv-extras{margin-top:10px;border-top:1px solid var(--surf);padding-top:10px;}
+.rentals-page .lfeats{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px;}
+.rentals-page .lf{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:3px 7px;border-radius:4px;white-space:nowrap;}
+.rentals-page .lf-util-y{background:var(--gbg);color:#166534;border:1px solid var(--gbr);}
+.rentals-page .lf-util-n{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+.rentals-page .lf-go{background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe;}
+.rentals-page .lf-pet{background:var(--ambbg);color:#92400e;border:1px solid var(--ambbr);}
+.rentals-page .lf-lease{background:var(--surf);color:var(--t2);border:1px solid var(--border);}
+.rentals-page .commute{background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:9px;}
+.rentals-page .com-hd{font-size:10px;font-weight:700;color:var(--t2);margin-bottom:5px;}
+.rentals-page .com-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);}
+.rentals-page .com-row:last-child{border:none;padding-bottom:0;}
+.rentals-page .com-l{font-size:10px;color:var(--t3);}
+.rentals-page .com-v{font-size:10px;font-weight:700;color:var(--amber);}
+.rentals-page .ldesc{font-size:11px;color:var(--t3);line-height:1.55;margin-top:2px;}
+
+/* BUTTONS WRAP (replaces lbtns for both views) */
+.rentals-page .lbtns-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 14px;}
+.rentals-page .lgrid.list-view .lbtns-wrap{grid-template-columns:auto auto auto;justify-content:start;}
+.rentals-page .lbtn-save{background:var(--surf);color:var(--t2);border:1.5px solid var(--border);}
+.rentals-page .lbtn-save:hover{border-color:var(--amber);color:var(--amber);}
 .rentals-page .lcard{background:var(--white,#fff);border-radius:14px;border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s;text-decoration:none;color:inherit;}
 .rentals-page .lcard:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(7,17,31,.1);}
 .rentals-page .lcard-img{height:160px;display:flex;align-items:center;justify-content:center;position:relative;background-size:cover;background-position:center;}

@@ -630,6 +630,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
             {filteredListings.map((l) => {
               const days = daysAgo(new Date(l.listedAt));
+              const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
+              const hasBasement = l.description?.toLowerCase().includes("basement");
+              const hasPets = l.description?.toLowerCase().includes("pet");
+              const hasUtils = l.description?.toLowerCase().includes("utilit") || l.description?.toLowerCase().includes("hydro incl") || l.description?.toLowerCase().includes("heat incl");
               return (
                 <div key={l.mlsNumber} className="lcard">
                   <Link href={`/listings/${l.mlsNumber}`}>
@@ -647,11 +651,40 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                         {l.parking > 0 && <span>🚗 {l.parking} park</span>}
                         <span style={{ textTransform: "capitalize" }}>{l.propertyType}</span>
                       </div>
+
+                      {/* ── LIST VIEW EXTRAS ── */}
+                      {viewMode === "list" && (
+                        <div className="lv-extras">
+                          {/* Feature tags */}
+                          <div className="lfeats">
+                            {hasUtils && <span className="lf lf-util-y">💡 Utilities incl.</span>}
+                            {!hasUtils && <span className="lf lf-util-n">💡 Tenant pays utils</span>}
+                            <span className="lf lf-go">🚂 Milton GO access</span>
+                            {hasPets && <span className="lf lf-pet">🐾 Pets OK</span>}
+                            {hasBasement && <span className="lf lf-lease">🏠 Basement</span>}
+                            <span className="lf lf-lease">📋 MLS {l.mlsNumber}</span>
+                          </div>
+
+                          {/* Commute box */}
+                          <div className="commute">
+                            <div className="com-hd">🚂 Commute from here</div>
+                            <div className="com-row"><span className="com-l">Milton GO station</span><span className="com-v">Nearby</span></div>
+                            <div className="com-row"><span className="com-l">GO to Union Station</span><span className="com-v">~55 min</span></div>
+                            <div className="com-row"><span className="com-l">Highway 401</span><span className="com-v">5–10 min</span></div>
+                          </div>
+
+                          {/* Description preview */}
+                          {descPreview && <div className="ldesc">{descPreview}</div>}
+                        </div>
+                      )}
                     </div>
                   </Link>
-                  <div className="lbtns" style={{ padding: "0 16px 14px" }}>
+                  <div className="lbtns-wrap">
                     <button className="lbtn lbtn-bk" onClick={() => handleBookShowing(l)}>Book showing</button>
                     <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>⏱ See in 1 hr</button>
+                    {viewMode === "list" && (
+                      <button className="lbtn lbtn-save" onClick={() => showToast(`♡ Saved ${l.address.split(",")[0]}`)}>♡ Save</button>
+                    )}
                   </div>
                 </div>
               );
