@@ -96,13 +96,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
       if (typeFilter !== "All" && l.propertyType !== typeFilter.toLowerCase()) return false;
       // Beds
       if (filters.beds !== "Any") {
-        const min = filters.beds === "5+" ? 5 : parseInt(filters.beds);
-        if (l.bedrooms < min) return false;
+        const val = parseInt(filters.beds);
+        if (filters.beds === "5+") { if (l.bedrooms < 5) return false; }
+        else { if (l.bedrooms !== val) return false; }
       }
       // Baths
       if (filters.baths !== "Any") {
-        const min = filters.baths === "4+" ? 4 : parseInt(filters.baths);
-        if (l.bathrooms < min) return false;
+        const val = parseInt(filters.baths);
+        if (filters.baths === "4+") { if (l.bathrooms < 4) return false; }
+        else { if (l.bathrooms !== val) return false; }
       }
       // Price
       if (l.price < priceMin || l.price > priceMax) return false;
