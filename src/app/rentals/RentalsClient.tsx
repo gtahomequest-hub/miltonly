@@ -53,52 +53,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const filterBarRef = useRef<HTMLDivElement>(null);
-  const filterPlaceholderRef = useRef<HTMLDivElement>(null);
 
+  // Fix overflow-x:hidden on body which breaks CSS sticky — restore it on unmount
   useEffect(() => {
-    let barH = 0;
-    let isStuck = false;
-
-    const onScroll = () => {
-      const ph = filterPlaceholderRef.current;
-      const fb = filterBarRef.current;
-      const nav = document.querySelector("header");
-      if (!ph || !fb || !nav) return;
-
-      if (!isStuck) barH = fb.offsetHeight;
-
-      // Use the nav's actual bottom edge — accounts for height + border + everything
-      const navBottom = nav.getBoundingClientRect().bottom;
-      const phTop = ph.getBoundingClientRect().top;
-      const shouldStick = phTop <= navBottom;
-
-      if (shouldStick && !isStuck) {
-        ph.style.height = barH + "px";
-        fb.style.position = "fixed";
-        fb.style.top = navBottom + "px";
-        fb.style.left = "0";
-        fb.style.right = "0";
-        fb.style.zIndex = "200";
-        fb.style.boxShadow = "0 4px 20px rgba(0,0,0,.3)";
-        isStuck = true;
-      } else if (shouldStick && isStuck) {
-        // Update top in case nav shifts
-        fb.style.top = navBottom + "px";
-      } else if (!shouldStick && isStuck) {
-        fb.style.position = "";
-        fb.style.top = "";
-        fb.style.left = "";
-        fb.style.right = "";
-        fb.style.zIndex = "";
-        fb.style.boxShadow = "";
-        ph.style.height = "0";
-        isStuck = false;
-      }
+    document.documentElement.style.overflowX = "clip";
+    document.body.style.overflowX = "clip";
+    return () => {
+      document.documentElement.style.overflowX = "";
+      document.body.style.overflowX = "";
     };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const showToast = useCallback((msg: string) => {
@@ -496,8 +459,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
       </div>
 
       {/* ═══ STICKY FILTER BAR ═══ */}
-      <div ref={filterPlaceholderRef} className="fb-placeholder" />
-      <div ref={filterBarRef} className="filter-bar" id="filter-bar">
+      <div className="filter-bar" id="filter-bar">
         <div className="fb-top">
           <div className="fb-count">
             <em>{totalRentals}</em> Milton rentals
