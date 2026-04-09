@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { formatPriceFull } from "@/lib/format";
 import { getStreetPageData } from "@/lib/street-data";
 import { getOrGenerateStreetContent } from "@/lib/street-content";
+import { prisma } from "@/lib/prisma";
 import SchemaScript from "@/components/SchemaScript";
 import { generateLocalBusinessSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import StreetClientSections from "@/components/street/StreetClientSections";
@@ -40,13 +41,24 @@ export default async function StreetPage({ params }: Props) {
     byType: data.byType,
   });
 
-  // FAQ data
-  const faqs = [
-    { question: `What is the average home price on ${data.streetName} in Milton?`, answer: `The average price on ${data.streetName} in Milton is ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}, based on ${data.allListings.length} listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.` },
-    { question: `How many homes are for sale on ${data.streetName} Milton?`, answer: `There are currently ${data.activeCount} active listings on ${data.streetName} in Milton. Property types include ${Object.keys(data.byType).join(", ")}.` },
-    { question: `What types of homes are on ${data.streetName} in Milton?`, answer: `${data.streetName} has ${Object.entries(data.byType).map(([t, d]) => `${d.count} ${t} properties`).join(", ")}. The most common type is ${Object.entries(data.byType).sort((a, b) => b[1].count - a[1].count)[0]?.[0] || "varied"}.` },
-    { question: `Is ${data.streetName} Milton a good investment?`, answer: `${data.streetName} in Milton has ${data.activeCount} active and ${data.totalSold12mo} sold listings. The average price is ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}. Milton's continued population growth and GO train connectivity support long-term value.` },
-  ];
+  // Use pipeline-generated FAQs if available, otherwise build from data
+  const pipelineContent = await prisma.streetContent.findUnique({
+    where: { streetSlug: params.slug },
+    select: { faqJson: true, status: true, publishedAt: true },
+  });
+
+  let faqs: { question: string; answer: string }[];
+  if (pipelineContent?.faqJson && pipelineContent.status === "published") {
+    const parsed = JSON.parse(pipelineContent.faqJson);
+    faqs = parsed.map((f: { q: string; a: string }) => ({ question: f.q, answer: f.a }));
+  } else {
+    faqs = [
+      { question: `What is the average home price on ${data.streetName} in Milton?`, answer: `The average price on ${data.streetName} in Milton is ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}, based on ${data.allListings.length} listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.` },
+      { question: `How many homes are for sale on ${data.streetName} Milton?`, answer: `There are currently ${data.activeCount} active listings on ${data.streetName} in Milton. Property types include ${Object.keys(data.byType).join(", ")}.` },
+      { question: `What types of homes are on ${data.streetName} in Milton?`, answer: `${data.streetName} has ${Object.entries(data.byType).map(([t, d]) => `${d.count} ${t} properties`).join(", ")}. The most common type is ${Object.entries(data.byType).sort((a, b) => b[1].count - a[1].count)[0]?.[0] || "varied"}.` },
+      { question: `Is ${data.streetName} Milton a good investment?`, answer: `${data.streetName} in Milton has ${data.activeCount} active and ${data.totalSold12mo} sold listings. The average price is ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}. Milton's continued population growth and GO train connectivity support long-term value.` },
+    ];
+  }
 
   const schemas = [
     generateBreadcrumbSchema([
@@ -63,6 +75,19 @@ export default async function StreetPage({ params }: Props) {
         name: f.question,
         acceptedAnswer: { "@type": "Answer", text: f.answer },
       })),
+    },
+    // Article schema for E-E-A-T signals
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: `${data.streetName} Milton Real Estate Guide — Prices, Schools & Market Data`,
+      description: `${data.totalSold12mo} homes sold on ${data.streetName} in the last 12 months. Average price ${formatPriceFull(data.avgSoldPrice)}.`,
+      url: `https://miltonly.com/streets/${params.slug}`,
+      datePublished: pipelineContent?.publishedAt?.toISOString() || new Date().toISOString(),
+      dateModified: new Date().toISOString(),
+      author: { "@type": "Person", name: "Miltonly Real Estate Team", url: "https://miltonly.com/about" },
+      publisher: { "@type": "Organization", name: "Miltonly", url: "https://miltonly.com", logo: { "@type": "ImageObject", url: "https://miltonly.com/logo.png" } },
+      mainEntityOfPage: { "@type": "WebPage", "@id": `https://miltonly.com/streets/${params.slug}` },
     },
   ];
 

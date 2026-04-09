@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 
@@ -28,6 +28,23 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [toast, setToast] = useState("");
+  const [showGallery, setShowGallery] = useState(false);
+
+  const openGallery = (idx: number) => { setPhotoIdx(idx); setShowGallery(true); };
+
+  const prevPhoto = useCallback(() => setPhotoIdx((i) => (i - 1 + l.photos.length) % l.photos.length), [l.photos.length]);
+  const nextPhoto = useCallback(() => setPhotoIdx((i) => (i + 1) % l.photos.length), [l.photos.length]);
+
+  useEffect(() => {
+    if (!showGallery) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") prevPhoto();
+      else if (e.key === "ArrowRight") nextPhoto();
+      else if (e.key === "Escape") setShowGallery(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showGallery, prevPhoto, nextPhoto]);
 
   const isRental = l.transactionType === "For Lease";
   const days = daysAgo(new Date(l.listedAt));
@@ -80,33 +97,40 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
   return (
     <>
       <div className="max-w-6xl mx-auto px-5 sm:px-11 py-6">
-        {/* ═══ PHOTO GALLERY ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3 mb-6">
-          <div className="relative rounded-2xl overflow-hidden bg-[#07111f] aspect-[16/10]">
-            {l.photos.length > 0 ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={l.photos[photoIdx]} alt={l.address} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[#475569]">No photos available</div>
-            )}
-            {l.photos.length > 1 && (
-              <>
-                <button onClick={() => setPhotoIdx((i) => (i - 1 + l.photos.length) % l.photos.length)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white text-lg">‹</button>
-                <button onClick={() => setPhotoIdx((i) => (i + 1) % l.photos.length)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white text-lg">›</button>
-                <div className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg">📷 {photoIdx + 1} / {l.photos.length}</div>
-              </>
-            )}
-            {l.virtualTourUrl && (
-              <a href={l.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="absolute bottom-3 left-3 bg-black/60 hover:bg-black/80 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">🎥 3D Tour</a>
-            )}
-          </div>
-
-          {/* Thumbnail strip */}
-          {l.photos.length > 1 && (
-            <div className="hidden lg:grid grid-rows-3 gap-2 h-full">
-              {l.photos.slice(1, 4).map((p, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i + 1)} className="w-full h-full object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity" />
+        {/* ═══ PHOTO GALLERY — Redfin-style grid ═══ */}
+        <div className="mb-6">
+          {l.photos.length === 0 ? (
+            <div className="rounded-2xl bg-[#07111f] aspect-[16/9] flex items-center justify-center text-[#475569]">No photos available</div>
+          ) : l.photos.length === 1 ? (
+            <div className="relative rounded-2xl overflow-hidden cursor-pointer" onClick={() => openGallery(0)}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={l.photos[0]} alt={l.address} className="w-full aspect-[16/9] object-cover" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[420px] lg:h-[480px] rounded-2xl overflow-hidden">
+              {/* Main large photo — spans 2 cols, 2 rows */}
+              <div className="col-span-2 row-span-2 relative cursor-pointer" onClick={() => openGallery(0)}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={l.photos[0]} alt={l.address} className="w-full h-full object-cover" />
+                {l.virtualTourUrl && (
+                  <a href={l.virtualTourUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="absolute bottom-3 left-3 bg-black/70 hover:bg-black/90 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 backdrop-blur-sm">🎥 3D Tour</a>
+                )}
+              </div>
+              {/* 4 smaller photos in right half */}
+              {[1, 2, 3, 4].map((idx) => (
+                <div key={idx} className={`relative cursor-pointer ${idx > l.photos.length - 1 ? "bg-[#f1f5f9]" : ""}`} onClick={() => idx <= l.photos.length - 1 && openGallery(idx)}>
+                  {idx <= l.photos.length - 1 && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={l.photos[idx]} alt="" className="w-full h-full object-cover hover:brightness-90 transition-all" />
+                  )}
+                  {/* "See all X photos" button on last visible thumbnail */}
+                  {idx === 4 && l.photos.length > 5 && (
+                    <button onClick={(e) => { e.stopPropagation(); openGallery(4); }} className="absolute inset-0 bg-black/50 hover:bg-black/60 transition-colors flex flex-col items-center justify-center text-white backdrop-blur-[2px]">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                      <span className="text-[13px] font-bold mt-1">See all {l.photos.length}</span>
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -346,6 +370,40 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
       {toast && (
         <div className="fixed bottom-5 right-5 z-50 bg-[#07111f] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center gap-2 text-[13px] text-[#f8f9fb] shadow-lg">
           <span className="text-[#22c55e]">✓</span> {toast}
+        </div>
+      )}
+
+      {/* ═══ FULLSCREEN PHOTO GALLERY MODAL ═══ */}
+      {showGallery && (
+        <div className="fixed inset-0 z-[100] bg-black">
+          {/* Top bar */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 py-4 bg-gradient-to-b from-black/80 to-transparent">
+            <div className="text-white">
+              <p className="text-[14px] font-bold">{l.address}</p>
+              <p className="text-[12px] text-white/60">{photoIdx + 1} of {l.photos.length} photos</p>
+            </div>
+            <button onClick={() => setShowGallery(false)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-[20px] transition-colors">✕</button>
+          </div>
+
+          {/* Main photo */}
+          <div className="absolute inset-0 flex items-center justify-center px-16">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={l.photos[photoIdx]} alt={`Photo ${photoIdx + 1}`} className="max-w-full max-h-full object-contain" />
+          </div>
+
+          {/* Nav arrows */}
+          <button onClick={prevPhoto} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/25 rounded-full flex items-center justify-center text-white text-[24px] transition-colors">‹</button>
+          <button onClick={nextPhoto} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/25 rounded-full flex items-center justify-center text-white text-[24px] transition-colors">›</button>
+
+          {/* Bottom thumbnail strip */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-8 pb-4 px-5">
+            <div className="flex gap-2 overflow-x-auto justify-center max-w-4xl mx-auto">
+              {l.photos.map((p, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)} className={`w-16 h-12 object-cover rounded-md cursor-pointer shrink-0 transition-all ${i === photoIdx ? "ring-2 ring-white opacity-100" : "opacity-50 hover:opacity-80"}`} />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </>

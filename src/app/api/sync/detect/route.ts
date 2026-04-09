@@ -1,7 +1,12 @@
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { extractStreetName } from "@/lib/streetUtils";
+
+export const maxDuration = 300;
 
 const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
 const TREB_TOKEN = process.env.TREB_API_TOKEN || "";
+const MEDIA_URL = "https://query.ampre.ca/odata/Media";
 const PAGE_SIZE = 1000;
 
 const SELECT_FIELDS = [
@@ -87,20 +92,6 @@ interface AmpProperty {
   NumberOfKitchens: number | null;
 }
 
-export interface SyncResult {
-  total: number;
-  added: number;
-  updated: number;
-  skipped: number;
-  errors: number;
-  duration: number;
-}
-
-function slugifyStreet(name: string | null, suffix: string | null): string {
-  const parts = [name, suffix].filter(Boolean).join(" ");
-  return parts.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-milton";
-}
-
 function mapPropertyType(type: string | null, subType: string | null): string {
   const sub = (subType || "").toLowerCase();
   if (sub.includes("detach") && !sub.includes("semi")) return "detached";
@@ -121,31 +112,24 @@ function mapStatus(mlsStatus: string | null, txType: string | null): string {
   return "active";
 }
 
-const MEDIA_URL = "https://query.ampre.ca/odata/Media";
-
 async function fetchPhotos(listingKey: string): Promise<string[]> {
   try {
     const filter = encodeURIComponent(`ResourceRecordKey eq '${listingKey}'`);
     const url = `${MEDIA_URL}?$filter=${filter}&$top=100&$orderby=Order%20asc&$select=MediaURL,Order,ImageSizeDescription`;
-
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${TREB_TOKEN}`, Accept: "application/json" },
     });
-
     if (!res.ok) return [];
     const data = await res.json();
     if (!data.value) return [];
 
-    // Get the largest version of each unique photo (deduplicate by Order)
     const byOrder = new Map<number, string>();
     for (const m of data.value) {
       const size = (m.ImageSizeDescription || "").toLowerCase();
-      // Prefer "largest" or high-res versions
       if (!byOrder.has(m.Order) || size.includes("large") || size.includes("1920") || size.includes("3840")) {
         if (m.MediaURL) byOrder.set(m.Order, m.MediaURL);
       }
     }
-
     return Array.from(byOrder.values());
   } catch {
     return [];
@@ -155,66 +139,62 @@ async function fetchPhotos(listingKey: string): Promise<string[]> {
 async function fetchPage(skip: number): Promise<{ items: AmpProperty[]; total: number }> {
   const filter = encodeURIComponent("City eq 'Milton'");
   const url = `${TREB_API_URL}?$select=${SELECT_FIELDS}&$filter=${filter}&$top=${PAGE_SIZE}&$skip=${skip}&$count=true&$orderby=OriginalEntryTimestamp%20desc`;
-
   const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${TREB_TOKEN}`,
-      Accept: "application/json",
-    },
+    headers: { Authorization: `Bearer ${TREB_TOKEN}`, Accept: "application/json" },
   });
-
-  if (!res.ok) {
-    throw new Error(`TREB API error: ${res.status} ${res.statusText}`);
-  }
-
+  if (!res.ok) throw new Error(`TREB API error: ${res.status} ${res.statusText}`);
   const data = await res.json();
-  return {
-    items: data.value || [],
-    total: data["@odata.count"] ?? 0,
-  };
+  return { items: data.value || [], total: data["@odata.count"] ?? 0 };
 }
 
-export async function syncMiltonListings(): Promise<SyncResult> {
-  const start = Date.now();
-  let added = 0;
-  let updated = 0;
-  let skipped = 0;
-  let errors = 0;
-  let totalFetched = 0;
-  let totalAvailable = 0;
+function buildAddress(item: AmpProperty): string {
+  return item.UnparsedAddress || [
+    item.StreetNumber, item.StreetName, item.StreetSuffix,
+    item.UnitNumber ? `Unit ${item.UnitNumber}` : null,
+  ].filter(Boolean).join(" ");
+}
 
-  // Paginate through all Milton listings
+function slugifyStreet(name: string | null, suffix: string | null): string {
+  const parts = [name, suffix].filter(Boolean).join(" ");
+  return parts.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-milton";
+}
+
+export async function GET(request: NextRequest) {
+  return POST(request);
+}
+
+export async function POST(request: NextRequest) {
+  const secret = request.headers.get("authorization")?.replace("Bearer ", "") ||
+    request.nextUrl.searchParams.get("secret");
+  if (secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const start = Date.now();
+  let added = 0, updated = 0, skipped = 0, errors = 0;
+  let totalFetched = 0, totalAvailable = 0;
+
+  // ── STEP 1: Full TREB sync (absorbs old /api/sync logic) ──
   let skip = 0;
   while (true) {
     const { items, total } = await fetchPage(skip);
     totalAvailable = total;
-
     if (items.length === 0) break;
 
     for (const item of items) {
-      // Skip commercial properties
-      if ((item.PropertyType || "").toLowerCase().includes("commercial")) {
-        skipped++;
-        continue;
-      }
-
-      // Skip if no listing key
-      if (!item.ListingKey) {
-        skipped++;
-        continue;
-      }
+      if ((item.PropertyType || "").toLowerCase().includes("commercial")) { skipped++; continue; }
+      if (!item.ListingKey) { skipped++; continue; }
 
       try {
-        const streetSlug = slugifyStreet(item.StreetName, item.StreetSuffix);
-        const address = item.UnparsedAddress || [
-          item.StreetNumber, item.StreetName, item.StreetSuffix,
-          item.UnitNumber ? `Unit ${item.UnitNumber}` : null,
-        ].filter(Boolean).join(" ");
+        const address = buildAddress(item);
+        const extractedStreetName = extractStreetName(address);
+        const legacySlug = slugifyStreet(item.StreetName, item.StreetSuffix);
 
         const listingData = {
           mlsNumber: item.ListingKey,
           address,
-          streetSlug,
+          streetSlug: legacySlug,
+          streetName: extractedStreetName,
           neighbourhood: item.CityRegion || "Milton",
           city: "Milton",
           price: item.ListPrice || 0,
@@ -263,9 +243,8 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           listOfficeName: item.ListOfficeName || null,
           totalRooms: item.RoomsTotal || null,
           kitchens: item.NumberOfKitchens || null,
-          listedAt: item.OriginalEntryTimestamp
-            ? new Date(item.OriginalEntryTimestamp)
-            : new Date(),
+          listedAt: item.OriginalEntryTimestamp ? new Date(item.OriginalEntryTimestamp) : new Date(),
+          syncedAt: new Date(),
         };
 
         const existing = await prisma.listing.findUnique({
@@ -274,10 +253,7 @@ export async function syncMiltonListings(): Promise<SyncResult> {
         });
 
         if (existing) {
-          await prisma.listing.update({
-            where: { mlsNumber: item.ListingKey },
-            data: listingData,
-          });
+          await prisma.listing.update({ where: { mlsNumber: item.ListingKey }, data: listingData });
           updated++;
         } else {
           await prisma.listing.create({ data: listingData });
@@ -291,17 +267,62 @@ export async function syncMiltonListings(): Promise<SyncResult> {
 
     totalFetched += items.length;
     skip += PAGE_SIZE;
-
-    // Stop if we've fetched everything
     if (totalFetched >= totalAvailable || items.length < PAGE_SIZE) break;
   }
 
-  return {
-    total: totalAvailable,
+  // ── STEP 2: Find new streets not yet in StreetContent or StreetQueue ──
+  const cutoff = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25 hours ago
+
+  const recentStreets: { streetName: string; streetSlug: string }[] = await prisma.$queryRaw`
+    SELECT DISTINCT "streetName", "streetSlug"
+    FROM "Listing"
+    WHERE "syncedAt" > ${cutoff}
+    AND "streetName" IS NOT NULL
+    AND "streetSlug" IS NOT NULL
+    AND "streetSlug" NOT IN (
+      SELECT "streetSlug" FROM "StreetContent"
+      WHERE status IN ('draft', 'published')
+    )
+    AND "streetSlug" NOT IN (
+      SELECT "streetSlug" FROM "StreetQueue"
+      WHERE status IN ('pending', 'processing', 'done')
+    )
+  `;
+
+  // ── STEP 3: Insert new streets into queue ──
+  let newStreetsQueued = 0;
+  for (const s of recentStreets) {
+    if (!s.streetName || !s.streetSlug) continue;
+    try {
+      await prisma.streetQueue.upsert({
+        where: { streetSlug: s.streetSlug },
+        create: { streetSlug: s.streetSlug, streetName: s.streetName, status: "pending" },
+        update: {},
+      });
+      newStreetsQueued++;
+    } catch {
+      // ignore duplicates
+    }
+  }
+
+  // ── STEP 4: Fire generate route (non-blocking) ──
+  if (newStreetsQueued > 0) {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
+    fetch(`${baseUrl}/api/sync/generate?secret=${process.env.CRON_SECRET}`, { method: "GET" }).catch(() => {});
+  }
+
+  return NextResponse.json({
+    success: true,
+    listingsSynced: added + updated,
     added,
     updated,
     skipped,
     errors,
-    duration: Date.now() - start,
-  };
+    totalAvailable,
+    newStreetsQueued,
+    streets: recentStreets.map((s) => s.streetName),
+    durationMs: Date.now() - start,
+  });
 }

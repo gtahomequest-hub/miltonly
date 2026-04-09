@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { prisma } from "@/lib/prisma";
 
 const SITE_URL = "https://miltonly.com";
 
@@ -14,7 +15,7 @@ const neighbourhoods = [
   "harrison",
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -125,5 +126,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })
   );
 
-  return [...staticPages, ...neighbourhoodPages];
+  // Published street pages from pipeline
+  const publishedStreets = await prisma.streetContent.findMany({
+    where: { status: "published" },
+    select: { streetSlug: true, updatedAt: true },
+  });
+
+  const streetPages: MetadataRoute.Sitemap = publishedStreets.map((s) => ({
+    url: `${SITE_URL}/streets/${s.streetSlug}`,
+    lastModified: s.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...neighbourhoodPages, ...streetPages];
 }

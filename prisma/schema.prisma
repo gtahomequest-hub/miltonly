@@ -69,10 +69,13 @@ model Listing {
   minLeaseTerm      Int?      // months
   locker            String?   // Exclusive|Shared|None
   listedAt          DateTime
+  syncedAt          DateTime  @default(now())
+  streetName        String?
   updatedAt         DateTime  @updatedAt
   createdAt         DateTime  @default(now())
 
   @@index([streetSlug])
+  @@index([syncedAt])
   @@index([neighbourhood])
   @@index([status])
   @@index([propertyType])
@@ -197,16 +200,38 @@ model CondoBuilding {
 }
 
 model StreetContent {
-  id              String   @id @default(cuid())
-  streetSlug      String   @unique
+  id              String    @id @default(cuid())
+  streetSlug      String    @unique
   streetName      String
-  description     String
+  neighbourhood   String?
+  description     String    @db.Text
+  rawAiOutput     String?   @db.Text
+  status          String    @default("draft")
+  needsReview     Boolean   @default(true)
+  aiGenerated     Boolean   @default(true)
+  publishedAt     DateTime?
+  generatedAt     DateTime  @default(now())
+  marketDataHash  String?
+  attempts        Int       @default(0)
+  reviewNotes     String?   @db.Text
   metaTitle       String?
   metaDescription String?
-  needsReview     Boolean  @default(false)
-  generatedAt     DateTime @default(now())
-  marketDataHash  String?
-  updatedAt       DateTime @updatedAt
+  faqJson         String?   @db.Text
+  statsJson       String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model StreetQueue {
+  id          String    @id @default(cuid())
+  streetSlug  String    @unique
+  streetName  String
+  status      String    @default("pending")
+  attempts    Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  updatedAt   DateTime  @updatedAt
 }
 
 model Partner {

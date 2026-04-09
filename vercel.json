@@ -1,8 +1,20 @@
 {
   "crons": [
     {
-      "path": "/api/sync?secret=miltonly-cron-2026",
-      "schedule": "0 11 * * *"
+      "path": "/api/sync/detect?secret=miltonly-cron-2026",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/sync/generate?secret=miltonly-cron-2026",
+      "schedule": "5 10 * * *"
+    },
+    {
+      "path": "/api/sync/regenerate?secret=miltonly-cron-2026",
+      "schedule": "0 12 * * 0"
+    },
+    {
+      "path": "/api/monitor/queue?secret=miltonly-cron-2026",
+      "schedule": "0 * * * *"
     }
   ]
 }
