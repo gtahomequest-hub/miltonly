@@ -283,6 +283,17 @@ export async function POST(request: NextRequest) {
   const skipped: string[] = [];
   const failed: string[] = [];
 
+  const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
+  const keyPrefix = process.env.ANTHROPIC_API_KEY?.slice(0, 10) || "NOT_SET";
+  console.log(`[generate] ANTHROPIC_API_KEY defined: ${hasApiKey}, prefix: ${keyPrefix}`);
+
+  if (!hasApiKey) {
+    return NextResponse.json({
+      error: "ANTHROPIC_API_KEY is not set in environment variables",
+      hint: "Add it in Vercel dashboard → Settings → Environment Variables → make sure Production is checked",
+    }, { status: 500 });
+  }
+
   // Pick pending items
   const pending = await prisma.streetQueue.findMany({
     where: { status: "pending" },
