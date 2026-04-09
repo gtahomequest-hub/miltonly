@@ -58,18 +58,21 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const filterPlaceholderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const nav = document.querySelector("header");
+    const navH = nav ? nav.offsetHeight : 0;
+
     const onScroll = () => {
       const ph = filterPlaceholderRef.current;
       const fb = filterBarRef.current;
       if (!ph || !fb) return;
 
-      // Simple: when placeholder hits top of viewport (0), stick the bar
       const rect = ph.getBoundingClientRect();
-      const stuck = rect.top <= 0;
+      // Stick when placeholder reaches the bottom edge of the nav
+      const stuck = rect.top <= navH;
 
       if (stuck) {
         fb.style.position = "fixed";
-        fb.style.top = "0px";
+        fb.style.top = navH + "px";
         fb.style.left = "0px";
         fb.style.right = "0px";
         fb.style.zIndex = "200";
