@@ -9,32 +9,24 @@ export const metadata = genMeta({
 });
 
 export default async function RentalsPage() {
+  // Only rental/lease listings — status "rented" in our DB means lease/rental transaction
   const listings = await prisma.listing.findMany({
     where: { status: "rented", city: "Milton" },
     orderBy: { listedAt: "desc" },
     take: 24,
   });
 
-  // Also get active rentals
-  const activeRentals = await prisma.listing.findMany({
-    where: { status: "active", city: "Milton" },
-    orderBy: { listedAt: "desc" },
-    take: 24,
-  });
-
-  // Combine and prefer active, then rented
-  const allListings = [...activeRentals, ...listings].slice(0, 24);
-
   const totalRentals = await prisma.listing.count({
-    where: { status: { in: ["rented", "active"] }, city: "Milton" },
+    where: { status: "rented", city: "Milton" },
   });
 
+  // Avg rent — only rental listings under $10K/month (filters out mis-priced)
   const avgRent = await prisma.listing.aggregate({
-    where: { status: { in: ["rented", "active"] }, city: "Milton", price: { lt: 10000 } },
+    where: { status: "rented", city: "Milton", price: { gt: 500, lt: 10000 } },
     _avg: { price: true },
   });
 
-  const serialized = JSON.parse(JSON.stringify(allListings));
+  const serialized = JSON.parse(JSON.stringify(listings));
 
   return (
     <RentalsClient
