@@ -53,32 +53,40 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [, setFilterStuck] = useState(false);
   const filterBarRef = useRef<HTMLDivElement>(null);
   const filterPlaceholderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const nav = document.querySelector("header");
     const navH = nav ? nav.offsetHeight : 0;
+    let barH = 0;
+    let isStuck = false;
 
     const onScroll = () => {
       const ph = filterPlaceholderRef.current;
       const fb = filterBarRef.current;
       if (!ph || !fb) return;
 
-      const rect = ph.getBoundingClientRect();
-      // Stick when placeholder reaches the bottom edge of the nav
-      const stuck = rect.top <= navH;
+      // Measure bar height while it's still in flow (before fixing)
+      if (!isStuck) {
+        barH = fb.offsetHeight;
+      }
 
-      if (stuck) {
+      const rect = ph.getBoundingClientRect();
+      const shouldStick = rect.top <= navH;
+
+      if (shouldStick && !isStuck) {
+        // Set placeholder FIRST to prevent jerk
+        ph.style.height = barH + "px";
+        // Then fix the bar
         fb.style.position = "fixed";
         fb.style.top = navH + "px";
-        fb.style.left = "0px";
-        fb.style.right = "0px";
+        fb.style.left = "0";
+        fb.style.right = "0";
         fb.style.zIndex = "200";
         fb.style.boxShadow = "0 4px 20px rgba(0,0,0,.3)";
-        ph.style.height = fb.offsetHeight + "px";
-      } else {
+        isStuck = true;
+      } else if (!shouldStick && isStuck) {
         fb.style.position = "";
         fb.style.top = "";
         fb.style.left = "";
@@ -86,9 +94,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         fb.style.zIndex = "";
         fb.style.boxShadow = "";
         ph.style.height = "0";
+        isStuck = false;
       }
-
-      setFilterStuck(stuck);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
