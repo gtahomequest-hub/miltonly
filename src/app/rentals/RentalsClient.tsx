@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import "./rentals.css";
@@ -53,6 +53,20 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterStuck, setFilterStuck] = useState(false);
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const filterPlaceholderRef = useRef<HTMLDivElement>(null);
+
+  // JS-based sticky for filter bar (CSS sticky breaks with overflow-x:hidden on body)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!filterPlaceholderRef.current) return;
+      const rect = filterPlaceholderRef.current.getBoundingClientRect();
+      setFilterStuck(rect.top <= 62);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -449,7 +463,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
       </div>
 
       {/* ═══ STICKY FILTER BAR ═══ */}
-      <div className="filter-bar" id="filter-bar">
+      <div ref={filterPlaceholderRef} className={filterStuck ? "fb-placeholder" : ""} />
+      <div ref={filterBarRef} className={`filter-bar${filterStuck ? " stuck" : ""}`} id="filter-bar">
         <div className="fb-top">
           <div className="fb-count">
             <em>{totalRentals}</em> Milton rentals
