@@ -53,52 +53,44 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filterStuck, setFilterStuck] = useState(false);
+  const [, setFilterStuck] = useState(false);
   const filterBarRef = useRef<HTMLDivElement>(null);
   const filterPlaceholderRef = useRef<HTMLDivElement>(null);
-  const stickyOffset = useRef(0);
-  const navHeight = useRef(0);
 
-  // Measure once on mount: where the filter bar sits in the document + nav height
   useEffect(() => {
-    const nav = document.querySelector("header");
-    navHeight.current = nav?.offsetHeight || 0;
+    const onScroll = () => {
+      const ph = filterPlaceholderRef.current;
+      const fb = filterBarRef.current;
+      if (!ph || !fb) return;
 
-    // Get the filter bar's natural position from the top of the document
-    if (filterPlaceholderRef.current) {
-      stickyOffset.current = filterPlaceholderRef.current.offsetTop;
-    }
-  }, []);
+      // Simple: when placeholder hits top of viewport (0), stick the bar
+      const rect = ph.getBoundingClientRect();
+      const stuck = rect.top <= 0;
 
-  // Scroll handler — stick when scroll passes the filter bar's natural position
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!filterPlaceholderRef.current || !filterBarRef.current) return;
-
-      // Recalculate offset if not stuck (it shifts when content above changes)
-      if (!filterStuck) {
-        stickyOffset.current = filterPlaceholderRef.current.offsetTop;
-      }
-
-      const scrollY = window.scrollY;
-      const triggerPoint = stickyOffset.current - navHeight.current;
-      const shouldStick = scrollY >= triggerPoint;
-
-      if (shouldStick !== filterStuck) {
-        setFilterStuck(shouldStick);
-      }
-
-      // Set placeholder height to prevent content jump
-      if (shouldStick) {
-        filterPlaceholderRef.current.style.height = filterBarRef.current.offsetHeight + "px";
+      if (stuck) {
+        fb.style.position = "fixed";
+        fb.style.top = "0px";
+        fb.style.left = "0px";
+        fb.style.right = "0px";
+        fb.style.zIndex = "200";
+        fb.style.boxShadow = "0 4px 20px rgba(0,0,0,.3)";
+        ph.style.height = fb.offsetHeight + "px";
       } else {
-        filterPlaceholderRef.current.style.height = "0";
+        fb.style.position = "";
+        fb.style.top = "";
+        fb.style.left = "";
+        fb.style.right = "";
+        fb.style.zIndex = "";
+        fb.style.boxShadow = "";
+        ph.style.height = "0";
       }
+
+      setFilterStuck(stuck);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [filterStuck]);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -495,8 +487,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
       </div>
 
       {/* ═══ STICKY FILTER BAR ═══ */}
-      <div ref={filterPlaceholderRef} className={filterStuck ? "fb-placeholder" : ""} />
-      <div ref={filterBarRef} className={`filter-bar${filterStuck ? " stuck" : ""}`} id="filter-bar" style={filterStuck ? { top: navHeight.current + "px" } : undefined}>
+      <div ref={filterPlaceholderRef} className="fb-placeholder" />
+      <div ref={filterBarRef} className="filter-bar" id="filter-bar">
         <div className="fb-top">
           <div className="fb-count">
             <em>{totalRentals}</em> Milton rentals

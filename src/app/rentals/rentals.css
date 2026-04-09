@@ -139,9 +139,8 @@
 .rentals-page .sl{font-size:10px;font-weight:700;color:#78350f;margin-top:2px;letter-spacing:.08em;text-transform:uppercase;}
 
 /* FILTER BAR */
-.rentals-page .filter-bar{background:var(--mid);border-bottom:2px solid var(--nb);padding:0 48px;z-index:200;transition:box-shadow .2s;}
-.rentals-page .filter-bar.stuck{position:fixed;left:0;right:0;box-shadow:0 4px 20px rgba(0,0,0,.3);}
-.rentals-page .fb-placeholder{height:0;transition:height .1s;}
+.rentals-page .filter-bar{background:var(--mid);border-bottom:2px solid var(--nb);padding:0 48px;z-index:200;}
+.rentals-page .fb-placeholder{}
 .rentals-page .fb-top{display:flex;align-items:center;justify-content:space-between;padding:12px 0 10px;}
 .rentals-page .fb-count{font-size:14px;font-weight:700;color:var(--pearl);}
 .rentals-page .fb-count em{color:var(--amber);font-style:normal;}
