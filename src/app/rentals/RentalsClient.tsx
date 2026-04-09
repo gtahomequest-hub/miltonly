@@ -54,30 +54,51 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [, setBookingMls] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterStuck, setFilterStuck] = useState(false);
-  const [navH, setNavH] = useState(0);
   const filterBarRef = useRef<HTMLDivElement>(null);
   const filterPlaceholderRef = useRef<HTMLDivElement>(null);
+  const stickyOffset = useRef(0);
+  const navHeight = useRef(0);
 
+  // Measure once on mount: where the filter bar sits in the document + nav height
   useEffect(() => {
     const nav = document.querySelector("header");
-    const h = nav?.offsetHeight || 0;
-    setNavH(h);
+    navHeight.current = nav?.offsetHeight || 0;
 
+    // Get the filter bar's natural position from the top of the document
+    if (filterPlaceholderRef.current) {
+      stickyOffset.current = filterPlaceholderRef.current.offsetTop;
+    }
+  }, []);
+
+  // Scroll handler — stick when scroll passes the filter bar's natural position
+  useEffect(() => {
     const handleScroll = () => {
       if (!filterPlaceholderRef.current || !filterBarRef.current) return;
-      const placeholderTop = filterPlaceholderRef.current.getBoundingClientRect().top;
-      const shouldStick = placeholderTop <= h;
-      setFilterStuck(shouldStick);
+
+      // Recalculate offset if not stuck (it shifts when content above changes)
+      if (!filterStuck) {
+        stickyOffset.current = filterPlaceholderRef.current.offsetTop;
+      }
+
+      const scrollY = window.scrollY;
+      const triggerPoint = stickyOffset.current - navHeight.current;
+      const shouldStick = scrollY >= triggerPoint;
+
+      if (shouldStick !== filterStuck) {
+        setFilterStuck(shouldStick);
+      }
+
+      // Set placeholder height to prevent content jump
       if (shouldStick) {
         filterPlaceholderRef.current.style.height = filterBarRef.current.offsetHeight + "px";
       } else {
-        filterPlaceholderRef.current.style.height = "0px";
+        filterPlaceholderRef.current.style.height = "0";
       }
     };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [filtersOpen]);
+  }, [filterStuck]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -475,7 +496,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
 
       {/* ═══ STICKY FILTER BAR ═══ */}
       <div ref={filterPlaceholderRef} className={filterStuck ? "fb-placeholder" : ""} />
-      <div ref={filterBarRef} className={`filter-bar${filterStuck ? " stuck" : ""}`} id="filter-bar" style={filterStuck ? { top: navH + "px" } : undefined}>
+      <div ref={filterBarRef} className={`filter-bar${filterStuck ? " stuck" : ""}`} id="filter-bar" style={filterStuck ? { top: navHeight.current + "px" } : undefined}>
         <div className="fb-top">
           <div className="fb-count">
             <em>{totalRentals}</em> Milton rentals
