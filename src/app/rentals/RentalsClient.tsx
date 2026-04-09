@@ -57,35 +57,34 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const filterPlaceholderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const nav = document.querySelector("header");
-    const navH = nav ? nav.offsetHeight : 0;
     let barH = 0;
     let isStuck = false;
 
     const onScroll = () => {
       const ph = filterPlaceholderRef.current;
       const fb = filterBarRef.current;
-      if (!ph || !fb) return;
+      const nav = document.querySelector("header");
+      if (!ph || !fb || !nav) return;
 
-      // Measure bar height while it's still in flow (before fixing)
-      if (!isStuck) {
-        barH = fb.offsetHeight;
-      }
+      if (!isStuck) barH = fb.offsetHeight;
 
-      const rect = ph.getBoundingClientRect();
-      const shouldStick = rect.top <= navH;
+      // Use the nav's actual bottom edge — accounts for height + border + everything
+      const navBottom = nav.getBoundingClientRect().bottom;
+      const phTop = ph.getBoundingClientRect().top;
+      const shouldStick = phTop <= navBottom;
 
       if (shouldStick && !isStuck) {
-        // Set placeholder FIRST to prevent jerk
         ph.style.height = barH + "px";
-        // Then fix the bar
         fb.style.position = "fixed";
-        fb.style.top = navH + "px";
+        fb.style.top = navBottom + "px";
         fb.style.left = "0";
         fb.style.right = "0";
         fb.style.zIndex = "200";
         fb.style.boxShadow = "0 4px 20px rgba(0,0,0,.3)";
         isStuck = true;
+      } else if (shouldStick && isStuck) {
+        // Update top in case nav shifts
+        fb.style.top = navBottom + "px";
       } else if (!shouldStick && isStuck) {
         fb.style.position = "";
         fb.style.top = "";
