@@ -33,7 +33,17 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const [userName, setUserName] = useState("");
   const [toast, setToast] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [filters, setFilters] = useState<Record<string, string>>({
+    type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any",
+  });
+  const [priceMin, setPriceMin] = useState(1500);
+  const [priceMax, setPriceMax] = useState(4000);
+
+  const tglFilter = useCallback((key: string, val: string) => {
+    setFilters((f) => ({ ...f, [key]: val }));
+    if (key === "type") setTypeFilter(val);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -46,7 +56,23 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
     } catch { /* silent */ }
   };
 
-  const filteredListings = typeFilter === "all" ? listings : listings.filter((l) => l.propertyType === typeFilter);
+  const filteredListings = listings.filter((l) => {
+    if (typeFilter !== "All" && l.propertyType !== typeFilter.toLowerCase()) return false;
+    if (filters.beds !== "Any") {
+      const minBeds = filters.beds === "5+" ? 5 : parseInt(filters.beds);
+      if (l.bedrooms < minBeds) return false;
+    }
+    if (filters.baths !== "Any") {
+      const minBaths = filters.baths === "4+" ? 4 : parseInt(filters.baths);
+      if (l.bathrooms < minBaths) return false;
+    }
+    if (l.price < priceMin || l.price > priceMax) return false;
+    if (filters.park !== "Any") {
+      const minPark = parseInt(filters.park);
+      if (l.parking < minPark) return false;
+    }
+    return true;
+  });
 
   const progWidth = [0, 17, 33, 50, 67, 83, 100][wizStep - 1] || 0;
 
@@ -269,27 +295,158 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         <div className="stat"><span className="sv">1.2%</span><span className="sl">Vacancy rate</span></div>
       </div>
 
-      {/* FILTER BAR */}
-      <div className="filter-bar">
+      {/* ═══ STICKY FILTER BAR — EXACT MATCH FROM HTML ═══ */}
+      <div className="filter-bar" id="filter-bar">
+
+        {/* top: count + sort + view */}
         <div className="fb-top">
           <div className="fb-count">Showing <em>{filteredListings.length}</em> Milton rentals</div>
           <div className="fb-right">
             <div className="view-toggle">
-              <div className={`vtab${viewMode === "grid" ? " on" : ""}`} onClick={() => setViewMode("grid")}>⊞</div>
-              <div className={`vtab${viewMode === "list" ? " on" : ""}`} onClick={() => setViewMode("list")}>☰</div>
+              <div className={`vtab${viewMode === "grid" ? " on" : ""}`} onClick={() => setViewMode("grid")} title="Grid view">⊞</div>
+              <div className={`vtab${viewMode === "list" ? " on" : ""}`} onClick={() => setViewMode("list")} title="List view">☰</div>
             </div>
+            <select className="fb-sort-sel" onChange={() => showToast("Sorted")}>
+              <option>Best match</option>
+              <option>Newest first</option>
+              <option>Price low–high</option>
+              <option>Price high–low</option>
+              <option>Closest to GO</option>
+            </select>
           </div>
         </div>
+
+        {/* filter groups */}
         <div className="fb-filters">
-          <div className="fg-block">
+
+          {/* PROPERTY TYPE */}
+          <div className={`fg-block${filters.type !== "All" ? " active" : ""}`}>
             <span className="fg-label">Property type</span>
             <div className="toggle-group">
-              {["all", "detached", "semi", "townhouse", "condo"].map((t) => (
-                <button key={t} className={`tgl${typeFilter === t ? " on" : ""}`} onClick={() => setTypeFilter(t)}>{t === "all" ? "All" : t.charAt(0).toUpperCase() + t.slice(1)}</button>
+              {["All", "Detached", "Semi", "Townhouse", "Condo"].map((v) => (
+                <button key={v} className={`tgl${filters.type === v ? " on" : ""}`} onClick={() => tglFilter("type", v)}>{v}</button>
               ))}
             </div>
           </div>
+
+          {/* BEDROOMS */}
+          <div className={`fg-block${filters.beds !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Bedrooms</span>
+            <div className="toggle-group">
+              {["Any", "1", "2", "3", "4", "5+"].map((v) => (
+                <button key={v} className={`tgl${filters.beds === v ? " on" : ""}`} onClick={() => tglFilter("beds", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* BATHROOMS */}
+          <div className={`fg-block${filters.baths !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Bathrooms</span>
+            <div className="toggle-group">
+              {["Any", "1", "2", "3", "4+"].map((v) => (
+                <button key={v} className={`tgl${filters.baths === v ? " on" : ""}`} onClick={() => tglFilter("baths", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* PRICE RANGE */}
+          <div className="fg-block active">
+            <span className="fg-label">Monthly rent</span>
+            <div className="range-group">
+              <div className="range-vals">
+                <span className="range-val"><em>${priceMin.toLocaleString()}</em></span>
+                <span className="range-val"><em>${priceMax.toLocaleString()}</em></span>
+              </div>
+              <div className="range-row" style={{ marginBottom: 6 }}>
+                <span className="range-lbl">Min</span>
+                <input type="range" className="frange" min={1000} max={4000} step={100} value={priceMin} onChange={(e) => setPriceMin(Math.min(parseInt(e.target.value), priceMax - 500))} />
+              </div>
+              <div className="range-row">
+                <span className="range-lbl">Max</span>
+                <input type="range" className="frange" min={1000} max={5000} step={100} value={priceMax} onChange={(e) => setPriceMax(Math.max(parseInt(e.target.value), priceMin + 500))} />
+              </div>
+            </div>
+          </div>
+
+          {/* MOVE-IN DATE */}
+          <div className={`fg-block${filters.avail !== "Now" ? " active" : ""}`}>
+            <span className="fg-label">Move-in date</span>
+            <div className="toggle-group">
+              {["Now", "May", "June", "July", "Flexible"].map((v) => (
+                <button key={v} className={`tgl${filters.avail === v ? " on" : ""}`} onClick={() => tglFilter("avail", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* PETS */}
+          <div className={`fg-block${filters.pets !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Pets</span>
+            <div className="toggle-group">
+              {["Any", "Pets OK", "No pets"].map((v) => (
+                <button key={v} className={`tgl${filters.pets === v ? " on" : ""}`} onClick={() => tglFilter("pets", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* UTILITIES */}
+          <div className={`fg-block${filters.util !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Utilities</span>
+            <div className="toggle-group">
+              {["Any", "Included", "Tenant pays"].map((v) => (
+                <button key={v} className={`tgl${filters.util === v ? " on" : ""}`} onClick={() => tglFilter("util", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* FINISHED BASEMENT */}
+          <div className={`fg-block${filters.basement !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Finished basement</span>
+            <div className="toggle-group">
+              {["Any", "Yes", "No"].map((v) => (
+                <button key={v} className={`tgl${filters.basement === v ? " on" : ""}`} onClick={() => tglFilter("basement", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* LEASE LENGTH */}
+          <div className={`fg-block${filters.lease !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Lease length</span>
+            <div className="toggle-group">
+              {["Any", "Month-to-month", "6 months", "12 months"].map((v) => (
+                <button key={v} className={`tgl${filters.lease === v ? " on" : ""}`} onClick={() => tglFilter("lease", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* PARKING */}
+          <div className={`fg-block${filters.park !== "Any" ? " active" : ""}`}>
+            <span className="fg-label">Parking</span>
+            <div className="toggle-group">
+              {["Any", "1+", "2+"].map((v) => (
+                <button key={v} className={`tgl${filters.park === v ? " on" : ""}`} onClick={() => tglFilter("park", v)}>{v}</button>
+              ))}
+            </div>
+          </div>
+
+          <button className="clear-btn" onClick={() => {
+            setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
+            setTypeFilter("All"); setPriceMin(1500); setPriceMax(4000);
+            showToast("↺ Filters reset — showing all rentals");
+          }}>↺ Reset all</button>
+
         </div>
+
+        {/* active filter chips summary row */}
+        <div className="fb-chips">
+          <span className="fb-lbl">Active:</span>
+          <div className={`fchip on`}>🏠 <span>{filters.type === "All" ? "All types" : filters.type}</span> <span className="fchip-x">✕</span></div>
+          <div className={`fchip on`}>🛏 <span>{filters.beds === "Any" ? "Any beds" : filters.beds + " bed" + (filters.beds === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
+          <div className={`fchip on`}>🚿 <span>{filters.baths === "Any" ? "Any baths" : filters.baths + " bath" + (filters.baths === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
+          <div className={`fchip on`}>💰 <span>${priceMin.toLocaleString()}–${priceMax.toLocaleString()}</span> <span className="fchip-x">✕</span></div>
+          <div className={`fchip on`}>📅 <span>{filters.avail === "Now" ? "Available now" : "Move in " + filters.avail}</span> <span className="fchip-x">✕</span></div>
+          <div className={`fchip on`}>🎯 <span>{wizData.prio || "Any location"}</span> <span className="fchip-x">✕</span></div>
+        </div>
+
       </div>
 
       {/* LISTINGS */}
