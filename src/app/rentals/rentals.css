@@ -206,6 +206,19 @@
 .rentals-page .toast.show{transform:translateY(0);opacity:1;pointer-events:all;}
 .rentals-page .toast-ck{color:var(--green);font-size:15px;flex-shrink:0;}
 
+/* SEARCH DROPDOWN */
+.rentals-page .sdrop{background:#fff;border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:12px;animation:fadeUp .2s ease;}
+.rentals-page .sdrop.open{display:block;}
+.rentals-page .sdi{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--surf);transition:background .15s;}
+.rentals-page .sdi:last-child{border:none;}
+.rentals-page .sdi:hover{background:var(--surf);}
+.rentals-page .sdi-ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.rentals-page .sdi-ico.am{background:rgba(245,158,11,.1);}
+.rentals-page .sdi-ico.bl{background:#eff6ff;}
+.rentals-page .sdi-ico.gr{background:var(--surf);}
+.rentals-page .sdi-main{font-size:13px;font-weight:700;color:var(--t1);}
+.rentals-page .sdi-sub{font-size:11px;color:var(--t3);margin-top:2px;line-height:1.4;}
+
 /* SORT SELECT */
 .rentals-page .fb-sort-sel{background:var(--mid);color:var(--pearl);border:1.5px solid var(--nb);border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;}
 .rentals-page .fb-sort-sel:focus{outline:none;border-color:var(--amber);}

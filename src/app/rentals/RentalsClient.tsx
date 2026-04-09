@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import "./rentals.css";
@@ -27,23 +27,31 @@ interface Props {
 }
 
 export default function RentalsClient({ listings, totalRentals, avgRent }: Props) {
+  // ── WIZARD STATE ──
   const [wizStep, setWizStep] = useState(1);
   const [wizData, setWizData] = useState({ type: "", budget: "", prio: "", beds: 1, park: 0, pet: "No pet", timeline: "" });
   const [wizSuccess, setWizSuccess] = useState(false);
   const [userName, setUserName] = useState("");
-  const [toast, setToast] = useState("");
+
+  // ── SEARCH STATE ──
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // ── FILTER STATE ──
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [typeFilter, setTypeFilter] = useState("All");
   const [filters, setFilters] = useState<Record<string, string>>({
     type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any",
   });
-  const [priceMin, setPriceMin] = useState(1500);
-  const [priceMax, setPriceMax] = useState(4000);
+  const [priceMin, setPriceMin] = useState(500);
+  const [priceMax, setPriceMax] = useState(5000);
+  const [sortBy, setSortBy] = useState("newest");
+  const [availPill, setAvailPill] = useState("Available now");
 
-  const tglFilter = useCallback((key: string, val: string) => {
-    setFilters((f) => ({ ...f, [key]: val }));
-    if (key === "type") setTypeFilter(val);
-  }, []);
+  // ── UI STATE ──
+  const [toast, setToast] = useState("");
+  const [, setBookingMls] = useState("");
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -53,52 +61,153 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   const submitLead = async (data: Record<string, string>) => {
     try {
       await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    } catch { /* silent */ }
+      return true;
+    } catch { return false; }
   };
 
-  const filteredListings = listings.filter((l) => {
-    if (typeFilter !== "All" && l.propertyType !== typeFilter.toLowerCase()) return false;
-    if (filters.beds !== "Any") {
-      const minBeds = filters.beds === "5+" ? 5 : parseInt(filters.beds);
-      if (l.bedrooms < minBeds) return false;
-    }
-    if (filters.baths !== "Any") {
-      const minBaths = filters.baths === "4+" ? 4 : parseInt(filters.baths);
-      if (l.bathrooms < minBaths) return false;
-    }
-    if (l.price < priceMin || l.price > priceMax) return false;
-    if (filters.park !== "Any") {
-      const minPark = parseInt(filters.park);
-      if (l.parking < minPark) return false;
-    }
-    return true;
-  });
+  const tglFilter = useCallback((key: string, val: string) => {
+    setFilters((f) => ({ ...f, [key]: val }));
+    if (key === "type") setTypeFilter(val);
+  }, []);
+
+  // ── FILTER + SORT LOGIC ──
+  const filteredListings = useMemo(() => {
+    const result = listings.filter((l) => {
+      // Search query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchAddr = l.address.toLowerCase().includes(q);
+        const matchMls = l.mlsNumber.toLowerCase().includes(q);
+        const matchHood = l.neighbourhood.toLowerCase().includes(q);
+        if (!matchAddr && !matchMls && !matchHood) return false;
+      }
+      // Type
+      if (typeFilter !== "All" && l.propertyType !== typeFilter.toLowerCase()) return false;
+      // Beds
+      if (filters.beds !== "Any") {
+        const min = filters.beds === "5+" ? 5 : parseInt(filters.beds);
+        if (l.bedrooms < min) return false;
+      }
+      // Baths
+      if (filters.baths !== "Any") {
+        const min = filters.baths === "4+" ? 4 : parseInt(filters.baths);
+        if (l.bathrooms < min) return false;
+      }
+      // Price
+      if (l.price < priceMin || l.price > priceMax) return false;
+      // Parking
+      if (filters.park !== "Any") {
+        const min = parseInt(filters.park);
+        if (l.parking < min) return false;
+      }
+      // Basement
+      if (filters.basement === "Yes" && !l.description?.toLowerCase().includes("basement")) return false;
+      return true;
+    });
+
+    // Sort
+    if (sortBy === "price_asc") result.sort((a, b) => a.price - b.price);
+    else if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price);
+    else result.sort((a, b) => new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime());
+
+    return result;
+  }, [listings, searchQuery, typeFilter, filters, priceMin, priceMax, sortBy]);
 
   const progWidth = [0, 17, 33, 50, 67, 83, 100][wizStep - 1] || 0;
-
   const typeIcons: Record<string, string> = { detached: "🏠", semi: "🏘", townhouse: "🏗", condo: "🏢", other: "🏠" };
+
+  // ── SEARCH HANDLER ──
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      showToast("Type a street, MLS # or neighbourhood to search");
+      return;
+    }
+    setSearchOpen(false);
+    document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+    showToast(`🔍 Showing results for "${searchQuery}"`);
+  };
+
+  // ── BOOKING HANDLER (listing cards) ──
+  const handleBookShowing = async (listing: Listing) => {
+    await submitLead({
+      firstName: "Showing Request",
+      source: "listing-card-book",
+      intent: "renter",
+      street: listing.address,
+    });
+    showToast(`✓ Showing request sent for ${listing.address.split(",")[0]}!`);
+  };
+
+  const handleOneHourShowing = async (listing: Listing) => {
+    await submitLead({
+      firstName: "1-Hour Showing",
+      source: "listing-card-1hr",
+      intent: "renter",
+      street: listing.address,
+    });
+    setBookingMls(listing.mlsNumber);
+    showToast(`⏱ 1-hour showing confirmed for ${listing.address.split(",")[0]}! We'll call you.`);
+  };
 
   return (
     <div className="rentals-page">
       {/* ═══ HERO ═══ */}
       <div className="hero">
-        {/* LEFT */}
+        {/* ── LEFT PANEL ── */}
         <div className="hl">
           <div className="live-badge"><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
           <h1>Find your next<br />home in <em>Milton</em></h1>
           <p className="hl-desc">Browse every active rental — condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
-          <div className="sbox">
+
+          {/* Search box */}
+          <div className="sbox" ref={searchRef}>
             <div className="srow">
-              <input className="sinput" placeholder="Street, MLS #, neighbourhood, school or GO station..." />
-              <button className="sbtn" onClick={() => showToast("Searching Milton rentals...")}>Search →</button>
+              <input
+                className="sinput"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(false); }}
+                onFocus={() => { if (!searchQuery) setSearchOpen(true); }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                placeholder="Street, MLS #, neighbourhood, school or GO station..."
+              />
+              <button className="sbtn" onClick={handleSearch}>Search →</button>
             </div>
+
+            {/* Search dropdown — shows when input focused + empty */}
+            {searchOpen && (
+              <div className="sdrop open">
+                <div className="sdi" onClick={() => { setSearchOpen(false); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+                  <div className="sdi-ico am">🏠</div>
+                  <div><div className="sdi-main">See all {totalRentals} active Milton rentals</div><div className="sdi-sub">Condos, townhouses, detached — all listings</div></div>
+                </div>
+                <div className="sdi" onClick={() => { setSearchQuery("condo"); setSearchOpen(false); showToast("🔍 Filtering condos..."); }}>
+                  <div className="sdi-ico bl">🏢</div>
+                  <div><div className="sdi-main">Show condos only</div><div className="sdi-sub">All Milton condo rentals</div></div>
+                </div>
+                <div className="sdi" onClick={() => { setSearchQuery("Main St"); setSearchOpen(false); showToast("🔍 Searching Main St..."); }}>
+                  <div className="sdi-ico gr">📍</div>
+                  <div><div className="sdi-main">Main Street rentals</div><div className="sdi-sub">Popular Milton street</div></div>
+                </div>
+              </div>
+            )}
+
+            {/* Move-in pills */}
             <div className="avail-row">
               <span className="avail-lbl">Move in:</span>
-              {["Available now", "May 2026", "June 2026", "July 2026", "Flexible"].map((a, i) => (
-                <button key={a} className={`apill${i === 0 ? " on" : ""}`} onClick={(e) => { document.querySelectorAll(".apill").forEach((p) => p.classList.remove("on")); (e.target as HTMLElement).classList.add("on"); showToast("📅 " + a); }}>{a}</button>
+              {["Available now", "May 2026", "June 2026", "July 2026", "Flexible"].map((a) => (
+                <button
+                  key={a}
+                  className={`apill${availPill === a ? " on" : ""}`}
+                  onClick={() => {
+                    setAvailPill(a);
+                    tglFilter("avail", a === "Available now" ? "Now" : a.replace(" 2026", ""));
+                    showToast(`📅 Showing rentals: ${a}`);
+                  }}
+                >{a}</button>
               ))}
             </div>
           </div>
+
           <div className="trust-row">
             <div className="ti">178 families placed this year</div>
             <div className="ti">4.9 ★ Google rating</div>
@@ -107,7 +216,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           </div>
         </div>
 
-        {/* MIDDLE — WIZARD */}
+        {/* ── MIDDLE — WIZARD ── */}
         <div className="hm">
           <div className="wiz-topbar">
             <div className="wiz-brand">Let Miltonly find you<em> what you&apos;re looking for.</em></div>
@@ -124,7 +233,11 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                     <div className="q-text">What kind of home are you looking for?</div>
                     <div className="opt-grid">
                       {[{ icon: "🏠", label: "Detached" }, { icon: "🏘", label: "Semi-detached" }, { icon: "🏗", label: "Townhouse" }, { icon: "🏢", label: "Condo / apt" }].map((t) => (
-                        <div key={t.label} className={`opt-tile${wizData.type === t.label ? " sel" : ""}`} onClick={() => { setWizData({ ...wizData, type: t.label }); setTimeout(() => setWizStep(2), 400); }}>
+                        <div key={t.label} className={`opt-tile${wizData.type === t.label ? " sel" : ""}`} onClick={() => {
+                          setWizData({ ...wizData, type: t.label });
+                          showToast(`✓ ${t.label} selected`);
+                          setTimeout(() => setWizStep(2), 500);
+                        }}>
                           <div className="opt-tick">✓</div>
                           <span className="opt-ico">{t.icon}</span>
                           <div className="opt-lbl">{t.label}</div>
@@ -141,7 +254,11 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                     <div className="q-text">What&apos;s your monthly budget?</div>
                     <div className="opt-grid">
                       {["Under $2,000", "$2,000–$2,500", "$2,500–$3,000", "$3,000+"].map((b) => (
-                        <div key={b} className={`opt-tile${wizData.budget === b ? " sel" : ""}`} onClick={() => { setWizData({ ...wizData, budget: b }); setTimeout(() => setWizStep(3), 400); }}>
+                        <div key={b} className={`opt-tile${wizData.budget === b ? " sel" : ""}`} onClick={() => {
+                          setWizData({ ...wizData, budget: b });
+                          showToast(`✓ Budget: ${b}/month`);
+                          setTimeout(() => setWizStep(3), 500);
+                        }}>
                           <div className="opt-tick">✓</div>
                           <span className="opt-ico" style={{ fontSize: 18, marginBottom: 5 }}>💰</span>
                           <div className="opt-lbl">{b}</div>
@@ -159,7 +276,11 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                     <div className="q-text">What matters most to you?</div>
                     <div className="prio-list">
                       {[{ icon: "🚂", label: "Close to Milton GO station" }, { icon: "🎓", label: "Good school zone" }, { icon: "🌳", label: "Near parks & playgrounds" }, { icon: "🏡", label: "Quiet neighbourhood" }, { icon: "✌️", label: "No preference" }].map((p) => (
-                        <div key={p.label} className={`prio-tile${wizData.prio === p.label ? " sel" : ""}`} onClick={() => { setWizData({ ...wizData, prio: p.label }); setTimeout(() => setWizStep(4), 400); }}>
+                        <div key={p.label} className={`prio-tile${wizData.prio === p.label ? " sel" : ""}`} onClick={() => {
+                          setWizData({ ...wizData, prio: p.label });
+                          showToast(`✓ Priority: ${p.label}`);
+                          setTimeout(() => setWizStep(4), 500);
+                        }}>
                           <span className="prio-ico">{p.icon}</span>
                           <span className="prio-txt">{p.label}</span>
                           <div className="prio-radio" />
@@ -170,7 +291,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                   </div>
                 )}
 
-                {/* Step 4 — Rooms */}
+                {/* Step 4 — Rooms + Pets */}
                 {wizStep === 4 && (
                   <div className="wiz-step active">
                     <div className="q-meta"><div className="q-badge">4</div><span className="q-of">Question 4 of 6</span></div>
@@ -179,22 +300,36 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                       <div className="cnt-row">
                         <div><div className="cnt-lbl">Bedrooms</div></div>
                         <div className="cnt-ctrls">
-                          <button className="cnt-btn" disabled={wizData.beds <= 1} onClick={() => setWizData({ ...wizData, beds: wizData.beds - 1 })}>−</button>
+                          <button className="cnt-btn" disabled={wizData.beds <= 1} onClick={() => setWizData((d) => ({ ...d, beds: d.beds - 1 }))}>−</button>
                           <span className="cnt-val">{wizData.beds}</span>
-                          <button className="cnt-btn" onClick={() => setWizData({ ...wizData, beds: wizData.beds + 1 })}>+</button>
+                          <button className="cnt-btn" disabled={wizData.beds >= 6} onClick={() => setWizData((d) => ({ ...d, beds: d.beds + 1 }))}>+</button>
                         </div>
                       </div>
                       <div className="cnt-div" />
                       <div className="cnt-row">
                         <div><div className="cnt-lbl">Parking</div></div>
                         <div className="cnt-ctrls">
-                          <button className="cnt-btn" disabled={wizData.park <= 0} onClick={() => setWizData({ ...wizData, park: wizData.park - 1 })}>−</button>
+                          <button className="cnt-btn" disabled={wizData.park <= 0} onClick={() => setWizData((d) => ({ ...d, park: d.park - 1 }))}>−</button>
                           <span className="cnt-val">{wizData.park}</span>
-                          <button className="cnt-btn" onClick={() => setWizData({ ...wizData, park: wizData.park + 1 })}>+</button>
+                          <button className="cnt-btn" disabled={wizData.park >= 3} onClick={() => setWizData((d) => ({ ...d, park: d.park + 1 }))}>+</button>
                         </div>
                       </div>
                     </div>
-                    <button className="next-btn dark" onClick={() => setWizStep(5)}>Looks good — next <em>→</em></button>
+                    {/* Pet selection */}
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t4)", letterSpacing: ".09em", textTransform: "uppercase" as const, marginBottom: 7 }}>Do you have a pet?</div>
+                    <div className="opt-grid" style={{ marginBottom: 14 }}>
+                      {[{ icon: "🚫", label: "No pet" }, { icon: "🐱", label: "Cat" }, { icon: "🐶", label: "Small dog" }, { icon: "🐕", label: "Large dog" }].map((p) => (
+                        <div key={p.label} className={`opt-tile${wizData.pet === p.label ? " sel" : ""}`} onClick={() => setWizData((d) => ({ ...d, pet: p.label }))}>
+                          <div className="opt-tick">✓</div>
+                          <span className="opt-ico" style={{ fontSize: 18, marginBottom: 4 }}>{p.icon}</span>
+                          <div className="opt-lbl">{p.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="next-btn dark" onClick={() => {
+                      showToast(`✓ ${wizData.beds} bed · ${wizData.park} parking · ${wizData.pet}`);
+                      setWizStep(5);
+                    }}>Looks good — next <em>→</em></button>
                     <div className="back-lnk" onClick={() => setWizStep(3)}>← Back</div>
                   </div>
                 )}
@@ -206,7 +341,11 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                     <div className="q-text">When do you need to move in?</div>
                     <div className="time-list">
                       {[{ label: "As soon as possible", badge: "Moving now", cls: "tb-hot", val: "ASAP" }, { label: "Within the next month", badge: "Active search", cls: "tb-hot", val: "Within 1 month" }, { label: "1 to 3 months", badge: "Planning ahead", cls: "tb-warm", val: "1–3 months" }, { label: "Just exploring for now", badge: "Early stage", cls: "tb-browse", val: "Just exploring" }].map((t) => (
-                        <div key={t.val} className={`time-tile${wizData.timeline === t.val ? " sel" : ""}`} onClick={() => { setWizData({ ...wizData, timeline: t.val }); setTimeout(() => setWizStep(6), 400); }}>
+                        <div key={t.val} className={`time-tile${wizData.timeline === t.val ? " sel" : ""}`} onClick={() => {
+                          setWizData({ ...wizData, timeline: t.val });
+                          showToast(`✓ Timeline: ${t.label}`);
+                          setTimeout(() => setWizStep(6), 500);
+                        }}>
                           <span className="time-main">{t.label}</span>
                           <span className={`tbadge ${t.cls}`}>{t.badge}</span>
                         </div>
@@ -233,9 +372,12 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                       const phone = (document.getElementById("wiz-phone") as HTMLInputElement).value;
                       const email = (document.getElementById("wiz-email") as HTMLInputElement).value;
                       if (!phone) { showToast("Please enter your phone number."); return; }
-                      await submitLead({ firstName: userName, phone, email, source: "wizard", intent: "renter", timeline: wizData.timeline });
-                      setWizSuccess(true);
-                      showToast("✓ Shortlist sent!");
+                      const ok = await submitLead({ firstName: userName, phone, email, source: "wizard", intent: "renter", timeline: wizData.timeline });
+                      if (ok) {
+                        setWizSuccess(true);
+                        showToast("✓ Shortlist sent! We'll call you within 15 minutes.");
+                        setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 800);
+                      }
                     }}>
                       Show me my {filteredListings.length} matches →
                     </button>
@@ -245,17 +387,21 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                 )}
               </>
             ) : (
+              /* ── SUCCESS SCREEN ── */
               <div className="success-screen show">
                 <div className="ss-check">✓</div>
                 <div className="ss-title">Your shortlist is ready, {userName}!</div>
-                <div className="ss-sub">We found {filteredListings.length} matches and will call you within 15 minutes.</div>
-                <button className="ss-alert" onClick={() => showToast("🔔 Alert set!")}>🔔 Alert me when new matches list</button>
+                <div className="ss-sub">We found {filteredListings.length} matches and will call you within 15 minutes. Your results are below.</div>
+                <button className="ss-alert" onClick={async () => {
+                  await submitLead({ firstName: userName, source: "new-match-alert", intent: "renter" });
+                  showToast("🔔 Alert set! You'll hear from us first.");
+                }}>🔔 Alert me when new matches list</button>
               </div>
             )}
           </div>
         </div>
 
-        {/* RIGHT — Booking */}
+        {/* ── RIGHT — BOOKING CARD ── */}
         <div className="hr">
           <div className="booking-card">
             <div className="bc-strip" />
@@ -272,9 +418,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                 const name = (document.getElementById("bc-name") as HTMLInputElement).value;
                 const phone = (document.getElementById("bc-phone") as HTMLInputElement).value;
                 const mls = (document.getElementById("bc-mls") as HTMLInputElement).value;
-                if (!name || !phone) { showToast("Please enter name and phone."); return; }
-                await submitLead({ firstName: name, phone, source: "1hr-booking", intent: "renter", street: mls });
-                showToast("⏱ Booking sent! Expect a call within 15 minutes.");
+                if (!name) { showToast("Please enter your name."); (document.getElementById("bc-name") as HTMLInputElement).focus(); return; }
+                if (!phone) { showToast("Please enter your phone number."); (document.getElementById("bc-phone") as HTMLInputElement).focus(); return; }
+                const ok = await submitLead({ firstName: name, phone, source: "1hr-booking", intent: "renter", street: mls || "Any Milton rental" });
+                if (ok) {
+                  showToast(`⏱ Booking confirmed! We'll call ${phone} within 15 minutes.`);
+                  (document.getElementById("bc-name") as HTMLInputElement).value = "";
+                  (document.getElementById("bc-phone") as HTMLInputElement).value = "";
+                  (document.getElementById("bc-mls") as HTMLInputElement).value = "";
+                }
               }}><em>⏱</em> Confirm my 1-hour showing</button>
             </div>
           </div>
@@ -287,7 +439,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         </div>
       </div>
 
-      {/* STATS BAR */}
+      {/* ═══ STATS BAR ═══ */}
       <div className="stats-bar">
         <div className="stat"><span className="sv">${avgRent.toLocaleString()}</span><span className="sl">Avg rent / month</span></div>
         <div className="stat"><span className="sv">{totalRentals}</span><span className="sl">Active rentals today</span></div>
@@ -295,10 +447,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         <div className="stat"><span className="sv">1.2%</span><span className="sl">Vacancy rate</span></div>
       </div>
 
-      {/* ═══ STICKY FILTER BAR — EXACT MATCH FROM HTML ═══ */}
+      {/* ═══ STICKY FILTER BAR ═══ */}
       <div className="filter-bar" id="filter-bar">
-
-        {/* top: count + sort + view */}
         <div className="fb-top">
           <div className="fb-count">Showing <em>{filteredListings.length}</em> Milton rentals</div>
           <div className="fb-right">
@@ -306,19 +456,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               <div className={`vtab${viewMode === "grid" ? " on" : ""}`} onClick={() => setViewMode("grid")} title="Grid view">⊞</div>
               <div className={`vtab${viewMode === "list" ? " on" : ""}`} onClick={() => setViewMode("list")} title="List view">☰</div>
             </div>
-            <select className="fb-sort-sel" onChange={() => showToast("Sorted")}>
-              <option>Best match</option>
-              <option>Newest first</option>
-              <option>Price low–high</option>
-              <option>Price high–low</option>
-              <option>Closest to GO</option>
+            <select className="fb-sort-sel" value={sortBy} onChange={(e) => { setSortBy(e.target.value); showToast(`Sorted: ${e.target.value}`); }}>
+              <option value="newest">Newest first</option>
+              <option value="price_asc">Price low–high</option>
+              <option value="price_desc">Price high–low</option>
             </select>
           </div>
         </div>
 
-        {/* filter groups */}
         <div className="fb-filters">
-
           {/* PROPERTY TYPE */}
           <div className={`fg-block${filters.type !== "All" ? " active" : ""}`}>
             <span className="fg-label">Property type</span>
@@ -328,7 +474,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* BEDROOMS */}
           <div className={`fg-block${filters.beds !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Bedrooms</span>
@@ -338,7 +483,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* BATHROOMS */}
           <div className={`fg-block${filters.baths !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Bathrooms</span>
@@ -348,7 +492,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* PRICE RANGE */}
           <div className="fg-block active">
             <span className="fg-label">Monthly rent</span>
@@ -359,7 +502,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               </div>
               <div className="range-row" style={{ marginBottom: 6 }}>
                 <span className="range-lbl">Min</span>
-                <input type="range" className="frange" min={1000} max={4000} step={100} value={priceMin} onChange={(e) => setPriceMin(Math.min(parseInt(e.target.value), priceMax - 500))} />
+                <input type="range" className="frange" min={500} max={4000} step={100} value={priceMin} onChange={(e) => setPriceMin(Math.min(parseInt(e.target.value), priceMax - 500))} />
               </div>
               <div className="range-row">
                 <span className="range-lbl">Max</span>
@@ -367,7 +510,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               </div>
             </div>
           </div>
-
           {/* MOVE-IN DATE */}
           <div className={`fg-block${filters.avail !== "Now" ? " active" : ""}`}>
             <span className="fg-label">Move-in date</span>
@@ -377,7 +519,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* PETS */}
           <div className={`fg-block${filters.pets !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Pets</span>
@@ -387,7 +528,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* UTILITIES */}
           <div className={`fg-block${filters.util !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Utilities</span>
@@ -397,7 +537,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* FINISHED BASEMENT */}
           <div className={`fg-block${filters.basement !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Finished basement</span>
@@ -407,7 +546,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* LEASE LENGTH */}
           <div className={`fg-block${filters.lease !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Lease length</span>
@@ -417,7 +555,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
               ))}
             </div>
           </div>
-
           {/* PARKING */}
           <div className={`fg-block${filters.park !== "Any" ? " active" : ""}`}>
             <span className="fg-label">Parking</span>
@@ -430,65 +567,76 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
 
           <button className="clear-btn" onClick={() => {
             setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-            setTypeFilter("All"); setPriceMin(1500); setPriceMax(4000);
+            setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setSortBy("newest");
             showToast("↺ Filters reset — showing all rentals");
           }}>↺ Reset all</button>
-
         </div>
 
-        {/* active filter chips summary row */}
+        {/* chips */}
         <div className="fb-chips">
           <span className="fb-lbl">Active:</span>
-          <div className={`fchip on`}>🏠 <span>{filters.type === "All" ? "All types" : filters.type}</span> <span className="fchip-x">✕</span></div>
-          <div className={`fchip on`}>🛏 <span>{filters.beds === "Any" ? "Any beds" : filters.beds + " bed" + (filters.beds === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
-          <div className={`fchip on`}>🚿 <span>{filters.baths === "Any" ? "Any baths" : filters.baths + " bath" + (filters.baths === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
-          <div className={`fchip on`}>💰 <span>${priceMin.toLocaleString()}–${priceMax.toLocaleString()}</span> <span className="fchip-x">✕</span></div>
-          <div className={`fchip on`}>📅 <span>{filters.avail === "Now" ? "Available now" : "Move in " + filters.avail}</span> <span className="fchip-x">✕</span></div>
-          <div className={`fchip on`}>🎯 <span>{wizData.prio || "Any location"}</span> <span className="fchip-x">✕</span></div>
+          <div className="fchip on">🏠 <span>{filters.type === "All" ? "All types" : filters.type}</span> <span className="fchip-x">✕</span></div>
+          <div className="fchip on">🛏 <span>{filters.beds === "Any" ? "Any beds" : filters.beds + " bed" + (filters.beds === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
+          <div className="fchip on">🚿 <span>{filters.baths === "Any" ? "Any baths" : filters.baths + " bath" + (filters.baths === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
+          <div className="fchip on">💰 <span>${priceMin.toLocaleString()}–${priceMax.toLocaleString()}</span> <span className="fchip-x">✕</span></div>
+          <div className="fchip on">📅 <span>{filters.avail === "Now" ? "Available now" : "Move in " + filters.avail}</span> <span className="fchip-x">✕</span></div>
+          {searchQuery && <div className="fchip on">🔍 <span>&quot;{searchQuery}&quot;</span> <span className="fchip-x" onClick={() => setSearchQuery("")}>✕</span></div>}
         </div>
-
       </div>
 
-      {/* LISTINGS */}
+      {/* ═══ LISTINGS ═══ */}
       <section className="listings-sec" id="listings">
         <div className="ls-header">
           <div>
             <div className="ls-title">{wizSuccess ? `${userName}'s Milton matches` : "All Milton rentals"}</div>
-            <div className="ls-sub">{filteredListings.length} active listings · sorted by newest</div>
+            <div className="ls-sub">{filteredListings.length} active listings · sorted by {sortBy === "price_asc" ? "price low–high" : sortBy === "price_desc" ? "price high–low" : "newest"}</div>
           </div>
         </div>
 
-        <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
-          {filteredListings.map((l) => {
-            const days = daysAgo(new Date(l.listedAt));
-            return (
-              <Link key={l.mlsNumber} href={`/listings/${l.mlsNumber}`} className="lcard">
-                <div className="lcard-img" style={{ background: l.photos[0] ? `url(${l.photos[0]}) center/cover` : "#e0f2fe" }}>
-                  {!l.photos[0] && <span style={{ fontSize: 44 }}>{typeIcons[l.propertyType] || "🏠"}</span>}
-                  <span className="lbadge">{days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d ago`}</span>
-                  <span className="avail-tag">Available now</span>
-                </div>
-                <div className="lbody">
-                  <div className="lprice">{formatPriceFull(l.price)} <span>/ month</span></div>
-                  <div className="laddr">{l.address.split(",")[0]} · {l.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "")}</div>
-                  <div className="lspecs">
-                    <span>🛏 {l.bedrooms} bed</span>
-                    <span>🚿 {l.bathrooms} bath</span>
-                    {l.parking > 0 && <span>🚗 {l.parking} park</span>}
-                    <span className="capitalize">{l.propertyType}</span>
+        {filteredListings.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "#64748b" }}>
+            <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No rentals match your filters</p>
+            <p style={{ fontSize: 13 }}>Try adjusting your price range, bedrooms, or property type.</p>
+            <button className="clear-btn" style={{ marginTop: 16 }} onClick={() => {
+              setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
+              setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery("");
+            }}>↺ Reset all filters</button>
+          </div>
+        ) : (
+          <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
+            {filteredListings.map((l) => {
+              const days = daysAgo(new Date(l.listedAt));
+              return (
+                <div key={l.mlsNumber} className="lcard">
+                  <Link href={`/listings/${l.mlsNumber}`}>
+                    <div className="lcard-img" style={{ background: l.photos[0] ? `url(${l.photos[0]}) center/cover` : "#e0f2fe" }}>
+                      {!l.photos[0] && <span style={{ fontSize: 44 }}>{typeIcons[l.propertyType] || "🏠"}</span>}
+                      <span className="lbadge">{days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d ago`}</span>
+                      <span className="avail-tag">Available now</span>
+                    </div>
+                    <div className="lbody">
+                      <div className="lprice">{formatPriceFull(l.price)} <span>/ month</span></div>
+                      <div className="laddr">{l.address.split(",")[0]} · {l.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "")}</div>
+                      <div className="lspecs">
+                        <span>🛏 {l.bedrooms} bed</span>
+                        <span>🚿 {l.bathrooms} bath</span>
+                        {l.parking > 0 && <span>🚗 {l.parking} park</span>}
+                        <span style={{ textTransform: "capitalize" }}>{l.propertyType}</span>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="lbtns" style={{ padding: "0 16px 14px" }}>
+                    <button className="lbtn lbtn-bk" onClick={() => handleBookShowing(l)}>Book showing</button>
+                    <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>⏱ See in 1 hr</button>
                   </div>
-                  <div className="lbtns">
-                    <button className="lbtn lbtn-bk" onClick={(e) => { e.preventDefault(); showToast(`Showing booked for ${l.address.split(",")[0]}!`); }}>Book showing</button>
-                    <button className="lbtn lbtn-1h" onClick={(e) => { e.preventDefault(); showToast("⏱ 1-hour showing sent!"); }}>⏱ See in 1 hr</button>
-                  </div>
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* ALERT STRIP */}
+      {/* ═══ ALERT STRIP ═══ */}
       <div className="alert-strip">
         <div className="as-left">
           <h3>🔔 Get alerted before it lists publicly</h3>
@@ -500,23 +648,27 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
             const email = (document.getElementById("alert-email") as HTMLInputElement).value;
             if (!email || !email.includes("@")) { showToast("Please enter a valid email."); return; }
             await submitLead({ email, source: "alert", intent: "renter", firstName: "Alert Subscriber" });
-            showToast("🔔 Alert saved!");
+            showToast("🔔 Alert saved! You'll hear from us first.");
             (document.getElementById("alert-email") as HTMLInputElement).value = "";
           }}>Save this search →</button>
         </div>
       </div>
 
-      {/* FOOTER CTA */}
+      {/* ═══ FOOTER CTA ═══ */}
       <section className="footer-cta">
         <h2>Start your Milton<br />rental search <em>today</em></h2>
         <p>{totalRentals} active rentals · See any home in 1 hour · Milton&apos;s only rental specialist</p>
         <div className="footer-btns">
-          <button className="fbtn-p" onClick={() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" })}>Browse all rentals →</button>
+          <button className="fbtn-p" onClick={() => {
+            setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
+            setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery("");
+            document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+          }}>Browse all rentals →</button>
           <Link href="/listings" className="fbtn-s">View all listings</Link>
         </div>
       </section>
 
-      {/* TOAST */}
+      {/* ═══ TOAST ═══ */}
       <div className={`toast${toast ? " show" : ""}`}>
         <span className="toast-ck">✓</span>
         <span>{toast}</span>
