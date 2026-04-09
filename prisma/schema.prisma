@@ -33,6 +33,31 @@ model Listing {
   goWalkMinutes  Int?
   condoBuilding     String?
   maintenanceFee    Int?
+  // Detail fields
+  lotSize           String?
+  lotDepth          Float?
+  lotWidth          Float?
+  garageType        String?
+  heatSource        String?
+  roof              String?
+  foundation        String?
+  construction      String?
+  exteriorFeatures  String[]
+  interiorFeatures  String[]
+  fireplace         Boolean   @default(false)
+  architecturalStyle String?
+  approximateAge    String?
+  taxAmount         Float?
+  taxYear           Int?
+  maintenanceFeeAmt Float?
+  directionFaces    String?
+  crossStreet       String?
+  sewer             String?
+  waterSource       String?
+  virtualTourUrl    String?
+  listOfficeName    String?
+  totalRooms        Int?
+  kitchens          Int?
   transactionType   String?   // For Sale|For Lease
   petsAllowed       String?   // Yes|No|Restricted
   rentIncludes      String[]  // ["Building Insurance","Parking","Heat"]

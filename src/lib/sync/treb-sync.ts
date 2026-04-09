@@ -11,12 +11,20 @@ const SELECT_FIELDS = [
   "BedroomsTotal", "BathroomsTotalInteger",
   "PropertyType", "PropertySubType", "TransactionType",
   "MlsStatus", "LivingAreaRange", "Basement",
-  "ParkingTotal", "TaxAnnualAmount",
+  "ParkingTotal",
   "PublicRemarks", "OriginalEntryTimestamp",
   "ListOfficeName", "UnparsedAddress", "Latitude", "Longitude",
   "PetsAllowed", "RentIncludes", "LaundryFeatures",
-  "Cooling", "HeatType", "Furnished", "PossessionDetails",
+  "Cooling", "HeatType", "HeatSource", "Furnished", "PossessionDetails",
   "MinimumRentalTermMonths", "Locker",
+  "LotSizeArea", "LotDepth", "LotWidth", "GarageType",
+  "Roof", "FoundationDetails", "ConstructionMaterials",
+  "ExteriorFeatures", "InteriorFeatures",
+  "FireplaceYN", "ArchitecturalStyle", "ApproximateAge",
+  "TaxAnnualAmount", "TaxYear", "AssociationFee",
+  "DirectionFaces", "CrossStreet", "Sewer", "WaterSource",
+  "VirtualTourURLUnbranded", "ListOfficeName",
+  "RoomsTotal", "NumberOfKitchens",
 ].join(",");
 
 interface AmpProperty {
@@ -39,10 +47,8 @@ interface AmpProperty {
   LivingAreaRange: string | null;
   Basement: string[] | null;
   ParkingTotal: number | null;
-  TaxAnnualAmount: number | null;
   PublicRemarks: string | null;
   OriginalEntryTimestamp: string | null;
-  ListOfficeName: string | null;
   UnparsedAddress: string | null;
   Latitude: number | null;
   Longitude: number | null;
@@ -51,10 +57,34 @@ interface AmpProperty {
   LaundryFeatures: string[] | null;
   Cooling: string[] | null;
   HeatType: string | null;
+  HeatSource: string | null;
   Furnished: string | null;
   PossessionDetails: string | null;
   MinimumRentalTermMonths: number | null;
   Locker: string | null;
+  LotSizeArea: number | null;
+  LotDepth: number | null;
+  LotWidth: number | null;
+  GarageType: string | null;
+  Roof: string[] | null;
+  FoundationDetails: string[] | null;
+  ConstructionMaterials: string[] | null;
+  ExteriorFeatures: string[] | null;
+  InteriorFeatures: string[] | null;
+  FireplaceYN: boolean | null;
+  ArchitecturalStyle: string[] | null;
+  ApproximateAge: string | null;
+  TaxAnnualAmount: number | null;
+  TaxYear: number | null;
+  AssociationFee: number | null;
+  DirectionFaces: string | null;
+  CrossStreet: string | null;
+  Sewer: string[] | null;
+  WaterSource: string[] | null;
+  VirtualTourURLUnbranded: string | null;
+  ListOfficeName: string | null;
+  RoomsTotal: number | null;
+  NumberOfKitchens: number | null;
 }
 
 export interface SyncResult {
@@ -209,6 +239,30 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           possessionDetails: item.PossessionDetails || null,
           minLeaseTerm: item.MinimumRentalTermMonths || null,
           locker: item.Locker || null,
+          lotSize: item.LotSizeArea ? String(item.LotSizeArea) : null,
+          lotDepth: item.LotDepth || null,
+          lotWidth: item.LotWidth || null,
+          garageType: item.GarageType || null,
+          heatSource: item.HeatSource || null,
+          roof: Array.isArray(item.Roof) ? item.Roof.join(", ") : null,
+          foundation: Array.isArray(item.FoundationDetails) ? item.FoundationDetails.join(", ") : null,
+          construction: Array.isArray(item.ConstructionMaterials) ? item.ConstructionMaterials.join(", ") : null,
+          exteriorFeatures: Array.isArray(item.ExteriorFeatures) ? item.ExteriorFeatures : [],
+          interiorFeatures: Array.isArray(item.InteriorFeatures) ? item.InteriorFeatures : [],
+          fireplace: item.FireplaceYN || false,
+          architecturalStyle: Array.isArray(item.ArchitecturalStyle) ? item.ArchitecturalStyle.join(", ") : null,
+          approximateAge: item.ApproximateAge || null,
+          taxAmount: item.TaxAnnualAmount || null,
+          taxYear: item.TaxYear || null,
+          maintenanceFeeAmt: item.AssociationFee || null,
+          directionFaces: item.DirectionFaces || null,
+          crossStreet: item.CrossStreet || null,
+          sewer: Array.isArray(item.Sewer) ? item.Sewer.join(", ") : null,
+          waterSource: Array.isArray(item.WaterSource) ? item.WaterSource.join(", ") : null,
+          virtualTourUrl: item.VirtualTourURLUnbranded || null,
+          listOfficeName: item.ListOfficeName || null,
+          totalRooms: item.RoomsTotal || null,
+          kitchens: item.NumberOfKitchens || null,
           listedAt: item.OriginalEntryTimestamp
             ? new Date(item.OriginalEntryTimestamp)
             : new Date(),
