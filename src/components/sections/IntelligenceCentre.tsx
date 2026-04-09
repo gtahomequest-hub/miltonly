@@ -1,19 +1,121 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-const modes = ["Street vs Street", "Neighbourhood vs Neighbourhood", "Building vs Building", "Listing vs Area Avg", "Buy vs Rent"];
+const modes = ["Street vs Street", "Neighbourhood vs Neighbourhood", "Building vs Building"];
 const dims = ["Avg price", "Growth trend", "Days on market", "Sold vs ask %", "Price/sqft", "School rating", "GO walk time", "Rental yield", "Inventory", "Owner ratio"];
 
 type Tab = "compare" | "street" | "condo";
+type Suggestion = { name: string; slug: string };
+
+function useAutocomplete(type: string) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Suggestion[]>([]);
+  const [show, setShow] = useState(false);
+  const [selected, setSelected] = useState<Suggestion | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  const search = useCallback((q: string) => {
+    setQuery(q);
+    setSelected(null);
+    if (q.length < 2) { setResults([]); setShow(false); return; }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(q)}&type=${type}`);
+        const data = await res.json();
+        setResults(data);
+        setShow(data.length > 0);
+      } catch { setResults([]); }
+    }, 200);
+  }, [type]);
+
+  const pick = useCallback((item: Suggestion) => {
+    setQuery(item.name);
+    setSelected(item);
+    setShow(false);
+  }, []);
+
+  const close = useCallback(() => setTimeout(() => setShow(false), 150), []);
+
+  return { query, results, show, selected, search, pick, close, setShow };
+}
+
+function AutocompleteInput({ ac, placeholder, label }: {
+  ac: ReturnType<typeof useAutocomplete>;
+  placeholder: string;
+  label?: string;
+}) {
+  return (
+    <div className="relative">
+      {label && (
+        <label className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.08em] mb-1.5 block">
+          {label}
+        </label>
+      )}
+      <input
+        type="text"
+        value={ac.query}
+        onChange={(e) => ac.search(e.target.value)}
+        onFocus={() => ac.results.length > 0 && ac.setShow(true)}
+        onBlur={ac.close}
+        placeholder={placeholder}
+        className="w-full bg-[#07111f] border-[1.5px] border-[#334155] rounded-lg px-3 py-3 text-[13px] text-white placeholder:text-[#64748b] outline-none focus:border-[#f59e0b] transition-colors"
+      />
+      {ac.show && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0c1e35] border border-[#334155] rounded-lg overflow-hidden z-20 shadow-xl">
+          {ac.results.map((r) => (
+            <button
+              key={r.slug}
+              onMouseDown={() => ac.pick(r)}
+              className="w-full text-left px-3 py-2.5 text-[13px] text-[#cbd5e1] hover:bg-[#1e3a5f] hover:text-white transition-colors border-b border-[#1e3a5f] last:border-0"
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function IntelligenceCentre() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("compare");
   const [activeMode, setActiveMode] = useState(modes[0]);
-  const [leftInput, setLeftInput] = useState("");
-  const [rightInput, setRightInput] = useState("");
-  const [streetInput, setStreetInput] = useState("");
+
+  const acType = activeMode.includes("Street") ? "street" : activeMode.includes("Neighbourhood") ? "neighbourhood" : "condo";
+  const leftAc = useAutocomplete(acType);
+  const rightAc = useAutocomplete(acType);
+  const streetAc = useAutocomplete("street");
+  const condoAc = useAutocomplete("condo");
+
+  // Reset inputs when mode changes
+  useEffect(() => {
+    leftAc.search("");
+    rightAc.search("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMode]);
+
+  const handleStreetExplore = () => {
+    if (streetAc.selected) {
+      router.push(`/streets/${streetAc.selected.slug}`);
+    } else if (streetAc.query.length > 0) {
+      router.push("/streets");
+    } else {
+      router.push("/streets");
+    }
+  };
+
+  const handleCondoExplore = () => {
+    if (condoAc.selected) {
+      router.push(`/condos/${condoAc.selected.slug}`);
+    } else {
+      router.push("/condos");
+    }
+  };
 
   return (
     <section className="bg-[#07111f] px-5 sm:px-11 py-12">
@@ -73,33 +175,19 @@ export default function IntelligenceCentre() {
                 ))}
               </div>
 
-              {/* Inputs */}
+              {/* Inputs with autocomplete */}
               <div className="grid sm:grid-cols-[1fr_auto_1fr] gap-3 items-end mb-5">
-                <div>
-                  <label className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.08em] mb-1.5 block">
-                    Left side
-                  </label>
-                  <input
-                    type="text"
-                    value={leftInput}
-                    onChange={(e) => setLeftInput(e.target.value)}
-                    placeholder={activeMode.includes("Street") ? "e.g. Laurier Ave" : activeMode.includes("Neighbourhood") ? "e.g. Willmott" : "e.g. Bronte Condos"}
-                    className="w-full bg-[#07111f] border-[1.5px] border-[#334155] rounded-lg px-3 py-3 text-[13px] text-white placeholder:text-[#64748b] outline-none focus:border-[#f59e0b] transition-colors"
-                  />
-                </div>
+                <AutocompleteInput
+                  ac={leftAc}
+                  label="Left side"
+                  placeholder={activeMode.includes("Street") ? "e.g. Laurier Ave" : activeMode.includes("Neighbourhood") ? "e.g. Willmott" : "e.g. Bronte Condos"}
+                />
                 <span className="hidden sm:block text-[12px] text-[#64748b] font-bold pb-3">vs</span>
-                <div>
-                  <label className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.08em] mb-1.5 block">
-                    Right side
-                  </label>
-                  <input
-                    type="text"
-                    value={rightInput}
-                    onChange={(e) => setRightInput(e.target.value)}
-                    placeholder={activeMode.includes("Street") ? "e.g. Derry Rd" : activeMode.includes("Neighbourhood") ? "e.g. Coates" : "e.g. Ivy Ridge"}
-                    className="w-full bg-[#07111f] border-[1.5px] border-[#334155] rounded-lg px-3 py-3 text-[13px] text-white placeholder:text-[#64748b] outline-none focus:border-[#f59e0b] transition-colors"
-                  />
-                </div>
+                <AutocompleteInput
+                  ac={rightAc}
+                  label="Right side"
+                  placeholder={activeMode.includes("Street") ? "e.g. Derry Rd" : activeMode.includes("Neighbourhood") ? "e.g. Coates" : "e.g. Ivy Ridge"}
+                />
               </div>
 
               {/* CTA */}
@@ -126,31 +214,34 @@ export default function IntelligenceCentre() {
               </p>
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  <input
-                    type="text"
-                    value={streetInput}
-                    onChange={(e) => setStreetInput(e.target.value)}
+                  <AutocompleteInput
+                    ac={streetAc}
                     placeholder="Type any Milton street name"
-                    className="w-full pl-9 pr-3 py-3 bg-[#07111f] border-[1.5px] border-[#334155] rounded-lg text-[13px] text-white placeholder:text-[#64748b] outline-none focus:border-[#f59e0b] transition-colors"
                   />
                 </div>
-                <Link
-                  href={streetInput ? `/streets/${streetInput.toLowerCase().replace(/\s+/g, "-")}-milton` : "/streets"}
-                  className="bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold px-5 py-3 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors flex items-center"
+                <button
+                  onClick={handleStreetExplore}
+                  className="bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold px-5 py-3 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors"
                 >
                   Explore
-                </Link>
+                </button>
               </div>
               <p className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold mb-2">Popular streets</p>
               <div className="flex flex-wrap gap-1.5">
-                {["Derry Rd", "Main St E", "Thompson Rd", "Laurier Ave", "Scott Blvd", "Savoline Blvd"].map((s) => (
+                {[
+                  { name: "Derry Rd", slug: "derry-road-milton" },
+                  { name: "Main St E", slug: "main-street-milton" },
+                  { name: "Scott Blvd", slug: "scott-boulevard-milton" },
+                  { name: "Savoline Blvd", slug: "savoline-boulevard-milton" },
+                  { name: "Laurier Ave", slug: "laurier-avenue-milton" },
+                  { name: "Ferguson Dr", slug: "ferguson-drive-milton" },
+                ].map((s) => (
                   <Link
-                    key={s}
-                    href={`/streets/${s.toLowerCase().replace(/\s+/g, "-")}-milton`}
+                    key={s.slug}
+                    href={`/streets/${s.slug}`}
                     className="text-[11px] text-[#cbd5e1] bg-[#07111f] border border-[#334155] rounded-full px-3 py-1 hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors"
                   >
-                    {s}
+                    {s.name}
                   </Link>
                 ))}
               </div>
@@ -164,16 +255,17 @@ export default function IntelligenceCentre() {
               </p>
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                  <input
-                    type="text"
+                  <AutocompleteInput
+                    ac={condoAc}
                     placeholder="Type a condo building name or address"
-                    className="w-full pl-9 pr-3 py-3 bg-[#07111f] border-[1.5px] border-[#334155] rounded-lg text-[13px] text-white placeholder:text-[#64748b] outline-none focus:border-[#f59e0b] transition-colors"
                   />
                 </div>
-                <Link href="/condos" className="bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold px-5 py-3 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors flex items-center">
+                <button
+                  onClick={handleCondoExplore}
+                  className="bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold px-5 py-3 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors"
+                >
                   Explore
-                </Link>
+                </button>
               </div>
               <p className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold mb-2">Popular buildings</p>
               <div className="flex flex-wrap gap-1.5">
