@@ -219,6 +219,11 @@
 .rentals-page .sdi-main{font-size:13px;font-weight:700;color:var(--t1);}
 .rentals-page .sdi-sub{font-size:11px;color:var(--t3);margin-top:2px;line-height:1.4;}
 
+/* FILTER TOGGLE BUTTON */
+.rentals-page .fb-toggle{font-size:12px;font-weight:600;color:var(--t4);background:var(--mid);border:1.5px solid var(--nb);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.rentals-page .fb-toggle:hover{border-color:var(--amber);color:var(--ambl);}
+.rentals-page .fb-toggle.open{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);color:var(--ambl);}
+
 /* SORT SELECT */
 .rentals-page .fb-sort-sel{background:var(--mid);color:var(--pearl);border:1.5px solid var(--nb);border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;}
 .rentals-page .fb-sort-sel:focus{outline:none;border-color:var(--amber);}

@@ -52,6 +52,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   // ── UI STATE ──
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -450,8 +451,19 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
       {/* ═══ STICKY FILTER BAR ═══ */}
       <div className="filter-bar" id="filter-bar">
         <div className="fb-top">
-          <div className="fb-count">Showing <em>{filteredListings.length}</em> Milton rentals</div>
+          <div className="fb-count">
+            <em>{totalRentals}</em> Milton rentals
+            {filteredListings.length !== totalRentals && (
+              <span style={{ fontSize: 11, color: "#f59e0b", marginLeft: 8 }}>· {filteredListings.length} match filters</span>
+            )}
+          </div>
           <div className="fb-right">
+            <button
+              className={`fb-toggle${filtersOpen ? " open" : ""}`}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              {filtersOpen ? "Hide filters ✕" : "Filters ▾"}
+            </button>
             <div className="view-toggle">
               <div className={`vtab${viewMode === "grid" ? " on" : ""}`} onClick={() => setViewMode("grid")} title="Grid view">⊞</div>
               <div className={`vtab${viewMode === "list" ? " on" : ""}`} onClick={() => setViewMode("list")} title="List view">☰</div>
@@ -464,7 +476,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           </div>
         </div>
 
-        <div className="fb-filters">
+        {filtersOpen && <div className="fb-filters">
           {/* PROPERTY TYPE */}
           <div className={`fg-block${filters.type !== "All" ? " active" : ""}`}>
             <span className="fg-label">Property type</span>
@@ -570,9 +582,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
             setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setSortBy("newest");
             showToast("↺ Filters reset — showing all rentals");
           }}>↺ Reset all</button>
-        </div>
+        </div>}
 
-        {/* chips */}
+        {/* chips — always visible when filters are active */}
         <div className="fb-chips">
           <span className="fb-lbl">Active:</span>
           <div className="fchip on">🏠 <span>{filters.type === "All" ? "All types" : filters.type}</span> <span className="fchip-x">✕</span></div>
