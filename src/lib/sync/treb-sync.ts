@@ -79,6 +79,37 @@ function mapStatus(mlsStatus: string | null, txType: string | null): string {
   return "active";
 }
 
+const MEDIA_URL = "https://query.ampre.ca/odata/Media";
+
+async function fetchPhotos(listingKey: string): Promise<string[]> {
+  try {
+    const filter = encodeURIComponent(`ResourceRecordKey eq '${listingKey}'`);
+    const url = `${MEDIA_URL}?$filter=${filter}&$top=10&$orderby=Order%20asc&$select=MediaURL,Order,ImageSizeDescription`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${TREB_TOKEN}`, Accept: "application/json" },
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.value) return [];
+
+    // Get the largest version of each unique photo (deduplicate by Order)
+    const byOrder = new Map<number, string>();
+    for (const m of data.value) {
+      const size = (m.ImageSizeDescription || "").toLowerCase();
+      // Prefer "largest" or high-res versions
+      if (!byOrder.has(m.Order) || size.includes("large") || size.includes("1920") || size.includes("3840")) {
+        if (m.MediaURL) byOrder.set(m.Order, m.MediaURL);
+      }
+    }
+
+    return Array.from(byOrder.values()).slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchPage(skip: number): Promise<{ items: AmpProperty[]; total: number }> {
   const filter = encodeURIComponent("City eq 'Milton'");
   const url = `${TREB_API_URL}?$select=${SELECT_FIELDS}&$filter=${filter}&$top=${PAGE_SIZE}&$skip=${skip}&$count=true&$orderby=OriginalEntryTimestamp%20desc`;
@@ -155,7 +186,7 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           description: item.PublicRemarks || null,
           latitude: item.Latitude || 0,
           longitude: item.Longitude || 0,
-          photos: [] as string[],
+          photos: await fetchPhotos(item.ListingKey),
           listedAt: item.OriginalEntryTimestamp
             ? new Date(item.OriginalEntryTimestamp)
             : new Date(),
