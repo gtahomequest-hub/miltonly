@@ -33,8 +33,8 @@ export default function CompareWaitlistForm() {
   if (submitted) {
     return (
       <div className="bg-[#0c1e35] border border-[#22c55e]/30 rounded-xl p-5">
-        <p className="text-[14px] font-bold text-white mb-1">You're on the list</p>
-        <p className="text-[12px] text-[#94a3b8]">We'll email you as soon as Compare launches.</p>
+        <p className="text-[14px] font-bold text-white mb-1">You&apos;re on the list</p>
+        <p className="text-[12px] text-[#94a3b8]">We&apos;ll email you as soon as Compare launches.</p>
       </div>
     );
   }
