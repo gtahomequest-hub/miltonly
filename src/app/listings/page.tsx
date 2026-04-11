@@ -47,16 +47,18 @@ export default async function ListingsPage({ searchParams }: Props) {
   if (searchParams.sort === "price_asc") orderBy = { price: "asc" };
   if (searchParams.sort === "price_desc") orderBy = { price: "desc" };
 
-  const [listings, totalCount, avgPrice, typeBreakdown] = await Promise.all([
+  const [listings, totalCount, avgPrice, typeBreakdown, domAgg] = await Promise.all([
     prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE }),
     prisma.listing.count({ where }),
     prisma.listing.aggregate({ where: { status: "active", city: "Milton" }, _avg: { price: true } }),
     prisma.listing.groupBy({ by: ["propertyType"], _count: true, _avg: { price: true }, where: { status: "active", city: "Milton" } }),
+    prisma.listing.aggregate({ where: { status: "active", city: "Milton", daysOnMarket: { gt: 0 } }, _avg: { daysOnMarket: true } }),
   ]);
 
   const totalPages = Math.ceil(totalCount / PER_PAGE);
   const statusLabel = searchParams.status === "rent" ? "for rent" : searchParams.status === "sold" ? "sold" : "for sale";
   const avg = Math.round(avgPrice._avg.price || 0);
+  const avgDom = Math.round(domAgg._avg.daysOnMarket || 0);
 
   return (
     <div className="min-h-screen bg-white">
@@ -230,7 +232,7 @@ export default async function ListingsPage({ searchParams }: Props) {
               <p className="text-[12px] text-[#64748b] mt-1">Homes on market</p>
             </div>
             <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-              <p className="text-[28px] font-extrabold text-[#07111f]">18</p>
+              <p className="text-[28px] font-extrabold text-[#07111f]">{avgDom || "—"}</p>
               <p className="text-[12px] text-[#64748b] mt-1">Avg. days on market</p>
             </div>
           </div>

@@ -24,7 +24,7 @@ export default function AboutPage() {
       </section>
 
       {/* Awards */}
-      <section className="max-w-[600px] mx-auto px-5 py-14 text-center">
+      <section className="max-w-[600px] mx-auto px-5 pt-14 pb-0 text-center">
         <h2 className="text-[20px] font-extrabold text-[#07111f] mb-8 tracking-[-0.02em]">Awards &amp; Recognition</h2>
         <div className="space-y-3">
           <div className="bg-white rounded-xl border border-[#fde68a] p-4 flex items-center gap-3">

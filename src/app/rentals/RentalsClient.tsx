@@ -814,8 +814,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             <div className="bm-addr">{bookingModal.listing.address.split(",")[0]}</div>
             <div className="bm-price">{formatPriceFull(bookingModal.listing.price)}/mo · {bookingModal.listing.bedrooms} bed · {bookingModal.listing.bathrooms} bath</div>
             <div className="bm-fields">
-              <input className="bm-input" id="bm-name" placeholder="Your name" />
-              <input className="bm-input" id="bm-phone" type="tel" placeholder="Phone number" />
+              <input className="bm-input" id="bm-name" required placeholder="Your name" />
+              <input className="bm-input" id="bm-phone" required type="tel" placeholder="Phone number" />
             </div>
             <button className="bm-submit" onClick={submitBooking}>
               {bookingModal.type === "1hr" ? "⏱ Confirm 1-hour showing" : "Request showing"}
