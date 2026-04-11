@@ -11,10 +11,11 @@ export const getHeroStats = unstable_cache(
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 86400000);
     const sevenDaysAgo = new Date(today.getTime() - 7 * 86400000);
 
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const [activeCount, listedToday, soldThisWeek, activeListings, soldListings] =
       await Promise.all([
         prisma.listing.count({ where: { status: "active" } }),
-        prisma.listing.count({ where: { listedAt: { gte: today } } }),
+        prisma.listing.count({ where: { OR: [{ listedAt: { gte: twentyFourHoursAgo } }, { syncedAt: { gte: today } }] } }),
         prisma.listing.count({ where: { status: "sold", updatedAt: { gte: sevenDaysAgo } } }),
         prisma.listing.aggregate({
           where: { status: "active" },

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
-import Link from "next/link";
-import { formatPriceFull } from "@/lib/format";
+import StreetsGrid from "./StreetsGrid";
 
 export const metadata = genMeta({
   title: "Milton Streets — Price Data for Every Street",
@@ -47,34 +46,10 @@ export default async function StreetsIndexPage() {
           Every Milton Street
         </h1>
         <p className="text-[13px] text-[#64748b] mb-8">
-          {streetData.length} streets with active or sold listings. Click any street for full market data.
+{streetData.length} streets with live price data · Updated daily from TREB
         </p>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {streetData.map((s) => (
-            <Link
-              key={s.slug}
-              href={`/streets/${s.slug}`}
-              className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:shadow-md transition-shadow group"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[14px] font-bold text-[#07111f] group-hover:text-[#2563eb] transition-colors truncate">
-                    {s.name}
-                  </p>
-                  <p className="text-[11px] text-[#94a3b8] mt-0.5 truncate">{s.neighbourhood}</p>
-                </div>
-                <span className="text-[11px] font-bold text-[#475569] bg-[#f8fafc] rounded-full px-2 py-0.5 shrink-0">
-                  {s.count}
-                </span>
-              </div>
-              <p className="text-[16px] font-extrabold text-[#07111f] mt-2">
-                {formatPriceFull(s.avgPrice)}
-              </p>
-              <p className="text-[10px] text-[#94a3b8] mt-0.5">avg price · {s.count} listings</p>
-            </Link>
-          ))}
-        </div>
+        <StreetsGrid streets={streetData} />
       </div>
     </div>
   );

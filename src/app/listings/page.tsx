@@ -151,7 +151,7 @@ export default async function ListingsPage({ searchParams }: Props) {
                           {l.sqft ? ` · ${l.sqft.toLocaleString()} sqft` : ""}
                         </p>
                       </div>
-                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${isRental ? "bg-[#eff6ff] text-[#1e3a8a]" : l.status === "sold" ? "bg-[#fef2f2] text-[#991b1b]" : "bg-[#f0fdf4] text-[#166534]"}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${isRental ? "bg-[#eff6ff] text-[#1e3a8a]" : l.status === "sold" ? "bg-[#fef2f2] text-[#991b1b]" : "bg-[#15803d] text-white"}`}>
                         {isRental ? "Lease" : l.status}
                       </span>
                     </div>

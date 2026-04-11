@@ -22,8 +22,8 @@ export function generateMetadata({
   keywords,
 }: GenerateMetadataOptions = {}): Metadata {
   const metaTitle = title
-    ? `${title} | ${SITE_NAME}.com`
-    : "Milton Ontario Real Estate — Homes For Sale, Street Data & Market Intelligence | Miltonly.com";
+    ? title
+    : "Milton Ontario Real Estate — Homes For Sale, Street Data & Market Intelligence";
 
   const metaDescription =
     description ??

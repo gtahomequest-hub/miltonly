@@ -56,16 +56,16 @@ export default function HeroSection({ stats, typeStats }: Props) {
 
   return (
     <section className="flex flex-col lg:flex-row min-h-[560px]">
-      {/* ═══ LEFT — BuyersHood (dark navy) ═══ */}
+      {/* ═══ LEFT — Hero (dark navy) ═══ */}
       <div className="flex-1 bg-[#07111f] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
-        <p className="text-[10px] font-bold text-[rgba(248,249,251,0.6)] uppercase tracking-[0.14em] mb-2.5">
+        <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.14em] mb-2.5">
           For buyers · renters · investors
         </p>
         <h1 className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
-          <span className="text-[#f8f9fb]">Buyers</span>
-          <span className="text-[#f8f9fb]">Hood</span>
+          <span className="text-[#f8f9fb]">Milton </span>
+          <span className="text-[#f8f9fb]">Real Estate</span>
         </h1>
-        <p className="text-[13px] text-[rgba(248,249,251,0.6)] leading-[1.65] mb-6 sm:mb-[30px] max-w-md">
+        <p className="text-[13px] text-[#94a3b8] leading-[1.65] mb-6 sm:mb-[30px] max-w-md">
           Browse every Milton home for sale, rent or sold — live TREB data, updated daily.
         </p>
 

@@ -30,10 +30,10 @@ export default function SocialProofSection() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
           {[
-            { value: "500+", label: "Families Helped" },
-            { value: "4.9", label: "Google Rating" },
+            { value: "14", label: "Years Experience" },
+            { value: "🏆", label: "RE/MAX Hall of Fame" },
             { value: "12", label: "Avg. Days to Sell" },
-            { value: "15+", label: "Years in Milton" },
+            { value: "286+", label: "Active Listings" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="text-4xl sm:text-5xl font-extrabold text-navy tracking-tight">

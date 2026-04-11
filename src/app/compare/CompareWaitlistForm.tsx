@@ -47,7 +47,7 @@ export default function CompareWaitlistForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Enter your email"
-        className="flex-1 bg-[#0c1e35] border border-[#334155] rounded-lg px-4 py-3 text-[13px] text-white placeholder:text-[#64748b] outline-none focus:border-[#f59e0b] transition-colors"
+        className="flex-1 bg-[#0c1e35] border border-[#334155] rounded-lg px-4 py-3 text-[13px] text-[#f8f9fb] placeholder:text-[#94a3b8] outline-none focus:border-[#f59e0b] transition-colors"
       />
       <button
         type="submit"

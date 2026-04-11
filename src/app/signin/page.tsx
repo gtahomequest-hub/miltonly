@@ -11,8 +11,8 @@ export default function SignInPage() {
     <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
-          <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.02em] mb-2">Sign in</h1>
-          <p className="text-[13px] text-[#64748b]">Sign in to save listings and get alerts</p>
+          <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.02em] mb-2">Sign in to Miltonly</h1>
+          <p className="text-[13px] text-[#64748b]">Save listings and get personalized alerts</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-sm">
           <div className="space-y-4">
@@ -28,7 +28,9 @@ export default function SignInPage() {
               Sign in
             </button>
           </div>
-          <p className="text-[11px] text-[#94a3b8] text-center mt-5">Coming soon — sign in to save listings and get personalized alerts.</p>
+          <p className="text-[11px] text-[#94a3b8] text-center mt-5">
+            No account? <a href="tel:+16478399090" className="text-[#f59e0b] font-semibold hover:underline">Contact Aamir to get started</a>
+          </p>
         </div>
       </div>
     </div>

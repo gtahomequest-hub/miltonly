@@ -315,7 +315,7 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
                   {isRental ? "⏱ Book showing — 15 min response" : "Request a showing"}
                 </button>
               </form>
-              <p className="text-[10px] text-[#334155] text-center mt-3">No spam · No cold calls · Milton specialist</p>
+              <p className="text-[10px] text-[#334155] text-center mt-3">Aamir Yaqoob · RE/MAX Realty Specialists</p>
             </div>
 
             {/* Quick facts */}

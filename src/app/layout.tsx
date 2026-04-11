@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Navbar from "@/components/Navbar";
+import AgentStrip from "@/components/AgentStrip";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
@@ -87,6 +88,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         <Navbar />
         {children}
+        <AgentStrip />
         <CrispChat />
       </body>
     </html>
