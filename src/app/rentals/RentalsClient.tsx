@@ -542,8 +542,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             </div>
             <div className="bc-form">
               <div><label className="bc-lbl">MLS # or address</label><input className="bc-input" id="bc-mls" placeholder="e.g. W12345678 or 142 Laurier Ave" /></div>
-              <div><label className="bc-lbl">Your name</label><input className="bc-input" id="bc-name" placeholder="First and last name" /></div>
-              <div><label className="bc-lbl">Phone number</label><input className="bc-input" id="bc-phone" type="tel" placeholder="(647) 555-0000" /></div>
+              <div><label className="bc-lbl">Your name</label><input className="bc-input" id="bc-name" required placeholder="First and last name" /></div>
+              <div><label className="bc-lbl">Phone number</label><input className="bc-input" id="bc-phone" required type="tel" placeholder="(647) 555-0000" /></div>
               <button className="bc-btn" onClick={async () => {
                 const name = (document.getElementById("bc-name") as HTMLInputElement).value;
                 const phone = (document.getElementById("bc-phone") as HTMLInputElement).value;

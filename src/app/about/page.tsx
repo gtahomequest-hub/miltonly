@@ -9,7 +9,7 @@ export const metadata = genMeta({
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9fb]">
+    <div className="bg-[#f8f9fb]">
       {/* Hero */}
       <section className="bg-[#07111f] text-center px-5 sm:px-11 py-20">
         <h1 className="text-[clamp(30px,5vw,48px)] font-extrabold text-[#f8f9fb] leading-[1.1] tracking-[-0.03em] mb-2">
