@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import AgentContactSection from "@/components/AgentContactSection";
 import "./rentals.css";
 
 interface Listing {
@@ -775,44 +776,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         </div>
       </div>
 
-      {/* ═══ AGENT SECTION ═══ */}
-      <section className="agent-section">
-        <div className="agent-inner">
-          <div className="agent-info">
-            <h2 className="agent-headline">Your Milton Real Estate Expert</h2>
-            <p className="agent-sub">Tenants · Landlords · Buyers · Sellers — Every Side, Every Deal.</p>
-            <p className="agent-bio">With 14 years of full-time real estate experience, Aamir Yaqoob knows that finding the right rental is about far more than price — it is about finding the right fit, the right terms, and the right protection. Whether you are a tenant searching for a home, a landlord leasing your property, or ready to buy or sell, Aamir represents your interests completely. RE/MAX Realty Specialists Inc.</p>
-            <div className="agent-awards">
-              <div className="agent-award">🏆 RE/MAX Hall of Fame Award</div>
-              <div className="agent-award">🏆 RE/MAX Executive Award</div>
-              <div className="agent-award">🏆 RE/MAX 100% Club Award</div>
-            </div>
-            <div className="agent-pills">
-              <span className="agent-pill">14 Years Full-Time Experience</span>
-              <span className="agent-pill">Tenants · Landlords · Buyers · Sellers</span>
-              <span className="agent-pill">Milton Specialist</span>
-              <span className="agent-pill">🏆 RE/MAX Hall of Fame</span>
-            </div>
-            <div className="agent-btns">
-              <a href="tel:+16478399090" className="agent-btn-call">📞 Call or Text (647) 839-9090</a>
-              <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="agent-btn-wa">💬 WhatsApp (647) 839-9090</a>
-            </div>
-            <div className="agent-email">gtahomequest@gmail.com</div>
-          </div>
-          <div className="agent-cta">
-            <h3>Start your Milton rental search <em>today</em></h3>
-            <p>{totalRentals} active rentals · Aamir Yaqoob, RE/MAX Realty Specialists Inc.</p>
-            <div className="footer-btns">
-              <button className="fbtn-p" onClick={() => {
-                setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-                setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setAvailPill("Available now");
-                document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
-              }}>Browse all rentals →</button>
-              <Link href="/listings" className="fbtn-s">View all listings</Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AgentContactSection />
 
       {/* ═══ BOOKING MODAL ═══ */}
       {bookingModal && (

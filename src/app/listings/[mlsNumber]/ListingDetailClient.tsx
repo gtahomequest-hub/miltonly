@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import AgentContactSection from "@/components/AgentContactSection";
 
 interface Listing {
   mlsNumber: string; address: string; price: number; bedrooms: number; bathrooms: number;
@@ -340,6 +341,8 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
             </div>
           </div>
         </div>
+
+        <AgentContactSection headline="Have questions about this property?" />
 
         {/* ═══ SIMILAR LISTINGS ═══ */}
         {similar.length > 0 && (

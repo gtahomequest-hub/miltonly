@@ -255,33 +255,8 @@
 .rentals-page .as-btn{background:var(--amber);color:var(--navy);border:none;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;}
 .rentals-page .as-btn:hover{background:var(--ambl);}
 
-/* FOOTER CTA */
-/* AGENT SECTION */
-.rentals-page .agent-section{background:var(--navy);padding:60px 48px;}
-.rentals-page .agent-inner{display:grid;grid-template-columns:1fr 1fr;gap:48px;max-width:1100px;margin:0 auto;align-items:center;}
-.rentals-page .agent-headline{font-size:clamp(22px,3vw,30px);font-weight:800;color:var(--pearl);line-height:1.15;letter-spacing:-.02em;margin-bottom:6px;}
-.rentals-page .agent-sub{font-size:15px;font-weight:700;color:var(--amber);margin-bottom:14px;letter-spacing:-.01em;}
-.rentals-page .agent-bio{font-size:14px;color:var(--t4);line-height:1.65;margin-bottom:18px;}
-.rentals-page .agent-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
-.rentals-page .agent-pill{font-size:11px;font-weight:700;color:var(--pearl);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 14px;letter-spacing:.02em;}
-.rentals-page .agent-btns{display:flex;gap:10px;margin-bottom:10px;}
-.rentals-page .agent-btn-call{background:var(--amber);color:var(--navy);border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:800;cursor:pointer;text-decoration:none;transition:all .15s;text-align:center;}
-.rentals-page .agent-btn-call:hover{background:var(--ambl);transform:translateY(-1px);}
-.rentals-page .agent-btn-wa{background:rgba(255,255,255,.08);color:var(--pearl);border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .15s;text-align:center;}
-.rentals-page .agent-btn-wa:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.12);}
-.rentals-page .agent-awards{margin-bottom:18px;padding-left:12px;border-left:3px solid var(--amber);display:flex;flex-direction:column;gap:4px;}
-.rentals-page .agent-award{font-size:12px;font-weight:700;color:var(--amber);letter-spacing:.01em;}
-.rentals-page .agent-email{font-size:12px;color:var(--t4);letter-spacing:.02em;}
+/* BOOKING CARD AGENT LINE */
 .rentals-page .bc-agent{font-size:10px;color:var(--t4);text-align:center;margin-top:10px;letter-spacing:.02em;}
-.rentals-page .agent-cta{text-align:center;}
-.rentals-page .agent-cta h3{font-size:clamp(24px,3.5vw,38px);font-weight:800;color:var(--pearl);margin-bottom:10px;line-height:1.1;letter-spacing:-.03em;}
-.rentals-page .agent-cta h3 em{color:var(--amber);font-style:normal;}
-.rentals-page .agent-cta p{font-size:14px;color:var(--t4);margin-bottom:28px;}
-.rentals-page .footer-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-.rentals-page .fbtn-p{background:var(--amber);color:var(--navy);border:none;border-radius:11px;padding:14px 32px;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s;}
-.rentals-page .fbtn-p:hover{background:var(--ambl);transform:translateY(-2px);}
-.rentals-page .fbtn-s{background:transparent;color:var(--pearl);border:1.5px solid var(--nb);border-radius:11px;padding:14px 32px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;}
-.rentals-page .fbtn-s:hover{border-color:var(--pearl);}
 
 /* TOAST */
 .rentals-page .toast{position:fixed;bottom:22px;right:22px;z-index:999;background:var(--navy);border:1px solid var(--green);border-radius:11px;padding:12px 17px;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--pearl);transform:translateY(70px);opacity:0;transition:all .45s cubic-bezier(.34,1.56,.64,1);max-width:320px;pointer-events:none;}
@@ -313,8 +288,7 @@
   .rentals-page .lgrid{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:680px){
-  .rentals-page .hl,.rentals-page .listings-sec,.rentals-page .agent-section,.rentals-page .alert-strip,.rentals-page .filter-bar{padding-left:20px;padding-right:20px;}
-  .rentals-page .agent-inner{grid-template-columns:1fr;gap:32px;}
+  .rentals-page .hl,.rentals-page .listings-sec,.rentals-page .alert-strip,.rentals-page .filter-bar{padding-left:20px;padding-right:20px;}
   .rentals-page .hr{padding:28px 20px;}
   .rentals-page .rent-avgs{padding:14px 20px;}
   .rentals-page .lgrid{grid-template-columns:1fr;}
