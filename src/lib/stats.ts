@@ -12,7 +12,8 @@ export const getHeroStats = unstable_cache(
     const sevenDaysAgo = new Date(today.getTime() - 7 * 86400000);
 
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const [activeCount, listedToday, soldThisWeek, activeListings, soldListings] =
+    const saleFilter = { city: "Milton", price: { gt: 100000 } };
+    const [activeCount, listedToday, soldThisWeek, activeListings, soldListings, semi3, det4, condo2, condo1] =
       await Promise.all([
         prisma.listing.count({ where: { status: "active" } }),
         prisma.listing.count({ where: { OR: [{ listedAt: { gte: twentyFourHoursAgo } }, { syncedAt: { gte: today } }] } }),
@@ -25,6 +26,10 @@ export const getHeroStats = unstable_cache(
           where: { status: "sold", updatedAt: { gte: thirtyDaysAgo } },
           _avg: { price: true, soldPrice: true, daysOnMarket: true },
         }),
+        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "semi", bedrooms: 3 }, _avg: { price: true } }),
+        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "detached", bedrooms: 4 }, _avg: { price: true } }),
+        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "condo", bedrooms: 2 }, _avg: { price: true } }),
+        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "condo", bedrooms: 1 }, _avg: { price: true } }),
       ]);
 
     const avgActivePrice = Math.round(activeListings._avg.price || 0);
@@ -59,6 +64,10 @@ export const getHeroStats = unstable_cache(
       avgDOM,
       avgSoldDOM,
       soldVsAsk,
+      avg3BedSemi: Math.round(semi3._avg.price || 0),
+      avg4BedDetached: Math.round(det4._avg.price || 0),
+      avg2BedCondo: Math.round(condo2._avg.price || 0),
+      avg1DenCondo: Math.round(condo1._avg.price || 0),
     };
   },
   ["hero-stats"],

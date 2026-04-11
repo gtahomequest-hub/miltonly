@@ -24,6 +24,10 @@ interface Props {
     listedToday: number;
     avgSoldDOM: number;
     soldVsAsk: number;
+    avg3BedSemi: number;
+    avg4BedDetached: number;
+    avg2BedCondo: number;
+    avg1DenCondo: number;
   };
   typeStats: Record<string, { avgPrice: number; avgDOM: number; soldVsAsk: number }>;
 }
@@ -107,18 +111,19 @@ export default function HeroSection({ stats, typeStats }: Props) {
           ))}
         </div>
 
-        {/* 4 stat boxes — REAL DATA */}
-        <div className="grid grid-cols-2 gap-2 mt-auto">
+        {/* 5 stat boxes — REAL DATA */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-auto">
           {[
-            { value: formatPrice(stats.avgSoldPrice || stats.avgActivePrice), label: "Avg sold price", trend: "↑ live from TREB" },
-            { value: String(stats.listedToday || "0"), label: "Listed today", trend: "↑ updated daily" },
-            { value: (stats.avgSoldDOM || "��") + " days", label: "Avg to sell", trend: "↓ live data" },
-            { value: stats.soldVsAsk + "%", label: "Sold vs asking", trend: stats.soldVsAsk >= 100 ? "↑ above ask" : "↓ below ask" },
+            { value: formatPrice(stats.avgSoldPrice || stats.avgActivePrice), label: "Avg sold price", sub: "all types · Milton" },
+            { value: formatPrice(stats.avg3BedSemi), label: "3-bed semi", sub: "avg · Milton" },
+            { value: formatPrice(stats.avg4BedDetached), label: "4-bed detached", sub: "avg · Milton" },
+            { value: formatPrice(stats.avg2BedCondo), label: "2-bed condo", sub: "avg · Milton" },
+            { value: formatPrice(stats.avg1DenCondo), label: "1+den condo", sub: "avg · Milton" },
           ].map((s) => (
-            <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
-              <p className="text-[22px] font-extrabold text-[#f8f9fb]">{s.value}</p>
-              <p className="text-[11px] text-[rgba(248,249,251,0.5)] mt-[3px]">{s.label}</p>
-              <p className="text-[10px] text-[#22c55e] font-semibold mt-[3px]">{s.trend}</p>
+            <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[12px_14px]">
+              <p className="text-[18px] font-extrabold text-[#f8f9fb]">{s.value}</p>
+              <p className="text-[10px] text-[rgba(248,249,251,0.6)] mt-[3px] font-semibold">{s.label}</p>
+              <p className="text-[9px] text-[#94a3b8] mt-[2px]">{s.sub}</p>
             </div>
           ))}
         </div>
