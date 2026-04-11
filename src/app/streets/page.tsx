@@ -39,7 +39,7 @@ export default async function StreetsIndexPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
       <div className="px-5 sm:px-11 py-8">
-        <p className="text-[10px] text-[#94a3b8] font-semibold uppercase tracking-[0.12em] mb-1">
+        <p className="text-[10px] text-[#f59e0b] font-semibold uppercase tracking-[0.12em] mb-1">
           Street Intelligence
         </p>
         <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.3px] mb-2">

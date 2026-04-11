@@ -70,7 +70,7 @@ function ListingCard({ listing }: { listing: Listing }) {
           <span className="text-[11px] text-[#475569] font-bold capitalize">{listing.propertyType}</span>
           <span className="text-[11px] text-[#475569] font-bold">{days === 0 ? "Listed today" : `${days}d on market`}</span>
         </div>
-        <p className="text-[10px] text-[#94a3b8] mt-[6px] group-hover:text-[#2563eb] transition-colors">
+        <p className="text-[10px] text-[#94a3b8] mt-[6px] group-hover:text-[#f59e0b] transition-colors">
           Compare to street avg →
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function FeaturedListings({ listings }: Props) {
             Featured Milton listings
           </h2>
         </div>
-        <Link href="/listings" className="text-[13px] text-[#2563eb] font-semibold hover:underline shrink-0">
+        <Link href="/listings" className="text-[13px] text-[#f59e0b] font-semibold hover:underline shrink-0">
           Browse all listings →
         </Link>
       </div>

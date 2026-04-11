@@ -291,7 +291,7 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
           </div>
 
           {/* ═══ RIGHT COLUMN — SIDEBAR ═══ */}
-          <div className="space-y-4">
+          <div className="space-y-4 self-start">
             {/* CTA card */}
             <div className="bg-[#07111f] rounded-2xl p-6 sticky top-[70px]">
               <h3 className="text-[16px] font-extrabold text-[#f8f9fb] mb-1">{isRental ? "Book a showing" : "Request a showing"}</h3>

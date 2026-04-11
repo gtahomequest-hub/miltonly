@@ -124,28 +124,28 @@ export default function HeroSection({ stats, typeStats }: Props) {
         </div>
       </div>
 
-      {/* ═══ AMBER DIVIDER ═══ */}
-      <div className="hidden lg:flex w-[3px] bg-[#f59e0b] relative items-center justify-center">
-        <div className="absolute bg-[#07111f] border-[1.5px] border-[#f59e0b] rounded-full px-[9px] py-[6px] -rotate-90">
+      {/* ═══ DIVIDER ═══ */}
+      <div className="hidden lg:flex w-[3px] bg-[#1e3a5f] relative items-center justify-center">
+        <div className="absolute bg-[#07111f] border-[1.5px] border-[#1e3a5f] rounded-full px-[9px] py-[6px] -rotate-90">
           <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em] whitespace-nowrap">Milton · ON</span>
         </div>
       </div>
-      <div className="lg:hidden h-[3px] bg-[#f59e0b] flex items-center justify-center relative">
-        <div className="absolute bg-[#07111f] border-[1.5px] border-[#f59e0b] rounded-full px-3 py-1">
+      <div className="lg:hidden h-[3px] bg-[#1e3a5f] flex items-center justify-center relative">
+        <div className="absolute bg-[#07111f] border-[1.5px] border-[#1e3a5f] rounded-full px-3 py-1">
           <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">Milton · ON</span>
         </div>
       </div>
 
-      {/* ═══ RIGHT — Miltonly Intelligence (amber) ═══ */}
-      <div className="flex-1 bg-[#fbbf24] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
-        <p className="text-[10px] font-bold text-[#92400e] uppercase tracking-[0.14em] mb-2.5">
+      {/* ═══ RIGHT — Miltonly Intelligence (navy) ═══ */}
+      <div className="flex-1 bg-[#0c1e35] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
+        <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-2.5">
           For sellers · investors · researchers
         </p>
         <p className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
-          <span className="text-[#07111f]">Miltonly </span>
-          <span className="text-[#1d4ed8]">Intelligence</span>
+          <span className="text-[#f8f9fb]">Miltonly </span>
+          <span className="text-[#f59e0b]">Intelligence</span>
         </p>
-        <p className="text-[13px] text-[#78350f] leading-[1.65] mb-5">
+        <p className="text-[13px] text-[#94a3b8] leading-[1.65] mb-5">
           Street price data, home valuations and market comparisons — only in Milton.
         </p>
 
@@ -155,7 +155,7 @@ export default function HeroSection({ stats, typeStats }: Props) {
             <>
               <div className="flex items-center gap-[7px] mb-3">
                 <span className="w-[7px] h-[7px] rounded-full bg-[#f59e0b]" />
-                <span className="text-[10px] font-bold text-[#b45309] uppercase tracking-[0.1em]">Live street prices</span>
+                <span className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">Live street prices</span>
               </div>
               <p className="text-[15px] font-bold text-[#07111f] leading-[1.3] mb-[5px]">What are homes fetching on your street?</p>
               <p className="text-[12px] text-[#64748b] leading-[1.5] mb-4">Pick a home type and enter your street name — see exactly what they&apos;re fetching right now.</p>
@@ -172,12 +172,12 @@ export default function HeroSection({ stats, typeStats }: Props) {
                     onClick={() => setSelectedType(t.id)}
                     className={`text-center rounded-[10px] py-2.5 px-1 border transition-all ${
                       selectedType === t.id
-                        ? "bg-[#fef3c7] border-2 border-[#07111f]"
+                        ? "bg-[#07111f] border-2 border-[#f59e0b]"
                         : "bg-[#f8fafc] border-[1.5px] border-[#e2e8f0] hover:border-[#cbd5e1]"
                     }`}
                   >
                     <span className="text-[15px] block mb-[3px]">{t.icon}</span>
-                    <span className={`text-[10px] ${selectedType === t.id ? "text-[#07111f] font-bold" : "text-[#64748b]"}`}>{t.label}</span>
+                    <span className={`text-[10px] ${selectedType === t.id ? "text-[#f8f9fb] font-bold" : "text-[#64748b]"}`}>{t.label}</span>
                   </button>
                 ))}
               </div>
@@ -200,7 +200,7 @@ export default function HeroSection({ stats, typeStats }: Props) {
                   className="flex-1 px-3 py-[11px] text-[13px] font-medium text-[#07111f] placeholder:text-[#d1d5db] outline-none bg-transparent"
                 />
               </div>
-              <p className="text-[10px] text-[#a16207] font-semibold mb-2">No house number needed — street name only</p>
+              <p className="text-[10px] text-[#94a3b8] font-semibold mb-2">No house number needed — street name only</p>
 
               <div className="flex flex-wrap gap-[5px] mb-[13px]">
                 {streetPills.map((s) => (

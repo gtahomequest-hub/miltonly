@@ -71,7 +71,7 @@ export default async function SeoLinkGrid() {
           <h3 className="text-[14px] font-extrabold text-[#07111f]">
             Search homes by street in Milton
           </h3>
-          <Link href="/streets" className="text-[11px] text-[#2563eb] font-semibold hover:underline">
+          <Link href="/streets" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
             View all {totalStreets} streets
           </Link>
         </div>

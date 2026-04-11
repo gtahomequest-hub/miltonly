@@ -21,9 +21,9 @@ export default function TrustBarSection({ stats }: Props) {
       {/* Trust bar */}
       <div className="flex flex-wrap justify-center items-center gap-x-11 gap-y-3 px-5 sm:px-11 py-[18px] border-b border-[#e9ecef]">
         {[
-          { color: "#22c55e", text: "14 years full-time experience" },
+          { color: "#f59e0b", text: "14 years full-time experience" },
           { color: "#f59e0b", text: "🏆 RE/MAX Hall of Fame" },
-          { color: "#2563eb", text: "Live TREB data daily" },
+          { color: "#f59e0b", text: "Live TREB data daily" },
           { color: "#f59e0b", text: "Milton-only specialist" },
         ].map((item) => (
           <span key={item.text} className="flex items-center gap-2">
