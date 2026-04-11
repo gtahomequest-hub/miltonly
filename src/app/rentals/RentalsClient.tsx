@@ -31,13 +31,21 @@ interface Listing {
   basement: boolean;
 }
 
+interface RentAvg {
+  label: string;
+  avg: number;
+  type: string;
+  beds: number;
+}
+
 interface Props {
   listings: Listing[];
   totalRentals: number;
   avgRent: number;
+  rentAvgs: RentAvg[];
 }
 
-export default function RentalsClient({ listings, totalRentals, avgRent }: Props) {
+export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs }: Props) {
   // ── WIZARD STATE ──
   const [wizStep, setWizStep] = useState(1);
   const [wizData, setWizData] = useState({ type: "", budget: "", prio: "", beds: 1, park: 0, pet: "No pet", timeline: "" });
@@ -63,7 +71,11 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   // ── UI STATE ──
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [bookingModal, setBookingModal] = useState<{ listing: Listing; type: "book" | "1hr" } | null>(null);
+  const priceRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   // Fix overflow-x:hidden on body which breaks CSS sticky — restore it on unmount
   useEffect(() => {
@@ -73,6 +85,16 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
       document.documentElement.style.overflowX = "";
       document.body.style.overflowX = "";
     };
+  }, []);
+
+  // Close popovers on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (priceRef.current && !priceRef.current.contains(e.target as Node)) setPriceOpen(false);
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const showToast = useCallback((msg: string) => {
@@ -101,7 +123,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         const matchAddr = l.address.toLowerCase().includes(q);
         const matchMls = l.mlsNumber.toLowerCase().includes(q);
         const matchHood = l.neighbourhood.toLowerCase().includes(q);
-        if (!matchAddr && !matchMls && !matchHood) return false;
+        const matchType = l.propertyType.toLowerCase().includes(q);
+        const matchDesc = l.description?.toLowerCase().includes(q) || false;
+        if (!matchAddr && !matchMls && !matchHood && !matchType && !matchDesc) return false;
       }
       // Type
       if (typeFilter !== "All" && l.propertyType !== typeFilter.toLowerCase()) return false;
@@ -125,7 +149,33 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         if (l.parking < min) return false;
       }
       // Basement
-      if (filters.basement === "Yes" && !l.description?.toLowerCase().includes("basement")) return false;
+      if (filters.basement === "Yes" && !l.basement) return false;
+      if (filters.basement === "No" && l.basement) return false;
+      // Pets
+      if (filters.pets === "Pets OK" && (!l.petsAllowed || l.petsAllowed.toLowerCase() === "no" || l.petsAllowed.toLowerCase() === "none")) return false;
+      if (filters.pets === "No pets" && l.petsAllowed && l.petsAllowed.toLowerCase() !== "no" && l.petsAllowed.toLowerCase() !== "none") return false;
+      // Utilities
+      if (filters.util === "Included" && (!l.rentIncludes || l.rentIncludes.length === 0)) return false;
+      if (filters.util === "Tenant pays" && l.rentIncludes && l.rentIncludes.length > 0) return false;
+      // Lease term
+      if (filters.lease !== "Any") {
+        if (filters.lease === "Month-to-month" && l.minLeaseTerm && l.minLeaseTerm > 1) return false;
+        if (filters.lease === "6 months" && l.minLeaseTerm && l.minLeaseTerm > 6) return false;
+        if (filters.lease === "12 months" && l.minLeaseTerm && l.minLeaseTerm > 12) return false;
+      }
+      // Move-in / availability
+      if (filters.avail !== "Now" && filters.avail !== "Flexible") {
+        const poss = (l.possessionDetails || "").toLowerCase();
+        const month = filters.avail.toLowerCase();
+        if (!poss.includes(month) && !poss.includes("flexible") && !poss.includes("tbd") && poss !== "vacant" && poss !== "immediate") return false;
+      }
+      if (filters.avail === "Now") {
+        // "Now" = available now / immediate / vacant — don't filter out if possession is unknown
+        const poss = (l.possessionDetails || "").toLowerCase();
+        const futureMonths = ["may", "june", "july", "august", "september", "october", "november", "december"];
+        const isFuture = futureMonths.some((m) => poss.includes(m));
+        if (isFuture) return false;
+      }
       return true;
     });
 
@@ -152,25 +202,35 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
   };
 
   // ── BOOKING HANDLER (listing cards) ──
-  const handleBookShowing = async (listing: Listing) => {
-    await submitLead({
-      firstName: "Showing Request",
-      source: "listing-card-book",
-      intent: "renter",
-      street: listing.address,
-    });
-    showToast(`✓ Showing request sent for ${listing.address.split(",")[0]}!`);
+  const handleBookShowing = (listing: Listing) => {
+    setBookingModal({ listing, type: "book" });
   };
 
-  const handleOneHourShowing = async (listing: Listing) => {
-    await submitLead({
-      firstName: "1-Hour Showing",
-      source: "listing-card-1hr",
+  const handleOneHourShowing = (listing: Listing) => {
+    setBookingModal({ listing, type: "1hr" });
+  };
+
+  const submitBooking = async () => {
+    if (!bookingModal) return;
+    const name = (document.getElementById("bm-name") as HTMLInputElement)?.value;
+    const phone = (document.getElementById("bm-phone") as HTMLInputElement)?.value;
+    if (!name) { showToast("Please enter your name."); return; }
+    if (!phone) { showToast("Please enter your phone number."); return; }
+    const ok = await submitLead({
+      firstName: name,
+      phone,
+      source: bookingModal.type === "1hr" ? "listing-card-1hr" : "listing-card-book",
       intent: "renter",
-      street: listing.address,
+      street: bookingModal.listing.address,
     });
-    setBookingMls(listing.mlsNumber);
-    showToast(`⏱ 1-hour showing confirmed for ${listing.address.split(",")[0]}! We'll call you.`);
+    if (ok) {
+      setBookingMls(bookingModal.listing.mlsNumber);
+      const msg = bookingModal.type === "1hr"
+        ? `⏱ 1-hour showing confirmed for ${bookingModal.listing.address.split(",")[0]}! We'll call you.`
+        : `✓ Showing request sent for ${bookingModal.listing.address.split(",")[0]}!`;
+      showToast(msg);
+      setBookingModal(null);
+    }
   };
 
   return (
@@ -200,15 +260,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
             {/* Search dropdown — shows when input focused + empty */}
             {searchOpen && (
               <div className="sdrop open">
-                <div className="sdi" onClick={() => { setSearchOpen(false); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+                <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "All"); setSearchQuery(""); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico am">🏠</div>
                   <div><div className="sdi-main">See all {totalRentals} active Milton rentals</div><div className="sdi-sub">Condos, townhouses, detached — all listings</div></div>
                 </div>
-                <div className="sdi" onClick={() => { setSearchQuery("condo"); setSearchOpen(false); showToast("🔍 Filtering condos..."); }}>
+                <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "Condo"); setSearchQuery(""); showToast("🏢 Showing condos only"); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico bl">🏢</div>
                   <div><div className="sdi-main">Show condos only</div><div className="sdi-sub">All Milton condo rentals</div></div>
                 </div>
-                <div className="sdi" onClick={() => { setSearchQuery("Main St"); setSearchOpen(false); showToast("🔍 Searching Main St..."); }}>
+                <div className="sdi" onClick={() => { setSearchQuery("Main St"); setSearchOpen(false); showToast("🔍 Searching Main St..."); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico gr">📍</div>
                   <div><div className="sdi-main">Main Street rentals</div><div className="sdi-sub">Popular Milton street</div></div>
                 </div>
@@ -233,10 +293,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           </div>
 
           <div className="trust-row">
-            <div className="ti">178 families placed this year</div>
-            <div className="ti">4.9 ★ Google rating</div>
-            <div className="ti">Milton-only specialist</div>
-            <div className="ti">No fees ever</div>
+            <div className="ti">14 Years Full-Time Experience</div>
+            <div className="ti">Tenants · Landlords · Buyers · Sellers</div>
+            <div className="ti">Milton Specialist</div>
+            <div className="ti">🏆 RE/MAX Hall of Fame</div>
           </div>
         </div>
 
@@ -396,7 +456,25 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                       const phone = (document.getElementById("wiz-phone") as HTMLInputElement).value;
                       const email = (document.getElementById("wiz-email") as HTMLInputElement).value;
                       if (!phone) { showToast("Please enter your phone number."); return; }
-                      const ok = await submitLead({ firstName: userName, phone, email, source: "wizard", intent: "renter", timeline: wizData.timeline });
+                      // Apply wizard preferences to filters
+                      const typeMap: Record<string, string> = { "Detached": "Detached", "Semi-detached": "Semi", "Townhouse": "Townhouse", "Condo / apt": "Condo" };
+                      if (wizData.type && typeMap[wizData.type]) tglFilter("type", typeMap[wizData.type]);
+                      if (wizData.beds) tglFilter("beds", String(wizData.beds));
+                      if (wizData.park > 0) tglFilter("park", wizData.park + "+");
+                      if (wizData.pet !== "No pet") tglFilter("pets", "Pets OK");
+                      if (wizData.budget) {
+                        if (wizData.budget === "Under $2,000") { setPriceMin(500); setPriceMax(2000); }
+                        else if (wizData.budget === "$2,000–$2,500") { setPriceMin(2000); setPriceMax(2500); }
+                        else if (wizData.budget === "$2,500–$3,000") { setPriceMin(2500); setPriceMax(3000); }
+                        else if (wizData.budget === "$3,000+") { setPriceMin(3000); setPriceMax(5000); }
+                      }
+                      // Send full wizard data to leads API
+                      const ok = await submitLead({
+                        firstName: userName, phone, email, source: "wizard", intent: "renter",
+                        timeline: wizData.timeline,
+                        propertyType: wizData.type, budget: wizData.budget, priority: wizData.prio,
+                        bedrooms: String(wizData.beds), parking: String(wizData.park), pet: wizData.pet,
+                      });
                       if (ok) {
                         setWizSuccess(true);
                         showToast("✓ Shortlist sent! We'll call you within 15 minutes.");
@@ -452,23 +530,48 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                   (document.getElementById("bc-mls") as HTMLInputElement).value = "";
                 }
               }}><em>⏱</em> Confirm my 1-hour showing</button>
+              <div className="bc-agent">Aamir Yaqoob · RE/MAX Realty Specialists Inc.</div>
             </div>
           </div>
           <div className="micro-grid">
-            <div className="mc"><span className="mc-v"><em>{totalRentals}</em></span><span className="mc-l">Active today</span></div>
-            <div className="mc"><span className="mc-v"><em>11</em>d</span><span className="mc-l">Avg to lease</span></div>
-            <div className="mc"><span className="mc-v"><em>1.2</em>%</span><span className="mc-l">Vacancy</span></div>
-            <div className="mc"><span className="mc-v">4.<em>9</em>★</span><span className="mc-l">Google</span></div>
+            <div className="mc"><span className="mc-v"><em>🏡</em></span><span className="mc-l">List My House</span></div>
+            <div className="mc"><span className="mc-v"><em>🏠</em></span><span className="mc-l">Need to see a house today?</span></div>
+            <div className="mc"><span className="mc-v"><em>📞</em></span><span className="mc-l">Let&apos;s Talk</span></div>
+            <div className="mc"><span className="mc-v"><em>14</em>yr</span><span className="mc-l">Experience to protect your interest</span></div>
           </div>
         </div>
       </div>
 
-      {/* ═══ STATS BAR ═══ */}
-      <div className="stats-bar">
-        <div className="stat"><span className="sv">${avgRent.toLocaleString()}</span><span className="sl">Avg rent / month</span></div>
-        <div className="stat"><span className="sv">{totalRentals}</span><span className="sl">Active rentals today</span></div>
-        <div className="stat"><span className="sv">11 days</span><span className="sl">Avg days to lease</span></div>
-        <div className="stat"><span className="sv">1.2%</span><span className="sl">Vacancy rate</span></div>
+      {/* ═══ RENT AVERAGES BAR ═══ */}
+      <div className="rent-avgs">
+        <div className="ra-header">
+          <span className="ra-title">Average Rent in Milton</span>
+          <span className="ra-subtitle">Live data from {totalRentals} active listings · Click to filter</span>
+        </div>
+        <div className="ra-scroll">
+          {rentAvgs.map((r) => {
+            const typeMap: Record<string, string> = { condo: "Condo", semi: "Semi", townhouse: "Townhouse", detached: "Detached" };
+            return (
+              <div
+                key={r.label}
+                className="ra-card"
+                onClick={() => {
+                  tglFilter("type", typeMap[r.type] || "All");
+                  tglFilter("beds", String(r.beds));
+                  document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+                  showToast(`Showing ${r.label} rentals`);
+                }}
+              >
+                <span className="ra-price">${r.avg.toLocaleString()}</span>
+                <span className="ra-label">{r.label}</span>
+              </div>
+            );
+          })}
+          <div className="ra-card ra-total">
+            <span className="ra-price">{totalRentals}</span>
+            <span className="ra-label">Active rentals</span>
+          </div>
+        </div>
       </div>
 
       {/* ═══ STICKY FILTER BAR ═══ */}
@@ -493,129 +596,70 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           </div>
         </div>
 
-        {filtersOpen && <div className="fb-filters">
-          {/* PROPERTY TYPE */}
-          <div className={`fg-block${filters.type !== "All" ? " active" : ""}`}>
-            <span className="fg-label">Property type</span>
-            <div className="toggle-group">
-              {["All", "Detached", "Semi", "Townhouse", "Condo"].map((v) => (
-                <button key={v} className={`tgl${filters.type === v ? " on" : ""}`} onClick={() => tglFilter("type", v)}>{v}</button>
+        {/* ── SINGLE-ROW FILTER STRIP ── */}
+        <div className="fstrip">
+          {/* Type */}
+          <div className="fs-group">
+            <span className="fs-label">Type</span>
+            <select className={`fs-sel${filters.type !== "All" ? " on" : ""}`} value={filters.type} onChange={(e) => tglFilter("type", e.target.value)}>
+              {[["All", "All"], ["Detached", "Detached"], ["Semi", "Semi"], ["Townhouse", "Town"], ["Condo", "Condo"]].map(([val, lbl]) => (
+                <option key={val} value={val}>{lbl}</option>
               ))}
-            </div>
+            </select>
           </div>
-          {/* BEDROOMS */}
-          <div className={`fg-block${filters.beds !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Bedrooms</span>
-            <div className="toggle-group">
-              {["Any", "1", "2", "3", "4", "5+"].map((v) => (
-                <button key={v} className={`tgl${filters.beds === v ? " on" : ""}`} onClick={() => tglFilter("beds", v)}>{v}</button>
+          {/* Beds */}
+          <div className="fs-group">
+            <span className="fs-label">Beds</span>
+            <select className={`fs-sel${filters.beds !== "Any" ? " on" : ""}`} value={filters.beds} onChange={(e) => tglFilter("beds", e.target.value)}>
+              {["Any", "1", "2", "3", "4", "5+"].map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+          {/* Baths */}
+          <div className="fs-group">
+            <span className="fs-label">Baths</span>
+            <select className={`fs-sel${filters.baths !== "Any" ? " on" : ""}`} value={filters.baths} onChange={(e) => tglFilter("baths", e.target.value)}>
+              {["Any", "1", "2", "3", "4+"].map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+          {/* Price Min */}
+          <div className="fs-group">
+            <span className="fs-label">Min $</span>
+            <select className={`fs-sel${priceMin !== 500 ? " on" : ""}`} value={priceMin} onChange={(e) => setPriceMin(parseInt(e.target.value))}>
+              {[500, 1000, 1500, 2000, 2500, 3000, 3500, 4000].map((v) => (
+                <option key={v} value={v}>{v >= 1000 ? (v / 1000).toFixed(1).replace(".0", "") + "k" : v}</option>
               ))}
-            </div>
+            </select>
           </div>
-          {/* BATHROOMS */}
-          <div className={`fg-block${filters.baths !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Bathrooms</span>
-            <div className="toggle-group">
-              {["Any", "1", "2", "3", "4+"].map((v) => (
-                <button key={v} className={`tgl${filters.baths === v ? " on" : ""}`} onClick={() => tglFilter("baths", v)}>{v}</button>
+          {/* Price Max */}
+          <div className="fs-group">
+            <span className="fs-label">Max $</span>
+            <select className={`fs-sel${priceMax !== 5000 ? " on" : ""}`} value={priceMax} onChange={(e) => setPriceMax(parseInt(e.target.value))}>
+              {[1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000].map((v) => (
+                <option key={v} value={v}>{v >= 1000 ? (v / 1000).toFixed(1).replace(".0", "") + "k" : v}</option>
               ))}
-            </div>
+            </select>
           </div>
-          {/* PRICE RANGE */}
-          <div className="fg-block active">
-            <span className="fg-label">Monthly rent</span>
-            <div className="range-group">
-              <div className="range-vals">
-                <span className="range-val"><em>${priceMin.toLocaleString()}</em></span>
-                <span className="range-val"><em>${priceMax.toLocaleString()}</em></span>
-              </div>
-              <div className="range-row" style={{ marginBottom: 6 }}>
-                <span className="range-lbl">Min</span>
-                <input type="range" className="frange" min={500} max={4000} step={100} value={priceMin} onChange={(e) => setPriceMin(Math.min(parseInt(e.target.value), priceMax - 500))} />
-              </div>
-              <div className="range-row">
-                <span className="range-lbl">Max</span>
-                <input type="range" className="frange" min={1000} max={5000} step={100} value={priceMax} onChange={(e) => setPriceMax(Math.max(parseInt(e.target.value), priceMin + 500))} />
-              </div>
-            </div>
+          {/* Move-in */}
+          <div className="fs-group">
+            <span className="fs-label">Move-in</span>
+            <select className={`fs-sel${filters.avail !== "Now" ? " on" : ""}`} value={filters.avail} onChange={(e) => { tglFilter("avail", e.target.value); setAvailPill(e.target.value === "Now" ? "Available now" : e.target.value === "Flexible" ? "Flexible" : e.target.value + " 2026"); }}>
+              {["Now", "May", "June", "July", "Flexible"].map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
           </div>
-          {/* MOVE-IN DATE */}
-          <div className={`fg-block${filters.avail !== "Now" ? " active" : ""}`}>
-            <span className="fg-label">Move-in date</span>
-            <div className="toggle-group">
-              {["Now", "May", "June", "July", "Flexible"].map((v) => (
-                <button key={v} className={`tgl${filters.avail === v ? " on" : ""}`} onClick={() => tglFilter("avail", v)}>{v}</button>
-              ))}
-            </div>
+          {/* Parking */}
+          <div className="fs-group">
+            <span className="fs-label">Parking</span>
+            <select className={`fs-sel${filters.park !== "Any" ? " on" : ""}`} value={filters.park} onChange={(e) => tglFilter("park", e.target.value)}>
+              {["Any", "1+", "2+"].map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
           </div>
-          {/* PETS */}
-          <div className={`fg-block${filters.pets !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Pets</span>
-            <div className="toggle-group">
-              {["Any", "Pets OK", "No pets"].map((v) => (
-                <button key={v} className={`tgl${filters.pets === v ? " on" : ""}`} onClick={() => tglFilter("pets", v)}>{v}</button>
-              ))}
-            </div>
-          </div>
-          {/* UTILITIES */}
-          <div className={`fg-block${filters.util !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Utilities</span>
-            <div className="toggle-group">
-              {["Any", "Included", "Tenant pays"].map((v) => (
-                <button key={v} className={`tgl${filters.util === v ? " on" : ""}`} onClick={() => tglFilter("util", v)}>{v}</button>
-              ))}
-            </div>
-          </div>
-          {/* FINISHED BASEMENT */}
-          <div className={`fg-block${filters.basement !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Finished basement</span>
-            <div className="toggle-group">
-              {["Any", "Yes", "No"].map((v) => (
-                <button key={v} className={`tgl${filters.basement === v ? " on" : ""}`} onClick={() => tglFilter("basement", v)}>{v}</button>
-              ))}
-            </div>
-          </div>
-          {/* LEASE LENGTH */}
-          <div className={`fg-block${filters.lease !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Lease length</span>
-            <div className="toggle-group">
-              {["Any", "Month-to-month", "6 months", "12 months"].map((v) => (
-                <button key={v} className={`tgl${filters.lease === v ? " on" : ""}`} onClick={() => tglFilter("lease", v)}>{v}</button>
-              ))}
-            </div>
-          </div>
-          {/* PARKING */}
-          <div className={`fg-block${filters.park !== "Any" ? " active" : ""}`}>
-            <span className="fg-label">Parking</span>
-            <div className="toggle-group">
-              {["Any", "1+", "2+"].map((v) => (
-                <button key={v} className={`tgl${filters.park === v ? " on" : ""}`} onClick={() => tglFilter("park", v)}>{v}</button>
-              ))}
-            </div>
-          </div>
-
-          <button className="clear-btn" onClick={() => {
+          {/* Reset */}
+          <button className="fs-reset" onClick={() => {
             setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-            setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setSortBy("newest");
-            showToast("↺ Filters reset — showing all rentals");
-          }}>↺ Reset all</button>
-        </div>}
-
-        {/* chips — always visible when filters are active */}
-        <div className="fb-chips">
-          <span className="fb-lbl">Active:</span>
-          <div className="fchip on">🏠 <span>{filters.type === "All" ? "All types" : filters.type}</span> <span className="fchip-x">✕</span></div>
-          <div className="fchip on">🛏 <span>{filters.beds === "Any" ? "Any beds" : filters.beds + " bed" + (filters.beds === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
-          <div className="fchip on">🚿 <span>{filters.baths === "Any" ? "Any baths" : filters.baths + " bath" + (filters.baths === "1" ? "" : "s")}</span> <span className="fchip-x">✕</span></div>
-          <div className="fchip on">💰 <span>${priceMin.toLocaleString()}–${priceMax.toLocaleString()}</span> <span className="fchip-x">✕</span></div>
-          <div className="fchip on">📅 <span>{filters.avail === "Now" ? "Available now" : "Move in " + filters.avail}</span> <span className="fchip-x">✕</span></div>
-          <button
-            className={`fb-toggle${filtersOpen ? " open" : ""}`}
-            onClick={() => setFiltersOpen(!filtersOpen)}
-          >
-            {filtersOpen ? "✕ Close" : "☰ More filters"}
-          </button>
-          {searchQuery && <div className="fchip on">🔍 <span>&quot;{searchQuery}&quot;</span> <span className="fchip-x" onClick={() => setSearchQuery("")}>✕</span></div>}
+            setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setSortBy("newest"); setAvailPill("Available now");
+            showToast("↺ Filters reset");
+          }}>↺ Reset</button>
+          {searchQuery && <div className="fs-search-chip">&quot;{searchQuery}&quot; <span className="fs-chip-x" onClick={() => setSearchQuery("")}>✕</span></div>}
         </div>
       </div>
 
@@ -632,9 +676,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
           <div style={{ textAlign: "center", padding: "60px 20px", color: "#64748b" }}>
             <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No rentals match your filters</p>
             <p style={{ fontSize: 13 }}>Try adjusting your price range, bedrooms, or property type.</p>
-            <button className="clear-btn" style={{ marginTop: 16 }} onClick={() => {
+            <button className="fs-reset" style={{ marginTop: 16 }} onClick={() => {
               setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-              setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery("");
+              setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setAvailPill("Available now");
             }}>↺ Reset all filters</button>
           </div>
         ) : (
@@ -701,7 +745,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
                   </Link>
                   <div className="lbtns-wrap">
                     <button className="lbtn lbtn-bk" onClick={() => handleBookShowing(l)}>Book showing</button>
-                    <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>⏱ See in 1 hr</button>
+                    <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>I want to see this today</button>
                     {viewMode === "list" && (
                       <button className="lbtn lbtn-save" onClick={() => showToast(`♡ Saved ${l.address.split(",")[0]}`)}>♡ Save</button>
                     )}
@@ -731,19 +775,64 @@ export default function RentalsClient({ listings, totalRentals, avgRent }: Props
         </div>
       </div>
 
-      {/* ═══ FOOTER CTA ═══ */}
-      <section className="footer-cta">
-        <h2>Start your Milton<br />rental search <em>today</em></h2>
-        <p>{totalRentals} active rentals · See any home in 1 hour · Milton&apos;s only rental specialist</p>
-        <div className="footer-btns">
-          <button className="fbtn-p" onClick={() => {
-            setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-            setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery("");
-            document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
-          }}>Browse all rentals →</button>
-          <Link href="/listings" className="fbtn-s">View all listings</Link>
+      {/* ═══ AGENT SECTION ═══ */}
+      <section className="agent-section">
+        <div className="agent-inner">
+          <div className="agent-info">
+            <h2 className="agent-headline">Your Milton Real Estate Expert</h2>
+            <p className="agent-sub">Tenants · Landlords · Buyers · Sellers — Every Side, Every Deal.</p>
+            <p className="agent-bio">With 14 years of full-time real estate experience, Aamir Yaqoob knows that finding the right rental is about far more than price — it is about finding the right fit, the right terms, and the right protection. Whether you are a tenant searching for a home, a landlord leasing your property, or ready to buy or sell, Aamir represents your interests completely. RE/MAX Realty Specialists Inc.</p>
+            <div className="agent-awards">
+              <div className="agent-award">🏆 RE/MAX Hall of Fame Award</div>
+              <div className="agent-award">🏆 RE/MAX Executive Award</div>
+              <div className="agent-award">🏆 RE/MAX 100% Club Award</div>
+            </div>
+            <div className="agent-pills">
+              <span className="agent-pill">14 Years Full-Time Experience</span>
+              <span className="agent-pill">Tenants · Landlords · Buyers · Sellers</span>
+              <span className="agent-pill">Milton Specialist</span>
+              <span className="agent-pill">🏆 RE/MAX Hall of Fame</span>
+            </div>
+            <div className="agent-btns">
+              <a href="tel:+16478399090" className="agent-btn-call">📞 Call or Text (647) 839-9090</a>
+              <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="agent-btn-wa">💬 WhatsApp (647) 839-9090</a>
+            </div>
+            <div className="agent-email">gtahomequest@gmail.com</div>
+          </div>
+          <div className="agent-cta">
+            <h3>Start your Milton rental search <em>today</em></h3>
+            <p>{totalRentals} active rentals · Aamir Yaqoob, RE/MAX Realty Specialists Inc.</p>
+            <div className="footer-btns">
+              <button className="fbtn-p" onClick={() => {
+                setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
+                setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setAvailPill("Available now");
+                document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+              }}>Browse all rentals →</button>
+              <Link href="/listings" className="fbtn-s">View all listings</Link>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* ═══ BOOKING MODAL ═══ */}
+      {bookingModal && (
+        <div className="bm-overlay" onClick={() => setBookingModal(null)}>
+          <div className="bm-card" onClick={(e) => e.stopPropagation()}>
+            <button className="bm-close" onClick={() => setBookingModal(null)}>✕</button>
+            <div className="bm-title">{bookingModal.type === "1hr" ? "⏱ 1-Hour Showing" : "Book a Showing"}</div>
+            <div className="bm-addr">{bookingModal.listing.address.split(",")[0]}</div>
+            <div className="bm-price">{formatPriceFull(bookingModal.listing.price)}/mo · {bookingModal.listing.bedrooms} bed · {bookingModal.listing.bathrooms} bath</div>
+            <div className="bm-fields">
+              <input className="bm-input" id="bm-name" placeholder="Your name" />
+              <input className="bm-input" id="bm-phone" type="tel" placeholder="Phone number" />
+            </div>
+            <button className="bm-submit" onClick={submitBooking}>
+              {bookingModal.type === "1hr" ? "⏱ Confirm 1-hour showing" : "Request showing"}
+            </button>
+            <div className="bm-note">We&apos;ll call you within {bookingModal.type === "1hr" ? "1 hour" : "15 minutes"} to confirm</div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ TOAST ═══ */}
       <div className={`toast${toast ? " show" : ""}`}>

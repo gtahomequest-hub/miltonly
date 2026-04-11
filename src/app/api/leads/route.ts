@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { notifyNewLead } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
         hasAgent: hasAgent === "Yes" ? true : hasAgent === "No" ? false : null,
       },
     });
+
+    // Send email notification (non-blocking)
+    notifyNewLead(body).catch((e) => console.error("Email notify error:", e));
 
     return NextResponse.json({ success: true, id: lead.id });
   } catch (e) {

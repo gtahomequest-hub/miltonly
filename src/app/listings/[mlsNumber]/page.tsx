@@ -22,9 +22,14 @@ export default async function ListingDetailPage({ params }: Props) {
   const listing = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!listing) notFound();
 
-  // Similar listings
+  // Similar listings — match transaction type so rentals show rentals, sales show sales
   const similar = await prisma.listing.findMany({
-    where: { propertyType: listing.propertyType, mlsNumber: { not: listing.mlsNumber }, city: "Milton" },
+    where: {
+      propertyType: listing.propertyType,
+      transactionType: listing.transactionType,
+      mlsNumber: { not: listing.mlsNumber },
+      city: "Milton",
+    },
     orderBy: { listedAt: "desc" },
     take: 4,
   });

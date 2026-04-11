@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
-import RentalsClient from "./RentalsClient";
+import RentalsClient from "../rentals/RentalsClient";
 
 export const metadata = genMeta({
-  title: "Milton Rentals — Let Miltonly Find Your Home",
-  description: "Browse every active rental in Milton Ontario. Condos, townhouses, detached homes — live TREB data, verified landlords, same-day showings guaranteed.",
-  canonical: "https://miltonly.com/rentals",
+  title: "Milton Rentals — Find Your Perfect Rental Home in Milton ON",
+  description:
+    "Browse every active rental in Milton Ontario. Condos, townhouses, detached homes — live TREB data, verified landlords, same-day showings guaranteed.",
+  canonical: "https://miltonly.com/rent",
 });
 
 export const revalidate = 3600;
@@ -22,7 +23,7 @@ const rentCategories = [
   { label: "4 Bed Detached", type: "detached", beds: 4 },
 ];
 
-export default async function RentalsPage() {
+export default async function RentLandingPage() {
   const listings = await prisma.listing.findMany({
     where: { transactionType: "For Lease", city: "Milton" },
     orderBy: { listedAt: "desc" },
