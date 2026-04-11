@@ -265,20 +265,58 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               </div>
             )}
 
-            {/* Move-in pills */}
-            <div className="avail-row">
-              <span className="avail-lbl">Move in:</span>
-              {["Available now", "May 2026", "June 2026", "July 2026", "Flexible"].map((a) => (
-                <button
-                  key={a}
-                  className={`apill${availPill === a ? " on" : ""}`}
-                  onClick={() => {
-                    setAvailPill(a);
-                    tglFilter("avail", a === "Available now" ? "Now" : a.replace(" 2026", ""));
-                    showToast(`📅 Showing rentals: ${a}`);
-                  }}
-                >{a}</button>
+            {/* Filter pills — Budget */}
+            <div className="fpill-row">
+              <span className="fpill-label">Budget:</span>
+              {[
+                { label: "Any price", min: 500, max: 5000 },
+                { label: "Under $2K", min: 500, max: 2000 },
+                { label: "$2K–$2.5K", min: 2000, max: 2500 },
+                { label: "$2.5K–$3K", min: 2500, max: 3000 },
+                { label: "$3K+", min: 3000, max: 5000 },
+              ].map((p) => (
+                <button key={p.label} className={`fpill${priceMin === p.min && priceMax === p.max ? " on" : ""}`} onClick={() => { setPriceMin(p.min); setPriceMax(p.max); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+                  {p.label}
+                </button>
               ))}
+            </div>
+            {/* Filter pills — Type */}
+            <div className="fpill-row">
+              <span className="fpill-label">Type:</span>
+              {[
+                { label: "Any", val: "All" },
+                { label: "Condo/Apt", val: "Condo" },
+                { label: "Townhouse", val: "Townhouse" },
+                { label: "Semi-Det", val: "Semi" },
+                { label: "Detached", val: "Detached" },
+              ].map((p) => (
+                <button key={p.label} className={`fpill${filters.type === p.val ? " on" : ""}`} onClick={() => { tglFilter("type", p.val); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {/* Filter pills — Beds + Move-in dropdown */}
+            <div className="fpill-row">
+              <span className="fpill-label">Beds:</span>
+              {[
+                { label: "Any", val: "Any" },
+                { label: "1 bed", val: "1" },
+                { label: "2 bed", val: "2" },
+                { label: "3 bed", val: "3" },
+                { label: "4+ bed", val: "4" },
+              ].map((p) => (
+                <button key={p.label} className={`fpill${filters.beds === p.val ? " on" : ""}`} onClick={() => { tglFilter("beds", p.val); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+                  {p.label}
+                </button>
+              ))}
+              <select className="fpill-select" value={availPill} onChange={(e) => { setAvailPill(e.target.value); tglFilter("avail", e.target.value === "Available now" ? "Now" : e.target.value === "Flexible" ? "Flexible" : e.target.value.replace(" 2026", "")); }}>
+                <option value="Available now">Any move-in</option>
+                <option value="Available now">Available now</option>
+                <option value="May 2026">May 2026</option>
+                <option value="June 2026">June 2026</option>
+                <option value="July 2026">July 2026</option>
+                <option value="Flexible">Flexible</option>
+              </select>
             </div>
           </div>
 
