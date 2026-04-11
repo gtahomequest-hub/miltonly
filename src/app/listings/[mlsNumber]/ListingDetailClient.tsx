@@ -308,14 +308,18 @@ export default function ListingDetailClient({ listing: l, similar }: Props) {
                 showToast("✓ Showing request sent! We'll call you within 15 minutes.");
                 e.currentTarget.reset();
               }}>
-                <input name="name" placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-                <input name="phone" type="tel" placeholder="Phone number" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
+                <input name="name" required placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
+                <input name="phone" required type="tel" placeholder="Phone number" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
                 <input name="email" type="email" placeholder="Email (optional)" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
                 <button type="submit" className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#eab308] transition-colors">
                   {isRental ? "⏱ Book showing — 15 min response" : "Request a showing"}
                 </button>
               </form>
-              <p className="text-[10px] text-[#334155] text-center mt-3">Aamir Yaqoob · RE/MAX Realty Specialists</p>
+              <p className="text-[10px] text-[#94a3b8] text-center mt-3">Aamir Yaqoob · RE/MAX Realty Specialists Inc.</p>
+              <div className="flex gap-2 mt-2">
+                <a href="tel:+16478399090" className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] transition-colors">📞 (647) 839-9090</a>
+                <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-[#94a3b8] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors">💬 WhatsApp</a>
+              </div>
             </div>
 
             {/* Quick facts */}

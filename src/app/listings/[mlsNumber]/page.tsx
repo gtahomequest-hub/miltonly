@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatPriceFull } from "@/lib/format";
 import type { Metadata } from "next";
 import ListingDetailClient from "./ListingDetailClient";
+import FooterSection from "@/components/sections/FooterSection";
 
 interface Props { params: { mlsNumber: string } }
 
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!l) return { title: "Listing Not Found" };
   const isRental = l.transactionType === "For Lease";
   return {
-    title: `${l.address.split(",")[0]} — ${formatPriceFull(l.price)}${isRental ? "/mo" : ""} | ${l.bedrooms}bd ${l.bathrooms}ba ${l.propertyType}`,
+    title: `${l.address.split(",")[0]} — ${formatPriceFull(l.price)}${isRental ? "/mo" : ""} · ${l.bedrooms}bd ${l.bathrooms}ba ${l.propertyType}`,
     description: `${isRental ? "For rent" : "For sale"}: ${l.propertyType} at ${l.address}. ${l.bedrooms} beds, ${l.bathrooms} baths${l.parking ? ", " + l.parking + " parking" : ""}. ${formatPriceFull(l.price)}${isRental ? "/month" : ""}. MLS® ${l.mlsNumber}.`,
     alternates: { canonical: `https://miltonly.com/listings/${l.mlsNumber}` },
   };
@@ -53,6 +54,7 @@ export default async function ListingDetailPage({ params }: Props) {
       </div>
 
       <ListingDetailClient listing={serialized} similar={serializedSimilar} />
+      <FooterSection />
     </div>
   );
 }
