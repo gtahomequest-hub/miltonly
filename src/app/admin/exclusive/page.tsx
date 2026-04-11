@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 
 interface Listing {
   id: string;
@@ -61,6 +62,10 @@ export default function ExclusiveAdminPage() {
   const [editing, setEditing] = useState<Listing | null>(null);
   const [draft, setDraft] = useState({ ...emptyDraft, photosText: "" });
   const [showForm, setShowForm] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -180,6 +185,50 @@ export default function ExclusiveAdminPage() {
     } else {
       showToast("Delete failed");
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+    setUploading(true);
+    setUploadProgress({ done: 0, total: files.length });
+    const newUrls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const blob = await upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/admin/upload",
+        });
+        newUrls.push(blob.url);
+        setUploadProgress({ done: i + 1, total: files.length });
+      } catch (err) {
+        console.error("Upload failed:", err);
+        showToast(`Upload failed for ${file.name}`);
+      }
+    }
+    if (newUrls.length > 0) {
+      setDraft((d) => {
+        const existing = d.photosText.trim();
+        const appended = existing ? `${existing}\n${newUrls.join("\n")}` : newUrls.join("\n");
+        return { ...d, photosText: appended };
+      });
+      showToast(`Uploaded ${newUrls.length} photo${newUrls.length === 1 ? "" : "s"}`);
+    }
+    setUploading(false);
+    setUploadProgress({ done: 0, total: 0 });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePhoto = (idx: number) => {
+    setDraft((d) => {
+      const lines = d.photosText
+        .split("\n")
+        .map((u) => u.trim())
+        .filter(Boolean);
+      lines.splice(idx, 1);
+      return { ...d, photosText: lines.join("\n") };
+    });
   };
 
   if (!authed) {
@@ -433,14 +482,60 @@ export default function ExclusiveAdminPage() {
                 />
               </Field>
               <Field label="Photos">
+                <div className="flex gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="bg-[#07111f] text-[#f8f9fb] text-[12px] font-bold rounded-lg px-4 py-2 hover:bg-[#1e3a5f] disabled:opacity-60"
+                  >
+                    {uploading
+                      ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
+                      : "📤 Upload photos"}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <span className="text-[11px] text-[#64748b] self-center">
+                    Choose one or many · auto-added below
+                  </span>
+                </div>
+                {/* Photo thumbnails */}
+                {draft.photosText.trim() && (
+                  <div className="grid grid-cols-4 gap-2 mb-2">
+                    {draft.photosText
+                      .split("\n")
+                      .map((u) => u.trim())
+                      .filter(Boolean)
+                      .map((url, i) => (
+                        <div key={`${url}-${i}`} className="relative aspect-square rounded-lg overflow-hidden border border-[#e2e8f0] bg-[#f1f5f9]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(i)}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-[10px] font-bold flex items-center justify-center hover:bg-red-600"
+                            aria-label="Remove photo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
                 <textarea
-                  className="form-input min-h-[120px] font-mono text-[11px]"
-                  placeholder="https://drive.google.com/uc?export=view&id=FILE_ID"
+                  className="form-input min-h-[80px] font-mono text-[11px]"
+                  placeholder="Or paste URLs manually, one per line"
                   value={draft.photosText}
                   onChange={(e) => setDraft({ ...draft, photosText: e.target.value })}
                 />
                 <p className="text-[11px] text-[#64748b] mt-1">
-                  One Google Drive URL per line. Format: https://drive.google.com/uc?export=view&amp;id=FILE_ID
+                  Uploaded photos are stored on Vercel Blob. You can also paste direct image URLs.
                 </p>
               </Field>
               <Field label="Slug">
