@@ -6,68 +6,30 @@ const CACHE_TTL = 3600;
 
 export const getHeroStats = unstable_cache(
   async () => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 86400000);
-    const sevenDaysAgo = new Date(today.getTime() - 7 * 86400000);
-
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const saleFilter = { city: "Milton", price: { gt: 100000 } };
-    const [activeCount, listedToday, soldThisWeek, activeListings, soldListings, semi3, det4, condo2, condo1] =
-      await Promise.all([
-        prisma.listing.count({ where: { status: "active" } }),
-        prisma.listing.count({ where: { OR: [{ listedAt: { gte: twentyFourHoursAgo } }, { syncedAt: { gte: today } }] } }),
-        prisma.listing.count({ where: { status: "sold", updatedAt: { gte: sevenDaysAgo } } }),
-        prisma.listing.aggregate({
-          where: { status: "active" },
-          _avg: { price: true, daysOnMarket: true },
-        }),
-        prisma.listing.aggregate({
-          where: { status: "sold", updatedAt: { gte: thirtyDaysAgo } },
-          _avg: { price: true, soldPrice: true, daysOnMarket: true },
-        }),
-        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "semi", bedrooms: 3 }, _avg: { price: true } }),
-        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "detached", bedrooms: 4 }, _avg: { price: true } }),
-        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "condo", bedrooms: 2 }, _avg: { price: true } }),
-        prisma.listing.aggregate({ where: { ...saleFilter, propertyType: "condo", bedrooms: 1 }, _avg: { price: true } }),
-      ]);
-
-    const avgActivePrice = Math.round(activeListings._avg.price || 0);
-    const avgSoldPrice = Math.round(soldListings._avg.soldPrice || soldListings._avg.price || avgActivePrice);
-    const avgDOM = Math.round(activeListings._avg.daysOnMarket || 0);
-    const avgSoldDOM = Math.round(soldListings._avg.daysOnMarket || avgDOM);
-
-    // Sold vs asking - calculate from sold listings that have both prices
-    const soldWithPrices = await prisma.listing.findMany({
-      where: { status: "sold", soldPrice: { not: null } },
-      select: { price: true, soldPrice: true },
-      take: 100,
-      orderBy: { updatedAt: "desc" },
-    });
-
-    let soldVsAsk = 100;
-    if (soldWithPrices.length > 0) {
-      const ratios = soldWithPrices
-        .filter((l) => l.soldPrice && l.price > 0)
-        .map((l) => (l.soldPrice! / l.price) * 100);
-      if (ratios.length > 0) {
-        soldVsAsk = Math.round(ratios.reduce((a, b) => a + b, 0) / ratios.length);
-      }
-    }
+    const [
+      allActive,
+      detachedStats,
+      semiStats,
+      condoStats,
+      rentalStats,
+    ] = await Promise.all([
+      prisma.listing.count({ where: { status: "active", price: { gt: 100000 }, city: "Milton" } }),
+      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "detached", city: "Milton" }, _avg: { price: true }, _count: true }),
+      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "semi", city: "Milton" }, _avg: { price: true }, _count: true }),
+      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "condo", city: "Milton" }, _avg: { price: true }, _count: true }),
+      prisma.listing.aggregate({ where: { transactionType: "For Lease", price: { gt: 500, lt: 10000 }, city: "Milton" }, _avg: { price: true }, _count: true }),
+    ]);
 
     return {
-      avgActivePrice,
-      avgSoldPrice,
-      activeCount,
-      listedToday,
-      soldThisWeek,
-      avgDOM,
-      avgSoldDOM,
-      soldVsAsk,
-      avg3BedSemi: Math.round(semi3._avg.price || 0),
-      avg4BedDetached: Math.round(det4._avg.price || 0),
-      avg2BedCondo: Math.round(condo2._avg.price || 0),
-      avg1DenCondo: Math.round(condo1._avg.price || 0),
+      activeCount: allActive,
+      avgDetached: Math.round(detachedStats._avg.price || 0),
+      detachedCount: detachedStats._count,
+      avgSemi: Math.round(semiStats._avg.price || 0),
+      semiCount: semiStats._count,
+      avgCondo: Math.round(condoStats._avg.price || 0),
+      condoCount: condoStats._count,
+      avgRent: Math.round(rentalStats._avg.price || 0),
+      rentalCount: rentalStats._count,
     };
   },
   ["hero-stats"],

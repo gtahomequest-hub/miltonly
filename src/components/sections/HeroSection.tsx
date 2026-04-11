@@ -19,15 +19,15 @@ const streetPills = ["Derry Rd", "Main St E", "Thompson Rd", "Laurier Ave", "Lou
 
 interface Props {
   stats: {
-    avgActivePrice: number;
-    avgSoldPrice: number;
-    listedToday: number;
-    avgSoldDOM: number;
-    soldVsAsk: number;
-    avg3BedSemi: number;
-    avg4BedDetached: number;
-    avg2BedCondo: number;
-    avg1DenCondo: number;
+    activeCount: number;
+    avgDetached: number;
+    detachedCount: number;
+    avgSemi: number;
+    semiCount: number;
+    avgCondo: number;
+    condoCount: number;
+    avgRent: number;
+    rentalCount: number;
   };
   typeStats: Record<string, { avgPrice: number; avgDOM: number; soldVsAsk: number }>;
 }
@@ -111,14 +111,14 @@ export default function HeroSection({ stats, typeStats }: Props) {
           ))}
         </div>
 
-        {/* 5 stat boxes — REAL DATA */}
+        {/* 5 stat boxes — REAL DATA from active listings */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-auto">
           {[
-            { value: formatPrice(stats.avgSoldPrice || stats.avgActivePrice), label: "Avg sold price", sub: "all types · Milton" },
-            { value: formatPrice(stats.avg3BedSemi), label: "3-bed semi", sub: "avg · Milton" },
-            { value: formatPrice(stats.avg4BedDetached), label: "4-bed detached", sub: "avg · Milton" },
-            { value: formatPrice(stats.avg2BedCondo), label: "2-bed condo", sub: "avg · Milton" },
-            { value: formatPrice(stats.avg1DenCondo), label: "1+den condo", sub: "avg · Milton" },
+            { value: formatPrice(stats.avgDetached), label: "Detached avg ask", sub: `${stats.detachedCount} active` },
+            { value: formatPrice(stats.avgSemi), label: "Semi-det avg ask", sub: `${stats.semiCount} active` },
+            { value: formatPrice(stats.avgCondo), label: "Condo avg ask", sub: `${stats.condoCount} active` },
+            { value: `$${stats.avgRent.toLocaleString()}/mo`, label: "Avg asking rent", sub: `${stats.rentalCount} rentals` },
+            { value: String(stats.activeCount), label: "Active listings", sub: "updated daily" },
           ].map((s) => (
             <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[12px_14px]">
               <p className="text-[18px] font-extrabold text-[#f8f9fb]">{s.value}</p>
