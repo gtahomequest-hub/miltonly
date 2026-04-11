@@ -46,6 +46,7 @@ interface Props {
   rentAvgs: RentAvg[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs }: Props) {
   // ── WIZARD STATE ──
   const [wizStep, setWizStep] = useState(1);
@@ -72,11 +73,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   // ── UI STATE ──
   const [toast, setToast] = useState("");
   const [, setBookingMls] = useState("");
-  const [priceOpen, setPriceOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [bookingModal, setBookingModal] = useState<{ listing: Listing; type: "book" | "1hr" } | null>(null);
-  const priceRef = useRef<HTMLDivElement>(null);
-  const moreRef = useRef<HTMLDivElement>(null);
 
   // Fix overflow-x:hidden on body which breaks CSS sticky — restore it on unmount
   useEffect(() => {
@@ -88,15 +85,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
     };
   }, []);
 
-  // Close popovers on click outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (priceRef.current && !priceRef.current.contains(e.target as Node)) setPriceOpen(false);
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
