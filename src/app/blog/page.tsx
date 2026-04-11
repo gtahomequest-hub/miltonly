@@ -6,6 +6,8 @@ export const metadata = genMeta({
   canonical: "https://miltonly.com/blog",
 });
 
+export const dynamic = "force-dynamic";
+
 export default function BlogPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5">
@@ -15,12 +17,12 @@ export default function BlogPage() {
         <p className="text-[14px] text-[#64748b] mb-8 leading-relaxed">
           Market updates, neighbourhood guides and buying tips — coming soon.
         </p>
-        <form className="flex gap-2 max-w-sm mx-auto" onSubmit={(e) => e.preventDefault()}>
+        <div className="flex gap-2 max-w-sm mx-auto">
           <input type="email" placeholder="your@email.com" className="flex-1 px-4 py-3 text-[13px] border border-[#e2e8f0] rounded-xl outline-none focus:border-[#f59e0b] transition-colors" />
-          <button type="submit" className="bg-[#07111f] text-[#f59e0b] text-[13px] font-bold px-5 py-3 rounded-xl hover:bg-[#0c1e35] transition-colors shrink-0">
+          <button className="bg-[#07111f] text-[#f59e0b] text-[13px] font-bold px-5 py-3 rounded-xl hover:bg-[#0c1e35] transition-colors shrink-0">
             Notify me
           </button>
-        </form>
+        </div>
         <p className="text-[11px] text-[#94a3b8] mt-3">Get notified when we launch</p>
       </div>
     </div>
