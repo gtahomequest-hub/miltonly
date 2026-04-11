@@ -45,9 +45,8 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Right side — Sign in + Call Aamir */}
-        <div className="hidden lg:flex items-center gap-5">
-          <Link href="/signin" className="text-[13px] text-[#94a3b8] hover:text-[#f8f9fb] transition-colors">Sign in</Link>
+        {/* Right side — Call Aamir */}
+        <div className="hidden lg:flex items-center">
           <a
             href="tel:+16478399090"
             className="bg-[#f59e0b] text-[#07111f] text-[13px] font-bold px-[18px] py-[9px] rounded-lg hover:bg-[#fbbf24] transition-colors"
@@ -81,8 +80,7 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-          <div className="pt-3 mt-2 border-t border-[#1e3a5f] space-y-2">
-            <Link href="/signin" onClick={() => setMobileOpen(false)} className="block py-2 text-[13px] text-[#94a3b8]">Sign in</Link>
+          <div className="pt-3 mt-2 border-t border-[#1e3a5f]">
             <a href="tel:+16478399090" className="block text-center bg-[#f59e0b] text-[#07111f] font-bold py-3 rounded-lg">📞 Call Aamir</a>
           </div>
         </div>
