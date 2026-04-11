@@ -2,12 +2,21 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/format";
 
 const searchTabs = ["Buy", "Rent", "Sold"] as const;
-const pills = [
-  "Detached in Willmott", "4-bed under $1.1M", "Near Craig Kielburger",
-  "Walk to Milton GO", "Open houses", "New builds", "Condos under $700K", "Price reduced",
+const SEARCH_PILLS = [
+  { label: "Detached homes", href: "/listings?type=detached" },
+  { label: "Townhouses", href: "/listings?type=townhouse" },
+  { label: "Condos under $700K", href: "/listings?type=condo&maxPrice=700000" },
+  { label: "Under $800K", href: "/listings?maxPrice=800000" },
+  { label: "Under $1M", href: "/listings?maxPrice=1000000" },
+  { label: "4-bed detached", href: "/listings?type=detached&beds=4" },
+  { label: "Willmott homes", href: "/listings?neighbourhood=Willmott" },
+  { label: "Dempsey homes", href: "/listings?neighbourhood=Dempsey" },
+  { label: "Rentals now", href: "/rentals" },
+  { label: "3-bed rentals", href: "/rentals" },
 ];
 const propertyTypes = [
   { id: "detached", label: "Detached", icon: "🏠" },
@@ -33,11 +42,22 @@ interface Props {
 }
 
 export default function HeroSection({ stats, typeStats }: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<(typeof searchTabs)[number]>("Buy");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("detached");
   const [streetName, setStreetName] = useState("");
   const [showCapture, setShowCapture] = useState(false);
   const [capturedStreet, setCapturedStreet] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (/^[A-Z]\d{7,}$/i.test(q)) { router.push(`/listings/${q.toUpperCase()}`); return; }
+    if (activeTab === "Rent") { router.push(`/rentals`); return; }
+    router.push(`/listings?q=${encodeURIComponent(q)}`);
+  };
 
   const typeData = useMemo(() => {
     const s = typeStats[selectedType];
@@ -91,23 +111,25 @@ export default function HeroSection({ stats, typeStats }: Props) {
         </div>
 
         {/* Search bar */}
-        <div className="flex bg-[#0c1e35] border-2 border-[#1e3a5f] rounded-[13px] overflow-hidden focus-within:border-[#f59e0b] transition-colors mb-[14px]">
+        <form onSubmit={handleSearch} className="flex bg-[#0c1e35] border-2 border-[#1e3a5f] rounded-[13px] overflow-hidden focus-within:border-[#f59e0b] transition-colors mb-[14px]">
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Address, street, neighbourhood, MLS#..."
             className="flex-1 bg-transparent text-[14px] text-[#f8f9fb] placeholder:text-[rgba(248,249,251,0.25)] px-4 py-[14px] outline-none"
           />
-          <button className="bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-[22px] py-[14px] shrink-0 hover:bg-[#eab308] transition-colors">
+          <button type="submit" className="bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-[22px] py-[14px] shrink-0 hover:bg-[#eab308] transition-colors">
             Search
           </button>
-        </div>
+        </form>
 
-        {/* Quick pills */}
+        {/* Quick pills — real links */}
         <div className="flex flex-wrap gap-[6px] mb-6">
-          {pills.map((p) => (
-            <span key={p} className="text-[11px] text-[rgba(248,249,251,0.5)] bg-[#0c1e35] border border-[#1e3a5f] rounded-full px-3 py-[5px] cursor-pointer hover:border-[#f59e0b] hover:text-[#f8f9fb] transition-colors">
-              {p}
-            </span>
+          {SEARCH_PILLS.map((pill) => (
+            <a key={pill.label} href={pill.href} className="text-[11px] text-[#94a3b8] border border-[#1e3a5f] rounded-full px-3 py-[5px] hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors whitespace-nowrap">
+              {pill.label}
+            </a>
           ))}
         </div>
 

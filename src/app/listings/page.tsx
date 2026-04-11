@@ -12,7 +12,7 @@ export const metadata = genMeta({
 export const revalidate = 3600;
 
 interface Props {
-  searchParams: { type?: string; status?: string; min?: string; max?: string; beds?: string; baths?: string; sort?: string; page?: string };
+  searchParams: { type?: string; status?: string; min?: string; max?: string; maxPrice?: string; beds?: string; baths?: string; sort?: string; page?: string; q?: string; neighbourhood?: string };
 }
 
 const PER_PAGE = 36;
@@ -27,9 +27,21 @@ export default async function ListingsPage({ searchParams }: Props) {
   else if (searchParams.status === "sold") where.status = "sold";
   else where.status = "active";
   if (searchParams.min) where.price = { ...(where.price as object || {}), gte: parseInt(searchParams.min) };
-  if (searchParams.max) where.price = { ...(where.price as object || {}), lte: parseInt(searchParams.max) };
-  if (searchParams.beds) where.bedrooms = { gte: parseInt(searchParams.beds) };
+  if (searchParams.max || searchParams.maxPrice) {
+    const maxVal = parseInt(searchParams.maxPrice || searchParams.max || "0");
+    where.price = { ...(where.price as object || {}), lte: maxVal };
+  }
+  if (searchParams.beds) where.bedrooms = parseInt(searchParams.beds);
   if (searchParams.baths) where.bathrooms = { gte: parseInt(searchParams.baths) };
+  if (searchParams.neighbourhood) where.neighbourhood = { contains: searchParams.neighbourhood, mode: "insensitive" };
+  if (searchParams.q) {
+    where.OR = [
+      { address: { contains: searchParams.q, mode: "insensitive" } },
+      { neighbourhood: { contains: searchParams.q, mode: "insensitive" } },
+      { mlsNumber: { contains: searchParams.q, mode: "insensitive" } },
+      { description: { contains: searchParams.q, mode: "insensitive" } },
+    ];
+  }
 
   let orderBy: Record<string, string> = { listedAt: "desc" };
   if (searchParams.sort === "price_asc") orderBy = { price: "asc" };
