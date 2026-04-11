@@ -7,6 +7,7 @@ const primaryLinks = [
   { href: "/listings", label: "Buy" },
   { href: "/rentals", label: "Rent" },
   { href: "/sell", label: "Sell" },
+  { href: "/exclusive", label: "Exclusive" },
   { href: "/streets", label: "Streets" },
   { href: "/about", label: "About" },
 ];
@@ -32,13 +33,13 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Centre nav — 5 primary links */}
-        <nav className="hidden lg:flex items-center gap-1">
+        {/* Centre nav — 6 primary links */}
+        <nav className="hidden lg:flex items-center gap-0">
           {primaryLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className="px-3 py-1.5 text-[13px] font-medium text-[#94a3b8] hover:text-[#f8f9fb] transition-colors"
+              className="px-2 py-1.5 text-[13px] font-medium text-[#94a3b8] hover:text-[#f8f9fb] transition-colors"
             >
               {l.label}
             </Link>

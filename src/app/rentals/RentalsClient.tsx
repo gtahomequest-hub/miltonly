@@ -803,6 +803,18 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         </div>
       </div>
 
+      {/* ═══ EXCLUSIVE CROSS-LINK BANNER ═══ */}
+      <Link
+        href="/exclusive"
+        className="mx-5 sm:mx-11 my-4 bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#2d5a8e] transition-colors"
+      >
+        <div>
+          <p className="text-[14px] font-semibold text-[#f8f9fb]">🏠 Looking for exclusive off-market rentals?</p>
+          <p className="text-[12px] text-[#94a3b8] mt-0.5">Aamir has exclusive listings not on MLS</p>
+        </div>
+        <span className="text-[13px] font-semibold text-[#f59e0b] shrink-0">View exclusive listings →</span>
+      </Link>
+
       <AgentContactSection />
 
       {/* ═══ BOOKING MODAL ═══ */}

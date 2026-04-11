@@ -11,6 +11,7 @@ import { getHeroStats, getFeaturedListings, getPropertyTypeStats } from "@/lib/s
 import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
 import IntelligenceCentre from "@/components/sections/IntelligenceCentre";
+import ExclusiveStrip from "@/components/sections/ExclusiveStrip";
 import FeaturedListings from "@/components/sections/FeaturedListings";
 import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
 import FooterSection from "@/components/sections/FooterSection";
@@ -38,6 +39,7 @@ export default async function HomePage() {
         <HeroSection stats={stats} typeStats={typeStats} />
         <TrustBarSection stats={stats} />
         <IntelligenceCentre />
+        <ExclusiveStrip />
         <FeaturedListings listings={featured} />
         <SeoLinkGrid />
       </main>
