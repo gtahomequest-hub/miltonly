@@ -245,3 +245,24 @@ model Partner {
   bio     String?
   active  Boolean @default(true)
 }
+
+model ExclusiveListing {
+  id           String   @id @default(cuid())
+  title        String
+  address      String
+  city         String
+  price        Int
+  priceType    String   @default("sale")
+  bedsMin      Int
+  bedsMax      Int      @default(0)
+  baths        Int
+  parking      Int      @default(0)
+  propertyType String
+  status       String   @default("active")
+  badge        String   @default("Exclusive")
+  description  String   @db.Text
+  photos       String[]
+  slug         String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

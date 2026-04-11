@@ -3,6 +3,7 @@ import Link from "next/link";
 const primaryLinks = [
   { href: "/listings", label: "Buy" },
   { href: "/rentals", label: "Rent" },
+  { href: "/exclusive", label: "Exclusive" },
   { href: "/sell", label: "Sell" },
   { href: "/streets", label: "Streets" },
   { href: "/about", label: "About" },
