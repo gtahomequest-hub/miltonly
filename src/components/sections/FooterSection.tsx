@@ -1,14 +1,18 @@
 import Link from "next/link";
 
-const footerLinks = [
+const primaryLinks = [
   { href: "/listings", label: "Buy" },
-  { href: "/rent", label: "Rent" },
+  { href: "/rentals", label: "Rent" },
   { href: "/sell", label: "Sell" },
-  { href: "/compare", label: "Compare" },
   { href: "/streets", label: "Streets" },
+  { href: "/about", label: "About" },
+];
+
+const secondaryLinks = [
+  { href: "/compare", label: "Compare" },
   { href: "/condos", label: "Condos" },
-  { href: "/blog", label: "Blog" },
-  { href: "/partners", label: "Partners" },
+  { href: "/map", label: "Map" },
+  { href: "/saved", label: "Saved" },
 ];
 
 export default function FooterSection() {
@@ -25,8 +29,14 @@ export default function FooterSection() {
 
         {/* Links */}
         <nav className="flex flex-wrap justify-center gap-x-[22px] gap-y-2">
-          {footerLinks.map((l) => (
+          {primaryLinks.map((l) => (
             <Link key={l.href} href={l.href} className="text-[12px] text-[rgba(248,249,251,0.5)] hover:text-[rgba(248,249,251,0.7)] transition-colors">
+              {l.label}
+            </Link>
+          ))}
+          <span className="text-[12px] text-[rgba(248,249,251,0.15)]">|</span>
+          {secondaryLinks.map((l) => (
+            <Link key={l.href} href={l.href} className="text-[12px] text-[rgba(248,249,251,0.35)] hover:text-[rgba(248,249,251,0.6)] transition-colors">
               {l.label}
             </Link>
           ))}
@@ -34,7 +44,7 @@ export default function FooterSection() {
 
         {/* Copyright */}
         <p className="text-[11px] text-[rgba(248,249,251,0.3)] text-center sm:text-right shrink-0">
-          © 2025 Miltonly.com · Milton Ontario · TREB data disclaimer
+          © 2025 Miltonly.com · Aamir Yaqoob · RE/MAX Realty Specialists Inc.
         </p>
       </div>
     </footer>
