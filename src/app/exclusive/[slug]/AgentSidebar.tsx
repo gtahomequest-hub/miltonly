@@ -3,10 +3,9 @@ import InquiryForm from "./InquiryForm";
 interface Props {
   address: string;
   slug: string;
-  formId: string;
 }
 
-export default function AgentSidebar({ address, slug, formId }: Props) {
+export default function AgentSidebar({ address, slug }: Props) {
   return (
     <div>
       {/* Agent card */}
@@ -43,7 +42,7 @@ export default function AgentSidebar({ address, slug, formId }: Props) {
       </div>
 
       {/* Inquiry form */}
-      <InquiryForm address={address} slug={slug} formId={formId} />
+      <InquiryForm address={address} slug={slug} />
     </div>
   );
 }

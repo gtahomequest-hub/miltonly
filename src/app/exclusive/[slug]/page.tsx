@@ -138,7 +138,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
 
           {/* Right: sticky agent sidebar */}
           <div className="lg:sticky lg:top-[80px] self-start">
-            <AgentSidebar address={listing.address} slug={listing.slug} formId="top" />
+            <AgentSidebar address={listing.address} slug={listing.slug} />
           </div>
         </div>
       </section>
@@ -253,7 +253,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
 
             {/* Right column 1/3 — sticky duplicate */}
             <div className="lg:sticky lg:top-[80px] self-start">
-              <AgentSidebar address={listing.address} slug={listing.slug} formId="details" />
+              <AgentSidebar address={listing.address} slug={listing.slug} />
             </div>
           </div>
         </div>
