@@ -20,6 +20,23 @@ interface Listing {
   description: string;
   photos: string[];
   slug: string;
+  sqft: number | null;
+  yearBuilt: number | null;
+  lotSize: string | null;
+  maintenance: number | null;
+  taxes: number | null;
+  taxYear: number | null;
+  heating: string | null;
+  cooling: string | null;
+  basement: string | null;
+  garage: string | null;
+  exterior: string | null;
+  locker: string | null;
+  exposure: string | null;
+  petFriendly: boolean | null;
+  interiorFeatures: string[];
+  exteriorFeatures: string[];
+  rooms: unknown;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +57,23 @@ const emptyDraft: Omit<Listing, "id" | "createdAt" | "updatedAt"> = {
   description: "",
   photos: [],
   slug: "",
+  sqft: null,
+  yearBuilt: null,
+  lotSize: null,
+  maintenance: null,
+  taxes: null,
+  taxYear: null,
+  heating: null,
+  cooling: null,
+  basement: null,
+  garage: null,
+  exterior: null,
+  locker: null,
+  exposure: null,
+  petFriendly: null,
+  interiorFeatures: [],
+  exteriorFeatures: [],
+  rooms: null,
 };
 
 function slugify(s: string) {
@@ -60,7 +94,13 @@ export default function ExclusiveAdminPage() {
   const [toast, setToast] = useState("");
 
   const [editing, setEditing] = useState<Listing | null>(null);
-  const [draft, setDraft] = useState({ ...emptyDraft, photosText: "" });
+  const [draft, setDraft] = useState({
+    ...emptyDraft,
+    photosText: "",
+    interiorFeaturesText: "",
+    exteriorFeaturesText: "",
+    roomsText: "",
+  });
   const [showForm, setShowForm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,7 +151,13 @@ export default function ExclusiveAdminPage() {
 
   const openNew = () => {
     setEditing(null);
-    setDraft({ ...emptyDraft, photosText: "" });
+    setDraft({
+      ...emptyDraft,
+      photosText: "",
+      interiorFeaturesText: "",
+      exteriorFeaturesText: "",
+      roomsText: "",
+    });
     setShowForm(true);
   };
 
@@ -133,7 +179,27 @@ export default function ExclusiveAdminPage() {
       description: l.description,
       photos: l.photos,
       slug: l.slug,
+      sqft: l.sqft,
+      yearBuilt: l.yearBuilt,
+      lotSize: l.lotSize,
+      maintenance: l.maintenance,
+      taxes: l.taxes,
+      taxYear: l.taxYear,
+      heating: l.heating,
+      cooling: l.cooling,
+      basement: l.basement,
+      garage: l.garage,
+      exterior: l.exterior,
+      locker: l.locker,
+      exposure: l.exposure,
+      petFriendly: l.petFriendly,
+      interiorFeatures: l.interiorFeatures || [],
+      exteriorFeatures: l.exteriorFeatures || [],
+      rooms: l.rooms,
       photosText: l.photos.join("\n"),
+      interiorFeaturesText: (l.interiorFeatures || []).join("\n"),
+      exteriorFeaturesText: (l.exteriorFeatures || []).join("\n"),
+      roomsText: l.rooms ? JSON.stringify(l.rooms, null, 2) : "",
     });
     setShowForm(true);
   };
@@ -143,6 +209,23 @@ export default function ExclusiveAdminPage() {
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
+    const interiorFeatures = draft.interiorFeaturesText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const exteriorFeatures = draft.exteriorFeaturesText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    let rooms: unknown = null;
+    if (draft.roomsText.trim()) {
+      try {
+        rooms = JSON.parse(draft.roomsText);
+      } catch {
+        showToast("Rooms JSON is invalid — fix it and save again");
+        return;
+      }
+    }
     const payload = {
       ...(editing ? { id: editing.id } : {}),
       title: draft.title,
@@ -160,6 +243,23 @@ export default function ExclusiveAdminPage() {
       description: draft.description,
       photos,
       slug: draft.slug || slugify(`${draft.address}-${draft.city}`),
+      sqft: draft.sqft,
+      yearBuilt: draft.yearBuilt,
+      lotSize: draft.lotSize,
+      maintenance: draft.maintenance,
+      taxes: draft.taxes,
+      taxYear: draft.taxYear,
+      heating: draft.heating,
+      cooling: draft.cooling,
+      basement: draft.basement,
+      garage: draft.garage,
+      exterior: draft.exterior,
+      locker: draft.locker,
+      exposure: draft.exposure,
+      petFriendly: draft.petFriendly,
+      interiorFeatures,
+      exteriorFeatures,
+      rooms,
     };
     const res = await fetch("/api/admin/exclusive", {
       method: editing ? "PUT" : "POST",
@@ -481,6 +581,172 @@ export default function ExclusiveAdminPage() {
                   onChange={(e) => setDraft({ ...draft, description: e.target.value })}
                 />
               </Field>
+
+              <div className="pt-3 mt-3 border-t border-[#e2e8f0]">
+                <p className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-3">Property details</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <Field label="Sqft">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={draft.sqft ?? ""}
+                      onChange={(e) => setDraft({ ...draft, sqft: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </Field>
+                  <Field label="Year built">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={draft.yearBuilt ?? ""}
+                      onChange={(e) => setDraft({ ...draft, yearBuilt: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </Field>
+                  <Field label="Lot size">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="40 x 110 ft or N/A"
+                      value={draft.lotSize ?? ""}
+                      onChange={(e) => setDraft({ ...draft, lotSize: e.target.value || null })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <Field label="Maintenance / mo">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={draft.maintenance ?? ""}
+                      onChange={(e) => setDraft({ ...draft, maintenance: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </Field>
+                  <Field label="Taxes / yr">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={draft.taxes ?? ""}
+                      onChange={(e) => setDraft({ ...draft, taxes: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </Field>
+                  <Field label="Tax year">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={draft.taxYear ?? ""}
+                      onChange={(e) => setDraft({ ...draft, taxYear: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <Field label="Heating">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Forced Air Gas"
+                      value={draft.heating ?? ""}
+                      onChange={(e) => setDraft({ ...draft, heating: e.target.value || null })}
+                    />
+                  </Field>
+                  <Field label="Cooling">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Central Air"
+                      value={draft.cooling ?? ""}
+                      onChange={(e) => setDraft({ ...draft, cooling: e.target.value || null })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <Field label="Basement">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="None / Finished"
+                      value={draft.basement ?? ""}
+                      onChange={(e) => setDraft({ ...draft, basement: e.target.value || null })}
+                    />
+                  </Field>
+                  <Field label="Garage">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Underground"
+                      value={draft.garage ?? ""}
+                      onChange={(e) => setDraft({ ...draft, garage: e.target.value || null })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <Field label="Exterior">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Brick"
+                      value={draft.exterior ?? ""}
+                      onChange={(e) => setDraft({ ...draft, exterior: e.target.value || null })}
+                    />
+                  </Field>
+                  <Field label="Locker">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Owned #134"
+                      value={draft.locker ?? ""}
+                      onChange={(e) => setDraft({ ...draft, locker: e.target.value || null })}
+                    />
+                  </Field>
+                  <Field label="Exposure">
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="South"
+                      value={draft.exposure ?? ""}
+                      onChange={(e) => setDraft({ ...draft, exposure: e.target.value || null })}
+                    />
+                  </Field>
+                </div>
+                <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={draft.petFriendly ?? false}
+                    onChange={(e) => setDraft({ ...draft, petFriendly: e.target.checked })}
+                    className="w-4 h-4 accent-[#f59e0b]"
+                  />
+                  <span className="text-[12px] text-[#07111f] font-semibold">Pet friendly</span>
+                </label>
+              </div>
+
+              <Field label="Interior features (one per line)">
+                <textarea
+                  className="form-input min-h-[90px] text-[12px]"
+                  placeholder="Ensuite Laundry&#10;Central Air&#10;Open Concept"
+                  value={draft.interiorFeaturesText}
+                  onChange={(e) => setDraft({ ...draft, interiorFeaturesText: e.target.value })}
+                />
+              </Field>
+
+              <Field label="Exterior features (one per line)">
+                <textarea
+                  className="form-input min-h-[70px] text-[12px]"
+                  placeholder="Balcony&#10;Visitor Parking"
+                  value={draft.exteriorFeaturesText}
+                  onChange={(e) => setDraft({ ...draft, exteriorFeaturesText: e.target.value })}
+                />
+              </Field>
+
+              <Field label="Rooms (JSON array)">
+                <textarea
+                  className="form-input min-h-[140px] font-mono text-[11px]"
+                  placeholder={`[\n  {"name":"Living","level":"Main","size":"17 x 13 ft","notes":"W/O to balcony"}\n]`}
+                  value={draft.roomsText}
+                  onChange={(e) => setDraft({ ...draft, roomsText: e.target.value })}
+                />
+                <p className="text-[11px] text-[#64748b] mt-1">
+                  JSON array of rooms. Each object needs: name, level, size, notes.
+                </p>
+              </Field>
+
               <Field label="Photos">
                 <div className="flex gap-2 mb-2">
                   <button

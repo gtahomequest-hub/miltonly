@@ -5,9 +5,10 @@ import { useState } from "react";
 interface Props {
   address: string;
   slug: string;
+  formId?: string;
 }
 
-export default function InquiryForm({ address, slug }: Props) {
+export default function InquiryForm({ address, slug, formId = "main" }: Props) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");

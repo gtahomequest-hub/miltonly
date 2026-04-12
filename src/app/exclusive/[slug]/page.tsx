@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import type { Metadata } from "next";
-import InquiryForm from "./InquiryForm";
+import Gallery from "./Gallery";
+import AgentSidebar from "./AgentSidebar";
 
 export const revalidate = 300;
 
@@ -10,132 +12,262 @@ interface Props {
   params: { slug: string };
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const listing = await prisma.exclusiveListing.findUnique({ where: { slug: params.slug } });
-  if (!listing) return { title: "Listing not found" };
-  const priceStr = listing.priceType === "rent"
-    ? `$${listing.price.toLocaleString()}/mo`
-    : `$${listing.price.toLocaleString()}`;
-  return genMeta({
-    title: `${listing.title} — ${priceStr}`,
-    description: listing.description.slice(0, 160),
-    canonical: `https://miltonly.com/exclusive/${listing.slug}`,
-  });
+interface Room {
+  name: string;
+  level: string;
+  size: string;
+  notes?: string;
 }
 
 function formatPrice(price: number, priceType: string) {
-  if (priceType === "rent") return `$${price.toLocaleString()} / month`;
+  if (priceType === "rent") return `$${price.toLocaleString()}`;
   return `$${price.toLocaleString()}`;
 }
 
 function formatBedsLong(bedsMin: number, bedsMax: number) {
-  if (bedsMax > 0) return `${bedsMin}+${bedsMax} Bed`;
-  return `${bedsMin} Bed`;
+  if (bedsMax > 0) return `${bedsMin}+${bedsMax}`;
+  return `${bedsMin}`;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const listing = await prisma.exclusiveListing.findUnique({ where: { slug: params.slug } });
+  if (!listing) return { title: "Listing not found" };
+  const priceStr =
+    listing.priceType === "rent"
+      ? `$${listing.price.toLocaleString()}/mo`
+      : `$${listing.price.toLocaleString()}`;
+  const beds = listing.bedsMax > 0 ? `${listing.bedsMin}+${listing.bedsMax}` : `${listing.bedsMin}`;
+  return genMeta({
+    title: `${listing.address} — ${priceStr} | ${beds} bed ${listing.propertyType} | Miltonly`,
+    description: listing.description.slice(0, 160),
+    canonical: `https://miltonly.com/exclusive/${listing.slug}`,
+  });
 }
 
 export default async function ExclusiveDetailPage({ params }: Props) {
   const listing = await prisma.exclusiveListing.findUnique({ where: { slug: params.slug } });
   if (!listing) notFound();
 
-  const [heroPhoto, ...restPhotos] = listing.photos;
+  const rooms: Room[] = Array.isArray(listing.rooms) ? (listing.rooms as unknown as Room[]) : [];
+  const priceSuffix = listing.priceType === "rent" ? " / month" : "";
+
+  const detailRows: Array<{ label: string; value: string }> = [
+    { label: "Property type", value: listing.propertyType },
+    { label: "Sqft", value: listing.sqft ? `${listing.sqft.toLocaleString()} sq ft` : "—" },
+    { label: "Year built", value: listing.yearBuilt ? String(listing.yearBuilt) : "—" },
+    {
+      label: "Maintenance",
+      value: listing.maintenance ? `$${listing.maintenance.toLocaleString()} / month` : "—",
+    },
+    {
+      label: "Taxes",
+      value: listing.taxes
+        ? `$${listing.taxes.toLocaleString()}${listing.taxYear ? ` / yr (${listing.taxYear})` : " / yr"}`
+        : "—",
+    },
+    { label: "Heating", value: listing.heating || "—" },
+    { label: "Cooling", value: listing.cooling || "—" },
+    { label: "Basement", value: listing.basement || "—" },
+    { label: "Garage", value: listing.garage || "—" },
+    { label: "Locker", value: listing.locker || "—" },
+    { label: "Exposure", value: listing.exposure || "—" },
+    { label: "Lot size", value: listing.lotSize || "—" },
+    { label: "Exterior", value: listing.exterior || "—" },
+    { label: "Pets", value: listing.petFriendly === null ? "—" : listing.petFriendly ? "Yes" : "No" },
+  ];
 
   return (
-    <div className="bg-[#f8f9fb] min-h-screen">
-      {/* Gallery */}
-      <section className="bg-white">
-        {heroPhoto && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={heroPhoto}
-            alt={listing.title}
-            className="w-full max-h-[500px] object-cover"
-          />
-        )}
-        {restPhotos.length > 0 && (
-          <div className="max-w-6xl mx-auto px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {restPhotos.map((p, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={i}
-                src={p}
-                alt={`${listing.title} photo ${i + 2}`}
-                className="w-full aspect-[4/3] object-cover rounded-lg"
-              />
-            ))}
-          </div>
-        )}
-      </section>
+    <div className="bg-white min-h-screen">
+      {/* Gallery — full width */}
+      <Gallery photos={listing.photos} title={listing.title} />
 
-      {/* Info */}
-      <section className="max-w-6xl mx-auto px-5 py-8">
+      {/* Breadcrumb + back link */}
+      <div className="max-w-6xl mx-auto px-5 pt-6">
+        <Link
+          href="/exclusive"
+          className="text-[12px] text-[#94a3b8] hover:text-[#07111f] inline-block mb-2"
+        >
+          ← Back to exclusive listings
+        </Link>
+        <nav className="text-[11px] text-[#64748b]">
+          <Link href="/" className="hover:text-[#07111f]">
+            Miltonly
+          </Link>
+          <span className="mx-1.5">›</span>
+          <Link href="/exclusive" className="hover:text-[#07111f]">
+            Exclusive
+          </Link>
+          {listing.city && (
+            <>
+              <span className="mx-1.5">›</span>
+              <span>{listing.city}</span>
+            </>
+          )}
+          <span className="mx-1.5">›</span>
+          <span className="text-[#07111f] font-semibold">{listing.address}</span>
+        </nav>
+      </div>
+
+      {/* Header row — price + stats, agent sidebar */}
+      <section className="max-w-6xl mx-auto px-5 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left 2/3 */}
+          {/* Left: price + address + stat row */}
           <div className="lg:col-span-2">
-            <span className="inline-block bg-[#f59e0b] text-[#07111f] text-[10px] font-bold px-3 py-1 rounded-full">
+            <span className="inline-block bg-[#f59e0b] text-[#07111f] text-[10px] font-bold px-3 py-1 rounded-full tracking-wider uppercase">
               {listing.badge}
             </span>
-            <p className="text-[32px] sm:text-[38px] font-extrabold text-[#07111f] tracking-[-0.02em] mt-3">
+            <p className="text-[36px] sm:text-[42px] font-extrabold text-[#07111f] tracking-[-0.02em] leading-[1.1] mt-3">
               {formatPrice(listing.price, listing.priceType)}
+              {priceSuffix && (
+                <span className="text-[20px] font-semibold text-[#64748b]"> {priceSuffix.trim()}</span>
+              )}
             </p>
-            <p className="text-[15px] text-[#475569] mt-1">
-              {listing.address}
-              {listing.city ? `, ${listing.city}` : ""}
-            </p>
-            <p className="text-[14px] font-bold text-[#07111f] mt-4">
-              {formatBedsLong(listing.bedsMin, listing.bedsMax)}
-            </p>
-            <p className="text-[13px] text-[#64748b] mt-1">
-              {listing.baths} Bath · {listing.parking} Parking · {listing.propertyType}
-            </p>
+            <p className="text-[18px] font-semibold text-[#07111f] mt-2">{listing.address}</p>
+            {listing.city && <p className="text-[14px] text-[#64748b] mt-0.5">{listing.city}</p>}
 
-            <div className="border-t border-[#e2e8f0] my-6" />
-
-            <h2 className="text-[16px] font-extrabold text-[#07111f] mb-3">About this home</h2>
-            <p className="text-[14px] leading-relaxed text-[#374151] whitespace-pre-line">
-              {listing.description}
-            </p>
+            {/* Icon stat row */}
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5 py-5 border-y border-[#e2e8f0]">
+              <Stat icon="🛏" value={formatBedsLong(listing.bedsMin, listing.bedsMax)} label="Beds" />
+              <Stat icon="🚿" value={String(listing.baths)} label="Baths" />
+              {listing.sqft && <Stat icon="📐" value={`${listing.sqft.toLocaleString()}`} label="Sqft" />}
+              <Stat icon="🏠" value={listing.propertyType} label="Type" />
+              <Stat icon="🚗" value={String(listing.parking)} label="Parking" />
+              {listing.yearBuilt && <Stat icon="📅" value={String(listing.yearBuilt)} label="Year built" />}
+            </div>
           </div>
 
-          {/* Right 1/3 */}
-          <div className="self-start lg:sticky lg:top-6">
-            {/* Agent contact card */}
-            <div className="bg-[#07111f] rounded-2xl p-6">
-              <p className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider">Listed by</p>
-              <p className="text-[20px] font-extrabold text-[#f8f9fb] mt-1">Aamir Yaqoob</p>
-              <p className="text-[12px] font-bold text-[#f59e0b] mt-1">
-                Sales Representative · RE/MAX Realty Specialists Inc.
-              </p>
-
-              <div className="mt-3 space-y-1">
-                <p className="text-[11px] text-[#94a3b8]">🏆 RE/MAX Hall of Fame Award</p>
-                <p className="text-[11px] text-[#94a3b8]">🏆 RE/MAX Executive Award</p>
-                <p className="text-[11px] text-[#94a3b8]">🏆 RE/MAX 100% Club Award</p>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                <a
-                  href="tel:+16478399090"
-                  className="block w-full bg-[#f59e0b] text-[#07111f] text-center rounded-xl py-3 font-bold text-[14px] hover:bg-[#fbbf24]"
-                >
-                  📞 Call (647) 839-9090
-                </a>
-                <a
-                  href="https://wa.me/16478399090"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full bg-[#0c1e35] border border-[#1e3a5f] text-[#f8f9fb] text-center rounded-xl py-3 font-bold text-[14px] hover:bg-[#1e3a5f]"
-                >
-                  💬 WhatsApp (647) 839-9090
-                </a>
-                <p className="text-[11px] text-[#94a3b8] text-center mt-2">gtahomequest@gmail.com</p>
-              </div>
-            </div>
-
-            {/* Inquiry form */}
-            <InquiryForm address={listing.address} slug={listing.slug} />
+          {/* Right: sticky agent sidebar */}
+          <div className="lg:sticky lg:top-[80px] self-start">
+            <AgentSidebar address={listing.address} slug={listing.slug} formId="top" />
           </div>
         </div>
       </section>
+
+      {/* Details section — bg-[#f8f9fb] */}
+      <section className="bg-[#f8f9fb] py-10 mt-10">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left column 2/3 */}
+            <div className="lg:col-span-2 space-y-10">
+              {/* About */}
+              <div>
+                <h2 className="text-[20px] font-extrabold text-[#07111f] mb-4 tracking-[-0.01em]">
+                  About this property
+                </h2>
+                <p className="text-[14px] leading-relaxed text-[#374151] whitespace-pre-line">
+                  {listing.description}
+                </p>
+              </div>
+
+              {/* Property details */}
+              <div>
+                <h2 className="text-[20px] font-extrabold text-[#07111f] mb-4 tracking-[-0.01em]">
+                  Property details
+                </h2>
+                <div className="bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden">
+                  <div className="grid grid-cols-1 sm:grid-cols-2">
+                    {detailRows.map((row, i) => (
+                      <div
+                        key={row.label}
+                        className={`flex items-center justify-between px-5 py-3 text-[13px] ${
+                          i % 2 === 0 ? "bg-white" : "bg-[#f8f9fb]"
+                        } ${i < detailRows.length - 2 ? "border-b border-[#f1f5f9]" : ""}`}
+                      >
+                        <span className="text-[#94a3b8]">{row.label}</span>
+                        <span className="text-[#07111f] font-semibold text-right">{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Rooms */}
+              {rooms.length > 0 && (
+                <div>
+                  <h2 className="text-[20px] font-extrabold text-[#07111f] mb-4 tracking-[-0.01em]">
+                    Room details
+                  </h2>
+                  <div className="bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden">
+                    <table className="w-full text-[13px]">
+                      <thead className="bg-[#07111f] text-[#f8f9fb]">
+                        <tr>
+                          <th className="text-left px-5 py-3 font-semibold">Room</th>
+                          <th className="text-left px-5 py-3 font-semibold">Level</th>
+                          <th className="text-left px-5 py-3 font-semibold">Size</th>
+                          <th className="text-left px-5 py-3 font-semibold">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rooms.map((r, i) => (
+                          <tr key={`${r.name}-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-[#f8f9fb]"}>
+                            <td className="px-5 py-3 font-semibold text-[#07111f]">{r.name}</td>
+                            <td className="px-5 py-3 text-[#64748b]">{r.level}</td>
+                            <td className="px-5 py-3 text-[#64748b]">{r.size}</td>
+                            <td className="px-5 py-3 text-[#64748b]">{r.notes || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Interior features */}
+              {listing.interiorFeatures.length > 0 && (
+                <div>
+                  <h2 className="text-[20px] font-extrabold text-[#07111f] mb-4 tracking-[-0.01em]">
+                    Interior features
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {listing.interiorFeatures.map((f) => (
+                      <span
+                        key={f}
+                        className="bg-white border border-[#e2e8f0] text-[#475569] rounded-full px-3 py-1 text-[12px] font-medium"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Exterior features */}
+              {listing.exteriorFeatures.length > 0 && (
+                <div>
+                  <h2 className="text-[20px] font-extrabold text-[#07111f] mb-4 tracking-[-0.01em]">
+                    Exterior features
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {listing.exteriorFeatures.map((f) => (
+                      <span
+                        key={f}
+                        className="bg-white border border-[#e2e8f0] text-[#475569] rounded-full px-3 py-1 text-[12px] font-medium"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right column 1/3 — sticky duplicate */}
+            <div className="lg:sticky lg:top-[80px] self-start">
+              <AgentSidebar address={listing.address} slug={listing.slug} formId="details" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Stat({ icon, value, label }: { icon: string; value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-start min-w-[72px]">
+      <span className="text-[20px] leading-none mb-1">{icon}</span>
+      <span className="text-[18px] font-extrabold text-[#07111f] leading-tight">{value}</span>
+      <span className="text-[11px] text-[#64748b] font-semibold">{label}</span>
     </div>
   );
 }
