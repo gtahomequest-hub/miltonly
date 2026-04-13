@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { makeStreetDecision, getStreetStats } from "@/lib/streetDecision";
 import { calcMarketDataHash } from "@/lib/streetUtils";
 import { sendSMS } from "@/lib/smsAlert";
-import Anthropic from "@anthropic-ai/sdk";
+import { generateStreetDescription as aiGenerate, type SafeStreetStats } from "@/lib/ai/compliance";
 
 export const maxDuration = 300;
 
@@ -118,8 +118,6 @@ async function generateDescription(
   stats: NonNullable<Awaited<ReturnType<typeof getStreetStats>>>,
   previousFailure?: string
 ): Promise<string> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
   const bestMonth = stats.monthlyTrend.length > 0
     ? stats.monthlyTrend.reduce((a, b) => (b.salesCount > a.salesCount ? b : a)).month
     : "N/A";
@@ -144,17 +142,23 @@ Real market data — use all of this naturally in the text:
 - Price trend: Prices have ${stats.priceDirection}
 - Most active sales month recently: ${bestMonth}`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1200,
-    temperature: 0.7,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  const safeStats: SafeStreetStats = {
+    streetName,
+    neighbourhood: stats.neighbourhood,
+    avgSoldPrice: stats.avgSoldPrice,
+    medianSoldPrice: stats.medianSoldPrice,
+    totalSold12mo: stats.totalSold12mo,
+    avgDOM: stats.avgDOM,
+    soldVsAskPct: stats.soldVsAskPct,
+    activeCount: stats.activeCount,
+    dominantPropertyType: stats.dominantPropertyType,
+    priceDirection: stats.priceDirection,
+    schoolZone: stats.schoolZone,
+    bestMonth,
+  };
 
-  const block = response.content[0];
-  if (block.type !== "text") throw new Error("Unexpected response type");
-  return block.text.trim();
+  const result = await aiGenerate(SYSTEM_PROMPT, userPrompt, safeStats);
+  return result.text;
 }
 
 function buildFaqJson(
@@ -217,6 +221,8 @@ async function processStreet(streetSlug: string, streetName: string) {
   const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} in the last 12 months. Average price ${formatPrice(stats.avgSoldPrice)}. ${stats.avgDOM} days on market. Milton's most detailed street guide.`;
   const faqJson = buildFaqJson(streetName, stats);
 
+  const contentStatus = passed ? "published" : "draft";
+
   await prisma.streetContent.upsert({
     where: { streetSlug },
     create: {
@@ -230,10 +236,10 @@ async function processStreet(streetSlug: string, streetName: string) {
       faqJson,
       statsJson: JSON.stringify(stats),
       marketDataHash,
-      status: "draft",
-      needsReview: true,
+      status: contentStatus,
+      needsReview: !passed,
       aiGenerated: true,
-      publishedAt: null,
+      publishedAt: passed ? new Date() : null,
       generatedAt: new Date(),
       attempts,
     },
@@ -246,8 +252,9 @@ async function processStreet(streetSlug: string, streetName: string) {
       faqJson,
       statsJson: JSON.stringify(stats),
       marketDataHash,
-      status: "draft",
-      needsReview: true,
+      status: contentStatus,
+      needsReview: !passed,
+      publishedAt: passed ? new Date() : undefined,
       generatedAt: new Date(),
       attempts,
     },
@@ -260,7 +267,9 @@ async function processStreet(streetSlug: string, streetName: string) {
 
   // SMS notification
   await sendSMS(
-    `\u{1f4dd} New Miltonly draft ready: ${streetName}\n${stats.totalSold12mo} sales \u00b7 ${formatPrice(stats.avgSoldPrice)} avg\nReview at miltonly.vercel.app/admin/review`
+    passed
+      ? `\u2713 Published: ${streetName}\n${stats.totalSold12mo} sales \u00b7 ${formatPrice(stats.avgSoldPrice)} avg\nmiltonly.com/streets/${streetSlug}`
+      : `\u{1f4dd} Draft needs review: ${streetName}\n${stats.totalSold12mo} sales \u00b7 ${formatPrice(stats.avgSoldPrice)} avg\nmiltonly.vercel.app/admin/review`
   );
 
   return { streetName, passed, attempts };
@@ -298,7 +307,7 @@ export async function POST(request: NextRequest) {
   const pending = await prisma.streetQueue.findMany({
     where: { status: "pending" },
     orderBy: { createdAt: "asc" },
-    take: 20,
+    take: 50,
   });
 
   // Run decision check and filter
@@ -319,9 +328,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Process in batches of 3
-  for (let i = 0; i < toBuild.length; i += 3) {
-    const batch = toBuild.slice(i, i + 3);
+  // Process in batches of 10
+  for (let i = 0; i < toBuild.length; i += 10) {
+    const batch = toBuild.slice(i, i + 10);
 
     // Mark as processing
     await Promise.all(
@@ -357,9 +366,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2 second pause between batches
-    if (i + 3 < toBuild.length) {
-      await new Promise((r) => setTimeout(r, 2000));
+    // 1 second pause between batches
+    if (i + 10 < toBuild.length) {
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 

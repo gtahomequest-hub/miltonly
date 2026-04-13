@@ -40,7 +40,7 @@ function extractStreetName(address: string): string {
 export const getStreetPageData = unstable_cache(
   async (slug: string): Promise<StreetPageData | null> => {
     const allListings = await prisma.listing.findMany({
-      where: { streetSlug: slug },
+      where: { streetSlug: slug, permAdvertise: true },
       orderBy: { listedAt: "desc" },
     });
 

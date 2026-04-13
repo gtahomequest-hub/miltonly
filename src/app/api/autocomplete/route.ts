@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const results = await prisma.listing.findMany({
       where: {
         streetName: { contains: q, mode: "insensitive" },
+        permAdvertise: true,
       },
       select: { streetName: true, streetSlug: true },
       distinct: ["streetName"],
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
     const results = await prisma.listing.findMany({
       where: {
         neighbourhood: { contains: q, mode: "insensitive" },
+        permAdvertise: true,
       },
       select: { neighbourhood: true },
       distinct: ["neighbourhood"],

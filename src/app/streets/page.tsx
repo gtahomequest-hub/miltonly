@@ -14,27 +14,60 @@ export default async function StreetsIndexPage() {
     by: ["streetSlug"],
     _count: true,
     _avg: { price: true },
-    where: { city: "Milton" },
+    where: { city: "Milton", permAdvertise: true },
     orderBy: { _count: { streetSlug: "desc" } },
   });
 
-  // Get the clean street name for each slug from the Listing table
+  // Get the clean street name + neighbourhood for each slug
   const streetData = await Promise.all(
-    streets.slice(0, 100).map(async (s) => {
+    streets.map(async (s) => {
       const sample = await prisma.listing.findFirst({
         where: { streetSlug: s.streetSlug, streetName: { not: null } },
         select: { streetName: true, neighbourhood: true },
       });
 
+      // Check if this street has active listings
+      const activeCount = await prisma.listing.count({
+        where: { streetSlug: s.streetSlug, status: "active", permAdvertise: true },
+      });
+
+      // Check if it has a published street page
+      const hasPage = await prisma.streetContent.findUnique({
+        where: { streetSlug: s.streetSlug, status: "published" },
+        select: { streetSlug: true, publishedAt: true },
+      });
+
+      // Check if recently queued (new street)
+      const inQueue = await prisma.streetQueue.findUnique({
+        where: { streetSlug: s.streetSlug },
+        select: { createdAt: true },
+      });
+
+      const isNew = inQueue
+        ? Date.now() - new Date(inQueue.createdAt).getTime() < 7 * 86400000
+        : false;
+
       return {
         slug: s.streetSlug,
         name: sample?.streetName || s.streetSlug,
-        neighbourhood: sample?.neighbourhood || "Milton",
+        neighbourhood: sample?.neighbourhood
+          ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
+          : "Milton",
         count: s._count,
+        activeCount,
         avgPrice: Math.round(s._avg.price || 0),
+        hasPage: !!hasPage,
+        isNew,
       };
     })
   );
+
+  // Get unique neighbourhoods for filter chips
+  const neighbourhoods = Array.from(new Set(streetData.map((s) => s.neighbourhood)))
+    .filter((n) => n && n !== "Milton")
+    .sort();
+
+  const publishedCount = await prisma.streetContent.count({ where: { status: "published" } });
 
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
@@ -46,10 +79,10 @@ export default async function StreetsIndexPage() {
           Every Milton Street
         </h1>
         <p className="text-[13px] text-[#64748b] mb-8">
-{streetData.length} streets with live price data · Updated daily from TREB
+          {streetData.length} streets with live price data · {publishedCount} full street reports published · Updated daily from TREB
         </p>
 
-        <StreetsGrid streets={streetData} />
+        <StreetsGrid streets={streetData} neighbourhoods={neighbourhoods} />
       </div>
     </div>
   );

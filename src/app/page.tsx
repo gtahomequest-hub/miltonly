@@ -6,7 +6,7 @@ import {
   generateBreadcrumbSchema,
 } from "@/lib/schema";
 import { homepageFAQs } from "@/lib/faqs";
-import { getHeroStats, getFeaturedListings, getPropertyTypeStats } from "@/lib/stats";
+import { getHeroStats, getFeaturedListings, getPropertyTypeStats, getTrendingStreets } from "@/lib/stats";
 
 import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
@@ -17,10 +17,11 @@ import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
 import FooterSection from "@/components/sections/FooterSection";
 
 export default async function HomePage() {
-  const [stats, featured, typeStats] = await Promise.all([
+  const [stats, featured, typeStats, trendingStreets] = await Promise.all([
     getHeroStats(),
     getFeaturedListings(),
     getPropertyTypeStats(),
+    getTrendingStreets(),
   ]);
 
   const schemas = [
@@ -36,7 +37,7 @@ export default async function HomePage() {
     <>
       <SchemaScript schemas={schemas} />
       <main>
-        <HeroSection stats={stats} typeStats={typeStats} />
+        <HeroSection stats={stats} typeStats={typeStats} trendingStreets={trendingStreets} />
         <TrustBarSection stats={stats} />
         <IntelligenceCentre />
         <ExclusiveStrip />

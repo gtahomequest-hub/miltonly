@@ -24,24 +24,24 @@ const rentCategories = [
 
 export default async function RentalsPage() {
   const listings = await prisma.listing.findMany({
-    where: { transactionType: "For Lease", city: "Milton" },
+    where: { transactionType: "For Lease", city: "Milton", permAdvertise: true },
     orderBy: { listedAt: "desc" },
     take: 48,
   });
 
   const totalRentals = await prisma.listing.count({
-    where: { transactionType: "For Lease", city: "Milton" },
+    where: { transactionType: "For Lease", city: "Milton", permAdvertise: true },
   });
 
   const avgRent = await prisma.listing.aggregate({
-    where: { transactionType: "For Lease", city: "Milton", price: { gt: 500, lt: 10000 } },
+    where: { transactionType: "For Lease", city: "Milton", price: { gt: 500, lt: 10000 }, permAdvertise: true },
     _avg: { price: true },
   });
 
   const rentAvgs = await Promise.all(
     rentCategories.map(async (cat) => {
       const where: Record<string, unknown> = {
-        transactionType: "For Lease", city: "Milton", propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 },
+        transactionType: "For Lease", city: "Milton", propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true,
       };
       if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
       const agg = await prisma.listing.aggregate({ where, _avg: { price: true } });

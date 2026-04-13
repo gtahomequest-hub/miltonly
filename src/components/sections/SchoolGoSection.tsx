@@ -41,7 +41,7 @@ export default function SchoolGoSection() {
               {schools.map((school) => (
                 <Link
                   key={school}
-                  href={`/school-zones/${school.toLowerCase().replace(/[\s.]+/g, "-")}`}
+                  href={`/listings?q=${encodeURIComponent(school)}`}
                   className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-brand-50 rounded-xl text-sm font-medium text-neutral-700 hover:text-brand-600 transition-all group"
                 >
                   {school}
@@ -73,7 +73,7 @@ export default function SchoolGoSection() {
               ].map((option) => (
                 <Link
                   key={option.time}
-                  href={`/go-train?maxWalk=${option.time.split(" ")[0]}`}
+                  href="/streets"
                   className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-accent-50 rounded-xl text-sm transition-all group"
                 >
                   <span className="font-medium text-neutral-700 group-hover:text-accent-700">
@@ -85,7 +85,7 @@ export default function SchoolGoSection() {
                 </Link>
               ))}
             </div>
-            <Link href="/go-train" className="btn-secondary w-full text-center block !rounded-xl">
+            <Link href="/streets" className="btn-secondary w-full text-center block !rounded-xl">
               View All GO Commute Homes
             </Link>
           </div>

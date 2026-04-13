@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import AgentStrip from "@/components/AgentStrip";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import ConsentBanner from "@/components/consent/ConsentBanner";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -90,6 +91,7 @@ export default function RootLayout({
         {children}
         <AgentStrip />
         <CrispChat />
+        <ConsentBanner />
       </body>
     </html>
   );

@@ -26,6 +26,13 @@ const propertyTypes = [
 ];
 const streetPills = ["Derry Rd", "Main St E", "Thompson Rd", "Laurier Ave", "Louis St. Laurent"];
 
+interface TrendingStreet {
+  slug: string;
+  name: string;
+  activeCount: number;
+  avgPrice: number;
+}
+
 interface Props {
   stats: {
     activeCount: number;
@@ -39,9 +46,10 @@ interface Props {
     rentalCount: number;
   };
   typeStats: Record<string, { avgPrice: number; avgDOM: number; soldVsAsk: number }>;
+  trendingStreets: TrendingStreet[];
 }
 
-export default function HeroSection({ stats, typeStats }: Props) {
+export default function HeroSection({ stats, typeStats, trendingStreets }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<(typeof searchTabs)[number]>("Buy");
   const [searchQuery, setSearchQuery] = useState("");
@@ -133,8 +141,38 @@ export default function HeroSection({ stats, typeStats }: Props) {
           ))}
         </div>
 
+        {/* Trending streets — fills the dead zone */}
+        {trendingStreets.length > 0 && (
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">Trending streets this week</p>
+              <Link href="/streets" className="text-[10px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">
+                All streets →
+              </Link>
+            </div>
+            <div className="space-y-1.5">
+              {trendingStreets.slice(0, 4).map((street) => (
+                <Link
+                  key={street.slug}
+                  href={`/streets/${street.slug}`}
+                  className="flex items-center justify-between bg-[#0c1e35] border border-[#1e3a5f] rounded-lg px-3 py-2.5 hover:border-[#f59e0b] transition-colors group"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-[#f8f9fb] group-hover:text-[#f59e0b] transition-colors truncate">{street.name}</p>
+                    <p className="text-[9px] text-[#94a3b8]">{street.activeCount} active listings</p>
+                  </div>
+                  <div className="text-right shrink-0 ml-3">
+                    <p className="text-[13px] font-extrabold text-[#f8f9fb]">{formatPrice(street.avgPrice)}</p>
+                    <p className="text-[9px] text-[#94a3b8]">avg ask</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 5 stat boxes — REAL DATA from active listings */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
           {[
             { value: formatPrice(stats.avgDetached), label: "Detached avg ask", sub: `${stats.detachedCount} active` },
             { value: formatPrice(stats.avgSemi), label: "Semi-det avg ask", sub: `${stats.semiCount} active` },

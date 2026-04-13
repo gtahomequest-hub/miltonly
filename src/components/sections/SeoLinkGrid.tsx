@@ -15,6 +15,7 @@ const getSeoData = unstable_cache(
     const streetGroups = await prisma.listing.groupBy({
       by: ["streetSlug"],
       _count: true,
+      where: { permAdvertise: true },
       orderBy: { _count: { streetSlug: "desc" } },
       take: 60,
     });
@@ -34,6 +35,7 @@ const getSeoData = unstable_cache(
     const hoodGroups = await prisma.listing.groupBy({
       by: ["neighbourhood"],
       _count: true,
+      where: { permAdvertise: true },
       orderBy: { _count: { neighbourhood: "desc" } },
     });
 
@@ -49,10 +51,10 @@ const getSeoData = unstable_cache(
     const types = await prisma.listing.groupBy({
       by: ["propertyType"],
       _count: true,
-      where: { status: "active" },
+      where: { status: "active", permAdvertise: true },
     });
 
-    const totalStreets = await prisma.listing.groupBy({ by: ["streetSlug"], _count: true });
+    const totalStreets = await prisma.listing.groupBy({ by: ["streetSlug"], _count: true, where: { permAdvertise: true } });
 
     return { streets, neighbourhoods, types, totalStreets: totalStreets.length };
   },
@@ -178,23 +180,23 @@ export default async function SeoLinkGrid() {
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
           {[
-            "Craig Kielburger Secondary",
-            "Bishop Reding Catholic Secondary",
-            "Milton District High School",
-            "E.W. Foster Public School",
-            "Stuart E. Russel PS",
-            "Tiger Jeet Singh PS",
-            "Sam Sherratt PS",
-            "Anne J. MacArthur PS",
-            "Viola Desmond PS",
-            "Chris Hadfield PS",
+            { name: "Craig Kielburger Secondary", q: "Craig Kielburger" },
+            { name: "Bishop Reding Catholic Secondary", q: "Bishop Reding" },
+            { name: "Milton District High School", q: "Milton District" },
+            { name: "E.W. Foster Public School", q: "E.W. Foster" },
+            { name: "Stuart E. Russel PS", q: "Stuart E. Russel" },
+            { name: "Tiger Jeet Singh PS", q: "Tiger Jeet Singh" },
+            { name: "Sam Sherratt PS", q: "Sam Sherratt" },
+            { name: "Anne J. MacArthur PS", q: "Anne J. MacArthur" },
+            { name: "Viola Desmond PS", q: "Viola Desmond" },
+            { name: "Chris Hadfield PS", q: "Chris Hadfield" },
           ].map((school) => (
             <Link
-              key={school}
-              href={`/school-zones/${school.toLowerCase().replace(/[\s.]+/g, "-")}`}
+              key={school.name}
+              href={`/listings?q=${encodeURIComponent(school.q)}`}
               className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors"
             >
-              Homes near {school}
+              Homes near {school.name}
             </Link>
           ))}
         </div>
@@ -210,13 +212,13 @@ export default async function SeoLinkGrid() {
             { label: "Milton homes for sale", href: "/listings" },
             { label: "Milton homes for rent", href: "/listings?status=rent" },
             { label: "Milton sold prices", href: "/listings?status=sold" },
-            { label: "Milton market report", href: "/market-report" },
-            { label: "Milton neighbourhood comparison", href: "/compare" },
-            { label: "Homes near Milton GO station", href: "/go-train" },
-            { label: "Milton condo buildings", href: "/condos" },
             { label: "Milton street prices", href: "/streets" },
+            { label: "Milton neighbourhood comparison", href: "/compare" },
+            { label: "Milton rentals", href: "/rentals" },
+            { label: "Milton condo buildings", href: "/condos" },
+            { label: "Milton exclusive listings", href: "/exclusive" },
             { label: "What's my Milton home worth?", href: "/sell" },
-            { label: "Milton open houses", href: "/listings?openHouse=true" },
+            { label: "About your Milton agent", href: "/about" },
           ].map((l) => (
             <Link
               key={l.label}

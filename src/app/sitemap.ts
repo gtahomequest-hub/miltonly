@@ -5,17 +5,6 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://miltonly.com";
 
-const neighbourhoods = [
-  "willmott",
-  "coates",
-  "clarke",
-  "beaty",
-  "dempsey",
-  "old-milton",
-  "hawthorne-village",
-  "scott",
-  "harrison",
-];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -40,93 +29,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/buy`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${SITE_URL}/rent`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${SITE_URL}/invest`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${SITE_URL}/compare`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${SITE_URL}/map`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.7,
-    },
-    {
       url: `${SITE_URL}/streets`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
-      url: `${SITE_URL}/condos`,
+      url: `${SITE_URL}/rentals`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/exclusive`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
-      url: `${SITE_URL}/neighbourhoods`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${SITE_URL}/school-zones`,
+      url: `${SITE_URL}/about`,
       lastModified: now,
       changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${SITE_URL}/go-train`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${SITE_URL}/market-report`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${SITE_URL}/blog`,
-      lastModified: now,
-      changeFrequency: "weekly",
       priority: 0.6,
     },
     {
-      url: `${SITE_URL}/partners`,
+      url: `${SITE_URL}/compare`,
       lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
+      changeFrequency: "weekly",
+      priority: 0.7,
     },
   ];
-
-  const neighbourhoodPages: MetadataRoute.Sitemap = neighbourhoods.map(
-    (slug) => ({
-      url: `${SITE_URL}/neighbourhoods/${slug}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })
-  );
 
   // Published street pages from pipeline
   const publishedStreets = await prisma.streetContent.findMany({
@@ -141,5 +73,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages];
+  return [...staticPages, ...streetPages];
 }

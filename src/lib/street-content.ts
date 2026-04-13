@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { generateStreetDescription as aiGenerate, type SafeStreetStats } from "@/lib/ai/compliance";
 
 const BANNED_WORDS = [
   "nestled", "charming", "vibrant", "picturesque", "bustling",
@@ -63,10 +64,8 @@ interface StreetDataForContent {
 export async function generateStreetDescription(
   data: StreetDataForContent
 ): Promise<{ text: string; passed: boolean; attempts: number }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
   // If no API key, return a data-driven template
-  if (!apiKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return generateTemplateDescription(data);
   }
 
@@ -110,34 +109,28 @@ STRICT RULES:
 9. Write in second or third person — never first person
 10. The description must only apply to THIS street in Milton — it should not work for any other city`;
 
+  const safeStats: SafeStreetStats = {
+    streetName: data.streetName,
+    neighbourhood: data.neighbourhoods[0] || "Milton",
+    avgSoldPrice: data.avgSoldPrice,
+    medianSoldPrice: data.avgSoldPrice,
+    totalSold12mo: data.totalSold12mo,
+    avgDOM: data.avgDOM,
+    soldVsAskPct: data.soldVsAskPct,
+    activeCount: data.activeCount,
+    dominantPropertyType: Object.keys(data.byType)[0] || "detached",
+    priceDirection: "remained steady",
+    schoolZone: null,
+    bestMonth: "N/A",
+  };
+
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        }),
-      });
-
-      if (!res.ok) {
-        console.error(`Claude API error (attempt ${attempt}):`, res.status);
-        continue;
-      }
-
-      const result = await res.json();
-      const text = result.content?.[0]?.text || "";
-      const validation = validateStreetDescription(text);
+      const result = await aiGenerate(systemPrompt, userPrompt, safeStats);
+      const validation = validateStreetDescription(result.text);
 
       if (validation.pass) {
-        return { text, passed: true, attempts: attempt };
+        return { text: result.text, passed: true, attempts: attempt };
       }
       console.log(`Validation failed (attempt ${attempt}): ${validation.reason}`);
     } catch (e) {

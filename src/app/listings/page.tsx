@@ -21,7 +21,7 @@ export default async function ListingsPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page || "1"));
   const skip = (page - 1) * PER_PAGE;
 
-  const where: Record<string, unknown> = { city: "Milton" };
+  const where: Record<string, unknown> = { city: "Milton", permAdvertise: true };
   if (searchParams.type && searchParams.type !== "all") where.propertyType = searchParams.type;
   if (searchParams.status === "rent") where.transactionType = "For Lease";
   else if (searchParams.status === "sold") where.status = "sold";
@@ -50,9 +50,9 @@ export default async function ListingsPage({ searchParams }: Props) {
   const [listings, totalCount, avgPrice, typeBreakdown, domAgg] = await Promise.all([
     prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE }),
     prisma.listing.count({ where }),
-    prisma.listing.aggregate({ where: { status: "active", city: "Milton" }, _avg: { price: true } }),
-    prisma.listing.groupBy({ by: ["propertyType"], _count: true, _avg: { price: true }, where: { status: "active", city: "Milton" } }),
-    prisma.listing.aggregate({ where: { status: "active", city: "Milton", daysOnMarket: { gt: 0 } }, _avg: { daysOnMarket: true } }),
+    prisma.listing.aggregate({ where: { status: "active", city: "Milton", permAdvertise: true }, _avg: { price: true } }),
+    prisma.listing.groupBy({ by: ["propertyType"], _count: true, _avg: { price: true }, where: { status: "active", city: "Milton", permAdvertise: true } }),
+    prisma.listing.aggregate({ where: { status: "active", city: "Milton", daysOnMarket: { gt: 0 }, permAdvertise: true }, _avg: { daysOnMarket: true } }),
   ]);
 
   const totalPages = Math.ceil(totalCount / PER_PAGE);
@@ -279,7 +279,7 @@ export default async function ListingsPage({ searchParams }: Props) {
               { label: "Milton under $1M", href: "/listings?max=1000000" },
               { label: "Milton over $1M", href: "/listings?min=1000000" },
               { label: "Milton street prices", href: "/streets" },
-              { label: "Milton market data", href: "/market-report" },
+              { label: "Milton street prices", href: "/streets" },
             ].map((l) => (
               <Link key={l.label} href={l.href} className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors">{l.label}</Link>
             ))}

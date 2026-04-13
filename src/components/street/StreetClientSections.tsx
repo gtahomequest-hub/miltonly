@@ -44,6 +44,15 @@ interface Props {
 export default function StreetClientSections({ data, description, faqs }: Props) {
   const [typeFilter, setTypeFilter] = useState("all");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [alertEmail, setAlertEmail] = useState("");
+  const [alertSubmitted, setAlertSubmitted] = useState(false);
+
+  const handleAlert = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!alertEmail) return;
+    setAlertSubmitted(true);
+    setAlertEmail("");
+  };
 
   const filteredActive = typeFilter === "all"
     ? data.activeListings
@@ -99,6 +108,47 @@ export default function StreetClientSections({ data, description, faqs }: Props)
               </form>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Street Price Alert */}
+      <section className="bg-[#07111f] px-5 sm:px-11 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.1em] mb-1.5">
+                Street Price Alert
+              </p>
+              <p className="text-[15px] font-bold text-[#f8f9fb] mb-1">
+                Get notified when a home lists on {data.streetName}
+              </p>
+              <p className="text-[12px] text-[#94a3b8]">
+                New listings, price changes, and sold prices — straight to your inbox. Free, no spam.
+              </p>
+            </div>
+            {alertSubmitted ? (
+              <p className="text-[13px] font-bold text-[#f59e0b] shrink-0">
+                Done — you&apos;ll hear from us.
+              </p>
+            ) : (
+              <form onSubmit={handleAlert} className="flex gap-2 shrink-0">
+                <input
+                  type="email"
+                  value={alertEmail}
+                  onChange={(e) => setAlertEmail(e.target.value)}
+                  placeholder="Your email"
+                  required
+                  className="w-52 px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] text-[#f8f9fb] placeholder:text-[#64748b] rounded-lg outline-none focus:border-[#f59e0b]"
+                />
+                <button
+                  type="submit"
+                  className="bg-[#f59e0b] text-[#07111f] text-[12px] font-bold px-4 py-2.5 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors"
+                >
+                  Alert me
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
 

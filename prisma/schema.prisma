@@ -68,6 +68,9 @@ model Listing {
   possessionDetails String?   // Immediate|30-59 Days|TBA
   minLeaseTerm      Int?      // months
   locker            String?   // Exclusive|Shared|None
+  // Display permission flags (IDX/DDF compliance)
+  permAdvertise     Boolean   @default(true)  // InternetEntireListingDisplayYN
+  displayAddress    Boolean   @default(true)  // InternetAddressDisplayYN
   listedAt          DateTime
   syncedAt          DateTime  @default(now())
   streetName        String?
@@ -282,4 +285,19 @@ model ExclusiveListing {
   rooms             Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model ComplianceLog {
+  id            String   @id @default(cuid())
+  checkDate     DateTime @default(now())
+  aiCompliance  Boolean  // No PropTx records in any prompt
+  dataRetrieval Boolean  // Only one MLS feed pull per 24 hours
+  listingExpiry Boolean  // No listings retained past 60 days
+  displayPerms  Boolean  // perm_adv and disp_addr enforced
+  consentCheck  Boolean  // All leads have valid consent
+  allPassed     Boolean
+  details       String?  @db.Text // JSON with failure details
+  createdAt     DateTime @default(now())
+
+  @@index([checkDate])
 }

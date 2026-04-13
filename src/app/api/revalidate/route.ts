@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Revalidate all key pages when no specific path given
-  const paths = ["/", "/listings", "/streets", "/condos", "/neighbourhoods", "/market-report"];
+  const paths = ["/", "/listings", "/streets", "/rentals", "/exclusive"];
   paths.forEach((p) => revalidatePath(p));
 
   return NextResponse.json({ revalidated: true, paths });

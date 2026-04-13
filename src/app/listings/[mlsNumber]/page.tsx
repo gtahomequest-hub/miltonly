@@ -30,6 +30,7 @@ export default async function ListingDetailPage({ params }: Props) {
       transactionType: listing.transactionType,
       mlsNumber: { not: listing.mlsNumber },
       city: "Milton",
+      permAdvertise: true,
     },
     orderBy: { listedAt: "desc" },
     take: 4,

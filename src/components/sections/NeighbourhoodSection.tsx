@@ -31,7 +31,7 @@ export default function NeighbourhoodSection() {
           {neighbourhoods.map((n) => (
             <Link
               key={n.name}
-              href={`/neighbourhoods/${n.name.toLowerCase().replace(/\s+/g, "-")}`}
+              href={`/listings?neighbourhood=${encodeURIComponent(n.name)}`}
               className="group relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[3/2]"
             >
               {/* Background gradient (photo placeholder) */}

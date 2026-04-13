@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   // Build slug from street name
   const slug = street.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-milton";
 
-  const where: Record<string, unknown> = { streetSlug: slug };
+  const where: Record<string, unknown> = { streetSlug: slug, permAdvertise: true };
   if (type !== "all") {
     where.propertyType = type;
   }
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   // If no data for this street, return Milton-wide stats for this property type
   if (agg._count === 0) {
-    const miltonWhere: Record<string, unknown> = { city: "Milton" };
+    const miltonWhere: Record<string, unknown> = { city: "Milton", permAdvertise: true };
     if (type !== "all") miltonWhere.propertyType = type;
 
     const miltonAgg = await prisma.listing.aggregate({
