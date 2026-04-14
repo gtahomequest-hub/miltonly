@@ -245,7 +245,7 @@ model StreetQueue {
 model Partner {
   id      String  @id @default(cuid())
   name    String
-  type    String // mortgage|lawyer|inspector|mover|contractor
+  type    String // mortgage|lawyer|mover|contractor
   company String
   phone   String
   email   String

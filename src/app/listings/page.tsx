@@ -249,8 +249,7 @@ export default async function ListingsPage({ searchParams }: Props) {
               { step: "2", title: "Search & shortlist", desc: "Browse listings on Miltonly — filter by neighbourhood, price, bedrooms, and property type. Save your favourites and set up alerts." },
               { step: "3", title: "Book showings", desc: "See homes in person. On Miltonly, you can book showings directly — we respond within 15 minutes, guaranteed." },
               { step: "4", title: "Make an offer", desc: "Your agent prepares a competitive offer. In Milton, homes sell at an average of 100% of asking price within 18 days." },
-              { step: "5", title: "Home inspection", desc: "Protect your investment with a professional inspection. Milton homes average " + formatPriceFull(avg) + " — inspection is essential at this price point." },
-              { step: "6", title: "Close & move in", desc: "Your lawyer handles closing. Typical Milton closing takes 30-60 days. Welcome to Milton — one of Canada&apos;s best places to live." },
+              { step: "5", title: "Close & move in", desc: "Your lawyer handles closing. Typical Milton closing takes 30-60 days. Welcome to Milton — one of Canada&apos;s best places to live." },
             ].map((item) => (
               <div key={item.step} className="flex gap-4">
                 <div className="w-8 h-8 bg-[#07111f] text-[#f59e0b] rounded-full flex items-center justify-center text-[12px] font-extrabold shrink-0">{item.step}</div>
