@@ -175,28 +175,62 @@ export default async function SeoLinkGrid() {
 
       {/* School zones */}
       <div className="mb-6">
-        <h3 className="text-[14px] font-extrabold text-[#07111f] mb-4">
-          Search homes by school zone in Milton
-        </h3>
+        <div className="flex items-baseline gap-3 mb-4">
+          <h3 className="text-[14px] font-extrabold text-[#07111f]">
+            Search homes by school zone in Milton
+          </h3>
+          <Link href="/schools" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
+            View all 30+ schools
+          </Link>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
           {[
-            { name: "Craig Kielburger Secondary", q: "Craig Kielburger" },
-            { name: "Bishop Reding Catholic Secondary", q: "Bishop Reding" },
-            { name: "Milton District High School", q: "Milton District" },
-            { name: "E.W. Foster Public School", q: "E.W. Foster" },
-            { name: "Stuart E. Russel PS", q: "Stuart E. Russel" },
-            { name: "Tiger Jeet Singh PS", q: "Tiger Jeet Singh" },
-            { name: "Sam Sherratt PS", q: "Sam Sherratt" },
-            { name: "Anne J. MacArthur PS", q: "Anne J. MacArthur" },
-            { name: "Viola Desmond PS", q: "Viola Desmond" },
-            { name: "Chris Hadfield PS", q: "Chris Hadfield" },
+            { name: "Bishop P.F. Reding Catholic SS", slug: "bishop-pf-reding-catholic-ss" },
+            { name: "Milton District High School", slug: "milton-district-high-school" },
+            { name: "Elsie MacGill Secondary", slug: "elsie-macgill-secondary-school" },
+            { name: "St. Francis Xavier Catholic SS", slug: "st-francis-xavier-catholic-ss" },
+            { name: "Chris Hadfield PS", slug: "chris-hadfield-ps" },
+            { name: "Anne J. MacArthur PS", slug: "anne-j-macarthur-ps" },
+            { name: "Tiger Jeet Singh PS", slug: "tiger-jeet-singh-ps" },
+            { name: "Irma Coulson PS", slug: "irma-coulson-ps" },
+            { name: "E.W. Foster PS", slug: "ew-foster-ps" },
+            { name: "Sam Sherratt PS", slug: "sam-sherratt-ps" },
           ].map((school) => (
             <Link
-              key={school.name}
-              href={`/listings?q=${encodeURIComponent(school.q)}`}
+              key={school.slug}
+              href={`/schools/${school.slug}`}
               className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors"
             >
               Homes near {school.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Mosques */}
+      <div className="mb-6">
+        <div className="flex items-baseline gap-3 mb-4">
+          <h3 className="text-[14px] font-extrabold text-[#07111f]">
+            Homes near mosques in Milton
+          </h3>
+          <Link href="/mosques" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
+            View all mosques
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
+          {[
+            { name: "Halton Islamic Community Centre", slug: "halton-islamic-community-centre" },
+            { name: "ICNA Milton", slug: "icna-milton" },
+            { name: "Milton Muslim Community Centre", slug: "milton-muslim-community-centre" },
+            { name: "Islamic Community Centre of Milton", slug: "islamic-community-centre-of-milton" },
+            { name: "Milton Musalla", slug: "milton-musalla" },
+          ].map((mosque) => (
+            <Link
+              key={mosque.slug}
+              href={`/mosques/${mosque.slug}`}
+              className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors"
+            >
+              Homes near {mosque.name}
             </Link>
           ))}
         </div>
@@ -217,6 +251,7 @@ export default async function SeoLinkGrid() {
             { label: "Milton rentals", href: "/rentals" },
             { label: "Milton condo buildings", href: "/condos" },
             { label: "Milton exclusive listings", href: "/exclusive" },
+            { label: "Mosques in Milton", href: "/mosques" },
             { label: "What's my Milton home worth?", href: "/sell" },
             { label: "About your Milton agent", href: "/about" },
           ].map((l) => (

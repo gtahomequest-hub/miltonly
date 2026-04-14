@@ -14,6 +14,7 @@
     "@prisma/client": "^5.22.0",
     "@types/twilio": "^3.19.2",
     "@vercel/blob": "^2.3.3",
+    "jose": "^6.2.2",
     "mysql2": "^3.20.0",
     "next": "14.2.35",
     "prisma": "^5.22.0",

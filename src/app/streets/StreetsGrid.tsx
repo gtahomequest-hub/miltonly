@@ -202,8 +202,8 @@ export default function StreetsGrid({
                   </span>
                 )}
                 {s.activeCount >= 5 && (
-                  <span className="text-[9px] font-bold text-[#f59e0b] bg-[rgba(245,158,11,0.15)] rounded-full px-1.5 py-0.5">
-                    HOT
+                  <span className="text-[9px] font-extrabold text-[#07111f] bg-[#f59e0b] rounded-full px-2 py-0.5">
+                    VIP HUB
                   </span>
                 )}
               </div>

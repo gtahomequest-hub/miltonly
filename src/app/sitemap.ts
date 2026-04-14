@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { schools } from "@/lib/schools";
+import { mosques } from "@/lib/mosques";
 
 export const dynamic = "force-dynamic";
 
@@ -93,5 +95,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages];
+  // School pages
+  const schoolPages: MetadataRoute.Sitemap = [
+    {
+      url: `${SITE_URL}/schools`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    },
+    ...schools.map((s) => ({
+      url: `${SITE_URL}/schools/${s.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+  ];
+
+  // Mosque pages
+  const mosquePages: MetadataRoute.Sitemap = [
+    {
+      url: `${SITE_URL}/mosques`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    },
+    ...mosques.map((m) => ({
+      url: `${SITE_URL}/mosques/${m.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+  ];
+
+  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...schoolPages, ...mosquePages];
 }

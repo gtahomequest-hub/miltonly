@@ -38,3 +38,9 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# Project intelligence files (local only — never commit)
+AI-BRIEFING.md
+ADVISOR-BRIEFING.md
+CHANGELOG-DECISIONS.md
+DO-NOT-REPEAT.md

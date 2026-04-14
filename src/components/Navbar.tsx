@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useUser } from "@/components/UserProvider";
 
 const primaryLinks = [
   { href: "/listings", label: "Buy" },
@@ -15,12 +16,15 @@ const primaryLinks = [
 const secondaryLinks = [
   { href: "/compare", label: "Compare" },
   { href: "/condos", label: "Condos" },
+  { href: "/schools", label: "Schools" },
+  { href: "/mosques", label: "Mosques" },
   { href: "/map", label: "Map" },
   { href: "/saved", label: "Saved" },
 ];
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, loading } = useUser();
 
   return (
     <header className="sticky top-0 z-50 bg-[#07111f] border-b border-[#1e3a5f]">
@@ -46,14 +50,39 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Right side — Call Aamir */}
-        <div className="hidden lg:flex items-center">
-          <a
-            href="tel:+16478399090"
-            className="bg-[#f59e0b] text-[#07111f] text-[13px] font-bold px-[18px] py-[9px] rounded-lg hover:bg-[#fbbf24] transition-colors"
-          >
-            📞 Call Aamir
-          </a>
+        {/* Right side */}
+        <div className="hidden lg:flex items-center gap-3">
+          {!loading && user ? (
+            <>
+              <Link
+                href="/saved"
+                className="text-[13px] font-medium text-[#94a3b8] hover:text-[#f8f9fb] transition-colors"
+              >
+                ♡ Saved
+              </Link>
+              <Link
+                href="/saved"
+                className="bg-[#0c1e35] border border-[#1e3a5f] text-[#f8f9fb] text-[13px] font-bold px-[14px] py-[8px] rounded-lg hover:bg-[#1e3a5f] transition-colors"
+              >
+                {user.firstName || user.email.split("@")[0]}
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/signin"
+                className="text-[13px] font-medium text-[#94a3b8] hover:text-[#f8f9fb] transition-colors"
+              >
+                Sign in
+              </Link>
+              <a
+                href="tel:+16478399090"
+                className="bg-[#f59e0b] text-[#07111f] text-[13px] font-bold px-[18px] py-[9px] rounded-lg hover:bg-[#fbbf24] transition-colors"
+              >
+                Call Aamir
+              </a>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -82,7 +111,15 @@ export default function Navbar() {
             ))}
           </div>
           <div className="pt-3 mt-2 border-t border-[#1e3a5f]">
-            <a href="tel:+16478399090" className="block text-center bg-[#f59e0b] text-[#07111f] font-bold py-3 rounded-lg">📞 Call Aamir</a>
+            {!loading && user ? (
+              <Link href="/saved" onClick={() => setMobileOpen(false)} className="block text-center bg-[#f59e0b] text-[#07111f] font-bold py-3 rounded-lg">
+                ♡ My saved ({user.savedListings?.length || 0})
+              </Link>
+            ) : (
+              <Link href="/signin" onClick={() => setMobileOpen(false)} className="block text-center bg-[#f59e0b] text-[#07111f] font-bold py-3 rounded-lg">
+                Sign in
+              </Link>
+            )}
           </div>
         </div>
       )}

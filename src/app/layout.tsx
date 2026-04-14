@@ -4,7 +4,9 @@ import Navbar from "@/components/Navbar";
 import AgentStrip from "@/components/AgentStrip";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import UserProvider from "@/components/UserProvider";
 import ConsentBanner from "@/components/consent/ConsentBanner";
+import ChromeGate from "@/components/ChromeGate";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -87,11 +89,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <GoogleAnalytics />
-        <Navbar />
-        {children}
-        <AgentStrip />
-        <CrispChat />
-        <ConsentBanner />
+        <UserProvider>
+          <ChromeGate>
+            <Navbar />
+          </ChromeGate>
+          {children}
+          <ChromeGate>
+            <AgentStrip />
+            <CrispChat />
+            <ConsentBanner />
+          </ChromeGate>
+        </UserProvider>
       </body>
     </html>
   );

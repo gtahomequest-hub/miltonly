@@ -221,6 +221,11 @@ model StreetContent {
   metaDescription String?
   faqJson         String?   @db.Text
   statsJson       String?   @db.Text
+  // VIP Hub — streets with 5+ active listings
+  isVipHub        Boolean   @default(false)
+  vipHubAt        DateTime? // When it became a hub
+  vipDescription  String?   @db.Text // 800+ word enhanced content
+  vipFaqJson      String?   @db.Text // Deeper FAQs for hub pages
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -300,4 +305,48 @@ model ComplianceLog {
   createdAt     DateTime @default(now())
 
   @@index([checkDate])
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  firstName      String?
+  phone          String?
+  verifyCode     String?   // 6-digit email verification code
+  verifyExpiry   DateTime? // Code expiry (15 minutes)
+  verified       Boolean   @default(false)
+  savedListings  String[]  // MLS numbers
+  leadId         String?   // Link to Lead record
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLoginAt    DateTime?
+  savedSearches  SavedSearch[]
+
+  @@index([email])
+}
+
+model SavedSearch {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  name            String   // "Detached in Willmott under $1M"
+  // Filter criteria
+  propertyType    String?  // detached|semi|townhouse|condo
+  neighbourhood   String?
+  streetSlug      String?
+  priceMin        Int?
+  priceMax        Int?
+  bedsMin         Int?
+  bathsMin        Int?
+  transactionType String?  // For Sale|For Lease
+  // Alert settings
+  alertEnabled    Boolean  @default(true)
+  alertFrequency  String   @default("daily") // daily|instant
+  lastAlertAt     DateTime?
+  lastMatchCount  Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([alertEnabled])
 }
