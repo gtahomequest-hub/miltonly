@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -55,16 +54,6 @@ export default function ComingSoonPage() {
           </div>
         </div>
 
-        {/* Related */}
-        <p className="text-[12px] text-[#64748b]">
-          Need a home inspection?{" "}
-          <Link
-            href="https://www.inspectionly.ca"
-            className="text-[#60a5fa] hover:text-white underline underline-offset-2"
-          >
-            Visit Inspectionly.ca
-          </Link>
-        </p>
       </div>
     </main>
   );
