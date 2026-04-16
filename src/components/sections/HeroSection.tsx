@@ -182,8 +182,8 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           ].map((s) => (
             <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[12px_14px]">
               <p className="text-[18px] font-extrabold text-[#f8f9fb]">{s.value}</p>
-              <p className="text-[10px] text-[rgba(248,249,251,0.6)] mt-[3px] font-semibold">{s.label}</p>
-              <p className="text-[9px] text-[#94a3b8] mt-[2px]">{s.sub}</p>
+              <p className="text-[12px] text-[rgba(248,249,251,0.6)] mt-[3px] font-semibold">{s.label}</p>
+              <p className="text-[11px] text-[#94a3b8] mt-[2px]">{s.sub}</p>
             </div>
           ))}
         </div>

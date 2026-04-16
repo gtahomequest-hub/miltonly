@@ -45,8 +45,11 @@ export default async function RentLandingPage() {
         transactionType: "For Lease", city: "Milton", propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true,
       };
       if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
-      const agg = await prisma.listing.aggregate({ where, _avg: { price: true } });
-      return { label: cat.label, type: cat.type, beds: cat.beds, avg: Math.round(agg._avg.price || 0) };
+      const [agg, count] = await Promise.all([
+        prisma.listing.aggregate({ where, _avg: { price: true } }),
+        prisma.listing.count({ where }),
+      ]);
+      return { label: cat.label, type: cat.type, beds: cat.beds, avg: Math.round(agg._avg.price || 0), count };
     })
   );
 

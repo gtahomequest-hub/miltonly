@@ -178,7 +178,7 @@ export default async function MosqueDetailPage({ params }: Props) {
       <div className="min-h-screen">
         {/* Breadcrumb */}
         <div className="bg-white border-b border-[#f1f5f9] px-5 sm:px-11 py-3">
-          <div className="flex items-center gap-2 text-[11px] text-[#94a3b8]">
+          <div className="flex items-center gap-2 text-[12px] text-[#94a3b8]">
             <Link href="/" className="hover:text-[#07111f]">Home</Link>
             <span>&rsaquo;</span>
             <Link href="/mosques" className="hover:text-[#07111f]">Mosques</Link>

@@ -108,7 +108,7 @@ export default async function SchoolsPage() {
       <div className="min-h-screen bg-[#f8f9fb]">
         {/* Breadcrumb */}
         <div className="bg-white border-b border-[#f1f5f9] px-5 sm:px-11 py-3">
-          <div className="flex items-center gap-2 text-[11px] text-[#94a3b8]">
+          <div className="flex items-center gap-2 text-[12px] text-[#94a3b8]">
             <Link href="/" className="hover:text-[#07111f]">Home</Link>
             <span>&rsaquo;</span>
             <span className="text-[#475569] font-medium">Schools</span>
@@ -118,7 +118,7 @@ export default async function SchoolsPage() {
         {/* Hero */}
         <section className="bg-[#07111f] px-5 sm:px-11 py-10 sm:py-14">
           <div className="max-w-6xl mx-auto">
-            <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-3">
+            <p className="text-[11px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-3">
               School Zone Intelligence
             </p>
             <h1 className="text-[28px] sm:text-[40px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
@@ -142,7 +142,7 @@ export default async function SchoolsPage() {
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <p className="text-[22px] font-extrabold text-[#07111f]">{s.value}</p>
-                <p className="text-[10px] text-[#78350f] font-semibold mt-0.5">{s.label}</p>
+                <p className="text-[12px] text-[#78350f] font-semibold mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>

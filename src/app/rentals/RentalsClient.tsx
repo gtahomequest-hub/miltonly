@@ -2,9 +2,57 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import AgentContactSection from "@/components/AgentContactSection";
+import { useUser } from "@/components/UserProvider";
 import "./rentals.css";
+
+const FOOTER_NEIGHBOURHOODS = ["Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton"];
+const toFooterSlug = (n: string) =>
+  n.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+
+const svgProps = {
+  width: 26,
+  height: 26,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  style: { display: "inline-block" as const, verticalAlign: "middle" as const },
+};
+const HomeTypeIcon = {
+  Detached: (
+    <svg {...svgProps}>
+      <path d="M3 12l9-8 9 8V20H3z" />
+      <path d="M10 20v-6h4v6" />
+    </svg>
+  ),
+  Semi: (
+    <svg {...svgProps}>
+      <path d="M2 11l5-5 5 5 5-5 5 5V20H2z" />
+      <line x1="12" y1="11" x2="12" y2="20" />
+    </svg>
+  ),
+  Townhouse: (
+    <svg {...svgProps}>
+      <path d="M2 11l3-4 3 4 3-4 3 4 3-4 3 4V20H2z" />
+      <line x1="8" y1="11" x2="8" y2="20" />
+      <line x1="14" y1="11" x2="14" y2="20" />
+    </svg>
+  ),
+  Condo: (
+    <svg {...svgProps}>
+      <rect x="5" y="3" width="14" height="18" />
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <line x1="5" y1="8" x2="19" y2="8" />
+      <line x1="5" y1="13" x2="19" y2="13" />
+      <line x1="5" y1="18" x2="19" y2="18" />
+    </svg>
+  ),
+};
 
 interface Listing {
   mlsNumber: string;
@@ -30,13 +78,35 @@ interface Listing {
   minLeaseTerm: number | null;
   locker: string | null;
   basement: boolean;
+  listOfficeName?: string | null;
 }
+
+const TC_SMALL = new Set(["of", "at", "the", "in", "and", "on", "for", "by", "to"]);
+const TC_FIXUPS: Record<string, string> = { Remax: "RE/MAX", "Re/Max": "RE/MAX", Mls: "MLS", Ltd: "Ltd.", Inc: "Inc.", Re: "RE" };
+function titleCase(s: string | null | undefined): string {
+  if (!s) return "";
+  const out = s.toLowerCase().split(/(\s+|-|\/)/).map((tok, i) => {
+    if (!tok.trim() || tok === "/" || tok === "-") return tok;
+    if (i > 0 && TC_SMALL.has(tok)) return tok;
+    return tok.charAt(0).toUpperCase() + tok.slice(1);
+  }).join("");
+  return Object.entries(TC_FIXUPS).reduce((acc, [f, t]) => acc.replace(new RegExp(`\\b${f}\\b`, "g"), t), out);
+}
+const propertyBadgeLabel = (t: string) => {
+  const l = (t || "").toLowerCase();
+  if (l === "detached") return "Detached";
+  if (l === "semi") return "Semi";
+  if (l === "townhouse") return "Townhouse";
+  if (l === "condo") return "Condo";
+  return t;
+};
 
 interface RentAvg {
   label: string;
   avg: number;
   type: string;
   beds: number;
+  count: number;
 }
 
 interface Props {
@@ -48,9 +118,12 @@ interface Props {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs }: Props) {
+  const router = useRouter();
+  const { user, isListingSaved, saveListing, unsaveListing } = useUser();
+
   // ── WIZARD STATE ──
   const [wizStep, setWizStep] = useState(1);
-  const [wizData, setWizData] = useState({ type: "", budget: "", prio: "", beds: 1, park: 0, pet: "No pet", timeline: "" });
+  const [wizData, setWizData] = useState({ type: "", budget: "" });
   const [wizSuccess, setWizSuccess] = useState(false);
   const [userName, setUserName] = useState("");
 
@@ -58,6 +131,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const raScrollRef = useRef<HTMLDivElement>(null);
 
   // ── FILTER STATE ──
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -65,10 +139,16 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   const [filters, setFilters] = useState<Record<string, string>>({
     type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any",
   });
-  const [priceMin, setPriceMin] = useState(500);
+  const [priceMin, setPriceMin] = useState(1500);
   const [priceMax, setPriceMax] = useState(5000);
   const [sortBy, setSortBy] = useState("newest");
-  const [availPill, setAvailPill] = useState("Available now");
+  const [, setAvailPill] = useState("Available now");
+
+  // Hero pill PENDING selections — accumulated until user clicks "Show results"
+  const [pendingPriceMin, setPendingPriceMin] = useState(1500);
+  const [pendingPriceMax, setPendingPriceMax] = useState(5000);
+  const [pendingType, setPendingType] = useState("All");
+  const [pendingBeds, setPendingBeds] = useState("Any");
 
   // ── UI STATE ──
   const [toast, setToast] = useState("");
@@ -177,7 +257,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
     return result;
   }, [listings, searchQuery, typeFilter, filters, priceMin, priceMax, sortBy]);
 
-  const progWidth = [0, 17, 33, 50, 67, 83, 100][wizStep - 1] || 0;
+  const progWidth = wizSuccess ? 100 : Math.round((wizStep / 3) * 100);
+  const newThisWeek = useMemo(() => listings.filter((l) => daysAgo(new Date(l.listedAt)) <= 7).length, [listings]);
   const typeIcons: Record<string, string> = { detached: "🏠", semi: "🏘", townhouse: "🏗", condo: "🏢", other: "🏠" };
 
   // ── SEARCH HANDLER ──
@@ -223,13 +304,121 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
     }
   };
 
+  // Hero pill options (shared between rendering + label lookup for summary row)
+  const budgetOptions = [
+    { label: "Any price", min: 1500, max: 5000 },
+    { label: "Under $2K", min: 1500, max: 2000 },
+    { label: "$2K–$2.5K", min: 2000, max: 2500 },
+    { label: "$2.5K–$3K", min: 2500, max: 3000 },
+    { label: "$3K+", min: 3000, max: 5000 },
+  ];
+  const typeOptions = [
+    { label: "Any", val: "All" },
+    { label: "Condo/Apt", val: "Condo" },
+    { label: "Townhouse", val: "Townhouse" },
+    { label: "Semi-Det", val: "Semi" },
+    { label: "Detached", val: "Detached" },
+  ];
+  const bedsOptions = [
+    { label: "Any", val: "Any" },
+    { label: "1 bed", val: "1" },
+    { label: "2 bed", val: "2" },
+    { label: "3 bed", val: "3" },
+    { label: "4+ bed", val: "4" },
+  ];
+
+  const pendingBudgetActive = pendingPriceMin !== 1500 || pendingPriceMax !== 5000;
+  const pendingTypeActive = pendingType !== "All";
+  const pendingBedsActive = pendingBeds !== "Any";
+  const pendingActiveLabels: string[] = [];
+  if (pendingBudgetActive) {
+    const m = budgetOptions.find((o) => o.min === pendingPriceMin && o.max === pendingPriceMax);
+    if (m) pendingActiveLabels.push(m.label);
+  }
+  if (pendingTypeActive) {
+    const m = typeOptions.find((o) => o.val === pendingType);
+    if (m) pendingActiveLabels.push(m.label);
+  }
+  if (pendingBedsActive) {
+    const m = bedsOptions.find((o) => o.val === pendingBeds);
+    if (m) pendingActiveLabels.push(m.label);
+  }
+  const hasActivePending = pendingActiveLabels.length > 0;
+  const appliedIsDefault = priceMin === 1500 && priceMax === 5000 && filters.type === "All" && filters.beds === "Any";
+  const pendingMatchesApplied = pendingPriceMin === priceMin && pendingPriceMax === priceMax && pendingType === filters.type && pendingBeds === filters.beds;
+
+  const handleApplyFilters = () => {
+    setPriceMin(pendingPriceMin);
+    setPriceMax(pendingPriceMax);
+    tglFilter("type", pendingType);
+    tglFilter("beds", pendingBeds);
+    document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+  };
+  const handleClearFilters = () => {
+    setPendingPriceMin(1500);
+    setPendingPriceMax(5000);
+    setPendingType("All");
+    setPendingBeds("Any");
+    setPriceMin(1500);
+    setPriceMax(5000);
+    tglFilter("type", "All");
+    tglFilter("beds", "Any");
+  };
+
+  // Listing-card save handler (redirects to sign-in if not authenticated)
+  const handleSaveListing = async (mlsNumber: string, addr: string) => {
+    if (!user) {
+      router.push(`/signin?next=${encodeURIComponent("/rentals")}`);
+      return;
+    }
+    if (isListingSaved(mlsNumber)) {
+      await unsaveListing(mlsNumber);
+      showToast(`♡ Removed ${addr.split(",")[0]}`);
+    } else {
+      await saveListing(mlsNumber);
+      showToast(`♥ Saved ${addr.split(",")[0]}`);
+    }
+  };
+
+  // Rent-averages scroll handlers
+  const scrollRa = (dir: "left" | "right") => {
+    const el = raScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -240 : 240, behavior: "smooth" });
+  };
+
+  // Street-slug helper for listing cards + footer
+  const streetOf = (addr: string) => addr.split(",")[0].replace(/^\d+[a-zA-Z]?\s+/, "").trim();
+  const streetSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+  const hoodOf = (hood: string) => hood.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
+
+  // Top streets by listing count (for footer)
+  const topStreets = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of listings) {
+      const s = streetOf(l.address);
+      if (!s) continue;
+      counts.set(s, (counts.get(s) || 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([name]) => ({ name, slug: streetSlug(name) }));
+  }, [listings]);
+
   return (
     <div className="rentals-page">
       {/* ═══ HERO ═══ */}
       <div className="hero">
         {/* ── LEFT PANEL ── */}
         <div className="hl">
-          <div className="live-badge"><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
+          <div className="live-row">
+            <div className="live-badge"><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
+            {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
+            <a href="tel:+16478399090" className="hero-phone-link" style={{color:"#f59e0b"}}>
+              📞 Call Aamir · (647) 839-9090
+            </a>
+          </div>
           <h1>Find your next<br />home in <em>Milton</em></h1>
           <p className="hl-desc">Browse every active rental — condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
 
@@ -242,7 +431,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(false); }}
                 onFocus={() => { if (!searchQuery) setSearchOpen(true); }}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
-                placeholder="Street, MLS #, neighbourhood, school or GO station..."
+                placeholder="Street, neighbourhood or MLS #..."
               />
               <button className="sbtn" onClick={handleSearch}>Search →</button>
             </div>
@@ -268,14 +457,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             {/* Filter pills — Budget */}
             <div className="fpill-row">
               <span className="fpill-label">Budget:</span>
-              {[
-                { label: "Any price", min: 500, max: 5000 },
-                { label: "Under $2K", min: 500, max: 2000 },
-                { label: "$2K–$2.5K", min: 2000, max: 2500 },
-                { label: "$2.5K–$3K", min: 2500, max: 3000 },
-                { label: "$3K+", min: 3000, max: 5000 },
-              ].map((p) => (
-                <button key={p.label} className={`fpill${priceMin === p.min && priceMax === p.max ? " on" : ""}`} onClick={() => { setPriceMin(p.min); setPriceMax(p.max); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+              {budgetOptions.map((p) => (
+                <button key={p.label} className={`fpill${pendingPriceMin === p.min && pendingPriceMax === p.max ? " on" : ""}`} onClick={() => { setPendingPriceMin(p.min); setPendingPriceMax(p.max); }}>
                   {p.label}
                 </button>
               ))}
@@ -283,74 +466,104 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             {/* Filter pills — Type */}
             <div className="fpill-row">
               <span className="fpill-label">Type:</span>
-              {[
-                { label: "Any", val: "All" },
-                { label: "Condo/Apt", val: "Condo" },
-                { label: "Townhouse", val: "Townhouse" },
-                { label: "Semi-Det", val: "Semi" },
-                { label: "Detached", val: "Detached" },
-              ].map((p) => (
-                <button key={p.label} className={`fpill${filters.type === p.val ? " on" : ""}`} onClick={() => { tglFilter("type", p.val); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+              {typeOptions.map((p) => (
+                <button key={p.label} className={`fpill${pendingType === p.val ? " on" : ""}`} onClick={() => { setPendingType(p.val); }}>
                   {p.label}
                 </button>
               ))}
             </div>
-            {/* Filter pills — Beds + Move-in dropdown */}
+            {/* Filter pills — Beds */}
             <div className="fpill-row">
               <span className="fpill-label">Beds:</span>
-              {[
-                { label: "Any", val: "Any" },
-                { label: "1 bed", val: "1" },
-                { label: "2 bed", val: "2" },
-                { label: "3 bed", val: "3" },
-                { label: "4+ bed", val: "4" },
-              ].map((p) => (
-                <button key={p.label} className={`fpill${filters.beds === p.val ? " on" : ""}`} onClick={() => { tglFilter("beds", p.val); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
+              {bedsOptions.map((p) => (
+                <button key={p.label} className={`fpill${pendingBeds === p.val ? " on" : ""}`} onClick={() => { setPendingBeds(p.val); }}>
                   {p.label}
                 </button>
               ))}
-              <select className="fpill-select" value={availPill} onChange={(e) => { setAvailPill(e.target.value); tglFilter("avail", e.target.value === "Available now" ? "Now" : e.target.value === "Flexible" ? "Flexible" : e.target.value.replace(" 2026", "")); }}>
-                <option value="Available now">Any move-in</option>
-                <option value="Available now">Available now</option>
-                <option value="May 2026">May 2026</option>
-                <option value="June 2026">June 2026</option>
-                <option value="July 2026">July 2026</option>
-                <option value="Flexible">Flexible</option>
-              </select>
             </div>
+            {/* Filter pills — Move-in (immediate-apply, consistent styling with rows above) */}
+            <div className="fpill-row">
+              <span className="fpill-label">Move-in:</span>
+              {[
+                { label: "Available", val: "Now", availLabel: "Available now" },
+                { label: "May", val: "May", availLabel: "May 2026" },
+                { label: "June", val: "June", availLabel: "June 2026" },
+                { label: "July", val: "July", availLabel: "July 2026" },
+                { label: "Flexible", val: "Flexible", availLabel: "Flexible" },
+              ].map((p) => (
+                <button key={p.label} className={`fpill${filters.avail === p.val ? " on" : ""}`} onClick={() => { tglFilter("avail", p.val); setAvailPill(p.availLabel); }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {/* Divider */}
+            <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "12px 0 10px" }} />
+            {/* Active filter summary + apply/clear */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 11, lineHeight: 1.4 }}>
+                {hasActivePending ? (
+                  <>
+                    <span style={{ color: "#f59e0b", fontWeight: 700 }}>{pendingActiveLabels.length} filter{pendingActiveLabels.length === 1 ? "" : "s"} selected</span>
+                    <span style={{ color: "var(--t4)" }}> — {pendingActiveLabels.join(", ")}</span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--t3)" }}>Select filters above</span>
+                )}
+              </div>
+              {hasActivePending && (
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button onClick={handleClearFilters} style={{ background: "transparent", border: "none", color: "var(--t4)", fontSize: 11, fontWeight: 600, cursor: "pointer", padding: "6px 4px", textDecoration: "underline" }}>
+                    Clear all
+                  </button>
+                  <button className="sbtn" onClick={handleApplyFilters}>
+                    Show results
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Muted hint — pending-vs-applied status */}
+          <div style={{ fontSize: 11, color: "var(--t4)", marginTop: -8, marginBottom: 14, paddingLeft: 2 }}>
+            {appliedIsDefault && pendingMatchesApplied
+              ? `Showing all ${totalRentals} rentals`
+              : !pendingMatchesApplied
+              ? "Hit Show results to apply"
+              : `Showing ${filteredListings.length} rentals matching your filters`}
           </div>
 
           <div className="trust-row">
-            <div className="ti">14 Years Full-Time Experience</div>
-            <div className="ti">Tenants · Landlords · Buyers · Sellers</div>
-            <div className="ti">Milton Specialist</div>
-            <div className="ti">🏆 RE/MAX Hall of Fame</div>
+            14 Years Full-Time Experience · Tenants · Landlords · Buyers · Sellers · Milton Specialist · RE/MAX Hall of Fame
           </div>
         </div>
 
         {/* ── MIDDLE — WIZARD ── */}
         <div className="hm">
           <div className="wiz-topbar">
-            <div className="wiz-brand">Let Miltonly find you<em> what you&apos;re looking for.</em></div>
-            <div className="wiz-sub">6 quick questions · 60 seconds · no commitment</div>
+            <h1 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,color:"var(--pearl)",lineHeight:1.09,marginBottom:3}}>Answer 3 questions. Get matched.</h1>
+            <div className="wiz-sub">3 quick questions · 30 seconds · no commitment</div>
             <div className="prog-track"><div className="prog-bar" style={{ width: `${progWidth}%` }} /></div>
           </div>
           <div className="wiz-body">
             {!wizSuccess ? (
               <>
-                {/* Step 1 — Type */}
+                {/* Step 1 — Home type */}
                 {wizStep === 1 && (
                   <div className="wiz-step active">
-                    <div className="q-meta"><div className="q-badge">1</div><span className="q-of">Question 1 of 6</span></div>
+                    <div className="q-meta"><div className="q-badge">1</div><span className="q-of">Question 1 of 3</span></div>
                     <div className="q-text">What kind of home are you looking for?</div>
                     <div className="opt-grid">
-                      {[{ icon: "🏠", label: "Detached" }, { icon: "🏘", label: "Semi-detached" }, { icon: "🏗", label: "Townhouse" }, { icon: "🏢", label: "Condo / apt" }].map((t) => (
+                      {[
+                        { icon: HomeTypeIcon.Detached, label: "Detached" },
+                        { icon: HomeTypeIcon.Semi, label: "Semi" },
+                        { icon: HomeTypeIcon.Townhouse, label: "Townhouse" },
+                        { icon: HomeTypeIcon.Condo, label: "Condo" },
+                      ].map((t) => (
                         <div key={t.label} className={`opt-tile${wizData.type === t.label ? " sel" : ""}`} onClick={() => {
                           setWizData({ ...wizData, type: t.label });
                           showToast(`✓ ${t.label} selected`);
                           setTimeout(() => setWizStep(2), 500);
                         }}>
-                          <div className="opt-tick">✓</div>
+                          {wizData.type === t.label && <div className="opt-tick">✓</div>}
                           <span className="opt-ico">{t.icon}</span>
                           <div className="opt-lbl">{t.label}</div>
                         </div>
@@ -362,16 +575,16 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 {/* Step 2 — Budget */}
                 {wizStep === 2 && (
                   <div className="wiz-step active">
-                    <div className="q-meta"><div className="q-badge">2</div><span className="q-of">Question 2 of 6</span></div>
+                    <div className="q-meta"><div className="q-badge">2</div><span className="q-of">Question 2 of 3</span></div>
                     <div className="q-text">What&apos;s your monthly budget?</div>
                     <div className="opt-grid">
-                      {["Under $2,000", "$2,000–$2,500", "$2,500–$3,000", "$3,000+"].map((b) => (
+                      {["Under $2K", "$2K–$2.5K", "$2.5K–$3K", "$3K+"].map((b) => (
                         <div key={b} className={`opt-tile${wizData.budget === b ? " sel" : ""}`} onClick={() => {
                           setWizData({ ...wizData, budget: b });
                           showToast(`✓ Budget: ${b}/month`);
                           setTimeout(() => setWizStep(3), 500);
                         }}>
-                          <div className="opt-tick">✓</div>
+                          {wizData.budget === b && <div className="opt-tick">✓</div>}
                           <span className="opt-ico" style={{ fontSize: 18, marginBottom: 5 }}>💰</span>
                           <div className="opt-lbl">{b}</div>
                         </div>
@@ -381,138 +594,46 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                   </div>
                 )}
 
-                {/* Step 3 — Priority */}
+                {/* Step 3 — Lead capture */}
                 {wizStep === 3 && (
                   <div className="wiz-step active">
-                    <div className="q-meta"><div className="q-badge">3</div><span className="q-of">Question 3 of 6</span></div>
-                    <div className="q-text">What matters most to you?</div>
-                    <div className="prio-list">
-                      {[{ icon: "🚂", label: "Close to Milton GO station" }, { icon: "🎓", label: "Good school zone" }, { icon: "🌳", label: "Near parks & playgrounds" }, { icon: "🏡", label: "Quiet neighbourhood" }, { icon: "✌️", label: "No preference" }].map((p) => (
-                        <div key={p.label} className={`prio-tile${wizData.prio === p.label ? " sel" : ""}`} onClick={() => {
-                          setWizData({ ...wizData, prio: p.label });
-                          showToast(`✓ Priority: ${p.label}`);
-                          setTimeout(() => setWizStep(4), 500);
-                        }}>
-                          <span className="prio-ico">{p.icon}</span>
-                          <span className="prio-txt">{p.label}</span>
-                          <div className="prio-radio" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="back-lnk" onClick={() => setWizStep(2)}>← Back</div>
-                  </div>
-                )}
-
-                {/* Step 4 — Rooms + Pets */}
-                {wizStep === 4 && (
-                  <div className="wiz-step active">
-                    <div className="q-meta"><div className="q-badge">4</div><span className="q-of">Question 4 of 6</span></div>
-                    <div className="q-text">Rooms, parking &amp; pets?</div>
-                    <div className="cnt-card">
-                      <div className="cnt-row">
-                        <div><div className="cnt-lbl">Bedrooms</div></div>
-                        <div className="cnt-ctrls">
-                          <button className="cnt-btn" disabled={wizData.beds <= 1} onClick={() => setWizData((d) => ({ ...d, beds: d.beds - 1 }))}>−</button>
-                          <span className="cnt-val">{wizData.beds}</span>
-                          <button className="cnt-btn" disabled={wizData.beds >= 6} onClick={() => setWizData((d) => ({ ...d, beds: d.beds + 1 }))}>+</button>
-                        </div>
-                      </div>
-                      <div className="cnt-div" />
-                      <div className="cnt-row">
-                        <div><div className="cnt-lbl">Parking</div></div>
-                        <div className="cnt-ctrls">
-                          <button className="cnt-btn" disabled={wizData.park <= 0} onClick={() => setWizData((d) => ({ ...d, park: d.park - 1 }))}>−</button>
-                          <span className="cnt-val">{wizData.park}</span>
-                          <button className="cnt-btn" disabled={wizData.park >= 3} onClick={() => setWizData((d) => ({ ...d, park: d.park + 1 }))}>+</button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Pet selection */}
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--t4)", letterSpacing: ".09em", textTransform: "uppercase" as const, marginBottom: 7 }}>Do you have a pet?</div>
-                    <div className="opt-grid" style={{ marginBottom: 14 }}>
-                      {[{ icon: "🚫", label: "No pet" }, { icon: "🐱", label: "Cat" }, { icon: "🐶", label: "Small dog" }, { icon: "🐕", label: "Large dog" }].map((p) => (
-                        <div key={p.label} className={`opt-tile${wizData.pet === p.label ? " sel" : ""}`} onClick={() => setWizData((d) => ({ ...d, pet: p.label }))}>
-                          <div className="opt-tick">✓</div>
-                          <span className="opt-ico" style={{ fontSize: 18, marginBottom: 4 }}>{p.icon}</span>
-                          <div className="opt-lbl">{p.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <button className="next-btn dark" onClick={() => {
-                      showToast(`✓ ${wizData.beds} bed · ${wizData.park} parking · ${wizData.pet}`);
-                      setWizStep(5);
-                    }}>Looks good — next <em>→</em></button>
-                    <div className="back-lnk" onClick={() => setWizStep(3)}>← Back</div>
-                  </div>
-                )}
-
-                {/* Step 5 — Timeline */}
-                {wizStep === 5 && (
-                  <div className="wiz-step active">
-                    <div className="q-meta"><div className="q-badge">5</div><span className="q-of">Question 5 of 6</span></div>
-                    <div className="q-text">When do you need to move in?</div>
-                    <div className="time-list">
-                      {[{ label: "As soon as possible", badge: "Moving now", cls: "tb-hot", val: "ASAP" }, { label: "Within the next month", badge: "Active search", cls: "tb-hot", val: "Within 1 month" }, { label: "1 to 3 months", badge: "Planning ahead", cls: "tb-warm", val: "1–3 months" }, { label: "Just exploring for now", badge: "Early stage", cls: "tb-browse", val: "Just exploring" }].map((t) => (
-                        <div key={t.val} className={`time-tile${wizData.timeline === t.val ? " sel" : ""}`} onClick={() => {
-                          setWizData({ ...wizData, timeline: t.val });
-                          showToast(`✓ Timeline: ${t.label}`);
-                          setTimeout(() => setWizStep(6), 500);
-                        }}>
-                          <span className="time-main">{t.label}</span>
-                          <span className={`tbadge ${t.cls}`}>{t.badge}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="back-lnk" onClick={() => setWizStep(4)}>← Back</div>
-                  </div>
-                )}
-
-                {/* Step 6 — Contact */}
-                {wizStep === 6 && (
-                  <div className="wiz-step active">
-                    <div className="q-meta"><div className="q-badge">6</div><span className="q-of">Last step</span></div>
+                    <div className="q-meta"><div className="q-badge">3</div><span className="q-of">Last step</span></div>
                     <div className="q-text">Your matches are ready.</div>
                     <div className="contact-hdr">
                       <div className="ch-num">{filteredListings.length}</div>
                       <div className="ch-lbl">Milton rentals match what you described</div>
                     </div>
-                    <div className="cf"><label className="cf-lbl">Your first name</label><input className="cf-input" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="e.g. Sarah" /></div>
+                    <div className="cf"><label className="cf-lbl">Full name</label><input className="cf-input" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="First and last name" /></div>
+                    <div className="cf"><label className="cf-lbl">Email</label><input className="cf-input" id="wiz-email" type="email" placeholder="your@email.com" /></div>
                     <div className="cf"><label className="cf-lbl">Phone number</label><input className="cf-input" id="wiz-phone" type="tel" placeholder="(647) 555-0000" /></div>
-                    <div className="cf"><label className="cf-lbl">Email <span className="cf-opt">— optional</span></label><input className="cf-input" id="wiz-email" type="email" placeholder="your@email.com" /></div>
                     <button className="next-btn amber" onClick={async () => {
                       if (!userName) { showToast("Please enter your name."); return; }
-                      const phone = (document.getElementById("wiz-phone") as HTMLInputElement).value;
                       const email = (document.getElementById("wiz-email") as HTMLInputElement).value;
+                      const phone = (document.getElementById("wiz-phone") as HTMLInputElement).value;
+                      if (!email) { showToast("Please enter your email."); return; }
                       if (!phone) { showToast("Please enter your phone number."); return; }
-                      // Apply wizard preferences to filters
-                      const typeMap: Record<string, string> = { "Detached": "Detached", "Semi-detached": "Semi", "Townhouse": "Townhouse", "Condo / apt": "Condo" };
-                      if (wizData.type && typeMap[wizData.type]) tglFilter("type", typeMap[wizData.type]);
-                      if (wizData.beds) tglFilter("beds", String(wizData.beds));
-                      if (wizData.park > 0) tglFilter("park", wizData.park + "+");
-                      if (wizData.pet !== "No pet") tglFilter("pets", "Pets OK");
-                      if (wizData.budget) {
-                        if (wizData.budget === "Under $2,000") { setPriceMin(500); setPriceMax(2000); }
-                        else if (wizData.budget === "$2,000–$2,500") { setPriceMin(2000); setPriceMax(2500); }
-                        else if (wizData.budget === "$2,500–$3,000") { setPriceMin(2500); setPriceMax(3000); }
-                        else if (wizData.budget === "$3,000+") { setPriceMin(3000); setPriceMax(5000); }
-                      }
-                      // Send full wizard data to leads API
+                      // Apply quiz preferences to listing filters below
+                      if (wizData.type) tglFilter("type", wizData.type);
+                      if (wizData.budget === "Under $2K") { setPriceMin(1500); setPriceMax(2000); }
+                      else if (wizData.budget === "$2K–$2.5K") { setPriceMin(2000); setPriceMax(2500); }
+                      else if (wizData.budget === "$2.5K–$3K") { setPriceMin(2500); setPriceMax(3000); }
+                      else if (wizData.budget === "$3K+") { setPriceMin(3000); setPriceMax(5000); }
+                      // Post quiz to leads API
                       const ok = await submitLead({
-                        firstName: userName, phone, email, source: "wizard", intent: "renter",
-                        timeline: wizData.timeline,
-                        propertyType: wizData.type, budget: wizData.budget, priority: wizData.prio,
-                        bedrooms: String(wizData.beds), parking: String(wizData.park), pet: wizData.pet,
+                        firstName: userName, phone, email, source: "rental-quiz", intent: "renter",
+                        propertyType: wizData.type,
+                        budget: wizData.budget,
                       });
                       if (ok) {
                         setWizSuccess(true);
-                        showToast("✓ Shortlist sent! We'll call you within 15 minutes.");
+                        showToast("✓ Matches sent!");
                         setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 800);
                       }
                     }}>
-                      Show me my {filteredListings.length} matches →
+                      Show me matching rentals →
                     </button>
-                    <div className="submit-note">Reply within 15 minutes · No spam · No cold calls</div>
-                    <div className="back-lnk" onClick={() => setWizStep(5)}>← Back</div>
+                    <div className="submit-note">Aamir usually replies within the hour · No spam</div>
+                    <div className="back-lnk" onClick={() => setWizStep(2)}>← Back</div>
                   </div>
                 )}
               </>
@@ -520,8 +641,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               /* ── SUCCESS SCREEN ── */
               <div className="success-screen show">
                 <div className="ss-check">✓</div>
-                <div className="ss-title">Your shortlist is ready, {userName}!</div>
-                <div className="ss-sub">We found {filteredListings.length} matches and will call you within 15 minutes. Your results are below.</div>
+                <div className="ss-title">Thanks, {userName}!</div>
+                <div className="ss-sub">We&apos;ll send you matches within the hour. Aamir will follow up personally.</div>
                 <button className="ss-alert" onClick={async () => {
                   await submitLead({ firstName: userName, source: "new-match-alert", intent: "renter" });
                   showToast("🔔 Alert set! You'll hear from us first.");
@@ -532,13 +653,13 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         </div>
 
         {/* ── RIGHT — BOOKING CARD ── */}
-        <div className="hr">
+        <div className="hr" id="book-showing">
           <div className="booking-card">
             <div className="bc-strip" />
             <div className="bc-head">
-              <div className="bc-eyebrow"><span className="bc-eye-dot" />Flagship feature</div>
-              <div className="bc-title">Booking confirmation<br />within <em>1 hour</em></div>
-              <div className="bc-sub">Name any Milton listing. We confirm your showing within the hour.</div>
+              <div className="bc-eyebrow">Book a showing</div>
+              <h2 className="bc-title" style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,lineHeight:1.09,margin:0}}>Usually confirmed within <span style={{color:"#f59e0b"}}>the hour</span></h2>
+              <div className="bc-sub">Name any Milton listing. Aamir typically confirms your showing within an hour during business hours.</div>
             </div>
             <div className="bc-form">
               <div><label className="bc-lbl">MLS # or address</label><input className="bc-input" id="bc-mls" placeholder="e.g. W12345678 or 142 Laurier Ave" /></div>
@@ -557,7 +678,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                   (document.getElementById("bc-phone") as HTMLInputElement).value = "";
                   (document.getElementById("bc-mls") as HTMLInputElement).value = "";
                 }
-              }}><em>⏱</em> Confirm my 1-hour showing</button>
+              }}><em>⏱</em> Request my showing</button>
+              <div className="bc-trust">No obligation · Aamir usually calls back within the hour</div>
               <div className="bc-agent">Aamir Yaqoob · RE/MAX Realty Specialists Inc.</div>
             </div>
           </div>
@@ -573,34 +695,56 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       {/* ═══ RENT AVERAGES BAR ═══ */}
       <div className="rent-avgs">
         <div className="ra-header">
-          <span className="ra-title">Average Rent in Milton</span>
-          <span className="ra-subtitle">Live data from {totalRentals} active listings · Click to filter</span>
-        </div>
-        <div className="ra-scroll">
-          {rentAvgs.map((r) => {
-            const typeMap: Record<string, string> = { condo: "Condo", semi: "Semi", townhouse: "Townhouse", detached: "Detached" };
-            return (
-              <div
-                key={r.label}
-                className="ra-card"
-                onClick={() => {
-                  tglFilter("type", typeMap[r.type] || "All");
-                  tglFilter("beds", String(r.beds));
-                  document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
-                  showToast(`Showing ${r.label} rentals`);
-                }}
-              >
-                <span className="ra-price">${r.avg.toLocaleString()}</span>
-                <span className="ra-label">{r.label}</span>
-              </div>
-            );
-          })}
-          <div className="ra-card ra-total">
-            <span className="ra-price">{totalRentals}</span>
-            <span className="ra-label">Active rentals</span>
+          <span className="ra-eyebrow">Rental Market</span>
+          <div className="ra-titles">
+            <span className="ra-title">Average Rent in Milton</span>
+            <span className="ra-subtitle">Live data from {totalRentals} active listings · Click to filter</span>
           </div>
         </div>
+        <div className="ra-scroll-wrap">
+          <button className="ra-scroll-btn ra-prev" onClick={() => scrollRa("left")} aria-label="Scroll left">‹</button>
+          <div className="ra-scroll" ref={raScrollRef}>
+            {rentAvgs.map((r) => {
+              const typeMap: Record<string, string> = { condo: "Condo", semi: "Semi", townhouse: "Townhouse", detached: "Detached" };
+              const applyRentFilter = () => {
+                tglFilter("type", typeMap[r.type] || "All");
+                tglFilter("beds", String(r.beds));
+                document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+                showToast(`Showing ${r.label} rentals`);
+              };
+              return (
+                <div key={r.label} className="ra-card" onClick={applyRentFilter}>
+                  <span className="ra-price">${r.avg.toLocaleString()}</span>
+                  <span className="ra-label">{r.label}<span className="ra-arrow"> →</span></span>
+                  <span className="ra-count">{r.count} listing{r.count === 1 ? "" : "s"}</span>
+                  <button
+                    className="ra-view"
+                    onClick={(e) => { e.stopPropagation(); applyRentFilter(); }}
+                  >
+                    View →
+                  </button>
+                </div>
+              );
+            })}
+            <div
+              className="ra-card ra-total"
+              onClick={() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              View all {totalRentals} →
+            </div>
+          </div>
+          <button className="ra-scroll-btn ra-next" onClick={() => scrollRa("right")} aria-label="Scroll right">›</button>
+        </div>
       </div>
+
+      {/* ═══ WHY MILTONLY TRUST SECTION ═══ */}
+      <section className="trust-why">
+        <div className="trust-why-inner">
+          <div className="trust-why-item"><span className="trust-why-ico">✓</span>Every Milton rental live from TREB — updated daily</div>
+          <div className="trust-why-item"><span className="trust-why-ico">✓</span>No fake listings — all verified MLS data</div>
+          <div className="trust-why-item"><span className="trust-why-ico">⏱</span>Aamir confirms your showing within the hour</div>
+        </div>
+      </section>
 
       {/* ═══ STICKY FILTER BAR ═══ */}
       <div className="filter-bar" id="filter-bar">
@@ -652,9 +796,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           {/* Price Min */}
           <div className="fs-group">
             <span className="fs-label">Min $</span>
-            <select className={`fs-sel${priceMin !== 500 ? " on" : ""}`} value={priceMin} onChange={(e) => setPriceMin(parseInt(e.target.value))}>
-              {[500, 1000, 1500, 2000, 2500, 3000, 3500, 4000].map((v) => (
-                <option key={v} value={v}>{v >= 1000 ? (v / 1000).toFixed(1).replace(".0", "") + "k" : v}</option>
+            <select className={`fs-sel${priceMin !== 1500 ? " on" : ""}`} value={priceMin} onChange={(e) => setPriceMin(parseInt(e.target.value))}>
+              {[1500, 2000, 2500, 3000, 3500, 4000, 4500].map((v) => (
+                <option key={v} value={v}>{(v / 1000).toFixed(1).replace(".0", "") + "k"}</option>
               ))}
             </select>
           </div>
@@ -684,7 +828,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           {/* Reset */}
           <button className="fs-reset" onClick={() => {
             setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-            setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setSortBy("newest"); setAvailPill("Available now");
+            setTypeFilter("All"); setPriceMin(1500); setPriceMax(5000); setSearchQuery(""); setSortBy("newest"); setAvailPill("Available now");
             showToast("↺ Filters reset");
           }}>↺ Reset</button>
           {searchQuery && <div className="fs-search-chip">&quot;{searchQuery}&quot; <span className="fs-chip-x" onClick={() => setSearchQuery("")}>✕</span></div>}
@@ -706,7 +850,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             <p style={{ fontSize: 13 }}>Try adjusting your price range, bedrooms, or property type.</p>
             <button className="fs-reset" style={{ marginTop: 16 }} onClick={() => {
               setFilters({ type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any" });
-              setTypeFilter("All"); setPriceMin(500); setPriceMax(5000); setSearchQuery(""); setAvailPill("Available now");
+              setTypeFilter("All"); setPriceMin(1500); setPriceMax(5000); setSearchQuery(""); setAvailPill("Available now");
             }}>↺ Reset all filters</button>
           </div>
         ) : (
@@ -714,22 +858,40 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             {filteredListings.map((l) => {
               const days = daysAgo(new Date(l.listedAt));
               const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
+              const cardStreet = streetOf(l.address);
+              const cardHood = hoodOf(l.neighbourhood);
               return (
-                <div key={l.mlsNumber} className="lcard">
-                  <Link href={`/listings/${l.mlsNumber}`}>
+                <div
+                  key={l.mlsNumber}
+                  className="lcard"
+                  onClick={() => router.push(`/listings/${l.mlsNumber}`)}
+                >
                     <div className="lcard-img" style={{ background: l.photos[0] ? `url(${l.photos[0]}) center/cover` : "#e0f2fe" }}>
                       {!l.photos[0] && <span style={{ fontSize: 44 }}>{typeIcons[l.propertyType] || "🏠"}</span>}
                       <span className="lbadge">{days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d ago`}</span>
                       <span className="avail-tag">{l.possessionDetails === "Vacant" || l.possessionDetails === "Immediate" ? "Available now" : l.possessionDetails || "Available"}</span>
                     </div>
                     <div className="lbody">
-                      <div className="lprice">{formatPriceFull(l.price)} <span>/ month</span></div>
-                      <div className="laddr">{l.address.split(",")[0]} · {l.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "")}</div>
+                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:2}}>
+                        <div className="lprice" style={{marginBottom:0}}>{formatPriceFull(l.price)} <span>/ month</span></div>
+                        <span style={{background:"#07111f",color:"#cbd5e1",fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,flexShrink:0,alignSelf:"center"}}>
+                          {propertyBadgeLabel(l.propertyType)}
+                        </span>
+                      </div>
+                      <div className="laddr">{titleCase(l.address.split(",")[0])}</div>
+                      <div className="lcard-links">
+                        <Link href={`/streets/${streetSlug(cardStreet)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardStreet)}</Link>
+                        <span className="sep">·</span>
+                        <Link href={`/listings?neighbourhood=${encodeURIComponent(cardHood)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardHood)}</Link>
+                      </div>
                       <div className="lspecs">
                         <span>🛏 {l.bedrooms} bed</span>
                         <span>🚿 {l.bathrooms} bath</span>
                         {l.parking > 0 && <span>🚗 {l.parking} park</span>}
-                        <span style={{ textTransform: "capitalize" }}>{l.propertyType}</span>
+                        <span>⏱ {days}d on market</span>
+                      </div>
+                      <div style={{fontSize:11,color:"#94a3b8",marginTop:-4,marginBottom:8}}>
+                        {l.listOfficeName ? titleCase(l.listOfficeName) : "MLS®"} · {days === 0 ? "Listed today" : `${days}d on Miltonly`}
                       </div>
 
                       {/* ── LIST VIEW EXTRAS — ALL REAL DATA ── */}
@@ -770,13 +932,17 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                         </div>
                       )}
                     </div>
-                  </Link>
-                  <div className="lbtns-wrap">
+                  <div className="lbtns-wrap" onClick={(e) => e.stopPropagation()}>
                     <button className="lbtn lbtn-bk" onClick={() => handleBookShowing(l)}>Book showing</button>
-                    <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>I want to see this today</button>
-                    {viewMode === "list" && (
-                      <button className="lbtn lbtn-save" onClick={() => showToast(`♡ Saved ${l.address.split(",")[0]}`)}>♡ Save</button>
-                    )}
+                    <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>See this today →</button>
+                    <button
+                      className="lbtn-save-mini"
+                      onClick={() => handleSaveListing(l.mlsNumber, l.address)}
+                      aria-label={isListingSaved(l.mlsNumber) ? "Unsave listing" : "Save listing"}
+                      title={isListingSaved(l.mlsNumber) ? "Unsave listing" : "Save listing"}
+                    >
+                      {isListingSaved(l.mlsNumber) ? "♥" : "♡"}
+                    </button>
                   </div>
                 </div>
               );
@@ -841,6 +1007,54 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       <div className={`toast${toast ? " show" : ""}`}>
         <span className="toast-ck">✓</span>
         <span>{toast}</span>
+      </div>
+
+      {/* ═══ RENTALS PAGE FOOTER ═══ */}
+      <footer className="rentals-footer">
+        <div className="rf-inner">
+          <div className="rf-col">
+            <h4>Popular Milton streets</h4>
+            <ul>
+              {topStreets.map((s) => (
+                <li key={s.slug}><Link href={`/streets/${s.slug}`}>{s.name}</Link></li>
+              ))}
+              {topStreets.length === 0 && (
+                <li><Link href="/streets">Browse all Milton streets →</Link></li>
+              )}
+            </ul>
+          </div>
+          <div className="rf-col">
+            <h4>Milton neighbourhoods</h4>
+            <ul>
+              {FOOTER_NEIGHBOURHOODS.map((n) => (
+                <li key={n}><Link href={`/neighbourhoods/${toFooterSlug(n)}`}>{n}</Link></li>
+              ))}
+            </ul>
+          </div>
+          <div className="rf-col">
+            <h4>Quick links</h4>
+            <ul>
+              <li><Link href="/listings">Buy in Milton</Link></li>
+              <li><Link href="/sell">Sell in Milton</Link></li>
+              <li><Link href="/schools">Schools</Link></li>
+              <li><Link href="/mosques">Mosques</Link></li>
+              <li><Link href="/about">About</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="rf-bottom">
+          Aamir Yaqoob · RE/MAX Realty Specialists Inc. · Milton Ontario · <a href="tel:+16478399090">(647) 839-9090</a>
+        </div>
+      </footer>
+
+      {/* ═══ MOBILE STICKY CTA (visible below 900px via CSS) ═══ */}
+      <div className="mobile-cta">
+        <button
+          className="mobile-cta-btn"
+          onClick={() => document.getElementById("book-showing")?.scrollIntoView({ behavior: "smooth" })}
+        >
+          Book a showing →
+        </button>
       </div>
     </div>
   );

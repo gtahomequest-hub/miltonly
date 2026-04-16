@@ -1,7 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import Link from "next/link";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
+import ListingsCardsClient from "./ListingsCardsClient";
+import SaveSearchStrip from "./SaveSearchStrip";
+import SchemaScript from "@/components/SchemaScript";
+import { generateFAQSchema } from "@/lib/schema";
 
 export const metadata = genMeta({
   title: "Milton Homes For Sale & Real Estate",
@@ -12,10 +16,37 @@ export const metadata = genMeta({
 export const revalidate = 3600;
 
 interface Props {
-  searchParams: { type?: string; status?: string; min?: string; max?: string; maxPrice?: string; beds?: string; baths?: string; sort?: string; page?: string; q?: string; neighbourhood?: string };
+  searchParams: {
+    type?: string; status?: string; min?: string; max?: string; maxPrice?: string;
+    beds?: string; baths?: string; sort?: string; page?: string; q?: string;
+    neighbourhood?: string; openHouse?: string;
+  };
 }
 
 const PER_PAGE = 36;
+
+const NEIGHBOURHOOD_FILTER_OPTIONS = [
+  "Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton",
+  "Coates", "Clarke", "Scott", "Harrison", "Ford", "Walker", "Cobban",
+];
+
+const FOOTER_NEIGHBOURHOODS = ["Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton"];
+
+const FEATURED_SCHOOLS = [
+  { slug: "chris-hadfield-ps", name: "Chris Hadfield PS", board: "Public", neighbourhood: "Dempsey", fraser: null as string | null },
+  { slug: "bishop-pf-reding-catholic-secondary-school", name: "Bishop P.F. Reding", board: "Catholic", neighbourhood: "Old Milton", fraser: "8.0" as string | null },
+  { slug: "guardian-angels-catholic-es", name: "Guardian Angels Catholic ES", board: "Catholic", neighbourhood: "Milton", fraser: null as string | null },
+  { slug: "irma-coulson-ps", name: "Irma Coulson PS", board: "Public", neighbourhood: "Beaty", fraser: null as string | null },
+];
+
+function titleCaseHood(h: string) {
+  const cleaned = h.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
+  return cleaned
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export default async function ListingsPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page || "1"));
@@ -47,249 +78,403 @@ export default async function ListingsPage({ searchParams }: Props) {
   if (searchParams.sort === "price_asc") orderBy = { price: "asc" };
   if (searchParams.sort === "price_desc") orderBy = { price: "desc" };
 
-  const [listings, totalCount, avgPrice, typeBreakdown, domAgg] = await Promise.all([
-    prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE }),
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const activeBase = { status: "active", city: "Milton", permAdvertise: true } as const;
+
+  const [
+    listings,
+    totalCount,
+    avgPriceAgg,
+    domAgg,
+    newThisWeek,
+    neighbourhoodStats,
+    topStreets,
+  ] = await Promise.all([
+    prisma.listing.findMany({
+      where, orderBy, skip, take: PER_PAGE,
+      select: {
+        mlsNumber: true, address: true, price: true, bedrooms: true, bathrooms: true,
+        sqft: true, propertyType: true, status: true, transactionType: true, photos: true,
+        listedAt: true, neighbourhood: true, daysOnMarket: true, listOfficeName: true,
+      },
+    }),
     prisma.listing.count({ where }),
-    prisma.listing.aggregate({ where: { status: "active", city: "Milton", permAdvertise: true }, _avg: { price: true } }),
-    prisma.listing.groupBy({ by: ["propertyType"], _count: true, _avg: { price: true }, where: { status: "active", city: "Milton", permAdvertise: true } }),
-    prisma.listing.aggregate({ where: { status: "active", city: "Milton", daysOnMarket: { gt: 0 }, permAdvertise: true }, _avg: { daysOnMarket: true } }),
+    prisma.listing.aggregate({ where: activeBase, _avg: { price: true } }),
+    prisma.listing.aggregate({ where: { ...activeBase, daysOnMarket: { gt: 0 } }, _avg: { daysOnMarket: true } }),
+    prisma.listing.count({ where: { ...activeBase, listedAt: { gte: sevenDaysAgo } } }),
+    prisma.listing.groupBy({
+      by: ["neighbourhood"],
+      _count: true,
+      _avg: { price: true },
+      where: activeBase,
+      orderBy: { _count: { neighbourhood: "desc" } },
+      take: 30,
+    }),
+    prisma.listing.groupBy({
+      by: ["streetSlug", "streetName"],
+      _count: true,
+      where: { ...activeBase, streetName: { not: null } },
+      orderBy: { _count: { streetSlug: "desc" } },
+      take: 6,
+    }),
   ]);
 
   const totalPages = Math.ceil(totalCount / PER_PAGE);
   const statusLabel = searchParams.status === "rent" ? "for rent" : searchParams.status === "sold" ? "sold" : "for sale";
-  const avg = Math.round(avgPrice._avg.price || 0);
+  const avg = Math.round(avgPriceAgg._avg.price || 0);
   const avgDom = Math.round(domAgg._avg.daysOnMarket || 0);
 
+  // De-duplicate neighbourhood stats (TREB has versions like "1035 - Old Milton")
+  const hoodMap = new Map<string, { count: number; avgSum: number; avgN: number }>();
+  for (const h of neighbourhoodStats) {
+    const name = titleCaseHood(h.neighbourhood);
+    if (!name) continue;
+    const existing = hoodMap.get(name);
+    const avgPrice = h._avg.price || 0;
+    if (existing) {
+      existing.count += h._count;
+      existing.avgSum += avgPrice * h._count;
+      existing.avgN += h._count;
+    } else {
+      hoodMap.set(name, { count: h._count, avgSum: avgPrice * h._count, avgN: h._count });
+    }
+  }
+  const topNeighbourhoods = Array.from(hoodMap.entries())
+    .filter(([name]) => name && name.toLowerCase() !== "milton")
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 6)
+    .map(([name, stats]) => ({
+      name,
+      count: stats.count,
+      avg: stats.avgN > 0 ? Math.round(stats.avgSum / stats.avgN) : 0,
+    }));
+
+  const faqs = [
+    {
+      question: "How many homes are for sale in Milton Ontario?",
+      answer: `There are currently ${totalCount} homes ${statusLabel} in Milton, Ontario. Listings update daily from TREB MLS® data and include detached homes, semis, townhouses, and condos across every Milton neighbourhood.`,
+    },
+    {
+      question: "What is the average home price in Milton?",
+      answer: `The average asking price for a Milton home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood — detached homes in established areas like Old Milton sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
+    },
+    {
+      question: "What neighbourhoods are in Milton Ontario?",
+      answer: `Milton's main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old Milton, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points — use the neighbourhood filter to narrow your search.`,
+    },
+    {
+      question: "How do I book a showing for a Milton home?",
+      answer: `Click "Book showing" on any listing card and Aamir Yaqoob — a licensed RE/MAX Realty Specialists Inc. agent based in Milton — will confirm your appointment within the hour. No obligation, no pressure.`,
+    },
+  ];
+
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: "About Milton Ontario Real Estate",
+    description: "An overview of the Milton real estate market — growth, property mix, and why working with a local specialist matters.",
+    author: { "@type": "Person", name: "Aamir Yaqoob" },
+    publisher: { "@type": "Organization", name: "Miltonly" },
+    datePublished: "2026-04-01",
+    dateModified: new Date().toISOString().slice(0, 10),
+  };
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* ═══ HEADER + FILTERS ═══ */}
-      <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-5">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-[22px] font-extrabold text-[#07111f] tracking-[-0.3px] mb-1">
-            Milton homes {statusLabel} &amp; real estate
-          </h1>
-          <p className="text-[13px] text-[#64748b] mb-5">{totalCount} homes · Live TREB MLS® data</p>
+    <>
+      <SchemaScript schemas={[generateFAQSchema(faqs), articleSchema]} />
 
-          <form className="flex flex-wrap items-center gap-2">
-            <select name="status" defaultValue={searchParams.status || "active"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#07111f] font-semibold cursor-pointer">
-              <option value="active">For sale</option>
-              <option value="rent">For rent</option>
-              <option value="sold">Sold</option>
-            </select>
-            <select name="type" defaultValue={searchParams.type || "all"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
-              <option value="all">All types</option>
-              <option value="detached">Detached</option>
-              <option value="semi">Semi</option>
-              <option value="townhouse">Townhouse</option>
-              <option value="condo">Condo</option>
-            </select>
-            <select name="min" defaultValue={searchParams.min || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
-              <option value="">No min</option>
-              {[300000,400000,500000,600000,700000,800000,900000,1000000,1200000,1500000].map(p => (
-                <option key={p} value={p}>{formatPriceFull(p)}</option>
-              ))}
-            </select>
-            <span className="text-[11px] text-[#94a3b8]">–</span>
-            <select name="max" defaultValue={searchParams.max || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
-              <option value="">No max</option>
-              {[500000,600000,700000,800000,900000,1000000,1200000,1500000,2000000,3000000].map(p => (
-                <option key={p} value={p}>{formatPriceFull(p)}</option>
-              ))}
-            </select>
-            <select name="beds" defaultValue={searchParams.beds || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
-              <option value="">Beds</option>
-              {[1,2,3,4,5].map(b => <option key={b} value={b}>{b}+</option>)}
-            </select>
-            <select name="baths" defaultValue={searchParams.baths || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
-              <option value="">Baths</option>
-              {[1,2,3].map(b => <option key={b} value={b}>{b}+</option>)}
-            </select>
-            <button type="submit" className="text-[12px] bg-[#07111f] text-[#f59e0b] font-bold px-5 py-2.5 rounded-lg hover:bg-[#0c1e35] transition-colors">Apply</button>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[11px] text-[#94a3b8]">Sort:</span>
-              <select name="sort" defaultValue={searchParams.sort || "newest"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
-                <option value="newest">Newest</option>
-                <option value="price_asc">Price ↑</option>
-                <option value="price_desc">Price ↓</option>
-              </select>
+      <div className="min-h-screen bg-white">
+        {/* ═══ HEADER + SNAPSHOT + FILTERS ═══ */}
+        <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-5">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-[30px] font-extrabold text-[#07111f] tracking-[-0.5px] mb-1 leading-tight">
+              Milton homes {statusLabel} &amp; real estate
+            </h1>
+            <p className="text-[14px] text-[#64748b] mb-4">{totalCount} homes · Live TREB MLS® data</p>
+
+            {/* Market snapshot bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              <div className="bg-[#07111f] rounded-lg px-4 py-3">
+                <p className="text-[18px] font-extrabold text-white tracking-[-0.3px]">{formatPriceFull(avg)}</p>
+                <p className="text-[11px] text-[#94a3b8] mt-0.5 font-medium">Avg asking price</p>
+              </div>
+              <div className="bg-[#07111f] rounded-lg px-4 py-3">
+                <p className="text-[18px] font-extrabold text-white tracking-[-0.3px]">{avgDom || "—"}{avgDom ? " days" : ""}</p>
+                <p className="text-[11px] text-[#94a3b8] mt-0.5 font-medium">Avg DOM</p>
+              </div>
+              <div className="bg-[#07111f] rounded-lg px-4 py-3">
+                <p className="text-[18px] font-extrabold text-white tracking-[-0.3px]">{newThisWeek}</p>
+                <p className="text-[11px] text-[#94a3b8] mt-0.5 font-medium">New this week</p>
+              </div>
+              <div className="bg-[#07111f] rounded-lg px-4 py-3">
+                <p className="text-[18px] font-extrabold text-white tracking-[-0.3px]">{totalCount}</p>
+                <p className="text-[11px] text-[#94a3b8] mt-0.5 font-medium">Active listings</p>
+              </div>
             </div>
-          </form>
-        </div>
-      </div>
 
-      {/* ═══ LISTINGS GRID ═══ */}
-      <div className="max-w-7xl mx-auto px-5 sm:px-11 py-6">
-        {listings.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-[16px] font-bold text-[#07111f] mb-2">No homes match your filters</p>
-            <p className="text-[13px] text-[#64748b] mb-4">Try adjusting your search criteria.</p>
-            <Link href="/listings" className="text-[13px] text-[#2563eb] font-semibold hover:underline">Clear all filters</Link>
+            <form className="flex flex-wrap items-center gap-2">
+              <select name="status" defaultValue={searchParams.status || "active"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#07111f] font-semibold cursor-pointer">
+                <option value="active">For sale</option>
+                <option value="rent">For rent</option>
+                <option value="sold">Sold</option>
+              </select>
+              <select name="type" defaultValue={searchParams.type || "all"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                <option value="all">All types</option>
+                <option value="detached">Detached</option>
+                <option value="semi">Semi</option>
+                <option value="townhouse">Townhouse</option>
+                <option value="condo">Condo</option>
+              </select>
+              <select name="min" defaultValue={searchParams.min || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                <option value="">No min</option>
+                {[300000,400000,500000,600000,700000,800000,900000,1000000,1200000,1500000].map(p => (
+                  <option key={p} value={p}>{formatPriceFull(p)}</option>
+                ))}
+              </select>
+              <span className="text-[11px] text-[#94a3b8]">–</span>
+              <select name="max" defaultValue={searchParams.max || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                <option value="">No max</option>
+                {[500000,600000,700000,800000,900000,1000000,1200000,1500000,2000000,3000000].map(p => (
+                  <option key={p} value={p}>{formatPriceFull(p)}</option>
+                ))}
+              </select>
+              <select name="beds" defaultValue={searchParams.beds || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                <option value="">Beds</option>
+                {[1,2,3,4,5].map(b => <option key={b} value={b}>{b}+</option>)}
+              </select>
+              <select name="baths" defaultValue={searchParams.baths || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                <option value="">Baths</option>
+                {[1,2,3].map(b => <option key={b} value={b}>{b}+</option>)}
+              </select>
+              <select name="neighbourhood" defaultValue={searchParams.neighbourhood || ""} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                <option value="">All neighbourhoods</option>
+                {NEIGHBOURHOOD_FILTER_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              <label className="flex items-center gap-1.5 text-[12px] font-medium text-[#475569] border border-[#e2e8f0] rounded-lg px-3 py-2.5 cursor-pointer hover:border-[#07111f] transition-colors">
+                <input type="checkbox" name="openHouse" value="1" defaultChecked={!!searchParams.openHouse} className="accent-[#f59e0b]" />
+                Open houses
+              </label>
+              <button type="submit" className="text-[12px] bg-[#07111f] text-[#f59e0b] font-bold px-5 py-2.5 rounded-lg hover:bg-[#0c1e35] transition-colors">Apply</button>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-[12px] font-medium text-[#94a3b8]">Sort:</span>
+                <select name="sort" defaultValue={searchParams.sort || "newest"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
+                  <option value="newest">Newest</option>
+                  <option value="price_asc">Price ↑</option>
+                  <option value="price_desc">Price ↓</option>
+                </select>
+              </div>
+            </form>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {listings.map((l) => {
-              const days = daysAgo(new Date(l.listedAt));
-              const isRental = l.transactionType === "For Lease";
-              return (
-                <Link key={l.mlsNumber} href={`/listings/${l.mlsNumber}`} className="group bg-white rounded-xl border border-[#e2e8f0] overflow-hidden hover:shadow-lg transition-all">
-                  {/* Photo — bigger, 3:2 aspect */}
-                  <div className="aspect-[3/2] relative bg-[#f1f5f9]">
-                    {l.photos[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={l.photos[0]} alt={l.address} className="w-full h-full object-cover" loading="lazy" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[#cbd5e1] text-[32px]">🏠</div>
-                    )}
-                    {/* Status tag */}
-                    {days <= 3 && <span className="absolute top-2.5 left-2.5 bg-[#07111f] text-[#f59e0b] text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">{days === 0 ? "New today" : "New"}</span>}
-                    {/* Photo count — Redfin style */}
-                    {l.photos.length > 1 && (
-                      <span className="absolute bottom-2.5 right-2.5 bg-black/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 backdrop-blur-sm">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                        {l.photos.length}
-                      </span>
-                    )}
-                    {/* Favourite */}
-                    <span className="absolute top-2.5 right-2.5 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-[14px] opacity-0 group-hover:opacity-100">♡</span>
-                  </div>
+        </div>
 
-                  {/* Body */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[20px] font-extrabold text-[#07111f] tracking-[-0.3px]">
-                          {formatPriceFull(l.price)}{isRental ? <span className="text-[13px] font-normal text-[#94a3b8]">/mo</span> : ""}
-                        </p>
-                        <p className="text-[13px] text-[#475569] mt-0.5">
-                          {l.bedrooms} bd · {l.bathrooms} ba
-                          {l.sqft ? ` · ${l.sqft.toLocaleString()} sqft` : ""}
-                        </p>
-                      </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${isRental ? "bg-[#eff6ff] text-[#1e3a8a]" : l.status === "sold" ? "bg-[#fef2f2] text-[#991b1b]" : "bg-[#15803d] text-white"}`}>
-                        {isRental ? "Lease" : l.status}
+        {/* ═══ SAVE SEARCH STRIP ═══ */}
+        <SaveSearchStrip
+          type={searchParams.type}
+          status={searchParams.status}
+          neighbourhood={searchParams.neighbourhood}
+          min={searchParams.min}
+          max={searchParams.max}
+          beds={searchParams.beds}
+          baths={searchParams.baths}
+          openHouse={searchParams.openHouse}
+        />
+
+        {/* ═══ LISTINGS GRID ═══ */}
+        <div className="max-w-7xl mx-auto px-5 sm:px-11 py-6">
+          {listings.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-[16px] font-bold text-[#07111f] mb-2">No homes match your filters</p>
+              <p className="text-[13px] text-[#64748b] mb-4">Try adjusting your search criteria.</p>
+              <Link href="/listings" className="text-[13px] text-[#2563eb] font-semibold hover:underline">Clear all filters</Link>
+            </div>
+          ) : (
+            <ListingsCardsClient listings={JSON.parse(JSON.stringify(listings))} />
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-10 pt-8 border-t border-[#e2e8f0]">
+              {page > 1 && (
+                <Link href={{ pathname: "/listings", query: { ...searchParams, page: String(page - 1) } }} className="text-[13px] bg-white border border-[#e2e8f0] rounded-lg px-5 py-2.5 text-[#475569] font-medium hover:border-[#07111f] transition-colors">
+                  ← Previous
+                </Link>
+              )}
+              <span className="text-[13px] text-[#94a3b8]">Page {page} of {totalPages}</span>
+              {page < totalPages && (
+                <Link href={{ pathname: "/listings", query: { ...searchParams, page: String(page + 1) } }} className="text-[13px] bg-white border border-[#e2e8f0] rounded-lg px-5 py-2.5 text-[#475569] font-medium hover:border-[#07111f] transition-colors">
+                  Next →
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ═══ SECTION 1 — NEIGHBOURHOOD QUICK LINKS ═══ */}
+        {topNeighbourhoods.length > 0 && (
+          <div className="bg-[#07111f] px-5 sm:px-11 py-10">
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-[22px] font-extrabold text-white mb-6">Browse Milton by neighbourhood</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {topNeighbourhoods.map((h) => (
+                  <Link
+                    key={h.name}
+                    href={`/listings?neighbourhood=${encodeURIComponent(h.name)}`}
+                    className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-5 hover:border-[#f59e0b] transition-colors group"
+                  >
+                    <p className="text-[16px] font-bold text-[#f8f9fb] group-hover:text-[#f59e0b] transition-colors">{h.name}</p>
+                    <p className="text-[12px] text-[#94a3b8] mt-1">{h.count} active listing{h.count === 1 ? "" : "s"}</p>
+                    {h.avg > 0 && <p className="text-[14px] font-bold text-[#cbd5e1] mt-2">{formatPriceFull(h.avg)} avg</p>}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ SECTION 2 — TOP STREETS STRIP ═══ */}
+        {topStreets.length > 0 && (
+          <div className="bg-[#0c1e35] px-5 sm:px-11 py-10 border-t border-[#1e3a5f]">
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-[22px] font-extrabold text-white mb-6">Top Milton streets right now</h2>
+              <div className="flex flex-wrap gap-2">
+                {topStreets.map((s) => (
+                  <Link
+                    key={s.streetSlug}
+                    href={`/streets/${s.streetSlug}`}
+                    className="bg-[#07111f] border border-[#1e3a5f] rounded-full px-4 py-2 text-[13px] font-medium text-[#cbd5e1] hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors"
+                  >
+                    {s.streetName}
+                    <span className="text-[#94a3b8] ml-2">· {s._count} active</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ SECTION 3 — SCHOOL ZONE LINKS ═══ */}
+        <div className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-[22px] font-extrabold text-[#07111f] mb-6">Find homes near top-rated schools</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {FEATURED_SCHOOLS.map((s) => {
+                const hoodStat = topNeighbourhoods.find((h) => h.name === s.neighbourhood);
+                return (
+                  <Link
+                    key={s.slug}
+                    href={`/schools/${s.slug}`}
+                    className="bg-white border border-[#e2e8f0] rounded-xl p-5 hover:shadow-md hover:border-[#07111f] transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-[16px] font-bold text-[#07111f]">{s.name}</p>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${s.board === "Public" ? "bg-[#dbeafe] text-[#1e40af]" : "bg-[#fef3c7] text-[#92400e]"}`}>
+                        {s.board}
                       </span>
                     </div>
-                    <p className="text-[12px] text-[#64748b] mt-1.5 truncate">{l.address}</p>
-                    <p className="text-[10px] text-[#94a3b8] mt-2">
-                      {l.listOfficeName || "MLS®"} · {days === 0 ? "Listed today" : `${days}d on Miltonly`}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-10 pt-8 border-t border-[#e2e8f0]">
-            {page > 1 && (
-              <Link href={{ pathname: "/listings", query: { ...searchParams, page: String(page - 1) } }} className="text-[13px] bg-white border border-[#e2e8f0] rounded-lg px-5 py-2.5 text-[#475569] font-medium hover:border-[#07111f] transition-colors">
-                ← Previous
-              </Link>
-            )}
-            <span className="text-[13px] text-[#94a3b8]">Page {page} of {totalPages}</span>
-            {page < totalPages && (
-              <Link href={{ pathname: "/listings", query: { ...searchParams, page: String(page + 1) } }} className="text-[13px] bg-white border border-[#e2e8f0] rounded-lg px-5 py-2.5 text-[#475569] font-medium hover:border-[#07111f] transition-colors">
-                Next →
-              </Link>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ═══ MARKET STATS SECTION ═══ */}
-      <div className="bg-[#f8f9fb] border-t border-[#e2e8f0] px-5 sm:px-11 py-10">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-[20px] font-extrabold text-[#07111f] mb-2">Average home prices in Milton, ON</h2>
-          <p className="text-[13px] text-[#64748b] mb-6">Based on {totalCount} active listings · Updated daily from TREB MLS®</p>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-              <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-1">All homes avg.</p>
-              <p className="text-[26px] font-extrabold text-[#07111f]">{formatPriceFull(avg)}</p>
-            </div>
-            {[...typeBreakdown].sort((a, b) => (b._avg.price || 0) - (a._avg.price || 0)).map((t) => (
-              <div key={t.propertyType} className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-                <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-1 capitalize">{t.propertyType} avg.</p>
-                <p className="text-[26px] font-extrabold text-[#07111f]">{formatPriceFull(Math.round(t._avg.price || 0))}</p>
-                <p className="text-[11px] text-[#64748b] mt-1">{t._count} listings</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Milton real estate trends */}
-          <h2 className="text-[20px] font-extrabold text-[#07111f] mt-10 mb-2">Milton, ON real estate trends</h2>
-          <p className="text-[13px] text-[#64748b] mb-6">Milton is one of Canada&apos;s fastest-growing cities. Here&apos;s what the market looks like right now.</p>
-
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-              <p className="text-[28px] font-extrabold text-[#07111f]">{formatPriceFull(avg)}</p>
-              <p className="text-[12px] text-[#64748b] mt-1">Median sale price</p>
-            </div>
-            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-              <p className="text-[28px] font-extrabold text-[#07111f]">{totalCount}</p>
-              <p className="text-[12px] text-[#64748b] mt-1">Homes on market</p>
-            </div>
-            <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-              <p className="text-[28px] font-extrabold text-[#07111f]">{avgDom || "—"}</p>
-              <p className="text-[12px] text-[#64748b] mt-1">Avg. days on market</p>
+                    <p className="text-[12px] text-[#64748b]">{s.neighbourhood}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[12px]">
+                      {s.fraser && <span className="text-[#15803d] font-semibold">Fraser {s.fraser}/10</span>}
+                      {hoodStat && <span className="text-[#64748b]">{hoodStat.count} nearby listings</span>}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ═══ HOW TO BUY SECTION ═══ */}
-      <div className="bg-white border-t border-[#e2e8f0] px-5 sm:px-11 py-10">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-[20px] font-extrabold text-[#07111f] mb-6">How to buy a house in Milton, ON</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { step: "1", title: "Get pre-approved", desc: "Know your budget before you start. Milton&apos;s average home is " + formatPriceFull(avg) + ". A pre-approval shows sellers you&apos;re serious." },
-              { step: "2", title: "Search & shortlist", desc: "Browse listings on Miltonly — filter by neighbourhood, price, bedrooms, and property type. Save your favourites and set up alerts." },
-              { step: "3", title: "Book showings", desc: "See homes in person. On Miltonly, you can book showings directly — we respond within 15 minutes, guaranteed." },
-              { step: "4", title: "Make an offer", desc: "Your agent prepares a competitive offer. In Milton, homes sell at an average of 100% of asking price within 18 days." },
-              { step: "5", title: "Close & move in", desc: "Your lawyer handles closing. Typical Milton closing takes 30-60 days. Welcome to Milton — one of Canada&apos;s best places to live." },
-            ].map((item) => (
-              <div key={item.step} className="flex gap-4">
-                <div className="w-8 h-8 bg-[#07111f] text-[#f59e0b] rounded-full flex items-center justify-center text-[12px] font-extrabold shrink-0">{item.step}</div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-[#07111f] mb-1">{item.title}</h3>
-                  <p className="text-[12px] text-[#64748b] leading-[1.6]">{item.desc}</p>
+        {/* ═══ SECTION 4 — SAVE SEARCH CTA ═══ */}
+        <div className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-[18px] font-extrabold text-[#07111f] mb-2">Create a free account to save searches and get deal alerts</p>
+            <p className="text-[14px] text-[#64748b] mb-5">We&apos;ll email you the moment a new Milton listing matches your filters — before it hits any other site.</p>
+            <Link href="/signin" className="inline-block bg-[#07111f] text-[#f59e0b] text-[14px] font-bold px-6 py-3 rounded-lg hover:bg-[#0c1e35] transition-colors">
+              Sign up free →
+            </Link>
+          </div>
+        </div>
+
+        {/* ═══ SECTION 5 — SEO CONTENT ═══ */}
+        <article className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-[800px] mx-auto">
+            <h2 className="text-[24px] font-extrabold text-[#07111f] mb-4">About Milton real estate</h2>
+            <div className="space-y-4 text-[15px] text-[#475569] leading-[1.7]">
+              <p>
+                Milton has been one of Canada&apos;s fastest-growing communities for two decades, and the pace hasn&apos;t really let up. Between the GO train expansion, the Boyne and Agerton build-out, and new campus infrastructure coming online, the pool of people arriving here each year keeps the resale market competitive. What that means for buyers is simple: inventory moves quickly, the good homes get multiple offers, and knowing which neighbourhoods to shortlist is half the work.
+              </p>
+              <p>
+                The property mix is unusually wide for a town this size. You can be looking at a 2005 detached in Timberlea, a brand-new Mattamy townhouse in Walker, or a low-rise condo right off the GO station — all in the same afternoon. Price points spread across a similar range. Entry-level condos start in the high $400K window; established detached streets in Dempsey and Hawthorne Village routinely clear $1.2M. Understanding that spread — and what each pocket actually trades at right now — is where a local agent makes the biggest difference.
+              </p>
+              <p>
+                That&apos;s where working with someone who only sells Milton matters. Aamir Yaqoob has been with RE/MAX Realty Specialists Inc. full-time for 14 years and has closed on every street you&apos;ll scroll past. He&apos;ll tell you which townhouse has a rental parking spot included, which street backs onto a park that floods, and which condo building has a maintenance fee about to jump. Call (647) 839-9090 or tap Book showing on any listing — confirmed within the hour, no obligation.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        {/* ═══ SECTION 6 — FAQ ═══ */}
+        <div className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-[22px] font-extrabold text-[#07111f] mb-6">Frequently asked questions</h2>
+            <div className="space-y-3">
+              {faqs.map((faq, i) => (
+                <div key={i} className="bg-white border border-[#e2e8f0] rounded-xl p-5">
+                  <h3 className="text-[15px] font-bold text-[#07111f] mb-2">{faq.question}</h3>
+                  <p className="text-[13px] text-[#64748b] leading-[1.65]">{faq.answer}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ FOOTER ═══ */}
+        <footer className="bg-[#07111f] px-5 sm:px-11 py-12 border-t border-[#1e3a5f]">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-8">
+              <div>
+                <h4 className="text-[13px] font-bold text-[#f59e0b] uppercase tracking-[0.12em] mb-4">Popular searches</h4>
+                <ul className="space-y-2">
+                  <li><Link href="/listings?type=detached" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Detached homes</Link></li>
+                  <li><Link href="/listings?type=townhouse" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Townhouses</Link></li>
+                  <li><Link href="/listings?type=condo" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Condos</Link></li>
+                  <li><Link href="/listings?max=700000" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Under $700K</Link></li>
+                  <li><Link href="/listings?status=sold" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Sold prices</Link></li>
+                </ul>
               </div>
-            ))}
+              <div>
+                <h4 className="text-[13px] font-bold text-[#f59e0b] uppercase tracking-[0.12em] mb-4">Milton neighbourhoods</h4>
+                <ul className="space-y-2">
+                  {FOOTER_NEIGHBOURHOODS.map((n) => (
+                    <li key={n}>
+                      <Link href={`/listings?neighbourhood=${encodeURIComponent(n)}`} className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">{n}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-[13px] font-bold text-[#f59e0b] uppercase tracking-[0.12em] mb-4">Quick links</h4>
+                <ul className="space-y-2">
+                  <li><Link href="/streets" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Streets</Link></li>
+                  <li><Link href="/schools" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Schools</Link></li>
+                  <li><Link href="/mosques" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Mosques</Link></li>
+                  <li><Link href="/rentals" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Rentals</Link></li>
+                  <li><Link href="/sell" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">Sell</Link></li>
+                  <li><Link href="/about" className="text-[13px] text-[#94a3b8] hover:text-[#f59e0b] transition-colors">About</Link></li>
+                </ul>
+              </div>
+            </div>
+            <div className="border-t border-[#1e3a5f] pt-6 text-[12px] text-[#64748b] text-center">
+              Aamir Yaqoob · RE/MAX Realty Specialists Inc. · Milton Ontario · <a href="tel:+16478399090" className="text-[#f59e0b] hover:underline">(647) 839-9090</a>
+            </div>
+            <p className="text-[10px] text-[#475569] text-center mt-4 max-w-3xl mx-auto leading-relaxed">
+              Data provided by TREB via Miltonly. MLS® listings updated daily. Information is deemed reliable but not guaranteed.
+            </p>
           </div>
-        </div>
+        </footer>
       </div>
-
-      {/* ═══ SEO LINKS ═══ */}
-      <div className="bg-[#f8f9fb] border-t border-[#e2e8f0] px-5 sm:px-11 py-8">
-        <div className="max-w-7xl mx-auto">
-          <h3 className="text-[14px] font-extrabold text-[#07111f] mb-4">More Milton real estate</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-1.5">
-            {[
-              { label: "Milton detached homes", href: "/listings?type=detached" },
-              { label: "Milton townhouses", href: "/listings?type=townhouse" },
-              { label: "Milton condos", href: "/listings?type=condo" },
-              { label: "Milton homes for rent", href: "/rentals" },
-              { label: "Milton sold prices", href: "/listings?status=sold" },
-              { label: "Milton under $700K", href: "/listings?max=700000" },
-              { label: "Milton under $1M", href: "/listings?max=1000000" },
-              { label: "Milton over $1M", href: "/listings?min=1000000" },
-              { label: "Milton street prices", href: "/streets" },
-              { label: "Milton street prices", href: "/streets" },
-            ].map((l) => (
-              <Link key={l.label} href={l.href} className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors">{l.label}</Link>
-            ))}
-          </div>
-
-          <p className="text-[10px] text-[#94a3b8] mt-8 leading-relaxed">
-            Data provided by TREB via Miltonly. MLS® listings updated daily. Information is deemed reliable but not guaranteed.
-            Miltonly.com is Milton Ontario&apos;s only dedicated real estate platform.
-          </p>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }

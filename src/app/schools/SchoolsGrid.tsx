@@ -84,7 +84,7 @@ export default function SchoolsGrid({ schools }: { schools: SchoolWithCount[] })
       </div>
 
       {/* Results count */}
-      <p className="text-[11px] text-[#94a3b8] mb-4">
+      <p className="text-[11px] font-medium text-[#94a3b8] mb-4">
         Showing {filtered.length} school{filtered.length !== 1 ? "s" : ""}
       </p>
 
