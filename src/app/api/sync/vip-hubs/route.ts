@@ -3,10 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 const VIP_THRESHOLD = 5; // Streets with 5+ active listings become VIP Hubs
 
+export async function GET(request: NextRequest) {
+  return POST(request);
+}
+
 // Run after daily sync — detects VIP hub streets
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret =
+    request.headers.get("authorization")?.replace("Bearer ", "") ||
+    request.nextUrl.searchParams.get("secret");
+  if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

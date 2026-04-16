@@ -303,11 +303,16 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 
-  // Pick pending items
+  // Pick pending items — include failed with < 3 attempts for auto-retry
   const pending = await prisma.streetQueue.findMany({
-    where: { status: "pending" },
+    where: {
+      OR: [
+        { status: "pending" },
+        { status: "failed", attempts: { lt: 3 } },
+      ],
+    },
     orderBy: { createdAt: "asc" },
-    take: 50,
+    take: 25,
   });
 
   // Run decision check and filter

@@ -48,6 +48,23 @@ export async function POST(request: NextRequest) {
     actions.push(`Alerted: ${failedCount} failed generations`);
   }
 
+  // ── CHECK 2.5: Backlog alert — pending > 50 for > 24h ──
+  const oldestPending = await prisma.streetQueue.findFirst({
+    where: { status: "pending" },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+  const pendingTotal = await prisma.streetQueue.count({ where: { status: "pending" } });
+  if (pendingTotal > 50 && oldestPending && oldestPending.createdAt < twentyFourHoursAgo) {
+    // Only alert once per day — piggyback on the same 11 UTC window as the daily summary
+    if (new Date().getUTCHours() === 11) {
+      await sendSMS(
+        `\u26a0 Miltonly: ${pendingTotal} streets pending content generation for >24h.\nHit /api/sync/generate/catchup?secret=... to clear the backlog.`
+      );
+      actions.push(`Alerted: ${pendingTotal} pending backlog`);
+    }
+  }
+
   // ── CHECK 3: Daily summary (7am UTC = ~3am ET) ──
   const currentHour = new Date().getUTCHours();
   if (currentHour === 11) {
