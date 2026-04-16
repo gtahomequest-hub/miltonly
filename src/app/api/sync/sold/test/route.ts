@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
-const TREB_TOKEN = process.env.TREB_API_TOKEN || "";
+// Trim env var — Vercel-stored tokens have been observed with trailing
+// whitespace/newline that corrupts the Authorization header.
+const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
 
 function authorize(req: NextRequest): boolean {
   const expected = process.env.CRON_SECRET;

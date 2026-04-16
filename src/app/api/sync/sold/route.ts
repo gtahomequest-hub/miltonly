@@ -28,7 +28,10 @@ export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
-const TREB_TOKEN = process.env.TREB_API_TOKEN || "";
+// Trim env var — Vercel-stored tokens have been observed with trailing
+// whitespace/newline that corrupts the Authorization header and triggers
+// an AMPRE 400 on every request. trim() removes spaces, tabs, and newlines.
+const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
 const PAGE_SIZE = 500;
 
 // Fields we need for a sold record. Includes ModificationTimestamp (cursor),
