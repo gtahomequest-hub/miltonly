@@ -18,8 +18,8 @@ export const CACHE_TTL = {
 } as const;
 
 function makeRedis(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.UPSTASH_REDIS_KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_KV_REST_API_TOKEN;
   if (!url || !token) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[cache] Upstash env vars not set — cache disabled");
