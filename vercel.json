@@ -27,6 +27,14 @@
     {
       "path": "/api/compliance/check?secret=miltonly-cron-2026",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/sync/sold",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/jobs/compute-sold-stats",
+      "schedule": "30 11 * * *"
     }
   ]
 }
