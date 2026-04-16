@@ -111,7 +111,7 @@ async function sleep(ms: number) {
 async function fetchPage(filter: string, orderby: string): Promise<AmpSoldRecord[]> {
   const url = `${TREB_API_URL}?$select=${SELECT_FIELDS}&$filter=${encodeURIComponent(
     filter
-  )}&$top=${PAGE_SIZE}&$orderby=${orderby}`;
+  )}&$top=${PAGE_SIZE}&$orderby=${encodeURIComponent(orderby)}`;
 
   let attempt = 0;
   while (true) {
@@ -129,7 +129,12 @@ async function fetchPage(filter: string, orderby: string): Promise<AmpSoldRecord
       await sleep(wait);
       continue;
     }
-    throw new Error(`TREB error: ${res.status} ${res.statusText}`);
+    // Include response body so 400s (OData filter rejections) are diagnosable
+    // without another round-trip. AMPRE returns a JSON error with the bad token.
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `TREB error: ${res.status} ${res.statusText} — filter=${filter} — body=${body.slice(0, 500)}`
+    );
   }
 }
 
@@ -158,8 +163,7 @@ export async function POST(req: NextRequest) {
   let pagesFetched = 0;
 
   // Determine cursor.
-  // - Empty table → backfill: fetch by CloseDate ASC, all Milton Sold history
-  //   (bounded below by 2010-01-01 to avoid pathological pre-data ranges).
+  // - Empty table → backfill: fetch all Milton Sold history, ordered by CloseDate ASC.
   // - Populated table → incremental: fetch by ModificationTimestamp > max(we have).
   const stateRows = (await soldDb`
     SELECT
@@ -169,27 +173,39 @@ export async function POST(req: NextRequest) {
   const isBackfill = stateRows[0]?.total === 0;
   const maxMod = stateRows[0]?.max_mod;
 
-  // Pagination cursor values.
-  // We chunk by the cursor field with `gt` tiebreaker to avoid infinite loops
-  // when many records share the same timestamp.
-  let cursorCloseDate: string | null = isBackfill ? "2010-01-01T00:00:00Z" : null;
-  let cursorModTime: string | null = !isBackfill ? (maxMod ?? "1970-01-01T00:00:00Z") : null;
+  // Cursor state. AMPRE rejects empty-string comparisons like `ListingKey gt ''`
+  // with a 400, so the FIRST page of each run uses no key cursor — just the
+  // primary field filter. After the first page we have a real ListingKey and
+  // can tiebreak rows that share the primary timestamp with
+  // `(primary gt X OR (primary eq X AND ListingKey gt 'Y'))`.
+  let cursorPrimary: string | null = isBackfill ? null : maxMod;
   let cursorKey: string = "";
+  let hasKeyCursor = false;
 
   while (true) {
     let filter: string;
     let orderby: string;
     if (isBackfill) {
-      filter =
-        `City eq 'Milton' and MlsStatus eq 'Sold' ` +
-        `and (CloseDate gt ${cursorCloseDate} ` +
-        `or (CloseDate eq ${cursorCloseDate} and ListingKey gt '${cursorKey}'))`;
+      if (!hasKeyCursor) {
+        filter = `City eq 'Milton' and MlsStatus eq 'Sold'`;
+      } else {
+        filter =
+          `City eq 'Milton' and MlsStatus eq 'Sold' ` +
+          `and (CloseDate gt ${cursorPrimary} ` +
+          `or (CloseDate eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
+      }
       orderby = "CloseDate asc,ListingKey asc";
     } else {
-      filter =
-        `City eq 'Milton' ` +
-        `and (ModificationTimestamp gt ${cursorModTime} ` +
-        `or (ModificationTimestamp eq ${cursorModTime} and ListingKey gt '${cursorKey}'))`;
+      if (!hasKeyCursor) {
+        filter = cursorPrimary
+          ? `City eq 'Milton' and ModificationTimestamp gt ${cursorPrimary}`
+          : `City eq 'Milton'`;
+      } else {
+        filter =
+          `City eq 'Milton' ` +
+          `and (ModificationTimestamp gt ${cursorPrimary} ` +
+          `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
+      }
       orderby = "ModificationTimestamp asc,ListingKey asc";
     }
 
@@ -300,8 +316,9 @@ export async function POST(req: NextRequest) {
 
       // Advance cursor based on the record we just processed.
       cursorKey = item.ListingKey;
-      if (isBackfill && item.CloseDate) cursorCloseDate = item.CloseDate;
-      if (!isBackfill && item.ModificationTimestamp) cursorModTime = item.ModificationTimestamp;
+      hasKeyCursor = true;
+      if (isBackfill && item.CloseDate) cursorPrimary = item.CloseDate;
+      if (!isBackfill && item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
     }
 
     if (items.length < PAGE_SIZE) break; // last page
