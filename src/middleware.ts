@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 //   Visit https://www.miltonly.com/?preview=off
 // ============================================================
 
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 // Change this secret to rotate access. Anyone with the current
 // secret can preview the real site.
