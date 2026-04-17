@@ -7,6 +7,7 @@ import {
 } from "@/lib/schema";
 import { homepageFAQs } from "@/lib/faqs";
 import { getHeroStats, getFeaturedListings, getPropertyTypeStats, getTrendingStreets } from "@/lib/stats";
+import { getMiltonSoldTotals } from "@/lib/sold-data";
 
 import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
@@ -17,11 +18,12 @@ import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
 import FooterSection from "@/components/sections/FooterSection";
 
 export default async function HomePage() {
-  const [stats, featured, typeStats, trendingStreets] = await Promise.all([
+  const [stats, featured, typeStats, trendingStreets, soldTotals] = await Promise.all([
     getHeroStats(),
     getFeaturedListings(),
     getPropertyTypeStats(),
     getTrendingStreets(),
+    getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
   ]);
 
   const schemas = [
@@ -38,7 +40,7 @@ export default async function HomePage() {
       <SchemaScript schemas={schemas} />
       <main>
         <HeroSection stats={stats} typeStats={typeStats} trendingStreets={trendingStreets} />
-        <TrustBarSection stats={stats} />
+        <TrustBarSection stats={stats} soldLast30={soldTotals.last30} />
         <IntelligenceCentre />
         <ExclusiveStrip />
         <FeaturedListings listings={featured} />

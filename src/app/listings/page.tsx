@@ -188,6 +188,27 @@ export default async function ListingsPage({ searchParams }: Props) {
         {/* ═══ HEADER + SNAPSHOT + FILTERS ═══ */}
         <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-5">
           <div className="max-w-7xl mx-auto">
+            {/* ═══ MODE TABS — Active / Rent / Sold ═══ */}
+            <div className="flex gap-2 mb-5">
+              {[
+                { label: "For Sale", href: "/listings", active: searchParams.status !== "rent" && searchParams.status !== "sold" },
+                { label: "For Rent", href: "/listings?status=rent", active: searchParams.status === "rent" },
+                { label: "Sold", href: "/sold", active: false },
+              ].map((t) => (
+                <Link
+                  key={t.label}
+                  href={t.href}
+                  className={`text-[12px] font-bold px-4 py-2 rounded-full border transition-colors ${
+                    t.active
+                      ? "bg-[#07111f] text-white border-[#07111f]"
+                      : "bg-white text-[#475569] border-[#e2e8f0] hover:bg-[#f8f9fb]"
+                  }`}
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+
             <h1 className="text-[30px] font-extrabold text-[#07111f] tracking-[-0.5px] mb-1 leading-tight">
               Milton homes {statusLabel} &amp; real estate
             </h1>

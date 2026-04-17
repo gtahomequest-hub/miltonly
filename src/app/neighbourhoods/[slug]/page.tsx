@@ -10,6 +10,7 @@ import {
   generateNeighbourhoodSchema,
 } from "@/lib/schema";
 import FooterSection from "@/components/sections/FooterSection";
+import NeighbourhoodSoldBlock from "@/components/street/NeighbourhoodSoldBlock";
 
 interface Props {
   params: { slug: string };
@@ -508,6 +509,11 @@ export default async function NeighbourhoodPage({ params }: Props) {
             </div>
           </div>
         </section>
+        <NeighbourhoodSoldBlock
+          neighbourhood={data.rawName}
+          displayName={data.name}
+          currentPath={`/neighbourhoods/${params.slug}`}
+        />
       </div>
       <FooterSection />
     </>

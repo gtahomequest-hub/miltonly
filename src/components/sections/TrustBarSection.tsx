@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 
 interface Props {
@@ -12,9 +13,10 @@ interface Props {
     avgRent: number;
     rentalCount: number;
   };
+  soldLast30: number;
 }
 
-export default function TrustBarSection({ stats }: Props) {
+export default function TrustBarSection({ stats, soldLast30 }: Props) {
   return (
     <section className="bg-[#f8f9fb]">
       <h2 className="sr-only">Milton market at a glance</h2>
@@ -34,24 +36,34 @@ export default function TrustBarSection({ stats }: Props) {
         ))}
       </div>
 
-      {/* Stats bar — real data from active listings */}
-      <div className="grid grid-cols-2 md:grid-cols-5 px-5 sm:px-11 py-7 border-b border-[#e9ecef]">
+      {/* Stats bar — real data from active listings + VOW sold totals */}
+      <div className="grid grid-cols-2 md:grid-cols-6 px-5 sm:px-11 py-7 border-b border-[#e9ecef]">
         {[
-          { value: formatPrice(stats.avgDetached), label: "Detached avg", trend: `${stats.detachedCount} active` },
-          { value: formatPrice(stats.avgSemi), label: "Semi avg", trend: `${stats.semiCount} active` },
-          { value: formatPrice(stats.avgCondo), label: "Condo avg", trend: `${stats.condoCount} active` },
-          { value: `$${stats.avgRent.toLocaleString()}/mo`, label: "Avg rent", trend: `${stats.rentalCount} rentals` },
-          { value: String(stats.activeCount), label: "Active now", trend: "updated daily" },
-        ].map((stat, i) => (
-          <div
-            key={stat.label}
-            className={`text-center py-3 md:py-0 px-4 ${i < 4 ? "md:border-r md:border-[#e2e8f0]" : ""}`}
-          >
-            <p className="text-[26px] sm:text-[30px] font-extrabold text-[#07111f] tracking-[-0.5px]">{stat.value}</p>
-            <p className="text-[12px] text-[#64748b] font-semibold mt-1">{stat.label}</p>
-            <p className="text-[11px] text-[#f59e0b] font-bold mt-[3px]">{stat.trend}</p>
-          </div>
-        ))}
+          { value: formatPrice(stats.avgDetached), label: "Detached avg", trend: `${stats.detachedCount} active`, href: null },
+          { value: formatPrice(stats.avgSemi), label: "Semi avg", trend: `${stats.semiCount} active`, href: null },
+          { value: formatPrice(stats.avgCondo), label: "Condo avg", trend: `${stats.condoCount} active`, href: null },
+          { value: `$${stats.avgRent.toLocaleString()}/mo`, label: "Avg rent", trend: `${stats.rentalCount} rentals`, href: null },
+          { value: String(stats.activeCount), label: "Active now", trend: "updated daily", href: null },
+          { value: String(soldLast30), label: "Sold (30d)", trend: "see recent sales", href: "/sold" },
+        ].map((stat, i) => {
+          const inner = (
+            <>
+              <p className="text-[26px] sm:text-[30px] font-extrabold text-[#07111f] tracking-[-0.5px]">{stat.value}</p>
+              <p className="text-[12px] text-[#64748b] font-semibold mt-1">{stat.label}</p>
+              <p className="text-[11px] text-[#f59e0b] font-bold mt-[3px]">{stat.trend}</p>
+            </>
+          );
+          const cls = `text-center py-3 md:py-0 px-4 ${i < 5 ? "md:border-r md:border-[#e2e8f0]" : ""}`;
+          return stat.href ? (
+            <Link key={stat.label} href={stat.href} className={`${cls} hover:bg-white transition-colors`}>
+              {inner}
+            </Link>
+          ) : (
+            <div key={stat.label} className={cls}>
+              {inner}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

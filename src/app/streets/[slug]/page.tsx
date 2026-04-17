@@ -8,8 +8,9 @@ import { prisma } from "@/lib/prisma";
 import SchemaScript from "@/components/SchemaScript";
 import { generateLocalBusinessSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import StreetClientSections from "@/components/street/StreetClientSections";
+import StreetSoldBlock from "@/components/street/StreetSoldBlock";
 
-interface Props { params: { slug: string } }
+interface Props { params: { slug: string }; searchParams?: { soldView?: string } }
 
 const VIP_THRESHOLD = 5;
 
@@ -30,9 +31,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function StreetPage({ params }: Props) {
+export default async function StreetPage({ params, searchParams }: Props) {
   const data = await getStreetPageData(params.slug);
   if (!data) notFound();
+  const soldView: "sales" | "rentals" = searchParams?.soldView === "rentals" ? "rentals" : "sales";
 
   const isVipHub = data.activeCount >= VIP_THRESHOLD;
 
@@ -291,6 +293,14 @@ export default async function StreetPage({ params }: Props) {
             </div>
           </div>
         </section>
+
+        {/* Sold / Rentals intelligence section (VOW-gated) */}
+        <StreetSoldBlock
+          streetSlug={params.slug}
+          streetName={data.streetName}
+          currentPath={`/streets/${params.slug}`}
+          view={soldView}
+        />
 
         {/* Client sections: listings, sold history, charts, seller form, FAQ, etc. */}
         <StreetClientSections
