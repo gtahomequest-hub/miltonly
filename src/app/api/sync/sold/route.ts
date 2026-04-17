@@ -191,7 +191,10 @@ export async function POST(req: NextRequest) {
   // is more reliable than string-matching MlsStatus (TREB uses values like
   // 'Closed', 'Sold Conditional', etc. — a populated CloseDate is the
   // definitional truth of a closed transaction regardless of the label).
-  const BASE_SOLD_FILTER = `City eq 'Milton' and CloseDate gt 2024-01-01T00:00:00Z`;
+  // CloseDate is Edm.Date in AMPRE (date-only, no time). Filter literals
+  // must match that type — '2024-01-01T00:00:00Z' triggers AMPRE's
+  // "Edm.Date and Edm.DateTimeOffset not compatible" error.
+  const BASE_SOLD_FILTER = `City eq 'Milton' and CloseDate gt 2024-01-01`;
 
   while (true) {
     let filter: string;
@@ -313,9 +316,11 @@ export async function POST(req: NextRequest) {
       // Advance cursor based on the record we just processed. Backfill
       // paginates on CloseDate (always populated due to the base filter);
       // incremental paginates on ModificationTimestamp to catch recent updates.
+      // CloseDate is Edm.Date — strip any time component AMPRE might return so
+      // the next page filter stays a valid Edm.Date literal.
       cursorKey = item.ListingKey;
       hasKeyCursor = true;
-      if (isBackfill && item.CloseDate) cursorPrimary = item.CloseDate;
+      if (isBackfill && item.CloseDate) cursorPrimary = item.CloseDate.slice(0, 10);
       else if (!isBackfill && item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
     }
 
