@@ -189,15 +189,22 @@ export async function POST(req: NextRequest) {
     let filter: string;
     let orderby: string;
     if (isBackfill) {
+      // Mirror detect/route.ts's proven filter: City eq 'Milton' only.
+      // MlsStatus value in the TREB VOW feed isn't reliably 'Sold' as a
+      // server-side filter (AMPRE returns 0). We keep client-side filtering
+      // (isSold check below) which matches on `includes('sold')` so it
+      // catches 'Sold', 'Sold Conditional', 'Sld', etc.
       if (!hasKeyCursor) {
-        filter = `City eq 'Milton' and MlsStatus eq 'Sold'`;
+        filter = `City eq 'Milton'`;
       } else {
         filter =
-          `City eq 'Milton' and MlsStatus eq 'Sold' ` +
-          `and (CloseDate gt ${cursorPrimary} ` +
-          `or (CloseDate eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
+          `City eq 'Milton' ` +
+          `and (ModificationTimestamp gt ${cursorPrimary} ` +
+          `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
       }
-      orderby = "CloseDate asc,ListingKey asc";
+      // ModificationTimestamp is always populated (unlike CloseDate on active
+      // listings) so cursor pagination works uniformly regardless of status.
+      orderby = "ModificationTimestamp asc,ListingKey asc";
     } else {
       if (!hasKeyCursor) {
         filter = cursorPrimary
@@ -318,10 +325,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Advance cursor based on the record we just processed.
+      // Both backfill and incremental now paginate on ModificationTimestamp —
+      // CloseDate is null for active listings so it can't drive pagination
+      // after we dropped the MlsStatus filter.
       cursorKey = item.ListingKey;
       hasKeyCursor = true;
-      if (isBackfill && item.CloseDate) cursorPrimary = item.CloseDate;
-      if (!isBackfill && item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
+      if (item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
     }
 
     if (items.length < PAGE_SIZE) break; // last page

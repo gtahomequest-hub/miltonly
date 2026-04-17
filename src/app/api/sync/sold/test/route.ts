@@ -31,10 +31,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Simplest possible call — mirrors detect/route.ts's proven pattern:
-  // just `City eq 'Milton'`, minimal $select, $top=1.
-  const filter = encodeURIComponent("City eq 'Milton'");
-  const url = `${TREB_API_URL}?$select=ListingKey,City,MlsStatus,CloseDate&$filter=${filter}&$top=1`;
+  // Diagnostic call — NO city filter, $top=1. Shows the raw first record
+  // AMPRE returns so we can see the actual City, MlsStatus, etc. values
+  // the feed uses (and confirm whether 'Milton' is the literal city value).
+  // Select enough fields to see all the status/location identifiers.
+  const url = `${TREB_API_URL}?$select=ListingKey,City,CityRegion,StateOrProvince,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$top=1`;
 
   // Token diagnostics — never log the token, just safe metadata.
   const tokenDiag = {
