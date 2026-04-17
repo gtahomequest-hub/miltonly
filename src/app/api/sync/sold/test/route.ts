@@ -20,7 +20,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
-const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
+// Uses VOW_TOKEN (VOW agreement #1848370) — IDX-scoped TREB_API_TOKEN
+// cannot see sold/closed records. detect/route.ts keeps the IDX token.
+const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 
 const SELECT_FIELDS =
   "ListingKey,City,MlsStatus,StandardStatus,TransactionType," +
@@ -72,7 +74,7 @@ async function runProbe(filterExpr: string, top: number): Promise<ProbeResult> {
   try {
     response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${TREB_TOKEN}`,
+        Authorization: `Bearer ${VOW_TOKEN}`,
         Accept: "application/json",
       },
     });
@@ -146,12 +148,12 @@ export async function GET(req: NextRequest) {
   }
 
   const tokenDiag = {
-    present: TREB_TOKEN.length > 0,
-    length: TREB_TOKEN.length,
-    trailingWhitespace: TREB_TOKEN.length > 0 && /\s$/.test(TREB_TOKEN),
-    endsWithLiteralBackslashN: TREB_TOKEN.length > 0 && TREB_TOKEN.endsWith("\\n"),
-    first10: TREB_TOKEN.slice(0, 10),
-    last4: TREB_TOKEN.slice(-4),
+    present: VOW_TOKEN.length > 0,
+    length: VOW_TOKEN.length,
+    trailingWhitespace: VOW_TOKEN.length > 0 && /\s$/.test(VOW_TOKEN),
+    endsWithLiteralBackslashN: VOW_TOKEN.length > 0 && VOW_TOKEN.endsWith("\\n"),
+    first10: VOW_TOKEN.slice(0, 10),
+    last4: VOW_TOKEN.slice(-4),
   };
 
   const urlDiag = {

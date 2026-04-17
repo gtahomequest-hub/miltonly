@@ -27,13 +27,14 @@ import { extractStreetName, streetNameToSlug } from "@/lib/streetUtils";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-// Trim env vars — the Vercel-stored TREB_API_URL and TREB_API_TOKEN have
-// both been observed with trailing whitespace/newline. Trailing whitespace
-// in the URL corrupts the query string (AMPRE rejects); trailing whitespace
-// in the token corrupts the Authorization header. trim() strips spaces,
-// tabs, and newlines without altering the real value.
+// Trim env vars — Vercel-stored values have trailing whitespace/newline
+// that corrupts the URL query string or the Authorization header.
+//
+// This route uses VOW_TOKEN (VOW agreement #1848370) — IDX-scoped
+// TREB_API_TOKEN cannot see sold/closed records. detect/route.ts keeps
+// the IDX token for active listings; only sold data requires VOW scope.
 const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
-const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
+const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 const PAGE_SIZE = 500;
 
 // Fields we need for a sold record. Includes ModificationTimestamp (cursor),
@@ -121,7 +122,7 @@ async function fetchPage(filter: string, orderby: string): Promise<AmpSoldRecord
   let attempt = 0;
   while (true) {
     const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${TREB_TOKEN}`, Accept: "application/json" },
+      headers: { Authorization: `Bearer ${VOW_TOKEN}`, Accept: "application/json" },
     });
     if (res.ok) {
       const data = await res.json();
