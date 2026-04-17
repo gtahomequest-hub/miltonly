@@ -32,8 +32,10 @@ export async function POST(req: NextRequest) {
   try {
     const summary = await computeAllStats();
     console.log(
-      `[jobs/compute-sold-stats] streets=${summary.streets} ` +
-      `neighbourhoods=${summary.neighbourhoods} duration=${summary.durationMs}ms`
+      `[jobs/compute-sold-stats] ` +
+      `streetsSale=${summary.streetsSale} streetsLease=${summary.streetsLease} ` +
+      `nbhdsSale=${summary.neighbourhoodsSale} nbhdsLease=${summary.neighbourhoodsLease} ` +
+      `duration=${summary.durationMs}ms`
     );
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {

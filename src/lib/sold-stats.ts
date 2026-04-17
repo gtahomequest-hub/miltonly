@@ -1,16 +1,17 @@
 // DATA FLOW RULES — never violate:
 // DB1 (operationalDb) → listings, leads, users, auth, compliance
-// DB2 (soldDb, schema: sold) → raw VOW sold records, price history
-// DB3 (analyticsDb, schema: analytics) → pre-computed stats, scores, monthly aggregates
+// DB2 (soldDb, schema: sold) → raw VOW sold records (sales AND leases)
+// DB3 (analyticsDb, schema: analytics) → pre-computed stats
 // DB2 → DB3: this file. One direction only.
-// DB2 → Claude API: NEVER. Individual sold records must not enter any AI prompt.
+// DB2 → Claude API: NEVER.
 // DB3 → Claude API: aggregated stats only.
 //
-// Stats compute reads raw sold_records from the `sold` schema, aggregates, and
-// writes to the `analytics` schema. On each write, the corresponding Redis
-// cache keys are invalidated so the next read recomputes from fresh analytics.
-//
-// Compute is driven by the 11:30 UTC cron (Point 5 — fully decoupled from sync).
+// Sale and lease compute are PHYSICALLY SEPARATE functions
+// (computeStreetSaleStats vs computeStreetLeaseStats). Neither function sees
+// the other's rows — enforced by the WHERE clause at the function boundary.
+// This is how we guarantee "no lease data in DB4 prediction features": the
+// sale compute function is what DB4 imports, and it structurally can't read
+// lease rows. Don't merge them into a single function on a refactor.
 
 import { requireSoldDb, requireAnalyticsDb } from "./db";
 import { invalidateMany } from "./cache";
@@ -18,8 +19,6 @@ import type { MarketTemperature } from "./db-types";
 
 function classifyTemperature(soldToAsk: number | null, dom: number | null): MarketTemperature | null {
   if (soldToAsk === null || dom === null) return null;
-  // >=1.03 & DOM <=10 → hot ; >=1.00 & DOM <=20 → warm ; 0.97-1.00 → balanced ;
-  // 0.93-0.97 or DOM>30 → cool ; <0.93 or DOM>45 → cold
   if (soldToAsk >= 1.03 && dom <= 10) return "hot";
   if (soldToAsk >= 1.00 && dom <= 20) return "warm";
   if (soldToAsk >= 0.97 && dom <= 30) return "balanced";
@@ -33,33 +32,34 @@ function toNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export async function computeStreetSoldStats(streetSlug: string): Promise<void> {
+// ────────────────────────────────────────────────────────────────────────
+// STREET — SALE stats (transaction_type = 'For Sale' only)
+// ────────────────────────────────────────────────────────────────────────
+
+export async function computeStreetSaleStats(streetSlug: string): Promise<void> {
   const sold = requireSoldDb();
   const analytics = requireAnalyticsDb();
 
-  // Aggregate last 90 days / 12 months in one round-trip.
-  // Filter matches the read-side VOW compliance filter so stats never
-  // include non-displayable records.
   const rows = (await sold`
     WITH d90 AS (
       SELECT * FROM sold.sold_records
       WHERE street_slug = ${streetSlug}
+        AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
-        AND mls_status = 'Sold'
         AND sold_date >= NOW() - INTERVAL '90 days'
     ),
     d365 AS (
       SELECT * FROM sold.sold_records
       WHERE street_slug = ${streetSlug}
+        AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
-        AND mls_status = 'Sold'
         AND sold_date >= NOW() - INTERVAL '365 days'
     ),
     prev AS (
       SELECT AVG(sold_price) AS avg_prev FROM sold.sold_records
       WHERE street_slug = ${streetSlug}
+        AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
-        AND mls_status = 'Sold'
         AND sold_date >= NOW() - INTERVAL '730 days'
         AND sold_date <  NOW() - INTERVAL '365 days'
     ),
@@ -102,6 +102,8 @@ export async function computeStreetSoldStats(streetSlug: string): Promise<void> 
     : null;
   const temp = classifyTemperature(toNum(r.avg_sold_to_ask), toNum(r.avg_dom));
 
+  // Upsert ONLY the sale columns. The street_sold_stats row may have lease
+  // columns set from a prior computeStreetLeaseStats call — don't clobber them.
   await analytics`
     INSERT INTO analytics.street_sold_stats (
       street_slug, avg_sold_price, median_sold_price, avg_list_price,
@@ -126,7 +128,7 @@ export async function computeStreetSoldStats(streetSlug: string): Promise<void> 
       last_updated        = NOW()
   `;
 
-  // Monthly breakdown for the last 24 months
+  // Monthly breakdown (sales only)
   await analytics`
     DELETE FROM analytics.street_monthly_stats WHERE street_slug = ${streetSlug}
   `;
@@ -140,8 +142,8 @@ export async function computeStreetSoldStats(streetSlug: string): Promise<void> 
       AVG(sold_to_ask_ratio) AS avg_sold_to_ask
     FROM sold.sold_records
     WHERE street_slug = ${streetSlug}
+      AND transaction_type = 'For Sale'
       AND perm_advertise = TRUE
-      AND mls_status = 'Sold'
       AND sold_date >= NOW() - INTERVAL '24 months'
     GROUP BY 1, 2
     ORDER BY 1, 2
@@ -162,10 +164,95 @@ export async function computeStreetSoldStats(streetSlug: string): Promise<void> 
   await invalidateMany([
     `street-stats:${streetSlug}`,
     `street-aggregate:${streetSlug}`,
+    `sold-records:street:${streetSlug}`,
   ]);
 }
 
-export async function computeNeighbourhoodSoldStats(neighbourhood: string): Promise<void> {
+// ────────────────────────────────────────────────────────────────────────
+// STREET — LEASE stats (transaction_type = 'For Lease' only)
+// Rents break down by bed count (they vary ~3x by bed count).
+// ────────────────────────────────────────────────────────────────────────
+
+export async function computeStreetLeaseStats(streetSlug: string): Promise<void> {
+  const sold = requireSoldDb();
+  const analytics = requireAnalyticsDb();
+
+  const rows = (await sold`
+    WITH d90 AS (
+      SELECT * FROM sold.sold_records
+      WHERE street_slug = ${streetSlug}
+        AND transaction_type = 'For Lease'
+        AND perm_advertise = TRUE
+        AND sold_date >= NOW() - INTERVAL '90 days'
+    ),
+    d365 AS (
+      SELECT 1 AS n FROM sold.sold_records
+      WHERE street_slug = ${streetSlug}
+        AND transaction_type = 'For Lease'
+        AND perm_advertise = TRUE
+        AND sold_date >= NOW() - INTERVAL '365 days'
+    )
+    SELECT
+      (SELECT AVG(sold_price) FROM d90)                              AS avg_leased_price,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds = 1)               AS avg_leased_price_1bed,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds = 2)               AS avg_leased_price_2bed,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds = 3)               AS avg_leased_price_3bed,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds >= 4)              AS avg_leased_price_4bed,
+      (SELECT COUNT(*)        FROM d90)::int                         AS leased_count_90days,
+      (SELECT COUNT(*)        FROM d365)::int                        AS leased_count_12months,
+      (SELECT AVG(days_on_market) FROM d90)                          AS avg_lease_dom
+  `) as Array<{
+    avg_leased_price: string | null;
+    avg_leased_price_1bed: string | null;
+    avg_leased_price_2bed: string | null;
+    avg_leased_price_3bed: string | null;
+    avg_leased_price_4bed: string | null;
+    leased_count_90days: number;
+    leased_count_12months: number;
+    avg_lease_dom: string | null;
+  }>;
+
+  const r = rows[0];
+
+  // Ensure a row exists for this street (sale compute may not have run yet),
+  // then update only the lease columns — never touch sale columns here.
+  await analytics`
+    INSERT INTO analytics.street_sold_stats (
+      street_slug,
+      avg_leased_price, avg_leased_price_1bed, avg_leased_price_2bed,
+      avg_leased_price_3bed, avg_leased_price_4bed,
+      leased_count_90days, leased_count_12months, avg_lease_dom,
+      last_updated
+    ) VALUES (
+      ${streetSlug},
+      ${r.avg_leased_price}, ${r.avg_leased_price_1bed}, ${r.avg_leased_price_2bed},
+      ${r.avg_leased_price_3bed}, ${r.avg_leased_price_4bed},
+      ${r.leased_count_90days}, ${r.leased_count_12months}, ${r.avg_lease_dom},
+      NOW()
+    )
+    ON CONFLICT (street_slug) DO UPDATE SET
+      avg_leased_price        = EXCLUDED.avg_leased_price,
+      avg_leased_price_1bed   = EXCLUDED.avg_leased_price_1bed,
+      avg_leased_price_2bed   = EXCLUDED.avg_leased_price_2bed,
+      avg_leased_price_3bed   = EXCLUDED.avg_leased_price_3bed,
+      avg_leased_price_4bed   = EXCLUDED.avg_leased_price_4bed,
+      leased_count_90days     = EXCLUDED.leased_count_90days,
+      leased_count_12months   = EXCLUDED.leased_count_12months,
+      avg_lease_dom           = EXCLUDED.avg_lease_dom,
+      last_updated            = NOW()
+  `;
+
+  await invalidateMany([
+    `street-lease-stats:${streetSlug}`,
+    `sold-records:street:${streetSlug}:lease`,
+  ]);
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// NEIGHBOURHOOD — SALE stats
+// ────────────────────────────────────────────────────────────────────────
+
+export async function computeNeighbourhoodSaleStats(neighbourhood: string): Promise<void> {
   const sold = requireSoldDb();
   const analytics = requireAnalyticsDb();
 
@@ -173,22 +260,22 @@ export async function computeNeighbourhoodSoldStats(neighbourhood: string): Prom
     WITH d90 AS (
       SELECT * FROM sold.sold_records
       WHERE neighbourhood = ${neighbourhood}
+        AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
-        AND mls_status = 'Sold'
         AND sold_date >= NOW() - INTERVAL '90 days'
     ),
     d365 AS (
       SELECT * FROM sold.sold_records
       WHERE neighbourhood = ${neighbourhood}
+        AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
-        AND mls_status = 'Sold'
         AND sold_date >= NOW() - INTERVAL '365 days'
     ),
     prev AS (
       SELECT AVG(sold_price) AS avg_prev FROM sold.sold_records
       WHERE neighbourhood = ${neighbourhood}
+        AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
-        AND mls_status = 'Sold'
         AND sold_date >= NOW() - INTERVAL '730 days'
         AND sold_date <  NOW() - INTERVAL '365 days'
     )
@@ -223,7 +310,6 @@ export async function computeNeighbourhoodSoldStats(neighbourhood: string): Prom
     ? (avg365 - avgPrev) / avgPrev
     : null;
 
-  // Market score (0-100): 50 baseline, ±25 from YoY appreciation, ±25 from velocity.
   const soldToAsk = toNum(r.avg_sold_to_ask);
   const dom = toNum(r.avg_dom);
   let score: number | null = null;
@@ -270,8 +356,8 @@ export async function computeNeighbourhoodSoldStats(neighbourhood: string): Prom
       AVG(days_on_market) AS avg_dom
     FROM sold.sold_records
     WHERE neighbourhood = ${neighbourhood}
+      AND transaction_type = 'For Sale'
       AND perm_advertise = TRUE
-      AND mls_status = 'Sold'
       AND sold_date >= NOW() - INTERVAL '24 months'
     GROUP BY 1, 2
     ORDER BY 1, 2
@@ -291,39 +377,140 @@ export async function computeNeighbourhoodSoldStats(neighbourhood: string): Prom
   ]);
 }
 
+// ────────────────────────────────────────────────────────────────────────
+// NEIGHBOURHOOD — LEASE stats
+// ────────────────────────────────────────────────────────────────────────
+
+export async function computeNeighbourhoodLeaseStats(neighbourhood: string): Promise<void> {
+  const sold = requireSoldDb();
+  const analytics = requireAnalyticsDb();
+
+  const rows = (await sold`
+    WITH d90 AS (
+      SELECT * FROM sold.sold_records
+      WHERE neighbourhood = ${neighbourhood}
+        AND transaction_type = 'For Lease'
+        AND perm_advertise = TRUE
+        AND sold_date >= NOW() - INTERVAL '90 days'
+    ),
+    d365 AS (
+      SELECT 1 AS n FROM sold.sold_records
+      WHERE neighbourhood = ${neighbourhood}
+        AND transaction_type = 'For Lease'
+        AND perm_advertise = TRUE
+        AND sold_date >= NOW() - INTERVAL '365 days'
+    )
+    SELECT
+      (SELECT AVG(sold_price) FROM d90)                              AS avg_leased_price,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds = 1)               AS avg_leased_price_1bed,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds = 2)               AS avg_leased_price_2bed,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds = 3)               AS avg_leased_price_3bed,
+      (SELECT AVG(sold_price) FROM d90 WHERE beds >= 4)              AS avg_leased_price_4bed,
+      (SELECT COUNT(*)        FROM d90)::int                         AS leased_count_90days,
+      (SELECT COUNT(*)        FROM d365)::int                        AS leased_count_12months,
+      (SELECT AVG(days_on_market) FROM d90)                          AS avg_lease_dom
+  `) as Array<{
+    avg_leased_price: string | null;
+    avg_leased_price_1bed: string | null;
+    avg_leased_price_2bed: string | null;
+    avg_leased_price_3bed: string | null;
+    avg_leased_price_4bed: string | null;
+    leased_count_90days: number;
+    leased_count_12months: number;
+    avg_lease_dom: string | null;
+  }>;
+
+  const r = rows[0];
+
+  await analytics`
+    INSERT INTO analytics.neighbourhood_sold_stats (
+      neighbourhood,
+      avg_leased_price, avg_leased_price_1bed, avg_leased_price_2bed,
+      avg_leased_price_3bed, avg_leased_price_4bed,
+      leased_count_90days, leased_count_12months, avg_lease_dom,
+      last_updated
+    ) VALUES (
+      ${neighbourhood},
+      ${r.avg_leased_price}, ${r.avg_leased_price_1bed}, ${r.avg_leased_price_2bed},
+      ${r.avg_leased_price_3bed}, ${r.avg_leased_price_4bed},
+      ${r.leased_count_90days}, ${r.leased_count_12months}, ${r.avg_lease_dom},
+      NOW()
+    )
+    ON CONFLICT (neighbourhood) DO UPDATE SET
+      avg_leased_price        = EXCLUDED.avg_leased_price,
+      avg_leased_price_1bed   = EXCLUDED.avg_leased_price_1bed,
+      avg_leased_price_2bed   = EXCLUDED.avg_leased_price_2bed,
+      avg_leased_price_3bed   = EXCLUDED.avg_leased_price_3bed,
+      avg_leased_price_4bed   = EXCLUDED.avg_leased_price_4bed,
+      leased_count_90days     = EXCLUDED.leased_count_90days,
+      leased_count_12months   = EXCLUDED.leased_count_12months,
+      avg_lease_dom           = EXCLUDED.avg_lease_dom,
+      last_updated            = NOW()
+  `;
+
+  await invalidateMany([
+    `neighbourhood-lease-stats:${neighbourhood}`,
+  ]);
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Orchestrator — runs all four compute functions in batches of 10.
+// ────────────────────────────────────────────────────────────────────────
+
 export async function computeAllStats(): Promise<{
-  streets: number; neighbourhoods: number; durationMs: number;
+  streetsSale: number; streetsLease: number;
+  neighbourhoodsSale: number; neighbourhoodsLease: number;
+  durationMs: number;
 }> {
   const sold = requireSoldDb();
   const t0 = Date.now();
-
-  const streetRows = (await sold`
-    SELECT DISTINCT street_slug FROM sold.sold_records
-    WHERE perm_advertise = TRUE AND sold_date >= NOW() - INTERVAL '365 days'
-  `) as Array<{ street_slug: string }>;
-
-  // Batches of 10 parallel — keeps Neon HTTP pool happy, cuts wall clock ~10x.
   const BATCH = 10;
-  for (let i = 0; i < streetRows.length; i += BATCH) {
-    await Promise.all(
-      streetRows.slice(i, i + BATCH).map((r) => computeStreetSoldStats(r.street_slug))
-    );
+
+  const saleStreets = (await sold`
+    SELECT DISTINCT street_slug FROM sold.sold_records
+    WHERE transaction_type = 'For Sale'
+      AND perm_advertise = TRUE
+      AND sold_date >= NOW() - INTERVAL '365 days'
+  `) as Array<{ street_slug: string }>;
+  for (let i = 0; i < saleStreets.length; i += BATCH) {
+    await Promise.all(saleStreets.slice(i, i + BATCH).map((r) => computeStreetSaleStats(r.street_slug)));
   }
 
-  const nbhdRows = (await sold`
-    SELECT DISTINCT neighbourhood FROM sold.sold_records
-    WHERE perm_advertise = TRUE AND sold_date >= NOW() - INTERVAL '365 days'
-  `) as Array<{ neighbourhood: string }>;
+  const leaseStreets = (await sold`
+    SELECT DISTINCT street_slug FROM sold.sold_records
+    WHERE transaction_type = 'For Lease'
+      AND perm_advertise = TRUE
+      AND sold_date >= NOW() - INTERVAL '365 days'
+  `) as Array<{ street_slug: string }>;
+  for (let i = 0; i < leaseStreets.length; i += BATCH) {
+    await Promise.all(leaseStreets.slice(i, i + BATCH).map((r) => computeStreetLeaseStats(r.street_slug)));
+  }
 
-  for (let i = 0; i < nbhdRows.length; i += BATCH) {
-    await Promise.all(
-      nbhdRows.slice(i, i + BATCH).map((r) => computeNeighbourhoodSoldStats(r.neighbourhood))
-    );
+  const saleNbhds = (await sold`
+    SELECT DISTINCT neighbourhood FROM sold.sold_records
+    WHERE transaction_type = 'For Sale'
+      AND perm_advertise = TRUE
+      AND sold_date >= NOW() - INTERVAL '365 days'
+  `) as Array<{ neighbourhood: string }>;
+  for (let i = 0; i < saleNbhds.length; i += BATCH) {
+    await Promise.all(saleNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodSaleStats(r.neighbourhood)));
+  }
+
+  const leaseNbhds = (await sold`
+    SELECT DISTINCT neighbourhood FROM sold.sold_records
+    WHERE transaction_type = 'For Lease'
+      AND perm_advertise = TRUE
+      AND sold_date >= NOW() - INTERVAL '365 days'
+  `) as Array<{ neighbourhood: string }>;
+  for (let i = 0; i < leaseNbhds.length; i += BATCH) {
+    await Promise.all(leaseNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodLeaseStats(r.neighbourhood)));
   }
 
   return {
-    streets: streetRows.length,
-    neighbourhoods: nbhdRows.length,
+    streetsSale: saleStreets.length,
+    streetsLease: leaseStreets.length,
+    neighbourhoodsSale: saleNbhds.length,
+    neighbourhoodsLease: leaseNbhds.length,
     durationMs: Date.now() - t0,
   };
 }

@@ -1,17 +1,28 @@
-// GET /api/sold — authed-only read of VOW sold records (DB2).
+// GET /api/sold — authed-only read of VOW closed transactions (DB2).
+//
+// Query params:
+//   street         — street_slug to filter on
+//   neighbourhood  — neighbourhood name to filter on (one of street/nbhd required)
+//   type           — 'sale' | 'lease' | 'all'. Default 'sale'. Separates the
+//                    two transaction categories since sales and leases have
+//                    different price scales and different UX (seller capture
+//                    vs tenant/landlord capture).
+//   days           — 1..90 lookback window (VOW 90-day ceiling enforced)
+//   limit          — max records (capped at 50)
 //
 // Compliance gates (all enforced at read, never at storage):
 //   - Auth session required (401 if missing) — zero VOW data to anon users.
-//   - perm_advertise = TRUE — excludes records the seller has withdrawn from display.
+//   - perm_advertise = TRUE — excludes records the seller withdrew from display.
 //   - sold_date >= NOW() - 90 days — VOW board rule.
-//   - mls_status = 'Sold' — hides records that flipped back to Active after a deal collapse.
+//   - transaction_type = 'For Sale' or 'For Lease' per `type` param (default sale).
+//   - mls_status check filters deal-collapse flips (Sold row that flipped back).
 //   - display_address = false → address substituted with "Address withheld".
 //
-// Rate limiting: @upstash/ratelimit, per-user + per-IP. Deferred tuning in
-// CHANGELOG-DECISIONS; initial limits are conservative.
+// Rate limiting: @upstash/ratelimit, per-user + per-IP. Conservative defaults
+// (60/min user, 30/min IP); tuning tracked in CHANGELOG-DECISIONS.
 //
 // Caching: read-through via `cached()` helper (stampede-protected), with
-// graceful degradation on Redis or DB3 outage (Point E).
+// graceful degradation on Redis or DB3 outage.
 
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
@@ -24,8 +35,6 @@ export const dynamic = "force-dynamic";
 
 const MAX_LIMIT = 50;
 
-// Rate limiter — null when Redis isn't configured; in that case we skip
-// the limit gate entirely rather than blocking real traffic.
 const userLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "1 m"), prefix: "rl:sold:user" })
   : null;
@@ -38,6 +47,8 @@ function getIp(req: NextRequest): string {
   if (xff) return xff.split(",")[0].trim();
   return req.headers.get("x-real-ip") || "unknown";
 }
+
+type TxnFilter = "sale" | "lease" | "all";
 
 interface SoldApiRow {
   mls_number: string;
@@ -57,9 +68,11 @@ interface SoldApiRow {
   sqft_range: string | null;
   lat: string | null;
   lng: string | null;
+  transaction_type: string | null;
+  mls_status: string;
 }
 
-function redact(row: SoldRecord & { display_address: boolean }): SoldApiRow {
+function redact(row: SoldRecord): SoldApiRow {
   return {
     mls_number: row.mls_number,
     address: row.display_address ? row.address : "Address withheld",
@@ -78,7 +91,15 @@ function redact(row: SoldRecord & { display_address: boolean }): SoldApiRow {
     sqft_range: row.sqft_range,
     lat: row.display_address ? row.lat : null,
     lng: row.display_address ? row.lng : null,
+    transaction_type: row.transaction_type ?? null,
+    mls_status: row.mls_status,
   };
+}
+
+function parseTypeParam(raw: string | null): TxnFilter {
+  if (raw === "lease") return "lease";
+  if (raw === "all") return "all";
+  return "sale"; // default
 }
 
 export async function GET(req: NextRequest) {
@@ -88,7 +109,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Sign in to view sold data" }, { status: 401 });
   }
 
-  // 2. Rate limit (user + IP, whichever fires first). Gracefully skipped when Redis is down.
+  // 2. Rate limit (user + IP). Gracefully skipped when Redis is down.
   try {
     if (userLimiter) {
       const r = await userLimiter.limit(user.id);
@@ -115,8 +136,9 @@ export async function GET(req: NextRequest) {
   // 3. Parse query.
   const street = req.nextUrl.searchParams.get("street");
   const neighbourhood = req.nextUrl.searchParams.get("neighbourhood");
+  const type = parseTypeParam(req.nextUrl.searchParams.get("type"));
   const daysParam = parseInt(req.nextUrl.searchParams.get("days") || "90", 10);
-  const days = Math.min(90, Math.max(1, Number.isFinite(daysParam) ? daysParam : 90)); // VOW ceiling
+  const days = Math.min(90, Math.max(1, Number.isFinite(daysParam) ? daysParam : 90));
   const limitParam = parseInt(req.nextUrl.searchParams.get("limit") || "20", 10);
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number.isFinite(limitParam) ? limitParam : 20));
 
@@ -127,8 +149,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // 4. DB3 fallback guard (Point E) — if DB2 client isn't configured, render
-  // a graceful empty response, not a 500.
   if (!soldDb) {
     console.warn("[api/sold] soldDb is not configured");
     return NextResponse.json({
@@ -140,37 +160,73 @@ export async function GET(req: NextRequest) {
   }
 
   const cacheKey = street
-    ? `sold-records:street:${street}:${days}:${limit}`
-    : `sold-records:nbhd:${neighbourhood}:${days}:${limit}`;
+    ? `sold-records:street:${street}:${type}:${days}:${limit}`
+    : `sold-records:nbhd:${neighbourhood}:${type}:${days}:${limit}`;
 
   try {
     const rows = await cached<SoldApiRow[]>(cacheKey, CACHE_TTL.soldList, async () => {
       const sql = soldDb!;
-      const result = (street
-        ? await sql`
+      // transaction_type literal injected server-side based on validated `type` —
+      // never from user input directly (the parseTypeParam() narrows to the
+      // three allowed values before we get here).
+      const txnSqlFilter =
+        type === "sale"
+          ? "'For Sale'"
+          : type === "lease"
+            ? "'For Lease'"
+            : null;
+
+      let result: Array<SoldRecord>;
+      if (street) {
+        if (txnSqlFilter) {
+          result = (await sql`
             SELECT * FROM sold.sold_records
             WHERE street_slug = ${street}
               AND perm_advertise = TRUE
-              AND mls_status = 'Sold'
-              AND sold_date >= NOW() - (${days} || ' days')::interval
-            ORDER BY sold_date DESC
-            LIMIT ${limit}
-          `
-        : await sql`
-            SELECT * FROM sold.sold_records
-            WHERE neighbourhood = ${neighbourhood}
-              AND perm_advertise = TRUE
-              AND mls_status = 'Sold'
+              AND transaction_type = ${type === "sale" ? "For Sale" : "For Lease"}
               AND sold_date >= NOW() - (${days} || ' days')::interval
             ORDER BY sold_date DESC
             LIMIT ${limit}
           `) as Array<SoldRecord>;
+        } else {
+          result = (await sql`
+            SELECT * FROM sold.sold_records
+            WHERE street_slug = ${street}
+              AND perm_advertise = TRUE
+              AND sold_date >= NOW() - (${days} || ' days')::interval
+            ORDER BY sold_date DESC
+            LIMIT ${limit}
+          `) as Array<SoldRecord>;
+        }
+      } else {
+        if (txnSqlFilter) {
+          result = (await sql`
+            SELECT * FROM sold.sold_records
+            WHERE neighbourhood = ${neighbourhood}
+              AND perm_advertise = TRUE
+              AND transaction_type = ${type === "sale" ? "For Sale" : "For Lease"}
+              AND sold_date >= NOW() - (${days} || ' days')::interval
+            ORDER BY sold_date DESC
+            LIMIT ${limit}
+          `) as Array<SoldRecord>;
+        } else {
+          result = (await sql`
+            SELECT * FROM sold.sold_records
+            WHERE neighbourhood = ${neighbourhood}
+              AND perm_advertise = TRUE
+              AND sold_date >= NOW() - (${days} || ' days')::interval
+            ORDER BY sold_date DESC
+            LIMIT ${limit}
+          `) as Array<SoldRecord>;
+        }
+      }
 
       return result.map(redact);
     });
 
     return NextResponse.json({
       source: "TREB MLS®",
+      type,
       records: rows,
       count: rows.length,
     });

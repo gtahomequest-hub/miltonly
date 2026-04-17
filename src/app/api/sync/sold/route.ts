@@ -49,7 +49,7 @@ const SELECT_FIELDS = [
   "PropertyType", "PropertySubType",
   "LivingAreaRange",
   "Latitude", "Longitude",
-  "MlsStatus", "TransactionType",
+  "MlsStatus", "StandardStatus", "TransactionType",
   "InternetEntireListingDisplayYN",
   "InternetAddressDisplayYN",
   "ModificationTimestamp",
@@ -75,8 +75,9 @@ interface AmpSoldRecord {
   LivingAreaRange: string | null;
   Latitude: number | null;
   Longitude: number | null;
-  MlsStatus: string | null;
-  TransactionType: string | null;
+  MlsStatus: string | null;          // 'Sold' | 'Leased'
+  StandardStatus: string | null;     // RESO-normalized, typically 'Closed'
+  TransactionType: string | null;    // 'For Sale' | 'For Lease'
   InternetEntireListingDisplayYN: boolean | null;
   InternetAddressDisplayYN: boolean | null;
   ModificationTimestamp: string | null;
@@ -188,11 +189,13 @@ export async function POST(req: NextRequest) {
   let cursorKey: string = "";
   let hasKeyCursor = false;
 
-  // AMPRE rejects CloseDate in $filter ("Field not allowed in filter: CloseDate")
-  // even though CloseDate can appear in $select. Use MlsStatus eq 'Sold' per
-  // the VOW integration brief — earlier attempts that returned 0 records were
-  // side-effects of trailing-whitespace corruption on TREB_API_URL (now trimmed).
-  const BASE_SOLD_FILTER = `City eq 'Milton' and MlsStatus eq 'Sold'`;
+  // AMPRE rejects CloseDate in $filter; filter on StandardStatus eq 'Closed'
+  // which captures both sales ('For Sale') and leases ('For Lease') — RESO
+  // standard value confirmed via /api/sync/sold/test probe D on 2026-04-16.
+  // MlsStatus variants ('Sold' / 'Leased') are stored on the row for read-path
+  // display but not used as server-side filter (a single status filter would
+  // miss one of the two categories).
+  const BASE_SOLD_FILTER = `City eq 'Milton' and StandardStatus eq 'Closed'`;
 
   while (true) {
     // Both backfill and incremental paginate on ModificationTimestamp — it's
@@ -223,12 +226,18 @@ export async function POST(req: NextRequest) {
       if ((item.City || "").toLowerCase() === "deleted") { skipped++; continue; }
       if ((item.StreetName || "").toLowerCase() === "deleted") { skipped++; continue; }
 
-      // Upsert path. The BASE_SOLD_FILTER above guarantees every returned
-      // record has CloseDate > 2024-01-01, so each row is a sold transaction
-      // by definition. No MlsStatus string-matching — we store whatever value
-      // TREB provides (Closed, Sold, Sold Conditional, etc.) and let the
-      // read-side decide what to surface.
+      // Upsert path. BASE_SOLD_FILTER ensures every returned record has
+      // StandardStatus = 'Closed' — i.e. a real closed transaction, either
+      // sale or lease. transaction_type is CHECK-constrained to exactly
+      // 'For Sale' or 'For Lease'; skip any row with an unexpected value
+      // rather than corrupt the constraint with bad data.
       const mlsStatus = item.MlsStatus || "Unknown";
+      const stdStatus = item.StandardStatus || null;
+      const txnType = item.TransactionType;
+      if (txnType !== "For Sale" && txnType !== "For Lease") {
+        skipped++;
+        continue;
+      }
       const address = buildAddress(item);
       const streetName = extractStreetName(address);
       const streetSlug = streetNameToSlug(streetName);
@@ -254,7 +263,8 @@ export async function POST(req: NextRequest) {
             days_on_market, sold_to_ask_ratio,
             beds, baths, property_type, sqft_range,
             lat, lng,
-            display_address, perm_advertise, mls_status,
+            display_address, perm_advertise,
+            mls_status, standard_status, transaction_type,
             modification_timestamp, updated_at
           ) VALUES (
             ${item.ListingKey}, ${address}, ${streetName}, ${streetSlug},
@@ -266,7 +276,7 @@ export async function POST(req: NextRequest) {
             ${item.Latitude}, ${item.Longitude},
             ${item.InternetAddressDisplayYN !== false},
             ${item.InternetEntireListingDisplayYN !== false},
-            ${mlsStatus},
+            ${mlsStatus}, ${stdStatus}, ${txnType},
             ${modTimestamp}, NOW()
           )
           ON CONFLICT (mls_number) DO UPDATE SET
@@ -290,6 +300,8 @@ export async function POST(req: NextRequest) {
             display_address        = EXCLUDED.display_address,
             perm_advertise         = EXCLUDED.perm_advertise,
             mls_status             = EXCLUDED.mls_status,
+            standard_status        = EXCLUDED.standard_status,
+            transaction_type       = EXCLUDED.transaction_type,
             modification_timestamp = EXCLUDED.modification_timestamp,
             updated_at             = NOW()
           RETURNING (xmax = 0) AS inserted

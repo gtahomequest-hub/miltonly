@@ -65,14 +65,14 @@ async function loadTeaser(
                 SELECT MIN(sold_price) FROM sold.sold_records
                 WHERE street_slug = ${street}
                   AND perm_advertise = TRUE
-                  AND mls_status = 'Sold'
+                  AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
               ) AS price_min,
               (
                 SELECT MAX(sold_price) FROM sold.sold_records
                 WHERE street_slug = ${street}
                   AND perm_advertise = TRUE
-                  AND mls_status = 'Sold'
+                  AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
               ) AS price_max
             FROM analytics.street_sold_stats s
@@ -103,14 +103,14 @@ async function loadTeaser(
                 SELECT MIN(sold_price) FROM sold.sold_records
                 WHERE neighbourhood = ${neighbourhood}
                   AND perm_advertise = TRUE
-                  AND mls_status = 'Sold'
+                  AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
               ) AS price_min,
               (
                 SELECT MAX(sold_price) FROM sold.sold_records
                 WHERE neighbourhood = ${neighbourhood}
                   AND perm_advertise = TRUE
-                  AND mls_status = 'Sold'
+                  AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
               ) AS price_max
             FROM analytics.neighbourhood_sold_stats n
