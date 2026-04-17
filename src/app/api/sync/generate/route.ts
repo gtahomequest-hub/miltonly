@@ -127,29 +127,34 @@ async function generateDescription(
     userPrompt += `Your previous attempt failed because: ${previousFailure}\nFix only that issue. Keep everything else the same.\n\n`;
   }
 
+  // Phase 2.6: DB1 no longer stores sold prices. The stats computed by
+  // streetDecision.ts still carry old field names internally (avgSoldPrice,
+  // medianSoldPrice, soldVsAskPct) — but post-migration those values are
+  // always null/0. We remap to the renamed SafeStreetStats fields here so
+  // the AI prompt surfaces only active-listing data.
   userPrompt += `Write a street description for ${streetName} in Milton, Ontario.
 
 Real market data — use all of this naturally in the text:
 - Street: ${streetName}, ${stats.neighbourhood} neighbourhood
-- Average sold price: ${formatPrice(stats.avgSoldPrice)}
-- Median sold price: ${formatPrice(stats.medianSoldPrice)}
+- Average list price: ${formatPrice(stats.avgSoldPrice)}
 - Homes sold in last 12 months: ${stats.totalSold12mo}
 - Average days on market: ${stats.avgDOM} days
-- Sold vs asking price: ${stats.soldVsAskPct}%
 - Active listings right now: ${stats.activeCount}
 - Primary property type: ${stats.dominantPropertyType}
 - School zone: ${stats.schoolZone || "Milton public schools"}
 - Price trend: Prices have ${stats.priceDirection}
-- Most active sales month recently: ${bestMonth}`;
+- Most active month recently: ${bestMonth}`;
 
   const safeStats: SafeStreetStats = {
     streetName,
     neighbourhood: stats.neighbourhood,
-    avgSoldPrice: stats.avgSoldPrice,
-    medianSoldPrice: stats.medianSoldPrice,
+    // stats.avgSoldPrice from streetDecision.ts is the legacy variable name;
+    // post-migration it reflects list-price aggregates only. Map to the
+    // correctly-named SafeStreetStats field.
+    avgListPrice: stats.avgSoldPrice,
+    medianListPrice: stats.medianSoldPrice,
     totalSold12mo: stats.totalSold12mo,
     avgDOM: stats.avgDOM,
-    soldVsAskPct: stats.soldVsAskPct,
     activeCount: stats.activeCount,
     dominantPropertyType: stats.dominantPropertyType,
     priceDirection: stats.priceDirection,
@@ -168,11 +173,11 @@ function buildFaqJson(
   return JSON.stringify([
     {
       q: `What is the average home price on ${streetName} in Milton?`,
-      a: `The average sold price on ${streetName} in Milton over the last 12 months is ${formatPrice(stats.avgSoldPrice)}, with a median of ${formatPrice(stats.medianSoldPrice)}. Homes here sold at ${stats.soldVsAskPct}% of their asking price on average.`,
+      a: `The average list price on ${streetName} in Milton is ${formatPrice(stats.avgSoldPrice)}. Exact sold prices and sold-to-ask ratios for this street are available to registered users via the TREB MLS® sold-data section on the page.`,
     },
     {
       q: `How long do homes take to sell on ${streetName} Milton?`,
-      a: `Homes on ${streetName} in Milton sold in an average of ${stats.avgDOM} days over the last 12 months. ${stats.totalSold12mo} properties traded hands in that period.`,
+      a: `Active listings on ${streetName} in Milton have been on market an average of ${stats.avgDOM} days. ${stats.totalSold12mo} sold transactions recorded on this street in the last 12 months — exact days-on-market per transaction is available to registered users.`,
     },
     {
       q: `What types of homes are on ${streetName} in Milton?`,
@@ -218,7 +223,7 @@ async function processStreet(streetSlug: string, streetName: string) {
   if (!passed) description = rawAiOutput; // Save last attempt anyway
 
   const metaTitle = `${streetName} Milton Real Estate | Homes, Prices & Market Data`;
-  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} in the last 12 months. Average price ${formatPrice(stats.avgSoldPrice)}. ${stats.avgDOM} days on market. Milton's most detailed street guide.`;
+  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} in the last 12 months. Average list price ${formatPrice(stats.avgSoldPrice)}. ${stats.avgDOM} days on market. Milton's most detailed street guide.`;
   const faqJson = buildFaqJson(streetName, stats);
 
   const contentStatus = passed ? "published" : "draft";

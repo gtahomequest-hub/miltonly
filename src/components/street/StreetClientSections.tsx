@@ -5,10 +5,12 @@ import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 
 interface Listing {
+  // Post Phase 2.6: this component only ever receives active listings.
+  // soldPrice/soldDate removed from the interface — DB1 no longer stores them
+  // and active listings never had them populated.
   mlsNumber: string;
   address: string;
   price: number;
-  soldPrice: number | null;
   bedrooms: number;
   bathrooms: number;
   parking: number;

@@ -152,19 +152,13 @@ export default function AdminReviewClient({ drafts, recentPublished, queueStats 
                       Key Stats
                     </h3>
                     <div className="grid grid-cols-2 gap-3 text-[12px]">
-                      <div>
-                        <span className="text-[#94a3b8]">Avg sold price</span>
-                        <p className="font-bold text-[#07111f]">
-                          ${stats.avgSoldPrice?.toLocaleString()}
-                        </p>
-                      </div>
+                      {/* Phase 2.6: "Avg sold price" and "Sold vs ask" cells removed.
+                          DB1 no longer stores sold prices; real sold-data insight is
+                          surfaced via the gated DB2 pipeline on the public street page
+                          itself, not this admin review panel. */}
                       <div>
                         <span className="text-[#94a3b8]">Days on market</span>
                         <p className="font-bold text-[#07111f]">{stats.avgDOM} days</p>
-                      </div>
-                      <div>
-                        <span className="text-[#94a3b8]">Sold vs ask</span>
-                        <p className="font-bold text-[#07111f]">{stats.soldVsAskPct}%</p>
                       </div>
                       <div>
                         <span className="text-[#94a3b8]">Sold (12mo)</span>
@@ -266,8 +260,7 @@ export default function AdminReviewClient({ drafts, recentPublished, queueStats 
                     <div className="flex items-center gap-4 text-[11px] text-[#94a3b8]">
                       {stats && (
                         <span>
-                          {stats.totalSold12mo} sales · ${Math.round((stats.avgSoldPrice || 0) / 1000)}K ·{" "}
-                          {stats.avgDOM}d
+                          {stats.totalSold12mo} sales · {stats.avgDOM}d
                         </span>
                       )}
                       {stats?.totalSold12mo < 4 && (

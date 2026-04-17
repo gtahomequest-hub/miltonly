@@ -69,44 +69,37 @@ export const getFeaturedListings = unstable_cache(
 
 export const getStreetStats = unstable_cache(
   async (streetSlug: string, propertyType?: string) => {
+    // Phase 2.6: DB1 sold fields nullified. Stats now aggregate active
+    // listings only; sold-to-ask ratios and sold listing arrays are
+    // surfaced exclusively via the gated DB2 StreetSoldBlock on street
+    // pages. This function keeps the same return shape so call sites
+    // continue to work, but soldListings is always empty and soldVsAsk
+    // is a neutral 100 (no longer computed from DB1).
     const where: Record<string, unknown> = { streetSlug };
     if (propertyType && propertyType !== "all") {
       where.propertyType = propertyType;
     }
 
-    const [active, sold, agg] = await Promise.all([
+    const [active, agg] = await Promise.all([
       prisma.listing.findMany({
         where: { ...where, status: "active" },
         orderBy: { listedAt: "desc" },
         take: 10,
       }),
-      prisma.listing.findMany({
-        where: { ...where, status: "sold" },
-        orderBy: { updatedAt: "desc" },
-        take: 10,
-      }),
       prisma.listing.aggregate({
-        where,
+        where: { ...where, status: "active" },
         _avg: { price: true, daysOnMarket: true },
         _count: true,
       }),
     ]);
 
-    // Sold vs ask for this street
-    const soldWithPrices = sold.filter((l) => l.soldPrice && l.price > 0);
-    let soldVsAsk = 100;
-    if (soldWithPrices.length > 0) {
-      const ratios = soldWithPrices.map((l) => (l.soldPrice! / l.price) * 100);
-      soldVsAsk = Math.round(ratios.reduce((a, b) => a + b, 0) / ratios.length);
-    }
-
     return {
       avgPrice: Math.round(agg._avg.price || 0),
       avgDOM: Math.round(agg._avg.daysOnMarket || 0),
       totalCount: agg._count,
-      soldVsAsk,
+      soldVsAsk: 100,           // neutral — real ratios come from gated DB2 path
       activeListings: active,
-      soldListings: sold,
+      soldListings: [] as never[], // always empty — see header comment
     };
   },
   ["street-stats"],

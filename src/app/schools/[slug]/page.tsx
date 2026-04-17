@@ -58,29 +58,22 @@ export default async function SchoolDetailPage({ params }: Props) {
     take: 30,
   });
 
-  // Market stats for this neighbourhood
+  // Market stats — active listings only. DB1 sold fields are no longer
+  // populated (Phase 2.6 migration 2026-04-17); sold-price intelligence
+  // surfaces only through the gated DB2 pipeline, not this page.
   const allListings = await prisma.listing.findMany({
     where: {
       permAdvertise: true,
       city: "Milton",
       neighbourhood: { contains: school.neighbourhood, mode: "insensitive" },
     },
-    select: { price: true, status: true, propertyType: true, soldPrice: true },
+    select: { price: true, status: true, propertyType: true },
   });
 
   const active = allListings.filter((l) => l.status === "active");
-  const sold = allListings.filter((l) => l.status === "sold");
   const avgPrice =
     active.length > 0
       ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length)
-      : allListings.length > 0
-      ? Math.round(allListings.reduce((s, l) => s + l.price, 0) / allListings.length)
-      : 0;
-  const avgSoldPrice =
-    sold.length > 0
-      ? Math.round(
-          sold.reduce((s, l) => s + (l.soldPrice || l.price), 0) / sold.length
-        )
       : 0;
 
   // By type breakdown
@@ -145,7 +138,7 @@ export default async function SchoolDetailPage({ params }: Props) {
     },
     {
       question: `What is the average home price near ${school.name}?`,
-      answer: `The average asking price for homes near ${school.name} in ${school.neighbourhood} is ${formatPriceFull(avgPrice)}.${avgSoldPrice > 0 ? ` Recent sold prices average ${formatPriceFull(avgSoldPrice)}.` : ""} ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""}`,
+      answer: `The average asking price for homes near ${school.name} in ${school.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Exact sold prices are available to registered users via the TREB MLS® sold-data sections on street pages.`,
     },
     {
       question: `Is ${school.neighbourhood} a good area for families in Milton?`,
@@ -232,7 +225,6 @@ export default async function SchoolDetailPage({ params }: Props) {
                 {[
                   { value: String(active.length), label: "Active listings nearby" },
                   { value: avgPrice > 0 ? formatPriceFull(avgPrice) : "\u2014", label: "Avg asking price" },
-                  { value: avgSoldPrice > 0 ? formatPriceFull(avgSoldPrice) : "\u2014", label: "Avg sold price" },
                   { value: String(allListings.length), label: "Total listings" },
                 ].map((s) => (
                   <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">

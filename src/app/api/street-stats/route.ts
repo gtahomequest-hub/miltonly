@@ -43,23 +43,17 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Calculate sold vs ask for this street
-  const soldOnStreet = await prisma.listing.findMany({
-    where: { streetSlug: slug, status: "sold", soldPrice: { not: null } },
-    select: { price: true, soldPrice: true },
-  });
-
-  let soldVsAsk = 100;
-  if (soldOnStreet.length > 0) {
-    const ratios = soldOnStreet.filter((l) => l.price > 0).map((l) => (l.soldPrice! / l.price) * 100);
-    if (ratios.length > 0) soldVsAsk = Math.round(ratios.reduce((a, b) => a + b, 0) / ratios.length);
-  }
-
+  // Phase 2.6: soldVsAsk used to be computed from DB1 soldPrice values.
+  // DB1 no longer carries sold prices (VOW compliance). Real sold-to-ask
+  // ratios come from the gated DB2 analytics pipeline (see
+  // /api/sold + StreetSoldBlock). This public endpoint returns a neutral
+  // 100 so existing call sites keep their response shape without exposing
+  // any sold-derived data.
   return NextResponse.json({
     found: true,
     avgPrice: Math.round(agg._avg.price || 0),
     avgDOM: Math.round(agg._avg.daysOnMarket || 0),
-    soldVsAsk,
+    soldVsAsk: 100,
     count: agg._count,
   });
 }

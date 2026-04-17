@@ -151,7 +151,7 @@ export function generateListingSchema(listing: {
 export function generateStreetPageSchema(street: {
   streetName: string;
   streetSlug: string;
-  avgSoldPrice: number;
+  avgListPrice: number;
   activeListings: number;
   neighbourhood: string;
 }) {
@@ -159,7 +159,7 @@ export function generateStreetPageSchema(street: {
     "@context": "https://schema.org",
     "@type": "Place",
     name: `${street.streetName}, Milton Ontario`,
-    description: `Real estate data for ${street.streetName} in ${street.neighbourhood}, Milton Ontario. ${street.activeListings} active listings, average sold price $${street.avgSoldPrice.toLocaleString()}.`,
+    description: `Real estate data for ${street.streetName} in ${street.neighbourhood}, Milton Ontario. ${street.activeListings} active listings, average list price $${street.avgListPrice.toLocaleString()}.`,
     url: `${SITE_URL}/streets/${street.streetSlug}`,
     address: {
       "@type": "PostalAddress",

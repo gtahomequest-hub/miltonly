@@ -83,8 +83,12 @@ export default async function ListingDetailPage({ params }: Props) {
   // Redact address if displayAddress = false (keeps MLS + brokerage per RECO)
   const listing = redactAddress(listingRaw);
 
-  // Parallel queries
-  const [similarRaw, soldCountOnStreet, soldCountInHood, hoodRentAvg] = await Promise.all([
+  // Parallel queries.
+  // Phase 2.6: the two sold-count queries (by streetSlug + soldDate, and by
+  // neighbourhood + soldDate) were removed. DB1 no longer carries soldDate
+  // values; the sold-count information surfaces on the page through the
+  // gated StreetSoldBlock / NeighbourhoodSoldBlock fed from DB2.
+  const [similarRaw, hoodRentAvg] = await Promise.all([
     prisma.listing.findMany({
       where: {
         propertyType: listing.propertyType,
@@ -95,20 +99,6 @@ export default async function ListingDetailPage({ params }: Props) {
       },
       orderBy: { listedAt: "desc" },
       take: 4,
-    }),
-    prisma.listing.count({
-      where: {
-        streetSlug: listing.streetSlug,
-        status: "sold",
-        soldDate: { gte: new Date(Date.now() - 90 * 86400000) },
-      },
-    }),
-    prisma.listing.count({
-      where: {
-        neighbourhood: { contains: cleanHood(listing.neighbourhood), mode: "insensitive" },
-        status: "sold",
-        soldDate: { gte: new Date(Date.now() - 90 * 86400000) },
-      },
     }),
     // Average rent in same neighbourhood for investor widget
     prisma.listing.aggregate({
@@ -122,6 +112,8 @@ export default async function ListingDetailPage({ params }: Props) {
       _avg: { price: true },
     }),
   ]);
+  const soldCountOnStreet = 0; // deprecated — see StreetSoldBlock on street page
+  const soldCountInHood = 0; // deprecated — see NeighbourhoodSoldBlock
 
   const similar = similarRaw.map(redactAddress);
   const hoodAvgRent = hoodRentAvg._avg.price ? Math.round(hoodRentAvg._avg.price) : null;

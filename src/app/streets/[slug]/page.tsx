@@ -38,17 +38,10 @@ export default async function StreetPage({ params, searchParams }: Props) {
 
   const isVipHub = data.activeCount >= VIP_THRESHOLD;
 
-  // Phase 2.6: getStreetPageData no longer returns sold-derived aggregates
-  // (VOW compliance — see DO-NOT-REPEAT.md). The AI street-content generator
-  // still takes avgSoldPrice / soldVsAskPct in its input shape; pass the
-  // active-listing avg as a stand-in and a neutral 100 for sold-to-ask.
-  // TODO: refactor street-content.ts to drop those fields entirely.
   const content = await getOrGenerateStreetContent(params.slug, {
     streetName: data.streetName,
-    avgSoldPrice: data.avgListPrice,
     avgListPrice: data.avgListPrice,
     avgDOM: data.avgDOM,
-    soldVsAskPct: 100,
     totalSold12mo: data.totalSold12mo,
     activeCount: data.activeCount,
     neighbourhoods: data.neighbourhoods,

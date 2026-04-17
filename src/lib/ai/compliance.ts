@@ -26,20 +26,24 @@ function getClient(): Anthropic {
   return client;
 }
 
-/** Pre-computed street stats that are safe to pass to Claude (no raw listing data) */
+/** Pre-computed street stats that are safe to pass to Claude (no raw listing data).
+ *  Post-Phase-2.6 (2026-04-17): fields renamed to match their actual semantics.
+ *  DB1 no longer stores sold prices; these values are all active-listing aggregates
+ *  sourced from the operational Listing table. Sold data lives in DB2 and is
+ *  surfaced only through the gated StreetSoldBlock, never into AI prompts. */
 export interface SafeStreetStats {
   streetName: string;
   neighbourhood: string;
-  avgSoldPrice: number;
-  medianSoldPrice: number;
-  totalSold12mo: number;
-  avgDOM: number;
-  soldVsAskPct: number;
+  avgListPrice: number;      // active-listing average (was avgSoldPrice — misleading)
+  medianListPrice: number;   // active-listing median (was medianSoldPrice — misleading)
+  totalSold12mo: number;     // count of sold listings — safe aggregate, name describes a count
+  avgDOM: number;            // active-listing days on market
   activeCount: number;
   dominantPropertyType: string;
   priceDirection: string;
   schoolZone: string | null;
   bestMonth: string;
+  // soldVsAskPct removed — ratios would require sold price data which DB1 no longer holds.
 }
 
 /** Validates that no raw listing data leaks into a prompt */

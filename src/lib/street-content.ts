@@ -51,14 +51,14 @@ export function validateStreetDescription(text: string): ValidationResult {
 
 interface StreetDataForContent {
   streetName: string;
-  avgSoldPrice: number;
-  avgListPrice: number;
-  avgDOM: number;
-  soldVsAskPct: number;
-  totalSold12mo: number;
+  avgListPrice: number;      // active-listing avg; was (avgSoldPrice + avgListPrice), merged
+  avgDOM: number;            // active-listing DOM
+  totalSold12mo: number;     // count only — safe aggregate
   activeCount: number;
   neighbourhoods: string[];
   byType: Record<string, { count: number; avgPrice: number }>;
+  // soldVsAskPct removed — DB1 no longer holds sold prices; ratios come from DB2
+  // aggregates and surface only through the gated StreetSoldBlock, not AI prompts.
 }
 
 export async function generateStreetDescription(
@@ -76,13 +76,11 @@ export async function generateStreetDescription(
   const userPrompt = `Write a detailed description of ${data.streetName} in Milton, Ontario for a real estate website.
 
 Real data to incorporate:
-- Average sold price: $${data.avgSoldPrice.toLocaleString()}
 - Average list price: $${data.avgListPrice.toLocaleString()}
 - Property types: ${types}
 - Neighbourhood: ${data.neighbourhoods.join(", ")}
 - Total sold last 12 months: ${data.totalSold12mo}
 - Avg days on market: ${data.avgDOM || "not enough data"}
-- Sold vs asking: ${data.soldVsAskPct}%
 - Active listings: ${data.activeCount}
 
 Paragraph 1 (100 words): What it is like to live on this street. Location within Milton, nearby schools, parks, GO train access, community feel. Be specific to Milton — mention real landmarks, real schools, real transit. Do not use generic real estate clichés.
@@ -112,11 +110,10 @@ STRICT RULES:
   const safeStats: SafeStreetStats = {
     streetName: data.streetName,
     neighbourhood: data.neighbourhoods[0] || "Milton",
-    avgSoldPrice: data.avgSoldPrice,
-    medianSoldPrice: data.avgSoldPrice,
+    avgListPrice: data.avgListPrice,
+    medianListPrice: data.avgListPrice, // only avg available from caller; median not tracked here
     totalSold12mo: data.totalSold12mo,
     avgDOM: data.avgDOM,
-    soldVsAskPct: data.soldVsAskPct,
     activeCount: data.activeCount,
     dominantPropertyType: Object.keys(data.byType)[0] || "detached",
     priceDirection: "remained steady",
@@ -144,7 +141,7 @@ STRICT RULES:
 }
 
 function generateTemplateDescription(data: StreetDataForContent): { text: string; passed: boolean; attempts: number } {
-  const avgPrice = data.avgListPrice > 0 ? `$${(data.avgListPrice / 1000).toFixed(0)}K` : `$${(data.avgSoldPrice / 1000).toFixed(0)}K`;
+  const avgPrice = data.avgListPrice > 0 ? `$${(data.avgListPrice / 1000).toFixed(0)}K` : "—";
   const types = Object.keys(data.byType).join(", ");
   const hood = data.neighbourhoods[0] || "Milton";
 
