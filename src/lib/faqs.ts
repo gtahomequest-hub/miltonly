@@ -4,7 +4,7 @@ export const homepageFAQs: FAQItem[] = [
   {
     question: "What is the average home price in Milton Ontario?",
     answer:
-      "The average sold price for homes in Milton Ontario is approximately $1,125,000 as of 2025, based on live TREB data. Prices vary by neighbourhood and property type — detached homes average higher while condos and townhouses offer more affordable entry points.",
+      "The average list price for homes in Milton Ontario is approximately $1,125,000 as of 2025, based on live TREB MLS® active listings. Prices vary by neighbourhood and property type — detached homes average higher while condos and townhouses offer more affordable entry points. Exact sold prices are available to registered users via the sold-data sections on street and neighbourhood pages.",
   },
   {
     question: "What are the best neighbourhoods in Milton Ontario?",
