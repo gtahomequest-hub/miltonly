@@ -1,16 +1,21 @@
-// Diagnostic endpoint — runs three probes in parallel against AMPRE to
-// identify the correct server-side filter for Milton sold records.
+// Diagnostic endpoint — runs four probes in parallel against AMPRE to
+// identify the correct server-side filter for Milton sold records AND
+// discover the exact TransactionType string values used by the feed.
 //
-// Probe A: City eq 'Milton' and StandardStatus eq 'Closed'
+// Probe A: City eq 'Milton' and StandardStatus eq 'Closed'          (top=5)
 //          RESO-standard status value — should be universal across boards.
-// Probe B: City eq 'Milton' and MlsStatus eq 'Sld'
+// Probe B: City eq 'Milton' and MlsStatus eq 'Sld'                  (top=5)
 //          TRREB historically uses abbreviated status codes; 'Sld' = Sold.
-// Probe C: City eq 'Milton' and MlsStatus ne 'New'  (top=20)
-//          Discovery — surfaces every non-active status string in the feed.
+// Probe C: City eq 'Milton' and MlsStatus ne 'New'                  (top=20)
+//          Discovery — surfaces every non-active MlsStatus string in the feed.
+// Probe D: City eq 'Milton' and StandardStatus eq 'Closed'          (top=100)
+//          TransactionType discovery — larger sample guarantees we see both
+//          sale and lease rows so the CHECK constraint in migration 002
+//          uses the exact string values AMPRE returns.
 //
-// Also reports, per probe: count, unique MlsStatus/StandardStatus values,
+// Per probe: count, unique MlsStatus/StandardStatus/TransactionType values,
 // sample records, AMPRE error message if any. Summary at the top aggregates
-// winners (probes that returned records) and the union of statuses seen.
+// winners and the union of statuses/transaction types seen across probes.
 //
 // Auth: Authorization: Bearer <CRON_SECRET>  OR  ?secret=<CRON_SECRET>.
 
@@ -56,6 +61,7 @@ interface ProbeResult {
   count: number;
   uniqueMlsStatuses: string[];
   uniqueStandardStatuses: string[];
+  uniqueTransactionTypes: string[];
   sample: SampleRecord[];
   amprerror: string | null;
   bodySnippet: string;
@@ -87,6 +93,7 @@ async function runProbe(filterExpr: string, top: number): Promise<ProbeResult> {
       count: 0,
       uniqueMlsStatuses: [],
       uniqueStandardStatuses: [],
+      uniqueTransactionTypes: [],
       sample: [],
       amprerror: String(err),
       bodySnippet: "",
@@ -109,12 +116,14 @@ async function runProbe(filterExpr: string, top: number): Promise<ProbeResult> {
 
   const mlsSet = new Set<string>();
   const stdSet = new Set<string>();
+  const txnSet = new Set<string>();
   const sample: SampleRecord[] = [];
   for (const r of values) {
     if (!r || typeof r !== "object") continue;
     const rec = r as Record<string, unknown>;
     if (rec.MlsStatus) mlsSet.add(String(rec.MlsStatus));
     if (rec.StandardStatus) stdSet.add(String(rec.StandardStatus));
+    if (rec.TransactionType) txnSet.add(String(rec.TransactionType));
     if (sample.length < 3) {
       sample.push({
         ListingKey: String(rec.ListingKey ?? ""),
@@ -136,6 +145,7 @@ async function runProbe(filterExpr: string, top: number): Promise<ProbeResult> {
     count: values.length,
     uniqueMlsStatuses: Array.from(mlsSet).sort(),
     uniqueStandardStatuses: Array.from(stdSet).sort(),
+    uniqueTransactionTypes: Array.from(txnSet).sort(),
     sample,
     amprerror,
     bodySnippet: bodyText.slice(0, 600),
@@ -162,20 +172,25 @@ export async function GET(req: NextRequest) {
     endsWithLiteralBackslashN: TREB_API_URL.endsWith("\\n"),
   };
 
-  // Run all three probes in parallel — cuts wall time to max(probe duration).
-  const [probeA, probeB, probeC] = await Promise.all([
+  // Run all four probes in parallel — cuts wall time to max(probe duration).
+  const [probeA, probeB, probeC, probeD] = await Promise.all([
     runProbe("City eq 'Milton' and StandardStatus eq 'Closed'", 5),
     runProbe("City eq 'Milton' and MlsStatus eq 'Sld'", 5),
     runProbe("City eq 'Milton' and MlsStatus ne 'New'", 20),
+    // Probe D — TransactionType discovery, large sample so we see both
+    // 'For Sale' and 'For Lease' rows before writing the CHECK constraint.
+    runProbe("City eq 'Milton' and StandardStatus eq 'Closed'", 100),
   ]);
 
-  // Aggregate status vocabulary across all three probes so the union is one
-  // array to inspect instead of three.
+  // Aggregate status + transaction-type vocabulary across all probes so the
+  // union is one array to inspect instead of four.
   const allMls = new Set<string>();
   const allStd = new Set<string>();
-  for (const p of [probeA, probeB, probeC]) {
+  const allTxn = new Set<string>();
+  for (const p of [probeA, probeB, probeC, probeD]) {
     p.uniqueMlsStatuses.forEach((s) => allMls.add(s));
     p.uniqueStandardStatuses.forEach((s) => allStd.add(s));
+    p.uniqueTransactionTypes.forEach((s) => allTxn.add(s));
   }
 
   const winners: string[] = [];
@@ -189,9 +204,11 @@ export async function GET(req: NextRequest) {
       winners,
       uniqueMlsStatusesAcrossProbes: Array.from(allMls).sort(),
       uniqueStandardStatusesAcrossProbes: Array.from(allStd).sort(),
+      uniqueTransactionTypesAcrossProbes: Array.from(allTxn).sort(),
     },
     probeA_resoStandardClosed: probeA,
     probeB_mlsStatusSld: probeB,
     probeC_mlsStatusNotNew: probeC,
+    probeD_transactionTypeDiscovery: probeD,
   });
 }
