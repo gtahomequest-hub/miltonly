@@ -21,12 +21,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: isVip
       ? `${data.streetName} Milton — VIP Hub | ${data.activeCount} Active Listings, Prices & Market Data | Miltonly.com`
-      : `${data.streetName} Milton — Homes For Sale, Sold Prices & Street Intelligence | Miltonly.com`,
-    description: `See what homes are selling for on ${data.streetName} in Milton Ontario. ${data.activeCount} active listings, avg price ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}. Updated daily.`,
+      : `${data.streetName} Milton — Homes For Sale & Street Intelligence | Miltonly.com`,
+    description: `See what homes are selling for on ${data.streetName} in Milton Ontario. ${data.activeCount} active listings, avg list price ${formatPriceFull(data.avgListPrice)}. Updated daily.`,
     alternates: { canonical: `https://miltonly.com/streets/${params.slug}` },
     openGraph: {
       title: `${data.streetName} Milton Real Estate — ${isVip ? "VIP Hub — " : ""}Live Data`,
-      description: `${data.activeCount} homes for sale on ${data.streetName}, Milton. Avg ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}. Live TREB data.`,
+      description: `${data.activeCount} homes for sale on ${data.streetName}, Milton. Avg list price ${formatPriceFull(data.avgListPrice)}. Live TREB data.`,
     },
   };
 }
@@ -38,12 +38,17 @@ export default async function StreetPage({ params, searchParams }: Props) {
 
   const isVipHub = data.activeCount >= VIP_THRESHOLD;
 
+  // Phase 2.6: getStreetPageData no longer returns sold-derived aggregates
+  // (VOW compliance — see DO-NOT-REPEAT.md). The AI street-content generator
+  // still takes avgSoldPrice / soldVsAskPct in its input shape; pass the
+  // active-listing avg as a stand-in and a neutral 100 for sold-to-ask.
+  // TODO: refactor street-content.ts to drop those fields entirely.
   const content = await getOrGenerateStreetContent(params.slug, {
     streetName: data.streetName,
-    avgSoldPrice: data.avgSoldPrice,
+    avgSoldPrice: data.avgListPrice,
     avgListPrice: data.avgListPrice,
     avgDOM: data.avgDOM,
-    soldVsAskPct: data.soldVsAskPct,
+    soldVsAskPct: 100,
     totalSold12mo: data.totalSold12mo,
     activeCount: data.activeCount,
     neighbourhoods: data.neighbourhoods,
@@ -62,10 +67,10 @@ export default async function StreetPage({ params, searchParams }: Props) {
     faqs = parsed.map((f: { q: string; a: string }) => ({ question: f.q, answer: f.a }));
   } else {
     faqs = [
-      { question: `What is the average home price on ${data.streetName} in Milton?`, answer: `The average price on ${data.streetName} in Milton is ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}, based on ${data.allListings.length} listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.` },
+      { question: `What is the average home price on ${data.streetName} in Milton?`, answer: `The average list price on ${data.streetName} in Milton is ${formatPriceFull(data.avgListPrice)}, based on ${data.activeCount} active listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.` },
       { question: `How many homes are for sale on ${data.streetName} Milton?`, answer: `There are currently ${data.activeCount} active listings on ${data.streetName} in Milton. Property types include ${Object.keys(data.byType).join(", ")}.` },
       { question: `What types of homes are on ${data.streetName} in Milton?`, answer: `${data.streetName} has ${Object.entries(data.byType).map(([t, d]) => `${d.count} ${t} properties`).join(", ")}. The most common type is ${Object.entries(data.byType).sort((a, b) => b[1].count - a[1].count)[0]?.[0] || "varied"}.` },
-      { question: `Is ${data.streetName} Milton a good investment?`, answer: `${data.streetName} in Milton has ${data.activeCount} active and ${data.totalSold12mo} sold listings. The average price is ${formatPriceFull(data.avgListPrice || data.avgSoldPrice)}. Milton's continued population growth and GO train connectivity support long-term value.` },
+      { question: `Is ${data.streetName} Milton a good investment?`, answer: `${data.streetName} in Milton has ${data.activeCount} active listings with an average list price of ${formatPriceFull(data.avgListPrice)}. Milton's continued population growth and GO train connectivity support long-term value.` },
     ];
   }
 
@@ -82,11 +87,11 @@ export default async function StreetPage({ params, searchParams }: Props) {
       },
       {
         question: `What's the best strategy for buying on ${data.streetName} right now?`,
-        answer: `With ${data.activeCount} active listings, buyers have leverage on ${data.streetName}. The average list price is ${formatPriceFull(data.avgListPrice)} with homes selling at ${data.soldVsAskPct}% of asking. Properties sit for ${data.avgDOM} days on average, giving room for negotiation.`,
+        answer: `With ${data.activeCount} active listings, buyers have leverage on ${data.streetName}. The average list price is ${formatPriceFull(data.avgListPrice)}. Properties sit for ${data.avgDOM} days on average, giving room for negotiation.`,
       },
       {
-        question: `Is ${data.streetName} a buyer's or seller's market?`,
-        answer: `With ${data.activeCount} active listings and homes selling at ${data.soldVsAskPct}% of asking, ${data.streetName} ${data.soldVsAskPct >= 100 ? "leans toward sellers — but high inventory gives buyers options" : "favours buyers — properties are selling below asking with good inventory levels"}.`,
+        question: `How active is the ${data.streetName} market?`,
+        answer: `${data.streetName} has ${data.activeCount} active listings and an average days-on-market of ${data.avgDOM || "—"} days. For exact sold prices and sold-to-ask ratios, sign in to see the TREB MLS® sold data for this street.`,
       },
     ];
   }
@@ -111,7 +116,7 @@ export default async function StreetPage({ params, searchParams }: Props) {
       "@context": "https://schema.org",
       "@type": "Article",
       headline: `${data.streetName} Milton Real Estate Guide — Prices, Schools & Market Data`,
-      description: `${data.totalSold12mo} homes sold on ${data.streetName} in the last 12 months. Average price ${formatPriceFull(data.avgSoldPrice)}.`,
+      description: `${data.activeCount} active listings on ${data.streetName} with an average list price of ${formatPriceFull(data.avgListPrice)}. Live TREB MLS® data.`,
       url: `https://miltonly.com/streets/${params.slug}`,
       datePublished: pipelineContent?.publishedAt?.toISOString() || new Date().toISOString(),
       dateModified: new Date().toISOString(),
@@ -175,7 +180,7 @@ export default async function StreetPage({ params, searchParams }: Props) {
                   {data.streetName}, Milton
                 </h1>
                 <p className="text-[14px] sm:text-[16px] text-[rgba(248,249,251,0.6)] mt-3 max-w-lg leading-relaxed">
-                  {data.allListings.length} listings &middot; Average {formatPriceFull(data.avgListPrice || data.avgSoldPrice)} &middot; {data.activeCount} active right now
+                  {data.allListings.length} listings &middot; Avg list price {formatPriceFull(data.avgListPrice)} &middot; {data.activeCount} active right now
                 </p>
                 <span className="inline-block mt-4 text-[10px] font-bold text-[#f59e0b] bg-[rgba(245,158,11,0.15)] px-3 py-1 rounded-full">
                   Data updated {data.lastUpdated}
@@ -184,10 +189,10 @@ export default async function StreetPage({ params, searchParams }: Props) {
 
               <div className="grid grid-cols-2 gap-2 shrink-0 lg:w-[340px]">
                 {[
-                  { value: formatPriceFull(data.avgListPrice || data.avgSoldPrice), label: "Avg price" },
+                  { value: formatPriceFull(data.avgListPrice), label: "Avg list price" },
                   { value: String(data.activeCount), label: "Active listings" },
                   { value: data.avgDOM ? data.avgDOM + " days" : "\u2014", label: "Avg days on market" },
-                  { value: data.soldVsAskPct + "%", label: "Sold vs asking" },
+                  { value: String(data.totalSold12mo), label: "Sold this year" },
                 ].map((s) => (
                   <div key={s.label} className={`${isVipHub ? "bg-gradient-to-br from-[#0c1e35] to-[#1a2e4a]" : "bg-[#0c1e35]"} border border-[#1e3a5f] rounded-xl p-[14px_16px]`}>
                     <p className="text-[20px] font-extrabold text-[#f8f9fb]">{s.value}</p>
@@ -199,13 +204,13 @@ export default async function StreetPage({ params, searchParams }: Props) {
           </div>
         </section>
 
-        {/* SECTION 4 — Market snapshot bar */}
+        {/* SECTION 4 — Market snapshot bar (active-listing aggregates only).
+           Sold-derived stats moved to the gated StreetSoldBlock below. */}
         <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
-          <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
               { value: formatPriceFull(data.avgListPrice), label: "Avg list price" },
-              { value: formatPriceFull(data.avgSoldPrice), label: "Avg sold price" },
-              { value: formatPriceFull(data.medianPrice), label: "Median price" },
+              { value: formatPriceFull(data.medianPrice), label: "Median list price" },
               { value: String(data.totalSold12mo), label: "Sold this year" },
               { value: String(data.activeCount), label: "Active now" },
               { value: String(data.rentedCount), label: "Rented" },
@@ -244,12 +249,10 @@ export default async function StreetPage({ params, searchParams }: Props) {
                     </p>
                   </div>
                   <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-5">
-                    <p className="text-[28px] font-extrabold text-[#f59e0b]">{data.soldVsAskPct}%</p>
-                    <p className="text-[12px] text-[rgba(248,249,251,0.6)] mt-1 font-medium">Selling vs asking price</p>
+                    <p className="text-[28px] font-extrabold text-[#f59e0b]">{formatPriceFull(data.avgListPrice)}</p>
+                    <p className="text-[12px] text-[rgba(248,249,251,0.6)] mt-1 font-medium">Avg list price</p>
                     <p className="text-[11px] text-[rgba(248,249,251,0.4)] mt-2">
-                      {data.soldVsAskPct >= 100
-                        ? "Strong demand — homes selling at or above asking"
-                        : "Room to negotiate — homes selling below asking"}
+                      Sold prices + sold-to-ask ratios for this street are in the sold-data section below (sign in to view).
                     </p>
                   </div>
                   <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-5">

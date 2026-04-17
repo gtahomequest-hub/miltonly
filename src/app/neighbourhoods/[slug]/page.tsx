@@ -44,7 +44,9 @@ async function getNeighbourhoodData(slug: string) {
   const name = cleanHoodName(rawName);
   const where = { neighbourhood: rawName, permAdvertise: true as const };
 
-  const [allListings, activeListings, soldListings, rentedListings] =
+  // Sold listings are no longer fetched here — sold data surfaces only
+  // through the gated NeighbourhoodSoldBlock fed from DB2 with VowGate.
+  const [allListings, activeListings, rentedListings] =
     await Promise.all([
       prisma.listing.findMany({ where, orderBy: { listedAt: "desc" } }),
       prisma.listing.findMany({
@@ -52,73 +54,51 @@ async function getNeighbourhoodData(slug: string) {
         orderBy: { listedAt: "desc" },
         take: 12,
       }),
-      prisma.listing.findMany({
-        where: { ...where, status: "sold" },
-        orderBy: { updatedAt: "desc" },
-        take: 12,
-      }),
       prisma.listing.count({ where: { ...where, status: "rented" } }),
     ]);
 
   if (allListings.length === 0) return null;
 
-  // Prices
+  // Active-listing aggregates only (Phase 2.6 — DB1 sold-derived fields
+  // removed from the public render tree; sold data surfaces only through
+  // the gated NeighbourhoodSoldBlock fed from DB2 with VowGate + k=10).
   const active = allListings.filter((l) => l.status === "active");
   const sold = allListings.filter((l) => l.status === "sold");
-  const allPrices = allListings.map((l) => l.price).sort((a, b) => a - b);
-  const avgPrice = Math.round(
-    allPrices.reduce((s, p) => s + p, 0) / allPrices.length
-  );
-  const medianPrice = allPrices[Math.floor(allPrices.length / 2)] || 0;
-  const avgListPrice =
-    active.length > 0
-      ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length)
-      : 0;
-  const soldPrices = sold
-    .map((l) => l.soldPrice || l.price)
-    .sort((a, b) => a - b);
-  const avgSoldPrice =
-    soldPrices.length > 0
-      ? Math.round(soldPrices.reduce((s, p) => s + p, 0) / soldPrices.length)
-      : avgPrice;
+  const activePrices = active.map((l) => l.price).sort((a, b) => a - b);
+  const avgPrice = activePrices.length > 0
+    ? Math.round(activePrices.reduce((s, p) => s + p, 0) / activePrices.length)
+    : 0;
+  const medianPrice = activePrices.length > 0
+    ? activePrices[Math.floor(activePrices.length / 2)]
+    : 0;
+  const avgListPrice = avgPrice; // alias — both are active-only avg list price
 
-  // DOM
-  const withDOM = allListings.filter(
+  // DOM — active listings only
+  const activeWithDOM = active.filter(
     (l) => l.daysOnMarket && l.daysOnMarket > 0
   );
-  const avgDOM =
-    withDOM.length > 0
-      ? Math.round(
-          withDOM.reduce((s, l) => s + (l.daysOnMarket || 0), 0) /
-            withDOM.length
-        )
-      : 0;
+  const avgDOM = activeWithDOM.length > 0
+    ? Math.round(
+        activeWithDOM.reduce((s, l) => s + (l.daysOnMarket || 0), 0) /
+          activeWithDOM.length
+      )
+    : 0;
 
-  // Sold vs ask
-  const soldWithBoth = sold.filter((l) => l.soldPrice && l.price > 0);
-  let soldVsAskPct = 100;
-  if (soldWithBoth.length > 0) {
-    soldVsAskPct = Math.round(
-      soldWithBoth.reduce((s, l) => s + (l.soldPrice! / l.price) * 100, 0) /
-        soldWithBoth.length
-    );
-  }
-
-  // By type
+  // By type — active listings only
   const types = ["detached", "semi", "townhouse", "condo", "other"];
   const byType: Record<
     string,
     { count: number; avgPrice: number; activeCount: number }
   > = {};
   for (const t of types) {
-    const ofType = allListings.filter((l) => l.propertyType === t);
-    if (ofType.length > 0) {
+    const activeOfType = active.filter((l) => l.propertyType === t);
+    if (activeOfType.length > 0) {
       byType[t] = {
-        count: ofType.length,
+        count: activeOfType.length,
         avgPrice: Math.round(
-          ofType.reduce((s, l) => s + l.price, 0) / ofType.length
+          activeOfType.reduce((s, l) => s + l.price, 0) / activeOfType.length
         ),
-        activeCount: ofType.filter((l) => l.status === "active").length,
+        activeCount: activeOfType.length,
       };
     }
   }
@@ -162,20 +142,19 @@ async function getNeighbourhoodData(slug: string) {
     rawName,
     totalListings: allListings.length,
     activeCount: active.length,
-    soldCount: sold.length,
+    soldCount: sold.length,          // safe count only
     rentedCount: rentedListings,
-    avgPrice,
-    avgListPrice,
-    avgSoldPrice,
-    medianPrice,
-    avgDOM,
-    soldVsAskPct,
-    byType,
+    avgPrice,                        // active-only avg list price
+    avgListPrice,                    // alias for avgPrice
+    medianPrice,                     // active-only median
+    avgDOM,                          // active-only
+    byType,                          // active-only
     topStreets,
     activeListings: activeListings.map((l) =>
       JSON.parse(JSON.stringify(l))
     ),
-    soldListings: soldListings.map((l) => JSON.parse(JSON.stringify(l))),
+    // soldListings removed — sold records reach the render tree only via
+    // the gated NeighbourhoodSoldBlock below.
     lastUpdated: new Date().toISOString().split("T")[0],
   };
 }
@@ -215,7 +194,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
     },
     {
       question: `How fast do homes sell in ${data.name} Milton?`,
-      answer: `Homes in ${data.name}, Milton sell in an average of ${data.avgDOM} days on market. Sellers achieve ${data.soldVsAskPct}% of their asking price on average.`,
+      answer: `Active listings in ${data.name}, Milton average ${data.avgDOM || "—"} days on market. Sold-to-ask ratios and individual sold prices are available to registered users via the TREB MLS® sold-data section on this page.`,
     },
   ];
 
@@ -284,10 +263,10 @@ export default async function NeighbourhoodPage({ params }: Props) {
 
               <div className="grid grid-cols-2 gap-2 shrink-0 lg:w-[340px]">
                 {[
-                  { value: formatPriceFull(data.avgPrice), label: "Avg price" },
+                  { value: formatPriceFull(data.avgPrice), label: "Avg list price" },
                   { value: String(data.activeCount), label: "Active listings" },
                   { value: data.avgDOM ? data.avgDOM + " days" : "—", label: "Avg days on market" },
-                  { value: data.soldVsAskPct + "%", label: "Sold vs asking" },
+                  { value: String(data.soldCount), label: "Sold this year" },
                 ].map((s) => (
                   <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
                     <p className="text-[20px] font-extrabold text-[#f8f9fb]">{s.value}</p>
@@ -299,14 +278,14 @@ export default async function NeighbourhoodPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Market snapshot bar */}
+        {/* Market snapshot bar — active-listing aggregates only.
+           Sold-price intel surfaces in the gated NeighbourhoodSoldBlock below. */}
         <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
-          <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { value: formatPriceFull(data.avgListPrice || data.avgPrice), label: "Avg list price" },
-              { value: formatPriceFull(data.avgSoldPrice), label: "Avg sold price" },
-              { value: formatPriceFull(data.medianPrice), label: "Median price" },
-              { value: String(data.soldCount), label: "Sold" },
+              { value: formatPriceFull(data.avgListPrice), label: "Avg list price" },
+              { value: formatPriceFull(data.medianPrice), label: "Median list price" },
+              { value: String(data.soldCount), label: "Sold this year" },
               { value: String(data.activeCount), label: "Active now" },
               { value: String(data.rentedCount), label: "Rented" },
             ].map((s) => (

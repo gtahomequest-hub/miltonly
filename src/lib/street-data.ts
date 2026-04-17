@@ -1,3 +1,17 @@
+// Street page data — ACTIVE-LISTING aggregates only.
+//
+// VOW compliance (Phase 2.6 — 2026-04-17): this function was previously
+// computing sold-derived aggregates (avgSoldPrice, soldVsAskPct,
+// overUnderAsking, individual soldListings) from DB1's Listing table and
+// shipping them into the public render tree. On low-volume streets those
+// aggregates back-calculate to individual sold prices — a VOW violation
+// per the project-wide k-anonymity rule in DO-NOT-REPEAT.md.
+//
+// Option C fix: DB1 as a sold-data source is ripped out of public pages.
+// The new StreetSoldBlock (fed from DB2 via gated sold-data.ts fetchers,
+// with VowGate + k-anonymity) is the sole path for any sold-data display.
+// This module now returns only active-listing aggregates + safe counts.
+
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
 import { extractStreetName as cleanStreetName } from "@/lib/streetUtils";
@@ -6,30 +20,24 @@ export interface StreetPageData {
   slug: string;
   streetName: string;
   neighbourhoods: string[];
-  // Hero stats
-  avgSoldPrice: number;
-  avgListPrice: number;
-  medianPrice: number;
-  totalSold12mo: number;
+  // Active-listing aggregates (public, safe)
+  avgListPrice: number;        // of active listings only
+  medianPrice: number;         // of active listings only
+  avgDOM: number;              // of active listings only
+  // Counts — safe aggregates
   activeCount: number;
   rentedCount: number;
-  avgDOM: number;
-  soldVsAskPct: number;
-  // By type
+  totalSold12mo: number;       // count only, no sold-price inference
+  // By type (active-listing averages)
   byType: Record<string, { count: number; avgPrice: number; activeCount: number }>;
-  // Listings
+  // Listings — active only. No soldListings field.
   activeListings: unknown[];
-  soldListings: unknown[];
-  allListings: unknown[];
-  // Price distribution
+  allListings: unknown[];      // retained for consumers that need list shape; active+rented only (no sold)
+  // Distributions — computed from active listings only
   priceDistribution: { range: string; count: number; pct: number }[];
-  // DOM distribution
   domDistribution: { range: string; count: number; pct: number }[];
-  // Over/under asking
-  overUnderAsking: { aboveCount: number; atCount: number; belowCount: number; totalSold: number; avgOverPct: number };
-  // Nearby streets
+  // Nearby streets — active-listing avg only
   nearbyStreets: { slug: string; name: string; avgPrice: number; count: number }[];
-  // Last updated
   lastUpdated: string;
 }
 
@@ -52,45 +60,36 @@ export const getStreetPageData = unstable_cache(
     const streetName = allListings[0].streetName || extractStreetName(allListings[0].address);
     const neighbourhoods = Array.from(new Set(allListings.map((l) => l.neighbourhood)));
 
-    // Prices
-    const allPrices = allListings.map((l) => l.price).sort((a, b) => a - b);
+    // ----- Active-only aggregates (public-safe) -----
+    const activePrices = active.map((l) => l.price).sort((a, b) => a - b);
     const avgListPrice = active.length > 0
-      ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length) : 0;
-    const soldPrices = sold.map((l) => l.soldPrice || l.price).sort((a, b) => a - b);
-    const avgSoldPrice = sold.length > 0
-      ? Math.round(soldPrices.reduce((s, p) => s + p, 0) / soldPrices.length)
-      : Math.round(allPrices.reduce((s, p) => s + p, 0) / allPrices.length);
-    const medianPrice = allPrices.length > 0 ? allPrices[Math.floor(allPrices.length / 2)] : 0;
+      ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length)
+      : 0;
+    const medianPrice = activePrices.length > 0
+      ? activePrices[Math.floor(activePrices.length / 2)]
+      : 0;
 
-    // DOM
-    const withDOM = allListings.filter((l) => l.daysOnMarket && l.daysOnMarket > 0);
-    const avgDOM = withDOM.length > 0
-      ? Math.round(withDOM.reduce((s, l) => s + (l.daysOnMarket || 0), 0) / withDOM.length) : 0;
+    // DOM from active listings only (current days-on-market, not final sold DOM).
+    const activeWithDOM = active.filter((l) => l.daysOnMarket && l.daysOnMarket > 0);
+    const avgDOM = activeWithDOM.length > 0
+      ? Math.round(activeWithDOM.reduce((s, l) => s + (l.daysOnMarket || 0), 0) / activeWithDOM.length)
+      : 0;
 
-    // Sold vs ask
-    const soldWithBoth = sold.filter((l) => l.soldPrice && l.price > 0);
-    let soldVsAskPct = 100;
-    if (soldWithBoth.length > 0) {
-      soldVsAskPct = Math.round(
-        soldWithBoth.reduce((s, l) => s + (l.soldPrice! / l.price) * 100, 0) / soldWithBoth.length
-      );
-    }
-
-    // By type
+    // By-type aggregates — active listings only.
     const types = ["detached", "semi", "townhouse", "condo", "other"];
     const byType: StreetPageData["byType"] = {};
     for (const t of types) {
-      const ofType = allListings.filter((l) => l.propertyType === t);
-      if (ofType.length > 0) {
+      const activeOfType = active.filter((l) => l.propertyType === t);
+      if (activeOfType.length > 0) {
         byType[t] = {
-          count: ofType.length,
-          avgPrice: Math.round(ofType.reduce((s, l) => s + l.price, 0) / ofType.length),
-          activeCount: ofType.filter((l) => l.status === "active").length,
+          count: activeOfType.length,
+          avgPrice: Math.round(activeOfType.reduce((s, l) => s + l.price, 0) / activeOfType.length),
+          activeCount: activeOfType.length,
         };
       }
     }
 
-    // Price distribution
+    // Price distribution — active listings only.
     const buckets = [
       { range: "Under $500K", min: 0, max: 500000 },
       { range: "$500K–$700K", min: 500000, max: 700000 },
@@ -99,11 +98,11 @@ export const getStreetPageData = unstable_cache(
       { range: "Over $1.5M", min: 1500000, max: Infinity },
     ];
     const priceDistribution = buckets.map((b) => {
-      const count = allListings.filter((l) => l.price >= b.min && l.price < b.max).length;
-      return { range: b.range, count, pct: allListings.length > 0 ? Math.round((count / allListings.length) * 100) : 0 };
+      const count = active.filter((l) => l.price >= b.min && l.price < b.max).length;
+      return { range: b.range, count, pct: active.length > 0 ? Math.round((count / active.length) * 100) : 0 };
     });
 
-    // DOM distribution
+    // DOM distribution — active listings only.
     const domBuckets = [
       { range: "< 7 days", min: 0, max: 7 },
       { range: "7–14 days", min: 7, max: 14 },
@@ -111,17 +110,11 @@ export const getStreetPageData = unstable_cache(
       { range: "30+ days", min: 30, max: Infinity },
     ];
     const domDistribution = domBuckets.map((b) => {
-      const count = withDOM.filter((l) => (l.daysOnMarket || 0) >= b.min && (l.daysOnMarket || 0) < b.max).length;
-      return { range: b.range, count, pct: withDOM.length > 0 ? Math.round((count / withDOM.length) * 100) : 0 };
+      const count = activeWithDOM.filter((l) => (l.daysOnMarket || 0) >= b.min && (l.daysOnMarket || 0) < b.max).length;
+      return { range: b.range, count, pct: activeWithDOM.length > 0 ? Math.round((count / activeWithDOM.length) * 100) : 0 };
     });
 
-    // Over/under asking
-    const aboveCount = soldWithBoth.filter((l) => l.soldPrice! > l.price).length;
-    const belowCount = soldWithBoth.filter((l) => l.soldPrice! < l.price).length;
-    const atCount = soldWithBoth.length - aboveCount - belowCount;
-    const avgOverPct = soldVsAskPct - 100;
-
-    // Nearby streets
+    // Nearby streets — active-listing avg price only.
     const nearbyRaw = await prisma.listing.groupBy({
       by: ["streetSlug"],
       _count: true,
@@ -129,6 +122,8 @@ export const getStreetPageData = unstable_cache(
       where: {
         neighbourhood: { in: neighbourhoods },
         streetSlug: { not: slug },
+        status: "active",
+        permAdvertise: true,
       },
       orderBy: { _count: { streetSlug: "desc" } },
       take: 6,
@@ -149,25 +144,26 @@ export const getStreetPageData = unstable_cache(
       })
     );
 
+    // Expose active + rented via allListings for downstream components that
+    // want to iterate over every publicly-safe listing. Sold listings are
+    // deliberately excluded — use the gated DB2 pipeline for sold display.
+    const publicListings = [...active, ...rented];
+
     return {
       slug,
       streetName,
       neighbourhoods,
-      avgSoldPrice,
       avgListPrice,
       medianPrice,
-      totalSold12mo: sold.length,
+      avgDOM,
       activeCount: active.length,
       rentedCount: rented.length,
-      avgDOM,
-      soldVsAskPct,
+      totalSold12mo: sold.length, // count only — safe aggregate
       byType,
       activeListings: active as never[],
-      soldListings: sold as never[],
-      allListings: allListings as never[],
+      allListings: publicListings as never[],
       priceDistribution,
       domDistribution,
-      overUnderAsking: { aboveCount, atCount, belowCount, totalSold: soldWithBoth.length, avgOverPct },
       nearbyStreets,
       lastUpdated: new Date().toISOString().split("T")[0],
     };
