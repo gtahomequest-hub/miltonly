@@ -1,6 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { calcMarketDataHash } from "@/lib/streetUtils";
 
+// Post Phase 2.6 (2026-04-17): this module's stats pipeline was restructured
+// to stop reading DB1 sold-derived fields. DB1 no longer stores soldPrice or
+// soldDate (see migrations/db1/2026-04-17-null-sold-fields.sql + DO-NOT-REPEAT.md).
+// Historical sold-price intelligence lives exclusively in DB2 (sold schema)
+// and is surfaced via gated DB2 fetchers in src/lib/sold-data.ts. This file
+// now aggregates active-listing data only and carries a sold-count (status
+// flip, not price-derived) for context. Field names match what they actually
+// contain — no more avgSoldPrice labels on active-listing values.
+
 export type StreetDecision =
   | "build"
   | "regenerate"
@@ -13,11 +22,12 @@ export async function makeStreetDecision(
   streetName: string
 ): Promise<StreetDecision> {
   // ── MINIMUM DATA GATE ──
+  // DB1 still carries status flips to "sold" even after soldDate nullification;
+  // count them by status alone (no date filter — that field is always null now).
   const soldCount = await prisma.listing.count({
     where: {
       streetSlug,
       status: "sold",
-      soldDate: { gt: new Date(Date.now() - 24 * 30 * 24 * 60 * 60 * 1000) }, // ~24 months
     },
   });
   const activeCount = await prisma.listing.count({
@@ -33,7 +43,7 @@ export async function makeStreetDecision(
       where: { streetSlug },
       data: { status: "ineligible" },
     });
-    console.log(`Ineligible: ${streetName} — only ${soldCount} sales in 24mo, ${activeCount} active`);
+    console.log(`Ineligible: ${streetName} — ${soldCount} sold-status, ${activeCount} active`);
     return "skip_low_data";
   }
 
@@ -68,24 +78,9 @@ export async function makeStreetDecision(
 }
 
 export async function getStreetStats(streetSlug: string) {
-  const soldListings = await prisma.listing.findMany({
-    where: {
-      streetSlug,
-      status: "sold",
-      soldDate: { gt: new Date(Date.now() - 12 * 30 * 24 * 60 * 60 * 1000) },
-    },
-    select: {
-      soldPrice: true,
-      price: true,
-      daysOnMarket: true,
-      propertyType: true,
-      soldDate: true,
-    },
-  });
-
-  // Fall back to active listings if no sold data
+  // Active listings only — DB1 sold-derived computation removed post Phase 2.6.
   const activeListings = await prisma.listing.findMany({
-    where: { streetSlug, status: "active" },
+    where: { streetSlug, status: "active", permAdvertise: true },
     select: {
       price: true,
       propertyType: true,
@@ -93,91 +88,40 @@ export async function getStreetStats(streetSlug: string) {
     },
   });
 
-  if (soldListings.length === 0 && activeListings.length === 0) return null;
+  // Sold-status count (no price/date data — just a count for context).
+  const soldCount = await prisma.listing.count({
+    where: { streetSlug, status: "sold" },
+  });
 
-  // Use sold prices if available, otherwise use active list prices
-  const priceSources = soldListings.length > 0
-    ? soldListings.map((l) => l.soldPrice || l.price).filter(Boolean)
-    : activeListings.map((l) => l.price).filter(Boolean);
+  if (activeListings.length === 0 && soldCount === 0) return null;
 
-  const avgSoldPrice = priceSources.length > 0
+  const priceSources = activeListings.map((l) => l.price).filter((p): p is number => !!p && p > 0);
+
+  const avgListPrice = priceSources.length > 0
     ? Math.round(priceSources.reduce((a, b) => a + b, 0) / priceSources.length)
     : 0;
 
   const sortedPrices = [...priceSources].sort((a, b) => a - b);
-  const medianSoldPrice = sortedPrices.length > 0
+  const medianListPrice = sortedPrices.length > 0
     ? sortedPrices[Math.floor(sortedPrices.length / 2)]
     : 0;
 
-  const allListingsForDOM = [...soldListings, ...activeListings];
-  const doms = allListingsForDOM.map((l) => l.daysOnMarket).filter((d): d is number => d !== null);
+  const doms = activeListings
+    .map((l) => l.daysOnMarket)
+    .filter((d): d is number => d !== null && d > 0);
   const avgDOM = doms.length > 0
     ? Math.round(doms.reduce((a, b) => a + b, 0) / doms.length)
     : 0;
 
-  // Sold vs ask percentage (only meaningful with sold data)
-  const ratios = soldListings
-    .filter((l) => l.soldPrice && l.price && l.price > 0)
-    .map((l) => ((l.soldPrice || 0) / l.price) * 100);
-  const soldVsAskPct = ratios.length > 0
-    ? Math.round((ratios.reduce((a, b) => a + b, 0) / ratios.length) * 10) / 10
-    : 100;
-
-  // Property type breakdown — use sold if available, otherwise active
-  const typeSource = soldListings.length > 0 ? soldListings : activeListings;
+  // Property-type breakdown from active listings.
   const typeCounts: Record<string, number> = {};
-  for (const l of typeSource) {
+  for (const l of activeListings) {
     typeCounts[l.propertyType] = (typeCounts[l.propertyType] || 0) + 1;
   }
   const typeBreakdown = Object.entries(typeCounts)
     .sort((a, b) => b[1] - a[1])
     .map(([type, count]) => ({ propertyType: type, cnt: count }));
   const dominantPropertyType = typeBreakdown[0]?.propertyType || "detached";
-
-  const activeCount = activeListings.length;
-
-  // 6-month splits for price direction
-  const sixMonthsAgo = new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000);
-  const recent6mo = soldListings.filter((l) => l.soldDate && l.soldDate > sixMonthsAgo);
-  const prior6mo = soldListings.filter((l) => l.soldDate && l.soldDate <= sixMonthsAgo);
-
-  const avgSoldPrice6mo = recent6mo.length > 0
-    ? Math.round(recent6mo.map((l) => l.soldPrice || l.price).reduce((a, b) => a + b, 0) / recent6mo.length)
-    : null;
-  const avgSoldPricePrior6mo = prior6mo.length > 0
-    ? Math.round(prior6mo.map((l) => l.soldPrice || l.price).reduce((a, b) => a + b, 0) / prior6mo.length)
-    : null;
-
-  let priceDirection = "remained steady";
-  if (avgSoldPrice6mo && avgSoldPricePrior6mo && avgSoldPricePrior6mo > 0) {
-    const changePct = Math.round(((avgSoldPrice6mo - avgSoldPricePrior6mo) / avgSoldPricePrior6mo) * 100);
-    if (changePct > 0) priceDirection = `risen ${changePct}% in the last 6 months`;
-    else if (changePct < 0) priceDirection = `softened ${Math.abs(changePct)}% in the last 6 months`;
-  }
-
-  // Monthly trend (24 months)
-  const soldAll24 = await prisma.listing.findMany({
-    where: {
-      streetSlug,
-      status: "sold",
-      soldDate: { gt: new Date(Date.now() - 24 * 30 * 24 * 60 * 60 * 1000) },
-    },
-    select: { soldPrice: true, price: true, soldDate: true },
-  });
-  const monthlyMap = new Map<string, { total: number; count: number }>();
-  for (const l of soldAll24) {
-    if (!l.soldDate) continue;
-    const key = `${l.soldDate.toLocaleString("en-US", { month: "short" })} ${l.soldDate.getFullYear()}`;
-    const entry = monthlyMap.get(key) || { total: 0, count: 0 };
-    entry.total += l.soldPrice || l.price;
-    entry.count++;
-    monthlyMap.set(key, entry);
-  }
-  const monthlyTrend = Array.from(monthlyMap.entries()).map(([month, data]) => ({
-    month,
-    avgPrice: Math.round(data.total / data.count),
-    salesCount: data.count,
-  }));
 
   // Neighbourhood and school zone
   const sampleListing = await prisma.listing.findFirst({
@@ -186,18 +130,17 @@ export async function getStreetStats(streetSlug: string) {
   });
 
   return {
-    avgSoldPrice,
-    medianSoldPrice,
-    totalSold12mo: soldListings.length,
+    avgListPrice,
+    medianListPrice,
+    totalSold12mo: soldCount,   // status-flip count only — no price data
     avgDOM,
-    soldVsAskPct,
-    activeCount,
+    activeCount: activeListings.length,
     dominantPropertyType,
     typeBreakdown,
-    monthlyTrend,
-    avgSoldPrice6mo,
-    avgSoldPricePrior6mo,
-    priceDirection,
+    // Trend/price-direction data moved to DB3 (gated). AI content gets a
+    // neutral placeholder so prompts remain stable.
+    monthlyTrend: [] as Array<{ month: string; avgPrice: number; salesCount: number }>,
+    priceDirection: "remained steady" as const,
     neighbourhood: sampleListing?.neighbourhood || "Milton",
     schoolZone: sampleListing?.schoolZone || null,
   };
