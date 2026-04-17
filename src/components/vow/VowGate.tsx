@@ -56,25 +56,35 @@ async function loadTeaser(
       CACHE_TTL.aggregate,
       async (): Promise<PublicAggregateTeaser | null> => {
         if (street) {
+          // K-ANONYMITY GUARD — do not lower without a written compliance review.
+          // MIN(sold_price) and MAX(sold_price) look like aggregates, but when
+          // the set has fewer than ~10 rows they reveal individual records:
+          //   n=1 → MIN = MAX = that record's exact price
+          //   n=2 → MIN and MAX reveal the cheapest and most expensive of two
+          //   n<5 → two or three known facts (street + date range + property
+          //          type) are enough to match a range back to a specific sale
+          // k=10 is the project-wide threshold (see DO-NOT-REPEAT.md "K-anonymity
+          // threshold for aggregate teasers"). Rendering side returns a
+          // sign-in prompt instead of the range when the CASE returns NULL.
           const rows = (await sql`
             SELECT
               s.sold_count_90days,
               s.avg_dom,
               s.market_temperature,
-              (
+              CASE WHEN s.sold_count_90days >= 10 THEN (
                 SELECT MIN(sold_price) FROM sold.sold_records
                 WHERE street_slug = ${street}
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
-              ) AS price_min,
-              (
+              ) ELSE NULL END AS price_min,
+              CASE WHEN s.sold_count_90days >= 10 THEN (
                 SELECT MAX(sold_price) FROM sold.sold_records
                 WHERE street_slug = ${street}
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
-              ) AS price_max
+              ) ELSE NULL END AS price_max
             FROM analytics.street_sold_stats s
             WHERE s.street_slug = ${street}
           `) as Array<{
@@ -95,24 +105,30 @@ async function loadTeaser(
           };
         }
         if (neighbourhood) {
+          // K-ANONYMITY GUARD — do not lower without a written compliance review.
+          // Same reasoning as the street branch above: MIN/MAX over <10 rows
+          // can be back-calculated to individual sold prices. See DO-NOT-REPEAT.md
+          // "K-anonymity threshold for aggregate teasers". Neighbourhoods tend
+          // to have higher sale volumes than streets, so k=10 rarely suppresses
+          // here in practice — but the rule is uniform regardless of scope.
           const rows = (await sql`
             SELECT
               n.sold_count_90days,
               n.avg_dom,
-              (
+              CASE WHEN n.sold_count_90days >= 10 THEN (
                 SELECT MIN(sold_price) FROM sold.sold_records
                 WHERE neighbourhood = ${neighbourhood}
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
-              ) AS price_min,
-              (
+              ) ELSE NULL END AS price_min,
+              CASE WHEN n.sold_count_90days >= 10 THEN (
                 SELECT MAX(sold_price) FROM sold.sold_records
                 WHERE neighbourhood = ${neighbourhood}
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
-              ) AS price_max
+              ) ELSE NULL END AS price_max
             FROM analytics.neighbourhood_sold_stats n
             WHERE n.neighbourhood = ${neighbourhood}
           `) as Array<{
@@ -201,11 +217,25 @@ export default async function VowGate({
             Avg {teaser.avg_dom} days on market
           </span>
         )}
-        {teaser?.price_range_low !== null && teaser?.price_range_high !== null && teaser && (
+        {teaser && teaser.price_range_low !== null && teaser.price_range_high !== null ? (
+          /* count ≥ 10 — k-anonymity threshold met, range is safe to display */
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">
             {formatMoney(teaser.price_range_low)} – {formatMoney(teaser.price_range_high)}
           </span>
-        )}
+        ) : count >= 1 ? (
+          /* 1 ≤ count < 10 — range suppressed by k-anonymity guard in loadTeaser(). */
+          /* Render a sign-in prompt chip instead, so anon users see the CTA but never */
+          /* a MIN/MAX that could back-calculate an individual sold price. */
+          <Link
+            href={signinHref}
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 2a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z" fill="currentColor"/>
+            </svg>
+            Sign in to see sold price range for {street ? "this street" : "this neighbourhood"}
+          </Link>
+        ) : null}
       </div>
 
       <div className="rounded-xl bg-slate-50 p-5 border border-slate-200">
