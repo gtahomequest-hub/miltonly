@@ -23,6 +23,7 @@
     "prisma": "^5.22.0",
     "react": "^18",
     "react-dom": "^18",
+    "recharts": "^3.8.1",
     "resend": "^6.10.0",
     "twilio": "^5.13.1"
   },

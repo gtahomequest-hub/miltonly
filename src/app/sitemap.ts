@@ -60,6 +60,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.7,
     },
+    {
+      url: `${SITE_URL}/sold`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
 
   // Neighbourhood pages (dynamic from database)
@@ -95,6 +101,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Sold-per-street pages — one per published street.
+  const soldStreetPages: MetadataRoute.Sitemap = publishedStreets.map((s) => ({
+    url: `${SITE_URL}/sold/${s.streetSlug}`,
+    lastModified: s.updatedAt,
+    changeFrequency: "daily" as const,
+    priority: 0.8,
+  }));
+
   // School pages
   const schoolPages: MetadataRoute.Sitemap = [
     {
@@ -127,5 +141,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...schoolPages, ...mosquePages];
+  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...soldStreetPages, ...schoolPages, ...mosquePages];
 }
