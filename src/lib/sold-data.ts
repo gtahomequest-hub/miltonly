@@ -6,6 +6,7 @@
 import "server-only";
 import { soldDb, analyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
+import { getSession } from "./auth";
 import type {
   SoldRecord,
   StreetSoldStats,
@@ -14,6 +15,26 @@ import type {
 } from "./db-types";
 
 const MAX_CONSUMER_RECORDS = 100; // VOW rule — never exceed per consumer query
+
+/**
+ * VOW defence-in-depth gate. Every record-returning fetcher calls this
+ * BEFORE any cache or DB touch. If it returns false, the fetcher returns
+ * an empty array and never queries DB2, never hits Redis, never touches a
+ * cache key that could be poisoned.
+ *
+ * Required conditions:
+ *   - authenticated session
+ *   - VOW bona-fide-interest acknowledgement recorded (Phase 2.5 gate)
+ *
+ * Aggregate fetchers (stats, counts, neighbourhood lists) do NOT call this —
+ * those are always public by design.
+ */
+async function canServeRecordsToThisRequest(): Promise<boolean> {
+  const user = await getSession();
+  if (!user) return false;
+  if (!user.vowAcknowledgedAt) return false;
+  return true;
+}
 
 export interface PublicSaleStats {
   sold_count_90days: number;
@@ -107,6 +128,10 @@ export async function getStreetLeaseStats(streetSlug: string): Promise<PublicLea
 }
 
 export async function getStreetMonthlySales(streetSlug: string): Promise<Array<{ year: number; month: number; avg_sold_price: number | null; sold_count: number }>> {
+  // Gate at fetcher level: even though monthly stats are aggregated, a
+  // low-volume street (1 sale/month) makes these rows effectively
+  // individual. Defence-in-depth — never hit DB or cache for anon users.
+  if (!(await canServeRecordsToThisRequest())) return [];
   if (!analyticsDb) return [];
   return cached(`street-monthly-sales:${streetSlug}`, CACHE_TTL.stats, async () => {
     const rows = (await analyticsDb!`
@@ -225,6 +250,10 @@ export async function getStreetSoldList(
   days: number = 90,
   limit: number = 20
 ): Promise<SoldListItem[]> {
+  // VOW defence-in-depth — gate at fetcher level BEFORE any cache lookup.
+  // Ensures no anon request ever touches sold.sold_records or a Redis key
+  // that could return cached records.
+  if (!(await canServeRecordsToThisRequest())) return [];
   if (!soldDb) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
@@ -249,6 +278,7 @@ export async function getNeighbourhoodSoldList(
   days: number = 90,
   limit: number = 20
 ): Promise<SoldListItem[]> {
+  if (!(await canServeRecordsToThisRequest())) return [];
   if (!soldDb) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
@@ -273,6 +303,7 @@ export async function getRecentSoldList(
   limit: number = 60,
   filters?: { neighbourhood?: string; property_type?: string }
 ): Promise<SoldListItem[]> {
+  if (!(await canServeRecordsToThisRequest())) return [];
   if (!soldDb) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
