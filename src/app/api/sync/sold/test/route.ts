@@ -1,20 +1,30 @@
-// Diagnostic endpoint — simplest possible AMPRE call to verify the
-// connection, auth, and base URL work before layering sold-specific
-// filters + VOW fields on top. Mirrors detect/route.ts's proven fetch.
+// Diagnostic endpoint — runs three probes in parallel against AMPRE to
+// identify the correct server-side filter for Milton sold records.
+//
+// Probe A: City eq 'Milton' and StandardStatus eq 'Closed'
+//          RESO-standard status value — should be universal across boards.
+// Probe B: City eq 'Milton' and MlsStatus eq 'Sld'
+//          TRREB historically uses abbreviated status codes; 'Sld' = Sold.
+// Probe C: City eq 'Milton' and MlsStatus ne 'New'  (top=20)
+//          Discovery — surfaces every non-active status string in the feed.
+//
+// Also reports, per probe: count, unique MlsStatus/StandardStatus values,
+// sample records, AMPRE error message if any. Summary at the top aggregates
+// winners (probes that returned records) and the union of statuses seen.
 //
 // Auth: Authorization: Bearer <CRON_SECRET>  OR  ?secret=<CRON_SECRET>.
-// Returns: the raw AMPRE response — status, headers, body — plus token
-// diagnostics so trailing-whitespace and missing-env issues are visible.
 
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-// Trim env vars — trailing whitespace on the URL corrupts the query string;
-// trailing whitespace on the token corrupts the Authorization header.
 const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
 const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
+
+const SELECT_FIELDS =
+  "ListingKey,City,MlsStatus,StandardStatus,TransactionType," +
+  "CloseDate,ClosePrice,PurchaseContractDate,ModificationTimestamp";
 
 function authorize(req: NextRequest): boolean {
   const expected = process.env.CRON_SECRET;
@@ -26,36 +36,37 @@ function authorize(req: NextRequest): boolean {
   return false;
 }
 
-export async function GET(req: NextRequest) {
-  if (!authorize(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+interface SampleRecord {
+  ListingKey: string;
+  MlsStatus: string | null;
+  StandardStatus: string | null;
+  CloseDate: string | null;
+  ClosePrice: number | null;
+  PurchaseContractDate: string | null;
+  TransactionType: string | null;
+}
 
-  // Discovery probe — no MlsStatus filter so we can see every status string
-  // TREB actually uses for Milton records. 'Sold' as the filter value returns
-  // zero records, which means TREB labels closed transactions with a
-  // different string (likely 'Closed', 'Sold Conditional', etc.).
-  const filter = encodeURIComponent("City eq 'Milton'");
-  const url = `${TREB_API_URL}?$select=ListingKey,City,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$filter=${filter}&$top=10`;
+interface ProbeResult {
+  filter: string;
+  ok: boolean;
+  httpStatus: number;
+  httpStatusText: string;
+  count: number;
+  uniqueMlsStatuses: string[];
+  uniqueStandardStatuses: string[];
+  sample: SampleRecord[];
+  amprerror: string | null;
+  bodySnippet: string;
+}
 
-  // Token diagnostics — never log the token, just safe metadata.
-  const tokenDiag = {
-    present: TREB_TOKEN.length > 0,
-    length: TREB_TOKEN.length,
-    trailingWhitespace:
-      TREB_TOKEN.length > 0 && /\s$/.test(TREB_TOKEN),
-    endsWithLiteralBackslashN:
-      TREB_TOKEN.length > 0 && TREB_TOKEN.endsWith("\\n"),
-    first10: TREB_TOKEN.slice(0, 10),
-    last4: TREB_TOKEN.slice(-4),
-  };
-
-  const urlDiag = {
-    configured: TREB_API_URL,
-    trailingWhitespace: /\s$/.test(TREB_API_URL),
-    endsWithLiteralBackslashN: TREB_API_URL.endsWith("\\n"),
-    called: url,
-  };
+async function runProbe(filterExpr: string, top: number): Promise<ProbeResult> {
+  const encodedFilter = encodeURIComponent(filterExpr);
+  const encodedOrderby = encodeURIComponent("ModificationTimestamp desc");
+  const url =
+    `${TREB_API_URL}?$select=${SELECT_FIELDS}` +
+    `&$filter=${encodedFilter}` +
+    `&$orderby=${encodedOrderby}` +
+    `&$top=${top}`;
 
   let response: Response;
   try {
@@ -66,66 +77,119 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        stage: "fetch-threw",
-        token: tokenDiag,
-        url: urlDiag,
-        error: String(err),
-      },
-      { status: 500 }
-    );
+    return {
+      filter: filterExpr,
+      ok: false,
+      httpStatus: 0,
+      httpStatusText: "fetch-threw",
+      count: 0,
+      uniqueMlsStatuses: [],
+      uniqueStandardStatuses: [],
+      sample: [],
+      amprerror: String(err),
+      bodySnippet: "",
+    };
   }
 
-  const bodyText = await response.text().catch(() => "<body-read-failed>");
-  const responseHeaders: Record<string, string> = {};
-  response.headers.forEach((value, key) => {
-    responseHeaders[key] = value;
-  });
-
-  // Try to surface AMPRE's error message at the top level for quick reading
-  // without having to pull it out of the raw JSON body manually.
+  const bodyText = await response.text().catch(() => "");
   let amprerror: string | null = null;
-  // Discovery data — unique MlsStatus values and per-record status, so the
-  // caller doesn't have to parse responseBody to find the real sold label.
-  let uniqueMlsStatuses: string[] = [];
-  const recordStatuses: Array<{ ListingKey: string; MlsStatus: string | null; CloseDate: string | null; TransactionType: string | null }> = [];
-  let recordCount = 0;
+  let values: unknown[] = [];
   try {
-    const parsed = JSON.parse(bodyText);
-    amprerror = parsed?.error?.message ?? parsed?.message ?? null;
-    const values = Array.isArray(parsed?.value) ? parsed.value : [];
-    recordCount = values.length;
-    const statusSet = new Set<string>();
-    for (const r of values) {
-      if (r?.MlsStatus) statusSet.add(String(r.MlsStatus));
-      recordStatuses.push({
-        ListingKey: String(r?.ListingKey ?? ""),
-        MlsStatus: r?.MlsStatus ?? null,
-        CloseDate: r?.CloseDate ?? null,
-        TransactionType: r?.TransactionType ?? null,
+    const parsed: unknown = JSON.parse(bodyText);
+    if (parsed && typeof parsed === "object") {
+      const obj = parsed as { value?: unknown; error?: { message?: string }; message?: string };
+      amprerror = obj.error?.message ?? obj.message ?? null;
+      if (Array.isArray(obj.value)) values = obj.value;
+    }
+  } catch {
+    // Not JSON — leave amprerror null, values empty.
+  }
+
+  const mlsSet = new Set<string>();
+  const stdSet = new Set<string>();
+  const sample: SampleRecord[] = [];
+  for (const r of values) {
+    if (!r || typeof r !== "object") continue;
+    const rec = r as Record<string, unknown>;
+    if (rec.MlsStatus) mlsSet.add(String(rec.MlsStatus));
+    if (rec.StandardStatus) stdSet.add(String(rec.StandardStatus));
+    if (sample.length < 3) {
+      sample.push({
+        ListingKey: String(rec.ListingKey ?? ""),
+        MlsStatus: (rec.MlsStatus as string | null) ?? null,
+        StandardStatus: (rec.StandardStatus as string | null) ?? null,
+        CloseDate: (rec.CloseDate as string | null) ?? null,
+        ClosePrice: (rec.ClosePrice as number | null) ?? null,
+        PurchaseContractDate: (rec.PurchaseContractDate as string | null) ?? null,
+        TransactionType: (rec.TransactionType as string | null) ?? null,
       });
     }
-    uniqueMlsStatuses = Array.from(statusSet).sort();
-  } catch {
-    // Not JSON — leave discovery fields empty.
   }
 
-  // Diagnostic endpoint always returns HTTP 200. Success/failure of the
-  // upstream AMPRE call is conveyed by `ok` and `httpStatus` in the body.
-  return NextResponse.json({
+  return {
+    filter: filterExpr,
     ok: response.ok,
-    stage: "response-received",
-    token: tokenDiag,
-    url: urlDiag,
     httpStatus: response.status,
     httpStatusText: response.statusText,
+    count: values.length,
+    uniqueMlsStatuses: Array.from(mlsSet).sort(),
+    uniqueStandardStatuses: Array.from(stdSet).sort(),
+    sample,
     amprerror,
-    recordCount,
-    uniqueMlsStatuses,
-    recordStatuses,
-    responseHeaders,
-    responseBody: bodyText.slice(0, 4000),
-    responseBodyLength: bodyText.length,
+    bodySnippet: bodyText.slice(0, 600),
+  };
+}
+
+export async function GET(req: NextRequest) {
+  if (!authorize(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tokenDiag = {
+    present: TREB_TOKEN.length > 0,
+    length: TREB_TOKEN.length,
+    trailingWhitespace: TREB_TOKEN.length > 0 && /\s$/.test(TREB_TOKEN),
+    endsWithLiteralBackslashN: TREB_TOKEN.length > 0 && TREB_TOKEN.endsWith("\\n"),
+    first10: TREB_TOKEN.slice(0, 10),
+    last4: TREB_TOKEN.slice(-4),
+  };
+
+  const urlDiag = {
+    configured: TREB_API_URL,
+    trailingWhitespace: /\s$/.test(TREB_API_URL),
+    endsWithLiteralBackslashN: TREB_API_URL.endsWith("\\n"),
+  };
+
+  // Run all three probes in parallel — cuts wall time to max(probe duration).
+  const [probeA, probeB, probeC] = await Promise.all([
+    runProbe("City eq 'Milton' and StandardStatus eq 'Closed'", 5),
+    runProbe("City eq 'Milton' and MlsStatus eq 'Sld'", 5),
+    runProbe("City eq 'Milton' and MlsStatus ne 'New'", 20),
+  ]);
+
+  // Aggregate status vocabulary across all three probes so the union is one
+  // array to inspect instead of three.
+  const allMls = new Set<string>();
+  const allStd = new Set<string>();
+  for (const p of [probeA, probeB, probeC]) {
+    p.uniqueMlsStatuses.forEach((s) => allMls.add(s));
+    p.uniqueStandardStatuses.forEach((s) => allStd.add(s));
+  }
+
+  const winners: string[] = [];
+  if (probeA.ok && probeA.count > 0) winners.push(probeA.filter);
+  if (probeB.ok && probeB.count > 0) winners.push(probeB.filter);
+
+  return NextResponse.json({
+    token: tokenDiag,
+    url: urlDiag,
+    summary: {
+      winners,
+      uniqueMlsStatusesAcrossProbes: Array.from(allMls).sort(),
+      uniqueStandardStatusesAcrossProbes: Array.from(allStd).sort(),
+    },
+    probeA_resoStandardClosed: probeA,
+    probeB_mlsStatusSld: probeB,
+    probeC_mlsStatusNotNew: probeC,
   });
 }
