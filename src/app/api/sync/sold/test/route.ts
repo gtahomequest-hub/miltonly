@@ -31,18 +31,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Diagnostic call — filter for Milton records with a populated CloseDate.
-  // A populated CloseDate is the definitive indicator of a sold/closed
-  // transaction regardless of what MlsStatus string TREB uses. Returns 5
-  // records so we can see the exact MlsStatus values those sold records
-  // carry (TREB reportedly uses 'Closed' rather than 'Sold').
-  // AMPRE rejects CloseDate in $filter ("Field not allowed in filter: CloseDate")
-  // even though it can appear in $select. Filter on MlsStatus eq 'Sold' per
-  // the VOW integration brief. CloseDate still shows up in $select for inspection.
-  const filter = encodeURIComponent(
-    "City eq 'Milton' and MlsStatus eq 'Sold'"
-  );
-  const url = `${TREB_API_URL}?$select=ListingKey,City,CityRegion,StateOrProvince,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$filter=${filter}&$top=5`;
+  // Discovery probe — no MlsStatus filter so we can see every status string
+  // TREB actually uses for Milton records. 'Sold' as the filter value returns
+  // zero records, which means TREB labels closed transactions with a
+  // different string (likely 'Closed', 'Sold Conditional', etc.).
+  const filter = encodeURIComponent("City eq 'Milton'");
+  const url = `${TREB_API_URL}?$select=ListingKey,City,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$filter=${filter}&$top=10`;
 
   // Token diagnostics — never log the token, just safe metadata.
   const tokenDiag = {
@@ -92,17 +86,33 @@ export async function GET(req: NextRequest) {
   // Try to surface AMPRE's error message at the top level for quick reading
   // without having to pull it out of the raw JSON body manually.
   let amprerror: string | null = null;
+  // Discovery data — unique MlsStatus values and per-record status, so the
+  // caller doesn't have to parse responseBody to find the real sold label.
+  let uniqueMlsStatuses: string[] = [];
+  const recordStatuses: Array<{ ListingKey: string; MlsStatus: string | null; CloseDate: string | null; TransactionType: string | null }> = [];
+  let recordCount = 0;
   try {
     const parsed = JSON.parse(bodyText);
     amprerror = parsed?.error?.message ?? parsed?.message ?? null;
+    const values = Array.isArray(parsed?.value) ? parsed.value : [];
+    recordCount = values.length;
+    const statusSet = new Set<string>();
+    for (const r of values) {
+      if (r?.MlsStatus) statusSet.add(String(r.MlsStatus));
+      recordStatuses.push({
+        ListingKey: String(r?.ListingKey ?? ""),
+        MlsStatus: r?.MlsStatus ?? null,
+        CloseDate: r?.CloseDate ?? null,
+        TransactionType: r?.TransactionType ?? null,
+      });
+    }
+    uniqueMlsStatuses = Array.from(statusSet).sort();
   } catch {
-    // Not JSON — leave null.
+    // Not JSON — leave discovery fields empty.
   }
 
   // Diagnostic endpoint always returns HTTP 200. Success/failure of the
   // upstream AMPRE call is conveyed by `ok` and `httpStatus` in the body.
-  // Returning 5xx here makes the endpoint look like it crashed when it
-  // actually worked correctly (it just got a 4xx back from AMPRE).
   return NextResponse.json({
     ok: response.ok,
     stage: "response-received",
@@ -111,6 +121,9 @@ export async function GET(req: NextRequest) {
     httpStatus: response.status,
     httpStatusText: response.statusText,
     amprerror,
+    recordCount,
+    uniqueMlsStatuses,
+    recordStatuses,
     responseHeaders,
     responseBody: bodyText.slice(0, 4000),
     responseBodyLength: bodyText.length,
