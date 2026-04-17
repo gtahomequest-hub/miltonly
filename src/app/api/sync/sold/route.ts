@@ -27,10 +27,12 @@ import { extractStreetName, streetNameToSlug } from "@/lib/streetUtils";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
-// Trim env var — Vercel-stored tokens have been observed with trailing
-// whitespace/newline that corrupts the Authorization header and triggers
-// an AMPRE 400 on every request. trim() removes spaces, tabs, and newlines.
+// Trim env vars — the Vercel-stored TREB_API_URL and TREB_API_TOKEN have
+// both been observed with trailing whitespace/newline. Trailing whitespace
+// in the URL corrupts the query string (AMPRE rejects); trailing whitespace
+// in the token corrupts the Authorization header. trim() strips spaces,
+// tabs, and newlines without altering the real value.
+const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
 const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
 const PAGE_SIZE = 500;
 

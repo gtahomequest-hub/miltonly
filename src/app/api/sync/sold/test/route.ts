@@ -11,9 +11,9 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
-// Trim env var — Vercel-stored tokens have been observed with trailing
-// whitespace/newline that corrupts the Authorization header.
+// Trim env vars — trailing whitespace on the URL corrupts the query string;
+// trailing whitespace on the token corrupts the Authorization header.
+const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
 const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
 
 function authorize(req: NextRequest): boolean {
@@ -31,11 +31,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Diagnostic call — NO city filter, $top=1. Shows the raw first record
-  // AMPRE returns so we can see the actual City, MlsStatus, etc. values
-  // the feed uses (and confirm whether 'Milton' is the literal city value).
-  // Select enough fields to see all the status/location identifiers.
-  const url = `${TREB_API_URL}?$select=ListingKey,City,CityRegion,StateOrProvince,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$top=1`;
+  // Diagnostic call — City eq 'Milton' filter (matching detect's proven
+  // pattern), $top=5. Returns five actual Milton records so we can see the
+  // exact MlsStatus string values TREB uses for sold vs active (e.g. 'Sold',
+  // 'Closed', 'Sold Conditional', 'Draft') before we add a server-side
+  // MlsStatus filter back to the sync route.
+  const filter = encodeURIComponent("City eq 'Milton'");
+  const url = `${TREB_API_URL}?$select=ListingKey,City,CityRegion,StateOrProvince,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$filter=${filter}&$top=5`;
 
   // Token diagnostics — never log the token, just safe metadata.
   const tokenDiag = {

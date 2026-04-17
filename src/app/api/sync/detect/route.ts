@@ -4,8 +4,10 @@ import { extractStreetName } from "@/lib/streetUtils";
 
 export const maxDuration = 300;
 
-const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
-const TREB_TOKEN = process.env.TREB_API_TOKEN || "";
+// Trim env vars — Vercel-stored values have trailing whitespace/newline
+// that corrupts the URL query string or the Authorization header.
+const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
+const TREB_TOKEN = (process.env.TREB_API_TOKEN || "").trim();
 const MEDIA_URL = "https://query.ampre.ca/odata/Media";
 const PAGE_SIZE = 1000;
 
