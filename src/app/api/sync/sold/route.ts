@@ -41,7 +41,7 @@ const SELECT_FIELDS = [
   "UnparsedAddress", "StreetNumber", "StreetName", "StreetSuffix",
   "City", "CityRegion",
   "ListPrice", "ClosePrice",
-  "CloseDate", "ListDate", "OriginalEntryTimestamp",
+  "CloseDate", "ListingContractDate", "OriginalEntryTimestamp",
   "BedroomsTotal", "BathroomsTotalInteger",
   "PropertyType", "PropertySubType",
   "LivingAreaRange",
@@ -63,7 +63,7 @@ interface AmpSoldRecord {
   ListPrice: number | null;
   ClosePrice: number | null;
   CloseDate: string | null;
-  ListDate: string | null;
+  ListingContractDate: string | null;
   OriginalEntryTimestamp: string | null;
   BedroomsTotal: number | null;
   BathroomsTotalInteger: number | null;
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
       } else {
         const listPrice = item.ListPrice ?? 0;
         const soldPrice = item.ClosePrice ?? 0;
-        const listDate = item.ListDate ?? item.OriginalEntryTimestamp ?? item.CloseDate;
+        const listDate = item.ListingContractDate ?? item.OriginalEntryTimestamp ?? item.CloseDate;
         const closeDate = item.CloseDate;
         if (!closeDate || !listDate || soldPrice <= 0 || listPrice <= 0) {
           skipped++;
