@@ -109,6 +109,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Sign in to view sold data" }, { status: 401 });
   }
 
+  // 1a. VOW acknowledgement gate — 403 if user hasn't accepted the bona-fide-
+  // interest terms yet. Client handles by prompting; direct API consumers see
+  // a clear machine-readable flag.
+  if (!user.vowAcknowledgedAt) {
+    return NextResponse.json(
+      {
+        error: "VOW acknowledgement required",
+        acknowledgementRequired: true,
+      },
+      { status: 403 }
+    );
+  }
+
   // 2. Rate limit (user + IP). Gracefully skipped when Redis is down.
   try {
     if (userLimiter) {

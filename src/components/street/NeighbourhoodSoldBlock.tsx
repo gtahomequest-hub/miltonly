@@ -32,12 +32,13 @@ export default async function NeighbourhoodSoldBlock({
 }) {
   const user = await getSession();
   const authed = !!user;
+  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
 
   const [saleStats, leaseStats, saleRecords, leaseRecords] = await Promise.all([
     getNeighbourhoodSaleStats(neighbourhood).catch(() => null),
     getNeighbourhoodLeaseStats(neighbourhood).catch(() => null),
-    authed ? getNeighbourhoodSoldList(neighbourhood, "sale", 90, 20).catch(() => []) : Promise.resolve([]),
-    authed ? getNeighbourhoodSoldList(neighbourhood, "lease", 90, 20).catch(() => []) : Promise.resolve([]),
+    canSeeRecords ? getNeighbourhoodSoldList(neighbourhood, "sale", 90, 20).catch(() => []) : Promise.resolve([]),
+    canSeeRecords ? getNeighbourhoodSoldList(neighbourhood, "lease", 90, 20).catch(() => []) : Promise.resolve([]),
   ]);
 
   const saleCount = saleStats?.sold_count_90days ?? 0;

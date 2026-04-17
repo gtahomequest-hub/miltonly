@@ -50,6 +50,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function SoldHubPage({ searchParams }: PageProps) {
   const user = await getSession();
   const authed = !!user;
+  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
   const nbhdFilter = searchParams?.nbhd;
@@ -58,7 +59,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   const [totals, neighbourhoods, records] = await Promise.all([
     getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
     getDistinctSoldNeighbourhoods().catch(() => [] as string[]),
-    authed
+    canSeeRecords
       ? getRecentSoldList(typeParam, 90, 60, {
           neighbourhood: nbhdFilter,
           property_type: ptypeFilter,

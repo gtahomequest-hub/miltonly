@@ -50,6 +50,7 @@ const SELECT_FIELDS = [
   "LivingAreaRange",
   "Latitude", "Longitude",
   "MlsStatus", "StandardStatus", "TransactionType",
+  "ListOfficeName",
   "InternetEntireListingDisplayYN",
   "InternetAddressDisplayYN",
   "ModificationTimestamp",
@@ -78,6 +79,7 @@ interface AmpSoldRecord {
   MlsStatus: string | null;          // 'Sold' | 'Leased'
   StandardStatus: string | null;     // RESO-normalized, typically 'Closed'
   TransactionType: string | null;    // 'For Sale' | 'For Lease'
+  ListOfficeName: string | null;     // listing Brokerage — VOW 6.3(c) display requirement
   InternetEntireListingDisplayYN: boolean | null;
   InternetAddressDisplayYN: boolean | null;
   ModificationTimestamp: string | null;
@@ -233,6 +235,7 @@ export async function POST(req: NextRequest) {
       // rather than corrupt the constraint with bad data.
       const mlsStatus = item.MlsStatus || "Unknown";
       const stdStatus = item.StandardStatus || null;
+      const listOfficeName = item.ListOfficeName || null;
       const txnType = item.TransactionType;
       if (txnType !== "For Sale" && txnType !== "For Lease") {
         skipped++;
@@ -265,6 +268,7 @@ export async function POST(req: NextRequest) {
             lat, lng,
             display_address, perm_advertise,
             mls_status, standard_status, transaction_type,
+            list_office_name,
             modification_timestamp, updated_at
           ) VALUES (
             ${item.ListingKey}, ${address}, ${streetName}, ${streetSlug},
@@ -277,6 +281,7 @@ export async function POST(req: NextRequest) {
             ${item.InternetAddressDisplayYN !== false},
             ${item.InternetEntireListingDisplayYN !== false},
             ${mlsStatus}, ${stdStatus}, ${txnType},
+            ${listOfficeName},
             ${modTimestamp}, NOW()
           )
           ON CONFLICT (mls_number) DO UPDATE SET
@@ -302,6 +307,7 @@ export async function POST(req: NextRequest) {
             mls_status             = EXCLUDED.mls_status,
             standard_status        = EXCLUDED.standard_status,
             transaction_type       = EXCLUDED.transaction_type,
+            list_office_name       = EXCLUDED.list_office_name,
             modification_timestamp = EXCLUDED.modification_timestamp,
             updated_at             = NOW()
           RETURNING (xmax = 0) AS inserted

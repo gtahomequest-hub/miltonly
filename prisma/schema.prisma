@@ -322,6 +322,16 @@ model User {
   lastLoginAt    DateTime?
   savedSearches  SavedSearch[]
 
+  // VOW bona-fide-interest acknowledgement (Phase 2.5 compliance).
+  // Required under PROPTX VOW Datafeed Agreement §3.2 "Consumer" definition +
+  // §6.3(k). Recorded when a signed-in user first attempts to view VOW data.
+  // All four fields are captured together so the acknowledgement is audit-provable
+  // (timestamp alone isn't enough; we need the literal text shown + IP + UA).
+  vowAcknowledgedAt           DateTime?
+  vowAcknowledgementText      String?   // @db.Text — the literal string the user saw
+  vowAcknowledgementIp        String?
+  vowAcknowledgementUserAgent String?
+
   @@index([email])
 }
 

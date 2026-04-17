@@ -39,17 +39,21 @@ export default async function StreetSoldBlock({
 }) {
   const user = await getSession();
   const authed = !!user;
+  // Individual records only fetched for users who've acknowledged the VOW
+  // bona-fide-interest terms. Aggregates/stats are always fetched (safe to
+  // surface to anon + un-acknowledged users alike).
+  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
 
   const [saleStats, leaseStats, saleRecords, leaseRecords, monthly] = await Promise.all([
     getStreetSaleStats(streetSlug).catch(() => null),
     getStreetLeaseStats(streetSlug).catch(() => null),
-    authed && view === "sales"
+    canSeeRecords && view === "sales"
       ? getStreetSoldList(streetSlug, "sale", 90, 20).catch(() => [])
       : Promise.resolve([]),
-    authed && view === "rentals"
+    canSeeRecords && view === "rentals"
       ? getStreetSoldList(streetSlug, "lease", 90, 20).catch(() => [])
       : Promise.resolve([]),
-    authed && view === "sales"
+    canSeeRecords && view === "sales"
       ? getStreetMonthlySales(streetSlug).catch(() => [])
       : Promise.resolve([]),
   ]);

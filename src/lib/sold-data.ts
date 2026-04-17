@@ -193,6 +193,8 @@ export interface SoldListItem {
   transaction_type: "For Sale" | "For Lease";
   mls_status: string;
   sqft_range: string | null;
+  /** Listing Brokerage (TREB ListOfficeName). Required per-record display (VOW 6.3(c)). */
+  list_office_name: string | null;
 }
 
 function toListItem(r: SoldRecord): SoldListItem {
@@ -213,6 +215,7 @@ function toListItem(r: SoldRecord): SoldListItem {
     transaction_type: (r.transaction_type as "For Sale" | "For Lease") ?? "For Sale",
     mls_status: r.mls_status,
     sqft_range: r.sqft_range,
+    list_office_name: r.list_office_name ?? null,
   };
 }
 

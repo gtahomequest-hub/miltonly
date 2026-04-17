@@ -55,6 +55,7 @@ export default function SoldTable({
             <th className="px-4 py-3 text-right">Ratio</th>
             <th className="px-4 py-3 text-right">DOM</th>
             <th className="px-4 py-3 text-right">Date</th>
+            <th className="px-4 py-3">Listing Brokerage</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#e2e8f0] bg-white">
@@ -74,6 +75,8 @@ export default function SoldTable({
                 </td>
                 <td className="px-4 py-3 text-right text-[#475569]">{r.days_on_market}</td>
                 <td className="px-4 py-3 text-right text-[#475569]">{formatDate(r.sold_date)}</td>
+                {/* VOW 6.3(c) — listing Brokerage must be in same font/size as other details, not visually separated */}
+                <td className="px-4 py-3 text-[#475569]">{r.list_office_name ?? "—"}</td>
               </tr>
             );
           })}

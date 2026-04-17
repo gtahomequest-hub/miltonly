@@ -46,14 +46,15 @@ export default async function StreetSoldPage({ params, searchParams }: Props) {
 
   const user = await getSession();
   const authed = !!user;
+  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
   const view = searchParams?.view === "rentals" ? "rentals" : "sales";
 
   const [saleStats, leaseStats, saleRecords, leaseRecords, monthly] = await Promise.all([
     getStreetSaleStats(params.streetSlug).catch(() => null),
     getStreetLeaseStats(params.streetSlug).catch(() => null),
-    authed ? getStreetSoldList(params.streetSlug, "sale", 90, 20).catch(() => []) : Promise.resolve([]),
-    authed ? getStreetSoldList(params.streetSlug, "lease", 90, 20).catch(() => []) : Promise.resolve([]),
-    authed ? getStreetMonthlySales(params.streetSlug).catch(() => []) : Promise.resolve([]),
+    canSeeRecords ? getStreetSoldList(params.streetSlug, "sale", 90, 20).catch(() => []) : Promise.resolve([]),
+    canSeeRecords ? getStreetSoldList(params.streetSlug, "lease", 90, 20).catch(() => []) : Promise.resolve([]),
+    canSeeRecords ? getStreetMonthlySales(params.streetSlug).catch(() => []) : Promise.resolve([]),
   ]);
 
   const saleCount = saleStats?.sold_count_90days ?? 0;

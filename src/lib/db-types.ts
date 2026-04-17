@@ -55,6 +55,8 @@ export interface SoldRecord {
   standard_status: string | null;
   /** Exactly 'For Sale' or 'For Lease'. CHECK-constrained. */
   transaction_type: TransactionType | null;
+  /** Listing Brokerage (TREB ListOfficeName). VOW 6.3(c) requires per-record display. */
+  list_office_name: string | null;
   modification_timestamp: string | null;
   created_at: string;
   updated_at: string;

@@ -156,8 +156,15 @@ export default async function VowGate({
 }: VowGateProps) {
   const user = await getSession();
 
-  // Authed path — render the full VOW children. No client-side gating anywhere.
+  // Three gate states:
+  //   1) Anon                       → aggregate teaser (existing behaviour)
+  //   2) Authed, not yet acknowledged → inline VowAcknowledgementPrompt
+  //   3) Authed + acknowledged      → render the full VOW children
   if (user) {
+    if (!user.vowAcknowledgedAt) {
+      const { default: VowAcknowledgementPrompt } = await import("./VowAcknowledgementPrompt");
+      return <VowAcknowledgementPrompt />;
+    }
     return <>{children}</>;
   }
 
