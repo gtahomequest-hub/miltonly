@@ -187,34 +187,38 @@ export async function POST(req: NextRequest) {
   let cursorKey: string = "";
   let hasKeyCursor = false;
 
+  // Primary "is sold" signal: CloseDate is populated and >= 2024-01-01. This
+  // is more reliable than string-matching MlsStatus (TREB uses values like
+  // 'Closed', 'Sold Conditional', etc. — a populated CloseDate is the
+  // definitional truth of a closed transaction regardless of the label).
+  const BASE_SOLD_FILTER = `City eq 'Milton' and CloseDate gt 2024-01-01T00:00:00Z`;
+
   while (true) {
     let filter: string;
     let orderby: string;
     if (isBackfill) {
-      // Mirror detect/route.ts's proven filter: City eq 'Milton' only.
-      // MlsStatus value in the TREB VOW feed isn't reliably 'Sold' as a
-      // server-side filter (AMPRE returns 0). We keep client-side filtering
-      // (isSold check below) which matches on `includes('sold')` so it
-      // catches 'Sold', 'Sold Conditional', 'Sld', etc.
+      // Backfill — order by CloseDate ASC. Safe now because the base filter
+      // guarantees CloseDate is populated on every returned row.
       if (!hasKeyCursor) {
-        filter = `City eq 'Milton'`;
+        filter = BASE_SOLD_FILTER;
       } else {
         filter =
-          `City eq 'Milton' ` +
-          `and (ModificationTimestamp gt ${cursorPrimary} ` +
-          `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
+          `${BASE_SOLD_FILTER} ` +
+          `and (CloseDate gt ${cursorPrimary} ` +
+          `or (CloseDate eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
       }
-      // ModificationTimestamp is always populated (unlike CloseDate on active
-      // listings) so cursor pagination works uniformly regardless of status.
-      orderby = "ModificationTimestamp asc,ListingKey asc";
+      orderby = "CloseDate asc,ListingKey asc";
     } else {
+      // Incremental — order by ModificationTimestamp to catch recently-updated
+      // rows. Combined with the base CloseDate filter so we only ever pull
+      // closed transactions.
       if (!hasKeyCursor) {
         filter = cursorPrimary
-          ? `City eq 'Milton' and ModificationTimestamp gt ${cursorPrimary}`
-          : `City eq 'Milton'`;
+          ? `${BASE_SOLD_FILTER} and ModificationTimestamp gt ${cursorPrimary}`
+          : BASE_SOLD_FILTER;
       } else {
         filter =
-          `City eq 'Milton' ` +
+          `${BASE_SOLD_FILTER} ` +
           `and (ModificationTimestamp gt ${cursorPrimary} ` +
           `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
       }
@@ -232,38 +236,18 @@ export async function POST(req: NextRequest) {
       if ((item.City || "").toLowerCase() === "deleted") { skipped++; continue; }
       if ((item.StreetName || "").toLowerCase() === "deleted") { skipped++; continue; }
 
+      // Upsert path. The BASE_SOLD_FILTER above guarantees every returned
+      // record has CloseDate > 2024-01-01, so each row is a sold transaction
+      // by definition. No MlsStatus string-matching — we store whatever value
+      // TREB provides (Closed, Sold, Sold Conditional, etc.) and let the
+      // read-side decide what to surface.
       const mlsStatus = item.MlsStatus || "Unknown";
-      const isSold = mlsStatus.toLowerCase().includes("sold");
-
-      // For backfill we only care about Sold rows; for incremental we ingest
-      // any status so flips (Sold → Active after collapse) are captured.
-      if (isBackfill && !isSold) { skipped++; continue; }
-
-      // Core fields required for a sold row. If the record isn't sold (post-flip)
-      // we still update mls_status on our existing row; we don't insert a brand
-      // new non-sold record.
       const address = buildAddress(item);
       const streetName = extractStreetName(address);
       const streetSlug = streetNameToSlug(streetName);
       const modTimestamp = item.ModificationTimestamp ?? new Date().toISOString();
 
-      if (!isSold) {
-        // Status flip update path: only touch rows we already have.
-        const existing = (await soldDb`
-          SELECT mls_number FROM sold.sold_records WHERE mls_number = ${item.ListingKey}
-        `) as Array<{ mls_number: string }>;
-        if (existing.length === 0) { skipped++; continue; }
-        await soldDb`
-          UPDATE sold.sold_records
-          SET mls_status = ${mlsStatus},
-              modification_timestamp = ${modTimestamp},
-              perm_advertise = ${item.InternetEntireListingDisplayYN !== false},
-              display_address = ${item.InternetAddressDisplayYN !== false},
-              updated_at = NOW()
-          WHERE mls_number = ${item.ListingKey}
-        `;
-        updated++;
-      } else {
+      {
         const listPrice = item.ListPrice ?? 0;
         const soldPrice = item.ClosePrice ?? 0;
         const listDate = item.ListingContractDate ?? item.OriginalEntryTimestamp ?? item.CloseDate;
@@ -326,13 +310,13 @@ export async function POST(req: NextRequest) {
         if (result[0]?.inserted) inserted++; else updated++;
       }
 
-      // Advance cursor based on the record we just processed.
-      // Both backfill and incremental now paginate on ModificationTimestamp —
-      // CloseDate is null for active listings so it can't drive pagination
-      // after we dropped the MlsStatus filter.
+      // Advance cursor based on the record we just processed. Backfill
+      // paginates on CloseDate (always populated due to the base filter);
+      // incremental paginates on ModificationTimestamp to catch recent updates.
       cursorKey = item.ListingKey;
       hasKeyCursor = true;
-      if (item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
+      if (isBackfill && item.CloseDate) cursorPrimary = item.CloseDate;
+      else if (!isBackfill && item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
     }
 
     if (items.length < PAGE_SIZE) break; // last page

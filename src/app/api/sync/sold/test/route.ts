@@ -31,12 +31,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Diagnostic call — City eq 'Milton' filter (matching detect's proven
-  // pattern), $top=5. Returns five actual Milton records so we can see the
-  // exact MlsStatus string values TREB uses for sold vs active (e.g. 'Sold',
-  // 'Closed', 'Sold Conditional', 'Draft') before we add a server-side
-  // MlsStatus filter back to the sync route.
-  const filter = encodeURIComponent("City eq 'Milton'");
+  // Diagnostic call — filter for Milton records with a populated CloseDate.
+  // A populated CloseDate is the definitive indicator of a sold/closed
+  // transaction regardless of what MlsStatus string TREB uses. Returns 5
+  // records so we can see the exact MlsStatus values those sold records
+  // carry (TREB reportedly uses 'Closed' rather than 'Sold').
+  const filter = encodeURIComponent(
+    "City eq 'Milton' and CloseDate gt 2024-01-01T00:00:00Z"
+  );
   const url = `${TREB_API_URL}?$select=ListingKey,City,CityRegion,StateOrProvince,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$filter=${filter}&$top=5`;
 
   // Token diagnostics — never log the token, just safe metadata.
