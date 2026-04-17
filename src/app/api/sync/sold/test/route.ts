@@ -86,17 +86,30 @@ export async function GET(req: NextRequest) {
     responseHeaders[key] = value;
   });
 
-  return NextResponse.json(
-    {
-      stage: "response-received",
-      token: tokenDiag,
-      url: urlDiag,
-      httpStatus: response.status,
-      httpStatusText: response.statusText,
-      responseHeaders,
-      responseBody: bodyText.slice(0, 4000),
-      responseBodyLength: bodyText.length,
-    },
-    { status: response.ok ? 200 : 502 }
-  );
+  // Try to surface AMPRE's error message at the top level for quick reading
+  // without having to pull it out of the raw JSON body manually.
+  let amprerror: string | null = null;
+  try {
+    const parsed = JSON.parse(bodyText);
+    amprerror = parsed?.error?.message ?? parsed?.message ?? null;
+  } catch {
+    // Not JSON — leave null.
+  }
+
+  // Diagnostic endpoint always returns HTTP 200. Success/failure of the
+  // upstream AMPRE call is conveyed by `ok` and `httpStatus` in the body.
+  // Returning 5xx here makes the endpoint look like it crashed when it
+  // actually worked correctly (it just got a 4xx back from AMPRE).
+  return NextResponse.json({
+    ok: response.ok,
+    stage: "response-received",
+    token: tokenDiag,
+    url: urlDiag,
+    httpStatus: response.status,
+    httpStatusText: response.statusText,
+    amprerror,
+    responseHeaders,
+    responseBody: bodyText.slice(0, 4000),
+    responseBodyLength: bodyText.length,
+  });
 }
