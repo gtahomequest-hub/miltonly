@@ -19,7 +19,8 @@
 // no-ops once the table is fully populated.
 //
 // Usage:
-//   node scripts/backfill-list-office-name.mjs --dry-run   # plan only
+//   node scripts/backfill-list-office-name.mjs --log-url   # build+print batch 1 URL, no calls
+//   node scripts/backfill-list-office-name.mjs --dry-run   # plan only, no writes
 //   node scripts/backfill-list-office-name.mjs             # write
 //
 // Reads SOLD_DATABASE_URL and VOW_TOKEN from .env.local (per DO-NOT-REPEAT.md:
@@ -73,12 +74,18 @@ const TREB_API_URL = (
 ).trim();
 const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 
-// URL-length-safe batch size. 100 × ~10-char ListingKey + quoting/encoding
-// stays well under typical 8KB URL ceilings. AMPRE has been observed to
-// accept `ListingKey in (...)` at this size without issue.
-const BATCH_SIZE = 100;
+// URL-length-safe batch size. AMPRE is on OData v4.0 which does not support
+// the `in` operator (v4.01 feature), so the filter is built as an `or`-chain
+// of `ListingKey eq 'X'` clauses — same primitive form the sync route uses
+// successfully (src/app/api/sync/sold/route.ts:216). Each term is ~33 chars
+// before URL-encoding, so 50 terms ≈ 1.7 KB of raw filter + ~2x URL-encoded
+// overhead on quotes and spaces = well under 8 KB URL ceiling.
+const BATCH_SIZE = 50;
 
 const DRY_RUN = process.argv.includes("--dry-run");
+// --log-url: build and print the URL for batch 1 without hitting AMPRE.
+// Used to visually verify the constructed filter after a syntax failure.
+const LOG_URL_ONLY = process.argv.includes("--log-url");
 
 function assertEnv() {
   const missing = [];
@@ -98,14 +105,23 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Fetch ListOfficeName for a batch of ListingKeys. Returns Map<key, name>. */
-async function fetchOfficeNamesForBatch(keys) {
-  const quoted = keys.map((k) => `'${k.replace(/'/g, "''")}'`).join(",");
-  const filter = `ListingKey in (${quoted})`;
-  const url =
+/** Build the AMPRE URL for a batch of ListingKeys. Exposed for --log-url. */
+function buildBatchUrl(keys) {
+  // OR-chain of `ListingKey eq 'X'` — AMPRE/OData v4.0 compatible. Single-
+  // quotes inside a key are escaped per OData spec (double them).
+  const filter = keys
+    .map((k) => `ListingKey eq '${k.replace(/'/g, "''")}'`)
+    .join(" or ");
+  return (
     `${TREB_API_URL}?$select=ListingKey,ListOfficeName` +
     `&$filter=${encodeURIComponent(filter)}` +
-    `&$top=${keys.length}`;
+    `&$top=${keys.length}`
+  );
+}
+
+/** Fetch ListOfficeName for a batch of ListingKeys. Returns Map<key, name>. */
+async function fetchOfficeNamesForBatch(keys) {
+  const url = buildBatchUrl(keys);
 
   let attempt = 0;
   while (true) {
@@ -144,7 +160,8 @@ async function main() {
   const sql = neon(SOLD_DATABASE_URL);
   const started = Date.now();
 
-  console.log(`[backfill] mode: ${DRY_RUN ? "DRY-RUN" : "WRITE"}`);
+  const mode = LOG_URL_ONLY ? "LOG-URL" : DRY_RUN ? "DRY-RUN" : "WRITE";
+  console.log(`[backfill] mode: ${mode}`);
   console.log(`[backfill] batch size: ${BATCH_SIZE}`);
 
   // Preflight: what's the current state?
@@ -176,6 +193,20 @@ async function main() {
     `[backfill] ${mlsNumbers.length} rows to process in ${batchCount} batches`
   );
 
+  // --log-url: print the URL we WOULD send for batch 1, then exit without
+  // calling AMPRE or touching DB. Use this to verify OData filter syntax
+  // after an AMPRE rejection.
+  if (LOG_URL_ONLY) {
+    const firstBatch = mlsNumbers.slice(0, BATCH_SIZE);
+    const url = buildBatchUrl(firstBatch);
+    console.log(`[backfill] LOG-URL: batch 1 contains ${firstBatch.length} keys`);
+    console.log(`[backfill] LOG-URL: first 5 keys: ${firstBatch.slice(0, 5).join(", ")}`);
+    console.log(`[backfill] LOG-URL: url length: ${url.length} chars`);
+    console.log(`[backfill] LOG-URL: url:`);
+    console.log(url);
+    return;
+  }
+
   if (DRY_RUN) {
     console.log(
       `[backfill] DRY-RUN: would fetch ${mlsNumbers.length} ListingKeys from AMPRE ` +
@@ -184,6 +215,15 @@ async function main() {
           .join(", ")}. Exiting without writes.`
     );
     return;
+  }
+
+  // On real runs, log the batch-1 URL once up front — cheap visibility for
+  // diagnosing AMPRE filter rejections without re-running in --log-url mode.
+  {
+    const firstBatch = mlsNumbers.slice(0, BATCH_SIZE);
+    const url = buildBatchUrl(firstBatch);
+    console.log(`[backfill] batch 1 url (length ${url.length}):`);
+    console.log(url);
   }
 
   let totalUpdated = 0;
