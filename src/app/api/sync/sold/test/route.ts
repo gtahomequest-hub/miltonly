@@ -36,9 +36,11 @@ export async function GET(req: NextRequest) {
   // transaction regardless of what MlsStatus string TREB uses. Returns 5
   // records so we can see the exact MlsStatus values those sold records
   // carry (TREB reportedly uses 'Closed' rather than 'Sold').
-  // CloseDate is Edm.Date in AMPRE — date-only literal, no time component.
+  // AMPRE rejects CloseDate in $filter ("Field not allowed in filter: CloseDate")
+  // even though it can appear in $select. Filter on MlsStatus eq 'Sold' per
+  // the VOW integration brief. CloseDate still shows up in $select for inspection.
   const filter = encodeURIComponent(
-    "City eq 'Milton' and CloseDate gt 2024-01-01"
+    "City eq 'Milton' and MlsStatus eq 'Sold'"
   );
   const url = `${TREB_API_URL}?$select=ListingKey,City,CityRegion,StateOrProvince,MlsStatus,TransactionType,CloseDate,ClosePrice,ModificationTimestamp&$filter=${filter}&$top=5`;
 

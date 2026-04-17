@@ -187,46 +187,29 @@ export async function POST(req: NextRequest) {
   let cursorKey: string = "";
   let hasKeyCursor = false;
 
-  // Primary "is sold" signal: CloseDate is populated and >= 2024-01-01. This
-  // is more reliable than string-matching MlsStatus (TREB uses values like
-  // 'Closed', 'Sold Conditional', etc. — a populated CloseDate is the
-  // definitional truth of a closed transaction regardless of the label).
-  // CloseDate is Edm.Date in AMPRE (date-only, no time). Filter literals
-  // must match that type — '2024-01-01T00:00:00Z' triggers AMPRE's
-  // "Edm.Date and Edm.DateTimeOffset not compatible" error.
-  const BASE_SOLD_FILTER = `City eq 'Milton' and CloseDate gt 2024-01-01`;
+  // AMPRE rejects CloseDate in $filter ("Field not allowed in filter: CloseDate")
+  // even though CloseDate can appear in $select. Use MlsStatus eq 'Sold' per
+  // the VOW integration brief — earlier attempts that returned 0 records were
+  // side-effects of trailing-whitespace corruption on TREB_API_URL (now trimmed).
+  const BASE_SOLD_FILTER = `City eq 'Milton' and MlsStatus eq 'Sold'`;
 
   while (true) {
+    // Both backfill and incremental paginate on ModificationTimestamp — it's
+    // the only date field AMPRE allows in $filter for this endpoint.
+    // ModificationTimestamp is Edm.DateTimeOffset so full ISO datetime
+    // literals are accepted.
     let filter: string;
-    let orderby: string;
-    if (isBackfill) {
-      // Backfill — order by CloseDate ASC. Safe now because the base filter
-      // guarantees CloseDate is populated on every returned row.
-      if (!hasKeyCursor) {
-        filter = BASE_SOLD_FILTER;
-      } else {
-        filter =
-          `${BASE_SOLD_FILTER} ` +
-          `and (CloseDate gt ${cursorPrimary} ` +
-          `or (CloseDate eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
-      }
-      orderby = "CloseDate asc,ListingKey asc";
+    if (!hasKeyCursor) {
+      filter = cursorPrimary
+        ? `${BASE_SOLD_FILTER} and ModificationTimestamp gt ${cursorPrimary}`
+        : BASE_SOLD_FILTER;
     } else {
-      // Incremental — order by ModificationTimestamp to catch recently-updated
-      // rows. Combined with the base CloseDate filter so we only ever pull
-      // closed transactions.
-      if (!hasKeyCursor) {
-        filter = cursorPrimary
-          ? `${BASE_SOLD_FILTER} and ModificationTimestamp gt ${cursorPrimary}`
-          : BASE_SOLD_FILTER;
-      } else {
-        filter =
-          `${BASE_SOLD_FILTER} ` +
-          `and (ModificationTimestamp gt ${cursorPrimary} ` +
-          `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
-      }
-      orderby = "ModificationTimestamp asc,ListingKey asc";
+      filter =
+        `${BASE_SOLD_FILTER} ` +
+        `and (ModificationTimestamp gt ${cursorPrimary} ` +
+        `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
     }
+    const orderby = "ModificationTimestamp asc,ListingKey asc";
 
     const items = await fetchPage(filter, orderby);
     pagesFetched++;
@@ -313,15 +296,14 @@ export async function POST(req: NextRequest) {
         if (result[0]?.inserted) inserted++; else updated++;
       }
 
-      // Advance cursor based on the record we just processed. Backfill
-      // paginates on CloseDate (always populated due to the base filter);
-      // incremental paginates on ModificationTimestamp to catch recent updates.
-      // CloseDate is Edm.Date — strip any time component AMPRE might return so
-      // the next page filter stays a valid Edm.Date literal.
+      // Advance cursor on ModificationTimestamp for both backfill and incremental.
+      // CloseDate cannot be used in $filter per AMPRE, so it can't drive
+      // cursor pagination. Defensive: keep a date-slice pattern available for
+      // CloseDate-bound Edm.Date values that might be normalized in future
+      // (if AMPRE ever ships a date-only cursor field for VOW).
       cursorKey = item.ListingKey;
       hasKeyCursor = true;
-      if (isBackfill && item.CloseDate) cursorPrimary = item.CloseDate.slice(0, 10);
-      else if (!isBackfill && item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
+      if (item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
     }
 
     if (items.length < PAGE_SIZE) break; // last page
