@@ -85,13 +85,18 @@ const TREB_API_URL = (
 ).trim();
 const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 
-// URL-length-safe batch size. AMPRE is on OData v4.0 which does not support
-// the `in` operator (v4.01 feature), so the filter is built as an `or`-chain
-// of `ListingKey eq 'X'` clauses — same primitive form the sync route uses
-// successfully (src/app/api/sync/sold/route.ts:216). Each term is ~33 chars
-// before URL-encoding, so 50 terms ≈ 1.7 KB of raw filter + ~2x URL-encoded
-// overhead on quotes and spaces = well under 8 KB URL ceiling.
-const BATCH_SIZE = 50;
+// Batch size tuned to AMPRE's Elasticsearch backend, not to URL length.
+// OData `or` chains are translated to ES `bool` queries with `must`/`should`
+// clauses. At 50 terms AMPRE rejected 140/141 batches with
+// `[bool] failed to parse field [must]` (ES max_clause_count). Dropped to 10
+// as a safe floor — if this still fails, drop to 5 then 1 (single-clause
+// filters are guaranteed to work since sync/sold/route.ts uses them).
+const BATCH_SIZE = 10;
+
+// Delay between batches. Sequential pacing to avoid tripping AMPRE's rate
+// limiter (429/503 have their own retry-with-backoff, but a pre-emptive
+// pause is cheaper than eating the backoff penalty).
+const INTER_BATCH_DELAY_MS = 500;
 
 const DRY_RUN = process.argv.includes("--dry-run");
 // --log-url: build and print the URL for batch 1 without hitting AMPRE.
@@ -175,8 +180,10 @@ async function fetchOfficeNamesForBatch(keys) {
       continue;
     }
     const body = await res.text().catch(() => "");
+    // Include the full failing URL so the batch can be reproduced manually
+    // (curl, browser, or Postman) without re-running the whole script.
     throw new Error(
-      `AMPRE error: ${res.status} ${res.statusText} — body=${body.slice(0, 500)}`
+      `AMPRE error: ${res.status} ${res.statusText} — body=${body.slice(0, 500)} — url=${url}`
     );
   }
 }
@@ -336,8 +343,16 @@ async function main() {
       FROM sold.sold_records
     `;
     console.log(
-      `[backfill] ${label}: updated ${batchUpdated} rows, ${progress.still_null} still null`
+      `[backfill] ${label} succeeded: updated ${batchUpdated} rows ` +
+        `(${updates.length} attempted, ${batch.length - updates.length} skipped); ` +
+        `${progress.still_null} still null overall`
     );
+
+    // Pre-emptive pacing to stay clear of AMPRE rate limits. Skip on the
+    // last batch — nothing to pace for.
+    if (i < batchCount - 1) {
+      await sleep(INTER_BATCH_DELAY_MS);
+    }
   }
 
   // --- final verification ---------------------------------------------------
