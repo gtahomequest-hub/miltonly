@@ -56,11 +56,22 @@ function loadEnvLocal() {
     if (eq === -1) continue;
     const key = trimmed.slice(0, eq).trim();
     let val = trimmed.slice(eq + 1).trim();
-    if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
+    const isDoubleQuoted = val.startsWith('"') && val.endsWith('"');
+    const isSingleQuoted = val.startsWith("'") && val.endsWith("'");
+    if (isDoubleQuoted || isSingleQuoted) {
       val = val.slice(1, -1);
+    }
+    // Double-quoted values interpret escape sequences (dotenv convention).
+    // This repo's .env.local has been observed with literal "\n" inside
+    // double-quoted URLs — without this pass, the 2-char sequence survives
+    // into process.env and corrupts fetch() when Node later normalizes it.
+    if (isDoubleQuoted) {
+      val = val
+        .replace(/\\n/g, "\n")
+        .replace(/\\r/g, "\r")
+        .replace(/\\t/g, "\t")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
     }
     if (process.env[key] === undefined) process.env[key] = val;
   }
@@ -95,6 +106,22 @@ function assertEnv() {
     console.error(
       `[backfill] missing required env: ${missing.join(", ")}. ` +
         `Set them in .env.local and re-run.`
+    );
+    process.exit(1);
+  }
+  // Defensive: fail loudly if any critical env survived .trim() with embedded
+  // whitespace. This catches corrupted values (literal "\n" in quoted strings,
+  // embedded spaces, etc.) before they reach AMPRE as malformed URLs or
+  // Authorization headers.
+  const corrupted = [];
+  if (/\s/.test(TREB_API_URL)) corrupted.push(`TREB_API_URL (codes: ${Array.from(TREB_API_URL).map(c=>c.charCodeAt(0)).filter(c=>c<33||c===127).join(",")})`);
+  if (/\s/.test(VOW_TOKEN)) corrupted.push("VOW_TOKEN");
+  if (/\s/.test(SOLD_DATABASE_URL)) corrupted.push("SOLD_DATABASE_URL");
+  if (corrupted.length > 0) {
+    console.error(
+      `[backfill] env contains whitespace after trim: ${corrupted.join(", ")}. ` +
+        `Check .env.local for literal \\n, \\r, \\t inside quoted values or ` +
+        `stray whitespace. Fix the file and re-run.`
     );
     process.exit(1);
   }
