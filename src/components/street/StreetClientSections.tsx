@@ -121,7 +121,7 @@ export default function StreetClientSections({ data, description, faqs }: Props)
                 Get notified when a home lists on {data.streetName}
               </p>
               <p className="text-[12px] text-[#94a3b8]">
-                New listings, price changes, and sold prices — straight to your inbox. Free, no spam.
+                New listings and price changes in Milton — straight to your inbox. Register for full MLS sold-data access.
               </p>
             </div>
             {alertSubmitted ? (
@@ -169,7 +169,7 @@ export default function StreetClientSections({ data, description, faqs }: Props)
                   `Based on ${data.activeCount} active and ${data.totalSold12mo} sold listings on ${data.streetName}`,
                   `Active listings here are priced ${formatPriceFull(data.avgListPrice)} on average`,
                   data.avgDOM ? `Average ${data.avgDOM} days on market` : "Active seller market",
-                  "Exact sold prices available to registered users",
+                  "Full historical market data available to registered users",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[13px] text-[#92400e]">
                     <span className="w-1.5 h-1.5 bg-[#07111f] rounded-full mt-1.5 shrink-0" />
