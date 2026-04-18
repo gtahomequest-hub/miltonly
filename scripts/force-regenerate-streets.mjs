@@ -72,7 +72,10 @@ loadEnvLocal();
 
 // --- config ------------------------------------------------------------------
 const CRON_SECRET = (process.env.CRON_SECRET || "").trim();
-const BASE_URL_DEFAULT = (process.env.MILTONLY_URL || "https://miltonly.com").trim();
+// Canonical host. `miltonly.com` issues a 307 to `www.miltonly.com`, and
+// fetch strips the Authorization header on cross-origin redirects, which
+// produced 401s on every call. Target the canonical host directly.
+const BASE_URL_DEFAULT = (process.env.MILTONLY_URL || "https://www.miltonly.com").trim();
 const INTER_CALL_DELAY_MS = 2000;
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // match endpoint maxDuration
 
@@ -157,8 +160,18 @@ function sleep(ms) {
 // The endpoint reads body.slug (see src/app/api/admin/force-regenerate/
 // route.ts:39). Do NOT rename this key to streetSlug — the endpoint will
 // return 400 "Missing required field: slug (string)".
+//
+// Auth: both ?secret= query param AND Authorization: Bearer header are
+// included. The endpoint accepts either. Query param is the primary auth
+// because fetch strips Authorization on cross-origin redirects (observed
+// on miltonly.com → www.miltonly.com 307), and ?secret= survives any
+// redirect since it's part of the URL itself. The Bearer header is
+// retained as a secondary so an overridden MILTONLY_URL that lands on a
+// canonical origin without a redirect still authenticates cleanly.
 async function regenerateOne(baseUrl, slug) {
-  const url = `${baseUrl.replace(/\/$/, "")}/api/admin/force-regenerate`;
+  const url =
+    `${baseUrl.replace(/\/$/, "")}/api/admin/force-regenerate` +
+    `?secret=${encodeURIComponent(CRON_SECRET)}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
