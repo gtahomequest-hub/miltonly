@@ -69,7 +69,11 @@ export async function makeStreetDecision(
 
   const currentHash = calcMarketDataHash(stats);
 
-  if (currentHash === existing.marketDataHash) return "skip_current";
+  // IMPORTANT: guard against null === null matching. A null stored hash means
+  // "never generated" or "manually invalidated" — in both cases we must NOT skip.
+  if (existing.marketDataHash !== null && currentHash === existing.marketDataHash) {
+    return "skip_current";
+  }
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   if (existing.generatedAt < thirtyDaysAgo) return "regenerate";
