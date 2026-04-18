@@ -153,11 +153,16 @@ function sleep(ms) {
 }
 
 // --- single-slug request -----------------------------------------------------
+// Contract: POST /api/admin/force-regenerate with body { "slug": "..." }.
+// The endpoint reads body.slug (see src/app/api/admin/force-regenerate/
+// route.ts:39). Do NOT rename this key to streetSlug — the endpoint will
+// return 400 "Missing required field: slug (string)".
 async function regenerateOne(baseUrl, slug) {
   const url = `${baseUrl.replace(/\/$/, "")}/api/admin/force-regenerate`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
+  const requestBody = { slug };
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -165,11 +170,20 @@ async function regenerateOne(baseUrl, slug) {
         Authorization: `Bearer ${CRON_SECRET}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ slug }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
-    const json = await res.json().catch(() => ({}));
-    return { status: res.status, json };
+    // Read the raw body text first so we never lose server diagnostics to
+    // a JSON.parse failure. Then attempt to parse. Errors in parsing should
+    // surface the raw body (truncated) rather than a useless "Unauthorized".
+    const rawBody = await res.text();
+    let json = null;
+    try {
+      json = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      // leave json null — caller will log rawBody
+    }
+    return { status: res.status, statusText: res.statusText, rawBody, json };
   } finally {
     clearTimeout(timer);
   }
@@ -204,7 +218,10 @@ async function main() {
 
     let outcome;
     try {
-      const { status, json } = await regenerateOne(args.baseUrl, slug);
+      const { status, statusText, rawBody, json } = await regenerateOne(
+        args.baseUrl,
+        slug
+      );
       const ms = Date.now() - t0;
       if (status === 200 && json?.ok) {
         console.log(
@@ -213,14 +230,27 @@ async function main() {
         );
         outcome = { slug, ok: true, attempts: json.attempts, passed: json.passed, ms };
       } else {
-        const err = json?.error || `HTTP ${status}`;
-        console.log(`failed (${ms}ms, ${err})`);
-        outcome = { slug, ok: false, error: err, ms };
+        // Show the raw HTTP status, statusText, and up to 500 chars of body.
+        // Previously this derived a single `err` string from json?.error and
+        // lost signal — a 400 "Missing required field: slug" would look
+        // identical to a 401 "Unauthorized" after collapsing.
+        const bodyPreview = (rawBody || "").trim().slice(0, 500);
+        console.log(
+          `failed (${ms}ms) — HTTP ${status} ${statusText} — body: ${bodyPreview || "<empty>"}`
+        );
+        outcome = {
+          slug,
+          ok: false,
+          status,
+          statusText,
+          body: bodyPreview,
+          ms,
+        };
       }
     } catch (e) {
       const ms = Date.now() - t0;
       const err = e instanceof Error ? e.message : String(e);
-      console.log(`failed (${ms}ms, ${err})`);
+      console.log(`failed (${ms}ms) — fetch threw: ${err}`);
       outcome = { slug, ok: false, error: err, ms };
     }
     results.push(outcome);
@@ -239,8 +269,16 @@ async function main() {
   console.log(`[force-regen] failed:    ${failCount}`);
   if (failCount > 0) {
     console.log(`[force-regen] failed slugs:`);
-    for (const r of results.filter((r) => !r.ok)) {
-      console.log(`[force-regen]   ${r.slug}: ${r.error}`);
+    for (const r of results.filter((x) => !x.ok)) {
+      // HTTP-level failures carry status/statusText/body; fetch-thrown errors
+      // (network, abort, DNS) carry error. Log whichever shape applies.
+      if (r.status !== undefined) {
+        console.log(
+          `[force-regen]   ${r.slug}: HTTP ${r.status} ${r.statusText} — ${r.body || "<empty body>"}`
+        );
+      } else {
+        console.log(`[force-regen]   ${r.slug}: ${r.error}`);
+      }
     }
   }
 
