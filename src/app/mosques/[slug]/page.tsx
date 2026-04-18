@@ -135,7 +135,7 @@ export default async function MosqueDetailPage({ params }: Props) {
     },
     {
       question: `What is the average home price near ${mosque.name}?`,
-      answer: `The average asking price for homes near ${mosque.name} in ${mosque.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Exact sold prices are available to registered users via the TREB MLS® sold-data sections on street pages.`,
+      answer: `The average asking price for homes near ${mosque.name} in ${mosque.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Register for full MLS® access to see detailed market data, including historical transaction records on individual street pages.`,
     },
     {
       question: `Is ${mosque.neighbourhood} a good area for Muslim families in Milton?`,

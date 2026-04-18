@@ -194,7 +194,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
     },
     {
       question: `How fast do homes sell in ${data.name} Milton?`,
-      answer: `Active listings in ${data.name}, Milton average ${data.avgDOM || "—"} days on market. Sold-to-ask ratios and individual sold prices are available to registered users via the TREB MLS® sold-data section on this page.`,
+      answer: `Active listings in ${data.name}, Milton average ${data.avgDOM || "—"} days on market. Register for full MLS® access to see detailed market data, including historical transaction records for this neighbourhood.`,
     },
   ];
 

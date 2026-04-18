@@ -138,7 +138,7 @@ export default async function SchoolDetailPage({ params }: Props) {
     },
     {
       question: `What is the average home price near ${school.name}?`,
-      answer: `The average asking price for homes near ${school.name} in ${school.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Exact sold prices are available to registered users via the TREB MLS® sold-data sections on street pages.`,
+      answer: `The average asking price for homes near ${school.name} in ${school.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Register for full MLS® access to see detailed market data, including historical transaction records on individual street pages.`,
     },
     {
       question: `Is ${school.neighbourhood} a good area for families in Milton?`,

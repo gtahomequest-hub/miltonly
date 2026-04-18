@@ -1,3 +1,13 @@
+// TODO(tier-2-refactor): This file is a parallel implementation to
+// src/lib/generateStreet.ts. Both produce StreetContent but with different
+// signatures, different validator thresholds, and different prompt templates.
+// The metaTitle column can flip between the two templates depending on which
+// path last wrote. Consolidate into one generate path — either by having the
+// render-time fallback call generateStreetContent from generateStreet.ts, or
+// by deleting this file and handling the first-visit case in the page
+// component directly. Until consolidated, any Phase N.X compliance change
+// must be applied to BOTH files in sync.
+
 import { prisma } from "@/lib/prisma";
 import { generateStreetDescription as aiGenerate, type SafeStreetStats } from "@/lib/ai/compliance";
 
@@ -99,7 +109,7 @@ STRICT RULES:
 1. Never use: nestled, charming, vibrant, picturesque, bustling, sought-after, stunning, boasts, tranquil, serene, oasis, turnkey, in the heart of, a stone's throw, meticulously, truly special, ideal for families, conveniently located
 2. Every sentence must be under 25 words
 3. No passive voice
-4. Include the actual sold price and days on market naturally in the text
+4. Include the actual list price and days on market naturally in the text
 5. Reference at least one real Milton school by name
 6. Reference the GO train or Highway 401 specifically
 7. Do not start with the street name
@@ -179,7 +189,7 @@ export async function getOrGenerateStreetContent(
       streetName: data.streetName,
       description: result.text,
       needsReview: !result.passed,
-      metaTitle: `${data.streetName} Milton — Homes For Sale, Sold Prices & Street Intelligence | Miltonly.com`,
+      metaTitle: `${data.streetName} Milton — Homes For Sale & Street Intelligence | Miltonly.com`,
       metaDescription: `See what homes are selling for on ${data.streetName} in Milton Ontario. ${data.activeCount} active listings, avg price $${data.avgListPrice.toLocaleString()}. Updated daily.`,
     },
     update: {
