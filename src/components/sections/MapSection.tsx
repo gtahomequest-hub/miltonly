@@ -10,7 +10,7 @@ export default function MapSection() {
             Explore Milton on the Map
           </h2>
           <p className="text-neutral-500 mt-3 max-w-xl mx-auto">
-            Live listing pins, GO train walk times, school zones, and sold price
+            Live listing pins, GO train walk times, school zones, and market data
             heat maps. All in one interactive view.
           </p>
         </div>

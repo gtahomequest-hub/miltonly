@@ -245,7 +245,7 @@ export default async function SeoLinkGrid() {
           {[
             { label: "Milton homes for sale", href: "/listings" },
             { label: "Milton homes for rent", href: "/listings?status=rent" },
-            { label: "Milton sold prices", href: "/listings?status=sold" },
+            { label: "Milton market data", href: "/listings?status=sold" },
             { label: "Milton street prices", href: "/streets" },
             { label: "Milton neighbourhood comparison", href: "/compare" },
             { label: "Milton rentals", href: "/rentals" },

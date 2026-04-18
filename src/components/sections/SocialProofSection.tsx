@@ -3,7 +3,7 @@ export default function SocialProofSection() {
     {
       name: "Sarah & James T.",
       location: "Willmott",
-      quote: "We found our dream home in Willmott thanks to the street data. Knowing the sold prices on the exact street gave us confidence to make our offer.",
+      quote: "We found our dream home in Willmott thanks to the street data. Having real market insight on the exact street gave us confidence to make our offer.",
     },
     {
       name: "Michael R.",

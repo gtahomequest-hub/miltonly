@@ -210,7 +210,7 @@ export default function IntelligenceCentre() {
           {activeTab === "street" && (
             <>
               <p className="text-[13px] text-[#94a3b8] mb-4">
-                Search any Milton street for sold prices, trends, and market data.
+                Search any Milton street for active listings, trends, and detailed market data. Registered users see full historical transaction records.
               </p>
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">

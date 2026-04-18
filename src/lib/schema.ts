@@ -186,7 +186,7 @@ export function generateNeighbourhoodSchema(neighbourhood: {
     name: `${neighbourhood.name}, Milton Ontario`,
     description:
       neighbourhood.description ??
-      `Explore homes for sale, sold prices, schools, and market data in ${neighbourhood.name}, Milton Ontario.`,
+      `Explore homes for sale, schools, and detailed market data in ${neighbourhood.name}, Milton Ontario.`,
     url: `${SITE_URL}/neighbourhoods/${neighbourhood.slug}`,
     address: {
       "@type": "PostalAddress",
