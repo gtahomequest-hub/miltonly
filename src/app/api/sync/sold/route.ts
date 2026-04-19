@@ -1,150 +1,36 @@
-// VOW sold records sync — TREB AMP OData → sold.sold_records.
+// VOW sold records sync — TREB AMPRE OData → sold.sold_records + sold.media + sold.rooms.
 //
-// DATA FLOW: TREB VOW feed → DB2 (sold schema). Never touches DB1.
+// All heavy lifting lives in src/lib/vow-sync.ts. This file is a thin route
+// wrapper that handles auth, env, and returns the sync result as JSON.
 //
-// Architecture decisions (Phase 1, locked):
-//   Point 1 — NEVER delete from sold.sold_records. VOW 90-day rule is enforced
-//             on the read path, not here.
-//   Point 3 — (Unified with Point A) ingest ALL records regardless of
-//             PermAdvertise. Flags stored on the row. Display filter handles
-//             compliance, and flips (true→false) are captured on next sync.
-//   Point 5 — NO triggerStatsCompute() call. The 11:30 UTC cron runs stats
-//             compute independently.
-//   Point 7 — Authorization header only (Vercel cron injects it automatically
-//             from the CRON_SECRET env var).
-//   Point B — On first run (empty table), backfill all available Milton history
-//             via CloseDate cursor. Subsequent runs are incremental by
-//             ModificationTimestamp cursor with no CloseDate lower bound.
-//   Point C — Sync records regardless of MlsStatus; store current status so
-//             flips (Sold → Active after deal collapse) are honored on read.
+// Architecture & compliance notes (see src/lib/vow-sync.ts for the mapping):
+//   - NEVER delete from sold.sold_records. VOW 90-day rule on read path.
+//   - Ingest ALL records regardless of PermAdvertise. Flags stored.
+//   - $expand not supported on /Property by AMPRE — sibling /Media and
+//     /PropertyRooms fetches run per-page in batches of 20.
+//   - /Member endpoint is 403 under VOW #1848370 — no agent-name lookup.
 //
 // Auth: Authorization: Bearer <CRON_SECRET>.
+// Local test hook: `?limit=N` query param caps total upserts.
 
 import { NextRequest, NextResponse } from "next/server";
 import { soldDb } from "@/lib/db";
-import { extractStreetName, streetNameToSlug } from "@/lib/streetUtils";
+import { runSoldSync, type AmpConfig, type SqlExecutor } from "@/lib/vow-sync";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-// Trim env vars — Vercel-stored values have trailing whitespace/newline
-// that corrupts the URL query string or the Authorization header.
-//
-// This route uses VOW_TOKEN (VOW agreement #1848370) — IDX-scoped
-// TREB_API_TOKEN cannot see sold/closed records. detect/route.ts keeps
-// the IDX token for active listings; only sold data requires VOW scope.
 const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property").trim();
 const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
-const PAGE_SIZE = 500;
 
-// Fields we need for a sold record. Includes ModificationTimestamp (cursor),
-// PermAdvertise flags (compliance), and status fields (mutation tracking).
-const SELECT_FIELDS = [
-  "ListingKey",
-  "UnparsedAddress", "StreetNumber", "StreetName", "StreetSuffix",
-  "City", "CityRegion",
-  "ListPrice", "ClosePrice",
-  "CloseDate", "ListingContractDate", "OriginalEntryTimestamp",
-  "BedroomsTotal", "BathroomsTotalInteger",
-  "PropertyType", "PropertySubType",
-  "LivingAreaRange",
-  "Latitude", "Longitude",
-  "MlsStatus", "StandardStatus", "TransactionType",
-  "ListOfficeName",
-  "InternetEntireListingDisplayYN",
-  "InternetAddressDisplayYN",
-  "ModificationTimestamp",
-].join(",");
-
-interface AmpSoldRecord {
-  ListingKey: string;
-  UnparsedAddress: string | null;
-  StreetNumber: string | null;
-  StreetName: string | null;
-  StreetSuffix: string | null;
-  City: string | null;
-  CityRegion: string | null;
-  ListPrice: number | null;
-  ClosePrice: number | null;
-  CloseDate: string | null;
-  ListingContractDate: string | null;
-  OriginalEntryTimestamp: string | null;
-  BedroomsTotal: number | null;
-  BathroomsTotalInteger: number | null;
-  PropertyType: string | null;
-  PropertySubType: string | null;
-  LivingAreaRange: string | null;
-  Latitude: number | null;
-  Longitude: number | null;
-  MlsStatus: string | null;          // 'Sold' | 'Leased'
-  StandardStatus: string | null;     // RESO-normalized, typically 'Closed'
-  TransactionType: string | null;    // 'For Sale' | 'For Lease'
-  ListOfficeName: string | null;     // listing Brokerage — VOW 6.3(c) display requirement
-  InternetEntireListingDisplayYN: boolean | null;
-  InternetAddressDisplayYN: boolean | null;
-  ModificationTimestamp: string | null;
-}
-
-function mapPropertyType(type: string | null, subType: string | null): string {
-  const sub = (subType || "").toLowerCase();
-  if (sub.includes("detach") && !sub.includes("semi")) return "detached";
-  if (sub.includes("semi")) return "semi";
-  if (sub.includes("town") || sub.includes("row")) return "townhouse";
-  if (sub.includes("condo") || sub.includes("apart") || sub.includes("strata")) return "condo";
-  const t = (type || "").toLowerCase();
-  if (t.includes("condo")) return "condo";
-  if (t.includes("residential")) return "detached";
-  return "other";
-}
-
-function buildAddress(item: AmpSoldRecord): string {
-  return (
-    item.UnparsedAddress ||
-    [item.StreetNumber, item.StreetName, item.StreetSuffix].filter(Boolean).join(" ")
-  );
-}
-
-function computeDaysOnMarket(listDate: string | null, closeDate: string | null): number {
-  if (!listDate || !closeDate) return 0;
-  const l = new Date(listDate).getTime();
-  const c = new Date(closeDate).getTime();
-  if (!Number.isFinite(l) || !Number.isFinite(c) || c < l) return 0;
-  return Math.round((c - l) / (1000 * 60 * 60 * 24));
-}
-
-async function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-/** Fetch one page with exponential backoff on 429/503. */
-async function fetchPage(filter: string, orderby: string): Promise<AmpSoldRecord[]> {
-  const url = `${TREB_API_URL}?$select=${SELECT_FIELDS}&$filter=${encodeURIComponent(
-    filter
-  )}&$top=${PAGE_SIZE}&$orderby=${encodeURIComponent(orderby)}`;
-
-  let attempt = 0;
-  while (true) {
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${VOW_TOKEN}`, Accept: "application/json" },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return (data.value as AmpSoldRecord[]) ?? [];
-    }
-    if (res.status === 429 || res.status === 503) {
-      attempt++;
-      if (attempt > 5) throw new Error(`TREB backoff exhausted: ${res.status}`);
-      const wait = Math.min(30_000, 1000 * Math.pow(2, attempt));
-      await sleep(wait);
-      continue;
-    }
-    // Include response body so 400s (OData filter rejections) are diagnosable
-    // without another round-trip. AMPRE returns a JSON error with the bad token.
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `TREB error: ${res.status} ${res.statusText} — filter=${filter} — body=${body.slice(0, 500)}`
-    );
-  }
+// Adapt @neondatabase/serverless's tagged-template function to the shared
+// SqlExecutor interface. The function is also callable as (text, values) for
+// parameterized queries — that's the form the core uses.
+function neonExecutor(db: NonNullable<typeof soldDb>): SqlExecutor {
+  return async (text, values) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (await (db as any)(text, values)) as Record<string, unknown>[];
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -165,184 +51,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const started = Date.now();
-  let inserted = 0;
-  let updated = 0;
-  let skipped = 0;
-  let pagesFetched = 0;
+  const limitParam = req.nextUrl.searchParams.get("limit");
+  const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 0) : Infinity;
 
-  // Determine cursor.
-  // - Empty table → backfill: fetch all Milton Sold history, ordered by CloseDate ASC.
-  // - Populated table → incremental: fetch by ModificationTimestamp > max(we have).
-  const stateRows = (await soldDb`
-    SELECT
-      (SELECT COUNT(*) FROM sold.sold_records)::int AS total,
-      (SELECT MAX(modification_timestamp) FROM sold.sold_records) AS max_mod
-  `) as Array<{ total: number; max_mod: string | null }>;
-  const isBackfill = stateRows[0]?.total === 0;
-  const maxMod = stateRows[0]?.max_mod;
+  const db = neonExecutor(soldDb);
+  const amp: AmpConfig = { propertyUrl: TREB_API_URL, token: VOW_TOKEN, pageSize: 500 };
 
-  // Cursor state. AMPRE rejects empty-string comparisons like `ListingKey gt ''`
-  // with a 400, so the FIRST page of each run uses no key cursor — just the
-  // primary field filter. After the first page we have a real ListingKey and
-  // can tiebreak rows that share the primary timestamp with
-  // `(primary gt X OR (primary eq X AND ListingKey gt 'Y'))`.
-  let cursorPrimary: string | null = isBackfill ? null : maxMod;
-  let cursorKey: string = "";
-  let hasKeyCursor = false;
-
-  // AMPRE rejects CloseDate in $filter; filter on StandardStatus eq 'Closed'
-  // which captures both sales ('For Sale') and leases ('For Lease') — RESO
-  // standard value confirmed via /api/sync/sold/test probe D on 2026-04-16.
-  // MlsStatus variants ('Sold' / 'Leased') are stored on the row for read-path
-  // display but not used as server-side filter (a single status filter would
-  // miss one of the two categories).
-  const BASE_SOLD_FILTER = `City eq 'Milton' and StandardStatus eq 'Closed'`;
-
-  while (true) {
-    // Both backfill and incremental paginate on ModificationTimestamp — it's
-    // the only date field AMPRE allows in $filter for this endpoint.
-    // ModificationTimestamp is Edm.DateTimeOffset so full ISO datetime
-    // literals are accepted.
-    let filter: string;
-    if (!hasKeyCursor) {
-      filter = cursorPrimary
-        ? `${BASE_SOLD_FILTER} and ModificationTimestamp gt ${cursorPrimary}`
-        : BASE_SOLD_FILTER;
-    } else {
-      filter =
-        `${BASE_SOLD_FILTER} ` +
-        `and (ModificationTimestamp gt ${cursorPrimary} ` +
-        `or (ModificationTimestamp eq ${cursorPrimary} and ListingKey gt '${cursorKey}'))`;
-    }
-    const orderby = "ModificationTimestamp asc,ListingKey asc";
-
-    const items = await fetchPage(filter, orderby);
-    pagesFetched++;
-    if (items.length === 0) break;
-
-    for (const item of items) {
-      // Garbage filter: City must be Milton (not 'Deleted'), StreetName present,
-      // not obviously placeholder. Do NOT filter on PermAdvertise — ingest all.
-      if (!item.ListingKey) { skipped++; continue; }
-      if ((item.City || "").toLowerCase() === "deleted") { skipped++; continue; }
-      if ((item.StreetName || "").toLowerCase() === "deleted") { skipped++; continue; }
-
-      // Upsert path. BASE_SOLD_FILTER ensures every returned record has
-      // StandardStatus = 'Closed' — i.e. a real closed transaction, either
-      // sale or lease. transaction_type is CHECK-constrained to exactly
-      // 'For Sale' or 'For Lease'; skip any row with an unexpected value
-      // rather than corrupt the constraint with bad data.
-      const mlsStatus = item.MlsStatus || "Unknown";
-      const stdStatus = item.StandardStatus || null;
-      const listOfficeName = item.ListOfficeName || null;
-      const txnType = item.TransactionType;
-      if (txnType !== "For Sale" && txnType !== "For Lease") {
-        skipped++;
-        continue;
-      }
-      const address = buildAddress(item);
-      const streetName = extractStreetName(address);
-      const streetSlug = streetNameToSlug(streetName);
-      const modTimestamp = item.ModificationTimestamp ?? new Date().toISOString();
-
-      {
-        const listPrice = item.ListPrice ?? 0;
-        const soldPrice = item.ClosePrice ?? 0;
-        const listDate = item.ListingContractDate ?? item.OriginalEntryTimestamp ?? item.CloseDate;
-        const closeDate = item.CloseDate;
-        if (!closeDate || !listDate || soldPrice <= 0 || listPrice <= 0) {
-          skipped++;
-          continue;
-        }
-        const dom = computeDaysOnMarket(listDate, closeDate);
-        const ratio = listPrice > 0 ? soldPrice / listPrice : 0;
-        const propertyType = mapPropertyType(item.PropertyType, item.PropertySubType);
-
-        const result = (await soldDb`
-          INSERT INTO sold.sold_records (
-            mls_number, address, street_name, street_slug, neighbourhood, city,
-            list_price, sold_price, sold_date, list_date,
-            days_on_market, sold_to_ask_ratio,
-            beds, baths, property_type, sqft_range,
-            lat, lng,
-            display_address, perm_advertise,
-            mls_status, standard_status, transaction_type,
-            list_office_name,
-            modification_timestamp, updated_at
-          ) VALUES (
-            ${item.ListingKey}, ${address}, ${streetName}, ${streetSlug},
-            ${item.CityRegion || "Milton"}, ${item.City || "Milton"},
-            ${listPrice}, ${soldPrice}, ${closeDate}, ${listDate},
-            ${dom}, ${ratio},
-            ${item.BedroomsTotal}, ${item.BathroomsTotalInteger},
-            ${propertyType}, ${item.LivingAreaRange},
-            ${item.Latitude}, ${item.Longitude},
-            ${item.InternetAddressDisplayYN !== false},
-            ${item.InternetEntireListingDisplayYN !== false},
-            ${mlsStatus}, ${stdStatus}, ${txnType},
-            ${listOfficeName},
-            ${modTimestamp}, NOW()
-          )
-          ON CONFLICT (mls_number) DO UPDATE SET
-            address                = EXCLUDED.address,
-            street_name            = EXCLUDED.street_name,
-            street_slug            = EXCLUDED.street_slug,
-            neighbourhood          = EXCLUDED.neighbourhood,
-            city                   = EXCLUDED.city,
-            list_price             = EXCLUDED.list_price,
-            sold_price             = EXCLUDED.sold_price,
-            sold_date              = EXCLUDED.sold_date,
-            list_date              = EXCLUDED.list_date,
-            days_on_market         = EXCLUDED.days_on_market,
-            sold_to_ask_ratio      = EXCLUDED.sold_to_ask_ratio,
-            beds                   = EXCLUDED.beds,
-            baths                  = EXCLUDED.baths,
-            property_type          = EXCLUDED.property_type,
-            sqft_range             = EXCLUDED.sqft_range,
-            lat                    = EXCLUDED.lat,
-            lng                    = EXCLUDED.lng,
-            display_address        = EXCLUDED.display_address,
-            perm_advertise         = EXCLUDED.perm_advertise,
-            mls_status             = EXCLUDED.mls_status,
-            standard_status        = EXCLUDED.standard_status,
-            transaction_type       = EXCLUDED.transaction_type,
-            list_office_name       = EXCLUDED.list_office_name,
-            modification_timestamp = EXCLUDED.modification_timestamp,
-            updated_at             = NOW()
-          RETURNING (xmax = 0) AS inserted
-        `) as Array<{ inserted: boolean }>;
-        if (result[0]?.inserted) inserted++; else updated++;
-      }
-
-      // Advance cursor on ModificationTimestamp for both backfill and incremental.
-      // CloseDate cannot be used in $filter per AMPRE, so it can't drive
-      // cursor pagination. Defensive: keep a date-slice pattern available for
-      // CloseDate-bound Edm.Date values that might be normalized in future
-      // (if AMPRE ever ships a date-only cursor field for VOW).
-      cursorKey = item.ListingKey;
-      hasKeyCursor = true;
-      if (item.ModificationTimestamp) cursorPrimary = item.ModificationTimestamp;
-    }
-
-    if (items.length < PAGE_SIZE) break; // last page
-    // Safety cap to prevent runaway backfills
-    if (pagesFetched > 400) break;
-  }
-
-  const durationMs = Date.now() - started;
-  console.log(
-    `[sync/sold] mode=${isBackfill ? "backfill" : "incremental"} ` +
-    `pages=${pagesFetched} inserted=${inserted} updated=${updated} skipped=${skipped} duration=${durationMs}ms`
-  );
-
-  return NextResponse.json({
-    ok: true,
-    mode: isBackfill ? "backfill" : "incremental",
-    pagesFetched,
-    inserted,
-    updated,
-    skipped,
-    durationMs,
-  });
+  const result = await runSoldSync({ db, amp, limit });
+  return NextResponse.json(result);
 }
