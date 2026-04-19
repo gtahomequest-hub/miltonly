@@ -975,7 +975,7 @@ export async function runSoldSync(opts: {
   let pagesFetched = 0;
   let totalProcessed = 0;
 
-  pageLoop: while (true) {
+  while (true) {
     let filter: string;
     if (!hasKeyCursor) {
       filter = cursorPrimary
@@ -994,9 +994,10 @@ export async function runSoldSync(opts: {
     if (items.length === 0) break;
 
     const writtenKeys: string[] = [];
+    let limitHit = false;
 
     for (const item of items) {
-      if (totalProcessed >= limit) break pageLoop;
+      if (totalProcessed >= limit) { limitHit = true; break; }
 
       const listingKey = item.ListingKey as string | undefined;
       if (!listingKey) { skipped++; continue; }
@@ -1086,6 +1087,7 @@ export async function runSoldSync(opts: {
       }
     }
 
+    if (limitHit) break; // run after sibling fetches above, not before
     if (items.length < 500) break;
     if (pagesFetched > 400) break;
   }
