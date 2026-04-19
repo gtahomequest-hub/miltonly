@@ -24,12 +24,12 @@ const TREB_API_URL = (process.env.TREB_API_URL || "https://query.ampre.ca/odata/
 const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 
 // Adapt @neondatabase/serverless's tagged-template function to the shared
-// SqlExecutor interface. The function is also callable as (text, values) for
-// parameterized queries — that's the form the core uses.
+// SqlExecutor interface. As of v1.x, the direct (text, values) call form is
+// deprecated — must use sql.query(text, values). Confirmed empirically against
+// @neondatabase/serverless@1.0.2: function-call form throws, .query works.
 function neonExecutor(db: NonNullable<typeof soldDb>): SqlExecutor {
   return async (text, values) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (await (db as any)(text, values)) as Record<string, unknown>[];
+    return (await db.query(text, values)) as Record<string, unknown>[];
   };
 }
 

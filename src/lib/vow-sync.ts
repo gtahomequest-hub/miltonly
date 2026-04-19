@@ -1101,6 +1101,28 @@ export async function runSoldSync(opts: {
   };
 }
 
+/**
+ * Fetch Property records for a batch of ListingKeys via OR-chain. Used by
+ * backfill scripts that need to re-enrich known records without cursor paging.
+ * Uses $select so payload size matches the cron path.
+ */
+export async function fetchPropertyBatchByKeys(
+  config: AmpConfig,
+  listingKeys: string[]
+): Promise<AmpRecord[]> {
+  if (listingKeys.length === 0) return [];
+  const keyFilter = listingKeys
+    .map((k) => `ListingKey eq '${k.replace(/'/g, "''")}'`)
+    .join(" or ");
+  const select = SELECT_FIELDS.join(",");
+  const url =
+    `${config.propertyUrl}?$select=${select}` +
+    `&$filter=${encodeURIComponent(keyFilter)}` +
+    `&$top=${listingKeys.length}`;
+  const data = await ampGet<{ value?: AmpRecord[] }>(url, config.token);
+  return data.value ?? [];
+}
+
 export async function fetchRoomsBatch(
   config: AmpConfig,
   listingKeys: string[]
