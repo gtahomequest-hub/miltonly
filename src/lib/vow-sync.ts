@@ -947,7 +947,17 @@ export async function runSoldSync(opts: {
     []
   );
   const total = (stateRows[0]?.total as number) ?? 0;
-  const maxMod = stateRows[0]?.max_mod as string | null;
+  // node-postgres + @neondatabase/serverless's sql.query() both return
+  // TIMESTAMPTZ as a Date object. AMPRE needs ISO 8601 in the $filter
+  // string — without .toISOString(), Date.toString() produces
+  // "Fri Apr 17 2026 18:21:23 GMT+0000 (…)" and AMPRE rejects it with 400
+  // ("property 'Fri' is not defined"). Coerce eagerly so every downstream
+  // interpolation sees a safe ISO string.
+  const maxModRaw = stateRows[0]?.max_mod;
+  const maxMod: string | null =
+    maxModRaw instanceof Date
+      ? maxModRaw.toISOString()
+      : (maxModRaw as string | null) ?? null;
   const isBackfill = total === 0;
 
   let cursorPrimary: string | null = isBackfill ? null : maxMod;
