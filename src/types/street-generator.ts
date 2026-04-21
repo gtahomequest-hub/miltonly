@@ -1,0 +1,148 @@
+// src/types/street-generator.ts
+// Schema contract between generateStreet.ts and DescriptionBody component.
+
+export type StreetSectionId =
+  | "about"
+  | "homes"
+  | "amenities"
+  | "market"
+  | "gettingAround"
+  | "schools"
+  | "bestFitFor"
+  | "differentPriorities";
+
+export interface StreetSection {
+  id: StreetSectionId;
+  heading: string;
+  paragraphs: string[];
+}
+
+export interface StreetFAQItem {
+  question: string;
+  answer: string;
+}
+
+export interface StreetGeneratorOutput {
+  sections: StreetSection[];    // length = 8, ordered per canonical sequence
+  faq: StreetFAQItem[];         // length 6-8
+}
+
+// --- Validation-facing augment (persisted alongside output, not returned by model) ---
+
+export interface StreetGenerationMeta {
+  model: "claude-opus-4-7";
+  generatedAt: string;          // ISO
+  inputHash: string;            // sha256 of StreetGeneratorInput for drift detection
+  attemptCount: 1 | 2 | 3;
+  validatorPassed: boolean;
+  validatorViolations: ValidatorViolation[];  // empty if passed
+  wordCounts: Record<StreetSectionId, number>;
+  totalWords: number;
+}
+
+export interface ValidatorViolation {
+  rule: ValidatorRule;
+  sectionId?: StreetSectionId;
+  excerpt: string;              // the offending substring, ~80 chars window
+  severity: "hard" | "soft";    // hard = always retry; soft = retry only if other hard fails
+}
+
+export type ValidatorRule =
+  | "em_dash"
+  | "superlative"
+  | "cliche_opener"
+  | "methodology_leak"
+  | "hedging_builder"
+  | "precise_price"
+  | "invented_cross_street"
+  | "builder_without_high_confidence"
+  | "section_word_floor"
+  | "section_word_ceiling"
+  | "total_word_floor"
+  | "total_word_ceiling"
+  | "missing_section_id"
+  | "heading_out_of_bank"
+  | "faq_count_out_of_range"
+  | "faq_answer_length"
+  | "faq_question_out_of_bank"
+  | "invalid_json_shape";
+
+// --- Frontend contract (what DescriptionBody consumes) ---
+
+export interface DescriptionBodyProps {
+  sections: StreetSection[];                    // all 8, frontend filters as needed
+  faq: StreetFAQItem[];
+}
+
+// -----------------------------------------------------------------
+// StreetGeneratorInput
+// -----------------------------------------------------------------
+// The full input payload consumed by the generator. Reverse-engineered
+// from the system prompt's field references and validated against
+// all three regression examples in docs/phase-4.1/03-examples.ts.
+// Shape is authoritative; do not modify without a corresponding
+// update to the system prompt and example fixtures.
+
+export interface StreetGeneratorInput {
+  street: {
+    name: string;
+    slug: string;
+    shortName: string;
+    type: string;
+  };
+  neighbourhoods: string[];
+  primaryBuilder?: {
+    name: string;
+    confidence: "high" | "medium" | "low";
+    evidence?: string;
+  };
+  aggregates: {
+    txCount: number;
+    salesCount: number;
+    leasesCount: number;
+    typicalPrice: number | null;
+    priceRange: { low: number; high: number } | null;
+    daysOnMarket: number | null;
+    kAnonLevel: "full" | "thin" | "zero";
+  };
+  byType: Record<string, {
+    count: number;
+    typicalPrice: number | null;
+    priceRange: { low: number; high: number } | null;
+    kFlag: string;
+  }>;
+  dominantStyle?: string;
+  lotSize?: { typical: string; range: string };
+  leaseActivity?: {
+    byBed: Record<string, { count: number; typicalRent: number }>;
+  };
+  quarterlyTrend?: Array<{
+    quarter: string;
+    typical: number;
+    count: number;
+  }>;
+  nearby: {
+    parks: Array<{ name: string; distanceMin: number; walkable: boolean }>;
+    schoolsPublic: Array<{ name: string; level: string; board: string; distanceMin: number }>;
+    schoolsCatholic: Array<{ name: string; level: string; board: string; distanceMin: number }>;
+    mosques: Array<{ name: string; distanceMin: number }>;
+    grocery: Array<{ name: string; distanceMin: number }>;
+    hospital?: { name: string; distanceMin: number };
+    goStation?: { name: string; distanceMin: number };
+    highway?: { name: string; onrampDistanceMin: number };
+  };
+  commute: {
+    toTorontoDowntown: { method: string; minutes: number };
+    toMississauga: { method: string; minutes: number };
+    toOakville: { method: string; minutes: number };
+    toBurlington: { method: string; minutes: number };
+    toPearson: { method: string; minutes: number };
+  };
+  activeListingsCount: number;
+  crossStreets: Array<{
+    slug: string;
+    shortName: string;
+    distinctivePattern: string;
+    typicalPrice: number;
+  }>;
+}

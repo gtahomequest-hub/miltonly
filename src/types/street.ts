@@ -8,6 +8,8 @@
 // Spec: docs/street-template-data-spec.md (sections 2, 3, 6).
 
 import type { ReactNode } from "react";
+import type { StreetSection, StreetFAQItem } from "./street-generator";
+export type { StreetSection, StreetFAQItem, StreetSectionId, StreetGeneratorOutput, StreetGenerationMeta, StreetGeneratorInput, ValidatorViolation, ValidatorRule } from "./street-generator";
 
 // ───── Primitive building blocks ──────────────────────────────────────────
 
@@ -130,6 +132,11 @@ export interface DescriptionSidebarProps {
   sidebarCTA: SidebarCTAData;
 }
 
+// ─── Legacy (orphaned post-Phase-4.1-Step-1 — kept until consumers migrate) ──
+// These were fields on the old DescriptionBodyProps. The new contract is the
+// 8-section array from src/types/street-generator.ts. DescriptionSection,
+// BestFitItem, DifferentPriorityItem are no longer referenced by any interface
+// in this file but may still be referenced by not-yet-migrated consumers.
 export interface BestFitItem {
   strong: string;
   body: string;
@@ -142,10 +149,14 @@ export interface DescriptionSection {
   paragraphs: string[];
 }
 
+// ─── DescriptionBody: new shape per Phase 4.1 contract ──────────────────────
+// Data shape (sections + faq) comes verbatim from street-generator.ts so the
+// generator and this component agree on a single contract. The two inline-slot
+// fields are preserved per kickoff: they're UI render-time concerns, not data,
+// and are orthogonal to the 4.1 generator output shape.
 export interface DescriptionBodyProps {
-  sections: DescriptionSection[];
-  bestFitFor: BestFitItem[];
-  differentPriorities: DifferentPriorityItem[];
+  sections: StreetSection[];
+  faq: StreetFAQItem[];
   /** Slot children rendered inline between sections (e.g. an InlineCTA). */
   inlineSlot?: ReactNode;
   /** Index (0-based) of `sections` to render the inlineSlot after. Default: 1. */
