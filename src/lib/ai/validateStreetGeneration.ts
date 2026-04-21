@@ -454,16 +454,26 @@ function extractCandidateStreetNames(text: string): string[] {
 
 export async function generateWithRetry(
   input: StreetGeneratorInput,
-  callModel: (input: StreetGeneratorInput, priorViolations?: ValidatorViolation[]) => Promise<StreetGeneratorOutput>,
+  callModel: (
+    input: StreetGeneratorInput,
+    priorViolations?: ValidatorViolation[],
+    priorOutput?: StreetGeneratorOutput,
+  ) => Promise<StreetGeneratorOutput>,
 ): Promise<{ output: StreetGeneratorOutput; attemptCount: 1 | 2 | 3; violations: ValidatorViolation[] }> {
   let lastViolations: ValidatorViolation[] = [];
+  let lastOutput: StreetGeneratorOutput | undefined = undefined;
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const output = await callModel(input, lastViolations.length ? lastViolations : undefined);
+    const output = await callModel(
+      input,
+      lastViolations.length ? lastViolations : undefined,
+      lastOutput,
+    );
     const violations = validateStreetGeneration(output, input);
     if (violations.length === 0) {
       return { output, attemptCount: attempt as 1 | 2 | 3, violations: [] };
     }
     lastViolations = violations;
+    lastOutput = output;
   }
   throw new StreetGenerationFailure(input.street.slug, lastViolations);
 }
