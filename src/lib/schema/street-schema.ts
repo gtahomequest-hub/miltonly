@@ -13,7 +13,18 @@ import type {
   DifferentPriorityItem,
   NearbyPlace,
   FAQItem,
+  StreetSection,
 } from "@/types/street";
+
+/**
+ * Content resolved at the page-component level before schema is built.
+ * Lets the composer emit schema from generation-aware sources (FAQ list,
+ * 8-section body) instead of the `getStreetPageData` legacy fields.
+ */
+export interface ResolvedStreetContent {
+  faqs: FAQItem[];
+  sections: StreetSection[];
+}
 
 const SITE_URL = "https://miltonly.com";
 const ORG_ID = `${SITE_URL}/#organization`;
@@ -217,14 +228,21 @@ export function buildNearbyPlacesItemListSchema(
 // Composer
 // ────────────────────────────────────────────────────────────────────
 
-export function buildStreetPageSchema(data: StreetPageData): object {
+export function buildStreetPageSchema(
+  data: StreetPageData,
+  resolved: ResolvedStreetContent,
+): object {
   const graph: object[] = [
     buildLocalBusinessSchema(data),
     buildPlaceSchema(data),
     buildBreadcrumbListSchema(data),
   ];
 
-  const faq = buildFAQPageSchema(data.faqs);
+  // FAQPage and Alternatives ItemList both source from `resolved`, not from
+  // the legacy `data.faqs` / `data.descriptionBody`. The page component is
+  // responsible for feeding the generation-aware versions when a succeeded
+  // StreetGeneration row exists; otherwise it passes the legacy-shape values.
+  const faq = buildFAQPageSchema(resolved.faqs);
   if (faq) graph.push(faq);
 
   for (const pt of data.productTypes) {
@@ -232,11 +250,7 @@ export function buildStreetPageSchema(data: StreetPageData): object {
     if (saleOffer) graph.push(saleOffer);
   }
 
-  // Alternatives ItemList sources from the `differentPriorities` section of the
-  // generated description when present. Legacy shape has no differentPriorities
-  // array (replaced by strict 8-section output), so scan for a matching section
-  // id in the generated sections array; emit nothing when absent.
-  const diffPriorities = data.descriptionBody.sections.find(
+  const diffPriorities = resolved.sections.find(
     (s) => s.id === "differentPriorities"
   );
   const alternatives = diffPriorities

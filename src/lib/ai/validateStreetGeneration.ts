@@ -65,16 +65,25 @@ const HEDGING_PHRASES = [
 // --- Price detection ---
 
 const DOLLAR_FIGURE = /\$(\d{1,3}(?:,\d{3})+)(?!\d)/g;
+// K/M-suffix shorthand used in prose: "$425K", "$1.15M", "$2.5M". Matched
+// alongside the comma-separated form so non-boundary shorthand can't slip
+// past the rounding check.
+const DOLLAR_SUFFIX = /\$(\d+(?:\.\d+)?)(K|M)\b/g;
 // v3: widened to accept 5-digit rents ($10,500) in addition to 4-digit ($2,100)
 const RENT_FIGURE = /\$(\d{1,2},?\d{3})(?!\d)/g;
 
-function isPriceProperlyRounded(figureStr: string): boolean {
-  const value = parseInt(figureStr.replace(/,/g, ""), 10);
+function isPriceProperlyRounded(value: number): boolean {
   if (isNaN(value)) return true;
   if (value < 500_000) return value % 10_000 === 0;
   if (value < 1_000_000) return value % 25_000 === 0;
   if (value < 2_000_000) return value % 50_000 === 0;
   return value % 100_000 === 0;
+}
+
+function parseSuffixFigure(numStr: string, suffix: string): number {
+  const n = parseFloat(numStr);
+  if (!Number.isFinite(n)) return NaN;
+  return Math.round(n * (suffix === "M" ? 1_000_000 : 1_000));
 }
 
 function isRentProperlyRounded(figureStr: string): boolean {
@@ -91,7 +100,13 @@ function findPrecisePrice(text: string): string | null {
   while ((match = DOLLAR_FIGURE.exec(text)) !== null) {
     const value = parseInt(match[1].replace(/,/g, ""), 10);
     if (value < 10_000) continue;  // skip rent-sized figures
-    if (!isPriceProperlyRounded(match[1])) return match[0];
+    if (!isPriceProperlyRounded(value)) return match[0];
+  }
+  DOLLAR_SUFFIX.lastIndex = 0;
+  while ((match = DOLLAR_SUFFIX.exec(text)) !== null) {
+    const value = parseSuffixFigure(match[1], match[2]);
+    if (value < 10_000) continue;  // "$5K" etc. — sub-sale territory
+    if (!isPriceProperlyRounded(value)) return match[0];
   }
   return null;
 }

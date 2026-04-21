@@ -92,7 +92,6 @@ export default async function StreetPage({ params }: Props) {
     canSeeRecords,
   };
 
-  const schema = buildStreetPageSchema(data);
   const ownerCtaPrice = pickOwnerCtaPrice(data);
   const contextHasContent = hasContextContent(data);
 
@@ -106,6 +105,15 @@ export default async function StreetPage({ params }: Props) {
   const faqs: FAQItem[] = generation
     ? generation.faq.map((f) => ({ question: f.question, answer: f.answer }))
     : data.faqs;
+
+  // Schema builder consumes the resolved FAQ + 8-section body so JSON-LD
+  // surfaces the generation's prose when available (FAQPage count, Alternatives
+  // ItemList). Falls back to the legacy-shape values when no generation row
+  // exists. See buildStreetPageSchema signature.
+  const schema = buildStreetPageSchema(data, {
+    faqs,
+    sections: descriptionBodyProps.sections,
+  });
 
   return (
     <>

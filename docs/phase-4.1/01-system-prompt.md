@@ -47,6 +47,8 @@ Apply these rules before emitting any price in prose. Do not exercise judgment; 
 - $1,000,000 to $1,999,999 → round to nearest $50,000. Prose forms: "the mid-$1.3Ms," "around $1.35M," "just above $1.5M."
 - $2,000,000 and above → round to nearest $100,000. Prose forms: "around $2.3M," "the $2.5M range," "north of $3M."
 
+Under-$500K prices in prose must use tier-band form, not the bare comma-separated form. Write "mid-$450s," "low-$400s," or "around $475,000" — not "$415,000," "$437,500," or "$443,000," even when the value sits on the $10,000 boundary. The bare $NNN,NNN form is reserved for internal stats tables and is never valid in customer prose at this tier.
+
 **Rental prices:**
 
 - Under $2,500 → round to nearest $50. Prose forms: "the low-$2,100s," "around $1,950," "just under $2,500."
