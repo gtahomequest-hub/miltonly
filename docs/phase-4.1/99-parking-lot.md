@@ -31,6 +31,19 @@ copy.
 `566241.8367346938` in the JSON-LD. Needs `Math.round()` or equivalent
 before serialization.
 
+## KNOWN_MILTON_ANCHORS — arterial road coverage
+
+`validateStreetGeneration.ts` has a `KNOWN_MILTON_ANCHORS` list used to
+tolerate references to well-known Milton places in the
+`differentPriorities` section. It currently lists neighbourhoods but not
+arterial road names. Step 8 rerun surfaced one instance where the model
+referenced "Main Street" as a benign Milton landmark from calla-point,
+which tripped `invented_cross_street` on attempt 1; retry cleanly
+dropped the reference. Single occurrence, not worth fixing on its own.
+Revisit if the Step 9 backfill surfaces this pattern repeatedly —
+candidates to add: "Main Street", "Derry Road", "James Snow Parkway",
+"Regional Road 25".
+
 ## Murlock Heights ghost slug
 
 `murlock-heights-milton` has zero rows in DB1 / DB2 / DB3. The slug must
