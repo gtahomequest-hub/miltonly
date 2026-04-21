@@ -93,13 +93,21 @@ export async function generateStreetDescription(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    system: SYSTEM_PROMPT,
+    system: [
+      {
+        type: "text",
+        text: SYSTEM_PROMPT,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
     messages: [{ role: "user", content: userMessage }],
   });
 
   const elapsedMs = Date.now() - startedAt;
   const tokensIn = response.usage.input_tokens;
   const tokensOut = response.usage.output_tokens;
+  const cacheCreationTokens = response.usage.cache_creation_input_tokens ?? 0;
+  const cacheReadTokens = response.usage.cache_read_input_tokens ?? 0;
 
   logLine({
     streetSlug: input.street.slug,
@@ -107,6 +115,8 @@ export async function generateStreetDescription(
     attemptNumber,
     tokensIn,
     tokensOut,
+    cacheCreationTokens,
+    cacheReadTokens,
     elapsedMs,
   });
 
@@ -161,6 +171,8 @@ interface LogPayload {
   attemptNumber: 1 | 2 | 3;
   tokensIn: number;
   tokensOut: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
   elapsedMs: number;
 }
 

@@ -25,15 +25,20 @@ const FIXTURE_SLUGS = [
 
 const OUT_DIR = path.join(process.cwd(), "docs/phase-4.1/spot-check");
 
-// claude-opus-4-7 pricing (USD per million tokens). No prompt caching in use.
+// claude-opus-4-7 pricing (USD per million tokens).
+// Cache write = 1.25× base, cache read = 0.10× base.
 const PRICE_IN_PER_MTOK = 15;
 const PRICE_OUT_PER_MTOK = 75;
+const PRICE_CACHE_WRITE_PER_MTOK = 18.75;
+const PRICE_CACHE_READ_PER_MTOK = 1.5;
 const COST_STOP_USD = 8;
 
 interface AttemptUsage {
   attemptNumber: number;
   tokensIn: number;
   tokensOut: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
 }
 
 function loadEnvLocal() {
@@ -65,6 +70,8 @@ function costOf(usage: AttemptUsage[]): number {
   for (const u of usage) {
     c += (u.tokensIn / 1_000_000) * PRICE_IN_PER_MTOK;
     c += (u.tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK;
+    c += (u.cacheCreationTokens / 1_000_000) * PRICE_CACHE_WRITE_PER_MTOK;
+    c += (u.cacheReadTokens / 1_000_000) * PRICE_CACHE_READ_PER_MTOK;
   }
   return c;
 }
@@ -89,6 +96,8 @@ function installGenLogCapture() {
             attemptNumber: payload.attemptNumber ?? buffer.length + 1,
             tokensIn: payload.tokensIn,
             tokensOut: payload.tokensOut,
+            cacheCreationTokens: payload.cacheCreationTokens ?? 0,
+            cacheReadTokens: payload.cacheReadTokens ?? 0,
           });
         }
       } catch {

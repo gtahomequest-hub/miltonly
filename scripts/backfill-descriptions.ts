@@ -56,10 +56,15 @@ function loadEnvLocal() {
   }
 }
 
-// ─── Pricing (claude-opus-4-7, no prompt caching) ───────────────────────────
+// ─── Pricing (claude-opus-4-7) ──────────────────────────────────────────────
+// Cache write = 1.25× base, cache read = 0.10× base. System-prompt caching
+// enabled in generateStreetDescription; cache_creation/cache_read fields are
+// emitted on the [gen] log line alongside input/output counts.
 
 const PRICE_IN_PER_MTOK = 15;
 const PRICE_OUT_PER_MTOK = 75;
+const PRICE_CACHE_WRITE_PER_MTOK = 18.75;
+const PRICE_CACHE_READ_PER_MTOK = 1.5;
 
 // ─── Defaults ───────────────────────────────────────────────────────────────
 
@@ -404,7 +409,12 @@ async function processOne(
   }
 
   // 4. Generate with rate-limit backoff wrapping each attempt.
-  const callRecords: Array<{ tokensIn: number; tokensOut: number }> = [];
+  const callRecords: Array<{
+    tokensIn: number;
+    tokensOut: number;
+    cacheCreationTokens: number;
+    cacheReadTokens: number;
+  }> = [];
   const genWithBackoff: typeof generateStreetDescription = async (
     inp,
     priorViolations,
@@ -414,14 +424,24 @@ async function processOne(
       try {
         // Intercept [gen] log to capture token usage per call.
         const origLog = console.log;
-        let captured: { tokensIn: number; tokensOut: number } | null = null;
+        let captured: {
+          tokensIn: number;
+          tokensOut: number;
+          cacheCreationTokens: number;
+          cacheReadTokens: number;
+        } | null = null;
         console.log = (...a: unknown[]) => {
           const f = a[0];
           if (typeof f === "string" && f.startsWith("[gen] ")) {
             try {
               const p = JSON.parse(f.slice("[gen] ".length));
               if (typeof p.tokensIn === "number" && typeof p.tokensOut === "number") {
-                captured = { tokensIn: p.tokensIn, tokensOut: p.tokensOut };
+                captured = {
+                  tokensIn: p.tokensIn,
+                  tokensOut: p.tokensOut,
+                  cacheCreationTokens: p.cacheCreationTokens ?? 0,
+                  cacheReadTokens: p.cacheReadTokens ?? 0,
+                };
               }
             } catch {
               /* ignore */
@@ -454,9 +474,13 @@ async function processOne(
     const { output, attemptCount } = await generateWithRetry(input, genWithBackoff);
     const tokensIn = callRecords.reduce((s, r) => s + r.tokensIn, 0);
     const tokensOut = callRecords.reduce((s, r) => s + r.tokensOut, 0);
+    const cacheCreate = callRecords.reduce((s, r) => s + r.cacheCreationTokens, 0);
+    const cacheRead = callRecords.reduce((s, r) => s + r.cacheReadTokens, 0);
     cost =
       (tokensIn / 1_000_000) * PRICE_IN_PER_MTOK +
-      (tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK;
+      (tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK +
+      (cacheCreate / 1_000_000) * PRICE_CACHE_WRITE_PER_MTOK +
+      (cacheRead / 1_000_000) * PRICE_CACHE_READ_PER_MTOK;
     state.totalCost += cost;
 
     await writeSuccess(
@@ -482,9 +506,13 @@ async function processOne(
   } catch (err) {
     const tokensIn = callRecords.reduce((s, r) => s + r.tokensIn, 0);
     const tokensOut = callRecords.reduce((s, r) => s + r.tokensOut, 0);
+    const cacheCreate = callRecords.reduce((s, r) => s + r.cacheCreationTokens, 0);
+    const cacheRead = callRecords.reduce((s, r) => s + r.cacheReadTokens, 0);
     cost =
       (tokensIn / 1_000_000) * PRICE_IN_PER_MTOK +
-      (tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK;
+      (tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK +
+      (cacheCreate / 1_000_000) * PRICE_CACHE_WRITE_PER_MTOK +
+      (cacheRead / 1_000_000) * PRICE_CACHE_READ_PER_MTOK;
     state.totalCost += cost;
 
     if (err instanceof StreetGenerationFailure) {
