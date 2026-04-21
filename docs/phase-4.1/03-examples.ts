@@ -139,6 +139,11 @@ export const OUTPUT_A: StreetGeneratorOutput = {
 // =============================================================================
 // Real context: Ford neighbourhood, 0 transactions, Mattamy townhouses.
 // Validator run: PASS (0 violations, total 1005 words, kAnon=zero, floor 1000)
+//
+// Note (2026-04-21): "murlock-heights-milton" is a stage-name slug for this
+// generator-input spec and has zero rows in DB1/DB2/DB3 — not a live page.
+// Live thin-data spot-check fixture: calla-point-milton (Mattamy townhouse,
+// 4 sold records, k-anon–gated). See docs/phase-4.1/99-parking-lot.md.
 // =============================================================================
 
 export const INPUT_B: ExampleInput = {

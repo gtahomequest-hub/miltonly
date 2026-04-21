@@ -108,6 +108,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     soldTypeAggRows,
     soldRange12moRows,
     soldCoordsRows,
+    soldExistsRows,
   ] = await Promise.all([
     prisma.listing.findMany({
       where: { streetSlug: slug, permAdvertise: true },
@@ -165,11 +166,28 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           LIMIT 1
         ` as unknown as Promise<Array<{ lat: string | null; lng: string | null }>>).catch(() => [] as Array<{ lat: string | null; lng: string | null }>)
       : Promise.resolve([] as Array<{ lat: string | null; lng: string | null }>),
+    // Existence-gate probe: any DB2 sold record for this street, regardless of
+    // perm_advertise / transaction_type / date window. Uses Index Only Scan on
+    // idx_sold_street_slug. Streets that only exist in the DB2 historical archive
+    // (no DB3 aggregate, no DB1 listing) still render with k-anon–gated data.
+    soldDb
+      ? (soldDb`
+          SELECT 1 AS one FROM sold.sold_records
+          WHERE street_slug = ${slug}
+          LIMIT 1
+        ` as unknown as Promise<Array<{ one: number }>>).catch(() => [] as Array<{ one: number }>)
+      : Promise.resolve([] as Array<{ one: number }>),
   ]);
 
-  // Existence gate — if neither DB1 listings nor DB3 aggregates nor
-  // description content exist, treat the slug as unknown.
-  if (allListings.length === 0 && soldStatsRows.length === 0 && !streetContent) {
+  // Existence gate — slug is unknown only if it has no presence in any DB:
+  // no current DB1 listings, no DB3 pre-computed aggregates, no DB1 StreetContent,
+  // and no DB2 historical sold record.
+  if (
+    allListings.length === 0 &&
+    soldStatsRows.length === 0 &&
+    !streetContent &&
+    soldExistsRows.length === 0
+  ) {
     return null;
   }
 
