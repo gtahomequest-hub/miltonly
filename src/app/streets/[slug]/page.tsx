@@ -8,7 +8,8 @@ import { SchemaInjector } from "@/lib/schema/injector";
 import { Container } from "@/components/ui";
 import { roundPriceForProse } from "@/lib/format";
 import { formatCAD } from "@/lib/charts/theme";
-import type { StreetPageData } from "@/types/street";
+import { loadStreetGeneration } from "@/lib/ai/loadStreetGeneration";
+import type { StreetPageData, StreetSection, StreetFAQItem, FAQItem } from "@/types/street";
 
 import { StreetHero } from "@/components/street/StreetHero";
 import { DescriptionSidebar } from "@/components/street/DescriptionSidebar";
@@ -66,10 +67,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StreetPage({ params }: Props) {
-  const data = await getStreetPageData(params.slug);
+  const [data, user, generation] = await Promise.all([
+    getStreetPageData(params.slug),
+    getSession(),
+    // Phase 4.1 generated description. Null means "no generation on file, or
+    // stale/corrupt row" — caller falls back to the legacy description shape
+    // below. Never generates on-demand at render time.
+    loadStreetGeneration(params.slug),
+  ]);
   if (!data) notFound();
 
-  const user = await getSession();
   const canSeeRecords = !!(user && user.vowAcknowledgedAt);
 
   // Fetch sold records only for users cleared through the VOW gate. The
@@ -89,6 +96,17 @@ export default async function StreetPage({ params }: Props) {
   const ownerCtaPrice = pickOwnerCtaPrice(data);
   const contextHasContent = hasContextContent(data);
 
+  // Description body: generated if a valid succeeded StreetGeneration row
+  // exists; otherwise a legacy-shape fallback from street-data.ts (also
+  // handles streets where content has never been generated).
+  const descriptionBodyProps = resolveDescriptionBody(data, generation);
+
+  // FAQ: prefer generated FAQ when present; fall back to the legacy
+  // template FAQs from street-data.
+  const faqs: FAQItem[] = generation
+    ? generation.faq.map((f) => ({ question: f.question, answer: f.answer }))
+    : data.faqs;
+
   return (
     <>
       <SchemaInjector schema={schema} />
@@ -100,7 +118,7 @@ export default async function StreetPage({ params }: Props) {
           <div className="description-grid">
             <DescriptionSidebar {...data.descriptionSidebar} />
             <DescriptionBody
-              {...data.descriptionBody}
+              {...descriptionBodyProps}
               inlineSlot={
                 ownerCtaPrice > 0 ? (
                   <InlineCTASection
@@ -132,7 +150,7 @@ export default async function StreetPage({ params }: Props) {
 
       {contextHasContent && <ContextCards {...data.contextCards} />}
 
-      <FAQ faqs={data.faqs} />
+      <FAQ faqs={faqs} />
 
       <FinalCTAs {...data.finalCTAs} />
 
@@ -150,4 +168,50 @@ function pickOwnerCtaPrice(data: StreetPageData): number {
 function hasContextContent(data: StreetPageData): boolean {
   const { similarStreets, neighbourhoods, schools } = data.contextCards;
   return similarStreets.length + neighbourhoods.length + schools.length > 0;
+}
+
+/**
+ * If a generated description exists (status=succeeded, narrowed shape),
+ * return the { sections, faq } pair for DescriptionBody. Otherwise, adapt
+ * the legacy-shape fallback from street-data.ts (which uses loose section
+ * ids like "s1") into the StreetSection strict union. sectionsJson emitted
+ * by the legacy path bypasses the StreetSectionId union at the type level
+ * via the shape adapter below; this keeps the page renderable on streets
+ * that have never been generated.
+ */
+function resolveDescriptionBody(
+  data: StreetPageData,
+  generation: { sections: StreetSection[]; faq: StreetFAQItem[] } | null,
+): { sections: StreetSection[]; faq: StreetFAQItem[] } {
+  if (generation) {
+    return { sections: generation.sections, faq: generation.faq };
+  }
+  // Legacy fallback: street-data's descriptionBody.sections is a loose
+  // DescriptionSection[] (id optional, heading, paragraphs). Map it through
+  // the approved StreetSectionId union, defaulting unknown ids to "about".
+  const legacySections = (data.descriptionBody?.sections ?? []) as Array<{
+    id?: string;
+    heading: string;
+    paragraphs: string[];
+  }>;
+  const sections: StreetSection[] = legacySections.map((s) => ({
+    id: isKnownSectionId(s.id) ? s.id : "about",
+    heading: s.heading,
+    paragraphs: s.paragraphs,
+  }));
+  return { sections, faq: [] };
+}
+
+const KNOWN_SECTION_IDS = new Set([
+  "about",
+  "homes",
+  "amenities",
+  "market",
+  "gettingAround",
+  "schools",
+  "bestFitFor",
+  "differentPriorities",
+]);
+function isKnownSectionId(v: unknown): v is StreetSection["id"] {
+  return typeof v === "string" && KNOWN_SECTION_IDS.has(v);
 }

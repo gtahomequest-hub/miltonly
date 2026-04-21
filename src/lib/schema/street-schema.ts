@@ -232,10 +232,19 @@ export function buildStreetPageSchema(data: StreetPageData): object {
     if (saleOffer) graph.push(saleOffer);
   }
 
-  const alternatives = buildAlternativesItemListSchema(
-    data.descriptionBody.differentPriorities,
-    data.street.slug
+  // Alternatives ItemList sources from the `differentPriorities` section of the
+  // generated description when present. Legacy shape has no differentPriorities
+  // array (replaced by strict 8-section output), so scan for a matching section
+  // id in the generated sections array; emit nothing when absent.
+  const diffPriorities = data.descriptionBody.sections.find(
+    (s) => s.id === "differentPriorities"
   );
+  const alternatives = diffPriorities
+    ? buildAlternativesItemListSchema(
+        diffPriorities.paragraphs.map((p) => ({ strong: "", body: p })),
+        data.street.slug,
+      )
+    : null;
   if (alternatives) graph.push(alternatives);
 
   const nearby = buildNearbyPlacesItemListSchema(

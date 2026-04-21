@@ -730,19 +730,23 @@ function trendLabel(points: QuarterlyDataPoint[]): string {
 function buildDescriptionBody(
   streetContent: { description: string; streetName: string } | null
 ): DescriptionBodyProps {
+  // Legacy fallback shape — populated when no Phase 4.1 StreetGeneration row
+  // exists for this street. Maps the single-blob StreetContent.description
+  // into one "about" section so the new DescriptionBody contract is satisfied.
+  // The page-level resolveDescriptionBody swaps this for the full 8-section
+  // generated payload when one is available.
   if (!streetContent?.description) {
-    return { sections: [], bestFitFor: [], differentPriorities: [] };
+    return { sections: [], faq: [] };
   }
   return {
     sections: [
       {
-        id: "s1",
+        id: "about",
         heading: `About ${streetContent.streetName}`,
         paragraphs: streetContent.description.split(/\n\n+/).filter((p) => p.trim().length > 0),
       },
     ],
-    bestFitFor: [],
-    differentPriorities: [],
+    faq: [],
   };
 }
 
