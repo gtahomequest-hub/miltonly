@@ -47,3 +47,15 @@ DO-NOT-REPEAT.md
 
 # Claude Code local settings
 .claude/
+
+# dev server logs + ad-hoc curl dumps
+logs/
+
+# local DB snapshots (large, not for VCS)
+miltonly-sold-snapshot.dump
+
+# local MLS data dumps (stale point-in-time, raw property records)
+whitlock-data.md
+
+# Phase 4.1 spot-check generator output (transient)
+docs/phase-4.1/spot-check/
