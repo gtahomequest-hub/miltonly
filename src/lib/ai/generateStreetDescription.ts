@@ -59,7 +59,6 @@ const SYSTEM_PROMPT = fs.readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
 
 const MODEL = "claude-opus-4-7" as const;
 const MAX_TOKENS = 8000;
-const TEMPERATURE = 0.7;
 
 // Lazy Anthropic client — defers API-key check until first call so the module
 // imports cleanly in environments where the key isn't set yet (tests, CI).
@@ -94,7 +93,6 @@ export async function generateStreetDescription(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    temperature: TEMPERATURE,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage }],
   });
