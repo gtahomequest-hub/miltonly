@@ -130,7 +130,7 @@ async function generateDescription(
 Real market data — use all of this naturally in the text:
 - Street: ${streetName}, ${stats.neighbourhood} neighbourhood
 - Average list price: ${formatPrice(stats.avgListPrice)}
-- Homes sold in last 12 months: ${stats.totalSold12mo}
+- Closed home sales on record: ${stats.totalSold12mo}
 - Average days on market: ${stats.avgDOM} days
 - Active listings right now: ${stats.activeCount}
 - Primary property type: ${stats.dominantPropertyType}
@@ -167,7 +167,7 @@ function buildFaqJson(
     },
     {
       q: `How long do homes take to sell on ${streetName} Milton?`,
-      a: `Active listings on ${streetName} in Milton have been on market an average of ${stats.avgDOM} days. ${stats.totalSold12mo} sold transactions recorded on this street in the last 12 months — exact days-on-market per transaction is available to registered users.`,
+      a: `Active listings on ${streetName} in Milton have been on market an average of ${stats.avgDOM} days. ${stats.totalSold12mo} sold transactions on record for this street — exact days-on-market per transaction is available to registered users.`,
     },
     {
       q: `What types of homes are on ${streetName} in Milton?`,
@@ -234,7 +234,7 @@ export async function generateStreetContent(
   if (!passed) description = rawAiOutput;
 
   const metaTitle = `${streetName} Milton Real Estate | Homes, Prices & Market Data`;
-  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} in the last 12 months. Average list price ${formatPrice(stats.avgListPrice)}. ${stats.avgDOM} days on market. Milton's most detailed street guide.`;
+  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} recently. Average list price ${formatPrice(stats.avgListPrice)}. ${stats.avgDOM} days on market. Milton's most detailed street guide.`;
   const faqJson = buildFaqJson(streetName, stats);
 
   const contentStatus = passed ? "published" : "draft";
@@ -285,4 +285,40 @@ export async function generateStreetContent(
   }
 
   return { streetName, passed, attempts };
+}
+
+/**
+ * Render-time fallback used by /streets/[slug]. Returns the stored
+ * StreetContent description if one exists and is fresher than 30 days;
+ * otherwise triggers the canonical generation pipeline, then returns the
+ * newly written row. If generation fails (e.g. no DB3 stats yet for a
+ * new street), returns a minimal placeholder — the cron will re-try
+ * and populate a full description on the next pass.
+ */
+export async function getOrGenerateStreetContent(
+  slug: string,
+  data: { streetName: string }
+): Promise<{ description: string; needsReview: boolean }> {
+  const existing = await prisma.streetContent.findUnique({ where: { streetSlug: slug } });
+  if (existing) {
+    const daysSince = (Date.now() - existing.generatedAt.getTime()) / 86400000;
+    if (daysSince < 30) {
+      return { description: existing.description, needsReview: existing.needsReview };
+    }
+  }
+
+  try {
+    await generateStreetContent(slug, data.streetName, { skipSms: true });
+    const after = await prisma.streetContent.findUnique({ where: { streetSlug: slug } });
+    if (after) return { description: after.description, needsReview: after.needsReview };
+  } catch (e) {
+    console.error(`[generateStreet] render-time fallback failed for ${slug}:`, e);
+  }
+
+  return {
+    description:
+      `${data.streetName} in Milton, Ontario. Full street data is being prepared — ` +
+      `registered users will see detailed market intelligence here shortly.`,
+    needsReview: true,
+  };
 }

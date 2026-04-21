@@ -79,7 +79,7 @@ export default function StreetsGrid({
           </div>
           {alertSubmitted ? (
             <p className="text-[13px] font-bold text-[#f59e0b] shrink-0">
-              You&apos;re in — we&apos;ll email you.
+              You&apos;re in. We&apos;ll email you.
             </p>
           ) : (
             <form onSubmit={handleAlertSubmit} className="flex gap-2 shrink-0">

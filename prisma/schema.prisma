@@ -150,27 +150,6 @@ model VisitorProfile {
   leadId                  String?
 }
 
-model StreetData {
-  id              String   @id @default(cuid())
-  streetName      String
-  streetSlug      String   @unique
-  neighbourhood   String
-  avgSoldPrice    Int
-  avgPricePerSqft Int?
-  soldCount12mo   Int
-  avgDaysOnMarket Int
-  soldVsAskPct    Float
-  priceChange3mo  Float
-  priceChange6mo  Float
-  priceChange1yr  Float
-  activeListings  Int
-  schoolZone      String?
-  goWalkMinutes   Int?
-  lastUpdated     DateTime
-
-  @@index([neighbourhood])
-}
-
 model CondoBuilding {
   id                String   @id @default(cuid())
   name              String

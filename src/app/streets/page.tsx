@@ -3,7 +3,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import StreetsGrid from "./StreetsGrid";
 
 export const metadata = genMeta({
-  title: "Milton Streets — Price Data for Every Street",
+  title: "Milton Streets, Price Data for Every Street",
   description: "Browse every Milton Ontario street with real estate data. Average prices, days on market, active listings. Street-level intelligence powered by TREB.",
   canonical: "https://miltonly.com/streets",
 });
