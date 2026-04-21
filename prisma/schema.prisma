@@ -3,79 +3,80 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model Listing {
-  id             String    @id @default(cuid())
-  mlsNumber      String    @unique
-  address        String
-  streetSlug     String
-  neighbourhood  String
-  city           String    @default("Milton")
-  price          Int
-  bedrooms       Int
-  bathrooms      Float
-  parking        Int
-  basement       Boolean
-  sqft           Int?
-  propertyType   String // detached|semi|townhouse|condo
-  status         String // active|sold|rented|expired
-  soldPrice      Int?
-  soldDate       DateTime?
-  daysOnMarket   Int?
-  photos         String[]
-  description    String?
-  latitude       Float
-  longitude      Float
-  schoolZone     String?
-  goWalkMinutes  Int?
-  condoBuilding     String?
-  maintenanceFee    Int?
+  id                 String    @id @default(cuid())
+  mlsNumber          String    @unique
+  address            String
+  streetSlug         String
+  neighbourhood      String
+  city               String    @default("Milton")
+  price              Int
+  bedrooms           Int
+  bathrooms          Float
+  parking            Int
+  basement           Boolean
+  sqft               Int?
+  propertyType       String // detached|semi|townhouse|condo
+  status             String // active|sold|rented|expired
+  soldPrice          Int?
+  soldDate           DateTime?
+  daysOnMarket       Int?
+  photos             String[]
+  description        String?
+  latitude           Float
+  longitude          Float
+  schoolZone         String?
+  goWalkMinutes      Int?
+  condoBuilding      String?
+  maintenanceFee     Int?
   // Detail fields
-  lotSize           String?
-  lotDepth          Float?
-  lotWidth          Float?
-  garageType        String?
-  heatSource        String?
-  roof              String?
-  foundation        String?
-  construction      String?
-  exteriorFeatures  String[]
-  interiorFeatures  String[]
-  fireplace         Boolean   @default(false)
+  lotSize            String?
+  lotDepth           Float?
+  lotWidth           Float?
+  garageType         String?
+  heatSource         String?
+  roof               String?
+  foundation         String?
+  construction       String?
+  exteriorFeatures   String[]
+  interiorFeatures   String[]
+  fireplace          Boolean   @default(false)
   architecturalStyle String?
-  approximateAge    String?
-  taxAmount         Float?
-  taxYear           Int?
-  maintenanceFeeAmt Float?
-  directionFaces    String?
-  crossStreet       String?
-  sewer             String?
-  waterSource       String?
-  virtualTourUrl    String?
-  listOfficeName    String?
-  totalRooms        Int?
-  kitchens          Int?
-  transactionType   String?   // For Sale|For Lease
-  petsAllowed       String?   // Yes|No|Restricted
-  rentIncludes      String[]  // ["Building Insurance","Parking","Heat"]
-  laundryFeatures   String?   // Ensuite|Shared|None
-  cooling           String?   // Central Air|Window|None
-  heatType          String?   // Forced Air|Baseboard|Radiant
-  furnished         String?   // Furnished|Unfurnished|Partially
-  possessionDetails String?   // Immediate|30-59 Days|TBA
-  minLeaseTerm      Int?      // months
-  locker            String?   // Exclusive|Shared|None
+  approximateAge     String?
+  taxAmount          Float?
+  taxYear            Int?
+  maintenanceFeeAmt  Float?
+  directionFaces     String?
+  crossStreet        String?
+  sewer              String?
+  waterSource        String?
+  virtualTourUrl     String?
+  listOfficeName     String?
+  totalRooms         Int?
+  kitchens           Int?
+  transactionType    String? // For Sale|For Lease
+  petsAllowed        String? // Yes|No|Restricted
+  rentIncludes       String[] // ["Building Insurance","Parking","Heat"]
+  laundryFeatures    String? // Ensuite|Shared|None
+  cooling            String? // Central Air|Window|None
+  heatType           String? // Forced Air|Baseboard|Radiant
+  furnished          String? // Furnished|Unfurnished|Partially
+  possessionDetails  String? // Immediate|30-59 Days|TBA
+  minLeaseTerm       Int? // months
+  locker             String? // Exclusive|Shared|None
   // Display permission flags (IDX/DDF compliance)
-  permAdvertise     Boolean   @default(true)  // InternetEntireListingDisplayYN
-  displayAddress    Boolean   @default(true)  // InternetAddressDisplayYN
-  listedAt          DateTime
-  syncedAt          DateTime  @default(now())
-  streetName        String?
-  updatedAt         DateTime  @updatedAt
-  createdAt         DateTime  @default(now())
+  permAdvertise      Boolean   @default(true) // InternetEntireListingDisplayYN
+  displayAddress     Boolean   @default(true) // InternetAddressDisplayYN
+  listedAt           DateTime
+  syncedAt           DateTime  @default(now())
+  streetName         String?
+  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime  @default(now())
 
   @@index([streetSlug])
   @@index([syncedAt])
@@ -234,51 +235,51 @@ model Partner {
 }
 
 model ExclusiveListing {
-  id                String   @id @default(cuid())
-  title             String
-  address           String
-  city              String
-  price             Int
-  priceType         String   @default("sale")
-  bedsMin           Int
-  bedsMax           Int      @default(0)
-  baths             Int
-  parking           Int      @default(0)
-  propertyType      String
-  status            String   @default("active")
-  badge             String   @default("Exclusive")
-  description       String   @db.Text
-  photos            String[]
-  slug              String   @unique
-  sqft              Int?
-  yearBuilt         Int?
-  lotSize           String?
-  maintenance       Int?
-  taxes             Int?
-  taxYear           Int?
-  heating           String?
-  cooling           String?
-  basement          String?
-  garage            String?
-  exterior          String?
-  locker            String?
-  exposure          String?
-  petFriendly       Boolean?
-  interiorFeatures  String[]
-  exteriorFeatures  String[]
-  rooms             Json?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String
+  address          String
+  city             String
+  price            Int
+  priceType        String   @default("sale")
+  bedsMin          Int
+  bedsMax          Int      @default(0)
+  baths            Int
+  parking          Int      @default(0)
+  propertyType     String
+  status           String   @default("active")
+  badge            String   @default("Exclusive")
+  description      String   @db.Text
+  photos           String[]
+  slug             String   @unique
+  sqft             Int?
+  yearBuilt        Int?
+  lotSize          String?
+  maintenance      Int?
+  taxes            Int?
+  taxYear          Int?
+  heating          String?
+  cooling          String?
+  basement         String?
+  garage           String?
+  exterior         String?
+  locker           String?
+  exposure         String?
+  petFriendly      Boolean?
+  interiorFeatures String[]
+  exteriorFeatures String[]
+  rooms            Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model ComplianceLog {
   id            String   @id @default(cuid())
   checkDate     DateTime @default(now())
-  aiCompliance  Boolean  // No PropTx records in any prompt
-  dataRetrieval Boolean  // Only one MLS feed pull per 24 hours
-  listingExpiry Boolean  // No listings retained past 60 days
-  displayPerms  Boolean  // perm_adv and disp_addr enforced
-  consentCheck  Boolean  // All leads have valid consent
+  aiCompliance  Boolean // No PropTx records in any prompt
+  dataRetrieval Boolean // Only one MLS feed pull per 24 hours
+  listingExpiry Boolean // No listings retained past 60 days
+  displayPerms  Boolean // perm_adv and disp_addr enforced
+  consentCheck  Boolean // All leads have valid consent
   allPassed     Boolean
   details       String?  @db.Text // JSON with failure details
   createdAt     DateTime @default(now())
@@ -287,19 +288,19 @@ model ComplianceLog {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  firstName      String?
-  phone          String?
-  verifyCode     String?   // 6-digit email verification code
-  verifyExpiry   DateTime? // Code expiry (15 minutes)
-  verified       Boolean   @default(false)
-  savedListings  String[]  // MLS numbers
-  leadId         String?   // Link to Lead record
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  lastLoginAt    DateTime?
-  savedSearches  SavedSearch[]
+  id            String        @id @default(cuid())
+  email         String        @unique
+  firstName     String?
+  phone         String?
+  verifyCode    String? // 6-digit email verification code
+  verifyExpiry  DateTime? // Code expiry (15 minutes)
+  verified      Boolean       @default(false)
+  savedListings String[] // MLS numbers
+  leadId        String? // Link to Lead record
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastLoginAt   DateTime?
+  savedSearches SavedSearch[]
 
   // VOW bona-fide-interest acknowledgement (Phase 2.5 compliance).
   // Required under PROPTX VOW Datafeed Agreement §3.2 "Consumer" definition +
@@ -307,7 +308,7 @@ model User {
   // All four fields are captured together so the acknowledgement is audit-provable
   // (timestamp alone isn't enough; we need the literal text shown + IP + UA).
   vowAcknowledgedAt           DateTime?
-  vowAcknowledgementText      String?   // @db.Text — the literal string the user saw
+  vowAcknowledgementText      String? // @db.Text — the literal string the user saw
   vowAcknowledgementIp        String?
   vowAcknowledgementUserAgent String?
 
@@ -315,27 +316,82 @@ model User {
 }
 
 model SavedSearch {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  name            String   // "Detached in Willmott under $1M"
+  user            User      @relation(fields: [userId], references: [id])
+  name            String // "Detached in Willmott under $1M"
   // Filter criteria
-  propertyType    String?  // detached|semi|townhouse|condo
+  propertyType    String? // detached|semi|townhouse|condo
   neighbourhood   String?
   streetSlug      String?
   priceMin        Int?
   priceMax        Int?
   bedsMin         Int?
   bathsMin        Int?
-  transactionType String?  // For Sale|For Lease
+  transactionType String? // For Sale|For Lease
   // Alert settings
-  alertEnabled    Boolean  @default(true)
-  alertFrequency  String   @default("daily") // daily|instant
+  alertEnabled    Boolean   @default(true)
+  alertFrequency  String    @default("daily") // daily|instant
   lastAlertAt     DateTime?
-  lastMatchCount  Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  lastMatchCount  Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([userId])
   @@index([alertEnabled])
 }
+
+// ───── Phase 4.1 — AI-generated street description persistence ──────────────
+// One row per street. Written by the backfill (scripts/backfill-descriptions.ts)
+// and the spot-check harness; read at render time by /streets/[slug]/page.tsx.
+//
+// `status` is load-bearing for resumability — the backfill claims a slug atomically
+// by upserting status=generating, which prevents concurrent workers from
+// double-generating the same street. Readers MUST check status === "succeeded"
+// before consuming sectionsJson/faqJson.
+//
+// `inputHash` (sha256 of stringified StreetGeneratorInput, 64 hex chars) gates
+// idempotency: a rerun for the same input skips unless the hash changes.
+//
+// Cost tracking stored as Decimal(10,4) — supports four-decimal-cent precision
+// for per-call spend over thousands of generations.
+
+enum GenerationStatus {
+  pending
+  generating
+  succeeded
+  failed
+}
+
+model StreetGeneration {
+  streetSlug   String           @id
+  sectionsJson Json
+  faqJson      Json
+  inputHash    String
+  status       GenerationStatus @default(succeeded)
+  generatedAt  DateTime         @default(now())
+  attemptCount Int
+  wordCounts   Json
+  totalWords   Int
+  tokensIn     Int?
+  tokensOut    Int?
+  costUsd      Decimal?         @db.Decimal(10, 4)
+
+  @@index([status])
+  @@index([generatedAt])
+}
+
+// Structured review rows for streets that exhausted the generator's 3-attempt
+// retry loop (or hit a non-retryable failure like NoCentroidError or
+// rate_limit_exhausted). Inspected by operators; retried after 24h cooldown
+// or on explicit --slug re-run.
+model StreetGenerationReview {
+  streetSlug    String   @id
+  violations    Json
+  lastAttemptAt DateTime @default(now())
+  lastInputHash String
+
+  @@index([lastAttemptAt])
+}
+
+
