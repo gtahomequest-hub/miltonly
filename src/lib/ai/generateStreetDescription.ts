@@ -36,28 +36,16 @@ import type {
 } from "@/types/street-generator";
 import { formatViolationsForRetry } from "./validateStreetGeneration";
 
-// ---------------------------------------------------------------------------
-// Error classes — thrown, never caught-and-suppressed inside this module.
-// Callers decide retry / fail-over policy.
-// ---------------------------------------------------------------------------
-
-export class StreetGenerationParseFailure extends Error {
-  readonly rawText: string;
-  constructor(message: string, rawText: string) {
-    super(message);
-    this.name = "StreetGenerationParseFailure";
-    this.rawText = rawText;
-  }
-}
-
-export class StreetGenerationShapeFailure extends Error {
-  readonly fragment: unknown;
-  constructor(message: string, fragment: unknown) {
-    super(message);
-    this.name = "StreetGenerationShapeFailure";
-    this.fragment = fragment;
-  }
-}
+// Error classes consolidated in src/lib/ai/errors.ts; re-exported here so
+// existing callers that import from this module keep working.
+export {
+  StreetGenerationParseFailure,
+  StreetGenerationShapeFailure,
+} from "./errors";
+import {
+  StreetGenerationParseFailure,
+  StreetGenerationShapeFailure,
+} from "./errors";
 
 // ---------------------------------------------------------------------------
 // Module-scope constants: system prompt cached once at import.

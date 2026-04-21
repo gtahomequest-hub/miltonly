@@ -50,19 +50,17 @@ import {
   COMMUTE_FIXED,
   GO_TRAIN_MINUTES,
   UNION_TO_DOWNTOWN_TTC_MINUTES,
+  NEIGHBOURHOOD_CENTROIDS,
   type POI,
 } from "@/lib/geo";
 import { schools } from "@/lib/schools";
 import { extractStreetName } from "@/lib/streetUtils";
+import { NoCentroidError } from "@/lib/ai/errors";
 import type { StreetGeneratorInput } from "@/types/street-generator";
 
 // K-anonymity thresholds. Parallel to the same constants in street-data.ts.
 const K_ANON_PRICE = 5;
 const K_ANON_RANGE = 10;
-
-// Milton centroid — used as fallback when a street has no DB1 listings and no
-// DB2 sold-record coords. Same value used by buildCommuteGrid in street-data.ts.
-const MILTON_CENTROID = { lat: 43.5083, lng: -79.8822 };
 
 // ---------------------------------------------------------------------------
 // Raw DB row shapes (kept local; not re-exported to avoid cross-module coupling)
@@ -246,8 +244,18 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     );
   }
 
-  // ─── Centroid (DB1 listings → DB2 sold fallback → Milton centre) ────
-  const centroid = resolveCentroid(allListings, soldCoordsRows[0] ?? null);
+  // ─── Centroid (DB1 listings → DB2 sold sample → neighbourhood lookup) ─
+  // Primary: per-listing lat/lng (DB1 or DB2). Currently 0% populated across
+  // all of Milton; kept in place so future coord enrichment lifts straight in.
+  // Fallback: the street's dominant neighbourhood string → hardcoded
+  // NEIGHBOURHOOD_CENTROIDS lookup. If neither resolves, throw NoCentroidError.
+  const centroid = resolveCentroid(
+    slug,
+    allListings,
+    soldCoordsRows[0] ?? null,
+    neighbourhoods,
+    soldNeighbourhoodRows,
+  );
 
   // ─── Aggregates ─────────────────────────────────────────────────────
   const stats = soldStatsRows[0] ?? null;
@@ -389,23 +397,60 @@ function deriveStreetType(streetName: string): string {
 }
 
 function resolveCentroid(
+  slug: string,
   listings: Listing[],
   soldCoord: { lat: string | null; lng: string | null } | null,
-): { lat: number; lng: number } | null {
-  // Prefer DB1 centroid if valid coords exist.
+  cleanedNeighbourhoods: string[],
+  rawSoldNeighbourhoods: Array<{ neighbourhood: string }>,
+): { lat: number; lng: number } {
+  // 1. Per-listing coords from DB1 (preferred; future-proof if a geocoder runs).
   const valid = listings.filter((l) => hasValidCoords(l.latitude, l.longitude));
   if (valid.length > 0) {
     const lat = valid.reduce((s, l) => s + l.latitude, 0) / valid.length;
     const lng = valid.reduce((s, l) => s + l.longitude, 0) / valid.length;
     return { lat, lng };
   }
-  // Fallback to DB2 sample if present.
+  // 2. Per-listing coords from DB2 (future-proof; currently 0% populated).
   const lat = num(soldCoord?.lat ?? null);
   const lng = num(soldCoord?.lng ?? null);
   if (lat !== null && lng !== null && hasValidCoords(lat, lng)) {
     return { lat, lng };
   }
-  return null;
+  // 3. Neighbourhood centroid lookup. Try the DB1/DB2 RAW neighbourhood
+  //    strings first (NEIGHBOURHOOD_CENTROIDS is keyed by raw TREB form), then
+  //    fall back to cleaned neighbourhoods as a last resort in case a raw-form
+  //    lookup misses but the cleaned value happens to match.
+  const dominantRaw = pickDominantNeighbourhood(listings, rawSoldNeighbourhoods);
+  if (dominantRaw && NEIGHBOURHOOD_CENTROIDS[dominantRaw]) {
+    return NEIGHBOURHOOD_CENTROIDS[dominantRaw];
+  }
+  for (const n of cleanedNeighbourhoods) {
+    if (NEIGHBOURHOOD_CENTROIDS[n]) return NEIGHBOURHOOD_CENTROIDS[n];
+  }
+  const reason = dominantRaw
+    ? `no NEIGHBOURHOOD_CENTROIDS match for "${dominantRaw}"`
+    : `no listings and no DB2 sold records with a neighbourhood string`;
+  throw new NoCentroidError(slug, reason);
+}
+
+function pickDominantNeighbourhood(
+  listings: Listing[],
+  soldRows: Array<{ neighbourhood: string }>,
+): string | null {
+  const counts: Record<string, number> = {};
+  for (const l of listings) {
+    if (l.neighbourhood) counts[l.neighbourhood] = (counts[l.neighbourhood] ?? 0) + 1;
+  }
+  // DB2 rows are already ordered by frequency DESC (see query); only fall back
+  // to them if DB1 is empty.
+  if (Object.keys(counts).length === 0) {
+    for (const r of soldRows) {
+      if (r.neighbourhood) return r.neighbourhood;
+    }
+    return null;
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return sorted[0][0];
 }
 
 // ---------------------------------------------------------------------------
@@ -483,9 +528,9 @@ function buildLeaseActivity(
 // ---------------------------------------------------------------------------
 
 function buildNearby(
-  centroid: { lat: number; lng: number } | null,
+  centroid: { lat: number; lng: number },
 ): StreetGeneratorInput["nearby"] {
-  const c = centroid ?? MILTON_CENTROID;
+  const c = centroid;
 
   const parksOut = PARKS.map((p) => {
     const km = haversineKm(c.lat, c.lng, p.lat, p.lng);
@@ -581,13 +626,17 @@ function buildNearby(
 // ---------------------------------------------------------------------------
 
 function buildCommute(
-  centroid: { lat: number; lng: number } | null,
+  centroid: { lat: number; lng: number },
 ): StreetGeneratorInput["commute"] {
-  const c = centroid ?? MILTON_CENTROID;
+  const c = centroid;
   const goKm = haversineKm(c.lat, c.lng, GO_STATION.lat, GO_STATION.lng);
   const goWalkMin = walkMinutes(goKm);
   const goDriveMin = driveMinutes(goKm);
   // Walk-to-GO if under ~15 min (≤ 1.25 km); else drive-to-GO.
+  // TODO(Phase 4.4): at neighbourhood-centroid resolution, the 15-minute
+  // street-level spread in toTorontoDowntown collapses to 2-4 min. Per-
+  // street geocoding restores the real differentiation (the 67 / 82 gap
+  // between walk-to-GO and drive-to-GO streets shown in the examples).
   const toGOMin = goWalkMin <= 15 ? goWalkMin : goDriveMin;
   const goMethod = goWalkMin <= 15 ? "GO+TTC (walk to GO)" : "GO+TTC (drive to GO)";
 

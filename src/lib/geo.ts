@@ -97,6 +97,54 @@ export const COMMUTE_FIXED: CommuteDestination[] = [
 export const GO_TRAIN_MINUTES = 48;
 export const UNION_TO_DOWNTOWN_TTC_MINUTES = 12;
 
+// ───── NEIGHBOURHOOD_CENTROIDS ──────────────────────────────────────────────
+// Coords are approximate centres-of-mass for each named Milton neighbourhood,
+// sourced from OpenStreetMap neighbourhood polygons cross-checked against
+// Milton municipal ward/community boundaries. Used as a street-centroid
+// fallback when DB1 / DB2 provide no per-listing lat/lng (100% of current
+// records). All streets sharing a neighbourhood key resolve to the same
+// centroid — within-neighbourhood differentiation is deliberately lost; the
+// geography claim "street X is in neighbourhood Y, which is centred at (lat,
+// lng)" remains factual.
+//
+// Keyed by the raw neighbourhood string as it appears in DB1/DB2 listings so
+// no cleaning is required at lookup time. Includes both the TREB-coded form
+// ("1032 - FO Ford") and the un-coded form ("Rural Milton West") seen in
+// sold.sold_records. Unknown or rural-with-no-centroid strings intentionally
+// OMITTED — callers throw NoCentroidError rather than guess.
+export const NEIGHBOURHOOD_CENTROIDS: Record<string, { lat: number; lng: number }> = {
+  // Milton urban neighbourhoods (TREB-coded form, DB1/DB2 primary format)
+  "1023 - BE Beaty":         { lat: 43.5285, lng: -79.8760 },
+  "1024 - BM Bronte Meadows":{ lat: 43.5040, lng: -79.8760 },
+  "1025 - BW Bowes":         { lat: 43.5280, lng: -79.8610 },
+  "1026 - CB Cobban":        { lat: 43.5010, lng: -79.9180 },
+  "1027 - CL Clarke":        { lat: 43.5200, lng: -79.8550 },
+  "1028 - CO Coates":        { lat: 43.5220, lng: -79.8970 },
+  "1029 - DE Dempsey":       { lat: 43.5250, lng: -79.8700 },
+  "1031 - DP Dorset Park":   { lat: 43.5120, lng: -79.8860 },
+  "1032 - FO Ford":          { lat: 43.4950, lng: -79.9260 },
+  "1033 - HA Harrison":      { lat: 43.5440, lng: -79.8720 },
+  "1034 - MN Milton North":  { lat: 43.5450, lng: -79.8950 },
+  "1035 - OM Old Milton":    { lat: 43.5150, lng: -79.8830 },
+  "1036 - SC Scott":         { lat: 43.5130, lng: -79.8930 },
+  "1037 - TM Timberlea":     { lat: 43.5050, lng: -79.8950 },
+  "1038 - WI Willmott":      { lat: 43.4980, lng: -79.9070 },
+  "1051 - Walker":           { lat: 43.5110, lng: -79.8600 },
+  // Non-coded forms used on a subset of records
+  "Campbellville":           { lat: 43.4700, lng: -79.9900 },
+  // Omitted — no reliable centroid from public sources, or name is
+  // ambiguous / covers a large rural area that would give misleading
+  // nearby-distance signal:
+  //   "1030 - DG Derry Green"            (industrial corridor; no residential centre)
+  //   "1039 - MI Rural Milton"           (catch-all)
+  //   "1041 - NA Rural Nassagaweya"      (large rural tract)
+  //   "1044 - TR Rural Trafalgar"        (large rural tract)
+  //   "Rural Milton West"                (large rural tract)
+  //   "Brookville/Haltonville"           (two hamlets, ambiguous centre)
+  //   "Moffat"                           (small hamlet)
+  //   "Nassagaweya"                      (entire former township)
+};
+
 export const TRANSIT: POI[] = [
   { name: "Milton GO Station", lat: 43.515, lng: -79.8534, icon: "🚉" },
 ];
