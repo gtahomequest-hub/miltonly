@@ -123,8 +123,11 @@ export interface StreetGeneratorInput {
   }>;
   nearby: {
     parks: Array<{ name: string; distanceMin: number; walkable: boolean }>;
-    schoolsPublic: Array<{ name: string; level: string; board: string; distanceMin: number }>;
-    schoolsCatholic: Array<{ name: string; level: string; board: string; distanceMin: number }>;
+    // School `distanceMin` is nullable: many Milton schools don't have
+    // hardcoded coordinates yet. Null means "coord not on file; distance
+    // unknown" — callers must surface as null rather than fabricate.
+    schoolsPublic: Array<{ name: string; level: string; board: string; distanceMin: number | null }>;
+    schoolsCatholic: Array<{ name: string; level: string; board: string; distanceMin: number | null }>;
     mosques: Array<{ name: string; distanceMin: number }>;
     grocery: Array<{ name: string; distanceMin: number }>;
     hospital?: { name: string; distanceMin: number };

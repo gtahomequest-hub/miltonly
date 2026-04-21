@@ -76,7 +76,7 @@ interface RawSoldStats {
   avg_lease_dom: string | null;
 }
 
-interface RawMonthly {
+export interface RawMonthly {
   year: number;
   month: number;
   avg_sold_price: string | null;
@@ -404,7 +404,7 @@ const STREET_SUFFIXES = new Set([
   "hts", "gt", "cmn", "pk", "rdg", "gr", "cl", "wk", "hl", "ter", "terr",
 ]);
 
-function shortNameFor(name: string): string {
+export function shortNameFor(name: string): string {
   let tokens = stripTrailingCity(name).split(/\s+/).filter(Boolean);
   // Strip a street-type suffix (e.g. "Crescent", "Ave", "Cres.").
   if (tokens.length > 1) {
@@ -692,7 +692,7 @@ function buildProductTypeSections(input: {
   return sections;
 }
 
-function monthlyToQuarterly(rows: RawMonthly[]): QuarterlyDataPoint[] {
+export function monthlyToQuarterly(rows: RawMonthly[]): QuarterlyDataPoint[] {
   // Aggregate 12 months into quarters (3 per year). Group by year + floor((month-1)/3).
   const buckets = new Map<string, { totalPrice: number; totalCount: number; label: string }>();
   for (const r of rows) {

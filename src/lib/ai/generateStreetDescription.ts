@@ -18,7 +18,11 @@
 //   - Structured logging: one JSON line prefixed "[gen]" per call.
 //   - No silent error suppression. All failures throw with context.
 
-import "server-only";
+// Server-scoped by construction: uses fs.readFileSync + Anthropic SDK, neither
+// usable in a client bundle. Omitting `server-only` package guard because it
+// breaks Node-script contexts (spot-check, backfill); the fs and Anthropic
+// imports would fail at runtime in a browser anyway.
+
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";

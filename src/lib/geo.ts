@@ -55,7 +55,47 @@ export const PARKS: POI[] = [
   { name: "Kelso Conservation Area", lat: 43.5167, lng: -79.9333, icon: "🌲" },
   { name: "Centennial Park", lat: 43.5234, lng: -79.8834, icon: "🌳" },
   { name: "Milton Community Park", lat: 43.5178, lng: -79.8645, icon: "🌳" },
+  // Neighbourhood parks (approximate centroids) for more granular distance signal
+  { name: "Rotary Park", lat: 43.5165, lng: -79.8830, icon: "🌳" },
+  { name: "Coates Park", lat: 43.5210, lng: -79.8980, icon: "🌳" },
+  { name: "Willmott Park", lat: 43.4980, lng: -79.9070, icon: "🌳" },
+  { name: "Ford District Park", lat: 43.4950, lng: -79.9260, icon: "🌳" },
+  { name: "Escarpment View Park", lat: 43.5300, lng: -79.8550, icon: "🌳" },
+  { name: "Velodrome Park", lat: 43.5340, lng: -79.8950, icon: "🌳" },
 ];
+
+// Highway 401 on-ramps. Milton has two; pick whichever is nearer per street.
+export const HIGHWAY_ONRAMPS: POI[] = [
+  { name: "Highway 401 at James Snow Pkwy", lat: 43.5220, lng: -79.8475, icon: "🛣️" },
+  { name: "Highway 401 at Regional Rd 25", lat: 43.5183, lng: -79.8830, icon: "🛣️" },
+];
+
+// Fixed landmarks used by buildGeneratorInput's nearby + commute sections.
+export const HOSPITAL: POI = { name: "Milton District Hospital", lat: 43.5158, lng: -79.8861, icon: "🏥" };
+export const GO_STATION: POI = { name: "Milton GO Station", lat: 43.5173, lng: -79.8693, icon: "🚉" };
+
+// Reference Milton centroid for "drive from anywhere in Milton" commute times.
+// These drive minutes vary ~±5 across the town — close enough to hardcode.
+// Toronto downtown is handled separately in buildGeneratorInput since it
+// depends on walk-or-drive-to-GO time, which is street-specific.
+export interface CommuteDestination {
+  label: string;   // "toMississauga" key in StreetGeneratorInput
+  name: string;    // human-readable destination
+  method: string;  // "drive" / "transit"
+  minutes: number; // typical from Milton centroid
+}
+
+export const COMMUTE_FIXED: CommuteDestination[] = [
+  { label: "toMississauga", name: "Mississauga",         method: "drive",   minutes: 22 },
+  { label: "toOakville",    name: "Oakville",            method: "drive",   minutes: 24 },
+  { label: "toBurlington",  name: "Burlington",          method: "drive",   minutes: 20 },
+  { label: "toPearson",     name: "Toronto Pearson",     method: "drive",   minutes: 32 },
+];
+
+// Toronto-downtown commute formula components (from example outputs):
+//   toGOStationMinutes + 48 (GO train) + 12 (Union → downtown TTC) = total
+export const GO_TRAIN_MINUTES = 48;
+export const UNION_TO_DOWNTOWN_TTC_MINUTES = 12;
 
 export const TRANSIT: POI[] = [
   { name: "Milton GO Station", lat: 43.515, lng: -79.8534, icon: "🚉" },
