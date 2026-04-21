@@ -335,9 +335,16 @@ export function validateStreetGeneration(
   const allowedShortNames = input.crossStreets.map(c => c.shortName);
   const candidatePhrases = extractCandidateStreetNames(diffPriorities);
   for (const phrase of candidatePhrases) {
+    // Also tolerate a phrase that is a ≥2-token prefix/substring of the host
+    // street's canonical name (e.g. "Main St" inside "Main Street East").
+    // Requires 2+ tokens to avoid single-word false positives ("Main" alone).
+    const phraseIsHostSelfReference =
+      phrase.trim().split(/\s+/).length >= 2 &&
+      input.street.name.toLowerCase().includes(phrase.toLowerCase());
     const isAllowed = allowedShortNames.some(s => phrase.includes(s))
       || phrase.includes(input.street.shortName)
       || phrase.includes(input.street.name)
+      || phraseIsHostSelfReference
       || input.neighbourhoods.some(n => phrase.includes(n))
       || KNOWN_MILTON_ANCHORS.some(a => phrase.includes(a));
     if (!isAllowed) {

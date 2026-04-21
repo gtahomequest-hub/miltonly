@@ -28,7 +28,7 @@ const OUT_DIR = path.join(process.cwd(), "docs/phase-4.1/spot-check");
 // claude-opus-4-7 pricing (USD per million tokens). No prompt caching in use.
 const PRICE_IN_PER_MTOK = 15;
 const PRICE_OUT_PER_MTOK = 75;
-const COST_STOP_USD = 10;
+const COST_STOP_USD = 8;
 
 interface AttemptUsage {
   attemptNumber: number;
@@ -146,12 +146,14 @@ async function main() {
   );
 
   const capture = installGenLogCapture();
+  type ViolList = Array<{ rule: string; sectionId?: string; excerpt: string }>;
   const results: Array<{
     slug: string;
     status: "succeeded" | "failed";
     attempts: number;
     totalWords: number;
-    violations: Array<{ rule: string; sectionId?: string; excerpt: string }>;
+    violations: ViolList;
+    perAttemptViolations: ViolList[];
     usage: AttemptUsage[];
     cost: number;
     output?: StreetGeneratorOutput;
@@ -192,6 +194,7 @@ async function main() {
           attempts: 0,
           totalWords: 0,
           violations: [],
+          perAttemptViolations: [],
           usage: [],
           cost: 0,
           error: msg,
@@ -202,12 +205,30 @@ async function main() {
 
       let output: StreetGeneratorOutput | undefined;
       let attemptCount = 0;
-      let violations: Array<{ rule: string; sectionId?: string; excerpt: string }> =
-        [];
+      let violations: ViolList = [];
       let errorMsg: string | undefined;
 
+      // Tee each attempt's output so the harness can re-validate them
+      // independently and report a per-attempt violation trail. Uses the
+      // existing callModel seam in generateWithRetry — no changes to the
+      // generator or retry modules.
+      const attemptOutputs: StreetGeneratorOutput[] = [];
+      const teedGenerator = async (
+        input: StreetGeneratorInput,
+        priorViolations?: Parameters<typeof generateStreetDescription>[1],
+        priorOutput?: Parameters<typeof generateStreetDescription>[2],
+      ) => {
+        const out = await generateStreetDescription(
+          input,
+          priorViolations,
+          priorOutput,
+        );
+        attemptOutputs.push(out);
+        return out;
+      };
+
       try {
-        const r = await generateWithRetry(input, generateStreetDescription);
+        const r = await generateWithRetry(input, teedGenerator);
         output = r.output;
         attemptCount = r.attemptCount;
         // Independent re-validation as the kickoff specifies.
@@ -222,6 +243,12 @@ async function main() {
         }
       }
 
+      // Per-attempt diagnostic: re-validate each tee'd output. Length of
+      // attemptOutputs matches the real attempts made (1, 2, or 3).
+      const perAttemptViolations: ViolList[] = attemptOutputs.map((o) =>
+        validateStreetGeneration(o, input),
+      );
+
       const usage = capture.take();
       const cost = costOf(usage);
       runningCost += cost;
@@ -235,6 +262,7 @@ async function main() {
         attempts: attemptCount,
         totalWords,
         violations,
+        perAttemptViolations,
         usage,
         cost,
         output,
@@ -252,6 +280,7 @@ async function main() {
               totalWords,
               usage,
               cost,
+              perAttemptViolations,
               output,
             },
             null,
@@ -272,6 +301,7 @@ async function main() {
               error: errorMsg,
               usage,
               cost,
+              perAttemptViolations,
               partialOutput: output,
             },
             null,
@@ -283,8 +313,15 @@ async function main() {
 
       const violPart =
         violations.length === 0 ? "0" : violations.map((v) => v.rule).join(",");
+      const perAttemptStr = (i: number): string => {
+        const av = perAttemptViolations[i];
+        if (!av) return "-";
+        return av.length === 0 ? "0" : av.map((v) => v.rule).join(",");
+      };
       console.log(
-        `[${slug}] attempts=${attemptCount} totalWords=${totalWords} violations=${violPart} cost=$${cost.toFixed(2)}`,
+        `[${slug}] attempts=${attemptCount} totalWords=${totalWords} violations=${violPart} ` +
+          `attempt1_violations=${perAttemptStr(0)} attempt2_violations=${perAttemptStr(1)} attempt3_violations=${perAttemptStr(2)} ` +
+          `cost=$${cost.toFixed(2)}`,
       );
 
       if (runningCost > COST_STOP_USD) {

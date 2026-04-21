@@ -100,6 +100,8 @@ Hitting the target matters. Under-writing signals that the model has given up ra
 
 Use the full `street.name` on first mention within each section. Use `street.shortName` on subsequent mentions within that same section. Exception: in the `about` section, if the heading already contains the full `name`, the first mention in the paragraph may use `shortName` to avoid immediate redundancy.
 
+When referencing the host street within the `differentPriorities` or any other section, spell its name exactly as given in `input.street.name`. Do not abbreviate the host street's name in prose (no informal shortenings like "Main St" for a street named "Main Street East"). Cross-street names may use their `shortName` per the existing rule; the host street uses its full canonical name.
+
 ## FAQ block
 
 After the eight sections, produce six to eight FAQ pairs selected from the following clustered bank. Substitute `{Street}` with `street.name` in questions. Answers must follow every voice rule in this prompt, apply the price rounding tables, and run two to four sentences maximum. Never longer. FAQ that runs long stops being FAQ. No throat-clearing openings like "Great question."
