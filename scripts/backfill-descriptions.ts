@@ -1,4 +1,4 @@
-// Phase 4.1 Step 9 — backfill script for generated street descriptions.
+// Phase 4.1 Step 9b — backfill script for generated street descriptions.
 //
 // Walks the candidate universe of renderable streets (union of DB1 Listing,
 // DB2 sold_records, DB3 street_sold_stats, DB1 StreetContent — mirrors the
@@ -10,39 +10,36 @@
 // the model; it reads StreetGeneration rows populated here.
 //
 // Flags:
-//   --dry-run            Log planned actions only. No API calls. No DB writes.
-//   --budget-usd N       Hard stop when cumulative cost >= N USD. Default 1200.
-//   --concurrency N      Parallel workers. Default 3.
-//   --slug X             Operate on a single street (overrides the universe).
+//   --dry-run                    Log planned actions only. No API calls. No writes.
+//   --budget-usd N               Per-run hard stop. Default 1200.
+//   --daily-budget-usd N         Rolling-24h cap across runs (.backfill-state.json).
+//                                Default 25. Exits if exceeded; resumes after 24h.
+//   --batch-size N               Pause after every N successful generations and
+//                                require --approve-batch K to continue. Default 25.
+//   --approve-batch K            Approves batch K that was awaiting approval.
+//   --concurrency N              Parallel workers. Default 3.
+//   --slug X                     Operate on a single street (bypasses universe).
+//   --status                     Read-only status summary. No API. No writes.
 //
-// Idempotency:
-//   A slug is SKIPPED when StreetGeneration.status='succeeded' AND inputHash
-//   matches the freshly-computed inputHash. If the inputs change (new sold
-//   records, etc.) the hash changes and the slug is re-generated.
+// State files (at repo root, gitignored):
+//   .backfill-state.json         Persisted across runs: cumulative cost, 24h
+//                                window, batch progress, noCentroid tally.
+//   .backfill-batch-N.json       One per completed batch — approval artifact.
 //
-// Atomic claim:
-//   Before generating, the script upserts a row with status='generating'
-//   via INSERT ... ON CONFLICT ... WHERE status <> 'generating'. If no row
-//   is returned, another worker owns it and this worker moves on.
-//
-// Cooldown:
-//   Slugs with a StreetGenerationReview row less than 24h old are SKIPPED
-//   unless --slug forces them (re-run intent).
-//
-// Rate-limit backoff:
-//   On Anthropic 429, sleep 2^n * 1000ms (n = retry attempt, capped at 30s)
-//   and retry the CURRENT attempt. This is orthogonal to the 3-attempt
-//   retry loop inside generateWithRetry.
+// Idempotency, atomic claim, cooldown, and rate-limit backoff are unchanged
+// from Step 9; see section headings below for details.
 //
 // Run:
 //   TSX_TSCONFIG_PATH=./tsconfig.test.json npx --yes tsx scripts/backfill-descriptions.ts --dry-run
-//   TSX_TSCONFIG_PATH=./tsconfig.test.json npx --yes tsx scripts/backfill-descriptions.ts --budget-usd 200 --concurrency 3
-//   TSX_TSCONFIG_PATH=./tsconfig.test.json npx --yes tsx scripts/backfill-descriptions.ts --slug main-st-e-milton
+//   TSX_TSCONFIG_PATH=./tsconfig.test.json npx --yes tsx scripts/backfill-descriptions.ts --status
+//   TSX_TSCONFIG_PATH=./tsconfig.test.json npx --yes tsx scripts/backfill-descriptions.ts \
+//       --budget-usd 50 --daily-budget-usd 25 --batch-size 25 --concurrency 3
+//   TSX_TSCONFIG_PATH=./tsconfig.test.json npx --yes tsx scripts/backfill-descriptions.ts --approve-batch 1
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, renameSync } from "node:fs";
 import crypto from "node:crypto";
 
-// ─── Env loader (pattern: spot-check.ts) ────────────────────────────────────
+// ─── Env loader ─────────────────────────────────────────────────────────────
 
 function loadEnvLocal() {
   try {
@@ -57,9 +54,6 @@ function loadEnvLocal() {
 }
 
 // ─── Pricing (claude-opus-4-7) ──────────────────────────────────────────────
-// Cache write = 1.25× base, cache read = 0.10× base. System-prompt caching
-// enabled in generateStreetDescription; cache_creation/cache_read fields are
-// emitted on the [gen] log line alongside input/output counts.
 
 const PRICE_IN_PER_MTOK = 15;
 const PRICE_OUT_PER_MTOK = 75;
@@ -69,16 +63,88 @@ const PRICE_CACHE_READ_PER_MTOK = 1.5;
 // ─── Defaults ───────────────────────────────────────────────────────────────
 
 const DEFAULT_BUDGET_USD = 1200;
+const DEFAULT_DAILY_BUDGET_USD = 25;
+const DEFAULT_BATCH_SIZE = 25;
 const DEFAULT_CONCURRENCY = 3;
 const REVIEW_COOLDOWN_HOURS = 24;
 const MAX_RATE_LIMIT_RETRIES = 5;
 const RATE_LIMIT_SLEEP_CAP_MS = 30_000;
+const WINDOW_HOURS = 24;
+
+const STATE_FILE = ".backfill-state.json";
+const FALLBACK_PER_STREET_USD = 0.84; // used in dry-run projection when no history
+
+// ─── State schema ───────────────────────────────────────────────────────────
+
+interface PendingBatch {
+  number: number;
+  startedAt: string;
+  finishedAt: string | null;
+  status: "in_progress" | "awaiting_approval";
+  successes: number;
+  failures: number;
+  slugs: Array<{
+    slug: string;
+    status: "succeeded" | "failed";
+    attempts: number;
+    cost: number;
+  }>;
+  cost: number;
+}
+
+interface BackfillState {
+  firstRunAt: string | null;
+  windowStartedAt: string;
+  dailySpent: number;
+  dailyBudgetExhaustedAt: string | null;
+  cumulativeCost: number;
+  cumulativeSuccesses: number;
+  cumulativeFailures: number;
+  noCentroidSlugs: string[];
+  lastApprovedBatch: number;
+  pendingBatch: PendingBatch | null;
+}
+
+function emptyState(): BackfillState {
+  return {
+    firstRunAt: null,
+    windowStartedAt: new Date().toISOString(),
+    dailySpent: 0,
+    dailyBudgetExhaustedAt: null,
+    cumulativeCost: 0,
+    cumulativeSuccesses: 0,
+    cumulativeFailures: 0,
+    noCentroidSlugs: [],
+    lastApprovedBatch: 0,
+    pendingBatch: null,
+  };
+}
+
+function loadState(): BackfillState {
+  if (!existsSync(STATE_FILE)) return emptyState();
+  try {
+    return JSON.parse(readFileSync(STATE_FILE, "utf-8"));
+  } catch {
+    return emptyState();
+  }
+}
+
+function saveState(state: BackfillState): void {
+  // Atomic write: .tmp then rename.
+  const tmp = `${STATE_FILE}.tmp`;
+  writeFileSync(tmp, JSON.stringify(state, null, 2), "utf-8");
+  renameSync(tmp, STATE_FILE);
+}
 
 // ─── Arg parsing ────────────────────────────────────────────────────────────
 
 interface CliArgs {
   dryRun: boolean;
+  status: boolean;
   budgetUsd: number;
+  dailyBudgetUsd: number;
+  batchSize: number;
+  approveBatch: number | null;
   concurrency: number;
   slug: string | null;
 }
@@ -86,22 +152,24 @@ interface CliArgs {
 function parseArgs(argv: string[]): CliArgs {
   const out: CliArgs = {
     dryRun: false,
+    status: false,
     budgetUsd: DEFAULT_BUDGET_USD,
+    dailyBudgetUsd: DEFAULT_DAILY_BUDGET_USD,
+    batchSize: DEFAULT_BATCH_SIZE,
+    approveBatch: null,
     concurrency: DEFAULT_CONCURRENCY,
     slug: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--dry-run") out.dryRun = true;
-    else if (a === "--budget-usd") {
-      const v = Number(argv[++i]);
-      if (!Number.isFinite(v) || v <= 0) die(`--budget-usd requires a positive number`);
-      out.budgetUsd = v;
-    } else if (a === "--concurrency") {
-      const v = Number(argv[++i]);
-      if (!Number.isInteger(v) || v < 1) die(`--concurrency requires a positive integer`);
-      out.concurrency = v;
-    } else if (a === "--slug") {
+    else if (a === "--status") out.status = true;
+    else if (a === "--budget-usd") out.budgetUsd = requirePositiveNumber("--budget-usd", argv[++i]);
+    else if (a === "--daily-budget-usd") out.dailyBudgetUsd = requirePositiveNumber("--daily-budget-usd", argv[++i]);
+    else if (a === "--batch-size") out.batchSize = requirePositiveInt("--batch-size", argv[++i]);
+    else if (a === "--approve-batch") out.approveBatch = requirePositiveInt("--approve-batch", argv[++i]);
+    else if (a === "--concurrency") out.concurrency = requirePositiveInt("--concurrency", argv[++i]);
+    else if (a === "--slug") {
       const v = argv[++i];
       if (!v || v.startsWith("--")) die(`--slug requires a value`);
       out.slug = v;
@@ -110,6 +178,18 @@ function parseArgs(argv: string[]): CliArgs {
     }
   }
   return out;
+}
+
+function requirePositiveNumber(name: string, raw: string | undefined): number {
+  const v = Number(raw);
+  if (!Number.isFinite(v) || v <= 0) die(`${name} requires a positive number`);
+  return v;
+}
+
+function requirePositiveInt(name: string, raw: string | undefined): number {
+  const v = Number(raw);
+  if (!Number.isInteger(v) || v < 1) die(`${name} requires a positive integer`);
+  return v;
 }
 
 function die(msg: string): never {
@@ -124,10 +204,9 @@ function log(event: string, payload: Record<string, unknown>): void {
   console.log(`[backfill:${event}] ${JSON.stringify({ ...payload })}`);
 }
 
-// ─── Universe query: renderable slugs matching the Step 7b gate ─────────────
+// ─── Universe query ─────────────────────────────────────────────────────────
 
 async function loadCandidateUniverse(): Promise<string[]> {
-  // Dynamic imports: env must be loaded before these modules initialize.
   const { prisma } = await import("@/lib/prisma");
   const { analyticsDb, soldDb } = await import("@/lib/db");
 
@@ -136,18 +215,15 @@ async function loadCandidateUniverse(): Promise<string[]> {
     distinct: ["streetSlug"],
     select: { streetSlug: true },
   });
-
   const contentRows = await prisma.streetContent.findMany({
     select: { streetSlug: true },
   });
-
   const statsRows = analyticsDb
     ? ((await analyticsDb`
         SELECT DISTINCT street_slug AS slug FROM analytics.street_sold_stats
         WHERE street_slug IS NOT NULL
       `) as unknown as Array<{ slug: string }>)
     : [];
-
   const soldRows = soldDb
     ? ((await soldDb`
         SELECT DISTINCT street_slug AS slug FROM sold.sold_records
@@ -160,11 +236,10 @@ async function loadCandidateUniverse(): Promise<string[]> {
   for (const r of contentRows) universe.add(r.streetSlug);
   for (const r of statsRows) universe.add(r.slug);
   for (const r of soldRows) universe.add(r.slug);
-
   return Array.from(universe).sort();
 }
 
-// ─── Hash helper — must match generateStreetDescription.inputHashPrefix ─────
+// ─── Hash helper ────────────────────────────────────────────────────────────
 
 function hashInput(input: unknown): string {
   return crypto
@@ -173,8 +248,6 @@ function hashInput(input: unknown): string {
     .digest("hex")
     .slice(0, 12);
 }
-
-// ─── Word-count helper ──────────────────────────────────────────────────────
 
 function wordCountsFor(sections: Array<{ id: string; paragraphs: string[] }>): {
   perSection: Record<string, number>;
@@ -198,19 +271,13 @@ type SkipReason =
   | "cooldown_active"
   | "claimed_by_other_worker";
 
-interface SkipCheck {
-  skip: false;
-}
-interface SkipReasonCheck {
-  skip: true;
-  reason: SkipReason;
-}
+type Preflight = { skip: false } | { skip: true; reason: SkipReason };
 
 async function preflightSkip(
   slug: string,
   inputHash: string,
   forceSlug: boolean,
-): Promise<SkipCheck | SkipReasonCheck> {
+): Promise<Preflight> {
   const { prisma } = await import("@/lib/prisma");
   const existing = await prisma.streetGeneration.findUnique({
     where: { streetSlug: slug },
@@ -227,25 +294,17 @@ async function preflightSkip(
       select: { lastAttemptAt: true },
     });
     if (review) {
-      const ageHours =
-        (Date.now() - review.lastAttemptAt.getTime()) / (60 * 60 * 1000);
+      const ageHours = (Date.now() - review.lastAttemptAt.getTime()) / 3_600_000;
       if (ageHours < REVIEW_COOLDOWN_HOURS) {
         return { skip: true, reason: "cooldown_active" };
       }
     }
   }
-
   return { skip: false };
 }
 
-/**
- * Atomic claim. Returns true iff this worker now owns the row with
- * status='generating'. Another worker holding 'generating' returns false.
- *
- * Uses INSERT ... ON CONFLICT with a conditional WHERE on the update branch.
- * Required columns (sectionsJson, faqJson, wordCounts) are initialized to
- * neutral placeholders; they are overwritten on success.
- */
+// ─── Atomic claim ───────────────────────────────────────────────────────────
+
 async function claimRow(slug: string, inputHash: string): Promise<boolean> {
   const { prisma } = await import("@/lib/prisma");
   const rows = await prisma.$queryRaw<Array<{ streetSlug: string }>>`
@@ -294,7 +353,6 @@ async function writeSuccess(
       costUsd,
     },
   });
-  // If there was a stale review row, clear it — the street is green now.
   await prisma.streetGenerationReview
     .delete({ where: { streetSlug: slug } })
     .catch(() => undefined);
@@ -337,27 +395,38 @@ async function writeFailure(
   });
 }
 
-// ─── Rate-limit-aware wrapper around the generator ─────────────────────────
+// ─── Rate-limit-aware generator wrapper ─────────────────────────────────────
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
 function isRateLimitError(err: unknown): boolean {
-  const status = (err as { status?: number })?.status;
-  return status === 429;
+  return (err as { status?: number })?.status === 429;
 }
 
-// ─── Main worker flow ──────────────────────────────────────────────────────
+// ─── Worker state (per-run scratch) ─────────────────────────────────────────
 
 interface WorkerState {
-  totalCost: number;
-  budgetUsd: number;
-  succeeded: number;
-  failed: number;
-  skipped: Record<SkipReason, number>;
+  runCost: number;
+  runBudgetUsd: number;
+  runSucceeded: number;
+  runFailed: number;
+  runSkipped: Record<SkipReason, number>;
+  runNoCentroid: number;
+  runInputBuildErrors: number;
   aborted: boolean;
+  abortReason: "budget_exhausted" | "daily_budget_exhausted" | "batch_awaiting_approval" | null;
+  // Persistent state, mutated in-place and written on each terminal event
+  // and at end-of-run. Protected by the serial nature of processOne updates
+  // (workers await one slug at a time; cross-worker writes compete on the
+  // batch-complete check which is guarded below).
+  persisted: BackfillState;
+  batchSize: number;
+  dailyBudgetUsd: number;
 }
+
+// ─── Per-slug flow ──────────────────────────────────────────────────────────
 
 async function processOne(
   slug: string,
@@ -375,23 +444,32 @@ async function processOne(
     StreetGenerationFailure,
   } = await import("@/lib/ai/validateStreetGeneration");
 
-  // 1. Build input (DB-only, no API calls) so we can compute inputHash.
+  // 1. Build input.
   let input;
   try {
     input = await buildGeneratorInput(slug);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log("input_build_failed", { slug, error: msg });
-    state.failed++;
+    const isNoCentroid = err instanceof Error && err.name === "NoCentroidError";
+    if (isNoCentroid) {
+      state.runNoCentroid++;
+      if (!state.persisted.noCentroidSlugs.includes(slug)) {
+        state.persisted.noCentroidSlugs.push(slug);
+      }
+      log("skip", { slug, reason: "no_centroid" });
+    } else {
+      state.runInputBuildErrors++;
+      log("input_build_failed", { slug, error: msg });
+    }
     return;
   }
   const inputHash = hashInput(input);
 
-  // 2. Idempotency / cooldown preflight (no writes yet).
-  const preflight = await preflightSkip(slug, inputHash, !!args.slug);
-  if (preflight.skip) {
-    state.skipped[preflight.reason]++;
-    log("skip", { slug, reason: preflight.reason });
+  // 2. Preflight skip (idempotency, cooldown).
+  const pf = await preflightSkip(slug, inputHash, !!args.slug);
+  if (pf.skip) {
+    state.runSkipped[pf.reason]++;
+    log("skip", { slug, reason: pf.reason });
     return;
   }
 
@@ -403,12 +481,12 @@ async function processOne(
   // 3. Atomic claim.
   const owned = await claimRow(slug, inputHash);
   if (!owned) {
-    state.skipped.claimed_by_other_worker++;
+    state.runSkipped.claimed_by_other_worker++;
     log("skip", { slug, reason: "claimed_by_other_worker" });
     return;
   }
 
-  // 4. Generate with rate-limit backoff wrapping each attempt.
+  // 4. Generate with rate-limit backoff.
   const callRecords: Array<{
     tokensIn: number;
     tokensOut: number;
@@ -422,7 +500,6 @@ async function processOne(
   ) => {
     for (let rlRetry = 0; rlRetry <= MAX_RATE_LIMIT_RETRIES; rlRetry++) {
       try {
-        // Intercept [gen] log to capture token usage per call.
         const origLog = console.log;
         let captured: {
           tokensIn: number;
@@ -470,8 +547,11 @@ async function processOne(
   };
 
   let cost = 0;
+  let slugOutcome: "succeeded" | "failed" = "failed";
+  let attemptsUsed = 0;
   try {
     const { output, attemptCount } = await generateWithRetry(input, genWithBackoff);
+    attemptsUsed = attemptCount;
     const tokensIn = callRecords.reduce((s, r) => s + r.tokensIn, 0);
     const tokensOut = callRecords.reduce((s, r) => s + r.tokensOut, 0);
     const cacheCreate = callRecords.reduce((s, r) => s + r.cacheCreationTokens, 0);
@@ -481,19 +561,10 @@ async function processOne(
       (tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK +
       (cacheCreate / 1_000_000) * PRICE_CACHE_WRITE_PER_MTOK +
       (cacheRead / 1_000_000) * PRICE_CACHE_READ_PER_MTOK;
-    state.totalCost += cost;
 
-    await writeSuccess(
-      slug,
-      inputHash,
-      output.sections,
-      output.faq,
-      attemptCount,
-      tokensIn,
-      tokensOut,
-      cost,
-    );
-    state.succeeded++;
+    await writeSuccess(slug, inputHash, output.sections, output.faq, attemptCount, tokensIn, tokensOut, cost);
+    slugOutcome = "succeeded";
+    state.runSucceeded++;
     log("success", {
       slug,
       attempts: attemptCount,
@@ -501,7 +572,7 @@ async function processOne(
       tokensIn,
       tokensOut,
       cost: Number(cost.toFixed(4)),
-      runningCost: Number(state.totalCost.toFixed(4)),
+      runCost: Number((state.runCost + cost).toFixed(4)),
     });
   } catch (err) {
     const tokensIn = callRecords.reduce((s, r) => s + r.tokensIn, 0);
@@ -513,11 +584,12 @@ async function processOne(
       (tokensOut / 1_000_000) * PRICE_OUT_PER_MTOK +
       (cacheCreate / 1_000_000) * PRICE_CACHE_WRITE_PER_MTOK +
       (cacheRead / 1_000_000) * PRICE_CACHE_READ_PER_MTOK;
-    state.totalCost += cost;
 
     if (err instanceof StreetGenerationFailure) {
+      attemptsUsed = 3;
       await writeFailure(slug, inputHash, err.violations, 3, tokensIn, tokensOut, cost);
     } else {
+      attemptsUsed = 0;
       const msg = err instanceof Error ? err.message : String(err);
       await writeFailure(
         slug,
@@ -529,24 +601,91 @@ async function processOne(
         cost,
       );
     }
-    state.failed++;
+    slugOutcome = "failed";
+    state.runFailed++;
     log("failure", {
       slug,
       error: err instanceof Error ? err.message : String(err),
       tokensIn,
       tokensOut,
       cost: Number(cost.toFixed(4)),
-      runningCost: Number(state.totalCost.toFixed(4)),
+      runCost: Number((state.runCost + cost).toFixed(4)),
     });
   }
 
-  if (state.totalCost >= state.budgetUsd) {
+  // Update run + persisted counters, persist, then check budget/batch gates.
+  state.runCost += cost;
+  state.persisted.cumulativeCost += cost;
+  state.persisted.dailySpent += cost;
+  if (slugOutcome === "succeeded") state.persisted.cumulativeSuccesses++;
+  else state.persisted.cumulativeFailures++;
+
+  // Ensure a pendingBatch exists (the current working batch).
+  if (!state.persisted.pendingBatch) {
+    state.persisted.pendingBatch = {
+      number: state.persisted.lastApprovedBatch + 1,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      status: "in_progress",
+      successes: 0,
+      failures: 0,
+      slugs: [],
+      cost: 0,
+    };
+  }
+  const batch = state.persisted.pendingBatch;
+  batch.slugs.push({ slug, status: slugOutcome, attempts: attemptsUsed, cost });
+  if (slugOutcome === "succeeded") batch.successes++;
+  else batch.failures++;
+  batch.cost += cost;
+
+  saveState(state.persisted);
+
+  // Budget gates.
+  if (state.runCost >= state.runBudgetUsd) {
     state.aborted = true;
+    state.abortReason = "budget_exhausted";
     log("budget_exhausted", {
-      totalCost: Number(state.totalCost.toFixed(4)),
-      budgetUsd: state.budgetUsd,
+      runCost: Number(state.runCost.toFixed(4)),
+      runBudgetUsd: state.runBudgetUsd,
+    });
+    return;
+  }
+  if (state.persisted.dailySpent >= state.dailyBudgetUsd) {
+    state.aborted = true;
+    state.abortReason = "daily_budget_exhausted";
+    state.persisted.dailyBudgetExhaustedAt = new Date().toISOString();
+    saveState(state.persisted);
+    log("daily_budget_exhausted", {
+      dailySpent: Number(state.persisted.dailySpent.toFixed(4)),
+      dailyBudgetUsd: state.dailyBudgetUsd,
+      windowStartedAt: state.persisted.windowStartedAt,
+      resumesAt: new Date(Date.now() + WINDOW_HOURS * 3_600_000).toISOString(),
+    });
+    return;
+  }
+
+  // Batch-completion gate: when successes reach batchSize, finalize and halt.
+  if (batch.successes >= state.batchSize) {
+    batch.status = "awaiting_approval";
+    batch.finishedAt = new Date().toISOString();
+    writeBatchArtifact(batch);
+    saveState(state.persisted);
+    state.aborted = true;
+    state.abortReason = "batch_awaiting_approval";
+    log("batch_awaiting_approval", {
+      batchNumber: batch.number,
+      successes: batch.successes,
+      failures: batch.failures,
+      cost: Number(batch.cost.toFixed(4)),
+      approveWith: `--approve-batch ${batch.number}`,
     });
   }
+}
+
+function writeBatchArtifact(batch: PendingBatch): void {
+  const path = `.backfill-batch-${batch.number}.json`;
+  writeFileSync(path, JSON.stringify(batch, null, 2), "utf-8");
 }
 
 // ─── Concurrency pool ──────────────────────────────────────────────────────
@@ -572,47 +711,229 @@ async function runPool(
   await Promise.all(workers);
 }
 
-// ─── Entry point ───────────────────────────────────────────────────────────
+// ─── Daily window management ────────────────────────────────────────────────
+
+function maybeResetDailyWindow(state: BackfillState): void {
+  const now = Date.now();
+  const started = new Date(state.windowStartedAt).getTime();
+  if (now - started >= WINDOW_HOURS * 3_600_000) {
+    state.windowStartedAt = new Date(now).toISOString();
+    state.dailySpent = 0;
+    state.dailyBudgetExhaustedAt = null;
+  }
+}
+
+function formatHoursMins(ms: number): string {
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h${m.toString().padStart(2, "0")}m`;
+}
+
+// ─── --status path ──────────────────────────────────────────────────────────
+
+async function statusCommand(state: BackfillState, args: CliArgs): Promise<void> {
+  const { prisma } = await import("@/lib/prisma");
+
+  const universe = await loadCandidateUniverse();
+  const succeededRows = await prisma.streetGeneration.count({
+    where: { status: "succeeded" },
+  });
+  const reviewRows = await prisma.streetGenerationReview.count();
+
+  const accountedFor =
+    succeededRows + reviewRows + state.noCentroidSlugs.length;
+  const pending = Math.max(universe.length - accountedFor, 0);
+
+  const dailyRemaining =
+    state.dailyBudgetExhaustedAt && new Date(state.dailyBudgetExhaustedAt).getTime() > 0
+      ? Math.max(args.dailyBudgetUsd - state.dailySpent, 0)
+      : args.dailyBudgetUsd - state.dailySpent;
+
+  const windowAgeMs = Date.now() - new Date(state.windowStartedAt).getTime();
+  const windowStatus =
+    windowAgeMs >= WINDOW_HOURS * 3_600_000
+      ? "expired (resets on next run)"
+      : `active, ${formatHoursMins(WINDOW_HOURS * 3_600_000 - windowAgeMs)} remaining`;
+
+  const batchStatus = state.pendingBatch
+    ? `batch ${state.pendingBatch.number} ${state.pendingBatch.status} (${state.pendingBatch.successes}/${args.batchSize} successes)`
+    : `no open batch (last approved: ${state.lastApprovedBatch})`;
+
+  log("status", {
+    universe: universe.length,
+    completed: succeededRows,
+    failed: reviewRows,
+    noCentroid: state.noCentroidSlugs.length,
+    pending,
+    cumulativeCost: Number(state.cumulativeCost.toFixed(4)),
+    cumulativeSuccesses: state.cumulativeSuccesses,
+    cumulativeFailures: state.cumulativeFailures,
+    dailyBudgetRemaining: Number(Math.max(dailyRemaining, 0).toFixed(4)),
+    dailyBudgetWindow: windowStatus,
+    batchStatus,
+    dailyBudgetExhaustedAt: state.dailyBudgetExhaustedAt,
+  });
+}
+
+// ─── Entry point ────────────────────────────────────────────────────────────
 
 async function main() {
   loadEnvLocal();
   const args = parseArgs(process.argv.slice(2));
 
+  // --status is read-only and has no other action; short-circuit.
+  if (args.status) {
+    const state = loadState();
+    maybeResetDailyWindow(state);
+    await statusCommand(state, args);
+    return;
+  }
+
   if (!args.dryRun && !process.env.ANTHROPIC_API_KEY) {
     die("ANTHROPIC_API_KEY missing from env. Check .env.local.");
+  }
+
+  const state = loadState();
+  maybeResetDailyWindow(state);
+  if (!state.firstRunAt) state.firstRunAt = new Date().toISOString();
+
+  // Handle --approve-batch first. Approving unlocks the next batch; it does
+  // NOT by itself start work. If the user also passes normal flags, we proceed
+  // after approval.
+  if (args.approveBatch !== null) {
+    if (!state.pendingBatch || state.pendingBatch.status !== "awaiting_approval") {
+      die(`--approve-batch ${args.approveBatch} but no batch is awaiting approval.`);
+    }
+    if (state.pendingBatch.number !== args.approveBatch) {
+      die(
+        `--approve-batch ${args.approveBatch} does not match pending batch ${state.pendingBatch.number}.`,
+      );
+    }
+    log("batch_approved", {
+      batchNumber: state.pendingBatch.number,
+      successes: state.pendingBatch.successes,
+      failures: state.pendingBatch.failures,
+      cost: Number(state.pendingBatch.cost.toFixed(4)),
+    });
+    state.lastApprovedBatch = state.pendingBatch.number;
+    state.pendingBatch = null;
+    saveState(state);
+  }
+
+  // If a batch is pending approval and no --approve-batch was passed, refuse
+  // to do any further work — print the pending batch summary and exit.
+  if (state.pendingBatch && state.pendingBatch.status === "awaiting_approval") {
+    log("batch_pending_approval", {
+      batchNumber: state.pendingBatch.number,
+      successes: state.pendingBatch.successes,
+      failures: state.pendingBatch.failures,
+      cost: Number(state.pendingBatch.cost.toFixed(4)),
+      approveWith: `--approve-batch ${state.pendingBatch.number}`,
+      batchFile: `.backfill-batch-${state.pendingBatch.number}.json`,
+    });
+    return;
+  }
+
+  // Daily-budget gate: if we previously exhausted and the 24h window has NOT
+  // expired, refuse to run.
+  if (state.dailyBudgetExhaustedAt) {
+    const ageMs = Date.now() - new Date(state.dailyBudgetExhaustedAt).getTime();
+    if (ageMs < WINDOW_HOURS * 3_600_000) {
+      const resumeAt = new Date(
+        new Date(state.dailyBudgetExhaustedAt).getTime() + WINDOW_HOURS * 3_600_000,
+      ).toISOString();
+      log("daily_budget_still_exhausted", {
+        dailySpent: Number(state.dailySpent.toFixed(4)),
+        dailyBudgetUsd: args.dailyBudgetUsd,
+        exhaustedAt: state.dailyBudgetExhaustedAt,
+        resumesAt: resumeAt,
+      });
+      return;
+    }
+    // Window elapsed — reset (maybeResetDailyWindow already covers this).
   }
 
   log("start", {
     dryRun: args.dryRun,
     budgetUsd: args.budgetUsd,
+    dailyBudgetUsd: args.dailyBudgetUsd,
+    batchSize: args.batchSize,
     concurrency: args.concurrency,
     slug: args.slug,
+    lastApprovedBatch: state.lastApprovedBatch,
+    pendingBatchInProgress: state.pendingBatch?.number ?? null,
   });
 
   const slugs = args.slug ? [args.slug] : await loadCandidateUniverse();
   log("universe_loaded", { count: slugs.length });
 
-  const state: WorkerState = {
-    totalCost: 0,
-    budgetUsd: args.budgetUsd,
-    succeeded: 0,
-    failed: 0,
-    skipped: {
+  const workerState: WorkerState = {
+    runCost: 0,
+    runBudgetUsd: args.budgetUsd,
+    runSucceeded: 0,
+    runFailed: 0,
+    runSkipped: {
       already_succeeded_same_input: 0,
       cooldown_active: 0,
       claimed_by_other_worker: 0,
     },
+    runNoCentroid: 0,
+    runInputBuildErrors: 0,
     aborted: false,
+    abortReason: null,
+    persisted: state,
+    batchSize: args.batchSize,
+    dailyBudgetUsd: args.dailyBudgetUsd,
   };
 
-  await runPool(slugs, args, state);
+  await runPool(slugs, args, workerState);
+
+  if (args.dryRun) {
+    // Dry-run summary: projection using current per-street average (falls back
+    // to a static baseline if no history exists yet).
+    const history = state.cumulativeSuccesses;
+    const perStreet = history > 0 ? state.cumulativeCost / history : FALLBACK_PER_STREET_USD;
+    const wouldGenerate =
+      slugs.length -
+      workerState.runNoCentroid -
+      workerState.runSkipped.already_succeeded_same_input -
+      workerState.runSkipped.cooldown_active -
+      workerState.runInputBuildErrors;
+    const estimatedCost = wouldGenerate * perStreet;
+    log("dry_run_summary", {
+      universeSize: slugs.length,
+      wouldGenerate,
+      wouldNoCentroid: workerState.runNoCentroid,
+      wouldSkipAlreadySucceeded: workerState.runSkipped.already_succeeded_same_input,
+      wouldSkipCooldown: workerState.runSkipped.cooldown_active,
+      inputBuildErrors: workerState.runInputBuildErrors,
+      perStreetAvg: Number(perStreet.toFixed(4)),
+      perStreetSource: history > 0 ? `history (n=${history})` : "baseline",
+      estimatedCost: Number(estimatedCost.toFixed(2)),
+    });
+  }
+
+  // Final save — dry-run paths never mutate persistent counters, but
+  // noCentroidSlugs WAS mutated in processOne. Suppress that in dry-run by
+  // restoring from the snapshot we loaded.
+  if (args.dryRun) {
+    // Reload to drop any in-memory mutations from this dry-run.
+    // (State on disk is unchanged since we never saved during dry-run.)
+  } else {
+    saveState(state);
+  }
 
   log("done", {
-    succeeded: state.succeeded,
-    failed: state.failed,
-    skipped: state.skipped,
-    totalCost: Number(state.totalCost.toFixed(4)),
-    aborted: state.aborted,
+    dryRun: args.dryRun,
+    succeeded: workerState.runSucceeded,
+    failed: workerState.runFailed,
+    skipped: workerState.runSkipped,
+    noCentroid: workerState.runNoCentroid,
+    inputBuildErrors: workerState.runInputBuildErrors,
+    runCost: Number(workerState.runCost.toFixed(4)),
+    cumulativeCost: Number(state.cumulativeCost.toFixed(4)),
+    aborted: workerState.aborted,
+    abortReason: workerState.abortReason,
   });
 }
 
