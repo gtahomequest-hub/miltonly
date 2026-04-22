@@ -354,6 +354,10 @@ const STREET_ABBREVIATIONS: Record<string, string> = {
   rd: "Road",
   dr: "Drive",
   ct: "Court",
+  // Step 11d: real-world DB1 streetName values use "Crt" for Court.
+  // Slug forms include both -crt-milton and -court-milton. Both abbreviation
+  // variants map to "Court" — the canonical full-word form.
+  crt: "Court",
   cres: "Crescent",
   blvd: "Boulevard",
   ln: "Lane",
@@ -365,6 +369,10 @@ const STREET_ABBREVIATIONS: Record<string, string> = {
   gt: "Gate",
   cmn: "Common",
   pk: "Park",
+  // Step 11d: parkway variants (pkwy/pky) absent from universe audit but
+  // mapped here for completeness across GTA datasets.
+  pkwy: "Parkway",
+  pky: "Parkway",
   rdg: "Ridge",
   gr: "Grove",
   gv: "Grove",

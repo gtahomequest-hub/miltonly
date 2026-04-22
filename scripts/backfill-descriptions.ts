@@ -248,7 +248,75 @@ async function loadCandidateUniverse(): Promise<string[]> {
   for (const r of contentRows) universe.add(r.streetSlug);
   for (const r of statsRows) universe.add(r.slug);
   for (const r of soldRows) universe.add(r.slug);
-  return Array.from(universe).sort();
+  return dedupeCanonical(Array.from(universe).sort());
+}
+
+// ─── Slug dedupe ────────────────────────────────────────────────────────────
+//
+// Groups slugs by a "canonical key" — the slug with any abbreviated suffix
+// token mapped to its full-word form. When 2+ slugs share a key, prefer the
+// full-word variant (e.g. -court-milton over -crt-milton). Skipped duplicates
+// are logged so we have an audit trail.
+//
+// Step 11d — addresses data-quality drift where DB1 and DB2 ingestion paths
+// normalized street suffixes differently, producing two slugs for the same
+// physical street (aird-court-milton vs aird-crt-milton) at ~150-250 pair
+// scale in Milton alone.
+
+const ABBREV_TO_FULL: Record<string, string> = {
+  crt: "court",
+  cres: "crescent",
+  blvd: "boulevard",
+  dr: "drive",
+  rd: "road",
+  st: "street",
+  ave: "avenue",
+  ln: "lane",
+  terr: "terrace",
+  ter: "terrace",
+  pl: "place",
+  cir: "circle",
+  pkwy: "parkway",
+  pky: "parkway",
+  hts: "heights",
+};
+
+function canonicalizeSlug(slug: string): string {
+  // Slugs are of the form `<base-tokens>-<suffix>-milton`. Map the suffix
+  // token (second-to-last) from abbreviation to full form.
+  const parts = slug.split("-");
+  if (parts.length < 3) return slug;
+  if (parts[parts.length - 1] !== "milton") return slug;
+  const suffix = parts[parts.length - 2];
+  const canonical = ABBREV_TO_FULL[suffix];
+  if (!canonical) return slug;
+  parts[parts.length - 2] = canonical;
+  return parts.join("-");
+}
+
+function dedupeCanonical(slugs: string[]): string[] {
+  const groups = new Map<string, string[]>();
+  for (const s of slugs) {
+    const key = canonicalizeSlug(s);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(s);
+  }
+  const kept: string[] = [];
+  for (const [key, members] of Array.from(groups.entries())) {
+    if (members.length === 1) {
+      kept.push(members[0]);
+      continue;
+    }
+    // Prefer the member whose slug equals the canonical key (full-word form).
+    // Fall back to the first member if no full-form is present.
+    const canonicalMember = members.find((m: string) => m === key) ?? members[0];
+    kept.push(canonicalMember);
+    for (const m of members) {
+      if (m === canonicalMember) continue;
+      log("dedupe_skip", { canonical: canonicalMember, skipped: m });
+    }
+  }
+  return kept.sort();
 }
 
 // ─── Hash helper ────────────────────────────────────────────────────────────
