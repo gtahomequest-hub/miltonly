@@ -129,11 +129,23 @@ function loadState(): BackfillState {
   }
 }
 
-function saveState(state: BackfillState): void {
-  // Atomic write: .tmp then rename.
+// Serialize concurrent saveState calls. On Windows, renameSync on the same
+// path from multiple workers races and can fail with EPERM when another
+// worker's handle on the tmp file is still resolving. The mutex threads all
+// writes through a single Promise chain so renames happen one at a time.
+let saveStateMutex: Promise<void> = Promise.resolve();
+
+function actuallyWriteState(state: BackfillState): void {
   const tmp = `${STATE_FILE}.tmp`;
   writeFileSync(tmp, JSON.stringify(state, null, 2), "utf-8");
   renameSync(tmp, STATE_FILE);
+}
+
+function saveState(state: BackfillState): Promise<void> {
+  saveStateMutex = saveStateMutex.then(() => {
+    actuallyWriteState(state);
+  });
+  return saveStateMutex;
 }
 
 // ─── Arg parsing ────────────────────────────────────────────────────────────
@@ -639,9 +651,16 @@ async function processOne(
   else batch.failures++;
   batch.cost += cost;
 
-  saveState(state.persisted);
+  await saveState(state.persisted);
 
   // Budget gates.
+  //
+  // Note on budget overshoot: the daily budget cap is enforced after each
+  // completed call, not mid-call. With concurrency=N, up to N-1 inflight
+  // calls can complete after the cap is hit, causing overshoot bounded by
+  // (N-1) × max_per_street_cost. At concurrency=3 and max ~$1.20/street,
+  // expect up to $2.40 overshoot. Set --daily-budget-usd to your target
+  // effective spend minus this buffer if you need a hard ceiling.
   if (state.runCost >= state.runBudgetUsd) {
     state.aborted = true;
     state.abortReason = "budget_exhausted";
@@ -655,7 +674,7 @@ async function processOne(
     state.aborted = true;
     state.abortReason = "daily_budget_exhausted";
     state.persisted.dailyBudgetExhaustedAt = new Date().toISOString();
-    saveState(state.persisted);
+    await saveState(state.persisted);
     log("daily_budget_exhausted", {
       dailySpent: Number(state.persisted.dailySpent.toFixed(4)),
       dailyBudgetUsd: state.dailyBudgetUsd,
@@ -670,7 +689,7 @@ async function processOne(
     batch.status = "awaiting_approval";
     batch.finishedAt = new Date().toISOString();
     writeBatchArtifact(batch);
-    saveState(state.persisted);
+    await saveState(state.persisted);
     state.aborted = true;
     state.abortReason = "batch_awaiting_approval";
     log("batch_awaiting_approval", {
@@ -817,7 +836,7 @@ async function main() {
     });
     state.lastApprovedBatch = state.pendingBatch.number;
     state.pendingBatch = null;
-    saveState(state);
+    await saveState(state);
   }
 
   // If a batch is pending approval and no --approve-batch was passed, refuse
@@ -920,7 +939,7 @@ async function main() {
     // Reload to drop any in-memory mutations from this dry-run.
     // (State on disk is unchanged since we never saved during dry-run.)
   } else {
-    saveState(state);
+    await saveState(state);
   }
 
   log("done", {

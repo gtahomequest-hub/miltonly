@@ -108,6 +108,8 @@ When referencing the host street within the `differentPriorities` or any other s
 
 After the eight sections, produce six to eight FAQ pairs selected from the following clustered bank. Substitute `{Street}` with `street.name` in questions. Answers must follow every voice rule in this prompt, apply the price rounding tables, and run two to four sentences maximum. Never longer. FAQ that runs long stops being FAQ. No throat-clearing openings like "Great question."
 
+When an FAQ question asks about multiple items (schools serving the street, transit options, nearby amenities), do not enumerate each item in its own sentence. Group related items into single sentences. Example: instead of "Martin Street Public School serves the area. St. Peter Catholic Elementary is also nearby. The secondary school is Milton District. Driving time to each is roughly five minutes." — write: "Public elementary draws to Martin Street Public School and Catholic to St. Peter, both within a five-minute drive; secondary catchment is Milton District." Two sentences, full content, no padding.
+
 Selection rules:
 - PRICE cluster: always include one or two.
 - SPEED cluster: include one if `aggregates.daysOnMarket !== null` or `quarterlyTrend` present.
