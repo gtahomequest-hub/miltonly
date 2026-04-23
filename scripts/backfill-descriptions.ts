@@ -248,7 +248,98 @@ async function loadCandidateUniverse(): Promise<string[]> {
   for (const r of contentRows) universe.add(r.streetSlug);
   for (const r of statsRows) universe.add(r.slug);
   for (const r of soldRows) universe.add(r.slug);
+
+  // Step 13f — malformed-slug blacklist. Reject slugs where tokens encode
+  // unit descriptors, N/A values, or addressing artifacts rather than real
+  // street-name content. See scripts/_dupe-deep-audit.mjs for the full
+  // pattern analysis. Logs the rejected count for audit trail.
+  const preBlacklist = universe.size;
+  const rejected: string[] = [];
+  for (const slug of Array.from(universe)) {
+    if (isMalformedSlug(slug)) {
+      universe.delete(slug);
+      rejected.push(slug);
+    }
+  }
+  log("blacklist_applied", {
+    rejectedCount: rejected.length,
+    universeBefore: preBlacklist,
+    universeAfter: universe.size,
+    sample: rejected.slice(0, 10),
+  });
+
   return dedupeCanonical(Array.from(universe).sort());
+}
+
+// ─── Malformed slug detection ───────────────────────────────────────────────
+
+const MALFORMED_TOKENS = new Set(["na", "unt", "bsmt", "basement"]);
+const EXACT_BLACKLIST = new Set([
+  "hwy-7-n-a-milton",
+  "con-5-pt-lot-17-milton",
+  "no-1-side-rd-milton",
+  "sideroad-10-milton",
+]);
+const STREET_TYPE_TOKENS = new Set([
+  "blvd", "boulevard",
+  "cres", "crescent",
+  "way",
+  "dr", "drive",
+  "ave", "avenue",
+  "rd", "road",
+  "st", "street",
+  "terr", "ter", "terrace",
+  "trl", "trail",
+  "gate",
+  "crt", "court",
+  "pl", "place",
+  "cir", "circle",
+  "hts", "heights",
+  "gardens",
+  "ln", "lane",
+  "line",
+  "common",
+]);
+
+/**
+ * Reject slugs that encode MLS parse artifacts (N/A suffix, unit descriptors,
+ * basement/upper qualifiers, mid-slug unit-number tokens) rather than real
+ * street names. Conservative: only strips tokens with no plausible meaning
+ * as part of a Milton street name.
+ */
+export function isMalformedSlug(slug: string): boolean {
+  if (EXACT_BLACKLIST.has(slug)) return true;
+
+  const parts = slug.split("-");
+  if (parts.length < 3) return false;
+  if (parts[parts.length - 1] !== "milton") return false;
+
+  // Token-based malformation: "na", "unt", "bsmt", "basement" anywhere mid-slug.
+  for (let i = 1; i < parts.length - 1; i++) {
+    if (MALFORMED_TOKENS.has(parts[i].toLowerCase())) return true;
+  }
+
+  // "upper" as a unit descriptor — reject when it appears AFTER a street-type
+  // token (featherstone-rd-upper, savoline-blvd-upper, etc.). Legitimate
+  // "Upper X" street names have "upper" at the start, not after a suffix.
+  let sawStreetType = false;
+  for (let i = 1; i < parts.length - 1; i++) {
+    const t = parts[i].toLowerCase();
+    if (STREET_TYPE_TOKENS.has(t)) sawStreetType = true;
+    else if (sawStreetType && (t === "upper" || t === "only")) return true;
+  }
+
+  // Numeric-only mid-slug token AFTER a street-type token = unit number
+  // artifact. "3-side-rd-milton" is legitimate (leading numeric, side-road),
+  // "farmstead-dr-ne-88-milton" is garbage (numeric after street-type "dr").
+  sawStreetType = false;
+  for (let i = 1; i < parts.length - 1; i++) {
+    const t = parts[i].toLowerCase();
+    if (STREET_TYPE_TOKENS.has(t)) sawStreetType = true;
+    else if (sawStreetType && /^\d+$/.test(t)) return true;
+  }
+
+  return false;
 }
 
 // ─── Slug dedupe ────────────────────────────────────────────────────────────
