@@ -268,7 +268,7 @@ async function loadCandidateUniverse(): Promise<string[]> {
     sample: rejected.slice(0, 10),
   });
 
-  return dedupeCanonical(Array.from(universe).sort());
+  return await dedupeByIdentity(Array.from(universe).sort());
 }
 
 // ─── Malformed slug detection ───────────────────────────────────────────────
@@ -367,72 +367,72 @@ export function isMalformedSlug(slug: string): boolean {
   return false;
 }
 
-// ─── Slug dedupe ────────────────────────────────────────────────────────────
+// ─── Identity-keyed dedupe (Step 13m-2) ─────────────────────────────────────
 //
-// Groups slugs by a "canonical key" — the slug with any abbreviated suffix
-// token mapped to its full-word form. When 2+ slugs share a key, prefer the
-// full-word variant (e.g. -court-milton over -crt-milton). Skipped duplicates
-// are logged so we have an audit trail.
+// Groups slugs by deriveIdentity().identityKey — base + direction + suffix —
+// which collapses suffix-abbreviation pairs (crt↔court, cres↔crescent, etc.)
+// AND phantom directional variants (derry-rd-e-milton, asleton-blvd-n-milton)
+// into their registry-validated base identity. See src/lib/streetUtils.ts
+// for the identity derivation + REGISTERED_DIRECTIONS table.
 //
-// Step 11d — addresses data-quality drift where DB1 and DB2 ingestion paths
-// normalized street suffixes differently, producing two slugs for the same
-// physical street (aird-court-milton vs aird-crt-milton) at ~150-250 pair
-// scale in Milton alone.
+// Canonical pick within a group: prefer the slug with the most DB2
+// transactions (data-bearing), tiebreak by shortest slug (a proxy for
+// canonical form in the absence of transaction-volume signal), tiebreak
+// by alphabetical. Replaces the Step 11d full-word-preferred rule, which
+// systematically picked empty slugs as canonical on all 277 inverted groups.
 
-const ABBREV_TO_FULL: Record<string, string> = {
-  crt: "court",
-  cres: "crescent",
-  blvd: "boulevard",
-  dr: "drive",
-  rd: "road",
-  st: "street",
-  ave: "avenue",
-  ln: "lane",
-  terr: "terrace",
-  ter: "terrace",
-  pl: "place",
-  cir: "circle",
-  pkwy: "parkway",
-  pky: "parkway",
-  hts: "heights",
-  // Step 12b WS4: 18 slugs in the current Milton universe use -trl-milton
-  // while 11 use -trail-milton. Previously not deduped; extending coverage.
-  trl: "trail",
-};
-
-function canonicalizeSlug(slug: string): string {
-  // Slugs are of the form `<base-tokens>-<suffix>-milton`. Map the suffix
-  // token (second-to-last) from abbreviation to full form.
-  const parts = slug.split("-");
-  if (parts.length < 3) return slug;
-  if (parts[parts.length - 1] !== "milton") return slug;
-  const suffix = parts[parts.length - 2];
-  const canonical = ABBREV_TO_FULL[suffix];
-  if (!canonical) return slug;
-  parts[parts.length - 2] = canonical;
-  return parts.join("-");
+async function fetchSlugTxCounts(slugs: string[]): Promise<Map<string, number>> {
+  const { soldDb } = await import("@/lib/db");
+  const counts = new Map<string, number>();
+  if (!soldDb || slugs.length === 0) return counts;
+  const rows = await (soldDb`
+    SELECT street_slug, COUNT(*)::int AS n
+    FROM sold.sold_records
+    WHERE street_slug = ANY(${slugs}::text[])
+    GROUP BY street_slug
+  ` as unknown as Promise<Array<{ street_slug: string; n: number }>>).catch(() => [] as Array<{ street_slug: string; n: number }>);
+  for (const r of rows) counts.set(r.street_slug, r.n);
+  return counts;
 }
 
-function dedupeCanonical(slugs: string[]): string[] {
+async function dedupeByIdentity(slugs: string[]): Promise<string[]> {
+  const { deriveIdentity } = await import("@/lib/streetUtils");
+
+  // One DB2 GROUP BY over the entire universe. Cheap — uses
+  // idx_sold_street_slug, returns one row per slug that has any sold_records.
+  const txCounts = await fetchSlugTxCounts(slugs);
+
+  // Group by identity key. Slugs that fail to parse keep their original slug
+  // as their own singleton key (no merging).
   const groups = new Map<string, string[]>();
   for (const s of slugs) {
-    const key = canonicalizeSlug(s);
+    const id = deriveIdentity(s);
+    const key = id ? id.identityKey : `__noident__|${s}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(s);
   }
+
   const kept: string[] = [];
-  for (const [key, members] of Array.from(groups.entries())) {
-    if (members.length === 1) {
-      kept.push(members[0]);
-      continue;
-    }
-    // Prefer the member whose slug equals the canonical key (full-word form).
-    // Fall back to the first member if no full-form is present.
-    const canonicalMember = members.find((m: string) => m === key) ?? members[0];
-    kept.push(canonicalMember);
-    for (const m of members) {
-      if (m === canonicalMember) continue;
-      log("dedupe_skip", { canonical: canonicalMember, skipped: m });
+  for (const [, members] of Array.from(groups.entries())) {
+    if (members.length === 1) { kept.push(members[0]); continue; }
+    // Sort: (tx desc, slug length asc, slug alphabetical asc). First element
+    // becomes canonical; rest are logged as dedupe_skip.
+    const sorted = members.slice().sort((a, b) => {
+      const txa = txCounts.get(a) ?? 0;
+      const txb = txCounts.get(b) ?? 0;
+      if (txa !== txb) return txb - txa;
+      if (a.length !== b.length) return a.length - b.length;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    const canonical = sorted[0];
+    kept.push(canonical);
+    for (const m of sorted.slice(1)) {
+      log("dedupe_skip", {
+        canonical,
+        skipped: m,
+        canonicalTx: txCounts.get(canonical) ?? 0,
+        skippedTx: txCounts.get(m) ?? 0,
+      });
     }
   }
   return kept.sort();
