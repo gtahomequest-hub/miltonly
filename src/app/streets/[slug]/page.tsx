@@ -26,6 +26,7 @@ import { FAQ } from "@/components/street/FAQ";
 import { FinalCTAs } from "@/components/street/FinalCTAs";
 import { CornerWidget } from "@/components/street/CornerWidget";
 import { ExitIntent } from "@/components/street/ExitIntent";
+import { StreetPlaceholder } from "@/components/street/StreetPlaceholder";
 
 interface Props { params: { slug: string } }
 
@@ -100,16 +101,29 @@ export default async function StreetPage({ params }: Props) {
   // handles streets where content has never been generated).
   const descriptionBodyProps = resolveDescriptionBody(data, generation);
 
-  // FAQ: prefer generated FAQ when present; fall back to the legacy
-  // template FAQs from street-data.
+  // Placeholder mode: when neither a succeeded StreetGeneration nor a legacy
+  // StreetContent.description exists for the slug, descriptionBodyProps.sections
+  // resolves to []. That's the signal to render a confident editorial
+  // placeholder body + suppress the template FAQ fallback, so the page feels
+  // native rather than an empty shell. The rest of the page (hero, market,
+  // commute, schools, inventory, CTAs) renders normally off DB-derived data.
+  const placeholderMode = descriptionBodyProps.sections.length === 0;
+
+  // FAQ: prefer generated FAQ when present; in placeholder mode, suppress
+  // entirely so template FAQs don't render under a "profile in preparation"
+  // body. Legacy path (content-bearing streets without an AI generation)
+  // still surfaces the template FAQs.
   const faqs: FAQItem[] = generation
     ? generation.faq.map((f) => ({ question: f.question, answer: f.answer }))
-    : data.faqs;
+    : placeholderMode
+      ? []
+      : data.faqs;
 
   // Schema builder consumes the resolved FAQ + 8-section body so JSON-LD
   // surfaces the generation's prose when available (FAQPage count, Alternatives
   // ItemList). Falls back to the legacy-shape values when no generation row
-  // exists. See buildStreetPageSchema signature.
+  // exists. Placeholder mode: faqs=[] and sections=[] cause FAQPage and
+  // Alternatives ItemList to be omitted automatically (existing gates).
   const schema = buildStreetPageSchema(data, {
     faqs,
     sections: descriptionBodyProps.sections,
@@ -121,26 +135,33 @@ export default async function StreetPage({ params }: Props) {
 
       <StreetHero {...data.heroProps} />
 
-      <section className="border-b" style={{ paddingTop: 96, paddingBottom: 96, borderColor: "var(--line)" }}>
-        <Container>
-          <div className="description-grid">
-            <DescriptionSidebar {...data.descriptionSidebar} />
-            <DescriptionBody
-              {...descriptionBodyProps}
-              inlineSlot={
-                ownerCtaPrice > 0 ? (
-                  <InlineCTASection
-                    variant="owner"
-                    streetShort={data.street.shortName}
-                    typicalPrice={ownerCtaPrice}
-                  />
-                ) : null
-              }
-              inlineSlotAfter={0}
-            />
-          </div>
-        </Container>
-      </section>
+      {placeholderMode ? (
+        <StreetPlaceholder
+          streetName={data.street.name}
+          sidebar={data.descriptionSidebar}
+        />
+      ) : (
+        <section className="border-b" style={{ paddingTop: 96, paddingBottom: 96, borderColor: "var(--line)" }}>
+          <Container>
+            <div className="description-grid">
+              <DescriptionSidebar {...data.descriptionSidebar} />
+              <DescriptionBody
+                {...descriptionBodyProps}
+                inlineSlot={
+                  ownerCtaPrice > 0 ? (
+                    <InlineCTASection
+                      variant="owner"
+                      streetShort={data.street.shortName}
+                      typicalPrice={ownerCtaPrice}
+                    />
+                  ) : null
+                }
+                inlineSlotAfter={0}
+              />
+            </div>
+          </Container>
+        </section>
+      )}
 
       {data.productTypes.map((pt) => (
         <TypeSection key={pt.type} {...pt} />
@@ -158,7 +179,7 @@ export default async function StreetPage({ params }: Props) {
 
       {contextHasContent && <ContextCards {...data.contextCards} />}
 
-      <FAQ faqs={faqs} />
+      {faqs.length > 0 && <FAQ faqs={faqs} />}
 
       <FinalCTAs {...data.finalCTAs} />
 
