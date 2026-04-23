@@ -32,8 +32,10 @@ import {
   expandStreetName,
   shortNameFor,
   monthlyToQuarterly,
+  resolveSiblingSlugs,
   type RawMonthly,
 } from "@/lib/street-data";
+import { deriveIdentity, type Direction } from "@/lib/streetUtils";
 import { cleanNeighbourhoodName, roundPriceForProse } from "@/lib/format";
 import { formatCADShort } from "@/lib/charts/theme";
 import {
@@ -109,7 +111,14 @@ interface RawCrossDominantType {
 // ---------------------------------------------------------------------------
 
 export async function buildGeneratorInput(slug: string): Promise<StreetGeneratorInput> {
-  // Parallel fetch — all per-street queries go in one round-trip batch.
+  // Step 13m-1 — resolve sibling slugs that map to the same identity. All
+  // DB2/DB3/DB1 queries that used to filter by `street_slug = slug` now
+  // filter by `street_slug IN (siblingSlugs)` so the generator sees
+  // per-identity data rather than per-slug data fragmented across
+  // abbreviation/direction variants.
+  const siblingSlugs = await resolveSiblingSlugs(slug);
+
+  // Parallel fetch — all per-identity queries go in one round-trip batch.
   const [
     allListings,
     streetContent,
@@ -124,17 +133,18 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     crossCandidates,
   ] = await Promise.all([
     prisma.listing.findMany({
-      where: { streetSlug: slug, permAdvertise: true },
+      where: { streetSlug: { in: siblingSlugs }, permAdvertise: true },
       orderBy: { listedAt: "desc" },
     }),
-    prisma.streetContent.findUnique({ where: { streetSlug: slug } }),
+    prisma.streetContent.findFirst({ where: { streetSlug: { in: siblingSlugs } } }),
     queryAnalytics<RawSoldStats>(
       (db) => db`SELECT sold_count_12months, leased_count_12months, avg_sold_price, avg_dom
-                 FROM analytics.street_sold_stats WHERE street_slug = ${slug}`
+                 FROM analytics.street_sold_stats WHERE street_slug = ANY(${siblingSlugs}::text[])
+                 ORDER BY sold_count_12months DESC NULLS LAST LIMIT 1`
     ),
     queryAnalytics<RawMonthly>(
       (db) => db`SELECT year, month, avg_sold_price, sold_count, avg_dom, avg_sold_to_ask
-                 FROM analytics.street_monthly_stats WHERE street_slug = ${slug}
+                 FROM analytics.street_monthly_stats WHERE street_slug = ANY(${siblingSlugs}::text[])
                  ORDER BY year, month`
     ),
     querySold<RawTypeAgg>(
@@ -144,7 +154,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                          MIN(sold_price) AS min_price,
                          MAX(sold_price) AS max_price
                   FROM sold.sold_records
-                  WHERE street_slug = ${slug}
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Sale'
                     AND sold_date >= NOW() - INTERVAL '12 months'
@@ -157,7 +167,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                          MIN(sold_price) AS min_price,
                          MAX(sold_price) AS max_price
                   FROM sold.sold_records
-                  WHERE street_slug = ${slug}
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Lease'
                     AND sold_date >= NOW() - INTERVAL '12 months'
@@ -168,7 +178,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                          COUNT(*)::int AS n,
                          AVG(sold_price) AS typical
                   FROM sold.sold_records
-                  WHERE street_slug = ${slug}
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Lease'
                     AND sold_date >= NOW() - INTERVAL '12 months'
@@ -180,38 +190,39 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                          MIN(sold_price) AS lo,
                          MAX(sold_price) AS hi
                   FROM sold.sold_records
-                  WHERE street_slug = ${slug}
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Sale'
                     AND sold_date >= NOW() - INTERVAL '12 months'`
     ),
     querySold<{ lat: string | null; lng: string | null }>(
       (db) => db`SELECT lat, lng FROM sold.sold_records
-                  WHERE street_slug = ${slug}
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND lat IS NOT NULL AND lng IS NOT NULL
                   LIMIT 1`
     ),
     // Neighbourhood fallback: streets with no current DB1 active listings
     // (expired / sold-only) still have neighbourhood strings on their DB2
     // historical records. Pull the top 3 most-common neighbourhood values
-    // as a fallback for the identity derivation.
+    // across all sibling variants.
     querySold<{ neighbourhood: string }>(
       (db) => db`SELECT neighbourhood
                   FROM sold.sold_records
-                  WHERE street_slug = ${slug}
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
                   GROUP BY neighbourhood
                   ORDER BY COUNT(*) DESC
                   LIMIT 3`
     ),
     // TODO: real crossStreet selection heuristic is part of prospecting
     // intelligence layer; this is a Phase 4.1 fallback — pick top-2 by abs
-    // typicalPrice delta from k≥5 streets.
+    // typicalPrice delta from k≥5 streets. Exclude all siblings of this
+    // identity so a cross-street suggestion never points back at itself.
     queryAnalytics<RawCrossCandidate>(
       (db) => db`SELECT street_slug, avg_sold_price
                  FROM analytics.street_sold_stats
                  WHERE sold_count_12months >= ${K_ANON_PRICE}
                    AND avg_sold_price IS NOT NULL
-                   AND street_slug != ${slug}`
+                   AND street_slug <> ALL(${siblingSlugs}::text[])`
     ),
   ]);
 
@@ -229,6 +240,47 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   const streetName = expandStreetName(rawName);
   const shortName = shortNameFor(streetName);
   const type = deriveStreetType(streetName);
+  // Step 13m-1 identity metadata.
+  const identity = deriveIdentity(slug);
+  const identityKey = identity?.identityKey ?? `${slug}|`;
+  const direction: Direction = (identity?.direction ?? "") as Direction;
+  // Per-direction stats for dual-column candidate identities. We query DB2
+  // with GROUP BY raw_vow_data->>'StreetDirection' scoped to this identity's
+  // siblings. Each row becomes a DirectionalStats entry. Empty when the
+  // identity has a single direction (or when no data is present per direction).
+  const directionalStatsRaw = siblingSlugs.length > 1 && soldDb
+    ? await (soldDb`
+        SELECT UPPER(COALESCE(raw_vow_data->>'StreetDirection', '')) AS dir,
+               COUNT(*) FILTER (WHERE transaction_type='For Sale')::int AS n_sales,
+               AVG(sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
+               MIN(sold_price) FILTER (WHERE transaction_type='For Sale') AS min_sale,
+               MAX(sold_price) FILTER (WHERE transaction_type='For Sale') AS max_sale,
+               MODE() WITHIN GROUP (ORDER BY property_type) FILTER (WHERE transaction_type='For Sale') AS dominant_type
+          FROM sold.sold_records
+          WHERE street_slug = ANY(${siblingSlugs}::text[])
+            AND perm_advertise = TRUE
+            AND sold_date >= NOW() - INTERVAL '12 months'
+          GROUP BY UPPER(COALESCE(raw_vow_data->>'StreetDirection', ''))
+          ORDER BY dir
+      ` as unknown as Promise<Array<{ dir: string; n_sales: number; avg_sale: string | null; min_sale: string | null; max_sale: string | null; dominant_type: string | null }>>).catch(() => [])
+    : [];
+  const VALID_DIRS = new Set<Direction>(["", "N", "S", "E", "W", "NE", "NW", "SE", "SW"]);
+  const directionalStats = directionalStatsRaw
+    .filter((r) => VALID_DIRS.has(r.dir as Direction) && r.n_sales > 0)
+    .map((r) => {
+      const avg = r.avg_sale != null ? Math.round(Number(r.avg_sale)) : null;
+      const lo = r.min_sale != null ? Math.round(Number(r.min_sale)) : null;
+      const hi = r.max_sale != null ? Math.round(Number(r.max_sale)) : null;
+      return {
+        direction: r.dir as Direction,
+        salesCount: r.n_sales,
+        typicalPrice: avg && r.n_sales >= K_ANON_PRICE ? avg : null,
+        priceRange: lo != null && hi != null && r.n_sales >= K_ANON_RANGE
+          ? { low: lo, high: hi }
+          : null,
+        dominantType: r.dominant_type ?? undefined,
+      };
+    });
   let neighbourhoods = dedupe(
     allListings
       .map((l) => cleanNeighbourhoodName(l.neighbourhood))
@@ -316,7 +368,15 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   // ─── Compose output. primaryBuilder / dominantStyle / lotSize omitted
   //     because no pipeline source exists yet — absent rather than fabricated.
   const input: StreetGeneratorInput = {
-    street: { name: streetName, slug, shortName, type },
+    street: {
+      name: streetName,
+      slug,
+      shortName,
+      type,
+      identityKey,
+      siblingSlugs,
+      direction,
+    },
     neighbourhoods,
     aggregates: {
       txCount,
@@ -333,6 +393,10 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     activeListingsCount,
     crossStreets,
   };
+  // directionalStats only populated on multi-sibling identities with ≥1
+  // per-direction bucket carrying real sales. Omitted otherwise so single-
+  // direction pages don't carry an empty field.
+  if (directionalStats.length > 1) input.directionalStats = directionalStats;
   if (leaseActivity) input.leaseActivity = leaseActivity;
   if (quarterlyTrend && quarterlyTrend.length > 0) input.quarterlyTrend = quarterlyTrend;
   return input;

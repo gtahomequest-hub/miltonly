@@ -83,13 +83,33 @@ export interface DescriptionBodyProps {
 // Shape is authoritative; do not modify without a corresponding
 // update to the system prompt and example fixtures.
 
+// Step 13m — identity-keyed metadata. Generator receives the list of
+// sibling slugs + the street's direction (when multi-direction identity)
+// so it can frame dual-column pages correctly.
+export type Direction = "" | "N" | "S" | "E" | "W" | "NE" | "NW" | "SE" | "SW";
+
+// Per-direction stats populated only when an identity has multiple directions
+// with independent data. Model uses this to anchor "east vs west" framing on
+// dual-column pages. Absent / undefined on single-direction identities.
+export interface DirectionalStats {
+  direction: Direction;
+  salesCount: number;
+  typicalPrice: number | null;
+  priceRange: { low: number; high: number } | null;
+  dominantType?: string;
+}
+
 export interface StreetGeneratorInput {
   street: {
     name: string;
     slug: string;
     shortName: string;
     type: string;
+    identityKey: string;
+    siblingSlugs: string[];
+    direction: Direction;
   };
+  directionalStats?: DirectionalStats[];
   neighbourhoods: string[];
   primaryBuilder?: {
     name: string;

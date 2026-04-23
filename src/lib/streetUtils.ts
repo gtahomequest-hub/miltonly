@@ -110,6 +110,125 @@ export function ruralSideRoadName(slug: string): string | null {
   return null;
 }
 
+// ─── Identity derivation (Step 13m-1) ───────────────────────────────────────
+//
+// The slug-as-key model conflates multiple slug variants of the same physical
+// street. MLS ingestion routes data under abbreviated slug forms (e.g.
+// `scott-blvd-milton` holds 54 transactions while `scott-boulevard-milton`
+// holds 0). deriveIdentity() extracts a stable identity from a slug so the
+// render + generator layers can query across all sibling variants.
+//
+//   identityKey = `${base}|${direction}|${suffixCanonical}`
+//
+// Suffix IS part of the identity key because some Milton bases carry two
+// distinct streets with the same base + direction but different street types
+// (e.g. Attenborough Terrace AND Attenborough Trail are both in Milton).
+// Without suffix in the key, their data would merge incorrectly.
+
+export type Direction = "" | "N" | "S" | "E" | "W" | "NE" | "NW" | "SE" | "SW";
+
+export interface StreetIdentity {
+  base: string;             // "asleton" | "main" | "3-side"
+  suffixCanonical: string;  // full-word: "boulevard", "street", "road", "court"
+  direction: Direction;     // "" | "N" | "S" | "E" | "W" | "NE" | "NW" | "SE" | "SW"
+  identityKey: string;      // `${base}|${direction}`
+  canonicalSlug: string;    // full-word form for display URL
+}
+
+const IDENTITY_SUFFIX_TOKENS: Set<string> = new Set([
+  "blvd", "boulevard", "cres", "crescent", "crt", "court", "ct",
+  "dr", "drive", "rd", "road", "st", "street", "ave", "avenue",
+  "ln", "lane", "terr", "terrace", "ter", "trl", "trail",
+  "gate", "way", "pl", "place", "cir", "circle", "hts", "heights",
+  "pkwy", "parkway", "pky", "gardens", "line", "common", "point",
+  "hollow", "close", "walk", "hill", "grove", "ridge", "view",
+  "park", "square",
+]);
+
+const IDENTITY_SUFFIX_CANON: Record<string, string> = {
+  blvd: "boulevard", boulevard: "boulevard",
+  cres: "crescent", crescent: "crescent",
+  crt: "court", court: "court", ct: "court",
+  dr: "drive", drive: "drive",
+  rd: "road", road: "road",
+  st: "street", street: "street",
+  ave: "avenue", avenue: "avenue",
+  ln: "lane", lane: "lane",
+  terr: "terrace", terrace: "terrace", ter: "terrace",
+  trl: "trail", trail: "trail",
+  pl: "place", place: "place",
+  cir: "circle", circle: "circle",
+  hts: "heights", heights: "heights",
+  pkwy: "parkway", parkway: "parkway", pky: "parkway",
+  gate: "gate", way: "way", gardens: "gardens",
+  line: "line", common: "common", point: "point",
+  hollow: "hollow", close: "close", walk: "walk",
+  hill: "hill", grove: "grove", ridge: "ridge",
+  view: "view", park: "park", square: "square",
+};
+
+const DIRECTION_TOKENS: ReadonlySet<string> = new Set<string>(["N", "S", "E", "W", "NE", "NW", "SE", "SW"]);
+
+/**
+ * Derive a stable identity from a slug. Slug-only (no DB lookup). Returns null
+ * for malformed or empty-city slugs. Called on every page render, so keep cheap.
+ */
+export function deriveIdentity(slug: string): StreetIdentity | null {
+  const parts = slug.split("-");
+  if (parts.length < 2 || parts[parts.length - 1] !== "milton") return null;
+  const tokens = parts.slice(0, -1); // drop -milton
+  if (tokens.length === 0) return null;
+
+  // Walk from the tail: trailing direction, then suffix.
+  let direction: Direction = "";
+  let i = tokens.length - 1;
+  const tailUpper = tokens[i].toUpperCase() as Direction;
+  if (DIRECTION_TOKENS.has(tailUpper)) {
+    direction = tailUpper;
+    i--;
+  }
+  let suffixCanonical = "";
+  if (i >= 0) {
+    const t = tokens[i].toLowerCase();
+    if (IDENTITY_SUFFIX_TOKENS.has(t)) {
+      suffixCanonical = IDENTITY_SUFFIX_CANON[t] ?? t;
+      i--;
+    }
+  }
+  const base = tokens.slice(0, i + 1).join("-").toLowerCase();
+  if (!base) return null;
+
+  const canonicalParts = [base];
+  if (suffixCanonical) canonicalParts.push(suffixCanonical);
+  if (direction) canonicalParts.push(direction.toLowerCase());
+  canonicalParts.push("milton");
+
+  return {
+    base,
+    suffixCanonical,
+    direction,
+    identityKey: `${base}|${direction}|${suffixCanonical}`,
+    canonicalSlug: canonicalParts.join("-"),
+  };
+}
+
+/**
+ * Given an identity and a candidate pool of slugs (typically the universe),
+ * returns the subset whose derived identity matches. Used to resolve sibling
+ * variants during page render + generator input construction.
+ */
+export function siblingSlugsForIdentity(
+  identity: StreetIdentity,
+  candidatePool: readonly string[],
+): string[] {
+  const out: string[] = [];
+  for (const s of candidatePool) {
+    const id = deriveIdentity(s);
+    if (id && id.identityKey === identity.identityKey) out.push(s);
+  }
+  return out.sort();
+}
+
 // Converts street name to URL slug — always ends in -milton
 export function streetNameToSlug(streetName: string): string {
   return (
