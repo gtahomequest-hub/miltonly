@@ -279,6 +279,9 @@ const ABBREV_TO_FULL: Record<string, string> = {
   pkwy: "parkway",
   pky: "parkway",
   hts: "heights",
+  // Step 12b WS4: 18 slugs in the current Milton universe use -trl-milton
+  // while 11 use -trail-milton. Previously not deduped; extending coverage.
+  trl: "trail",
 };
 
 function canonicalizeSlug(slug: string): string {
