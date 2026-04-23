@@ -35,7 +35,7 @@ import {
   resolveSiblingSlugs,
   type RawMonthly,
 } from "@/lib/street-data";
-import { deriveIdentity, type Direction } from "@/lib/streetUtils";
+import { deriveIdentity, registeredDirectionsFor, type Direction } from "@/lib/streetUtils";
 import { cleanNeighbourhoodName, roundPriceForProse } from "@/lib/format";
 import { formatCADShort } from "@/lib/charts/theme";
 import {
@@ -244,13 +244,18 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   const identity = deriveIdentity(slug);
   const identityKey = identity?.identityKey ?? `${slug}|`;
   const direction: Direction = (identity?.direction ?? "") as Direction;
-  // Per-direction stats for dual-column candidate identities. We query DB2
-  // with GROUP BY raw_vow_data->>'StreetDirection' scoped to this identity's
-  // siblings. Each row becomes a DirectionalStats entry. Empty when the
-  // identity has a single direction (or when no data is present per direction).
-  const directionalStatsRaw = siblingSlugs.length > 1 && soldDb
+  // Per-direction stats for dual-column candidate identities. Populated only
+  // when the identity's (base, suffix) is a REGISTERED_DIRECTIONS entry per
+  // the Milton Street Directory. All direction slugs for the identity merge
+  // at identity time; this query splits them back out by looking at each
+  // sibling slug's own direction (parsed from the slug), since MLS
+  // raw_vow_data->>'StreetDirection' is nearly always null in DB2.
+  const registeredDirs = identity
+    ? registeredDirectionsFor(identity.base, identity.suffixCanonical)
+    : null;
+  const perSlugStatsRaw = registeredDirs && soldDb
     ? await (soldDb`
-        SELECT UPPER(COALESCE(raw_vow_data->>'StreetDirection', '')) AS dir,
+        SELECT street_slug,
                COUNT(*) FILTER (WHERE transaction_type='For Sale')::int AS n_sales,
                AVG(sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
                MIN(sold_price) FILTER (WHERE transaction_type='For Sale') AS min_sale,
@@ -260,27 +265,51 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
             AND sold_date >= NOW() - INTERVAL '12 months'
-          GROUP BY UPPER(COALESCE(raw_vow_data->>'StreetDirection', ''))
-          ORDER BY dir
-      ` as unknown as Promise<Array<{ dir: string; n_sales: number; avg_sale: string | null; min_sale: string | null; max_sale: string | null; dominant_type: string | null }>>).catch(() => [])
+          GROUP BY street_slug
+      ` as unknown as Promise<Array<{ street_slug: string; n_sales: number; avg_sale: string | null; min_sale: string | null; max_sale: string | null; dominant_type: string | null }>>).catch(() => [])
     : [];
-  const VALID_DIRS = new Set<Direction>(["", "N", "S", "E", "W", "NE", "NW", "SE", "SW"]);
-  const directionalStats = directionalStatsRaw
-    .filter((r) => VALID_DIRS.has(r.dir as Direction) && r.n_sales > 0)
-    .map((r) => {
-      const avg = r.avg_sale != null ? Math.round(Number(r.avg_sale)) : null;
-      const lo = r.min_sale != null ? Math.round(Number(r.min_sale)) : null;
-      const hi = r.max_sale != null ? Math.round(Number(r.max_sale)) : null;
-      return {
-        direction: r.dir as Direction,
-        salesCount: r.n_sales,
-        typicalPrice: avg && r.n_sales >= K_ANON_PRICE ? avg : null,
-        priceRange: lo != null && hi != null && r.n_sales >= K_ANON_RANGE
-          ? { low: lo, high: hi }
-          : null,
-        dominantType: r.dominant_type ?? undefined,
-      };
-    });
+  // Aggregate per-slug stats into per-direction buckets. Each sibling slug's
+  // direction comes from deriveIdentity(slug).direction (slug-level metadata).
+  const perDir = new Map<Direction, { n_sales: number; sum_avg: number; min_sale: number | null; max_sale: number | null; types: Map<string, number> }>();
+  for (const row of perSlugStatsRaw) {
+    const dir = (deriveIdentity(row.street_slug)?.direction ?? "") as Direction;
+    if (!registeredDirs!.has(dir)) continue;
+    if (row.n_sales === 0) continue;
+    if (!perDir.has(dir)) perDir.set(dir, { n_sales: 0, sum_avg: 0, min_sale: null, max_sale: null, types: new Map() });
+    const bucket = perDir.get(dir)!;
+    bucket.n_sales += row.n_sales;
+    if (row.avg_sale != null) bucket.sum_avg += Number(row.avg_sale) * row.n_sales;
+    if (row.min_sale != null) {
+      const lo = Number(row.min_sale);
+      bucket.min_sale = bucket.min_sale == null ? lo : Math.min(bucket.min_sale, lo);
+    }
+    if (row.max_sale != null) {
+      const hi = Number(row.max_sale);
+      bucket.max_sale = bucket.max_sale == null ? hi : Math.max(bucket.max_sale, hi);
+    }
+    if (row.dominant_type) {
+      bucket.types.set(row.dominant_type, (bucket.types.get(row.dominant_type) ?? 0) + row.n_sales);
+    }
+  }
+  const directionalStats = Array.from(perDir.entries()).map(([direction, b]) => {
+    const weightedAvg = b.n_sales > 0 ? Math.round(b.sum_avg / b.n_sales) : null;
+    const lo = b.min_sale != null ? Math.round(b.min_sale) : null;
+    const hi = b.max_sale != null ? Math.round(b.max_sale) : null;
+    let dominant: string | undefined;
+    let dominantN = 0;
+    for (const [t, n] of Array.from(b.types.entries())) {
+      if (n > dominantN) { dominant = t; dominantN = n; }
+    }
+    return {
+      direction,
+      salesCount: b.n_sales,
+      typicalPrice: weightedAvg && b.n_sales >= K_ANON_PRICE ? weightedAvg : null,
+      priceRange: lo != null && hi != null && b.n_sales >= K_ANON_RANGE
+        ? { low: lo, high: hi }
+        : null,
+      dominantType: dominant,
+    };
+  });
   let neighbourhoods = dedupe(
     allListings
       .map((l) => cleanNeighbourhoodName(l.neighbourhood))

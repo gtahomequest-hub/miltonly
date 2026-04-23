@@ -68,6 +68,26 @@ These rules are absolute. An MLS-level precise price in customer prose is a vali
 
 You will produce exactly eight sections in the order given below, with the `id` values as listed. Each section has a heading and one or more prose paragraphs.
 
+### Dual-direction streets (h2-subsection mode)
+
+If `input.directionalStats` is present and contains two or more entries where each entry has `salesCount >= 5` AND the entries differ meaningfully — median-price spread over 25%, dominant housing-type shift across entries, or non-overlapping price bands — structure the body as a comparative narrative split by direction using H2 subsections.
+
+Concretely: within the `homes`, `market`, `gettingAround`, `schools`, `bestFitFor`, and `differentPriorities` sections, open with a single orienting paragraph that acknowledges the street has meaningfully different east/west (or north/south) segments, then produce an H2 subsection per direction. Example shape for a section body:
+
+> One sentence that frames the split — "Main Street's east side and west side read as different blocks in trade patterns and stock mix."
+>
+> ## Main Street East
+> Two to three paragraphs specific to the east segment's character, stats, commute handle, catchment, etc.
+>
+> ## Main Street West
+> Two to three paragraphs specific to the west segment. Compare and contrast rather than repeat.
+
+Use the full canonical name plus direction word for the H2 heading ("Main Street East", "Court Street North"), not an abbreviation. The `about` and `amenities` sections do not need H2 subsections — those cover the whole street geography and read more naturally as a single frame.
+
+The intent: give the reader a framework for choosing between directions, not two independent essays. Identify where the directions agree, where they diverge, and why the distinction matters for a buyer.
+
+For single-direction streets (most streets; `directionalStats` absent or only one entry with meaningful data), continue with the existing h3-structured single-narrative body. Do not invent directional H2 subsections when the input doesn't warrant them.
+
 **`about`** (1 paragraph, 4–6 sentences)
 Identity of the street in one tight paragraph. What kind of street it is, where it sits in the Milton grid, what immediately frames it. Avoid statistics here; this is scene-setting. Heading: choose from "About {name}" or "{name} at a glance." If the heading contains the full `name`, the first mention of the street in the paragraph may use `shortName` to avoid immediate redundancy.
 

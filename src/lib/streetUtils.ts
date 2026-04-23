@@ -205,12 +205,24 @@ const DIRECTION_ALIAS: Record<string, Direction> = {
 };
 const DIRECTION_TOKENS: ReadonlySet<string> = new Set<string>(Object.keys(DIRECTION_ALIAS));
 
-// Step 13m-2a — authoritative registry of (base, suffix, direction) tuples
-// that have real directional splits per Milton_Existing_Street_Directory_2022.pdf.
-// Any MLS slug carrying a direction token whose (base, suffix) is NOT a key
-// here has its direction stripped — the direction is MLS addressing noise,
-// not a real street segment. Derived from 12 registry entries; 140 phantom
-// MLS directional slugs collapse into their base identities as a result.
+// Step 13m-2a — authoritative registry of (base, suffix) combos that have
+// real directional splits per Milton_Existing_Street_Directory_2022.pdf.
+// Derived from 12 registry entries. Two roles for this table:
+//
+//   1. Identity collapse: even for registered directional streets, the
+//      IDENTITY itself stops at base|suffix (empty direction). All
+//      directional slugs (main-st-e, main-st-w, main-st-n, main-st-s)
+//      merge into one identity (main||street), rendered as a single page
+//      with per-direction h2-subsections driven by directionalStats.
+//
+//   2. directionalStats filter: when populating per-direction stats for
+//      the generator, only include direction buckets that are registered
+//      for this (base, suffix). Prevents a stray MLS "N" record on
+//      asleton|boulevard from producing a phantom subsection.
+//
+// So this table drives what gets DUAL-COLUMN rendered, not what stays
+// split as separate identities. All directions collapse at identity time;
+// only registered directions surface as dual-column candidates.
 const REGISTERED_DIRECTIONS: Record<string, ReadonlySet<Direction>> = {
   "bronte|street":      new Set<Direction>(["N", "S"]),
   "burnhamthorpe|road": new Set<Direction>(["W"]),
@@ -225,6 +237,11 @@ const REGISTERED_DIRECTIONS: Record<string, ReadonlySet<Direction>> = {
   "steeles|avenue":     new Set<Direction>(["E", "W"]),
   "thompson|road":      new Set<Direction>(["N", "S"]),
 };
+
+/** Exported for the directionalStats population path to filter buckets. */
+export function registeredDirectionsFor(base: string, suffixCanonical: string): ReadonlySet<Direction> | null {
+  return REGISTERED_DIRECTIONS[`${base}|${suffixCanonical}`] ?? null;
+}
 
 /**
  * Derive a stable identity from a slug. Slug-only (no DB lookup). Returns null
@@ -255,28 +272,27 @@ export function deriveIdentity(slug: string): StreetIdentity | null {
   const base = tokens.slice(0, i + 1).join("-").toLowerCase();
   if (!base) return null;
 
-  // Step 13m-2a — registry-validated direction gate. If the slug carries a
-  // directional token but the Milton Street Directory does not list this
-  // (base, suffix) combo with that direction, strip the direction. Collapses
-  // the ~140 phantom directional MLS variants into their base identities.
-  if (direction) {
-    const key = `${base}|${suffixCanonical}`;
-    const registered = REGISTERED_DIRECTIONS[key];
-    if (!registered || !registered.has(direction)) {
-      direction = "";
-    }
-  }
+  // Step 13m-3 — direction ALWAYS collapses at identity time. Two reasons:
+  //   - Phantom MLS directions (derry-rd-e, asleton-blvd-n) were addressing
+  //     noise; stripping merges them into the base identity so data unions.
+  //   - Registered directional streets (main, bronte, kennedy, etc.) render
+  //     as a single page with h2-subsections per direction. Each directional
+  //     slug (main-st-e, main-st-w, main-st-n, main-st-s) routes to the same
+  //     identity (main||street); directionalStats carries per-direction data.
+  // The `direction` field below keeps slug-level direction for metadata +
+  // future 301-redirect canonical-slug handling.
+  const slugDirection = direction;
+  const identityDirection: Direction = "";
 
   const canonicalParts = [base];
   if (suffixCanonical) canonicalParts.push(suffixCanonical);
-  if (direction) canonicalParts.push(direction.toLowerCase());
   canonicalParts.push("milton");
 
   return {
     base,
     suffixCanonical,
-    direction,
-    identityKey: `${base}|${direction}|${suffixCanonical}`,
+    direction: slugDirection,
+    identityKey: `${base}|${identityDirection}|${suffixCanonical}`,
     canonicalSlug: canonicalParts.join("-"),
   };
 }
