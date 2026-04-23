@@ -1,0 +1,76 @@
+{
+  "streetSlug": "calla-point-milton",
+  "violations": [
+    {
+      "rule": "superlative",
+      "sectionId": "homes",
+      "excerpt": "... market that the behavioural picture is best addressed in a direct conversation rath...",
+      "severity": "hard"
+    }
+  ],
+  "lastAttemptAt": "2026-04-21T09:07:55.247Z",
+  "lastInputHash": "2344febfab6e",
+  "attempts": 3,
+  "error": "Street generation failed after 3 attempts for calla-point-milton. 1 violations.",
+  "usage": [
+    {
+      "attemptNumber": 1,
+      "tokensIn": 5562,
+      "tokensOut": 2295
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 7951,
+      "tokensOut": 2772
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 8467,
+      "tokensOut": 2681
+    }
+  ],
+  "cost": 0.18216000000000002,
+  "perAttemptViolations": [
+    [
+      {
+        "rule": "heading_out_of_bank",
+        "sectionId": "schools",
+        "excerpt": "got \"Schools and catchment.\", expected one of: Schools and catchment",
+        "severity": "hard"
+      },
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 907, floor 1050 (kAnon=thin)",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "methodology_leak",
+        "sectionId": "homes",
+        "excerpt": "...necessarily impressionistic rather than statistical. What the transaction record does show ...",
+        "severity": "hard"
+      },
+      {
+        "rule": "superlative",
+        "sectionId": "gettingAround",
+        "excerpt": "...t is a meaningful journey, and it works best for those who can build their schedule ...",
+        "severity": "hard"
+      },
+      {
+        "rule": "methodology_leak",
+        "sectionId": "gettingAround",
+        "excerpt": "...location performs well above the Milton average.\n\nPearson Airport is approximately thir...",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "superlative",
+        "sectionId": "homes",
+        "excerpt": "... market that the behavioural picture is best addressed in a direct conversation rath...",
+        "severity": "hard"
+      }
+    ]
+  ]
+}

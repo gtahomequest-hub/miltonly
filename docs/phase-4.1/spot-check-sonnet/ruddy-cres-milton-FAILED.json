@@ -1,0 +1,86 @@
+{
+  "streetSlug": "ruddy-cres-milton",
+  "violations": [
+    {
+      "rule": "superlative",
+      "sectionId": "market",
+      "excerpt": "...ately. Any specific opportunity here is best evaluated with a full picture of compar...",
+      "severity": "hard"
+    }
+  ],
+  "lastAttemptAt": "2026-04-21T09:03:08.483Z",
+  "lastInputHash": "f8b33888a6b5",
+  "attempts": 3,
+  "error": "Street generation failed after 3 attempts for ruddy-cres-milton. 1 violations.",
+  "usage": [
+    {
+      "attemptNumber": 1,
+      "tokensIn": 5677,
+      "tokensOut": 2237
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 8089,
+      "tokensOut": 2300
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 8074,
+      "tokensOut": 2571
+    }
+  ],
+  "cost": 0.17214000000000002,
+  "perAttemptViolations": [
+    [
+      {
+        "rule": "methodology_leak",
+        "sectionId": "homes",
+        "excerpt": "...sistent in form and age, which tends to mean buyers are comparing similar properties...",
+        "severity": "hard"
+      },
+      {
+        "rule": "heading_out_of_bank",
+        "sectionId": "schools",
+        "excerpt": "got \"Schools and catchment.\", expected one of: Schools and catchment",
+        "severity": "hard"
+      },
+      {
+        "rule": "methodology_leak",
+        "sectionId": "bestFitFor",
+        "excerpt": "... highway access and grocery convenience mean the location does not ask for sacrifice...",
+        "severity": "hard"
+      },
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 913, floor 1050 (kAnon=thin)",
+        "severity": "hard"
+      },
+      {
+        "rule": "methodology_leak",
+        "excerpt": "...g longer to find buyers than the Milton average. With a small number of transactions on...",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "methodology_leak",
+        "sectionId": "bestFitFor",
+        "excerpt": "...s to grocery, hospital, and the highway mean the location carries strong daily conve...",
+        "severity": "hard"
+      },
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 962, floor 1050 (kAnon=thin)",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "superlative",
+        "sectionId": "market",
+        "excerpt": "...ately. Any specific opportunity here is best evaluated with a full picture of compar...",
+        "severity": "hard"
+      }
+    ]
+  ]
+}

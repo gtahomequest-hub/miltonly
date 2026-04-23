@@ -1,0 +1,96 @@
+{
+  "streetSlug": "scott-blvd-milton",
+  "violations": [
+    {
+      "rule": "faq_answer_length",
+      "excerpt": "answer for \"Which schools serve Scott Boulevard?...\" has 5 sentences (allowed 2-4)",
+      "severity": "hard"
+    },
+    {
+      "rule": "faq_answer_length",
+      "excerpt": "answer for \"If Scott Boulevard isn't the right fit, what simil...\" has 5 sentences (allowed 2-4)",
+      "severity": "hard"
+    }
+  ],
+  "lastAttemptAt": "2026-04-21T09:00:51.942Z",
+  "lastInputHash": "408451b0f7ce",
+  "attempts": 3,
+  "error": "Street generation failed after 3 attempts for scott-blvd-milton. 2 violations.",
+  "usage": [
+    {
+      "attemptNumber": 1,
+      "tokensIn": 6257,
+      "tokensOut": 2652
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 9051,
+      "tokensOut": 2693
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 9071,
+      "tokensOut": 2777
+    }
+  ],
+  "cost": 0.194967,
+  "perAttemptViolations": [
+    [
+      {
+        "rule": "methodology_leak",
+        "sectionId": "market",
+        "excerpt": "...ill carry more signal than the trailing average, and we would rather walk through that ...",
+        "severity": "hard"
+      },
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 1146, floor 1200 (kAnon=full)",
+        "severity": "hard"
+      },
+      {
+        "rule": "precise_price",
+        "excerpt": "FAQ rent \"$3,150\" violates rounding",
+        "severity": "hard"
+      },
+      {
+        "rule": "faq_answer_length",
+        "excerpt": "answer for \"Which schools serve Scott Boulevard?...\" has 5 sentences (allowed 2-4)",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 1144, floor 1200 (kAnon=full)",
+        "severity": "hard"
+      },
+      {
+        "rule": "precise_price",
+        "excerpt": "FAQ rent \"$3,150\" violates rounding",
+        "severity": "hard"
+      },
+      {
+        "rule": "faq_answer_length",
+        "excerpt": "answer for \"Which schools serve Scott Boulevard?...\" has 5 sentences (allowed 2-4)",
+        "severity": "hard"
+      },
+      {
+        "rule": "faq_answer_length",
+        "excerpt": "answer for \"If Scott Boulevard isn't the right fit, what simil...\" has 5 sentences (allowed 2-4)",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "faq_answer_length",
+        "excerpt": "answer for \"Which schools serve Scott Boulevard?...\" has 5 sentences (allowed 2-4)",
+        "severity": "hard"
+      },
+      {
+        "rule": "faq_answer_length",
+        "excerpt": "answer for \"If Scott Boulevard isn't the right fit, what simil...\" has 5 sentences (allowed 2-4)",
+        "severity": "hard"
+      }
+    ]
+  ]
+}

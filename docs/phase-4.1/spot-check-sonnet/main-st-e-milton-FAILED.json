@@ -1,0 +1,60 @@
+{
+  "streetSlug": "main-st-e-milton",
+  "violations": [
+    {
+      "rule": "precise_price",
+      "excerpt": "FAQ rent \"$2,550\" violates rounding",
+      "severity": "hard"
+    }
+  ],
+  "lastAttemptAt": "2026-04-21T08:57:42.727Z",
+  "lastInputHash": "a8b6815b5cff",
+  "attempts": 3,
+  "error": "Street generation failed after 3 attempts for main-st-e-milton. 1 violations.",
+  "usage": [
+    {
+      "attemptNumber": 1,
+      "tokensIn": 6263,
+      "tokensOut": 2676
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 9022,
+      "tokensOut": 2857
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 9178,
+      "tokensOut": 2857
+    }
+  ],
+  "cost": 0.19923900000000003,
+  "perAttemptViolations": [
+    [
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 1166, floor 1200 (kAnon=full)",
+        "severity": "hard"
+      },
+      {
+        "rule": "precise_price",
+        "excerpt": "FAQ rent \"$2,550\" violates rounding",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "precise_price",
+        "excerpt": "FAQ rent \"$2,550\" violates rounding",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "precise_price",
+        "excerpt": "FAQ rent \"$2,550\" violates rounding",
+        "severity": "hard"
+      }
+    ]
+  ]
+}

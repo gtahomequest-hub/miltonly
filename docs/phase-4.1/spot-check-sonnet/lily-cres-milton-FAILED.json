@@ -1,0 +1,62 @@
+{
+  "streetSlug": "lily-cres-milton",
+  "violations": [
+    {
+      "rule": "total_word_floor",
+      "excerpt": "total 1049, floor 1050 (kAnon=thin)",
+      "severity": "hard"
+    }
+  ],
+  "lastAttemptAt": "2026-04-21T09:05:21.228Z",
+  "lastInputHash": "eae340fa8ee6",
+  "attempts": 3,
+  "error": "Street generation failed after 3 attempts for lily-cres-milton. 1 violations.",
+  "usage": [
+    {
+      "attemptNumber": 1,
+      "tokensIn": 5639,
+      "tokensOut": 2285
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 8018,
+      "tokensOut": 2488
+    },
+    {
+      "attemptNumber": 2,
+      "tokensIn": 8196,
+      "tokensOut": 2482
+    }
+  ],
+  "cost": 0.17438399999999998,
+  "perAttemptViolations": [
+    [
+      {
+        "rule": "heading_out_of_bank",
+        "sectionId": "schools",
+        "excerpt": "got \"Schools and catchment.\", expected one of: Schools and catchment",
+        "severity": "hard"
+      },
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 899, floor 1050 (kAnon=thin)",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "superlative",
+        "sectionId": "market",
+        "excerpt": "...ales, which means the resale picture is best discussed privately with reference to c...",
+        "severity": "hard"
+      }
+    ],
+    [
+      {
+        "rule": "total_word_floor",
+        "excerpt": "total 1049, floor 1050 (kAnon=thin)",
+        "severity": "hard"
+      }
+    ]
+  ]
+}
