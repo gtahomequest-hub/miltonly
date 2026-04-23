@@ -339,6 +339,31 @@ export function isMalformedSlug(slug: string): boolean {
     else if (sawStreetType && /^\d+$/.test(t)) return true;
   }
 
+  // Step 13h — doubled street-type + numeric pattern.
+  // asleton-blvd-boulevard-140-milton: adjacent abbreviation+full-form pair
+  // with a numeric unit number somewhere later. MLS-ingestion artifact where
+  // both StreetSuffix and suffix-in-StreetName landed in the slug plus the
+  // unit number.
+  const SUFFIX_PAIRS: Array<[string, string]> = [
+    ["blvd", "boulevard"], ["cres", "crescent"], ["trl", "trail"],
+    ["dr", "drive"], ["ave", "avenue"], ["rd", "road"],
+    ["st", "street"], ["terr", "terrace"], ["ter", "terrace"],
+    ["crt", "court"], ["ct", "court"], ["pl", "place"],
+    ["cir", "circle"], ["ln", "lane"], ["hts", "heights"],
+  ];
+  for (let i = 1; i < parts.length - 2; i++) {
+    const a = parts[i].toLowerCase();
+    const b = parts[i + 1].toLowerCase();
+    const isPair = SUFFIX_PAIRS.some(([abbr, full]) =>
+      (a === abbr && b === full) || (a === full && b === abbr),
+    );
+    if (!isPair) continue;
+    // Look for any numeric-only token after the pair (before -milton).
+    for (let j = i + 2; j < parts.length - 1; j++) {
+      if (/^\d+$/.test(parts[j])) return true;
+    }
+  }
+
   return false;
 }
 

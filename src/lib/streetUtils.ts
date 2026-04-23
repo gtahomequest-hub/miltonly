@@ -84,6 +84,32 @@ export function extractStreetName(fullAddress: string): string {
   return address.trim();
 }
 
+/**
+ * Ontario rural-address exception. For slugs whose bare numeric token IS
+ * the street name (e.g. "3 Side Road" addressed as `3-side-rd-milton`),
+ * returns the canonical display form. Regular urban streets with a leading
+ * house number (like `106-rottenburg-crt-milton`) are NOT rural side-roads —
+ * they fall through and are handled by the normal extractStreetName path.
+ *
+ * Patterns matched:
+ *   <number>-side-rd-milton           → "<number> Side Road"
+ *   <number>-side-road-milton         → "<number> Side Road"
+ *   <number>-sideroad-milton          → "<number> Side Road"
+ *   sideroad-<number>-milton          → "<number> Side Road"
+ *
+ * Returns null when the slug does not match the rural pattern — caller falls
+ * back to its normal name-derivation path.
+ */
+export function ruralSideRoadName(slug: string): string | null {
+  const m1 = slug.match(/^(\d+)-side-(?:rd|road|roa?d)-milton$/);
+  if (m1) return `${m1[1]} Side Road`;
+  const m2 = slug.match(/^(\d+)-sideroad-milton$/);
+  if (m2) return `${m2[1]} Side Road`;
+  const m3 = slug.match(/^sideroad-(\d+)-milton$/);
+  if (m3) return `${m3[1]} Side Road`;
+  return null;
+}
+
 // Converts street name to URL slug — always ends in -milton
 export function streetNameToSlug(streetName: string): string {
   return (

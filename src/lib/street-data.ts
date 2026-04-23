@@ -19,7 +19,7 @@ import { prisma } from "./prisma";
 import { analyticsDb, soldDb } from "./db";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
-import { extractStreetName } from "./streetUtils";
+import { extractStreetName, ruralSideRoadName } from "./streetUtils";
 import { cleanNeighbourhoodName, roundPriceForProse } from "./format";
 import { formatCAD, formatCADShort } from "./charts/theme";
 import type {
@@ -204,7 +204,12 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   // only to the display form; the short form keeps abbreviations by design
   // (they're shorter and read more naturally in prose).
   const sample = allListings[0];
+  // Step 13h — Ontario rural-address exception. For numeric-prefixed slugs
+  // like `3-side-rd-milton` where the number IS the street name (not a house
+  // number), preserve the leading number. Falls back to the normal chain
+  // for conventional street names.
   const rawName =
+    ruralSideRoadName(slug) ??
     streetContent?.streetName ??
     sample?.streetName ??
     extractStreetName(sample?.address ?? deslugify(slug));
@@ -412,17 +417,38 @@ function stripTrailingCity(name: string): string {
 /** Expand street-type abbreviations ("Cres" → "Crescent") and compass
  *  abbreviations ("E" → "East") for DISPLAY contexts: H1, page title,
  *  breadcrumbs, schema.org Place.name. Strips trailing " Milton" so the
- *  city suffix never double-renders. */
+ *  city suffix never double-renders.
+ *
+ *  Step 13h — after expansion, collapse adjacent duplicates so names like
+ *  "Asleton Blvd Boulevard" (where raw MLS fields concatenated a suffix
+ *  abbreviation AND its full-word form) render as "Asleton Boulevard".
+ *
+ *  Step 13h — Ontario rural-address exception. When the raw name begins
+ *  with a bare numeric token followed by "Side", "Sideroad", or "Line",
+ *  preserve the number as part of the street name ("3 Side Road", not
+ *  just "Side Road"). For conventional street names where the leading
+ *  number is a house number, the caller is responsible for stripping it
+ *  BEFORE calling expandStreetName. This function preserves whatever
+ *  numeric tokens it receives. */
 export function expandStreetName(name: string): string {
   const cleaned = stripTrailingCity(name);
-  return cleaned
+  const expanded = cleaned
     .split(/\s+/)
     .filter(Boolean)
     .map((token) => {
       const key = token.toLowerCase().replace(/\.$/, "");
       return STREET_ABBREVIATIONS[key] ?? token;
-    })
-    .join(" ");
+    });
+  // Collapse adjacent duplicate tokens (case-insensitive). Catches the
+  // doubled-suffix artifact from upstream data-ingestion paths that
+  // concatenate StreetName + StreetSuffix without de-duplication.
+  const deduped: string[] = [];
+  for (const tok of expanded) {
+    const prev = deduped[deduped.length - 1];
+    if (prev && prev.toLowerCase() === tok.toLowerCase()) continue;
+    deduped.push(tok);
+  }
+  return deduped.join(" ");
 }
 
 const STREET_SUFFIXES = new Set([

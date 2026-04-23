@@ -54,7 +54,7 @@ import {
   type POI,
 } from "@/lib/geo";
 import { schools } from "@/lib/schools";
-import { extractStreetName } from "@/lib/streetUtils";
+import { extractStreetName, ruralSideRoadName } from "@/lib/streetUtils";
 import { NoCentroidError } from "@/lib/ai/errors";
 import type { StreetGeneratorInput } from "@/types/street-generator";
 
@@ -217,7 +217,9 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 
   // ─── Street identity ────────────────────────────────────────────────
   const sample = allListings[0];
+  // Step 13h — rural-address exception (see src/lib/streetUtils.ts).
   const rawName =
+    ruralSideRoadName(slug) ??
     streetContent?.streetName ??
     sample?.streetName ??
     extractStreetName(sample?.address ?? deslugify(slug));
