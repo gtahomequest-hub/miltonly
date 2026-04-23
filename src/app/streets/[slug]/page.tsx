@@ -101,13 +101,16 @@ export default async function StreetPage({ params }: Props) {
   // handles streets where content has never been generated).
   const descriptionBodyProps = resolveDescriptionBody(data, generation);
 
-  // Placeholder mode: when neither a succeeded StreetGeneration nor a legacy
-  // StreetContent.description exists for the slug, descriptionBodyProps.sections
-  // resolves to []. That's the signal to render a confident editorial
-  // placeholder body + suppress the template FAQ fallback, so the page feels
-  // native rather than an empty shell. The rest of the page (hero, market,
-  // commute, schools, inventory, CTAs) renders normally off DB-derived data.
-  const placeholderMode = descriptionBodyProps.sections.length === 0;
+  // Placeholder mode: fire whenever there is no succeeded AI generation,
+  // regardless of whether legacy StreetContent.description exists. Before
+  // Step 13d this keyed off sections.length === 0, which let legacy-bearing
+  // failures (anderson-avenue, aspen-terrace) fall through to pre-Phase-4.1
+  // template prose — below the voice spec. Uniform graceful failure now.
+  //
+  // `generation` (from loadStreetGeneration) is already status-gated to
+  // succeed-only and returns null otherwise, so !generation is equivalent
+  // to "no succeeded StreetGeneration row."
+  const placeholderMode = !generation;
 
   // FAQ: prefer generated FAQ when present; in placeholder mode, suppress
   // entirely so template FAQs don't render under a "profile in preparation"

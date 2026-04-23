@@ -64,3 +64,6 @@ docs/phase-4.1/spot-check/
 .backfill-state.json
 .backfill-state.json.tmp
 .backfill-batch-*.json
+
+# Phase 4.1 render-audit transient output (local-only)
+_tmp_audit/
