@@ -107,6 +107,14 @@ export function ruralSideRoadName(slug: string): string | null {
   if (m2) return `${m2[1]} Side Road`;
   const m3 = slug.match(/^sideroad-(\d+)-milton$/);
   if (m3) return `${m3[1]} Side Road`;
+  // Step 13m-2a — named side roads (e.g. REID SIDE ROAD). Matches a single
+  // alphabetic base token (no hyphens — multi-word bases are not known
+  // side-road patterns in Milton). Registry has only "REID SIDE ROAD" today.
+  const m4 = slug.match(/^([a-z]+)-side-(?:rd|road)-milton$/);
+  if (m4) {
+    const name = m4[1];
+    return `${name.charAt(0).toUpperCase()}${name.slice(1).toLowerCase()} Side Road`;
+  }
   return null;
 }
 
@@ -143,6 +151,13 @@ const IDENTITY_SUFFIX_TOKENS: Set<string> = new Set([
   "pkwy", "parkway", "pky", "gardens", "line", "common", "point",
   "hollow", "close", "walk", "hill", "grove", "ridge", "view",
   "park", "square",
+  // Step 13m-2a — Milton Street Directory 2022 reconciliation additions.
+  // Landing/crossing/garden/path are frequent registry suffixes previously
+  // unrecognized (22 / 12 / 9 / 4 entries respectively). pt→point, cr→crescent,
+  // wy→way are MLS abbreviations that appeared in registry or universe slugs.
+  // townline/head/centre are rare registry suffixes (3 / 1 / 1 entries).
+  "landing", "ldg", "crossing", "garden", "path",
+  "pt", "cr", "wy", "townline", "head", "centre",
 ]);
 
 const IDENTITY_SUFFIX_CANON: Record<string, string> = {
@@ -160,14 +175,56 @@ const IDENTITY_SUFFIX_CANON: Record<string, string> = {
   cir: "circle", circle: "circle",
   hts: "heights", heights: "heights",
   pkwy: "parkway", parkway: "parkway", pky: "parkway",
-  gate: "gate", way: "way", gardens: "gardens",
+  gate: "gate", way: "way", gardens: "garden",
   line: "line", common: "common", point: "point",
   hollow: "hollow", close: "close", walk: "walk",
   hill: "hill", grove: "grove", ridge: "ridge",
   view: "view", park: "park", square: "square",
+  // Step 13m-2a — registry additions. `pt` and `cr` canonicalize to full
+  // words; `gardens` plural collapses to `garden` singular (registry uses
+  // singular form 9× vs plural 0×). `wy` is an MLS variant of `way`.
+  landing: "landing", ldg: "landing",
+  crossing: "crossing",
+  garden: "garden",
+  path: "path",
+  pt: "point",
+  cr: "crescent",
+  wy: "way",
+  townline: "townline",
+  head: "head",
+  centre: "centre",
 };
 
-const DIRECTION_TOKENS: ReadonlySet<string> = new Set<string>(["N", "S", "E", "W", "NE", "NW", "SE", "SW"]);
+// Step 13m-2a — accept spelled-out directional tokens (KENNEDY CIRCLE EAST
+// in the Milton registry uses EAST/WEST spelled out rather than E/W). Alias
+// to single-letter codes during derivation.
+const DIRECTION_ALIAS: Record<string, Direction> = {
+  N: "N", S: "S", E: "E", W: "W",
+  NE: "NE", NW: "NW", SE: "SE", SW: "SW",
+  NORTH: "N", SOUTH: "S", EAST: "E", WEST: "W",
+};
+const DIRECTION_TOKENS: ReadonlySet<string> = new Set<string>(Object.keys(DIRECTION_ALIAS));
+
+// Step 13m-2a — authoritative registry of (base, suffix, direction) tuples
+// that have real directional splits per Milton_Existing_Street_Directory_2022.pdf.
+// Any MLS slug carrying a direction token whose (base, suffix) is NOT a key
+// here has its direction stripped — the direction is MLS addressing noise,
+// not a real street segment. Derived from 12 registry entries; 140 phantom
+// MLS directional slugs collapse into their base identities as a result.
+const REGISTERED_DIRECTIONS: Record<string, ReadonlySet<Direction>> = {
+  "bronte|street":      new Set<Direction>(["N", "S"]),
+  "burnhamthorpe|road": new Set<Direction>(["W"]),
+  "campbell|avenue":    new Set<Direction>(["E", "W"]),
+  "court|street":       new Set<Direction>(["N", "S"]),
+  "james-snow|parkway": new Set<Direction>(["N", "S"]),
+  "kennedy|circle":     new Set<Direction>(["E", "W"]),
+  "lower-base|line":    new Set<Direction>(["E", "W"]),
+  "main|street":        new Set<Direction>(["E", "N", "S", "W"]),
+  "ontario|street":     new Set<Direction>(["N", "S"]),
+  "parkway|drive":      new Set<Direction>(["E", "W"]),
+  "steeles|avenue":     new Set<Direction>(["E", "W"]),
+  "thompson|road":      new Set<Direction>(["N", "S"]),
+};
 
 /**
  * Derive a stable identity from a slug. Slug-only (no DB lookup). Returns null
@@ -182,9 +239,9 @@ export function deriveIdentity(slug: string): StreetIdentity | null {
   // Walk from the tail: trailing direction, then suffix.
   let direction: Direction = "";
   let i = tokens.length - 1;
-  const tailUpper = tokens[i].toUpperCase() as Direction;
+  const tailUpper = tokens[i].toUpperCase();
   if (DIRECTION_TOKENS.has(tailUpper)) {
-    direction = tailUpper;
+    direction = DIRECTION_ALIAS[tailUpper] ?? "";
     i--;
   }
   let suffixCanonical = "";
@@ -197,6 +254,18 @@ export function deriveIdentity(slug: string): StreetIdentity | null {
   }
   const base = tokens.slice(0, i + 1).join("-").toLowerCase();
   if (!base) return null;
+
+  // Step 13m-2a — registry-validated direction gate. If the slug carries a
+  // directional token but the Milton Street Directory does not list this
+  // (base, suffix) combo with that direction, strip the direction. Collapses
+  // the ~140 phantom directional MLS variants into their base identities.
+  if (direction) {
+    const key = `${base}|${suffixCanonical}`;
+    const registered = REGISTERED_DIRECTIONS[key];
+    if (!registered || !registered.has(direction)) {
+      direction = "";
+    }
+  }
 
   const canonicalParts = [base];
   if (suffixCanonical) canonicalParts.push(suffixCanonical);
