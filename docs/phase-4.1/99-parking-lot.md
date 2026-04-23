@@ -31,6 +31,39 @@ copy.
 `566241.8367346938` in the JSON-LD. Needs `Math.round()` or equivalent
 before serialization.
 
+## Tenure-as-statistic methodology_leak pattern
+
+A new `methodology_leak` phrasing class surfaced in Step 11 day-2 results,
+distinct from the median/past-12-months patterns that the current
+METHODOLOGY_LEAK_PHRASES list catches.
+
+Abbott-st-milton failed all 3 retry attempts on the excerpt:
+
+> "...rather than trading in and out, and the long average tenure on the
+> block reflects that..."
+
+The phrase "long average tenure" smuggles in statistical-style reasoning
+through different wording than the typical "median" / "past 12 months" /
+"n=X" leaks. The model reaches for this construction on streets with
+limited trade volume where "residents stay" would read fine but "average
+tenure" gives the sentence a statistical gloss.
+
+Not blocking — the retry loop correctly caught it and routed the street
+to the review queue. The concern is that our METHODOLOGY_LEAK_PHRASES
+list may be missing this class of phrasing, meaning other streets could
+leak the same pattern without being caught (or get caught late in the
+retry sequence).
+
+Consider extending METHODOLOGY_LEAK_PHRASES post-backfill with:
+- "average tenure"
+- "typical tenure"
+- "long-held"
+- "held for" + duration constructions
+
+Not applied now — would require a full spot-check regression pass to
+confirm no false positives on streets where tenure language is narrative
+rather than statistical. Defer to post-backfill review phase.
+
 ## Schools-FAQ — omit-pool approach for post-backfill cleanup
 
 Schools-FAQ hard-cap amendment was attempted and rejected in Step 12b.
