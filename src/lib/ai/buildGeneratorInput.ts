@@ -221,8 +221,11 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     streetContent?.streetName ??
     sample?.streetName ??
     extractStreetName(sample?.address ?? deslugify(slug));
+  // Chain order matters: expand first, then strip the suffix from the expanded
+  // form so shortNameFor's STREET_SUFFIXES set sees canonical tokens instead
+  // of abbreviated variants. Prevents "Aird Crt" slipping into input.street.shortName.
   const streetName = expandStreetName(rawName);
-  const shortName = shortNameFor(rawName);
+  const shortName = shortNameFor(streetName);
   const type = deriveStreetType(streetName);
   let neighbourhoods = dedupe(
     allListings
@@ -710,7 +713,7 @@ async function buildCrossStreets(
     const roundedPrice = formatCADShort(roundPriceForProse(r.price));
     return {
       slug: r.slug,
-      shortName: shortNameFor(deslugify(r.slug)),
+      shortName: shortNameFor(expandStreetName(deslugify(r.slug))),
       distinctivePattern: `${dominantType} trading around ${roundedPrice}`,
       typicalPrice: r.price,
     };

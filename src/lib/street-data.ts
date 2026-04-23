@@ -208,8 +208,12 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     streetContent?.streetName ??
     sample?.streetName ??
     extractStreetName(sample?.address ?? deslugify(slug));
+  // Expand first, then derive short name from the expanded form — so the
+  // suffix-strip step in shortNameFor sees canonical tokens ("Court", "Crescent")
+  // that match its STREET_SUFFIXES set, rather than raw abbreviations like "Crt"
+  // that would slip through and land literally in the model's shortName input.
   const streetName = expandStreetName(rawName);
-  const shortName = shortNameFor(rawName);
+  const shortName = shortNameFor(streetName);
   const neighbourhoods = dedupe(
     allListings
       .map((l) => cleanNeighbourhoodName(l.neighbourhood))
