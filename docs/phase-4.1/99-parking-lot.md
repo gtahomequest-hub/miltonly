@@ -31,6 +31,32 @@ copy.
 `566241.8367346938` in the JSON-LD. Needs `Math.round()` or equivalent
 before serialization.
 
+## Schools-FAQ — omit-pool approach for post-backfill cleanup
+
+Schools-FAQ hard-cap amendment was attempted and rejected in Step 12b.
+The model ignored the explicit 3-sentence ceiling across 3/3 test streets
+(aspen-terrace, ash-gate, balsam-crt — all produced 8-9 sentences on
+"Which schools serve X?" answers even after the amendment landed in the
+system prompt). Spec was unambiguous; model chose to enumerate anyway
+on list-shaped inputs. More prompt pressure caused displacement in
+Step 8c, exact pressure in 12b produced zero compliance.
+
+Alternative approach deferred for post-backfill cleanup: omit the
+schools question from the FAQ selection pool on streets with 3+ schools
+in `nearby.schoolsPublic` / `nearby.schoolsCatholic`. Prevention rather
+than cure — the problematic question simply doesn't get asked when the
+input guarantees the model will over-enumerate. Other FAQ clusters
+(price, commute, housing stock, rental) fill the slot.
+
+Estimated recovery: ~200+ streets currently expected to land in
+StreetGenerationReview over the full Milton backfill would instead
+succeed with 6-8 clean FAQs that skip schools. Implementation is in
+the generator input layer (buildGeneratorInput.ts), not the prompt —
+remove schools from the question pool condition when school count
+exceeds a threshold. ~10 LoC.
+
+Evaluate after Phase 4.1 backfill completes. Not blocking day-3 resume.
+
 ## KNOWN_MILTON_ANCHORS — arterial road coverage
 
 `validateStreetGeneration.ts` has a `KNOWN_MILTON_ANCHORS` list used to
