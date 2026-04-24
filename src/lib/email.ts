@@ -24,7 +24,7 @@ interface LeadData {
   [key: string]: string | undefined;
 }
 
-export async function notifyNewLead(data: LeadData) {
+export async function notifyNewLead(data: LeadData, leadId?: string) {
   if (!resend || !TO) return;
 
   const sourceLabel: Record<string, string> = {
@@ -34,6 +34,7 @@ export async function notifyNewLead(data: LeadData) {
     "1hr-booking": "1-Hour Booking (Hero Card)",
     alert: "Search Alert Signup",
     "new-match-alert": "New Match Alert",
+    "ads-rentals-lp": "Rentals Landing Page (Paid Ad)",
   };
 
   const rows = [
@@ -58,9 +59,10 @@ export async function notifyNewLead(data: LeadData) {
   const subject = `${isHot ? "🔥 HOT" : "📩"} New ${sourceLabel[data.source || ""] || "lead"} — ${data.firstName || "Unknown"}${data.phone ? ` (${data.phone})` : ""}`;
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: FROM,
       to: TO,
+      replyTo: process.env.REALTOR_EMAIL,
       subject,
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:500px;margin:0 auto;">
@@ -75,7 +77,12 @@ export async function notifyNewLead(data: LeadData) {
         </div>
       `,
     });
+    if (result.error) {
+      console.error("[email send failed]", { leadId, source: data.source, error: result.error.message });
+    } else {
+      console.log("[email sent]", { leadId, source: data.source, resendId: result.data?.id });
+    }
   } catch (e) {
-    console.error("Email notification error:", e);
+    console.error("[email send failed]", { leadId, source: data.source, error: e instanceof Error ? e.message : String(e) });
   }
 }

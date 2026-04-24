@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send email notification (non-blocking)
-    notifyNewLead(body).catch((e) => console.error("Email notify error:", e));
+    notifyNewLead(body, lead.id).catch((e) => console.error("Email notify error:", e));
 
     return NextResponse.json({ success: true, id: lead.id });
   } catch (e) {

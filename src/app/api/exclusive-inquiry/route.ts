@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name and phone required" }, { status: 400 });
     }
 
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
         firstName: name,
         email: email || "",
@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
 
     if (resend && TO) {
       try {
-        await resend.emails.send({
+        const result = await resend.emails.send({
           from: FROM,
           to: TO,
+          replyTo: process.env.REALTOR_EMAIL,
           subject: `Exclusive listing inquiry \u2014 ${address || slug || "unknown"}`,
           html: `
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:520px;margin:0 auto;">
@@ -61,8 +62,13 @@ export async function POST(req: NextRequest) {
             </div>
           `,
         });
+        if (result.error) {
+          console.error("[email send failed]", { leadId: lead.id, source: "exclusive-listing", error: result.error.message });
+        } else {
+          console.log("[email sent]", { leadId: lead.id, source: "exclusive-listing", resendId: result.data?.id });
+        }
       } catch (e) {
-        console.error("Exclusive inquiry email error:", e);
+        console.error("[email send failed]", { leadId: lead.id, source: "exclusive-listing", error: e instanceof Error ? e.message : String(e) });
       }
     }
 

@@ -12,9 +12,10 @@ export async function sendVerificationEmail(email: string, code: string) {
     return;
   }
 
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: FROM,
     to: email,
+    replyTo: process.env.REALTOR_EMAIL,
     subject: `${code} — Your Miltonly verification code`,
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:440px;margin:0 auto;">
@@ -34,6 +35,11 @@ export async function sendVerificationEmail(email: string, code: string) {
       </div>
     `,
   });
+  if (result.error) {
+    console.error("[email send failed]", { leadId: email, source: "verification", error: result.error.message });
+  } else {
+    console.log("[email sent]", { leadId: email, source: "verification", resendId: result.data?.id });
+  }
 }
 
 export async function sendDealAlertEmail(
@@ -61,9 +67,10 @@ export async function sendDealAlertEmail(
     )
     .join("");
 
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: FROM,
     to: email,
+    replyTo: process.env.REALTOR_EMAIL,
     subject: `${matches.length} new listing${matches.length > 1 ? "s" : ""} matching "${searchName}" — Miltonly`,
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:500px;margin:0 auto;">
@@ -80,4 +87,9 @@ export async function sendDealAlertEmail(
       </div>
     `,
   });
+  if (result.error) {
+    console.error("[email send failed]", { leadId: email, source: "deal-alert", error: result.error.message });
+  } else {
+    console.log("[email sent]", { leadId: email, source: "deal-alert", resendId: result.data?.id });
+  }
 }
