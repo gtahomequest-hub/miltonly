@@ -24,7 +24,6 @@ import type { DirectionalStats } from "@/types/street-generator";
 
 const MIN_SALES_PER_DIRECTION = 5;
 const MEDIAN_SPREAD_THRESHOLD = 0.25;
-const MIX_SHIFT_THRESHOLD = 0.30;
 
 export type DirectionClassification = "single" | "h2-subsections";
 
