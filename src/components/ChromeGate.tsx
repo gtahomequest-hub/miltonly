@@ -9,5 +9,6 @@ import { usePathname } from "next/navigation";
 export default function ChromeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   if (pathname === "/coming-soon") return null;
+  if (pathname?.startsWith("/rentals/ads")) return null;
   return <>{children}</>;
 }

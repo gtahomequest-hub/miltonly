@@ -14,6 +14,8 @@ const secondaryLinks = [
   { href: "/condos", label: "Condos" },
   { href: "/map", label: "Map" },
   { href: "/saved", label: "Saved" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
 ];
 
 export default function FooterSection() {
@@ -45,7 +47,7 @@ export default function FooterSection() {
 
         {/* Copyright */}
         <p className="text-[11px] text-[rgba(248,249,251,0.3)] text-center sm:text-right shrink-0">
-          © 2025 Miltonly.com · Aamir Yaqoob · RE/MAX Realty Specialists Inc.
+          © 2026 Miltonly.com · Aamir Yaqoob · RE/MAX Realty Specialists Inc.
         </p>
       </div>
     </footer>
