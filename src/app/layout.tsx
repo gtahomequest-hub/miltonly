@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
-import AgentStrip from "@/components/AgentStrip";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import UserProvider from "@/components/UserProvider";
@@ -115,7 +114,6 @@ export default function RootLayout({
           </ChromeGate>
           {children}
           <ChromeGate>
-            <AgentStrip />
             <CrispChat />
             <ConsentBanner />
           </ChromeGate>
