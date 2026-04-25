@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const maxPrice = parseInt(searchParams.get("maxPrice") || "0", 10);
+    // Accept both ?maxPrice= and ?max= for parity with the /listings page,
+    // which has accepted both since day one.
+    const maxPrice = parseInt(searchParams.get("maxPrice") || searchParams.get("max") || "0", 10);
     if (!maxPrice || maxPrice <= 0) {
       return NextResponse.json({ count: 0 });
     }
