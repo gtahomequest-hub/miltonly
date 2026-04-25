@@ -41,6 +41,7 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     "homepage-persona-first-time-buyer": "Persona — First-Time Buyer (Homepage)",
     "homepage-persona-newcomer": "Persona — New to Canada (Homepage)",
     "homepage-persona-move-up": "Persona — Move-Up Family (Homepage)",
+    "homepage-newsletter": "Newsletter — Milton Market Brief (Pre-Footer)",
   };
 
   const rows = [

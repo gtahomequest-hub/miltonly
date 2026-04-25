@@ -17,6 +17,7 @@ import FeaturedListings from "@/components/sections/FeaturedListings";
 import MortgageCalculator from "@/components/sections/MortgageCalculator";
 import SoldOnMyStreet from "@/components/sections/SoldOnMyStreet";
 import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
+import PreFooterCTA from "@/components/sections/PreFooterCTA";
 import FooterSection from "@/components/sections/FooterSection";
 
 export default async function HomePage() {
@@ -50,6 +51,7 @@ export default async function HomePage() {
         <SoldOnMyStreet />
         <SeoLinkGrid />
       </main>
+      <PreFooterCTA />
       <FooterSection />
     </>
   );
