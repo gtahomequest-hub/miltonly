@@ -150,25 +150,25 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
         <div className="flex flex-wrap gap-2 mb-[14px]">
           <button
             type="button"
-            className="bg-[#f59e0b] text-[#07111f] font-extrabold text-[13px] px-5 py-2 rounded-lg"
+            className="bg-[#f59e0b] text-[#07111f] font-extrabold text-[12px] px-[18px] py-2 rounded-lg"
           >
             🏠 Find a Home
           </button>
           <button
             type="button"
-            className="bg-transparent text-white/75 font-semibold text-[13px] px-5 py-2 rounded-lg border border-white/15 hover:border-white/30 transition-colors"
+            className="bg-transparent text-white/75 font-semibold text-[12px] px-[14px] py-2 rounded-lg border border-white/15 hover:border-white/30 transition-colors"
           >
             💰 Sell Mine
           </button>
           <button
             type="button"
-            className="bg-transparent text-white/75 font-semibold text-[13px] px-5 py-2 rounded-lg border border-white/15 hover:border-white/30 transition-colors"
+            className="bg-transparent text-white/75 font-semibold text-[12px] px-[14px] py-2 rounded-lg border border-white/15 hover:border-white/30 transition-colors"
           >
             📈 Build Wealth
           </button>
           <button
             type="button"
-            className="bg-transparent text-[#f59e0b] font-bold text-[13px] px-[18px] py-2 rounded-lg border-[1.5px] border-[#f59e0b]"
+            className="bg-transparent text-[#f59e0b] font-bold text-[12px] px-[14px] py-2 rounded-lg border-[1.5px] border-[#f59e0b]"
           >
             🏷️ What&apos;s It Worth?
           </button>
@@ -257,8 +257,8 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
             { value: `$${stats.avgRent.toLocaleString()}/mo`, label: "Avg asking rent", sub: `${stats.rentalCount} rentals` },
             { value: String(stats.activeCount), label: "Active listings", sub: "updated daily" },
           ].map((s) => (
-            <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[12px_14px]">
-              <p className="text-[18px] font-extrabold text-[#f8f9fb]">{s.value}</p>
+            <div key={s.label} className="min-w-0 bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[12px_14px]">
+              <p className="text-[16px] font-extrabold text-[#f8f9fb] whitespace-nowrap">{s.value}</p>
               <p className="text-[12px] text-[rgba(248,249,251,0.6)] mt-[3px] font-semibold">{s.label}</p>
               <p className="text-[11px] text-[#94a3b8] mt-[2px]">{s.sub}</p>
             </div>
@@ -419,6 +419,25 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           <a href="tel:6478399090" className="text-[#f59e0b] font-bold text-[14px] hover:text-[#fbbf24] transition-colors">
             📞 Book a free call with Aamir →
           </a>
+        </div>
+
+        {/* Trust strip — pinned to bottom of right panel */}
+        <div className="mt-auto pt-6 border-t border-white/[0.08] grid grid-cols-3 gap-3 text-center">
+          {[
+            { value: "14 years", label: "Milton specialist" },
+            { value: "47", label: "5-star Google reviews" },
+            { value: "300+", label: "Milton families helped" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <div className="text-[22px] font-extrabold text-[#f59e0b]">{stat.value}</div>
+              <div
+                className="text-[11px] mt-0.5 leading-[1.3]"
+                style={{ color: "rgba(148,163,184,0.8)" }}
+              >
+                {stat.label}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
