@@ -37,6 +37,7 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     "ads-rentals-lp": "Rentals Landing Page (Paid Ad)",
     "homepage-exclusive": "Off-Market List (Homepage)",
     "homepage-mortgage-calculator": "Mortgage Calc — Pre-Approval",
+    "homepage-sold-on-my-street": "Sold Report — Street Search",
   };
 
   const rows = [

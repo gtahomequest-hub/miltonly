@@ -15,6 +15,7 @@ import IntelligenceCentre from "@/components/sections/IntelligenceCentre";
 import ExclusiveStrip from "@/components/sections/ExclusiveStrip";
 import FeaturedListings from "@/components/sections/FeaturedListings";
 import MortgageCalculator from "@/components/sections/MortgageCalculator";
+import SoldOnMyStreet from "@/components/sections/SoldOnMyStreet";
 import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
 import FooterSection from "@/components/sections/FooterSection";
 
@@ -46,6 +47,7 @@ export default async function HomePage() {
         <ExclusiveStrip />
         <FeaturedListings listings={featured} />
         <MortgageCalculator />
+        <SoldOnMyStreet />
         <SeoLinkGrid />
       </main>
       <FooterSection />
