@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/format";
 
-const searchTabs = ["Buy", "Rent", "Sold"] as const;
 const SEARCH_PILLS = [
   { label: "Detached homes", href: "/listings?type=detached" },
   { label: "Townhouses", href: "/listings?type=townhouse" },
@@ -51,7 +50,6 @@ interface Props {
 
 export default function HeroSection({ stats, typeStats, trendingStreets }: Props) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<(typeof searchTabs)[number]>("Buy");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("detached");
   const [streetName, setStreetName] = useState("");
@@ -63,7 +61,6 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
     const q = searchQuery.trim();
     if (!q) return;
     if (/^[A-Z]\d{7,}$/i.test(q)) { router.push(`/listings/${q.toUpperCase()}`); return; }
-    if (activeTab === "Rent") { router.push(`/rentals`); return; }
     router.push(`/listings?q=${encodeURIComponent(q)}`);
   };
 
@@ -90,36 +87,98 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
     <section className="flex flex-col lg:flex-row min-h-[560px]">
       {/* ═══ LEFT — Hero (dark navy) ═══ */}
       <div className="flex-1 bg-[#07111f] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
-        <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.14em] mb-2.5">
+
+        {/* AGENT TRUST CARD */}
+        <div className="bg-white/[0.05] border border-[#f59e0b]/30 rounded-xl px-4 py-[14px] mb-6">
+          <div className="flex items-start gap-3 mb-3">
+            <div
+              aria-hidden
+              className="w-11 h-11 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold flex items-center justify-center shrink-0 text-[15px]"
+            >
+              AY
+            </div>
+            <div className="min-w-0">
+              <p className="text-[15px] font-bold text-white leading-tight">
+                Aamir Yaqoob · RE/MAX Realty
+              </p>
+              <p className="text-[12px] text-[#f59e0b] mt-0.5">
+                Milton-only specialist · 14 years · RE/MAX Hall of Fame
+              </p>
+              <p className="text-[12px] text-[#f59e0b] mt-0.5">
+                ★★★★★ 47 Google reviews
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            <a
+              href="tel:6478399090"
+              className="bg-[#f59e0b]/15 border-[1.5px] border-[#f59e0b] rounded-lg px-4 py-[9px] text-[#f59e0b] font-bold text-[13px] hover:bg-[#f59e0b]/25 transition-colors"
+            >
+              📞 (647) 839-9090
+            </a>
+            <Link
+              href="/book"
+              className="bg-transparent border-[1.5px] border-white/20 rounded-lg px-4 py-[9px] text-white font-semibold text-[13px] hover:border-white/40 transition-colors"
+            >
+              Book a call →
+            </Link>
+          </div>
+        </div>
+
+        {/* EYEBROW */}
+        <p className="text-[11px] font-bold text-[#f59e0b] uppercase tracking-[2px] mb-[14px]">
           For buyers · renters · investors
         </p>
-        <h1 className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
-          <span className="text-[#f8f9fb]">Milton </span>
-          <span className="text-[#f8f9fb]">Real Estate</span>
+
+        {/* H1 */}
+        <h1
+          className="font-black leading-[1.1] mb-3"
+          style={{ fontSize: "clamp(36px, 4.5vw, 52px)" }}
+        >
+          <span className="text-[#f8f9fb]">Milton&apos;s Most </span>
+          <span className="text-[#f59e0b]">Data-Rich</span>
+          <span className="text-[#f8f9fb]"> Real Estate</span>
         </h1>
-        <p className="text-[13px] text-[#94a3b8] leading-[1.65] mb-6 sm:mb-[30px] max-w-md">
-          Browse every Milton home for sale, rent or sold — live TREB data, updated daily.
+
+        {/* SUBTITLE */}
+        <p className="text-[15px] text-white/75 leading-[1.6] mb-6 max-w-[480px]">
+          Find, price &amp; compare any home in Milton — live TREB data, updated daily.
+          The only site built exclusively for Milton.
         </p>
 
-        {/* Search tabs */}
-        <div className="flex gap-1.5 mb-[11px]">
-          {searchTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`text-[12px] font-semibold rounded-full px-[18px] py-[6px] transition-all ${
-                activeTab === tab
-                  ? "bg-[#f59e0b] text-[#07111f]"
-                  : "text-[rgba(248,249,251,0.5)] hover:text-[rgba(248,249,251,0.7)]"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        {/* INTENT TABS — visual-only in Part 1; click-noop until Part 2 wiring */}
+        <div className="flex flex-wrap gap-2 mb-[14px]">
+          <button
+            type="button"
+            className="bg-[#f59e0b] text-[#07111f] font-extrabold text-[13px] px-5 py-2 rounded-lg"
+          >
+            🏠 Find a Home
+          </button>
+          <button
+            type="button"
+            className="bg-transparent text-white/75 font-semibold text-[13px] px-5 py-2 rounded-lg border border-white/15 hover:border-white/30 transition-colors"
+          >
+            💰 Sell Mine
+          </button>
+          <button
+            type="button"
+            className="bg-transparent text-white/75 font-semibold text-[13px] px-5 py-2 rounded-lg border border-white/15 hover:border-white/30 transition-colors"
+          >
+            📈 Build Wealth
+          </button>
+          <button
+            type="button"
+            className="bg-transparent text-[#f59e0b] font-bold text-[13px] px-[18px] py-2 rounded-lg border-[1.5px] border-[#f59e0b]"
+          >
+            🏷️ What&apos;s It Worth?
+          </button>
         </div>
 
         {/* Search bar */}
-        <form onSubmit={handleSearch} className="flex bg-[#0c1e35] border-2 border-[#1e3a5f] rounded-[13px] overflow-hidden focus-within:border-[#f59e0b] transition-colors mb-[14px]">
+        <form
+          onSubmit={handleSearch}
+          className="flex bg-[#0c1e35] border-2 border-[#1e3a5f] rounded-[13px] overflow-hidden focus-within:border-[#f59e0b] transition-colors mb-2"
+        >
           <input
             type="text"
             value={searchQuery}
@@ -127,15 +186,33 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
             placeholder="Address, street, neighbourhood, MLS#..."
             className="flex-1 bg-transparent text-[14px] text-[#f8f9fb] placeholder:text-[rgba(248,249,251,0.25)] px-4 py-[14px] outline-none"
           />
-          <button type="submit" className="bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-[22px] py-[14px] shrink-0 hover:bg-[#eab308] transition-colors">
+          <button
+            type="submit"
+            className="bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-[22px] py-[14px] shrink-0 hover:bg-[#eab308] transition-colors"
+          >
             Search
           </button>
         </form>
+        <p className="text-[12px] text-white/50 mb-[14px]">
+          See what streets are hottest right now →
+        </p>
+
+        {/* Map CTA link */}
+        <Link
+          href="/map"
+          className="inline-block self-start text-[#f59e0b] font-bold text-[14px] border-b border-[#f59e0b]/30 hover:border-[#f59e0b] transition-colors mb-6"
+        >
+          🗺️ The only Milton map that shows street-level avg prices, not just pins →
+        </Link>
 
         {/* Quick pills — real links */}
         <div className="flex flex-wrap gap-[6px] mb-6">
           {SEARCH_PILLS.map((pill) => (
-            <a key={pill.label} href={pill.href} className="text-[11px] text-[#94a3b8] border border-[#1e3a5f] rounded-full px-3 py-[5px] hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors whitespace-nowrap">
+            <a
+              key={pill.label}
+              href={pill.href}
+              className="text-[13px] text-white/80 bg-white/[0.07] border border-white/[0.12] rounded-full px-[13px] py-[7px] hover:bg-white/[0.12] hover:text-[#f59e0b] hover:border-[#f59e0b] transition-colors whitespace-nowrap"
+            >
               {pill.label}
             </a>
           ))}
@@ -203,14 +280,17 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
 
       {/* ═══ RIGHT — Miltonly Intelligence (navy) ═══ */}
       <div className="flex-1 bg-[#0c1e35] flex flex-col p-[30px] sm:p-[40px] lg:p-[50px_44px]">
-        <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-2.5">
+        <p className="text-[11px] font-bold text-[#f59e0b] uppercase tracking-[2px] mb-2.5">
           For sellers · investors · researchers
         </p>
-        <p className="text-[28px] sm:text-[34px] font-extrabold tracking-[-0.5px] leading-[1.05] mb-2">
+        <h2
+          className="font-black leading-[1.05] mb-2"
+          style={{ fontSize: "clamp(28px, 3vw, 40px)" }}
+        >
           <span className="text-[#f8f9fb]">Miltonly </span>
           <span className="text-[#f59e0b]">Intelligence</span>
-        </p>
-        <p className="text-[13px] text-[#94a3b8] leading-[1.65] mb-5">
+        </h2>
+        <p className="text-[15px] text-white/70 leading-[1.6] mb-5">
           Street price data, home valuations and market comparisons — only in Milton.
         </p>
 
@@ -283,18 +363,23 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
               </button>
 
               {/* Mini stats — REAL DATA */}
-              <div className="grid grid-cols-3 gap-[5px] mt-3 pt-3 border-t border-[#f1f5f9]">
-                {[
-                  { value: typeData.avgPrice, label: "Avg fetching", trend: "↑ live" },
-                  { value: typeData.avgDOM, label: "To sell", trend: "↓ live" },
-                  { value: typeData.soldVsAsk, label: "Of asking", trend: "↑ live" },
-                ].map((s) => (
-                  <div key={s.label} className="bg-[#f8fafc] rounded-lg p-[9px_6px] text-center">
-                    <p className="text-[13px] font-extrabold text-[#07111f]">{s.value}</p>
-                    <p className="text-[9px] text-[#94a3b8] mt-[2px]">{s.label}</p>
-                    <p className="text-[9px] text-[#16a34a] font-bold mt-[2px]">{s.trend}</p>
-                  </div>
-                ))}
+              <div className="mt-3 pt-3 border-t border-[#f1f5f9]">
+                <p className="text-[12px] italic mb-1.5" style={{ color: "rgba(148,163,184,0.8)" }}>
+                  e.g. Main St E — right now
+                </p>
+                <div className="grid grid-cols-3 gap-[5px]">
+                  {[
+                    { value: typeData.avgPrice, label: "Avg fetching", trend: "↑ live" },
+                    { value: typeData.avgDOM, label: "To sell", trend: "↓ live" },
+                    { value: typeData.soldVsAsk, label: "Of asking", trend: "↑ live" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-[#f8fafc] rounded-lg p-[9px_6px] text-center">
+                      <p className="text-[13px] font-extrabold text-[#07111f]">{s.value}</p>
+                      <p className="text-[9px] text-[#94a3b8] mt-[2px]">{s.label}</p>
+                      <p className="text-[9px] text-[#16a34a] font-bold mt-[2px]">{s.trend}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           ) : (
@@ -315,7 +400,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
         </div>
 
         {/* Dark home value card */}
-        <div className="bg-[#07111f] rounded-[14px] p-[16px_18px] flex items-center gap-[14px]">
+        <div id="home-worth" className="bg-[#07111f] rounded-[14px] p-[16px_18px] flex items-center gap-[14px]">
           <div className="w-[42px] h-[42px] bg-[#f59e0b] rounded-[10px] flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           </div>
@@ -326,6 +411,14 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           <Link href="/sell" className="bg-[#f59e0b] text-[#07111f] text-[12px] font-extrabold px-4 py-2.5 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors">
             Get estimate →
           </Link>
+        </div>
+
+        {/* Secondary CTA row */}
+        <div className="flex items-center justify-between bg-white/[0.04] border border-white/[0.08] rounded-[10px] px-[18px] py-[14px] mt-3 gap-3 flex-wrap">
+          <span className="text-[14px] text-white/70">Not sure where to start in Milton?</span>
+          <a href="tel:6478399090" className="text-[#f59e0b] font-bold text-[14px] hover:text-[#fbbf24] transition-colors">
+            📞 Book a free call with Aamir →
+          </a>
         </div>
       </div>
     </section>
