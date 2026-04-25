@@ -179,11 +179,11 @@ export default async function SeoLinkGrid() {
       </div>
 
       {/* Strip 1 — between Price and School Zones */}
-      <div className="border-l-4 border-amber-500 bg-slate-900/40 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <p className="text-sm text-slate-700">🎯 Can&apos;t find what you&apos;re looking for in this list?</p>
+      <div className="border-l-4 border-amber-500 bg-amber-50 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <p className="text-sm text-slate-800">🎯 Can&apos;t find what you&apos;re looking for in this list?</p>
         <a
           href="tel:6478399090"
-          className="text-sm font-semibold text-amber-600 hover:underline whitespace-nowrap"
+          className="text-sm font-semibold text-[#07111f] hover:text-amber-600 hover:underline whitespace-nowrap"
         >
           Text Aamir directly: (647) 839-9090 →
         </a>
@@ -254,11 +254,11 @@ export default async function SeoLinkGrid() {
       </div>
 
       {/* Strip 2 — between Mosques and More Milton */}
-      <div className="border-l-4 border-amber-500 bg-slate-900/40 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <p className="text-sm text-slate-700">💬 Looking for something hyper-specific? (e.g. backing onto greenspace, walk-out basement, mortgage helper)</p>
+      <div className="border-l-4 border-amber-500 bg-amber-50 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <p className="text-sm text-slate-800">💬 Looking for something hyper-specific? (e.g. backing onto greenspace, walk-out basement, mortgage helper)</p>
         <a
           href="tel:6478399090"
-          className="text-sm font-semibold text-amber-600 hover:underline whitespace-nowrap"
+          className="text-sm font-semibold text-[#07111f] hover:text-amber-600 hover:underline whitespace-nowrap"
         >
           Tell Aamir what you need →
         </a>
