@@ -51,7 +51,7 @@ function AutocompleteInput({ ac, placeholder, label }: {
   return (
     <div className="relative">
       {label && (
-        <label className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.08em] mb-1.5 block">
+        <label className="text-[11px] font-bold text-[#f59e0b] uppercase tracking-widest mb-1.5 block">
           {label}
         </label>
       )}
@@ -129,7 +129,7 @@ export default function IntelligenceCentre() {
             Data no other Milton site has
           </h2>
           <p className="text-[14px] text-[#94a3b8] max-w-lg mx-auto">
-            Compare streets, neighbourhoods and buildings across 10 data dimensions. Updated daily from TREB.
+            The only Milton tool that compares any two streets, neighbourhoods or buildings across 10 live data dimensions — updated daily from TREB. No other site in Milton offers this.
           </p>
         </div>
 
@@ -281,6 +281,21 @@ export default function IntelligenceCentre() {
               </div>
             </>
           )}
+        </div>
+
+        {/* Lead-capture CTA — sits below the widget card */}
+        <div className="mt-5 flex items-center justify-between bg-[rgba(245,158,11,0.07)] border border-[rgba(245,158,11,0.2)] rounded-xl px-6 py-4 flex-wrap gap-3">
+          <div>
+            <p className="font-bold text-white text-[15px]">
+              Want Aamir to run this comparison for you?
+            </p>
+            <p className="text-[13px] text-[#94a3b8] mt-0.5">
+              Free · Takes 2 minutes · Milton-specific insight included
+            </p>
+          </div>
+          <a href="tel:6478399090" className="bg-[#f59e0b] text-[#07111f] px-6 py-2.5 rounded-lg font-bold text-[14px] no-underline whitespace-nowrap">
+            📞 Book a free analysis call →
+          </a>
         </div>
       </div>
     </section>
