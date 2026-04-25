@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { extractStreetName } from "@/lib/streetUtils";
+import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
 
 export const maxDuration = 300;
 
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
           bathrooms: item.BathroomsTotalInteger || 0,
           parking: item.ParkingTotal || 0,
           basement: Array.isArray(item.Basement) ? item.Basement.length > 0 : false,
-          sqft: null as number | null,
+          sqft: parseLivingAreaRange(item.LivingAreaRange),
           propertyType: mapPropertyType(item.PropertyType, item.PropertySubType),
           status: mapStatus(item.MlsStatus, item.TransactionType),
           description: item.PublicRemarks || null,

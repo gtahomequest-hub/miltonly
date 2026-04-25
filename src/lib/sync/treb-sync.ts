@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
 
 const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
 const TREB_TOKEN = process.env.TREB_API_TOKEN || "";
@@ -222,7 +223,7 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           bathrooms: item.BathroomsTotalInteger || 0,
           parking: item.ParkingTotal || 0,
           basement: Array.isArray(item.Basement) ? item.Basement.length > 0 : false,
-          sqft: null as number | null,
+          sqft: parseLivingAreaRange(item.LivingAreaRange),
           propertyType: mapPropertyType(item.PropertyType, item.PropertySubType),
           status: mapStatus(item.MlsStatus, item.TransactionType),
           description: item.PublicRemarks || null,
