@@ -36,6 +36,7 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     "new-match-alert": "New Match Alert",
     "ads-rentals-lp": "Rentals Landing Page (Paid Ad)",
     "homepage-exclusive": "Off-Market List (Homepage)",
+    "homepage-mortgage-calculator": "Mortgage Calc — Pre-Approval",
   };
 
   const rows = [
