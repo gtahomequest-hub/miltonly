@@ -17,9 +17,18 @@ interface Listing {
   status: string;
   photos: string[];
   listedAt: Date | string;
+  sqft?: number | null;
 }
 
-const listingTabs = ["New this week", "Best value", "Newest"] as const;
+type FunctionalTab = "New this week" | "Best value" | "Newest";
+
+const listingTabs: { label: string; visual: boolean }[] = [
+  { label: "New this week", visual: false },
+  { label: "Open House", visual: true },
+  { label: "Best value", visual: false },
+  { label: "Newest", visual: false },
+  { label: "Under $800K", visual: true },
+];
 
 interface Props {
   listings: {
@@ -70,16 +79,28 @@ function ListingCard({ listing }: { listing: Listing }) {
           <span className="text-[11px] text-[#475569] font-bold capitalize">{listing.propertyType}</span>
           <span className="text-[11px] text-[#475569] font-bold">{days === 0 ? "Listed today" : `${days}d on market`}</span>
         </div>
-        <p className="text-[10px] text-[#94a3b8] mt-[6px] group-hover:text-[#f59e0b] transition-colors">
+        {listing.sqft && (
+          <p className="text-[12px] text-[#475569] mt-1.5 font-medium">
+            {listing.sqft.toLocaleString()} sqft  ·  <span className="text-[#f59e0b]">${Math.round(listing.price / listing.sqft)}/sqft</span>
+          </p>
+        )}
+        <p className="text-[11px] text-[#475569] mt-[6px] font-semibold group-hover:text-[#f59e0b] transition-colors">
           Compare to street avg →
         </p>
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); /* TODO: open showing modal */ }}
+          className="mt-3 w-full text-center text-[12px] font-bold py-2 rounded-lg bg-[#f59e0b] text-[#07111f] hover:bg-[#fbbf24] transition-colors"
+        >
+          📅 Book a showing
+        </button>
       </div>
     </Link>
   );
 }
 
 export default function FeaturedListings({ listings }: Props) {
-  const [activeTab, setActiveTab] = useState<(typeof listingTabs)[number]>("New this week");
+  const [activeTab, setActiveTab] = useState<FunctionalTab>("New this week");
 
   const currentListings = activeTab === "New this week"
     ? listings.newThisWeek
@@ -92,31 +113,49 @@ export default function FeaturedListings({ listings }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
         <div>
           <p className="text-[10px] text-[#94a3b8] font-semibold uppercase tracking-[0.12em] mb-[6px]">
-            Live TREB data · updated daily
+            Live TREB data · updated every 15 min
           </p>
           <h2 className="text-[22px] font-extrabold text-[#07111f] tracking-[-0.3px]">
-            Featured Milton listings
+            Hand-picked Milton listings
           </h2>
+          <p className="text-[14px] text-[#64748b] mt-2 max-w-[640px]">
+            Aamir personally vets every listing. Real photos, real square footage, real numbers — no stock images, no inflated estimates.
+          </p>
         </div>
         <Link href="/listings" className="text-[13px] text-[#f59e0b] font-semibold hover:underline shrink-0">
           Browse all listings →
         </Link>
       </div>
 
-      <div className="flex gap-1 mb-5">
-        {listingTabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`text-[12px] font-semibold px-4 py-[6px] rounded-full border transition-all ${
-              activeTab === tab
-                ? "bg-[#07111f] border-[#07111f] text-[#f59e0b]"
-                : "bg-white border-[#e2e8f0] text-[#64748b] hover:text-[#475569]"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2">
+        {listingTabs.map((tab) => {
+          const isActive = !tab.visual && activeTab === tab.label;
+          return (
+            <button
+              key={tab.label}
+              onClick={() => { if (!tab.visual) setActiveTab(tab.label as FunctionalTab); }}
+              className={`text-[12px] font-semibold px-4 py-[6px] rounded-full border transition-all ${
+                isActive
+                  ? "bg-[#07111f] border-[#07111f] text-[#f59e0b]"
+                  : "bg-white border-[#e2e8f0] text-[#64748b] hover:text-[#475569]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 mb-5 bg-white border border-[#e2e8f0] rounded-[12px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-[13px] text-[#475569]">
+          <span className="font-bold text-[#07111f]">Save this search</span> — get an email when a new home matching your filters hits the market.
+        </p>
+        <button
+          type="button"
+          className="text-[12px] font-bold px-4 py-2 rounded-full bg-[#07111f] text-[#f59e0b] border border-[#07111f] hover:bg-[#0c1e35] transition-colors whitespace-nowrap self-start sm:self-auto"
+        >
+          🔔 Set up alerts →
+        </button>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[14px]">
@@ -125,6 +164,21 @@ export default function FeaturedListings({ listings }: Props) {
         ) : (
           <p className="text-[13px] text-[#94a3b8] col-span-3 text-center py-8">No listings in this category right now.</p>
         )}
+      </div>
+
+      <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+        <a
+          href="tel:+16478399090"
+          className="text-[14px] font-bold px-6 py-3 rounded-full bg-[#f59e0b] text-[#07111f] hover:bg-[#fbbf24] transition-colors text-center"
+        >
+          📞 Tour any of these with Aamir
+        </a>
+        <a
+          href="/listings"
+          className="text-[14px] font-bold px-6 py-3 rounded-full bg-white text-[#07111f] border-2 border-[#07111f] hover:bg-[#f8fafc] transition-colors text-center"
+        >
+          Browse all listings →
+        </a>
       </div>
     </section>
   );
