@@ -63,7 +63,7 @@ export const getFeaturedListings = unstable_cache(
 
     return { newThisWeek, priceDrops, openHouses };
   },
-  ["featured-listings"],
+  ["featured-listings-v2"],
   { revalidate: CACHE_TTL }
 );
 

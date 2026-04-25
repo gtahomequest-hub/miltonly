@@ -24,6 +24,16 @@ export function parseLivingAreaRange(range: string | null | undefined): number |
       value = Math.floor((low + high) / 2);
     }
   } else {
+    // Try "< X" notation (TREB uses this for tiny units, e.g. "< 700")
+    const lessThanMatch = trimmed.match(/^<\s*(\d+)$/);
+    if (lessThanMatch) {
+      const ceiling = parseInt(lessThanMatch[1], 10);
+      if (Number.isFinite(ceiling) && ceiling > 100) {
+        // Use midpoint of [100, ceiling] — honest representation of the bounded range
+        const midpoint = Math.floor((100 + ceiling) / 2);
+        return midpoint >= 100 && midpoint <= 50000 ? midpoint : null;
+      }
+    }
     const single = parseInt(trimmed, 10);
     if (Number.isFinite(single) && single > 0) value = single;
   }
