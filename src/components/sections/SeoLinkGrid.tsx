@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
 import { extractStreetName } from "@/lib/streetUtils";
+import PersonaRouter from "./PersonaRouter";
 
 interface StreetLink {
   slug: string;
@@ -67,10 +68,14 @@ export default async function SeoLinkGrid() {
 
   return (
     <section className="bg-white border-t border-[#e9ecef] px-5 sm:px-11 py-10">
-      {/* Streets */}
+      {/* New to Milton? — persona routing */}
+      <PersonaRouter />
+
+      {/* Streets — Tier A */}
       <div className="mb-10">
         <div className="flex items-baseline gap-3 mb-4">
-          <h3 className="text-[14px] font-extrabold text-[#07111f]">
+          <h3 className="text-[16px] font-extrabold text-[#07111f]">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 align-middle" />
             Search homes by street in Milton
           </h3>
           <Link href="/streets" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
@@ -119,7 +124,7 @@ export default async function SeoLinkGrid() {
 
       {/* Property types */}
       <div className="mb-10">
-        <h3 className="text-[14px] font-extrabold text-[#07111f] mb-4">
+        <h3 className="text-[14px] font-semibold text-slate-600 mb-4">
           Search by property type in Milton
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
@@ -146,7 +151,7 @@ export default async function SeoLinkGrid() {
 
       {/* Price ranges */}
       <div className="mb-10">
-        <h3 className="text-[14px] font-extrabold text-[#07111f] mb-4">
+        <h3 className="text-[14px] font-semibold text-slate-600 mb-4">
           Search by price in Milton
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
@@ -173,10 +178,22 @@ export default async function SeoLinkGrid() {
         </div>
       </div>
 
-      {/* School zones */}
+      {/* Strip 1 — between Price and School Zones */}
+      <div className="border-l-4 border-amber-500 bg-slate-900/40 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <p className="text-sm text-slate-700">🎯 Can&apos;t find what you&apos;re looking for in this list?</p>
+        <a
+          href="tel:6478399090"
+          className="text-sm font-semibold text-amber-600 hover:underline whitespace-nowrap"
+        >
+          Text Aamir directly: (647) 839-9090 →
+        </a>
+      </div>
+
+      {/* School zones — Tier A */}
       <div className="mb-6">
         <div className="flex items-baseline gap-3 mb-4">
-          <h3 className="text-[14px] font-extrabold text-[#07111f]">
+          <h3 className="text-[16px] font-extrabold text-[#07111f]">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 align-middle" />
             Search homes by school zone in Milton
           </h3>
           <Link href="/schools" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
@@ -234,6 +251,17 @@ export default async function SeoLinkGrid() {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Strip 2 — between Mosques and More Milton */}
+      <div className="border-l-4 border-amber-500 bg-slate-900/40 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <p className="text-sm text-slate-700">💬 Looking for something hyper-specific? (e.g. backing onto greenspace, walk-out basement, mortgage helper)</p>
+        <a
+          href="tel:6478399090"
+          className="text-sm font-semibold text-amber-600 hover:underline whitespace-nowrap"
+        >
+          Tell Aamir what you need →
+        </a>
       </div>
 
       {/* Quick links */}

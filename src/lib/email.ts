@@ -38,6 +38,9 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     "homepage-exclusive": "Off-Market List (Homepage)",
     "homepage-mortgage-calculator": "Mortgage Calc — Pre-Approval",
     "homepage-sold-on-my-street": "Sold Report — Street Search",
+    "homepage-persona-first-time-buyer": "Persona — First-Time Buyer (Homepage)",
+    "homepage-persona-newcomer": "Persona — New to Canada (Homepage)",
+    "homepage-persona-move-up": "Persona — Move-Up Family (Homepage)",
   };
 
   const rows = [
