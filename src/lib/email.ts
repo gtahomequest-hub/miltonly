@@ -35,6 +35,7 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     alert: "Search Alert Signup",
     "new-match-alert": "New Match Alert",
     "ads-rentals-lp": "Rentals Landing Page (Paid Ad)",
+    "homepage-exclusive": "Off-Market List (Homepage)",
   };
 
   const rows = [
