@@ -58,7 +58,24 @@ const BUDGET_OPTIONS = [
   { val: "2500", label: "Under $2.5K" },
   { val: "3000", label: "Under $3K" },
   { val: "3500", label: "Under $3.5K" },
+  { val: "4000", label: "Under $4K" },
+  { val: "5000", label: "Under $5K" },
 ];
+
+// Snap an arbitrary URL ?max= to the smallest chip value >= n (so ?max=2750
+// highlights "Under $3K" and ?max=4500 highlights "Under $5K"). Returns "0" (Any)
+// when n is 0, negative, or above the highest chip.
+function mapMaxToChip(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  const numeric = BUDGET_OPTIONS
+    .map((o) => parseInt(o.val, 10))
+    .filter((v) => v > 0)
+    .sort((a, b) => a - b);
+  for (const v of numeric) {
+    if (v >= n) return String(v);
+  }
+  return "0";
+}
 
 const MOVE_IN_OPTIONS = [
   { val: "asap", label: "ASAP" },
@@ -84,7 +101,7 @@ function buildDynamicHeadline(type: string, beds: number, max: number): string |
   if (type && TYPE_LABEL[type]) parts.push(TYPE_LABEL[type]);
   parts.push("Rentals");
   let h1 = `Milton ${parts.join(" ")}`;
-  if (max > 0 && max < 5000) h1 += ` Under $${(max / 1000).toFixed(1).replace(".0", "")}K`;
+  if (max > 0 && max <= 5000) h1 += ` Under $${(max / 1000).toFixed(1).replace(".0", "")}K`;
   return h1;
 }
 
@@ -113,7 +130,7 @@ function AdsClientInner({
   const [bedrooms, setBedrooms] = useState<string>(
     initialBeds >= 4 ? "4+" : initialBeds > 0 ? String(initialBeds) : "any"
   );
-  const [budget, setBudget] = useState<string>(initialMax > 0 ? String(initialMax) : "0");
+  const [budget, setBudget] = useState<string>(mapMaxToChip(initialMax));
   const [moveIn, setMoveIn] = useState<string>("asap");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
