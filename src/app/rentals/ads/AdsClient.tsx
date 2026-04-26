@@ -5,6 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import TrustStrip from "./TrustStrip";
+import SpeedToLeadBadge from "./SpeedToLeadBadge";
+import ComparisonTable from "./ComparisonTable";
 
 interface Listing {
   mlsNumber: string;
@@ -22,9 +25,10 @@ interface Listing {
 
 interface Props {
   listings: Listing[];
-  matchCount: number;
   totalRentals: number;
   newThisWeek: number;
+  renterCount: number;
+  updatedMinAgo: number | null;
   initialType: string;
   initialBeds: number;
   initialMax: number;
@@ -40,6 +44,7 @@ const HOME_TYPE_OPTIONS = [
 ];
 
 const BED_OPTIONS = [
+  { val: "any", label: "Any" },
   { val: "studio", label: "Studio" },
   { val: "1", label: "1" },
   { val: "2", label: "2" },
@@ -70,29 +75,28 @@ const TYPE_LABEL: Record<string, string> = {
   detached: "Detached",
 };
 
-function buildHeadline(type: string, beds: number, max: number): { h1: string; sub: string } {
+// Returns null when no URL params (fall back to static spec headline + amber clause).
+// Returns dynamic SKAG-friendly H1 when any of type/beds/max are set.
+function buildDynamicHeadline(type: string, beds: number, max: number): string | null {
+  if (!type && !beds && !max) return null;
   const parts: string[] = [];
   if (beds > 0) parts.push(beds >= 4 ? "4+ Bedroom" : `${beds}-Bedroom`);
   if (type && TYPE_LABEL[type]) parts.push(TYPE_LABEL[type]);
-  parts.push(type ? "Rentals" : "Rentals");
-
-  const core = parts.join(" ");
-  let h1 = `Milton ${core}`;
+  parts.push("Rentals");
+  let h1 = `Milton ${parts.join(" ")}`;
   if (max > 0 && max < 5000) h1 += ` Under $${(max / 1000).toFixed(1).replace(".0", "")}K`;
-
-  if (!type && !beds && !max) h1 = "Find Your Milton Rental";
-
-  return {
-    h1,
-    sub: "Live TREB listings, matched and shown by Aamir Yaqoob — RE/MAX Hall of Fame, 14 years in Milton.",
-  };
+  return h1;
 }
+
+const HERO_SUB =
+  "Live TREB listings, hand-matched by Aamir Yaqoob — RE/MAX Hall of Fame, 14 years in Milton. No bots. No call centres. No spam.";
 
 function AdsClientInner({
   listings,
-  matchCount,
   totalRentals,
   newThisWeek,
+  renterCount,
+  updatedMinAgo,
   initialType,
   initialBeds,
   initialMax,
@@ -107,7 +111,7 @@ function AdsClientInner({
   const [step, setStep] = useState<1 | 2>(1);
   const [homeType, setHomeType] = useState<string>(initialType || "any");
   const [bedrooms, setBedrooms] = useState<string>(
-    initialBeds === 0 ? "1" : initialBeds >= 4 ? "4+" : initialBeds > 0 ? String(initialBeds) : "1"
+    initialBeds >= 4 ? "4+" : initialBeds > 0 ? String(initialBeds) : "any"
   );
   const [budget, setBudget] = useState<string>(initialMax > 0 ? String(initialMax) : "0");
   const [moveIn, setMoveIn] = useState<string>("asap");
@@ -140,7 +144,31 @@ function AdsClientInner({
     });
   }, [searchParams]);
 
-  const { h1, sub } = useMemo(() => buildHeadline(initialType, initialBeds, initialMax), [initialType, initialBeds, initialMax]);
+  // Hybrid H1 — dynamic when URL params drive a SKAG-friendly headline; static
+  // (with amber " — Before Someone Else Does." suffix) otherwise.
+  const dynamicHeadline = useMemo(
+    () => buildDynamicHeadline(initialType, initialBeds, initialMax),
+    [initialType, initialBeds, initialMax]
+  );
+  const headline = dynamicHeadline || "Find Your Milton Rental";
+  const headlineSuffix = dynamicHeadline ? null : " — Before Someone Else Does.";
+
+  // Live listings filter — applied client-side over the 60-row pool.
+  const filteredListings = useMemo(() => {
+    return listings.filter((l) => {
+      if (homeType !== "any" && l.propertyType !== homeType) return false;
+      if (bedrooms === "studio" && l.bedrooms !== 0) return false;
+      if (bedrooms === "4+" && l.bedrooms < 4) return false;
+      if (bedrooms === "1" && l.bedrooms !== 1) return false;
+      if (bedrooms === "2" && l.bedrooms !== 2) return false;
+      if (bedrooms === "3" && l.bedrooms !== 3) return false;
+      if (budget !== "0") {
+        const cap = parseInt(budget, 10);
+        if (Number.isFinite(cap) && cap > 0 && l.price > cap) return false;
+      }
+      return true;
+    });
+  }, [listings, homeType, bedrooms, budget]);
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
@@ -214,6 +242,9 @@ function AdsClientInner({
 
   return (
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
+      {/* ══ TRUST STRIP — top-of-page social proof ══ */}
+      <TrustStrip />
+
       {/* ══ SLIM HEADER — no distractions ══ */}
       <header className="sticky top-0 z-50 bg-[#07111f]/95 backdrop-blur border-b border-[#1e3a5f]">
         <div className="max-w-6xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
@@ -277,13 +308,19 @@ function AdsClientInner({
               </div>
 
               <h1 className="text-[34px] sm:text-[44px] lg:text-[54px] font-extrabold leading-[1.04] tracking-[-0.02em] mb-4">
-                {h1}
+                <span className="text-[#f8f9fb]">{headline}</span>
+                {headlineSuffix && (
+                  <span className="text-[#f59e0b]">{headlineSuffix}</span>
+                )}
               </h1>
               <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-xl mb-6">
-                {sub}
+                {HERO_SUB}
               </p>
 
-              {/* Trust strip */}
+              {/* Speed-to-lead guarantee */}
+              <SpeedToLeadBadge />
+
+              {/* Credentials strip */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-7 text-[12px] sm:text-[13px]">
                 <span className="flex items-center gap-1.5 text-[#fbbf24] font-semibold">
                   <span aria-hidden>🏆</span> RE/MAX Hall of Fame
@@ -306,7 +343,11 @@ function AdsClientInner({
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">You talk to Aamir directly — no call centres, no juniors</span>
+                  <span className="text-[14px] text-[#e2e8f0]">You talk to Aamir directly — no juniors, no handoffs</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
+                  <span className="text-[14px] text-[#e2e8f0]">Lease negotiation included — at no cost to you</span>
                 </li>
               </ul>
             </div>
@@ -330,16 +371,27 @@ function AdsClientInner({
                   </div>
                 </div>
                 <h2 className="text-[22px] sm:text-[24px] font-extrabold leading-tight text-[#07111f]">
-                  {step === 1 ? "Tell Aamir what you're looking for" : "Where should Aamir send your matches?"}
+                  {step === 1 ? "Don't lose your top pick to someone faster." : "Where should Aamir send your matches?"}
                 </h2>
-                <p className="text-[13px] text-[#64748b] mt-1 mb-4">
+                <p className="text-[13px] text-[#64748b] mt-1 mb-3">
                   {step === 1
-                    ? "He'll personally send matches that fit — usually within one business hour."
+                    ? "Get matched in 30 seconds. Aamir replies within 60 min."
                     : "3–5 hand-picked Milton rentals texted to you within the hour."}
                 </p>
 
                 {step === 1 && (
                   <>
+                    {/* Urgency counter */}
+                    <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-green-500/10 border border-green-500/25 rounded-lg">
+                      <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                      </span>
+                      <p className="text-[12px] font-semibold text-[#065f46]">
+                        <span className="font-bold">{renterCount}</span> Milton renters got matched this week
+                      </p>
+                    </div>
+
                     {/* Home type pills */}
                     <div className="mb-3">
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Home type</label>
@@ -494,6 +546,9 @@ function AdsClientInner({
                     >
                       {submitting ? "Sending…" : "Send to Aamir →"}
                     </button>
+                    <p className="text-[12px] text-[#475569] text-center mt-3 leading-relaxed">
+                      🔒 No obligation. No spam. If matches don&apos;t fit, we stop. That&apos;s it.
+                    </p>
                     <button
                       type="button"
                       onClick={() => setStep(1)}
@@ -515,18 +570,24 @@ function AdsClientInner({
         </div>
       </section>
 
+      {/* ══ COMPARISON — Why Aamir vs DIY vs Out-of-area ══ */}
+      <ComparisonTable />
+
       {/* ══ LISTING PREVIEW ══ */}
       <section id="matches" className="bg-[#0a1628] py-14 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-7 gap-4 flex-wrap">
             <div>
               <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-1.5">
-                Live TREB data
+                Live TREB data ·{" "}
+                {updatedMinAgo !== null
+                  ? `Updated ${updatedMinAgo === 0 ? "just now" : `${updatedMinAgo} min ago`}`
+                  : "Updated recently"}
               </div>
               <h2 className="text-[26px] sm:text-[32px] font-extrabold leading-tight">
-                {matchCount} Milton rental{matchCount === 1 ? "" : "s"} match your criteria
+                Showing {filteredListings.length} of {totalRentals} matches
               </h2>
-              <p className="text-[13px] text-[#94a3b8] mt-1">Sorted by newest. Photos and prices updated daily from TREB.</p>
+              <p className="text-[13px] text-[#94a3b8] mt-1">Sorted by newest. Filter narrows by your chip selections above.</p>
             </div>
             <a
               href="#lead-form"
@@ -536,16 +597,18 @@ function AdsClientInner({
             </a>
           </div>
 
-          {listings.length === 0 ? (
+          {filteredListings.length === 0 ? (
             <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-8 text-center">
-              <p className="text-[15px] text-[#cbd5e1] mb-3">No live matches right now — but new Milton rentals list daily.</p>
+              <p className="text-[15px] text-[#cbd5e1] mb-3">
+                No exact matches — Aamir will hand-pick the closest fits. Submit your details →
+              </p>
               <a href="#lead-form" className="inline-block bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-bold px-6 py-3 rounded-lg">
-                Get alerted when one matches →
+                Get matched →
               </a>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {listings.map((l) => {
+              {filteredListings.map((l) => {
                 const days = daysAgo(new Date(l.listedAt));
                 const streetAddr = l.address.split(",")[0];
                 const avail = l.possessionDetails === "Vacant" || l.possessionDetails === "Immediate"
@@ -590,13 +653,13 @@ function AdsClientInner({
             </div>
           )}
 
-          {matchCount > listings.length && (
+          {totalRentals > filteredListings.length && (
             <div className="text-center mt-8">
               <a
                 href="#lead-form"
                 className="inline-block bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold px-8 py-4 rounded-xl text-[15px] transition-colors"
               >
-                Get all {matchCount} matches sent to you →
+                Get all {totalRentals} matches sent to you →
               </a>
             </div>
           )}

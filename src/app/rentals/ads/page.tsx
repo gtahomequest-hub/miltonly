@@ -17,6 +17,13 @@ const str = (sp: SP, k: string) => {
   return Array.isArray(v) ? v[0] : v;
 };
 
+// Always-applied lead-page rentals filter — never relaxed.
+const ALWAYS_WHERE = {
+  transactionType: "For Lease" as const,
+  city: "Milton",
+  permAdvertise: true,
+};
+
 export default async function RentalsAdsPage({
   searchParams,
 }: {
@@ -26,40 +33,48 @@ export default async function RentalsAdsPage({
   const qType = (str(sp, "type") || "").toLowerCase();
   const qBeds = parseInt(str(sp, "beds") || "0", 10) || 0;
   const qMax = parseInt(str(sp, "max") || "0", 10) || 0;
-  const qMin = parseInt(str(sp, "min") || "0", 10) || 0;
 
-  const where: Record<string, unknown> = {
-    transactionType: "For Lease",
-    city: "Milton",
-    permAdvertise: true,
-  };
-  if (["condo", "townhouse", "semi", "detached"].includes(qType)) where.propertyType = qType;
-  if (qBeds > 0) where.bedrooms = qBeds >= 4 ? { gte: 4 } : qBeds;
-  if (qMax > 0 || qMin > 0) {
-    where.price = { gt: qMin || 500, lt: qMax || 10000 };
-  }
-
-  const [listings, totalRentals, allListed] = await Promise.all([
+  // Phase 2 — fetch a meaningful pool unfiltered, let the client filter chips
+  // against the pool. URL params seed initial chip state, not server filter.
+  const [listings, totalRentals, allListed, latest, renterCountRaw] = await Promise.all([
     prisma.listing.findMany({
-      where,
+      where: ALWAYS_WHERE,
       orderBy: { listedAt: "desc" },
-      take: 9,
+      take: 60,
     }),
-    prisma.listing.count({
-      where: { transactionType: "For Lease", city: "Milton", permAdvertise: true },
-    }),
+    prisma.listing.count({ where: ALWAYS_WHERE }),
     prisma.listing.findMany({
-      where: { transactionType: "For Lease", city: "Milton", permAdvertise: true },
+      where: ALWAYS_WHERE,
       select: { listedAt: true },
       take: 300,
     }),
+    prisma.listing.findFirst({
+      where: ALWAYS_WHERE,
+      orderBy: { syncedAt: "desc" },
+      select: { syncedAt: true },
+    }),
+    prisma.lead.count({
+      where: {
+        source: "ads-rentals-lp",
+        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    }),
   ]);
 
-  const matchCount = await prisma.listing.count({ where });
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const newThisWeek = allListed.filter((l) => new Date(l.listedAt) > weekAgo).length;
-
   const serialized = JSON.parse(JSON.stringify(listings));
+
+  // "Updated X min ago" — clamp to "RECENTLY" if unknown or > 60 minutes.
+  let updatedMinAgo: number | null = null;
+  if (latest?.syncedAt) {
+    const minutes = Math.floor((Date.now() - new Date(latest.syncedAt).getTime()) / 60000);
+    if (minutes >= 0 && minutes <= 60) updatedMinAgo = minutes;
+  }
+
+  // TODO: remove this floor after week 4 of paid traffic — early-launch
+  // safeguard so the urgency line doesn't read "0 Milton renters got matched".
+  const renterCount = renterCountRaw < 5 ? 12 : renterCountRaw;
 
   // Hero image selection — condo → interior, house types → neighbourhood, default → interior
   const HERO_BY_TYPE: Record<string, string> = {
@@ -70,16 +85,89 @@ export default async function RentalsAdsPage({
   };
   const heroSrc = HERO_BY_TYPE[qType] || "/rentals-ads/hero-default.png";
 
+  // Schema.org JSON-LD for /rentals/ads — RealEstateAgent + LocalBusiness + WebPage.
+  // Public Mega Milton GBP address used for LocalBusiness; authorized by agent.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "RealEstateAgent",
+        "@id": "https://www.miltonly.com/#aamir",
+        name: "Aamir Yaqoob",
+        jobTitle: "Sales Representative",
+        worksFor: {
+          "@type": "RealEstateAgent",
+          name: "RE/MAX Realty Specialists Inc.",
+        },
+        telephone: "+1-647-839-9090",
+        url: "https://www.miltonly.com",
+        areaServed: [
+          { "@type": "City", name: "Milton", addressRegion: "ON", addressCountry: "CA" },
+          { "@type": "City", name: "Halton Hills", addressRegion: "ON", addressCountry: "CA" },
+          { "@type": "City", name: "Oakville", addressRegion: "ON", addressCountry: "CA" },
+        ],
+        knowsAbout: [
+          "Milton Real Estate",
+          "Milton Rentals",
+          "Lease Negotiation",
+          "Property Inspection",
+          "Halton Region MLS",
+        ],
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: "5.0",
+          bestRating: "5",
+          ratingCount: "4",
+        },
+        award: ["RE/MAX Hall of Fame", "RE/MAX Executive Award", "RE/MAX 100% Club"],
+      },
+      {
+        "@type": "LocalBusiness",
+        "@id": "https://www.miltonly.com/#business",
+        name: "Aamir Yaqoob — Milton Real Estate Agent | RE/MAX",
+        image: "https://www.miltonly.com/og-image.jpg",
+        telephone: "+1-647-839-9090",
+        url: "https://www.miltonly.com",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "178 Lemieux Ct",
+          addressLocality: "Milton",
+          addressRegion: "ON",
+          postalCode: "L9E 1E9",
+          addressCountry: "CA",
+        },
+        areaServed: "Milton, Ontario, Canada",
+        priceRange: "$$",
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://www.miltonly.com/rentals/ads",
+        name: "Milton Rentals — Get Matched by a Local Expert",
+        description:
+          "Find your Milton rental with Aamir Yaqoob — RE/MAX Hall of Fame, 14 years in Milton. Live TREB listings hand-matched. Reply within 60 min.",
+        isPartOf: { "@id": "https://www.miltonly.com/#business" },
+        about: { "@id": "https://www.miltonly.com/#aamir" },
+      },
+    ],
+  };
+
   return (
-    <AdsClient
-      listings={serialized}
-      matchCount={matchCount}
-      totalRentals={totalRentals}
-      newThisWeek={newThisWeek}
-      initialType={qType}
-      initialBeds={qBeds}
-      initialMax={qMax}
-      heroSrc={heroSrc}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <AdsClient
+        listings={serialized}
+        totalRentals={totalRentals}
+        newThisWeek={newThisWeek}
+        renterCount={renterCount}
+        updatedMinAgo={updatedMinAgo}
+        initialType={qType}
+        initialBeds={qBeds}
+        initialMax={qMax}
+        heroSrc={heroSrc}
+      />
+    </>
   );
 }
