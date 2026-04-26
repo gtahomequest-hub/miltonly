@@ -90,7 +90,7 @@ model Listing {
 model Lead {
   id              String    @id @default(cuid())
   firstName       String
-  email           String
+  email           String?
   phone           String?
   intent          String // buyer|seller|renter|investor
   score           String // hot|warm|cold
@@ -115,6 +115,11 @@ model Lead {
   utmMedium       String?
   utmCampaign     String?
   utmKeyword      String?
+  utmContent      String?
+  gclid           String?
+  referrer        String?
+  userAgent       String?
+  ip              String?
   notes           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -126,6 +131,7 @@ model Lead {
   @@index([intent])
   @@index([score])
   @@index([createdAt])
+  @@index([gclid])
 }
 
 model VisitorProfile {

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 
 interface Listing {
@@ -31,35 +31,37 @@ interface Props {
   heroSrc: string;
 }
 
-const PROPERTY_TYPES = [
-  { val: "", label: "Any" },
+const HOME_TYPE_OPTIONS = [
+  { val: "any", label: "Any" },
   { val: "condo", label: "Condo" },
-  { val: "townhouse", label: "Town" },
+  { val: "townhouse", label: "Townhouse" },
   { val: "semi", label: "Semi" },
   { val: "detached", label: "Detached" },
 ];
 
 const BED_OPTIONS = [
-  { val: 0, label: "Any" },
-  { val: 1, label: "1" },
-  { val: 2, label: "2" },
-  { val: 3, label: "3" },
-  { val: 4, label: "4+" },
+  { val: "studio", label: "Studio" },
+  { val: "1", label: "1" },
+  { val: "2", label: "2" },
+  { val: "3", label: "3" },
+  { val: "4+", label: "4+" },
 ];
 
 const BUDGET_OPTIONS = [
-  { val: 0, label: "Any" },
-  { val: 2000, label: "Under $2K" },
-  { val: 2500, label: "Under $2.5K" },
-  { val: 3000, label: "Under $3K" },
-  { val: 5000, label: "$3K+" },
+  { val: "0", label: "Any" },
+  { val: "2000", label: "Under $2K" },
+  { val: "2500", label: "Under $2.5K" },
+  { val: "3000", label: "Under $3K" },
+  { val: "3500", label: "Under $3.5K" },
 ];
 
 const MOVE_IN_OPTIONS = [
   { val: "asap", label: "ASAP" },
-  { val: "1mo", label: "Within 1 month" },
-  { val: "flex", label: "Flexible" },
+  { val: "1month", label: "Within 1 month" },
+  { val: "flexible", label: "Flexible" },
 ];
+
+const HONEYPOT_FIELD = "company_website"; // matches HONEYPOT_FIELD env on server
 
 const TYPE_LABEL: Record<string, string> = {
   condo: "Condo",
@@ -97,88 +99,115 @@ function AdsClientInner({
   heroSrc,
 }: Props) {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Form state — pre-filled from URL
-  const [type, setType] = useState(initialType || "");
-  const [beds, setBeds] = useState(initialBeds || 0);
-  const [budget, setBudget] = useState(initialMax || 0);
-  const [moveIn, setMoveIn] = useState("asap");
+  // Form state — Step 1 chips, Step 2 contact. Defaults pre-fill from URL params
+  // when present so deep-linked campaigns (e.g. /rentals/ads?type=condo&beds=2) land
+  // on Step 1 with the correct chips already selected.
+  const [step, setStep] = useState<1 | 2>(1);
+  const [homeType, setHomeType] = useState<string>(initialType || "any");
+  const [bedrooms, setBedrooms] = useState<string>(
+    initialBeds === 0 ? "1" : initialBeds >= 4 ? "4+" : initialBeds > 0 ? String(initialBeds) : "1"
+  );
+  const [budget, setBudget] = useState<string>(initialMax > 0 ? String(initialMax) : "0");
+  const [moveIn, setMoveIn] = useState<string>("asap");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [honey, setHoney] = useState(""); // honeypot — must stay empty
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const { h1, sub } = useMemo(() => buildHeadline(initialType, initialBeds, initialMax), [initialType, initialBeds, initialMax]);
+  // Tracking state — must live at parent so it survives the Step 1 → Step 2 transition.
+  // Storing inside a Step 2 sub-component would lose URL params on every advance.
+  const [tracking, setTracking] = useState({
+    utm_source: "",
+    utm_medium: "",
+    utm_campaign: "",
+    utm_term: "",
+    utm_content: "",
+    gclid: "",
+  });
 
-  // Hero uses brand photo at /public/rentals-ads/hero.png (optimized by next/image)
-
-  // UTM passthrough
-  const utm = useMemo(() => {
-    return {
+  useEffect(() => {
+    setTracking({
       utm_source: searchParams.get("utm_source") || "",
       utm_medium: searchParams.get("utm_medium") || "",
       utm_campaign: searchParams.get("utm_campaign") || "",
       utm_term: searchParams.get("utm_term") || "",
       utm_content: searchParams.get("utm_content") || "",
-    };
+      gclid: searchParams.get("gclid") || "",
+    });
   }, [searchParams]);
+
+  const { h1, sub } = useMemo(() => buildHeadline(initialType, initialBeds, initialMax), [initialType, initialBeds, initialMax]);
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
     return () => { document.documentElement.style.scrollBehavior = ""; };
   }, []);
 
-  const validPhone = (p: string) => p.replace(/\D/g, "").length >= 10;
+  function advanceToStep2() {
+    setStep(2);
+    if (typeof window !== "undefined") {
+      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+      if (w.gtag) w.gtag("event", "form_step_2_view", { step: 2, source: "rentals/ads" });
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!name.trim()) { setError("Please enter your name."); return; }
-    if (!validPhone(phone)) { setError("Please enter a valid 10-digit phone number."); return; }
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const phoneDigits = phone.replace(/\D/g, "");
+
+    if (trimmedName.length < 2) { setError("Please enter your first name."); return; }
+    if (phoneDigits.length < 10 && !trimmedEmail) {
+      setError("Please enter a phone number or email so Aamir can reach you.");
+      return;
+    }
+
     setSubmitting(true);
-
-    const typeLabel = TYPE_LABEL[type] || "Any type";
-    const bedsLabel = beds === 0 ? "Any beds" : beds >= 4 ? "4+ bed" : `${beds} bed`;
-    const budgetLabel = budget === 0 ? "Any budget" : budget >= 5000 ? "$3K+" : `Under $${(budget / 1000).toFixed(1).replace(".0", "")}K`;
-    const moveInLabel = MOVE_IN_OPTIONS.find((m) => m.val === moveIn)?.label || "ASAP";
-
-    const prefsSummary = `${bedsLabel} ${typeLabel}, ${budgetLabel}, move-in ${moveInLabel}`;
 
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: name.trim(),
+          firstName: trimmedName,
           phone: phone.trim(),
-          email: email.trim() || undefined,
+          email: trimmedEmail,
           source: "ads-rentals-lp",
           intent: "renter",
-          street: prefsSummary,
-          timeline: moveIn === "asap" ? "ASAP" : moveIn === "1mo" ? "Within 1 month" : "Flexible",
-          propertyType: type || "any",
-          budget: budget > 0 ? budget : undefined,
-          ...utm,
+          bedrooms,
+          budget,
+          moveIn,
+          homeType,
+          utm_source: tracking.utm_source,
+          utm_medium: tracking.utm_medium,
+          utm_campaign: tracking.utm_campaign,
+          utm_term: tracking.utm_term,
+          utm_content: tracking.utm_content,
+          gclid: tracking.gclid,
+          [HONEYPOT_FIELD]: honey,
         }),
       });
-      if (!res.ok) throw new Error("Submit failed");
 
-      // Google Ads conversion event (if gtag is loaded)
-      if (typeof window !== "undefined" && (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag) {
-        (window as unknown as { gtag: (...a: unknown[]) => void }).gtag("event", "generate_lead", {
-          event_category: "rentals",
-          event_label: "ads-rentals-lp",
-          value: 1,
-        });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data?.error || "Couldn't submit — please try again or call (647) 839-9090.");
+        setSubmitting(false);
+        return;
       }
 
-      setSuccess(true);
-      setTimeout(() => document.getElementById("matches")?.scrollIntoView({ behavior: "smooth" }), 300);
+      const redirect = data?.redirect || `/rentals/thank-you?lid=${data?.id || ""}`;
+      router.push(redirect);
+      // stay submitting=true until navigation completes
     } catch {
       setError("Something went wrong. Please call Aamir directly at (647) 839-9090.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -282,176 +311,205 @@ function AdsClientInner({
               </ul>
             </div>
 
-            {/* RIGHT — LEAD FORM (the only primary CTA) */}
+            {/* RIGHT — LEAD FORM (2-step, success → /rentals/thank-you) */}
             <div id="lead-form" className="lg:sticky lg:top-[80px]">
-              {!success ? (
-                <form
-                  onSubmit={handleSubmit}
-                  className="bg-white rounded-2xl shadow-2xl p-5 sm:p-7 text-[#07111f]"
-                >
-                  <div className="mb-4">
-                    <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-1.5">
-                      Get matched in 1 hour
-                    </div>
-                    <h2 className="text-[22px] sm:text-[24px] font-extrabold leading-tight text-[#07111f]">
-                      Tell Aamir what you&apos;re looking for
-                    </h2>
-                    <p className="text-[13px] text-[#64748b] mt-1">
-                      He&apos;ll personally send matches that fit — usually within one business hour.
-                    </p>
+              <form
+                onSubmit={handleSubmit}
+                className="bg-white rounded-2xl shadow-2xl p-5 sm:p-7 text-[#07111f]"
+                noValidate
+              >
+                {/* Progress header */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase">
+                    Step {step} of 2 · 30 seconds
+                  </span>
+                  <div className="flex items-center gap-1" aria-hidden>
+                    <span className={`w-2 h-2 rounded-full ${step >= 1 ? "bg-[#f59e0b]" : "bg-[#e2e8f0]"}`} />
+                    <span className={`w-6 h-[2px] ${step === 2 ? "bg-[#f59e0b]" : "bg-[#e2e8f0]"}`} />
+                    <span className={`w-2 h-2 rounded-full ${step === 2 ? "bg-[#f59e0b]" : "bg-[#e2e8f0]"}`} />
                   </div>
-
-                  {/* Type pills */}
-                  <div className="mb-3">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Home type</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {PROPERTY_TYPES.map((o) => (
-                        <button
-                          key={o.val || "any"}
-                          type="button"
-                          onClick={() => setType(o.val)}
-                          className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
-                            type === o.val
-                              ? "bg-[#07111f] text-white border-[#07111f]"
-                              : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                          }`}
-                        >
-                          {o.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Beds pills */}
-                  <div className="mb-3">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Bedrooms</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {BED_OPTIONS.map((o) => (
-                        <button
-                          key={o.val}
-                          type="button"
-                          onClick={() => setBeds(o.val)}
-                          className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all min-w-[48px] ${
-                            beds === o.val
-                              ? "bg-[#07111f] text-white border-[#07111f]"
-                              : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                          }`}
-                        >
-                          {o.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Budget pills */}
-                  <div className="mb-3">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Monthly budget</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {BUDGET_OPTIONS.map((o) => (
-                        <button
-                          key={o.val}
-                          type="button"
-                          onClick={() => setBudget(o.val)}
-                          className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
-                            budget === o.val
-                              ? "bg-[#07111f] text-white border-[#07111f]"
-                              : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                          }`}
-                        >
-                          {o.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Move-in */}
-                  <div className="mb-4">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Move-in</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {MOVE_IN_OPTIONS.map((o) => (
-                        <button
-                          key={o.val}
-                          type="button"
-                          onClick={() => setMoveIn(o.val)}
-                          className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
-                            moveIn === o.val
-                              ? "bg-[#07111f] text-white border-[#07111f]"
-                              : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                          }`}
-                        >
-                          {o.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Contact inputs */}
-                  <div className="space-y-2.5 mb-3">
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your full name"
-                      className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                      autoComplete="name"
-                    />
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Phone number"
-                      className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                      autoComplete="tel"
-                      inputMode="tel"
-                    />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email (optional)"
-                      className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                      autoComplete="email"
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] py-4 rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl hover:shadow-[#f59e0b]/30 active:scale-[0.99]"
-                  >
-                    {submitting ? "Sending…" : `See my ${matchCount > 0 ? matchCount : ""} matching rentals →`}
-                  </button>
-
-                  <p className="text-[11px] text-[#64748b] text-center mt-3 leading-relaxed">
-                    No fees · No spam · Aamir usually replies within 1 business hour.<br />
-                    By submitting you agree to be contacted about Milton rentals. See our{" "}
-                    <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy Policy</Link>.
-                  </p>
-                </form>
-              ) : (
-                <div className="bg-white rounded-2xl shadow-2xl p-7 text-[#07111f]">
-                  <div className="w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center text-[30px] font-bold mx-auto mb-4">✓</div>
-                  <h2 className="text-[24px] font-extrabold text-center mb-2">Thanks, {name.split(" ")[0] || "friend"}!</h2>
-                  <p className="text-[14px] text-[#64748b] text-center mb-5">
-                    Aamir will personally reach out within one business hour with matching rentals.
-                  </p>
-                  <a
-                    href="tel:+16478399090"
-                    className="block w-full text-center bg-[#07111f] hover:bg-[#0c1e35] text-white font-bold py-3.5 rounded-xl transition-colors"
-                  >
-                    📞 Or call now — (647) 839-9090
-                  </a>
-                  <p className="text-[11px] text-[#94a3b8] text-center mt-3">Scroll down to preview matches →</p>
                 </div>
-              )}
+                <h2 className="text-[22px] sm:text-[24px] font-extrabold leading-tight text-[#07111f]">
+                  {step === 1 ? "Tell Aamir what you're looking for" : "Where should Aamir send your matches?"}
+                </h2>
+                <p className="text-[13px] text-[#64748b] mt-1 mb-4">
+                  {step === 1
+                    ? "He'll personally send matches that fit — usually within one business hour."
+                    : "3–5 hand-picked Milton rentals texted to you within the hour."}
+                </p>
+
+                {step === 1 && (
+                  <>
+                    {/* Home type pills */}
+                    <div className="mb-3">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Home type</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {HOME_TYPE_OPTIONS.map((o) => (
+                          <button
+                            key={o.val}
+                            type="button"
+                            onClick={() => setHomeType(o.val)}
+                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
+                              homeType === o.val
+                                ? "bg-[#07111f] text-white border-[#07111f]"
+                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Bedrooms pills */}
+                    <div className="mb-3">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Bedrooms</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {BED_OPTIONS.map((o) => (
+                          <button
+                            key={o.val}
+                            type="button"
+                            onClick={() => setBedrooms(o.val)}
+                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all min-w-[48px] ${
+                              bedrooms === o.val
+                                ? "bg-[#07111f] text-white border-[#07111f]"
+                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Budget pills */}
+                    <div className="mb-3">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Monthly budget</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {BUDGET_OPTIONS.map((o) => (
+                          <button
+                            key={o.val}
+                            type="button"
+                            onClick={() => setBudget(o.val)}
+                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
+                              budget === o.val
+                                ? "bg-[#07111f] text-white border-[#07111f]"
+                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Move-in pills */}
+                    <div className="mb-4">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Move-in</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {MOVE_IN_OPTIONS.map((o) => (
+                          <button
+                            key={o.val}
+                            type="button"
+                            onClick={() => setMoveIn(o.val)}
+                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
+                              moveIn === o.val
+                                ? "bg-[#07111f] text-white border-[#07111f]"
+                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={advanceToStep2}
+                      className="w-full bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold text-[15px] py-4 rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl hover:shadow-[#f59e0b]/30 active:scale-[0.99]"
+                    >
+                      See my matches → (Step 2 of 2)
+                    </button>
+                  </>
+                )}
+
+                {step === 2 && (
+                  <>
+                    <div className="space-y-2.5 mb-3">
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="First name"
+                        className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
+                        autoComplete="given-name"
+                        maxLength={60}
+                      />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Phone (we'll text you)"
+                        className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
+                        autoComplete="tel"
+                        inputMode="tel"
+                      />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email (optional, for the cheat sheet)"
+                        className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
+                        autoComplete="email"
+                      />
+                    </div>
+
+                    {/* Honeypot — silent spam trap */}
+                    <div style={{ position: "absolute", left: "-10000px", top: "-10000px" }} aria-hidden="true">
+                      <label>
+                        Company website
+                        <input
+                          type="text"
+                          tabIndex={-1}
+                          autoComplete="off"
+                          name={HONEYPOT_FIELD}
+                          value={honey}
+                          onChange={(e) => setHoney(e.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    {error && (
+                      <div className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                        {error}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] py-4 rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl hover:shadow-[#f59e0b]/30 active:scale-[0.99]"
+                    >
+                      {submitting ? "Sending…" : "Send to Aamir →"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-full mt-2 text-[13px] text-[#64748b] hover:text-[#07111f] py-2"
+                    >
+                      ← Back
+                    </button>
+
+                    <p className="text-[11px] text-[#64748b] text-center mt-3 leading-relaxed">
+                      No fees · No spam · Aamir usually replies within 1 business hour.<br />
+                      By submitting you agree to be contacted about Milton rentals. See our{" "}
+                      <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy Policy</Link>.
+                    </p>
+                  </>
+                )}
+              </form>
             </div>
           </div>
         </div>
