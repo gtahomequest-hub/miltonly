@@ -16,8 +16,6 @@ interface Props {
   lead: Lead | null;
   isSpam: boolean;
   cheatsheetEnabled: boolean;
-  awConversionId: string;
-  awConversionLabel: string;
 }
 
 const TIMELINE_LABEL: Record<string, string> = {
@@ -50,15 +48,15 @@ export default function ThankYouClient({
   lead,
   isSpam,
   cheatsheetEnabled,
-  awConversionId,
-  awConversionLabel,
 }: Props) {
-  // Fire Google Ads conversion exactly once on mount.
+  // Fire GA4 generate_lead event exactly once on mount.
+  // Google Ads imports this conversion via the GA4 ↔ Ads link rather than
+  // a native AW- conversion (Google Ads new UI removed the manual gtag
+  // conversion path for new accounts).
   // Skip on spam (honeypot fired) — no conversion for synthetic submissions.
   // Cold-cache resilience: if gtag isn't loaded yet, poll every 200ms up to 5s.
   useEffect(() => {
     if (isSpam) return;
-    if (!awConversionId || !awConversionLabel) return;
 
     const transactionId = lead?.id || `no-lid-${Date.now()}`;
     let fired = false;
@@ -68,11 +66,11 @@ export default function ThankYouClient({
       if (fired) return;
       const w = window as unknown as { gtag?: (...a: unknown[]) => void };
       if (typeof w.gtag === "function") {
-        w.gtag("event", "conversion", {
-          send_to: `${awConversionId}/${awConversionLabel}`,
+        w.gtag("event", "generate_lead", {
           transaction_id: transactionId,
           value: 1.0,
           currency: "CAD",
+          lead_id: lead?.id || transactionId,
         });
         fired = true;
         return;
