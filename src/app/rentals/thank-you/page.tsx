@@ -21,6 +21,11 @@ export default async function ThankYouPage({
     priceRangeMax: number | null;
     timeline: string | null;
     propertyType: string | null;
+    // PII flowed in only so client-side SHA-256 can be passed to gtag user_data
+    // for Google Ads Enhanced Conversions (manual mode). Hashed before any
+    // network call leaves the browser; never logged or rendered.
+    email: string | null;
+    phone: string | null;
   } | null = null;
 
   if (lid && lid !== "spam") {
@@ -33,6 +38,8 @@ export default async function ThankYouPage({
         priceRangeMax: row.priceRangeMax,
         timeline: row.timeline,
         propertyType: row.propertyType,
+        email: row.email,
+        phone: row.phone,
       };
     }
   }

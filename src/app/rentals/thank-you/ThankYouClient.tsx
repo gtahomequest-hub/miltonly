@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { hashUserData } from "@/lib/hash";
 
 interface Lead {
   id: string;
@@ -10,6 +11,8 @@ interface Lead {
   priceRangeMax: number | null;
   timeline: string | null;
   propertyType: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 interface Props {
@@ -60,25 +63,38 @@ export default function ThankYouClient({
 
     const transactionId = lead?.id || `no-lid-${Date.now()}`;
     let fired = false;
+    let cancelled = false;
     const start = Date.now();
 
-    function tryFire() {
-      if (fired) return;
-      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-      if (typeof w.gtag === "function") {
-        w.gtag("event", "generate_lead", {
-          transaction_id: transactionId,
-          value: 1.0,
-          currency: "CAD",
-          lead_id: lead?.id || transactionId,
-        });
-        fired = true;
-        return;
-      }
-      if (Date.now() - start > 5000) return;
-      setTimeout(tryFire, 200);
-    }
-    tryFire();
+    // Hash up front; gtag fires once the hash promise resolves AND gtag is
+    // available. user_data MUST be inside the event payload — gtag('set','user_data',…)
+    // races on Next.js and the event reaches Google Ads with no user_data.
+    (async () => {
+      const userData = await hashUserData(lead?.email, lead?.phone);
+      const hasUserData = userData.sha256_email_address || userData.sha256_phone_number;
+
+      const tryFire = () => {
+        if (fired || cancelled) return;
+        const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+        if (typeof w.gtag === "function") {
+          const eventPayload: Record<string, unknown> = {
+            transaction_id: transactionId,
+            value: 1.0,
+            currency: "CAD",
+            lead_id: lead?.id || transactionId,
+          };
+          if (hasUserData) eventPayload.user_data = userData;
+          w.gtag("event", "generate_lead", eventPayload);
+          fired = true;
+          return;
+        }
+        if (Date.now() - start > 5000) return;
+        setTimeout(tryFire, 200);
+      };
+      tryFire();
+    })();
+
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
