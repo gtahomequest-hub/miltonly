@@ -8,25 +8,39 @@ import {
   haversineKm, walkMinutes, driveMinutes, directionsUrl, hasValidCoords,
   GROCERIES, MOSQUES, PARKS, TRANSIT, COMMUTES, type POI,
 } from "@/lib/geo";
+import { attributionPayload } from "@/lib/attribution";
+import { hashUserData } from "@/lib/hash";
 
 // Fires GA4 generate_lead with cold-cache polling (mirrors /rentals/thank-you).
 // Same event Google Ads imports as a conversion via the GA4↔Ads link, so listing-
 // detail submits attribute alongside the /rentals/ads form submits.
-function fireGenerateLead(leadId: string | null | undefined) {
+//
+// Email + phone (when present) are hashed client-side via SHA-256 and passed
+// inside user_data for Enhanced Conversions manual mode. Skip user_data when
+// neither contact field is provided so we don't send empty hash fields.
+async function fireGenerateLead(
+  leadId: string | null | undefined,
+  email?: string | null,
+  phone?: string | null,
+) {
   if (typeof window === "undefined") return;
   const transactionId = leadId || `no-lid-${Date.now()}`;
+  const userData = await hashUserData(email, phone);
+  const hasUserData = userData.sha256_email_address || userData.sha256_phone_number;
   let fired = false;
   const start = Date.now();
   const tryFire = () => {
     if (fired) return;
     const w = window as unknown as { gtag?: (...a: unknown[]) => void };
     if (typeof w.gtag === "function") {
-      w.gtag("event", "generate_lead", {
+      const eventPayload: Record<string, unknown> = {
         transaction_id: transactionId,
         value: 1.0,
         currency: "CAD",
         lead_id: leadId || transactionId,
-      });
+      };
+      if (hasUserData) eventPayload.user_data = userData;
+      w.gtag("event", "generate_lead", eventPayload);
       fired = true;
       return;
     }
@@ -458,10 +472,11 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
           source: isRental ? "landlord-listing-page" : "seller-listing-page",
           intent: isRental ? "list-rental" : "seller",
           mlsNumber: mls,
+          ...attributionPayload(),
         }),
       });
       const data = await res.json().catch(() => ({} as { id?: string }));
-      if (res.ok) fireGenerateLead(data?.id);
+      if (res.ok) fireGenerateLead(data?.id, email, null);
       setSent(true);
     } catch {/* ignore */} finally { setBusy(false); }
   };
@@ -561,10 +576,11 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           mlsNumber: mls,
           street: address,
           transactionType: "Lease",
+          ...attributionPayload(),
         }),
       });
       const data = await res.json().catch(() => ({} as { id?: string }));
-      if (res.ok) fireGenerateLead(data?.id);
+      if (res.ok) fireGenerateLead(data?.id, payload.email, payload.phone);
       setSent(true);
     } catch { setErr("Could not submit — try again."); }
   };

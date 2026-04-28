@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import { attributionPayload } from "@/lib/attribution";
 import TrustStrip from "./TrustStrip";
 import SpeedToLeadBadge from "./SpeedToLeadBadge";
 import ComparisonTable from "./ComparisonTable";
@@ -236,6 +237,9 @@ function AdsClientInner({
           utm_term: tracking.utm_term,
           utm_content: tracking.utm_content,
           gclid: tracking.gclid,
+          // Cross-page persisted attribution wins over URL-only tracking — preserves
+          // first-touch when this page is re-visited after the original ad click.
+          ...attributionPayload(),
           [HONEYPOT_FIELD]: honey,
         }),
       });

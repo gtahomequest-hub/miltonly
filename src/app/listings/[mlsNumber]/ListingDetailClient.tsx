@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import { attributionPayload } from "@/lib/attribution";
+import { hashUserData } from "@/lib/hash";
 import AgentContactSection from "@/components/AgentContactSection";
 import {
   UrgencyBanner, VOWTeaser, WhatsNearby, MortgageCalc, InvestorWidget,
@@ -100,23 +102,27 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, ...attributionPayload() }),
       });
       const json = await res.json().catch(() => ({} as { id?: string }));
       if (!res.ok || typeof window === "undefined") return;
       const w = window as unknown as { gtag?: (...a: unknown[]) => void };
       const transactionId = json?.id || `no-lid-${Date.now()}`;
+      const userData = await hashUserData(data.email, data.phone);
+      const hasUserData = userData.sha256_email_address || userData.sha256_phone_number;
       let fired = false;
       const start = Date.now();
       const tryFire = () => {
         if (fired) return;
         if (typeof w.gtag === "function") {
-          w.gtag("event", "generate_lead", {
+          const eventPayload: Record<string, unknown> = {
             transaction_id: transactionId,
             value: 1.0,
             currency: "CAD",
             lead_id: json?.id || transactionId,
-          });
+          };
+          if (hasUserData) eventPayload.user_data = userData;
+          w.gtag("event", "generate_lead", eventPayload);
           fired = true;
           return;
         }

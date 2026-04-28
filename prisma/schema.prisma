@@ -111,12 +111,26 @@ model Lead {
   savedListings   String[]
   comparisonsMade String[]
   source          String // hero|seller_tool|buyer_alert|investor_report|street_page|condo_page|comparison|popup|chat|partner
+  // First-touch attribution — captured from the original ad click that
+  // produced the user's first session. Preserved across navigation by
+  // src/lib/attribution.ts (localStorage + cookie).
   utmSource       String?
   utmMedium       String?
   utmCampaign     String?
   utmKeyword      String?
   utmContent      String?
   gclid           String?
+  // Last-touch attribution — overwritten on each new ad click. Useful for
+  // multi-touch analytics; first-touch is what Google Ads imports.
+  utmSourceLast   String?
+  utmMediumLast   String?
+  utmCampaignLast String?
+  utmTermLast     String?
+  utmContentLast  String?
+  gclidLast       String?
+  // Capture metadata for the first-touch session.
+  firstVisitAt    DateTime?
+  landingPage     String?
   referrer        String?
   userAgent       String?
   ip              String?

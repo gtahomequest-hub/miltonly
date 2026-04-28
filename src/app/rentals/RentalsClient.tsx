@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import AgentContactSection from "@/components/AgentContactSection";
 import { useUser } from "@/components/UserProvider";
+import { attributionPayload } from "@/lib/attribution";
 import "./rentals.css";
 
 const FOOTER_NEIGHBOURHOODS = ["Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton"];
@@ -174,7 +175,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
 
   const submitLead = async (data: Record<string, string>) => {
     try {
-      await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, ...attributionPayload() }) });
       return true;
     } catch { return false; }
   };

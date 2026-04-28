@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 export default function SchoolAlertForm() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,7 @@ export default function SchoolAlertForm() {
           source: "school-alert",
           intent: "buyer",
           street: school || "Any school zone",
+          ...attributionPayload(),
         }),
       });
       setSubmitted(true);

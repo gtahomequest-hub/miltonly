@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/components/UserProvider";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import { attributionPayload } from "@/lib/attribution";
 
 export interface CardListing {
   mlsNumber: string;
@@ -108,6 +109,7 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
           intent: "buyer",
           street: bookingModal.address,
           mlsNumber: bookingModal.mlsNumber,
+          ...attributionPayload(),
         }),
       });
       showToast("Showing requested — Aamir will call you within the hour");

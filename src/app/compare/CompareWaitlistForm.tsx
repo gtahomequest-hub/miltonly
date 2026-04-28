@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 export default function CompareWaitlistForm() {
   const [email, setEmail] = useState("");
@@ -20,6 +21,7 @@ export default function CompareWaitlistForm() {
           email,
           source: "compare-waitlist",
           intent: "buyer",
+          ...attributionPayload(),
         }),
       });
       setSubmitted(true);

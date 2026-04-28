@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 export default function PreFooterCTA() {
   const [email, setEmail] = useState("");
@@ -27,6 +28,7 @@ export default function PreFooterCTA() {
           phone: "",
           source: "homepage-newsletter",
           notes: "Pre-footer newsletter signup",
+          ...attributionPayload(),
         }),
       });
       if (!res.ok) throw new Error();

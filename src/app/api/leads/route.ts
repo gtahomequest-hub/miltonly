@@ -15,6 +15,76 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || "Miltonly <onboarding@resend.dev>";
 const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || process.env.REALTOR_EMAIL;
 
+// Auto-reply sender. Hardcoded to the Resend testing sender until miltonly.com
+// domain is verified in Resend dashboard. Display name keeps it personal —
+// "Aamir from Miltonly" rather than the raw onboarding@resend.dev address.
+// reply-to routes the lead's reply to Aamir's real inbox.
+const AUTO_REPLY_FROM = "Aamir from Miltonly <onboarding@resend.dev>";
+const AUTO_REPLY_REPLY_TO = process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL || "aamir@miltonly.com";
+
+// Fire-and-forget. Returns immediately so /api/leads response stays fast.
+// All errors are caught + logged; never propagated to the client.
+function sendAutoReply(args: {
+  leadId: string;
+  email: string;
+  firstName: string;
+}) {
+  if (!resend) return;
+  const { leadId, email, firstName } = args;
+  const safeName = (firstName || "there").trim() || "there";
+  const subject = "Got your Milton rental request — calling you in under 60 minutes";
+  const html = `
+    <p>Hi ${safeName},</p>
+    <p>Aamir here. I just got your request for a Milton rental.</p>
+    <p>I'll be calling you in the next 60 minutes. If now is a bad time, just reply to this email and tell me when works.</p>
+    <p>While you wait — a few things I want you to know:</p>
+    <ul>
+      <li>I'm RE/MAX Hall of Fame and have helped 150+ Milton families lease in the last 14 years</li>
+      <li>You pay me nothing. The landlord covers my fee.</li>
+      <li>I'll send you matching active listings before our call so you can scan options.</li>
+    </ul>
+    <p>Talk soon,<br>
+    Aamir Yaqoob<br>
+    RE/MAX Real Estate Centre Inc.<br>
+    (647) 839-9090</p>
+  `;
+  const text = [
+    `Hi ${safeName},`,
+    "",
+    "Aamir here. I just got your request for a Milton rental.",
+    "",
+    "I'll be calling you in the next 60 minutes. If now is a bad time, just reply to this email and tell me when works.",
+    "",
+    "While you wait — a few things I want you to know:",
+    "  - I'm RE/MAX Hall of Fame and have helped 150+ Milton families lease in the last 14 years",
+    "  - You pay me nothing. The landlord covers my fee.",
+    "  - I'll send you matching active listings before our call so you can scan options.",
+    "",
+    "Talk soon,",
+    "Aamir Yaqoob",
+    "RE/MAX Real Estate Centre Inc.",
+    "(647) 839-9090",
+  ].join("\n");
+
+  resend.emails
+    .send({
+      from: AUTO_REPLY_FROM,
+      to: email,
+      replyTo: AUTO_REPLY_REPLY_TO,
+      subject,
+      html,
+      text,
+    })
+    .then((result) => {
+      if (result.error) {
+        console.error("[auto-reply send failed]", { leadId, error: result.error.message });
+      } else {
+        console.log("[auto-reply sent]", { leadId, resendId: result.data?.id });
+      }
+    })
+    .catch((e) => console.error("Auto-reply send error:", e));
+}
+
 const HOME_TYPE_TO_PROPERTY_TYPE: Record<string, string | null> = {
   any: null,
   condo: "condo",
@@ -122,6 +192,14 @@ export async function POST(request: NextRequest) {
           utmKeyword: (body.utm_term || "").toString().slice(0, 120) || null,
           utmContent: (body.utm_content || "").toString().slice(0, 120) || null,
           gclid: (body.gclid || "").toString().slice(0, 200) || null,
+          utmSourceLast: (body.utm_source_last || "").toString().slice(0, 80) || null,
+          utmMediumLast: (body.utm_medium_last || "").toString().slice(0, 80) || null,
+          utmCampaignLast: (body.utm_campaign_last || "").toString().slice(0, 120) || null,
+          utmTermLast: (body.utm_term_last || "").toString().slice(0, 120) || null,
+          utmContentLast: (body.utm_content_last || "").toString().slice(0, 120) || null,
+          gclidLast: (body.gclid_last || "").toString().slice(0, 200) || null,
+          firstVisitAt: body.firstVisitAt ? new Date(body.firstVisitAt) : null,
+          landingPage: (body.landingPage || "").toString().slice(0, 300) || null,
           referrer,
           userAgent,
           ip,
@@ -143,6 +221,12 @@ export async function POST(request: NextRequest) {
         },
         lead.id
       ).catch((e) => console.error("Email notify error:", e));
+
+      // Auto-reply — fires within ~30s if email present. Skipped on honeypot
+      // (already returned above) and when no email was captured.
+      if (finalEmail) {
+        sendAutoReply({ leadId: lead.id, email: finalEmail, firstName: trimmedName });
+      }
 
       // Twilio stub — fire-and-forget. Currently logs to console; live SMS
       // wired but commented out until A2P 10DLC is registered.
@@ -215,10 +299,30 @@ export async function POST(request: NextRequest) {
         street: street || null,
         timeline: timeline || null,
         hasAgent: hasAgent === "Yes" ? true : hasAgent === "No" ? false : null,
+        utmSource: (body.utm_source || "").toString().slice(0, 80) || null,
+        utmMedium: (body.utm_medium || "").toString().slice(0, 80) || null,
+        utmCampaign: (body.utm_campaign || "").toString().slice(0, 120) || null,
+        utmKeyword: (body.utm_term || "").toString().slice(0, 120) || null,
+        utmContent: (body.utm_content || "").toString().slice(0, 120) || null,
+        gclid: (body.gclid || "").toString().slice(0, 200) || null,
+        utmSourceLast: (body.utm_source_last || "").toString().slice(0, 80) || null,
+        utmMediumLast: (body.utm_medium_last || "").toString().slice(0, 80) || null,
+        utmCampaignLast: (body.utm_campaign_last || "").toString().slice(0, 120) || null,
+        utmTermLast: (body.utm_term_last || "").toString().slice(0, 120) || null,
+        utmContentLast: (body.utm_content_last || "").toString().slice(0, 120) || null,
+        gclidLast: (body.gclid_last || "").toString().slice(0, 200) || null,
+        firstVisitAt: body.firstVisitAt ? new Date(body.firstVisitAt) : null,
+        landingPage: (body.landingPage || "").toString().slice(0, 300) || null,
       },
     });
 
     notifyNewLead(body, lead.id).catch((e) => console.error("Email notify error:", e));
+
+    // Auto-reply for non-ads sources (listing detail, alerts, etc.) — same
+    // skip rules: skip if no email, honeypot already short-circuited above.
+    if (lead.email) {
+      sendAutoReply({ leadId: lead.id, email: lead.email, firstName: lead.firstName });
+    }
 
     return NextResponse.json({ success: true, id: lead.id });
   } catch (e) {

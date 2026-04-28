@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 type Stats =
   | { found: false; name: string }
@@ -139,6 +140,7 @@ export default function SoldOnMyStreet() {
           intent: "seller",
           source: "homepage-sold-on-my-street",
           notes,
+          ...attributionPayload(),
         }),
       });
       if (!res.ok) throw new Error();

@@ -7,6 +7,7 @@ import GoogleAnalytics from "@/components/GoogleAnalytics";
 import UserProvider from "@/components/UserProvider";
 import ConsentBanner from "@/components/consent/ConsentBanner";
 import ChromeGate from "@/components/ChromeGate";
+import AttributionCapture from "@/components/AttributionCapture";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -108,6 +109,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <GoogleAnalytics />
+        <AttributionCapture />
         <UserProvider>
           <ChromeGate>
             <Navbar />

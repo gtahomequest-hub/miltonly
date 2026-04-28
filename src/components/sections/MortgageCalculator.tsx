@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { monthlyPayment, ontarioLTT, cmhcPremium, stressTestRate, formatMoney, formatMoneyShort } from "@/lib/mortgage-math";
+import { attributionPayload } from "@/lib/attribution";
 
 export default function MortgageCalculator() {
   const [price, setPrice] = useState(1050000);
@@ -196,6 +197,7 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
           intent: "buyer",
           source: "homepage-mortgage-calculator",
           notes,
+          ...attributionPayload(),
         }),
       });
       if (!res.ok) throw new Error();

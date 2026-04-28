@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 export default function MosqueAlertForm() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,7 @@ export default function MosqueAlertForm() {
           source: "mosque-alert",
           intent: "buyer",
           street: mosque || "Any mosque area",
+          ...attributionPayload(),
         }),
       });
       setSubmitted(true);

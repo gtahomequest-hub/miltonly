@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 type Persona = {
   emoji: string;
@@ -79,6 +80,7 @@ function PersonaCard({ persona }: { persona: Persona }) {
           phone: digits,
           source: persona.source,
           notes: `Persona: ${persona.name}`,
+          ...attributionPayload(),
         }),
       });
       if (!res.ok) throw new Error();
