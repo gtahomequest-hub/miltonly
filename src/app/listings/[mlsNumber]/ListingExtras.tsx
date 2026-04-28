@@ -9,6 +9,33 @@ import {
   GROCERIES, MOSQUES, PARKS, TRANSIT, COMMUTES, type POI,
 } from "@/lib/geo";
 
+// Fires GA4 generate_lead with cold-cache polling (mirrors /rentals/thank-you).
+// Same event Google Ads imports as a conversion via the GA4↔Ads link, so listing-
+// detail submits attribute alongside the /rentals/ads form submits.
+function fireGenerateLead(leadId: string | null | undefined) {
+  if (typeof window === "undefined") return;
+  const transactionId = leadId || `no-lid-${Date.now()}`;
+  let fired = false;
+  const start = Date.now();
+  const tryFire = () => {
+    if (fired) return;
+    const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+    if (typeof w.gtag === "function") {
+      w.gtag("event", "generate_lead", {
+        transaction_id: transactionId,
+        value: 1.0,
+        currency: "CAD",
+        lead_id: leadId || transactionId,
+      });
+      fired = true;
+      return;
+    }
+    if (Date.now() - start > 5000) return;
+    setTimeout(tryFire, 200);
+  };
+  tryFire();
+}
+
 interface SchoolLite {
   slug: string;
   name: string;
@@ -422,7 +449,7 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
     if (!email.includes("@")) return;
     setBusy(true);
     try {
-      await fetch("/api/leads", {
+      const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -433,6 +460,8 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
           mlsNumber: mls,
         }),
       });
+      const data = await res.json().catch(() => ({} as { id?: string }));
+      if (res.ok) fireGenerateLead(data?.id);
       setSent(true);
     } catch {/* ignore */} finally { setBusy(false); }
   };
@@ -522,7 +551,7 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
       return;
     }
     try {
-      await fetch("/api/leads", {
+      const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -534,6 +563,8 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           transactionType: "Lease",
         }),
       });
+      const data = await res.json().catch(() => ({} as { id?: string }));
+      if (res.ok) fireGenerateLead(data?.id);
       setSent(true);
     } catch { setErr("Could not submit — try again."); }
   };

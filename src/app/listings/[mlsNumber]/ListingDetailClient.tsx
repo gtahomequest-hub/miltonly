@@ -96,7 +96,35 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 4000); };
 
   const submitLead = async (data: Record<string, string>) => {
-    try { await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); } catch {}
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => ({} as { id?: string }));
+      if (!res.ok || typeof window === "undefined") return;
+      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+      const transactionId = json?.id || `no-lid-${Date.now()}`;
+      let fired = false;
+      const start = Date.now();
+      const tryFire = () => {
+        if (fired) return;
+        if (typeof w.gtag === "function") {
+          w.gtag("event", "generate_lead", {
+            transaction_id: transactionId,
+            value: 1.0,
+            currency: "CAD",
+            lead_id: json?.id || transactionId,
+          });
+          fired = true;
+          return;
+        }
+        if (Date.now() - start > 5000) return;
+        setTimeout(tryFire, 200);
+      };
+      tryFire();
+    } catch {}
   };
 
   const scrollToCTA = () => {
