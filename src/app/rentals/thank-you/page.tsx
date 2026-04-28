@@ -39,8 +39,8 @@ export default async function ThankYouPage({
 
   const isSpam = lid === "spam";
   const cheatsheetEnabled = process.env.CHEATSHEET_ENABLED === "true";
-  const awConversionId = process.env.NEXT_PUBLIC_AW_CONVERSION_ID || "";
-  const awConversionLabel = process.env.NEXT_PUBLIC_AW_CONVERSION_LABEL || "";
+  const awConversionId = (process.env.NEXT_PUBLIC_AW_CONVERSION_ID || "").trim();
+  const awConversionLabel = (process.env.NEXT_PUBLIC_AW_CONVERSION_LABEL || "").trim();
 
   return (
     <ThankYouClient
