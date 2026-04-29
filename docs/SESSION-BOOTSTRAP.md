@@ -62,7 +62,7 @@ Milton, Ontario's only dedicated real estate intelligence site. **Live at https:
 - Phase 1 paid funnel: `/rentals/ads` (SKAG-aligned LP) → `/rentals/thank-you` (fires GA4 `generate_lead`).
 
 **Tech stack** (verify in `package.json` if specifics matter):
-Next.js 14.2 App Router · TypeScript 5 · Tailwind 3.4 · Prisma 5.22 over Postgres · 4-DB architecture (DB1 Prisma operational, DB2 Neon `sold` schema, DB3 Neon `analytics` schema, Upstash Redis cache) · Resend (email) · Twilio (SMS, stub mode pending A2P 10DLC) · GA4 + Google Ads · Vercel hosting auto-deploy from `main`.
+Next.js 14.2 App Router · TypeScript 5 · Tailwind 3.4 · Prisma 5.22 over Postgres · 4-DB architecture (DB1 Prisma operational on Supabase, DB2 Neon `sold` schema, DB3 Neon `analytics` schema, Upstash Redis cache) · Resend (email) · Twilio (SMS, stub mode pending A2P 10DLC) · GA4 + Google Ads · Vercel hosting auto-deploy from `main`.
 
 ---
 
