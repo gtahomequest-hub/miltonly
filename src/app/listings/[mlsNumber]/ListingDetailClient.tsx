@@ -115,14 +115,15 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
       const tryFire = () => {
         if (fired) return;
         if (typeof w.gtag === "function") {
-          const eventPayload: Record<string, unknown> = {
+          // See ThankYouClient.tsx — inline user_data is dropped by gtag.js for GA4.
+          // Back-to-back set+event in the same tick is the canonical EC pattern.
+          if (hasUserData) w.gtag("set", "user_data", userData);
+          w.gtag("event", "generate_lead", {
             transaction_id: transactionId,
             value: 1.0,
             currency: "CAD",
             lead_id: json?.id || transactionId,
-          };
-          if (hasUserData) eventPayload.user_data = userData;
-          w.gtag("event", "generate_lead", eventPayload);
+          });
           fired = true;
           return;
         }

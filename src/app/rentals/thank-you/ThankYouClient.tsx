@@ -77,14 +77,18 @@ export default function ThankYouClient({
         if (fired || cancelled) return;
         const w = window as unknown as { gtag?: (...a: unknown[]) => void };
         if (typeof w.gtag === "function") {
-          const eventPayload: Record<string, unknown> = {
+          // GA4 Enhanced Conversions for Leads requires gtag('set','user_data',…)
+          // immediately before the event. Inline user_data inside the event params
+          // is the AW- (Google Ads native) pattern and gets dropped by gtag.js
+          // when serializing to GA4's /g/collect endpoint. Back-to-back set+event
+          // in the same synchronous tick has no race — the queue is FIFO.
+          if (hasUserData) w.gtag("set", "user_data", userData);
+          w.gtag("event", "generate_lead", {
             transaction_id: transactionId,
             value: 1.0,
             currency: "CAD",
             lead_id: lead?.id || transactionId,
-          };
-          if (hasUserData) eventPayload.user_data = userData;
-          w.gtag("event", "generate_lead", eventPayload);
+          });
           fired = true;
           return;
         }
