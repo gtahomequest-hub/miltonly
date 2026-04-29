@@ -33,6 +33,11 @@ function sendAutoReply(args: {
   const { leadId, email, firstName } = args;
   const safeName = (firstName || "there").trim() || "there";
   const subject = "Got your Milton rental request — calling you in under 60 minutes";
+  // RECO compliance: every realtor communication must accurately identify
+  // the brokerage. Brokerage = "RE/MAX Realty Specialists Inc., Brokerage".
+  // Signature block follows: bold name, accent line, brokerage, stats, contact
+  // row, compliance asterisk note. Google Reviews row intentionally omitted
+  // until a real URL is supplied — no placeholder/broken links shipped.
   const html = `
     <p>Hi ${safeName},</p>
     <p>Aamir here. I just got your request for a Milton rental.</p>
@@ -43,10 +48,42 @@ function sendAutoReply(args: {
       <li>You pay me nothing. The landlord covers my fee.</li>
       <li>I'll send you matching active listings before our call so you can scan options.</li>
     </ul>
-    <p>Talk soon,<br>
-    Aamir Yaqoob<br>
-    RE/MAX Real Estate Centre Inc.<br>
-    (647) 839-9090</p>
+    <p>Talk soon,</p>
+    <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;font-size:14px;line-height:1.5;max-width:600px;margin-top:24px;">
+      <tr>
+        <td style="padding-top:24px;border-top:2px solid #F5A524;">
+          <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">
+            Aamir Yaqoob, REALTOR<sup>&reg;</sup>
+          </div>
+          <div style="font-size:13px;color:#F5A524;font-weight:600;letter-spacing:0.3px;margin-bottom:8px;">
+            RE/MAX Hall of Fame
+          </div>
+          <div style="font-size:13px;color:#555;margin-bottom:12px;">
+            RE/MAX Realty Specialists Inc., Brokerage*
+          </div>
+          <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px;">
+            14 years focused on Milton &nbsp;&bull;&nbsp; 150+ families leased
+          </div>
+          <div style="margin-top:12px;">
+            <a href="tel:+16478399090" style="color:#F5A524;text-decoration:none;font-weight:600;font-size:15px;">
+              (647) 839-9090
+            </a>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <a href="mailto:${AUTO_REPLY_REPLY_TO}" style="color:#1a1a1a;text-decoration:none;">
+              ${AUTO_REPLY_REPLY_TO}
+            </a>
+          </div>
+          <div style="margin-top:6px;">
+            <a href="https://www.miltonly.com" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
+              miltonly.com
+            </a>
+          </div>
+          <div style="margin-top:18px;font-size:11px;color:#888;line-height:1.4;">
+            *Not intended to solicit buyers or tenants currently under contract with another brokerage.
+          </div>
+        </td>
+      </tr>
+    </table>
   `;
   const text = [
     `Hi ${safeName},`,
@@ -61,9 +98,20 @@ function sendAutoReply(args: {
     "  - I'll send you matching active listings before our call so you can scan options.",
     "",
     "Talk soon,",
-    "Aamir Yaqoob",
-    "RE/MAX Real Estate Centre Inc.",
+    "",
+    "—",
+    "",
+    "Aamir Yaqoob, REALTOR®",
+    "RE/MAX Hall of Fame",
+    "RE/MAX Realty Specialists Inc., Brokerage*",
+    "",
+    "14 years focused on Milton • 150+ families leased",
+    "",
     "(647) 839-9090",
+    AUTO_REPLY_REPLY_TO,
+    "miltonly.com",
+    "",
+    "*Not intended to solicit buyers or tenants currently under contract with another brokerage.",
   ].join("\n");
 
   resend.emails
