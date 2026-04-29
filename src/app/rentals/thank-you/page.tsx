@@ -41,11 +41,6 @@ export default async function ThankYouPage({
         email: row.email,
         phone: row.phone,
       };
-      // [EC-DEBUG] Server-side prop check — confirms Prisma actually returns
-      // email + phone for this lid before they cross the wire to the client.
-      console.log("[EC-DEBUG server] lead loaded", { id: row.id, hasEmail: !!row.email, hasPhone: !!row.phone, emailLen: row.email?.length ?? 0, phoneLen: row.phone?.length ?? 0 });
-    } else {
-      console.log("[EC-DEBUG server] no lead row for lid", lid);
     }
   }
 

@@ -70,14 +70,8 @@ export default function ThankYouClient({
     // available. user_data MUST be inside the event payload — gtag('set','user_data',…)
     // races on Next.js and the event reaches Google Ads with no user_data.
     (async () => {
-      // [EC-DEBUG] Checkpoint #4 — confirm the props that arrived from the server.
-      console.log("[EC-DEBUG client] lead email/phone", { hasLead: !!lead, email: lead?.email, phone: lead?.phone });
       const userData = await hashUserData(lead?.email, lead?.phone);
-      // [EC-DEBUG] Checkpoint #2 — confirm hashUserData actually returned hashes.
-      console.log("[EC-DEBUG client] hashed", userData);
       const hasUserData = userData.sha256_email_address || userData.sha256_phone_number;
-      // [EC-DEBUG] Checkpoint #3 — confirm the gating condition.
-      console.log("[EC-DEBUG client] hasUserData gate", { hasUserData: !!hasUserData });
 
       const tryFire = () => {
         if (fired || cancelled) return;
@@ -88,13 +82,7 @@ export default function ThankYouClient({
           // is the AW- (Google Ads native) pattern and gets dropped by gtag.js
           // when serializing to GA4's /g/collect endpoint. Back-to-back set+event
           // in the same synchronous tick has no race — the queue is FIFO.
-          if (hasUserData) {
-            // [EC-DEBUG] Checkpoint #1 — confirm gtag('set','user_data',…) actually fires.
-            console.log("[EC-DEBUG client] user_data set", userData);
-            w.gtag("set", "user_data", userData);
-          } else {
-            console.log("[EC-DEBUG client] SKIPPING gtag('set') because hasUserData is falsy");
-          }
+          if (hasUserData) w.gtag("set", "user_data", userData);
           w.gtag("event", "generate_lead", {
             transaction_id: transactionId,
             value: 1.0,

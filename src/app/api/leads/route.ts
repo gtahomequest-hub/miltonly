@@ -69,8 +69,8 @@ function sendAutoReply(args: {
               (647) 839-9090
             </a>
             &nbsp;&nbsp;|&nbsp;&nbsp;
-            <a href="mailto:${AUTO_REPLY_REPLY_TO}" style="color:#1a1a1a;text-decoration:none;">
-              ${AUTO_REPLY_REPLY_TO}
+            <a href="mailto:gtahomequest@gmail.com" style="color:#1a1a1a;text-decoration:none;">
+              gtahomequest@gmail.com
             </a>
           </div>
           <div style="margin-top:6px;">
@@ -108,7 +108,7 @@ function sendAutoReply(args: {
     "14 years focused on Milton • 150+ families leased",
     "",
     "(647) 839-9090",
-    AUTO_REPLY_REPLY_TO,
+    "gtahomequest@gmail.com",
     "miltonly.com",
     "",
     "*Not intended to solicit buyers or tenants currently under contract with another brokerage.",
