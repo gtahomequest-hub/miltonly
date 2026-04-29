@@ -1,27 +1,11 @@
-# ADVISOR-BRIEFING.md — Strategy Session Context
+# ADVISOR-BRIEFING.md — Monthly Strategy Review
 
 > **Last updated:** April 28, 2026
 > **Update monthly** or after major strategy changes.
-
----
-
-## Current State (2026-04-28)
-
-**Site is LIVE** at https://www.miltonly.com. Maintenance gate has been off since 2026-04-17.
-
-**Paid acquisition stack is shipped and ready to launch.** `/rentals/ads` is the SKAG-aligned paid-traffic landing page — 2-step form, hybrid H1 (URL params drive a dynamic SKAG headline, no params show a static + amber suffix), trust strip, speed-to-lead badge, 4-column comparison block, live TREB listings filtered client-side, JSON-LD `@graph` for the rich-results stack. `/rentals/thank-you` fires the Google Ads conversion `gtag` exactly once on mount keyed on `transaction_id=lead.id`. Lead model carries `gclid` + UTMs + referrer + UA + IP. Honeypot routes silently to `lid=spam`. Rate-limited 5 req / 60s per IP. Three commits over 25–26 April shipped Phase 1 (form + thank-you + conversion + gclid), Phase 2 (trust strip + speed-to-lead + comparison + live filter + JSON-LD), Phase 2.1 (Under $4K and Under $5K chips + chip rounding helper).
-
-**GA4 is firing in production** (`G-5G7486M9M9`). Verified live 2026-04-25 after redeploy.
-
-**Google Ads campaign is built and paused.** "Milton Rental - Search" — Manual CPC, $30/day, Milton-only, English/Hindi/Urdu/Punjabi, one ad group, eight phrase-match keywords, RSA with 15 headlines + 4 descriptions, seven sitelinks + a call extension at the campaign level. **Conversion tracking is wired to placeholder `AW-` ID/label values** — the campaign cannot be unpaused until the real conversion ID and label are dropped into Vercel env (expected 2026-04-29). Once real values land, one test submission against `/rentals/ads`, confirm conversion in the Google Ads dashboard, then unpause.
-
-**VOW pipeline operational.** DB2 holds ~7,001 closed transactions (sales + leases) synced nightly from TREB VOW. Analytics schema recomputes street and neighbourhood stats at 11:30 UTC. Street-content pipeline regenerates every 4 hours with auto-retry + VIP hub detection + catch-up endpoint.
-
-**VOW compliance hardened through three phases.** Phase 2.5 shipped the display-layer controls (SSR VowGate, k=10 anonymity on aggregate teasers, per-record Brokerage display for §6.3(c), bona-fide-interest acknowledgement quartet for TRESA 2002 + §6.3(k)). Phase 2.6 closed source-level data flow (DB1 `Listing.soldPrice`/`soldDate` permanently nulled, `streetDecision`/`streetUtils` rewritten to compute only active-listing aggregates, 77 stored StreetContent rows marked stale and regenerated). Tier 1 + Tier 1.5 teaser-language audit (2026-04-18) closed 14 public-facing "sold prices" phrasings across FAQ templates, homepage prose, JSON-LD schema descriptions, and a forgotten parallel generation path. Final `src/` grep confirms zero unclassified matches — every remaining mention is either a comment, an admin-only surface, a register-to-view CTA with adjacent gate qualifier, or `/sold`-hub meta (intentionally public for SEO of the gate-compliant hub).
-
-**Phase 4.1 — 8-section AI street descriptions** is in active backfill. Identity-keyed slug architecture and directional H2-subsection prompt handling shipped through Step 13m-4. 24 succeeded slugs regenerated under the new input shape; 301 middleware redirects siblings to canonical. Backlog clears automatically on cron in ~3 days.
-
-**Strategic implication:** the site now combines (a) hyperlocal organic SEO (700+ street pages, schools, mosques, neighbourhoods) with (b) a paid-traffic engine that converts SKAG keyword variants into structured leads with full attribution. Authenticated users see real sold prices, days-on-market, sold-to-ask ratios, YoY price change, and rental comps by bed count — gated under VowGate. Anonymous visitors see aggregated teasers that SEO-rank without breaching VOW.
+>
+> **This is the monthly strategy review document, not a session bootstrap.** Used during Aamir's strategy reviews — vision, growth strategy, locked positions, open strategic questions, where strategic advice is most valuable. **For session bootstrap, see `docs/SESSION-BOOTSTRAP.md`.**
+>
+> **Live operating state** (current blocker, today's One Thing, this-week roadmap) lives in **Notion · Powerhouse OS root + 🏙️ Miltonly hub page**. The most-recent launch session snapshot lives at **`docs/launch-prep-2026-04-28.md`**. Decision history lives in `CHANGELOG-DECISIONS.md` (newest at top, ~80+ entries) and the Notion **Decisions DB**.
 
 ---
 

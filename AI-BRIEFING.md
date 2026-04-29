@@ -1,31 +1,11 @@
-# AI-BRIEFING.md — Claude Code Session Context
+# AI-BRIEFING.md — Technical-State Reference
 
 > **Last updated:** April 28, 2026
 > **Auto-update this file** after every deployment and every phase completion.
-
----
-
-## Where we are (2026-04-28)
-
-**Site is live** at https://www.miltonly.com. Maintenance gate has been off since 2026-04-17.
-
-**Paid acquisition stack is shipped (rentals/ads funnel).** `/rentals/ads` is the SKAG-friendly paid-traffic landing page; `/rentals/thank-you` is the post-submit page that fires the Google Ads conversion. All three rentals/ads phases are live as of 2026-04-26:
-
-- **Phase 1 (commit `e032110`, 2026-04-25)** — 2-step form (chips → contact), `/rentals/thank-you` server page, Google Ads `gtag` conversion firing once on mount with `transaction_id=lead.id`, `gclid` + UTM persistence on `Lead`, additive Prisma migration `add_lead_ads_tracking_fields`, honeypot routing to `lid=spam`, in-memory rate limit (5 req / 60s per IP), Twilio stub (live SMS commented out until A2P 10DLC is registered), strict validation scoped to `source="ads-rentals-lp"`. `/api/leads` preserved for all 11 other callers.
-- **Phase 2 (commit `6b04165`, 2026-04-26)** — top trust strip, speed-to-lead badge, 4-column comparison block, live TREB listings filter (client-side, propertyType + bedrooms + budget AND-logic), JSON-LD `@graph` (RealEstateAgent + LocalBusiness + WebPage + aggregateRating), hybrid H1 (URL params → SKAG dynamic; no params → static + amber " — Before Someone Else Does." suffix).
-- **Phase 2.1 (commit `d6c1294`, 2026-04-26)** — Under $4K and Under $5K chips added to BUDGET_OPTIONS, new `mapMaxToChip()` helper snaps any URL `?max=` to the smallest chip ≥ value (so URL hydration always lands on a real chip), `buildDynamicHeadline` boundary fix (`max <= 5000` instead of `<`).
-
-**GA4 is fully installed and firing in production.** `NEXT_PUBLIC_GA_ID = G-5G7486M9M9`. Verified live 2026-04-25 after redeploy (`a444c51`).
-
-**Google Ads account created for Miltonly.** One **paused** Search campaign — "Milton Rental - Search". Manual CPC, $30/day, Milton-only, languages English/Hindi/Urdu/Punjabi, 1 ad group, 8 phrase-match keywords, RSA with 15 headlines + 4 descriptions, 7 sitelinks + call extension at the campaign level. **Conversion tracking is wired to placeholder `AW-` ID/label values** — the campaign cannot be unpaused until the real conversion ID and label are dropped into `NEXT_PUBLIC_AW_CONVERSION_ID` / `NEXT_PUBLIC_AW_CONVERSION_LABEL` (Vercel env). Real values land 2026-04-29.
-
-**Phase 1 — 4-DB architecture** is shipped and operational: DB1 (Prisma), DB2 (`sold` schema on Neon), DB3 (`analytics` schema on Neon), Redis (Upstash). DB2 holds 7,001+ closed transactions across sales and leases. Sync and stats compute crons running nightly.
-
-**Phase 2 + 2.5 + 2.6 — VOW compliance** is shipped. SSR VowGate with k=10 k-anonymity on MIN/MAX aggregate teasers, per-record listing Brokerage display (VOW §6.3(c)), bona-fide-interest acknowledgement quartet (TRESA 2002 + VOW §6.3(k)), DB1 sold-derived fields nullified, public render tree free of sold-derived data. Tier 1 + Tier 1.5 teaser-language audit complete as of 2026-04-18 — 14 public-facing "sold prices" phrasings neutralized across commits `fc73715`, `2e9f5ed`, `df47b74`.
-
-**Phase 4.1 — 8-section AI street descriptions** is in backfill. Identity-keyed slug architecture + directional H2-subsection prompt handling shipped through Step 13m-4 (commits `9fa14c9`, `9cf5c3f`, `032b6ee`). 24 succeeded slugs regenerated under the new input shape. 301 middleware redirects siblings to canonical. Backlog clearing on the cron — `~3 days` to clear automatically per project_pending_catchup memory.
-
-**Active pipeline:** `/api/sync/sold` populates `sold.sold_records` on schedule. `/api/sync/generate` every 4h regenerates StreetContent rows. Street pipeline auto-retry + VIP hub cron + catch-up endpoint all wired per commit `74b5ed6`. `skip_current` null-hash bug fixed 2026-04-18 (`77f5215`) — rows with `marketDataHash = NULL` no longer silently skipped.
+>
+> **Session bootstrap is `docs/SESSION-BOOTSTRAP.md`** — paste that into new Claude sessions. **This file is the technical-state reference**: phase status, route inventory, cron schedule, schema map, env-var registry, runbook. Read on demand from the bootstrap, not at session start.
+>
+> **Live operating state** (current blocker, what's shipped today, what's next this week) lives in **Notion · 🏙️ Miltonly hub page** + Powerhouse OS "Today's One Thing" callout. The most-recent launch session snapshot lives at **`docs/launch-prep-2026-04-28.md`**. Decision history lives in `CHANGELOG-DECISIONS.md` (this repo) and the Notion **Decisions DB**. Settled architectural locks live in `DO-NOT-REPEAT.md`.
 
 ---
 
