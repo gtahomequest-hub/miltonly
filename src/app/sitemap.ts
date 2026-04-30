@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { schools } from "@/lib/schools";
 import { mosques } from "@/lib/mosques";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = "https://miltonly.com";
+const SITE_URL = config.SITE_URL;
 
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -72,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const hoodGroups = await prisma.listing.groupBy({
     by: ["neighbourhood"],
     _count: true,
-    where: { city: "Milton", permAdvertise: true },
+    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
   });
 
   const neighbourhoodPages: MetadataRoute.Sitemap = hoodGroups

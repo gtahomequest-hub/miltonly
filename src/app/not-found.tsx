@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { config } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "Page not found — Miltonly",
-  description: "The page you're looking for doesn't exist on Miltonly.",
+  title: `Page not found — ${config.SITE_NAME}`,
+  description: `The page you're looking for doesn't exist on ${config.SITE_NAME}.`,
   robots: { index: false, follow: false },
 };
 
@@ -29,7 +30,7 @@ export default function NotFound() {
             href="/listings"
             className="border border-[#e2e8f0] text-[#475569] text-[13px] font-bold px-5 py-3 rounded-lg hover:border-[#07111f] transition-colors"
           >
-            Browse Milton listings
+            Browse {config.CITY_NAME} listings
           </Link>
         </div>
       </div>

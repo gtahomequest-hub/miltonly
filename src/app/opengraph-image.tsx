@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
+import { config } from "@/lib/config";
 
 export const runtime = "edge";
-export const alt = "Miltonly — Milton Ontario real estate platform";
+export const alt = `${config.SITE_NAME} — ${config.CITY_NAME} ${config.CITY_PROVINCE} real estate platform`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -40,7 +41,7 @@ export default function OGImage() {
             lineHeight: 1.4,
           }}
         >
-          Milton Ontario Real Estate — Homes For Sale, Street Data &amp; Market Intelligence
+          {config.CITY_NAME} {config.CITY_PROVINCE} Real Estate — Homes For Sale, Street Data &amp; Market Intelligence
         </div>
         <div
           style={{
@@ -76,7 +77,7 @@ export default function OGImage() {
             color: "rgba(255,255,255,0.3)",
           }}
         >
-          miltonly.com
+          {config.SITE_DOMAIN}
         </div>
       </div>
     ),

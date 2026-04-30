@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { config } from "@/lib/config";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Miltonly — Milton Ontario Real Estate",
-    short_name: "Miltonly",
-    description:
-      "Milton Ontario's only dedicated real estate platform. Homes for sale, street intelligence, and market data.",
+    name: `${config.SITE_NAME} — ${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`,
+    short_name: config.SITE_NAME,
+    description: `${config.CITY_NAME} ${config.CITY_PROVINCE}'s only dedicated real estate platform. Homes for sale, street intelligence, and market data.`,
     start_url: "/",
     display: "standalone",
     background_color: "#0A1628",

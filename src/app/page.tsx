@@ -8,6 +8,7 @@ import {
 import { homepageFAQs } from "@/lib/faqs";
 import { getHeroStats, getFeaturedListings, getPropertyTypeStats, getTrendingStreets } from "@/lib/stats";
 import { getMiltonSoldTotals } from "@/lib/sold-data";
+import { config } from "@/lib/config";
 
 import HeroSection from "@/components/sections/HeroSection";
 import TrustBarSection from "@/components/sections/TrustBarSection";
@@ -34,7 +35,7 @@ export default async function HomePage() {
     generateWebSiteSchema(),
     generateFAQSchema(homepageFAQs),
     generateBreadcrumbSchema([
-      { name: "Milton Real Estate", url: "https://miltonly.com" },
+      { name: `${config.CITY_NAME} Real Estate`, url: config.SITE_URL },
     ]),
   ];
 
