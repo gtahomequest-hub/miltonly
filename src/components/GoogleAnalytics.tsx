@@ -1,8 +1,6 @@
 import Script from "next/script";
 import { GA_ID } from "@/lib/analytics";
 
-const AW_ID = (process.env.NEXT_PUBLIC_AW_CONVERSION_ID ?? "").trim();
-
 export default function GoogleAnalytics() {
   if (!GA_ID) return null;
 
@@ -18,7 +16,6 @@ export default function GoogleAnalytics() {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', '${GA_ID}');
-          ${AW_ID ? `gtag('config', '${AW_ID}');` : ""}
         `}
       </Script>
     </>
