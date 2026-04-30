@@ -140,12 +140,43 @@ model Lead {
   lastContactAt   DateTime?
   convertedAt     DateTime?
   cookieId        String?
+  // Lead admin UI fields (MOD-58)
+  leadStatus              String?  @default("New") // New|Contacted|Qualified|Junk|Booked|Closed|Lost
+  qualificationReason     String?
+  firstPage               String?
+  internalReferrer        String?
+  isQualified             Boolean  @default(false)
+  leadTemperatureAtSubmit String? // Hot|Warm|Cold
+  // Activity log relation (MOD-58)
+  activities              LeadActivity[]
 
   @@index([email])
   @@index([intent])
   @@index([score])
-  @@index([createdAt])
   @@index([gclid])
+  // Admin UI filterable indexes (MOD-58)
+  @@index([leadStatus, createdAt(sort: Desc)])
+  @@index([isQualified, createdAt(sort: Desc)])
+  @@index([source, createdAt(sort: Desc)])
+  @@index([leadTemperatureAtSubmit, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([leadStatus, isQualified, createdAt(sort: Desc)])
+  @@index([source, leadStatus, createdAt(sort: Desc)])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String // form_submit | email_sent | page_view | call_logged | status_change | note | manual_action
+  payload   Json
+  createdAt DateTime @default(now())
+  createdBy String? // null = system, "aamir" = manual
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
 }
 
 model VisitorProfile {
