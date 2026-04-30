@@ -20,6 +20,7 @@
 // Auth: Authorization: Bearer <CRON_SECRET>  OR  ?secret=<CRON_SECRET>.
 
 import { NextRequest, NextResponse } from "next/server";
+import { config } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -173,13 +174,14 @@ export async function GET(req: NextRequest) {
   };
 
   // Run all four probes in parallel — cuts wall time to max(probe duration).
+  const cityFilter = `City eq '${config.AMPRE_CITY_FILTER}'`;
   const [probeA, probeB, probeC, probeD] = await Promise.all([
-    runProbe("City eq 'Milton' and StandardStatus eq 'Closed'", 5),
-    runProbe("City eq 'Milton' and MlsStatus eq 'Sld'", 5),
-    runProbe("City eq 'Milton' and MlsStatus ne 'New'", 20),
+    runProbe(`${cityFilter} and StandardStatus eq 'Closed'`, 5),
+    runProbe(`${cityFilter} and MlsStatus eq 'Sld'`, 5),
+    runProbe(`${cityFilter} and MlsStatus ne 'New'`, 20),
     // Probe D — TransactionType discovery, large sample so we see both
     // 'For Sale' and 'For Lease' rows before writing the CHECK constraint.
-    runProbe("City eq 'Milton' and StandardStatus eq 'Closed'", 100),
+    runProbe(`${cityFilter} and StandardStatus eq 'Closed'`, 100),
   ]);
 
   // Aggregate status + transaction-type vocabulary across all probes so the

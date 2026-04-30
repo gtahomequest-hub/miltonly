@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.RESEND_FROM_EMAIL || "Miltonly <noreply@miltonly.com>";
-const TO = process.env.REALTOR_EMAIL || "gtahomequest@gmail.com";
+const FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
+const TO = process.env.REALTOR_EMAIL || config.realtor.email;
 
 export async function POST(req: NextRequest) {
   try {

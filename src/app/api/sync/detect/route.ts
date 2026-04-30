@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { extractStreetName } from "@/lib/streetUtils";
 import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
 
@@ -143,7 +144,7 @@ async function fetchPhotos(listingKey: string): Promise<string[]> {
 }
 
 async function fetchPage(skip: number): Promise<{ items: AmpProperty[]; total: number }> {
-  const filter = encodeURIComponent("City eq 'Milton'");
+  const filter = encodeURIComponent(`City eq '${config.AMPRE_CITY_FILTER}'`);
   const url = `${TREB_API_URL}?$select=${SELECT_FIELDS}&$filter=${filter}&$top=${PAGE_SIZE}&$skip=${skip}&$count=true&$orderby=OriginalEntryTimestamp%20desc`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${TREB_TOKEN}`, Accept: "application/json" },
@@ -162,7 +163,7 @@ function buildAddress(item: AmpProperty): string {
 
 function slugifyStreet(name: string | null, suffix: string | null): string {
   const parts = [name, suffix].filter(Boolean).join(" ");
-  return parts.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-milton";
+  return parts.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${config.SLUG_SUFFIX}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -201,8 +202,8 @@ export async function POST(request: NextRequest) {
           address,
           streetSlug: legacySlug,
           streetName: extractedStreetName,
-          neighbourhood: item.CityRegion || "Milton",
-          city: "Milton",
+          neighbourhood: item.CityRegion || config.CITY_NAME,
+          city: config.PRISMA_CITY_VALUE,
           price: item.ListPrice || 0,
           bedrooms: item.BedroomsTotal || 0,
           bathrooms: item.BathroomsTotalInteger || 0,

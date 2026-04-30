@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { revalidatePath } from "next/cache";
 import { sendSMS } from "@/lib/smsAlert";
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
   revalidatePath(`/streets/${streetSlug}`);
 
   await sendSMS(
-    `\u2713 Published: ${updated.streetName} \u2014 miltonly.com/streets/${streetSlug}`
+    `\u2713 Published: ${updated.streetName} \u2014 ${config.SITE_DOMAIN}/streets/${streetSlug}`
   );
 
   return NextResponse.json({ ok: true, streetSlug });

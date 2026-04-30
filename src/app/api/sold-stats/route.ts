@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 
 const url = process.env.ANALYTICS_DATABASE_URL;
 const aSql = url ? neon(url) : null;
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
       name.toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "")
-      + "-milton";
+      + `-${config.SLUG_SUFFIX}`;
 
     let rows = (await aSql`
       SELECT
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     if (!rows?.[0]) {
       console.warn(`[sold-stats] derived slug miss for "${name}" → ${derivedSlug}, trying operational fallback`);
       const listing = await prisma.listing.findFirst({
-        where: { streetName: name, city: "Milton" },
+        where: { streetName: name, city: config.PRISMA_CITY_VALUE },
         select: { streetSlug: true },
       });
       if (listing?.streetSlug) {

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { notifyNewLead } from "@/lib/email";
 import { Resend } from "resend";
 import { NextRequest, NextResponse } from "next/server";
@@ -12,15 +13,15 @@ const ADS_SOURCE = "ads-rentals-lp";
 // continues to flow through `notifyNewLead` (src/lib/email.ts) — both fire when
 // CHEATSHEET_ENABLED=true; only `notifyNewLead` fires otherwise.
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const RESEND_FROM = process.env.RESEND_FROM_EMAIL || "Miltonly <onboarding@resend.dev>";
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <onboarding@resend.dev>`;
 const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || process.env.REALTOR_EMAIL;
 
-// Auto-reply sender. Hardcoded to the Resend testing sender until miltonly.com
+// Auto-reply sender. Hardcoded to the Resend testing sender until the site
 // domain is verified in Resend dashboard. Display name keeps it personal —
-// "Aamir from Miltonly" rather than the raw onboarding@resend.dev address.
-// reply-to routes the lead's reply to Aamir's real inbox.
-const AUTO_REPLY_FROM = "Aamir from Miltonly <onboarding@resend.dev>";
-const AUTO_REPLY_REPLY_TO = process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL || "aamir@miltonly.com";
+// "<First> from <SiteName>" rather than the raw onboarding@resend.dev address.
+// reply-to routes the lead's reply to the realtor's real inbox.
+const AUTO_REPLY_FROM = `${config.realtor.name.split(" ")[0]} from ${config.SITE_NAME} <onboarding@resend.dev>`;
+const AUTO_REPLY_REPLY_TO = process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL || config.realtor.email;
 
 // Fire-and-forget. Returns immediately so /api/leads response stays fast.
 // All errors are caught + logged; never propagated to the client.
@@ -32,7 +33,7 @@ function sendAutoReply(args: {
   if (!resend) return;
   const { leadId, email, firstName } = args;
   const safeName = (firstName || "there").trim() || "there";
-  const subject = "Got your Milton rental request — calling you in under 60 minutes";
+  const subject = `Got your ${config.CITY_NAME} rental request — calling you in under 60 minutes`;
   // RECO compliance: every realtor communication must accurately identify
   // the brokerage. Brokerage = "RE/MAX Realty Specialists Inc., Brokerage".
   // Signature block follows: bold name, accent line, brokerage, stats, contact
@@ -40,11 +41,11 @@ function sendAutoReply(args: {
   // until a real URL is supplied — no placeholder/broken links shipped.
   const html = `
     <p>Hi ${safeName},</p>
-    <p>Aamir here. I just got your request for a Milton rental.</p>
+    <p>${config.realtor.name.split(" ")[0]} here. I just got your request for a ${config.CITY_NAME} rental.</p>
     <p>I'll be calling you in the next 60 minutes. If now is a bad time, just reply to this email and tell me when works.</p>
     <p>While you wait — a few things I want you to know:</p>
     <ul>
-      <li>I'm RE/MAX Hall of Fame and have helped 150+ Milton families lease in the last 14 years</li>
+      <li>I'm RE/MAX Hall of Fame and have helped 150+ ${config.CITY_NAME} families lease in the last ${config.realtor.yearsExperience} years</li>
       <li>You pay me nothing. The landlord covers my fee.</li>
       <li>I'll send you matching active listings before our call so you can scan options.</li>
     </ul>
@@ -53,29 +54,29 @@ function sendAutoReply(args: {
       <tr>
         <td style="padding-top:24px;border-top:2px solid #F5A524;">
           <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">
-            Aamir Yaqoob, REALTOR<sup>&reg;</sup>
+            ${config.realtor.name}, REALTOR<sup>&reg;</sup>
           </div>
           <div style="font-size:13px;color:#F5A524;font-weight:600;letter-spacing:0.3px;margin-bottom:8px;">
             RE/MAX Hall of Fame
           </div>
           <div style="font-size:13px;color:#555;margin-bottom:12px;">
-            RE/MAX Realty Specialists Inc., Brokerage*
+            ${config.brokerage.name}*
           </div>
           <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px;">
-            14 years focused on Milton &nbsp;&bull;&nbsp; 150+ families leased
+            ${config.realtor.yearsExperience} years focused on ${config.CITY_NAME} &nbsp;&bull;&nbsp; 150+ families leased
           </div>
           <div style="margin-top:12px;">
-            <a href="tel:+16478399090" style="color:#F5A524;text-decoration:none;font-weight:600;font-size:15px;">
-              (647) 839-9090
+            <a href="tel:${config.realtor.phoneE164}" style="color:#F5A524;text-decoration:none;font-weight:600;font-size:15px;">
+              ${config.realtor.phone}
             </a>
             &nbsp;&nbsp;|&nbsp;&nbsp;
-            <a href="mailto:gtahomequest@gmail.com" style="color:#1a1a1a;text-decoration:none;">
-              gtahomequest@gmail.com
+            <a href="mailto:${config.realtor.email}" style="color:#1a1a1a;text-decoration:none;">
+              ${config.realtor.email}
             </a>
           </div>
           <div style="margin-top:6px;">
-            <a href="https://www.miltonly.com" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
-              miltonly.com
+            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
+              ${config.SITE_DOMAIN}
             </a>
           </div>
           <div style="margin-top:18px;font-size:11px;color:#888;line-height:1.4;">
@@ -88,12 +89,12 @@ function sendAutoReply(args: {
   const text = [
     `Hi ${safeName},`,
     "",
-    "Aamir here. I just got your request for a Milton rental.",
+    `${config.realtor.name.split(" ")[0]} here. I just got your request for a ${config.CITY_NAME} rental.`,
     "",
     "I'll be calling you in the next 60 minutes. If now is a bad time, just reply to this email and tell me when works.",
     "",
     "While you wait — a few things I want you to know:",
-    "  - I'm RE/MAX Hall of Fame and have helped 150+ Milton families lease in the last 14 years",
+    `  - I'm RE/MAX Hall of Fame and have helped 150+ ${config.CITY_NAME} families lease in the last ${config.realtor.yearsExperience} years`,
     "  - You pay me nothing. The landlord covers my fee.",
     "  - I'll send you matching active listings before our call so you can scan options.",
     "",
@@ -101,15 +102,15 @@ function sendAutoReply(args: {
     "",
     "—",
     "",
-    "Aamir Yaqoob, REALTOR®",
+    `${config.realtor.name}, REALTOR®`,
     "RE/MAX Hall of Fame",
-    "RE/MAX Realty Specialists Inc., Brokerage*",
+    `${config.brokerage.name}*`,
     "",
-    "14 years focused on Milton • 150+ families leased",
+    `${config.realtor.yearsExperience} years focused on ${config.CITY_NAME} • 150+ families leased`,
     "",
-    "(647) 839-9090",
-    "gtahomequest@gmail.com",
-    "miltonly.com",
+    config.realtor.phone,
+    config.realtor.email,
+    config.SITE_DOMAIN,
     "",
     "*Not intended to solicit buyers or tenants currently under contract with another brokerage.",
   ].join("\n");
@@ -288,21 +289,21 @@ export async function POST(request: NextRequest) {
       }).catch((e) => console.error("Twilio stub error:", e));
 
       // Renter cheat-sheet email — gated by env flag + email presence.
-      // TODO: swap RESEND_FROM_EMAIL to leads@miltonly.com once miltonly.com domain is verified in Resend dashboard
+      // TODO: swap RESEND_FROM_EMAIL to leads@<site domain> once domain is verified in Resend dashboard
       if (process.env.CHEATSHEET_ENABLED === "true" && finalEmail && resend) {
-        const pdfUrl = process.env.CHEATSHEET_PDF_URL || "https://www.miltonly.com/milton-rental-cheat-sheet.pdf";
+        const pdfUrl = process.env.CHEATSHEET_PDF_URL || `${config.SITE_URL_WWW}/${config.SLUG_SUFFIX}-rental-cheat-sheet.pdf`;
         resend.emails
           .send({
             from: RESEND_FROM,
             to: finalEmail,
             replyTo: RESEND_REPLY_TO,
-            subject: `Your Milton rental matches are coming, ${trimmedName} — read this in the meantime`,
+            subject: `Your ${config.CITY_NAME} rental matches are coming, ${trimmedName} — read this in the meantime`,
             html: `
               <p>Hi ${trimmedName},</p>
-              <p>Thanks for reaching out — Aamir will text you 3–5 hand-picked Milton matches by end of business day.</p>
-              <p>While you wait, here's the <a href="${pdfUrl}">Milton Renter's Cheat Sheet (PDF)</a> — what landlords actually ask for, prices by neighbourhood, and three red flags to watch for.</p>
-              <p>If anything's urgent, call or text <a href="tel:+16478399090">(647) 839-9090</a>.</p>
-              <p>— Aamir Yaqoob<br>RE/MAX Realty Specialists Inc., Brokerage</p>
+              <p>Thanks for reaching out — ${config.realtor.name.split(" ")[0]} will text you 3–5 hand-picked ${config.CITY_NAME} matches by end of business day.</p>
+              <p>While you wait, here's the <a href="${pdfUrl}">${config.CITY_NAME} Renter's Cheat Sheet (PDF)</a> — what landlords actually ask for, prices by neighbourhood, and three red flags to watch for.</p>
+              <p>If anything's urgent, call or text <a href="tel:${config.realtor.phoneE164}">${config.realtor.phone}</a>.</p>
+              <p>— ${config.realtor.name}<br>${config.brokerage.name}</p>
             `,
           })
           .then((result) => {

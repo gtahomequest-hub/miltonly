@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
 
 const VIP_THRESHOLD = 5; // Streets with 5+ active listings become VIP Hubs
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         data: {
           streetSlug: slug,
           streetName: sample?.streetName || slug,
-          description: `Real estate data for ${sample?.streetName || slug} in Milton, Ontario.`,
+          description: `Real estate data for ${sample?.streetName || slug} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}.`,
           status: "draft",
           isVipHub: true,
           vipHubAt: new Date(),

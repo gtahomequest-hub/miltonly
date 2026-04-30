@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Build slug from street name
-  const slug = street.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-milton";
+  const slug = street.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${config.SLUG_SUFFIX}`;
 
   const where: Record<string, unknown> = { streetSlug: slug, permAdvertise: true };
   if (type !== "all") {
@@ -23,21 +24,21 @@ export async function GET(request: NextRequest) {
     _count: true,
   });
 
-  // If no data for this street, return Milton-wide stats for this property type
+  // If no data for this street, return city-wide stats for this property type
   if (agg._count === 0) {
-    const miltonWhere: Record<string, unknown> = { city: "Milton", permAdvertise: true };
-    if (type !== "all") miltonWhere.propertyType = type;
+    const cityWhere: Record<string, unknown> = { city: config.PRISMA_CITY_VALUE, permAdvertise: true };
+    if (type !== "all") cityWhere.propertyType = type;
 
-    const miltonAgg = await prisma.listing.aggregate({
-      where: miltonWhere,
+    const cityAgg = await prisma.listing.aggregate({
+      where: cityWhere,
       _avg: { price: true, daysOnMarket: true },
     });
 
     return NextResponse.json({
       found: false,
-      message: "No recent data on this street — showing Milton average",
-      avgPrice: Math.round(miltonAgg._avg.price || 0),
-      avgDOM: Math.round(miltonAgg._avg.daysOnMarket || 0),
+      message: `No recent data on this street — showing ${config.CITY_NAME} average`,
+      avgPrice: Math.round(cityAgg._avg.price || 0),
+      avgDOM: Math.round(cityAgg._avg.daysOnMarket || 0),
       soldVsAsk: 100,
       count: 0,
     });
