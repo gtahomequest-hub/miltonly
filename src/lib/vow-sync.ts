@@ -13,6 +13,7 @@
 // exist as columns but are never written from here.
 
 import { extractStreetName, streetNameToSlug } from "@/lib/streetUtils";
+import { config } from "@/lib/config";
 
 // =============================================================================
 // Type: a minimal query-executor interface. Both @neondatabase/serverless's
@@ -394,8 +395,8 @@ export function mapAmpToSoldColumns(r: AmpRecord): Record<string, unknown> {
     address,
     street_name: streetName,
     street_slug: streetSlug,
-    neighbourhood: (r.CityRegion as string | null) || "Milton",
-    city: (r.City as string | null) || "Milton",
+    neighbourhood: (r.CityRegion as string | null) || config.CITY_NAME,
+    city: (r.City as string | null) || config.PRISMA_CITY_VALUE,
     list_price: listPrice,
     sold_price: soldPrice,
     sold_date: closeDate,
@@ -964,7 +965,7 @@ export async function runSoldSync(opts: {
   let cursorKey = "";
   let hasKeyCursor = false;
 
-  const BASE_FILTER = `City eq 'Milton' and StandardStatus eq 'Closed'`;
+  const BASE_FILTER = `City eq '${config.AMPRE_CITY_FILTER}' and StandardStatus eq 'Closed'`;
   const upsertSql = buildSoldRecordUpsertSql();
 
   let inserted = 0;

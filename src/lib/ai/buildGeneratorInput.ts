@@ -27,6 +27,7 @@
 
 import type { Listing } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { analyticsDb, soldDb } from "@/lib/db";
 import {
   expandStreetName,
@@ -467,7 +468,7 @@ function stripLeadingCodePrefix(s: string): string {
 
 function deslugify(slug: string): string {
   const parts = slug.split("-").filter(Boolean);
-  if (parts.length > 1 && parts[parts.length - 1].toLowerCase() === "milton") {
+  if (parts.length > 1 && parts[parts.length - 1].toLowerCase() === config.SLUG_SUFFIX) {
     parts.pop();
   }
   return parts.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");

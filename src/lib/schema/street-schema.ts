@@ -7,6 +7,7 @@
 // and two ItemLists (alternative streets, nearby places).
 
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
+import { config } from "@/lib/config";
 import type {
   StreetPageData,
   TypeSectionProps,
@@ -26,10 +27,11 @@ export interface ResolvedStreetContent {
   sections: StreetSection[];
 }
 
-const SITE_URL = "https://miltonly.com";
+const SITE_URL = config.SITE_URL;
 const ORG_ID = `${SITE_URL}/#organization`;
 const AGENT_ID = `${SITE_URL}/#agent`;
 const K_ANON_AGG = 5;
+const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 // ────────────────────────────────────────────────────────────────────
 // Per-piece builders
@@ -44,39 +46,38 @@ export function buildLocalBusinessSchema(data: StreetPageData): object {
   return {
     "@type": "LocalBusiness",
     "@id": ORG_ID,
-    name: "Team Miltonly",
-    alternateName: "Miltonly",
-    description:
-      "Milton real estate advisory serving every street in Milton, Ontario. Street-by-street analysis, professional guidance for buyers and sellers, and deep local expertise.",
+    name: `Team ${config.SITE_NAME}`,
+    alternateName: config.SITE_NAME,
+    description: `${config.CITY_NAME} real estate advisory serving every street in ${CITY_PROVINCE_LABEL}. Street-by-street analysis, professional guidance for buyers and sellers, and deep local expertise.`,
     url: SITE_URL,
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Milton",
-      addressRegion: "ON",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE_CODE,
+      addressCountry: config.CITY_COUNTRY_CODE,
     },
     areaServed: [
       {
         "@type": "City",
-        name: "Milton",
-        containedInPlace: { "@type": "AdministrativeArea", name: "Ontario" },
+        name: config.CITY_NAME,
+        containedInPlace: { "@type": "AdministrativeArea", name: config.CITY_PROVINCE },
       },
     ],
     priceRange: "$$$",
     knowsAbout: [
-      "Milton real estate",
-      "Milton property valuations",
-      "Milton neighbourhoods",
+      `${config.CITY_NAME} real estate`,
+      `${config.CITY_NAME} property valuations`,
+      `${config.CITY_NAME} neighbourhoods`,
       ...hoodNames,
       data.street.name,
     ],
     founder: {
       "@type": "RealEstateAgent",
       "@id": AGENT_ID,
-      name: "Aamir Yaqoob",
+      name: config.realtor.name,
       jobTitle: "Real Estate Advisor",
-      worksFor: { "@type": "Organization", name: "RE/MAX Realty Specialists Inc." },
-      areaServed: { "@type": "City", name: "Milton" },
+      worksFor: { "@type": "Organization", name: config.brokerage.name },
+      areaServed: { "@type": "City", name: config.CITY_NAME },
     },
   };
 }
@@ -91,8 +92,8 @@ export function buildPlaceSchema(data: StreetPageData): object {
     "@id": `${SITE_URL}/neighbourhoods/${slugifyNbhd(n)}`,
     containedInPlace: {
       "@type": "City",
-      name: "Milton",
-      containedInPlace: { "@type": "AdministrativeArea", name: "Ontario" },
+      name: config.CITY_NAME,
+      containedInPlace: { "@type": "AdministrativeArea", name: config.CITY_PROVINCE },
     },
   }));
 
@@ -102,17 +103,17 @@ export function buildPlaceSchema(data: StreetPageData): object {
     name: data.street.name,
     description:
       data.street.characterSummary ||
-      `A residential street in ${data.street.neighbourhoods.join(", ") || "Milton"}, Milton Ontario.`,
+      `A residential street in ${data.street.neighbourhoods.join(", ") || config.CITY_NAME}, ${CITY_PROVINCE_LABEL}.`,
     url: `${SITE_URL}/streets/${data.street.slug}`,
     containedInPlace: containedInPlace.length > 0 ? containedInPlace : [
-      { "@type": "City", name: "Milton" },
+      { "@type": "City", name: config.CITY_NAME },
     ],
     address: {
       "@type": "PostalAddress",
       streetAddress: data.street.name,
-      addressLocality: "Milton",
-      addressRegion: "ON",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE_CODE,
+      addressCountry: config.CITY_COUNTRY_CODE,
     },
   };
 }
@@ -121,7 +122,7 @@ export function buildBreadcrumbListSchema(data: StreetPageData): object {
   return generateBreadcrumbSchema([
     { name: "Home", url: SITE_URL },
     { name: "Streets", url: `${SITE_URL}/streets` },
-    { name: `${data.street.name}, Milton`, url: `${SITE_URL}/streets/${data.street.slug}` },
+    { name: `${data.street.name}, ${config.CITY_NAME}`, url: `${SITE_URL}/streets/${data.street.slug}` },
   ]);
 }
 
@@ -157,7 +158,7 @@ export function buildAggregateOfferSchema(
     name: `${pt.displayName} ${kind === "sale" ? "homes" : "leases"} on ${streetName}`,
     itemOffered: {
       "@type": itemTypeByProduct[pt.type] ?? "Residence",
-      name: `${pt.displayName} on ${streetName}, Milton`,
+      name: `${pt.displayName} on ${streetName}, ${config.CITY_NAME}`,
     },
     offerCount: n,
     lowPrice: inferLowPrice(pt) ?? undefined,
@@ -182,8 +183,8 @@ export function buildAlternativesItemListSchema(
   return {
     "@type": "ItemList",
     "@id": `${SITE_URL}/streets/${streetSlug}#alternatives`,
-    name: "Alternative Milton streets for different priorities",
-    description: "Milton streets that may suit buyers with different priorities than this one.",
+    name: `Alternative ${config.CITY_NAME} streets for different priorities`,
+    description: `${config.CITY_NAME} streets that may suit buyers with different priorities than this one.`,
     itemListElement: items.map((it, i) => ({
       "@type": "ListItem",
       position: i + 1,
@@ -215,9 +216,9 @@ export function buildNearbyPlacesItemListSchema(
         name: p.name,
         address: {
           "@type": "PostalAddress",
-          addressLocality: "Milton",
-          addressRegion: "ON",
-          addressCountry: "CA",
+          addressLocality: config.CITY_NAME,
+          addressRegion: config.CITY_PROVINCE_CODE,
+          addressCountry: config.CITY_COUNTRY_CODE,
         },
       },
     })),

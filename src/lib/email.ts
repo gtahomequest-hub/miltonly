@@ -1,10 +1,11 @@
 import { Resend } from "resend";
+import { config } from "@/lib/config";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM = process.env.RESEND_FROM_EMAIL || "Miltonly <noreply@miltonly.com>";
+const FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
 const TO = process.env.REALTOR_EMAIL || "";
 
 interface LeadData {
@@ -41,7 +42,7 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     "homepage-persona-first-time-buyer": "Persona — First-Time Buyer (Homepage)",
     "homepage-persona-newcomer": "Persona — New to Canada (Homepage)",
     "homepage-persona-move-up": "Persona — Move-Up Family (Homepage)",
-    "homepage-newsletter": "Newsletter — Milton Market Brief (Pre-Footer)",
+    "homepage-newsletter": `Newsletter — ${config.CITY_NAME} Market Brief (Pre-Footer)`,
   };
 
   const rows = [

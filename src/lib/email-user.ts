@@ -1,10 +1,11 @@
 import { Resend } from "resend";
+import { config } from "@/lib/config";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM = process.env.RESEND_FROM_EMAIL || "Miltonly <noreply@miltonly.com>";
+const FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
 
 export async function sendVerificationEmail(email: string, code: string) {
   if (!resend) {
@@ -16,7 +17,7 @@ export async function sendVerificationEmail(email: string, code: string) {
     from: FROM,
     to: email,
     replyTo: process.env.REALTOR_EMAIL,
-    subject: `${code} — Your Miltonly verification code`,
+    subject: `${code} — Your ${config.SITE_NAME} verification code`,
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:440px;margin:0 auto;">
         <div style="background:linear-gradient(135deg,#07111f,#1e3a5f);padding:28px 32px;border-radius:12px 12px 0 0;text-align:center;">
@@ -30,7 +31,7 @@ export async function sendVerificationEmail(email: string, code: string) {
           <p style="color:#94a3b8;font-size:12px;margin:16px 0 0;">This code expires in 15 minutes.</p>
         </div>
         <div style="background:#f8f9fb;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:16px;text-align:center;">
-          <p style="color:#94a3b8;font-size:11px;margin:0;">You're receiving this because someone signed up at miltonly.com</p>
+          <p style="color:#94a3b8;font-size:11px;margin:0;">You're receiving this because someone signed up at ${config.SITE_DOMAIN}</p>
         </div>
       </div>
     `,
@@ -59,7 +60,7 @@ export async function sendDealAlertEmail(
       (m) =>
         `<tr>
           <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">
-            <a href="https://miltonly.com/listings/${m.mlsNumber}" style="color:#07111f;font-weight:600;text-decoration:none;font-size:14px;">${m.address}</a>
+            <a href="${config.SITE_URL}/listings/${m.mlsNumber}" style="color:#07111f;font-weight:600;text-decoration:none;font-size:14px;">${m.address}</a>
             <br/><span style="color:#94a3b8;font-size:11px;">${m.propertyType} · MLS ${m.mlsNumber}</span>
           </td>
           <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#07111f;font-size:14px;">$${m.price.toLocaleString()}</td>
@@ -71,7 +72,7 @@ export async function sendDealAlertEmail(
     from: FROM,
     to: email,
     replyTo: process.env.REALTOR_EMAIL,
-    subject: `${matches.length} new listing${matches.length > 1 ? "s" : ""} matching "${searchName}" — Miltonly`,
+    subject: `${matches.length} new listing${matches.length > 1 ? "s" : ""} matching "${searchName}" — ${config.SITE_NAME}`,
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:500px;margin:0 auto;">
         <div style="background:linear-gradient(135deg,#07111f,#1e3a5f);padding:20px 24px;border-radius:12px 12px 0 0;">
@@ -82,7 +83,7 @@ export async function sendDealAlertEmail(
           ${listItems}
         </table>
         <div style="padding:20px 24px;background:#fffbeb;border:1px solid #fde68a;border-top:none;border-radius:0 0 12px 12px;text-align:center;">
-          <a href="https://miltonly.com/saved" style="color:#d97706;font-weight:700;font-size:14px;text-decoration:none;">View all on Miltonly →</a>
+          <a href="${config.SITE_URL}/saved" style="color:#d97706;font-weight:700;font-size:14px;text-decoration:none;">View all on ${config.SITE_NAME} →</a>
         </div>
       </div>
     `,

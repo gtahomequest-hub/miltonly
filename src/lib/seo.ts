@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import { config } from "./config";
 
-const SITE_URL = "https://miltonly.com";
-const SITE_NAME = "Miltonly";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+const DEFAULT_OG_IMAGE = `${config.SITE_URL}/og-image.jpg`;
+const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
 
 interface GenerateMetadataOptions {
   title?: string;
@@ -21,38 +21,27 @@ export function generateMetadata({
   noIndex = false,
   keywords,
 }: GenerateMetadataOptions = {}): Metadata {
-  const metaTitle = title
-    ? title
-    : "Milton Ontario Real Estate — Homes For Sale, Street Data & Market Intelligence";
+  const metaTitle = title ? title : config.seo.defaultTitleSuffix;
 
-  const metaDescription =
-    description ??
-    "Milton Ontario's only dedicated real estate platform. Search homes for sale, compare streets and neighbourhoods, get your home value, and access street-level market data. Live TREB listings updated daily.";
+  const metaDescription = description ?? config.seo.defaultDescription;
 
-  const metaCanonical = canonical ?? SITE_URL;
+  const metaCanonical = canonical ?? config.SITE_URL;
   const metaOgImage = ogImage ?? DEFAULT_OG_IMAGE;
 
   return {
     title: metaTitle,
     description: metaDescription,
-    keywords: keywords ?? [
-      "Milton Ontario real estate",
-      "Milton homes for sale",
-      "Milton real estate listings",
-      "Milton Ontario homes",
-      "buy home Milton",
-      "sell home Milton",
-      "Milton real estate market",
-      "Milton neighbourhood comparison",
-    ],
+    keywords: keywords ?? [...config.seo.keywords],
     alternates: {
       canonical: metaCanonical,
     },
     openGraph: {
       type: "website",
       locale: "en_CA",
-      siteName: SITE_NAME,
-      title: title ? `${title} | ${SITE_NAME}.com` : `Milton Ontario Real Estate | ${SITE_NAME}.com`,
+      siteName: config.SITE_NAME,
+      title: title
+        ? `${title} | ${config.SITE_NAME}.com`
+        : `${REAL_ESTATE_LABEL} | ${config.SITE_NAME}.com`,
       description: metaDescription,
       url: metaCanonical,
       images: [
@@ -60,13 +49,15 @@ export function generateMetadata({
           url: metaOgImage,
           width: 1200,
           height: 630,
-          alt: "Miltonly — Milton Ontario real estate platform",
+          alt: `${config.SITE_NAME} — ${REAL_ESTATE_LABEL} platform`,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: title ? `${title} | ${SITE_NAME}.com` : `Milton Ontario Real Estate | ${SITE_NAME}.com`,
+      title: title
+        ? `${title} | ${config.SITE_NAME}.com`
+        : `${REAL_ESTATE_LABEL} | ${config.SITE_NAME}.com`,
       description: metaDescription,
       images: [metaOgImage],
     },

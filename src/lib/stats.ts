@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { unstable_cache } from "next/cache";
 
 // Revalidate every hour
@@ -13,11 +14,11 @@ export const getHeroStats = unstable_cache(
       condoStats,
       rentalStats,
     ] = await Promise.all([
-      prisma.listing.count({ where: { status: "active", price: { gt: 100000 }, city: "Milton", permAdvertise: true } }),
-      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "detached", city: "Milton", permAdvertise: true }, _avg: { price: true }, _count: true }),
-      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "semi", city: "Milton", permAdvertise: true }, _avg: { price: true }, _count: true }),
-      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "condo", city: "Milton", permAdvertise: true }, _avg: { price: true }, _count: true }),
-      prisma.listing.aggregate({ where: { transactionType: "For Lease", price: { gt: 500, lt: 10000 }, city: "Milton", permAdvertise: true }, _avg: { price: true }, _count: true }),
+      prisma.listing.count({ where: { status: "active", price: { gt: 100000 }, city: config.PRISMA_CITY_VALUE, permAdvertise: true } }),
+      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "detached", city: config.PRISMA_CITY_VALUE, permAdvertise: true }, _avg: { price: true }, _count: true }),
+      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "semi", city: config.PRISMA_CITY_VALUE, permAdvertise: true }, _avg: { price: true }, _count: true }),
+      prisma.listing.aggregate({ where: { status: "active", price: { gt: 100000 }, propertyType: "condo", city: config.PRISMA_CITY_VALUE, permAdvertise: true }, _avg: { price: true }, _count: true }),
+      prisma.listing.aggregate({ where: { transactionType: "For Lease", price: { gt: 500, lt: 10000 }, city: config.PRISMA_CITY_VALUE, permAdvertise: true }, _avg: { price: true }, _count: true }),
     ]);
 
     return {
@@ -111,7 +112,7 @@ export const getTrendingStreets = unstable_cache(
     // Streets with the most active listings right now
     const streetGroups = await prisma.listing.groupBy({
       by: ["streetSlug"],
-      where: { status: "active", city: "Milton", streetSlug: { not: "" }, permAdvertise: true },
+      where: { status: "active", city: config.PRISMA_CITY_VALUE, streetSlug: { not: "" }, permAdvertise: true },
       _count: true,
       _avg: { price: true },
       orderBy: { _count: { streetSlug: "desc" } },

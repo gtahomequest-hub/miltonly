@@ -1,3 +1,5 @@
+import { config } from "@/lib/config";
+
 type LeadLike = {
   id: string;
   firstName: string;
@@ -19,7 +21,7 @@ export async function sendLeadSms(lead: LeadLike): Promise<void> {
   }
 
   const bedroomLabel = lead.bedrooms === 0 ? "studio" : `${lead.bedrooms}bd`;
-  const renterMsg = `Hi ${lead.firstName}! It's Aamir from RE/MAX 👋 Got your request for a ${bedroomLabel} under $${lead.priceRangeMax} in Milton. Pulling matches now — you'll have 3-5 listings by 4 PM today. Quick Q: any preferred area (Hawthorne, Scott, Willmott)? Reply STOP to opt out.`;
+  const renterMsg = `Hi ${lead.firstName}! It's ${config.realtor.name.split(" ")[0]} from RE/MAX 👋 Got your request for a ${bedroomLabel} under $${lead.priceRangeMax} in ${config.CITY_NAME}. Pulling matches now — you'll have 3-5 listings by 4 PM today. Quick Q: any preferred area (Hawthorne, Scott, Willmott)? Reply STOP to opt out.`;
   const aamirMsg = `🏠 NEW LEAD ${lead.id}: ${lead.firstName} | ${bedroomLabel} | $${lead.priceRangeMax} | ${lead.timeline} | ${lead.phone}`;
 
   if (!isLive) {

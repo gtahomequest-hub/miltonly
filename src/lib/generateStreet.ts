@@ -5,6 +5,7 @@
 // through src/lib/ai/compliance.ts — no other entry point exists.
 
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
 import { calcMarketDataHash } from "@/lib/streetUtils";
 import { sendSMS } from "@/lib/smsAlert";
@@ -24,14 +25,12 @@ const BANNED_WORDS = [
   "prestigious", "remarkable", "exceptional", "incredible", "amazing",
 ];
 
-const MILTON_ANCHORS = [
-  "Milton GO", "Union Station", "Craig Kielburger",
-  "Bishop Reding", "Milton District Hospital",
-  "Tiger Jeet Singh", "Stuart E. Russell",
-  "Sam Sherratt", "Escarpment", "Kelso Conservation",
-  "Highway 401", "Willmott", "Coates", "Clarke", "Beaty",
-  "Dempsey", "Old Milton", "Hawthorne", "Scott", "Harrison",
-];
+// Milton-specific anchor list used by the validator's "needs ≥2 known anchors"
+// rule. Sources from config.ai.knownAnchors so a city fork can swap in
+// destination-specific anchors. Note: SYSTEM_PROMPT below still embeds the
+// historical Milton anchor list inline — full prompt extraction is deferred
+// until the prompt is rewritten as a city-agnostic template.
+const KNOWN_ANCHORS = config.ai.knownAnchors;
 
 const SYSTEM_PROMPT = `You are a local Milton Ontario real estate expert writing for Miltonly.com. You have 10+ years of experience selling homes in Milton. You know every street personally.
 
@@ -86,7 +85,7 @@ function validateContent(text: string, streetName: string): ValidationResult {
   const schools = ["Craig Kielburger", "Bishop Reding", "Tiger Jeet Singh", "Stuart E. Russell", "Sam Sherratt"];
   const hasSchool = schools.some((s) => text.includes(s));
   const hasTransit = /\bGO\b/.test(text) || text.includes("401") || text.includes("Union Station");
-  if (!hasSchool) failures.push("Missing Milton school name");
+  if (!hasSchool) failures.push(`Missing ${config.CITY_NAME} school name`);
   if (!hasTransit) failures.push("Missing GO station / Highway 401 / Union Station reference");
 
   const wordCount = text.split(/\s+/).filter(Boolean).length;
@@ -99,8 +98,8 @@ function validateContent(text: string, streetName: string): ValidationResult {
     if (sw > 30) failures.push(`Sentence too long (${sw} words): "${s.trim().slice(0, 60)}..."`);
   }
 
-  const foundAnchors = MILTON_ANCHORS.filter((a) => text.includes(a));
-  if (foundAnchors.length < 2) failures.push(`Only ${foundAnchors.length} Milton anchors (need 2+). Found: ${foundAnchors.join(", ") || "none"}`);
+  const foundAnchors = KNOWN_ANCHORS.filter((a) => text.includes(a));
+  if (foundAnchors.length < 2) failures.push(`Only ${foundAnchors.length} ${config.CITY_NAME} anchors (need 2+). Found: ${foundAnchors.join(", ") || "none"}`);
 
   const first30 = text.slice(0, 30).toLowerCase();
   if (first30.includes(streetName.toLowerCase())) failures.push("Starts with the street name");
@@ -125,7 +124,7 @@ async function generateDescription(
     userPrompt += `Your previous attempt failed because: ${previousFailure}\nFix only that issue. Keep everything else the same.\n\n`;
   }
 
-  userPrompt += `Write a street description for ${streetName} in Milton, Ontario.
+  userPrompt += `Write a street description for ${streetName} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}.
 
 Real market data — use all of this naturally in the text:
 - Street: ${streetName}, ${stats.neighbourhood} neighbourhood
@@ -134,7 +133,7 @@ Real market data — use all of this naturally in the text:
 - Average days on market: ${stats.avgDOM} days
 - Active listings right now: ${stats.activeCount}
 - Primary property type: ${stats.dominantPropertyType}
-- School zone: ${stats.schoolZone || "Milton public schools"}
+- School zone: ${stats.schoolZone || `${config.CITY_NAME} public schools`}
 - Price trend: Prices have ${stats.priceDirection}
 - Most active month recently: ${bestMonth}`;
 
@@ -233,8 +232,8 @@ export async function generateStreetContent(
   const passed = description.length > 0;
   if (!passed) description = rawAiOutput;
 
-  const metaTitle = `${streetName} Milton Real Estate | Homes, Prices & Market Data`;
-  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} recently. Average list price ${formatPrice(stats.avgListPrice)}. ${stats.avgDOM} days on market. Milton's most detailed street guide.`;
+  const metaTitle = `${streetName} ${config.CITY_NAME} Real Estate | Homes, Prices & Market Data`;
+  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} recently. Average list price ${formatPrice(stats.avgListPrice)}. ${stats.avgDOM} days on market. ${config.CITY_NAME}'s most detailed street guide.`;
   const faqJson = buildFaqJson(streetName, stats);
 
   const contentStatus = passed ? "published" : "draft";
@@ -279,7 +278,7 @@ export async function generateStreetContent(
   if (!opts.skipSms) {
     await sendSMS(
       passed
-        ? `\u2713 Published: ${streetName}\n${stats.totalSold12mo} sales \u00b7 ${formatPrice(stats.avgListPrice)} avg list\nmiltonly.com/streets/${streetSlug}`
+        ? `\u2713 Published: ${streetName}\n${stats.totalSold12mo} sales \u00b7 ${formatPrice(stats.avgListPrice)} avg list\n${config.SITE_DOMAIN}/streets/${streetSlug}`
         : `\u{1f4dd} Draft needs review: ${streetName}\n${stats.totalSold12mo} sales \u00b7 ${formatPrice(stats.avgListPrice)} avg list\nmiltonly.vercel.app/admin/review`
     );
   }
@@ -317,7 +316,7 @@ export async function getOrGenerateStreetContent(
 
   return {
     description:
-      `${data.streetName} in Milton, Ontario. Full street data is being prepared — ` +
+      `${data.streetName} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Full street data is being prepared — ` +
       `registered users will see detailed market intelligence here shortly.`,
     needsReview: true,
   };

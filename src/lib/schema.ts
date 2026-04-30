@@ -1,12 +1,14 @@
-const SITE_URL = "https://miltonly.com";
+import { config } from "./config";
+
+const SITE_URL = config.SITE_URL;
+const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 export function generateLocalBusinessSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
-    name: "Miltonly",
-    description:
-      "Milton Ontario's only dedicated real estate platform. Street intelligence, neighbourhood comparisons, live TREB listings and home valuations.",
+    name: config.SITE_NAME,
+    description: `${CITY_PROVINCE_LABEL}'s only dedicated real estate platform. Street intelligence, neighbourhood comparisons, live TREB listings and home valuations.`,
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
     image: `${SITE_URL}/og-image.jpg`,
@@ -14,9 +16,9 @@ export function generateLocalBusinessSchema() {
     email: process.env.REALTOR_EMAIL ?? "",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Milton",
-      addressRegion: "Ontario",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE,
+      addressCountry: config.CITY_COUNTRY_CODE,
     },
     geo: {
       "@type": "GeoCoordinates",
@@ -25,13 +27,13 @@ export function generateLocalBusinessSchema() {
     },
     areaServed: {
       "@type": "City",
-      name: "Milton",
+      name: config.CITY_NAME,
       containedInPlace: {
         "@type": "AdministrativeArea",
-        name: "Ontario",
+        name: config.CITY_PROVINCE,
         containedInPlace: {
           "@type": "Country",
-          name: "Canada",
+          name: config.CITY_COUNTRY,
         },
       },
     },
@@ -46,8 +48,8 @@ export function generateLocalBusinessSchema() {
     openingHours: "Mo-Su 08:00-20:00",
     priceRange: "$$",
     sameAs: [
-      "https://www.facebook.com/miltonly",
-      "https://www.instagram.com/miltonly",
+      `https://www.facebook.com/${config.SITE_NAME.toLowerCase()}`,
+      `https://www.instagram.com/${config.SITE_NAME.toLowerCase()}`,
     ],
   };
 }
@@ -56,10 +58,9 @@ export function generateWebSiteSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Miltonly",
+    name: config.SITE_NAME,
     url: SITE_URL,
-    description:
-      "Milton Ontario real estate platform — homes for sale, street intelligence, neighbourhood comparisons and home valuations",
+    description: `${CITY_PROVINCE_LABEL} real estate platform — homes for sale, street intelligence, neighbourhood comparisons and home valuations`,
     potentialAction: {
       "@type": "SearchAction",
       target: {
@@ -124,10 +125,10 @@ export function generateListingSchema(listing: {
   return {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
-    name: `${listing.address} — Milton Ontario`,
+    name: `${listing.address} — ${CITY_PROVINCE_LABEL}`,
     description:
       listing.description ??
-      `${listing.bedrooms} bed, ${listing.bathrooms} bath home at ${listing.address}, Milton ON. Listed at $${listing.price.toLocaleString()}.`,
+      `${listing.bedrooms} bed, ${listing.bathrooms} bath home at ${listing.address}, ${config.CITY_NAME} ${config.CITY_PROVINCE_CODE}. Listed at $${listing.price.toLocaleString()}.`,
     url: `${SITE_URL}/listings/${listing.mlsNumber}`,
     image: listing.photos.length > 0 ? listing.photos[0] : `${SITE_URL}/og-image.jpg`,
     offers: {
@@ -158,19 +159,19 @@ export function generateStreetPageSchema(street: {
   return {
     "@context": "https://schema.org",
     "@type": "Place",
-    name: `${street.streetName}, Milton Ontario`,
-    description: `Real estate data for ${street.streetName} in ${street.neighbourhood}, Milton Ontario. ${street.activeListings} active listings, average list price $${street.avgListPrice.toLocaleString()}.`,
+    name: `${street.streetName}, ${CITY_PROVINCE_LABEL}`,
+    description: `Real estate data for ${street.streetName} in ${street.neighbourhood}, ${CITY_PROVINCE_LABEL}. ${street.activeListings} active listings, average list price $${street.avgListPrice.toLocaleString()}.`,
     url: `${SITE_URL}/streets/${street.streetSlug}`,
     address: {
       "@type": "PostalAddress",
       streetAddress: street.streetName,
-      addressLocality: "Milton",
-      addressRegion: "Ontario",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE,
+      addressCountry: config.CITY_COUNTRY_CODE,
     },
     containedInPlace: {
       "@type": "City",
-      name: "Milton",
+      name: config.CITY_NAME,
     },
   };
 }
@@ -183,16 +184,16 @@ export function generateNeighbourhoodSchema(neighbourhood: {
   return {
     "@context": "https://schema.org",
     "@type": "Place",
-    name: `${neighbourhood.name}, Milton Ontario`,
+    name: `${neighbourhood.name}, ${CITY_PROVINCE_LABEL}`,
     description:
       neighbourhood.description ??
-      `Explore homes for sale, schools, and detailed market data in ${neighbourhood.name}, Milton Ontario.`,
+      `Explore homes for sale, schools, and detailed market data in ${neighbourhood.name}, ${CITY_PROVINCE_LABEL}.`,
     url: `${SITE_URL}/neighbourhoods/${neighbourhood.slug}`,
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Milton",
-      addressRegion: "Ontario",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE,
+      addressCountry: config.CITY_COUNTRY_CODE,
     },
   };
 }
@@ -210,14 +211,14 @@ export function generateCondoSchema(building: {
     "@context": "https://schema.org",
     "@type": "ApartmentComplex",
     name: building.name,
-    description: `Condo units for sale, rent, and investment data at ${building.name}, Milton Ontario.`,
+    description: `Condo units for sale, rent, and investment data at ${building.name}, ${CITY_PROVINCE_LABEL}.`,
     url: `${SITE_URL}/condos/${building.slug}`,
     address: {
       "@type": "PostalAddress",
       streetAddress: building.address,
-      addressLocality: "Milton",
-      addressRegion: "Ontario",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE,
+      addressCountry: config.CITY_COUNTRY_CODE,
     },
     geo: {
       "@type": "GeoCoordinates",

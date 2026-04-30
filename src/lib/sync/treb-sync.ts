@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
 
 const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
@@ -99,7 +100,7 @@ export interface SyncResult {
 
 function slugifyStreet(name: string | null, suffix: string | null): string {
   const parts = [name, suffix].filter(Boolean).join(" ");
-  return parts.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-milton";
+  return parts.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${config.SLUG_SUFFIX}`;
 }
 
 function mapPropertyType(type: string | null, subType: string | null): string {
@@ -154,7 +155,7 @@ async function fetchPhotos(listingKey: string): Promise<string[]> {
 }
 
 async function fetchPage(skip: number): Promise<{ items: AmpProperty[]; total: number }> {
-  const filter = encodeURIComponent("City eq 'Milton'");
+  const filter = encodeURIComponent(`City eq '${config.AMPRE_CITY_FILTER}'`);
   const url = `${TREB_API_URL}?$select=${SELECT_FIELDS}&$filter=${filter}&$top=${PAGE_SIZE}&$skip=${skip}&$count=true&$orderby=OriginalEntryTimestamp%20desc`;
 
   const res = await fetch(url, {
@@ -216,8 +217,8 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           mlsNumber: item.ListingKey,
           address,
           streetSlug,
-          neighbourhood: item.CityRegion || "Milton",
-          city: "Milton",
+          neighbourhood: item.CityRegion || config.CITY_NAME,
+          city: config.PRISMA_CITY_VALUE,
           price: item.ListPrice || 0,
           bedrooms: item.BedroomsTotal || 0,
           bathrooms: item.BathroomsTotalInteger || 0,

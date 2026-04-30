@@ -27,6 +27,7 @@ import type {
   StreetSectionId,
   ValidatorViolation,
 } from "@/types/street-generator";
+import { config } from "@/lib/config";
 
 // --- Denylists ---
 
@@ -187,27 +188,16 @@ const FAQ_BANK_TEMPLATES: string[] = [
   "If {Street} isn't the right fit, what similar streets should I look at?",
 ];
 
-// --- Known Milton anchors (for cross-street invention check) ---
-const KNOWN_MILTON_ANCHORS = [
-  // Neighbourhoods
-  "Old Milton", "Milton", "Ford", "Willmott", "Cobban", "Scott",
-  "Beaty", "Dempsey", "Bronte Meadows", "Harrison", "Clarke", "Coates",
-  // Highways and transit
-  "Highway 401", "Highway 407", "Milton GO", "GO", "TTC", "Derry Road",
-  // Institutional
-  "Milton District Hospital", "Milton Islamic Centre",
-  // External anchors
-  "Pearson", "Toronto", "Mississauga", "Oakville", "Burlington",
-  // School boards
-  "HDSB", "HCDSB",
-  // Common schools and parks seen in training/examples
-  "Rotary Park", "Willmott Park", "Ford District Park",
-  "Martin Street Public School", "St. Peter Catholic Elementary",
-  "Anne J. MacArthur Public School", "Our Lady of Victory Catholic Elementary",
-  "Boyne Public School",
-  // Builders and retailers
-  "Mattamy", "Sobeys", "Longo's", "FreshCo",
-];
+// --- Known anchors (for cross-street invention check) ---
+// Sourced from config.ai.knownAnchors so a city fork can swap anchors via
+// src/lib/config.ts. NOTE — Batch 1 regression: the original Milton-only
+// hardcoded list included extra schools, parks, builders, and external anchors
+// (HDSB/HCDSB, Mattamy, Pearson, Rotary Park, etc.) that are not in
+// config.ai.knownAnchors today. Cross-street validator may flag references to
+// those names as "invented_cross_street" until config.ai.knownAnchors is
+// extended OR the per-fork extras are moved to a dedicated registry file.
+// Tracked as deferred work post Batch 1.
+const KNOWN_ANCHORS = config.ai.knownAnchors;
 
 // --- Core validator ---
 
@@ -361,7 +351,7 @@ export function validateStreetGeneration(
       || phrase.includes(input.street.name)
       || phraseIsHostSelfReference
       || input.neighbourhoods.some(n => phrase.includes(n))
-      || KNOWN_MILTON_ANCHORS.some(a => phrase.includes(a));
+      || KNOWN_ANCHORS.some(a => phrase.includes(a));
     if (!isAllowed) {
       violations.push({
         rule: "invented_cross_street",
@@ -468,7 +458,7 @@ function countSentences(text: string): number {
 function extractCandidateStreetNames(text: string): string[] {
   const re = /\b(?:[A-Z][a-zA-Z'\-]+(?:\s+[A-Z][a-zA-Z'\-]+){1,4})\b/g;
   const hits = text.match(re) ?? [];
-  const ignore = ["We ", "Our ", "If ", "When ", "Where ", "The ", "Milton ", "Toronto ", "Highway "];
+  const ignore = ["We ", "Our ", "If ", "When ", "Where ", "The ", `${config.CITY_NAME} `, "Toronto ", "Highway "];
   return hits.filter(h => !ignore.some(ig => h.startsWith(ig.trim())));
 }
 

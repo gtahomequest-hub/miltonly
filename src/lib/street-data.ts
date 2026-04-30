@@ -16,6 +16,7 @@
 import "server-only";
 import type { Listing } from "@prisma/client";
 import { prisma } from "./prisma";
+import { config } from "./config";
 import { analyticsDb, soldDb } from "./db";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
@@ -49,7 +50,8 @@ import type {
 
 const K_ANON_PRICE = 5;
 const K_ANON_RANGE = 10;
-const SITE_URL = "https://miltonly.com";
+const SITE_URL = config.SITE_URL;
+const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPE PEEKS — raw DB3 row shapes (loose; SQL is ad-hoc).
@@ -111,7 +113,7 @@ export async function resolveSiblingSlugs(slug: string): Promise<string[]> {
   if (!identity) return [slug];
   // Narrow candidate pool via base-prefix LIKE queries on each data source.
   // Cheap (uses idx_sold_street_slug + streetSlug indexes) and bounded.
-  const likePattern = `${identity.base}-%-milton`;
+  const likePattern = `${identity.base}-%-${config.SLUG_SUFFIX}`;
   const [soldSlugRows, statsSlugRows, listingSlugRows] = await Promise.all([
     soldDb
       ? (soldDb`SELECT DISTINCT street_slug AS s FROM sold.sold_records WHERE street_slug LIKE ${likePattern}` as unknown as Promise<Array<{ s: string }>>).catch(() => [] as Array<{ s: string }>)
@@ -120,7 +122,7 @@ export async function resolveSiblingSlugs(slug: string): Promise<string[]> {
       ? (analyticsDb`SELECT DISTINCT street_slug AS s FROM analytics.street_sold_stats WHERE street_slug LIKE ${likePattern}` as unknown as Promise<Array<{ s: string }>>).catch(() => [] as Array<{ s: string }>)
       : Promise.resolve([] as Array<{ s: string }>),
     prisma.listing.findMany({
-      where: { streetSlug: { startsWith: `${identity.base}-`, endsWith: "-milton" } },
+      where: { streetSlug: { startsWith: `${identity.base}-`, endsWith: `-${config.SLUG_SUFFIX}` } },
       distinct: ["streetSlug"],
       select: { streetSlug: true },
     }),
@@ -403,8 +405,8 @@ function dedupe<T>(xs: T[]): T[] { return Array.from(new Set(xs)); }
 
 function deslugify(slug: string): string {
   const parts = slug.split("-").filter(Boolean);
-  // Strip trailing "milton" suffix baked into many slugs.
-  if (parts.length > 1 && parts[parts.length - 1].toLowerCase() === "milton") {
+  // Strip trailing slug suffix baked into many slugs.
+  if (parts.length > 1 && parts[parts.length - 1].toLowerCase() === config.SLUG_SUFFIX) {
     parts.pop();
   }
   return parts.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -464,7 +466,7 @@ const STREET_ABBREVIATIONS: Record<string, string> = {
  *  identically. */
 function stripTrailingCity(name: string): string {
   const tokens = name.split(/\s+/).filter(Boolean);
-  if (tokens.length > 1 && tokens[tokens.length - 1].toLowerCase() === "milton") {
+  if (tokens.length > 1 && tokens[tokens.length - 1].toLowerCase() === config.CITY_NAME.toLowerCase()) {
     return tokens.slice(0, -1).join(" ");
   }
   return name;
@@ -588,10 +590,10 @@ interface HeroBuildInput {
 function buildHero(input: HeroBuildInput): StreetHeroProps {
   const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs } = input;
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
-  const eyebrow = `Street Profile · ${cleanNbhds.slice(0, 3).join(" · ") || "Milton"} · Milton, ON`;
+  const eyebrow = `Street Profile · ${cleanNbhds.slice(0, 3).join(" · ") || config.CITY_NAME} · ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
   const subtitle = streetContent?.description
-    ? characterSummaryFrom(streetContent.description) || `A street in Milton, Ontario.`
-    : `A street in Milton, Ontario.`;
+    ? characterSummaryFrom(streetContent.description) || `A street in ${CITY_PROVINCE_LABEL}.`
+    : `A street in ${CITY_PROVINCE_LABEL}.`;
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -874,7 +876,7 @@ function buildSidebar(input: {
 
   const facts: Record<string, string> = {};
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
-  facts["Neighbourhood"] = cleanNbhds.slice(0, 2).join(", ") || "Milton";
+  facts["Neighbourhood"] = cleanNbhds.slice(0, 2).join(", ") || config.CITY_NAME;
   const typical = num(stats?.avg_sold_price ?? null);
   if (typical && (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE) {
     facts["Typical price"] = formatCADShort(roundPriceForProse(typical));
@@ -1213,7 +1215,7 @@ async function buildContextCards(input: {
     _count: true,
     _avg: { price: true },
     where: {
-      neighbourhood: { in: neighbourhoods.length > 0 ? neighbourhoods : ["Milton"] },
+      neighbourhood: { in: neighbourhoods.length > 0 ? neighbourhoods : [config.CITY_NAME] },
       streetSlug: { not: slug },
       status: "active",
       permAdvertise: true,
@@ -1244,7 +1246,7 @@ async function buildContextCards(input: {
     .map((n) => ({
       slug: n.toLowerCase().replace(/\s+/g, "-"),
       name: n,
-      summary: `Explore the ${n} area of Milton, its streets and comparable housing stock.`,
+      summary: `Explore the ${n} area of ${config.CITY_NAME}, its streets and comparable housing stock.`,
     }));
 
   const schoolCards = schools

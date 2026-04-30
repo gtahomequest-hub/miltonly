@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { calcMarketDataHash } from "@/lib/streetUtils";
 
 // Post Phase 2.6 (2026-04-17): this module's stats pipeline was restructured
@@ -145,7 +146,7 @@ export async function getStreetStats(streetSlug: string) {
     // neutral placeholder so prompts remain stable.
     monthlyTrend: [] as Array<{ month: string; avgPrice: number; salesCount: number }>,
     priceDirection: "remained steady" as const,
-    neighbourhood: sampleListing?.neighbourhood || "Milton",
+    neighbourhood: sampleListing?.neighbourhood || config.CITY_NAME,
     schoolZone: sampleListing?.schoolZone || null,
   };
 }

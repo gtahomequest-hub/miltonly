@@ -1,4 +1,13 @@
 import { createHash } from "crypto";
+import { config } from "@/lib/config";
+
+// Trailing-city regex for extractStreetName — matches ", <CityName>", ", <ProvinceCode>",
+// or ", <ProvinceFull>" anywhere after the street body. Built from config so a city
+// fork doesn't have to touch this file.
+const TRAILING_CITY_PROVINCE_RE = new RegExp(
+  `,\\s*(${config.CITY_NAME}|${config.CITY_PROVINCE_CODE}|${config.CITY_PROVINCE}).*`,
+  "i"
+);
 
 // Extracts ONLY the street name — no house numbers, no unit numbers
 export function extractStreetName(fullAddress: string): string {
@@ -25,8 +34,8 @@ export function extractStreetName(fullAddress: string): string {
   // (the house number was stripped but the leading direction stayed)
   address = address.replace(/^([NSEW])\s+(?=[A-Z])/i, "$1 ");
 
-  // Step 5: Remove trailing city/province info (", Milton, ON ...")
-  address = address.replace(/,\s*(Milton|ON|Ontario).*/i, "");
+  // Step 5: Remove trailing city/province info (", <CITY>, <PROV> ...")
+  address = address.replace(TRAILING_CITY_PROVINCE_RE, "");
 
   // Step 6: Remove anything in parentheses — (Lower), (Upper), (UPPER LEVELS), etc.
   address = address.replace(/\s*\([^)]*\)\s*/g, " ");
@@ -249,8 +258,8 @@ export function registeredDirectionsFor(base: string, suffixCanonical: string): 
  */
 export function deriveIdentity(slug: string): StreetIdentity | null {
   const parts = slug.split("-");
-  if (parts.length < 2 || parts[parts.length - 1] !== "milton") return null;
-  const tokens = parts.slice(0, -1); // drop -milton
+  if (parts.length < 2 || parts[parts.length - 1] !== config.SLUG_SUFFIX) return null;
+  const tokens = parts.slice(0, -1); // drop -<SLUG_SUFFIX>
   if (tokens.length === 0) return null;
 
   // Walk from the tail: trailing direction, then suffix.
@@ -286,7 +295,7 @@ export function deriveIdentity(slug: string): StreetIdentity | null {
 
   const canonicalParts = [base];
   if (suffixCanonical) canonicalParts.push(suffixCanonical);
-  canonicalParts.push("milton");
+  canonicalParts.push(config.SLUG_SUFFIX);
 
   return {
     base,
@@ -314,7 +323,7 @@ export function siblingSlugsForIdentity(
   return out.sort();
 }
 
-// Converts street name to URL slug — always ends in -milton
+// Converts street name to URL slug — always ends in -<SLUG_SUFFIX>
 export function streetNameToSlug(streetName: string): string {
   return (
     streetName
@@ -322,7 +331,7 @@ export function streetNameToSlug(streetName: string): string {
       .trim()
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
-      .replace(/-+/g, "-") + "-milton"
+      .replace(/-+/g, "-") + `-${config.SLUG_SUFFIX}`
   );
 }
 

@@ -7,6 +7,7 @@ import "server-only";
 import { soldDb, analyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
 import { getSession } from "./auth";
+import { config } from "./config";
 import type {
   SoldRecord,
   StreetSoldStats,
@@ -316,7 +317,7 @@ export async function getRecentSoldList(
     async () => {
       const rows = (await soldDb!`
         SELECT * FROM sold.sold_records
-        WHERE city = 'Milton'
+        WHERE city = ${config.PRISMA_CITY_VALUE}
           AND perm_advertise = TRUE
           AND transaction_type = ${txn}
           AND sold_date >= NOW() - (${safeDays} || ' days')::interval
@@ -340,11 +341,11 @@ export async function getMiltonSoldTotals(): Promise<{ last30: number; last90: n
     const rows = (await soldDb!`
       SELECT
         (SELECT COUNT(*) FROM sold.sold_records
-          WHERE city = 'Milton' AND perm_advertise = TRUE
+          WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
             AND sold_date >= NOW() - INTERVAL '30 days')::int AS last30,
         (SELECT COUNT(*) FROM sold.sold_records
-          WHERE city = 'Milton' AND perm_advertise = TRUE
+          WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
             AND sold_date >= NOW() - INTERVAL '90 days')::int AS last90
     `) as Array<{ last30: number; last90: number }>;
@@ -357,7 +358,7 @@ export async function getDistinctSoldNeighbourhoods(): Promise<string[]> {
   return cached(`milton-sold-nbhds`, CACHE_TTL.homepage, async () => {
     const rows = (await soldDb!`
       SELECT DISTINCT neighbourhood FROM sold.sold_records
-      WHERE city = 'Milton' AND perm_advertise = TRUE
+      WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
         AND transaction_type = 'For Sale'
         AND sold_date >= NOW() - INTERVAL '90 days'
       ORDER BY neighbourhood ASC
