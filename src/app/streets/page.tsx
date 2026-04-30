@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import StreetsGrid from "./StreetsGrid";
 
 export const metadata = genMeta({
-  title: "Milton Streets, Price Data for Every Street",
-  description: "Browse every Milton Ontario street with real estate data. Average prices, days on market, active listings. Street-level intelligence powered by TREB.",
-  canonical: "https://miltonly.com/streets",
+  title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
+  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} street with real estate data. Average prices, days on market, active listings. Street-level intelligence powered by TREB.`,
+  canonical: `${config.SITE_URL}/streets`,
 });
 
 export default async function StreetsIndexPage() {
@@ -14,7 +15,7 @@ export default async function StreetsIndexPage() {
     by: ["streetSlug"],
     _count: true,
     _avg: { price: true },
-    where: { city: "Milton", permAdvertise: true },
+    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
     orderBy: { _count: { streetSlug: "desc" } },
   });
 
@@ -52,7 +53,7 @@ export default async function StreetsIndexPage() {
         name: sample?.streetName || s.streetSlug,
         neighbourhood: sample?.neighbourhood
           ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
-          : "Milton",
+          : config.CITY_NAME,
         count: s._count,
         activeCount,
         avgPrice: Math.round(s._avg.price || 0),
@@ -64,7 +65,7 @@ export default async function StreetsIndexPage() {
 
   // Get unique neighbourhoods for filter chips
   const neighbourhoods = Array.from(new Set(streetData.map((s) => s.neighbourhood)))
-    .filter((n) => n && n !== "Milton")
+    .filter((n) => n && n !== config.CITY_NAME)
     .sort();
 
   const publishedCount = await prisma.streetContent.count({ where: { status: "published" } });
@@ -76,7 +77,7 @@ export default async function StreetsIndexPage() {
           Street Intelligence
         </p>
         <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.3px] mb-2">
-          Every Milton Street
+          Every {config.CITY_NAME} Street
         </h1>
         <p className="text-[13px] text-[#64748b] mb-8">
           {streetData.length} streets with live price data · {publishedCount} full street reports published · Updated daily from TREB

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { attributionPayload } from "@/lib/attribution";
 import { hashUserData } from "@/lib/hash";
+import { config } from "@/lib/config";
 import AgentContactSection from "@/components/AgentContactSection";
 import {
   UrgencyBanner, VOWTeaser, WhatsNearby, MortgageCalc, InvestorWidget,
@@ -381,7 +382,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                   <h3 className="text-[16px] font-extrabold text-[#f8f9fb] mb-1">Request a showing</h3>
                   <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-5">Tour this home. No obligation, no pressure.</p>
                   {saleFormSent ? (
-                    <p className="text-[13px] text-[#86efac] font-semibold">✓ Request sent — Aamir usually replies within the hour.</p>
+                    <p className="text-[13px] text-[#86efac] font-semibold">✓ Request sent — {config.realtor.name.split(" ")[0]} usually replies within the hour.</p>
                   ) : (
                     <form className="space-y-3" onSubmit={async (e) => {
                       e.preventDefault();
@@ -398,9 +399,9 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                       <button type="submit" className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors">Request a showing</button>
                     </form>
                   )}
-                  <p className="text-[10px] text-[#94a3b8] text-center mt-3">Aamir Yaqoob · RE/MAX Realty Specialists Inc.</p>
+                  <p className="text-[10px] text-[#94a3b8] text-center mt-3">{config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")}</p>
                   <div className="flex gap-2 mt-2">
-                    <a href="tel:+16478399090" className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] transition-colors">📞 (647) 839-9090</a>
+                    <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] transition-colors">📞 {config.realtor.phone}</a>
                     <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-[#94a3b8] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors">💬 WhatsApp</a>
                   </div>
                 </div>
@@ -439,7 +440,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
         {/* Similar */}
         {similar.length > 0 && (
           <div className="mt-10 mb-8">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-4">Similar homes in Milton</h2>
+            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-4">Similar homes in {config.CITY_NAME}</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {similar.map((s) => (
                 <Link key={s.mlsNumber} href={`/listings/${s.mlsNumber}`} className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden hover:shadow-md transition-shadow">

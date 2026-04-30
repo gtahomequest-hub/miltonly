@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import Link from "next/link";
 import { formatPriceFull } from "@/lib/format";
 
 export const metadata = genMeta({
-  title: "Milton Neighbourhoods — Prices, Schools & Market Data",
-  description:
-    "Explore every Milton Ontario neighbourhood. Compare average home prices, active listings, top streets, school zones and GO train access. Live TREB data.",
-  canonical: "https://miltonly.com/neighbourhoods",
+  title: `${config.CITY_NAME} Neighbourhoods — Prices, Schools & Market Data`,
+  description: `Explore every ${config.CITY_NAME} ${config.CITY_PROVINCE} neighbourhood. Compare average home prices, active listings, top streets, school zones and GO train access. Live TREB data.`,
+  canonical: `${config.SITE_URL}/neighbourhoods`,
 });
 
 export const revalidate = 3600;
@@ -28,7 +28,7 @@ export default async function NeighbourhoodsPage() {
     by: ["neighbourhood"],
     _count: true,
     _avg: { price: true },
-    where: { city: "Milton", permAdvertise: true },
+    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
     orderBy: { _count: { neighbourhood: "desc" } },
   });
 
@@ -82,7 +82,7 @@ export default async function NeighbourhoodsPage() {
             Neighbourhood Intelligence
           </p>
           <h1 className="text-[28px] sm:text-[36px] font-extrabold text-[#f8f9fb] tracking-[-0.5px]">
-            Milton Neighbourhoods
+            {config.CITY_NAME} Neighbourhoods
           </h1>
           <p className="text-[14px] text-[rgba(248,249,251,0.5)] mt-3">
             {hoods.length} neighbourhoods with live price data &middot; {totalActive} active listings &middot; Updated daily from TREB

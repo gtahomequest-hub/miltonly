@@ -1,30 +1,31 @@
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 
 export const metadata = genMeta({
   title: "Terms of Use",
-  description: "Terms and MLS® data disclaimer for Miltonly.com.",
-  canonical: "https://miltonly.com/terms",
+  description: `Terms and MLS® data disclaimer for ${config.SITE_DOMAIN}.`,
+  canonical: `${config.SITE_URL}/terms`,
 });
 
 export default function TermsPage() {
   return (
     <main className="bg-white text-[#07111f] min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
-        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to Miltonly</Link>
+        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to {config.SITE_NAME}</Link>
 
         <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Terms of Use</h1>
         <p className="text-[13px] text-[#64748b] mb-8">Last updated: April 23, 2026</p>
 
         <div className="space-y-6 text-[15px] leading-relaxed">
           <p>
-            Miltonly.com is operated by Aamir Yaqoob, Sales Representative at RE/MAX Realty Specialists Inc., Brokerage.
+            {config.SITE_DOMAIN} is operated by {config.realtor.name}, {config.realtor.title} at {config.brokerage.name}.
             By using this site you agree to the terms below.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Information is not advice</h2>
           <p>
-            Nothing on Miltonly.com is legal, tax, or financial advice. Real estate transactions have material consequences
+            Nothing on {config.SITE_DOMAIN} is legal, tax, or financial advice. Real estate transactions have material consequences
             — consult a licensed Realtor, lawyer, and/or accountant before acting on anything you read here.
           </p>
 
@@ -40,7 +41,7 @@ export default function TermsPage() {
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">No representation without agreement</h2>
           <p>
             Submitting a form or calling does not create an agency relationship. A written representation agreement is
-            required before Aamir Yaqoob can formally represent you in a real estate transaction.
+            required before {config.realtor.name} can formally represent you in a real estate transaction.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Acceptable use</h2>
@@ -51,8 +52,8 @@ export default function TermsPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Limitation of liability</h2>
           <p>
-            This site is provided &quot;as is.&quot; To the fullest extent permitted by law, Miltonly.com, Aamir Yaqoob, and
-            RE/MAX Realty Specialists Inc., Brokerage disclaim all warranties and are not liable for any indirect,
+            This site is provided &quot;as is.&quot; To the fullest extent permitted by law, {config.SITE_DOMAIN}, {config.realtor.name}, and
+            {" "}{config.brokerage.name} disclaim all warranties and are not liable for any indirect,
             incidental, or consequential damages arising from your use of this site.
           </p>
 
@@ -63,10 +64,10 @@ export default function TermsPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Contact</h2>
           <p>
-            <strong>Aamir Yaqoob</strong>, Sales Representative<br />
-            RE/MAX Realty Specialists Inc., Brokerage<br />
+            <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
+            {config.brokerage.name}<br />
             Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
-            Phone: <a href="tel:+16478399090" className="text-[#f59e0b] underline">(647) 839-9090</a>
+            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
           </p>
         </div>
       </div>

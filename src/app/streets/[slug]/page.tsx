@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
+import { config } from "@/lib/config";
 import { getStreetPageData, canonicalUrlFor } from "@/lib/street-data";
 import { getStreetSoldList } from "@/lib/sold-data";
 import { buildStreetPageSchema } from "@/lib/schema/street-schema";
@@ -48,10 +49,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Base title gets the layout template appended (" | Miltonly"); the og/twitter
   // paths don't apply that template so we embed the brand explicitly.
-  const baseTitle = `${data.street.name}, Milton, ${summary}`;
-  const ogTitle = `${baseTitle} | Miltonly`;
+  const baseTitle = `${data.street.name}, ${config.CITY_NAME}, ${summary}`;
+  const ogTitle = `${baseTitle} | ${config.SITE_NAME}`;
   const description =
-    `${data.street.name} in Milton, Ontario. ${data.street.characterSummary || summary}`.trim();
+    `${data.street.name} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}. ${data.street.characterSummary || summary}`.trim();
 
   return {
     title: baseTitle,

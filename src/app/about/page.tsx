@@ -1,10 +1,11 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import AgentContactSection from "@/components/AgentContactSection";
 
 export const metadata = genMeta({
-  title: "About Aamir Yaqoob — Milton Real Estate Agent",
-  description: "Aamir Yaqoob has served Milton families for 14 years as a full-time real estate professional. RE/MAX Hall of Fame Award recipient. Buy, sell, or rent in Milton.",
-  canonical: "https://miltonly.com/about",
+  title: `About ${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent`,
+  description: `${config.realtor.name} has served ${config.CITY_NAME} families for ${config.realtor.yearsExperience} years as a full-time real estate professional. RE/MAX Hall of Fame Award recipient. Buy, sell, or rent in ${config.CITY_NAME}.`,
+  canonical: `${config.SITE_URL}/about`,
 });
 
 export default function AboutPage() {
@@ -13,13 +14,13 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="bg-[#07111f] text-center px-5 sm:px-11 py-20">
         <h1 className="text-[clamp(30px,5vw,48px)] font-extrabold text-[#f8f9fb] leading-[1.1] tracking-[-0.03em] mb-2">
-          Aamir Yaqoob
+          {config.realtor.name}
         </h1>
         <p className="text-[15px] font-bold text-[#f59e0b] mb-6">
-          Sales Representative · RE/MAX Realty Specialists Inc.
+          {config.realtor.title} · {config.brokerage.name}
         </p>
         <p className="text-[15px] text-[#94a3b8] max-w-[560px] mx-auto leading-relaxed">
-          Aamir Yaqoob has served Milton families for 14 years as a full-time real estate professional. From first rentals to investment properties, buyers to sellers, Aamir provides complete representation at every stage.
+          {config.realtor.name} has served {config.CITY_NAME} families for {config.realtor.yearsExperience} years as a full-time real estate professional. From first rentals to investment properties, buyers to sellers, {config.realtor.name.split(" ")[0]} provides complete representation at every stage.
         </p>
       </section>
 

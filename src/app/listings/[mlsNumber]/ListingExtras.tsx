@@ -10,6 +10,7 @@ import {
 } from "@/lib/geo";
 import { attributionPayload } from "@/lib/attribution";
 import { hashUserData } from "@/lib/hash";
+import { config } from "@/lib/config";
 
 // Fires GA4 generate_lead with cold-cache polling (mirrors /rentals/thank-you).
 // Same event Google Ads imports as a conversion via the GA4↔Ads link, so listing-
@@ -81,7 +82,7 @@ export function SaveShareRow({ mls, address, isRental }: { mls: string; address:
   };
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const shareText = `${address} — ${isRental ? "for rent" : "for sale"} on Miltonly`;
+  const shareText = `${address} — ${isRental ? "for rent" : "for sale"} on ${config.SITE_NAME}`;
 
   const handleShare = async () => {
     if (typeof navigator !== "undefined" && "share" in navigator) {
@@ -145,9 +146,9 @@ function NearbyRow({ p, lat, lng, commute = false, coordsValid }: { p: POI; lat:
     const mode = commute ? "drive" : km < 2 ? "walk" : "drive";
     timeStr = `${km.toFixed(1)} km · ${time} min ${mode}`;
   } else if (p.fallbackMin) {
-    timeStr = `~${p.fallbackMin} min drive from Milton`;
+    timeStr = `~${p.fallbackMin} min drive from ${config.CITY_NAME}`;
   } else {
-    timeStr = "In Milton area";
+    timeStr = `In ${config.CITY_NAME} area`;
   }
   const url = coordsValid
     ? directionsUrl(p.lat, p.lng, lat, lng)
@@ -186,7 +187,7 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
   const unavailableNote = (
     <div className="bg-[#f8f9fb] border border-[#e2e8f0] rounded-lg p-4 text-center">
       <p className="text-[13px] font-semibold text-[#475569]">Precise distances unavailable for this listing</p>
-      <p className="text-[11px] text-[#94a3b8] mt-1">Coordinates are still syncing. See the Commutes tab for Milton-average drive times.</p>
+      <p className="text-[11px] text-[#94a3b8] mt-1">Coordinates are still syncing. See the Commutes tab for {config.CITY_NAME}-average drive times.</p>
     </div>
   );
 
@@ -245,7 +246,7 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
               </Link>
             ))
           ) : (
-            <p className="text-[13px] text-[#94a3b8] col-span-full py-4">No schools mapped to this neighbourhood yet — <Link href="/schools" className="text-[#f59e0b] hover:underline">browse all Milton schools</Link>.</p>
+            <p className="text-[13px] text-[#94a3b8] col-span-full py-4">No schools mapped to this neighbourhood yet — <Link href="/schools" className="text-[#f59e0b] hover:underline">browse all {config.CITY_NAME} schools</Link>.</p>
           )}
         </div>
       )}
@@ -270,7 +271,7 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {TRANSIT.map((p) => <NearbyRow key={p.name} p={p} lat={lat} lng={lng} coordsValid />)}
                 <a
-                  href={`https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Milton+GO&travelmode=transit`}
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${encodeURIComponent(`${config.CITY_NAME} GO`)}&travelmode=transit`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 bg-[#07111f] text-[#f59e0b] text-[12px] font-semibold rounded-lg px-3 py-2.5 hover:bg-[#0c1e35] transition-colors"
@@ -369,7 +370,7 @@ export function MortgageCalc({ price, taxAmount, propertyType }: { price: number
           </div>
         </div>
 
-        <p className="text-[10px] text-[#94a3b8] mt-3">Estimates only. Call Aamir for a full cost breakdown and pre-approval guidance.</p>
+        <p className="text-[10px] text-[#94a3b8] mt-3">Estimates only. Call {config.realtor.name.split(" ")[0]} for a full cost breakdown and pre-approval guidance.</p>
       </div>
     </div>
   );
@@ -408,13 +409,13 @@ export function InvestorWidget({ price, taxAmount, propertyType, hoodAvgRent }: 
         </div>
         {cashflow < 0 && (
           <p className="text-[12px] text-[#fbbf24] mb-3 leading-relaxed font-medium">
-            Negative cashflow reflects current mortgage rates. Contact Aamir for a full investment strategy — down-payment sizing, rate-shopping, and Milton-specific rental benchmarks can all move this number.
+            Negative cashflow reflects current mortgage rates. Contact {config.realtor.name.split(" ")[0]} for a full investment strategy — down-payment sizing, rate-shopping, and {config.CITY_NAME}-specific rental benchmarks can all move this number.
           </p>
         )}
         <p className="text-[11px] text-[#94a3b8] leading-relaxed">
           Assumes 20% down · 5% rate · 25-yr amortization · ${maintenance}/mo maintenance · est. rent
-          {hoodAvgRent ? " from live Milton rental data" : " based on comparable Milton properties"}.
-          Estimates only — contact Aamir for a full investment analysis.
+          {hoodAvgRent ? ` from live ${config.CITY_NAME} rental data` : ` based on comparable ${config.CITY_NAME} properties`}.
+          Estimates only — contact {config.realtor.name.split(" ")[0]} for a full investment analysis.
         </p>
       </div>
     </div>
@@ -486,18 +487,18 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
     <div className="mb-8">
       <div className="bg-[#07111f] text-white rounded-xl p-6 border border-[#1e3a5f]">
         <p className="text-[11px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-2">
-          {isRental ? "Milton landlord?" : "Milton homeowner?"}
+          {isRental ? `${config.CITY_NAME} landlord?` : `${config.CITY_NAME} homeowner?`}
         </p>
         <h3 className="text-[20px] font-extrabold mb-2">
-          {isRental ? "Thinking about renting out your Milton home?" : "Own a similar home in Milton?"}
+          {isRental ? `Thinking about renting out your ${config.CITY_NAME} home?` : `Own a similar home in ${config.CITY_NAME}?`}
         </h3>
         <p className="text-[13px] text-[#94a3b8] mb-4 leading-relaxed">
           {isRental
-            ? "Aamir manages rentals across Milton. Free rental valuation — find out what your home earns per month."
+            ? `${config.realtor.name.split(" ")[0]} manages rentals across ${config.CITY_NAME}. Free rental valuation — find out what your home earns per month.`
             : "Get a free valuation in 24 hours — see what a home like this could list for today."}
         </p>
         {sent ? (
-          <p className="text-[13px] text-[#86efac] font-semibold">✓ Thanks — Aamir will email your valuation within 24 hours.</p>
+          <p className="text-[13px] text-[#86efac] font-semibold">✓ Thanks — {config.realtor.name.split(" ")[0]} will email your valuation within 24 hours.</p>
         ) : (
           <div className="flex flex-col sm:flex-row gap-2">
             <input
@@ -590,7 +591,7 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
     return (
       <div className="bg-[#07111f] rounded-2xl p-6">
         <p className="text-[16px] font-extrabold text-[#86efac] mb-2">✓ Request received</p>
-        <p className="text-[13px] text-[#cbd5e1]">Aamir usually replies within the hour during business hours.</p>
+        <p className="text-[13px] text-[#cbd5e1]">{config.realtor.name.split(" ")[0]} usually replies within the hour during business hours.</p>
       </div>
     );
   }
@@ -598,7 +599,7 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
   return (
     <div className="bg-[#07111f] rounded-2xl p-6">
       <p className="text-[22px] font-extrabold text-white">${price.toLocaleString()}<span className="text-[14px] font-normal text-[#94a3b8]">/month</span></p>
-      <p className="text-[11px] text-[#94a3b8] mt-1 mb-5">Available now · Aamir usually replies within the hour</p>
+      <p className="text-[11px] text-[#94a3b8] mt-1 mb-5">Available now · {config.realtor.name.split(" ")[0]} usually replies within the hour</p>
 
       {mode === "none" && (
         <div className="space-y-2">
@@ -657,7 +658,7 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
       )}
 
       <div className="flex gap-2 mt-3">
-        <a href="tel:+16478399090" className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b]">📞 (647) 839-9090</a>
+        <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b]">📞 {config.realtor.phone}</a>
         <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-[#94a3b8] border border-[#1e3a5f] rounded-lg py-2 hover:text-[#f59e0b] hover:border-[#f59e0b]">💬 WhatsApp</a>
       </div>
     </div>
@@ -685,7 +686,7 @@ export function MobileBottomBar({ price, isRental, onBook }: { price: number; is
       >
         {isRental ? "Book showing" : "Request showing"}
       </button>
-      <a href="tel:+16478399090" className="w-10 h-10 flex items-center justify-center border border-white/15 rounded-lg text-[#f59e0b] text-[16px]">📞</a>
+      <a href={`tel:${config.realtor.phoneE164}`} className="w-10 h-10 flex items-center justify-center border border-white/15 rounded-lg text-[#f59e0b] text-[16px]">📞</a>
     </div>
   );
 }

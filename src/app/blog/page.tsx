@@ -1,9 +1,10 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 
 export const metadata = genMeta({
-  title: "Milton Real Estate Insights — Coming Soon",
-  description: "Market updates, neighbourhood guides and buying tips for Milton Ontario real estate — coming soon.",
-  canonical: "https://miltonly.com/blog",
+  title: `${config.CITY_NAME} Real Estate Insights — Coming Soon`,
+  description: `Market updates, neighbourhood guides and buying tips for ${config.CITY_NAME} ${config.CITY_PROVINCE} real estate — coming soon.`,
+  canonical: `${config.SITE_URL}/blog`,
 });
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default function BlogPage() {
     <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5">
       <div className="text-center max-w-[440px]">
         <div className="text-[48px] mb-4">📝</div>
-        <h1 className="text-[24px] font-extrabold text-[#07111f] mb-2 tracking-[-0.02em]">Milton Real Estate Insights</h1>
+        <h1 className="text-[24px] font-extrabold text-[#07111f] mb-2 tracking-[-0.02em]">{config.CITY_NAME} Real Estate Insights</h1>
         <p className="text-[14px] text-[#64748b] mb-8 leading-relaxed">
           Market updates, neighbourhood guides and buying tips — coming soon.
         </p>

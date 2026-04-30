@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -41,18 +42,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const priceStr = `$${l.price.toLocaleString()}${isRental ? "/mo" : ""}`;
 
   const title = isRental
-    ? `${addr} — ${l.bedrooms}bd ${typeLabel} for rent in ${hood} Milton | ${priceStr}`
-    : `${addr} — ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} Milton | ${priceStr}`;
+    ? `${addr} — ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
+    : `${addr} — ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
 
   const days = Math.floor((Date.now() - new Date(l.listedAt).getTime()) / 86400000);
+  const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
-    ? `${typeLabel} rental at ${addr}, ${hood} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with Aamir — usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} Milton — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with Aamir — usually confirmed within the hour.`;
+    ? `${typeLabel} rental at ${addr}, ${hood} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} — usually confirmed within the hour.`
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} — usually confirmed within the hour.`;
 
   return {
     title,
     description,
-    alternates: { canonical: `https://miltonly.com/listings/${l.mlsNumber}` },
+    alternates: { canonical: `${config.SITE_URL}/listings/${l.mlsNumber}` },
     openGraph: {
       title,
       description,
@@ -74,7 +76,7 @@ export default async function ListingDetailPage({ params }: Props) {
           <p className="text-[12px] font-bold text-[#94a3b8] uppercase tracking-[0.14em] mb-3">Not available</p>
           <h1 className="text-[22px] font-extrabold text-[#07111f] mb-3">This listing is not available for display</h1>
           <p className="text-[14px] text-[#64748b] mb-6">The brokerage or seller has opted out of public display for this property.</p>
-          <Link href="/listings" className="text-[14px] text-[#f59e0b] font-bold hover:underline">← Browse other Milton listings</Link>
+          <Link href="/listings" className="text-[14px] text-[#f59e0b] font-bold hover:underline">← Browse other {config.CITY_NAME} listings</Link>
         </div>
       </div>
     );
@@ -94,7 +96,7 @@ export default async function ListingDetailPage({ params }: Props) {
         propertyType: listing.propertyType,
         transactionType: listing.transactionType,
         mlsNumber: { not: listing.mlsNumber },
-        city: "Milton",
+        city: config.PRISMA_CITY_VALUE,
         permAdvertise: true,
       },
       orderBy: { listedAt: "desc" },
@@ -104,7 +106,7 @@ export default async function ListingDetailPage({ params }: Props) {
     prisma.listing.aggregate({
       where: {
         transactionType: "For Lease",
-        city: "Milton",
+        city: config.PRISMA_CITY_VALUE,
         permAdvertise: true,
         neighbourhood: { contains: cleanHood(listing.neighbourhood), mode: "insensitive" },
         price: { gt: 500, lt: 10000 },
@@ -133,7 +135,7 @@ export default async function ListingDetailPage({ params }: Props) {
   // ─── SCHEMA MARKUP ───
   const isRental = listing.transactionType === "For Lease";
   const hoodName = cleanHood(listing.neighbourhood);
-  const addrDisplay = listing.displayAddress ? titleCase(listing.address) : "Address on request, Milton, ON";
+  const addrDisplay = listing.displayAddress ? titleCase(listing.address) : `Address on request, ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
 
   const residenceSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -141,9 +143,9 @@ export default async function ListingDetailPage({ params }: Props) {
     name: addrDisplay,
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Milton",
-      addressRegion: "ON",
-      addressCountry: "CA",
+      addressLocality: config.CITY_NAME,
+      addressRegion: config.CITY_PROVINCE_CODE,
+      addressCountry: config.CITY_COUNTRY_CODE,
       streetAddress: listing.displayAddress ? titleCase(listing.address.split(",")[0]) : undefined,
     },
     numberOfRooms: listing.bedrooms,
@@ -171,10 +173,10 @@ export default async function ListingDetailPage({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Miltonly", item: "https://miltonly.com" },
-      { "@type": "ListItem", position: 2, name: isRental ? "Rent" : "Buy", item: `https://miltonly.com/${isRental ? "rentals" : "listings"}` },
-      { "@type": "ListItem", position: 3, name: hoodName, item: `https://miltonly.com/neighbourhoods/${hoodName.toLowerCase().replace(/\s+/g, "-")}` },
-      { "@type": "ListItem", position: 4, name: listing.displayAddress ? titleCase(listing.address.split(",")[0]) : listing.mlsNumber, item: `https://miltonly.com/listings/${listing.mlsNumber}` },
+      { "@type": "ListItem", position: 1, name: config.SITE_NAME, item: config.SITE_URL },
+      { "@type": "ListItem", position: 2, name: isRental ? "Rent" : "Buy", item: `${config.SITE_URL}/${isRental ? "rentals" : "listings"}` },
+      { "@type": "ListItem", position: 3, name: hoodName, item: `${config.SITE_URL}/neighbourhoods/${hoodName.toLowerCase().replace(/\s+/g, "-")}` },
+      { "@type": "ListItem", position: 4, name: listing.displayAddress ? titleCase(listing.address.split(",")[0]) : listing.mlsNumber, item: `${config.SITE_URL}/listings/${listing.mlsNumber}` },
     ],
   };
 
@@ -185,7 +187,7 @@ export default async function ListingDetailPage({ params }: Props) {
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-3">
         <div className="flex items-center gap-2 text-[12px] text-[#94a3b8] max-w-6xl mx-auto">
-          <Link href="/" className="hover:text-[#07111f]">Miltonly</Link>
+          <Link href="/" className="hover:text-[#07111f]">{config.SITE_NAME}</Link>
           <span>›</span>
           <Link href={isRental ? "/rentals" : "/listings"} className="hover:text-[#07111f]">{isRental ? "Rent" : "Buy"}</Link>
           <span>›</span>

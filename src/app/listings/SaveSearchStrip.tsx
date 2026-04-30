@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "@/components/UserProvider";
 import { useState } from "react";
+import { config } from "@/lib/config";
 
 interface Props {
   type?: string;
@@ -34,7 +35,7 @@ export default function SaveSearchStrip(props: Props) {
   }
   if (props.openHouse) labels.push("open houses");
 
-  const summary = labels.length ? labels.join(" · ") : "all Milton listings";
+  const summary = labels.length ? labels.join(" · ") : `all ${config.CITY_NAME} listings`;
 
   const handleSave = async () => {
     if (!user) {
@@ -48,7 +49,7 @@ export default function SaveSearchStrip(props: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: labels.length ? labels.join(" · ") : "All Milton listings",
+          name: labels.length ? labels.join(" · ") : `All ${config.CITY_NAME} listings`,
           propertyType: props.type && props.type !== "all" ? props.type : undefined,
           neighbourhood: props.neighbourhood || undefined,
           priceMin: props.min || undefined,

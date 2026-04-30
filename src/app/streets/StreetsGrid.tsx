@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatPriceFull } from "@/lib/format";
+import { config } from "@/lib/config";
 
 interface Street {
   slug: string;
@@ -74,7 +75,7 @@ export default function StreetsGrid({
               Get street price alerts
             </p>
             <p className="text-[12px] text-[#94a3b8]">
-              Be the first to know when a home lists on any Milton street.
+              Be the first to know when a home lists on any {config.CITY_NAME} street.
             </p>
           </div>
           {alertSubmitted ? (

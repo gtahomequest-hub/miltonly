@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import { config } from "@/lib/config";
 
 interface Listing {
   mlsNumber: string;
@@ -35,7 +36,7 @@ export default function SchoolListings({
           href="/listings"
           className="inline-block text-[13px] font-bold text-[#f59e0b] hover:underline"
         >
-          Browse all Milton listings
+          Browse all {config.CITY_NAME} listings
         </Link>
       </div>
     );

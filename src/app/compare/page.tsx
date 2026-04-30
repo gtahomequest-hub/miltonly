@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import CompareWaitlistForm from "./CompareWaitlistForm";
 
 export const metadata = genMeta({
-  title: "Compare Milton Streets — Coming Soon",
-  description: "Side-by-side price data, school zones, GO access and market trends for any two Milton streets. Launching soon on Miltonly.",
-  canonical: "https://miltonly.com/compare",
+  title: `Compare ${config.CITY_NAME} Streets — Coming Soon`,
+  description: `Side-by-side price data, school zones, GO access and market trends for any two ${config.CITY_NAME} streets. Launching soon on ${config.SITE_NAME}.`,
+  canonical: `${config.SITE_URL}/compare`,
 });
 
 export default function ComparePage() {
@@ -17,7 +18,7 @@ export default function ComparePage() {
         </span>
 
         <h1 className="text-[28px] sm:text-[36px] font-extrabold text-white tracking-[-0.5px] mb-3">
-          Compare any two Milton streets
+          Compare any two {config.CITY_NAME} streets
         </h1>
 
         <p className="text-[15px] text-[#94a3b8] leading-relaxed mb-8">
@@ -27,7 +28,7 @@ export default function ComparePage() {
         <CompareWaitlistForm />
 
         <div className="mt-8 pt-6 border-t border-[#1e3a5f]">
-          <p className="text-[13px] text-[#64748b] mb-3">In the meantime, explore Milton streets individually</p>
+          <p className="text-[13px] text-[#64748b] mb-3">In the meantime, explore {config.CITY_NAME} streets individually</p>
           <Link
             href="/streets"
             className="inline-block bg-white text-[#07111f] text-[13px] font-bold px-6 py-2.5 rounded-lg hover:bg-[#f1f5f9] transition-colors"

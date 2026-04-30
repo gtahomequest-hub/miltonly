@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 
 export const metadata = genMeta({
-  title: "Exclusive Listings — Aamir Yaqoob",
-  description: "Properties personally listed and represented by Aamir Yaqoob · RE/MAX Realty Specialists Inc. Milton Ontario exclusive homes for sale and for rent.",
-  canonical: "https://miltonly.com/exclusive",
+  title: `Exclusive Listings — ${config.realtor.name}`,
+  description: `Properties personally listed and represented by ${config.realtor.name} · ${config.brokerage.name.replace(", Brokerage", "")}. ${config.CITY_NAME} ${config.CITY_PROVINCE} exclusive homes for sale and for rent.`,
+  canonical: `${config.SITE_URL}/exclusive`,
 });
 
 export const revalidate = 300;
@@ -30,12 +31,12 @@ export default async function ExclusivePage() {
     <div className="bg-[#f8f9fb]">
       {/* Hero */}
       <section className="bg-[#07111f] text-center px-5 py-16">
-        <p className="text-[11px] font-bold text-[#f59e0b] tracking-[0.18em] mb-3">LISTED BY AAMIR YAQOOB</p>
+        <p className="text-[11px] font-bold text-[#f59e0b] tracking-[0.18em] mb-3">LISTED BY {config.realtor.name.toUpperCase()}</p>
         <h1 className="text-[clamp(32px,5vw,48px)] font-extrabold text-[#f8f9fb] leading-[1.1] tracking-[-0.03em] mb-4">
           Exclusive Listings
         </h1>
         <p className="text-[14px] text-[#94a3b8] max-w-[560px] mx-auto leading-relaxed">
-          Properties personally listed and represented by Aamir Yaqoob ·<br className="hidden sm:block" /> RE/MAX Realty Specialists Inc.
+          Properties personally listed and represented by {config.realtor.name} ·<br className="hidden sm:block" /> {config.brokerage.name.replace(", Brokerage", "")}
         </p>
       </section>
 
@@ -45,12 +46,12 @@ export default async function ExclusivePage() {
           {listings.length === 0 ? (
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-12 text-center">
               <p className="text-[15px] font-bold text-[#07111f] mb-2">No exclusive listings available right now</p>
-              <p className="text-[13px] text-[#64748b] mb-5">Call Aamir to hear about off-market opportunities.</p>
+              <p className="text-[13px] text-[#64748b] mb-5">Call {config.realtor.name.split(" ")[0]} to hear about off-market opportunities.</p>
               <a
-                href="tel:+16478399090"
+                href={`tel:${config.realtor.phoneE164}`}
                 className="inline-block bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-xl px-6 py-3 hover:bg-[#fbbf24] transition-colors"
               >
-                📞 Call Aamir (647) 839-9090
+                📞 Call {config.realtor.name.split(" ")[0]} {config.realtor.phone}
               </a>
             </div>
           ) : (
@@ -100,7 +101,7 @@ export default async function ExclusivePage() {
                       <div className="mt-4 flex gap-2 relative z-10">
                         {isComingSoon ? (
                           <a
-                            href="tel:+16478399090"
+                            href={`tel:${config.realtor.phoneE164}`}
                             className="flex-1 bg-[#f59e0b] text-[#07111f] font-bold rounded-xl px-4 py-2 text-[13px] text-center hover:bg-[#fbbf24]"
                           >
                             Get notified →
@@ -111,7 +112,7 @@ export default async function ExclusivePage() {
                               href="tel:+16478399090"
                               className="flex-1 bg-[#f59e0b] text-[#07111f] font-bold rounded-xl px-4 py-2 text-[13px] text-center hover:bg-[#fbbf24]"
                             >
-                              📞 Call Aamir
+                              📞 Call {config.realtor.name.split(" ")[0]}
                             </a>
                             <a
                               href="https://wa.me/16478399090"

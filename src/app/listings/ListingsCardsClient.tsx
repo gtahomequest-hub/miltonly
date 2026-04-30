@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/components/UserProvider";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 
 export interface CardListing {
   mlsNumber: string;
@@ -112,7 +113,7 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
           ...attributionPayload(),
         }),
       });
-      showToast("Showing requested — Aamir will call you within the hour");
+      showToast(`Showing requested — ${config.realtor.name.split(" ")[0]} will call you within the hour`);
       setBookingModal(null);
     } catch {
       showToast("Could not submit — please try again");
@@ -202,7 +203,7 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
                   {cleanedHood} →
                 </button>
                 <p className="text-[12px] text-[#94a3b8] mt-2">
-                  {cleanedBrokerage} · {days === 0 ? "Listed today" : `${days}d on Miltonly`}
+                  {cleanedBrokerage} · {days === 0 ? "Listed today" : `${days}d on ${config.SITE_NAME}`}
                 </p>
                 <button
                   type="button"
@@ -234,7 +235,7 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
             <button onClick={submitBooking} className="w-full bg-[#f59e0b] text-[#07111f] font-bold rounded-lg py-3 text-[14px] hover:bg-[#fbbf24] transition-colors">
               Request showing
             </button>
-            <p className="text-[11px] text-[#94a3b8] mt-2 text-center">Aamir confirms within the hour · no obligation</p>
+            <p className="text-[11px] text-[#94a3b8] mt-2 text-center">{config.realtor.name.split(" ")[0]} confirms within the hour · no obligation</p>
           </div>
         </div>
       )}

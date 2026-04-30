@@ -1,26 +1,27 @@
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 
 export const metadata = genMeta({
   title: "Privacy Policy",
-  description: "How Miltonly.com and Aamir Yaqoob collect, use, and protect your personal information.",
-  canonical: "https://miltonly.com/privacy",
+  description: `How ${config.SITE_DOMAIN} and ${config.realtor.name} collect, use, and protect your personal information.`,
+  canonical: `${config.SITE_URL}/privacy`,
 });
 
 export default function PrivacyPage() {
   return (
     <main className="bg-white text-[#07111f] min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
-        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to Miltonly</Link>
+        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to {config.SITE_NAME}</Link>
 
         <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Privacy Policy</h1>
         <p className="text-[13px] text-[#64748b] mb-8">Last updated: April 23, 2026</p>
 
         <div className="prose prose-slate max-w-none space-y-6 text-[15px] leading-relaxed">
           <p>
-            Miltonly.com (&quot;we&quot;, &quot;us&quot;, or &quot;Miltonly&quot;) is operated by Aamir Yaqoob, Sales Representative at
-            RE/MAX Realty Specialists Inc., Brokerage. We take your privacy seriously and comply with Canada&apos;s Personal
-            Information Protection and Electronic Documents Act (PIPEDA) and applicable Ontario legislation.
+            {config.SITE_DOMAIN} (&quot;we&quot;, &quot;us&quot;, or &quot;{config.SITE_NAME}&quot;) is operated by {config.realtor.name}, {config.realtor.title} at
+            {" "}{config.brokerage.name}. We take your privacy seriously and comply with Canada&apos;s Personal
+            Information Protection and Electronic Documents Act (PIPEDA) and applicable {config.CITY_PROVINCE} legislation.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">What we collect</h2>
@@ -39,7 +40,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">How we use it</h2>
           <ul className="list-disc pl-6 space-y-1">
-            <li>To contact you about Milton rentals or homes that match your needs</li>
+            <li>To contact you about {config.CITY_NAME} rentals or homes that match your needs</li>
             <li>To arrange showings and represent you in real estate transactions</li>
             <li>To send optional listing alerts (you can unsubscribe at any time)</li>
             <li>To improve this website and measure ad performance</li>
@@ -48,15 +49,15 @@ export default function PrivacyPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Who sees your information</h2>
           <p>
-            Your contact information is seen by Aamir Yaqoob and, where required for a specific transaction, by
-            RE/MAX Realty Specialists Inc., Brokerage and the other parties to the transaction (e.g. landlord&apos;s Realtor).
+            Your contact information is seen by {config.realtor.name} and, where required for a specific transaction, by
+            {" "}{config.brokerage.name} and the other parties to the transaction (e.g. landlord&apos;s Realtor).
             We use the following service providers to store and process data on our behalf:
           </p>
           <ul className="list-disc pl-6 space-y-1">
             <li>Vercel (website hosting)</li>
             <li>Our database provider (encrypted lead storage)</li>
             <li>Google Analytics and Google Ads (traffic measurement)</li>
-            <li>Email delivery service (to notify Aamir of your inquiry)</li>
+            <li>Email delivery service (to notify {config.realtor.name.split(" ")[0]} of your inquiry)</li>
           </ul>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">How long we keep it</h2>
@@ -75,7 +76,7 @@ export default function PrivacyPage() {
             <li>Withdraw consent to be contacted at any time</li>
           </ul>
           <p>
-            To exercise any of these rights, email <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a> or call (647) 839-9090.
+            To exercise any of these rights, email <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a> or call {config.realtor.phone}.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Cookies and analytics</h2>
@@ -95,10 +96,10 @@ export default function PrivacyPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Contact</h2>
           <p>
-            <strong>Aamir Yaqoob</strong>, Sales Representative<br />
-            RE/MAX Realty Specialists Inc., Brokerage<br />
+            <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
+            {config.brokerage.name}<br />
             Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
-            Phone: <a href="tel:+16478399090" className="text-[#f59e0b] underline">(647) 839-9090</a>
+            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
           </p>
           <p className="text-[13px] text-[#64748b] mt-8">
             If you have a complaint about our handling of your personal information, you may contact the Office of the

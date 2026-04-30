@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import type { Metadata } from "next";
 import Gallery from "./Gallery";
 import AgentSidebar from "./AgentSidebar";
@@ -38,9 +39,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `$${listing.price.toLocaleString()}`;
   const beds = listing.bedsMax > 0 ? `${listing.bedsMin}+${listing.bedsMax}` : `${listing.bedsMin}`;
   return genMeta({
-    title: `${listing.address} — ${priceStr} | ${beds} bed ${listing.propertyType} | Miltonly`,
+    title: `${listing.address} — ${priceStr} | ${beds} bed ${listing.propertyType} | ${config.SITE_NAME}`,
     description: listing.description.slice(0, 160),
-    canonical: `https://miltonly.com/exclusive/${listing.slug}`,
+    canonical: `${config.SITE_URL}/exclusive/${listing.slug}`,
   });
 }
 
@@ -91,7 +92,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
         </Link>
         <nav className="text-[11px] text-[#64748b]">
           <Link href="/" className="hover:text-[#07111f]">
-            Miltonly
+            {config.SITE_NAME}
           </Link>
           <span className="mx-1.5">›</span>
           <Link href="/exclusive" className="hover:text-[#07111f]">

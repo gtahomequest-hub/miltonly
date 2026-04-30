@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import RentalsClient from "./RentalsClient";
 
 export const metadata = genMeta({
-  title: "Milton Rentals — Let Miltonly Find Your Home",
-  description: "Browse every active rental in Milton Ontario. Condos, townhouses, detached homes — live TREB data, verified landlords, same-day showings guaranteed.",
-  canonical: "https://miltonly.com/rentals",
+  title: `${config.CITY_NAME} Rentals — Let ${config.SITE_NAME} Find Your Home`,
+  description: `Browse every active rental in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes — live TREB data, verified landlords, same-day showings guaranteed.`,
+  canonical: `${config.SITE_URL}/rentals`,
 });
 
 export const revalidate = 3600;
@@ -24,24 +25,24 @@ const rentCategories = [
 
 export default async function RentalsPage() {
   const listings = await prisma.listing.findMany({
-    where: { transactionType: "For Lease", city: "Milton", permAdvertise: true },
+    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true },
     orderBy: { listedAt: "desc" },
     take: 48,
   });
 
   const totalRentals = await prisma.listing.count({
-    where: { transactionType: "For Lease", city: "Milton", permAdvertise: true },
+    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true },
   });
 
   const avgRent = await prisma.listing.aggregate({
-    where: { transactionType: "For Lease", city: "Milton", price: { gt: 500, lt: 10000 }, permAdvertise: true },
+    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true },
     _avg: { price: true },
   });
 
   const rentAvgs = await Promise.all(
     rentCategories.map(async (cat) => {
       const where: Record<string, unknown> = {
-        transactionType: "For Lease", city: "Milton", propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true,
+        transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true,
       };
       if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
       const [agg, count] = await Promise.all([
