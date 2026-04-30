@@ -47,7 +47,7 @@ DB2 and DB3 today point at the same Neon instance — separate named schemas, sp
 - `30 11 * * *` — `/api/jobs/compute-sold-stats` — recompute street + neighbourhood stats (sale + lease separately).
 
 **Required env vars:**
-- `DATABASE_URL` — DB1 Prisma (Supabase, unchanged)
+- `DATABASE_URL` — DB1 Prisma (Neon public schema)
 - `SOLD_DATABASE_URL` — DB2 Neon connection (points to same Neon as analytics; schema `sold`)
 - `ANALYTICS_DATABASE_URL` — DB3 Neon connection (same instance; schema `analytics`)
 - `UPSTASH_REDIS_KV_REST_API_URL` — Upstash Redis REST URL (Vercel Marketplace name)
@@ -91,7 +91,7 @@ Milton, Ontario's only dedicated real estate intelligence site. Street-level dat
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS 3.4 |
 | ORM | Prisma 5.22 |
-| Database | PostgreSQL (Supabase) |
+| Database | PostgreSQL (Neon, public schema) |
 | Hosting | Vercel (auto-deploy from main) |
 | Email | Resend |
 | SMS | Twilio |

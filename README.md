@@ -28,7 +28,7 @@ The street-page master template data spec is [`docs/street-template-data-spec.md
 ## What's currently shipped
 
 - Live MLS pipeline (TREB/Ampre OData sync, daily cron)
-- 4-database architecture: DB1 (Prisma/Supabase) · DB2 sold (Neon, `sold` schema) · DB3 analytics (Neon, `analytics` schema) · Redis (Upstash)
+- 4-database architecture: DB1 (Prisma, Neon public schema) · DB2 sold (Neon, `sold` schema) · DB3 analytics (Neon, `analytics` schema) · Redis (Upstash)
 - VOW pipeline with SSR `VowGate`, k=10 anonymity on aggregate teasers, bona-fide-interest acknowledgement quartet, per-record Brokerage display
 - 700+ AI-generated street pages through the compliance gatekeeper, regenerated every 4 hours
 - Passwordless auth (email + 6-digit code, 30-day JWT), saved listings, saved searches, deal alert matching
@@ -42,7 +42,7 @@ For phase-by-phase detail and current priorities see [`AI-BRIEFING.md`](./AI-BRI
 ## Tech stack
 
 - Next.js 14.2 (App Router), TypeScript 5, Tailwind CSS 3.4
-- Prisma 5.22 over PostgreSQL (Supabase) for DB1
+- Prisma 5.22 over PostgreSQL (Neon, public schema) for DB1
 - `@neondatabase/serverless` for DB2 + DB3
 - `@upstash/redis` for caching + rate-limiting
 - Vercel hosting, Vercel Blob for image uploads
