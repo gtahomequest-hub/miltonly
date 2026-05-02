@@ -1,6 +1,7 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { mosques, getAllMosqueNeighbourhoods } from "@/lib/mosques";
 import { prisma } from "@/lib/prisma";
+import { config } from "@/lib/config";
 import Link from "next/link";
 import SchemaScript from "@/components/SchemaScript";
 import {
@@ -12,19 +13,18 @@ import MosquesGrid from "./MosquesGrid";
 import MosqueAlertForm from "./MosqueAlertForm";
 
 export const metadata = genMeta({
-  title: "Mosques in Milton — Homes Near Masjids",
-  description:
-    "Find homes for sale near Milton Ontario's mosques and Islamic centres. 7 locations with live TREB listings by neighbourhood. Updated daily.",
-  canonical: "https://miltonly.com/mosques",
+  title: `Mosques in ${config.CITY_NAME} — Homes Near Masjids`,
+  description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s mosques and Islamic centres. 7 locations with live TREB listings by neighbourhood. Updated daily.`,
+  canonical: `${config.SITE_URL}/mosques`,
   keywords: [
-    "mosques near Milton Ontario",
-    "homes near mosque Milton",
-    "Milton masjid",
-    "Milton Islamic centre",
-    "Muslim community Milton Ontario",
+    `mosques near ${config.CITY_NAME} ${config.CITY_PROVINCE}`,
+    `homes near mosque ${config.CITY_NAME}`,
+    `${config.CITY_NAME} masjid`,
+    `${config.CITY_NAME} Islamic centre`,
+    `Muslim community ${config.CITY_NAME} ${config.CITY_PROVINCE}`,
     "homes near Halton Islamic Centre",
-    "Milton Ontario Muslim",
-    "buy home near mosque Milton",
+    `${config.CITY_NAME} ${config.CITY_PROVINCE} Muslim`,
+    `buy home near mosque ${config.CITY_NAME}`,
   ],
 });
 
@@ -32,7 +32,7 @@ export default async function MosquesPage() {
   const neighbourhoods = getAllMosqueNeighbourhoods();
   const counts = await prisma.listing.groupBy({
     by: ["neighbourhood"],
-    where: { status: "active", permAdvertise: true, city: "Milton" },
+    where: { status: "active", permAdvertise: true, city: config.PRISMA_CITY_VALUE },
     _count: true,
   });
 
@@ -65,31 +65,31 @@ export default async function MosquesPage() {
 
   const faqs = [
     {
-      question: "How many mosques are there in Milton Ontario?",
-      answer: `Milton has ${mosques.length} mosques and Islamic centres, including ${masjidCount} full masjid${masjidCount !== 1 ? "s" : ""}, ${centreCount} community centre${centreCount !== 1 ? "s" : ""}, and ${musallaCount} musalla${musallaCount !== 1 ? "s" : ""}. ${withJumah} locations offer Jumu\u2019ah prayers. The largest is the Halton Islamic Community Centre on Regional Rd 25, which offers daily prayers, an Islamic school, a Hifz program, and a food bank.`,
+      question: `How many mosques are there in ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
+      answer: `${config.CITY_NAME} has ${mosques.length} mosques and Islamic centres, including ${masjidCount} full masjid${masjidCount !== 1 ? "s" : ""}, ${centreCount} community centre${centreCount !== 1 ? "s" : ""}, and ${musallaCount} musalla${musallaCount !== 1 ? "s" : ""}. ${withJumah} locations offer Jumu\u2019ah prayers. The largest is the Halton Islamic Community Centre on Regional Rd 25, which offers daily prayers, an Islamic school, a Hifz program, and a food bank.`,
     },
     {
-      question: "Where is the nearest mosque to Milton Ontario?",
-      answer: "Milton has several mosques spread across the town. The Halton Islamic Community Centre at 4269 Regional Rd 25 is the largest, offering full masjid services. ICNA Milton at 500 Laurier Ave and the Milton Muslim Community Centre on Steeles Ave are centrally located. Milton Musalla on Derry Rd serves the northwest area.",
+      question: `Where is the nearest mosque to ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
+      answer: `${config.CITY_NAME} has several mosques spread across the town. The Halton Islamic Community Centre at 4269 Regional Rd 25 is the largest, offering full masjid services. ICNA ${config.CITY_NAME} at 500 Laurier Ave and the ${config.CITY_NAME} Muslim Community Centre on Steeles Ave are centrally located. ${config.CITY_NAME} Musalla on Derry Rd serves the northwest area.`,
     },
     {
-      question: "Which Milton neighbourhood is best for Muslim families?",
-      answer: `Milton\u2019s mosques and Islamic centres are distributed across the town, so most neighbourhoods offer reasonable access. The core Milton area has the highest concentration, with the Halton Islamic Community Centre, ICNA Milton, and the Milton Muslim Community Centre all within a short drive. There are currently ${totalActive > 0 ? totalActive : "many"} homes for sale across these neighbourhoods.`,
+      question: `Which ${config.CITY_NAME} neighbourhood is best for Muslim families?`,
+      answer: `${config.CITY_NAME}\u2019s mosques and Islamic centres are distributed across the town, so most neighbourhoods offer reasonable access. The core ${config.CITY_NAME} area has the highest concentration, with the Halton Islamic Community Centre, ICNA ${config.CITY_NAME}, and the ${config.CITY_NAME} Muslim Community Centre all within a short drive. There are currently ${totalActive > 0 ? totalActive : "many"} homes for sale across these neighbourhoods.`,
     },
     {
-      question: "Are there homes for sale near mosques in Milton?",
-      answer: `Yes. There are currently ${totalActive > 0 ? totalActive : "multiple"} active listings near Milton\u2019s mosques and Islamic centres. Each mosque page on Miltonly shows live nearby listings with prices, property types, and direct links to full details. You can also set up alerts to be notified when new homes list near your preferred location.`,
+      question: `Are there homes for sale near mosques in ${config.CITY_NAME}?`,
+      answer: `Yes. There are currently ${totalActive > 0 ? totalActive : "multiple"} active listings near ${config.CITY_NAME}\u2019s mosques and Islamic centres. Each mosque page on ${config.SITE_NAME} shows live nearby listings with prices, property types, and direct links to full details. You can also set up alerts to be notified when new homes list near your preferred location.`,
     },
     {
-      question: "Does Milton have an Islamic school?",
-      answer: "Yes. The Halton Islamic Community Centre at 4269 Regional Rd 25 operates an Islamic school and a Hifz program. It is run by the Muslim Association of Milton and serves families across the Halton Region.",
+      question: `Does ${config.CITY_NAME} have an Islamic school?`,
+      answer: `Yes. The Halton Islamic Community Centre at 4269 Regional Rd 25 operates an Islamic school and a Hifz program. It is run by the Muslim Association of ${config.CITY_NAME} and serves families across the Halton Region.`,
     },
   ];
 
   const schemas = [
     generateBreadcrumbSchema([
-      { name: "Home", url: "https://miltonly.com" },
-      { name: "Mosques", url: "https://miltonly.com/mosques" },
+      { name: "Home", url: config.SITE_URL },
+      { name: "Mosques", url: `${config.SITE_URL}/mosques` },
     ]),
     generateLocalBusinessSchema(),
     generateFAQSchema(faqs),
@@ -115,10 +115,10 @@ export default async function MosquesPage() {
               Community &amp; Real Estate
             </p>
             <h1 className="text-[28px] sm:text-[40px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
-              Mosques in Milton &amp; Nearby Homes
+              Mosques in {config.CITY_NAME} &amp; Nearby Homes
             </h1>
             <p className="text-[14px] sm:text-[16px] text-[rgba(248,249,251,0.6)] mt-4 max-w-2xl leading-relaxed">
-              Find homes for sale near Milton&apos;s {mosques.length} mosques and Islamic centres.
+              Find homes for sale near {config.CITY_NAME}&apos;s {mosques.length} mosques and Islamic centres.
               {totalActive > 0 && ` ${totalActive} active listings in surrounding neighbourhoods, updated daily from TREB.`}
             </p>
           </div>
@@ -146,24 +146,24 @@ export default async function MosquesPage() {
           <MosquesGrid mosques={mosquesWithCounts} />
         </div>
 
-        {/* Prose section — Milton's Muslim community */}
+        {/* Prose section — Muslim community */}
         <section className="bg-white px-5 sm:px-11 py-12 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-[20px] font-extrabold text-[#07111f] mb-6">
-              Milton&apos;s growing Muslim community and why proximity matters
+              {config.CITY_NAME}&apos;s growing Muslim community and why proximity matters
             </h2>
             <div className="text-[14px] text-[#374151] leading-[1.85] space-y-4">
               <p>
-                Milton&apos;s Muslim community has grown substantially over the past decade, mirroring the town&apos;s broader population boom. What was once a small, tight-knit group gathering for Jumu&apos;ah in rented halls now numbers in the thousands, supported by seven mosques and Islamic centres spread across town. That growth has reshaped the local real estate landscape in meaningful ways, particularly for families who prioritize daily access to prayer, community programming, and Islamic education for their children.
+                {config.CITY_NAME}&apos;s Muslim community has grown substantially over the past decade, mirroring the town&apos;s broader population boom. What was once a small, tight-knit group gathering for Jumu&apos;ah in rented halls now numbers in the thousands, supported by seven mosques and Islamic centres spread across town. That growth has reshaped the local real estate landscape in meaningful ways, particularly for families who prioritize daily access to prayer, community programming, and Islamic education for their children.
               </p>
               <p>
                 For many Muslim families, proximity to a mosque is not simply a matter of convenience. Daily prayers, Jumu&apos;ah on Fridays, Taraweeh during Ramadan, Eid celebrations, and weekend Islamic school all factor into where a family chooses to live. A home within a ten-minute drive of a full-service masjid can make the difference between attending regularly and missing out. The Halton Islamic Community Centre on Regional Rd 25 is the anchor institution here, offering not just daily salah but a full Islamic school, a Hifz program, and a community food bank. Families who rely on these services naturally gravitate toward the surrounding neighbourhoods.
               </p>
               <p>
-                The presence of multiple organizations serving different traditions also matters. Minhaj-ul-Quran operates the Milton Muslim Community Centre with locations on Steeles Ave and Bronte St. ICNA Milton runs a centre on Laurier Ave. The Sayyidah Fatemah Islamic Centre, founded by the Islamic Supreme Council of Canada, serves another segment of the community. This diversity means families can find a congregation that fits their practice without leaving Milton, and each centre creates its own radius of demand in the housing market.
+                The presence of multiple organizations serving different traditions also matters. Minhaj-ul-Quran operates the {config.CITY_NAME} Muslim Community Centre with locations on Steeles Ave and Bronte St. ICNA {config.CITY_NAME} runs a centre on Laurier Ave. The Sayyidah Fatemah Islamic Centre, founded by the Islamic Supreme Council of Canada, serves another segment of the community. This diversity means families can find a congregation that fits their practice without leaving {config.CITY_NAME}, and each centre creates its own radius of demand in the housing market.
               </p>
               <p>
-                From a real estate perspective, homes near active mosques tend to see steady demand from within the community, particularly during periods when national-level demand softens. Buyers looking near these locations should pay attention to commute patterns as well. Milton&apos;s GO station provides direct access to Union Station, which means a family can live near their mosque and still commute to Toronto for work. That combination of community infrastructure and transit access is difficult to replicate in other Halton municipalities, and it continues to draw Muslim families to Milton specifically.
+                From a real estate perspective, homes near active mosques tend to see steady demand from within the community, particularly during periods when national-level demand softens. Buyers looking near these locations should pay attention to commute patterns as well. {config.CITY_NAME}&apos;s GO station provides direct access to Union Station, which means a family can live near their mosque and still commute to Toronto for work. That combination of community infrastructure and transit access is difficult to replicate in other Halton municipalities, and it continues to draw Muslim families to {config.CITY_NAME} specifically.
               </p>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default async function MosquesPage() {
         <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-              Explore Milton neighbourhoods with mosques
+              Explore {config.CITY_NAME} neighbourhoods with mosques
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {hoodSlugs.map((h) => (

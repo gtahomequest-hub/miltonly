@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getMosqueBySlug, getMosquesByNeighbourhood } from "@/lib/mosques";
 import { prisma } from "@/lib/prisma";
 import { formatPriceFull } from "@/lib/format";
+import { config } from "@/lib/config";
 import SchemaScript from "@/components/SchemaScript";
 import {
   generateBreadcrumbSchema,
@@ -23,19 +24,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!mosque) return { title: "Mosque Not Found" };
 
   return {
-    title: `Homes Near ${mosque.name} Milton — Listings & Prices`,
-    description: `Find homes for sale near ${mosque.name} in Milton Ontario. ${mosque.address}. Live TREB listings, prices, and neighbourhood data. ${mosque.affiliation}.`,
-    alternates: { canonical: `https://miltonly.com/mosques/${params.slug}` },
+    title: `Homes Near ${mosque.name} ${config.CITY_NAME} — Listings & Prices`,
+    description: `Find homes for sale near ${mosque.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${mosque.address}. Live TREB listings, prices, and neighbourhood data. ${mosque.affiliation}.`,
+    alternates: { canonical: `${config.SITE_URL}/mosques/${params.slug}` },
     keywords: [
       `homes near ${mosque.name}`,
-      `${mosque.name} Milton`,
+      `${mosque.name} ${config.CITY_NAME}`,
       `houses for sale near ${mosque.name}`,
-      `Milton mosque real estate`,
-      `${mosque.neighbourhood} Milton homes`,
-      `Muslim community Milton`,
+      `${config.CITY_NAME} mosque real estate`,
+      `${mosque.neighbourhood} ${config.CITY_NAME} homes`,
+      `Muslim community ${config.CITY_NAME}`,
     ],
     openGraph: {
-      title: `Homes Near ${mosque.name} — Milton, Ontario`,
+      title: `Homes Near ${mosque.name} — ${config.CITY_NAME}, ${config.CITY_PROVINCE}`,
       description: `Find homes for sale near ${mosque.name}. ${mosque.address}. Live listings updated daily.`,
     },
   };
@@ -50,7 +51,7 @@ export default async function MosqueDetailPage({ params }: Props) {
     where: {
       status: "active",
       permAdvertise: true,
-      city: "Milton",
+      city: config.PRISMA_CITY_VALUE,
       neighbourhood: { contains: mosque.neighbourhood, mode: "insensitive" },
     },
     orderBy: { price: "asc" },
@@ -63,7 +64,7 @@ export default async function MosqueDetailPage({ params }: Props) {
   const allListings = await prisma.listing.findMany({
     where: {
       permAdvertise: true,
-      city: "Milton",
+      city: config.PRISMA_CITY_VALUE,
       neighbourhood: { contains: mosque.neighbourhood, mode: "insensitive" },
     },
     select: { price: true, status: true, propertyType: true },
@@ -127,7 +128,7 @@ export default async function MosqueDetailPage({ params }: Props) {
   const faqs = [
     {
       question: `What homes are for sale near ${mosque.name}?`,
-      answer: `There are currently ${active.length} active listings near ${mosque.name} in ${mosque.neighbourhood}, Milton.${avgPrice > 0 ? ` The average asking price is ${formatPriceFull(avgPrice)}.` : ""} ${byType.length > 0 ? `Property types include ${byType.map((t) => `${t.type} (${t.count})`).join(", ")}.` : ""}`,
+      answer: `There are currently ${active.length} active listings near ${mosque.name} in ${mosque.neighbourhood}, ${config.CITY_NAME}.${avgPrice > 0 ? ` The average asking price is ${formatPriceFull(avgPrice)}.` : ""} ${byType.length > 0 ? `Property types include ${byType.map((t) => `${t.type} (${t.count})`).join(", ")}.` : ""}`,
     },
     {
       question: `What services does ${mosque.name} offer?`,
@@ -138,16 +139,16 @@ export default async function MosqueDetailPage({ params }: Props) {
       answer: `The average asking price for homes near ${mosque.name} in ${mosque.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Register for full MLS® access to see detailed market data, including historical transaction records on individual street pages.`,
     },
     {
-      question: `Is ${mosque.neighbourhood} a good area for Muslim families in Milton?`,
-      answer: `${mosque.neighbourhood} in Milton is home to ${getMosquesByNeighbourhood(mosque.neighbourhood).length} mosque${getMosquesByNeighbourhood(mosque.neighbourhood).length > 1 ? "s and Islamic centres" : ""}, including ${mosque.name}. With ${active.length} homes currently for sale, families have options across property types. Milton's GO train connectivity and growing Muslim community make it a popular choice.`,
+      question: `Is ${mosque.neighbourhood} a good area for Muslim families in ${config.CITY_NAME}?`,
+      answer: `${mosque.neighbourhood} in ${config.CITY_NAME} is home to ${getMosquesByNeighbourhood(mosque.neighbourhood).length} mosque${getMosquesByNeighbourhood(mosque.neighbourhood).length > 1 ? "s and Islamic centres" : ""}, including ${mosque.name}. With ${active.length} homes currently for sale, families have options across property types. ${config.CITY_NAME}'s GO train connectivity and growing Muslim community make it a popular choice.`,
     },
   ];
 
   const schemas = [
     generateBreadcrumbSchema([
-      { name: "Home", url: "https://miltonly.com" },
-      { name: "Mosques", url: "https://miltonly.com/mosques" },
-      { name: mosque.name, url: `https://miltonly.com/mosques/${params.slug}` },
+      { name: "Home", url: config.SITE_URL },
+      { name: "Mosques", url: `${config.SITE_URL}/mosques` },
+      { name: mosque.name, url: `${config.SITE_URL}/mosques/${params.slug}` },
     ]),
     generateLocalBusinessSchema(),
     generateFAQSchema(faqs),
@@ -157,10 +158,10 @@ export default async function MosqueDetailPage({ params }: Props) {
       name: mosque.name,
       address: {
         "@type": "PostalAddress",
-        streetAddress: mosque.address.replace(", Milton", ""),
-        addressLocality: "Milton",
-        addressRegion: "Ontario",
-        addressCountry: "CA",
+        streetAddress: mosque.address.replace(`, ${config.CITY_NAME}`, ""),
+        addressLocality: config.CITY_NAME,
+        addressRegion: config.CITY_PROVINCE,
+        addressCountry: config.CITY_COUNTRY_CODE,
       },
     },
   ];
@@ -200,7 +201,7 @@ export default async function MosqueDetailPage({ params }: Props) {
                     {typeLabel}
                   </span>
                   <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em]">
-                    {mosque.neighbourhood} &middot; Milton
+                    {mosque.neighbourhood} &middot; {config.CITY_NAME}
                   </p>
                 </div>
                 <h1 className="text-[28px] sm:text-[36px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
@@ -355,14 +356,14 @@ export default async function MosqueDetailPage({ params }: Props) {
               Looking for a home near {mosque.name}?
             </h2>
             <p className="text-[14px] text-[rgba(248,249,251,0.5)] mt-3 mb-8">
-              Aamir knows Milton inside out. Let him help you find the right home for your family.
+              {config.realtor.name.split(" ")[0]} knows {config.CITY_NAME} inside out. Let him help you find the right home for your family.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <a
-                href="tel:+16478399090"
+                href={`tel:${config.realtor.phoneE164}`}
                 className="bg-[#f59e0b] text-[#07111f] text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#fbbf24] transition-colors"
               >
-                Call Aamir
+                Call {config.realtor.name.split(" ")[0]}
               </a>
               <Link
                 href="/book"

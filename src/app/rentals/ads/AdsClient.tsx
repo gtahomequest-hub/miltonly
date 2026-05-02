@@ -6,9 +6,13 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 import TrustStrip from "./TrustStrip";
 import SpeedToLeadBadge from "./SpeedToLeadBadge";
 import ComparisonTable from "./ComparisonTable";
+
+const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
+const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
 interface Listing {
   mlsNumber: string;
@@ -101,13 +105,13 @@ function buildDynamicHeadline(type: string, beds: number, max: number): string |
   if (beds > 0) parts.push(beds >= 4 ? "4+ Bedroom" : `${beds}-Bedroom`);
   if (type && TYPE_LABEL[type]) parts.push(TYPE_LABEL[type]);
   parts.push("Rentals");
-  let h1 = `Milton ${parts.join(" ")}`;
+  let h1 = `${config.CITY_NAME} ${parts.join(" ")}`;
   if (max > 0 && max <= 5000) h1 += ` Under $${(max / 1000).toFixed(1).replace(".0", "")}K`;
   return h1;
 }
 
 const HERO_SUB =
-  "Live TREB listings, hand-matched by Aamir Yaqoob — RE/MAX Hall of Fame, 14 years in Milton. No bots. No call centres. No spam.";
+  `Live TREB listings, hand-matched by ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. No bots. No call centres. No spam.`;
 
 function AdsClientInner({
   listings,
@@ -168,7 +172,7 @@ function AdsClientInner({
     () => buildDynamicHeadline(initialType, initialBeds, initialMax),
     [initialType, initialBeds, initialMax]
   );
-  const headline = dynamicHeadline || "Find Your Milton Rental";
+  const headline = dynamicHeadline || `Find Your ${config.CITY_NAME} Rental`;
   const headlineSuffix = dynamicHeadline ? null : " — Before Someone Else Does.";
 
   // Live listings filter — applied client-side over the 60-row pool.
@@ -211,7 +215,7 @@ function AdsClientInner({
 
     if (trimmedName.length < 2) { setError("Please enter your first name."); return; }
     if (phoneDigits.length < 10 && !trimmedEmail) {
-      setError("Please enter a phone number or email so Aamir can reach you.");
+      setError(`Please enter a phone number or email so ${REALTOR_FIRST_NAME} can reach you.`);
       return;
     }
 
@@ -247,7 +251,7 @@ function AdsClientInner({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data?.error || "Couldn't submit — please try again or call (647) 839-9090.");
+        setError(data?.error || `Couldn't submit — please try again or call ${config.realtor.phone}.`);
         setSubmitting(false);
         return;
       }
@@ -256,7 +260,7 @@ function AdsClientInner({
       router.push(redirect);
       // stay submitting=true until navigation completes
     } catch {
-      setError("Something went wrong. Please call Aamir directly at (647) 839-9090.");
+      setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} directly at ${config.realtor.phone}.`);
       setSubmitting(false);
     }
   }
@@ -271,17 +275,17 @@ function AdsClientInner({
         <div className="max-w-6xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
           <Link href="/" className="shrink-0">
             <span className="text-[20px] font-extrabold tracking-[-0.5px]">
-              <span className="text-[#f8f9fb]">miltonly</span>
+              <span className="text-[#f8f9fb]">{config.SITE_NAME.toLowerCase()}</span>
               <span className="text-[#f59e0b]">.</span>
             </span>
           </Link>
           <a
-            href="tel:+16478399090"
+            href={`tel:${config.realtor.phoneE164}`}
             className="flex items-center gap-2 bg-[#f59e0b] text-[#07111f] text-[13px] sm:text-[14px] font-bold px-4 py-2 rounded-lg hover:bg-[#fbbf24] transition-colors"
           >
             <span aria-hidden>📞</span>
-            <span className="hidden sm:inline">Call Aamir</span>
-            <span>(647) 839-9090</span>
+            <span className="hidden sm:inline">Call {REALTOR_FIRST_NAME}</span>
+            <span>{config.realtor.phone}</span>
           </a>
         </div>
       </header>
@@ -347,16 +351,16 @@ function AdsClientInner({
                   <span aria-hidden>🏆</span> RE/MAX Hall of Fame
                 </span>
                 <span className="text-[#64748b]">·</span>
-                <span className="text-[#cbd5e1] font-semibold">14 yrs full-time</span>
+                <span className="text-[#cbd5e1] font-semibold">{config.realtor.yearsExperience} yrs full-time</span>
                 <span className="text-[#64748b]">·</span>
-                <span className="text-[#cbd5e1] font-semibold">Milton specialist</span>
+                <span className="text-[#cbd5e1] font-semibold">{config.CITY_NAME} specialist</span>
               </div>
 
               {/* Why bullets */}
               <ul className="space-y-3 mb-2">
                 <li className="flex items-start gap-3">
                   <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">Every Milton rental — live from TREB, updated daily</span>
+                  <span className="text-[14px] text-[#e2e8f0]">Every {config.CITY_NAME} rental — live from TREB, updated daily</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
@@ -364,7 +368,7 @@ function AdsClientInner({
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">You talk to Aamir directly — no juniors, no handoffs</span>
+                  <span className="text-[14px] text-[#e2e8f0]">You talk to {REALTOR_FIRST_NAME} directly — no juniors, no handoffs</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
@@ -392,12 +396,12 @@ function AdsClientInner({
                   </div>
                 </div>
                 <h2 className="text-[22px] sm:text-[24px] font-extrabold leading-tight text-[#07111f]">
-                  {step === 1 ? "Don't lose your top pick to someone faster." : "Where should Aamir send your matches?"}
+                  {step === 1 ? "Don't lose your top pick to someone faster." : `Where should ${REALTOR_FIRST_NAME} send your matches?`}
                 </h2>
                 <p className="text-[13px] text-[#64748b] mt-1 mb-3">
                   {step === 1
-                    ? "Get matched in 30 seconds. Aamir replies within 60 min."
-                    : "3–5 hand-picked Milton rentals texted to you within the hour."}
+                    ? `Get matched in 30 seconds. ${REALTOR_FIRST_NAME} replies within 60 min.`
+                    : `3–5 hand-picked ${config.CITY_NAME} rentals texted to you within the hour.`}
                 </p>
 
                 {step === 1 && (
@@ -409,7 +413,7 @@ function AdsClientInner({
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                       </span>
                       <p className="text-[12px] font-semibold text-[#065f46]">
-                        <span className="font-bold">{renterCount}</span> Milton renters got matched this week
+                        <span className="font-bold">{renterCount}</span> {config.CITY_NAME} renters got matched this week
                       </p>
                     </div>
 
@@ -565,7 +569,7 @@ function AdsClientInner({
                       disabled={submitting}
                       className="w-full bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] py-4 rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl hover:shadow-[#f59e0b]/30 active:scale-[0.99]"
                     >
-                      {submitting ? "Sending…" : "Send to Aamir →"}
+                      {submitting ? "Sending…" : `Send to ${REALTOR_FIRST_NAME} →`}
                     </button>
                     <p className="text-[12px] text-[#475569] text-center mt-3 leading-relaxed">
                       🔒 No obligation. No spam. If matches don&apos;t fit, we stop. That&apos;s it.
@@ -579,8 +583,8 @@ function AdsClientInner({
                     </button>
 
                     <p className="text-[11px] text-[#64748b] text-center mt-3 leading-relaxed">
-                      No fees · No spam · Aamir usually replies within 1 business hour.<br />
-                      By submitting you agree to be contacted about Milton rentals. See our{" "}
+                      No fees · No spam · {REALTOR_FIRST_NAME} usually replies within 1 business hour.<br />
+                      By submitting you agree to be contacted about {config.CITY_NAME} rentals. See our{" "}
                       <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy Policy</Link>.
                     </p>
                   </>
@@ -591,7 +595,7 @@ function AdsClientInner({
         </div>
       </section>
 
-      {/* ══ COMPARISON — Why Aamir vs DIY vs Out-of-area ══ */}
+      {/* ══ COMPARISON — Why {realtor} vs DIY vs Out-of-area ══ */}
       <ComparisonTable />
 
       {/* ══ LISTING PREVIEW ══ */}
@@ -621,7 +625,7 @@ function AdsClientInner({
           {filteredListings.length === 0 ? (
             <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-8 text-center">
               <p className="text-[15px] text-[#cbd5e1] mb-3">
-                No exact matches — Aamir will hand-pick the closest fits. Submit your details →
+                No exact matches — {REALTOR_FIRST_NAME} will hand-pick the closest fits. Submit your details →
               </p>
               <a href="#lead-form" className="inline-block bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-bold px-6 py-3 rounded-lg">
                 Get matched →
@@ -687,17 +691,17 @@ function AdsClientInner({
         </div>
       </section>
 
-      {/* ══ MEET AAMIR ══ */}
+      {/* ══ MEET REALTOR ══ */}
       <section className="bg-[#07111f] py-14 sm:py-20 border-t border-[#1e3a5f]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-3">
-            Your Milton Realtor
+            Your {config.CITY_NAME} Realtor
           </div>
-          <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">Aamir Yaqoob</h2>
-          <p className="text-[14px] text-[#94a3b8] mb-6">Sales Representative · RE/MAX Realty Specialists Inc.</p>
+          <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">{config.realtor.name}</h2>
+          <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_SHORT_NAME}</p>
 
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-2xl mx-auto mb-7">
-            With <strong className="text-white">14 years of full-time experience</strong> in Milton, Aamir knows that renting is about more than price — it&apos;s about finding the right fit, the right protection, and the right outcome. You&apos;ll work with him directly from first call to signed lease.
+            With <strong className="text-white">{config.realtor.yearsExperience} years of full-time experience</strong> in {config.CITY_NAME}, {REALTOR_FIRST_NAME} knows that renting is about more than price — it&apos;s about finding the right fit, the right protection, and the right outcome. You&apos;ll work with him directly from first call to signed lease.
           </p>
 
           <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -705,8 +709,8 @@ function AdsClientInner({
               "🏆 RE/MAX Hall of Fame",
               "🏆 RE/MAX Executive Award",
               "🏆 RE/MAX 100% Club",
-              "14 Years Full-Time",
-              "Milton Specialist",
+              `${config.realtor.yearsExperience} Years Full-Time`,
+              `${config.CITY_NAME} Specialist`,
             ].map((a) => (
               <span key={a} className="text-[12px] font-semibold bg-[#0c1e35] border border-[#1e3a5f] text-[#cbd5e1] px-3 py-1.5 rounded-full">
                 {a}
@@ -716,18 +720,18 @@ function AdsClientInner({
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href="tel:+16478399090"
+              href={`tel:${config.realtor.phoneE164}`}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold px-7 py-4 rounded-xl text-[15px] transition-colors"
             >
-              📞 Call (647) 839-9090
+              📞 Call {config.realtor.phone}
             </a>
             <a
-              href="https://wa.me/16478399090"
+              href={`https://wa.me/${config.realtor.phoneE164.replace(/^\+/, "")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#0c1e35] border border-[#1e3a5f] hover:border-[#f59e0b]/50 text-white font-bold px-7 py-4 rounded-xl text-[15px] transition-colors"
             >
-              💬 WhatsApp Aamir
+              💬 WhatsApp {REALTOR_FIRST_NAME}
             </a>
           </div>
         </div>
@@ -740,24 +744,24 @@ function AdsClientInner({
           <div className="space-y-3">
             {[
               {
-                q: "Do I pay Aamir to help me rent in Milton?",
+                q: `Do I pay ${REALTOR_FIRST_NAME} to help me rent in ${config.CITY_NAME}?`,
                 a: "No. Renter representation is paid by the listing side on most rental transactions. You get a full-service Realtor at no cost to you.",
               },
               {
                 q: "How quickly will I hear back?",
-                a: "Aamir personally replies within one business hour. Forms submitted after hours get a reply first thing the next morning — or call (647) 839-9090 for the fastest response.",
+                a: `${REALTOR_FIRST_NAME} personally replies within one business hour. Forms submitted after hours get a reply first thing the next morning — or call ${config.realtor.phone} for the fastest response.`,
               },
               {
                 q: "Can I see a listing today?",
-                a: "Often yes — if the property allows a same-day showing, Aamir will coordinate directly with the listing side. Some properties need 24 hours&apos; notice.",
+                a: `Often yes — if the property allows a same-day showing, ${REALTOR_FIRST_NAME} will coordinate directly with the listing side. Some properties need 24 hours&apos; notice.`,
               },
               {
                 q: "I already have a Realtor — should I still submit?",
-                a: "Please don&apos;t — stick with your current Realtor. If you&apos;re not currently represented, Aamir would love to help.",
+                a: `Please don&apos;t — stick with your current Realtor. If you&apos;re not currently represented, ${REALTOR_FIRST_NAME} would love to help.`,
               },
               {
                 q: "Where do these listings come from?",
-                a: "Every rental you see is pulled live from TREB (Toronto Regional Real Estate Board) — the same MLS® data used by every licensed Realtor in Ontario. Updated daily.",
+                a: `Every rental you see is pulled live from TREB (Toronto Regional Real Estate Board) — the same MLS® data used by every licensed Realtor in ${config.CITY_PROVINCE}. Updated daily.`,
               },
             ].map((item) => (
               <details key={item.q} className="group bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden">
@@ -776,7 +780,7 @@ function AdsClientInner({
       <section className="bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-[26px] sm:text-[34px] font-extrabold text-[#07111f] mb-3 leading-tight">
-            Ready to find your Milton rental?
+            Ready to find your {config.CITY_NAME} rental?
           </h2>
           <p className="text-[14px] sm:text-[16px] text-[#07111f]/80 mb-6 max-w-xl mx-auto">
             Get matched with live listings that fit your needs — usually within one business hour.
@@ -789,10 +793,10 @@ function AdsClientInner({
               Get my matches →
             </a>
             <a
-              href="tel:+16478399090"
+              href={`tel:${config.realtor.phoneE164}`}
               className="w-full sm:w-auto inline-block bg-white hover:bg-[#f8f9fb] text-[#07111f] font-extrabold px-8 py-4 rounded-xl text-[15px] transition-colors"
             >
-              📞 Call (647) 839-9090
+              📞 Call {config.realtor.phone}
             </a>
           </div>
         </div>
@@ -804,7 +808,7 @@ function AdsClientInner({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
             <Link href="/" className="shrink-0">
               <span className="text-[17px] font-extrabold">
-                <span className="text-[#f8f9fb]">miltonly</span>
+                <span className="text-[#f8f9fb]">{config.SITE_NAME.toLowerCase()}</span>
                 <span className="text-[#f59e0b]">.</span>
               </span>
             </Link>
@@ -812,11 +816,11 @@ function AdsClientInner({
               <Link href="/privacy" className="text-[#94a3b8] hover:text-[#f8f9fb]">Privacy Policy</Link>
               <Link href="/terms" className="text-[#94a3b8] hover:text-[#f8f9fb]">Terms</Link>
               <Link href="/about" className="text-[#94a3b8] hover:text-[#f8f9fb]">About</Link>
-              <a href="tel:+16478399090" className="text-[#94a3b8] hover:text-[#f8f9fb]">(647) 839-9090</a>
+              <a href={`tel:${config.realtor.phoneE164}`} className="text-[#94a3b8] hover:text-[#f8f9fb]">{config.realtor.phone}</a>
             </nav>
           </div>
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
-            © 2026 Miltonly.com · Aamir Yaqoob, Sales Representative · RE/MAX Realty Specialists Inc., Brokerage · Milton, Ontario<br />
+            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name} · {config.CITY_NAME}, {config.CITY_PROVINCE}<br />
             <span className="text-[#64748b]/80">MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). Information deemed reliable but not guaranteed.</span>
           </div>
         </div>
@@ -825,9 +829,9 @@ function AdsClientInner({
       {/* ══ MOBILE STICKY CTA ══ */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 py-2.5 flex gap-2">
         <a
-          href="tel:+16478399090"
+          href={`tel:${config.realtor.phoneE164}`}
           className="shrink-0 bg-[#0c1e35] border border-[#1e3a5f] text-white font-bold px-4 py-3 rounded-lg text-[13px]"
-          aria-label="Call Aamir"
+          aria-label={`Call ${REALTOR_FIRST_NAME}`}
         >
           📞
         </a>

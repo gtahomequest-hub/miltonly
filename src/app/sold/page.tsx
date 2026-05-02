@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import {
   getMiltonSoldTotals,
@@ -34,15 +35,15 @@ interface PageProps {
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const totals = await getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 }));
   return genMeta({
-    title: `Milton sold homes — ${totals.last90} recent real estate sales`,
-    description: `Browse real sold prices and closed transactions in Milton Ontario. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`,
-    canonical: `https://miltonly.com/sold${searchParams?.nbhd ? `?nbhd=${encodeURIComponent(searchParams.nbhd)}` : ""}`,
+    title: `${config.CITY_NAME} sold homes — ${totals.last90} recent real estate sales`,
+    description: `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`,
+    canonical: `${config.SITE_URL}/sold${searchParams?.nbhd ? `?nbhd=${encodeURIComponent(searchParams.nbhd)}` : ""}`,
     keywords: [
-      "Milton sold homes",
-      "Milton real estate sold prices",
-      "recent sales Milton Ontario",
-      "Milton house sold prices",
-      "Milton MLS sold data",
+      `${config.CITY_NAME} sold homes`,
+      `${config.CITY_NAME} real estate sold prices`,
+      `recent sales ${config.CITY_NAME} ${config.CITY_PROVINCE}`,
+      `${config.CITY_NAME} house sold prices`,
+      `${config.CITY_NAME} MLS sold data`,
     ],
   });
 }
@@ -78,14 +79,14 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
       <section className="bg-[#07111f] px-5 sm:px-11 py-12">
         <div className="max-w-6xl mx-auto">
           <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-3">
-            Milton · Ontario · Real Estate
+            {config.CITY_NAME} · {config.CITY_PROVINCE} · Real Estate
           </p>
           <h1 className="text-[32px] sm:text-[42px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
-            Milton sold homes
+            {config.CITY_NAME} sold homes
           </h1>
           <p className="text-[14px] sm:text-[16px] text-[rgba(248,249,251,0.6)] mt-3 max-w-xl leading-relaxed">
-            Real closed transactions from TREB MLS<sup>®</sup>. {totals.last90} homes sold on Milton
-            streets in the last 90 days ({totals.last30} in the last 30).
+            Real closed transactions from TREB MLS<sup>®</sup>. {totals.last90} homes sold on {config.CITY_NAME}
+            {" "}streets in the last 90 days ({totals.last30} in the last 30).
           </p>
           {!authed && (
             <Link

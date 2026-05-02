@@ -1,3 +1,5 @@
+import { config } from "@/lib/config";
+
 export default function TrustStrip() {
   return (
     <div className="bg-[#07111f] border-b border-[#1e3a5f]">
@@ -5,11 +7,11 @@ export default function TrustStrip() {
         <p className="text-[11px] sm:text-[12px] text-[#cbd5e1] leading-relaxed">
           <span className="text-[#fbbf24]">⭐ 5.0 on Google</span>
           <span className="text-[#64748b] mx-1.5">·</span>
-          <span className="font-semibold">150+ Milton families helped</span>
+          <span className="font-semibold">150+ {config.CITY_NAME} families helped</span>
           <span className="text-[#64748b] mx-1.5">·</span>
           <span className="font-semibold">$55M+ leased &amp; sold</span>
           <span className="text-[#64748b] mx-1.5">·</span>
-          <span className="font-semibold">14 years Milton-only</span>
+          <span className="font-semibold">{config.realtor.yearsExperience} years {config.CITY_NAME}-only</span>
         </p>
       </div>
     </div>

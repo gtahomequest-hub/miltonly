@@ -3,6 +3,11 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { hashUserData } from "@/lib/hash";
+import { config } from "@/lib/config";
+
+const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
+const REALTOR_INITIALS = config.realtor.name.split(" ").map((p) => p[0]).join("").toUpperCase();
+const REALTOR_PHONE_DIGITS = config.realtor.phoneE164.replace(/^\+/, "");
 
 interface Lead {
   id: string;
@@ -123,15 +128,15 @@ export default function ThankYouClient({
         <div className="max-w-3xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
           <Link href="/" className="shrink-0">
             <span className="text-[20px] font-extrabold tracking-[-0.5px]">
-              <span className="text-[#f8f9fb]">miltonly</span>
+              <span className="text-[#f8f9fb]">{config.SITE_NAME.toLowerCase()}</span>
               <span className="text-[#f59e0b]">.</span>
             </span>
           </Link>
           <a
-            href="tel:+16478399090"
+            href={`tel:${config.realtor.phoneE164}`}
             className="flex items-center gap-2 bg-[#f59e0b] text-[#07111f] text-[13px] font-bold px-4 py-2 rounded-lg hover:bg-[#fbbf24]"
           >
-            📞 (647) 839-9090
+            📞 {config.realtor.phone}
           </a>
         </div>
       </header>
@@ -143,10 +148,10 @@ export default function ThankYouClient({
             ✓
           </div>
           <h1 className="text-[28px] sm:text-[36px] font-extrabold tracking-[-0.02em] leading-[1.1] mb-2">
-            Thanks {firstName}! Aamir is already on it.
+            Thanks {firstName}! {REALTOR_FIRST_NAME} is already on it.
           </h1>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-xl mx-auto">
-            Your request is in his queue. You&apos;ll get 3–5 hand-picked Milton matches by end of business day.
+            Your request is in his queue. You&apos;ll get 3–5 hand-picked {config.CITY_NAME} matches by end of business day.
           </p>
         </div>
 
@@ -160,7 +165,7 @@ export default function ThankYouClient({
               {echoSummary}
             </p>
             <p className="text-[12px] text-[#94a3b8] mt-2">
-              Wrong details? Reply to Aamir&apos;s text and he&apos;ll fix it before sending matches.
+              Wrong details? Reply to {REALTOR_FIRST_NAME}&apos;s text and he&apos;ll fix it before sending matches.
             </p>
           </div>
         )}
@@ -172,10 +177,10 @@ export default function ThankYouClient({
           </p>
           <ol className="space-y-4">
             {[
-              { t: "Now", h: "You'll get a confirmation text from Aamir's number", b: "(647) 839-9090 — save it before he sends matches." },
-              { t: "~1 hour", h: "Aamir personally reviews your criteria", b: "Hand-picks 3–5 matches from the live TREB feed. No bots, no batch-and-blast." },
+              { t: "Now", h: `You'll get a confirmation text from ${REALTOR_FIRST_NAME}'s number`, b: `${config.realtor.phone} — save it before he sends matches.` },
+              { t: "~1 hour", h: `${REALTOR_FIRST_NAME} personally reviews your criteria`, b: "Hand-picks 3–5 matches from the live TREB feed. No bots, no batch-and-blast." },
               { t: "By end of business day", h: "Matches land in your texts", b: "With photos, prices, and links. Reply to lock in showings." },
-              { t: "Within 24–48 hours", h: "Showings booked", b: "Aamir handles the listing-side coordination. You just show up." },
+              { t: "Within 24–48 hours", h: "Showings booked", b: `${REALTOR_FIRST_NAME} handles the listing-side coordination. You just show up.` },
             ].map((s, i) => (
               <li key={i} className="flex gap-3">
                 <div className="shrink-0 w-7 h-7 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold text-[12px] flex items-center justify-center">
@@ -198,14 +203,14 @@ export default function ThankYouClient({
           </p>
           <div className="bg-[#07111f] rounded-2xl p-4 max-w-[320px] mx-auto">
             <div className="flex items-center gap-2 pb-3 border-b border-[#1e3a5f] mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold text-[13px] flex items-center justify-center">AY</div>
+              <div className="w-8 h-8 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold text-[13px] flex items-center justify-center">{REALTOR_INITIALS}</div>
               <div>
-                <p className="text-[13px] font-bold text-[#f8f9fb] leading-tight">Aamir Yaqoob</p>
-                <p className="text-[10px] text-[#94a3b8]">(647) 839-9090</p>
+                <p className="text-[13px] font-bold text-[#f8f9fb] leading-tight">{config.realtor.name}</p>
+                <p className="text-[10px] text-[#94a3b8]">{config.realtor.phone}</p>
               </div>
             </div>
             <div className="bg-[#1e3a5f] rounded-2xl rounded-tl-sm px-3 py-2.5 mb-2 text-[13px] text-[#f8f9fb] leading-relaxed">
-              Hi {firstName}! It&apos;s Aamir from RE/MAX 👋 Got your request{lead?.bedrooms !== null && lead?.bedrooms !== undefined ? ` for a ${beds}` : ""}{price ? ` under ${price}` : ""} in Milton. Pulling matches now — you&apos;ll have 3-5 listings by 4 PM today.
+              Hi {firstName}! It&apos;s {REALTOR_FIRST_NAME} from RE/MAX 👋 Got your request{lead?.bedrooms !== null && lead?.bedrooms !== undefined ? ` for a ${beds}` : ""}{price ? ` under ${price}` : ""} in {config.CITY_NAME}. Pulling matches now — you&apos;ll have 3-5 listings by 4 PM today.
             </div>
             <div className="bg-[#1e3a5f] rounded-2xl rounded-tl-sm px-3 py-2.5 text-[13px] text-[#f8f9fb] leading-relaxed">
               Quick Q: any preferred area (Hawthorne, Scott, Willmott)?
@@ -216,15 +221,15 @@ export default function ThankYouClient({
         {/* 3 secondary action cards */}
         <div className="grid sm:grid-cols-3 gap-3 mb-6">
           <a
-            href="tel:+16478399090"
+            href={`tel:${config.realtor.phoneE164}`}
             className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 text-center hover:border-[#f59e0b]/60 transition-colors"
           >
             <div className="text-[26px] mb-1">📞</div>
             <p className="text-[13px] font-bold text-[#f8f9fb]">Call now</p>
-            <p className="text-[11px] text-[#94a3b8] mt-0.5">(647) 839-9090</p>
+            <p className="text-[11px] text-[#94a3b8] mt-0.5">{config.realtor.phone}</p>
           </a>
           <a
-            href="https://wa.me/16478399090?text=Hi%20Aamir%2C%20I%20just%20submitted%20a%20rental%20request"
+            href={`https://wa.me/${REALTOR_PHONE_DIGITS}?text=Hi%20${encodeURIComponent(REALTOR_FIRST_NAME)}%2C%20I%20just%20submitted%20a%20rental%20request`}
             target="_blank"
             rel="noopener"
             className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 text-center hover:border-green-500/60 transition-colors"
@@ -250,12 +255,12 @@ export default function ThankYouClient({
           <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-2">
             PREFER A 15-MIN CALL?
           </p>
-          <p className="text-[13px] text-[#cbd5e1] mb-4">Pick a slot — Aamir will phone you back at the time you choose.</p>
+          <p className="text-[13px] text-[#cbd5e1] mb-4">Pick a slot — {REALTOR_FIRST_NAME} will phone you back at the time you choose.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {["Today 5–6 PM", "Today 6–7 PM", "Tomorrow 10–11 AM", "Tomorrow 12–1 PM", "Tomorrow 5–6 PM", "Saturday 10–11 AM"].map((s) => (
               <a
                 key={s}
-                href={`tel:+16478399090`}
+                href={`tel:${config.realtor.phoneE164}`}
                 className="text-center bg-[#07111f] border border-[#1e3a5f] hover:border-[#f59e0b] hover:text-[#f59e0b] text-[12px] font-semibold text-[#cbd5e1] rounded-lg py-2 px-2 transition-colors"
               >
                 {s}
@@ -263,7 +268,7 @@ export default function ThankYouClient({
             ))}
           </div>
           <p className="text-[10px] text-[#64748b] text-center mt-3">
-            All slots route to Aamir&apos;s direct line — booking confirms via the same number.
+            All slots route to {REALTOR_FIRST_NAME}&apos;s direct line — booking confirms via the same number.
           </p>
         </div>
 
@@ -273,9 +278,9 @@ export default function ThankYouClient({
             <p className="text-[11px] font-bold tracking-wider text-[#fbbf24] uppercase mb-2">
               📘 BONUS — IN YOUR INBOX
             </p>
-            <p className="text-[15px] font-bold text-[#f8f9fb] mb-1">Milton Renter&apos;s Cheat Sheet</p>
+            <p className="text-[15px] font-bold text-[#f8f9fb] mb-1">{config.CITY_NAME} Renter&apos;s Cheat Sheet</p>
             <p className="text-[12px] text-[#cbd5e1] leading-relaxed">
-              Aamir&apos;s 6-page PDF: what landlords actually ask for, prices by neighbourhood, and 3 red flags to spot. Check your email — it landed there moments ago.
+              {REALTOR_FIRST_NAME}&apos;s 6-page PDF: what landlords actually ask for, prices by neighbourhood, and 3 red flags to spot. Check your email — it landed there moments ago.
             </p>
           </div>
         )}
@@ -283,33 +288,33 @@ export default function ThankYouClient({
         {/* Testimonials */}
         <div className="mb-6">
           <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-3 text-center">
-            RECENT MILTON RENTERS
+            RECENT {config.CITY_NAME.toUpperCase()} RENTERS
           </p>
           <div className="grid md:grid-cols-2 gap-3">
             {[
-              { name: "Priya S.", quote: "Found us a 2-bed in Hawthorne in 4 days. Aamir actually picks up the phone." },
+              { name: "Priya S.", quote: `Found us a 2-bed in Hawthorne in 4 days. ${REALTOR_FIRST_NAME} actually picks up the phone.` },
               { name: "James R.", quote: "Skipped the Zumper rabbit hole entirely. Three matches, signed lease in a week." },
             ].map((t) => (
               <div key={t.name} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4">
                 <p className="text-[14px] text-[#f8f9fb] leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                <p className="text-[11px] text-[#94a3b8] mt-2 font-semibold">— {t.name}, Milton renter</p>
+                <p className="text-[11px] text-[#94a3b8] mt-2 font-semibold">— {t.name}, {config.CITY_NAME} renter</p>
               </div>
             ))}
           </div>
         </div>
 
         <p className="text-center text-[11px] text-[#64748b] mt-6">
-          🛡️ Free for renters. Aamir is paid by the listing side, never by you.
+          🛡️ Free for renters. {REALTOR_FIRST_NAME} is paid by the listing side, never by you.
         </p>
       </main>
 
       {/* Sticky mobile CTA */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 py-2.5 flex gap-2">
         <a
-          href="tel:+16478399090"
+          href={`tel:${config.realtor.phoneE164}`}
           className="flex-1 text-center bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold py-3 rounded-lg text-[14px]"
         >
-          📞 Call Aamir now
+          📞 Call {REALTOR_FIRST_NAME} now
         </a>
       </div>
       <div className="md:hidden h-[60px]" aria-hidden />

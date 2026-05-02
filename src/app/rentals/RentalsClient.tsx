@@ -7,7 +7,11 @@ import { formatPriceFull, daysAgo } from "@/lib/format";
 import AgentContactSection from "@/components/AgentContactSection";
 import { useUser } from "@/components/UserProvider";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 import "./rentals.css";
+
+const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
+const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
 const FOOTER_NEIGHBOURHOODS = ["Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton"];
 const toFooterSlug = (n: string) =>
@@ -416,11 +420,11 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <div className="live-row">
             <div className="live-badge"><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
-            <a href="tel:+16478399090" className="hero-phone-link" style={{color:"#f59e0b"}}>
-              📞 Call Aamir · (647) 839-9090
+            <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#f59e0b"}}>
+              📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}
             </a>
           </div>
-          <h1>Find your next<br />home in <em>Milton</em></h1>
+          <h1>Find your next<br />home in <em>{config.CITY_NAME}</em></h1>
           <p className="hl-desc">Browse every active rental — condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
 
           {/* Search box */}
@@ -442,15 +446,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               <div className="sdrop open">
                 <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "All"); setSearchQuery(""); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico am">🏠</div>
-                  <div><div className="sdi-main">See all {totalRentals} active Milton rentals</div><div className="sdi-sub">Condos, townhouses, detached — all listings</div></div>
+                  <div><div className="sdi-main">See all {totalRentals} active {config.CITY_NAME} rentals</div><div className="sdi-sub">Condos, townhouses, detached — all listings</div></div>
                 </div>
                 <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "Condo"); setSearchQuery(""); showToast("🏢 Showing condos only"); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico bl">🏢</div>
-                  <div><div className="sdi-main">Show condos only</div><div className="sdi-sub">All Milton condo rentals</div></div>
+                  <div><div className="sdi-main">Show condos only</div><div className="sdi-sub">All {config.CITY_NAME} condo rentals</div></div>
                 </div>
                 <div className="sdi" onClick={() => { setSearchQuery("Main St"); setSearchOpen(false); showToast("🔍 Searching Main St..."); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico gr">📍</div>
-                  <div><div className="sdi-main">Main Street rentals</div><div className="sdi-sub">Popular Milton street</div></div>
+                  <div><div className="sdi-main">Main Street rentals</div><div className="sdi-sub">Popular {config.CITY_NAME} street</div></div>
                 </div>
               </div>
             )}
@@ -533,7 +537,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           </div>
 
           <div className="trust-row">
-            14 Years Full-Time Experience · Tenants · Landlords · Buyers · Sellers · Milton Specialist · RE/MAX Hall of Fame
+            {config.realtor.yearsExperience} Years Full-Time Experience · Tenants · Landlords · Buyers · Sellers · {config.CITY_NAME} Specialist · RE/MAX Hall of Fame
           </div>
         </div>
 
@@ -602,7 +606,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     <div className="q-text">Your matches are ready.</div>
                     <div className="contact-hdr">
                       <div className="ch-num">{filteredListings.length}</div>
-                      <div className="ch-lbl">Milton rentals match what you described</div>
+                      <div className="ch-lbl">{config.CITY_NAME} rentals match what you described</div>
                     </div>
                     <div className="cf"><label className="cf-lbl">Full name</label><input className="cf-input" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="First and last name" /></div>
                     <div className="cf"><label className="cf-lbl">Email</label><input className="cf-input" id="wiz-email" type="email" placeholder="your@email.com" /></div>
@@ -633,7 +637,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     }}>
                       Show me matching rentals →
                     </button>
-                    <div className="submit-note">Aamir usually replies within the hour · No spam</div>
+                    <div className="submit-note">{REALTOR_FIRST_NAME} usually replies within the hour · No spam</div>
                     <div className="back-lnk" onClick={() => setWizStep(2)}>← Back</div>
                   </div>
                 )}
@@ -643,7 +647,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               <div className="success-screen show">
                 <div className="ss-check">✓</div>
                 <div className="ss-title">Thanks, {userName}!</div>
-                <div className="ss-sub">We&apos;ll send you matches within the hour. Aamir will follow up personally.</div>
+                <div className="ss-sub">We&apos;ll send you matches within the hour. {REALTOR_FIRST_NAME} will follow up personally.</div>
                 <button className="ss-alert" onClick={async () => {
                   await submitLead({ firstName: userName, source: "new-match-alert", intent: "renter" });
                   showToast("🔔 Alert set! You'll hear from us first.");
@@ -660,7 +664,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             <div className="bc-head">
               <div className="bc-eyebrow">Book a showing</div>
               <h2 className="bc-title" style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,lineHeight:1.09,margin:0}}>Usually confirmed within <span style={{color:"#f59e0b"}}>the hour</span></h2>
-              <div className="bc-sub">Name any Milton listing. Aamir typically confirms your showing within an hour during business hours.</div>
+              <div className="bc-sub">Name any {config.CITY_NAME} listing. {REALTOR_FIRST_NAME} typically confirms your showing within an hour during business hours.</div>
             </div>
             <div className="bc-form">
               <div><label className="bc-lbl">MLS # or address</label><input className="bc-input" id="bc-mls" placeholder="e.g. W12345678 or 142 Laurier Ave" /></div>
@@ -672,7 +676,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 const mls = (document.getElementById("bc-mls") as HTMLInputElement).value;
                 if (!name) { showToast("Please enter your name."); (document.getElementById("bc-name") as HTMLInputElement).focus(); return; }
                 if (!phone) { showToast("Please enter your phone number."); (document.getElementById("bc-phone") as HTMLInputElement).focus(); return; }
-                const ok = await submitLead({ firstName: name, phone, source: "1hr-booking", intent: "renter", street: mls || "Any Milton rental" });
+                const ok = await submitLead({ firstName: name, phone, source: "1hr-booking", intent: "renter", street: mls || `Any ${config.CITY_NAME} rental` });
                 if (ok) {
                   showToast(`⏱ Booking confirmed! We'll call ${phone} within 15 minutes.`);
                   (document.getElementById("bc-name") as HTMLInputElement).value = "";
@@ -680,8 +684,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                   (document.getElementById("bc-mls") as HTMLInputElement).value = "";
                 }
               }}><em>⏱</em> Request my showing</button>
-              <div className="bc-trust">No obligation · Aamir usually calls back within the hour</div>
-              <div className="bc-agent">Aamir Yaqoob · RE/MAX Realty Specialists Inc.</div>
+              <div className="bc-trust">No obligation · {REALTOR_FIRST_NAME} usually calls back within the hour</div>
+              <div className="bc-agent">{config.realtor.name} · {BROKERAGE_SHORT_NAME}</div>
             </div>
           </div>
           <div className="micro-grid">
@@ -698,7 +702,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         <div className="ra-header">
           <span className="ra-eyebrow">Rental Market</span>
           <div className="ra-titles">
-            <span className="ra-title">Average Rent in Milton</span>
+            <span className="ra-title">Average Rent in {config.CITY_NAME}</span>
             <span className="ra-subtitle">Live data from {totalRentals} active listings · Click to filter</span>
           </div>
         </div>
@@ -738,12 +742,12 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         </div>
       </div>
 
-      {/* ═══ WHY MILTONLY TRUST SECTION ═══ */}
+      {/* ═══ WHY {SITE_NAME} TRUST SECTION ═══ */}
       <section className="trust-why">
         <div className="trust-why-inner">
-          <div className="trust-why-item"><span className="trust-why-ico">✓</span>Every Milton rental live from TREB — updated daily</div>
+          <div className="trust-why-item"><span className="trust-why-ico">✓</span>Every {config.CITY_NAME} rental live from TREB — updated daily</div>
           <div className="trust-why-item"><span className="trust-why-ico">✓</span>No fake listings — all verified MLS data</div>
-          <div className="trust-why-item"><span className="trust-why-ico">⏱</span>Aamir confirms your showing within the hour</div>
+          <div className="trust-why-item"><span className="trust-why-ico">⏱</span>{REALTOR_FIRST_NAME} confirms your showing within the hour</div>
         </div>
       </section>
 
@@ -751,7 +755,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       <div className="filter-bar" id="filter-bar">
         <div className="fb-top">
           <div className="fb-count">
-            <em>{totalRentals}</em> Milton rentals
+            <em>{totalRentals}</em> {config.CITY_NAME} rentals
             {filteredListings.length !== totalRentals && (
               <span style={{ fontSize: 11, color: "#f59e0b", marginLeft: 8 }}>· {filteredListings.length} match filters</span>
             )}
@@ -840,7 +844,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       <section className="listings-sec" id="listings">
         <div className="ls-header">
           <div>
-            <div className="ls-title">{wizSuccess ? `${userName}'s Milton matches` : "All Milton rentals"}</div>
+            <div className="ls-title">{wizSuccess ? `${userName}'s ${config.CITY_NAME} matches` : `All ${config.CITY_NAME} rentals`}</div>
             <div className="ls-sub">{filteredListings.length} active listings · sorted by {sortBy === "price_asc" ? "price low–high" : sortBy === "price_desc" ? "price high–low" : "newest"}</div>
           </div>
         </div>
@@ -892,7 +896,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                         <span>⏱ {days}d on market</span>
                       </div>
                       <div style={{fontSize:11,color:"#94a3b8",marginTop:-4,marginBottom:8}}>
-                        {l.listOfficeName ? titleCase(l.listOfficeName) : "MLS®"} · {days === 0 ? "Listed today" : `${days}d on Miltonly`}
+                        {l.listOfficeName ? titleCase(l.listOfficeName) : "MLS®"} · {days === 0 ? "Listed today" : `${days}d on ${config.SITE_NAME}`}
                       </div>
 
                       {/* ── LIST VIEW EXTRAS — ALL REAL DATA ── */}
@@ -977,7 +981,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       >
         <div>
           <p className="text-[14px] font-semibold text-[#f8f9fb]">🏠 Looking for exclusive off-market rentals?</p>
-          <p className="text-[12px] text-[#94a3b8] mt-0.5">Aamir has exclusive listings not on MLS</p>
+          <p className="text-[12px] text-[#94a3b8] mt-0.5">{REALTOR_FIRST_NAME} has exclusive listings not on MLS</p>
         </div>
         <span className="text-[13px] font-semibold text-[#f59e0b] shrink-0">View exclusive listings →</span>
       </Link>
@@ -1014,18 +1018,18 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       <footer className="rentals-footer">
         <div className="rf-inner">
           <div className="rf-col">
-            <h4>Popular Milton streets</h4>
+            <h4>Popular {config.CITY_NAME} streets</h4>
             <ul>
               {topStreets.map((s) => (
                 <li key={s.slug}><Link href={`/streets/${s.slug}`}>{s.name}</Link></li>
               ))}
               {topStreets.length === 0 && (
-                <li><Link href="/streets">Browse all Milton streets →</Link></li>
+                <li><Link href="/streets">Browse all {config.CITY_NAME} streets →</Link></li>
               )}
             </ul>
           </div>
           <div className="rf-col">
-            <h4>Milton neighbourhoods</h4>
+            <h4>{config.CITY_NAME} neighbourhoods</h4>
             <ul>
               {FOOTER_NEIGHBOURHOODS.map((n) => (
                 <li key={n}><Link href={`/neighbourhoods/${toFooterSlug(n)}`}>{n}</Link></li>
@@ -1035,8 +1039,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <div className="rf-col">
             <h4>Quick links</h4>
             <ul>
-              <li><Link href="/listings">Buy in Milton</Link></li>
-              <li><Link href="/sell">Sell in Milton</Link></li>
+              <li><Link href="/listings">Buy in {config.CITY_NAME}</Link></li>
+              <li><Link href="/sell">Sell in {config.CITY_NAME}</Link></li>
               <li><Link href="/schools">Schools</Link></li>
               <li><Link href="/mosques">Mosques</Link></li>
               <li><Link href="/about">About</Link></li>
@@ -1044,7 +1048,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           </div>
         </div>
         <div className="rf-bottom">
-          Aamir Yaqoob · RE/MAX Realty Specialists Inc. · Milton Ontario · <a href="tel:+16478399090">(647) 839-9090</a>
+          {config.realtor.name} · {BROKERAGE_SHORT_NAME} · {config.CITY_NAME} {config.CITY_PROVINCE} · <a href={`tel:${config.realtor.phoneE164}`}>{config.realtor.phone}</a>
         </div>
       </footer>
 

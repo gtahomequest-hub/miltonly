@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { formatPriceFull } from "@/lib/format";
+import { config } from "@/lib/config";
 import SchemaScript from "@/components/SchemaScript";
 import {
   generateLocalBusinessSchema,
@@ -32,7 +33,7 @@ async function getNeighbourhoodData(slug: string) {
   const allHoods = await prisma.listing.groupBy({
     by: ["neighbourhood"],
     _count: true,
-    where: { city: "Milton", permAdvertise: true },
+    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
   });
 
   const match = allHoods.find(
@@ -163,14 +164,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getNeighbourhoodData(params.slug);
   if (!data) return { title: "Neighbourhood Not Found" };
   return {
-    title: `${data.name} Milton — Homes For Sale, Prices & Neighbourhood Guide`,
-    description: `Explore ${data.name} in Milton Ontario. ${data.activeCount} active listings, avg price ${formatPriceFull(data.avgPrice)}. Streets, schools, market data. Updated daily.`,
+    title: `${data.name} ${config.CITY_NAME} — Homes For Sale, Prices & Neighbourhood Guide`,
+    description: `Explore ${data.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${data.activeCount} active listings, avg price ${formatPriceFull(data.avgPrice)}. Streets, schools, market data. Updated daily.`,
     alternates: {
-      canonical: `https://miltonly.com/neighbourhoods/${params.slug}`,
+      canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}`,
     },
     openGraph: {
-      title: `${data.name} Milton Real Estate — Live Data`,
-      description: `${data.activeCount} homes for sale in ${data.name}, Milton. Avg ${formatPriceFull(data.avgPrice)}.`,
+      title: `${data.name} ${config.CITY_NAME} Real Estate — Live Data`,
+      description: `${data.activeCount} homes for sale in ${data.name}, ${config.CITY_NAME}. Avg ${formatPriceFull(data.avgPrice)}.`,
     },
   };
 }
@@ -181,40 +182,40 @@ export default async function NeighbourhoodPage({ params }: Props) {
 
   const faqs = [
     {
-      question: `What is the average home price in ${data.name}, Milton?`,
-      answer: `The average home price in ${data.name}, Milton is ${formatPriceFull(data.avgPrice)} based on ${data.totalListings} listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.`,
+      question: `What is the average home price in ${data.name}, ${config.CITY_NAME}?`,
+      answer: `The average home price in ${data.name}, ${config.CITY_NAME} is ${formatPriceFull(data.avgPrice)} based on ${data.totalListings} listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.`,
     },
     {
-      question: `How many homes are for sale in ${data.name} Milton?`,
-      answer: `There are currently ${data.activeCount} active listings in ${data.name}, Milton. Property types include ${Object.keys(data.byType).join(", ")}.`,
+      question: `How many homes are for sale in ${data.name} ${config.CITY_NAME}?`,
+      answer: `There are currently ${data.activeCount} active listings in ${data.name}, ${config.CITY_NAME}. Property types include ${Object.keys(data.byType).join(", ")}.`,
     },
     {
-      question: `What streets are in ${data.name}, Milton?`,
+      question: `What streets are in ${data.name}, ${config.CITY_NAME}?`,
       answer: `Popular streets in ${data.name} include ${data.topStreets.slice(0, 5).map((s) => s.name).join(", ")}. These streets have the most listings and transaction activity in the neighbourhood.`,
     },
     {
-      question: `How fast do homes sell in ${data.name} Milton?`,
-      answer: `Active listings in ${data.name}, Milton average ${data.avgDOM || "—"} days on market. Register for full MLS® access to see detailed market data, including historical transaction records for this neighbourhood.`,
+      question: `How fast do homes sell in ${data.name} ${config.CITY_NAME}?`,
+      answer: `Active listings in ${data.name}, ${config.CITY_NAME} average ${data.avgDOM || "—"} days on market. Register for full MLS® access to see detailed market data, including historical transaction records for this neighbourhood.`,
     },
   ];
 
   const schemas = [
     generateBreadcrumbSchema([
-      { name: "Home", url: "https://miltonly.com" },
+      { name: "Home", url: config.SITE_URL },
       {
         name: "Neighbourhoods",
-        url: "https://miltonly.com/neighbourhoods",
+        url: `${config.SITE_URL}/neighbourhoods`,
       },
       {
-        name: `${data.name}, Milton`,
-        url: `https://miltonly.com/neighbourhoods/${params.slug}`,
+        name: `${data.name}, ${config.CITY_NAME}`,
+        url: `${config.SITE_URL}/neighbourhoods/${params.slug}`,
       },
     ]),
     generateLocalBusinessSchema(),
     generateNeighbourhoodSchema({
       name: data.name,
       slug: data.slug,
-      description: `Real estate data for ${data.name} neighbourhood in Milton Ontario. ${data.activeCount} active listings, average price ${formatPriceFull(data.avgPrice)}.`,
+      description: `Real estate data for ${data.name} neighbourhood in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${data.activeCount} active listings, average price ${formatPriceFull(data.avgPrice)}.`,
     }),
     {
       "@context": "https://schema.org",
@@ -238,7 +239,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
             <span>&rsaquo;</span>
             <Link href="/neighbourhoods" className="hover:text-[#07111f]">Neighbourhoods</Link>
             <span>&rsaquo;</span>
-            <span className="text-[#475569] font-medium">{data.name}, Milton</span>
+            <span className="text-[#475569] font-medium">{data.name}, {config.CITY_NAME}</span>
           </div>
         </div>
 
@@ -248,10 +249,10 @@ export default async function NeighbourhoodPage({ params }: Props) {
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
               <div>
                 <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-3">
-                  {data.name} &middot; Milton &middot; Ontario
+                  {data.name} &middot; {config.CITY_NAME} &middot; {config.CITY_PROVINCE}
                 </p>
                 <h1 className="text-[32px] sm:text-[40px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
-                  {data.name}, Milton
+                  {data.name}, {config.CITY_NAME}
                 </h1>
                 <p className="text-[14px] sm:text-[16px] text-[rgba(248,249,251,0.6)] mt-3 max-w-lg leading-relaxed">
                   {data.totalListings} listings &middot; Average {formatPriceFull(data.avgPrice)} &middot; {data.activeCount} active right now
@@ -476,13 +477,13 @@ export default async function NeighbourhoodPage({ params }: Props) {
               <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6">
                 <p className="text-[14px] font-bold text-[#f8f9fb] mb-2">Talk to an expert</p>
                 <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-4">
-                  14 years of Milton experience
+                  {config.realtor.yearsExperience} years of {config.CITY_NAME} experience
                 </p>
                 <a
-                  href="tel:+16478399090"
+                  href={`tel:${config.realtor.phoneE164}`}
                   className="block w-full bg-[#f59e0b] text-[#07111f] text-[12px] font-bold rounded-lg py-2.5 text-center"
                 >
-                  Call Aamir
+                  Call {config.realtor.name.split(" ")[0]}
                 </a>
               </div>
             </div>

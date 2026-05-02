@@ -1,5 +1,9 @@
-// Comparison table — Aamir vs DIY vs Out-of-area.
+// Comparison table — realtor vs DIY vs Out-of-area.
 // Desktop: 4-col grid. Mobile (<768px): rows stack as cards.
+
+import { config } from "@/lib/config";
+
+const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
 const ROWS: Array<{
   label: string;
@@ -8,10 +12,10 @@ const ROWS: Array<{
   out: { mark: "yes" | "no" | "partial"; text: string };
 }> = [
   {
-    label: "Live TREB feed (every Milton listing)",
+    label: `Live TREB feed (every ${config.CITY_NAME} listing)`,
     aamir: { mark: "yes", text: "Yes — same data MLS gives me" },
     diy: { mark: "no", text: "Delayed 24–48 hrs" },
-    out: { mark: "partial", text: "Yes but no Milton context" },
+    out: { mark: "partial", text: `Yes but no ${config.CITY_NAME} context` },
   },
   {
     label: "Replies within 60 min",
@@ -20,8 +24,8 @@ const ROWS: Array<{
     out: { mark: "partial", text: "24–72 hr response typical" },
   },
   {
-    label: "Knows Milton schools, transit, builders",
-    aamir: { mark: "yes", text: "Lived & worked here 14 years" },
+    label: `Knows ${config.CITY_NAME} schools, transit, builders`,
+    aamir: { mark: "yes", text: `Lived & worked here ${config.realtor.yearsExperience} years` },
     diy: { mark: "no", text: "You research alone" },
     out: { mark: "partial", text: "Generic city info" },
   },
@@ -41,7 +45,7 @@ const ROWS: Array<{
     label: "Same-day showings",
     aamir: { mark: "yes", text: "Yes when the property allows" },
     diy: { mark: "no", text: "You coordinate yourself" },
-    out: { mark: "partial", text: "Limited Milton availability" },
+    out: { mark: "partial", text: `Limited ${config.CITY_NAME} availability` },
   },
   {
     label: "Cost to renter",
@@ -62,7 +66,7 @@ export default function ComparisonTable() {
     <section className="bg-[#0a1628] border-t border-[#1e3a5f] py-14 sm:py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <p className="text-[11px] font-bold tracking-[0.18em] text-[#f59e0b] uppercase mb-3 text-center">
-          Why Aamir vs Doing It Yourself
+          Why {REALTOR_FIRST_NAME} vs Doing It Yourself
         </p>
         <h2 className="text-[26px] sm:text-[34px] font-extrabold text-white tracking-[-0.02em] leading-[1.15] text-center mb-8 sm:mb-10 max-w-3xl mx-auto">
           The difference between getting <em className="not-italic text-[#cbd5e1]">a</em> place and getting{" "}
@@ -76,7 +80,7 @@ export default function ComparisonTable() {
               <tr className="bg-[#0c1e35]">
                 <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-[#94a3b8]"></th>
                 <th className="px-5 py-4 bg-[#f59e0b]/10 border-l border-r border-[#f59e0b]/30">
-                  <p className="text-[13px] font-extrabold text-[#fbbf24]">Aamir Yaqoob</p>
+                  <p className="text-[13px] font-extrabold text-[#fbbf24]">{config.realtor.name}</p>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#fbbf24]/70 mt-0.5">RE/MAX Hall of Fame</p>
                 </th>
                 <th className="px-5 py-4">
@@ -126,7 +130,7 @@ export default function ComparisonTable() {
             <div key={r.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden">
               <p className="px-4 py-3 text-[13px] font-bold text-white border-b border-[#1e3a5f]">{r.label}</p>
               <div className="bg-[#f59e0b]/10 border-b border-[#f59e0b]/30 px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#fbbf24] mb-1">Aamir</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#fbbf24] mb-1">{REALTOR_FIRST_NAME}</p>
                 <p className="text-[12px] text-[#f8f9fb] flex items-start gap-2">
                   <MarkIcon mark={r.aamir.mark} />
                   <span>{r.aamir.text}</span>
@@ -155,7 +159,7 @@ export default function ComparisonTable() {
             href="#lead-form"
             className="inline-block bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold text-[15px] px-8 py-4 rounded-xl shadow-lg shadow-[#f59e0b]/20 transition-all"
           >
-            Get matched with Aamir →
+            Get matched with {REALTOR_FIRST_NAME} →
           </a>
         </div>
       </div>

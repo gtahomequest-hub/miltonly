@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import AdsClient from "./AdsClient";
 
 export const metadata = genMeta({
-  title: "Milton Rentals — Get Matched by a Local Expert",
-  description: "Live TREB rental listings in Milton Ontario, matched to your needs by RE/MAX Hall-of-Fame Realtor Aamir Yaqoob. Same-day showings when available.",
-  canonical: "https://miltonly.com/rentals/ads",
+  title: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
+  description: `Live TREB rental listings in ${config.CITY_NAME} ${config.CITY_PROVINCE}, matched to your needs by RE/MAX Hall-of-Fame Realtor ${config.realtor.name}. Same-day showings when available.`,
+  canonical: `${config.SITE_URL}/rentals/ads`,
   noIndex: true,
 });
 
@@ -20,7 +21,7 @@ const str = (sp: SP, k: string) => {
 // Always-applied lead-page rentals filter — never relaxed.
 const ALWAYS_WHERE = {
   transactionType: "For Lease" as const,
-  city: "Milton",
+  city: config.PRISMA_CITY_VALUE,
   permAdvertise: true,
 };
 
@@ -73,7 +74,7 @@ export default async function RentalsAdsPage({
   }
 
   // TODO: remove this floor after week 4 of paid traffic — early-launch
-  // safeguard so the urgency line doesn't read "0 Milton renters got matched".
+  // safeguard so the urgency line doesn't read "0 ${CITY_NAME} renters got matched".
   const renterCount = renterCountRaw < 5 ? 12 : renterCountRaw;
 
   // Hero image selection — condo → interior, house types → neighbourhood, default → interior
@@ -86,29 +87,31 @@ export default async function RentalsAdsPage({
   const heroSrc = HERO_BY_TYPE[qType] || "/rentals-ads/hero-default.png";
 
   // Schema.org JSON-LD for /rentals/ads — RealEstateAgent + LocalBusiness + WebPage.
-  // Public Mega Milton GBP address used for LocalBusiness; authorized by agent.
+  // Public Mega ${CITY_NAME} GBP address used for LocalBusiness; authorized by agent.
+  const realtorFirstName = config.realtor.name.split(" ")[0].toLowerCase();
+  const brokerageShort = config.brokerage.name.replace(", Brokerage", "");
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "RealEstateAgent",
-        "@id": "https://www.miltonly.com/#aamir",
-        name: "Aamir Yaqoob",
-        jobTitle: "Sales Representative",
+        "@id": `${config.SITE_URL_WWW}/#${realtorFirstName}`,
+        name: config.realtor.name,
+        jobTitle: config.realtor.title,
         worksFor: {
           "@type": "RealEstateAgent",
-          name: "RE/MAX Realty Specialists Inc.",
+          name: brokerageShort,
         },
-        telephone: "+1-647-839-9090",
-        url: "https://www.miltonly.com",
+        telephone: config.realtor.phoneE164,
+        url: config.SITE_URL_WWW,
         areaServed: [
-          { "@type": "City", name: "Milton", addressRegion: "ON", addressCountry: "CA" },
-          { "@type": "City", name: "Halton Hills", addressRegion: "ON", addressCountry: "CA" },
-          { "@type": "City", name: "Oakville", addressRegion: "ON", addressCountry: "CA" },
+          { "@type": "City", name: config.CITY_NAME, addressRegion: config.CITY_PROVINCE_CODE, addressCountry: config.CITY_COUNTRY_CODE },
+          { "@type": "City", name: "Halton Hills", addressRegion: config.CITY_PROVINCE_CODE, addressCountry: config.CITY_COUNTRY_CODE },
+          { "@type": "City", name: "Oakville", addressRegion: config.CITY_PROVINCE_CODE, addressCountry: config.CITY_COUNTRY_CODE },
         ],
         knowsAbout: [
-          "Milton Real Estate",
-          "Milton Rentals",
+          `${config.CITY_NAME} Real Estate`,
+          `${config.CITY_NAME} Rentals`,
           "Lease Negotiation",
           "Property Inspection",
           "Halton Region MLS",
@@ -123,30 +126,30 @@ export default async function RentalsAdsPage({
       },
       {
         "@type": "LocalBusiness",
-        "@id": "https://www.miltonly.com/#business",
-        name: "Aamir Yaqoob — Milton Real Estate Agent | RE/MAX",
-        image: "https://www.miltonly.com/og-image.jpg",
-        telephone: "+1-647-839-9090",
-        url: "https://www.miltonly.com",
+        "@id": `${config.SITE_URL_WWW}/#business`,
+        name: `${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent | RE/MAX`,
+        image: `${config.SITE_URL_WWW}/og-image.jpg`,
+        telephone: config.realtor.phoneE164,
+        url: config.SITE_URL_WWW,
         address: {
           "@type": "PostalAddress",
           streetAddress: "178 Lemieux Ct",
-          addressLocality: "Milton",
-          addressRegion: "ON",
+          addressLocality: config.CITY_NAME,
+          addressRegion: config.CITY_PROVINCE_CODE,
           postalCode: "L9E 1E9",
-          addressCountry: "CA",
+          addressCountry: config.CITY_COUNTRY_CODE,
         },
-        areaServed: "Milton, Ontario, Canada",
+        areaServed: `${config.CITY_NAME}, ${config.CITY_PROVINCE}, ${config.CITY_COUNTRY}`,
         priceRange: "$$",
       },
       {
         "@type": "WebPage",
-        "@id": "https://www.miltonly.com/rentals/ads",
-        name: "Milton Rentals — Get Matched by a Local Expert",
+        "@id": `${config.SITE_URL_WWW}/rentals/ads`,
+        name: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
         description:
-          "Find your Milton rental with Aamir Yaqoob — RE/MAX Hall of Fame, 14 years in Milton. Live TREB listings hand-matched. Reply within 60 min.",
-        isPartOf: { "@id": "https://www.miltonly.com/#business" },
-        about: { "@id": "https://www.miltonly.com/#aamir" },
+          `Find your ${config.CITY_NAME} rental with ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live TREB listings hand-matched. Reply within 60 min.`,
+        isPartOf: { "@id": `${config.SITE_URL_WWW}/#business` },
+        about: { "@id": `${config.SITE_URL_WWW}/#${realtorFirstName}` },
       },
     ],
   };

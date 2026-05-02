@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getSchoolBySlug, getSchoolsByNeighbourhood } from "@/lib/schools";
 import { prisma } from "@/lib/prisma";
 import { formatPriceFull } from "@/lib/format";
+import { config } from "@/lib/config";
 import SchemaScript from "@/components/SchemaScript";
 import {
   generateBreadcrumbSchema,
@@ -23,20 +24,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!school) return { title: "School Not Found" };
 
   return {
-    title: `Homes Near ${school.name} Milton — Prices, Listings & School Zone Data`,
-    description: `Find homes for sale near ${school.name} in ${school.neighbourhood}, Milton Ontario. Live TREB listings, average prices, and neighbourhood data for families. ${school.grades} · ${school.boardName}.`,
-    alternates: { canonical: `https://miltonly.com/schools/${params.slug}` },
+    title: `Homes Near ${school.name} ${config.CITY_NAME} — Prices, Listings & School Zone Data`,
+    description: `Find homes for sale near ${school.name} in ${school.neighbourhood}, ${config.CITY_NAME} ${config.CITY_PROVINCE}. Live TREB listings, average prices, and neighbourhood data for families. ${school.grades} · ${school.boardName}.`,
+    alternates: { canonical: `${config.SITE_URL}/schools/${params.slug}` },
     keywords: [
       `homes near ${school.name}`,
       `${school.name} school zone`,
-      `${school.name} Milton`,
+      `${school.name} ${config.CITY_NAME}`,
       `houses for sale near ${school.name}`,
-      `${school.neighbourhood} Milton homes`,
-      `Milton ${school.level} schools`,
-      `${school.boardName} Milton`,
+      `${school.neighbourhood} ${config.CITY_NAME} homes`,
+      `${config.CITY_NAME} ${school.level} schools`,
+      `${school.boardName} ${config.CITY_NAME}`,
     ],
     openGraph: {
-      title: `Homes Near ${school.name} — ${school.neighbourhood}, Milton`,
+      title: `Homes Near ${school.name} — ${school.neighbourhood}, ${config.CITY_NAME}`,
       description: `Find homes for sale in the ${school.name} school zone. ${school.grades} · ${school.boardName}. Live listings updated daily.`,
     },
   };
@@ -51,7 +52,7 @@ export default async function SchoolDetailPage({ params }: Props) {
     where: {
       status: "active",
       permAdvertise: true,
-      city: "Milton",
+      city: config.PRISMA_CITY_VALUE,
       neighbourhood: { contains: school.neighbourhood, mode: "insensitive" },
     },
     orderBy: { price: "asc" },
@@ -64,7 +65,7 @@ export default async function SchoolDetailPage({ params }: Props) {
   const allListings = await prisma.listing.findMany({
     where: {
       permAdvertise: true,
-      city: "Milton",
+      city: config.PRISMA_CITY_VALUE,
       neighbourhood: { contains: school.neighbourhood, mode: "insensitive" },
     },
     select: { price: true, status: true, propertyType: true },
@@ -129,8 +130,8 @@ export default async function SchoolDetailPage({ params }: Props) {
   // FAQs
   const faqs = [
     {
-      question: `What homes are for sale near ${school.name} in Milton?`,
-      answer: `There are currently ${active.length} active listings near ${school.name} in ${school.neighbourhood}, Milton.${avgPrice > 0 ? ` The average asking price is ${formatPriceFull(avgPrice)}.` : ""} ${byType.length > 0 ? `Property types include ${byType.map((t) => `${t.type} (${t.count})`).join(", ")}.` : ""}`,
+      question: `What homes are for sale near ${school.name} in ${config.CITY_NAME}?`,
+      answer: `There are currently ${active.length} active listings near ${school.name} in ${school.neighbourhood}, ${config.CITY_NAME}.${avgPrice > 0 ? ` The average asking price is ${formatPriceFull(avgPrice)}.` : ""} ${byType.length > 0 ? `Property types include ${byType.map((t) => `${t.type} (${t.count})`).join(", ")}.` : ""}`,
     },
     {
       question: `What grades does ${school.name} serve?`,
@@ -141,16 +142,16 @@ export default async function SchoolDetailPage({ params }: Props) {
       answer: `The average asking price for homes near ${school.name} in ${school.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Register for full MLS® access to see detailed market data, including historical transaction records on individual street pages.`,
     },
     {
-      question: `Is ${school.neighbourhood} a good area for families in Milton?`,
-      answer: `${school.neighbourhood} in Milton is home to ${getSchoolsByNeighbourhood(school.neighbourhood).length} school${getSchoolsByNeighbourhood(school.neighbourhood).length > 1 ? "s" : ""}, including ${school.name}. With ${active.length} homes currently for sale, families have options across detached, semi, townhouse and condo properties. Milton's GO train connectivity and growing community make it popular with young families.`,
+      question: `Is ${school.neighbourhood} a good area for families in ${config.CITY_NAME}?`,
+      answer: `${school.neighbourhood} in ${config.CITY_NAME} is home to ${getSchoolsByNeighbourhood(school.neighbourhood).length} school${getSchoolsByNeighbourhood(school.neighbourhood).length > 1 ? "s" : ""}, including ${school.name}. With ${active.length} homes currently for sale, families have options across detached, semi, townhouse and condo properties. ${config.CITY_NAME}'s GO train connectivity and growing community make it popular with young families.`,
     },
   ];
 
   const schemas = [
     generateBreadcrumbSchema([
-      { name: "Home", url: "https://miltonly.com" },
-      { name: "Schools", url: "https://miltonly.com/schools" },
-      { name: school.name, url: `https://miltonly.com/schools/${params.slug}` },
+      { name: "Home", url: config.SITE_URL },
+      { name: "Schools", url: `${config.SITE_URL}/schools` },
+      { name: school.name, url: `${config.SITE_URL}/schools/${params.slug}` },
     ]),
     generateLocalBusinessSchema(),
     generateFAQSchema(faqs),
@@ -160,9 +161,9 @@ export default async function SchoolDetailPage({ params }: Props) {
       name: school.name,
       address: {
         "@type": "PostalAddress",
-        addressLocality: "Milton",
-        addressRegion: "Ontario",
-        addressCountry: "CA",
+        addressLocality: config.CITY_NAME,
+        addressRegion: config.CITY_PROVINCE,
+        addressCountry: config.CITY_COUNTRY_CODE,
       },
       parentOrganization: {
         "@type": "Organization",
@@ -204,7 +205,7 @@ export default async function SchoolDetailPage({ params }: Props) {
                     {school.board === "public" ? "Public" : "Catholic"} {school.level}
                   </span>
                   <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em]">
-                    {school.neighbourhood} &middot; Milton
+                    {school.neighbourhood} &middot; {config.CITY_NAME}
                   </p>
                 </div>
                 <h1 className="text-[28px] sm:text-[36px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
@@ -349,14 +350,14 @@ export default async function SchoolDetailPage({ params }: Props) {
               Looking for a home near {school.name}?
             </h2>
             <p className="text-[14px] text-[rgba(248,249,251,0.5)] mt-3 mb-8">
-              Aamir knows every street in {school.neighbourhood}. Let him help you find the perfect family home.
+              {config.realtor.name.split(" ")[0]} knows every street in {school.neighbourhood}. Let him help you find the perfect family home.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <a
-                href="tel:+16478399090"
+                href={`tel:${config.realtor.phoneE164}`}
                 className="bg-[#f59e0b] text-[#07111f] text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#fbbf24] transition-colors"
               >
-                Call Aamir
+                Call {config.realtor.name.split(" ")[0]}
               </a>
               <Link
                 href="/book"

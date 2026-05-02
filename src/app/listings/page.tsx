@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
+import { config } from "@/lib/config";
 import Link from "next/link";
 import { formatPriceFull } from "@/lib/format";
 import ListingsCardsClient from "./ListingsCardsClient";
@@ -8,9 +9,9 @@ import SchemaScript from "@/components/SchemaScript";
 import { generateFAQSchema } from "@/lib/schema";
 
 export const metadata = genMeta({
-  title: "Milton Homes For Sale & Real Estate",
-  description: "Browse Milton Ontario homes for sale. View listing photos, property details, and neighbourhood data. Live TREB MLS® data updated daily.",
-  canonical: "https://miltonly.com/listings",
+  title: `${config.CITY_NAME} Homes For Sale & Real Estate`,
+  description: `Browse ${config.CITY_NAME} ${config.CITY_PROVINCE} homes for sale. View listing photos, property details, and neighbourhood data. Live TREB MLS® data updated daily.`,
+  canonical: `${config.SITE_URL}/listings`,
 });
 
 export const revalidate = 3600;
@@ -52,7 +53,7 @@ export default async function ListingsPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(searchParams.page || "1"));
   const skip = (page - 1) * PER_PAGE;
 
-  const where: Record<string, unknown> = { city: "Milton", permAdvertise: true };
+  const where: Record<string, unknown> = { city: config.PRISMA_CITY_VALUE, permAdvertise: true };
   if (searchParams.type && searchParams.type !== "all") where.propertyType = searchParams.type;
   if (searchParams.status === "rent") where.transactionType = "For Lease";
   else if (searchParams.status === "sold") where.status = "sold";
@@ -80,7 +81,7 @@ export default async function ListingsPage({ searchParams }: Props) {
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const activeBase = { status: "active", city: "Milton", permAdvertise: true } as const;
+  const activeBase = { status: "active", city: config.PRISMA_CITY_VALUE, permAdvertise: true } as const;
 
   const [
     listings,
@@ -141,7 +142,7 @@ export default async function ListingsPage({ searchParams }: Props) {
     }
   }
   const topNeighbourhoods = Array.from(hoodMap.entries())
-    .filter(([name]) => name && name.toLowerCase() !== "milton")
+    .filter(([name]) => name && name.toLowerCase() !== config.CITY_NAME.toLowerCase())
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 6)
     .map(([name, stats]) => ({
@@ -152,30 +153,30 @@ export default async function ListingsPage({ searchParams }: Props) {
 
   const faqs = [
     {
-      question: "How many homes are for sale in Milton Ontario?",
-      answer: `There are currently ${totalCount} homes ${statusLabel} in Milton, Ontario. Listings update daily from TREB MLS® data and include detached homes, semis, townhouses, and condos across every Milton neighbourhood.`,
+      question: `How many homes are for sale in ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
+      answer: `There are currently ${totalCount} homes ${statusLabel} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Listings update daily from TREB MLS® data and include detached homes, semis, townhouses, and condos across every ${config.CITY_NAME} neighbourhood.`,
     },
     {
-      question: "What is the average home price in Milton?",
-      answer: `The average asking price for a Milton home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood — detached homes in established areas like Old Milton sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
+      question: `What is the average home price in ${config.CITY_NAME}?`,
+      answer: `The average asking price for a ${config.CITY_NAME} home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood — detached homes in established areas like Old ${config.CITY_NAME} sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
     },
     {
-      question: "What neighbourhoods are in Milton Ontario?",
-      answer: `Milton's main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old Milton, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points — use the neighbourhood filter to narrow your search.`,
+      question: `What neighbourhoods are in ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
+      answer: `${config.CITY_NAME}'s main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old ${config.CITY_NAME}, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points — use the neighbourhood filter to narrow your search.`,
     },
     {
-      question: "How do I book a showing for a Milton home?",
-      answer: `Click "Book showing" on any listing card and Aamir Yaqoob — a licensed RE/MAX Realty Specialists Inc. agent based in Milton — will confirm your appointment within the hour. No obligation, no pressure.`,
+      question: `How do I book a showing for a ${config.CITY_NAME} home?`,
+      answer: `Click "Book showing" on any listing card and ${config.realtor.name} — a licensed ${config.brokerage.name.replace(", Brokerage", "")} agent based in ${config.CITY_NAME} — will confirm your appointment within the hour. No obligation, no pressure.`,
     },
   ];
 
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: "About Milton Ontario Real Estate",
-    description: "An overview of the Milton real estate market — growth, property mix, and why working with a local specialist matters.",
-    author: { "@type": "Person", name: "Aamir Yaqoob" },
-    publisher: { "@type": "Organization", name: "Miltonly" },
+    headline: `About ${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`,
+    description: `An overview of the ${config.CITY_NAME} real estate market — growth, property mix, and why working with a local specialist matters.`,
+    author: { "@type": "Person", name: config.realtor.name },
+    publisher: { "@type": "Organization", name: config.SITE_NAME },
     datePublished: "2026-04-01",
     dateModified: new Date().toISOString().slice(0, 10),
   };
@@ -210,7 +211,7 @@ export default async function ListingsPage({ searchParams }: Props) {
             </div>
 
             <h1 className="text-[30px] font-extrabold text-[#07111f] tracking-[-0.5px] mb-1 leading-tight">
-              Milton homes {statusLabel} &amp; real estate
+              {config.CITY_NAME} homes {statusLabel} &amp; real estate
             </h1>
             <p className="text-[14px] text-[#64748b] mb-4">{totalCount} homes · Live TREB MLS® data</p>
 
@@ -337,7 +338,7 @@ export default async function ListingsPage({ searchParams }: Props) {
         {topNeighbourhoods.length > 0 && (
           <div className="bg-[#07111f] px-5 sm:px-11 py-10">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-[22px] font-extrabold text-white mb-6">Browse Milton by neighbourhood</h2>
+              <h2 className="text-[22px] font-extrabold text-white mb-6">Browse {config.CITY_NAME} by neighbourhood</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {topNeighbourhoods.map((h) => (
                   <Link
@@ -359,7 +360,7 @@ export default async function ListingsPage({ searchParams }: Props) {
         {topStreets.length > 0 && (
           <div className="bg-[#0c1e35] px-5 sm:px-11 py-10 border-t border-[#1e3a5f]">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-[22px] font-extrabold text-white mb-6">Top Milton streets right now</h2>
+              <h2 className="text-[22px] font-extrabold text-white mb-6">Top {config.CITY_NAME} streets right now</h2>
               <div className="flex flex-wrap gap-2">
                 {topStreets.map((s) => (
                   <Link
@@ -411,7 +412,7 @@ export default async function ListingsPage({ searchParams }: Props) {
         <div className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-[18px] font-extrabold text-[#07111f] mb-2">Create a free account to save searches and get deal alerts</p>
-            <p className="text-[14px] text-[#64748b] mb-5">We&apos;ll email you the moment a new Milton listing matches your filters — before it hits any other site.</p>
+            <p className="text-[14px] text-[#64748b] mb-5">We&apos;ll email you the moment a new {config.CITY_NAME} listing matches your filters — before it hits any other site.</p>
             <Link href="/signin" className="inline-block bg-[#07111f] text-[#f59e0b] text-[14px] font-bold px-6 py-3 rounded-lg hover:bg-[#0c1e35] transition-colors">
               Sign up free →
             </Link>
@@ -421,16 +422,16 @@ export default async function ListingsPage({ searchParams }: Props) {
         {/* ═══ SECTION 5 — SEO CONTENT ═══ */}
         <article className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-[800px] mx-auto">
-            <h2 className="text-[24px] font-extrabold text-[#07111f] mb-4">About Milton real estate</h2>
+            <h2 className="text-[24px] font-extrabold text-[#07111f] mb-4">About {config.CITY_NAME} real estate</h2>
             <div className="space-y-4 text-[15px] text-[#475569] leading-[1.7]">
               <p>
-                Milton has been one of Canada&apos;s fastest-growing communities for two decades, and the pace hasn&apos;t really let up. Between the GO train expansion, the Boyne and Agerton build-out, and new campus infrastructure coming online, the pool of people arriving here each year keeps the resale market competitive. What that means for buyers is simple: inventory moves quickly, the good homes get multiple offers, and knowing which neighbourhoods to shortlist is half the work.
+                {config.CITY_NAME} has been one of Canada&apos;s fastest-growing communities for two decades, and the pace hasn&apos;t really let up. Between the GO train expansion, the Boyne and Agerton build-out, and new campus infrastructure coming online, the pool of people arriving here each year keeps the resale market competitive. What that means for buyers is simple: inventory moves quickly, the good homes get multiple offers, and knowing which neighbourhoods to shortlist is half the work.
               </p>
               <p>
                 The property mix is unusually wide for a town this size. You can be looking at a 2005 detached in Timberlea, a brand-new Mattamy townhouse in Walker, or a low-rise condo right off the GO station — all in the same afternoon. Price points spread across a similar range. Entry-level condos start in the high $400K window; established detached streets in Dempsey and Hawthorne Village routinely clear $1.2M. Understanding that spread — and what each pocket actually trades at right now — is where a local agent makes the biggest difference.
               </p>
               <p>
-                That&apos;s where working with someone who only sells Milton matters. Aamir Yaqoob has been with RE/MAX Realty Specialists Inc. full-time for 14 years and has closed on every street you&apos;ll scroll past. He&apos;ll tell you which townhouse has a rental parking spot included, which street backs onto a park that floods, and which condo building has a maintenance fee about to jump. Call (647) 839-9090 or tap Book showing on any listing — confirmed within the hour, no obligation.
+                That&apos;s where working with someone who only sells {config.CITY_NAME} matters. {config.realtor.name} has been with {config.brokerage.name.replace(", Brokerage", "")} full-time for {config.realtor.yearsExperience} years and has closed on every street you&apos;ll scroll past. {config.realtor.name.split(" ")[0]}&apos;ll tell you which townhouse has a rental parking spot included, which street backs onto a park that floods, and which condo building has a maintenance fee about to jump. Call {config.realtor.phone} or tap Book showing on any listing — confirmed within the hour, no obligation.
               </p>
             </div>
           </div>
@@ -466,7 +467,7 @@ export default async function ListingsPage({ searchParams }: Props) {
                 </ul>
               </div>
               <div>
-                <h4 className="text-[13px] font-bold text-[#f59e0b] uppercase tracking-[0.12em] mb-4">Milton neighbourhoods</h4>
+                <h4 className="text-[13px] font-bold text-[#f59e0b] uppercase tracking-[0.12em] mb-4">{config.CITY_NAME} neighbourhoods</h4>
                 <ul className="space-y-2">
                   {FOOTER_NEIGHBOURHOODS.map((n) => (
                     <li key={n}>
@@ -488,10 +489,10 @@ export default async function ListingsPage({ searchParams }: Props) {
               </div>
             </div>
             <div className="border-t border-[#1e3a5f] pt-6 text-[12px] text-[#64748b] text-center">
-              Aamir Yaqoob · RE/MAX Realty Specialists Inc. · Milton Ontario · <a href="tel:+16478399090" className="text-[#f59e0b] hover:underline">(647) 839-9090</a>
+              {config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")} · {config.CITY_NAME} {config.CITY_PROVINCE} · <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] hover:underline">{config.realtor.phone}</a>
             </div>
             <p className="text-[10px] text-[#475569] text-center mt-4 max-w-3xl mx-auto leading-relaxed">
-              Data provided by TREB via Miltonly. MLS® listings updated daily. Information is deemed reliable but not guaranteed.
+              Data provided by TREB via {config.SITE_NAME}. MLS® listings updated daily. Information is deemed reliable but not guaranteed.
             </p>
           </div>
         </footer>
