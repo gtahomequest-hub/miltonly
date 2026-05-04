@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
+import { config } from "@/lib/config";
 
 interface Props {
   stats: {
@@ -19,15 +20,15 @@ interface Props {
 export default function TrustBarSection({ stats, soldLast30 }: Props) {
   return (
     <section className="bg-[#f8f9fb]">
-      <h2 className="sr-only">Milton market at a glance</h2>
+      <h2 className="sr-only">{config.CITY_NAME} market at a glance</h2>
 
       {/* Trust bar */}
       <div className="flex flex-wrap justify-center items-center gap-x-11 gap-y-3 px-5 sm:px-11 py-[18px] border-b border-[#e9ecef]">
         {[
-          { color: "#f59e0b", text: "14 years full-time experience" },
+          { color: "#f59e0b", text: `${config.realtor.yearsExperience} years full-time experience` },
           { color: "#f59e0b", text: "🏆 RE/MAX Hall of Fame" },
           { color: "#f59e0b", text: "Live TREB data daily" },
-          { color: "#f59e0b", text: "Milton-only specialist" },
+          { color: "#f59e0b", text: `${config.CITY_NAME}-only specialist` },
         ].map((item) => (
           <span key={item.text} className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />

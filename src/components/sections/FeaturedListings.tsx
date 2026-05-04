@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
+import { config } from "@/lib/config";
 
 interface Listing {
   id: string;
@@ -116,7 +117,7 @@ export default function FeaturedListings({ listings }: Props) {
             Live TREB data · updated every 15 min
           </p>
           <h2 className="text-[22px] font-extrabold text-[#07111f] tracking-[-0.3px]">
-            Hand-picked Milton listings
+            Hand-picked {config.CITY_NAME} listings
           </h2>
           <p className="text-[14px] text-[#64748b] mt-2 max-w-[640px]">
             Aamir personally vets every listing. Real photos, real square footage, real numbers — no stock images, no inflated estimates.
@@ -168,7 +169,7 @@ export default function FeaturedListings({ listings }: Props) {
 
       <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
         <a
-          href="tel:+16478399090"
+          href={`tel:${config.realtor.phoneE164}`}
           className="text-[14px] font-bold px-6 py-3 rounded-full bg-[#f59e0b] text-[#07111f] hover:bg-[#fbbf24] transition-colors text-center"
         >
           📞 Tour any of these with Aamir

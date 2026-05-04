@@ -1,4 +1,5 @@
 import OffMarketForm from "./OffMarketForm";
+import { config } from "@/lib/config";
 
 export default function ExclusiveStrip() {
   return (
@@ -10,10 +11,10 @@ export default function ExclusiveStrip() {
             🔒 OFF-MARKET · INVITE-ONLY
           </p>
           <h2 className="text-[28px] sm:text-[32px] font-extrabold text-[#f8f9fb] tracking-[-0.02em] leading-[1.1] mb-3">
-            Milton homes you won&apos;t find on MLS
+            {config.CITY_NAME} homes you won&apos;t find on MLS
           </h2>
           <p className="text-[14px] text-[#94a3b8] leading-relaxed mb-5 max-w-lg">
-            Aamir gets first call on Milton homes before they hit MLS — sellers who want a private sale, sellers testing the market, and his repeat clients listing again. Get on the list and we&apos;ll text you when one matches your search.
+            Aamir gets first call on {config.CITY_NAME} homes before they hit MLS — sellers who want a private sale, sellers testing the market, and his repeat clients listing again. Get on the list and we&apos;ll text you when one matches your search.
           </p>
 
           {/* Proof strip */}
@@ -41,10 +42,10 @@ export default function ExclusiveStrip() {
               🔔 Get on the off-market list
             </a>
             <a
-              href="tel:+16478399090"
+              href={`tel:${config.realtor.phoneE164}`}
               className="inline-block text-[13px] font-bold text-[#94a3b8] hover:text-[#f59e0b] py-3 transition-colors"
             >
-              Or call Aamir: (647) 839-9090
+              Or call Aamir: {config.realtor.phone}
             </a>
           </div>
         </div>

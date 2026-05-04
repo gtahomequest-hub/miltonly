@@ -1,0 +1,30 @@
+﻿feat(config): city-as-config refactor batch 5 — components (Bucket A)
+
+Final batch of MOD-77 city-as-config refactor. Migrates 21 components
+in src/components/sections/ to flow Milton-specific copy through
+src/lib/config.ts. Closes the refactor that gates Oakville/Burlington/
+Mississauga/Brampton/Hamilton city forks.
+
+Batches shipped:
+- 0b6dc93 Batch 1 (lib)
+- 5553469 Batch 2 (API routes)
+- d236a79 Batch 3 (page metadata + infra)
+- 24c9b1a Batch 4 (page files)
+- c87f266 Batch 4.5 (dense schema + marketing)
+- this commit Batch 5 (components)
+
+Bucket B/E deliberately kept hardcoded: brand wordmark, proper-noun
+place/school/mosque names, per-fork pill/link-label arrays
+(QuickSearchPills, SeoLinkGrid quick-links, HeroSection streetPills —
+to be rewritten manually at each city fork).
+
+Decision: 3528f3a3-28f3-81c7-86f2-f574b2dcf3ce
+Module: 3528f3a3-28f3-8160-8609-d3d33c4a75aa
+
+[notion-module]
+title: Miltonly — City-as-config refactor batch 5 (components)
+mortgage-lever: Lead Gen
+phase: Weeks 5-8
+phase-gate: Phase 1A
+roi: Final batch of MOD-77. Closes the refactor that compounds across 5 future city forks (4 days saved per fork × 5 cities = ~20 days of fork-time recovered). Unblocks Oakville fork (Q2 2026), the next direct-revenue multiplier on the $25K/mo Real Estate engine.
+[/notion-module]

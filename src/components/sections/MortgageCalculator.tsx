@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { monthlyPayment, ontarioLTT, cmhcPremium, stressTestRate, formatMoney, formatMoneyShort } from "@/lib/mortgage-math";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 
 export default function MortgageCalculator() {
   const [price, setPrice] = useState(1050000);
@@ -37,10 +38,10 @@ export default function MortgageCalculator() {
         {/* LEFT — Inputs */}
         <div className="lg:col-span-2">
           <p className="text-[11px] font-bold text-[#f59e0b] tracking-[0.18em] mb-2">
-            🧮 MILTON-SPECIFIC · LAND TRANSFER TAX INCLUDED
+            🧮 {config.CITY_NAME.toUpperCase()}-SPECIFIC · LAND TRANSFER TAX INCLUDED
           </p>
           <h2 className="text-[28px] sm:text-[32px] font-extrabold text-[#07111f] tracking-[-0.02em] leading-[1.1] mb-3">
-            What can you actually afford in Milton?
+            What can you actually afford in {config.CITY_NAME}?
           </h2>
           <p className="text-[14px] text-[#475569] leading-relaxed mb-6 max-w-md">
             Most calculators show you a payment. We show you the real all-in cost — Ontario land transfer tax, CMHC insurance, and the stress-test rate every Canadian lender uses. No surprises at closing.
@@ -77,7 +78,7 @@ export default function MortgageCalculator() {
               <span className="text-[14px] font-extrabold text-[#07111f]">{rate.toFixed(2)}%</span>
             </div>
             <input type="range" min={3} max={8} step={0.05} value={rate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-[#f59e0b]" />
-            <p className="text-[10px] text-[#94a3b8] mt-1">Avg Milton 5-yr fixed today</p>
+            <p className="text-[10px] text-[#94a3b8] mt-1">Avg {config.CITY_NAME} 5-yr fixed today</p>
           </div>
 
           {/* Amortization toggle */}
@@ -135,7 +136,7 @@ export default function MortgageCalculator() {
 
             {matchCount !== null && matchCount > 0 && (
               <a href={`/listings?maxPrice=${price}`} className="block bg-[#0c1e35] border border-[#1e3a5f] rounded-lg p-4 mb-5 hover:border-[#f59e0b] transition-colors">
-                <p className="text-[14px] font-bold text-[#f8f9fb]">📍 {matchCount.toLocaleString()} Milton homes fit this budget →</p>
+                <p className="text-[14px] font-bold text-[#f8f9fb]">📍 {matchCount.toLocaleString()} {config.CITY_NAME} homes fit this budget →</p>
                 <p className="text-[11px] text-[#94a3b8] mt-1">See active listings under {formatMoneyShort(price)}</p>
               </a>
             )}
@@ -143,8 +144,8 @@ export default function MortgageCalculator() {
             <button onClick={() => setShowLeadForm(true)} className="block w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold py-3 rounded-xl hover:bg-[#fbbf24] transition-colors">
               📞 Get pre-approved with Aamir&apos;s broker
             </button>
-            <a href="tel:+16478399090" className="block text-center text-[12px] font-bold text-[#94a3b8] hover:text-[#f59e0b] mt-3 transition-colors">
-              Or text Aamir: (647) 839-9090
+            <a href={`tel:${config.realtor.phoneE164}`} className="block text-center text-[12px] font-bold text-[#94a3b8] hover:text-[#f59e0b] mt-3 transition-colors">
+              Or text Aamir: {config.realtor.phone}
             </a>
           </div>
         </div>
@@ -203,7 +204,7 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
       if (!res.ok) throw new Error();
       setSuccess(true);
     } catch {
-      setError("Something went wrong. Please call (647) 839-9090.");
+      setError(`Something went wrong. Please call ${config.realtor.phone}.`);
     } finally {
       setSubmitting(false);
     }
@@ -224,7 +225,7 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
         ) : (
           <form onSubmit={submit}>
             <p className="text-[20px] font-extrabold text-[#f8f9fb] mb-1">Get pre-approved</p>
-            <p className="text-[13px] text-[#94a3b8] mb-5">Aamir works with brokers who specialize in Milton. They&apos;ll get you a real pre-approval letter, not a soft estimate.</p>
+            <p className="text-[13px] text-[#94a3b8] mb-5">Aamir works with brokers who specialize in {config.CITY_NAME}. They&apos;ll get you a real pre-approval letter, not a soft estimate.</p>
             <input className={fieldCls + " mb-3"} placeholder="Your name" value={name} onChange={e => setName(e.target.value)} autoFocus />
             <input className={fieldCls + " mb-3"} type="tel" inputMode="tel" placeholder="(___) ___-____" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} />
             <input className={fieldCls + " mb-4"} type="email" inputMode="email" placeholder="Email (optional)" value={email} onChange={e => setEmail(e.target.value)} />

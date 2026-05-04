@@ -1,3 +1,5 @@
+import { config } from "@/lib/config";
+
 export default function SocialProofSection() {
   const testimonials = [
     {
@@ -23,7 +25,7 @@ export default function SocialProofSection() {
         <div className="text-center mb-12">
           <span className="section-label text-brand-500">Social Proof</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-navy mt-2">
-            Trusted by Milton Families
+            Trusted by {config.CITY_NAME} Families
           </h2>
         </div>
 
@@ -71,7 +73,7 @@ export default function SocialProofSection() {
               </p>
               <div className="mt-4 pt-4 border-t border-neutral-100">
                 <p className="font-bold text-navy text-sm">{t.name}</p>
-                <p className="text-neutral-400 text-xs mt-0.5">{t.location}, Milton</p>
+                <p className="text-neutral-400 text-xs mt-0.5">{t.location}, {config.CITY_NAME}</p>
               </div>
             </div>
           ))}

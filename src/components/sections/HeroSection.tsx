@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/format";
+import { config } from "@/lib/config";
 
 const SEARCH_PILLS = [
   { label: "Detached homes", href: "/listings?type=detached" },
@@ -102,7 +103,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
                 Aamir Yaqoob · RE/MAX Realty
               </p>
               <p className="text-[12px] text-[#f59e0b] mt-0.5">
-                Milton-only specialist · 14 years · RE/MAX Hall of Fame
+                {config.CITY_NAME}-only specialist · {config.realtor.yearsExperience} years · RE/MAX Hall of Fame
               </p>
               <p className="text-[12px] text-[#f59e0b] mt-0.5">
                 ★★★★★ 47 Google reviews
@@ -111,10 +112,10 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           </div>
           <div className="flex flex-wrap gap-2.5">
             <a
-              href="tel:6478399090"
+              href={`tel:${config.realtor.phoneE164}`}
               className="bg-[#f59e0b]/15 border-[1.5px] border-[#f59e0b] rounded-lg px-4 py-[9px] text-[#f59e0b] font-bold text-[13px] hover:bg-[#f59e0b]/25 transition-colors"
             >
-              📞 (647) 839-9090
+              📞 {config.realtor.phone}
             </a>
             <Link
               href="/book"
@@ -135,15 +136,15 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           className="font-black leading-[1.1] mb-3"
           style={{ fontSize: "clamp(36px, 4.5vw, 52px)" }}
         >
-          <span className="text-[#f8f9fb]">Milton&apos;s Most </span>
+          <span className="text-[#f8f9fb]">{config.CITY_NAME}&apos;s Most </span>
           <span className="text-[#f59e0b]">Data-Rich</span>
           <span className="text-[#f8f9fb]"> Real Estate</span>
         </h1>
 
         {/* SUBTITLE */}
         <p className="text-[15px] text-white/75 leading-[1.6] mb-6 max-w-[480px]">
-          Find, price &amp; compare any home in Milton — live TREB data, updated daily.
-          The only site built exclusively for Milton.
+          Find, price &amp; compare any home in {config.CITY_NAME} — live TREB data, updated daily.
+          The only site built exclusively for {config.CITY_NAME}.
         </p>
 
         {/* INTENT TABS — visual-only in Part 1; click-noop until Part 2 wiring */}
@@ -202,7 +203,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           href="/map"
           className="inline-block self-start text-[#f59e0b] font-bold text-[14px] border-b border-[#f59e0b]/30 hover:border-[#f59e0b] transition-colors mb-6"
         >
-          🗺️ The only Milton map that shows street-level avg prices, not just pins →
+          🗺️ The only {config.CITY_NAME} map that shows street-level avg prices, not just pins →
         </Link>
 
         {/* Quick pills — real links */}
@@ -269,12 +270,12 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
       {/* ═══ DIVIDER ═══ */}
       <div className="hidden lg:flex w-[3px] bg-[#1e3a5f] relative items-center justify-center">
         <div className="absolute bg-[#07111f] border-[1.5px] border-[#1e3a5f] rounded-full px-[9px] py-[6px] -rotate-90">
-          <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em] whitespace-nowrap">Milton · ON</span>
+          <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em] whitespace-nowrap">{config.CITY_NAME} · {config.CITY_PROVINCE_CODE}</span>
         </div>
       </div>
       <div className="lg:hidden h-[3px] bg-[#1e3a5f] flex items-center justify-center relative">
         <div className="absolute bg-[#07111f] border-[1.5px] border-[#1e3a5f] rounded-full px-3 py-1">
-          <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">Milton · ON</span>
+          <span className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-[0.1em]">{config.CITY_NAME} · {config.CITY_PROVINCE_CODE}</span>
         </div>
       </div>
 
@@ -291,7 +292,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           <span className="text-[#f59e0b]">Intelligence</span>
         </h2>
         <p className="text-[15px] text-white/70 leading-[1.6] mb-5">
-          Street price data, home valuations and market comparisons — only in Milton.
+          Street price data, home valuations and market comparisons — only in {config.CITY_NAME}.
         </p>
 
         {/* White intelligence card */}
@@ -335,7 +336,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
               <div className="flex bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[10px] overflow-hidden focus-within:border-[#07111f] transition-colors mb-[5px]">
                 <div className="flex items-center gap-1.5 px-[11px] border-r border-[#e2e8f0] shrink-0">
                   <svg className="w-3.5 h-3.5 text-[#94a3b8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                  <span className="text-[11px] text-[#94a3b8] whitespace-nowrap">Milton street</span>
+                  <span className="text-[11px] text-[#94a3b8] whitespace-nowrap">{config.CITY_NAME} street</span>
                 </div>
                 <input
                   type="text"
@@ -415,8 +416,8 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
 
         {/* Secondary CTA row */}
         <div className="flex items-center justify-between bg-white/[0.04] border border-white/[0.08] rounded-[10px] px-[18px] py-[14px] mt-3 gap-3 flex-wrap">
-          <span className="text-[14px] text-white/70">Not sure where to start in Milton?</span>
-          <a href="tel:6478399090" className="text-[#f59e0b] font-bold text-[14px] hover:text-[#fbbf24] transition-colors">
+          <span className="text-[14px] text-white/70">Not sure where to start in {config.CITY_NAME}?</span>
+          <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] font-bold text-[14px] hover:text-[#fbbf24] transition-colors">
             📞 Book a free call with Aamir →
           </a>
         </div>
@@ -424,9 +425,9 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
         {/* Trust strip — pinned to bottom of right panel */}
         <div className="mt-auto pt-6 border-t border-white/[0.08] grid grid-cols-3 gap-3 text-center">
           {[
-            { value: "14 years", label: "Milton specialist" },
+            { value: `${config.realtor.yearsExperience} years`, label: `${config.CITY_NAME} specialist` },
             { value: "47", label: "5-star Google reviews" },
-            { value: "300+", label: "Milton families helped" },
+            { value: "300+", label: `${config.CITY_NAME} families helped` },
           ].map((stat) => (
             <div key={stat.label}>
               <div className="text-[22px] font-extrabold text-[#f59e0b]">{stat.value}</div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { homepageFAQs } from "@/lib/faqs";
+import { config } from "@/lib/config";
 
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -15,7 +16,7 @@ export default function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-neutral-500 mt-3 max-w-lg mx-auto">
-            Common questions about Milton Ontario real estate.
+            Common questions about {config.CITY_NAME} {config.CITY_PROVINCE} real estate.
           </p>
         </div>
 

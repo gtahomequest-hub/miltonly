@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 
 type Persona = {
   emoji: string;
@@ -15,7 +16,7 @@ const PERSONAS: Persona[] = [
   {
     emoji: "🏡",
     name: "First-time buyer",
-    desc: "Saving your first down payment. Want to understand what's actually affordable in Milton today.",
+    desc: `Saving your first down payment. Want to understand what's actually affordable in ${config.CITY_NAME} today.`,
     bullets: [
       "Down payment + closing cost breakdown",
       "First-Time Buyer Incentive walkthrough",
@@ -26,7 +27,7 @@ const PERSONAS: Persona[] = [
   {
     emoji: "🍁",
     name: "New to Canada",
-    desc: "Recently arrived or planning your move. Need a Milton overview, schools, mosques, and the no-Canadian-credit mortgage path.",
+    desc: `Recently arrived or planning your move. Need a ${config.CITY_NAME} overview, schools, mosques, and the no-Canadian-credit mortgage path.`,
     bullets: [
       "Newcomer-friendly lender intros",
       "Schools + community guide",
@@ -86,7 +87,7 @@ function PersonaCard({ persona }: { persona: Persona }) {
       if (!res.ok) throw new Error();
       setSuccess(true);
     } catch {
-      setError("Couldn't send — please try (647) 839-9090 directly");
+      setError(`Couldn't send — please try ${config.realtor.phone} directly`);
     } finally {
       setSubmitting(false);
     }
@@ -99,8 +100,8 @@ function PersonaCard({ persona }: { persona: Persona }) {
         <p className="text-white font-bold text-base mb-1">Got it.</p>
         <p className="text-slate-300 text-sm leading-relaxed mb-3">
           Aamir will call within 1 business day. Save his number:{" "}
-          <a href="tel:6478399090" className="text-amber-400 font-semibold hover:underline">
-            (647) 839-9090
+          <a href={`tel:${config.realtor.phoneE164}`} className="text-amber-400 font-semibold hover:underline">
+            {config.realtor.phone}
           </a>
         </p>
         <button
@@ -141,7 +142,7 @@ function PersonaCard({ persona }: { persona: Persona }) {
           disabled={submitting}
           className="w-full bg-amber-500 hover:bg-amber-400 text-[#07111f] font-bold rounded-lg py-3 text-sm disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
         >
-          {submitting ? "Sending…" : "Get my Milton roadmap →"}
+          {submitting ? "Sending…" : `Get my ${config.CITY_NAME} roadmap →`}
         </button>
       </form>
     </div>
@@ -152,13 +153,13 @@ export default function PersonaRouter() {
   return (
     <div className="rounded-2xl p-8 md:p-10 mb-12 bg-[#07111f]">
       <p className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2">
-        🧭 NEW TO MILTON? START HERE
+        🧭 NEW TO {config.CITY_NAME.toUpperCase()}? START HERE
       </p>
       <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight mb-3">
-        Tell us where you are. We&apos;ll point you to the right Milton.
+        Tell us where you are. We&apos;ll point you to the right {config.CITY_NAME}.
       </h2>
       <p className="text-sm md:text-base text-slate-400 leading-relaxed max-w-2xl">
-        Aamir has helped 400+ Milton families across these three paths. Pick yours, leave a phone, and get a personalized 10-minute call within 1 business day.
+        Aamir has helped 400+ {config.CITY_NAME} families across these three paths. Pick yours, leave a phone, and get a personalized 10-minute call within 1 business day.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-8">
         {PERSONAS.map((p) => (

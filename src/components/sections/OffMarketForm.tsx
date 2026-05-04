@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { config } from "@/lib/config";
 
 export default function OffMarketForm() {
   const [propertyType, setPropertyType] = useState("");
@@ -43,7 +44,7 @@ export default function OffMarketForm() {
       if (!res.ok) throw new Error("Request failed");
       setSuccess(true);
     } catch {
-      setError("Something went wrong. Please call (647) 839-9090.");
+      setError(`Something went wrong. Please call ${config.realtor.phone}.`);
     } finally {
       setSubmitting(false);
     }
@@ -57,8 +58,8 @@ export default function OffMarketForm() {
         <p className="text-[13px] text-[#94a3b8] leading-relaxed mb-4">
           We&apos;ll text {phone} the moment a {propertyType.toLowerCase()} in {budget} with {bedrooms} hits Aamir&apos;s pipeline.
         </p>
-        <a href="tel:+16478399090" className="inline-block text-[13px] font-bold text-[#f59e0b] hover:underline">
-          Want to talk now? Call (647) 839-9090
+        <a href={`tel:${config.realtor.phoneE164}`} className="inline-block text-[13px] font-bold text-[#f59e0b] hover:underline">
+          Want to talk now? Call {config.realtor.phone}
         </a>
       </div>
     );
@@ -66,7 +67,7 @@ export default function OffMarketForm() {
 
   return (
     <form id="off-market-form" onSubmit={handleSubmit} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6 sm:p-7">
-      <p className="text-[20px] font-extrabold text-[#f8f9fb] mb-2">Get first access to Milton off-market homes</p>
+      <p className="text-[20px] font-extrabold text-[#f8f9fb] mb-2">Get first access to {config.CITY_NAME} off-market homes</p>
       <p className="text-[13px] text-[#94a3b8] mb-5 leading-relaxed">
         Tell us what you&apos;re looking for. We text you when a match comes up — usually 1–3 weeks before MLS.
       </p>

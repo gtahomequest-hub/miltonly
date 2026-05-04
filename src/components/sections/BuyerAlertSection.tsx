@@ -1,8 +1,10 @@
+import { config } from "@/lib/config";
+
 export default function BuyerAlertSection() {
   return (
     <section className="bg-gradient-to-br from-brand-50 via-white to-brand-50/50">
       <div className="section-container py-14 lg:py-16">
-        <h2 className="sr-only">Get Milton listing alerts</h2>
+        <h2 className="sr-only">Get {config.CITY_NAME} listing alerts</h2>
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
           {/* Left — Listing alert */}
           <div className="card p-6 sm:p-8 border-brand-100">
@@ -15,8 +17,8 @@ export default function BuyerAlertSection() {
               </h3>
             </div>
             <p className="text-neutral-500 text-sm leading-relaxed mb-6">
-              Get alerted the moment a home matching your criteria hits the Milton
-              market. Faster than Realtor.ca.
+              Get alerted the moment a home matching your criteria hits the {config.CITY_NAME}
+              {" "}market. Faster than Realtor.ca.
             </p>
             <form className="flex gap-3">
               <input

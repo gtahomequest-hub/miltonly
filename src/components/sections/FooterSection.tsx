@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 const exploreLeft = [
   { href: "/listings", label: "Buy" },
@@ -25,11 +26,11 @@ const legalLinks = [
 
 const trustBadges = [
   "🏆 RE/MAX Hall of Fame",
-  "📅 14 years in Milton",
+  `📅 ${config.realtor.yearsExperience} years in ${config.CITY_NAME}`,
   "⭐ 4.9/5 Google reviews",
 ];
 
-const WHATSAPP_HREF = "https://wa.me/16478399090?text=Hi%20Aamir%2C%20I%20found%20you%20on%20miltonly.com";
+const WHATSAPP_HREF = `https://wa.me/${config.realtor.phoneE164.replace("+", "")}?text=Hi%20Aamir%2C%20I%20found%20you%20on%20miltonly.com`;
 
 export default function FooterSection() {
   return (
@@ -46,7 +47,7 @@ export default function FooterSection() {
             </Link>
 
             <p className="text-sm text-slate-300 leading-relaxed mt-5">
-              Aamir Yaqoob is a RE/MAX Hall of Fame realtor with 14 years serving Milton, Ontario. He&apos;s helped 400+ Milton families buy, sell, and invest — with a focus on first-time buyers, newcomers to Canada, and move-up families. Real data, no fluff.
+              Aamir Yaqoob is a RE/MAX Hall of Fame realtor with {config.realtor.yearsExperience} years serving {config.CITY_NAME}, {config.CITY_PROVINCE}. He&apos;s helped 400+ {config.CITY_NAME} families buy, sell, and invest — with a focus on first-time buyers, newcomers to Canada, and move-up families. Real data, no fluff.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">
@@ -64,7 +65,7 @@ export default function FooterSection() {
           {/* Column 2 — Explore + Legal */}
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-4">
-              EXPLORE MILTON
+              EXPLORE {config.CITY_NAME.toUpperCase()}
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               <ul className="flex flex-col gap-2">
@@ -109,8 +110,8 @@ export default function FooterSection() {
               TALK TO AAMIR
             </p>
 
-            <a href="tel:6478399090" className="text-2xl font-bold text-amber-400 hover:text-amber-300 transition">
-              📞 (647) 839-9090
+            <a href={`tel:${config.realtor.phoneE164}`} className="text-2xl font-bold text-amber-400 hover:text-amber-300 transition">
+              📞 {config.realtor.phone}
             </a>
             <p className="text-xs text-slate-400 mt-1">Text or call · 9am–9pm ET</p>
 
@@ -129,7 +130,7 @@ export default function FooterSection() {
             </div>
 
             <p className="text-sm text-slate-300 mt-6">
-              RE/MAX Realty Specialists Inc., Brokerage
+              {config.brokerage.name}
             </p>
           </div>
         </div>
@@ -138,7 +139,7 @@ export default function FooterSection() {
         <div className="border-t border-slate-800 mt-12 pt-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <p className="text-xs text-slate-500">
-              © 2026 Miltonly.com · Aamir Yaqoob · RE/MAX Realty Specialists Inc., Brokerage
+              © 2026 Miltonly.com · {config.realtor.name} · {config.brokerage.name}
             </p>
             <p className="text-xs text-slate-500">
               Not intended to solicit buyers or sellers currently under contract.

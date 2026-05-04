@@ -1,3 +1,5 @@
+import { config } from "@/lib/config";
+
 export default function InvestorSection() {
   return (
     <section className="bg-navy">
@@ -10,10 +12,10 @@ export default function InvestorSection() {
                 For Investors
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-3 leading-tight">
-                Investing in Milton?<br />Get the data first.
+                Investing in {config.CITY_NAME}?<br />Get the data first.
               </h2>
               <p className="text-white/40 mt-5 leading-relaxed">
-                Download the free Milton Investor Report — rental yields by
+                Download the free {config.CITY_NAME} Investor Report — rental yields by
                 neighbourhood, best streets for appreciation, price growth
                 trends, and cap rates.
               </p>
@@ -46,7 +48,7 @@ export default function InvestorSection() {
                   Free Download
                 </div>
                 <h3 className="text-xl font-extrabold text-white mb-1">
-                  Milton Investor Report
+                  {config.CITY_NAME} Investor Report
                 </h3>
                 <p className="text-sm text-white/30 mb-6">
                   PDF delivered instantly to your inbox.

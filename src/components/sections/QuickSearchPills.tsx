@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 const pills = [
   { label: "Detached in Willmott", hot: true, href: "/listings?type=detached&neighbourhood=willmott" },
@@ -16,7 +17,7 @@ const pills = [
 export default function QuickSearchPills() {
   return (
     <section className="bg-white border-b border-[#f1f5f9]">
-      <h2 className="sr-only">Popular Milton real estate searches</h2>
+      <h2 className="sr-only">Popular {config.CITY_NAME} real estate searches</h2>
       <div className="flex items-center flex-wrap gap-2 px-5 sm:px-11 py-5">
         <span className="text-[11px] text-[#94a3b8] font-semibold uppercase tracking-[0.08em] shrink-0 mr-1">
           Popular searches

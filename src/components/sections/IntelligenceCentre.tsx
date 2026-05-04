@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { config } from "@/lib/config";
 
 const modes = ["Street vs Street", "Neighbourhood vs Neighbourhood", "Building vs Building"];
 const dims = ["Avg price", "Growth trend", "Days on market", "Sold vs ask %", "Price/sqft", "School rating", "GO walk time", "Rental yield", "Inventory", "Owner ratio"];
@@ -123,13 +124,13 @@ export default function IntelligenceCentre() {
         {/* Header */}
         <div className="text-center mb-8">
           <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-2">
-            Milton Intelligence Centre
+            {config.CITY_NAME} Intelligence Centre
           </p>
           <h2 className="text-[24px] sm:text-[28px] font-extrabold text-white tracking-[-0.3px] mb-2">
-            Data no other Milton site has
+            Data no other {config.CITY_NAME} site has
           </h2>
           <p className="text-[14px] text-[#94a3b8] max-w-lg mx-auto">
-            The only Milton tool that compares any two streets, neighbourhoods or buildings across 10 live data dimensions — updated daily from TREB. No other site in Milton offers this.
+            The only {config.CITY_NAME} tool that compares any two streets, neighbourhoods or buildings across 10 live data dimensions — updated daily from TREB. No other site in {config.CITY_NAME} offers this.
           </p>
         </div>
 
@@ -210,13 +211,13 @@ export default function IntelligenceCentre() {
           {activeTab === "street" && (
             <>
               <p className="text-[13px] text-[#94a3b8] mb-4">
-                Search any Milton street for active listings, trends, and detailed market data. Registered users see full historical transaction records.
+                Search any {config.CITY_NAME} street for active listings, trends, and detailed market data. Registered users see full historical transaction records.
               </p>
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
                   <AutocompleteInput
                     ac={streetAc}
-                    placeholder="Type any Milton street name"
+                    placeholder={`Type any ${config.CITY_NAME} street name`}
                   />
                 </div>
                 <button
@@ -251,7 +252,7 @@ export default function IntelligenceCentre() {
           {activeTab === "condo" && (
             <>
               <p className="text-[13px] text-[#94a3b8] mb-4">
-                Search any Milton condo building for prices, rental yields, and maintenance fees.
+                Search any {config.CITY_NAME} condo building for prices, rental yields, and maintenance fees.
               </p>
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
@@ -290,10 +291,10 @@ export default function IntelligenceCentre() {
               Want Aamir to run this comparison for you?
             </p>
             <p className="text-[13px] text-[#94a3b8] mt-0.5">
-              Free · Takes 2 minutes · Milton-specific insight included
+              Free · Takes 2 minutes · {config.CITY_NAME}-specific insight included
             </p>
           </div>
-          <a href="tel:6478399090" className="bg-[#f59e0b] text-[#07111f] px-6 py-2.5 rounded-lg font-bold text-[14px] no-underline whitespace-nowrap">
+          <a href={`tel:${config.realtor.phoneE164}`} className="bg-[#f59e0b] text-[#07111f] px-6 py-2.5 rounded-lg font-bold text-[14px] no-underline whitespace-nowrap">
             📞 Book a free analysis call →
           </a>
         </div>

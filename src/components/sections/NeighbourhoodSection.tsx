@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 const neighbourhoods = [
   { name: "Willmott", avgPrice: "$1,125,000", activeListings: 24, topSchool: "Craig Kielburger", goWalkMin: 12 },
@@ -19,7 +20,7 @@ export default function NeighbourhoodSection() {
         <div className="text-center mb-12">
           <span className="section-label text-brand-500">Neighbourhoods</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-navy mt-2">
-            Explore Milton Neighbourhoods
+            Explore {config.CITY_NAME} Neighbourhoods
           </h2>
           <p className="text-neutral-500 mt-3 max-w-lg mx-auto">
             Every neighbourhood at a glance — prices, schools, commute times, and

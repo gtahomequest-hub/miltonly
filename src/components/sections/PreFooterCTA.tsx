@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 
 export default function PreFooterCTA() {
   const [email, setEmail] = useState("");
@@ -34,7 +35,7 @@ export default function PreFooterCTA() {
       if (!res.ok) throw new Error();
       setSuccess(true);
     } catch {
-      setError("Couldn't subscribe — please try again or text Aamir at (647) 839-9090");
+      setError(`Couldn't subscribe — please try again or text Aamir at ${config.realtor.phone}`);
     } finally {
       setSubmitting(false);
     }
@@ -44,10 +45,10 @@ export default function PreFooterCTA() {
     <section className="bg-[#07111f]">
       <div className="max-w-3xl mx-auto py-12 md:py-16 px-5 text-center">
         <p className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-3">
-          📬 STAY CLOSE TO THE MILTON MARKET
+          📬 STAY CLOSE TO THE {config.CITY_NAME.toUpperCase()} MARKET
         </p>
         <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-          Get Aamir&apos;s Milton Market Brief — Sundays at 8am
+          Get Aamir&apos;s {config.CITY_NAME} Market Brief — Sundays at 8am
         </h2>
         <p className="text-sm md:text-base text-slate-400 mb-6 max-w-2xl mx-auto leading-relaxed">
           One short email. New listings, sold prices on your watchlist streets, and what&apos;s actually moving this week. No spam. Unsubscribe anytime.
@@ -92,7 +93,7 @@ export default function PreFooterCTA() {
         )}
 
         <p className="text-xs text-slate-500 mt-4">
-          Joining 1,400+ Milton homeowners and buyers. Curated, never automated.
+          Joining 1,400+ {config.CITY_NAME} homeowners and buyers. Curated, never automated.
         </p>
       </div>
     </section>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
 import { extractStreetName } from "@/lib/streetUtils";
+import { config } from "@/lib/config";
 import PersonaRouter from "./PersonaRouter";
 
 interface StreetLink {
@@ -76,7 +77,7 @@ export default async function SeoLinkGrid() {
         <div className="flex items-baseline gap-3 mb-4">
           <h3 className="text-[16px] font-extrabold text-[#07111f]">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 align-middle" />
-            Search homes by street in Milton
+            Search homes by street in {config.CITY_NAME}
           </h3>
           <Link href="/streets" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
             View all {totalStreets} streets
@@ -98,7 +99,7 @@ export default async function SeoLinkGrid() {
       {/* Neighbourhoods */}
       <div className="mb-10">
         <h3 className="text-[14px] font-extrabold text-[#07111f] mb-4">
-          Search homes by neighbourhood in Milton
+          Search homes by neighbourhood in {config.CITY_NAME}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
           {neighbourhoods.map((n) => (
@@ -125,7 +126,7 @@ export default async function SeoLinkGrid() {
       {/* Property types */}
       <div className="mb-10">
         <h3 className="text-[14px] font-semibold text-slate-600 mb-4">
-          Search by property type in Milton
+          Search by property type in {config.CITY_NAME}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
           {types.map((t) => (
@@ -152,7 +153,7 @@ export default async function SeoLinkGrid() {
       {/* Price ranges */}
       <div className="mb-10">
         <h3 className="text-[14px] font-semibold text-slate-600 mb-4">
-          Search by price in Milton
+          Search by price in {config.CITY_NAME}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
           {[
@@ -172,7 +173,7 @@ export default async function SeoLinkGrid() {
               href={`/listings?min=${p.min}&max=${p.max}`}
               className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors"
             >
-              Milton {p.label.toLowerCase()}
+              {config.CITY_NAME} {p.label.toLowerCase()}
             </Link>
           ))}
         </div>
@@ -182,10 +183,10 @@ export default async function SeoLinkGrid() {
       <div className="border-l-4 border-amber-500 bg-amber-50 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <p className="text-sm text-slate-800">🎯 Can&apos;t find what you&apos;re looking for in this list?</p>
         <a
-          href="tel:6478399090"
+          href={`tel:${config.realtor.phoneE164}`}
           className="text-sm font-semibold text-[#07111f] hover:text-amber-600 hover:underline whitespace-nowrap"
         >
-          Text Aamir directly: (647) 839-9090 →
+          Text Aamir directly: {config.realtor.phone} →
         </a>
       </div>
 
@@ -194,7 +195,7 @@ export default async function SeoLinkGrid() {
         <div className="flex items-baseline gap-3 mb-4">
           <h3 className="text-[16px] font-extrabold text-[#07111f]">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 align-middle" />
-            Search homes by school zone in Milton
+            Search homes by school zone in {config.CITY_NAME}
           </h3>
           <Link href="/schools" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
             View all 30+ schools
@@ -228,7 +229,7 @@ export default async function SeoLinkGrid() {
       <div className="mb-6">
         <div className="flex items-baseline gap-3 mb-4">
           <h3 className="text-[14px] font-extrabold text-[#07111f]">
-            Homes near mosques in Milton
+            Homes near mosques in {config.CITY_NAME}
           </h3>
           <Link href="/mosques" className="text-[11px] text-[#f59e0b] font-semibold hover:underline">
             View all mosques
@@ -257,7 +258,7 @@ export default async function SeoLinkGrid() {
       <div className="border-l-4 border-amber-500 bg-amber-50 rounded-r-lg px-5 py-3 my-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <p className="text-sm text-slate-800">💬 Looking for something hyper-specific? (e.g. backing onto greenspace, walk-out basement, mortgage helper)</p>
         <a
-          href="tel:6478399090"
+          href={`tel:${config.realtor.phoneE164}`}
           className="text-sm font-semibold text-[#07111f] hover:text-amber-600 hover:underline whitespace-nowrap"
         >
           Tell Aamir what you need →
@@ -267,7 +268,7 @@ export default async function SeoLinkGrid() {
       {/* Quick links */}
       <div>
         <h3 className="text-[14px] font-extrabold text-[#07111f] mb-4">
-          More Milton real estate searches
+          More {config.CITY_NAME} real estate searches
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-1.5">
           {[

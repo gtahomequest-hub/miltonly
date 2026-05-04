@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 export default function MapSection() {
   return (
@@ -7,7 +8,7 @@ export default function MapSection() {
         <div className="text-center mb-10">
           <span className="section-label text-brand-500">Interactive Map</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-navy mt-2">
-            Explore Milton on the Map
+            Explore {config.CITY_NAME} on the Map
           </h2>
           <p className="text-neutral-500 mt-3 max-w-xl mx-auto">
             Live listing pins, GO train walk times, school zones, and market data

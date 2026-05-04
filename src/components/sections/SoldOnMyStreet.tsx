@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { attributionPayload } from "@/lib/attribution";
+import { config } from "@/lib/config";
 
 type Stats =
   | { found: false; name: string }
@@ -108,7 +109,7 @@ export default function SoldOnMyStreet() {
       const data: Stats = await res.json();
       setStats(data);
     } catch {
-      setSearchError("Couldn't fetch sold data. Please try again or call (647) 839-9090.");
+      setSearchError(`Couldn't fetch sold data. Please try again or call ${config.realtor.phone}.`);
     } finally {
       setSearching(false);
     }
@@ -146,7 +147,7 @@ export default function SoldOnMyStreet() {
       if (!res.ok) throw new Error();
       setSuccess(true);
     } catch {
-      setLeadError("Something went wrong. Please call (647) 839-9090.");
+      setLeadError(`Something went wrong. Please call ${config.realtor.phone}.`);
     } finally {
       setSubmitting(false);
     }
@@ -175,7 +176,7 @@ export default function SoldOnMyStreet() {
           <div className="grid grid-cols-3 gap-4 max-w-md mb-5">
             <div>
               <p className="text-[18px] font-extrabold text-[#f59e0b]">🏘️ 7,094</p>
-              <p className="text-[11px] text-[#94a3b8] leading-tight mt-1">Milton sales tracked</p>
+              <p className="text-[11px] text-[#94a3b8] leading-tight mt-1">{config.CITY_NAME} sales tracked</p>
             </div>
             <div>
               <p className="text-[18px] font-extrabold text-[#f59e0b]">💯 100%</p>
@@ -334,8 +335,8 @@ export default function SoldOnMyStreet() {
               <p className="text-[13px] text-[#94a3b8] leading-relaxed mb-4">
                 Your full sold report + free CMA will land in your inbox within 1 business day. Aamir reviews every street personally before sending.
               </p>
-              <a href="tel:+16478399090" className="inline-block text-[13px] font-bold text-[#f59e0b] hover:underline">
-                Want to talk now? Call (647) 839-9090
+              <a href={`tel:${config.realtor.phoneE164}`} className="inline-block text-[13px] font-bold text-[#f59e0b] hover:underline">
+                Want to talk now? Call {config.realtor.phone}
               </a>
             </div>
           )}

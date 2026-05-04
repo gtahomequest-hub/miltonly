@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 const schools = [
   "Craig Kielburger",
@@ -19,7 +20,7 @@ export default function SchoolGoSection() {
             Schools &amp; GO Commute
           </h2>
           <p className="text-neutral-500 mt-3 max-w-lg mx-auto">
-            No other Milton site lets you search by school zone or GO train walk time.
+            No other {config.CITY_NAME} site lets you search by school zone or GO train walk time.
           </p>
         </div>
 
@@ -62,7 +63,7 @@ export default function SchoolGoSection() {
               <h3 className="text-xl font-extrabold text-navy">GO Train Commute</h3>
             </div>
             <p className="text-neutral-500 text-sm mb-5">
-              Show homes within walking distance to Milton GO station.
+              Show homes within walking distance to {config.CITY_NAME} GO station.
             </p>
             <div className="space-y-1.5 mb-6">
               {[

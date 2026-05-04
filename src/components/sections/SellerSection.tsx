@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { config } from "@/lib/config";
 
 export default function SellerSection() {
   return (
@@ -9,7 +10,7 @@ export default function SellerSection() {
             Thinking of Selling?
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mt-4 leading-tight">
-            Find out your Milton home&apos;s value in 30 seconds
+            Find out your {config.CITY_NAME} home&apos;s value in 30 seconds
           </h2>
           <p className="text-white/50 mt-5 text-lg leading-relaxed">
             Enter your street name and see what homes on your street have sold for.
