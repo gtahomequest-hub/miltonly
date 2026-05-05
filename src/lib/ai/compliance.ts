@@ -449,7 +449,7 @@ export async function generateLongFormStreetDescription(
   const cityProvince = options.cityProvince ?? "Ontario";
   const maxPasses = options.maxPasses ?? 7;
   const HUMANIZATION_PASS = maxPasses - 1;
-  const POLISH_PASS = maxPasses;
+
 
   // Compliance check on the user prompt up front (before we burn any DeepSeek tokens)
   const systemPromptV2 = buildSystemPromptV2(stats.streetName, cityName, cityProvince);
