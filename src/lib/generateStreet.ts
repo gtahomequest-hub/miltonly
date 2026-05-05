@@ -11,8 +11,19 @@ import { calcMarketDataHash } from "@/lib/streetUtils";
 import { sendSMS } from "@/lib/smsAlert";
 import {
   generateStreetDescription as aiGenerate,
+  generateLongFormStreetDescription,
   type SafeStreetStats,
 } from "@/lib/ai/compliance";
+
+// UPG-4 Stage 2 Piece 2: Feature flag selects AI provider.
+// AI_PROVIDER unset OR "anthropic" → legacy 300-word Anthropic path (default).
+// AI_PROVIDER="deepseek_v2" → new 1,400-word DeepSeek 7-pass path.
+// Flag is read at runtime so flipping in Vercel env takes effect on next request,
+// no rebuild required.
+const AI_PROVIDER_V2 = "deepseek_v2";
+function isDeepSeekV2(): boolean {
+  return (process.env.AI_PROVIDER || "").trim() === AI_PROVIDER_V2;
+}
 
 const BANNED_WORDS = [
   "nestled", "charming", "vibrant", "picturesque", "bustling",
@@ -151,6 +162,18 @@ Real market data — use all of this naturally in the text:
     bestMonth,
   };
 
+  // UPG-4 Stage 2 Piece 2: Feature-flag-gated provider selection.
+  if (isDeepSeekV2()) {
+    const deepSeekResult = await generateLongFormStreetDescription(safeStats, {
+      cityName: config.CITY_NAME,
+      cityProvince: config.CITY_PROVINCE,
+    });
+    // The DeepSeek function runs its own v2 validator internally and applies
+    // post-trim. We trust its output; the legacy validateContent() in this
+    // module will be bypassed by generateStreetContent() when the flag is set.
+    return deepSeekResult.text;
+  }
+
   const result = await aiGenerate(SYSTEM_PROMPT, userPrompt, safeStats);
   return result.text;
 }
@@ -215,18 +238,31 @@ export async function generateStreetContent(
   let attempts = 0;
   let lastFailures: string[] = [];
 
-  for (attempts = 1; attempts <= 3; attempts++) {
-    const failureReason = lastFailures.length > 0 ? lastFailures.join("; ") : undefined;
-    rawAiOutput = await generateDescription(streetName, stats, failureReason);
-    const validation = validateContent(rawAiOutput, streetName);
+  // UPG-4 Stage 2 Piece 2: When AI_PROVIDER=deepseek_v2 is set, the new
+  // generateLongFormStreetDescription() function runs its own v2 validator
+  // internally (1,200-1,500 words, 6 section headings, sentence rhythm, etc.)
+  // and applies a programmatic post-trim. The legacy validateContent() in this
+  // module would fail it on every attempt because it requires 280-360 words.
+  // Single-pass when DeepSeek mode — the multi-pass retry already happens
+  // inside the DeepSeek function across its 7 internal passes.
+  if (isDeepSeekV2()) {
+    rawAiOutput = await generateDescription(streetName, stats);
+    description = rawAiOutput;
+    attempts = 1;
+  } else {
+    for (attempts = 1; attempts <= 3; attempts++) {
+      const failureReason = lastFailures.length > 0 ? lastFailures.join("; ") : undefined;
+      rawAiOutput = await generateDescription(streetName, stats, failureReason);
+      const validation = validateContent(rawAiOutput, streetName);
 
-    if (validation.passed) {
-      description = rawAiOutput;
-      break;
+      if (validation.passed) {
+        description = rawAiOutput;
+        break;
+      }
+
+      lastFailures = validation.failures;
+      console.log(`${streetName} attempt ${attempts} failed:`, validation.failures);
     }
-
-    lastFailures = validation.failures;
-    console.log(`${streetName} attempt ${attempts} failed:`, validation.failures);
   }
 
   const passed = description.length > 0;
