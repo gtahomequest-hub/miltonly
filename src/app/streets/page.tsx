@@ -3,6 +3,8 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import StreetsGrid from "./StreetsGrid";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
   description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} street with real estate data. Average prices, days on market, active listings. Street-level intelligence powered by TREB.`,

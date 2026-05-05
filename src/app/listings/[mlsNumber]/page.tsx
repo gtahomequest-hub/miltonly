@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +8,8 @@ import FooterSection from "@/components/sections/FooterSection";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
+
+export const dynamic = 'force-dynamic';
 
 interface Props { params: { mlsNumber: string } }
 
@@ -22,7 +24,7 @@ function titleCase(s: string | null | undefined): string {
 }
 const cleanHood = (h: string) => titleCase(h.replace(/^\d+\s*-\s*\w+\s+/, "").trim());
 
-// Deterministic "views today" based on mlsNumber + date — stable within a day
+// Deterministic "views today" based on mlsNumber + date â€” stable within a day
 function viewsToday(mls: string): number {
   let h = 0;
   for (let i = 0; i < mls.length; i++) h = (h * 31 + mls.charCodeAt(i)) & 0xfffff;
@@ -42,14 +44,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const priceStr = `$${l.price.toLocaleString()}${isRental ? "/mo" : ""}`;
 
   const title = isRental
-    ? `${addr} — ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
-    : `${addr} — ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
+    ? `${addr} â€” ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
+    : `${addr} â€” ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
 
   const days = Math.floor((Date.now() - new Date(l.listedAt).getTime()) / 86400000);
   const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
-    ? `${typeLabel} rental at ${addr}, ${hood} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} — usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} — usually confirmed within the hour.`;
+    ? `${typeLabel} rental at ${addr}, ${hood} â€” ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} â€” usually confirmed within the hour.`
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME} â€” ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} â€” usually confirmed within the hour.`;
 
   return {
     title,
@@ -67,7 +69,7 @@ export default async function ListingDetailPage({ params }: Props) {
   const listingRaw = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!listingRaw) notFound();
 
-  // ─── COMPLIANCE GATE ───
+  // â”€â”€â”€ COMPLIANCE GATE â”€â”€â”€
   // If permAdvertise = false, do not render the listing publicly.
   if (!listingRaw.permAdvertise) {
     return (
@@ -76,7 +78,7 @@ export default async function ListingDetailPage({ params }: Props) {
           <p className="text-[12px] font-bold text-[#94a3b8] uppercase tracking-[0.14em] mb-3">Not available</p>
           <h1 className="text-[22px] font-extrabold text-[#07111f] mb-3">This listing is not available for display</h1>
           <p className="text-[14px] text-[#64748b] mb-6">The brokerage or seller has opted out of public display for this property.</p>
-          <Link href="/listings" className="text-[14px] text-[#f59e0b] font-bold hover:underline">← Browse other {config.CITY_NAME} listings</Link>
+          <Link href="/listings" className="text-[14px] text-[#f59e0b] font-bold hover:underline">â† Browse other {config.CITY_NAME} listings</Link>
         </div>
       </div>
     );
@@ -114,8 +116,8 @@ export default async function ListingDetailPage({ params }: Props) {
       _avg: { price: true },
     }),
   ]);
-  const soldCountOnStreet = 0; // deprecated — see StreetSoldBlock on street page
-  const soldCountInHood = 0; // deprecated — see NeighbourhoodSoldBlock
+  const soldCountOnStreet = 0; // deprecated â€” see StreetSoldBlock on street page
+  const soldCountInHood = 0; // deprecated â€” see NeighbourhoodSoldBlock
 
   const similar = similarRaw.map(redactAddress);
   const hoodAvgRent = hoodRentAvg._avg.price ? Math.round(hoodRentAvg._avg.price) : null;
@@ -132,7 +134,7 @@ export default async function ListingDetailPage({ params }: Props) {
   const domDays = Math.floor((Date.now() - new Date(listing.listedAt).getTime()) / 86400000);
   const views = viewsToday(listing.mlsNumber);
 
-  // ─── SCHEMA MARKUP ───
+  // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
   const hoodName = cleanHood(listing.neighbourhood);
   const addrDisplay = listing.displayAddress ? titleCase(listing.address) : `Address on request, ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
@@ -188,11 +190,11 @@ export default async function ListingDetailPage({ params }: Props) {
       <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-3">
         <div className="flex items-center gap-2 text-[12px] text-[#94a3b8] max-w-6xl mx-auto">
           <Link href="/" className="hover:text-[#07111f]">{config.SITE_NAME}</Link>
-          <span>›</span>
+          <span>â€º</span>
           <Link href={isRental ? "/rentals" : "/listings"} className="hover:text-[#07111f]">{isRental ? "Rent" : "Buy"}</Link>
-          <span>›</span>
+          <span>â€º</span>
           <span className="text-[#64748b]">{hoodName}</span>
-          <span>›</span>
+          <span>â€º</span>
           <span className="text-[#475569] font-medium">
             {listing.displayAddress ? titleCase(listing.address.split(",")[0]) : "Address on request"}
           </span>

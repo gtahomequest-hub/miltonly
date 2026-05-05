@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +12,8 @@ import {
 } from "@/lib/schema";
 import FooterSection from "@/components/sections/FooterSection";
 import NeighbourhoodSoldBlock from "@/components/street/NeighbourhoodSoldBlock";
+
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: { slug: string };
@@ -45,7 +47,7 @@ async function getNeighbourhoodData(slug: string) {
   const name = cleanHoodName(rawName);
   const where = { neighbourhood: rawName, permAdvertise: true as const };
 
-  // Sold listings are no longer fetched here — sold data surfaces only
+  // Sold listings are no longer fetched here â€” sold data surfaces only
   // through the gated NeighbourhoodSoldBlock fed from DB2 with VowGate.
   const [allListings, activeListings, rentedListings] =
     await Promise.all([
@@ -60,7 +62,7 @@ async function getNeighbourhoodData(slug: string) {
 
   if (allListings.length === 0) return null;
 
-  // Active-listing aggregates only (Phase 2.6 — DB1 sold-derived fields
+  // Active-listing aggregates only (Phase 2.6 â€” DB1 sold-derived fields
   // removed from the public render tree; sold data surfaces only through
   // the gated NeighbourhoodSoldBlock fed from DB2 with VowGate + k=10).
   const active = allListings.filter((l) => l.status === "active");
@@ -72,9 +74,9 @@ async function getNeighbourhoodData(slug: string) {
   const medianPrice = activePrices.length > 0
     ? activePrices[Math.floor(activePrices.length / 2)]
     : 0;
-  const avgListPrice = avgPrice; // alias — both are active-only avg list price
+  const avgListPrice = avgPrice; // alias â€” both are active-only avg list price
 
-  // DOM — active listings only
+  // DOM â€” active listings only
   const activeWithDOM = active.filter(
     (l) => l.daysOnMarket && l.daysOnMarket > 0
   );
@@ -85,7 +87,7 @@ async function getNeighbourhoodData(slug: string) {
       )
     : 0;
 
-  // By type — active listings only
+  // By type â€” active listings only
   const types = ["detached", "semi", "townhouse", "condo", "other"];
   const byType: Record<
     string,
@@ -154,7 +156,7 @@ async function getNeighbourhoodData(slug: string) {
     activeListings: activeListings.map((l) =>
       JSON.parse(JSON.stringify(l))
     ),
-    // soldListings removed — sold records reach the render tree only via
+    // soldListings removed â€” sold records reach the render tree only via
     // the gated NeighbourhoodSoldBlock below.
     lastUpdated: new Date().toISOString().split("T")[0],
   };
@@ -164,13 +166,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getNeighbourhoodData(params.slug);
   if (!data) return { title: "Neighbourhood Not Found" };
   return {
-    title: `${data.name} ${config.CITY_NAME} — Homes For Sale, Prices & Neighbourhood Guide`,
+    title: `${data.name} ${config.CITY_NAME} â€” Homes For Sale, Prices & Neighbourhood Guide`,
     description: `Explore ${data.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${data.activeCount} active listings, avg price ${formatPriceFull(data.avgPrice)}. Streets, schools, market data. Updated daily.`,
     alternates: {
       canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}`,
     },
     openGraph: {
-      title: `${data.name} ${config.CITY_NAME} Real Estate — Live Data`,
+      title: `${data.name} ${config.CITY_NAME} Real Estate â€” Live Data`,
       description: `${data.activeCount} homes for sale in ${data.name}, ${config.CITY_NAME}. Avg ${formatPriceFull(data.avgPrice)}.`,
     },
   };
@@ -195,7 +197,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
     },
     {
       question: `How fast do homes sell in ${data.name} ${config.CITY_NAME}?`,
-      answer: `Active listings in ${data.name}, ${config.CITY_NAME} average ${data.avgDOM || "—"} days on market. Register for full MLS® access to see detailed market data, including historical transaction records for this neighbourhood.`,
+      answer: `Active listings in ${data.name}, ${config.CITY_NAME} average ${data.avgDOM || "â€”"} days on market. Register for full MLSÂ® access to see detailed market data, including historical transaction records for this neighbourhood.`,
     },
   ];
 
@@ -266,7 +268,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
                 {[
                   { value: formatPriceFull(data.avgPrice), label: "Avg list price" },
                   { value: String(data.activeCount), label: "Active listings" },
-                  { value: data.avgDOM ? data.avgDOM + " days" : "—", label: "Avg days on market" },
+                  { value: data.avgDOM ? data.avgDOM + " days" : "â€”", label: "Avg days on market" },
                   { value: String(data.soldCount), label: "Sold this year" },
                 ].map((s) => (
                   <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
@@ -279,7 +281,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Market snapshot bar — active-listing aggregates only.
+        {/* Market snapshot bar â€” active-listing aggregates only.
            Sold-price intel surfaces in the gated NeighbourhoodSoldBlock below. */}
         <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
           <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -390,7 +392,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[#cbd5e1] text-[32px]">
-                          🏠
+                          ðŸ 
                         </div>
                       )}
                     </div>
@@ -400,7 +402,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
                       </p>
                       <p className="text-[12px] text-[#475569] mt-0.5">
                         {l.bedrooms as number} bd &middot; {l.bathrooms as number} ba
-                        {l.sqft ? ` · ${(l.sqft as number).toLocaleString()} sqft` : ""}
+                        {l.sqft ? ` Â· ${(l.sqft as number).toLocaleString()} sqft` : ""}
                       </p>
                       <p className="text-[11px] text-[#94a3b8] mt-1 truncate">
                         {l.address as string}
@@ -447,7 +449,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
               Ready to explore {data.name}?
             </h2>
             <p className="text-[14px] text-[rgba(248,249,251,0.5)] mt-3 mb-8">
-              Whether you&apos;re buying, selling or watching the market — we&apos;ve got you covered.
+              Whether you&apos;re buying, selling or watching the market â€” we&apos;ve got you covered.
             </p>
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6">

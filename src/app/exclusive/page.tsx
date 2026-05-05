@@ -1,11 +1,13 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMeta({
-  title: `Exclusive Listings — ${config.realtor.name}`,
-  description: `Properties personally listed and represented by ${config.realtor.name} · ${config.brokerage.name.replace(", Brokerage", "")}. ${config.CITY_NAME} ${config.CITY_PROVINCE} exclusive homes for sale and for rent.`,
+  title: `Exclusive Listings â€” ${config.realtor.name}`,
+  description: `Properties personally listed and represented by ${config.realtor.name} Â· ${config.brokerage.name.replace(", Brokerage", "")}. ${config.CITY_NAME} ${config.CITY_PROVINCE} exclusive homes for sale and for rent.`,
   canonical: `${config.SITE_URL}/exclusive`,
 });
 
@@ -36,7 +38,7 @@ export default async function ExclusivePage() {
           Exclusive Listings
         </h1>
         <p className="text-[14px] text-[#94a3b8] max-w-[560px] mx-auto leading-relaxed">
-          Properties personally listed and represented by {config.realtor.name} ·<br className="hidden sm:block" /> {config.brokerage.name.replace(", Brokerage", "")}
+          Properties personally listed and represented by {config.realtor.name} Â·<br className="hidden sm:block" /> {config.brokerage.name.replace(", Brokerage", "")}
         </p>
       </section>
 
@@ -51,7 +53,7 @@ export default async function ExclusivePage() {
                 href={`tel:${config.realtor.phoneE164}`}
                 className="inline-block bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-xl px-6 py-3 hover:bg-[#fbbf24] transition-colors"
               >
-                📞 Call {config.realtor.name.split(" ")[0]} {config.realtor.phone}
+                ðŸ“ž Call {config.realtor.name.split(" ")[0]} {config.realtor.phone}
               </a>
             </div>
           ) : (
@@ -94,7 +96,7 @@ export default async function ExclusivePage() {
                         {l.city ? `, ${l.city}` : ""}
                       </p>
                       <p className="text-[12px] text-[#475569] mt-2">
-                        {formatBeds(l.bedsMin, l.bedsMax)} · {l.baths} bath · {l.parking} parking
+                        {formatBeds(l.bedsMin, l.bedsMax)} Â· {l.baths} bath Â· {l.parking} parking
                       </p>
                       <p className="text-[11px] text-[#94a3b8] mt-1">{l.propertyType}</p>
 
@@ -104,7 +106,7 @@ export default async function ExclusivePage() {
                             href={`tel:${config.realtor.phoneE164}`}
                             className="flex-1 bg-[#f59e0b] text-[#07111f] font-bold rounded-xl px-4 py-2 text-[13px] text-center hover:bg-[#fbbf24]"
                           >
-                            Get notified →
+                            Get notified â†’
                           </a>
                         ) : (
                           <>
@@ -112,7 +114,7 @@ export default async function ExclusivePage() {
                               href="tel:+16478399090"
                               className="flex-1 bg-[#f59e0b] text-[#07111f] font-bold rounded-xl px-4 py-2 text-[13px] text-center hover:bg-[#fbbf24]"
                             >
-                              📞 Call {config.realtor.name.split(" ")[0]}
+                              ðŸ“ž Call {config.realtor.name.split(" ")[0]}
                             </a>
                             <a
                               href="https://wa.me/16478399090"
@@ -120,7 +122,7 @@ export default async function ExclusivePage() {
                               rel="noopener noreferrer"
                               className="flex-1 bg-[#07111f] text-[#f8f9fb] font-bold rounded-xl px-4 py-2 text-[13px] text-center border border-[#1e3a5f] hover:bg-[#0c1e35]"
                             >
-                              💬 WhatsApp
+                              ðŸ’¬ WhatsApp
                             </a>
                           </>
                         )}

@@ -1,4 +1,4 @@
-import { generateMetadata as genMeta } from "@/lib/seo";
+﻿import { generateMetadata as genMeta } from "@/lib/seo";
 import { mosques, getAllMosqueNeighbourhoods } from "@/lib/mosques";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
@@ -12,8 +12,10 @@ import {
 import MosquesGrid from "./MosquesGrid";
 import MosqueAlertForm from "./MosqueAlertForm";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMeta({
-  title: `Mosques in ${config.CITY_NAME} — Homes Near Masjids`,
+  title: `Mosques in ${config.CITY_NAME} â€” Homes Near Masjids`,
   description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s mosques and Islamic centres. 7 locations with live TREB listings by neighbourhood. Updated daily.`,
   canonical: `${config.SITE_URL}/mosques`,
   keywords: [
@@ -146,7 +148,7 @@ export default async function MosquesPage() {
           <MosquesGrid mosques={mosquesWithCounts} />
         </div>
 
-        {/* Prose section — Muslim community */}
+        {/* Prose section â€” Muslim community */}
         <section className="bg-white px-5 sm:px-11 py-12 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-[20px] font-extrabold text-[#07111f] mb-6">

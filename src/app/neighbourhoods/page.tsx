@@ -1,11 +1,13 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import Link from "next/link";
 import { formatPriceFull } from "@/lib/format";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Neighbourhoods — Prices, Schools & Market Data`,
+  title: `${config.CITY_NAME} Neighbourhoods â€” Prices, Schools & Market Data`,
   description: `Explore every ${config.CITY_NAME} ${config.CITY_PROVINCE} neighbourhood. Compare average home prices, active listings, top streets, school zones and GO train access. Live TREB data.`,
   canonical: `${config.SITE_URL}/neighbourhoods`,
 });
@@ -122,7 +124,7 @@ export default async function NeighbourhoodsPage() {
                     Top streets
                   </p>
                   <p className="text-[12px] text-[#64748b]">
-                    {h.topStreets.join(" · ")}
+                    {h.topStreets.join(" Â· ")}
                   </p>
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { generateMetadata as genMeta } from "@/lib/seo";
+﻿import { generateMetadata as genMeta } from "@/lib/seo";
 import { schools, getAllNeighbourhoods } from "@/lib/schools";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
@@ -12,8 +12,10 @@ import {
 import SchoolsGrid from "./SchoolsGrid";
 import SchoolAlertForm from "./SchoolAlertForm";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Schools — Homes Near Top Schools`,
+  title: `${config.CITY_NAME} Schools â€” Homes Near Top Schools`,
   description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s 28 public and Catholic schools. Live TREB listings by school zone, Fraser scores, and neighbourhood data.`,
   canonical: `${config.SITE_URL}/schools`,
   keywords: [
@@ -58,7 +60,7 @@ export default async function SchoolsPage() {
   const cathElem = schools.filter((s) => s.board === "catholic" && s.level === "elementary").length;
   const cathSec = schools.filter((s) => s.board === "catholic" && s.level === "secondary").length;
 
-  // Neighbourhoods that have schools — for internal linking
+  // Neighbourhoods that have schools â€” for internal linking
   const hoodSlugs = neighbourhoods.map((n) => ({
     name: n,
     slug: n.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-"),
@@ -153,7 +155,7 @@ export default async function SchoolsPage() {
           <SchoolsGrid schools={schoolsWithCounts} />
         </div>
 
-        {/* Why school zones matter — prose section */}
+        {/* Why school zones matter â€” prose section */}
         <section className="bg-white px-5 sm:px-11 py-12 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-[20px] font-extrabold text-[#07111f] mb-6">
@@ -176,7 +178,7 @@ export default async function SchoolsPage() {
           </div>
         </section>
 
-        {/* Neighbourhoods with schools — internal links */}
+        {/* Neighbourhoods with schools â€” internal links */}
         <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">

@@ -1,11 +1,13 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import RentalsClient from "../rentals/RentalsClient";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Rentals — Find Your Perfect Rental Home in ${config.CITY_NAME} ${config.CITY_PROVINCE_CODE}`,
-  description: `Browse every active rental in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes — live TREB data, verified landlords, same-day showings guaranteed.`,
+  title: `${config.CITY_NAME} Rentals â€” Find Your Perfect Rental Home in ${config.CITY_NAME} ${config.CITY_PROVINCE_CODE}`,
+  description: `Browse every active rental in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes â€” live TREB data, verified landlords, same-day showings guaranteed.`,
   canonical: `${config.SITE_URL}/rent`,
 });
 

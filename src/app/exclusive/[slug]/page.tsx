@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
@@ -6,6 +6,8 @@ import { config } from "@/lib/config";
 import type { Metadata } from "next";
 import Gallery from "./Gallery";
 import AgentSidebar from "./AgentSidebar";
+
+export const dynamic = 'force-dynamic';
 
 export const revalidate = 300;
 
@@ -39,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `$${listing.price.toLocaleString()}`;
   const beds = listing.bedsMax > 0 ? `${listing.bedsMin}+${listing.bedsMax}` : `${listing.bedsMin}`;
   return genMeta({
-    title: `${listing.address} — ${priceStr} | ${beds} bed ${listing.propertyType} | ${config.SITE_NAME}`,
+    title: `${listing.address} â€” ${priceStr} | ${beds} bed ${listing.propertyType} | ${config.SITE_NAME}`,
     description: listing.description.slice(0, 160),
     canonical: `${config.SITE_URL}/exclusive/${listing.slug}`,
   });
@@ -54,32 +56,32 @@ export default async function ExclusiveDetailPage({ params }: Props) {
 
   const detailRows: Array<{ label: string; value: string }> = [
     { label: "Property type", value: listing.propertyType },
-    { label: "Sqft", value: listing.sqft ? `${listing.sqft.toLocaleString()} sq ft` : "—" },
-    { label: "Year built", value: listing.yearBuilt ? String(listing.yearBuilt) : "—" },
+    { label: "Sqft", value: listing.sqft ? `${listing.sqft.toLocaleString()} sq ft` : "â€”" },
+    { label: "Year built", value: listing.yearBuilt ? String(listing.yearBuilt) : "â€”" },
     {
       label: "Maintenance",
-      value: listing.maintenance ? `$${listing.maintenance.toLocaleString()} / month` : "—",
+      value: listing.maintenance ? `$${listing.maintenance.toLocaleString()} / month` : "â€”",
     },
     {
       label: "Taxes",
       value: listing.taxes
         ? `$${listing.taxes.toLocaleString()}${listing.taxYear ? ` / yr (${listing.taxYear})` : " / yr"}`
-        : "—",
+        : "â€”",
     },
-    { label: "Heating", value: listing.heating || "—" },
-    { label: "Cooling", value: listing.cooling || "—" },
-    { label: "Basement", value: listing.basement || "—" },
-    { label: "Garage", value: listing.garage || "—" },
-    { label: "Locker", value: listing.locker || "—" },
-    { label: "Exposure", value: listing.exposure || "—" },
-    { label: "Lot size", value: listing.lotSize || "—" },
-    { label: "Exterior", value: listing.exterior || "—" },
-    { label: "Pets", value: listing.petFriendly === null ? "—" : listing.petFriendly ? "Yes" : "No" },
+    { label: "Heating", value: listing.heating || "â€”" },
+    { label: "Cooling", value: listing.cooling || "â€”" },
+    { label: "Basement", value: listing.basement || "â€”" },
+    { label: "Garage", value: listing.garage || "â€”" },
+    { label: "Locker", value: listing.locker || "â€”" },
+    { label: "Exposure", value: listing.exposure || "â€”" },
+    { label: "Lot size", value: listing.lotSize || "â€”" },
+    { label: "Exterior", value: listing.exterior || "â€”" },
+    { label: "Pets", value: listing.petFriendly === null ? "â€”" : listing.petFriendly ? "Yes" : "No" },
   ];
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Gallery — full width */}
+      {/* Gallery â€” full width */}
       <Gallery photos={listing.photos} title={listing.title} />
 
       {/* Breadcrumb + back link */}
@@ -88,28 +90,28 @@ export default async function ExclusiveDetailPage({ params }: Props) {
           href="/exclusive"
           className="text-[12px] text-[#94a3b8] hover:text-[#07111f] inline-block mb-2"
         >
-          ← Back to exclusive listings
+          â† Back to exclusive listings
         </Link>
         <nav className="text-[11px] text-[#64748b]">
           <Link href="/" className="hover:text-[#07111f]">
             {config.SITE_NAME}
           </Link>
-          <span className="mx-1.5">›</span>
+          <span className="mx-1.5">â€º</span>
           <Link href="/exclusive" className="hover:text-[#07111f]">
             Exclusive
           </Link>
           {listing.city && (
             <>
-              <span className="mx-1.5">›</span>
+              <span className="mx-1.5">â€º</span>
               <span>{listing.city}</span>
             </>
           )}
-          <span className="mx-1.5">›</span>
+          <span className="mx-1.5">â€º</span>
           <span className="text-[#07111f] font-semibold">{listing.address}</span>
         </nav>
       </div>
 
-      {/* Header row — price + stats, agent sidebar */}
+      {/* Header row â€” price + stats, agent sidebar */}
       <section className="max-w-6xl mx-auto px-5 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left: price + address + stat row */}
@@ -128,12 +130,12 @@ export default async function ExclusiveDetailPage({ params }: Props) {
 
             {/* Icon stat row */}
             <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5 py-5 border-y border-[#e2e8f0]">
-              <Stat icon="🛏" value={formatBedsLong(listing.bedsMin, listing.bedsMax)} label="Beds" />
-              <Stat icon="🚿" value={String(listing.baths)} label="Baths" />
-              {listing.sqft && <Stat icon="📐" value={`${listing.sqft.toLocaleString()}`} label="Sqft" />}
-              <Stat icon="🏠" value={listing.propertyType} label="Type" />
-              <Stat icon="🚗" value={String(listing.parking)} label="Parking" />
-              {listing.yearBuilt && <Stat icon="📅" value={String(listing.yearBuilt)} label="Year built" />}
+              <Stat icon="ðŸ›" value={formatBedsLong(listing.bedsMin, listing.bedsMax)} label="Beds" />
+              <Stat icon="ðŸš¿" value={String(listing.baths)} label="Baths" />
+              {listing.sqft && <Stat icon="ðŸ“" value={`${listing.sqft.toLocaleString()}`} label="Sqft" />}
+              <Stat icon="ðŸ " value={listing.propertyType} label="Type" />
+              <Stat icon="ðŸš—" value={String(listing.parking)} label="Parking" />
+              {listing.yearBuilt && <Stat icon="ðŸ“…" value={String(listing.yearBuilt)} label="Year built" />}
             </div>
           </div>
 
@@ -144,7 +146,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* Details section — bg-[#f8f9fb] */}
+      {/* Details section â€” bg-[#f8f9fb] */}
       <section className="bg-[#f8f9fb] py-10 mt-10">
         <div className="max-w-6xl mx-auto px-5">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -204,7 +206,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
                             <td className="px-5 py-3 font-semibold text-[#07111f]">{r.name}</td>
                             <td className="px-5 py-3 text-[#64748b]">{r.level}</td>
                             <td className="px-5 py-3 text-[#64748b]">{r.size}</td>
-                            <td className="px-5 py-3 text-[#64748b]">{r.notes || "—"}</td>
+                            <td className="px-5 py-3 text-[#64748b]">{r.notes || "â€”"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -252,7 +254,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
               )}
             </div>
 
-            {/* Right column 1/3 — sticky duplicate */}
+            {/* Right column 1/3 â€” sticky duplicate */}
             <div className="lg:sticky lg:top-[80px] self-start">
               <AgentSidebar address={listing.address} slug={listing.slug} />
             </div>
