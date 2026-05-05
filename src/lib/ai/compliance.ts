@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AI Compliance Gatekeeper
  *
  * This is the ONLY file in the codebase that calls external LLM APIs.
@@ -618,6 +618,7 @@ export function trimToWordCap(text: string, targetWordCount: number = 1400): Tri
 }
 
 
+ /**
  * DeepSeek 7-pass chain. Architecture proven 2026-05-04 — produces content that
  * ZeroGPT classifies as human-written (16.4% AI on Trafalgar Rd W test).
  *
