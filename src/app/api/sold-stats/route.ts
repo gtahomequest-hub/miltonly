@@ -3,6 +3,8 @@ import { neon } from "@neondatabase/serverless";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 
+export const dynamic = 'force-dynamic';
+
 const url = process.env.ANALYTICS_DATABASE_URL;
 const aSql = url ? neon(url) : null;
 
