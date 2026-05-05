@@ -222,7 +222,7 @@ export function validateLongFormContent(text: string, streetName: string): Valid
     failures.push(`Missing sections: ${missingSections.join(", ")}`);
   }
 
-  const anchorsFound = [...new Set(KNOWN_ANCHORS_V2.filter((a) => text.includes(a)))];
+  const anchorsFound = Array.from(new Set(KNOWN_ANCHORS_V2.filter((a) => text.includes(a))));
   if (anchorsFound.length < 3) {
     failures.push(`Only ${anchorsFound.length} anchors (need 3+). Found: ${anchorsFound.join(", ") || "none"}`);
   }
