@@ -52,12 +52,17 @@ export async function POST(request: NextRequest) {
       toBuild.push(item);
     } else {
       skipped.push(`${item.streetName} (${decision})`);
-      if (decision !== "skip_current") {
-        await prisma.streetQueue.update({
-          where: { id: item.id },
-          data: { status: decision === "skip_low_data" ? "ineligible" : "done" },
-        });
-      }
+      // UPG-4 Stage 2 Piece 3 (DEF-17 fix): Always transition out of pending
+      // after streetDecision examines the row. Previous logic left skip_current
+      // rows in pending forever, accumulating 230 orphaned rows by 2026-05-04.
+      // skip_current = content is fresh enough; queue's job for this street is done.
+      // skip_low_data = no stats yet; mark ineligible (StreetGeneration cron will
+      // re-evaluate when stats arrive).
+      const newStatus = decision === "skip_low_data" ? "ineligible" : "done";
+      await prisma.streetQueue.update({
+        where: { id: item.id },
+        data: { status: newStatus, processedAt: new Date() },
+      });
     }
   }
 
