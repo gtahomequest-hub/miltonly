@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AI Compliance Gatekeeper
  *
  * This is the ONLY file in the codebase that calls external LLM APIs.
@@ -222,7 +222,7 @@ export function validateLongFormContent(text: string, streetName: string): Valid
     failures.push(`Missing sections: ${missingSections.join(", ")}`);
   }
 
-  const anchorsFound = Array.from(new Set(KNOWN_ANCHORS_V2.filter((a) => text.includes(a))));
+  const anchorsFound = [...new Set(KNOWN_ANCHORS_V2.filter((a) => text.includes(a)))];
   if (anchorsFound.length < 3) {
     failures.push(`Only ${anchorsFound.length} anchors (need 3+). Found: ${anchorsFound.join(", ") || "none"}`);
   }
@@ -423,10 +423,201 @@ export interface LongFormGenerationResult {
     costUsd: number;
   }>;
   provider: "deepseek_v2";
+  trimResult: TrimResult | null;
 }
 
 /**
- * Generate a long-form (1,200-1,500 word) multi-stakeholder street guide using
+ * UPG-4 Stage 2 Piece 1: Programmatic post-trim function
+ *
+ * DEF-15 root cause: prompt-only word caps don't bind on DeepSeek (verified
+ * 2026-05-04 — humanization pass inflated 1,431w → 1,843w despite explicit
+ * "HARD WORD CAP" instructions in both humanization AND polish prompts).
+ *
+ * Solution: deterministic post-trim. Splits text into sections by ## heading,
+ * classifies each sentence, removes lowest-priority sentences from largest
+ * sections until under cap. Anecdotes, opinions, data points, and section
+ * headings are NEVER removed. Only transitional/restatement sentences.
+ *
+ * Returns trimmed text + metrics. If text is already under cap, returns
+ * unchanged with removedSentences = 0.
+ */
+
+const KEEP_ALWAYS_PATTERNS = [
+  // First-person markers (anecdotes, realtor voice)
+  /\bI[' ]ve\s/i, /\bmy clients\b/i, /\bin my experience\b/i,
+  /\bI had\s/i, /\bI tell\b/i, /\bI[' ]d\b/i,
+  /\bI[' ]ll\s/i, /\bI[' ]m\s/i, /\bI think\b/i,
+  /\bI know\b/i, /\bI saw\b/i, /\bI sold\b/i,
+  /\bI leased\b/i, /\bI showed\b/i, /\bI listed\b/i,
+  /\bone (guy|client|tenant|seller|buyer)\b/i,
+  // Specific data points (dollar figures, day counts)
+  /\$\d/i, /\b\d+\s*(days?|months?|years?)\b/i,
+  /\b\d+(\.\d+)?[KkMm]\b/, // shorthand like 1.5M, 800K
+  /\b\d+%/, // percentages
+  // Opinion verbs (operator stance)
+  /\bthe truth is\b/i, /\bhonestly\b/i, /\bI[' ]d argue\b/i,
+  /\bin my view\b/i, /\bmy take\b/i, /\bmy advice\b/i,
+];
+
+const TRIM_FIRST_PATTERNS = [
+  // Generic transitional openers
+  /^(?:Beyond that|On top of that|What this means is|That said|All in all)\b/i,
+  /^(?:In essence|Essentially|Basically|Overall|In summary|To sum up)\b/i,
+  // Self-summarizing restatements
+  /^(?:This (?:is|means|reflects)|These (?:are|represent))\b/i,
+  // Hedge openers that add nothing
+  /^(?:It[' ]s worth (?:noting|mentioning)|Worth noting)\b/i,
+  /^(?:It should be noted|It[' ]s important to)\b/i,
+];
+
+export interface TrimResult {
+  text: string;
+  removedSentences: number;
+  finalWordCount: number;
+  initialWordCount: number;
+  sectionsTouched: string[];
+}
+
+export function trimToWordCap(text: string, targetWordCount: number = 1400): TrimResult {
+  const initialWordCount = text.split(/\s+/).filter(Boolean).length;
+
+  if (initialWordCount <= targetWordCount) {
+    return {
+      text,
+      removedSentences: 0,
+      finalWordCount: initialWordCount,
+      initialWordCount,
+      sectionsTouched: [],
+    };
+  }
+
+  // Split into sections by ## heading. Keep the heading attached to its body.
+  // First section may not have a heading (intro paragraph before first ##).
+  const lines = text.split("\n");
+  const sections: Array<{ heading: string | null; bodyLines: string[] }> = [];
+  let current: { heading: string | null; bodyLines: string[] } = { heading: null, bodyLines: [] };
+
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      if (current.heading !== null || current.bodyLines.length > 0) {
+        sections.push(current);
+      }
+      current = { heading: line, bodyLines: [] };
+    } else {
+      current.bodyLines.push(line);
+    }
+  }
+  sections.push(current);
+
+  // For each section, classify each sentence and build a removable-sentence pool.
+  type Removable = {
+    sectionIdx: number;
+    bodyLineIdx: number;
+    sentenceIdxInLine: number;
+    sentenceText: string;
+    sentenceWordCount: number;
+    priority: number; // lower = trim first
+  };
+
+  const removables: Removable[] = [];
+
+  function classifySentence(s: string): { keepAlways: boolean; trimFirst: boolean; priority: number } {
+    const trimmed = s.trim();
+    if (!trimmed) return { keepAlways: false, trimFirst: false, priority: 99 };
+
+    const keepAlways = KEEP_ALWAYS_PATTERNS.some((p) => p.test(trimmed));
+    if (keepAlways) return { keepAlways: true, trimFirst: false, priority: 99 };
+
+    const trimFirst = TRIM_FIRST_PATTERNS.some((p) => p.test(trimmed));
+    if (trimFirst) return { keepAlways: false, trimFirst: true, priority: 1 };
+
+    // Default: trimmable but lower priority than explicit TRIM_FIRST patterns
+    return { keepAlways: false, trimFirst: false, priority: 5 };
+  }
+
+  for (let sIdx = 0; sIdx < sections.length; sIdx++) {
+    for (let lIdx = 0; lIdx < sections[sIdx].bodyLines.length; lIdx++) {
+      const line = sections[sIdx].bodyLines[lIdx];
+      // Split the line into sentences
+      const sentences = line.match(/[^.!?]+[.!?]+/g) || (line.trim() ? [line] : []);
+      for (let sentIdx = 0; sentIdx < sentences.length; sentIdx++) {
+        const sentence = sentences[sentIdx];
+        const cls = classifySentence(sentence);
+        if (cls.keepAlways) continue;
+        const wordCount = sentence.split(/\s+/).filter(Boolean).length;
+        if (wordCount < 4) continue; // too short to be worth removing
+        removables.push({
+          sectionIdx: sIdx,
+          bodyLineIdx: lIdx,
+          sentenceIdxInLine: sentIdx,
+          sentenceText: sentence,
+          sentenceWordCount: wordCount,
+          priority: cls.priority,
+        });
+      }
+    }
+  }
+
+  // Sort: lowest priority first (most trimmable), then largest word count first
+  // (cuts more per removal, fewer iterations needed)
+  removables.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return b.sentenceWordCount - a.sentenceWordCount;
+  });
+
+  // Greedy removal: take the next removable until we're under the cap
+  const removedKeys = new Set<string>();
+  const sectionsTouched = new Set<string>();
+  let currentWordCount = initialWordCount;
+
+  for (const r of removables) {
+    if (currentWordCount <= targetWordCount) break;
+    const key = `${r.sectionIdx}:${r.bodyLineIdx}:${r.sentenceIdxInLine}`;
+    removedKeys.add(key);
+    currentWordCount -= r.sentenceWordCount;
+    if (sections[r.sectionIdx].heading) {
+      sectionsTouched.add(sections[r.sectionIdx].heading || "(intro)");
+    } else {
+      sectionsTouched.add("(intro)");
+    }
+  }
+
+  // Reassemble with removed sentences stripped out
+  const newSections: string[] = [];
+  for (let sIdx = 0; sIdx < sections.length; sIdx++) {
+    const section = sections[sIdx];
+    const newBodyLines: string[] = [];
+    for (let lIdx = 0; lIdx < section.bodyLines.length; lIdx++) {
+      const line = section.bodyLines[lIdx];
+      const sentences = line.match(/[^.!?]+[.!?]+/g) || (line.trim() ? [line] : []);
+      if (sentences.length === 0) {
+        newBodyLines.push(line);
+        continue;
+      }
+      const keptSentences: string[] = [];
+      for (let sentIdx = 0; sentIdx < sentences.length; sentIdx++) {
+        const key = `${sIdx}:${lIdx}:${sentIdx}`;
+        if (!removedKeys.has(key)) keptSentences.push(sentences[sentIdx]);
+      }
+      newBodyLines.push(keptSentences.join("").trim());
+    }
+    const sectionText = (section.heading ? section.heading + "\n" : "") + newBodyLines.join("\n");
+    newSections.push(sectionText);
+  }
+
+  const newText = newSections.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const finalWordCount = newText.split(/\s+/).filter(Boolean).length;
+
+  return {
+    text: newText,
+    removedSentences: removedKeys.size,
+    finalWordCount,
+    initialWordCount,
+    sectionsTouched: Array.from(sectionsTouched),
+  };
+}
+
+
  * DeepSeek 7-pass chain. Architecture proven 2026-05-04 — produces content that
  * ZeroGPT classifies as human-written (16.4% AI on Trafalgar Rd W test).
  *
@@ -449,7 +640,6 @@ export async function generateLongFormStreetDescription(
   const cityProvince = options.cityProvince ?? "Ontario";
   const maxPasses = options.maxPasses ?? 7;
   const HUMANIZATION_PASS = maxPasses - 1;
-
 
   // Compliance check on the user prompt up front (before we burn any DeepSeek tokens)
   const systemPromptV2 = buildSystemPromptV2(stats.streetName, cityName, cityProvince);
@@ -512,7 +702,28 @@ export async function generateLongFormStreetDescription(
     lastText = response.text;
   }
 
-  // Final result is always the last pass (polish output)
+  // UPG-4 Stage 2 Piece 1: Programmatic post-trim if word count exceeds cap.
+  // DEF-15 fix — prompt-only enforcement doesn't bind on DeepSeek, so we trim
+  // deterministically. Anecdotes, opinions, data points are preserved by the
+  // trimToWordCap heuristics; only transitional/restatement sentences cut.
+  // Target 1,300 (not 1,400) accounts for ~100w reassembly drift from
+  // paragraph spacing not counted in the loop's running total — empirically
+  // calibrated against the 1,847w → 1,541w test run on Trafalgar Rd W.
+  let trimResult: TrimResult | null = null;
+  const HARD_WORD_CAP = 1500;
+  const TARGET_WORD_COUNT = 1300;
+  const lastWordCount = lastText.split(/\s+/).filter(Boolean).length;
+  if (lastWordCount > HARD_WORD_CAP) {
+    trimResult = trimToWordCap(lastText, TARGET_WORD_COUNT);
+    lastText = trimResult.text;
+    console.log(
+      `[AI Compliance v2] ${stats.streetName} post-trim: ` +
+      `${trimResult.initialWordCount}w → ${trimResult.finalWordCount}w | ` +
+      `removed ${trimResult.removedSentences} sentences from ${trimResult.sectionsTouched.length} section(s)`
+    );
+  }
+
+  // Final result is always the last pass (polish output, possibly trimmed)
   const finalValidation = validateLongFormContent(lastText, stats.streetName);
   const totalInputTokens = passes.reduce((sum, p) => sum + p.inputTokens, 0);
   const totalOutputTokens = passes.reduce((sum, p) => sum + p.outputTokens, 0);
@@ -521,7 +732,8 @@ export async function generateLongFormStreetDescription(
   console.log(
     `[AI Compliance v2] ${stats.streetName} final: ` +
     `${finalValidation.metrics.wordCount}w | ${finalValidation.passed ? "PASS" : `FAIL(${finalValidation.failures.length})`} | ` +
-    `total cost $${totalCostUsd.toFixed(5)} (${totalInputTokens}in/${totalOutputTokens}out)`
+    `total cost $${totalCostUsd.toFixed(5)} (${totalInputTokens}in/${totalOutputTokens}out)` +
+    (trimResult ? ` | trimmed -${trimResult.removedSentences}s` : "")
   );
 
   return {
@@ -534,5 +746,6 @@ export async function generateLongFormStreetDescription(
     totalCostUsd,
     passes,
     provider: "deepseek_v2",
+    trimResult,
   };
 }
