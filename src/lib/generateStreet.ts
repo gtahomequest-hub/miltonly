@@ -222,6 +222,20 @@ export interface GenerateResult {
   streetName: string;
   passed: boolean;
   attempts: number;
+  // Phase 4.1 v2 in-memory output. Populated only when AI_PROVIDER=phase41_v2
+  // and the generator returns (success path). Lets callers gate against the
+  // actual generated content rather than reading back from the DB row, which
+  // can be stale on the failure path.
+  v2?: {
+    sections: { id: string; heading: string; paragraphs: string[] }[];
+    faq: { question: string; answer: string }[];
+    wordCounts: Record<string, number>;
+    totalWords: number;
+    tokensIn: number;
+    tokensOut: number;
+    costUsd: number;
+    kAnonLevel: "full" | "thin" | "zero";
+  };
 }
 
 export interface GenerateOptions {
@@ -250,6 +264,7 @@ export async function generateStreetContent(
   // so we stringify here to match the legacy buildFaqJson() shape.
   let phase41FaqOverride: string | null = null;
   let phase41NeedsReview: boolean | null = null;
+  let phase41V2Out: GenerateResult["v2"] = undefined;
 
   const marketDataHash = calcMarketDataHash(stats);
   let description = "";
@@ -402,6 +417,16 @@ export async function generateStreetContent(
     }
 
     phase41NeedsReview = !v2Passed;
+    phase41V2Out = {
+      sections: v2Sections,
+      faq: v2Faq,
+      wordCounts,
+      totalWords,
+      tokensIn: phase41Result.totalInputTokens,
+      tokensOut: phase41Result.totalOutputTokens,
+      costUsd: phase41Result.totalCostUsd,
+      kAnonLevel: phase41Input.aggregates.kAnonLevel,
+    };
 
     // Build the flattened description for StreetContent fallback rendering
     // and SEO failover. ALL 8 sections' paragraphs joined with double-newline.
@@ -487,7 +512,12 @@ export async function generateStreetContent(
     );
   }
 
-  return { streetName, passed, attempts };
+  return {
+    streetName,
+    passed,
+    attempts,
+    v2: phase41V2Out,
+  };
 }
 
 /**

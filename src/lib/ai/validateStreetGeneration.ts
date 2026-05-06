@@ -222,6 +222,19 @@ const TOTAL_WORD_FLOOR_THIN = 800;
 const TOTAL_WORD_FLOOR_ZERO = 750;
 const TOTAL_WORD_CEILING = 2000;
 
+/** Effective total-word floor for a given kAnonLevel. Single source of truth
+ *  for callers that want to gate or recalibrate against the same threshold
+ *  the validator applies. */
+export function getTotalWordFloor(
+  kAnonLevel: "full" | "thin" | "zero",
+): number {
+  return kAnonLevel === "zero"
+    ? TOTAL_WORD_FLOOR_ZERO
+    : kAnonLevel === "thin"
+      ? TOTAL_WORD_FLOOR_THIN
+      : TOTAL_WORD_FLOOR_FULL;
+}
+
 const FAQ_MIN = 6;
 const FAQ_MAX = 8;
 const FAQ_ANSWER_MIN_SENTENCES = 2;
@@ -392,10 +405,7 @@ export function validateStreetGeneration(
   if (totalWords > TOTAL_WORD_CEILING) {
     violations.push({ rule: "total_word_ceiling", excerpt: `total ${totalWords}, ceiling ${TOTAL_WORD_CEILING}`, severity: "hard" });
   }
-  const effectiveTotalFloor =
-    input.aggregates.kAnonLevel === "zero" ? TOTAL_WORD_FLOOR_ZERO
-    : input.aggregates.kAnonLevel === "thin" ? TOTAL_WORD_FLOOR_THIN
-    : TOTAL_WORD_FLOOR_FULL;
+  const effectiveTotalFloor = getTotalWordFloor(input.aggregates.kAnonLevel);
   if (totalWords < effectiveTotalFloor) {
     violations.push({ rule: "total_word_floor", excerpt: `total ${totalWords}, floor ${effectiveTotalFloor} (kAnon=${input.aggregates.kAnonLevel})`, severity: "hard" });
   }

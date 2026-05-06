@@ -874,15 +874,21 @@ export async function generatePhase41StreetContent(
 
     let userPrompt = JSON.stringify(inp, null, 2);
     if (priorViolations && priorViolations.length > 0 && priorOutput) {
-      userPrompt +=
-        '\n\n---\n' +
-        formatViolationsForRetryEnriched(priorViolations, priorOutput, inp);
+      const retryFeedback = formatViolationsForRetryEnriched(priorViolations, priorOutput, inp);
+      userPrompt += '\n\n---\n' + retryFeedback;
+      console.log(
+        `[Phase41] ${inp.street.slug} retry-feedback for attempt ${attemptCounter} ` +
+        `(${retryFeedback.length} chars):\n--- BEGIN RETRY FEEDBACK ---\n${retryFeedback}\n--- END RETRY FEEDBACK ---`
+      );
     } else if (priorViolations && priorViolations.length > 0) {
       // Fallback to generic format when prior output isn't available (rare —
       // mostly for the first attempt-2 case if the generator helper changes).
-      userPrompt +=
-        '\n\n---\nYour previous attempt failed validation. Fix these specific issues and return clean JSON:\n\n' +
-        formatViolationsForRetry(priorViolations);
+      const legacyFeedback = formatViolationsForRetry(priorViolations);
+      userPrompt += '\n\n---\nYour previous attempt failed validation. Fix these specific issues and return clean JSON:\n\n' + legacyFeedback;
+      console.log(
+        `[Phase41] ${inp.street.slug} retry-feedback (legacy format) for attempt ${attemptCounter} ` +
+        `(${legacyFeedback.length} chars):\n--- BEGIN RETRY FEEDBACK ---\n${legacyFeedback}\n--- END RETRY FEEDBACK ---`
+      );
     }
 
     const response = await callDeepSeek({
@@ -936,14 +942,30 @@ export async function generatePhase41StreetContent(
       throw new Error('Phase41 output failed runtime shape narrowing');
     }
 
+    // Run the validator now so per-attempt violations are recorded as they
+    // happen. generateWithRetry will run the validator again to make its
+    // retry/exit decision; the second call is pure and cheap (regex scans
+    // over already-parsed text), and re-running it avoids the bug where the
+    // throw path left attempts[*].violations as the empty placeholder.
+    const candidateOutput = candidate as StreetGeneratorOutput;
+    const attemptViolations = validateStreetGeneration(candidateOutput, inp);
     attempts.push({
       attemptN: attemptCounter,
-      violations: [], // populated only for final attempt by reconciliation below
+      violations: attemptViolations,
       tokens: { in: response.inputTokens, out: response.outputTokens },
       costUsd: response.costUsd,
     });
 
-    return candidate as StreetGeneratorOutput;
+    const ruleSummary = attemptViolations.length === 0
+      ? "clean"
+      : attemptViolations.map(v => v.sectionId ? `${v.rule}@${v.sectionId}` : v.rule).join(", ");
+    console.log(
+      `[Phase41] ${inp.street.slug} attempt ${attemptCounter}: ` +
+      `${attemptViolations.length} violation${attemptViolations.length === 1 ? "" : "s"} (${ruleSummary}) ` +
+      `| tokens ${response.inputTokens}in/${response.outputTokens}out | $${response.costUsd.toFixed(5)}`
+    );
+
+    return candidateOutput;
   };
 
   let output: StreetGeneratorOutput;
@@ -966,7 +988,7 @@ export async function generatePhase41StreetContent(
         : [];
 
     throw new Phase41GenerationError(
-      `Phase41 generation failed after ${attemptCounter} attempts. ${violations.length} violations.`,
+      `Phase41 generation failed after ${attemptCounter} attempts. ${violations.length} violations. Cause: ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
       {
         violations,
         attemptCount: attemptCounter,
@@ -976,10 +998,6 @@ export async function generatePhase41StreetContent(
         attempts,
       },
     );
-  }
-
-  if (attempts.length > 0) {
-    attempts[attempts.length - 1].violations = finalViolations;
   }
 
   return {

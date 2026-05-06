@@ -22,7 +22,17 @@ function loadEnvLocal(): void {
     const raw = readFileSync(".env.local", "utf-8");
     for (const line of raw.split("\n")) {
       const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/\\n$/, "");
+      if (m && !process.env[m[1]]) {
+        let value = m[2].replace(/\\n$/, "");
+        // Strip a single matched pair of surrounding quotes (dotenv-spec behavior)
+        if (
+          (value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))
+        ) {
+          value = value.slice(1, -1);
+        }
+        process.env[m[1]] = value;
+      }
     }
   } catch {
     /* ignore — fall through to .env */
@@ -32,6 +42,7 @@ loadEnvLocal();
 
 import { generateStreetContent } from "@/lib/generateStreet";
 import { prisma } from "@/lib/prisma";
+import { getTotalWordFloor } from "@/lib/ai/validateStreetGeneration";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -73,14 +84,61 @@ async function main() {
   // Run the generator
   console.log("\nRunning generateStreetContent()...");
   const startTime = Date.now();
-  let result;
+  const startDate = new Date();
+  let result: Awaited<ReturnType<typeof generateStreetContent>> | undefined;
   let runError: Error | null = null;
   try {
     result = await generateStreetContent(SLUG, NAME, { skipSms: true });
   } catch (e) {
     runError = e as Error;
-    console.error(`\nERROR during generation: ${runError.message}`);
-    console.error(runError.stack);
+    const errAny = e as unknown as Record<string, unknown> & { cause?: unknown; payload?: Record<string, unknown> };
+    console.error(`\n=== ERROR during generation ===`);
+    console.error(`name:    ${runError.name}`);
+    console.error(`message: ${runError.message}`);
+    console.error(`stack:\n${runError.stack}`);
+    if (errAny.cause !== undefined) {
+      console.error(`\ncause:`);
+      console.error(errAny.cause);
+      const cause = errAny.cause as { message?: string; stack?: string };
+      if (cause && typeof cause === "object") {
+        if (cause.message) console.error(`cause.message: ${cause.message}`);
+        if (cause.stack) console.error(`cause.stack:\n${cause.stack}`);
+      }
+    } else {
+      console.error(`\ncause: (none)`);
+    }
+    // Phase41GenerationError carries its real payload here
+    if (errAny.payload && typeof errAny.payload === "object") {
+      console.error(`\npayload keys: ${Object.keys(errAny.payload).join(", ")}`);
+      console.error(`payload.attemptCount:    ${errAny.payload.attemptCount}`);
+      console.error(`payload.totalInputTokens:  ${errAny.payload.totalInputTokens}`);
+      console.error(`payload.totalOutputTokens: ${errAny.payload.totalOutputTokens}`);
+      console.error(`payload.totalCostUsd:      ${errAny.payload.totalCostUsd}`);
+      console.error(`payload.violations (${Array.isArray(errAny.payload.violations) ? (errAny.payload.violations as unknown[]).length : "n/a"}):`);
+      console.error(JSON.stringify(errAny.payload.violations, null, 2));
+      console.error(`\npayload.attempts:`);
+      console.error(JSON.stringify(errAny.payload.attempts, null, 2));
+    } else {
+      console.error(`\npayload: (none — not a Phase41GenerationError)`);
+    }
+    // Probe optional debug fields the user asked about (may not exist yet)
+    for (const key of ["lastResponseRaw", "lastParseError", "finalViolations", "attemptCount"]) {
+      if (key in errAny) {
+        console.error(`\nerror.${key}:`);
+        console.error(errAny[key]);
+      }
+    }
+    // Custom-prop dump for anything else
+    const ownKeys = Object.getOwnPropertyNames(errAny).filter(
+      k => !["name", "message", "stack", "cause", "payload"].includes(k),
+    );
+    if (ownKeys.length > 0) {
+      console.error(`\nother own props: ${ownKeys.join(", ")}`);
+      for (const k of ownKeys) {
+        console.error(`  ${k}:`, errAny[k]);
+      }
+    }
+    console.error(`=== END ERROR ===\n`);
   }
   const elapsedMs = Date.now() - startTime;
 
@@ -104,6 +162,35 @@ async function main() {
   console.log(`  StreetContent: ${postStreetContent ? `exists (status=${postStreetContent.status})` : "null"}`);
   console.log(`  StreetGeneration: ${postStreetGeneration ? `exists (status=${postStreetGeneration.status})` : "null"}`);
 
+  // Pull in-memory output from the success path, or err.payload from the throw
+  // path. Content gates (3, 5, 6) MUST validate against THIS run's data; the DB
+  // row may carry stale content from a prior succeeded run on the failure path.
+  type ErrPayload = {
+    violations: Array<{ rule: string; sectionId?: string; excerpt: string }>;
+    attemptCount: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalCostUsd: number;
+    attempts: Array<{
+      attemptN: number;
+      violations: Array<{ rule: string; sectionId?: string; excerpt: string }>;
+      tokens: { in: number; out: number };
+      costUsd: number;
+    }>;
+  };
+  const errPayload: ErrPayload | null =
+    (runError && (runError as unknown as { payload?: ErrPayload }).payload) || null;
+  const inMemV2 = result?.v2;
+  const inMemAttemptCount = result?.attempts ?? errPayload?.attemptCount ?? 0;
+  const inMemTokensIn = inMemV2?.tokensIn ?? errPayload?.totalInputTokens ?? 0;
+  const inMemTokensOut = inMemV2?.tokensOut ?? errPayload?.totalOutputTokens ?? 0;
+  const inMemCostUsd = inMemV2?.costUsd ?? errPayload?.totalCostUsd ?? 0;
+
+  function naGate(name: string, reason: string) {
+    console.log(`  [N/A] ${name}: ${reason}`);
+    gates.push({ name: `${name} [N/A]`, passed: true, detail: `N/A — ${reason}` });
+  }
+
   // Gate 2: StreetGeneration row exists with terminal status
   const gen = postStreetGeneration;
   gate(
@@ -112,76 +199,95 @@ async function main() {
     gen ? `status=${gen.status}, attemptCount=${gen.attemptCount}, totalWords=${gen.totalWords}` : "row missing",
   );
 
-  // Gate 3: StreetContent row updated with flattened description and Phase 4.1 FAQ
-  const sc = postStreetContent;
-  const descLen = sc?.description.length ?? 0;
-  const faqLooksPhase41 = (() => {
-    if (!sc?.faqJson) return false;
-    try {
-      const parsed = JSON.parse(sc.faqJson);
-      if (!Array.isArray(parsed)) return false;
-      // Phase 4.1 FAQ items have { question, answer } shape (not legacy { q, a })
-      return parsed.length >= 6 && parsed.length <= 8 &&
-        typeof parsed[0]?.question === "string" && typeof parsed[0]?.answer === "string";
-    } catch {
-      return false;
-    }
-  })();
-  gate(
-    "Gate 3a: StreetContent.description is non-empty flattened content",
-    descLen >= 1000,
-    sc ? `description.length=${descLen} chars` : "row missing",
-  );
-  gate(
-    "Gate 3b: StreetContent.faqJson is Phase 4.1 shape (6-8 items, question/answer)",
-    faqLooksPhase41,
-    sc?.faqJson ? `parsed length signal: ${faqLooksPhase41 ? "phase41" : "legacy or malformed"}` : "faqJson missing",
-  );
+  // Gate 2b: row reflects THIS run, not a prior one. Checks generatedAt is at
+  // or after the smoke-test start time, and attemptCount matches in-memory.
+  if (gen) {
+    const generatedAtFresh = gen.generatedAt >= startDate;
+    const attemptMatches = gen.attemptCount === inMemAttemptCount;
+    gate(
+      "Gate 2b: row reflects THIS run (generatedAt fresh, attemptCount matches in-memory)",
+      generatedAtFresh && attemptMatches,
+      `generatedAt=${gen.generatedAt.toISOString()} (start=${startDate.toISOString()}, fresh=${generatedAtFresh}), row.attemptCount=${gen.attemptCount} vs in-memory=${inMemAttemptCount}`,
+    );
+  } else {
+    gate("Gate 2b: row reflects THIS run (generatedAt fresh, attemptCount matches in-memory)", false, "row missing");
+  }
 
-  // Gate 4: Token usage and cost are populated and reasonable
-  const tokensIn = gen?.tokensIn ?? 0;
-  const tokensOut = gen?.tokensOut ?? 0;
-  const costUsd = gen?.costUsd ? parseFloat(gen.costUsd.toString()) : 0;
+  // Gate 3: StreetContent description and FAQ — gated on in-memory v2 output
+  // when the generator succeeded; N/A on the throw path because there's no
+  // in-memory content to validate.
+  if (inMemV2) {
+    const flatDesc = inMemV2.sections.flatMap(s => s.paragraphs).join("\n\n");
+    gate(
+      "Gate 3a: in-memory description (flattened sections) ≥ 1000 chars",
+      flatDesc.length >= 1000,
+      `flat description length=${flatDesc.length}`,
+    );
+    const faqLooksPhase41 =
+      Array.isArray(inMemV2.faq) &&
+      inMemV2.faq.length >= 6 &&
+      inMemV2.faq.length <= 8 &&
+      inMemV2.faq.every(item => typeof item.question === "string" && typeof item.answer === "string");
+    gate(
+      "Gate 3b: in-memory FAQ is Phase 4.1 shape (6-8 items, question/answer)",
+      faqLooksPhase41,
+      `faq.length=${inMemV2.faq.length}`,
+    );
+  } else {
+    naGate("Gate 3a: in-memory description (flattened sections) ≥ 1000 chars", "no in-memory output — generator failed at gate 1");
+    naGate("Gate 3b: in-memory FAQ is Phase 4.1 shape (6-8 items, question/answer)", "no in-memory output — generator failed at gate 1");
+  }
+
+  // Gate 4: Token usage and cost — pulled from in-memory totals (success or
+  // err.payload). Never from the DB row.
   gate(
-    "Gate 4a: tokensIn populated and reasonable (1000-5000 range expected)",
-    tokensIn >= 1000 && tokensIn <= 10000,
-    `tokensIn=${tokensIn}`,
+    "Gate 4a: tokensIn populated and total ≤ 25000 across all attempts",
+    inMemTokensIn > 0 && inMemTokensIn <= 25000,
+    `tokensIn=${inMemTokensIn}`,
   );
   gate(
-    "Gate 4b: tokensOut populated and reasonable (2000-6000 range expected per attempt)",
-    tokensOut >= 1000 && tokensOut <= 20000,
-    `tokensOut=${tokensOut}`,
+    "Gate 4b: tokensOut populated and total ≤ 20000 across all attempts",
+    inMemTokensOut >= 1000 && inMemTokensOut <= 20000,
+    `tokensOut=${inMemTokensOut}`,
   );
   gate(
     "Gate 4c: costUsd populated and within expected band (~$0.0005 - $0.02)",
-    costUsd > 0 && costUsd < 0.05,
-    `costUsd=$${costUsd.toFixed(6)}`,
+    inMemCostUsd > 0 && inMemCostUsd < 0.05,
+    `costUsd=$${inMemCostUsd.toFixed(6)}`,
   );
 
-  // Gate 5: Sections + FAQ shape valid
-  const sections = (gen?.sectionsJson as unknown as Array<{ id: string; heading: string; paragraphs: string[] }>) ?? [];
-  const faq = (gen?.faqJson as unknown as Array<{ question: string; answer: string }>) ?? [];
-  gate(
-    "Gate 5a: sectionsJson has 8 sections in canonical order",
-    sections.length === 8 &&
-      ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"]
-        .every((id, i) => sections[i]?.id === id),
-    `sections.length=${sections.length}, ids=[${sections.map(s => s.id).join(",")}]`,
-  );
-  gate(
-    "Gate 5b: faqJson has 6-8 items with question/answer shape",
-    faq.length >= 6 && faq.length <= 8 &&
-      faq.every(item => typeof item.question === "string" && typeof item.answer === "string"),
-    `faq.length=${faq.length}`,
-  );
+  // Gate 5: Sections + FAQ shape — in-memory only.
+  if (inMemV2) {
+    gate(
+      "Gate 5a: in-memory sections has 8 entries in canonical order",
+      inMemV2.sections.length === 8 &&
+        ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"]
+          .every((id, i) => inMemV2.sections[i]?.id === id),
+      `sections.length=${inMemV2.sections.length}, ids=[${inMemV2.sections.map(s => s.id).join(",")}]`,
+    );
+    gate(
+      "Gate 5b: in-memory FAQ has 6-8 items with question/answer shape",
+      inMemV2.faq.length >= 6 && inMemV2.faq.length <= 8 &&
+        inMemV2.faq.every(item => typeof item.question === "string" && typeof item.answer === "string"),
+      `faq.length=${inMemV2.faq.length}`,
+    );
+  } else {
+    naGate("Gate 5a: in-memory sections has 8 entries in canonical order", "no in-memory output — generator failed at gate 1");
+    naGate("Gate 5b: in-memory FAQ has 6-8 items with question/answer shape", "no in-memory output — generator failed at gate 1");
+  }
 
-  // Gate 6: Total word count within tier-appropriate floor (full-data: ≥1,200)
-  const totalWords = gen?.totalWords ?? 0;
-  gate(
-    "Gate 6: totalWords meets full-data floor (≥1,200)",
-    totalWords >= 1200 && totalWords <= 2000,
-    `totalWords=${totalWords}`,
-  );
+  // Gate 6: Total word count meets the validator's tier-aware floor for THIS
+  // run's kAnonLevel. Floor via getTotalWordFloor (single source of truth).
+  if (inMemV2) {
+    const floor = getTotalWordFloor(inMemV2.kAnonLevel);
+    gate(
+      `Gate 6: in-memory totalWords meets validator floor for kAnon=${inMemV2.kAnonLevel} (≥${floor})`,
+      inMemV2.totalWords >= floor && inMemV2.totalWords <= 2000,
+      `totalWords=${inMemV2.totalWords}, kAnonLevel=${inMemV2.kAnonLevel}, floor=${floor}`,
+    );
+  } else {
+    naGate("Gate 6: in-memory totalWords meets validator floor", "no in-memory output — generator failed at gate 1");
+  }
 
   // Write full output to inspection file
   const outputDir = path.join(process.cwd(), "experiment-output");
@@ -193,20 +299,28 @@ async function main() {
     runError: runError ? { message: runError.message, stack: runError.stack } : null,
     elapsedMs,
     gates,
-    streetGeneration: gen,
-    streetContent: sc ? {
-      ...sc,
-      description: sc.description.slice(0, 500) + "...[truncated]",
-      faqJson: sc.faqJson?.slice(0, 500) + "...[truncated]",
+    streetGeneration: postStreetGeneration,
+    streetContent: postStreetContent ? {
+      ...postStreetContent,
+      description: postStreetContent.description.slice(0, 500) + "...[truncated]",
+      faqJson: postStreetContent.faqJson?.slice(0, 500) + "...[truncated]",
       statsJson: "[omitted]",
     } : null,
-    sectionsPreview: sections.map(s => ({
-      id: s.id,
-      heading: s.heading,
-      paragraphCount: s.paragraphs.length,
-      firstParagraph: s.paragraphs[0]?.slice(0, 200) + "...",
-    })),
-    faqPreview: faq,
+    inMemoryV2: inMemV2 ? {
+      kAnonLevel: inMemV2.kAnonLevel,
+      totalWords: inMemV2.totalWords,
+      tokensIn: inMemV2.tokensIn,
+      tokensOut: inMemV2.tokensOut,
+      costUsd: inMemV2.costUsd,
+      sectionsPreview: inMemV2.sections.map(s => ({
+        id: s.id,
+        heading: s.heading,
+        paragraphCount: s.paragraphs.length,
+        firstParagraph: s.paragraphs[0]?.slice(0, 200) + "...",
+      })),
+      faqPreview: inMemV2.faq,
+    } : null,
+    errPayload,
   }, null, 2));
   console.log(`\nFull output written to: ${outputPath}`);
 

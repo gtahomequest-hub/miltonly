@@ -423,6 +423,8 @@ model StreetGeneration {
   generatedAt  DateTime         @default(now())
   attemptCount Int
   wordCounts   Json
+  // Sections-only word count (FAQ excluded). Matches validator's
+  // total-word floor logic in getTotalWordFloor / TOTAL_WORD_FLOOR_*.
   totalWords   Int
   tokensIn     Int?
   tokensOut    Int?
