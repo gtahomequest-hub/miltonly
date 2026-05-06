@@ -855,7 +855,6 @@ export class Phase41GenerationError extends Error {
  */
 export async function generatePhase41StreetContent(
   input: StreetGeneratorInput,
-  _options?: { maxAttempts?: number },
 ): Promise<Phase41GenerationResult> {
   const systemPrompt = loadPhase41SystemPrompt();
 
