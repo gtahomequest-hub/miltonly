@@ -4,14 +4,18 @@
 // validator, compliance gateway, and DB write shape. All Claude calls go
 // through src/lib/ai/compliance.ts — no other entry point exists.
 
+import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
 import { calcMarketDataHash } from "@/lib/streetUtils";
 import { sendSMS } from "@/lib/smsAlert";
+import { buildGeneratorInput } from "@/lib/ai/buildGeneratorInput";
 import {
   generateStreetDescription as aiGenerate,
   generateLongFormStreetDescription,
+  generatePhase41StreetContent,
+  Phase41GenerationError,
   type SafeStreetStats,
 } from "@/lib/ai/compliance";
 
@@ -23,6 +27,14 @@ import {
 const AI_PROVIDER_V2 = "deepseek_v2";
 function isDeepSeekV2(): boolean {
   return (process.env.AI_PROVIDER || "").trim() === AI_PROVIDER_V2;
+}
+
+// Phase 4.1: structured 8-section + FAQ output via DeepSeek + strict validator + retry.
+// AI_PROVIDER="phase41_v2" → buildGeneratorInput + generatePhase41StreetContent path.
+// Mutually exclusive with "deepseek_v2"; checked first because it is the migration target.
+const AI_PROVIDER_PHASE41 = "phase41_v2";
+function isPhase41V2(): boolean {
+  return (process.env.AI_PROVIDER || "").trim() === AI_PROVIDER_PHASE41;
 }
 
 const BANNED_WORDS = [
@@ -232,20 +244,176 @@ export async function generateStreetContent(
   const stats = await getStreetStats(streetSlug);
   if (!stats) throw new Error("No stats available");
 
+  // Hoisted so v2 branch results are accessible after the if/else block closes,
+  // for the FAQ + needsReview overrides at the StreetContent upsert below.
+  // StreetContent.faqJson is a Text column holding a JSON-stringified array,
+  // so we stringify here to match the legacy buildFaqJson() shape.
+  let phase41FaqOverride: string | null = null;
+  let phase41NeedsReview: boolean | null = null;
+
   const marketDataHash = calcMarketDataHash(stats);
   let description = "";
   let rawAiOutput = "";
   let attempts = 0;
   let lastFailures: string[] = [];
 
-  // UPG-4 Stage 2 Piece 2: When AI_PROVIDER=deepseek_v2 is set, the new
-  // generateLongFormStreetDescription() function runs its own v2 validator
-  // internally (1,200-1,500 words, 6 section headings, sentence rhythm, etc.)
-  // and applies a programmatic post-trim. The legacy validateContent() in this
-  // module would fail it on every attempt because it requires 280-360 words.
-  // Single-pass when DeepSeek mode — the multi-pass retry already happens
-  // inside the DeepSeek function across its 7 internal passes.
-  if (isDeepSeekV2()) {
+  // Phase 4.1 v2 path: structured 8-section + FAQ output, dual-writes to both
+  // StreetContent (operational metadata for sitemap/admin/crons) and
+  // StreetGeneration (structured prose for page renderer). Five non-renderer
+  // read surfaces only know about StreetContent, so dual-write is mandatory
+  // until full migration off StreetContent in a future phase.
+  // DEC-PH41-DUALWRITE locked 2026-05-05.
+  if (isPhase41V2()) {
+    const phase41Input = await buildGeneratorInput(streetSlug);
+    const inputHash = crypto
+      .createHash("sha256")
+      .update(JSON.stringify(phase41Input))
+      .digest("hex");
+
+    // Atomic claim: insert-or-flip-to-generating in StreetGeneration.
+    // Mirrors scripts/backfill-descriptions.ts:507 pattern.
+    await prisma.$queryRaw`
+      INSERT INTO "StreetGeneration" (
+        "streetSlug", "sectionsJson", "faqJson", "inputHash",
+        "status", "generatedAt", "attemptCount", "wordCounts", "totalWords"
+      ) VALUES (
+        ${streetSlug}, '[]'::jsonb, '[]'::jsonb, ${inputHash},
+        'generating'::"GenerationStatus", NOW(), 0, '{}'::jsonb, 0
+      )
+      ON CONFLICT ("streetSlug") DO UPDATE
+        SET "status"      = 'generating'::"GenerationStatus",
+            "inputHash"   = EXCLUDED."inputHash",
+            "generatedAt" = NOW()
+        WHERE "StreetGeneration"."status" <> 'generating'::"GenerationStatus"
+    `;
+
+    let phase41Result;
+    try {
+      phase41Result = await generatePhase41StreetContent(phase41Input);
+    } catch (err) {
+      // Phase41GenerationError carries violations + telemetry on retry-exhausted
+      // failures. Plain Errors (network hiccup, JSON parse hard fail before
+      // retry layer) carry no violations. Handle both.
+      const isPhase41Err = err instanceof Phase41GenerationError;
+      const violations = isPhase41Err ? err.payload.violations : [];
+      const attemptCountFromErr = isPhase41Err ? err.payload.attemptCount : 0;
+      const tokensInFromErr = isPhase41Err ? err.payload.totalInputTokens : 0;
+      const tokensOutFromErr = isPhase41Err ? err.payload.totalOutputTokens : 0;
+      const costFromErr = isPhase41Err ? err.payload.totalCostUsd : 0;
+
+      // Update the StreetGeneration row with telemetry and terminal status.
+      await prisma.streetGeneration.update({
+        where: { streetSlug },
+        data: {
+          status: "failed",
+          attemptCount: attemptCountFromErr,
+          tokensIn: tokensInFromErr,
+          tokensOut: tokensOutFromErr,
+          costUsd: costFromErr,
+          inputHash,
+        },
+      });
+
+      // Write the review row so admin tooling can surface the failure
+      // with violation details. Mirrors writeFailure() in
+      // scripts/backfill-descriptions.ts:560-595.
+      if (violations.length > 0) {
+        await prisma.streetGenerationReview.upsert({
+          where: { streetSlug },
+          update: {
+            violations: violations as unknown as object,
+            lastAttemptAt: new Date(),
+            lastInputHash: inputHash,
+          },
+          create: {
+            streetSlug,
+            violations: violations as unknown as object,
+            lastAttemptAt: new Date(),
+            lastInputHash: inputHash,
+          },
+        });
+      }
+
+      throw err;
+    }
+
+    const v2Passed = phase41Result.validatorPassed;
+    const v2Sections = phase41Result.output.sections;
+    const v2Faq = phase41Result.output.faq;
+    attempts = phase41Result.attemptCount;
+
+    // Compute per-section word counts + total for StreetGeneration row.
+    const wordCounts: Record<string, number> = {};
+    let totalWords = 0;
+    for (const s of v2Sections) {
+      const sectionWords = s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length;
+      wordCounts[s.id] = sectionWords;
+      totalWords += sectionWords;
+    }
+
+    // Update StreetGeneration with succeeded or failed terminal state.
+    if (v2Passed) {
+      await prisma.streetGeneration.update({
+        where: { streetSlug },
+        data: {
+          sectionsJson: v2Sections as unknown as object,
+          faqJson: v2Faq as unknown as object,
+          inputHash,
+          status: "succeeded",
+          generatedAt: new Date(),
+          attemptCount: attempts,
+          wordCounts,
+          totalWords,
+          tokensIn: phase41Result.totalInputTokens,
+          tokensOut: phase41Result.totalOutputTokens,
+          costUsd: phase41Result.totalCostUsd,
+        },
+      });
+      // Clear any prior review row.
+      await prisma.streetGenerationReview
+        .delete({ where: { streetSlug } })
+        .catch(() => undefined);
+    } else {
+      await prisma.streetGeneration.update({
+        where: { streetSlug },
+        data: {
+          status: "failed",
+          attemptCount: attempts,
+          tokensIn: phase41Result.totalInputTokens,
+          tokensOut: phase41Result.totalOutputTokens,
+          costUsd: phase41Result.totalCostUsd,
+          inputHash,
+        },
+      });
+      await prisma.streetGenerationReview.upsert({
+        where: { streetSlug },
+        update: {
+          violations: phase41Result.finalViolations as unknown as object,
+          lastAttemptAt: new Date(),
+          lastInputHash: inputHash,
+        },
+        create: {
+          streetSlug,
+          violations: phase41Result.finalViolations as unknown as object,
+          lastAttemptAt: new Date(),
+          lastInputHash: inputHash,
+        },
+      });
+    }
+
+    phase41NeedsReview = !v2Passed;
+
+    // Build the flattened description for StreetContent fallback rendering
+    // and SEO failover. ALL 8 sections' paragraphs joined with double-newline.
+    // This is what Google indexes if loadStreetGeneration ever returns null
+    // for this street; must contain real content, not a stub.
+    description = v2Sections
+      .flatMap((s) => s.paragraphs)
+      .join("\n\n");
+    rawAiOutput = ""; // raw debugging captured in StreetGeneration.sectionsJson
+
+    phase41FaqOverride = JSON.stringify(v2Faq);
+  } else if (isDeepSeekV2()) {
     rawAiOutput = await generateDescription(streetName, stats);
     description = rawAiOutput;
     attempts = 1;
@@ -270,7 +438,7 @@ export async function generateStreetContent(
 
   const metaTitle = `${streetName} ${config.CITY_NAME} Real Estate | Homes, Prices & Market Data`;
   const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} recently. Average list price ${formatPrice(stats.avgListPrice)}. ${stats.avgDOM} days on market. ${config.CITY_NAME}'s most detailed street guide.`;
-  const faqJson = buildFaqJson(streetName, stats);
+  const faqJson = phase41FaqOverride ?? buildFaqJson(streetName, stats);
 
   const contentStatus = passed ? "published" : "draft";
 
@@ -288,7 +456,7 @@ export async function generateStreetContent(
       statsJson: JSON.stringify(stats),
       marketDataHash,
       status: contentStatus,
-      needsReview: !passed,
+      needsReview: phase41NeedsReview ?? !passed,
       aiGenerated: true,
       publishedAt: passed ? new Date() : null,
       generatedAt: new Date(),
@@ -304,7 +472,7 @@ export async function generateStreetContent(
       statsJson: JSON.stringify(stats),
       marketDataHash,
       status: contentStatus,
-      needsReview: !passed,
+      needsReview: phase41NeedsReview ?? !passed,
       publishedAt: passed ? new Date() : undefined,
       generatedAt: new Date(),
       attempts,

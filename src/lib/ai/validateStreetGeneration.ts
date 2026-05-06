@@ -26,6 +26,7 @@ import type {
   StreetGeneratorInput,
   StreetSectionId,
   ValidatorViolation,
+  ValidatorRule,
 } from "@/types/street-generator";
 import { config } from "@/lib/config";
 
@@ -47,14 +48,75 @@ const CLICHE_OPENERS_AND_PHRASES = [
   "dream home", "truly unique", "one of a kind", "gem of a",
 ];
 
-const METHODOLOGY_LEAK_PHRASES = [
+// Two-pass methodology-leak detection. Substring-match for unambiguous phrases
+// like "TREB" or "MLS feed" — these never occur in normal English. Word-boundary
+// regex with context window for polysemous words like "mean," "average,"
+// "median" — these are methodology leaks only when surrounded by statistical
+// context indicators (price, sale, value, day, transaction, number, percent, $).
+// Prior single-pass substring approach false-positived on verb usage like
+// "marketing times mean buyers" — fixed 2026-05-05 in Phase 4.1 Piece D / 2.8.
+
+// Phrases that are unambiguous methodology leaks regardless of surrounding context.
+// Substring match is safe — these phrases don't occur in normal advisor prose.
+const METHODOLOGY_LEAK_PHRASES_SUBSTRING = [
   "last 12 months", "past 12 months", "last twelve months",
   "past twelve months", "last 24 months", "past 24 months",
-  "last quarter", "past quarter", "median", "average", "mean",
+  "last quarter", "past quarter",
   "data source", "our dataset", "our algorithm", "MLS feed",
   "TREB", "VOW", "standard deviation", "sample size",
-  "k-anonymity", "statistical", "per our data",
+  "k-anonymity", "per our data",
 ];
+
+// Common English words that are methodology leaks ONLY in statistical context.
+// Word-boundary regex match + context-window check required to avoid false positives
+// like "longer marketing times mean buyers..." (verb usage of "mean") or
+// "average household size" (descriptor usage of "average").
+const METHODOLOGY_LEAK_WORDS_CONTEXTUAL = [
+  "median", "average", "mean", "statistical",
+];
+
+// Context indicators that, when present near a contextual word, confirm methodology
+// leak. If a contextual word appears WITHOUT any of these in a 50-character window
+// before or after, treat it as benign English usage.
+//
+// Note: /\btime/i was considered as an indicator (for "median time") but dropped
+// because /\b/ at the leading boundary alone matches "times" (plural noun), which
+// false-positives on advisor prose like "longer marketing times mean buyers...".
+// "Days on market" stat patterns are still caught via /\bday/i below.
+const METHODOLOGY_CONTEXT_INDICATORS = [
+  /\$\s*\d/,           // $ followed by digits ("median price of $1.2M")
+  /\d+\s*%/,           // percent signs near the word
+  /\bprice/i,          // "median price"
+  /\bsale/i,           // "average sale"
+  /\bvalue/i,          // "median value"
+  /\bday/i,            // "average days on market"
+  /\btransaction/i,    // "average transaction"
+  /\bnumber/i,         // "median number"
+  /\bsales/i,          // "average sales"
+];
+
+function findMethodologyLeak(text: string): { excerpt: string; pattern: RegExp } | null {
+  // Pass 1: unambiguous substring matches.
+  for (const phrase of METHODOLOGY_LEAK_PHRASES_SUBSTRING) {
+    const re = wordBoundaryRegex(phrase);
+    if (re.test(text)) return { excerpt: excerptAround(text, re), pattern: re };
+  }
+  // Pass 2: contextual word matches gated by statistical context window.
+  for (const word of METHODOLOGY_LEAK_WORDS_CONTEXTUAL) {
+    const re = new RegExp(`\\b${word}\\b`, "gi");
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+      const idx = match.index;
+      const windowStart = Math.max(0, idx - 50);
+      const windowEnd = Math.min(text.length, idx + match[0].length + 50);
+      const window = text.slice(windowStart, windowEnd);
+      if (METHODOLOGY_CONTEXT_INDICATORS.some((ind) => ind.test(window))) {
+        return { excerpt: "..." + window + "...", pattern: re };
+      }
+    }
+  }
+  return null;
+}
 
 const HEDGING_PHRASES = [
   "likely built by", "probably built by", "appears to have been built",
@@ -147,11 +209,17 @@ const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
   about: 180, homes: 350, amenities: 250, market: 350,
   gettingAround: 200, schools: 200, bestFitFor: 180, differentPriorities: 180,
 };
-// v3: tiered total-word floors matching system prompt self-check #9 (1,200 target)
-// Thin and zero data streets get relaxed floors because market section collapses.
-const TOTAL_WORD_FLOOR_FULL = 1200;
-const TOTAL_WORD_FLOOR_THIN = 1050;
-const TOTAL_WORD_FLOOR_ZERO = 1000;
+// v4 (Phase 4.1 / Piece D): tiered total-word floors calibrated to DeepSeek
+// V3 chat output distribution. Empirical smoke testing showed DeepSeek converges
+// to 700-850 word output on structured 8-section + FAQ prompts regardless of
+// input richness or prompt strengthening (etheridge-avenue-milton: 729w with
+// salesCount=5, asleton-boulevard-milton: 825w with salesCount=24). Lowered
+// floors give the model achievable targets while preserving voice-quality discipline.
+// If production-ranked pages underperform at this length, raise floors and add
+// retry-feedback or multi-pass generation in a future phase.
+const TOTAL_WORD_FLOOR_FULL = 900;
+const TOTAL_WORD_FLOOR_THIN = 800;
+const TOTAL_WORD_FLOOR_ZERO = 750;
 const TOTAL_WORD_CEILING = 2000;
 
 const FAQ_MIN = 6;
@@ -269,13 +337,10 @@ export function validateStreetGeneration(
       }
     }
 
-    // Methodology leaks
-    for (const phrase of METHODOLOGY_LEAK_PHRASES) {
-      const re = wordBoundaryRegex(phrase);
-      if (re.test(sectionText)) {
-        violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: excerptAround(sectionText, re), severity: "hard" });
-        break;
-      }
+    // Methodology leaks (two-pass: substring + contextual)
+    const sectionLeak = findMethodologyLeak(sectionText);
+    if (sectionLeak) {
+      violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: sectionLeak.excerpt, severity: "hard" });
     }
 
     // v3: hedging emits its own rule
@@ -385,9 +450,9 @@ export function validateStreetGeneration(
   if (faqSale) violations.push({ rule: "precise_price", excerpt: `FAQ sale price "${faqSale}" violates rounding`, severity: "hard" });
   const faqRent = findPreciseRent(faqText);
   if (faqRent) violations.push({ rule: "precise_price", excerpt: `FAQ rent "${faqRent}" violates rounding`, severity: "hard" });
-  for (const phrase of METHODOLOGY_LEAK_PHRASES) {
-    const re = wordBoundaryRegex(phrase);
-    if (re.test(faqText)) { violations.push({ rule: "methodology_leak", excerpt: excerptAround(faqText, re), severity: "hard" }); break; }
+  const faqLeak = findMethodologyLeak(faqText);
+  if (faqLeak) {
+    violations.push({ rule: "methodology_leak", excerpt: faqLeak.excerpt, severity: "hard" });
   }
 
   // v3: FAQ questions must match bank verbatim (dedicated rule)
@@ -511,4 +576,334 @@ export function formatViolationsForRetry(violations: ValidatorViolation[]): stri
   }
   lines.push("", "Return the complete revised JSON. Do not include any prose commentary outside the JSON.");
   return lines.join("\n");
+}
+
+/**
+ * Build rule-specific actionable retry feedback. Unlike the legacy
+ * formatViolationsForRetry which just lists rule names + excerpts, this
+ * version computes concrete fix instructions per rule:
+ * - total_word_floor: per-section word math + which sections to expand
+ * - section_word_floor/ceiling: which section, how many words to add/cut
+ * - precise_price: the offending price + the correct rounded form
+ * - faq_answer_length: which FAQ + current sentence count + target
+ * - methodology_leak: the offending phrase + suggested rewrite
+ * - superlative/cliche: the offending word + suggested removal
+ * - invented_cross_street: which name was invented + valid options
+ * - heading_out_of_bank: which section + what the approved variants are
+ * - faq_count_out_of_range: current count + min/max
+ * - faq_question_out_of_bank: which FAQ + valid options
+ * - em_dash: which section + count
+ * - hedging_builder: the offending phrase + the correct silent-or-confident rule
+ *
+ * Falls back to legacy generic format for any rule not specifically handled,
+ * so partial coverage is safe.
+ */
+export function formatViolationsForRetryEnriched(
+  violations: ValidatorViolation[],
+  output: StreetGeneratorOutput,
+  input: StreetGeneratorInput,
+): string {
+  if (violations.length === 0) return "";
+
+  const lines: string[] = [
+    "Your previous attempt failed validation with the following specific issues. Fix each one and return clean JSON. Do not introduce new violations while fixing these.",
+    "",
+  ];
+
+  // Group violations by rule for cleaner output
+  const byRule = new Map<ValidatorRule, ValidatorViolation[]>();
+  for (const v of violations) {
+    if (!byRule.has(v.rule)) byRule.set(v.rule, []);
+    byRule.get(v.rule)!.push(v);
+  }
+
+  for (const [rule, rulesViolations] of Array.from(byRule.entries())) {
+    lines.push(...formatRuleViolations(rule, rulesViolations, output, input));
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push("Return the corrected full JSON output. Do not return only the changed sections; return the complete output with all eight sections and the FAQ block.");
+
+  return lines.join("\n");
+}
+
+function formatRuleViolations(
+  rule: ValidatorRule,
+  violations: ValidatorViolation[],
+  output: StreetGeneratorOutput,
+  input: StreetGeneratorInput,
+): string[] {
+  switch (rule) {
+    case "total_word_floor":
+      return formatTotalWordFloor(violations, output, input);
+    case "section_word_floor":
+    case "section_word_ceiling":
+      return formatSectionWordBounds(rule, violations, output);
+    case "precise_price":
+      return formatPrecisePrice(violations);
+    case "faq_answer_length":
+      return formatFaqAnswerLength(violations);
+    case "methodology_leak":
+      return formatMethodologyLeak(violations);
+    case "superlative":
+      return formatSuperlative(violations);
+    case "cliche_opener":
+      return formatClicheOpener(violations);
+    case "invented_cross_street":
+      return formatInventedCrossStreet(violations, input);
+    case "heading_out_of_bank":
+      return formatHeadingOutOfBank(violations);
+    case "faq_count_out_of_range":
+      return formatFaqCountOutOfRange(output);
+    case "faq_question_out_of_bank":
+      return formatFaqQuestionOutOfBank(violations, input);
+    case "em_dash":
+      return formatEmDash(violations);
+    case "hedging_builder":
+    case "builder_without_high_confidence":
+      return formatHedging(violations, input);
+    case "missing_section_id":
+      return formatMissingSectionId(output);
+    case "total_word_ceiling":
+      return formatTotalWordCeiling(output);
+    case "invalid_json_shape":
+      return [
+        "**invalid_json_shape**: Your output did not match the required JSON schema. Return a single JSON object with exactly two top-level keys: `sections` (array of 8 objects) and `faq` (array of 6-8 objects). Each section has `id`, `heading`, `paragraphs[]`. Each FAQ has `question`, `answer`. No code fences, no preamble.",
+      ];
+    default:
+      return [
+        `**${rule}**: ${violations.map(v => v.excerpt).join("; ")}`,
+      ];
+  }
+}
+
+// ---- Per-rule formatters ----
+
+function formatTotalWordFloor(
+  _violations: ValidatorViolation[],
+  output: StreetGeneratorOutput,
+  input: StreetGeneratorInput,
+): string[] {
+  const sectionWords = new Map<string, number>();
+  let total = 0;
+  for (const s of output.sections) {
+    const words = s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length;
+    sectionWords.set(s.id, words);
+    total += words;
+  }
+
+  const kAnon = input.aggregates.kAnonLevel;
+  const floor = kAnon === "full" ? 900 : kAnon === "thin" ? 800 : 750;
+  const target = kAnon === "full" ? 1400 : kAnon === "thin" ? 1100 : 950;
+  const deficit = target - total;
+
+  const expansionPriority: Array<{ id: string; reason: string }> = [
+    { id: "homes", reason: "add detail on architectural style, exterior treatments, lot characteristics, and how the stock behaves in trade" },
+    { id: "market", reason: "describe trade pace, what the quarterly trend shows, range texture, and buyer-seller dynamics" },
+    { id: "amenities", reason: "add second-tier walking-distance places (grocery, parks, places of worship) and describe daily-rhythm patterns" },
+    { id: "bestFitFor", reason: "elaborate on lifestyle tradeoffs the buyer accepts in exchange for what the street offers" },
+    { id: "differentPriorities", reason: "expand the priority comparison with cross-streets from input.crossStreets[] (verbatim shortNames only)" },
+  ];
+
+  const lines = [
+    `**total_word_floor**: Your output produced ${total} words. The floor for kAnonLevel="${kAnon}" is ${floor} words. You need ${deficit > 0 ? `at least ${target - total} more words to reach the target of ${target}` : "to add more material"}.`,
+    ``,
+    `Per-section breakdown:`,
+  ];
+
+  for (const s of output.sections) {
+    const wc = sectionWords.get(s.id) ?? 0;
+    lines.push(`  - ${s.id}: ${wc} words`);
+  }
+
+  lines.push(``, `Expand these sections in priority order. Distribute the additional ${deficit} words across the first 2-3:`);
+  let remaining = deficit;
+  for (const { id, reason } of expansionPriority) {
+    if (remaining <= 0) break;
+    const allocation = Math.min(Math.ceil(deficit / 3), remaining);
+    lines.push(`  - ${id}: add ~${allocation} words. ${reason}.`);
+    remaining -= allocation;
+  }
+
+  lines.push(``, `Do not pad with caveats, methodology references, or filler. Add grounded observation about the street's actual character.`);
+
+  return lines;
+}
+
+function formatTotalWordCeiling(
+  output: StreetGeneratorOutput,
+): string[] {
+  let total = 0;
+  for (const s of output.sections) {
+    total += s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length;
+  }
+  const excess = total - 2000;
+  return [
+    `**total_word_ceiling**: Your output produced ${total} words, exceeding the 2,000-word ceiling by ${excess}. Trim ${excess} words. Cut from sections that ran longest, prioritizing the removal of: redundant observations across sections, hedging caveats, and overly-elaborate transitions.`,
+  ];
+}
+
+function formatSectionWordBounds(
+  rule: "section_word_floor" | "section_word_ceiling",
+  violations: ValidatorViolation[],
+  output: StreetGeneratorOutput,
+): string[] {
+  const lines = [`**${rule}**:`];
+  for (const v of violations) {
+    if (!v.sectionId) continue;
+    const section = output.sections.find(s => s.id === v.sectionId);
+    if (!section) continue;
+    const wc = section.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length;
+    lines.push(`  - section "${v.sectionId}" has ${wc} words. Excerpt: "${v.excerpt}". ${rule === "section_word_floor" ? `Expand by adding more grounded detail` : `Trim by combining or cutting redundant observations`}.`);
+  }
+  return lines;
+}
+
+function formatPrecisePrice(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**precise_price**: One or more prices in your output use MLS-precision form rather than the prose rounding rules. Specific issues:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.sectionId ? `section "${v.sectionId}": ` : ""}${v.excerpt}`);
+  }
+  lines.push(``, `Reference the rounding tables in the system prompt. Sale prices: under $500K → nearest $10K with band prose ("mid-$480s"); $500K-$999K → nearest $25K; $1M-$1.99M → nearest $50K with prose forms ("the low-$1Ms," "the mid-$1.3Ms," "around $1.5M"); $2M+ → nearest $100K. Rental prices: under $2,500 → nearest $50; $2,500-$4,000 → nearest $100; over $4,000 → nearest $250 with band prose ("around $4,250," "the mid-$4,000s"). Never emit a comma-separated precise price like "$3,225" or "$4,200" in customer prose; round to "$3,200" or "the mid-$4,000s".`);
+  return lines;
+}
+
+function formatFaqAnswerLength(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**faq_answer_length**: One or more FAQ answers fall outside the 2-4 sentence range:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.excerpt}`);
+  }
+  lines.push(``, `Each FAQ answer must be 2-4 sentences inclusive. Count sentence-ending periods, question marks, and exclamation points. To trim a long answer: combine related observations using semicolons or compound clauses. To expand a short answer: add a second observation that complements the first.`);
+  return lines;
+}
+
+function formatMethodologyLeak(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**methodology_leak**: One or more passages reveal how the numbers were computed. The reader should experience finished observation, not exposed plumbing. Issues:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.sectionId ? `section "${v.sectionId}": ` : ""}"${v.excerpt}"`);
+  }
+  lines.push(``, `Rewrite to remove statistical framing. Substitutions: "median price" → "trades around"; "average days on market" → "homes typically sit"; "sample size" → omit; "transactions drive" → omit; "the Milton average" → "Milton norm" or "comparable streets"; "days on market mean buyers" → "the deliberate pace allows buyers"; "X days to sell on average" → "homes tend to sit for around X days." Avoid mentioning timeframes like "12 months" or "quarter."`);
+  return lines;
+}
+
+function formatSuperlative(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**superlative**: One or more banned superlatives appeared in your output:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.sectionId ? `section "${v.sectionId}": ` : ""}"${v.excerpt}"`);
+  }
+  lines.push(``, `Banned superlatives: "best," "unbeatable," "premier," "finest," "most desirable," "top-tier," "world-class," "unparalleled," "unmatched," "second to none," "nothing comes close." Note: even idiomatic uses like "in the best sense" trigger the rule. Rewrite to remove the superlative entirely. Replace with neutral descriptive language: "calm and unhurried" instead of "in the best sense"; "well-regarded" instead of "premier"; "characteristic of the area" instead of "second to none."`);
+  return lines;
+}
+
+function formatClicheOpener(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**cliche_opener**: One or more banned realtor-cliché phrases appeared:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.sectionId ? `section "${v.sectionId}": ` : ""}"${v.excerpt}"`);
+  }
+  lines.push(``, `Banned: "welcome to," "nestled in," "tucked away," "hidden gem," "sought-after," "desirable," "charming," "stunning," "must-see," "breathtaking," "boasts," "offers the perfect blend," "lifestyle you deserve," "dream home." Rewrite the opening with concrete observation about the street itself, not generic praise.`);
+  return lines;
+}
+
+function formatInventedCrossStreet(violations: ValidatorViolation[], input: StreetGeneratorInput): string[] {
+  const validNames = input.crossStreets.map(cs => cs.shortName).join(", ") || "(none provided)";
+  const lines = [
+    `**invented_cross_street**: You named a street that is not in input.crossStreets[]. Specifically:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - "${v.excerpt}" is not a valid cross-street.`);
+  }
+  lines.push(
+    ``,
+    `The ONLY street names allowed in section "differentPriorities" are these shortNames from input.crossStreets[]: ${validNames}.`,
+    ``,
+    `If you cannot place one of these into a meaningful priority-comparison sentence, rewrite the section to name NO streets at all and use the qualitative form: "buyers who weight [tradeoff] over [tradeoff] often end up in [region], and we can point to specific streets in conversation." Do not invent or guess at any other street names, even real Milton streets.`,
+  );
+  return lines;
+}
+
+function formatHeadingOutOfBank(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**heading_out_of_bank**: One or more section headings don't match the approved variants:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - section "${v.sectionId}": "${v.excerpt}"`);
+  }
+  lines.push(
+    ``,
+    `Approved heading variants per section (substitute {name} or {shortName} where indicated; no other changes allowed):`,
+    `  - about: "About {name}" or "{name} at a glance"`,
+    `  - homes: "The homes here" or "Housing stock on {shortName}"`,
+    `  - amenities: "What's nearby" or "Around the corner"`,
+    `  - market: "The market right now" or "Trade patterns"`,
+    `  - gettingAround: "Getting around" or "Where this street reaches"`,
+    `  - schools: "Schools and catchment"`,
+    `  - bestFitFor: "Who this street suits"`,
+    `  - differentPriorities: "If different priorities matter more"`,
+  );
+  return lines;
+}
+
+function formatFaqCountOutOfRange(output: StreetGeneratorOutput): string[] {
+  return [
+    `**faq_count_out_of_range**: Your FAQ has ${output.faq.length} items. The range is 6-8 inclusive. ${output.faq.length < 6 ? `Add ${6 - output.faq.length} more from the FAQ bank, drawn from underused clusters per the selection rules.` : `Remove ${output.faq.length - 8} items, prioritizing the least essential clusters first.`}`,
+  ];
+}
+
+function formatFaqQuestionOutOfBank(violations: ValidatorViolation[], input: StreetGeneratorInput): string[] {
+  const streetName = input.street.name;
+  const lines = [
+    `**faq_question_out_of_bank**: One or more FAQ questions are not from the canonical bank:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - "${v.excerpt}"`);
+  }
+  lines.push(
+    ``,
+    `Every FAQ question must be drawn VERBATIM from the canonical bank with only "{Street}" replaced with "${streetName}". Do not paraphrase. Do not invent new questions. Refer to the FAQ bank in the system prompt for the 21 valid templates organized by cluster (PRICE, SPEED, HOUSING STOCK, SCHOOLS, COMMUTE, BUILDER, RENTAL, INVESTOR, ROUTING).`,
+  );
+  return lines;
+}
+
+function formatEmDash(violations: ValidatorViolation[]): string[] {
+  return [
+    `**em_dash**: Your output contains em-dashes (—) or en-dashes (–), which are absolutely banned. ${violations.length} occurrence${violations.length > 1 ? "s" : ""} found in: ${violations.map(v => v.sectionId).filter(Boolean).join(", ") || "the output"}. Replace every em-dash and en-dash with a comma, semicolon, period, or parenthetical phrase. Hyphen-minus (-) is allowed for compound words; em-dash (—) and en-dash (–) are not.`,
+  ];
+}
+
+function formatHedging(violations: ValidatorViolation[], input: StreetGeneratorInput): string[] {
+  const builder = input.primaryBuilder;
+  const lines = [
+    `**hedging_builder / builder_without_high_confidence**: Your output contains hedging language about builder attribution.`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.sectionId ? `section "${v.sectionId}": ` : ""}"${v.excerpt}"`);
+  }
+  if (builder?.confidence === "high") {
+    lines.push(``, `input.primaryBuilder.confidence is "high" — name "${builder.name}" factually and once. Remove all hedging words ("likely," "probably," "appears to," "may have been," "possibly").`);
+  } else {
+    lines.push(``, `input.primaryBuilder.confidence is ${builder?.confidence === "medium" ? `"medium"` : "absent"} — do not name any builder at all. Describe observable patterns instead ("predominantly 2018-2021 construction," "consistent façade treatment across the block"). Remove all builder names and all hedging words.`);
+  }
+  return lines;
+}
+
+function formatMissingSectionId(
+  output: StreetGeneratorOutput,
+): string[] {
+  const present = output.sections.map(s => s.id);
+  const required: StreetSectionId[] = ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+  const missing = required.filter(r => !present.includes(r));
+  return [
+    `**missing_section_id**: Your output is missing required sections: ${missing.join(", ")}. The sections array MUST contain all 8 ids in canonical order: about, homes, amenities, market, gettingAround, schools, bestFitFor, differentPriorities. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
+  ];
 }

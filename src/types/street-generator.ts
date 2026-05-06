@@ -30,7 +30,7 @@ export interface StreetGeneratorOutput {
 // --- Validation-facing augment (persisted alongside output, not returned by model) ---
 
 export interface StreetGenerationMeta {
-  model: "claude-opus-4-7";
+  model: "claude-opus-4-7" | "deepseek-chat";
   generatedAt: string;          // ISO
   inputHash: string;            // sha256 of StreetGeneratorInput for drift detection
   attemptCount: 1 | 2 | 3;

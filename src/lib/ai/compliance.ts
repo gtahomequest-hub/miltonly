@@ -23,6 +23,19 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import * as fs from 'fs';
+import * as path from 'path';
+import {
+  validateStreetGeneration,
+  generateWithRetry,
+  formatViolationsForRetry,
+  formatViolationsForRetryEnriched,
+} from './validateStreetGeneration';
+import type {
+  StreetGeneratorInput,
+  StreetGeneratorOutput,
+  ValidatorViolation,
+} from '../../types/street-generator';
 
 const MODEL = "claude-opus-4-7";
 
@@ -278,9 +291,34 @@ interface DeepSeekRawResponse {
   costUsd: number;
 }
 
-async function callDeepSeek(systemPrompt: string, userPrompt: string): Promise<DeepSeekRawResponse> {
+interface CallDeepSeekOptions {
+  systemPrompt: string;
+  userPrompt: string;
+  responseFormat?: { type: 'json_object' };
+  maxTokens?: number;
+}
+
+async function callDeepSeek({
+  systemPrompt,
+  userPrompt,
+  responseFormat,
+  maxTokens = 3000,
+}: CallDeepSeekOptions): Promise<DeepSeekRawResponse> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
+
+  const requestBody: Record<string, unknown> = {
+    model: DEEPSEEK_MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.7,
+    max_tokens: maxTokens,
+  };
+  if (responseFormat) {
+    requestBody.response_format = responseFormat;
+  }
 
   const res = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
@@ -288,15 +326,7 @@ async function callDeepSeek(systemPrompt: string, userPrompt: string): Promise<D
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey.trim()}`,
     },
-    body: JSON.stringify({
-      model: DEEPSEEK_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 3000,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!res.ok) {
@@ -676,7 +706,7 @@ export async function generateLongFormStreetDescription(
       userPrompt = `${POLISH_PROMPT_V2}\n\n--- DRAFT ---\n\n${lastText}`;
     }
 
-    const response = await callDeepSeek(systemPrompt, userPrompt);
+    const response = await callDeepSeek({ systemPrompt, userPrompt });
     const validation = validateLongFormContent(response.text, stats.streetName);
 
     passes.push({
@@ -748,5 +778,218 @@ export async function generateLongFormStreetDescription(
     passes,
     provider: "deepseek_v2",
     trimResult,
+  };
+}
+
+// --- Phase 4.1 system prompt (lazy-loaded once per warm container) ---
+
+let phase41SystemPromptCache: string | null = null;
+
+function loadPhase41SystemPrompt(): string {
+  if (phase41SystemPromptCache !== null) return phase41SystemPromptCache;
+  const specPath = path.join(process.cwd(), 'docs', 'phase-4.1', '01-system-prompt.md');
+  try {
+    phase41SystemPromptCache = fs.readFileSync(specPath, 'utf8');
+  } catch (e) {
+    throw new Error(
+      `Failed to load Phase 4.1 system prompt at ${specPath}: ${(e as Error).message}`,
+    );
+  }
+  return phase41SystemPromptCache;
+}
+
+// --- Phase 4.1 generator (DEC-PH41-CANONICAL) ---
+
+interface Phase41Attempt {
+  attemptN: number;
+  violations: ValidatorViolation[];
+  tokens: { in: number; out: number };
+  costUsd: number;
+}
+
+export interface Phase41GenerationResult {
+  output: StreetGeneratorOutput;
+  attemptCount: number;
+  validatorPassed: boolean;
+  finalViolations: ValidatorViolation[];
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+  attempts: Phase41Attempt[];
+}
+
+export interface Phase41GenerationErrorPayload {
+  violations: ValidatorViolation[];
+  attemptCount: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+  attempts: Phase41Attempt[];
+}
+
+export class Phase41GenerationError extends Error {
+  public readonly payload: Phase41GenerationErrorPayload;
+
+  constructor(message: string, payload: Phase41GenerationErrorPayload) {
+    super(message);
+    this.name = 'Phase41GenerationError';
+    this.payload = payload;
+  }
+}
+
+/**
+ * Generate Phase 4.1-aligned street content via DeepSeek + validator retry loop.
+ *
+ * Architecture:
+ *  - System prompt: docs/phase-4.1/01-system-prompt.md (verbatim, lazy-cached)
+ *  - User message: JSON.stringify(input) + (on retry) formatViolationsForRetry feedback
+ *  - DeepSeek call: callDeepSeek with response_format: json_object, maxTokens 5000
+ *  - Validation: validateStreetGeneration() inside generateWithRetry()
+ *  - Retry: up to 3 attempts (managed by generateWithRetry)
+ *
+ * Known limitations (v1):
+ *  - Per-attempt `violations` arrays in the returned `attempts[]` are populated only for
+ *    the FINAL attempt. Earlier attempts retain empty `violations: []` because
+ *    generateWithRetry() does not expose per-attempt violation lists. Tracked for
+ *    follow-up if smoke testing surfaces a need for richer telemetry.
+ */
+export async function generatePhase41StreetContent(
+  input: StreetGeneratorInput,
+  _options?: { maxAttempts?: number },
+): Promise<Phase41GenerationResult> {
+  const systemPrompt = loadPhase41SystemPrompt();
+
+  const attempts: Phase41Attempt[] = [];
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCostUsd = 0;
+  let attemptCounter = 0;
+
+  const callModel = async (
+    inp: StreetGeneratorInput,
+    priorViolations?: ValidatorViolation[],
+    priorOutput?: StreetGeneratorOutput,
+  ): Promise<StreetGeneratorOutput> => {
+    attemptCounter += 1;
+
+    let userPrompt = JSON.stringify(inp, null, 2);
+    if (priorViolations && priorViolations.length > 0 && priorOutput) {
+      userPrompt +=
+        '\n\n---\n' +
+        formatViolationsForRetryEnriched(priorViolations, priorOutput, inp);
+    } else if (priorViolations && priorViolations.length > 0) {
+      // Fallback to generic format when prior output isn't available (rare —
+      // mostly for the first attempt-2 case if the generator helper changes).
+      userPrompt +=
+        '\n\n---\nYour previous attempt failed validation. Fix these specific issues and return clean JSON:\n\n' +
+        formatViolationsForRetry(priorViolations);
+    }
+
+    const response = await callDeepSeek({
+      systemPrompt,
+      userPrompt,
+      responseFormat: { type: 'json_object' },
+      maxTokens: 5000,
+    });
+
+    totalInputTokens += response.inputTokens;
+    totalOutputTokens += response.outputTokens;
+    totalCostUsd += response.costUsd;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(response.text);
+    } catch (e) {
+      attempts.push({
+        attemptN: attemptCounter,
+        violations: [
+          {
+            rule: 'invalid_json_shape',
+            excerpt: response.text.slice(0, 80),
+            severity: 'hard',
+          },
+        ],
+        tokens: { in: response.inputTokens, out: response.outputTokens },
+        costUsd: response.costUsd,
+      });
+      throw new Error(`Phase41 JSON parse failure: ${(e as Error).message}`);
+    }
+
+    const candidate = parsed as Partial<StreetGeneratorOutput>;
+    if (
+      !candidate ||
+      !Array.isArray(candidate.sections) ||
+      !Array.isArray(candidate.faq)
+    ) {
+      attempts.push({
+        attemptN: attemptCounter,
+        violations: [
+          {
+            rule: 'invalid_json_shape',
+            excerpt: JSON.stringify(parsed).slice(0, 80),
+            severity: 'hard',
+          },
+        ],
+        tokens: { in: response.inputTokens, out: response.outputTokens },
+        costUsd: response.costUsd,
+      });
+      throw new Error('Phase41 output failed runtime shape narrowing');
+    }
+
+    attempts.push({
+      attemptN: attemptCounter,
+      violations: [], // populated only for final attempt by reconciliation below
+      tokens: { in: response.inputTokens, out: response.outputTokens },
+      costUsd: response.costUsd,
+    });
+
+    return candidate as StreetGeneratorOutput;
+  };
+
+  let output: StreetGeneratorOutput;
+  let attemptCount: number;
+  let finalViolations: ValidatorViolation[];
+
+  try {
+    const result = await generateWithRetry(input, callModel);
+    output = result.output;
+    attemptCount = result.attemptCount;
+    finalViolations = result.violations;
+  } catch (err) {
+    // generateWithRetry throws StreetGenerationFailure on retry exhaustion. The
+    // class carries the slug + violations array. We rethrow a custom error
+    // that surfaces violations + telemetry to the caller, so the caller can
+    // write a review row and populate cost/token fields on the failed DB row.
+    const violations: ValidatorViolation[] =
+      err && typeof err === 'object' && 'violations' in err
+        ? ((err as { violations: ValidatorViolation[] }).violations ?? [])
+        : [];
+
+    throw new Phase41GenerationError(
+      `Phase41 generation failed after ${attemptCounter} attempts. ${violations.length} violations.`,
+      {
+        violations,
+        attemptCount: attemptCounter,
+        totalInputTokens,
+        totalOutputTokens,
+        totalCostUsd,
+        attempts,
+      },
+    );
+  }
+
+  if (attempts.length > 0) {
+    attempts[attempts.length - 1].violations = finalViolations;
+  }
+
+  return {
+    output,
+    attemptCount,
+    validatorPassed: finalViolations.length === 0,
+    finalViolations,
+    totalInputTokens,
+    totalOutputTokens,
+    totalCostUsd,
+    attempts,
   };
 }
