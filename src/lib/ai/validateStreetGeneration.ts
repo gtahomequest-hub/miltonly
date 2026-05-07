@@ -24,7 +24,9 @@
 import type {
   StreetGeneratorOutput,
   StreetGeneratorInput,
+  StreetSection,
   StreetSectionId,
+  StreetFAQItem,
   ValidatorViolation,
   ValidatorRule,
 } from "@/types/street-generator";
@@ -125,6 +127,84 @@ const HEDGING_PHRASES = [
   "probably Mattamy", "may be Mattamy", "likely a product of",
   "possibly built", "believed to be built",
 ];
+
+// --- Sales-register leak detection ---
+// Editorial prose speaks ABOUT the street, not FOR the writer. The model
+// occasionally pivots to advisory/sales register on closing lines — "Our
+// team monitors the street closely and can provide detailed guidance on
+// current listings and off-market opportunities" was the canonical example
+// from the prior B1 sample. This catches both the first-person-plural
+// pivot AND the reader-contact / service-language patterns.
+
+// First-person plural pronouns used as subject/object/possessive. Excludes
+// the editorial-we constructions ("we'd note", "we observe") that are
+// occasionally allowed in FAQ answers.
+const SALES_PRONOUNS_REGEX = /\b(?:our team|our view|our (?:advisory|practice|service|brokerage|firm)|we (?:follow|track|monitor|note|observe|advise|provide|offer|help|recommend|suggest|encourage|invite)|we'(?:ll|ve|re)|we can|we have|we work|we serve|we cover)\b/gi;
+
+// Reader-contact invitations. Match phrasal forms.
+const SALES_INVITATION_PHRASES = [
+  "contact us", "reach out", "let us know", "feel free to",
+  "get in touch", "drop us a line", "drop us a note",
+  "available to help", "happy to discuss", "happy to walk",
+  "private conversation", "off-market opportunit",
+  "call our team", "give us a call", "schedule a consultation",
+  "book a consultation", "request a consultation",
+];
+
+// Service-language nouns in promotional context. Matched as standalone
+// terms; require a sales_pronoun match in the same section to fire (handled
+// by the detection function below) — alone they're often legitimate
+// advisor-prose constructions.
+const SALES_SERVICE_NOUNS = [
+  "consultation", "advisory service", "brokerage service",
+];
+
+export function findSalesRegisterLeak(text: string): { excerpt: string; matchedPhrase: string } | null {
+  // Pass 1: pronoun pivot.
+  const pronounMatch = SALES_PRONOUNS_REGEX.exec(text);
+  SALES_PRONOUNS_REGEX.lastIndex = 0;
+  if (pronounMatch) {
+    return {
+      excerpt: excerptAroundIndex(text, pronounMatch.index, pronounMatch[0].length),
+      matchedPhrase: pronounMatch[0],
+    };
+  }
+  // Pass 2: invitation phrases.
+  for (const phrase of SALES_INVITATION_PHRASES) {
+    const re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    const m = re.exec(text);
+    if (m) {
+      return {
+        excerpt: excerptAroundIndex(text, m.index, m[0].length),
+        matchedPhrase: m[0],
+      };
+    }
+  }
+  // Pass 3: service nouns in promotional context (only fire if both a
+  // service noun AND a pronoun pivot appear within 200 chars).
+  for (const noun of SALES_SERVICE_NOUNS) {
+    const re = new RegExp(`\\b${noun.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    const m = re.exec(text);
+    if (m) {
+      const windowStart = Math.max(0, m.index - 200);
+      const windowEnd = Math.min(text.length, m.index + m[0].length + 200);
+      const window = text.slice(windowStart, windowEnd);
+      if (/\b(?:our|we|us)\b/i.test(window)) {
+        return {
+          excerpt: excerptAroundIndex(text, m.index, m[0].length),
+          matchedPhrase: m[0],
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function excerptAroundIndex(text: string, idx: number, len: number): string {
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(text.length, idx + len + 40);
+  return "..." + text.slice(start, end) + "...";
+}
 
 // --- Price detection ---
 
@@ -366,6 +446,19 @@ export function validateStreetGeneration(
       }
     }
 
+    // v5 (Phase 4.1 / two-call): sales-register leak. The model occasionally
+    // pivots to first-person-plural advisory voice on closing lines. Caught
+    // here per-section so we can route retry feedback to the right call.
+    const sectionSalesLeak = findSalesRegisterLeak(sectionText);
+    if (sectionSalesLeak) {
+      violations.push({
+        rule: "sales_register_leak",
+        sectionId: section.id,
+        excerpt: `${sectionSalesLeak.matchedPhrase}: ${sectionSalesLeak.excerpt}`,
+        severity: "hard",
+      });
+    }
+
     // Precise sale price (rounding violation)
     const preciseSalePrice = findPrecisePrice(sectionText);
     if (preciseSalePrice) {
@@ -465,6 +558,17 @@ export function validateStreetGeneration(
   if (faqLeak) {
     violations.push({ rule: "methodology_leak", excerpt: faqLeak.excerpt, severity: "hard" });
   }
+  // FAQ sales-register: editorial-we ("we'd note", "we observe") is
+  // tolerated; promotional sales register ("our team", "reach out", etc.)
+  // is caught by the same regex used for sections.
+  const faqSalesLeak = findSalesRegisterLeak(faqText);
+  if (faqSalesLeak) {
+    violations.push({
+      rule: "sales_register_leak",
+      excerpt: `FAQ ${faqSalesLeak.matchedPhrase}: ${faqSalesLeak.excerpt}`,
+      severity: "hard",
+    });
+  }
 
   // v3: FAQ questions must match bank verbatim (dedicated rule)
   const allowedQuestions = new Set(
@@ -487,6 +591,212 @@ export function validateStreetGeneration(
       violations.push({
         rule: "faq_answer_length",
         excerpt: `answer for "${item.question.slice(0,50)}..." has ${sentenceCount} sentences (allowed ${FAQ_ANSWER_MIN_SENTENCES}-${FAQ_ANSWER_MAX_SENTENCES})`,
+        severity: "hard",
+      });
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Run per-section validation rules on a SUBSET of sections (descriptive
+ * half: about/homes/amenities/market, OR evaluative half: gettingAround/
+ * schools/bestFitFor/differentPriorities). Skips total_word_floor (combined-
+ * level only), FAQ rules (separate validateFaq), and the
+ * builder_without_high_confidence check (only meaningful when homes is
+ * present, but harmless for descriptive call which does include homes).
+ *
+ * Used by the two-call architecture's per-call retry loops. The combined
+ * validateStreetGeneration runs as a final sanity check on the full output.
+ */
+export function validateSectionsSubset(
+  sections: StreetSection[],
+  expectedIds: StreetSectionId[],
+  input: StreetGeneratorInput,
+): ValidatorViolation[] {
+  const violations: ValidatorViolation[] = [];
+
+  if (sections.length !== expectedIds.length) {
+    violations.push({
+      rule: "invalid_json_shape",
+      excerpt: `sections length = ${sections.length}, expected ${expectedIds.length}`,
+      severity: "hard",
+    });
+    return violations;
+  }
+  for (let i = 0; i < expectedIds.length; i++) {
+    if (sections[i].id !== expectedIds[i]) {
+      violations.push({
+        rule: "missing_section_id",
+        excerpt: `position ${i} got id "${sections[i].id}", expected "${expectedIds[i]}"`,
+        severity: "hard",
+      });
+    }
+  }
+
+  for (const section of sections) {
+    const sectionText = section.paragraphs.join("\n\n");
+
+    const acceptable = HEADING_BANK[section.id].flatMap((tmpl) => [
+      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName),
+    ]);
+    if (!acceptable.includes(section.heading)) {
+      violations.push({
+        rule: "heading_out_of_bank",
+        sectionId: section.id,
+        excerpt: `got "${section.heading}", expected one of: ${acceptable.join(" | ")}`,
+        severity: "hard",
+      });
+    }
+
+    if (EM_DASH_CHARS.test(sectionText)) {
+      violations.push({
+        rule: "em_dash",
+        sectionId: section.id,
+        excerpt: excerptAround(sectionText, EM_DASH_CHARS),
+        severity: "hard",
+      });
+    }
+
+    for (const phrase of SUPERLATIVE_PHRASES) {
+      const re = wordBoundaryRegex(phrase);
+      if (re.test(sectionText)) {
+        violations.push({ rule: "superlative", sectionId: section.id, excerpt: excerptAround(sectionText, re), severity: "hard" });
+        break;
+      }
+    }
+
+    for (const phrase of CLICHE_OPENERS_AND_PHRASES) {
+      const re = wordBoundaryRegex(phrase);
+      if (re.test(sectionText)) {
+        violations.push({ rule: "cliche_opener", sectionId: section.id, excerpt: excerptAround(sectionText, re), severity: "hard" });
+        break;
+      }
+    }
+
+    const sectionLeak = findMethodologyLeak(sectionText);
+    if (sectionLeak) {
+      violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: sectionLeak.excerpt, severity: "hard" });
+    }
+
+    for (const phrase of HEDGING_PHRASES) {
+      const re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      if (re.test(sectionText)) {
+        violations.push({ rule: "hedging_builder", sectionId: section.id, excerpt: excerptAround(sectionText, re), severity: "hard" });
+        break;
+      }
+    }
+
+    const preciseSalePrice = findPrecisePrice(sectionText);
+    if (preciseSalePrice) {
+      violations.push({ rule: "precise_price", sectionId: section.id, excerpt: `sale price "${preciseSalePrice}" violates rounding rules`, severity: "hard" });
+    }
+
+    const preciseRent = findPreciseRent(sectionText);
+    if (preciseRent) {
+      violations.push({ rule: "precise_price", sectionId: section.id, excerpt: `rent "${preciseRent}" violates rounding rules`, severity: "hard" });
+    }
+
+    const wordCount = countWords(sectionText);
+    const effectiveFloor = (section.id === "market" && input.aggregates.kAnonLevel !== "full")
+      ? 30
+      : SECTION_WORD_FLOORS[section.id];
+    if (wordCount < effectiveFloor) {
+      violations.push({ rule: "section_word_floor", sectionId: section.id, excerpt: `${wordCount} words, floor ${effectiveFloor}`, severity: "hard" });
+    }
+    if (wordCount > SECTION_WORD_CEILINGS[section.id]) {
+      violations.push({ rule: "section_word_ceiling", sectionId: section.id, excerpt: `${wordCount} words, ceiling ${SECTION_WORD_CEILINGS[section.id]}`, severity: "hard" });
+    }
+  }
+
+  // Cross-street invention check (only meaningful if differentPriorities is in the subset)
+  const diffPriorities = sections.find((s) => s.id === "differentPriorities")?.paragraphs.join(" ");
+  if (diffPriorities) {
+    const allowedShortNames = input.crossStreets.map((c) => c.shortName);
+    const candidatePhrases = extractCandidateStreetNames(diffPriorities);
+    for (const phrase of candidatePhrases) {
+      const phraseIsHostSelfReference =
+        phrase.trim().split(/\s+/).length >= 2 &&
+        input.street.name.toLowerCase().includes(phrase.toLowerCase());
+      const isAllowed = allowedShortNames.some((s) => phrase.includes(s))
+        || phrase.includes(input.street.shortName)
+        || phrase.includes(input.street.name)
+        || phraseIsHostSelfReference
+        || input.neighbourhoods.some((n) => phrase.includes(n))
+        || KNOWN_ANCHORS.some((a) => phrase.includes(a));
+      if (!isAllowed) {
+        violations.push({ rule: "invented_cross_street", sectionId: "differentPriorities", excerpt: phrase, severity: "hard" });
+      }
+    }
+  }
+
+  // Builder at insufficient confidence (only if homes is in the subset)
+  const homesSection = sections.find((s) => s.id === "homes");
+  if (homesSection && input.primaryBuilder && input.primaryBuilder.confidence !== "high") {
+    const homesText = homesSection.paragraphs.join(" ");
+    if (homesText.toLowerCase().includes(input.primaryBuilder.name.toLowerCase())) {
+      violations.push({
+        rule: "builder_without_high_confidence",
+        sectionId: "homes",
+        excerpt: `builder "${input.primaryBuilder.name}" named in prose at confidence=${input.primaryBuilder.confidence}`,
+        severity: "hard",
+      });
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Run FAQ-only validation rules. Used by the evaluative half's retry loop.
+ */
+export function validateFaq(
+  faq: StreetFAQItem[],
+  input: StreetGeneratorInput,
+): ValidatorViolation[] {
+  const violations: ValidatorViolation[] = [];
+
+  if (!faq || faq.length < FAQ_MIN || faq.length > FAQ_MAX) {
+    violations.push({ rule: "faq_count_out_of_range", excerpt: `faq length = ${faq?.length}`, severity: "hard" });
+    return violations;
+  }
+
+  const faqText = faq.map((q) => `${q.question} ${q.answer}`).join("\n");
+
+  if (EM_DASH_CHARS.test(faqText)) {
+    violations.push({ rule: "em_dash", excerpt: excerptAround(faqText, EM_DASH_CHARS), severity: "hard" });
+  }
+  const faqSale = findPrecisePrice(faqText);
+  if (faqSale) violations.push({ rule: "precise_price", excerpt: `FAQ sale price "${faqSale}" violates rounding`, severity: "hard" });
+  const faqRent = findPreciseRent(faqText);
+  if (faqRent) violations.push({ rule: "precise_price", excerpt: `FAQ rent "${faqRent}" violates rounding`, severity: "hard" });
+  const faqLeak = findMethodologyLeak(faqText);
+  if (faqLeak) violations.push({ rule: "methodology_leak", excerpt: faqLeak.excerpt, severity: "hard" });
+  const faqSalesLeak = findSalesRegisterLeak(faqText);
+  if (faqSalesLeak) {
+    violations.push({
+      rule: "sales_register_leak",
+      excerpt: `FAQ ${faqSalesLeak.matchedPhrase}: ${faqSalesLeak.excerpt}`,
+      severity: "hard",
+    });
+  }
+
+  const allowedQuestions = new Set(
+    FAQ_BANK_TEMPLATES.map((t) => t.replace("{Street}", input.street.name)),
+  );
+  for (const item of faq) {
+    if (!allowedQuestions.has(item.question)) {
+      violations.push({ rule: "faq_question_out_of_bank", excerpt: `FAQ question not in bank: "${item.question}"`, severity: "hard" });
+    }
+  }
+
+  for (const item of faq) {
+    const sentenceCount = countSentences(item.answer);
+    if (sentenceCount < FAQ_ANSWER_MIN_SENTENCES || sentenceCount > FAQ_ANSWER_MAX_SENTENCES) {
+      violations.push({
+        rule: "faq_answer_length",
+        excerpt: `answer for "${item.question.slice(0, 50)}..." has ${sentenceCount} sentences (allowed ${FAQ_ANSWER_MIN_SENTENCES}-${FAQ_ANSWER_MAX_SENTENCES})`,
         severity: "hard",
       });
     }

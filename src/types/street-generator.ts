@@ -65,6 +65,7 @@ export type ValidatorRule =
   | "faq_count_out_of_range"
   | "faq_answer_length"
   | "faq_question_out_of_bank"
+  | "sales_register_leak"
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---
