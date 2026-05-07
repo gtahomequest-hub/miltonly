@@ -98,13 +98,24 @@ const METHODOLOGY_CONTEXT_INDICATORS = [
   /\bsales/i,          // "average sales"
 ];
 
-function findMethodologyLeak(text: string): { excerpt: string; pattern: RegExp } | null {
-  // Pass 1: unambiguous substring matches.
+// Pass 1 only — substring matches for unambiguous methodology phrases
+// (TREB, MLS feed, our dataset, etc.). Always banned in every section
+// including market. These never have legitimate uses in editorial prose.
+function findMethodologyLeakSubstring(text: string): { excerpt: string; pattern: RegExp } | null {
   for (const phrase of METHODOLOGY_LEAK_PHRASES_SUBSTRING) {
     const re = wordBoundaryRegex(phrase);
     if (re.test(text)) return { excerpt: excerptAround(text, re), pattern: re };
   }
-  // Pass 2: contextual word matches gated by statistical context window.
+  return null;
+}
+
+// Pass 2 only — contextual word matches gated by statistical context window.
+// Catches "median price" / "average days on market" / "mean DOM" patterns
+// that legitimately leak methodology in editorial contexts. Suppressed in
+// the market section, where "Days on market average around 96" is real
+// market analysis idiom and not a methodology leak. Source-citing language
+// (TREB, MLS, our dataset) is still caught by Pass 1 in market.
+function findMethodologyLeakContextual(text: string): { excerpt: string; pattern: RegExp } | null {
   for (const word of METHODOLOGY_LEAK_WORDS_CONTEXTUAL) {
     const re = new RegExp(`\\b${word}\\b`, "gi");
     let match: RegExpExecArray | null;
@@ -119,6 +130,13 @@ function findMethodologyLeak(text: string): { excerpt: string; pattern: RegExp }
     }
   }
   return null;
+}
+
+// Backwards-compatible composite for FAQ checks and any caller that wants
+// both passes. Per-section callers should use the two split functions
+// directly so they can suppress Pass 2 in the market section.
+function findMethodologyLeak(text: string): { excerpt: string; pattern: RegExp } | null {
+  return findMethodologyLeakSubstring(text) ?? findMethodologyLeakContextual(text);
 }
 
 const HEDGING_PHRASES = [
@@ -204,6 +222,36 @@ function excerptAroundIndex(text: string, idx: number, len: number): string {
   const start = Math.max(0, idx - 40);
   const end = Math.min(text.length, idx + len + 40);
   return "..." + text.slice(start, end) + "...";
+}
+
+// --- Market section template-parrot detection ---
+// During the B3 5-sample series the market section's worked example was
+// being parroted near-verbatim across multiple samples. At the 230-street
+// production scale that would create template-shaped content across many
+// pages and trigger Google helpful-content penalties. The prompt has been
+// revised with three rotating examples and a FORBIDDEN PATTERN block, but
+// the validator catches the specific phrases as a backstop.
+//
+// Match is case-insensitive substring. Phrases retired from the worked
+// example, plus any close paraphrase the model continues to lean on.
+const MARKET_TEMPLATE_PARROT_PHRASES = [
+  "end units and units with finished basements",
+  "interior units without basement finish trade",
+  "investor demand is anchored",
+];
+
+export function findMarketTemplateParrot(text: string): { excerpt: string; matchedPhrase: string } | null {
+  const lower = text.toLowerCase();
+  for (const phrase of MARKET_TEMPLATE_PARROT_PHRASES) {
+    const idx = lower.indexOf(phrase);
+    if (idx >= 0) {
+      return {
+        excerpt: excerptAroundIndex(text, idx, phrase.length),
+        matchedPhrase: text.slice(idx, idx + phrase.length),
+      };
+    }
+  }
+  return null;
 }
 
 // --- Price detection ---
@@ -431,10 +479,20 @@ export function validateStreetGeneration(
       }
     }
 
-    // Methodology leaks (two-pass: substring + contextual)
-    const sectionLeak = findMethodologyLeak(sectionText);
-    if (sectionLeak) {
-      violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: sectionLeak.excerpt, severity: "hard" });
+    // Methodology leaks. Substring pass (TREB, MLS feed, our dataset, etc.)
+    // applies to every section including market. Contextual-word pass
+    // (median, average, mean, statistical) applies to every section EXCEPT
+    // market — in market, "days on market average around 96" is legitimate
+    // analysis idiom and the validator was over-firing on it.
+    const subLeak = findMethodologyLeakSubstring(sectionText);
+    if (subLeak) {
+      violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: subLeak.excerpt, severity: "hard" });
+    }
+    if (section.id !== "market") {
+      const ctxLeak = findMethodologyLeakContextual(sectionText);
+      if (ctxLeak) {
+        violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: ctxLeak.excerpt, severity: "hard" });
+      }
     }
 
     // v3: hedging emits its own rule
@@ -457,6 +515,21 @@ export function validateStreetGeneration(
         excerpt: `${sectionSalesLeak.matchedPhrase}: ${sectionSalesLeak.excerpt}`,
         severity: "hard",
       });
+    }
+
+    // v6 (Phase 4.1 / B3 follow-up): market section template-parrot. The
+    // worked example was being lifted near-verbatim across samples. Backs
+    // up the prompt-side FORBIDDEN PATTERN block with a regex backstop.
+    if (section.id === "market") {
+      const parrotMatch = findMarketTemplateParrot(sectionText);
+      if (parrotMatch) {
+        violations.push({
+          rule: "market_template_parrot",
+          sectionId: section.id,
+          excerpt: `parrot phrase "${parrotMatch.matchedPhrase}": ${parrotMatch.excerpt}`,
+          severity: "hard",
+        });
+      }
     }
 
     // Precise sale price (rounding violation)
@@ -675,9 +748,19 @@ export function validateSectionsSubset(
       }
     }
 
-    const sectionLeak = findMethodologyLeak(sectionText);
-    if (sectionLeak) {
-      violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: sectionLeak.excerpt, severity: "hard" });
+    // Methodology leaks. Substring pass applies to every section including
+    // market. Contextual-word pass (median, average, mean, statistical)
+    // applies to every section EXCEPT market — analytical-vocabulary idiom
+    // like "Days on market average around 96" is legitimate market analysis.
+    const subLeakSub = findMethodologyLeakSubstring(sectionText);
+    if (subLeakSub) {
+      violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: subLeakSub.excerpt, severity: "hard" });
+    }
+    if (section.id !== "market") {
+      const ctxLeakSub = findMethodologyLeakContextual(sectionText);
+      if (ctxLeakSub) {
+        violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: ctxLeakSub.excerpt, severity: "hard" });
+      }
     }
 
     for (const phrase of HEDGING_PHRASES) {

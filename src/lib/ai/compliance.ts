@@ -798,20 +798,39 @@ export async function generateLongFormStreetDescription(
 // final validator. Hypothesis: each call lands ~700-900 words in DeepSeek's
 // natural output band, total clears the 900-word full-tier floor reliably.
 
-let phase41DescriptivePromptCache: string | null = null;
+// Three-call architecture: about-homes-amenities (light observational),
+// market (heavy analytical with worked-example scaffolding), evaluative
+// (advisory mode + FAQ). Promotes market into its own dedicated call so
+// the analytical scaffolding doesn't contaminate the other observational
+// sections via shared prompt budget.
+let phase41AboutHomesAmenitiesPromptCache: string | null = null;
+let phase41MarketPromptCache: string | null = null;
 let phase41EvaluativePromptCache: string | null = null;
 
-function loadPhase41DescriptivePrompt(): string {
-  if (phase41DescriptivePromptCache !== null) return phase41DescriptivePromptCache;
-  const specPath = path.join(process.cwd(), 'docs', 'phase-4.1', '02-descriptive-prompt.md');
+function loadPhase41AboutHomesAmenitiesPrompt(): string {
+  if (phase41AboutHomesAmenitiesPromptCache !== null) return phase41AboutHomesAmenitiesPromptCache;
+  const specPath = path.join(process.cwd(), 'docs', 'phase-4.1', '02a-about-homes-amenities-prompt.md');
   try {
-    phase41DescriptivePromptCache = fs.readFileSync(specPath, 'utf8');
+    phase41AboutHomesAmenitiesPromptCache = fs.readFileSync(specPath, 'utf8');
   } catch (e) {
     throw new Error(
-      `Failed to load Phase 4.1 descriptive prompt at ${specPath}: ${(e as Error).message}`,
+      `Failed to load Phase 4.1 about-homes-amenities prompt at ${specPath}: ${(e as Error).message}`,
     );
   }
-  return phase41DescriptivePromptCache;
+  return phase41AboutHomesAmenitiesPromptCache;
+}
+
+function loadPhase41MarketPrompt(): string {
+  if (phase41MarketPromptCache !== null) return phase41MarketPromptCache;
+  const specPath = path.join(process.cwd(), 'docs', 'phase-4.1', '02b-market-prompt.md');
+  try {
+    phase41MarketPromptCache = fs.readFileSync(specPath, 'utf8');
+  } catch (e) {
+    throw new Error(
+      `Failed to load Phase 4.1 market prompt at ${specPath}: ${(e as Error).message}`,
+    );
+  }
+  return phase41MarketPromptCache;
 }
 
 function loadPhase41EvaluativePrompt(): string {
@@ -827,7 +846,8 @@ function loadPhase41EvaluativePrompt(): string {
   return phase41EvaluativePromptCache;
 }
 
-const DESCRIPTIVE_SECTION_IDS: StreetSectionId[] = ["about", "homes", "amenities", "market"];
+const ABOUT_HOMES_AMENITIES_SECTION_IDS: StreetSectionId[] = ["about", "homes", "amenities"];
+const MARKET_SECTION_IDS: StreetSectionId[] = ["market"];
 const EVALUATIVE_SECTION_IDS: StreetSectionId[] = ["gettingAround", "schools", "bestFitFor", "differentPriorities"];
 
 // --- Phase 4.1 generator (DEC-PH41-CANONICAL) ---
@@ -884,7 +904,7 @@ interface HalfResult {
 }
 
 interface RunHalfParams {
-  halfLabel: "desc" | "eval";
+  halfLabel: "desc" | "eval" | "aha" | "market";
   systemPrompt: string;
   expectedSectionIds: StreetSectionId[];
   expectsFaq: boolean;
@@ -1025,39 +1045,61 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
 }
 
 /**
- * Generate Phase 4.1-aligned street content via DeepSeek two-call architecture.
+ * Generate Phase 4.1-aligned street content via DeepSeek three-call architecture.
  *
  * Architecture:
- *  - Two parallel DeepSeek calls partitioned by content mode:
- *      Descriptive (sections 1-4): about, homes, amenities, market
- *      Evaluative  (sections 5-8 + FAQ): gettingAround, schools, bestFitFor,
- *                                         differentPriorities, FAQ
- *  - Each call has its own focused system prompt (02-descriptive-prompt.md /
- *    03-evaluative-prompt.md), its own retry loop (5 attempts), and its
- *    own partial validator (validateSectionsSubset / validateFaq).
- *  - Runs in parallel via Promise.all. Each call typically lands 700-900
- *    words; combined output reliably exceeds the 900-word full-tier floor.
- *  - Combined output runs through the existing post-processors (FAQ trim +
- *    price rounding) and the full validateStreetGeneration as final check.
+ *  - Three parallel DeepSeek calls partitioned by content mode:
+ *      About-Homes-Amenities (sections 1-3): about, homes, amenities
+ *        Light observational mode. Pure scene-setting, no analytical scaffolding.
+ *      Market (section 4): market only.
+ *        Heavy analytical mode. Carries the worked-example scaffolding,
+ *        FORBIDDEN PATTERN block, and methodology nuance (analytical
+ *        vocabulary like "average days on market" allowed in context).
+ *      Evaluative (sections 5-8 + FAQ): gettingAround, schools, bestFitFor,
+ *                                        differentPriorities, FAQ.
+ *        Advisory-thinking-aloud mode.
+ *  - Each call has its own focused system prompt and retry loop (5 attempts).
+ *  - Runs in parallel via Promise.all. Wall-clock is max(call times), not sum.
+ *  - Combined output runs through post-processors (FAQ trim + price rounding)
+ *    and the full validateStreetGeneration as final check.
+ *
+ * Why three calls instead of two:
+ *  B-series data showed market's analytical scaffolding (worked examples,
+ *  forbidden-pattern block) was contaminating the about/homes/amenities
+ *  sections via shared prompt budget — each section in the descriptive call
+ *  was producing ~half its target volume because the model's attention was
+ *  absorbed by market-specific instructions. Pulling market into its own
+ *  call isolates the bloat to one call instead of four sections. Cost goes
+ *  up ~20% per page; structural problem moves from prompt layer to
+ *  architecture layer.
  *
  * Failure modes:
- *  - Either half exhausts retries → throws Phase41GenerationError with the
- *    half's residual violations.
- *  - Both halves succeed but combined fails (e.g., total_word_floor) →
+ *  - Any of the three calls exhausts retries → throws Phase41GenerationError
+ *    with that call's residual violations.
+ *  - All three calls succeed but combined fails (e.g., total_word_floor) →
  *    returns validatorPassed: false with the combined violations. Caller
  *    handles via the existing `if (v2Passed)` branch in generateStreet.ts.
  */
 export async function generatePhase41StreetContent(
   input: StreetGeneratorInput,
 ): Promise<Phase41GenerationResult> {
-  const descPrompt = loadPhase41DescriptivePrompt();
+  const ahaPrompt = loadPhase41AboutHomesAmenitiesPrompt();
+  const marketPrompt = loadPhase41MarketPrompt();
   const evalPrompt = loadPhase41EvaluativePrompt();
 
-  const [descRes, evalRes] = await Promise.all([
+  const [ahaRes, marketRes, evalRes] = await Promise.all([
     runHalfWithRetry({
-      halfLabel: "desc",
-      systemPrompt: descPrompt,
-      expectedSectionIds: DESCRIPTIVE_SECTION_IDS,
+      halfLabel: "aha",
+      systemPrompt: ahaPrompt,
+      expectedSectionIds: ABOUT_HOMES_AMENITIES_SECTION_IDS,
+      expectsFaq: false,
+      input,
+      maxAttempts: 5,
+    }),
+    runHalfWithRetry({
+      halfLabel: "market",
+      systemPrompt: marketPrompt,
+      expectedSectionIds: MARKET_SECTION_IDS,
       expectsFaq: false,
       input,
       maxAttempts: 5,
@@ -1072,23 +1114,26 @@ export async function generatePhase41StreetContent(
     }),
   ]);
 
-  const totalInputTokens = descRes.totalInputTokens + evalRes.totalInputTokens;
-  const totalOutputTokens = descRes.totalOutputTokens + evalRes.totalOutputTokens;
-  const totalCostUsd = descRes.totalCostUsd + evalRes.totalCostUsd;
-  const attemptCount = Math.max(descRes.attemptCount, evalRes.attemptCount);
-  const attempts: Phase41Attempt[] = [...descRes.attempts, ...evalRes.attempts];
+  const totalInputTokens = ahaRes.totalInputTokens + marketRes.totalInputTokens + evalRes.totalInputTokens;
+  const totalOutputTokens = ahaRes.totalOutputTokens + marketRes.totalOutputTokens + evalRes.totalOutputTokens;
+  const totalCostUsd = ahaRes.totalCostUsd + marketRes.totalCostUsd + evalRes.totalCostUsd;
+  const attemptCount = Math.max(ahaRes.attemptCount, marketRes.attemptCount, evalRes.attemptCount);
+  const attempts: Phase41Attempt[] = [...ahaRes.attempts, ...marketRes.attempts, ...evalRes.attempts];
 
-  // If either half exhausted retries, surface as a Phase41GenerationError
-  // (matches old single-call behaviour for the caller's catch in
-  // generateStreet.ts).
-  const halfFailures: ValidatorViolation[] = [...descRes.violations, ...evalRes.violations];
-  if (halfFailures.length > 0) {
+  // If any call exhausted retries, surface as a Phase41GenerationError.
+  const callFailures: ValidatorViolation[] = [
+    ...ahaRes.violations,
+    ...marketRes.violations,
+    ...evalRes.violations,
+  ];
+  if (callFailures.length > 0) {
     throw new Phase41GenerationError(
-      `Phase41 two-call generation failed: ` +
-      `desc=${descRes.violations.length} violations after ${descRes.attemptCount} attempts, ` +
+      `Phase41 three-call generation failed: ` +
+      `aha=${ahaRes.violations.length} violations after ${ahaRes.attemptCount} attempts, ` +
+      `market=${marketRes.violations.length} violations after ${marketRes.attemptCount} attempts, ` +
       `eval=${evalRes.violations.length} violations after ${evalRes.attemptCount} attempts.`,
       {
-        violations: halfFailures,
+        violations: callFailures,
         attemptCount,
         totalInputTokens,
         totalOutputTokens,
@@ -1098,14 +1143,16 @@ export async function generatePhase41StreetContent(
     );
   }
 
-  // Combine into canonical 8-section + FAQ output. evalRes.faq is guaranteed
-  // present because expectsFaq=true on the evaluative half.
+  // Combine into canonical 8-section + FAQ output. Sections must be in canonical
+  // order: about, homes, amenities, market, gettingAround, schools, bestFitFor,
+  // differentPriorities. ahaRes.sections gives the first three; marketRes the fourth;
+  // evalRes the last four; evalRes.faq the FAQ block.
   const combinedRaw: StreetGeneratorOutput = {
-    sections: [...descRes.sections, ...evalRes.sections],
+    sections: [...ahaRes.sections, ...marketRes.sections, ...evalRes.sections],
     faq: evalRes.faq!,
   };
 
-  // Post-processors (same as single-call version).
+  // Post-processors (same as single-call / two-call versions).
   const afterFaqTrim: StreetGeneratorOutput = {
     ...combinedRaw,
     faq: trimFaqAnswersToSentenceCap(combinedRaw.faq),
@@ -1123,7 +1170,7 @@ export async function generatePhase41StreetContent(
   );
   console.log(
     `[Phase41] ${input.street.slug} combined: ${wordTotal} words, ` +
-    `desc=${descRes.attemptCount} attempts, eval=${evalRes.attemptCount} attempts, ` +
+    `aha=${ahaRes.attemptCount}+market=${marketRes.attemptCount}+eval=${evalRes.attemptCount} attempts, ` +
     `total $${totalCostUsd.toFixed(5)}, ` +
     `${finalViolations.length === 0 ? "PASS" : `FAIL (${finalViolations.length} combined violations)`}`
   );

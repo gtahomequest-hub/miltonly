@@ -90,7 +90,7 @@ If `input.directionalStats` is present and contains two or more entries where ea
 For single-direction streets (most streets; `directionalStats` absent or only one entry with meaningful data), continue with a single-narrative body.
 
 **`gettingAround`** (1–2 paragraphs, 5–8 sentences)
-**This section MUST be between 160 and 200 words.** Outputs below 160 words will fail validation and force a retry. Aim for the middle of the range. Commute context. Highway access, GO station proximity, drive times to Toronto downtown (via GO, since that is the realistic mode), Mississauga, Oakville, Burlington, Pearson. Choose the two or three commute relationships most relevant given the street's position; do not enumerate all five. Heading: "Getting around" or "Where this street reaches."
+**This section MUST be between 100 and 140 words.** Outputs below 100 words will fail validation and force a retry. Aim for the middle of the range. Commute context. Highway access, GO station proximity, drive times to Toronto downtown (via GO, since that is the realistic mode), Mississauga, Oakville, Burlington, Pearson. Choose the two or three commute relationships most relevant given the street's position; do not enumerate all five. Heading: "Getting around" or "Where this street reaches."
 
 **This section is editorial narrative, not enumeration.** Weave the most-relevant commute relationships into observation about the street's position and the rhythms of getting around. A list of destinations with drive times reads as a directory.
 
@@ -101,7 +101,7 @@ For single-direction streets (most streets; `directionalStats` absent or only on
 The good pattern selects two or three commute relationships and embeds them in geographic observation. The bad pattern enumerates all five drive times in flat sequence. Choose detail over coverage.
 
 **`schools`** (1–2 paragraphs, 4–8 sentences)
-**This section MUST be between 150 and 200 words.** Outputs below 150 words will fail validation and force a retry. Aim for the middle of the range. Catchment and proximity. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; present proximity and let the reader investigate the rest. Heading: "Schools and catchment."
+**This section MUST be between 90 and 130 words.** Outputs below 90 words will fail validation and force a retry. Aim for the middle of the range. Catchment and proximity. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; present proximity and let the reader investigate the rest. Heading: "Schools and catchment."
 
 **This section is editorial narrative, not enumeration.** Weave catchment logic, walkability, program fit, and family-stage signal into a coherent paragraph. A list of school names with drive times is a failure of voice — even if technically prose, it reads as a directory entry.
 
@@ -112,10 +112,10 @@ The good pattern selects two or three commute relationships and embeds them in g
 The good pattern weaves walkability, family-stage routing, and neighbourhood context into observation. The bad pattern reads as a directory of facts. Lean toward the good pattern even when sacrificing some precision on every school's exact drive time.
 
 **`bestFitFor`** (1 paragraph prose, 4–6 sentences)
-**This section MUST be between 140 and 180 words.** Outputs below 140 words will fail validation and force a retry. Aim for the middle of the range — too short fails, too long wastes attention budget. Who this street tends to suit. Household shape, priorities, tradeoffs the buyer accepts in exchange for what this street offers. Written as an advisor thinking aloud, not a personas list. Avoid demographic caricature. Anchor to observable facts about the stock and location. Heading: "Who this street suits."
+**This section MUST be between 110 and 150 words.** Outputs below 110 words will fail validation and force a retry. Aim for the middle of the range — too short fails, too long wastes attention budget. Who this street tends to suit. Household shape, priorities, tradeoffs the buyer accepts in exchange for what this street offers. Written as an advisor thinking aloud, not a personas list. Avoid demographic caricature. Anchor to observable facts about the stock and location. Heading: "Who this street suits."
 
 **`differentPriorities`** (1 paragraph prose, 4–6 sentences)
-**This section MUST be between 140 and 180 words.** Outputs below 140 words will fail validation and force a retry. Aim for the middle of the range — too short fails, too long wastes attention budget. Where the reader should look if their priorities sit elsewhere. Use `crossStreets[]` to name one or two specific streets by `shortName` where each named street carries its own k≥5 price confidence in the input. For each named street, state the priority difference plainly and apply the price rounding tables to any referenced price.
+**This section MUST be between 95 and 135 words.** Outputs below 95 words will fail validation and force a retry. Aim for the middle of the range — too short fails, too long wastes attention budget. Where the reader should look if their priorities sit elsewhere. Use `crossStreets[]` to name one or two specific streets by `shortName` where each named street carries its own k≥5 price confidence in the input. For each named street, state the priority difference plainly and apply the price rounding tables to any referenced price.
 
 **Hard rule on street names. Read this paragraph in full before writing this section.** Every street name, road, or arterial you reference in `differentPriorities` MUST appear in one of three input fields: `input.crossStreets[].shortName`, `input.street.shortName`, or `input.neighbourhoods[]`. No other source qualifies. Your instinct will be to reach for Milton's recognizable arterials when comparing priorities (Main Street, Bronte Street, Steeles Avenue, Derry Road, James Snow Parkway, Trafalgar Road, Ontario Street, Louis St Laurent, Thompson Road). Do not. None of these names belong in this section unless they appear in the input data for THIS street. Inventing a street name, even a real one that exists in Milton, is a hard validator failure that burns a retry attempt and forces the next attempt to redo the entire output.
 
@@ -143,11 +143,11 @@ Heading: "If different priorities matter more."
 
 ## Word target for these four sections + FAQ
 
-The four sections together MUST sum to between 590 and 760 words on full-data streets. Each section has its own explicit floor and ceiling stated above. Hit each section's range — under-writing any section is a hard validator failure that forces a retry.
+The four sections together MUST sum to between 395 and 555 words on full-data streets. Each section has its own explicit floor and ceiling stated above. Hit each section's range — under-writing any section is a hard validator failure that forces a retry. These targets are calibrated to observed-output averages with safety margin; they are not aspirational.
 
 The FAQ adds another 300 to 450 words across 6 to 8 question/answer pairs (see FAQ block specification below for per-answer length rules).
 
-Combined evaluative output (sections + FAQ): 890 to 1210 words.
+Combined evaluative output (sections + FAQ): 695 to 1005 words.
 
 If you are running short, do not pad with caveats or filler. Expand with concrete observation: in `gettingAround`, more detail on each commute relationship and what the drive feels like at peak times. In `bestFitFor`, more nuance on the tradeoffs different household shapes accept. In `schools`, more specifics on each named school's distance and walkability. In `differentPriorities`, more characteristic detail when the qualitative form applies.
 
