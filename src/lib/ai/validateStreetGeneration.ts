@@ -29,6 +29,7 @@ import type {
   ValidatorRule,
 } from "@/types/street-generator";
 import { config } from "@/lib/config";
+import { countSentences } from "./trimFaqAnswers";
 
 // --- Denylists ---
 
@@ -514,22 +515,6 @@ function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-function countSentences(text: string): number {
-  const trimmed = text.trim();
-  if (!trimmed) return 0;
-  const normalized = trimmed
-    .replace(/\bSt\./g, "St")
-    .replace(/\bMr\./g, "Mr")
-    .replace(/\bMrs\./g, "Mrs")
-    .replace(/\bMs\./g, "Ms")
-    .replace(/\bDr\./g, "Dr")
-    .replace(/\be\.g\./gi, "eg")
-    .replace(/\bi\.e\./gi, "ie")
-    .replace(/\bU\.S\./g, "US");
-  const parts = normalized.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
-  return parts.length;
-}
-
 function extractCandidateStreetNames(text: string): string[] {
   const re = /\b(?:[A-Z][a-zA-Z'\-]+(?:\s+[A-Z][a-zA-Z'\-]+){1,4})\b/g;
   const hits = text.match(re) ?? [];
@@ -546,10 +531,10 @@ export async function generateWithRetry(
     priorViolations?: ValidatorViolation[],
     priorOutput?: StreetGeneratorOutput,
   ) => Promise<StreetGeneratorOutput>,
-): Promise<{ output: StreetGeneratorOutput; attemptCount: 1 | 2 | 3; violations: ValidatorViolation[] }> {
+): Promise<{ output: StreetGeneratorOutput; attemptCount: 1 | 2 | 3 | 4 | 5; violations: ValidatorViolation[] }> {
   let lastViolations: ValidatorViolation[] = [];
   let lastOutput: StreetGeneratorOutput | undefined = undefined;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
     const output = await callModel(
       input,
       lastViolations.length ? lastViolations : undefined,
@@ -557,7 +542,7 @@ export async function generateWithRetry(
     );
     const violations = validateStreetGeneration(output, input);
     if (violations.length === 0) {
-      return { output, attemptCount: attempt as 1 | 2 | 3, violations: [] };
+      return { output, attemptCount: attempt as 1 | 2 | 3 | 4 | 5, violations: [] };
     }
     lastViolations = violations;
     lastOutput = output;

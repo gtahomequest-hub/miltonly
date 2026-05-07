@@ -118,6 +118,24 @@ Where the reader should look if their priorities sit elsewhere. Use `crossStreet
 
 **Hard rule on street names. Read this paragraph in full before writing this section.** Every street name, road, or arterial you reference in `differentPriorities` MUST appear in one of three input fields: `input.crossStreets[].shortName`, `input.street.shortName`, or `input.neighbourhoods[]`. No other source qualifies. Your instinct will be to reach for Milton's recognizable arterials when comparing priorities (Main Street, Bronte Street, Steeles Avenue, Derry Road, James Snow Parkway, Trafalgar Road, Ontario Street, Louis St Laurent, Thompson Road). Do not. None of these names belong in this section unless they appear in the input data for THIS street. Inventing a street name, even a real one that exists in Milton, is a hard validator failure that burns a retry attempt and forces the next attempt to redo the entire output.
 
+When `input.crossStreets` is empty (no cross-streets provided in the input data), you MUST observe these constraints absolutely:
+
+1. Begin the section with one of these exact opening phrases:
+   - "If you're considering alternatives in similar pockets..."
+   - "For different priorities elsewhere in Milton..."
+   - "Buyers exploring comparable options..."
+
+2. The words "Main", "Street", "Avenue", "Boulevard", "Parkway", "Road", "Drive", "Crescent", "Court", "Lane", "Way", "Trail" followed by a capitalized word are forbidden in this section. Do not write "Main Street", "Main Street East", "Bronte Street", "James Snow Parkway", or any street name in any form.
+
+3. Describe alternatives by characteristic only:
+   - era of construction ("homes built in the 1990s vs. early 2000s")
+   - proximity to specific named amenities that appear in `input.nearby`
+   - lot characteristics ("larger pie-shaped lots," "tighter frontage")
+   - neighbourhood feel ("established with mature trees," "newer subdivisions still maturing")
+   - school catchment changes (only schools that appear in `input.nearby`)
+
+Naming any street in this section will fail validation and force a retry, increasing cost by ~3x and reducing chance of convergence. You will produce a higher-quality output by describing places qualitatively than by naming them.
+
 If you cannot name an alternative street from the input, do not name one at all. Describe the alternative by characteristic instead: "older neighbourhoods south of the 401," "newer subdivisions toward the escarpment," "earlier-era stock with smaller frontage in established Milton," "buyers who weight lot size over walkability often end up in the west-Milton growth pockets, and we can point to specific streets in conversation." Naming streets is optional in this section; getting the priority comparison right is mandatory. The qualitative form is the default, not the fallback.
 
 Heading: "If different priorities matter more."

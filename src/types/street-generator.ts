@@ -33,7 +33,7 @@ export interface StreetGenerationMeta {
   model: "claude-opus-4-7" | "deepseek-chat";
   generatedAt: string;          // ISO
   inputHash: string;            // sha256 of StreetGeneratorInput for drift detection
-  attemptCount: 1 | 2 | 3;
+  attemptCount: 1 | 2 | 3 | 4 | 5;
   validatorPassed: boolean;
   validatorViolations: ValidatorViolation[];  // empty if passed
   wordCounts: Record<StreetSectionId, number>;

@@ -31,6 +31,7 @@ import {
   formatViolationsForRetry,
   formatViolationsForRetryEnriched,
 } from './validateStreetGeneration';
+import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
 import type {
   StreetGeneratorInput,
   StreetGeneratorOutput,
@@ -296,6 +297,7 @@ interface CallDeepSeekOptions {
   userPrompt: string;
   responseFormat?: { type: 'json_object' };
   maxTokens?: number;
+  temperature?: number;
 }
 
 async function callDeepSeek({
@@ -303,6 +305,7 @@ async function callDeepSeek({
   userPrompt,
   responseFormat,
   maxTokens = 3000,
+  temperature = 0.7,
 }: CallDeepSeekOptions): Promise<DeepSeekRawResponse> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
@@ -313,7 +316,7 @@ async function callDeepSeek({
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    temperature: 0.7,
+    temperature,
     max_tokens: maxTokens,
   };
   if (responseFormat) {
@@ -895,6 +898,7 @@ export async function generatePhase41StreetContent(
       userPrompt,
       responseFormat: { type: 'json_object' },
       maxTokens: 5000,
+      temperature: 0.4,
     });
 
     totalInputTokens += response.inputTokens;
@@ -941,12 +945,16 @@ export async function generatePhase41StreetContent(
       throw new Error('Phase41 output failed runtime shape narrowing');
     }
 
-    // Run the validator now so per-attempt violations are recorded as they
-    // happen. generateWithRetry will run the validator again to make its
-    // retry/exit decision; the second call is pure and cheap (regex scans
-    // over already-parsed text), and re-running it avoids the bug where the
-    // throw path left attempts[*].violations as the empty placeholder.
-    const candidateOutput = candidate as StreetGeneratorOutput;
+    // Programmatic post-trim: clamp every FAQ answer to ≤ 4 sentences before
+    // the validator sees the output. The model has demonstrated it cannot
+    // reliably count its own sentences, so a deterministic trim removes
+    // faq_answer_length from the retry-feedback hot path. countSentences in
+    // trimFaqAnswers.ts is shared with the validator so they agree on counts.
+    const candidateRaw = candidate as StreetGeneratorOutput;
+    const candidateOutput: StreetGeneratorOutput = {
+      ...candidateRaw,
+      faq: trimFaqAnswersToSentenceCap(candidateRaw.faq),
+    };
     const attemptViolations = validateStreetGeneration(candidateOutput, inp);
     attempts.push({
       attemptN: attemptCounter,
