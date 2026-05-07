@@ -220,7 +220,9 @@ function log(event: string, payload: Record<string, unknown>): void {
 
 async function loadCandidateUniverse(): Promise<string[]> {
   const { prisma } = await import("@/lib/prisma");
-  const { analyticsDb, soldDb } = await import("@/lib/db");
+  const { getAnalyticsDb, getSoldDb } = await import("@/lib/db");
+  const analyticsDb = getAnalyticsDb();
+  const soldDb = getSoldDb();
 
   const permListingRows = await prisma.listing.findMany({
     where: { permAdvertise: true },
@@ -382,7 +384,8 @@ export function isMalformedSlug(slug: string): boolean {
 // systematically picked empty slugs as canonical on all 277 inverted groups.
 
 async function fetchSlugTxCounts(slugs: string[]): Promise<Map<string, number>> {
-  const { soldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("@/lib/db");
+  const soldDb = getSoldDb();
   const counts = new Map<string, number>();
   if (!soldDb || slugs.length === 0) return counts;
   const rows = await (soldDb`

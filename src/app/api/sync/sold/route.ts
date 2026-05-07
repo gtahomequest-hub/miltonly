@@ -14,7 +14,7 @@
 // Local test hook: `?limit=N` query param caps total upserts.
 
 import { NextRequest, NextResponse } from "next/server";
-import { soldDb } from "@/lib/db";
+import { getSoldDb } from "@/lib/db";
 import { runSoldSync, type AmpConfig, type SqlExecutor } from "@/lib/vow-sync";
 
 export const maxDuration = 300;
@@ -27,7 +27,7 @@ const VOW_TOKEN = (process.env.VOW_TOKEN || "").trim();
 // SqlExecutor interface. As of v1.x, the direct (text, values) call form is
 // deprecated — must use sql.query(text, values). Confirmed empirically
 // against @neondatabase/serverless@1.0.2.
-function neonExecutor(db: NonNullable<typeof soldDb>): SqlExecutor {
+function neonExecutor(db: NonNullable<ReturnType<typeof getSoldDb>>): SqlExecutor {
   return async (text, values) => {
     return (await db.query(text, values)) as Record<string, unknown>[];
   };
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!soldDb) {
+    const sd = getSoldDb();
+    if (!sd) {
       return NextResponse.json(
         { error: "SOLD_DATABASE_URL is not configured" },
         { status: 503 }
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     const limitParam = req.nextUrl.searchParams.get("limit");
     const limit = limitParam ? Math.max(1, parseInt(limitParam, 10) || 0) : Infinity;
 
-    const db = neonExecutor(soldDb);
+    const db = neonExecutor(sd);
     const amp: AmpConfig = { propertyUrl: TREB_API_URL, token: VOW_TOKEN, pageSize: 500 };
 
     const result = await runSoldSync({ db, amp, limit });

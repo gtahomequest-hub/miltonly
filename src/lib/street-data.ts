@@ -17,7 +17,7 @@ import "server-only";
 import type { Listing } from "@prisma/client";
 import { prisma } from "./prisma";
 import { config } from "./config";
-import { analyticsDb, soldDb } from "./db";
+import { getAnalyticsDb, getSoldDb } from "./db";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
@@ -114,12 +114,14 @@ export async function resolveSiblingSlugs(slug: string): Promise<string[]> {
   // Narrow candidate pool via base-prefix LIKE queries on each data source.
   // Cheap (uses idx_sold_street_slug + streetSlug indexes) and bounded.
   const likePattern = `${identity.base}-%-${config.SLUG_SUFFIX}`;
+  const sd = getSoldDb();
+  const ad = getAnalyticsDb();
   const [soldSlugRows, statsSlugRows, listingSlugRows] = await Promise.all([
-    soldDb
-      ? (soldDb`SELECT DISTINCT street_slug AS s FROM sold.sold_records WHERE street_slug LIKE ${likePattern}` as unknown as Promise<Array<{ s: string }>>).catch(() => [] as Array<{ s: string }>)
+    sd
+      ? (sd`SELECT DISTINCT street_slug AS s FROM sold.sold_records WHERE street_slug LIKE ${likePattern}` as unknown as Promise<Array<{ s: string }>>).catch(() => [] as Array<{ s: string }>)
       : Promise.resolve([] as Array<{ s: string }>),
-    analyticsDb
-      ? (analyticsDb`SELECT DISTINCT street_slug AS s FROM analytics.street_sold_stats WHERE street_slug LIKE ${likePattern}` as unknown as Promise<Array<{ s: string }>>).catch(() => [] as Array<{ s: string }>)
+    ad
+      ? (ad`SELECT DISTINCT street_slug AS s FROM analytics.street_sold_stats WHERE street_slug LIKE ${likePattern}` as unknown as Promise<Array<{ s: string }>>).catch(() => [] as Array<{ s: string }>)
       : Promise.resolve([] as Array<{ s: string }>),
     prisma.listing.findMany({
       where: { streetSlug: { startsWith: `${identity.base}-`, endsWith: `-${config.SLUG_SUFFIX}` } },
@@ -154,6 +156,8 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   // canonical slug (usually the full-word form) — 277 inversions across
   // the universe. Unioning across siblings restores data fidelity.
   const siblingSlugs = await resolveSiblingSlugs(slug);
+  const sd = getSoldDb();
+  const ad = getAnalyticsDb();
 
   const [
     allListings,
@@ -172,11 +176,11 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     // DB3 street_sold_stats is pre-computed per slug. In practice only one
     // sibling carries the row; pick the one with the highest sold_count_12months
     // if multiple return (belt + suspenders against future DB3 drift).
-    analyticsDb
-      ? (analyticsDb`SELECT * FROM analytics.street_sold_stats WHERE street_slug = ANY(${siblingSlugs}::text[]) ORDER BY sold_count_12months DESC NULLS LAST LIMIT 1` as unknown as Promise<RawSoldStats[]>).catch(() => [] as RawSoldStats[])
+    ad
+      ? (ad`SELECT * FROM analytics.street_sold_stats WHERE street_slug = ANY(${siblingSlugs}::text[]) ORDER BY sold_count_12months DESC NULLS LAST LIMIT 1` as unknown as Promise<RawSoldStats[]>).catch(() => [] as RawSoldStats[])
       : Promise.resolve([] as RawSoldStats[]),
-    analyticsDb
-      ? (analyticsDb`
+    ad
+      ? (ad`
           SELECT year, month, avg_sold_price, sold_count, avg_dom, avg_sold_to_ask
           FROM analytics.street_monthly_stats
           WHERE street_slug = ANY(${siblingSlugs}::text[])
@@ -186,8 +190,8 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     // StreetContent is keyed by slug too — prefer the sibling with non-empty
     // description if any. First non-null row wins.
     prisma.streetContent.findFirst({ where: { streetSlug: { in: siblingSlugs } } }),
-    soldDb
-      ? (soldDb`
+    sd
+      ? (sd`
           SELECT property_type,
                  COUNT(*)::int AS n,
                  AVG(sold_price) AS avg_price,
@@ -203,8 +207,8 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           GROUP BY property_type
         ` as unknown as Promise<RawTypeAgg[]>).catch(() => [] as RawTypeAgg[])
       : Promise.resolve([] as RawTypeAgg[]),
-    soldDb
-      ? (soldDb`
+    sd
+      ? (sd`
           SELECT COUNT(*)::int AS n,
                  MIN(sold_price) AS lo,
                  MAX(sold_price) AS hi
@@ -218,8 +222,8 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     // Centroid fallback: if DB1 has no current listings (expired/sold-only streets),
     // sample any stored lat/lng from DB2 sold records so nearbyPlaces + schema Place
     // still surface geography-aware content.
-    soldDb
-      ? (soldDb`
+    sd
+      ? (sd`
           SELECT lat, lng FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND lat IS NOT NULL AND lng IS NOT NULL
@@ -228,8 +232,8 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       : Promise.resolve([] as Array<{ lat: string | null; lng: string | null }>),
     // Existence-gate probe: any DB2 sold record for this street (or sibling),
     // regardless of perm_advertise / transaction_type / date window.
-    soldDb
-      ? (soldDb`
+    sd
+      ? (sd`
           SELECT 1 AS one FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
           LIMIT 1

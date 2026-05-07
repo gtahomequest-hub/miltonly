@@ -20,7 +20,9 @@ import path from "node:path";
   }
 
   const { prisma } = await import("@/lib/prisma");
-  const { analyticsDb, soldDb } = await import("@/lib/db");
+  const { getAnalyticsDb, getSoldDb } = await import("@/lib/db");
+  const analyticsDb = getAnalyticsDb();
+  const soldDb = getSoldDb();
   const { deriveIdentity } = await import("@/lib/streetUtils");
   const { isMalformedSlug } = await import("./backfill-descriptions");
 

@@ -17,7 +17,7 @@
 
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { analyticsDb } from "@/lib/db";
+import { getAnalyticsDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import type { PublicAggregateTeaser, MarketTemperature } from "@/lib/db-types";
 
@@ -41,8 +41,8 @@ async function loadTeaser(
   street?: string,
   neighbourhood?: string
 ): Promise<PublicAggregateTeaser | null> {
-  if (!analyticsDb) return null;
-  const sql = analyticsDb;
+  const sql = getAnalyticsDb();
+  if (!sql) return null;
   const key = street
     ? `street-aggregate:${street}`
     : neighbourhood

@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, readdir } from "fs/promises";
 import path from "path";
-import { soldDb, analyticsDb } from "@/lib/db";
+import { getSoldDb, getAnalyticsDb } from "@/lib/db";
 import type { NeonQueryFunction } from "@neondatabase/serverless";
 
 export const maxDuration = 60;
@@ -175,10 +175,12 @@ export async function POST(req: NextRequest) {
     requested === "analytics" ? ["analytics"] :
     ["sold", "analytics"];
 
-  if (!soldDb && targets.includes("sold")) {
+  const sd = getSoldDb();
+  const ad = getAnalyticsDb();
+  if (!sd && targets.includes("sold")) {
     return NextResponse.json({ error: "SOLD_DATABASE_URL is not configured" }, { status: 500 });
   }
-  if (!analyticsDb && targets.includes("analytics")) {
+  if (!ad && targets.includes("analytics")) {
     return NextResponse.json({ error: "ANALYTICS_DATABASE_URL is not configured" }, { status: 500 });
   }
 
@@ -186,7 +188,7 @@ export async function POST(req: NextRequest) {
   // across separate calls anyway — pg_try_advisory_lock + pg_advisory_unlock
   // in the same call is the right pattern for a single-shot gate. Concurrent
   // migration attempts are additionally protected by the _migrations PK conflict.
-  const lockClient = (soldDb ?? analyticsDb)!;
+  const lockClient = (sd ?? ad)!;
   const results: SchemaResult[] = [];
   let lockAcquired = false;
 
@@ -203,11 +205,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (targets.includes("sold") && soldDb) {
-      results.push(await runMigrationsForSchema(soldDb, "sold"));
+    if (targets.includes("sold") && sd) {
+      results.push(await runMigrationsForSchema(sd, "sold"));
     }
-    if (targets.includes("analytics") && analyticsDb) {
-      results.push(await runMigrationsForSchema(analyticsDb, "analytics"));
+    if (targets.includes("analytics") && ad) {
+      results.push(await runMigrationsForSchema(ad, "analytics"));
     }
   } catch (err) {
     return NextResponse.json(

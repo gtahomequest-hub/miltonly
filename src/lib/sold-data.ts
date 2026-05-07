@@ -4,7 +4,7 @@
 // components only.
 
 import "server-only";
-import { soldDb, analyticsDb } from "./db";
+import { getSoldDb, getAnalyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
 import { getSession } from "./auth";
 import { config } from "./config";
@@ -85,9 +85,9 @@ function n(v: string | number | null | undefined): number | null {
 // ────────────────────────────────────────
 
 export async function getStreetSaleStats(streetSlug: string): Promise<PublicSaleStats | null> {
-  if (!analyticsDb) return null;
+  if (!getAnalyticsDb()) return null;
   return cached(`street-sale-stats:${streetSlug}`, CACHE_TTL.stats, async () => {
-    const rows = (await analyticsDb!`
+    const rows = (await getAnalyticsDb()!`
       SELECT * FROM analytics.street_sold_stats WHERE street_slug = ${streetSlug}
     `) as Array<StreetSoldStats>;
     const r = rows[0];
@@ -108,9 +108,9 @@ export async function getStreetSaleStats(streetSlug: string): Promise<PublicSale
 }
 
 export async function getStreetLeaseStats(streetSlug: string): Promise<PublicLeaseStats | null> {
-  if (!analyticsDb) return null;
+  if (!getAnalyticsDb()) return null;
   return cached(`street-lease-stats:${streetSlug}`, CACHE_TTL.stats, async () => {
-    const rows = (await analyticsDb!`
+    const rows = (await getAnalyticsDb()!`
       SELECT * FROM analytics.street_sold_stats WHERE street_slug = ${streetSlug}
     `) as Array<StreetSoldStats>;
     const r = rows[0];
@@ -133,9 +133,9 @@ export async function getStreetMonthlySales(streetSlug: string): Promise<Array<{
   // low-volume street (1 sale/month) makes these rows effectively
   // individual. Defence-in-depth — never hit DB or cache for anon users.
   if (!(await canServeRecordsToThisRequest())) return [];
-  if (!analyticsDb) return [];
+  if (!getAnalyticsDb()) return [];
   return cached(`street-monthly-sales:${streetSlug}`, CACHE_TTL.stats, async () => {
-    const rows = (await analyticsDb!`
+    const rows = (await getAnalyticsDb()!`
       SELECT year, month, avg_sold_price, sold_count
       FROM analytics.street_monthly_stats
       WHERE street_slug = ${streetSlug}
@@ -155,9 +155,9 @@ export async function getStreetMonthlySales(streetSlug: string): Promise<Array<{
 // ────────────────────────────────────────
 
 export async function getNeighbourhoodSaleStats(neighbourhood: string): Promise<PublicNeighbourhoodSaleStats | null> {
-  if (!analyticsDb) return null;
+  if (!getAnalyticsDb()) return null;
   return cached(`nbhd-sale-stats:${neighbourhood}`, CACHE_TTL.stats, async () => {
-    const rows = (await analyticsDb!`
+    const rows = (await getAnalyticsDb()!`
       SELECT * FROM analytics.neighbourhood_sold_stats WHERE neighbourhood = ${neighbourhood}
     `) as Array<NeighbourhoodSoldStats>;
     const r = rows[0];
@@ -178,9 +178,9 @@ export async function getNeighbourhoodSaleStats(neighbourhood: string): Promise<
 }
 
 export async function getNeighbourhoodLeaseStats(neighbourhood: string): Promise<PublicLeaseStats | null> {
-  if (!analyticsDb) return null;
+  if (!getAnalyticsDb()) return null;
   return cached(`nbhd-lease-stats:${neighbourhood}`, CACHE_TTL.stats, async () => {
-    const rows = (await analyticsDb!`
+    const rows = (await getAnalyticsDb()!`
       SELECT * FROM analytics.neighbourhood_sold_stats WHERE neighbourhood = ${neighbourhood}
     `) as Array<NeighbourhoodSoldStats>;
     const r = rows[0];
@@ -255,12 +255,12 @@ export async function getStreetSoldList(
   // Ensures no anon request ever touches sold.sold_records or a Redis key
   // that could return cached records.
   if (!(await canServeRecordsToThisRequest())) return [];
-  if (!soldDb) return [];
+  if (!getSoldDb()) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
   const txn = type === "sale" ? "For Sale" : "For Lease";
   return cached(`sold-list:street:${streetSlug}:${type}:${safeDays}:${safeLimit}`, CACHE_TTL.soldList, async () => {
-    const rows = (await soldDb!`
+    const rows = (await getSoldDb()!`
       SELECT * FROM sold.sold_records
       WHERE street_slug = ${streetSlug}
         AND perm_advertise = TRUE
@@ -280,12 +280,12 @@ export async function getNeighbourhoodSoldList(
   limit: number = 20
 ): Promise<SoldListItem[]> {
   if (!(await canServeRecordsToThisRequest())) return [];
-  if (!soldDb) return [];
+  if (!getSoldDb()) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
   const txn = type === "sale" ? "For Sale" : "For Lease";
   return cached(`sold-list:nbhd:${neighbourhood}:${type}:${safeDays}:${safeLimit}`, CACHE_TTL.soldList, async () => {
-    const rows = (await soldDb!`
+    const rows = (await getSoldDb()!`
       SELECT * FROM sold.sold_records
       WHERE neighbourhood = ${neighbourhood}
         AND perm_advertise = TRUE
@@ -305,7 +305,7 @@ export async function getRecentSoldList(
   filters?: { neighbourhood?: string; property_type?: string }
 ): Promise<SoldListItem[]> {
   if (!(await canServeRecordsToThisRequest())) return [];
-  if (!soldDb) return [];
+  if (!getSoldDb()) return [];
   const safeDays = Math.min(90, Math.max(1, days));
   const safeLimit = Math.min(MAX_CONSUMER_RECORDS, Math.max(1, limit));
   const txn = type === "sale" ? "For Sale" : "For Lease";
@@ -315,7 +315,7 @@ export async function getRecentSoldList(
     `sold-list:all:${type}:${safeDays}:${safeLimit}:${nbhd ?? "-"}:${ptype ?? "-"}`,
     CACHE_TTL.soldList,
     async () => {
-      const rows = (await soldDb!`
+      const rows = (await getSoldDb()!`
         SELECT * FROM sold.sold_records
         WHERE city = ${config.PRISMA_CITY_VALUE}
           AND perm_advertise = TRUE
@@ -336,9 +336,9 @@ export async function getRecentSoldList(
 // ────────────────────────────────────────
 
 export async function getMiltonSoldTotals(): Promise<{ last30: number; last90: number }> {
-  if (!soldDb) return { last30: 0, last90: 0 };
+  if (!getSoldDb()) return { last30: 0, last90: 0 };
   return cached(`milton-sold-totals`, CACHE_TTL.homepage, async () => {
-    const rows = (await soldDb!`
+    const rows = (await getSoldDb()!`
       SELECT
         (SELECT COUNT(*) FROM sold.sold_records
           WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
@@ -354,9 +354,9 @@ export async function getMiltonSoldTotals(): Promise<{ last30: number; last90: n
 }
 
 export async function getDistinctSoldNeighbourhoods(): Promise<string[]> {
-  if (!soldDb) return [];
+  if (!getSoldDb()) return [];
   return cached(`milton-sold-nbhds`, CACHE_TTL.homepage, async () => {
-    const rows = (await soldDb!`
+    const rows = (await getSoldDb()!`
       SELECT DISTINCT neighbourhood FROM sold.sold_records
       WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
         AND transaction_type = 'For Sale'

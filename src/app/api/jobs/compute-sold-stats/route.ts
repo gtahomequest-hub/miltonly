@@ -5,7 +5,7 @@
 // Auth: Authorization: Bearer <CRON_SECRET> (Point 7).
 
 import { NextRequest, NextResponse } from "next/server";
-import { soldDb, analyticsDb } from "@/lib/db";
+import { getSoldDb, getAnalyticsDb } from "@/lib/db";
 import { computeAllStats } from "@/lib/sold-stats";
 
 export const maxDuration = 300;
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!soldDb || !analyticsDb) {
+  if (!getSoldDb() || !getAnalyticsDb()) {
     return NextResponse.json(
       { error: "SOLD_DATABASE_URL or ANALYTICS_DATABASE_URL is not configured" },
       { status: 503 }

@@ -28,7 +28,7 @@
 import type { Listing } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { analyticsDb, soldDb } from "@/lib/db";
+import { getAnalyticsDb, getSoldDb } from "@/lib/db";
 import {
   expandStreetName,
   shortNameFor,
@@ -254,8 +254,9 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   const registeredDirs = identity
     ? registeredDirectionsFor(identity.base, identity.suffixCanonical)
     : null;
-  const perSlugStatsRaw = registeredDirs && soldDb
-    ? await (soldDb`
+  const __sd = getSoldDb();
+  const perSlugStatsRaw = registeredDirs && __sd
+    ? await (__sd`
         SELECT street_slug,
                COUNT(*) FILTER (WHERE transaction_type='For Sale')::int AS n_sales,
                AVG(sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
@@ -436,15 +437,17 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 // DB query helpers — wrap Neon's typing quirks + handle errors uniformly.
 // ---------------------------------------------------------------------------
 
-type SqlClient = NonNullable<typeof analyticsDb>;
+type SqlClient = NonNullable<ReturnType<typeof getAnalyticsDb>>;
 
 function queryAnalytics<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
-  if (!analyticsDb) return Promise.resolve([] as T[]);
-  return (build(analyticsDb) as Promise<T[]>).catch(() => [] as T[]);
+  const ad = getAnalyticsDb();
+  if (!ad) return Promise.resolve([] as T[]);
+  return (build(ad) as Promise<T[]>).catch(() => [] as T[]);
 }
 function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
-  if (!soldDb) return Promise.resolve([] as T[]);
-  return (build(soldDb) as Promise<T[]>).catch(() => [] as T[]);
+  const sd = getSoldDb();
+  if (!sd) return Promise.resolve([] as T[]);
+  return (build(sd) as Promise<T[]>).catch(() => [] as T[]);
 }
 
 // ---------------------------------------------------------------------------

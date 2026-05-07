@@ -32,6 +32,7 @@ import {
   formatViolationsForRetryEnriched,
 } from './validateStreetGeneration';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
+import { roundPricesInOutput } from './roundPricesInOutput';
 import type {
   StreetGeneratorInput,
   StreetGeneratorOutput,
@@ -951,10 +952,15 @@ export async function generatePhase41StreetContent(
     // faq_answer_length from the retry-feedback hot path. countSentences in
     // trimFaqAnswers.ts is shared with the validator so they agree on counts.
     const candidateRaw = candidate as StreetGeneratorOutput;
-    const candidateOutput: StreetGeneratorOutput = {
+    const afterFaqTrim: StreetGeneratorOutput = {
       ...candidateRaw,
       faq: trimFaqAnswersToSentenceCap(candidateRaw.faq),
     };
+    // Programmatic price rounding: clamp every dollar token to the
+    // validator's tier-aware multiples before validation runs. Same
+    // pattern as the FAQ trim — eliminates precise_price as a failure
+    // mode the model can't reliably handle on its own.
+    const candidateOutput = roundPricesInOutput(afterFaqTrim);
     const attemptViolations = validateStreetGeneration(candidateOutput, inp);
     attempts.push({
       attemptN: attemptCounter,
