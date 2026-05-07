@@ -781,6 +781,23 @@ export function validateSectionsSubset(
       violations.push({ rule: "precise_price", sectionId: section.id, excerpt: `rent "${preciseRent}" violates rounding rules`, severity: "hard" });
     }
 
+    // v6 (Phase 4.1 / B6 follow-up): market section template-parrot check.
+    // Mirrors the wiring in the main validateStreetGeneration so the per-call
+    // partial validator catches the parrot and triggers retry on the market
+    // call only — instead of falling through to the combined validator as a
+    // hard failure. Closes the wiring gap discovered in B6 sample 5.
+    if (section.id === "market") {
+      const parrotMatch = findMarketTemplateParrot(sectionText);
+      if (parrotMatch) {
+        violations.push({
+          rule: "market_template_parrot",
+          sectionId: section.id,
+          excerpt: `parrot phrase "${parrotMatch.matchedPhrase}": ${parrotMatch.excerpt}`,
+          severity: "hard",
+        });
+      }
+    }
+
     const wordCount = countWords(sectionText);
     const effectiveFloor = (section.id === "market" && input.aggregates.kAnonLevel !== "full")
       ? 30
