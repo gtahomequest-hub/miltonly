@@ -8,7 +8,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
-import { calcMarketDataHash } from "@/lib/streetUtils";
+import { calcMarketDataHash, deriveIdentity } from "@/lib/streetUtils";
 import { sendSMS } from "@/lib/smsAlert";
 import { buildGeneratorInput } from "@/lib/ai/buildGeneratorInput";
 import {
@@ -255,6 +255,21 @@ export async function generateStreetContent(
   streetName: string,
   opts: GenerateOptions = {}
 ): Promise<GenerateResult> {
+  // Slug canonicalization at write-time entry. Mirrors the render-layer
+  // identity logic in deriveIdentity() — abbreviated suffix tokens (crt, blvd,
+  // ave, dr, trl, cres, terr, …) collapse to their full-word canonical form
+  // (court, boulevard, avenue, drive, trail, crescent, terrace, …). Defense-
+  // in-depth: today's call sites already pass canonical slugs, but this guard
+  // means any future ingestion or admin path that fails to canonicalize will
+  // not write divergent slugs to StreetGeneration / StreetContent.
+  const canonicalSlug = deriveIdentity(streetSlug)?.canonicalSlug ?? streetSlug;
+  if (canonicalSlug !== streetSlug) {
+    console.log(
+      `[generateStreetContent] slug canonicalized at entry: ${streetSlug} -> ${canonicalSlug}`
+    );
+    streetSlug = canonicalSlug;
+  }
+
   const stats = await getStreetStats(streetSlug);
   if (!stats) throw new Error("No stats available");
 
@@ -279,6 +294,22 @@ export async function generateStreetContent(
   // until full migration off StreetContent in a future phase.
   // DEC-PH41-DUALWRITE locked 2026-05-05.
   if (isPhase41V2()) {
+    // PHASE41_HALT feature flag: blocks NEW Phase 4.1 generations while the
+    // numeric-grounding validator + architecture decision is in flight.
+    // In-flight work that's already past this gate drains naturally through
+    // the validator path (which now has numeric_ungrounded wired in), so we
+    // don't waste cost on aborts. Set to false once the architecture
+    // decision resolves.
+    if ((process.env.PHASE41_HALT || "").trim() === "true") {
+      console.log(
+        `[generateStreetContent] Phase 4.1 generation halted by PHASE41_HALT feature flag. ` +
+        `New generations blocked. In-flight work draining through validator. ` +
+        `Set to false when validator deploys and architecture decision resolves. ` +
+        `(slug=${streetSlug})`
+      );
+      return { streetName, passed: false, attempts: 0 };
+    }
+
     const phase41Input = await buildGeneratorInput(streetSlug);
     const inputHash = crypto
       .createHash("sha256")
