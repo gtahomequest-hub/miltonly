@@ -254,6 +254,333 @@ export function findMarketTemplateParrot(text: string): { excerpt: string; match
   return null;
 }
 
+// --- Numeric grounding (Phase 4.1 / Task 2) ---
+//
+// Detects market-section numerics (dollar amounts, percentages, counts,
+// ratios, days-on-market, quarter labels) that do NOT trace back to
+// `StreetGeneratorInput` fields or recognized single-step derivations.
+//
+// Two failure modes seen in production audit:
+//   1. Price band extrapolation — model extends a range beyond actual comps
+//      ("$1.2M to $1.5M" when input maxes at $1.415M).
+//   2. Invented condition/position differentials — "$30K end-unit premium"
+//      when input has no condition/position split.
+//
+// Allowed shapes:
+//   - Direct match: number rounds to within tolerance of an input value
+//     (typicalPrice / priceRange / byType / quarterlyTrend / leaseActivity)
+//   - Yield derivation: y = (lease × 12 / sale) × 100, ±1% tolerance
+//   - Lease-to-sale ratio: leasesCount / salesCount, ±0.15 tolerance
+//   - "X of Y" counts: both X and Y must be in the input counts pool
+//
+// Banned shape: any "$X premium" / "$X differential" / "X% premium" — input
+// schema has no condition/position price split, so these are always fabricated.
+//
+// Tolerance:
+//   - Prices: max(±$15K, ±4%)
+//   - Percentages: ±1.0 absolute (for yield derivations)
+//   - DOM: ±5 days
+//   - Counts: exact match required (or in input counts pool)
+
+interface NumericExtraction {
+  raw: string;
+  index: number;
+  context: string;
+  type: "dollar" | "percent" | "count" | "ratio" | "days" | "quarter" | "year";
+}
+
+// Pattern ORDER matters — earlier patterns claim spans first (overlapping
+// later matches are dropped). Put more-specific shapes first so they win:
+//   "X of Y" before bare "X leases" (so "11 of 22" wins over "22 leases")
+//   "only X active" before bare "X active"
+const NUMERIC_PATTERNS: Array<{ re: RegExp; type: NumericExtraction["type"] }> = [
+  { re: /\$[\d,]+(?:\.\d+)?[KkMm]?/g, type: "dollar" },
+  { re: /(?:high|mid|low)-\$\d+(?:\.\d+)?[KkMm]?s?/g, type: "dollar" },
+  { re: /\b\d+(?:\.\d+)?%/g, type: "percent" },
+  { re: /\b\d+\s+of\s+\d+\b/gi, type: "count" },
+  { re: /\b(?:only|just)\s+\d+\s+active\b/gi, type: "count" },
+  { re: /\b\d+\s+(?:sales|leases|listings|active|townhouse|townhome|townhouses|townhomes|detached)\b/gi, type: "count" },
+  { re: /\bratio\s+of\s+(?:nearly\s+)?\d+(?:\.\d+)?\b/gi, type: "ratio" },
+  { re: /\b\d+(?:\.\d+)?\s*(?:to|:)\s*1\b/g, type: "ratio" },
+  { re: /\b\d+\s+day(?:s)?\b/g, type: "days" },
+  { re: /\bQ[1-4]\s+\d{4}\b/g, type: "quarter" },
+  { re: /\b(?:post|pre|after|before)[- ]?\d{4}\b/gi, type: "year" },
+];
+
+function extractNumerics(prose: string): NumericExtraction[] {
+  const out: NumericExtraction[] = [];
+  const seen = new Set<string>();
+  // Track [start, end) spans per type so overlapping matches in the same
+  // category (e.g., "5 active" inside "Only 5 active") emit a single finding.
+  const claimedSpans: Record<string, Array<[number, number]>> = {};
+  for (const { re, type } of NUMERIC_PATTERNS) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(prose))) {
+      const raw = m[0];
+      const start = m.index;
+      const end = m.index + raw.length;
+      const spans = claimedSpans[type] ||= [];
+      const overlaps = spans.some(([s, e]) => start < e && end > s);
+      if (overlaps) continue;
+      spans.push([start, end]);
+      const ctxStart = Math.max(0, start - 35);
+      const ctxEnd = Math.min(prose.length, end + 35);
+      const ctx = prose.slice(ctxStart, ctxEnd).replace(/\s+/g, " ").trim();
+      const key = `${type}:${raw}:${start}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ raw, index: start, context: ctx, type });
+    }
+  }
+  return out;
+}
+
+function parseDollarTokenForGrounding(tok: string): number | null {
+  let s = tok.replace(/[$,\s]/g, "").toLowerCase();
+  const tier = s.match(/^(high|mid|low)-(.+)$/);
+  if (tier) s = tier[2];
+  if (s.endsWith("s")) s = s.slice(0, -1);
+  let mul = 1;
+  let body = s;
+  if (s.endsWith("m")) { mul = 1_000_000; body = s.slice(0, -1); }
+  else if (s.endsWith("k")) { mul = 1_000; body = s.slice(0, -1); }
+  const n = Number(body);
+  if (!Number.isFinite(n)) return null;
+  if (mul === 1 && tier && n >= 100 && n < 1000) mul = 1_000;
+  return Math.round(n * mul);
+}
+
+function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
+  for (const i of inputs) {
+    if (i === 0) continue;
+    const tol = Math.max(15_000, i * 0.04);
+    if (Math.abs(prose - i) <= tol) return true;
+  }
+  return false;
+}
+
+function collectInputPrices(input: StreetGeneratorInput): number[] {
+  const out: number[] = [];
+  if (input.aggregates.typicalPrice) out.push(input.aggregates.typicalPrice);
+  if (input.aggregates.priceRange) out.push(input.aggregates.priceRange.low, input.aggregates.priceRange.high);
+  for (const t of Object.values(input.byType)) {
+    if (t.typicalPrice) out.push(t.typicalPrice);
+    if (t.priceRange) out.push(t.priceRange.low, t.priceRange.high);
+  }
+  for (const q of input.quarterlyTrend ?? []) if (q.typical) out.push(q.typical);
+  for (const c of input.crossStreets ?? []) if (c.typicalPrice) out.push(c.typicalPrice);
+  return out;
+}
+
+function collectInputRents(input: StreetGeneratorInput): number[] {
+  const out: number[] = [];
+  for (const b of Object.values(input.leaseActivity?.byBed ?? {})) if (b.typicalRent) out.push(b.typicalRent);
+  return out;
+}
+
+function collectInputCounts(input: StreetGeneratorInput): number[] {
+  const out: number[] = [];
+  out.push(input.aggregates.salesCount, input.aggregates.leasesCount, input.aggregates.txCount, input.activeListingsCount);
+  for (const t of Object.values(input.byType)) out.push(t.count);
+  for (const b of Object.values(input.leaseActivity?.byBed ?? {})) out.push(b.count);
+  for (const q of input.quarterlyTrend ?? []) out.push(q.count);
+  return out;
+}
+
+function normalizeQuarterLabel(q: string): string {
+  const m = q.match(/Q([1-4])\s*['']?(\d{2,4})/);
+  if (!m) return q.trim();
+  let yr = m[2];
+  if (yr.length === 2) yr = `20${yr}`;
+  return `Q${m[1]} ${yr}`;
+}
+
+interface UngroundedFinding {
+  raw: string;
+  type: NumericExtraction["type"];
+  context: string;
+  reason: string;
+}
+
+/**
+ * Scan market-section prose for numerics that do not match input data or
+ * recognized derivations. Returns a list of findings; empty when grounded.
+ *
+ * Exported for reuse by audit scripts and unit tests.
+ */
+export function findUngroundedNumerics(
+  prose: string,
+  input: StreetGeneratorInput,
+): UngroundedFinding[] {
+  const numerics = extractNumerics(prose);
+  const out: UngroundedFinding[] = [];
+
+  const prices = collectInputPrices(input);
+  const rents = collectInputRents(input);
+  const counts = collectInputCounts(input);
+  const quarters = (input.quarterlyTrend ?? []).map(q => normalizeQuarterLabel(q.quarter));
+  const dom = input.aggregates.daysOnMarket ?? 0;
+  const ratio = input.aggregates.salesCount > 0
+    ? input.aggregates.leasesCount / input.aggregates.salesCount
+    : 0;
+
+  for (const n of numerics) {
+    if (n.type === "dollar") {
+      const value = parseDollarTokenForGrounding(n.raw);
+      if (value === null) continue;  // unparseable — don't fire
+      const isRent = /\b(lease|rent|month|tenant|gross)/i.test(n.context);
+
+      // Premium/differential constructs are always fabricated — input has no
+      // by-condition or by-position price split in the schema.
+      if (/\b(premium|differential)\b/i.test(n.context) ||
+          /\bover\s+(interior|older|standard)/i.test(n.context)) {
+        out.push({
+          raw: n.raw, type: n.type, context: n.context,
+          reason: "premium/differential dollar — input has no end-vs-interior or condition split",
+        });
+        continue;
+      }
+
+      const candidates = isRent ? rents : prices;
+      if (isPriceWithinInputTolerance(value, candidates)) continue;
+      // Cross-check the other category (e.g., FAQ-area ambiguity)
+      const altCandidates = isRent ? prices : rents;
+      if (isPriceWithinInputTolerance(value, altCandidates)) continue;
+
+      out.push({
+        raw: n.raw, type: n.type, context: n.context,
+        reason: `${value} not in input ${isRent ? "rents" : "prices"} (tolerance ±max($15K, 4%))`,
+      });
+      continue;
+    }
+
+    if (n.type === "percent") {
+      const v = parseFloat(n.raw);
+      if (/\bpremium\b/i.test(n.context)) {
+        out.push({
+          raw: n.raw, type: n.type, context: n.context,
+          reason: "premium percentage — input has no by-condition split",
+        });
+        continue;
+      }
+      if (/\b(yield|gross)\b/i.test(n.context)) {
+        let derivable = false;
+        for (const r of rents) {
+          for (const p of prices) {
+            if (!p) continue;
+            const y = (r * 12 / p) * 100;
+            if (Math.abs(y - v) < 1.0) { derivable = true; break; }
+          }
+          if (derivable) break;
+        }
+        if (!derivable) {
+          out.push({
+            raw: n.raw, type: n.type, context: n.context,
+            reason: `yield ${v}% does not match any rent/price single-step derivation`,
+          });
+        }
+        continue;
+      }
+      // Other percentages (without yield/premium context) — treat as
+      // ungrounded unless the value matches a plausible input-derived number.
+      // Conservative: don't fire on bare percentages with no recognized context.
+      continue;
+    }
+
+    if (n.type === "count") {
+      const im = n.raw.match(/\d+/);
+      if (!im) continue;
+      const v = parseInt(im[0], 10);
+      // "X of Y" — both halves must be input counts (any input count)
+      const pair = n.raw.match(/(\d+)\s+of\s+(\d+)/i);
+      if (pair) {
+        const a = parseInt(pair[1], 10);
+        const b = parseInt(pair[2], 10);
+        if (counts.includes(a) && counts.includes(b)) continue;
+        out.push({
+          raw: n.raw, type: n.type, context: n.context,
+          reason: `${a} of ${b} — at least one not in input counts: [${counts.slice(0,8).join(",")}]`,
+        });
+        continue;
+      }
+      // Context-sensitive single-count matching: scoping the validation pool
+      // by the count's semantic category (active/sales/leases/listings) prevents
+      // false-negatives where an "active" count happens to match an unrelated
+      // input field like quarterlyTrend.count.
+      const lowerRaw = n.raw.toLowerCase();
+      let scopedCounts: number[];
+      if (/\bactive\b|\blistings?\b/.test(lowerRaw)) {
+        scopedCounts = [input.activeListingsCount];
+      } else if (/\bleases?\b/.test(lowerRaw)) {
+        scopedCounts = [input.aggregates.leasesCount,
+          ...Object.values(input.leaseActivity?.byBed ?? {}).map(b => b.count)];
+      } else if (/\bsales?\b/.test(lowerRaw)) {
+        scopedCounts = [input.aggregates.salesCount,
+          ...Object.values(input.byType).map(t => t.count)];
+      } else if (/\btownhouse|townhome|detached\b/.test(lowerRaw)) {
+        scopedCounts = Object.values(input.byType).map(t => t.count);
+      } else {
+        scopedCounts = counts;
+      }
+      if (scopedCounts.includes(v)) continue;
+      out.push({
+        raw: n.raw, type: n.type, context: n.context,
+        reason: `count ${v} not in input counts for category: [${scopedCounts.slice(0,8).join(",")}]`,
+      });
+      continue;
+    }
+
+    if (n.type === "ratio") {
+      const numbers = n.raw.match(/\d+(?:\.\d+)?/g);
+      if (!numbers) continue;
+      const v = parseFloat(numbers[0]);
+      if (Math.abs(v - ratio) < 0.15 || Math.abs(v - Math.round(ratio * 10) / 10) < 0.1) continue;
+      out.push({
+        raw: n.raw, type: n.type, context: n.context,
+        reason: `ratio ${v} ≠ leases/sales (${ratio.toFixed(2)})`,
+      });
+      continue;
+    }
+
+    if (n.type === "days") {
+      const im = n.raw.match(/\d+/);
+      if (!im) continue;
+      const v = parseInt(im[0], 10);
+      if (dom && Math.abs(v - dom) <= 5) continue;
+      // "X year"/"past X" parsed as days — skip
+      if (/\b(year|past|recent)\b/i.test(n.context)) continue;
+      out.push({
+        raw: n.raw, type: n.type, context: n.context,
+        reason: `DOM ${v} ≠ input ${dom} (tolerance ±5)`,
+      });
+      continue;
+    }
+
+    if (n.type === "quarter") {
+      const norm = normalizeQuarterLabel(n.raw);
+      if (quarters.includes(norm)) continue;
+      out.push({
+        raw: n.raw, type: n.type, context: n.context,
+        reason: `quarter ${norm} not in input: [${quarters.join(",")}]`,
+      });
+      continue;
+    }
+
+    // type === "year": "post-2015", "pre-2010" — input has no construction-year
+    // field, so any era qualifier is ungrounded.
+    if (n.type === "year") {
+      out.push({
+        raw: n.raw, type: n.type, context: n.context,
+        reason: "construction-era qualifier — input has no construction-year field",
+      });
+      continue;
+    }
+  }
+
+  return out;
+}
+
 // --- Price detection ---
 
 const DOLLAR_FIGURE = /\$(\d{1,3}(?:,\d{3})+)(?!\d)/g;
@@ -532,6 +859,21 @@ export function validateStreetGeneration(
       }
     }
 
+    // v7 (Phase 4.1 / Task 2): numeric grounding. Only fires on market
+    // section — that's where audited fabrication patterns appear (price
+    // band extrapolation, invented condition/position differentials).
+    if (section.id === "market") {
+      const ungrounded = findUngroundedNumerics(sectionText, input);
+      for (const f of ungrounded) {
+        violations.push({
+          rule: "numeric_ungrounded",
+          sectionId: section.id,
+          excerpt: `"${f.raw}" (${f.type}) — ${f.reason}; ctx: ${f.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
     // Precise sale price (rounding violation)
     const preciseSalePrice = findPrecisePrice(sectionText);
     if (preciseSalePrice) {
@@ -793,6 +1135,18 @@ export function validateSectionsSubset(
           rule: "market_template_parrot",
           sectionId: section.id,
           excerpt: `parrot phrase "${parrotMatch.matchedPhrase}": ${parrotMatch.excerpt}`,
+          severity: "hard",
+        });
+      }
+      // v7 (Phase 4.1 / Task 2): numeric grounding. Mirrors the combined
+      // validator wiring so the market call retries on its own when it
+      // fabricates a number, instead of cascading to combined-level fail.
+      const ungrounded = findUngroundedNumerics(sectionText, input);
+      for (const f of ungrounded) {
+        violations.push({
+          rule: "numeric_ungrounded",
+          sectionId: section.id,
+          excerpt: `"${f.raw}" (${f.type}) — ${f.reason}; ctx: ${f.context}`,
           severity: "hard",
         });
       }
@@ -1070,6 +1424,8 @@ function formatRuleViolations(
       return formatHedging(violations, input);
     case "missing_section_id":
       return formatMissingSectionId(output);
+    case "numeric_ungrounded":
+      return formatNumericUngrounded(violations);
     case "total_word_ceiling":
       return formatTotalWordCeiling(output);
     case "invalid_json_shape":
@@ -1311,4 +1667,22 @@ function formatMissingSectionId(
   return [
     `**missing_section_id**: Your output is missing required sections: ${missing.join(", ")}. The sections array MUST contain all 8 ids in canonical order: about, homes, amenities, market, gettingAround, schools, bestFitFor, differentPriorities. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
   ];
+}
+
+function formatNumericUngrounded(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**numeric_ungrounded**: Your market section contains ${violations.length} numeric value${violations.length === 1 ? "" : "s"} that do not trace to the input data. Every dollar amount, percentage, count, ratio, days-on-market figure, and quarter label in the market section MUST appear in the StreetGeneratorInput payload (or be a single-step derivation: yield = (lease × 12 / sale) × 100; lease-to-sale ratio = leasesCount / salesCount).`,
+    ``,
+    `Specific findings:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.excerpt}`);
+  }
+  lines.push(
+    ``,
+    `Fix: For each ungrounded numeric, either remove it or replace with qualitative language. Do not invent specific dollar amounts, percentages, or counts to satisfy structural slots in the prompt — if the input data does not provide a number, write the analysis qualitatively (e.g., "end units typically command a premium" instead of "$X premium").`,
+    ``,
+    `Banned patterns: any "$X premium" / "$X differential" / "X% premium" / "X-Y% premium over older stock" — the input schema has no condition/position/era price split, so these constructions are always fabricated.`,
+  );
+  return lines;
 }
