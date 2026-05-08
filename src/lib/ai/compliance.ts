@@ -117,10 +117,11 @@ export async function generateStreetDescription(
 
   const anthropic = getClient();
 
+  // claude-opus-4-7 deprecated the temperature parameter; passing it returns
+  // a 400 invalid_request_error. Mirrors the same posture at callClaudeOpus.
   const response = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 1200,
-    temperature: 0.7,
     system: systemPrompt,
     messages: [{ role: "user", content: userPrompt }],
   });
