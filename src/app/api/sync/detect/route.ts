@@ -19,7 +19,7 @@ const SELECT_FIELDS = [
   "PostalCode", "StateOrProvince",
   "BedroomsTotal", "BathroomsTotalInteger",
   "PropertyType", "PropertySubType", "TransactionType",
-  "MlsStatus", "LivingAreaRange", "Basement",
+  "MlsStatus", "StandardStatus", "LivingAreaRange", "Basement",
   "ParkingTotal",
   "PublicRemarks", "OriginalEntryTimestamp",
   "ListOfficeName", "UnparsedAddress", "Latitude", "Longitude",
@@ -54,6 +54,7 @@ interface AmpProperty {
   PropertySubType: string | null;
   TransactionType: string | null;
   MlsStatus: string | null;
+  StandardStatus: string | null;
   LivingAreaRange: string | null;
   Basement: string[] | null;
   ParkingTotal: number | null;
@@ -111,12 +112,52 @@ function mapPropertyType(type: string | null, subType: string | null): string {
   return "other";
 }
 
-function mapStatus(mlsStatus: string | null, txType: string | null): string {
+/**
+ * Map MLS / PropTx status fields to DB1 (status, leaseStatus) pair.
+ *
+ * Sale-side: status ∈ {active, sold, expired}, leaseStatus = null
+ * Lease-side: status = 'rented' (umbrella, unchanged for legacy queries),
+ *             leaseStatus ∈ {active, leased, expired, terminated,
+ *                            cancelled, suspended, withdrawn}
+ *
+ * MLS 'Price Change' collapses to leaseStatus = 'active'. The price-change
+ * signal is captured separately in lastPriceChangeAt by the caller.
+ *
+ * Replaces the pre-2026-05-09 mapStatus that collapsed all lease records
+ * to status='rented' and lost the lease lifecycle. See lease-segment probe
+ * (/api/sync/lease/test) — that revealed 4,176 of 6,270 MLS lease records
+ * were being silently dropped of state classification.
+ */
+function mapListingStates(
+  mlsStatus: string | null,
+  txType: string | null,
+  standardStatus: string | null,
+): { status: string; leaseStatus: string | null } {
   const s = (mlsStatus || "").toLowerCase();
-  if (s.includes("sold")) return "sold";
-  if (s.includes("lease") || (txType || "").toLowerCase().includes("lease")) return "rented";
-  if (s.includes("expired") || s.includes("terminated") || s.includes("suspended")) return "expired";
-  return "active";
+  const std = (standardStatus || "").toLowerCase();
+  const isLease = (txType || "").toLowerCase().includes("lease") || s.includes("lease");
+
+  // Sale-side state machine (semantics unchanged from pre-2026-05-09).
+  if (!isLease) {
+    if (s.includes("sold")) return { status: "sold", leaseStatus: null };
+    if (s.includes("expired") || s.includes("terminated") || s.includes("suspended")) {
+      return { status: "expired", leaseStatus: null };
+    }
+    return { status: "active", leaseStatus: null };
+  }
+
+  // Lease-side state machine (preserves the full PropTx lifecycle).
+  let leaseStatus: string;
+  if (s.includes("leased")) leaseStatus = "leased";
+  else if (s.includes("expired")) leaseStatus = "expired";
+  else if (s.includes("terminated")) leaseStatus = "terminated";
+  else if (s.includes("suspended")) leaseStatus = "suspended";
+  else if (std.includes("cancelled")) leaseStatus = "cancelled";
+  else if (std.includes("withdrawn")) leaseStatus = "withdrawn";
+  else if (s.includes("new") || s.includes("price change")) leaseStatus = "active";
+  else leaseStatus = "active"; // safe default — preserve the record rather than drop
+
+  return { status: "rented", leaseStatus };
 }
 
 async function fetchPhotos(listingKey: string): Promise<string[]> {
@@ -196,6 +237,13 @@ export async function POST(request: NextRequest) {
         const address = buildAddress(item);
         const extractedStreetName = extractStreetName(address);
         const legacySlug = slugifyStreet(item.StreetName, item.StreetSuffix);
+        const states = mapListingStates(item.MlsStatus, item.TransactionType, item.StandardStatus);
+        // Capture price-change events: when MlsStatus indicates a recent price
+        // change, stamp the current ingest time. Pre-2026-05-09 ingest discarded
+        // this signal entirely. Conditional spread below preserves the existing
+        // lastPriceChangeAt on update when this ingest pass doesn't see a
+        // price-change event (Prisma omits undefined/missing keys from SET).
+        const isPriceChange = (item.MlsStatus || "").toLowerCase().includes("price change");
 
         const listingData = {
           mlsNumber: item.ListingKey,
@@ -211,7 +259,9 @@ export async function POST(request: NextRequest) {
           basement: Array.isArray(item.Basement) ? item.Basement.length > 0 : false,
           sqft: parseLivingAreaRange(item.LivingAreaRange),
           propertyType: mapPropertyType(item.PropertyType, item.PropertySubType),
-          status: mapStatus(item.MlsStatus, item.TransactionType),
+          status: states.status,
+          leaseStatus: states.leaseStatus,
+          ...(isPriceChange ? { lastPriceChangeAt: new Date() } : {}),
           description: item.PublicRemarks || null,
           latitude: item.Latitude || 0,
           longitude: item.Longitude || 0,

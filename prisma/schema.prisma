@@ -23,6 +23,15 @@ model Listing {
   sqft               Int?
   propertyType       String // detached|semi|townhouse|condo
   status             String // active|sold|rented|expired
+  // Lease lifecycle state for status='rented' rows. NULL for sale-side records.
+  // Values: active|leased|expired|terminated|cancelled|suspended|withdrawn
+  // (PropTx 'Price Change' MlsStatus collapses to 'active' here; the
+  // lastPriceChangeAt timestamp captures the price-change signal separately.)
+  leaseStatus        String?
+  // Set by ingest when MlsStatus = 'Price Change'. Captures the most recent
+  // price-change event timestamp for market-signal tracking. NULL for listings
+  // that haven't had a tracked price change.
+  lastPriceChangeAt  DateTime?
   soldPrice          Int?
   soldDate           DateTime?
   daysOnMarket       Int?
@@ -85,6 +94,7 @@ model Listing {
   @@index([propertyType])
   @@index([price])
   @@index([transactionType])
+  @@index([leaseStatus])
 }
 
 model Lead {
