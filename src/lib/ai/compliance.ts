@@ -96,23 +96,30 @@ function validatePromptSafety(text: string): { safe: boolean; reason?: string } 
 }
 
 /**
- * Extract the JSON object substring from an LLM response.
+ * Extract the first balanced JSON object substring from an LLM response.
  *
  * Anthropic models occasionally emit text preamble or postamble around JSON
  * structures despite explicit JSON-only instructions ("I need to...",
- * "Here is the JSON:", trailing commentary). DeepSeek with native
- * response_format json_object does not exhibit this, but the helper is a
- * no-op on already-clean JSON, so it can be applied universally as defensive
- * hardening.
+ * "Here is the JSON:", trailing commentary, sometimes a second example
+ * object after a "Note:" line). DeepSeek with native response_format
+ * json_object does not exhibit this, but the helper is a no-op on
+ * already-clean JSON, so it can be applied universally as defensive hardening.
  *
- * Strips ```json fences (if present), then returns the slice from the first
- * `{` to the last `}`. If no balanced braces are found, returns the input
- * unchanged so callers can surface their own parse error.
+ * Algorithm: strip ```json fences (if present), find the first `{`, then
+ * brace-count forward (ignoring braces inside string literals) to find the
+ * MATCHING `}`. Returns that slice. This correctly handles:
+ *   - Prose preamble before the JSON object
+ *   - Trailing prose or a second JSON-like block after the first object
+ *   - Nested objects within the first object
+ *   - Strings inside the JSON containing literal `{` or `}` characters
  *
- * Safe to call on plain prose: returns the input unchanged when no braces
- * are present. NOT safe to call on prose that legitimately contains literal
- * `{` and `}` characters expected to remain in the output — only call when
- * the consumer expects JSON.
+ * Returns input unchanged if no `{` is found, or if braces are unbalanced
+ * (so callers surface their own parse error rather than getting silent corruption).
+ *
+ * Safe to call on plain prose: returns input unchanged when no `{` is present.
+ * NOT safe to call on prose that legitimately contains literal `{` and `}`
+ * characters expected to remain in the output — only call when the consumer
+ * expects JSON.
  */
 export function stripTextPreambleBeforeJson(text: string): string {
   let s = text.trim();
@@ -120,9 +127,25 @@ export function stripTextPreambleBeforeJson(text: string): string {
     s = s.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
   }
   const firstBrace = s.indexOf("{");
-  const lastBrace = s.lastIndexOf("}");
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    return s.slice(firstBrace, lastBrace + 1);
+  if (firstBrace < 0) return s;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = firstBrace; i < s.length; i++) {
+    const c = s[i];
+    if (escape) { escape = false; continue; }
+    if (inString) {
+      if (c === "\\") { escape = true; continue; }
+      if (c === '"') { inString = false; continue; }
+      continue;
+    }
+    if (c === '"') { inString = true; continue; }
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return s.slice(firstBrace, i + 1);
+    }
   }
   return s;
 }
