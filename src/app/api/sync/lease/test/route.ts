@@ -169,22 +169,61 @@ export async function GET(req: NextRequest) {
   const cityFilter = `City eq '${config.AMPRE_CITY_FILTER}'`;
   const leaseFilter = `${cityFilter} and TransactionType eq 'For Lease'`;
 
-  const [probeAll, probeActive, probeExpired, probeTerminated, probeSuspended, probeNonClosed] =
-    await Promise.all([
-      runProbe(`${leaseFilter}`, 30, token),
-      runProbe(`${leaseFilter} and MlsStatus eq 'New'`, 20, token),
-      runProbe(`${leaseFilter} and MlsStatus eq 'Exp'`, 20, token),
-      runProbe(`${leaseFilter} and MlsStatus eq 'Ter'`, 20, token),
-      runProbe(`${leaseFilter} and MlsStatus eq 'Sus'`, 20, token),
-      runProbe(`${leaseFilter} and MlsStatus ne 'Lsd'`, 30, token),
-    ]);
+  // PropTx/AMPRE returns FULL WORD MlsStatus values for lease records
+  // ("Expired", "Terminated", "Suspended") — NOT the abbreviated codes
+  // ("Exp", "Ter", "Sus") that work for sold-records sale-side probes.
+  // Also probing Cancelled + Withdrawn which appeared in StandardStatus.
+  const [
+    probeAll,
+    probeActive,
+    probeExpired,
+    probeTerminated,
+    probeSuspended,
+    probeCancelled,
+    probeWithdrawn,
+    probePriceChange,
+    probeLeased,
+  ] = await Promise.all([
+    runProbe(`${leaseFilter}`, 30, token),
+    runProbe(`${leaseFilter} and MlsStatus eq 'New'`, 20, token),
+    runProbe(`${leaseFilter} and MlsStatus eq 'Expired'`, 20, token),
+    runProbe(`${leaseFilter} and MlsStatus eq 'Terminated'`, 20, token),
+    runProbe(`${leaseFilter} and MlsStatus eq 'Suspended'`, 20, token),
+    runProbe(`${leaseFilter} and StandardStatus eq 'Cancelled'`, 20, token),
+    runProbe(`${leaseFilter} and StandardStatus eq 'Withdrawn'`, 20, token),
+    runProbe(`${leaseFilter} and MlsStatus eq 'Price Change'`, 20, token),
+    runProbe(`${leaseFilter} and MlsStatus eq 'Leased'`, 20, token),
+  ]);
 
   const allMls = new Set<string>();
   const allStd = new Set<string>();
-  for (const p of [probeAll, probeActive, probeExpired, probeTerminated, probeSuspended, probeNonClosed]) {
+  for (const p of [
+    probeAll, probeActive, probeExpired, probeTerminated, probeSuspended,
+    probeCancelled, probeWithdrawn, probePriceChange, probeLeased,
+  ]) {
     p.uniqueMlsStatuses.forEach((s) => allMls.add(s));
     p.uniqueStandardStatuses.forEach((s) => allStd.add(s));
   }
+
+  const counts = {
+    anyLease: probeAll.count,
+    activeLease_New: probeActive.count,
+    expiredLease_Expired: probeExpired.count,
+    terminatedLease_Terminated: probeTerminated.count,
+    suspendedLease_Suspended: probeSuspended.count,
+    cancelledLease_Cancelled: probeCancelled.count,
+    withdrawnLease_Withdrawn: probeWithdrawn.count,
+    priceChangedLease_PriceChange: probePriceChange.count,
+    leasedLease_Leased: probeLeased.count,
+  };
+  const droppedClassesTotal =
+    counts.activeLease_New +
+    counts.expiredLease_Expired +
+    counts.terminatedLease_Terminated +
+    counts.suspendedLease_Suspended +
+    counts.cancelledLease_Cancelled +
+    counts.withdrawnLease_Withdrawn +
+    counts.priceChangedLease_PriceChange;
 
   return NextResponse.json({
     tokenUsed: VOW_TOKEN ? "VOW" : "IDX",
@@ -192,24 +231,21 @@ export async function GET(req: NextRequest) {
     summary: {
       uniqueMlsStatusesAcrossLeaseProbes: Array.from(allMls).sort(),
       uniqueStandardStatusesAcrossLeaseProbes: Array.from(allStd).sort(),
-      counts: {
-        anyLease: probeAll.count,
-        activeLease_NewStatus: probeActive.count,
-        expiredLease_ExpStatus: probeExpired.count,
-        terminatedLease_TerStatus: probeTerminated.count,
-        suspendedLease_SusStatus: probeSuspended.count,
-        nonClosedLease_excludesLsd: probeNonClosed.count,
-      },
+      counts,
+      droppedClassesTotal,
       finding:
-        probeExpired.count > 0 || probeTerminated.count > 0 || probeSuspended.count > 0 || probeActive.count > 0
-          ? "MLS DOES send non-Closed lease records — current ingest mapping at detect/route.ts:117 is collapsing them to status=rented. Schema fix required."
-          : "MLS does NOT send non-Closed lease records (or status codes differ) — Option 1 redirect confirmed.",
+        droppedClassesTotal > 0
+          ? `MLS sends ${droppedClassesTotal} non-Leased lease records that the current ingest at detect/route.ts:117 is collapsing to status=rented. Schema fix required to preserve the lease state machine.`
+          : "All non-Leased lease classes returned 0 — either MLS truly doesn't send them, OR these specific filter values don't match (still investigating).",
     },
     probeAll,
     probeActive,
     probeExpired,
     probeTerminated,
     probeSuspended,
-    probeNonClosed,
+    probeCancelled,
+    probeWithdrawn,
+    probePriceChange,
+    probeLeased,
   });
 }
