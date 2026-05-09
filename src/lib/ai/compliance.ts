@@ -96,6 +96,38 @@ function validatePromptSafety(text: string): { safe: boolean; reason?: string } 
 }
 
 /**
+ * Extract the JSON object substring from an LLM response.
+ *
+ * Anthropic models occasionally emit text preamble or postamble around JSON
+ * structures despite explicit JSON-only instructions ("I need to...",
+ * "Here is the JSON:", trailing commentary). DeepSeek with native
+ * response_format json_object does not exhibit this, but the helper is a
+ * no-op on already-clean JSON, so it can be applied universally as defensive
+ * hardening.
+ *
+ * Strips ```json fences (if present), then returns the slice from the first
+ * `{` to the last `}`. If no balanced braces are found, returns the input
+ * unchanged so callers can surface their own parse error.
+ *
+ * Safe to call on plain prose: returns the input unchanged when no braces
+ * are present. NOT safe to call on prose that legitimately contains literal
+ * `{` and `}` characters expected to remain in the output — only call when
+ * the consumer expects JSON.
+ */
+export function stripTextPreambleBeforeJson(text: string): string {
+  let s = text.trim();
+  if (s.startsWith("```")) {
+    s = s.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+  }
+  const firstBrace = s.indexOf("{");
+  const lastBrace = s.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return s.slice(firstBrace, lastBrace + 1);
+  }
+  return s;
+}
+
+/**
  * LEGACY — Generate a short-form (300-word) street description using Claude.
  * Preserved untouched as part of UPG-4 Stage 1. Existing callers
  * (generateStreet.ts) continue to use this. Migration to long-form happens
@@ -944,12 +976,13 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
     totalCost += response.costUsd;
 
     let parsed: unknown;
+    const cleaned = stripTextPreambleBeforeJson(response.text);
     try {
-      parsed = JSON.parse(response.text);
+      parsed = JSON.parse(cleaned);
     } catch (e) {
       attempts.push({
         attemptN: attempt,
-        violations: [{ rule: 'invalid_json_shape', excerpt: response.text.slice(0, 80), severity: 'hard' }],
+        violations: [{ rule: 'invalid_json_shape', excerpt: cleaned.slice(0, 80), severity: 'hard' }],
         tokens: { in: response.inputTokens, out: response.outputTokens },
         costUsd: response.costUsd,
       });
