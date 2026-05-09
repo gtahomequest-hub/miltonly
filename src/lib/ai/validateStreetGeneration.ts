@@ -830,6 +830,100 @@ export function findTemporalPairings(
   return findings;
 }
 
+interface QualitativeFinding {
+  subsegmentTerm: string;
+  comparativeTerm: string;
+  context: string;
+  reason: string;
+}
+
+/**
+ * Detect Category-A qualitative subsegment-comparative fabrications in market
+ * section prose.
+ *
+ * Surfaced by Phase 4.1 Task 3.8b scope audit. Pass 2 of the twopass-causal
+ * architecture introduces qualitative claims like "end-units command a
+ * premium over interiors due to additional windows" or "older construction
+ * units trade at a discount compared to newer builds". The input schema has
+ * no by-condition / by-position / by-era / by-basement-finish / by-lot-size
+ * fields — every such comparative claim is fabricated, regardless of whether
+ * specific dollar amounts are stated.
+ *
+ * The numeric_ungrounded rule already catches the NUMERIC versions of these
+ * claims ($30K premium, etc.). This rule catches the QUALITATIVE versions
+ * that slip through when no specific number is invented.
+ *
+ * Detection: a subsegment vocabulary term appearing within 50 chars of a
+ * comparative vocabulary term fires the rule. Allow-list: future schema
+ * additions could permit grounded claims by exposing byCondition / byPosition
+ * etc. on input — until then the rule is effectively a hard ban.
+ */
+const SUBSEGMENT_TERMS = [
+  "end-unit", "end-units", "end units", "interior-unit", "interior-units",
+  "interior unit", "interior units",
+  "older build", "older builds", "newer build", "newer builds",
+  "older construction", "newer construction",
+  "basement-finish", "finished basement", "finished basements",
+  "unfinished basement", "unfinished basements",
+  "larger lot", "larger lots", "smaller lot", "smaller lots",
+  "corner unit", "corner units", "corner lot", "corner lots",
+  "end of street", "end of the street", "end-of-row", "end of row",
+  "south end", "north end", "east end", "west end",
+];
+const COMPARATIVE_TERMS = [
+  "premium", "discount", "command", "trade higher", "trade lower",
+  "value higher", "value lower", "trade at a", "trade above", "trade below",
+  "land at the upper end", "land at the lower end",
+  "commanding the upper end", "commanding the lower end",
+  "command higher", "command lower",
+  "above the typical", "below the typical",
+];
+
+export function findQualitativeGroundingViolations(prose: string): QualitativeFinding[] {
+  const findings: QualitativeFinding[] = [];
+  const seenPairs = new Set<string>(); // dedupe per (subsegment, comparative)
+
+  // Build regex for each subsegment term as a global match. Word boundaries
+  // are slightly relaxed for hyphenated forms like "end-unit" / "end-of-row"
+  // since \b doesn't break on '-'.
+  for (const subTerm of SUBSEGMENT_TERMS) {
+    const escaped = subTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const subRe = new RegExp(`\\b${escaped}\\b`, "gi");
+    const subMatches = Array.from(prose.matchAll(subRe));
+    if (subMatches.length === 0) continue;
+
+    for (const sm of subMatches) {
+      const smIdx = sm.index ?? 0;
+      const smEnd = smIdx + sm[0].length;
+      const ctxStart = Math.max(0, smIdx - 50);
+      const ctxEnd = Math.min(prose.length, smEnd + 50);
+      const window = prose.slice(ctxStart, ctxEnd);
+
+      for (const compTerm of COMPARATIVE_TERMS) {
+        const compEsc = compTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const compRe = new RegExp(`\\b${compEsc}\\b`, "i");
+        if (!compRe.test(window)) continue;
+
+        const key = `${subTerm.toLowerCase()}|${compTerm.toLowerCase()}|${smIdx}`;
+        if (seenPairs.has(key)) continue;
+        seenPairs.add(key);
+        findings.push({
+          subsegmentTerm: sm[0],
+          comparativeTerm: compTerm,
+          context: window,
+          reason:
+            `subsegment term "${sm[0]}" paired with comparative "${compTerm}" within 50 chars — ` +
+            `input schema has no by-condition / by-position / by-era field, so this comparative ` +
+            `is fabricated regardless of whether a specific number is stated`,
+        });
+        break; // one fire per subsegment match (don't double-fire on multiple comparatives)
+      }
+    }
+  }
+
+  return findings;
+}
+
 // --- Price detection ---
 
 const DOLLAR_FIGURE = /\$(\d{1,3}(?:,\d{3})+)(?!\d)/g;
@@ -1134,6 +1228,19 @@ export function validateStreetGeneration(
           severity: "hard",
         });
       }
+      // v9 (Phase 4.1 / Task 3.8 Intervention 4): qualitative grounding
+      // Category A. Catches subsegment-comparative fabrications (end-unit
+      // premium, older/newer construction discount, etc.) that numeric_ungrounded
+      // misses when no specific dollar amount is invented.
+      const qualitative = findQualitativeGroundingViolations(sectionText);
+      for (const q of qualitative) {
+        violations.push({
+          rule: "qualitative_grounding",
+          sectionId: section.id,
+          excerpt: `${q.reason}; ctx: ${q.context}`,
+          severity: "hard",
+        });
+      }
     }
 
     // Precise sale price (rounding violation)
@@ -1424,6 +1531,18 @@ export function validateSectionsSubset(
           severity: "hard",
         });
       }
+      // v9 (Phase 4.1 / Task 3.8 Intervention 4): qualitative grounding.
+      // Same mirror — the market call retries when it introduces a Cat-A
+      // subsegment-comparative fabrication.
+      const qualitative = findQualitativeGroundingViolations(sectionText);
+      for (const q of qualitative) {
+        violations.push({
+          rule: "qualitative_grounding",
+          sectionId: section.id,
+          excerpt: `${q.reason}; ctx: ${q.context}`,
+          severity: "hard",
+        });
+      }
     }
 
     const wordCount = countWords(sectionText);
@@ -1702,6 +1821,8 @@ function formatRuleViolations(
       return formatNumericUngrounded(violations);
     case "temporal_pairing":
       return formatTemporalPairing(violations);
+    case "qualitative_grounding":
+      return formatQualitativeGrounding(violations);
     case "total_word_ceiling":
       return formatTotalWordCeiling(output);
     case "invalid_json_shape":
@@ -1943,6 +2064,24 @@ function formatMissingSectionId(
   return [
     `**missing_section_id**: Your output is missing required sections: ${missing.join(", ")}. The sections array MUST contain all 8 ids in canonical order: about, homes, amenities, market, gettingAround, schools, bestFitFor, differentPriorities. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
   ];
+}
+
+function formatQualitativeGrounding(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**qualitative_grounding**: Your market section made ${violations.length} subsegment-comparative claim${violations.length === 1 ? "" : "s"} that the input data does not support. The input schema has NO by-condition, by-position, by-era, by-basement-finish, or by-lot-size fields — so any claim that "end units command a premium over interiors" or "older construction trades at a discount" or "larger lots command higher" is fabricated, regardless of whether you stated a specific number.`,
+    ``,
+    `Specific findings:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.excerpt}`);
+  }
+  lines.push(
+    ``,
+    `Fix: Remove every subsegment-comparative pairing. Banned constructions include any pairing of {end-unit, interior, older/newer construction, finished basement, larger/smaller lot, corner unit, end of street, north/south end} with {premium, discount, command, trade higher/lower, value higher/lower}. The qualitative versions of these claims are as ungrounded as the numeric versions — the input simply doesn't carry the data needed to support them.`,
+    ``,
+    `Acceptable substitute: describe the price RANGE without claiming WHY some units land where. "Townhouses on Asleton trade between $725K and $875K" is fine. "End-units in the upper end of that range" is not.`,
+  );
+  return lines;
 }
 
 function formatTemporalPairing(violations: ValidatorViolation[]): string[] {

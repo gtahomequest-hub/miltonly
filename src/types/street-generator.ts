@@ -69,6 +69,7 @@ export type ValidatorRule =
   | "market_template_parrot"
   | "numeric_ungrounded"
   | "temporal_pairing"
+  | "qualitative_grounding"
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---
