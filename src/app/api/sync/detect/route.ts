@@ -238,12 +238,30 @@ export async function POST(request: NextRequest) {
         const extractedStreetName = extractStreetName(address);
         const legacySlug = slugifyStreet(item.StreetName, item.StreetSuffix);
         const states = mapListingStates(item.MlsStatus, item.TransactionType, item.StandardStatus);
-        // Capture price-change events: when MlsStatus indicates a recent price
-        // change, stamp the current ingest time. Pre-2026-05-09 ingest discarded
-        // this signal entirely. Conditional spread below preserves the existing
-        // lastPriceChangeAt on update when this ingest pass doesn't see a
-        // price-change event (Prisma omits undefined/missing keys from SET).
-        const isPriceChange = (item.MlsStatus || "").toLowerCase().includes("price change");
+
+        // Pre-fetch existing row for two reasons:
+        //  (a) determine create-vs-update branching (existing logic)
+        //  (b) compare existing.price to incoming ListPrice so the
+        //      lastPriceChangeAt stamp ONLY fires on actual price changes.
+        //      Without this comparison, re-ingest passes that see the same
+        //      MlsStatus='Price Change' value would re-stamp the column
+        //      with each invocation's wall-clock time, polluting the signal.
+        const existing = await prisma.listing.findUnique({
+          where: { mlsNumber: item.ListingKey },
+          select: { id: true, price: true, lastPriceChangeAt: true },
+        });
+
+        // Stamp lastPriceChangeAt only when:
+        //   - MlsStatus indicates "Price Change", AND
+        //   - Either it's a new row (existing===null), OR existing.price
+        //     materially differs from the incoming ListPrice
+        // The conditional spread below preserves the existing value on
+        // update when this ingest pass shouldn't stamp (Prisma omits
+        // undefined/missing keys from the SET clause).
+        const isPriceChangeStatus = (item.MlsStatus || "").toLowerCase().includes("price change");
+        const incomingPrice = item.ListPrice || 0;
+        const priceActuallyChanged = !existing || existing.price !== incomingPrice;
+        const shouldStampPriceChange = isPriceChangeStatus && priceActuallyChanged;
 
         const listingData = {
           mlsNumber: item.ListingKey,
@@ -261,7 +279,7 @@ export async function POST(request: NextRequest) {
           propertyType: mapPropertyType(item.PropertyType, item.PropertySubType),
           status: states.status,
           leaseStatus: states.leaseStatus,
-          ...(isPriceChange ? { lastPriceChangeAt: new Date() } : {}),
+          ...(shouldStampPriceChange ? { lastPriceChangeAt: new Date() } : {}),
           description: item.PublicRemarks || null,
           latitude: item.Latitude || 0,
           longitude: item.Longitude || 0,
@@ -305,11 +323,6 @@ export async function POST(request: NextRequest) {
           listedAt: item.OriginalEntryTimestamp ? new Date(item.OriginalEntryTimestamp) : new Date(),
           syncedAt: new Date(),
         };
-
-        const existing = await prisma.listing.findUnique({
-          where: { mlsNumber: item.ListingKey },
-          select: { id: true },
-        });
 
         if (existing) {
           await prisma.listing.update({ where: { mlsNumber: item.ListingKey }, data: listingData });
