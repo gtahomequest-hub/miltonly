@@ -649,9 +649,11 @@ export function findTemporalPairings(
   // This avoids attributing a price to a quarter that's farther than the one
   // the prose actually paired it with — e.g., "Q3 2024 typical near $875K
   // down through Q3 2025" should attribute $875K to Q3 2024, not Q3 2025.
-  // The (?!\w) lookahead excludes "$830s" / "low-$800s" descriptive bands —
-  // those are not specific prices and would over-fire.
-  const pricePattern = /\$\d+(?:[,\d]*)(?:\.\d+)?\s*[KkMm]?(?!\w)/g;
+  //
+  // Strict price form: either comma-separated ($X,XXX[,XXX]+) OR K/M-suffix
+  // ($X[.XX]K|M). Bare "$1" or "$830" without comma or suffix is rejected to
+  // avoid backtrack matches inside descriptive bands like "$830s" or "$1.1Ms".
+  const pricePattern = /\$(?:\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?[KkMm])(?!\w)/g;
   const priceMatches = Array.from(prose.matchAll(pricePattern));
   for (const pm of priceMatches) {
     const priceStr = pm[0];
