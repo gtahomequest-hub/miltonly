@@ -360,6 +360,65 @@ interface CallDeepSeekOptions {
   temperature?: number;
 }
 
+// Claude 4.x pricing per million tokens. Used for hybrid model routing
+// diagnostic. Pricing as of 2026-05; verify against current Anthropic
+// rate sheet before promoting any of these to a committed product feature.
+type ClaudeModelKey = "opus" | "sonnet" | "haiku";
+const CLAUDE_MODELS: Record<ClaudeModelKey, { id: string; inPricePerM: number; outPricePerM: number }> = {
+  opus:   { id: "claude-opus-4-7",            inPricePerM: 15.00, outPricePerM: 75.00 },
+  sonnet: { id: "claude-sonnet-4-6",          inPricePerM:  3.00, outPricePerM: 15.00 },
+  haiku:  { id: "claude-haiku-4-5-20251001",  inPricePerM:  1.00, outPricePerM:  5.00 },
+};
+
+interface CallClaudeOptions {
+  modelKey: ClaudeModelKey;
+  systemPrompt: string;
+  userPrompt: string;
+  /** Force JSON-mode output by appending an explicit instruction; Claude
+   *  doesn't have native JSON mode like DeepSeek, so we rely on the system
+   *  prompt's schema instructions and a JSON-only reminder. */
+  jsonOnly?: boolean;
+  maxTokens?: number;
+}
+
+async function callClaude({
+  modelKey,
+  systemPrompt,
+  userPrompt,
+  jsonOnly = false,
+  maxTokens = 3000,
+}: CallClaudeOptions): Promise<DeepSeekRawResponse> {
+  const anthropic = getClient();
+  const model = CLAUDE_MODELS[modelKey];
+  const finalSystem = jsonOnly
+    ? `${systemPrompt}\n\nReturn JSON only. No prose preamble, no code fences, no commentary outside the JSON object.`
+    : systemPrompt;
+
+  // Note: claude-4.x models do not accept the temperature parameter.
+  const response = await anthropic.messages.create({
+    model: model.id,
+    max_tokens: maxTokens,
+    system: finalSystem,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+
+  const block = response.content[0];
+  if (block.type !== "text") throw new Error("Unexpected response type from Claude API");
+
+  const inputTokens = response.usage.input_tokens;
+  const outputTokens = response.usage.output_tokens;
+  const costUsd =
+    (inputTokens / 1_000_000) * model.inPricePerM +
+    (outputTokens / 1_000_000) * model.outPricePerM;
+
+  // Strip code-fence wrapping AND any prose preamble/postamble via shared
+  // helper. Sonnet and Haiku ignore the JSON-only directive more often than
+  // Opus and prefix responses with "I need to..." / "Here's the JSON:".
+  const text = stripTextPreambleBeforeJson(block.text);
+
+  return { text, inputTokens, outputTokens, costUsd };
+}
+
 async function callDeepSeek({
   systemPrompt,
   userPrompt,
@@ -966,6 +1025,13 @@ interface RunHalfParams {
   expectsFaq: boolean;
   input: StreetGeneratorInput;
   maxAttempts: number;
+  /** Diagnostic feature flag: route this call to a Claude model instead of
+   *  DeepSeek when "claude". Default is "deepseek". Used by the hybrid
+   *  market routing experiment. NOT a committed product feature. */
+  provider?: "deepseek" | "claude";
+  /** When provider==="claude", picks the Claude family member. Default "opus".
+   *  Used by Task 3 sub-tests to compare Sonnet/Haiku/Opus on the market call. */
+  claudeModel?: ClaudeModelKey;
 }
 
 /**
@@ -978,7 +1044,7 @@ interface RunHalfParams {
  * existing retry-feedback formatter applies.
  *
  * Exported for unit testing — runHalfWithRetry below is the only production
- * caller. Per Path A Part 1 (Sonnet's 33% failure mode at n=3 was prose-only
+ * caller. Per Path A Part 1 (Sonnet's 33% failure mode was prose-only
  * responses with no JSON; previously thrown as fatal, now retried within
  * the existing 5-attempt budget).
  */
@@ -1017,7 +1083,7 @@ export function tryParseGenerationResponse(rawText: string, expectsFaq: boolean)
 }
 
 async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
-  const { halfLabel, systemPrompt, expectedSectionIds, expectsFaq, input, maxAttempts } = params;
+  const { halfLabel, systemPrompt, expectedSectionIds, expectsFaq, input, maxAttempts, provider = "deepseek", claudeModel = "opus" } = params;
   const attempts: Phase41Attempt[] = [];
   let totalIn = 0, totalOut = 0, totalCost = 0;
   let lastViolations: ValidatorViolation[] = [];
@@ -1035,13 +1101,29 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
       );
     }
 
-    const response = await callDeepSeek({
-      systemPrompt,
-      userPrompt,
-      responseFormat: { type: 'json_object' },
-      maxTokens: 5000,
-      temperature: 0.4,
-    });
+    const callStart = Date.now();
+    const response = provider === "claude"
+      ? await callClaude({
+          modelKey: claudeModel,
+          systemPrompt,
+          userPrompt,
+          jsonOnly: true,
+          maxTokens: 5000,
+        })
+      : await callDeepSeek({
+          systemPrompt,
+          userPrompt,
+          responseFormat: { type: 'json_object' },
+          maxTokens: 5000,
+          temperature: 0.4,
+        });
+    const callMs = Date.now() - callStart;
+    if (provider === "claude") {
+      console.log(
+        `[Phase41/${halfLabel}] ${input.street.slug} attempt ${attempt} via Claude ${claudeModel} (${CLAUDE_MODELS[claudeModel].id}): ` +
+        `${response.inputTokens}in/${response.outputTokens}out, $${response.costUsd.toFixed(5)}, ${callMs}ms`
+      );
+    }
     totalIn += response.inputTokens;
     totalOut += response.outputTokens;
     totalCost += response.costUsd;
@@ -1183,6 +1265,45 @@ export async function generatePhase41StreetContent(
   const marketPrompt = loadPhase41MarketPrompt();
   const evalPrompt = loadPhase41EvaluativePrompt();
 
+  // Diagnostic feature flag: AI_PROVIDER_MARKET selects between modes for
+  // the market call only. About/homes/amenities and evaluative stay on
+  // DeepSeek single-pass.
+  //   "claude" or "opus"        — route market to Claude Opus (hybrid)
+  //   "sonnet"                  — route market to Claude Sonnet 4.6 (hybrid, Task 3a)
+  //   "haiku"                   — route market to Claude Haiku 4.5 (hybrid, Task 3b)
+  //   "deepseek-twopass"        — DeepSeek Pass 1 + general refinement Pass 2
+  //   "deepseek-twopass-causal" — DeepSeek Pass 1 + causal-only Pass 2 (Task 3d)
+  //   else (default)            — DeepSeek single-pass
+  // NOT committed product features — used to characterize analytical-depth
+  // vs cost trade-offs before lowering the market floor.
+  const marketModeRaw = (process.env.AI_PROVIDER_MARKET || "").trim();
+  type MarketMode = "deepseek" | "claude-opus" | "claude-sonnet" | "claude-haiku" | "deepseek-twopass" | "deepseek-twopass-causal";
+  const marketMode: MarketMode =
+    marketModeRaw === "claude" || marketModeRaw === "opus" ? "claude-opus" :
+    marketModeRaw === "sonnet" ? "claude-sonnet" :
+    marketModeRaw === "haiku" ? "claude-haiku" :
+    marketModeRaw === "deepseek-twopass-causal" ? "deepseek-twopass-causal" :
+    marketModeRaw === "deepseek-twopass" ? "deepseek-twopass" :
+    "deepseek";
+  if (marketMode === "claude-opus") {
+    console.log(`[Phase41] ${input.street.slug} HYBRID: market call routed to Claude Opus 4.7`);
+  } else if (marketMode === "claude-sonnet") {
+    console.log(`[Phase41] ${input.street.slug} HYBRID: market call routed to Claude Sonnet 4.6`);
+  } else if (marketMode === "claude-haiku") {
+    console.log(`[Phase41] ${input.street.slug} HYBRID: market call routed to Claude Haiku 4.5`);
+  } else if (marketMode === "deepseek-twopass") {
+    console.log(`[Phase41] ${input.street.slug} TWOPASS: market call uses DeepSeek Pass 1 + general refinement Pass 2`);
+  } else if (marketMode === "deepseek-twopass-causal") {
+    console.log(`[Phase41] ${input.street.slug} TWOPASS-CAUSAL: market call uses DeepSeek Pass 1 + causal-only refinement Pass 2`);
+  }
+
+  const isClaudeMarket = marketMode === "claude-opus" || marketMode === "claude-sonnet" || marketMode === "claude-haiku";
+  const claudeModelForMarket: ClaudeModelKey | undefined =
+    marketMode === "claude-opus" ? "opus" :
+    marketMode === "claude-sonnet" ? "sonnet" :
+    marketMode === "claude-haiku" ? "haiku" :
+    undefined;
+
   const [ahaRes, marketRes, evalRes] = await Promise.all([
     runHalfWithRetry({
       halfLabel: "aha",
@@ -1199,6 +1320,8 @@ export async function generatePhase41StreetContent(
       expectsFaq: false,
       input,
       maxAttempts: 5,
+      provider: isClaudeMarket ? "claude" : "deepseek",
+      claudeModel: claudeModelForMarket,
     }),
     runHalfWithRetry({
       halfLabel: "eval",
@@ -1209,6 +1332,140 @@ export async function generatePhase41StreetContent(
       maxAttempts: 5,
     }),
   ]);
+
+  // Two-pass refinement: when AI_PROVIDER_MARKET=deepseek-twopass[-causal]
+  // and Pass 1 came back clean, run a second DeepSeek call with a tight
+  // refinement prompt. Two variants:
+  //   - "deepseek-twopass": general expansion (may invite new numerics)
+  //   - "deepseek-twopass-causal": causal interpretation only, no new numbers
+  // Diagnostic only.
+  const isTwopass = marketMode === "deepseek-twopass" || marketMode === "deepseek-twopass-causal";
+  if (isTwopass && marketRes.violations.length === 0) {
+    const pass1Sections = marketRes.sections;
+    const pass1Words = pass1Sections.reduce(
+      (sum, s) => sum + s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length,
+      0,
+    );
+    const refinementSystemPrompt = marketMode === "deepseek-twopass-causal"
+      ? `You are reviewing a market analysis draft for a Milton real estate street page. Below is the draft. Your task is to EXPAND CAUSAL INTERPRETATION ONLY, with 1-2 additional sentences on each of the three dimensions below.
+
+CRITICAL CONSTRAINTS for this Pass 2:
+- Do NOT introduce new numeric quantifications. No new dollar amounts, percentages, counts, ratios, days-on-market figures, or quarter labels beyond what is already in the Pass 1 draft.
+- Do NOT invent premiums, differentials, or counts not present in the input data.
+- Numbers that appear in your output must already appear in the Pass 1 draft text. Your expansion is interpretive, not quantitative.
+
+PUNCTUATION HARD-BAN (Task 3.6 hardening):
+- ABSOLUTELY NO em-dash characters: — (U+2014), – (U+2013, en-dash), nor double-hyphen surrogates "--". Use comma, semicolon, period, or parentheses instead. ANY em-dash or en-dash character will trigger validator failure and a costly retry.
+
+VOICE HARD-BAN (sales-register vocabulary, Task 3.6 hardening):
+The following constructions are FORBIDDEN regardless of how the Pass 1 draft is written. If the Pass 1 draft contains them, your expansion must NOT echo or extend them, and must avoid all related phrases:
+- "investor demand is anchoring" / any "demand is anchoring" / "anchored by"
+- "we can offer", "our team", "our clients", "we", "us", "our" (no first-person plural anywhere)
+- "reach out", "let us know", "contact us", "happy to", "feel free to", "available to help"
+- "off-market opportunities" / "off-market"
+- Reader-contact invitations of any shape ("for more information", "discuss in person")
+- Closing-summary advisory ("buyers should be prepared", "the street offers a stable opportunity")
+
+VOICE INHERITED FROM PASS 1 (Task 3.6 hardening):
+- Third-person observer voice. No first-person, singular or plural.
+- Same register as the surrounding sections (about/homes/amenities/eval). Pass 2 should be indistinguishable in tone.
+- Analytical/observational, not advisory.
+
+PER-SECTION BUDGET (Task 3.6 hardening):
+- Pass 2 expansion stays inside the market section. Do NOT borrow word budget from any other section. Do NOT touch other sections' content.
+- The market section's word ceiling is 280. If your expansion would push the section above 280 words, return the Pass 1 draft unchanged for the market section and only emit the expansions you can fit.
+
+The three dimensions to expand causally:
+
+1. CONDITION-PRICING MECHANISM: explain WHY the price differentiation exists (end-unit vs interior, basement-finish vs not, era of construction). IMPORTANT: only do this if the Pass 1 draft already named the differentiation. Do not invent a new differentiation.
+
+2. LEASE-TO-SALE DYNAMIC: interpret what the lease/sale ratio already in the Pass 1 draft implies for buyer profile (investor vs end-user anchoring). Connect to tenant demand patterns visible in input. Do not introduce new ratios or yields.
+
+3. SUPPLY-PACE TENSION: resolve what the active listing count plus DOM already in the Pass 1 draft together signal. Tight supply + measured pace, or tight supply + urgency, or loose supply + slow pace. Pick the read the existing numbers support.
+
+Return the expanded market section. Same JSON format as the original market call. Do NOT add new structural elements beyond these three causal expansions. Do NOT pad. The expansions should add genuine causal interpretation, not new quantification.
+
+Original draft below:`
+      : `You are reviewing a market analysis draft for a Milton real estate street page. Below is the draft. Your task is to expand three specific dimensions with 1-2 additional sentences each, using the actual numbers from the input data:
+
+1. CONDITION-PRICING MECHANISM: explain in concrete terms why the price differentiation exists (end-unit vs interior, basement-finish vs not, era of construction). Quantify the premium where the input data supports it.
+
+2. LEASE-TO-SALE DYNAMIC: interpret what the lease/sale ratio and yield calculation imply for buyer profile. Connect to specific tenant demand patterns visible in input.
+
+3. SUPPLY-PACE TENSION: resolve what the active listing count plus DOM together signal. Tight supply + measured pace, or tight supply + urgency, or loose supply + slow pace. Pick the read the data actually supports.
+
+Return the expanded market section. Same JSON format as the original market call. Do NOT add new structural elements beyond these three expansions. Do NOT pad. The expansions should add genuine analytical content, not transitional hedging.
+
+Original draft below:`;
+    const refinementUserPrompt = JSON.stringify({ sections: pass1Sections }, null, 2);
+
+    const pass2Start = Date.now();
+    let pass2Failure: string | null = null;
+    let pass2Sections: StreetSection[] = pass1Sections;
+    let pass2Violations: ValidatorViolation[] = [];
+    let pass2Words = pass1Words;
+    let pass2InputTokens = 0;
+    let pass2OutputTokens = 0;
+    let pass2CostUsd = 0;
+
+    try {
+      const pass2Response = await callDeepSeek({
+        systemPrompt: refinementSystemPrompt,
+        userPrompt: refinementUserPrompt,
+        responseFormat: { type: 'json_object' },
+        maxTokens: 5000,
+        temperature: 0.4,
+      });
+      pass2InputTokens = pass2Response.inputTokens;
+      pass2OutputTokens = pass2Response.outputTokens;
+      pass2CostUsd = pass2Response.costUsd;
+
+      const parsed = JSON.parse(pass2Response.text) as { sections?: StreetSection[] };
+      if (!parsed?.sections || !Array.isArray(parsed.sections)) {
+        pass2Failure = "missing sections array";
+      } else {
+        const rounded = roundPricesInOutput({ sections: parsed.sections, faq: [] });
+        pass2Sections = rounded.sections;
+        pass2Violations = validateSectionsSubset(pass2Sections, MARKET_SECTION_IDS, input);
+        pass2Words = pass2Sections.reduce(
+          (sum, s) => sum + s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length,
+          0,
+        );
+      }
+    } catch (e) {
+      pass2Failure = (e as Error).message.slice(0, 120);
+    }
+
+    const pass2Ms = Date.now() - pass2Start;
+    console.log(`[Phase41/market-pass1] ${input.street.slug}: ${pass1Words}w (Pass 1 final, clean)`);
+    if (pass2Failure) {
+      console.log(`[Phase41/market-pass2] ${input.street.slug}: FAILED (${pass2Failure}) | ${pass2InputTokens}in/${pass2OutputTokens}out, $${pass2CostUsd.toFixed(5)}, ${pass2Ms}ms — falling back to Pass 1`);
+    } else {
+      const ruleSummary = pass2Violations.length === 0
+        ? "clean"
+        : pass2Violations.map(v => v.sectionId ? `${v.rule}@${v.sectionId}` : v.rule).join(", ");
+      console.log(
+        `[Phase41/market-pass2] ${input.street.slug}: ${pass1Words}w → ${pass2Words}w | ` +
+        `${pass2InputTokens}in/${pass2OutputTokens}out, $${pass2CostUsd.toFixed(5)}, ${pass2Ms}ms | ` +
+        `${pass2Violations.length} violation${pass2Violations.length === 1 ? "" : "s"} (${ruleSummary})`
+      );
+      // Diagnostic: dump full Pass 2 market prose so the log captures it even
+      // when violations propagate up and the DB row isn't updated.
+      console.log(`[Phase41/market-pass2] ${input.street.slug} PASS2_PROSE_BEGIN`);
+      for (const sec of pass2Sections) {
+        for (const para of sec.paragraphs) console.log(para);
+      }
+      console.log(`[Phase41/market-pass2] ${input.street.slug} PASS2_PROSE_END`);
+    }
+
+    if (!pass2Failure) {
+      marketRes.sections = pass2Sections;
+      marketRes.violations = pass2Violations;
+    }
+    marketRes.totalInputTokens += pass2InputTokens;
+    marketRes.totalOutputTokens += pass2OutputTokens;
+    marketRes.totalCostUsd += pass2CostUsd;
+  }
 
   const totalInputTokens = ahaRes.totalInputTokens + marketRes.totalInputTokens + evalRes.totalInputTokens;
   const totalOutputTokens = ahaRes.totalOutputTokens + marketRes.totalOutputTokens + evalRes.totalOutputTokens;

@@ -88,32 +88,44 @@ Use the input's quarterly trend, range, days-on-market, active listing count, an
 
 **Bad pattern (do NOT write closing paragraphs like these):** "Buyers looking at the street should be prepared to move when the right unit appears." or "Asleton is a street where expectations align closely with outcomes." or "Our team monitors the street closely and can provide detailed guidance on current listings and off-market opportunities." These are filler that reads as advisory closing, not market analysis.
 
-**Three example shapes follow. Use them as TEMPLATES FOR ANALYTICAL STRUCTURE, not for phrasing.** Your market section should hit similar analytical depth (recent comp, trend pattern, condition or micro-location signal, lease-to-sale read) but use specific facts from THIS street's input data. Do NOT copy phrases from these examples.
+## MARKET SECTION — STRUCTURAL REQUIREMENTS
 
-  **Example A — focus on builder/era discrimination:**
-  "A 4-bedroom detached on Smith Avenue traded $1.27M in Q4 2025, against the typical $1.20-1.30M range for the Mattamy-built homes on the street. Newer subdivision phases trade $50,000 to $80,000 above the original 2008 phases, reflecting updated kitchens and larger garages. Days on market sit around 65 across the year, with detached homes moving slightly faster than the townhome subset."
+This section MUST include each of the following as a discrete observation, using the actual numbers from input data. Aim for 220-260 words total across two paragraphs.
 
-  **Example B — focus on micro-location within the street:**
-  "Townhomes on the south end of Patterson Drive trade $30,000 to $50,000 above the north end consistently, reflecting closer transit and the elementary catchment boundary. Q3 2025 saw three south-end trades at $785,000 to $815,000 against two north-end at $735,000 to $755,000. The pattern has been stable for two years, so the spread is structural rather than seasonal."
+**1. RECENT COMP** — name a specific recent trade with price, property type, and approximate quarter if available. Example shape: "A three-bedroom townhome traded around $X in [quarter]." Use the actual recent-sale data from the input, not a generic placeholder.
 
-  **Example C — focus on lease-to-sale dynamics:**
-  "Cooper Crescent shows 12 leases against 8 sales over the year, a ratio that reflects investor anchoring rather than thin sale supply. Three-bedroom units lease in the high-$2,000s to around $3,000 while comparable sale prices sit in the low-$700s to high-$700s, which puts gross yields around 4.5%. The street trades less actively in summer; the busiest sale months sit September through December."
+**2. PRICE TREND** — describe how the typical price has moved over the available time window. Use phrases like "the range has narrowed from $X in [period] to $Y in [period]" or "prices have firmed/softened through [period]." Anchor to specific quarters or years from the input.
 
-The three examples hit different analytical centres of gravity (builder/era, micro-location, lease-to-sale). Pick the centre of gravity that BEST matches the input data for THIS street, then build the analysis from the actual numbers you have. The example phrasing is a model of structure, not a phrase bank.
+**3. CONDITION OR MICRO-LOCATION SIGNAL** — identify a price differentiator visible in THIS street's input data. Could be:
 
-If your market data includes quarterly trend, named comps, lease activity, or active-listing context, USE all of it. The section's word target reflects the analytical depth it requires; a 100-word market section means you skipped half the data.
+- Architectural era (older vs newer phases of the same subdivision, if input shows construction-year variation)
+- Micro-location (north end vs south end of street, proximity to a specific named amenity from `input.nearby`)
+- Property feature (number of bedrooms, lot type, dominant property type difference)
 
-**FORBIDDEN PATTERN — Template parroting:**
+Use specific input numbers. Do not fall back to generic categories. If the input does NOT show a clear price differentiator, omit this element rather than fabricate one.
 
-If you find yourself writing analytical prose that reads similarly to phrasing in the worked examples above, REWRITE in your own words using the actual facts from this street's input data. The examples show the SHAPE of analysis. They do not provide phrasing to lift.
+**4. SUPPLY READ** — comment on the active listing count and what it means for current pace. "X active listings" with a read on whether supply is tight or loose.
 
-The following constructions and any close paraphrase are explicitly banned:
+**5. DAYS ON MARKET** — state the typical DOM with one sentence of interpretation. Example shape: "Days on market average around X, indicating [pace read]." This section is permitted analytical vocabulary like "average" or "median" in legitimate context (the validator's contextual exception applies here).
+
+**6. LEASE-TO-SALE READ** — state the lease-to-sale ratio and what it implies. Calculate gross yield using actual lease range and sale price from input. Example shape: "X leases against Y sales over the period, with three-bedroom units leasing in the [range] against comparable sale prices in the [range], implying gross yields near Z%."
+
+Each of these MUST use street-specific numbers from the input. Do NOT use generic phrases like "well-priced units" or "stable market" without grounding in specific data.
+
+## What to avoid
+
+- Generic closing observations ("buyers should be prepared to move", "the street offers a stable opportunity", "expectations align closely with outcomes")
+- First-person plural or reader-contact invitations
+- Source-citing language ("per Q3 data", "based on records", "according to MLS")
+- Stock condition-vs-pricing patterns. If end-unit premiums or basement-finish differentials are visible in YOUR input data, describe them with this street's specific numbers and original phrasing — do not use inherited template language.
+
+The following specific constructions are validator-banned across all market sections (they appeared verbatim across prior outputs and have been retired):
 
 - "end units and units with finished basements consistently land..."
 - "interior units without basement finish trade closer to..."
 - "investor demand is anchored"
 
-These appeared verbatim across multiple prior outputs and have been retired. The validator catches them. Use the actual input data and your own observation.
+If your input shows a condition signal, describe it in original prose using the actual numbers. The shape of the analysis is the requirement; the phrasing is yours to choose.
 
 ## Naming convention in prose
 
