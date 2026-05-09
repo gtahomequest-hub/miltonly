@@ -581,6 +581,221 @@ export function findUngroundedNumerics(
   return out;
 }
 
+interface TemporalFinding {
+  quarter: string;
+  context: string;
+  reason: string;
+  type: "price_mismatch" | "direction_mismatch" | "count_mismatch";
+}
+
+/**
+ * Detect temporal pairing fabrications in market section prose.
+ *
+ * Surfaced by Phase 4.1 Task 3.5 qualitative audit on Sonnet 3a output:
+ * model wrote "before a single detached-influenced trade in Q3 2025 pushed
+ * the all-type composite higher" but the actual outlier in input data was
+ * Q3 2026, not Q3 2025. Q3 2025 was actually flat/slightly-down vs Q2 2025.
+ *
+ * The numeric_ungrounded rule already catches references to quarters not
+ * in input data. This rule catches the additional class:
+ *
+ * 1. **price_mismatch**: a quarter mention paired (within ~50 chars) with a
+ *    sale price that does NOT match input.quarterlyTrend[quarter].typical
+ *    within tolerance (max $25K or 5%). Rent prices near a quarter are
+ *    skipped — the rule only checks sale prices.
+ *
+ * 2. **direction_mismatch**: a quarter mention paired (within ~80 chars) with
+ *    a directional verb ("rose", "softened", "pushed higher", "declined")
+ *    where the stated direction contradicts the actual q-over-q change vs
+ *    the prior quarter in input. Only fires when stated and actual point
+ *    in OPPOSITE directions (up vs down) — flat vs slight-up tolerated.
+ *
+ * Skipped when input.quarterlyTrend is empty or the quarter doesn't exist
+ * in input (numeric_ungrounded handles the latter).
+ */
+export function findTemporalPairings(
+  prose: string,
+  input: StreetGeneratorInput,
+): TemporalFinding[] {
+  const trend = (input.quarterlyTrend ?? []).map(q => ({
+    canonical: normalizeQuarterLabel(q.quarter),
+    typical: q.typical,
+    count: q.count,
+  }));
+  if (trend.length === 0) return [];
+
+  // Sort chronologically (year asc, then quarter number asc) for prev-quarter lookup.
+  const sorted = [...trend].sort((a, b) => {
+    const ay = parseInt(a.canonical.split(" ")[1], 10);
+    const by = parseInt(b.canonical.split(" ")[1], 10);
+    if (ay !== by) return ay - by;
+    return parseInt(a.canonical.charAt(1), 10) - parseInt(b.canonical.charAt(1), 10);
+  });
+  const prevMap = new Map<string, number>();
+  for (let i = 1; i < sorted.length; i++) {
+    prevMap.set(sorted[i].canonical, sorted[i - 1].typical);
+  }
+  const trendMap = new Map(trend.map(q => [q.canonical, q.typical] as const));
+
+  const findings: TemporalFinding[] = [];
+  const seenKeys = new Set<string>(); // (quarter|type) — dedupe per-quarter per-type
+
+  // Find all quarter mentions in prose
+  const quarterPattern = /\bQ([1-4])\s*['']?(\d{2,4})\b/g;
+  const matches = Array.from(prose.matchAll(quarterPattern));
+
+  // Check 1: price + quarter pairing. For each sale price in the prose, find
+  // its NEAREST quarter mention (within 50 chars). Only check that pairing.
+  // This avoids attributing a price to a quarter that's farther than the one
+  // the prose actually paired it with — e.g., "Q3 2024 typical near $875K
+  // down through Q3 2025" should attribute $875K to Q3 2024, not Q3 2025.
+  // The (?!\w) lookahead excludes "$830s" / "low-$800s" descriptive bands —
+  // those are not specific prices and would over-fire.
+  const pricePattern = /\$\d+(?:[,\d]*)(?:\.\d+)?\s*[KkMm]?(?!\w)/g;
+  const priceMatches = Array.from(prose.matchAll(pricePattern));
+  for (const pm of priceMatches) {
+    const priceStr = pm[0];
+    const value = parseDollarTokenForGrounding(priceStr);
+    if (value === null) continue;
+    const pmIdx = pm.index ?? 0;
+
+    // Skip rent prices — only check sale prices against quarterly typical.
+    const localCtx = prose.slice(Math.max(0, pmIdx - 30), pmIdx + priceStr.length + 30);
+    if (/\b(lease|rent|month|tenant|monthly)\b/i.test(localCtx)) continue;
+
+    // Find nearest quarter (within 50 chars).
+    let nearest: { canonical: string; distance: number; idx: number } | null = null;
+    for (const qm of matches) {
+      const qIdx = qm.index ?? 0;
+      const distance = Math.abs(qIdx - pmIdx);
+      if (distance > 50) continue;
+      if (!nearest || distance < nearest.distance) {
+        nearest = { canonical: normalizeQuarterLabel(qm[0]), distance, idx: qIdx };
+      }
+    }
+    if (!nearest) continue;
+
+    const inputTypical = trendMap.get(nearest.canonical);
+    if (inputTypical === undefined) continue; // numeric_ungrounded handles
+
+    const tolerance = Math.max(25_000, inputTypical * 0.05);
+    if (Math.abs(value - inputTypical) > tolerance) {
+      const key = `${nearest.canonical}|price`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      const ctxStart = Math.max(0, Math.min(nearest.idx, pmIdx) - 30);
+      const ctxEnd = Math.min(prose.length, Math.max(nearest.idx, pmIdx) + 60);
+      findings.push({
+        quarter: nearest.canonical,
+        context: prose.slice(ctxStart, ctxEnd),
+        reason:
+          `${nearest.canonical} paired with ${priceStr} (${value.toLocaleString("en-US")}) ` +
+          `but input typical is $${Math.round(inputTypical).toLocaleString("en-US")} ` +
+          `(tolerance ±$${Math.round(tolerance).toLocaleString("en-US")})`,
+        type: "price_mismatch",
+      });
+    }
+  }
+
+  for (const m of matches) {
+    const raw = m[0];
+    const canonical = normalizeQuarterLabel(raw);
+    const idx = m.index ?? 0;
+    const ctxStart = Math.max(0, idx - 80);
+    const ctxEnd = Math.min(prose.length, idx + raw.length + 80);
+    const context = prose.slice(ctxStart, ctxEnd);
+
+    const inputTypical = trendMap.get(canonical);
+    if (inputTypical === undefined) continue;
+
+    // Check 2: direction word + quarter pairing (within ~80 chars, the full ctx).
+    // Word lists tuned to common up/down verbs the auditor has surfaced.
+    const upPattern = /\b(rose|climbed|firmed|surged|jumped|spiked|rebounded|increased|pushed[^.]{0,15}?higher|composite[^.]{0,15}?higher|all-type[^.]{0,15}?higher)\b/i;
+    const downPattern = /\b(softened|dropped|declined|fell|slipped|pushed[^.]{0,15}?lower|sank|cooled|compressed)\b/i;
+    const isStatedUp = upPattern.test(context);
+    const isStatedDown = downPattern.test(context);
+    if (!isStatedUp && !isStatedDown) continue;
+
+    const prev = prevMap.get(canonical);
+    if (prev === undefined) continue;
+
+    const change = (inputTypical - prev) / prev;
+    const actualDirection: "up" | "down" | "flat" =
+      change > 0.05 ? "up" :
+      change < -0.05 ? "down" :
+      "flat";
+    const statedDirection: "up" | "down" | null =
+      isStatedUp && !isStatedDown ? "up" :
+      isStatedDown && !isStatedUp ? "down" :
+      null;
+    if (statedDirection === null) continue; // ambiguous (both up and down phrases) — skip
+
+    const opposite =
+      (statedDirection === "up" && actualDirection === "down") ||
+      (statedDirection === "down" && actualDirection === "up");
+    if (!opposite) continue;
+
+    const key = `${canonical}|direction`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    findings.push({
+      quarter: canonical,
+      context,
+      reason:
+        `${canonical} described as ${statedDirection} but actual q-over-q change vs prior is ` +
+        `${actualDirection} ($${Math.round(prev).toLocaleString("en-US")} → ` +
+        `$${Math.round(inputTypical).toLocaleString("en-US")})`,
+      type: "direction_mismatch",
+    });
+  }
+
+  // Check 3: count-quarter pairing.
+  // "single trade in Q3 2025" / "lone sale in Q4 2024" / "one outlier trade
+  // in Q2 2026" — the prose claims the quarter had a SINGLE trade. If input
+  // shows count > 1, this is a fabrication (often the model conflated two
+  // outlier quarters — Sonnet 3a: claimed "single ... trade in Q3 2025"
+  // when input has Q3 '25 count=6 and Q3 '26 count=1).
+  //
+  // Detection runs across the whole prose (not per-quarter context), then
+  // associates each match with its nearest quarter mention.
+  const countPattern = /\b(single|lone|one|sole|isolated|individual|outlier|standalone)[^.]{0,30}?\b(trade|sale|transaction)\b/gi;
+  const countMatches = Array.from(prose.matchAll(countPattern));
+  for (const cm of countMatches) {
+    const cmIdx = cm.index ?? 0;
+    // Find the nearest quarter mention within 60 chars
+    let nearest: { match: RegExpMatchArray; canonical: string; distance: number } | null = null;
+    for (const qm of matches) {
+      const qIdx = qm.index ?? 0;
+      const distance = Math.abs(qIdx - cmIdx);
+      if (distance > 60) continue;
+      if (!nearest || distance < nearest.distance) {
+        nearest = { match: qm, canonical: normalizeQuarterLabel(qm[0]), distance };
+      }
+    }
+    if (!nearest) continue;
+    const inputQ = trend.find(q => q.canonical === nearest!.canonical);
+    if (!inputQ) continue; // numeric_ungrounded handles
+    if (inputQ.count <= 1) continue; // count claim matches input
+
+    const key = `${nearest.canonical}|count`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    const ctxStart = Math.max(0, cmIdx - 60);
+    const ctxEnd = Math.min(prose.length, cmIdx + cm[0].length + 60);
+    findings.push({
+      quarter: nearest.canonical,
+      context: prose.slice(ctxStart, ctxEnd),
+      reason:
+        `${nearest.canonical} described as having a "${cm[0]}" but input shows ` +
+        `count=${inputQ.count} trades that quarter (likely conflated with a different ` +
+        `single-trade outlier quarter)`,
+      type: "count_mismatch",
+    });
+  }
+
+  return findings;
+}
+
 // --- Price detection ---
 
 const DOLLAR_FIGURE = /\$(\d{1,3}(?:,\d{3})+)(?!\d)/g;
@@ -872,6 +1087,19 @@ export function validateStreetGeneration(
           severity: "hard",
         });
       }
+      // v8 (Phase 4.1 / Task 3.7): temporal pairing. Catches price-quarter
+      // and direction-quarter pairing fabrications that numeric_ungrounded
+      // misses (the quarter exists, but the model paired it with a wrong
+      // price or claimed a direction inconsistent with q-over-q data).
+      const temporal = findTemporalPairings(sectionText, input);
+      for (const t of temporal) {
+        violations.push({
+          rule: "temporal_pairing",
+          sectionId: section.id,
+          excerpt: `${t.type}: ${t.reason}; ctx: ${t.context}`,
+          severity: "hard",
+        });
+      }
     }
 
     // Precise sale price (rounding violation)
@@ -1147,6 +1375,18 @@ export function validateSectionsSubset(
           rule: "numeric_ungrounded",
           sectionId: section.id,
           excerpt: `"${f.raw}" (${f.type}) — ${f.reason}; ctx: ${f.context}`,
+          severity: "hard",
+        });
+      }
+      // v8 (Phase 4.1 / Task 3.7): temporal pairing. Same mirror so the
+      // market call retries when it pairs a quarter with the wrong price
+      // or a contradictory direction.
+      const temporal = findTemporalPairings(sectionText, input);
+      for (const t of temporal) {
+        violations.push({
+          rule: "temporal_pairing",
+          sectionId: section.id,
+          excerpt: `${t.type}: ${t.reason}; ctx: ${t.context}`,
           severity: "hard",
         });
       }
@@ -1426,6 +1666,8 @@ function formatRuleViolations(
       return formatMissingSectionId(output);
     case "numeric_ungrounded":
       return formatNumericUngrounded(violations);
+    case "temporal_pairing":
+      return formatTemporalPairing(violations);
     case "total_word_ceiling":
       return formatTotalWordCeiling(output);
     case "invalid_json_shape":
@@ -1667,6 +1909,24 @@ function formatMissingSectionId(
   return [
     `**missing_section_id**: Your output is missing required sections: ${missing.join(", ")}. The sections array MUST contain all 8 ids in canonical order: about, homes, amenities, market, gettingAround, schools, bestFitFor, differentPriorities. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
   ];
+}
+
+function formatTemporalPairing(violations: ValidatorViolation[]): string[] {
+  const lines = [
+    `**temporal_pairing**: Your market section paired ${violations.length} quarter mention${violations.length === 1 ? "" : "s"} with the wrong price or direction. The quarter exists in the input data, but the price you stated alongside it doesn't match the input value (price_mismatch), or the direction word you used contradicts the actual q-over-q change (direction_mismatch).`,
+    ``,
+    `Specific findings:`,
+  ];
+  for (const v of violations) {
+    lines.push(`  - ${v.excerpt}`);
+  }
+  lines.push(
+    ``,
+    `Fix: For each quarter mention, look at input.quarterlyTrend. The price you cite within ~50 chars of the quarter must match input.quarterlyTrend[that quarter].typical within $25K (or 5%). The direction word ("rose", "softened", "pushed higher", "declined") must agree with the actual change from the prior quarter — do not describe a quarter as "higher" if the input shows it flat or down vs the prior.`,
+    ``,
+    `Common failure mode: conflating two different outlier quarters. If only one quarter has a single-trade outlier price, name only THAT quarter. Do not transfer the outlier description to a different, well-trafficked quarter.`,
+  );
+  return lines;
 }
 
 function formatNumericUngrounded(violations: ValidatorViolation[]): string[] {

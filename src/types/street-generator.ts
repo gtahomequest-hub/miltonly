@@ -68,6 +68,7 @@ export type ValidatorRule =
   | "sales_register_leak"
   | "market_template_parrot"
   | "numeric_ungrounded"
+  | "temporal_pairing"
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---
