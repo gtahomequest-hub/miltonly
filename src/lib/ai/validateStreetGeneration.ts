@@ -644,11 +644,17 @@ export function findTemporalPairings(
   const quarterPattern = /\bQ([1-4])\s*['']?(\d{2,4})\b/g;
   const matches = Array.from(prose.matchAll(quarterPattern));
 
-  // Check 1: price + quarter pairing. For each sale price in the prose, find
-  // its NEAREST quarter mention (within 50 chars). Only check that pairing.
-  // This avoids attributing a price to a quarter that's farther than the one
-  // the prose actually paired it with — e.g., "Q3 2024 typical near $875K
-  // down through Q3 2025" should attribute $875K to Q3 2024, not Q3 2025.
+  // Check 1: price + quarter pairing. Pair each price with its SYNTACTICALLY
+  // associated quarter, not just the nearest quarter by char distance. The
+  // 3.8a audit found 3/3 false positives with the naive nearest-quarter
+  // heuristic (e.g., "Q3 2024 typical near $875K down through Q3 2025"
+  // mis-attributed $875K to Q3 2025).
+  //
+  // Pairing rules (in priority order):
+  //  (a) "$X in Q[1-4] [YYYY]" within ~15 chars after price → that quarter
+  //  (b) Most recent quarter mention BEFORE the price within 50 chars → that
+  //      quarter (the natural "Qn YYYY ... $X" prose order)
+  //  (c) Otherwise no pairing — price stands alone, no fire
   //
   // Strict price form: either comma-separated ($X,XXX[,XXX]+) OR K/M-suffix
   // ($X[.XX]K|M). Bare "$1" or "$830" without comma or suffix is rejected to
@@ -660,20 +666,33 @@ export function findTemporalPairings(
     const value = parseDollarTokenForGrounding(priceStr);
     if (value === null) continue;
     const pmIdx = pm.index ?? 0;
+    const pmEnd = pmIdx + priceStr.length;
 
     // Skip rent prices — only check sale prices against quarterly typical.
-    const localCtx = prose.slice(Math.max(0, pmIdx - 30), pmIdx + priceStr.length + 30);
+    const localCtx = prose.slice(Math.max(0, pmIdx - 30), pmEnd + 30);
     if (/\b(lease|rent|month|tenant|monthly)\b/i.test(localCtx)) continue;
 
-    // Find nearest quarter (within 50 chars).
-    let nearest: { canonical: string; distance: number; idx: number } | null = null;
-    for (const qm of matches) {
-      const qIdx = qm.index ?? 0;
-      const distance = Math.abs(qIdx - pmIdx);
-      if (distance > 50) continue;
-      if (!nearest || distance < nearest.distance) {
-        nearest = { canonical: normalizeQuarterLabel(qm[0]), distance, idx: qIdx };
+    // (a) Lookforward: "$X in Qn YYYY" within 15 chars after price end.
+    const forwardCtx = prose.slice(pmEnd, Math.min(prose.length, pmEnd + 25));
+    const forwardMatch = forwardCtx.match(/^\s*(?:in\s+)?(Q[1-4]\s*['']?\d{2,4})/i);
+    let nearest: { canonical: string; idx: number } | null = null;
+    if (forwardMatch) {
+      const qLocal = forwardMatch.index ?? 0;
+      const qIdx = pmEnd + qLocal + (forwardMatch[0].length - forwardMatch[1].length);
+      nearest = { canonical: normalizeQuarterLabel(forwardMatch[1]), idx: qIdx };
+    } else {
+      // (b) Lookbehind: most recent quarter mention before price within 50 chars.
+      let mostRecent: { canonical: string; idx: number; distance: number } | null = null;
+      for (const qm of matches) {
+        const qIdx = qm.index ?? 0;
+        if (qIdx >= pmIdx) continue; // must be before price
+        const distance = pmIdx - qIdx;
+        if (distance > 50) continue;
+        if (!mostRecent || distance < mostRecent.distance) {
+          mostRecent = { canonical: normalizeQuarterLabel(qm[0]), idx: qIdx, distance };
+        }
       }
+      if (mostRecent) nearest = { canonical: mostRecent.canonical, idx: mostRecent.idx };
     }
     if (!nearest) continue;
 
@@ -699,26 +718,39 @@ export function findTemporalPairings(
     }
   }
 
-  for (const m of matches) {
-    const raw = m[0];
-    const canonical = normalizeQuarterLabel(raw);
-    const idx = m.index ?? 0;
-    const ctxStart = Math.max(0, idx - 80);
-    const ctxEnd = Math.min(prose.length, idx + raw.length + 80);
-    const context = prose.slice(ctxStart, ctxEnd);
+  // Check 2: direction word + quarter pairing.
+  // Restructured per 3.8a fix: scan for direction words first, then pair each
+  // with its NEAREST quarter mention. This avoids the per-quarter mis-
+  // attribution bug where a direction word near one quarter would falsely
+  // fire on a different quarter that happened to be in its ±80 char context
+  // (e.g., "softened by Q3 2025, though a single sale in Q3 2026 reached..."
+  // where "softened" applies to Q3 2025 but old logic also fired on Q3 2026).
+  const upPattern = /\b(rose|climbed|firmed|surged|jumped|spiked|rebounded|increased|pushed[^.]{0,15}?higher|composite[^.]{0,15}?higher|all-type[^.]{0,15}?higher)\b/gi;
+  const downPattern = /\b(softened|dropped|declined|fell|slipped|pushed[^.]{0,15}?lower|sank|cooled|compressed)\b/gi;
+  type DirectionFinding = { idx: number; word: string; dir: "up" | "down" };
+  const directionMatches: DirectionFinding[] = [];
+  for (const dm of Array.from(prose.matchAll(upPattern))) {
+    directionMatches.push({ idx: dm.index ?? 0, word: dm[0], dir: "up" });
+  }
+  for (const dm of Array.from(prose.matchAll(downPattern))) {
+    directionMatches.push({ idx: dm.index ?? 0, word: dm[0], dir: "down" });
+  }
+  for (const dirFind of directionMatches) {
+    // Find nearest quarter (within 50 chars in either direction).
+    let nearestQ: { canonical: string; idx: number; distance: number } | null = null;
+    for (const qm of matches) {
+      const qIdx = qm.index ?? 0;
+      const distance = Math.abs(qIdx - dirFind.idx);
+      if (distance > 50) continue;
+      if (!nearestQ || distance < nearestQ.distance) {
+        nearestQ = { canonical: normalizeQuarterLabel(qm[0]), idx: qIdx, distance };
+      }
+    }
+    if (!nearestQ) continue;
 
-    const inputTypical = trendMap.get(canonical);
+    const inputTypical = trendMap.get(nearestQ.canonical);
     if (inputTypical === undefined) continue;
-
-    // Check 2: direction word + quarter pairing (within ~80 chars, the full ctx).
-    // Word lists tuned to common up/down verbs the auditor has surfaced.
-    const upPattern = /\b(rose|climbed|firmed|surged|jumped|spiked|rebounded|increased|pushed[^.]{0,15}?higher|composite[^.]{0,15}?higher|all-type[^.]{0,15}?higher)\b/i;
-    const downPattern = /\b(softened|dropped|declined|fell|slipped|pushed[^.]{0,15}?lower|sank|cooled|compressed)\b/i;
-    const isStatedUp = upPattern.test(context);
-    const isStatedDown = downPattern.test(context);
-    if (!isStatedUp && !isStatedDown) continue;
-
-    const prev = prevMap.get(canonical);
+    const prev = prevMap.get(nearestQ.canonical);
     if (prev === undefined) continue;
 
     const change = (inputTypical - prev) / prev;
@@ -726,26 +758,23 @@ export function findTemporalPairings(
       change > 0.05 ? "up" :
       change < -0.05 ? "down" :
       "flat";
-    const statedDirection: "up" | "down" | null =
-      isStatedUp && !isStatedDown ? "up" :
-      isStatedDown && !isStatedUp ? "down" :
-      null;
-    if (statedDirection === null) continue; // ambiguous (both up and down phrases) — skip
-
     const opposite =
-      (statedDirection === "up" && actualDirection === "down") ||
-      (statedDirection === "down" && actualDirection === "up");
+      (dirFind.dir === "up" && actualDirection === "down") ||
+      (dirFind.dir === "down" && actualDirection === "up");
     if (!opposite) continue;
 
-    const key = `${canonical}|direction`;
+    const key = `${nearestQ.canonical}|direction`;
     if (seenKeys.has(key)) continue;
     seenKeys.add(key);
+    const ctxStart = Math.max(0, Math.min(dirFind.idx, nearestQ.idx) - 30);
+    const ctxEnd = Math.min(prose.length, Math.max(dirFind.idx + dirFind.word.length, nearestQ.idx + 7) + 30);
     findings.push({
-      quarter: canonical,
-      context,
+      quarter: nearestQ.canonical,
+      context: prose.slice(ctxStart, ctxEnd),
       reason:
-        `${canonical} described as ${statedDirection} but actual q-over-q change vs prior is ` +
-        `${actualDirection} ($${Math.round(prev).toLocaleString("en-US")} → ` +
+        `${nearestQ.canonical} described as ${dirFind.dir} (via "${dirFind.word}") but actual ` +
+        `q-over-q change vs prior is ${actualDirection} ` +
+        `($${Math.round(prev).toLocaleString("en-US")} → ` +
         `$${Math.round(inputTypical).toLocaleString("en-US")})`,
       type: "direction_mismatch",
     });
@@ -758,37 +787,40 @@ export function findTemporalPairings(
   // outlier quarters — Sonnet 3a: claimed "single ... trade in Q3 2025"
   // when input has Q3 '25 count=6 and Q3 '26 count=1).
   //
-  // Detection runs across the whole prose (not per-quarter context), then
-  // associates each match with its nearest quarter mention.
+  // Co-location requirement (3.8a fix): the count phrase and the quarter
+  // MUST appear in the same prepositional phrase. Specifically, the rule
+  // only fires when "in Q[1-4] [YYYY]" appears within 25 chars after the
+  // count phrase end. Without this constraint, prose like "...by Q3 2025,
+  // though a single outlier sale in Q3 2026..." mis-attributed the count
+  // claim to Q3 2025 because Q3 2025 was nearer in absolute char distance.
   const countPattern = /\b(single|lone|one|sole|isolated|individual|outlier|standalone)[^.]{0,30}?\b(trade|sale|transaction)\b/gi;
   const countMatches = Array.from(prose.matchAll(countPattern));
   for (const cm of countMatches) {
     const cmIdx = cm.index ?? 0;
-    // Find the nearest quarter mention within 60 chars
-    let nearest: { match: RegExpMatchArray; canonical: string; distance: number } | null = null;
-    for (const qm of matches) {
-      const qIdx = qm.index ?? 0;
-      const distance = Math.abs(qIdx - cmIdx);
-      if (distance > 60) continue;
-      if (!nearest || distance < nearest.distance) {
-        nearest = { match: qm, canonical: normalizeQuarterLabel(qm[0]), distance };
-      }
-    }
-    if (!nearest) continue;
-    const inputQ = trend.find(q => q.canonical === nearest!.canonical);
+    const cmEnd = cmIdx + cm[0].length;
+
+    // Require "in Q[1-4] [YYYY]" within 25 chars AFTER the count phrase.
+    // The 25-char window covers natural prose like "single outlier sale in
+    // Q3 2026" without picking up a quarter mentioned later in the sentence.
+    const forwardCtx = prose.slice(cmEnd, Math.min(prose.length, cmEnd + 25));
+    const colocated = forwardCtx.match(/^\s*(?:in|during|over|across)?\s*(Q[1-4]\s*['']?\d{2,4})/i);
+    if (!colocated) continue; // no co-located quarter — don't fire (avoids 3.8a false positives)
+
+    const canonical = normalizeQuarterLabel(colocated[1]);
+    const inputQ = trend.find(q => q.canonical === canonical);
     if (!inputQ) continue; // numeric_ungrounded handles
     if (inputQ.count <= 1) continue; // count claim matches input
 
-    const key = `${nearest.canonical}|count`;
+    const key = `${canonical}|count`;
     if (seenKeys.has(key)) continue;
     seenKeys.add(key);
     const ctxStart = Math.max(0, cmIdx - 60);
-    const ctxEnd = Math.min(prose.length, cmIdx + cm[0].length + 60);
+    const ctxEnd = Math.min(prose.length, cmEnd + 60);
     findings.push({
-      quarter: nearest.canonical,
+      quarter: canonical,
       context: prose.slice(ctxStart, ctxEnd),
       reason:
-        `${nearest.canonical} described as having a "${cm[0]}" but input shows ` +
+        `${canonical} described as having a "${cm[0]}" but input shows ` +
         `count=${inputQ.count} trades that quarter (likely conflated with a different ` +
         `single-trade outlier quarter)`,
       type: "count_mismatch",

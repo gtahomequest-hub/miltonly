@@ -189,6 +189,54 @@ const TESTS: TestCase[] = [
     expectFireType: ["price_mismatch"],
     expectFireOnQuarter: ["Q3 2025"],
   },
+  {
+    name: "15. False-positive guard: 'from Qa down through Qb' with mid-prose price",
+    input: asletonInput(),
+    // From 3.8a audit (limestone-class): "from Q3 2024 typical of $880,000 down through Q3 2025".
+    // Asleton Q3 '24 = $880,600. "$880,000" within tolerance.
+    // Old logic would mis-attribute $880K to Q3 2025 (closer chars) → false positive.
+    // New lookbehind logic: $880K's most recent quarter before is Q3 2024 → match → no fire.
+    prose: "From a Q3 2024 typical of $880,000 down through Q3 2025, the corridor compressed.",
+    expectFireCount: 0,
+  },
+  {
+    name: "16. False-positive guard: 'by Qa, then by Qb' chained quarter+price pattern",
+    input: asletonInput(),
+    // Q3 '25 = $833K, Q4 '25 = $926K. Each price pairs with the immediately
+    // preceding quarter via lookbehind.
+    prose: "By Q3 2025, the typical price had settled around $833,000, and by Q4 2025, prices reached $930,000 with low supply.",
+    expectFireCount: 0,
+  },
+  {
+    name: "17. False-positive guard: count_mismatch with non-paired adjacent quarter",
+    input: asletonInput(),
+    // 3.8a audit case (asleton run 2 finalViolations): "by Q3 2025, though a
+    // single outlier sale in Q3 2026 reached $1,150,000". The "single outlier
+    // sale" is co-located with "in Q3 2026" (count=1, MATCHES) — should NOT
+    // fire on Q3 2025 (count=6) just because Q3 2025 sits earlier in the
+    // sentence. Old nearest-quarter logic mis-attributed and fired.
+    prose: "Prices softened by Q3 2025, though a single outlier sale in Q3 2026 reached $1,150,000.",
+    expectFireCount: 0,
+  },
+  {
+    name: "18. count_mismatch still fires when 'in Qn YYYY' co-located after count phrase",
+    input: asletonInput(),
+    // Sonnet 3a actual prose. "in Q3 2025" appears within 25 chars after
+    // "single ... trade". Q3 '25 count=6 → fires count_mismatch.
+    prose: "A single detached-influenced trade in Q3 2025 pushed the composite higher.",
+    expectFireCount: 1,
+    expectFireType: ["count_mismatch"],
+    expectFireOnQuarter: ["Q3 2025"],
+  },
+  {
+    name: "19. count_mismatch does NOT fire when count phrase is far from any quarter",
+    input: asletonInput(),
+    // Count phrase and quarter separated by > 25 chars of intervening prose
+    // (sentence boundary). Without co-location, the count claim isn't being
+    // attributed to that specific quarter.
+    prose: "A single trade dominated the upper end of the range. Earlier in the period, Q3 2025 saw normal volume.",
+    expectFireCount: 0,
+  },
 ];
 
 let passed = 0;
