@@ -968,6 +968,54 @@ interface RunHalfParams {
   maxAttempts: number;
 }
 
+/**
+ * Parse an LLM response into a candidate generation output, handling prose
+ * preamble + invalid-shape cases as recoverable violations rather than throws.
+ *
+ * Returns either { candidate, violation: null } on success or
+ * { candidate: null, violation } when the response is unparseable or missing
+ * required keys. The violation is always rule="invalid_json_shape" so the
+ * existing retry-feedback formatter applies.
+ *
+ * Exported for unit testing — runHalfWithRetry below is the only production
+ * caller. Per Path A Part 1 (Sonnet's 33% failure mode at n=3 was prose-only
+ * responses with no JSON; previously thrown as fatal, now retried within
+ * the existing 5-attempt budget).
+ */
+export function tryParseGenerationResponse(rawText: string, expectsFaq: boolean): {
+  candidate: { sections?: StreetSection[]; faq?: StreetFAQItem[] } | null;
+  violation: ValidatorViolation | null;
+} {
+  const cleaned = stripTextPreambleBeforeJson(rawText);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return {
+      candidate: null,
+      violation: {
+        rule: "invalid_json_shape",
+        excerpt: cleaned.length > 0 ? cleaned.slice(0, 80) : "(empty response)",
+        severity: "hard",
+      },
+    };
+  }
+  const candidate = parsed as { sections?: StreetSection[]; faq?: StreetFAQItem[] };
+  if (!candidate || !Array.isArray(candidate.sections)) {
+    return {
+      candidate: null,
+      violation: { rule: "invalid_json_shape", excerpt: "missing sections array", severity: "hard" },
+    };
+  }
+  if (expectsFaq && !Array.isArray(candidate.faq)) {
+    return {
+      candidate: null,
+      violation: { rule: "invalid_json_shape", excerpt: "missing faq array", severity: "hard" },
+    };
+  }
+  return { candidate, violation: null };
+}
+
 async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
   const { halfLabel, systemPrompt, expectedSectionIds, expectsFaq, input, maxAttempts } = params;
   const attempts: Phase41Attempt[] = [];
@@ -998,39 +1046,30 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
     totalOut += response.outputTokens;
     totalCost += response.costUsd;
 
-    let parsed: unknown;
-    const cleaned = stripTextPreambleBeforeJson(response.text);
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch (e) {
+    // Parse-retry (Path A Part 1): convert unparseable responses + missing-
+    // shape responses into recoverable invalid_json_shape violations that
+    // trigger retry-with-feedback within the existing 5-attempt budget.
+    // Previously these threw as fatal, killing the whole generation —
+    // accounted for Sonnet's 33% failure mode at n=3 (model emits prose
+    // with no JSON; helper finds no `{`; JSON.parse throws).
+    const parseResult = tryParseGenerationResponse(response.text, expectsFaq);
+    const parseViolation = parseResult.violation;
+    if (parseViolation) {
+      const violations: ValidatorViolation[] = [{ ...parseViolation, sectionId: undefined }];
       attempts.push({
         attemptN: attempt,
-        violations: [{ rule: 'invalid_json_shape', excerpt: cleaned.slice(0, 80), severity: 'hard' }],
+        violations,
         tokens: { in: response.inputTokens, out: response.outputTokens },
         costUsd: response.costUsd,
       });
-      throw new Error(`Phase41 ${halfLabel} JSON parse failure: ${(e as Error).message}`);
+      console.log(
+        `[Phase41/${halfLabel}] ${input.street.slug} attempt ${attempt}: invalid_json_shape (${parseViolation.excerpt}) | tokens ${response.inputTokens}in/${response.outputTokens}out | $${response.costUsd.toFixed(5)} — RETRY`
+      );
+      lastViolations = violations;
+      continue;
     }
-
-    const candidate = parsed as { sections?: StreetSection[]; faq?: StreetFAQItem[] };
-    if (!candidate || !Array.isArray(candidate.sections)) {
-      attempts.push({
-        attemptN: attempt,
-        violations: [{ rule: 'invalid_json_shape', excerpt: `${halfLabel} missing sections array`, severity: 'hard' }],
-        tokens: { in: response.inputTokens, out: response.outputTokens },
-        costUsd: response.costUsd,
-      });
-      throw new Error(`Phase41 ${halfLabel} output missing sections array`);
-    }
-    if (expectsFaq && !Array.isArray(candidate.faq)) {
-      attempts.push({
-        attemptN: attempt,
-        violations: [{ rule: 'invalid_json_shape', excerpt: `${halfLabel} missing faq array`, severity: 'hard' }],
-        tokens: { in: response.inputTokens, out: response.outputTokens },
-        costUsd: response.costUsd,
-      });
-      throw new Error(`Phase41 ${halfLabel} output missing faq array`);
-    }
+    // Post-violation-check, candidate is guaranteed non-null with valid shape.
+    const candidate = parseResult.candidate!;
 
     // Apply post-processors per-half BEFORE partial validation. Without this,
     // the partial validator catches precise_price / faq_answer_length
@@ -1038,7 +1077,7 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
     // each half burns retries chasing fixable issues. Post-processors are
     // idempotent so the combined-level call later is a no-op.
     const roundedHalf = roundPricesInOutput({
-      sections: candidate.sections,
+      sections: candidate.sections!,
       faq: expectsFaq && candidate.faq ? candidate.faq : [],
     });
     const sectionsForValidate = roundedHalf.sections;
