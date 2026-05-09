@@ -21,49 +21,58 @@ export default async function StreetsIndexPage() {
     orderBy: { _count: { streetSlug: "desc" } },
   });
 
-  // Get the clean street name + neighbourhood for each slug
-  const streetData = await Promise.all(
-    streets.map(async (s) => {
-      const sample = await prisma.listing.findFirst({
-        where: { streetSlug: s.streetSlug, streetName: { not: null } },
-        select: { streetName: true, neighbourhood: true },
-      });
+  // Hotfix 2026-05-09: replaced per-street N+1 loop (4 queries × 431 streets =
+  // ~1,724 concurrent queries) with 4 bulk queries. The N+1 pattern exhausted
+  // the Vercel serverless → Neon connection pool post-Path-A redeploy and
+  // triggered Application error: digest 306433527.
+  const slugs = streets.map((s) => s.streetSlug);
 
-      // Check if this street has active listings
-      const activeCount = await prisma.listing.count({
-        where: { streetSlug: s.streetSlug, status: "active", permAdvertise: true },
-      });
+  // Bulk #1: sample streetName + neighbourhood per slug
+  const samples = await prisma.listing.findMany({
+    where: { streetSlug: { in: slugs }, streetName: { not: null } },
+    distinct: ["streetSlug"],
+    select: { streetSlug: true, streetName: true, neighbourhood: true },
+  });
+  const sampleMap = new Map(samples.map((r) => [r.streetSlug, r]));
 
-      // Check if it has a published street page
-      const hasPage = await prisma.streetContent.findUnique({
-        where: { streetSlug: s.streetSlug, status: "published" },
-        select: { streetSlug: true, publishedAt: true },
-      });
+  // Bulk #2: active counts per slug
+  const activeRows = await prisma.listing.groupBy({
+    by: ["streetSlug"],
+    _count: true,
+    where: { streetSlug: { in: slugs }, status: "active", permAdvertise: true },
+  });
+  const activeMap = new Map(activeRows.map((r) => [r.streetSlug, r._count]));
 
-      // Check if recently queued (new street)
-      const inQueue = await prisma.streetQueue.findUnique({
-        where: { streetSlug: s.streetSlug },
-        select: { createdAt: true },
-      });
+  // Bulk #3: published street pages
+  const publishedRows = await prisma.streetContent.findMany({
+    where: { streetSlug: { in: slugs }, status: "published" },
+    select: { streetSlug: true },
+  });
+  const publishedSet = new Set(publishedRows.map((r) => r.streetSlug));
 
-      const isNew = inQueue
-        ? Date.now() - new Date(inQueue.createdAt).getTime() < 7 * 86400000
-        : false;
+  // Bulk #4: recently queued (last 7 days)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+  const queuedRows = await prisma.streetQueue.findMany({
+    where: { streetSlug: { in: slugs }, createdAt: { gte: sevenDaysAgo } },
+    select: { streetSlug: true },
+  });
+  const newSet = new Set(queuedRows.map((r) => r.streetSlug));
 
-      return {
-        slug: s.streetSlug,
-        name: sample?.streetName || s.streetSlug,
-        neighbourhood: sample?.neighbourhood
-          ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
-          : config.CITY_NAME,
-        count: s._count,
-        activeCount,
-        avgPrice: Math.round(s._avg.price || 0),
-        hasPage: !!hasPage,
-        isNew,
-      };
-    })
-  );
+  const streetData = streets.map((s) => {
+    const sample = sampleMap.get(s.streetSlug);
+    return {
+      slug: s.streetSlug,
+      name: sample?.streetName || s.streetSlug,
+      neighbourhood: sample?.neighbourhood
+        ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
+        : config.CITY_NAME,
+      count: s._count,
+      activeCount: activeMap.get(s.streetSlug) ?? 0,
+      avgPrice: Math.round(s._avg.price || 0),
+      hasPage: publishedSet.has(s.streetSlug),
+      isNew: newSet.has(s.streetSlug),
+    };
+  });
 
   // Get unique neighbourhoods for filter chips
   const neighbourhoods = Array.from(new Set(streetData.map((s) => s.neighbourhood)))
