@@ -50,20 +50,14 @@ import path from "node:path";
   // Drop malformed slugs — no canonical redirect for those; route handles 404.
   for (const s of Array.from(universe)) if (isMalformedSlug(s)) universe.delete(s);
 
-  // Per-slug transaction counts (same DB2 GROUP BY as backfill dedupeByIdentity)
-  const txCounts = new Map<string, number>();
-  if (soldDb) {
-    const slugs = Array.from(universe);
-    const rows = (await soldDb`
-      SELECT street_slug, COUNT(*)::int AS n
-      FROM sold.sold_records
-      WHERE street_slug = ANY(${slugs}::text[])
-      GROUP BY street_slug
-    `) as unknown as Array<{ street_slug: string; n: number }>;
-    for (const r of rows) txCounts.set(r.street_slug, r.n);
-  }
-
-  // Group by identityKey, pick canonical by (tx desc, slug length asc, alpha asc)
+  // Group by identityKey. Canonical winner is the deriveIdentity-derived
+  // full-word slug for the group, not the most-frequent abbreviated MLS form.
+  // Prior logic ranked by DB2 sold_records tx-count, which always favored
+  // abbreviated suffixes (crt, cres, blvd) since MLS ingest writes those.
+  // That made the middleware 301 canonical → abbreviated, undoing the R2
+  // StreetGeneration migration at the URL layer. Render path is slug-agnostic
+  // via resolveSiblingSlugs, so the abbreviated slugs in DB2 sold/analytics
+  // tables continue to be unioned in at query time.
   const groups = new Map<string, string[]>();
   for (const s of Array.from(universe)) {
     const id = deriveIdentity(s);
@@ -75,16 +69,11 @@ import path from "node:path";
   const canonicalMap: Record<string, string> = {};
   for (const [, members] of Array.from(groups.entries())) {
     if (members.length === 1) continue; // singletons don't need redirects
-    const sorted = members.slice().sort((a, b) => {
-      const txa = txCounts.get(a) ?? 0;
-      const txb = txCounts.get(b) ?? 0;
-      if (txa !== txb) return txb - txa;
-      if (a.length !== b.length) return a.length - b.length;
-      return a < b ? -1 : a > b ? 1 : 0;
-    });
-    const canonical = sorted[0];
-    for (const m of sorted.slice(1)) {
-      canonicalMap[m] = canonical;
+    // All members share the same identityKey, so their canonicalSlug is
+    // identical. Use the first member's deriveIdentity to get it.
+    const canonical = deriveIdentity(members[0])?.canonicalSlug ?? members[0];
+    for (const m of members) {
+      if (m !== canonical) canonicalMap[m] = canonical;
     }
   }
 
