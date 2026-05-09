@@ -90,6 +90,23 @@ interface RawLeaseByBed {
   typical: string | null;
 }
 
+// Per-row lease record for sample-based grounded content (Part 4, 2026-05-09).
+// Pulled from DB2 sold.sold_records; cap=10 most-recent in 12mo window.
+interface RawLeaseRecord {
+  mls_number: string;
+  address: string;
+  list_price: string | null;
+  sold_price: string | null;
+  beds: number | null;
+  baths: string | null;
+  sqft_range: string | null;
+  days_on_market: number | null;
+  property_type: string | null;
+  sold_date: Date;
+  lease_term: string | null;
+  furnished: string | null;
+}
+
 interface RawRangeRow {
   n: number;
   lo: string | null;
@@ -128,6 +145,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     soldSalesByType,
     soldLeasesByType,
     leasesByBed,
+    leasesPerRow,
     soldRangeRows,
     soldCoordsRows,
     soldNeighbourhoodRows,
@@ -185,6 +203,21 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                     AND sold_date >= NOW() - INTERVAL '12 months'
                   GROUP BY bed
                   ORDER BY bed`
+    ),
+    // Per-row recent lease records (Part 4, 2026-05-09). Cap=10 most-recent
+    // in 12mo window. Feeds buildLeaseSampleRecords which applies k-anon
+    // gating before exposing to the prompt input.
+    querySold<RawLeaseRecord>(
+      (db) => db`SELECT mls_number, address, list_price, sold_price,
+                        beds, baths, sqft_range, days_on_market,
+                        property_type, sold_date, lease_term, furnished
+                  FROM sold.sold_records
+                  WHERE street_slug = ANY(${siblingSlugs}::text[])
+                    AND perm_advertise = TRUE
+                    AND transaction_type = 'For Lease'
+                    AND sold_date >= NOW() - INTERVAL '12 months'
+                  ORDER BY sold_date DESC
+                  LIMIT 10`
     ),
     querySold<RawRangeRow>(
       (db) => db`SELECT COUNT(*)::int AS n,
@@ -373,6 +406,22 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 
   // ─── leaseActivity.byBed (optional) ─────────────────────────────────
   const leaseActivity = buildLeaseActivity(leasesByBed, leasesCount);
+
+  // ─── leaseActivity.recentRecords + rangeStats (Part 4, k-anon gated) ─
+  const sampleResult = buildLeaseSampleRecords(leasesPerRow, leasesCount);
+  if (leaseActivity && sampleResult?.recentRecords) {
+    leaseActivity.recentRecords = sampleResult.recentRecords;
+  }
+  if (leaseActivity && sampleResult?.rangeStats) {
+    leaseActivity.rangeStats = sampleResult.rangeStats;
+  }
+
+  // ─── Coverage instrumentation (Part 4 step 6.5) ─────────────────────
+  // Side-effect log for empirical k-anon coverage measurement. Failure to
+  // write here MUST NOT block generation — fire-and-forget try/catch.
+  void recordLeaseCoverage(slug, leasesCount, sampleResult).catch((e) =>
+    console.warn(`[lease-coverage-log] write failed for ${slug}: ${(e as Error).message}`),
+  );
 
   // ─── quarterlyTrend (optional; k-anon gated) ────────────────────────
   const quarterlyTrend =
@@ -621,6 +670,130 @@ function buildLeaseActivity(
   }
   if (Object.keys(byBed).length === 0) return undefined;
   return { byBed };
+}
+
+// ---------------------------------------------------------------------------
+// PII redaction for lease-record addresses passed to the prompt.
+// Strips trailing ", City, ON Postal" pattern + unit suffix. Keeps street
+// number + street name. Per Part 4 spec (2026-05-09).
+//
+// Examples:
+//   "830 Megson Terrace 622, Milton, ON L9T 9M7"  → "830 Megson Terrace"
+//   "45 Main Street W, Milton, ON L9T 1A1"        → "45 Main Street W"
+//   "12 Maple Ave Unit 5, Milton, ON L9T 4Z2"     → "12 Maple Ave"
+// ---------------------------------------------------------------------------
+export function redactAddressForPrompt(addr: string): string {
+  if (!addr) return "";
+  // Take only the first comma-separated segment (drops City/Province/Postal).
+  let segment = addr.split(",")[0].trim();
+  // Strip trailing "Unit N" / "Apt N" / "Suite N" / "# N" patterns.
+  segment = segment.replace(/\s+(?:unit|apt|suite|#)\s*\S+\s*$/i, "");
+  // Strip trailing bare unit number (1-4 digits at end, after street name).
+  // Pattern: "830 Megson Terrace 622" → strip the "622". Look for word
+  // boundary + 1-4 digits at end-of-string, but only if there's at least a
+  // street name (1+ word) preceding the unit number — not the leading "830".
+  segment = segment.replace(/\s+\d{1,4}\s*$/, (match, _offset, full) => {
+    // Don't strip if the only digits are at position 0 (the street number).
+    const remaining = full.slice(0, full.lastIndexOf(match));
+    return /[a-zA-Z]/.test(remaining) ? "" : match;
+  });
+  return segment.trim();
+}
+
+// ---------------------------------------------------------------------------
+// buildLeaseSampleRecords — assemble per-row records + range stats with
+// k-anon gating (Part 4, 2026-05-09).
+//
+// Three-tier gate:
+//   - count < 5  : return undefined (aggregation-only fallback preserves
+//     existing behavior on thin streets)
+//   - count 5-9  : return recentRecords only (no rangeStats; min/max
+//     requires k≥10 per existing K_ANON_RANGE discipline)
+//   - count ≥ 10 : return both recentRecords + rangeStats
+// ---------------------------------------------------------------------------
+function buildLeaseSampleRecords(
+  rows: RawLeaseRecord[],
+  leasesCount: number,
+): {
+  recentRecords?: NonNullable<StreetGeneratorInput["leaseActivity"]>["recentRecords"];
+  rangeStats?: { min: number; max: number };
+} | undefined {
+  if (leasesCount < K_ANON_PRICE) return undefined;
+  if (rows.length === 0) return undefined;
+
+  const records = rows
+    .map((r) => {
+      const listPrice = num(r.list_price);
+      const soldPrice = num(r.sold_price);
+      if (listPrice === null || soldPrice === null) return null;
+      const baths = num(r.baths);
+      const sd = r.sold_date instanceof Date ? r.sold_date : new Date(r.sold_date);
+      return {
+        mlsNumber: r.mls_number,
+        address: redactAddressForPrompt(r.address),
+        listPrice,
+        soldPrice,
+        beds: r.beds ?? 0,
+        baths: baths ?? 0,
+        sqftRange: r.sqft_range,
+        daysOnMarket: r.days_on_market ?? 0,
+        propertyType: r.property_type ?? "Unknown",
+        soldMonth: `${sd.getUTCFullYear()}-${String(sd.getUTCMonth() + 1).padStart(2, "0")}`,
+        leaseTerm: r.lease_term,
+        furnished: r.furnished,
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  if (records.length === 0) return undefined;
+
+  // rangeStats only when k≥10 (existing K_ANON_RANGE discipline applies).
+  let rangeStats: { min: number; max: number } | undefined;
+  if (leasesCount >= K_ANON_RANGE) {
+    const prices = records.map((r) => r.soldPrice).sort((a, b) => a - b);
+    if (prices.length > 0) {
+      rangeStats = { min: prices[0], max: prices[prices.length - 1] };
+    }
+  }
+
+  return { recentRecords: records, rangeStats };
+}
+
+// ---------------------------------------------------------------------------
+// Coverage instrumentation (Part 4 step 6.5).
+// Records per-street lease coverage as a side-effect of buildGeneratorInput
+// so we can empirically measure k-anon gate fire rates after Part 4 ships.
+// Table: analytics.street_lease_coverage_log — created via one-shot
+// migration script (scripts/migrate-create-lease-coverage-log.ts).
+//
+// Append-only: each generation run writes a new row with recorded_at
+// timestamp. Query latest state via DISTINCT ON (street_slug) ORDER BY
+// recorded_at DESC.
+// ---------------------------------------------------------------------------
+async function recordLeaseCoverage(
+  streetSlug: string,
+  leasesCount12mo: number,
+  sampleResult:
+    | {
+        recentRecords?: unknown;
+        rangeStats?: { min: number; max: number };
+      }
+    | undefined,
+): Promise<void> {
+  const ad = getAnalyticsDb();
+  if (!ad) return;
+  const hasRecentRecords = !!sampleResult?.recentRecords;
+  const hasRangeStats = !!sampleResult?.rangeStats;
+  const fallbackReason = hasRecentRecords
+    ? null
+    : leasesCount12mo < K_ANON_PRICE
+      ? "below_k5"
+      : "k_met_but_no_records"; // edge: k satisfied but per-row query returned 0
+  await ad`
+    INSERT INTO analytics.street_lease_coverage_log
+      (street_slug, lease_count_12mo, has_recent_records, has_range_stats, fallback_reason, recorded_at)
+    VALUES (${streetSlug}, ${leasesCount12mo}, ${hasRecentRecords}, ${hasRangeStats}, ${fallbackReason}, NOW())
+  `;
 }
 
 // ---------------------------------------------------------------------------

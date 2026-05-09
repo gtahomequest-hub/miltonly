@@ -376,6 +376,17 @@ function collectInputPrices(input: StreetGeneratorInput): number[] {
 function collectInputRents(input: StreetGeneratorInput): number[] {
   const out: number[] = [];
   for (const b of Object.values(input.leaseActivity?.byBed ?? {})) if (b.typicalRent) out.push(b.typicalRent);
+  // Part 4 (2026-05-09): per-row records expose individual rents that ARE
+  // grounded in input data. Without this, prose like "$3,200/mo for a
+  // 4-bed" would fire numeric_ungrounded even though it cites a record
+  // the prompt was given.
+  for (const r of input.leaseActivity?.recentRecords ?? []) {
+    if (r.soldPrice) out.push(r.soldPrice);
+    if (r.listPrice) out.push(r.listPrice);
+  }
+  if (input.leaseActivity?.rangeStats) {
+    out.push(input.leaseActivity.rangeStats.min, input.leaseActivity.rangeStats.max);
+  }
   return out;
 }
 

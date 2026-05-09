@@ -140,6 +140,28 @@ export interface StreetGeneratorInput {
   lotSize?: { typical: string; range: string };
   leaseActivity?: {
     byBed: Record<string, { count: number; typicalRent: number }>;
+    // Per-row recent lease records (Part 4, 2026-05-09). Populated when the
+    // street's 12-month lease count meets k-anon threshold (≥5). Cap: 10
+    // most-recent records per street. Drives grounded comp citation in the
+    // market section + housing-stock detail in homes + tenant-fit signals
+    // in bestFitFor. Address is PII-redacted (street# + streetName only).
+    recentRecords?: Array<{
+      mlsNumber: string;
+      address: string;
+      listPrice: number;
+      soldPrice: number;        // = monthly rent for For Lease records
+      beds: number;
+      baths: number;
+      sqftRange: string | null;
+      daysOnMarket: number;
+      propertyType: string;
+      soldMonth: string;        // "YYYY-MM"
+      leaseTerm: string | null;  // from sold.sold_records.lease_term (99.6% coverage)
+      furnished: string | null;  // from sold.sold_records.furnished (98.7% coverage)
+    }>;
+    // Range statistics (k-anon ≥10). Includes min/max rent across the
+    // recent-records window. Below k=10, omitted to prevent fingerprinting.
+    rangeStats?: { min: number; max: number };
   };
   quarterlyTrend?: Array<{
     quarter: string;

@@ -114,6 +114,12 @@ The good pattern weaves walkability, family-stage routing, and neighbourhood con
 **`bestFitFor`** (1 paragraph prose, 4–6 sentences)
 **This section MUST be between 110 and 150 words.** Outputs below 110 words will fail validation and force a retry. Aim for the middle of the range — too short fails, too long wastes attention budget. Who this street tends to suit. Household shape, priorities, tradeoffs the buyer accepts in exchange for what this street offers. Written as an advisor thinking aloud, not a personas list. Avoid demographic caricature. Anchor to observable facts about the stock and location. Heading: "Who this street suits."
 
+**Lease tenant-fit signals (when `input.leaseActivity.recentRecords` is present):** use the `furnished` distribution across recentRecords to characterize the rental segment — predominantly Unfurnished signals long-term anchored renters; the rare Furnished/Partially entries signal serviced/transient demand. Use `daysOnMarket` distribution from recentRecords to characterize lease velocity — fast-moving rentals indicate tight supply or attractive pricing; slow-moving rentals suggest pickier tenant pool or pricing friction.
+
+**Lease term variance gate:** only mention `leaseTerm` when the distribution across recentRecords shows non-trivial variance from the dominant 12-month pattern (presence of "Short Term Lease" or "Month To Month" entries). If 90%+ of records show the same leaseTerm value (almost always "12 Months" in this market), omit it from prose entirely — it's noise.
+
+Do NOT cite specific rents in this section — keep that in the market section.
+
 **`differentPriorities`** (1 paragraph prose, 4–6 sentences)
 **This section MUST be between 95 and 135 words.** Outputs below 95 words will fail validation and force a retry. Aim for the middle of the range — too short fails, too long wastes attention budget. Where the reader should look if their priorities sit elsewhere. Use `crossStreets[]` to name one or two specific streets by `shortName` where each named street carries its own k≥5 price confidence in the input. For each named street, state the priority difference plainly and apply the price rounding tables to any referenced price.
 

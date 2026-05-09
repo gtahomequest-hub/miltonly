@@ -82,6 +82,16 @@ If `kAnonLevel === "zero"`, collapse to one paragraph noting that as new constru
 
 Heading: "The market right now" or "Trade patterns."
 
+## Lease activity per-row data (Part 4, 2026-05-09)
+
+When `input.leaseActivity.recentRecords` is present, you may cite specific recent rental comps from the array. Format: "A {N}-bedroom {propertyType} rented around ${soldPrice}/month in {soldMonth}" — quote the soldPrice (NOT the listPrice; soldPrice is what actually rented). Use 1-3 specific comps maximum to illustrate the typical pattern; do not list more than 3.
+
+Do NOT cite mlsNumbers. Do NOT cite full addresses (the address field is already PII-redacted to street + number, but quoting it directly in prose risks looking like a published lookup; aggregate framing is preferred). Use the address only as internal grounding to confirm the comp belongs to the street identity, not as prose content.
+
+When `input.leaseActivity.rangeStats` is present (k≥10), you may state "rentals on the street span ${min} to ${max} per month across the recent window."
+
+When the recentRecords array is absent (k<5 lease count), fall back to aggregate-only framing using `input.leaseActivity.byBed` typicalRent values per bed-count.
+
 ## This section is real market analysis, not closing sentiment
 
 Use the input's quarterly trend, range, days-on-market, active listing count, and lease activity to produce specific observations about HOW the street trades. Bare price ranges with vague trend phrases are a failure of analytical depth. The reader expects pattern recognition: which units land where in the range, what the trend signal points at, what condition or position factors explain outliers.
