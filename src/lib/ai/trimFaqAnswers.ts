@@ -38,6 +38,21 @@ const MULTI_PERIOD_ABBREVS: Array<[RegExp, string]> = [
 
 function maskAbbreviations(text: string): string {
   let masked = text;
+  // Generic multi-initial pattern FIRST: "X.Y." / "X.Y.Z." / longer chains
+  // where each initial is a single uppercase letter immediately followed by
+  // a period. Catches E.W., W.I., P.F., P.F.C., U.S.A., J.K., I.B.M., etc.
+  // Must run before MULTI_PERIOD_ABBREVS so a `U.S.A.` chain is captured
+  // whole — otherwise `U.S.` gets masked first and the trailing `A.` is
+  // left dangling and counted as a sentence boundary.
+  // Two-letter words like "Mr." / "St." / "Dr." don't match (regex requires
+  // the first character to be the only letter before the period, which
+  // Mr/St/Dr fail since "M" is followed by "r" not "."). Single isolated
+  // initials like "I." or "A." also don't match — by design, they're more
+  // often actual sentence terminators than abbreviations.
+  // Found via 2026-05-09 lift-validation canary on Whitlock schools FAQ.
+  masked = masked.replace(/\b([A-Z])\.([A-Z])\.((?:[A-Z]\.)*)/g, (match) =>
+    match.replace(/\./g, SENTINEL),
+  );
   for (const [re, repl] of MULTI_PERIOD_ABBREVS) {
     masked = masked.replace(re, repl);
   }
