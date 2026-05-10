@@ -24,7 +24,11 @@ import path from "node:path";
   const analyticsDb = getAnalyticsDb();
   const soldDb = getSoldDb();
   const { deriveIdentity } = await import("@/lib/streetUtils");
-  const { isMalformedSlug } = await import("./backfill-descriptions");
+  // Import from standalone util (no top-level main() side-effect, unlike
+  // backfill-descriptions). See 2026-05-09 cleanup ledger entry — accidental
+  // re-import of backfill-descriptions previously triggered $5-10 of unintended
+  // SG generation per script run.
+  const { isMalformedSlug } = await import("@/lib/slugMalformedDetection");
 
   // Build raw universe (mirror loadCandidateUniverse)
   const universe = new Set<string>();
