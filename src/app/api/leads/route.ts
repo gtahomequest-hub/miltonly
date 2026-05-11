@@ -256,8 +256,6 @@ export async function POST(request: NextRequest) {
       });
 
       // Realtor email — preserves existing telemetry-instrumented pipeline.
-      // Attribution fields (gclid, utm_*) flow through so they appear in the
-      // kvCORE-parse text body BCC'd by notifyNewLead.
       notifyNewLead(
         {
           firstName: trimmedName,
@@ -269,13 +267,6 @@ export async function POST(request: NextRequest) {
           propertyType: propertyType || undefined,
           budget: priceRangeMax ? String(priceRangeMax) : undefined,
           bedrooms: bedroomsInt !== null ? String(bedroomsInt) : undefined,
-          gclid: (body.gclid || "").toString() || undefined,
-          utm_source: (body.utm_source || "").toString() || undefined,
-          utm_medium: (body.utm_medium || "").toString() || undefined,
-          utm_campaign: (body.utm_campaign || "").toString() || undefined,
-          utm_term: (body.utm_term || "").toString() || undefined,
-          utm_content: (body.utm_content || "").toString() || undefined,
-          landingPage: (body.landingPage || "").toString() || undefined,
         },
         lead.id
       ).catch((e) => console.error("Email notify error:", e));
