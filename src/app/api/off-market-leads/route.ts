@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyNewLead } from "@/lib/email";
+import { notifyAamirBySMS } from "@/lib/sms";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,20 +46,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Fire email to Aamir (non-blocking).
-    notifyNewLead(
-      {
-        firstName: "Off-Market Subscriber",
-        phone: phoneDigits,
-        propertyType,
-        budget,
-        bedrooms,
-        intent: "off-market list",
-        timeline: "ASAP",
-        source: source || "homepage-exclusive",
-      },
-      lead.id
-    ).catch((e) => console.error("[off-market-lead] notify error:", e));
+    // Fire email + SMS to Aamir (non-blocking). Independent .catch() so a
+    // Resend outage doesn't suppress the Twilio path, and vice versa.
+    const leadPayload = {
+      firstName: "Off-Market Subscriber",
+      phone: phoneDigits,
+      propertyType,
+      budget,
+      bedrooms,
+      intent: "off-market list",
+      timeline: "ASAP",
+      source: source || "homepage-exclusive",
+    };
+    notifyNewLead(leadPayload, lead.id).catch((e) =>
+      console.error("[off-market-lead] notify error:", e),
+    );
+    notifyAamirBySMS(leadPayload, lead.id).catch((e) =>
+      console.error("[off-market-lead] sms error:", e),
+    );
 
     return NextResponse.json({ ok: true, id: lead.id });
   } catch (err) {

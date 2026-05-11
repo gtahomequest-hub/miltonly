@@ -4,7 +4,7 @@ import { notifyNewLead } from "@/lib/email";
 import { Resend } from "resend";
 import { NextRequest, NextResponse } from "next/server";
 import { hit } from "@/lib/rateLimit";
-import { sendLeadSms } from "@/lib/twilio";
+import { notifyAamirBySMS } from "@/lib/sms";
 
 const HONEYPOT = process.env.HONEYPOT_FIELD || "company_website";
 const ADS_SOURCE = "ads-rentals-lp";
@@ -277,16 +277,20 @@ export async function POST(request: NextRequest) {
         sendAutoReply({ leadId: lead.id, email: finalEmail, firstName: trimmedName });
       }
 
-      // Twilio stub — fire-and-forget. Currently logs to console; live SMS
-      // wired but commented out until A2P 10DLC is registered.
-      sendLeadSms({
-        id: lead.id,
-        firstName: trimmedName,
-        phone: normalizedPhone,
-        bedrooms: bedroomsInt,
-        priceRangeMax: priceRangeMax,
-        timeline: moveIn,
-      }).catch((e) => console.error("Twilio stub error:", e));
+      // Twilio SMS to Aamir — redundant channel alongside email. Independent
+      // .catch() so a Twilio failure never affects the Resend send (or vice
+      // versa). The Lead row is the source of truth either way.
+      notifyAamirBySMS(
+        {
+          firstName: trimmedName,
+          phone: normalizedPhone || undefined,
+          source: ADS_SOURCE,
+          propertyType: propertyType || undefined,
+          budget: priceRangeMax ? String(priceRangeMax) : undefined,
+          timeline: moveIn,
+        },
+        lead.id,
+      ).catch((e) => console.error("[sms notify error]", e));
 
       // Renter cheat-sheet email — gated by env flag + email presence.
       // TODO: swap RESEND_FROM_EMAIL to leads@<site domain> once domain is verified in Resend dashboard
@@ -366,6 +370,7 @@ export async function POST(request: NextRequest) {
     });
 
     notifyNewLead(body, lead.id).catch((e) => console.error("Email notify error:", e));
+    notifyAamirBySMS(body, lead.id).catch((e) => console.error("[sms notify error]", e));
 
     // Auto-reply for non-ads sources (listing detail, alerts, etc.) — same
     // skip rules: skip if no email, honeypot already short-circuited above.

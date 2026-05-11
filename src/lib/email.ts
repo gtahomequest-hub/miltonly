@@ -8,7 +8,7 @@ const resend = process.env.RESEND_API_KEY
 const FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
 const TO = process.env.REALTOR_EMAIL || "";
 
-interface LeadData {
+export interface LeadData {
   firstName?: string;
   email?: string;
   phone?: string;

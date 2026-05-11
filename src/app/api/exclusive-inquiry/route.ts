@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { notifyAamirBySMS } from "@/lib/sms";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
@@ -72,6 +73,20 @@ export async function POST(req: NextRequest) {
         console.error("[email send failed]", { leadId: lead.id, source: "exclusive-listing", error: e instanceof Error ? e.message : String(e) });
       }
     }
+
+    // SMS to Aamir — redundant channel, fire-and-forget, independent of email
+    // outcome above. The Resend send and the Twilio send live on separate
+    // promise chains so a failure in one never blocks the other.
+    notifyAamirBySMS(
+      {
+        firstName: name,
+        phone,
+        source: "exclusive-listing",
+        street: address || undefined,
+        notes: message || undefined,
+      },
+      lead.id,
+    ).catch((e) => console.error("[exclusive-inquiry sms error]", e));
 
     return NextResponse.json({ ok: true });
   } catch (e) {
