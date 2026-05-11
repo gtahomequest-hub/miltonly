@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { attributionPayload } from "@/lib/attribution";
 
 interface Props {
   address: string;
@@ -28,7 +29,7 @@ export default function InquiryForm({ address, slug }: Props) {
       const res = await fetch("/api/exclusive-inquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email, message, address, slug }),
+        body: JSON.stringify({ name, phone, email, message, address, slug, ...attributionPayload() }),
       });
       if (res.ok) {
         setSent(true);

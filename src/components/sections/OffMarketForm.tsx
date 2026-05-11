@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { config } from "@/lib/config";
+import { attributionPayload } from "@/lib/attribution";
 
 export default function OffMarketForm() {
   const [propertyType, setPropertyType] = useState("");
@@ -39,7 +40,7 @@ export default function OffMarketForm() {
       const res = await fetch("/api/off-market-leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ propertyType, budget, bedrooms, phone: phoneDigits, source: "homepage-exclusive" }),
+        body: JSON.stringify({ propertyType, budget, bedrooms, phone: phoneDigits, source: "homepage-exclusive", ...attributionPayload() }),
       });
       if (!res.ok) throw new Error("Request failed");
       setSuccess(true);
