@@ -8,7 +8,6 @@ import { Trophy, MapPin, Clock, Lock } from "lucide-react";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
-import TrustStrip from "./TrustStrip";
 import ComparisonTable from "./ComparisonTable";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
@@ -43,10 +42,9 @@ interface Props {
 // Honeypot field name — must match HONEYPOT_FIELD env on /api/leads.
 const HONEYPOT_FIELD = "company_website";
 
-// Budget brackets exposed in the form. Numeric `val` matches /api/leads
-// budgetToInt() parsing — it stores as priceRangeMax on the Lead row.
-// $4,500+ uses 6000 as the upper-cap proxy so Aamir's qualification has a
-// meaningful number, not "any".
+// Budget brackets. Numeric `val` matches /api/leads budgetToInt() parsing
+// → priceRangeMax. $4,500+ uses 6000 as the upper-cap proxy so Aamir's
+// qualification has a meaningful number, not "any".
 const BUDGET_OPTIONS = [
   { val: "2500", label: "Under $2,500" },
   { val: "3500", label: "$2,500 – $3,500" },
@@ -54,17 +52,25 @@ const BUDGET_OPTIONS = [
   { val: "6000", label: "$4,500+" },
 ];
 
-// Type label injection for the dynamic headline. condo / detached / semi /
-// townhouse all map to a single word that fits the headline grammar.
+// Type-word injection for the dynamic headline AND the per-card display badge.
 const TYPE_HEADLINE_WORD: Record<string, string> = {
   condo: "condo",
   detached: "detached",
   semi: "semi-detached",
   townhouse: "townhouse",
 };
+const TYPE_DISPLAY_LABEL: Record<string, string> = {
+  condo: "Condo",
+  detached: "Detached",
+  semi: "Semi-Detached",
+  townhouse: "Townhouse",
+};
 
-// Format-as-you-type North American 10-digit phone mask. Identical to
-// OffMarketForm.tsx so users get a consistent UX across forms.
+// Email regex — same shape as /api/leads server-side check. Belt-and-suspenders
+// validation: client catches typos, server still validates on POST.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Format-as-you-type North American 10-digit phone mask. Matches OffMarketForm.
 function formatPhone(v: string): string {
   const digits = v.replace(/\D/g, "").slice(0, 10);
   if (digits.length < 4) return digits;
@@ -84,10 +90,12 @@ function AdsClientInner({
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Minimal form state — phone + budget only. firstName is auto-filled as a
-  // placeholder so the existing /api/leads ads-path validation (≥2 chars)
-  // passes without exposing a name field in this conversion-optimized variant.
+  // Form state — phone + email + budget. firstName is auto-filled per submit
+  // as `Lead ${phoneLast4}` so the existing /api/leads ads-path validation
+  // (>=2 chars) passes AND each row in the DB is identifiable when scrolling
+  // through recent leads without exposing a name field in the form.
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [budget, setBudget] = useState<string>("");
   const [honey, setHoney] = useState(""); // honeypot — must stay empty
   const [submitting, setSubmitting] = useState(false);
@@ -108,8 +116,7 @@ function AdsClientInner({
     });
   }, [searchParams]);
 
-  // Dynamic headline — inject the property-type word when ?type=condo/detached/
-  // semi/townhouse is on the URL. Falls back to plain "rentals" otherwise.
+  // Dynamic headline — inject the property-type word when ?type=… is on URL.
   const headline = useMemo(() => {
     const t = (initialType || "").toLowerCase();
     const typeWord = TYPE_HEADLINE_WORD[t];
@@ -122,13 +129,28 @@ function AdsClientInner({
     return () => { document.documentElement.style.scrollBehavior = ""; };
   }, []);
 
+  // Sticky mobile CTA → smooth-scroll to the form element. Falls back to
+  // window.scrollTo(0,0) if the form is somehow not in the DOM.
+  function scrollToForm() {
+    if (typeof window === "undefined") return;
+    const el = document.getElementById("lead-form");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
     const phoneDigits = phone.replace(/\D/g, "");
+    const trimmedEmail = email.trim();
+
     if (phoneDigits.length !== 10) {
       setError("Please enter a 10-digit phone number.");
+      return;
+    }
+    if (!trimmedEmail || !EMAIL_RE.test(trimmedEmail)) {
+      setError("Please enter a valid email address.");
       return;
     }
     if (!budget) {
@@ -140,7 +162,7 @@ function AdsClientInner({
 
     if (typeof window !== "undefined") {
       const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-      if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "2-field" });
+      if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "3-field" });
     }
 
     try {
@@ -148,26 +170,21 @@ function AdsClientInner({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // firstName placeholder — the ads path API requires ≥2 chars.
-          // We collect name on the follow-up call instead of in this form.
-          firstName: "Inbound Lead",
+          // Placeholder firstName — `Lead 0199` shape makes leads scannable
+          // in the DB. Real name comes from Aamir's follow-up call.
+          firstName: `Lead ${phoneDigits.slice(-4)}`,
           phone: phone.trim(),
-          email: "",
+          email: trimmedEmail,
           source: "ads-rentals-lp",
           intent: "renter",
           budget,
-          // Property type from ?type= URL param (still useful for Aamir's
-          // qualification even though it's not collected in the form).
           homeType: initialType || "any",
-          // Inline URL-derived tracking (form-fields-of-record).
           utm_source: tracking.utm_source,
           utm_medium: tracking.utm_medium,
           utm_campaign: tracking.utm_campaign,
           utm_term: tracking.utm_term,
           utm_content: tracking.utm_content,
           gclid: tracking.gclid,
-          // Persisted cross-page attribution wins over URL-only tracking —
-          // preserves first-touch when the user revisits after the ad click.
           ...attributionPayload(),
           [HONEYPOT_FIELD]: honey,
         }),
@@ -194,8 +211,6 @@ function AdsClientInner({
 
   return (
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
-      <TrustStrip />
-
       {/* ── SLIM HEADER ── */}
       <header className="sticky top-0 z-50 bg-[#07111f]/95 backdrop-blur border-b border-[#1e3a5f]">
         <div className="max-w-6xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
@@ -216,7 +231,7 @@ function AdsClientInner({
         </div>
       </header>
 
-      {/* ── HERO ── headline + sub + trust pills + 2-field form ── */}
+      {/* ── HERO ── headline + sub + trust pills + 3-field form ── */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <Image
@@ -247,7 +262,7 @@ function AdsClientInner({
                 {headline}
               </h1>
               <p className="text-[14px] sm:text-[17px] text-[#cbd5e1] leading-snug max-w-xl mb-3 sm:mb-5">
-                Same {REALTOR_FIRST_NAME} who&apos;s matched 750+ {config.CITY_NAME} renters. Replies in under 60 minutes.
+                Same {REALTOR_FIRST_NAME} who&apos;s done $50M+ in {config.CITY_NAME} real estate and matched 100+ renters. Replies in under 60 minutes.
               </p>
 
               {/* TRUST PILLARS — 3 pills, horizontal row, compact on mobile */}
@@ -258,7 +273,7 @@ function AdsClientInner({
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3a5f] bg-[#0c1e35] px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#cbd5e1]">
                   <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
-                  {config.realtor.yearsExperience} years in {config.CITY_NAME}
+                  {config.realtor.yearsExperience} years · $50M+ in {config.CITY_NAME}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-green-300">
                   <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
@@ -266,7 +281,7 @@ function AdsClientInner({
                 </span>
               </div>
 
-              {/* Live activity badge — kept compact below pills, desktop-prominent */}
+              {/* Live activity badge — desktop only, kept compact below pills */}
               <div className="hidden sm:inline-flex items-center gap-2 mt-5 bg-green-500/10 border border-green-500/25 rounded-full px-3 py-1.5">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
@@ -278,7 +293,7 @@ function AdsClientInner({
               </div>
             </div>
 
-            {/* RIGHT — 2-FIELD FORM (phone + budget). Stays sticky on desktop, sits below hero on mobile. */}
+            {/* RIGHT — 3-FIELD FORM (phone + email + budget). Sticky on desktop, below hero on mobile. */}
             <div id="lead-form" className="lg:sticky lg:top-[80px]">
               <form
                 onSubmit={handleSubmit}
@@ -289,26 +304,46 @@ function AdsClientInner({
                   See what {REALTOR_FIRST_NAME} has for you
                 </h2>
                 <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
-                  Drop your number + budget. {REALTOR_FIRST_NAME} texts 3–5 matches within the hour.
+                  Phone + email + budget. {REALTOR_FIRST_NAME} texts 3–5 matches within the hour.
                 </p>
 
-                {/* Field 1 — phone */}
-                <label htmlFor="lead-phone" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
-                  Mobile number
-                </label>
-                <input
-                  id="lead-phone"
-                  type="tel"
-                  inputMode="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(formatPhone(e.target.value))}
-                  placeholder="(647) 555-0123"
-                  autoComplete="tel"
-                  className="w-full h-12 px-4 rounded-lg border border-[#e2e8f0] bg-white text-[16px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20 mb-3"
-                />
+                {/* Phone + Email — side-by-side on desktop (sm+), stacked on mobile */}
+                <div className="grid sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
+                  <div>
+                    <label htmlFor="lead-phone" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+                      Mobile number
+                    </label>
+                    <input
+                      id="lead-phone"
+                      type="tel"
+                      inputMode="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(formatPhone(e.target.value))}
+                      placeholder="(647) 555-0123"
+                      autoComplete="tel"
+                      className="w-full h-12 px-4 rounded-lg border border-[#e2e8f0] bg-white text-[16px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lead-email" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+                      Email
+                    </label>
+                    <input
+                      id="lead-email"
+                      type="email"
+                      inputMode="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      autoComplete="email"
+                      className="w-full h-12 px-4 rounded-lg border border-[#e2e8f0] bg-white text-[16px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
+                    />
+                  </div>
+                </div>
 
-                {/* Field 2 — budget single-select via 2x2 button grid */}
+                {/* Budget — 2x2 button grid */}
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
                   Monthly budget
                 </label>
@@ -379,7 +414,7 @@ function AdsClientInner({
                   : "Updated recently"}
               </div>
               <h2 className="text-[24px] sm:text-[30px] font-extrabold leading-tight">
-                Recent {config.CITY_NAME} matches {REALTOR_FIRST_NAME}&apos;s worked on
+                Recent {config.CITY_NAME} rentals from live MLS data
               </h2>
             </div>
             <a
@@ -391,10 +426,11 @@ function AdsClientInner({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {/* Real listings — full info visible */}
+            {/* Real listings — full info visible, property-type badge below photo */}
             {teaserClear.map((l) => {
               const days = daysAgo(new Date(l.listedAt));
               const streetAddr = l.address.split(",")[0];
+              const typeLabel = TYPE_DISPLAY_LABEL[l.propertyType?.toLowerCase()] || l.propertyType;
               return (
                 <Link
                   key={l.mlsNumber}
@@ -413,6 +449,12 @@ function AdsClientInner({
                     </span>
                   </div>
                   <div className="p-4">
+                    {/* Property-type badge — branded amber pill, sits just above the price */}
+                    {typeLabel && (
+                      <span className="inline-block bg-[#f59e0b]/15 border border-[#f59e0b]/40 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1 mb-2">
+                        {typeLabel}
+                      </span>
+                    )}
                     <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1">
                       {formatPriceFull(l.price)}<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
                     </div>
@@ -427,9 +469,11 @@ function AdsClientInner({
               );
             })}
 
-            {/* Blurred listings — locked behind the form */}
+            {/* Blurred listings — locked behind the form. Property-type badge shown
+                un-blurred so the user can see what category is locked. */}
             {teaserBlurred.map((l) => {
               const streetAddr = l.address.split(",")[0];
+              const typeLabel = TYPE_DISPLAY_LABEL[l.propertyType?.toLowerCase()] || l.propertyType;
               return (
                 <a
                   key={l.mlsNumber}
@@ -446,6 +490,11 @@ function AdsClientInner({
                     )}
                   </div>
                   <div className="p-4 relative">
+                    {typeLabel && (
+                      <span className="inline-block bg-[#f59e0b]/15 border border-[#f59e0b]/40 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1 mb-2">
+                        {typeLabel}
+                      </span>
+                    )}
                     <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 blur-[6px] select-none">
                       $X,XXX<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
                     </div>
@@ -455,7 +504,6 @@ function AdsClientInner({
                       <span>🚿 {l.bathrooms} bath</span>
                     </div>
                   </div>
-                  {/* Lock overlay — sits across image+meta */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="bg-[#07111f]/85 backdrop-blur-sm border border-[#f59e0b]/40 rounded-full px-3 py-1.5 inline-flex items-center gap-1.5 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider shadow-lg">
                       <Lock className="w-3.5 h-3.5" aria-hidden />
@@ -499,7 +547,7 @@ function AdsClientInner({
           <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">{config.realtor.name}</h2>
           <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_SHORT_NAME}</p>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-2xl mx-auto mb-7">
-            With <strong className="text-white">{config.realtor.yearsExperience} years of full-time experience</strong> in {config.CITY_NAME}, {REALTOR_FIRST_NAME} knows that renting is about more than price — it&apos;s about finding the right fit, the right protection, and the right outcome. You&apos;ll work with him directly from first call to signed lease.
+            <strong className="text-white">{config.realtor.yearsExperience} years renting {config.CITY_NAME}, full-time.</strong> 100+ {config.CITY_NAME} renters matched, $50M+ in real estate sold. You&apos;ll work with {REALTOR_FIRST_NAME} directly — not an assistant, not a junior agent. From first call to signed lease.
           </p>
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {[
@@ -598,7 +646,7 @@ function AdsClientInner({
         </div>
       </section>
 
-      {/* ── COMPARISON — moved to just-above-footer per spec; reinforcement, not pre-conversion homework ── */}
+      {/* ── COMPARISON — kept just-above-footer per CRO spec ── */}
       <ComparisonTable />
 
       {/* ── SLIM COMPLIANT FOOTER ── */}
@@ -625,23 +673,27 @@ function AdsClientInner({
         </div>
       </footer>
 
-      {/* ── MOBILE STICKY CTA ── */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 py-2.5 flex gap-2">
+      {/* ── STICKY MOBILE BOTTOM CTA — 50/50 split, safe-area-aware, md:hidden ── */}
+      <div
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 pt-2.5 flex gap-2"
+        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
+      >
         <a
           href={`tel:${config.realtor.phoneE164}`}
-          className="shrink-0 bg-[#0c1e35] border border-[#1e3a5f] text-white font-bold px-4 py-3 rounded-lg text-[13px]"
-          aria-label={`Call ${REALTOR_FIRST_NAME}`}
+          className="flex-1 inline-flex items-center justify-center bg-[#0c1e35] border border-[#1e3a5f] text-white font-bold rounded-lg text-[14px] min-h-[48px]"
         >
-          📞
+          📞 Call {REALTOR_FIRST_NAME}
         </a>
-        <a
-          href="#lead-form"
-          className="flex-1 text-center bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold py-3 rounded-lg text-[14px]"
+        <button
+          type="button"
+          onClick={scrollToForm}
+          className="flex-1 inline-flex items-center justify-center bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold rounded-lg text-[14px] min-h-[48px]"
         >
-          Unlock all matches →
-        </a>
+          Get matches →
+        </button>
       </div>
-      <div className="lg:hidden h-[60px]" aria-hidden />
+      {/* Spacer so the footer isn't hidden behind the sticky bar when scrolled to bottom */}
+      <div className="md:hidden h-20" aria-hidden />
     </div>
   );
 }

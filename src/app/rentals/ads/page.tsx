@@ -20,11 +20,15 @@ const str = (sp: SP, k: string) => {
   return Array.isArray(v) ? v[0] : v;
 };
 
-// Always-applied lead-page rentals filter â€” never relaxed.
+// Always-applied lead-page rentals filter — never relaxed.
+// Price floor at $2,000 excludes sub-rent listings that read as bait or
+// data artifacts on this paid-traffic LP. Listings under $2K stay in the DB
+// and still appear on /listings + /rentals — only filtered on /rentals/ads.
 const ALWAYS_WHERE = {
   transactionType: "For Lease" as const,
   city: config.PRISMA_CITY_VALUE,
   permAdvertise: true,
+  price: { gte: 2000 },
 };
 
 export default async function RentalsAdsPage({
