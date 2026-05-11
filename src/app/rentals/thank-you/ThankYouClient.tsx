@@ -151,7 +151,7 @@ export default function ThankYouClient({
             Thanks {firstName}! {REALTOR_FIRST_NAME} is already on it.
           </h1>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-xl mx-auto">
-            Your request is in his queue. You&apos;ll get 3–5 hand-picked {config.CITY_NAME} matches by end of business day.
+            {REALTOR_FIRST_NAME}&apos;s seen your request and is matching you with {config.CITY_NAME} rentals right now. You&apos;ll hear from him within 1 hour during business hours (9 AM – 9 PM ET), or first thing in the morning if it&apos;s after hours. Talk soon.
           </p>
         </div>
 

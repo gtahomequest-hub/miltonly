@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Trophy, MapPin, Clock, Lock } from "lucide-react";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
 import TrustStrip from "./TrustStrip";
-import SpeedToLeadBadge from "./SpeedToLeadBadge";
 import ComparisonTable from "./ComparisonTable";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
@@ -40,78 +40,37 @@ interface Props {
   heroSrc: string;
 }
 
-const HOME_TYPE_OPTIONS = [
-  { val: "any", label: "Any" },
-  { val: "condo", label: "Condo" },
-  { val: "townhouse", label: "Townhouse" },
-  { val: "semi", label: "Semi" },
-  { val: "detached", label: "Detached" },
-];
+// Honeypot field name — must match HONEYPOT_FIELD env on /api/leads.
+const HONEYPOT_FIELD = "company_website";
 
-const BED_OPTIONS = [
-  { val: "any", label: "Any" },
-  { val: "studio", label: "Studio" },
-  { val: "1", label: "1" },
-  { val: "2", label: "2" },
-  { val: "3", label: "3" },
-  { val: "4+", label: "4+" },
-];
-
+// Budget brackets exposed in the form. Numeric `val` matches /api/leads
+// budgetToInt() parsing — it stores as priceRangeMax on the Lead row.
+// $4,500+ uses 6000 as the upper-cap proxy so Aamir's qualification has a
+// meaningful number, not "any".
 const BUDGET_OPTIONS = [
-  { val: "0", label: "Any" },
-  { val: "2000", label: "Under $2K" },
-  { val: "2500", label: "Under $2.5K" },
-  { val: "3000", label: "Under $3K" },
-  { val: "3500", label: "Under $3.5K" },
-  { val: "4000", label: "Under $4K" },
-  { val: "5000", label: "Under $5K" },
+  { val: "2500", label: "Under $2,500" },
+  { val: "3500", label: "$2,500 – $3,500" },
+  { val: "4500", label: "$3,500 – $4,500" },
+  { val: "6000", label: "$4,500+" },
 ];
 
-// Snap an arbitrary URL ?max= to the smallest chip value >= n (so ?max=2750
-// highlights "Under $3K" and ?max=4500 highlights "Under $5K"). Returns "0" (Any)
-// when n is 0, negative, or above the highest chip.
-function mapMaxToChip(n: number): string {
-  if (!Number.isFinite(n) || n <= 0) return "0";
-  const numeric = BUDGET_OPTIONS
-    .map((o) => parseInt(o.val, 10))
-    .filter((v) => v > 0)
-    .sort((a, b) => a - b);
-  for (const v of numeric) {
-    if (v >= n) return String(v);
-  }
-  return "0";
-}
-
-const MOVE_IN_OPTIONS = [
-  { val: "asap", label: "ASAP" },
-  { val: "1month", label: "Within 1 month" },
-  { val: "flexible", label: "Flexible" },
-];
-
-const HONEYPOT_FIELD = "company_website"; // matches HONEYPOT_FIELD env on server
-
-const TYPE_LABEL: Record<string, string> = {
-  condo: "Condo",
-  townhouse: "Townhouse",
-  semi: "Semi-Detached",
-  detached: "Detached",
+// Type label injection for the dynamic headline. condo / detached / semi /
+// townhouse all map to a single word that fits the headline grammar.
+const TYPE_HEADLINE_WORD: Record<string, string> = {
+  condo: "condo",
+  detached: "detached",
+  semi: "semi-detached",
+  townhouse: "townhouse",
 };
 
-// Returns null when no URL params (fall back to static spec headline + amber clause).
-// Returns dynamic SKAG-friendly H1 when any of type/beds/max are set.
-function buildDynamicHeadline(type: string, beds: number, max: number): string | null {
-  if (!type && !beds && !max) return null;
-  const parts: string[] = [];
-  if (beds > 0) parts.push(beds >= 4 ? "4+ Bedroom" : `${beds}-Bedroom`);
-  if (type && TYPE_LABEL[type]) parts.push(TYPE_LABEL[type]);
-  parts.push("Rentals");
-  let h1 = `${config.CITY_NAME} ${parts.join(" ")}`;
-  if (max > 0 && max <= 5000) h1 += ` Under $${(max / 1000).toFixed(1).replace(".0", "")}K`;
-  return h1;
+// Format-as-you-type North American 10-digit phone mask. Identical to
+// OffMarketForm.tsx so users get a consistent UX across forms.
+function formatPhone(v: string): string {
+  const digits = v.replace(/\D/g, "").slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
-
-const HERO_SUB =
-  `Live TREB listings, hand-matched by ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. No bots. No call centres. No spam.`;
 
 function AdsClientInner({
   listings,
@@ -120,41 +79,24 @@ function AdsClientInner({
   renterCount,
   updatedMinAgo,
   initialType,
-  initialBeds,
-  initialMax,
   heroSrc,
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Form state — Step 1 chips, Step 2 contact. Defaults pre-fill from URL params
-  // when present so deep-linked campaigns (e.g. /rentals/ads?type=condo&beds=2) land
-  // on Step 1 with the correct chips already selected.
-  const [step, setStep] = useState<1 | 2>(1);
-  const [homeType, setHomeType] = useState<string>(initialType || "any");
-  const [bedrooms, setBedrooms] = useState<string>(
-    initialBeds >= 4 ? "4+" : initialBeds > 0 ? String(initialBeds) : "any"
-  );
-  const [budget, setBudget] = useState<string>(mapMaxToChip(initialMax));
-  const [moveIn, setMoveIn] = useState<string>("asap");
-  const [name, setName] = useState("");
+  // Minimal form state — phone + budget only. firstName is auto-filled as a
+  // placeholder so the existing /api/leads ads-path validation (≥2 chars)
+  // passes without exposing a name field in this conversion-optimized variant.
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [budget, setBudget] = useState<string>("");
   const [honey, setHoney] = useState(""); // honeypot — must stay empty
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Tracking state — must live at parent so it survives the Step 1 → Step 2 transition.
-  // Storing inside a Step 2 sub-component would lose URL params on every advance.
+  // Tracking state — captured from URL + persistent attributionPayload().
   const [tracking, setTracking] = useState({
-    utm_source: "",
-    utm_medium: "",
-    utm_campaign: "",
-    utm_term: "",
-    utm_content: "",
-    gclid: "",
+    utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "", gclid: "",
   });
-
   useEffect(() => {
     setTracking({
       utm_source: searchParams.get("utm_source") || "",
@@ -166,111 +108,95 @@ function AdsClientInner({
     });
   }, [searchParams]);
 
-  // Hybrid H1 — dynamic when URL params drive a SKAG-friendly headline; static
-  // (with amber " — Before Someone Else Does." suffix) otherwise.
-  const dynamicHeadline = useMemo(
-    () => buildDynamicHeadline(initialType, initialBeds, initialMax),
-    [initialType, initialBeds, initialMax]
-  );
-  const headline = dynamicHeadline || `Find Your ${config.CITY_NAME} Rental`;
-  const headlineSuffix = dynamicHeadline ? null : " — Before Someone Else Does.";
-
-  // Live listings filter — applied client-side over the 60-row pool.
-  const filteredListings = useMemo(() => {
-    return listings.filter((l) => {
-      if (homeType !== "any" && l.propertyType !== homeType) return false;
-      if (bedrooms === "studio" && l.bedrooms !== 0) return false;
-      if (bedrooms === "4+" && l.bedrooms < 4) return false;
-      if (bedrooms === "1" && l.bedrooms !== 1) return false;
-      if (bedrooms === "2" && l.bedrooms !== 2) return false;
-      if (bedrooms === "3" && l.bedrooms !== 3) return false;
-      if (budget !== "0") {
-        const cap = parseInt(budget, 10);
-        if (Number.isFinite(cap) && cap > 0 && l.price > cap) return false;
-      }
-      return true;
-    });
-  }, [listings, homeType, bedrooms, budget]);
+  // Dynamic headline — inject the property-type word when ?type=condo/detached/
+  // semi/townhouse is on the URL. Falls back to plain "rentals" otherwise.
+  const headline = useMemo(() => {
+    const t = (initialType || "").toLowerCase();
+    const typeWord = TYPE_HEADLINE_WORD[t];
+    const noun = typeWord ? `${typeWord} rentals` : "rentals";
+    return `Get 3-5 ${config.CITY_NAME} ${noun} hand-picked by ${REALTOR_FIRST_NAME} — not ${totalRentals} listings to sift through.`;
+  }, [initialType, totalRentals]);
 
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
     return () => { document.documentElement.style.scrollBehavior = ""; };
   }, []);
 
-  function advanceToStep2() {
-    setStep(2);
-    if (typeof window !== "undefined") {
-      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-      if (w.gtag) w.gtag("event", "form_step_2_view", { step: 2, source: "rentals/ads" });
-    }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
     const phoneDigits = phone.replace(/\D/g, "");
-
-    if (trimmedName.length < 2) { setError("Please enter your first name."); return; }
-    if (phoneDigits.length < 10 && !trimmedEmail) {
-      setError(`Please enter a phone number or email so ${REALTOR_FIRST_NAME} can reach you.`);
+    if (phoneDigits.length !== 10) {
+      setError("Please enter a 10-digit phone number.");
+      return;
+    }
+    if (!budget) {
+      setError("Please select your budget.");
       return;
     }
 
     setSubmitting(true);
+
+    if (typeof window !== "undefined") {
+      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+      if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "2-field" });
+    }
 
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: trimmedName,
+          // firstName placeholder — the ads path API requires ≥2 chars.
+          // We collect name on the follow-up call instead of in this form.
+          firstName: "Inbound Lead",
           phone: phone.trim(),
-          email: trimmedEmail,
+          email: "",
           source: "ads-rentals-lp",
           intent: "renter",
-          bedrooms,
           budget,
-          moveIn,
-          homeType,
+          // Property type from ?type= URL param (still useful for Aamir's
+          // qualification even though it's not collected in the form).
+          homeType: initialType || "any",
+          // Inline URL-derived tracking (form-fields-of-record).
           utm_source: tracking.utm_source,
           utm_medium: tracking.utm_medium,
           utm_campaign: tracking.utm_campaign,
           utm_term: tracking.utm_term,
           utm_content: tracking.utm_content,
           gclid: tracking.gclid,
-          // Cross-page persisted attribution wins over URL-only tracking — preserves
-          // first-touch when this page is re-visited after the original ad click.
+          // Persisted cross-page attribution wins over URL-only tracking —
+          // preserves first-touch when the user revisits after the ad click.
           ...attributionPayload(),
           [HONEYPOT_FIELD]: honey,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) {
         setError(data?.error || `Couldn't submit — please try again or call ${config.realtor.phone}.`);
         setSubmitting(false);
         return;
       }
-
       const redirect = data?.redirect || `/rentals/thank-you?lid=${data?.id || ""}`;
       router.push(redirect);
-      // stay submitting=true until navigation completes
     } catch {
       setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} directly at ${config.realtor.phone}.`);
       setSubmitting(false);
     }
   }
 
+  // Listings teaser — 3 clear + 3 blurred + 1 "see more" CTA card.
+  const teaserClear = listings.slice(0, 3);
+  const teaserBlurred = listings.slice(3, 6);
+  const remainingCount = Math.max(0, totalRentals - 3);
+
   return (
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
-      {/* ══ TRUST STRIP — top-of-page social proof ══ */}
       <TrustStrip />
 
-      {/* ══ SLIM HEADER — no distractions ══ */}
+      {/* ── SLIM HEADER ── */}
       <header className="sticky top-0 z-50 bg-[#07111f]/95 backdrop-blur border-b border-[#1e3a5f]">
         <div className="max-w-6xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
           <Link href="/" className="shrink-0">
@@ -290,9 +216,8 @@ function AdsClientInner({
         </div>
       </header>
 
-      {/* ══ HERO ══ */}
+      {/* ── HERO ── headline + sub + trust pills + 2-field form ── */}
       <section className="relative overflow-hidden">
-        {/* Background — brand photo with navy overlay */}
         <div className="absolute inset-0">
           <Image
             src={heroSrc}
@@ -302,396 +227,270 @@ function AdsClientInner({
             sizes="100vw"
             className="object-cover object-center"
           />
-          {/* Navy brand overlay — lighter so photo shows through; stronger on the left for text legibility.
-              Neighbourhood photo gets an even lighter wash so the outdoor scene reads clearly. */}
           <div
             className="absolute inset-0"
             style={{
               background: heroSrc.includes("neighbourhood")
-                ? "linear-gradient(100deg, rgba(7,17,31,0.68) 0%, rgba(7,17,31,0.35) 45%, rgba(7,17,31,0.10) 100%)"
-                : "linear-gradient(100deg, rgba(7,17,31,0.78) 0%, rgba(7,17,31,0.55) 45%, rgba(7,17,31,0.30) 100%)",
+                ? "linear-gradient(100deg, rgba(7,17,31,0.74) 0%, rgba(7,17,31,0.45) 45%, rgba(7,17,31,0.20) 100%)"
+                : "linear-gradient(100deg, rgba(7,17,31,0.82) 0%, rgba(7,17,31,0.62) 45%, rgba(7,17,31,0.40) 100%)",
             }}
             aria-hidden
           />
-          {/* Bottom fade into page bg */}
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[#07111f]" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-[#07111f]" aria-hidden />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 lg:pt-20 lg:pb-24">
-          <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-8 lg:gap-14 items-start">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-10 sm:pt-10 sm:pb-14 lg:pt-16 lg:pb-20">
+          <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-12 items-start">
             {/* LEFT — copy */}
             <div>
-              {/* Live badge */}
-              <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/25 rounded-full px-3 py-1.5 mb-5">
+              <h1 className="text-[26px] sm:text-[40px] lg:text-[50px] font-extrabold leading-[1.08] tracking-[-0.02em] mb-3 sm:mb-4">
+                {headline}
+              </h1>
+              <p className="text-[14px] sm:text-[17px] text-[#cbd5e1] leading-snug max-w-xl mb-3 sm:mb-5">
+                Same {REALTOR_FIRST_NAME} who&apos;s matched 750+ {config.CITY_NAME} renters. Replies in under 60 minutes.
+              </p>
+
+              {/* TRUST PILLARS — 3 pills, horizontal row, compact on mobile */}
+              <div className="flex flex-wrap gap-2 sm:gap-2.5 mb-4 sm:mb-0">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#fbbf24]">
+                  <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
+                  RE/MAX Hall of Fame
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3a5f] bg-[#0c1e35] px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#cbd5e1]">
+                  <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
+                  {config.realtor.yearsExperience} years in {config.CITY_NAME}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-green-300">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
+                  Replies in &lt;60 min
+                </span>
+              </div>
+
+              {/* Live activity badge — kept compact below pills, desktop-prominent */}
+              <div className="hidden sm:inline-flex items-center gap-2 mt-5 bg-green-500/10 border border-green-500/25 rounded-full px-3 py-1.5">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                 </span>
                 <span className="text-[11px] font-bold tracking-wider text-green-300 uppercase">
-                  {totalRentals} active · {newThisWeek} new this week
+                  {totalRentals} active · {newThisWeek} new this week · {renterCount} matched this week
                 </span>
               </div>
-
-              <h1 className="text-[34px] sm:text-[44px] lg:text-[54px] font-extrabold leading-[1.04] tracking-[-0.02em] mb-4">
-                <span className="text-[#f8f9fb]">{headline}</span>
-                {headlineSuffix && (
-                  <span className="text-[#f59e0b]">{headlineSuffix}</span>
-                )}
-              </h1>
-              <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-xl mb-6">
-                {HERO_SUB}
-              </p>
-
-              {/* Speed-to-lead guarantee */}
-              <SpeedToLeadBadge />
-
-              {/* Credentials strip */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-7 text-[12px] sm:text-[13px]">
-                <span className="flex items-center gap-1.5 text-[#fbbf24] font-semibold">
-                  <span aria-hidden>🏆</span> RE/MAX Hall of Fame
-                </span>
-                <span className="text-[#64748b]">·</span>
-                <span className="text-[#cbd5e1] font-semibold">{config.realtor.yearsExperience} yrs full-time</span>
-                <span className="text-[#64748b]">·</span>
-                <span className="text-[#cbd5e1] font-semibold">{config.CITY_NAME} specialist</span>
-              </div>
-
-              {/* Why bullets */}
-              <ul className="space-y-3 mb-2">
-                <li className="flex items-start gap-3">
-                  <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">Every {config.CITY_NAME} rental — live from TREB, updated daily</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">Same-day showings when the property allows</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">You talk to {REALTOR_FIRST_NAME} directly — no juniors, no handoffs</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center text-[#fbbf24] text-[11px] font-bold">✓</span>
-                  <span className="text-[14px] text-[#e2e8f0]">Lease negotiation included — at no cost to you</span>
-                </li>
-              </ul>
             </div>
 
-            {/* RIGHT — LEAD FORM (2-step, success → /rentals/thank-you) */}
+            {/* RIGHT — 2-FIELD FORM (phone + budget). Stays sticky on desktop, sits below hero on mobile. */}
             <div id="lead-form" className="lg:sticky lg:top-[80px]">
               <form
                 onSubmit={handleSubmit}
-                className="bg-white rounded-2xl shadow-2xl p-5 sm:p-7 text-[#07111f]"
+                className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-[#07111f]"
                 noValidate
               >
-                {/* Progress header */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase">
-                    Step {step} of 2 · 30 seconds
-                  </span>
-                  <div className="flex items-center gap-1" aria-hidden>
-                    <span className={`w-2 h-2 rounded-full ${step >= 1 ? "bg-[#f59e0b]" : "bg-[#e2e8f0]"}`} />
-                    <span className={`w-6 h-[2px] ${step === 2 ? "bg-[#f59e0b]" : "bg-[#e2e8f0]"}`} />
-                    <span className={`w-2 h-2 rounded-full ${step === 2 ? "bg-[#f59e0b]" : "bg-[#e2e8f0]"}`} />
-                  </div>
-                </div>
-                <h2 className="text-[22px] sm:text-[24px] font-extrabold leading-tight text-[#07111f]">
-                  {step === 1 ? "Don't lose your top pick to someone faster." : `Where should ${REALTOR_FIRST_NAME} send your matches?`}
+                <h2 className="text-[18px] sm:text-[22px] font-extrabold leading-tight text-[#07111f] mb-1.5">
+                  See what {REALTOR_FIRST_NAME} has for you
                 </h2>
-                <p className="text-[13px] text-[#64748b] mt-1 mb-3">
-                  {step === 1
-                    ? `Get matched in 30 seconds. ${REALTOR_FIRST_NAME} replies within 60 min.`
-                    : `3–5 hand-picked ${config.CITY_NAME} rentals texted to you within the hour.`}
+                <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
+                  Drop your number + budget. {REALTOR_FIRST_NAME} texts 3–5 matches within the hour.
                 </p>
 
-                {step === 1 && (
-                  <>
-                    {/* Urgency counter */}
-                    <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-green-500/10 border border-green-500/25 rounded-lg">
-                      <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                      </span>
-                      <p className="text-[12px] font-semibold text-[#065f46]">
-                        <span className="font-bold">{renterCount}</span> {config.CITY_NAME} renters got matched this week
-                      </p>
-                    </div>
+                {/* Field 1 — phone */}
+                <label htmlFor="lead-phone" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+                  Mobile number
+                </label>
+                <input
+                  id="lead-phone"
+                  type="tel"
+                  inputMode="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhone(e.target.value))}
+                  placeholder="(647) 555-0123"
+                  autoComplete="tel"
+                  className="w-full h-12 px-4 rounded-lg border border-[#e2e8f0] bg-white text-[16px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20 mb-3"
+                />
 
-                    {/* Home type pills */}
-                    <div className="mb-3">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Home type</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {HOME_TYPE_OPTIONS.map((o) => (
-                          <button
-                            key={o.val}
-                            type="button"
-                            onClick={() => setHomeType(o.val)}
-                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
-                              homeType === o.val
-                                ? "bg-[#07111f] text-white border-[#07111f]"
-                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                            }`}
-                          >
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Bedrooms pills */}
-                    <div className="mb-3">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Bedrooms</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {BED_OPTIONS.map((o) => (
-                          <button
-                            key={o.val}
-                            type="button"
-                            onClick={() => setBedrooms(o.val)}
-                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all min-w-[48px] ${
-                              bedrooms === o.val
-                                ? "bg-[#07111f] text-white border-[#07111f]"
-                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                            }`}
-                          >
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Budget pills */}
-                    <div className="mb-3">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Monthly budget</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {BUDGET_OPTIONS.map((o) => (
-                          <button
-                            key={o.val}
-                            type="button"
-                            onClick={() => setBudget(o.val)}
-                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
-                              budget === o.val
-                                ? "bg-[#07111f] text-white border-[#07111f]"
-                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                            }`}
-                          >
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Move-in pills */}
-                    <div className="mb-4">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1.5">Move-in</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {MOVE_IN_OPTIONS.map((o) => (
-                          <button
-                            key={o.val}
-                            type="button"
-                            onClick={() => setMoveIn(o.val)}
-                            className={`px-3 py-2 rounded-lg text-[13px] font-semibold border transition-all ${
-                              moveIn === o.val
-                                ? "bg-[#07111f] text-white border-[#07111f]"
-                                : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                            }`}
-                          >
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
+                {/* Field 2 — budget single-select via 2x2 button grid */}
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+                  Monthly budget
+                </label>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {BUDGET_OPTIONS.map((o) => (
                     <button
+                      key={o.val}
                       type="button"
-                      onClick={advanceToStep2}
-                      className="w-full bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold text-[15px] py-4 rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl hover:shadow-[#f59e0b]/30 active:scale-[0.99]"
+                      onClick={() => setBudget(o.val)}
+                      className={`h-12 rounded-lg text-[13px] sm:text-[14px] font-semibold border transition-all ${
+                        budget === o.val
+                          ? "bg-[#07111f] text-white border-[#07111f]"
+                          : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                      }`}
                     >
-                      See my matches → (Step 2 of 2)
+                      {o.label}
                     </button>
-                  </>
+                  ))}
+                </div>
+
+                {/* Honeypot — silent spam trap */}
+                <div style={{ position: "absolute", left: "-10000px", top: "-10000px" }} aria-hidden="true">
+                  <label>
+                    Company website
+                    <input
+                      type="text"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      name={HONEYPOT_FIELD}
+                      value={honey}
+                      onChange={(e) => setHoney(e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                {error && (
+                  <div className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                    {error}
+                  </div>
                 )}
 
-                {step === 2 && (
-                  <>
-                    <div className="space-y-2.5 mb-3">
-                      <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="First name"
-                        className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                        autoComplete="given-name"
-                        maxLength={60}
-                      />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Phone (we'll text you)"
-                        className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                        autoComplete="tel"
-                        inputMode="tel"
-                      />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email (optional, for the cheat sheet)"
-                        className="w-full px-4 py-3 rounded-lg border border-[#e2e8f0] bg-white text-[15px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                        autoComplete="email"
-                      />
-                    </div>
-
-                    {/* Honeypot — silent spam trap */}
-                    <div style={{ position: "absolute", left: "-10000px", top: "-10000px" }} aria-hidden="true">
-                      <label>
-                        Company website
-                        <input
-                          type="text"
-                          tabIndex={-1}
-                          autoComplete="off"
-                          name={HONEYPOT_FIELD}
-                          value={honey}
-                          onChange={(e) => setHoney(e.target.value)}
-                        />
-                      </label>
-                    </div>
-
-                    {error && (
-                      <div className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
-                        {error}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] py-4 rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl hover:shadow-[#f59e0b]/30 active:scale-[0.99]"
-                    >
-                      {submitting ? "Sending…" : `Send to ${REALTOR_FIRST_NAME} →`}
-                    </button>
-                    <p className="text-[12px] text-[#475569] text-center mt-3 leading-relaxed">
-                      🔒 No obligation. No spam. If matches don&apos;t fit, we stop. That&apos;s it.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="w-full mt-2 text-[13px] text-[#64748b] hover:text-[#07111f] py-2"
-                    >
-                      ← Back
-                    </button>
-
-                    <p className="text-[11px] text-[#64748b] text-center mt-3 leading-relaxed">
-                      No fees · No spam · {REALTOR_FIRST_NAME} usually replies within 1 business hour.<br />
-                      By submitting you agree to be contacted about {config.CITY_NAME} rentals. See our{" "}
-                      <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy Policy</Link>.
-                    </p>
-                  </>
-                )}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full min-h-[52px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] sm:text-[16px] rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl active:scale-[0.99]"
+                >
+                  {submitting ? "Sending…" : "Unlock all matches"}
+                </button>
+                <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
+                  🔒 No spam. No fees. By submitting you agree to be contacted.{" "}
+                  <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy</Link>.
+                </p>
               </form>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ══ COMPARISON — Why {realtor} vs DIY vs Out-of-area ══ */}
-      <ComparisonTable />
-
-      {/* ══ LISTING PREVIEW ══ */}
-      <section id="matches" className="bg-[#0a1628] py-14 sm:py-20">
+      {/* ── LISTINGS TEASER — 3 clear + 3 blurred + CTA card ── */}
+      <section id="matches" className="bg-[#0a1628] py-12 sm:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-end justify-between mb-7 gap-4 flex-wrap">
+          <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
             <div>
-              <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-1.5">
+              <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-1">
                 Live TREB data ·{" "}
                 {updatedMinAgo !== null
                   ? `Updated ${updatedMinAgo === 0 ? "just now" : `${updatedMinAgo} min ago`}`
                   : "Updated recently"}
               </div>
-              <h2 className="text-[26px] sm:text-[32px] font-extrabold leading-tight">
-                Showing {filteredListings.length} of {totalRentals} matches
+              <h2 className="text-[24px] sm:text-[30px] font-extrabold leading-tight">
+                Recent {config.CITY_NAME} matches {REALTOR_FIRST_NAME}&apos;s worked on
               </h2>
-              <p className="text-[13px] text-[#94a3b8] mt-1">Sorted by newest. Filter narrows by your chip selections above.</p>
             </div>
             <a
               href="#lead-form"
               className="text-[13px] font-bold text-[#fbbf24] hover:text-[#f59e0b] transition-colors whitespace-nowrap"
             >
-              Get full list →
+              Get all matches →
             </a>
           </div>
 
-          {filteredListings.length === 0 ? (
-            <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-8 text-center">
-              <p className="text-[15px] text-[#cbd5e1] mb-3">
-                No exact matches — {REALTOR_FIRST_NAME} will hand-pick the closest fits. Submit your details →
-              </p>
-              <a href="#lead-form" className="inline-block bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-bold px-6 py-3 rounded-lg">
-                Get matched →
-              </a>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {filteredListings.map((l) => {
-                const days = daysAgo(new Date(l.listedAt));
-                const streetAddr = l.address.split(",")[0];
-                const avail = l.possessionDetails === "Vacant" || l.possessionDetails === "Immediate"
-                  ? "Available now"
-                  : l.possessionDetails || "Available";
-                return (
-                  <Link
-                    key={l.mlsNumber}
-                    href={`/listings/${l.mlsNumber}`}
-                    className="group block bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden hover:border-[#f59e0b]/50 hover:shadow-lg hover:shadow-[#f59e0b]/10 transition-all"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {/* Real listings — full info visible */}
+            {teaserClear.map((l) => {
+              const days = daysAgo(new Date(l.listedAt));
+              const streetAddr = l.address.split(",")[0];
+              return (
+                <Link
+                  key={l.mlsNumber}
+                  href={`/listings/${l.mlsNumber}`}
+                  className="group block bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden hover:border-[#f59e0b]/50 hover:shadow-lg hover:shadow-[#f59e0b]/10 transition-all"
+                >
+                  <div
+                    className="aspect-[4/3] bg-[#1e3a5f] bg-center bg-cover relative"
+                    style={l.photos[0] ? { backgroundImage: `url(${l.photos[0]})` } : {}}
                   >
-                    <div
-                      className="aspect-[4/3] bg-[#1e3a5f] bg-center bg-cover relative"
-                      style={l.photos[0] ? { backgroundImage: `url(${l.photos[0]})` } : {}}
-                    >
-                      {!l.photos[0] && (
-                        <div className="absolute inset-0 flex items-center justify-center text-[40px]">🏠</div>
-                      )}
-                      <span className="absolute top-2.5 left-2.5 bg-[#07111f]/85 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2 py-1 rounded">
-                        {days === 0 ? "New today" : days <= 7 ? `${days}d new` : `${days}d ago`}
-                      </span>
-                      <span className="absolute bottom-2.5 left-2.5 bg-green-500/90 text-white text-[10px] font-bold tracking-wide px-2 py-1 rounded">
-                        {avail}
-                      </span>
+                    {!l.photos[0] && (
+                      <div className="absolute inset-0 flex items-center justify-center text-[40px]">🏠</div>
+                    )}
+                    <span className="absolute top-2.5 left-2.5 bg-[#07111f]/85 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2 py-1 rounded">
+                      {days === 0 ? "New today" : days <= 7 ? `${days}d new` : `${days}d ago`}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1">
+                      {formatPriceFull(l.price)}<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-baseline justify-between gap-2 mb-1">
-                        <div className="text-[20px] font-extrabold text-[#f8f9fb]">
-                          {formatPriceFull(l.price)}<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
-                        </div>
-                      </div>
-                      <div className="text-[13px] font-semibold text-[#cbd5e1] mb-1 line-clamp-1">{streetAddr}</div>
-                      <div className="flex gap-3 text-[12px] text-[#94a3b8]">
-                        <span>🛏 {l.bedrooms} bed</span>
-                        <span>🚿 {l.bathrooms} bath</span>
-                        {l.parking > 0 && <span>🚗 {l.parking}</span>}
-                      </div>
+                    <div className="text-[13px] font-semibold text-[#cbd5e1] mb-1 line-clamp-1">{streetAddr}</div>
+                    <div className="flex gap-3 text-[12px] text-[#94a3b8]">
+                      <span>🛏 {l.bedrooms} bed</span>
+                      <span>🚿 {l.bathrooms} bath</span>
+                      {l.parking > 0 && <span>🚗 {l.parking}</span>}
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+                  </div>
+                </Link>
+              );
+            })}
 
-          {totalRentals > filteredListings.length && (
-            <div className="text-center mt-8">
-              <a
-                href="#lead-form"
-                className="inline-block bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold px-8 py-4 rounded-xl text-[15px] transition-colors"
-              >
-                Get all {totalRentals} matches sent to you →
-              </a>
-            </div>
-          )}
+            {/* Blurred listings — locked behind the form */}
+            {teaserBlurred.map((l) => {
+              const streetAddr = l.address.split(",")[0];
+              return (
+                <a
+                  key={l.mlsNumber}
+                  href="#lead-form"
+                  className="group relative block bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden hover:border-[#f59e0b]/50 transition-all"
+                  aria-label="Submit the form to unlock this match"
+                >
+                  <div
+                    className="aspect-[4/3] bg-[#1e3a5f] bg-center bg-cover relative"
+                    style={l.photos[0] ? { backgroundImage: `url(${l.photos[0]})`, filter: "blur(14px) saturate(0.7)" } : {}}
+                  >
+                    {!l.photos[0] && (
+                      <div className="absolute inset-0 flex items-center justify-center text-[40px] opacity-30">🏠</div>
+                    )}
+                  </div>
+                  <div className="p-4 relative">
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 blur-[6px] select-none">
+                      $X,XXX<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
+                    </div>
+                    <div className="text-[13px] font-semibold text-[#cbd5e1] mb-1 line-clamp-1 blur-[5px] select-none">{streetAddr}</div>
+                    <div className="flex gap-3 text-[12px] text-[#94a3b8] blur-[4px] select-none">
+                      <span>🛏 {l.bedrooms} bed</span>
+                      <span>🚿 {l.bathrooms} bath</span>
+                    </div>
+                  </div>
+                  {/* Lock overlay — sits across image+meta */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-[#07111f]/85 backdrop-blur-sm border border-[#f59e0b]/40 rounded-full px-3 py-1.5 inline-flex items-center gap-1.5 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider shadow-lg">
+                      <Lock className="w-3.5 h-3.5" aria-hidden />
+                      Unlock
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+
+            {/* CTA card — 7th tile, drives back to the form */}
+            <a
+              href="#lead-form"
+              className="group block bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] rounded-xl overflow-hidden hover:shadow-xl hover:shadow-[#f59e0b]/30 transition-all"
+            >
+              <div className="aspect-[4/3] relative flex flex-col items-center justify-center text-center p-5">
+                <Lock className="w-8 h-8 text-[#07111f] mb-2" aria-hidden />
+                <p className="text-[#07111f] text-[22px] font-extrabold leading-tight mb-1">
+                  + {remainingCount} more matches
+                </p>
+                <p className="text-[#07111f]/80 text-[12px] font-semibold leading-snug">
+                  in {REALTOR_FIRST_NAME}&apos;s private list
+                </p>
+              </div>
+              <div className="p-4 bg-[#07111f]/10">
+                <div className="bg-[#07111f] text-[#fbbf24] font-extrabold text-[14px] py-3 rounded-lg text-center group-hover:bg-[#0c1e35]">
+                  Get all matches →
+                </div>
+              </div>
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* ══ MEET REALTOR ══ */}
+      {/* ── MEET REALTOR ── */}
       <section className="bg-[#07111f] py-14 sm:py-20 border-t border-[#1e3a5f]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-3">
@@ -699,11 +498,9 @@ function AdsClientInner({
           </div>
           <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">{config.realtor.name}</h2>
           <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_SHORT_NAME}</p>
-
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-2xl mx-auto mb-7">
             With <strong className="text-white">{config.realtor.yearsExperience} years of full-time experience</strong> in {config.CITY_NAME}, {REALTOR_FIRST_NAME} knows that renting is about more than price — it&apos;s about finding the right fit, the right protection, and the right outcome. You&apos;ll work with him directly from first call to signed lease.
           </p>
-
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {[
               "🏆 RE/MAX Hall of Fame",
@@ -717,7 +514,6 @@ function AdsClientInner({
               </span>
             ))}
           </div>
-
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href={`tel:${config.realtor.phoneE164}`}
@@ -737,7 +533,7 @@ function AdsClientInner({
         </div>
       </section>
 
-      {/* ══ FAQ ══ */}
+      {/* ── FAQ ── */}
       <section className="bg-[#0a1628] py-14 sm:py-20 border-t border-[#1e3a5f]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <h2 className="text-[26px] sm:text-[32px] font-extrabold text-center mb-8">Common questions</h2>
@@ -753,11 +549,11 @@ function AdsClientInner({
               },
               {
                 q: "Can I see a listing today?",
-                a: `Often yes — if the property allows a same-day showing, ${REALTOR_FIRST_NAME} will coordinate directly with the listing side. Some properties need 24 hours&apos; notice.`,
+                a: `Often yes — if the property allows a same-day showing, ${REALTOR_FIRST_NAME} will coordinate directly with the listing side. Some properties need 24 hours' notice.`,
               },
               {
                 q: "I already have a Realtor — should I still submit?",
-                a: `Please don&apos;t — stick with your current Realtor. If you&apos;re not currently represented, ${REALTOR_FIRST_NAME} would love to help.`,
+                a: `Please don't — stick with your current Realtor. If you're not currently represented, ${REALTOR_FIRST_NAME} would love to help.`,
               },
               {
                 q: "Where do these listings come from?",
@@ -776,7 +572,7 @@ function AdsClientInner({
         </div>
       </section>
 
-      {/* ══ FINAL CTA BAND ══ */}
+      {/* ── FINAL CTA BAND ── */}
       <section className="bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-[26px] sm:text-[34px] font-extrabold text-[#07111f] mb-3 leading-tight">
@@ -802,7 +598,10 @@ function AdsClientInner({
         </div>
       </section>
 
-      {/* ══ SLIM COMPLIANT FOOTER ══ */}
+      {/* ── COMPARISON — moved to just-above-footer per spec; reinforcement, not pre-conversion homework ── */}
+      <ComparisonTable />
+
+      {/* ── SLIM COMPLIANT FOOTER ── */}
       <footer className="bg-[#07111f] border-t border-[#1e3a5f] py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
@@ -826,7 +625,7 @@ function AdsClientInner({
         </div>
       </footer>
 
-      {/* ══ MOBILE STICKY CTA ══ */}
+      {/* ── MOBILE STICKY CTA ── */}
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 py-2.5 flex gap-2">
         <a
           href={`tel:${config.realtor.phoneE164}`}
@@ -839,10 +638,9 @@ function AdsClientInner({
           href="#lead-form"
           className="flex-1 text-center bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold py-3 rounded-lg text-[14px]"
         >
-          Get my matches →
+          Unlock all matches →
         </a>
       </div>
-      {/* Spacer so content isn't hidden behind mobile CTA */}
       <div className="lg:hidden h-[60px]" aria-hidden />
     </div>
   );
