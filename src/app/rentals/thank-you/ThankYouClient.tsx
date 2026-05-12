@@ -8,6 +8,7 @@ import { config } from "@/lib/config";
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const REALTOR_INITIALS = config.realtor.name.split(" ").map((p) => p[0]).join("").toUpperCase();
 const REALTOR_PHONE_DIGITS = config.realtor.phoneE164.replace(/^\+/, "");
+const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
 // Weighted lead values for Google Ads Smart Bidding. Approximates expected
 // commission × close-rate per budget tier. Without this, Smart Bidding sees
@@ -67,17 +68,53 @@ function priceLabel(max: number | null): string | null {
   return `$${(max / 1000).toFixed(1).replace(".0", "")}K/mo`;
 }
 
+// Build the vCard 3.0 body shipped via the Save Contact button. Pure function
+// so it's testable + tweakable without touching the click handler.
+function buildAamirVCard(): string {
+  const lines = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    "N:Yaqoob;Aamir;;;",
+    `FN:${config.realtor.name}`,
+    `ORG:${BROKERAGE_SHORT_NAME}`,
+    `TITLE:${config.realtor.title}`,
+    `TEL;TYPE=CELL:${config.realtor.phoneE164}`,
+    `EMAIL:${process.env.NEXT_PUBLIC_REALTOR_EMAIL || "gtahomequest@gmail.com"}`,
+    `URL:${config.SITE_URL_WWW}`,
+    "END:VCARD",
+  ];
+  // RFC 6350 / 2426 prefer CRLF line endings. iOS Contacts is lenient but
+  // some Android Contacts apps require CRLF to parse multiline fields.
+  return lines.join("\r\n");
+}
+
+function downloadAamirVCard() {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([buildAamirVCard()], { type: "text/vcard;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Aamir-Yaqoob.vcf";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Defer revoke so iOS Safari has time to consume the blob URL.
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+  // Optional analytics — non-blocking. Failing to fire doesn't break the download.
+  const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+  if (w.gtag) w.gtag("event", "save_contact", { source: "rentals/thank-you" });
+}
+
 export default function ThankYouClient({
   lead,
   isSpam,
-  cheatsheetEnabled,
 }: Props) {
-  // Fire GA4 generate_lead event exactly once on mount.
-  // Google Ads imports this conversion via the GA4 ↔ Ads link rather than
-  // a native AW- conversion (Google Ads new UI removed the manual gtag
-  // conversion path for new accounts).
-  // Skip on spam (honeypot fired) — no conversion for synthetic submissions.
-  // Cold-cache resilience: if gtag isn't loaded yet, poll every 200ms up to 5s.
+  // GA4 generate_lead event fired exactly once on mount. Cold-cache resilient:
+  // if gtag isn't loaded yet, polls every 200ms for up to 5s. Skip on spam
+  // (honeypot tripped) — no conversion credit for synthetic submissions.
+  // Conversion value is weighted by budget tier so Smart Bidding can optimize
+  // toward higher-revenue lead profiles.
   useEffect(() => {
     if (isSpam) return;
 
@@ -86,9 +123,6 @@ export default function ThankYouClient({
     let cancelled = false;
     const start = Date.now();
 
-    // Hash up front; gtag fires once the hash promise resolves AND gtag is
-    // available. user_data MUST be inside the event payload — gtag('set','user_data',…)
-    // races on Next.js and the event reaches Google Ads with no user_data.
     (async () => {
       const userData = await hashUserData(lead?.email, lead?.phone);
       const hasUserData = userData.sha256_email_address || userData.sha256_phone_number;
@@ -97,11 +131,6 @@ export default function ThankYouClient({
         if (fired || cancelled) return;
         const w = window as unknown as { gtag?: (...a: unknown[]) => void };
         if (typeof w.gtag === "function") {
-          // GA4 Enhanced Conversions for Leads requires gtag('set','user_data',…)
-          // immediately before the event. Inline user_data inside the event params
-          // is the AW- (Google Ads native) pattern and gets dropped by gtag.js
-          // when serializing to GA4's /g/collect endpoint. Back-to-back set+event
-          // in the same synchronous tick has no race — the queue is FIFO.
           if (hasUserData) w.gtag("set", "user_data", userData);
           w.gtag("event", "generate_lead", {
             transaction_id: transactionId,
@@ -136,29 +165,27 @@ export default function ThankYouClient({
     .filter(Boolean)
     .join(" · ");
 
+  const whatsappUrl = `https://wa.me/${REALTOR_PHONE_DIGITS}?text=${encodeURIComponent(
+    `Hi ${REALTOR_FIRST_NAME}, I just submitted the form on ${config.SITE_DOMAIN} — looking forward to hearing from you!`,
+  )}`;
+
   return (
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
-      {/* Slim header */}
+      {/* ── MINIMAL HEADER — logo only, no nav or CTAs ── */}
       <header className="bg-[#07111f] border-b border-[#1e3a5f]">
-        <div className="max-w-3xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
-          <Link href="/" className="shrink-0">
+        <div className="max-w-3xl mx-auto flex items-center justify-start h-[58px] px-4 sm:px-6">
+          <Link href="/" className="shrink-0" aria-label={`${config.SITE_NAME} home`}>
             <span className="text-[20px] font-extrabold tracking-[-0.5px]">
               <span className="text-[#f8f9fb]">{config.SITE_NAME.toLowerCase()}</span>
               <span className="text-[#f59e0b]">.</span>
             </span>
           </Link>
-          <a
-            href={`tel:${config.realtor.phoneE164}`}
-            className="flex items-center gap-2 bg-[#f59e0b] text-[#07111f] text-[13px] font-bold px-4 py-2 rounded-lg hover:bg-[#fbbf24]"
-          >
-            📞 {config.realtor.phone}
-          </a>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14 pb-32 md:pb-14">
-        {/* Personalized hero */}
-        <div className="text-center mb-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pb-24">
+        {/* ── SECTION 1: Above the fold ── */}
+        <div className="text-center mb-7">
           <div className="inline-flex w-16 h-16 rounded-full bg-green-500 text-white items-center justify-center text-[34px] mb-4 shadow-lg shadow-green-500/20">
             ✓
           </div>
@@ -170,9 +197,9 @@ export default function ThankYouClient({
           </p>
         </div>
 
-        {/* Request echo card */}
+        {/* Lead summary card — what they asked for */}
         {lead && echoSummary && (
-          <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-6">
+          <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-5">
             <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-2">
               YOUR REQUEST
             </p>
@@ -185,154 +212,117 @@ export default function ThankYouClient({
           </div>
         )}
 
-        {/* What happens next — 4 step timeline */}
-        <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-6">
+        {/* Save Contact — vCard download. Most-prominent CTA on the page. */}
+        <div className="text-center mb-9">
+          <button
+            type="button"
+            onClick={downloadAamirVCard}
+            className="inline-flex items-center justify-center gap-2 w-full sm:w-auto sm:min-w-[280px] min-h-[52px] px-6 bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold text-[15px] sm:text-[16px] rounded-xl shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl active:scale-[0.99] transition-all"
+          >
+            <span aria-hidden>📇</span>
+            Save {REALTOR_FIRST_NAME}&apos;s Contact
+          </button>
+          <p className="text-[12px] sm:text-[13px] text-[#94a3b8] mt-2.5">
+            So you recognize his text/call within the hour.
+          </p>
+        </div>
+
+        {/* ── SECTION 2: Aamir intro — first-person, conversational ── */}
+        <section className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-7">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
+            {/* TODO: when Aamir provides a headshot, drop the file at
+                public/aamir.jpg (or similar) and swap this initials circle
+                for <Image src="/aamir.jpg" alt={config.realtor.name} ...>. */}
+            <div className="shrink-0 mx-auto sm:mx-0 w-[88px] h-[88px] sm:w-[96px] sm:h-[96px] rounded-full bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] text-[#07111f] font-extrabold text-[34px] sm:text-[36px] flex items-center justify-center shadow-lg shadow-[#f59e0b]/20">
+              {REALTOR_INITIALS}
+            </div>
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <p className="text-[15px] sm:text-[16px] text-[#f8f9fb] leading-relaxed mb-2">
+                Hi, I&apos;m {REALTOR_FIRST_NAME}. I&apos;ve been renting {config.CITY_NAME} for {config.realtor.yearsExperience} years — 150+ families helped find their place.
+              </p>
+              <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed mb-2">
+                I personally text every match, every time. When you see a {config.CITY_NAME} number text you within the hour, that&apos;s me. Save my contact above so you don&apos;t miss it.
+              </p>
+              <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed">
+                Looking forward to helping you find your place. — {REALTOR_FIRST_NAME}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── SECTION 3: Timeline ── */}
+        <section className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-7">
           <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-4">
             WHAT HAPPENS NEXT
           </p>
           <ol className="space-y-4">
             {[
-              { t: "Now", h: `You'll get a confirmation text from ${REALTOR_FIRST_NAME}'s number`, b: `${config.realtor.phone} — save it before he sends matches.` },
-              { t: "~1 hour", h: `${REALTOR_FIRST_NAME} personally reviews your criteria`, b: "Hand-picks 3–5 matches from the live TREB feed. No bots, no batch-and-blast." },
-              { t: "By end of business day", h: "Matches land in your texts", b: "With photos, prices, and links. Reply to lock in showings." },
-              { t: "Within 24–48 hours", h: "Showings booked", b: `${REALTOR_FIRST_NAME} handles the listing-side coordination. You just show up.` },
+              {
+                when: "Within 60 minutes",
+                what: `${REALTOR_FIRST_NAME} texts your 3–5 hand-picked ${config.CITY_NAME} matches`,
+              },
+              {
+                when: "Tonight or tomorrow",
+                what: `You pick favourites; ${REALTOR_FIRST_NAME} books showings`,
+              },
+              {
+                when: "Within 48 hours",
+                what: "First showing scheduled",
+              },
+              {
+                when: "Within 1–2 weeks",
+                what: "Signed lease, keys in hand",
+              },
             ].map((s, i) => (
-              <li key={i} className="flex gap-3">
-                <div className="shrink-0 w-7 h-7 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold text-[12px] flex items-center justify-center">
+              <li key={i} className="flex gap-3 sm:gap-4">
+                <div className="shrink-0 w-8 h-8 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold text-[13px] flex items-center justify-center">
                   {i + 1}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#f59e0b]">{s.t}</p>
-                  <p className="text-[14px] font-bold text-[#f8f9fb] mt-0.5">{s.h}</p>
-                  <p className="text-[12px] text-[#94a3b8] mt-0.5 leading-relaxed">{s.b}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#fbbf24] mb-0.5">
+                    {s.when}
+                  </p>
+                  <p className="text-[14px] sm:text-[15px] font-semibold text-[#f8f9fb] leading-snug">
+                    {s.what}
+                  </p>
                 </div>
               </li>
             ))}
           </ol>
-        </div>
+        </section>
 
-        {/* SMS preview mockup */}
-        <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-6">
-          <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-3">
-            WHAT THE TEXT LOOKS LIKE
-          </p>
-          <div className="bg-[#07111f] rounded-2xl p-4 max-w-[320px] mx-auto">
-            <div className="flex items-center gap-2 pb-3 border-b border-[#1e3a5f] mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#f59e0b] text-[#07111f] font-extrabold text-[13px] flex items-center justify-center">{REALTOR_INITIALS}</div>
-              <div>
-                <p className="text-[13px] font-bold text-[#f8f9fb] leading-tight">{config.realtor.name}</p>
-                <p className="text-[10px] text-[#94a3b8]">{config.realtor.phone}</p>
-              </div>
-            </div>
-            <div className="bg-[#1e3a5f] rounded-2xl rounded-tl-sm px-3 py-2.5 mb-2 text-[13px] text-[#f8f9fb] leading-relaxed">
-              Hi {firstName}! It&apos;s {REALTOR_FIRST_NAME} from RE/MAX 👋 Got your request{lead?.bedrooms !== null && lead?.bedrooms !== undefined ? ` for a ${beds}` : ""}{price ? ` under ${price}` : ""} in {config.CITY_NAME}. Pulling matches now — you&apos;ll have 3-5 listings by 4 PM today.
-            </div>
-            <div className="bg-[#1e3a5f] rounded-2xl rounded-tl-sm px-3 py-2.5 text-[13px] text-[#f8f9fb] leading-relaxed">
-              Quick Q: any preferred area (Hawthorne, Scott, Willmott)?
-            </div>
-          </div>
-        </div>
-
-        {/* 3 secondary action cards */}
-        <div className="grid sm:grid-cols-3 gap-3 mb-6">
+        {/* ── SECTION 4: WhatsApp alternative CTA — secondary visual weight ── */}
+        <div className="text-center mb-2">
           <a
-            href={`tel:${config.realtor.phoneE164}`}
-            className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 text-center hover:border-[#f59e0b]/60 transition-colors"
-          >
-            <div className="text-[26px] mb-1">📞</div>
-            <p className="text-[13px] font-bold text-[#f8f9fb]">Call now</p>
-            <p className="text-[11px] text-[#94a3b8] mt-0.5">{config.realtor.phone}</p>
-          </a>
-          <a
-            href={`https://wa.me/${REALTOR_PHONE_DIGITS}?text=Hi%20${encodeURIComponent(REALTOR_FIRST_NAME)}%2C%20I%20just%20submitted%20a%20rental%20request`}
+            href={whatsappUrl}
             target="_blank"
-            rel="noopener"
-            className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 text-center hover:border-green-500/60 transition-colors"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 w-full sm:w-auto sm:min-w-[280px] min-h-[48px] px-6 bg-[#0c1e35] border border-[#1e3a5f] hover:border-green-500/60 text-[#f8f9fb] font-bold text-[14px] sm:text-[15px] rounded-xl transition-colors"
           >
-            <div className="text-[26px] mb-1">💬</div>
-            <p className="text-[13px] font-bold text-[#f8f9fb]">WhatsApp</p>
-            <p className="text-[11px] text-[#94a3b8] mt-0.5">Faster reply</p>
-          </a>
-          <a
-            href="https://www.instagram.com/aamiryaqoobrealtor/"
-            target="_blank"
-            rel="noopener"
-            className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 text-center hover:border-[#f59e0b]/60 transition-colors"
-          >
-            <div className="text-[26px] mb-1">📷</div>
-            <p className="text-[13px] font-bold text-[#f8f9fb]">Instagram</p>
-            <p className="text-[11px] text-[#94a3b8] mt-0.5">@aamiryaqoobrealtor</p>
+            <span aria-hidden>💬</span>
+            Or message {REALTOR_FIRST_NAME} on WhatsApp
           </a>
         </div>
 
-        {/* Calendar slots */}
-        <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6 mb-6">
-          <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-2">
-            PREFER A 15-MIN CALL?
-          </p>
-          <p className="text-[13px] text-[#cbd5e1] mb-4">Pick a slot — {REALTOR_FIRST_NAME} will phone you back at the time you choose.</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {["Today 5–6 PM", "Today 6–7 PM", "Tomorrow 10–11 AM", "Tomorrow 12–1 PM", "Tomorrow 5–6 PM", "Saturday 10–11 AM"].map((s) => (
-              <a
-                key={s}
-                href={`tel:${config.realtor.phoneE164}`}
-                className="text-center bg-[#07111f] border border-[#1e3a5f] hover:border-[#f59e0b] hover:text-[#f59e0b] text-[12px] font-semibold text-[#cbd5e1] rounded-lg py-2 px-2 transition-colors"
-              >
-                {s}
-              </a>
-            ))}
-          </div>
-          <p className="text-[10px] text-[#64748b] text-center mt-3">
-            All slots route to {REALTOR_FIRST_NAME}&apos;s direct line — booking confirms via the same number.
-          </p>
-        </div>
-
-        {/* Cheat sheet — only when env flag is on */}
-        {cheatsheetEnabled && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 sm:p-6 mb-6">
-            <p className="text-[11px] font-bold tracking-wider text-[#fbbf24] uppercase mb-2">
-              📘 BONUS — IN YOUR INBOX
-            </p>
-            <p className="text-[15px] font-bold text-[#f8f9fb] mb-1">{config.CITY_NAME} Renter&apos;s Cheat Sheet</p>
-            <p className="text-[12px] text-[#cbd5e1] leading-relaxed">
-              {REALTOR_FIRST_NAME}&apos;s 6-page PDF: what landlords actually ask for, prices by neighbourhood, and 3 red flags to spot. Check your email — it landed there moments ago.
-            </p>
-          </div>
-        )}
-
-        {/* Testimonials */}
-        <div className="mb-6">
-          <p className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-3 text-center">
-            RECENT {config.CITY_NAME.toUpperCase()} RENTERS
-          </p>
-          <div className="grid md:grid-cols-2 gap-3">
-            {[
-              { name: "Priya S.", quote: `Found us a 2-bed in Hawthorne in 4 days. ${REALTOR_FIRST_NAME} actually picks up the phone.` },
-              { name: "James R.", quote: "Skipped the Zumper rabbit hole entirely. Three matches, signed lease in a week." },
-            ].map((t) => (
-              <div key={t.name} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4">
-                <p className="text-[14px] text-[#f8f9fb] leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                <p className="text-[11px] text-[#94a3b8] mt-2 font-semibold">— {t.name}, {config.CITY_NAME} renter</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="text-center text-[11px] text-[#64748b] mt-6">
-          🛡️ Free for renters. {REALTOR_FIRST_NAME} is paid by the listing side, never by you.
-        </p>
+        {/* ── SECTION 5: TESTIMONIALS_PLACEHOLDER ──
+            Reserved for 2-3 testimonials once Aamir collects them (planned
+            within the week). Intentionally renders nothing for v1 — drop
+            <section>…</section> here when the testimonial content lands. */}
+        {/* <!-- TESTIMONIALS_PLACEHOLDER --> */}
       </main>
 
-      {/* Sticky mobile CTA */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 py-2.5 flex gap-2">
-        <a
-          href={`tel:${config.realtor.phoneE164}`}
-          className="flex-1 text-center bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold py-3 rounded-lg text-[14px]"
-        >
-          📞 Call {REALTOR_FIRST_NAME} now
-        </a>
-      </div>
-      <div className="md:hidden h-[60px]" aria-hidden />
+      {/* ── MINIMAL FOOTER — legal + copyright only, no feature links ── */}
+      <footer className="bg-[#07111f] border-t border-[#1e3a5f] py-6">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px] mb-3">
+            <Link href="/privacy" className="text-[#94a3b8] hover:text-[#f8f9fb]">Privacy Policy</Link>
+            <Link href="/terms" className="text-[#94a3b8] hover:text-[#f8f9fb]">Terms</Link>
+          </nav>
+          <p className="text-center text-[11px] text-[#64748b] leading-relaxed">
+            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {BROKERAGE_SHORT_NAME}
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
