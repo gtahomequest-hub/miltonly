@@ -23,6 +23,16 @@ const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || process.env.REALTOR_EMAIL
 const AUTO_REPLY_FROM = `${config.realtor.name.split(" ")[0]} from ${config.SITE_NAME} <onboarding@resend.dev>`;
 const AUTO_REPLY_REPLY_TO = process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL || config.realtor.email;
 
+// AUTO-REPLY FEATURE FLAG (disabled by default 2026-05-12) — the lead-facing
+// auto-reply email currently fails for every real lead because the Resend
+// account is still on the onboarding@resend.dev sandbox sender, which can
+// only deliver to the account-owner inbox (gtahomequest@gmail.com). Sending
+// to a real lead address returns 422 "verify a domain at resend.com/domains".
+// Realtor notification (notifyNewLead) keeps working — only the lead-facing
+// auto-reply is gated. Re-enable by setting ENABLE_AUTO_REPLY=true in Vercel
+// after the verified-sender domain (Path B) ships.
+const AUTO_REPLY_ENABLED = process.env.ENABLE_AUTO_REPLY === "true";
+
 // Fire-and-forget. Returns immediately so /api/leads response stays fast.
 // All errors are caught + logged; never propagated to the client.
 function sendAutoReply(args: {
@@ -282,7 +292,9 @@ export async function POST(request: NextRequest) {
       // Auto-reply — fires within ~30s if email present. Skipped on honeypot
       // (already returned above) and when no email was captured.
       if (finalEmail) {
-        sendAutoReply({ leadId: lead.id, email: finalEmail, firstName: trimmedName });
+        if (AUTO_REPLY_ENABLED) {
+          sendAutoReply({ leadId: lead.id, email: finalEmail, firstName: trimmedName });
+        }
       }
 
       // Twilio SMS to Aamir — redundant channel alongside email. Independent
@@ -383,7 +395,9 @@ export async function POST(request: NextRequest) {
     // Auto-reply for non-ads sources (listing detail, alerts, etc.) — same
     // skip rules: skip if no email, honeypot already short-circuited above.
     if (lead.email) {
-      sendAutoReply({ leadId: lead.id, email: lead.email, firstName: lead.firstName });
+      if (AUTO_REPLY_ENABLED) {
+        sendAutoReply({ leadId: lead.id, email: lead.email, firstName: lead.firstName });
+      }
     }
 
     return NextResponse.json({ success: true, id: lead.id });
