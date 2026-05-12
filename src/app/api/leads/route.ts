@@ -181,7 +181,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { firstName, email, phone, source, intent, street, timeline, hasAgent } = body;
-    const isAds = source === ADS_SOURCE;
+    // ADS_SOURCE-prefixed variants (e.g. "ads-rentals-lp-modal" from the
+    // UnlockModal on /rentals/ads) get routed through the same paid-traffic
+    // path: phone normalization, propertyType/priceRangeMax mapping, Twilio
+    // SMS notification, auto-reply, attribution capture. The Lead row keeps
+    // its specific source tag (e.g. "ads-rentals-lp-modal") so DB analytics
+    // can split modal vs hero-form conversions.
+    const isAds = source === ADS_SOURCE || (typeof source === "string" && source.startsWith(`${ADS_SOURCE}-`));
 
     if (isAds) {
       // ─── Strict validation for paid-traffic landing page ───
@@ -226,7 +232,9 @@ export async function POST(request: NextRequest) {
           firstName: trimmedName,
           email: finalEmail,
           phone: normalizedPhone,
-          source: ADS_SOURCE,
+          // Preserve the exact source the form sent (e.g. ads-rentals-lp,
+          // ads-rentals-lp-modal). Fallback to ADS_SOURCE if missing.
+          source: typeof source === "string" && source ? source : ADS_SOURCE,
           intent: "renter",
           score,
           scorePoints,
