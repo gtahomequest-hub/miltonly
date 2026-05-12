@@ -5,53 +5,49 @@ import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
+// 2-column head-to-head: Aamir vs DIY. The "Out-of-area agent" column was
+// removed 2026-05-12 — for cold ad traffic, the honest competitive framing
+// is "use a Milton expert vs go alone on Realtor.ca/Zillow", not "vs another
+// agent". Keeps the 7 rows; just drops the third lane.
 const ROWS: Array<{
   label: string;
   aamir: { mark: "yes" | "no" | "partial"; text: string };
   diy: { mark: "yes" | "no" | "partial"; text: string };
-  out: { mark: "yes" | "no" | "partial"; text: string };
 }> = [
   {
     label: `Live TREB feed (every ${config.CITY_NAME} listing)`,
     aamir: { mark: "yes", text: "Yes — same data MLS gives me" },
     diy: { mark: "no", text: "Delayed 24–48 hrs" },
-    out: { mark: "partial", text: `Yes but no ${config.CITY_NAME} context` },
   },
   {
     label: "Replies within 60 min",
     aamir: { mark: "yes", text: "Yes — guaranteed" },
     diy: { mark: "no", text: "You email landlords yourself" },
-    out: { mark: "partial", text: "24–72 hr response typical" },
   },
   {
     label: `Knows ${config.CITY_NAME} schools, transit, builders`,
     aamir: { mark: "yes", text: `Lived & worked here ${config.realtor.yearsExperience} years` },
     diy: { mark: "no", text: "You research alone" },
-    out: { mark: "partial", text: "Generic city info" },
   },
   {
     label: "Negotiates rent on your behalf",
     aamir: { mark: "yes", text: "Yes — saved clients $150–$400/mo" },
     diy: { mark: "no", text: "You negotiate alone" },
-    out: { mark: "partial", text: "Rarely, not their focus" },
   },
   {
     label: "Reviews lease before you sign",
     aamir: { mark: "yes", text: "Yes — flags hidden clauses" },
     diy: { mark: "no", text: "You sign as-is" },
-    out: { mark: "partial", text: "Sometimes" },
   },
   {
     label: "Same-day showings",
     aamir: { mark: "yes", text: "Yes when the property allows" },
     diy: { mark: "no", text: "You coordinate yourself" },
-    out: { mark: "partial", text: `Limited ${config.CITY_NAME} availability` },
   },
   {
     label: "Cost to renter",
     aamir: { mark: "yes", text: "$0 — landlord pays commission" },
     diy: { mark: "yes", text: "Free but you do all the work" },
-    out: { mark: "yes", text: "$0 but slower & less informed" },
   },
 ];
 
@@ -87,10 +83,6 @@ export default function ComparisonTable() {
                   <p className="text-[13px] font-bold text-white">Realtor.ca / Zillow</p>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8] mt-0.5">DIY search</p>
                 </th>
-                <th className="px-5 py-4">
-                  <p className="text-[13px] font-bold text-white">Out-of-area agent</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8] mt-0.5">&nbsp;</p>
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -112,12 +104,6 @@ export default function ComparisonTable() {
                       <span>{r.diy.text}</span>
                     </span>
                   </td>
-                  <td className="px-5 py-4 border-t border-[#1e3a5f]">
-                    <span className="inline-flex items-start gap-2 text-[13px] text-[#94a3b8]">
-                      <MarkIcon mark={r.out.mark} />
-                      <span>{r.out.text}</span>
-                    </span>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -136,18 +122,11 @@ export default function ComparisonTable() {
                   <span>{r.aamir.text}</span>
                 </p>
               </div>
-              <div className="border-b border-[#1e3a5f] px-4 py-3">
+              <div className="px-4 py-3">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] mb-1">DIY</p>
                 <p className="text-[12px] text-[#cbd5e1] flex items-start gap-2">
                   <MarkIcon mark={r.diy.mark} />
                   <span>{r.diy.text}</span>
-                </p>
-              </div>
-              <div className="px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Out-of-area</p>
-                <p className="text-[12px] text-[#cbd5e1] flex items-start gap-2">
-                  <MarkIcon mark={r.out.mark} />
-                  <span>{r.out.text}</span>
                 </p>
               </div>
             </div>

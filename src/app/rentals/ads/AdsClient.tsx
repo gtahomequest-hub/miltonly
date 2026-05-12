@@ -121,7 +121,7 @@ function AdsClientInner({
     const t = (initialType || "").toLowerCase();
     const typeWord = TYPE_HEADLINE_WORD[t];
     const noun = typeWord ? `${typeWord} rentals` : "rentals";
-    return `Get 3-5 ${config.CITY_NAME} ${noun} hand-picked by ${REALTOR_FIRST_NAME} — not ${totalRentals} listings to sift through.`;
+    return `Skip ${totalRentals} listings. Get 3-5 ${config.CITY_NAME} ${noun} hand-picked by ${REALTOR_FIRST_NAME}.`;
   }, [initialType, totalRentals]);
 
   useEffect(() => {
@@ -262,7 +262,7 @@ function AdsClientInner({
                 {headline}
               </h1>
               <p className="text-[14px] sm:text-[17px] text-[#cbd5e1] leading-snug max-w-xl mb-3 sm:mb-5">
-                Same {REALTOR_FIRST_NAME} who&apos;s done $50M+ in {config.CITY_NAME} real estate and matched 100+ renters. Replies in under 60 minutes.
+                Same {REALTOR_FIRST_NAME} who&apos;s done $55M+ in {config.CITY_NAME} real estate and helped 150+ families. Replies in under 60 minutes.
               </p>
 
               {/* TRUST PILLARS — 3 pills, horizontal row, compact on mobile */}
@@ -273,7 +273,7 @@ function AdsClientInner({
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3a5f] bg-[#0c1e35] px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#cbd5e1]">
                   <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
-                  {config.realtor.yearsExperience} years · $50M+ in {config.CITY_NAME}
+                  {config.realtor.yearsExperience} years · $55M+ in {config.CITY_NAME}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-green-300">
                   <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
@@ -281,16 +281,27 @@ function AdsClientInner({
                 </span>
               </div>
 
-              {/* Live activity badge — desktop only, kept compact below pills */}
-              <div className="hidden sm:inline-flex items-center gap-2 mt-5 bg-green-500/10 border border-green-500/25 rounded-full px-3 py-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                </span>
-                <span className="text-[11px] font-bold tracking-wider text-green-300 uppercase">
-                  {totalRentals} active · {newThisWeek} new this week · {renterCount} matched this week
-                </span>
-              </div>
+              {/* Live activity badge — desktop only. Each segment renders only
+                  when its count is > 0; entire badge hides when all are zero
+                  (avoids "0 NEW THIS WEEK" reading as a negative trust signal). */}
+              {(() => {
+                const segs: string[] = [];
+                if (totalRentals > 0) segs.push(`${totalRentals} active`);
+                if (newThisWeek > 0) segs.push(`${newThisWeek} new this week`);
+                if (renterCount > 0) segs.push(`${renterCount} matched this week`);
+                if (segs.length === 0) return null;
+                return (
+                  <div className="hidden sm:inline-flex items-center gap-2 mt-5 bg-[#f59e0b]/10 border border-[#f59e0b]/25 rounded-full px-3 py-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fbbf24] opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f59e0b]" />
+                    </span>
+                    <span className="text-[11px] font-bold tracking-wider text-[#fbbf24] uppercase">
+                      {segs.join(" · ")}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* RIGHT — 3-FIELD FORM (phone + email + budget). Sticky on desktop, below hero on mobile. */}
@@ -301,7 +312,7 @@ function AdsClientInner({
                 noValidate
               >
                 <h2 className="text-[18px] sm:text-[22px] font-extrabold leading-tight text-[#07111f] mb-1.5">
-                  See what {REALTOR_FIRST_NAME} has for you
+                  Get matched in 60 seconds
                 </h2>
                 <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
                   Phone + email + budget. {REALTOR_FIRST_NAME} texts 3–5 matches within the hour.
@@ -547,7 +558,7 @@ function AdsClientInner({
           <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">{config.realtor.name}</h2>
           <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_SHORT_NAME}</p>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-2xl mx-auto mb-7">
-            <strong className="text-white">{config.realtor.yearsExperience} years renting {config.CITY_NAME}, full-time.</strong> 100+ {config.CITY_NAME} renters matched, $50M+ in real estate sold. You&apos;ll work with {REALTOR_FIRST_NAME} directly — not an assistant, not a junior agent. From first call to signed lease.
+            <strong className="text-white">{config.realtor.yearsExperience} years renting {config.CITY_NAME}, full-time.</strong> 150+ {config.CITY_NAME} families helped, $55M+ leased &amp; sold. You&apos;ll work with {REALTOR_FIRST_NAME} directly — not an assistant, not a junior agent. From first call to signed lease.
           </p>
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {[
@@ -607,8 +618,11 @@ function AdsClientInner({
                 q: "Where do these listings come from?",
                 a: `Every rental you see is pulled live from TREB (Toronto Regional Real Estate Board) — the same MLS® data used by every licensed Realtor in ${config.CITY_PROVINCE}. Updated daily.`,
               },
-            ].map((item) => (
-              <details key={item.q} className="group bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden">
+            ].map((item, i) => (
+              // First question is the #1 unstated objection for cold rental
+              // traffic ("what's the catch?") — open by default so the "$0
+              // to the renter" answer is visible without a tap.
+              <details key={item.q} open={i === 0} className="group bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden">
                 <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4 hover:bg-[#1e3a5f]/30 transition-colors">
                   <span className="text-[15px] font-bold text-white">{item.q}</span>
                   <span className="text-[#f59e0b] text-[20px] font-light group-open:rotate-45 transition-transform">+</span>
@@ -627,7 +641,7 @@ function AdsClientInner({
             Ready to find your {config.CITY_NAME} rental?
           </h2>
           <p className="text-[14px] sm:text-[16px] text-[#07111f]/80 mb-6 max-w-xl mx-auto">
-            Get matched with live listings that fit your needs — usually within one business hour.
+            Get matched with live listings that fit your needs — within 1 hour during business hours (9 AM – 9 PM ET).
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
