@@ -160,15 +160,15 @@ export default async function ListingsPage({ searchParams }: Props) {
     },
     {
       question: `What is the average home price in ${config.CITY_NAME}?`,
-      answer: `The average asking price for a ${config.CITY_NAME} home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood â€” detached homes in established areas like Old ${config.CITY_NAME} sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
+      answer: `The average asking price for a ${config.CITY_NAME} home right now is ${formatPriceFull(avg)}. Prices range widely by property type and neighbourhood — detached homes in established areas like Old ${config.CITY_NAME} sit higher, while condos and townhouses in newer subdivisions can come in considerably lower.`,
     },
     {
       question: `What neighbourhoods are in ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
-      answer: `${config.CITY_NAME}'s main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old ${config.CITY_NAME}, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points â€” use the neighbourhood filter to narrow your search.`,
+      answer: `${config.CITY_NAME}'s main residential neighbourhoods include Dempsey, Beaty, Willmott, Hawthorne Village, Timberlea, Old ${config.CITY_NAME}, Coates, Clarke, Scott, Harrison, Ford, Walker, and Cobban. Each has its own mix of housing stock, schools, and price points — use the neighbourhood filter to narrow your search.`,
     },
     {
       question: `How do I book a showing for a ${config.CITY_NAME} home?`,
-      answer: `Click "Book showing" on any listing card and ${config.realtor.name} â€” a licensed ${config.brokerage.name.replace(", Brokerage", "")} agent based in ${config.CITY_NAME} â€” will confirm your appointment within the hour. No obligation, no pressure.`,
+      answer: `Click "Book showing" on any listing card and ${config.realtor.name} — a licensed ${config.brokerage.name.replace(", Brokerage", "")} agent based in ${config.CITY_NAME} — will confirm your appointment within the hour. No obligation, no pressure.`,
     },
   ];
 
@@ -176,7 +176,7 @@ export default async function ListingsPage({ searchParams }: Props) {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: `About ${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`,
-    description: `An overview of the ${config.CITY_NAME} real estate market â€” growth, property mix, and why working with a local specialist matters.`,
+    description: `An overview of the ${config.CITY_NAME} real estate market — growth, property mix, and why working with a local specialist matters.`,
     author: { "@type": "Person", name: config.realtor.name },
     publisher: { "@type": "Organization", name: config.SITE_NAME },
     datePublished: "2026-04-01",
@@ -191,7 +191,7 @@ export default async function ListingsPage({ searchParams }: Props) {
         {/* â•â•â• HEADER + SNAPSHOT + FILTERS â•â•â• */}
         <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-5">
           <div className="max-w-7xl mx-auto">
-            {/* â•â•â• MODE TABS â€” Active / Rent / Sold â•â•â• */}
+            {/* â•â•â• MODE TABS — Active / Rent / Sold â•â•â• */}
             <div className="flex gap-2 mb-5">
               {[
                 { label: "For Sale", href: "/listings", active: searchParams.status !== "rent" && searchParams.status !== "sold" },
@@ -224,7 +224,7 @@ export default async function ListingsPage({ searchParams }: Props) {
                 <p className="text-[11px] text-[#94a3b8] mt-0.5 font-medium">Avg asking price</p>
               </div>
               <div className="bg-[#07111f] rounded-lg px-4 py-3">
-                <p className="text-[18px] font-extrabold text-white tracking-[-0.3px]">{avgDom || "â€”"}{avgDom ? " days" : ""}</p>
+                <p className="text-[18px] font-extrabold text-white tracking-[-0.3px]">{avgDom || "—"}{avgDom ? " days" : ""}</p>
                 <p className="text-[11px] text-[#94a3b8] mt-0.5 font-medium">Avg DOM</p>
               </div>
               <div className="bg-[#07111f] rounded-lg px-4 py-3">
@@ -286,8 +286,8 @@ export default async function ListingsPage({ searchParams }: Props) {
                 <span className="text-[12px] font-medium text-[#94a3b8]">Sort:</span>
                 <select name="sort" defaultValue={searchParams.sort || "newest"} className="text-[12px] bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 text-[#475569] font-medium cursor-pointer">
                   <option value="newest">Newest</option>
-                  <option value="price_asc">Price â†‘</option>
-                  <option value="price_desc">Price â†“</option>
+                  <option value="price_asc">Price ←‘</option>
+                  <option value="price_desc">Price ←“</option>
                 </select>
               </div>
             </form>
@@ -323,20 +323,20 @@ export default async function ListingsPage({ searchParams }: Props) {
             <div className="flex items-center justify-center gap-3 mt-10 pt-8 border-t border-[#e2e8f0]">
               {page > 1 && (
                 <Link href={{ pathname: "/listings", query: { ...searchParams, page: String(page - 1) } }} className="text-[13px] bg-white border border-[#e2e8f0] rounded-lg px-5 py-2.5 text-[#475569] font-medium hover:border-[#07111f] transition-colors">
-                  â† Previous
+                  ← Previous
                 </Link>
               )}
               <span className="text-[13px] text-[#94a3b8]">Page {page} of {totalPages}</span>
               {page < totalPages && (
                 <Link href={{ pathname: "/listings", query: { ...searchParams, page: String(page + 1) } }} className="text-[13px] bg-white border border-[#e2e8f0] rounded-lg px-5 py-2.5 text-[#475569] font-medium hover:border-[#07111f] transition-colors">
-                  Next â†’
+                  Next →
                 </Link>
               )}
             </div>
           )}
         </div>
 
-        {/* â•â•â• SECTION 1 â€” NEIGHBOURHOOD QUICK LINKS â•â•â• */}
+        {/* â•â•â• SECTION 1 — NEIGHBOURHOOD QUICK LINKS â•â•â• */}
         {topNeighbourhoods.length > 0 && (
           <div className="bg-[#07111f] px-5 sm:px-11 py-10">
             <div className="max-w-7xl mx-auto">
@@ -358,7 +358,7 @@ export default async function ListingsPage({ searchParams }: Props) {
           </div>
         )}
 
-        {/* â•â•â• SECTION 2 â€” TOP STREETS STRIP â•â•â• */}
+        {/* â•â•â• SECTION 2 — TOP STREETS STRIP â•â•â• */}
         {topStreets.length > 0 && (
           <div className="bg-[#0c1e35] px-5 sm:px-11 py-10 border-t border-[#1e3a5f]">
             <div className="max-w-7xl mx-auto">
@@ -379,7 +379,7 @@ export default async function ListingsPage({ searchParams }: Props) {
           </div>
         )}
 
-        {/* â•â•â• SECTION 3 â€” SCHOOL ZONE LINKS â•â•â• */}
+        {/* â•â•â• SECTION 3 — SCHOOL ZONE LINKS â•â•â• */}
         <div className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-[22px] font-extrabold text-[#07111f] mb-6">Find homes near top-rated schools</h2>
@@ -410,18 +410,18 @@ export default async function ListingsPage({ searchParams }: Props) {
           </div>
         </div>
 
-        {/* â•â•â• SECTION 4 â€” SAVE SEARCH CTA â•â•â• */}
+        {/* â•â•â• SECTION 4 — SAVE SEARCH CTA â•â•â• */}
         <div className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-[18px] font-extrabold text-[#07111f] mb-2">Create a free account to save searches and get deal alerts</p>
-            <p className="text-[14px] text-[#64748b] mb-5">We&apos;ll email you the moment a new {config.CITY_NAME} listing matches your filters â€” before it hits any other site.</p>
+            <p className="text-[14px] text-[#64748b] mb-5">We&apos;ll email you the moment a new {config.CITY_NAME} listing matches your filters — before it hits any other site.</p>
             <Link href="/signin" className="inline-block bg-[#07111f] text-[#f59e0b] text-[14px] font-bold px-6 py-3 rounded-lg hover:bg-[#0c1e35] transition-colors">
-              Sign up free â†’
+              Sign up free →
             </Link>
           </div>
         </div>
 
-        {/* â•â•â• SECTION 5 â€” SEO CONTENT â•â•â• */}
+        {/* â•â•â• SECTION 5 — SEO CONTENT â•â•â• */}
         <article className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-[800px] mx-auto">
             <h2 className="text-[24px] font-extrabold text-[#07111f] mb-4">About {config.CITY_NAME} real estate</h2>
@@ -430,16 +430,16 @@ export default async function ListingsPage({ searchParams }: Props) {
                 {config.CITY_NAME} has been one of Canada&apos;s fastest-growing communities for two decades, and the pace hasn&apos;t really let up. Between the GO train expansion, the Boyne and Agerton build-out, and new campus infrastructure coming online, the pool of people arriving here each year keeps the resale market competitive. What that means for buyers is simple: inventory moves quickly, the good homes get multiple offers, and knowing which neighbourhoods to shortlist is half the work.
               </p>
               <p>
-                The property mix is unusually wide for a town this size. You can be looking at a 2005 detached in Timberlea, a brand-new Mattamy townhouse in Walker, or a low-rise condo right off the GO station â€” all in the same afternoon. Price points spread across a similar range. Entry-level condos start in the high $400K window; established detached streets in Dempsey and Hawthorne Village routinely clear $1.2M. Understanding that spread â€” and what each pocket actually trades at right now â€” is where a local agent makes the biggest difference.
+                The property mix is unusually wide for a town this size. You can be looking at a 2005 detached in Timberlea, a brand-new Mattamy townhouse in Walker, or a low-rise condo right off the GO station — all in the same afternoon. Price points spread across a similar range. Entry-level condos start in the high $400K window; established detached streets in Dempsey and Hawthorne Village routinely clear $1.2M. Understanding that spread — and what each pocket actually trades at right now — is where a local agent makes the biggest difference.
               </p>
               <p>
-                That&apos;s where working with someone who only sells {config.CITY_NAME} matters. {config.realtor.name} has been with {config.brokerage.name.replace(", Brokerage", "")} full-time for {config.realtor.yearsExperience} years and has closed on every street you&apos;ll scroll past. {config.realtor.name.split(" ")[0]}&apos;ll tell you which townhouse has a rental parking spot included, which street backs onto a park that floods, and which condo building has a maintenance fee about to jump. Call {config.realtor.phone} or tap Book showing on any listing â€” confirmed within the hour, no obligation.
+                That&apos;s where working with someone who only sells {config.CITY_NAME} matters. {config.realtor.name} has been with {config.brokerage.name.replace(", Brokerage", "")} full-time for {config.realtor.yearsExperience} years and has closed on every street you&apos;ll scroll past. {config.realtor.name.split(" ")[0]}&apos;ll tell you which townhouse has a rental parking spot included, which street backs onto a park that floods, and which condo building has a maintenance fee about to jump. Call {config.realtor.phone} or tap Book showing on any listing — confirmed within the hour, no obligation.
               </p>
             </div>
           </div>
         </article>
 
-        {/* â•â•â• SECTION 6 â€” FAQ â•â•â• */}
+        {/* â•â•â• SECTION 6 — FAQ â•â•â• */}
         <div className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-[22px] font-extrabold text-[#07111f] mb-6">Frequently asked questions</h2>

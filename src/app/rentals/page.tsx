@@ -6,8 +6,8 @@ import RentalsClient from "./RentalsClient";
 export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Rentals â€” Let ${config.SITE_NAME} Find Your Home`,
-  description: `Browse every active rental in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes â€” live TREB data, verified landlords, same-day showings guaranteed.`,
+  title: `${config.CITY_NAME} Rentals — Let ${config.SITE_NAME} Find Your Home`,
+  description: `Browse every active rental in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes — live TREB data, verified landlords, same-day showings guaranteed.`,
   canonical: `${config.SITE_URL}/rentals`,
 });
 

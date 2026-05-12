@@ -9,6 +9,21 @@ const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const REALTOR_INITIALS = config.realtor.name.split(" ").map((p) => p[0]).join("").toUpperCase();
 const REALTOR_PHONE_DIGITS = config.realtor.phoneE164.replace(/^\+/, "");
 
+// Weighted lead values for Google Ads Smart Bidding. Approximates expected
+// commission × close-rate per budget tier. Without this, Smart Bidding sees
+// every lead as value=1 CAD and can't optimize bid toward higher-budget
+// renters (who carry materially higher expected revenue). Tiers match the
+// 4 budget options on /rentals/ads (mapped through priceRangeMax: int).
+function getLeadValueByBudget(priceRangeMax: number | null): number {
+  switch (priceRangeMax) {
+    case 2500: return 50;   // "Under $2,500"
+    case 3500: return 100;  // "$2,500 – $3,500"
+    case 4500: return 150;  // "$3,500 – $4,500"
+    case 6000: return 250;  // "$4,500+"
+    default: return 50;     // fallback for unexpected / missing values
+  }
+}
+
 interface Lead {
   id: string;
   firstName: string;
@@ -90,7 +105,7 @@ export default function ThankYouClient({
           if (hasUserData) w.gtag("set", "user_data", userData);
           w.gtag("event", "generate_lead", {
             transaction_id: transactionId,
-            value: 1.0,
+            value: getLeadValueByBudget(lead?.priceRangeMax ?? null),
             currency: "CAD",
             lead_id: lead?.id || transactionId,
           });

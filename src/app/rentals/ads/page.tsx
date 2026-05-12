@@ -6,10 +6,13 @@ import AdsClient from "./AdsClient";
 export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Rentals â€” Get Matched by a Local Expert`,
+  title: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
   description: `Live TREB rental listings in ${config.CITY_NAME} ${config.CITY_PROVINCE}, matched to your needs by RE/MAX Hall-of-Fame Realtor ${config.realtor.name}. Same-day showings when available.`,
   canonical: `${config.SITE_URL}/rentals/ads`,
-  noIndex: true,
+  // Paid landing page is open to crawlers — anecdotal Quality Score lift
+  // from removing noindex on Google Ads LPs. Other site routes keep their
+  // noindex/robots rules; this override is scoped to /rentals/ads only.
+  noIndex: false,
 });
 
 export const revalidate = 600;
@@ -41,7 +44,7 @@ export default async function RentalsAdsPage({
   const qBeds = parseInt(str(sp, "beds") || "0", 10) || 0;
   const qMax = parseInt(str(sp, "max") || "0", 10) || 0;
 
-  // Phase 2 â€” fetch a meaningful pool unfiltered, let the client filter chips
+  // Phase 2 — fetch a meaningful pool unfiltered, let the client filter chips
   // against the pool. URL params seed initial chip state, not server filter.
   const [listings, totalRentals, allListed, latest, renterCountRaw] = await Promise.all([
     prisma.listing.findMany({
@@ -72,18 +75,18 @@ export default async function RentalsAdsPage({
   const newThisWeek = allListed.filter((l) => new Date(l.listedAt) > weekAgo).length;
   const serialized = JSON.parse(JSON.stringify(listings));
 
-  // "Updated X min ago" â€” clamp to "RECENTLY" if unknown or > 60 minutes.
+  // "Updated X min ago" — clamp to "RECENTLY" if unknown or > 60 minutes.
   let updatedMinAgo: number | null = null;
   if (latest?.syncedAt) {
     const minutes = Math.floor((Date.now() - new Date(latest.syncedAt).getTime()) / 60000);
     if (minutes >= 0 && minutes <= 60) updatedMinAgo = minutes;
   }
 
-  // TODO: remove this floor after week 4 of paid traffic â€” early-launch
+  // TODO: remove this floor after week 4 of paid traffic — early-launch
   // safeguard so the urgency line doesn't read "0 ${CITY_NAME} renters got matched".
   const renterCount = renterCountRaw < 5 ? 12 : renterCountRaw;
 
-  // Hero image selection â€” condo â†’ interior, house types â†’ neighbourhood, default â†’ interior
+  // Hero image selection — condo → interior, house types → neighbourhood, default → interior
   const HERO_BY_TYPE: Record<string, string> = {
     condo: "/rentals-ads/hero-default.png",
     detached: "/rentals-ads/hero-neighbourhood.png",
@@ -92,7 +95,7 @@ export default async function RentalsAdsPage({
   };
   const heroSrc = HERO_BY_TYPE[qType] || "/rentals-ads/hero-default.png";
 
-  // Schema.org JSON-LD for /rentals/ads â€” RealEstateAgent + LocalBusiness + WebPage.
+  // Schema.org JSON-LD for /rentals/ads — RealEstateAgent + LocalBusiness + WebPage.
   // Public Mega ${CITY_NAME} GBP address used for LocalBusiness; authorized by agent.
   const realtorFirstName = config.realtor.name.split(" ")[0].toLowerCase();
   const brokerageShort = config.brokerage.name.replace(", Brokerage", "");
@@ -133,7 +136,7 @@ export default async function RentalsAdsPage({
       {
         "@type": "LocalBusiness",
         "@id": `${config.SITE_URL_WWW}/#business`,
-        name: `${config.realtor.name} â€” ${config.CITY_NAME} Real Estate Agent | RE/MAX`,
+        name: `${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent | RE/MAX`,
         image: `${config.SITE_URL_WWW}/og-image.jpg`,
         telephone: config.realtor.phoneE164,
         url: config.SITE_URL_WWW,
@@ -151,9 +154,9 @@ export default async function RentalsAdsPage({
       {
         "@type": "WebPage",
         "@id": `${config.SITE_URL_WWW}/rentals/ads`,
-        name: `${config.CITY_NAME} Rentals â€” Get Matched by a Local Expert`,
+        name: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
         description:
-          `Find your ${config.CITY_NAME} rental with ${config.realtor.name} â€” RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live TREB listings hand-matched. Reply within 60 min.`,
+          `Find your ${config.CITY_NAME} rental with ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live TREB listings hand-matched. Reply within 60 min.`,
         isPartOf: { "@id": `${config.SITE_URL_WWW}/#business` },
         about: { "@id": `${config.SITE_URL_WWW}/#${realtorFirstName}` },
       },

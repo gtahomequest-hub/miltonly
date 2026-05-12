@@ -308,6 +308,8 @@ function AdsClientInner({
             <div id="lead-form" className="lg:sticky lg:top-[80px]">
               <form
                 onSubmit={handleSubmit}
+                method="post"
+                action="/api/leads"
                 className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-[#07111f]"
                 noValidate
               >
@@ -401,10 +403,10 @@ function AdsClientInner({
                   disabled={submitting}
                   className="w-full min-h-[52px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] sm:text-[16px] rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl active:scale-[0.99]"
                 >
-                  {submitting ? "Sending…" : "Unlock all matches"}
+                  {submitting ? "Sending…" : "Text me my matches"}
                 </button>
                 <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
-                  🔒 No spam. No fees. By submitting you agree to be contacted.{" "}
+                  🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {BROKERAGE_SHORT_NAME}. Reply STOP to opt out.{" "}
                   <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy</Link>.
                 </p>
               </form>
