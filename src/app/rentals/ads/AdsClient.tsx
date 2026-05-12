@@ -9,6 +9,7 @@ import { formatPriceFull, daysAgo } from "@/lib/format";
 import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
 import ComparisonTable from "./ComparisonTable";
+import UnlockModal from "./UnlockModal";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
@@ -59,6 +60,17 @@ const TYPE_HEADLINE_WORD: Record<string, string> = {
   semi: "semi-detached",
   townhouse: "townhouse",
 };
+
+// Listings section heading variants. When ?type= is set, the heading reflects
+// that property type AND advertises the 3/9 split — message-matches the
+// filtered listings grid. No-type default keeps the existing copy.
+const SECTION_HEADING_DEFAULT = `Recent ${config.CITY_NAME} rentals from live MLS data`;
+const SECTION_HEADING_BY_TYPE: Record<string, string> = {
+  condo: `Recent ${config.CITY_NAME} condo rentals · 3 unlocked, 9 more behind the form`,
+  detached: `Recent ${config.CITY_NAME} detached homes for rent · 3 unlocked, 9 more behind the form`,
+  semi: `Recent ${config.CITY_NAME} semi-detached rentals · 3 unlocked, 9 more behind the form`,
+  townhouse: `Recent ${config.CITY_NAME} townhouse rentals · 3 unlocked, 9 more behind the form`,
+};
 const TYPE_DISPLAY_LABEL: Record<string, string> = {
   condo: "Condo",
   detached: "Detached",
@@ -100,6 +112,10 @@ function AdsClientInner({
   const [honey, setHoney] = useState(""); // honeypot — must stay empty
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Unlock-modal state — opened by any of the 9 locked listing cards.
+  // Shared modal across all locked cards (one form, not nine).
+  const [unlockOpen, setUnlockOpen] = useState(false);
 
   // Tracking state — captured from URL + persistent attributionPayload().
   const [tracking, setTracking] = useState({
@@ -204,10 +220,12 @@ function AdsClientInner({
     }
   }
 
-  // Listings teaser — 3 clear + 3 blurred + 1 "see more" CTA card.
+  // Listings grid — 3 clear + 9 locked (12 cards total). Locked cards
+  // trigger the shared UnlockModal. The old "+387 more matches" tease card
+  // was removed; the 9 locked cards do that job better.
   const teaserClear = listings.slice(0, 3);
-  const teaserBlurred = listings.slice(3, 6);
-  const remainingCount = Math.max(0, totalRentals - 3);
+  const teaserBlurred = listings.slice(3, 12);
+  const sectionHeading = SECTION_HEADING_BY_TYPE[initialType] || SECTION_HEADING_DEFAULT;
 
   return (
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
@@ -427,7 +445,7 @@ function AdsClientInner({
                   : "Updated recently"}
               </div>
               <h2 className="text-[24px] sm:text-[30px] font-extrabold leading-tight">
-                Recent {config.CITY_NAME} rentals from live MLS data
+                {sectionHeading}
               </h2>
             </div>
             <a
@@ -482,17 +500,19 @@ function AdsClientInner({
               );
             })}
 
-            {/* Blurred listings — locked behind the form. Property-type badge shown
-                un-blurred so the user can see what category is locked. */}
+            {/* Blurred listings — locked. Whole card is a button that opens
+                the shared UnlockModal. Property-type badge stays un-blurred
+                so visitors can see what category is locked. */}
             {teaserBlurred.map((l) => {
               const streetAddr = l.address.split(",")[0];
               const typeLabel = TYPE_DISPLAY_LABEL[l.propertyType?.toLowerCase()] || l.propertyType;
               return (
-                <a
+                <button
                   key={l.mlsNumber}
-                  href="#lead-form"
-                  className="group relative block bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden hover:border-[#f59e0b]/50 transition-all"
-                  aria-label="Submit the form to unlock this match"
+                  type="button"
+                  onClick={() => setUnlockOpen(true)}
+                  className="group relative block text-left bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden hover:border-[#f59e0b]/50 transition-all"
+                  aria-label="Unlock this match"
                 >
                   <div
                     className="aspect-[4/3] bg-[#1e3a5f] bg-center bg-cover relative"
@@ -508,45 +528,25 @@ function AdsClientInner({
                         {typeLabel}
                       </span>
                     )}
-                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 blur-[6px] select-none">
-                      $X,XXX<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 select-none">
+                      <span className="blur-[6px]">$X,XXX</span>
+                      <span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
                     </div>
-                    <div className="text-[13px] font-semibold text-[#cbd5e1] mb-1 line-clamp-1 blur-[5px] select-none">{streetAddr}</div>
-                    <div className="flex gap-3 text-[12px] text-[#94a3b8] blur-[4px] select-none">
+                    <div className="text-[13px] font-semibold text-[#cbd5e1] mb-2 line-clamp-1 blur-[5px] select-none">{streetAddr}</div>
+                    <div className="flex gap-3 text-[12px] text-[#94a3b8] blur-[4px] select-none mb-3">
                       <span>🛏 {l.bedrooms} bed</span>
                       <span>🚿 {l.bathrooms} bath</span>
                     </div>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-[#07111f]/85 backdrop-blur-sm border border-[#f59e0b]/40 rounded-full px-3 py-1.5 inline-flex items-center gap-1.5 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider shadow-lg">
-                      <Lock className="w-3.5 h-3.5" aria-hidden />
+                    {/* Visible Unlock button — ≥48px tap target per spec.
+                        Whole card is also clickable for larger tap area. */}
+                    <span className="block w-full text-center bg-[#f59e0b] group-hover:bg-[#fbbf24] text-[#07111f] font-extrabold rounded-lg py-3 min-h-[48px] inline-flex items-center justify-center gap-1.5 text-[14px] transition-colors">
+                      <Lock className="w-4 h-4" aria-hidden />
                       Unlock
-                    </div>
+                    </span>
                   </div>
-                </a>
+                </button>
               );
             })}
-
-            {/* CTA card — 7th tile, drives back to the form */}
-            <a
-              href="#lead-form"
-              className="group block bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] rounded-xl overflow-hidden hover:shadow-xl hover:shadow-[#f59e0b]/30 transition-all"
-            >
-              <div className="aspect-[4/3] relative flex flex-col items-center justify-center text-center p-5">
-                <Lock className="w-8 h-8 text-[#07111f] mb-2" aria-hidden />
-                <p className="text-[#07111f] text-[22px] font-extrabold leading-tight mb-1">
-                  + {remainingCount} more matches
-                </p>
-                <p className="text-[#07111f]/80 text-[12px] font-semibold leading-snug">
-                  in {REALTOR_FIRST_NAME}&apos;s private list
-                </p>
-              </div>
-              <div className="p-4 bg-[#07111f]/10">
-                <div className="bg-[#07111f] text-[#fbbf24] font-extrabold text-[14px] py-3 rounded-lg text-center group-hover:bg-[#0c1e35]">
-                  Get all matches →
-                </div>
-              </div>
-            </a>
           </div>
         </div>
       </section>
@@ -710,6 +710,15 @@ function AdsClientInner({
       </div>
       {/* Spacer so the footer isn't hidden behind the sticky bar when scrolled to bottom */}
       <div className="md:hidden h-20" aria-hidden />
+
+      {/* Unlock modal — shared form across all 9 locked listing cards.
+          Posts to /api/leads with source: "ads-rentals-lp-modal" so DB
+          analytics can split modal vs hero-form conversions. */}
+      <UnlockModal
+        isOpen={unlockOpen}
+        onClose={() => setUnlockOpen(false)}
+        initialType={initialType}
+      />
     </div>
   );
 }

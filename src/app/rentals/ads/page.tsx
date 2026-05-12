@@ -34,6 +34,29 @@ const ALWAYS_WHERE = {
   price: { gte: 2000 },
 };
 
+// URL ?type= param → DB propertyType values. Verified against the live DB
+// 2026-05-12: distinct propertyType values for /rentals/ads inventory are
+// already normalized to lowercase short form ("condo" / "townhouse" /
+// "detached" / "semi"). No Toronto-MLS variants like "Condo Apt" or
+// "Att/Row/Twnhouse" — those get mapped to short form at ingest time.
+const TYPE_MAP: Record<string, string[]> = {
+  condo: ["condo"],
+  detached: ["detached"],
+  semi: ["semi"],
+  townhouse: ["townhouse"],
+};
+
+// Min cards needed for the 3-clear + 9-locked grid below.
+const MIN_LISTINGS_FOR_GRID = 12;
+
+function buildListingsWhere(type: string | undefined) {
+  const base: typeof ALWAYS_WHERE & { propertyType?: { in: string[] } } = { ...ALWAYS_WHERE };
+  if (type && TYPE_MAP[type]) {
+    base.propertyType = { in: TYPE_MAP[type] };
+  }
+  return base;
+}
+
 export default async function RentalsAdsPage({
   searchParams,
 }: {
@@ -44,15 +67,31 @@ export default async function RentalsAdsPage({
   const qBeds = parseInt(str(sp, "beds") || "0", 10) || 0;
   const qMax = parseInt(str(sp, "max") || "0", 10) || 0;
 
-  // Phase 2 — fetch a meaningful pool unfiltered, let the client filter chips
-  // against the pool. URL params seed initial chip state, not server filter.
-  const [listings, totalRentals, allListed, latest, renterCountRaw] = await Promise.all([
-    prisma.listing.findMany({
+  // Type-aware query: when ?type=condo/detached/semi/townhouse is on URL,
+  // filter the listings + total count to that property type. Falls back to
+  // unfiltered if the type pool is thinner than MIN_LISTINGS_FOR_GRID (12)
+  // so the 3-clear + 9-locked grid always renders fully.
+  const typedWhere = buildListingsWhere(qType);
+  let listings = await prisma.listing.findMany({
+    where: typedWhere,
+    orderBy: { listedAt: "desc" },
+    take: MIN_LISTINGS_FOR_GRID,
+  });
+  let totalRentals = await prisma.listing.count({ where: typedWhere });
+
+  if (qType && listings.length < MIN_LISTINGS_FOR_GRID) {
+    console.log(
+      `[listings-fallback] type=${qType} returned ${listings.length} < ${MIN_LISTINGS_FOR_GRID} — broadening to all types`,
+    );
+    listings = await prisma.listing.findMany({
       where: ALWAYS_WHERE,
       orderBy: { listedAt: "desc" },
-      take: 60,
-    }),
-    prisma.listing.count({ where: ALWAYS_WHERE }),
+      take: MIN_LISTINGS_FOR_GRID,
+    });
+    totalRentals = await prisma.listing.count({ where: ALWAYS_WHERE });
+  }
+
+  const [allListed, latest, renterCountRaw] = await Promise.all([
     prisma.listing.findMany({
       where: ALWAYS_WHERE,
       select: { listedAt: true },
