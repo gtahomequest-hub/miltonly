@@ -71,14 +71,18 @@ export default function LiveListingSlider({
   }
 
   return (
+    // Full-bleed: breaks out of any parent's max-width container by
+    // positioning at viewport center (left-1/2) then translating left by half
+    // its own 100vw width. The parent must be mx-auto centered (which the
+    // sales page already is) for the trick to land flush with the viewport
+    // edges. No rounded corners or border on the outer band — full-bleed
+    // visual reads cleaner without them.
     <section
       aria-label="Continuous scroll of similar listings"
-      className={`bg-[#07111f] border border-[#1e3a5f] rounded-[12px] p-[20px] ${className}`}
+      className={`relative left-1/2 -translate-x-1/2 w-screen bg-[#07111f] ${className}`}
     >
       {/* Component-scoped keyframes + reduced-motion override. Inlined to keep
-          the animation self-contained without touching global CSS. The slider
-          uses --duration / --total-cards CSS vars so the animation timing is
-          driven by the listing count without recompiling Tailwind. */}
+          the animation self-contained without touching global CSS. */}
       <style>{`
         @keyframes lls-slide-left {
           0% { transform: translateX(0); }
@@ -107,45 +111,48 @@ export default function LiveListingSlider({
         }
       `}</style>
 
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3 mb-4">
+      {/* Thin label strip — constrained to page max-width so the header
+          aligns with the rest of the page chrome, while the track below
+          bleeds full width. */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-medium tracking-[1.4px] uppercase text-[#f59e0b] mb-1">
+          <div className="text-[10px] font-medium tracking-[1.4px] uppercase text-[#f59e0b]">
             More Milton {propertyTypeLabel} for sale
           </div>
-          <div className="text-[13px] font-medium tracking-tight text-[#f8f9fb]">
+          <div className="text-[12px] font-medium text-[#cbd5e1] mt-0.5">
             Live MLS data · updated minutes ago
           </div>
         </div>
-        <span className="shrink-0 inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.6px] text-green-300">
-          <span className="relative flex h-[7px] w-[7px]">
+        <span className="shrink-0 inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 rounded-full px-2 py-[3px] text-[9px] font-semibold uppercase tracking-[0.6px] text-green-300">
+          <span className="relative flex h-[6px] w-[6px]">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-[7px] w-[7px] bg-green-500" />
+            <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-green-500" />
           </span>
           Live
         </span>
       </div>
 
-      {/* Slider track + edge fades. Negative-margin bleed makes the fades
-          align with the card padding edges. */}
+      {/* Slider track — full-bleed inside the full-bleed section. Edge fades
+          align with the viewport edges so the loop's seam blends into the
+          navy band cleanly. */}
       <div
-        className="lls-wrap relative -mx-[20px] overflow-hidden"
+        className="lls-wrap relative overflow-hidden"
         style={{ ["--lls-duration" as string]: `${totalDurationSeconds}s` }}
       >
         {/* Left fade */}
         <div
           aria-hidden
-          className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 z-10"
+          className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 z-10"
           style={{ background: "linear-gradient(to right, #07111f, transparent)" }}
         />
         {/* Right fade */}
         <div
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 z-10"
+          className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 z-10"
           style={{ background: "linear-gradient(to left, #07111f, transparent)" }}
         />
 
-        <div className="lls-track px-[20px]">
+        <div className="lls-track px-4 sm:px-6">
           {doubled.map((listing, i) => {
             const days = daysAgo(new Date(listing.listedAt));
             const tag = days <= 7 ? `NEW · ${days}d` : `${days}d ago`;
@@ -167,11 +174,13 @@ export default function LiveListingSlider({
                     navigate(listing.mlsNumber);
                   }
                 }}
-                className="shrink-0 w-[200px] bg-[#0c1e35] border border-[#1e3a5f] hover:border-[#f59e0b]/50 focus:border-[#f59e0b] focus:outline-none rounded-[10px] overflow-hidden cursor-pointer transition-colors"
+                className="shrink-0 w-[240px] bg-[#0c1e35] border border-[#1e3a5f] hover:border-[#f59e0b]/50 focus:border-[#f59e0b] focus:outline-none rounded-[10px] overflow-hidden cursor-pointer transition-colors"
               >
-                {/* Photo */}
+                {/* Photo — portrait aspect ratio gives the image more
+                    vertical weight in the card, which reads as a higher-
+                    quality listing card on dense desktop layouts. */}
                 <div
-                  className="aspect-[4/3] bg-[#1e3a5f] bg-center bg-cover relative"
+                  className="aspect-[4/5] bg-[#1e3a5f] bg-center bg-cover relative"
                   style={photoUrl ? { backgroundImage: `url(${photoUrl})` } : {}}
                 >
                   {!photoUrl && (
@@ -182,7 +191,8 @@ export default function LiveListingSlider({
                   </span>
                 </div>
 
-                {/* Info */}
+                {/* Info — unchanged layout, slightly more horizontal room
+                    now that the card is 240px wide. */}
                 <div className="px-[12px] py-[10px]">
                   <div className="text-[15px] font-medium tracking-tight text-[#f8f9fb] leading-none mb-1">
                     {formatPriceFull(listing.price)}
@@ -208,7 +218,7 @@ export default function LiveListingSlider({
         </div>
       </div>
 
-      <p className="text-[10px] text-[#64748b] text-center mt-[12px] tracking-[0.2px]">
+      <p className="text-[10px] text-[#64748b] text-center pt-3 pb-5 tracking-[0.2px]">
         Hover to pause · Tap any listing to view it
       </p>
     </section>
