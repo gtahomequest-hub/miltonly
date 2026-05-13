@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { notifyNewLead } from "@/lib/email";
 import { withRetry } from "@/lib/notifications/retry";
+import { sendKvcoreParserEmail } from "@/lib/notifications/kvcore";
 import { Resend } from "resend";
 import { NextRequest, NextResponse } from "next/server";
 import { hit } from "@/lib/rateLimit";
@@ -309,6 +310,25 @@ export async function POST(request: NextRequest) {
         { label: "resend:realtor-email", leadId: lead.id },
       ).catch((e) => console.error("Email notify error:", e));
 
+      // kvCORE / BoldTrail parser email — fire-and-forget plain-text send
+      // to KVCORE_LEAD_PARSE_EMAIL so BoldTrail auto-creates the CRM lead.
+      // Fires regardless of whether the lead provided an email (kvCORE
+      // accepts phone-only leads). Internally retried + env-gated.
+      sendKvcoreParserEmail(
+        {
+          firstName: trimmedName,
+          email: finalEmail || undefined,
+          phone: normalizedPhone || undefined,
+          source: ADS_SOURCE,
+          intent: "renter",
+          timeline: moveIn,
+          propertyType: propertyType || undefined,
+          budget: priceRangeMax ? String(priceRangeMax) : undefined,
+          bedrooms: bedroomsInt !== null ? String(bedroomsInt) : undefined,
+        },
+        lead.id,
+      ).catch((e) => console.error("[kvcore notify error]", e));
+
       // Auto-reply — fires within ~30s if email present. Skipped on honeypot
       // (already returned above) and when no email was captured.
       if (finalEmail) {
@@ -421,6 +441,26 @@ export async function POST(request: NextRequest) {
       .catch((e) => console.error("Email notify error:", e));
     withRetry(() => notifyAamirBySMS(body, lead.id), { label: "twilio:sms", leadId: lead.id })
       .catch((e) => console.error("[sms notify error]", e));
+
+    // kvCORE parser email — same shape as ads-path. Body fields are typed
+    // `any` (from request.json()) so we explicitly construct the
+    // KvcoreLeadInput shape with safe defaults. Source falls back to
+    // "website" matching the existing non-ads lead.source default below.
+    sendKvcoreParserEmail(
+      {
+        firstName: typeof body.firstName === "string" ? body.firstName : undefined,
+        lastName: typeof body.lastName === "string" ? body.lastName : undefined,
+        email: typeof body.email === "string" ? body.email : undefined,
+        phone: typeof body.phone === "string" ? body.phone : undefined,
+        source: typeof body.source === "string" && body.source ? body.source : "website",
+        intent: typeof body.intent === "string" ? body.intent : undefined,
+        timeline: typeof body.timeline === "string" ? body.timeline : undefined,
+        budget: typeof body.budget === "string" ? body.budget : undefined,
+        bedrooms: typeof body.bedrooms === "string" ? body.bedrooms : undefined,
+        propertyType: typeof body.propertyType === "string" ? body.propertyType : undefined,
+      },
+      lead.id,
+    ).catch((e) => console.error("[kvcore notify error]", e));
 
     // Auto-reply for non-ads sources (listing detail, alerts, etc.) — same
     // skip rules: skip if no email, honeypot already short-circuited above.
