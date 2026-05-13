@@ -12,7 +12,6 @@ import AamirTrustCard from "@/components/landing/AamirTrustCard";
 import LiveListingSlider from "@/components/landing/LiveListingSlider";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
 const TYPE_DISPLAY_LABEL: Record<string, string> = {
   condo: "Condo",
@@ -59,17 +58,6 @@ interface Props {
   propertyTypeLabel: string;
 }
 
-// Deterministic 1-12 viewer-count badge per mlsNumber. Stable across reloads
-// so the listing always shows the same "X viewed in last hour" count.
-// Not real tracking — placeholder for a future analytics integration.
-function pseudoViewerCount(mlsNumber: string): number {
-  let h = 0;
-  for (let i = 0; i < mlsNumber.length; i++) {
-    h = (h * 31 + mlsNumber.charCodeAt(i)) | 0;
-  }
-  return (Math.abs(h) % 12) + 1;
-}
-
 // GA4 typing helper. Each event fires inline at the call site so every
 // `gtag('event', '<name>', ...)` is grep-discoverable for the regression
 // audit. No indirection.
@@ -92,7 +80,6 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
   const days = daysAgo(new Date(listing.listedAt));
   const photos = listing.photos || [];
   const totalPhotos = photos.length;
-  const viewerCount = useMemo(() => pseudoViewerCount(listing.mlsNumber), [listing.mlsNumber]);
 
   const description = listing.description?.trim() || "";
   const DESC_TRUNCATE = 400;
@@ -358,14 +345,16 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
                       Send me the details
                     </h3>
                     <p className="text-[12px] text-[#64748b] leading-[1.5]">
-                      {REALTOR_FIRST_NAME} replies within 4 business hours.
+                      {REALTOR_FIRST_NAME} replies under 60 min.
                     </p>
                   </div>
                   <LeadCaptureForm
                     variant="sales"
                     source="sales-rentals-featured-top"
                     mlsNumber={listing.mlsNumber}
+                    formId="top"
                     hideHeader
+                    chromeless
                     ctaLabel="Send me details"
                   />
                 </div>
@@ -374,7 +363,6 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
               <AamirTrustCard
                 listingAddress={streetAddr}
                 mlsNumber={listing.mlsNumber}
-                viewerCount={viewerCount}
                 className="mt-4"
               />
             </aside>
@@ -413,14 +401,16 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
                   Book a showing — {streetAddr}
                 </h2>
                 <p className="text-[13px] text-[#64748b] leading-[1.5]">
-                  {REALTOR_FIRST_NAME} confirms your time within 4 business hours.
+                  {REALTOR_FIRST_NAME} confirms your time under 60 min.
                 </p>
               </div>
               <LeadCaptureForm
                 variant="sales"
                 source="sales-rentals-featured-book"
                 mlsNumber={listing.mlsNumber}
+                formId="book"
                 hideHeader
+                chromeless
                 ctaLabel="Book my showing"
               />
             </div>
@@ -521,7 +511,7 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
             </nav>
           </div>
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
-            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {BROKERAGE_SHORT_NAME}<br />
+            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name}<br />
             <span className="text-[#64748b]/80">
               MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). Information deemed reliable but not guaranteed.
             </span>

@@ -7,7 +7,6 @@ import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
 // Honeypot field name — must match HONEYPOT_FIELD env on /api/leads.
 const HONEYPOT_FIELD = "company_website";
@@ -74,6 +73,18 @@ export interface LeadCaptureFormProps {
    *  the parent (e.g. the sales-page Polaroid booking band) can render its own
    *  unified header outside the form. Field grid + CTA button still render. */
   hideHeader?: boolean;
+  /** Optional ID suffix to uniquely scope the form's element IDs when more
+   *  than one LeadCaptureForm renders on the same page. Without it, the
+   *  internal IDs (`lead-form`, `lead-phone`, `lead-email`) collide. Pass a
+   *  short distinct token per instance — e.g. "top", "book", "modal". Default
+   *  unsuffixed behavior preserves the existing rental page. */
+  formId?: string;
+  /** When true, the form drops its own white card chrome (`bg-white
+   *  rounded-2xl shadow-2xl p-4 sm:p-6`) so the fields render flat onto
+   *  whatever parent surface is already styled (e.g. the sales-page Polaroid
+   *  white card). Internal field padding is preserved via a slimmer inner
+   *  wrapper. Default false keeps the existing rental behavior. */
+  chromeless?: boolean;
 }
 
 export default function LeadCaptureForm({
@@ -87,7 +98,17 @@ export default function LeadCaptureForm({
   ctaLabel,
   mlsNumber,
   hideHeader = false,
+  formId,
+  chromeless = false,
 }: LeadCaptureFormProps) {
+  // Element-ID suffix so multiple LeadCaptureForm instances on one page don't
+  // emit duplicate id="lead-form|lead-phone|lead-email" attributes. The
+  // unsuffixed form (legacy rental call sites) keeps the original IDs so
+  // existing CSS / GA selectors don't break.
+  const suffix = formId ? `-${formId}` : "";
+  const wrapperId = `lead-form${suffix}`;
+  const phoneId = `lead-phone${suffix}`;
+  const emailId = `lead-email${suffix}`;
   const searchParams = useSearchParams();
   const router = useRouter();
   const isSales = variant === "sales";
@@ -129,7 +150,7 @@ export default function LeadCaptureForm({
   const resolvedSubheadline =
     subheadline ??
     (isSales
-      ? `Phone + email + timeline. ${REALTOR_FIRST_NAME} replies within 4 hours.`
+      ? `Phone + email + timeline. ${REALTOR_FIRST_NAME} replies under 60 min.`
       : `Phone + email + budget. ${REALTOR_FIRST_NAME} texts 3–5 matches within the hour.`);
   const resolvedCtaLabel =
     ctaLabel ?? (isSales ? "Send me the details" : "Text me my matches");
@@ -224,13 +245,23 @@ export default function LeadCaptureForm({
     }
   }
 
+  // The default white-card chrome includes its own bg + shadow + rounded
+  // corners + padding so the form reads as a self-contained card on dark
+  // hero backgrounds (rental flow). When the form is nested inside a parent
+  // that already provides those affordances (sales-page Polaroid white
+  // card), pass `chromeless` to drop the inner panel and keep only enough
+  // padding to space the fields from the form's outer wrapper.
+  const formChrome = chromeless
+    ? "text-[#07111f]"
+    : "bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-[#07111f]";
+
   return (
-    <div id="lead-form" className={className}>
+    <div id={wrapperId} className={className}>
       <form
         onSubmit={handleSubmit}
         method="post"
         action="/api/leads"
-        className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-[#07111f]"
+        className={formChrome}
         noValidate
       >
         {!hideHeader && (
@@ -247,11 +278,11 @@ export default function LeadCaptureForm({
         {/* Phone + Email — side-by-side on desktop (sm+), stacked on mobile */}
         <div className="grid sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
           <div>
-            <label htmlFor="lead-phone" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+            <label htmlFor={phoneId} className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
               Mobile number
             </label>
             <input
-              id="lead-phone"
+              id={phoneId}
               type="tel"
               inputMode="tel"
               required
@@ -263,11 +294,11 @@ export default function LeadCaptureForm({
             />
           </div>
           <div>
-            <label htmlFor="lead-email" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+            <label htmlFor={emailId} className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
               Email
             </label>
             <input
-              id="lead-email"
+              id={emailId}
               type="email"
               inputMode="email"
               required
@@ -378,7 +409,7 @@ export default function LeadCaptureForm({
           {submitting ? "Sending…" : resolvedCtaLabel}
         </button>
         <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
-          🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {BROKERAGE_SHORT_NAME}. Reply STOP to opt out.{" "}
+          🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {config.brokerage.name}. Reply STOP to opt out.{" "}
           <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy</Link>.
         </p>
       </form>

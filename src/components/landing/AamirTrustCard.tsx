@@ -8,7 +8,6 @@ import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 const HONEYPOT_FIELD = "company_website";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MESSAGE_SOURCE = "sales-rentals-featured-message";
@@ -36,10 +35,6 @@ export interface AamirTrustCardProps {
   /** MLS number — passed through to the message lead POST body so the
    *  realtor email + SMS can link the message to the listing. */
   mlsNumber: string;
-  /** Pseudo-random viewer count for the activity bar (1–12). Computed
-   *  upstream from the mlsNumber hash so the same listing shows a stable
-   *  number across reloads. Optional — bar hides when undefined. */
-  viewerCount?: number;
   /** Optional className for the outer wrapper. */
   className?: string;
 }
@@ -47,7 +42,6 @@ export interface AamirTrustCardProps {
 export default function AamirTrustCard({
   listingAddress,
   mlsNumber,
-  viewerCount,
   className = "",
 }: AamirTrustCardProps) {
   const placeholder = `Hi ${REALTOR_FIRST_NAME}, I'm interested in ${listingAddress}. Is it still available, and when can I view it?`;
@@ -111,19 +105,6 @@ export default function AamirTrustCard({
         <CredentialPill icon="📍">{config.CITY_NAME} specialist</CredentialPill>
         <CredentialPill icon="🕐">Replies in &lt;60 min</CredentialPill>
       </div>
-
-      {/* Activity bar */}
-      {viewerCount !== undefined && (
-        <div className="bg-[#f59e0b]/5 border border-[#f59e0b]/25 rounded-[8px] px-3 py-2 flex items-center gap-2 mb-4">
-          <span className="relative flex h-[7px] w-[7px] shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fbbf24] opacity-75" />
-            <span className="relative inline-flex rounded-full h-[7px] w-[7px] bg-[#f59e0b]" />
-          </span>
-          <span className="text-[10px] font-medium text-[#fbbf24] uppercase tracking-[0.6px]">
-            {viewerCount} {viewerCount === 1 ? "person" : "people"} viewed this in last hour
-          </span>
-        </div>
-      )}
 
       {/* Message box OR confirmation banner */}
       {submitted ? (
@@ -450,7 +431,7 @@ function MessageCaptureModal({
           .
         </p>
         <p className="text-[10px] text-[#94a3b8] text-center mt-[6px]">
-          {BROKERAGE_SHORT_NAME}
+          {config.brokerage.name}
         </p>
       </div>
     </div>
