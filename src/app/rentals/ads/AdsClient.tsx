@@ -3,13 +3,14 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Trophy, MapPin, Clock, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { formatPriceFull, daysAgo } from "@/lib/format";
-import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
 import ComparisonTable from "./ComparisonTable";
 import UnlockModal from "./UnlockModal";
+import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
+import TrustPillars from "@/components/landing/TrustPillars";
+import StickyMobileBar from "@/components/landing/StickyMobileBar";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
@@ -40,19 +41,6 @@ interface Props {
   heroSrc: string;
 }
 
-// Honeypot field name — must match HONEYPOT_FIELD env on /api/leads.
-const HONEYPOT_FIELD = "company_website";
-
-// Budget brackets. Numeric `val` matches /api/leads budgetToInt() parsing
-// → priceRangeMax. $4,500+ uses 6000 as the upper-cap proxy so Aamir's
-// qualification has a meaningful number, not "any".
-const BUDGET_OPTIONS = [
-  { val: "2500", label: "Under $2,500" },
-  { val: "3500", label: "$2,500 – $3,500" },
-  { val: "4500", label: "$3,500 – $4,500" },
-  { val: "6000", label: "$4,500+" },
-];
-
 // Type-word injection for the dynamic headline AND the per-card display badge.
 const TYPE_HEADLINE_WORD: Record<string, string> = {
   condo: "condo",
@@ -78,18 +66,6 @@ const TYPE_DISPLAY_LABEL: Record<string, string> = {
   townhouse: "Townhouse",
 };
 
-// Email regex — same shape as /api/leads server-side check. Belt-and-suspenders
-// validation: client catches typos, server still validates on POST.
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Format-as-you-type North American 10-digit phone mask. Matches OffMarketForm.
-function formatPhone(v: string): string {
-  const digits = v.replace(/\D/g, "").slice(0, 10);
-  if (digits.length < 4) return digits;
-  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
 function AdsClientInner({
   listings,
   totalRentals,
@@ -99,38 +75,9 @@ function AdsClientInner({
   initialType,
   heroSrc,
 }: Props) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  // Form state — phone + email + budget. firstName is auto-filled per submit
-  // as `Lead ${phoneLast4}` so the existing /api/leads ads-path validation
-  // (>=2 chars) passes AND each row in the DB is identifiable when scrolling
-  // through recent leads without exposing a name field in the form.
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [budget, setBudget] = useState<string>("");
-  const [honey, setHoney] = useState(""); // honeypot — must stay empty
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
   // Unlock-modal state — opened by any of the 9 locked listing cards.
   // Shared modal across all locked cards (one form, not nine).
   const [unlockOpen, setUnlockOpen] = useState(false);
-
-  // Tracking state — captured from URL + persistent attributionPayload().
-  const [tracking, setTracking] = useState({
-    utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "", gclid: "",
-  });
-  useEffect(() => {
-    setTracking({
-      utm_source: searchParams.get("utm_source") || "",
-      utm_medium: searchParams.get("utm_medium") || "",
-      utm_campaign: searchParams.get("utm_campaign") || "",
-      utm_term: searchParams.get("utm_term") || "",
-      utm_content: searchParams.get("utm_content") || "",
-      gclid: searchParams.get("gclid") || "",
-    });
-  }, [searchParams]);
 
   // Dynamic headline — inject the property-type word when ?type=… is on URL.
   const headline = useMemo(() => {
@@ -144,81 +91,6 @@ function AdsClientInner({
     document.documentElement.style.scrollBehavior = "smooth";
     return () => { document.documentElement.style.scrollBehavior = ""; };
   }, []);
-
-  // Sticky mobile CTA → smooth-scroll to the form element. Falls back to
-  // window.scrollTo(0,0) if the form is somehow not in the DOM.
-  function scrollToForm() {
-    if (typeof window === "undefined") return;
-    const el = document.getElementById("lead-form");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    else window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-
-    const phoneDigits = phone.replace(/\D/g, "");
-    const trimmedEmail = email.trim();
-
-    if (phoneDigits.length !== 10) {
-      setError("Please enter a 10-digit phone number.");
-      return;
-    }
-    if (!trimmedEmail || !EMAIL_RE.test(trimmedEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (!budget) {
-      setError("Please select your budget.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    if (typeof window !== "undefined") {
-      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-      if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "3-field" });
-    }
-
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // Placeholder firstName — `Lead 0199` shape makes leads scannable
-          // in the DB. Real name comes from Aamir's follow-up call.
-          firstName: `Lead ${phoneDigits.slice(-4)}`,
-          phone: phone.trim(),
-          email: trimmedEmail,
-          source: "ads-rentals-lp",
-          intent: "renter",
-          budget,
-          homeType: initialType || "any",
-          utm_source: tracking.utm_source,
-          utm_medium: tracking.utm_medium,
-          utm_campaign: tracking.utm_campaign,
-          utm_term: tracking.utm_term,
-          utm_content: tracking.utm_content,
-          gclid: tracking.gclid,
-          ...attributionPayload(),
-          [HONEYPOT_FIELD]: honey,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data?.error || `Couldn't submit — please try again or call ${config.realtor.phone}.`);
-        setSubmitting(false);
-        return;
-      }
-      const redirect = data?.redirect || `/rentals/thank-you?lid=${data?.id || ""}`;
-      router.push(redirect);
-    } catch {
-      setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} directly at ${config.realtor.phone}.`);
-      setSubmitting(false);
-    }
-  }
 
   // Listings grid — 3 clear + 9 locked (12 cards total). Locked cards
   // trigger the shared UnlockModal. The old "+387 more matches" tease card
@@ -284,20 +156,7 @@ function AdsClientInner({
               </p>
 
               {/* TRUST PILLARS — 3 pills, horizontal row, compact on mobile */}
-              <div className="flex flex-wrap gap-2 sm:gap-2.5 mb-4 sm:mb-0">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#fbbf24]">
-                  <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
-                  RE/MAX Hall of Fame
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3a5f] bg-[#0c1e35] px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#cbd5e1]">
-                  <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
-                  {config.realtor.yearsExperience} years · $55M+ in {config.CITY_NAME}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-green-300">
-                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden />
-                  Replies in &lt;60 min
-                </span>
-              </div>
+              <TrustPillars />
 
               {/* Live activity badge — desktop only. Each segment renders only
                   when its count is > 0; entire badge hides when all are zero
@@ -323,112 +182,11 @@ function AdsClientInner({
             </div>
 
             {/* RIGHT — 3-FIELD FORM (phone + email + budget). Sticky on desktop, below hero on mobile. */}
-            <div id="lead-form" className="lg:sticky lg:top-[80px]">
-              <form
-                onSubmit={handleSubmit}
-                method="post"
-                action="/api/leads"
-                className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-[#07111f]"
-                noValidate
-              >
-                <h2 className="text-[18px] sm:text-[22px] font-extrabold leading-tight text-[#07111f] mb-1.5">
-                  Get matched in 60 seconds
-                </h2>
-                <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
-                  Phone + email + budget. {REALTOR_FIRST_NAME} texts 3–5 matches within the hour.
-                </p>
-
-                {/* Phone + Email — side-by-side on desktop (sm+), stacked on mobile */}
-                <div className="grid sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
-                  <div>
-                    <label htmlFor="lead-phone" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
-                      Mobile number
-                    </label>
-                    <input
-                      id="lead-phone"
-                      type="tel"
-                      inputMode="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(formatPhone(e.target.value))}
-                      placeholder="(647) 555-0123"
-                      autoComplete="tel"
-                      className="w-full h-12 px-4 rounded-lg border border-[#e2e8f0] bg-white text-[16px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lead-email" className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
-                      Email
-                    </label>
-                    <input
-                      id="lead-email"
-                      type="email"
-                      inputMode="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      autoComplete="email"
-                      className="w-full h-12 px-4 rounded-lg border border-[#e2e8f0] bg-white text-[16px] focus:outline-none focus:border-[#f59e0b] focus:ring-2 focus:ring-[#f59e0b]/20"
-                    />
-                  </div>
-                </div>
-
-                {/* Budget — 2x2 button grid */}
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
-                  Monthly budget
-                </label>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {BUDGET_OPTIONS.map((o) => (
-                    <button
-                      key={o.val}
-                      type="button"
-                      onClick={() => setBudget(o.val)}
-                      className={`h-12 rounded-lg text-[13px] sm:text-[14px] font-semibold border transition-all ${
-                        budget === o.val
-                          ? "bg-[#07111f] text-white border-[#07111f]"
-                          : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Honeypot — silent spam trap */}
-                <div style={{ position: "absolute", left: "-10000px", top: "-10000px" }} aria-hidden="true">
-                  <label>
-                    Company website
-                    <input
-                      type="text"
-                      tabIndex={-1}
-                      autoComplete="off"
-                      name={HONEYPOT_FIELD}
-                      value={honey}
-                      onChange={(e) => setHoney(e.target.value)}
-                    />
-                  </label>
-                </div>
-
-                {error && (
-                  <div className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full min-h-[52px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] sm:text-[16px] rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl active:scale-[0.99]"
-                >
-                  {submitting ? "Sending…" : "Text me my matches"}
-                </button>
-                <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
-                  🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {BROKERAGE_SHORT_NAME}. Reply STOP to opt out.{" "}
-                  <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy</Link>.
-                </p>
-              </form>
-            </div>
+            <LeadCaptureForm
+              source="ads-rentals-lp"
+              homeType={initialType || "any"}
+              className="lg:sticky lg:top-[80px]"
+            />
           </div>
         </div>
       </section>
@@ -690,26 +448,7 @@ function AdsClientInner({
       </footer>
 
       {/* ── STICKY MOBILE BOTTOM CTA — 50/50 split, safe-area-aware, md:hidden ── */}
-      <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07111f]/95 backdrop-blur border-t border-[#1e3a5f] px-3 pt-2.5 flex gap-2"
-        style={{ paddingBottom: "calc(10px + env(safe-area-inset-bottom))" }}
-      >
-        <a
-          href={`tel:${config.realtor.phoneE164}`}
-          className="flex-1 inline-flex items-center justify-center bg-[#0c1e35] border border-[#1e3a5f] text-white font-bold rounded-lg text-[14px] min-h-[48px]"
-        >
-          📞 Call {REALTOR_FIRST_NAME}
-        </a>
-        <button
-          type="button"
-          onClick={scrollToForm}
-          className="flex-1 inline-flex items-center justify-center bg-[#f59e0b] hover:bg-[#fbbf24] text-[#07111f] font-extrabold rounded-lg text-[14px] min-h-[48px]"
-        >
-          Get matches →
-        </button>
-      </div>
-      {/* Spacer so the footer isn't hidden behind the sticky bar when scrolled to bottom */}
-      <div className="md:hidden h-20" aria-hidden />
+      <StickyMobileBar />
 
       {/* Unlock modal — shared form across all 9 locked listing cards.
           Posts to /api/leads with source: "ads-rentals-lp-modal" so DB
