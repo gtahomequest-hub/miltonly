@@ -103,7 +103,7 @@ export default function AamirTrustCard({
       <div className="flex flex-wrap gap-1.5 mb-4">
         <CredentialPill icon="🏆">Hall of Fame</CredentialPill>
         <CredentialPill icon="📍">{config.CITY_NAME} specialist</CredentialPill>
-        <CredentialPill icon="🕐">Replies in &lt;60 min</CredentialPill>
+        <CredentialPill icon="🕐">{config.sla.short}</CredentialPill>
       </div>
 
       {/* Message box OR confirmation banner */}
@@ -135,7 +135,7 @@ export default function AamirTrustCard({
             />
             <div className="mt-2 pt-2 border-t border-[#1e3a5f] flex items-center justify-between gap-3">
               <span className="text-[9px] text-[#64748b] tracking-[0.3px] uppercase font-medium">
-                Replies under 60 min
+                {config.sla.short}
               </span>
               <button
                 type="button"

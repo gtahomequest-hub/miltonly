@@ -160,10 +160,10 @@ export default function ThankYouClient({ lead, isSpam }: Props) {
             ✓
           </div>
           <h1 className="text-[28px] sm:text-[36px] font-extrabold tracking-[-0.02em] leading-[1.1] mb-2">
-            Got it{lead?.firstName ? `, ${firstName}` : ""} — {REALTOR_FIRST_NAME} is calling you within 4 business hours.
+            Got it{lead?.firstName ? `, ${firstName}` : ""} — {config.sla.thankYouHero}
           </h1>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-xl mx-auto">
-            {REALTOR_FIRST_NAME} reviews every sales request personally. You&apos;ll hear from him within 4 business hours (9 AM – 9 PM ET). For anything urgent before then, call or text {config.realtor.phone} directly.
+            {config.sla.thankYouReassurance} For anything urgent before then, call or text {config.realtor.phone} directly.
           </p>
         </div>
 
@@ -193,7 +193,7 @@ export default function ThankYouClient({ lead, isSpam }: Props) {
             Save {REALTOR_FIRST_NAME}&apos;s Contact
           </button>
           <p className="text-[12px] sm:text-[13px] text-[#94a3b8] mt-2.5">
-            So you recognize his call within 4 business hours.
+            {config.sla.thankYouSaveContactHint}
           </p>
         </div>
 
@@ -208,7 +208,7 @@ export default function ThankYouClient({ lead, isSpam }: Props) {
                 Hi, I&apos;m {REALTOR_FIRST_NAME}. I&apos;m RE/MAX Hall of Fame and have helped 150+ {config.CITY_NAME} families buy and sell in the last {config.realtor.yearsExperience} years.
               </p>
               <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed mb-2">
-                I personally call every sales lead within 4 business hours. When you see a {config.CITY_NAME} number call you, that&apos;s me — save my contact above so you don&apos;t miss it.
+                {config.sla.thankYouAamirIntro} When you see a {config.CITY_NAME} number call you, that&apos;s me — save my contact above so you don&apos;t miss it.
               </p>
               <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed">
                 You&apos;re never under any obligation. We talk, you decide. — {REALTOR_FIRST_NAME}
@@ -230,7 +230,7 @@ export default function ThankYouClient({ lead, isSpam }: Props) {
               },
               {
                 when: "Step 2",
-                what: `${REALTOR_FIRST_NAME} calls you within 4 business hours (9 AM – 9 PM ET)`,
+                what: config.sla.thankYouStepTwo,
               },
               {
                 when: "Step 3",

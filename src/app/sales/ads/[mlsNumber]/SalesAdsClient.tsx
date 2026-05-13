@@ -345,7 +345,7 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
                       Send me the details
                     </h3>
                     <p className="text-[12px] text-[#64748b] leading-[1.5]">
-                      {REALTOR_FIRST_NAME} replies under 60 min.
+                      {config.sla.topFormSubline}
                     </p>
                   </div>
                   <LeadCaptureForm
@@ -401,7 +401,7 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
                   Book a showing — {streetAddr}
                 </h2>
                 <p className="text-[13px] text-[#64748b] leading-[1.5]">
-                  {REALTOR_FIRST_NAME} confirms your time under 60 min.
+                  {config.sla.bookingBandSubline}
                 </p>
               </div>
               <LeadCaptureForm

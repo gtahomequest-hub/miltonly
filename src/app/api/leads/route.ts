@@ -54,12 +54,12 @@ function sendSalesAutoReply(args: {
   const realtorFirstName = config.realtor.name.split(" ")[0];
   const propertyPhrase = listingAddress || "the property you were viewing";
   const subjectPropertyPhrase = listingAddress || "this property";
-  const subject = `Got your request for ${subjectPropertyPhrase} — calling you within 4 business hours`;
+  const subject = `Got your request for ${subjectPropertyPhrase} — ${config.sla.emailSubjectFragment}`;
 
   const html = `
     <p>Hi ${safeName},</p>
     <p>${realtorFirstName} here. I just got your request for ${propertyPhrase}.</p>
-    <p>I'll call you within 4 business hours (9 AM – 9 PM ET). For anything urgent before then, call or text ${config.realtor.phone} directly.</p>
+    <p>${config.sla.emailBody} For anything urgent before then, call or text ${config.realtor.phone} directly.</p>
     <p>A few things to know while you wait:</p>
     <ul>
       <li>I'm RE/MAX Hall of Fame and have helped 150+ ${config.CITY_NAME} families buy and sell in the last ${config.realtor.yearsExperience} years</li>
@@ -108,7 +108,7 @@ function sendSalesAutoReply(args: {
     "",
     `${realtorFirstName} here. I just got your request for ${propertyPhrase}.`,
     "",
-    "I'll call you within 4 business hours (9 AM – 9 PM ET). For anything urgent before then, call or text " + config.realtor.phone + " directly.",
+    config.sla.emailBody + " For anything urgent before then, call or text " + config.realtor.phone + " directly.",
     "",
     "A few things to know while you wait:",
     "",
