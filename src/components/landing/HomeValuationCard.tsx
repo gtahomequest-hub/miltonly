@@ -20,11 +20,15 @@ const CONSENT_TEXT =
   "Brokerage). I can withdraw consent anytime by replying STOP or clicking " +
   "unsubscribe.";
 
-function formatPhone(v: string): string {
-  const digits = v.replace(/\D/g, "").slice(0, 10);
-  if (digits.length < 4) return digits;
-  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+// Auto-formatter — every keystroke calls this. Strips non-digits, drops a
+// leading "1" country code, takes first 10 digits, formats with dashes.
+// Identical to MarketPulseUnlockCard's formatter (Commit 4j-hotfix swap).
+function formatPhoneInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").replace(/^1/, "").slice(0, 10);
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 type GtagFn = (...a: unknown[]) => void;
@@ -183,6 +187,7 @@ export default function HomeValuationCard({
       <form onSubmit={handleSubmit} noValidate>
         <input
           type="text"
+          name="address"
           required
           value={yourHomeAddress}
           onChange={(e) => setYourHomeAddress(e.target.value)}
@@ -194,6 +199,7 @@ export default function HomeValuationCard({
         <div className="grid sm:grid-cols-2 gap-2 mb-2">
           <input
             type="email"
+            name="email"
             inputMode="email"
             required
             value={email}
@@ -205,11 +211,13 @@ export default function HomeValuationCard({
           />
           <input
             type="tel"
-            inputMode="tel"
+            name="phone"
+            inputMode="numeric"
+            pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}"
             required
             value={phone}
-            onChange={(e) => setPhone(formatPhone(e.target.value))}
-            placeholder="(647) 555-0123"
+            onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+            placeholder="647-839-9090"
             autoComplete="tel"
             aria-label="Mobile number"
             className="w-full h-11 px-3 rounded-[7px] border border-[#1e3a5f] bg-[#07111f] text-[14px] text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#f59e0b]"
