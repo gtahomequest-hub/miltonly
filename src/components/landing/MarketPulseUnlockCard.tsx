@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
 import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
-import { formatPriceFull } from "@/lib/format";
+import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const HONEYPOT_FIELD = "company_website";
@@ -21,8 +21,9 @@ const CONSENT_TEXT =
   "Brokerage). I can withdraw consent anytime by replying STOP to any SMS or " +
   "clicking unsubscribe in any email.";
 
-// 30-day window — matches src/lib/market-pulse.ts.
-const PERIOD_DAYS = 30;
+// 90-day window — matches src/lib/market-pulse.ts (which now reads from
+// analytics.neighbourhood_sold_stats, whose canonical window is 90 days).
+const PERIOD_DAYS = 90;
 
 function formatPhone(v: string): string {
   const digits = v.replace(/\D/g, "").slice(0, 10);
@@ -39,12 +40,16 @@ function getGtag(): GtagFn | null {
 }
 
 // Match the shape that /api/leads returns in `stats` for this intent.
+// Post-4j-fix: dollar amounts (avg/median/min/max) are permanently null
+// from the blessed analytics path. The fields stay on the type so the
+// client UI contract is stable; the optional range row never renders.
 export interface MarketPulseStatsPayload {
   sold_count: number;
   avg_sold_price: number | null;
   median_sold_price: number | null;
   avg_dom: number | null;
   avg_sold_to_ask: number | null;
+  market_score: number | null;
   min_sold_price: number | null;
   max_sold_price: number | null;
   period_days: number;
@@ -52,29 +57,25 @@ export interface MarketPulseStatsPayload {
 }
 
 export interface MarketPulseUnlockCardProps {
-  /** Listing context — passed to /api/leads as matchCriteria for the
-   *  aggregate computation. */
+  /** Property type slug — kept on the input for matchCriteria persistence
+   *  + future per-type stat rollout. Not used in current copy. */
   propertyType: string;
-  bedrooms: number;
+  /** Neighbourhood string — keyed exactly as it appears in the analytics
+   *  table. Header copy + matchCriteria both use it. */
+  neighbourhood: string;
+  /** City string — included in matchCriteria for the lead audit trail. */
   city: string;
   /** MLS number of the originating listing — included in the lead row for
    *  attribution. */
   mlsNumber: string;
-  /** Property-type label used in headlines (e.g. "townhouse"). */
-  propertyTypeLabel: string;
-  /** First-line street address of the originating listing — used in
-   *  headline copy ("homes like 1265 Manitou Way"). */
-  listingStreetAddr: string;
   className?: string;
 }
 
 export default function MarketPulseUnlockCard({
   propertyType,
-  bedrooms,
+  neighbourhood,
   city,
   mlsNumber,
-  propertyTypeLabel,
-  listingStreetAddr,
   className = "",
 }: MarketPulseUnlockCardProps) {
   const [stats, setStats] = useState<MarketPulseStatsPayload | null>(null);
@@ -98,8 +99,12 @@ export default function MarketPulseUnlockCard({
     [searchParams],
   );
 
-  const headerKicker = `How ${propertyTypeLabel}s like ${listingStreetAddr} are actually selling`;
-  const headerTitle = `${config.CITY_NAME} ${propertyTypeLabel} market — last ${PERIOD_DAYS} days`;
+  // The `neighbourhood` prop is the RAW TREB string (e.g. "1032 - FO Ford")
+  // because the analytics table is keyed on that exact value. The display
+  // string strips the prefix for readable headers ("Ford market pulse").
+  const neighbourhoodDisplay = cleanNeighbourhoodName(neighbourhood) || neighbourhood;
+  const headerKicker = `How ${neighbourhoodDisplay} is selling right now`;
+  const headerTitle = `${neighbourhoodDisplay} market pulse — last ${PERIOD_DAYS} days`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,7 +155,7 @@ export default function MarketPulseUnlockCard({
           mlsNumber,
           matchCriteria: {
             propertyType,
-            bedrooms,
+            neighbourhood,
             city,
             periodDays: PERIOD_DAYS,
           },
@@ -179,6 +184,7 @@ export default function MarketPulseUnlockCard({
         median_sold_price: null,
         avg_dom: null,
         avg_sold_to_ask: null,
+        market_score: null,
         min_sold_price: null,
         max_sold_price: null,
         period_days: PERIOD_DAYS,
@@ -204,11 +210,16 @@ export default function MarketPulseUnlockCard({
         {stats.sold_count >= 5 ? (
           <>
             <div className="grid grid-cols-2 gap-[10px] mb-[10px]">
-              <StatTile label="Average price" value={stats.avg_sold_price !== null ? formatPriceFull(Math.round(stats.avg_sold_price)) : "—"} />
+              <StatTile label={`Sold (${PERIOD_DAYS}d)`} value={String(stats.sold_count)} />
               <StatTile label="Days on market" value={stats.avg_dom !== null ? String(Math.round(stats.avg_dom)) : "—"} />
               <StatTile label="Sold-to-ask" value={stats.avg_sold_to_ask !== null ? `${Math.round(stats.avg_sold_to_ask * 100)}%` : "—"} />
-              <StatTile label="Sold count" value={String(stats.sold_count)} />
+              <StatTile label="Market score" value={stats.market_score !== null ? `${Math.round(stats.market_score)}/100` : "—"} />
             </div>
+            {/* Optional range row — UI logic preserved per Commit 4j-fix
+                spec ("Range row display logic unchanged") but min/max are
+                permanently null from the blessed analytics path, so this
+                block never renders. Kept so the contract stays portable
+                if a future helper exposes range data. */}
             {stats.sold_count >= 10 && stats.min_sold_price !== null && stats.max_sold_price !== null && (
               <div className="grid grid-cols-2 gap-[10px]">
                 <StatTile label="Range — low" value={formatPriceFull(Math.round(stats.min_sold_price))} />

@@ -619,16 +619,16 @@ export async function POST(request: NextRequest) {
       } else {
         const m = (body.matchCriteria && typeof body.matchCriteria === "object") ? body.matchCriteria as Record<string, unknown> : {};
         const ptRaw = typeof m.propertyType === "string" ? m.propertyType : "";
-        const bedsRaw = typeof m.bedrooms === "number" && Number.isFinite(m.bedrooms) ? m.bedrooms : 0;
+        const nbhdRaw = typeof m.neighbourhood === "string" ? m.neighbourhood : "";
         const cityRaw = typeof m.city === "string" ? m.city : "";
-        if (!ptRaw || !cityRaw) {
+        if (!ptRaw || !nbhdRaw) {
           return NextResponse.json({ ok: false, error: "Match criteria missing. Reload the page and try again." }, { status: 400 });
         }
         matchCriteriaOut = {
           propertyType: ptRaw,
-          bedrooms: bedsRaw,
+          neighbourhood: nbhdRaw,
           city: cityRaw,
-          periodDays: 30,
+          periodDays: 90,
         };
       }
 
@@ -737,11 +737,10 @@ export async function POST(request: NextRequest) {
       let stats: Awaited<ReturnType<typeof getMarketPulse>> | null = null;
       if (intent === "market-pulse-unlock" && matchCriteriaOut) {
         try {
-          const mc = matchCriteriaOut as { propertyType: string; bedrooms: number; city: string };
+          const mc = matchCriteriaOut as { propertyType: string; neighbourhood: string };
           stats = await getMarketPulse({
             propertyType: mc.propertyType,
-            bedrooms: mc.bedrooms,
-            city: mc.city,
+            neighbourhood: mc.neighbourhood,
           });
         } catch (e) {
           console.error("[market-pulse compute failed]", { leadId: lead.id, error: e instanceof Error ? e.message : String(e) });

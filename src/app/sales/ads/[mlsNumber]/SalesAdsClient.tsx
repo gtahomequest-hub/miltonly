@@ -411,11 +411,9 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             <MarketPulseUnlockCard
               propertyType={listing.propertyType}
-              bedrooms={listing.bedrooms}
+              neighbourhood={listing.neighbourhood}
               city={listing.city}
               mlsNumber={listing.mlsNumber}
-              propertyTypeLabel={(typeLabel || listing.propertyType).toLowerCase()}
-              listingStreetAddr={streetAddr}
             />
             <HomeValuationCard mlsNumber={listing.mlsNumber} />
           </div>
