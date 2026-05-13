@@ -99,17 +99,6 @@ export default function HomeValuationCard({
 
     setSubmitting(true);
 
-    const gtag = getGtag();
-    if (gtag) {
-      gtag("event", "generate_lead", {
-        value: 7500,
-        currency: "CAD",
-        source: SOURCE,
-        intent: "home-valuation",
-        listing_mls: mlsNumber,
-      });
-    }
-
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -136,12 +125,28 @@ export default function HomeValuationCard({
           [HONEYPOT_FIELD]: honey,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; id?: string };
       if (!res.ok) {
         setError(data?.error || `Could not submit. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
+
+      // GA4 conversion event — fires only after res.ok (audit F1.4). $7,500
+      // is the highest-value lead surface on the sales page (move-up buyers
+      // are dual-transaction, both buying and selling sides commission).
+      const gtag = getGtag();
+      if (gtag) {
+        gtag("event", "generate_lead", {
+          transaction_id: typeof data?.id === "string" ? data.id : "",
+          value: 7500,
+          currency: "CAD",
+          source: SOURCE,
+          intent: "home-valuation",
+          listing_mls: mlsNumber,
+        });
+      }
+
       setSubmitted(true);
     } catch {
       setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} at ${config.realtor.phone}.`);

@@ -316,18 +316,35 @@ function MessageCaptureModal({
           [HONEYPOT_FIELD]: honey,
         }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; id?: string };
       if (!res.ok) {
         setError(`Could not send. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
+
+      // GA4 conversion event — fires only after res.ok (audit F1.4).
+      // Trust-card messages are warm leads asking specific questions, not
+      // full-pipeline buyer leads — mid-value at $3K, between the
+      // market-pulse research-stage ($2.5K) and the top-form direct-buyer
+      // ($5K) tiers. intent is "buyer-question" for analytics segmentation
+      // even though the DB lead row is persisted with intent="buyer" (the
+      // GA event param is a tagging signal independent of the DB schema).
+      const gtag = getGtag();
+      if (gtag) {
+        gtag('event', 'generate_lead', {
+          transaction_id: typeof data?.id === "string" ? data.id : "",
+          value: 3000,
+          currency: "CAD",
+          source: "sales-ads-trust-card-message",
+          intent: "buyer-question",
+          listing_mls: mlsNumber,
+        });
+      }
+
       // Success — let parent flip to confirmation. Stay on the page; no
       // /sales/thank-you redirect for message-path leads (intentional;
       // they're mid-browse and the inline banner is the better UX).
-      // Touch `data` to silence the unused warning while keeping the
-      // shape for future log instrumentation.
-      void data;
       onSuccess();
     } catch {
       setError(`Could not send. Please call ${config.realtor.phone} directly.`);

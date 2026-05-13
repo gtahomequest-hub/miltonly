@@ -188,7 +188,11 @@ export default function LeadCaptureForm({
 
     setSubmitting(true);
 
-    if (typeof window !== "undefined") {
+    // Renter-variant funnel event (legacy, out of scope for Commit 4k —
+    // renter GA is its own optimization pass). For SALES variant, the
+    // post-res.ok `generate_lead` event below is the conversion signal
+    // (transaction_id matches the /sales/thank-you fire for GA4 dedup).
+    if (!isSales && typeof window !== "undefined") {
       const w = window as unknown as { gtag?: (...a: unknown[]) => void };
       if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "3-field" });
     }
@@ -233,6 +237,27 @@ export default function LeadCaptureForm({
         setSubmitting(false);
         return;
       }
+
+      // Sales-variant GA4 conversion event — fire AFTER the API confirms
+      // res.ok so failed POSTs never count as conversions (audit F1.4 fix).
+      // The /sales/thank-you page also fires generate_lead on mount with the
+      // same transaction_id (lead.id) — GA4 dedupes the pair so only one
+      // billable conversion lands per lead, but Aamir's Google Ads gets the
+      // properly-attributed `source` + `intent` at the moment of submit.
+      if (isSales && typeof window !== "undefined") {
+        const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+        if (w.gtag) {
+          w.gtag("event", "generate_lead", {
+            transaction_id: typeof data?.id === "string" ? data.id : "",
+            source,
+            intent: variantBody.intent,
+            value: 5000,
+            currency: "CAD",
+            listing_mls: mlsNumber || "",
+          });
+        }
+      }
+
       const fallback = isSales
         ? `/sales/thank-you?lid=${data?.id || ""}`
         : `/rentals/thank-you?lid=${data?.id || ""}`;

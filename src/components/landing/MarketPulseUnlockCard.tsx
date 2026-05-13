@@ -134,17 +134,6 @@ export default function MarketPulseUnlockCard({
 
     setSubmitting(true);
 
-    const gtag = getGtag();
-    if (gtag) {
-      gtag("event", "generate_lead", {
-        value: 2500,
-        currency: "CAD",
-        source: SOURCE,
-        intent: "market-pulse-unlock",
-        listing_mls: mlsNumber,
-      });
-    }
-
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -175,12 +164,30 @@ export default function MarketPulseUnlockCard({
           [HONEYPOT_FIELD]: honey,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; stats?: MarketPulseStatsPayload | null };
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; id?: string; stats?: MarketPulseStatsPayload | null };
       if (!res.ok) {
         setError(data?.error || `Could not unlock the report. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
+
+      // GA4 conversion event — fire AFTER res.ok so failed POSTs never count
+      // as conversions (audit F1.4). transaction_id = lead.id for GA4 dedup
+      // safety. match_basis carries the analytics slice that generated the
+      // unlock so Aamir's reporting can segment by data confidence.
+      const gtag = getGtag();
+      if (gtag) {
+        gtag("event", "generate_lead", {
+          transaction_id: typeof data?.id === "string" ? data.id : "",
+          value: 2500,
+          currency: "CAD",
+          source: SOURCE,
+          intent: "market-pulse-unlock",
+          listing_mls: mlsNumber,
+          match_basis: data?.stats?.match_basis ?? "unknown",
+        });
+      }
+
       // Reveal stats from server response. If server returned no stats
       // (helper failure, env unset), still flip to "subscribed" state with
       // a fallback message — the lead is captured, just no on-page reveal.
