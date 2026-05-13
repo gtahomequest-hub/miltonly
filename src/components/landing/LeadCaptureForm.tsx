@@ -66,6 +66,10 @@ export interface LeadCaptureFormProps {
   subheadline?: string;
   /** Optional CTA button label. Defaults differ by variant. */
   ctaLabel?: string;
+  /** Sales-variant passthrough. The MLS number of the listing the lead was viewing
+   *  when they submitted. Forwarded as `mlsNumber` in the /api/leads POST body so
+   *  the realtor email / SMS can reference the listing. No visual effect. */
+  mlsNumber?: string;
 }
 
 export default function LeadCaptureForm({
@@ -77,6 +81,7 @@ export default function LeadCaptureForm({
   headline,
   subheadline,
   ctaLabel,
+  mlsNumber,
 }: LeadCaptureFormProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -181,6 +186,10 @@ export default function LeadCaptureForm({
           email: trimmedEmail,
           source,
           ...variantBody,
+          // Sales-variant only: the listing the lead was viewing. Rental
+          // form passes undefined which JSON.stringify omits — server-side
+          // handler reads mlsNumber from buyer branch only.
+          ...(mlsNumber ? { mlsNumber } : {}),
           utm_source: tracking.utm_source,
           utm_medium: tracking.utm_medium,
           utm_campaign: tracking.utm_campaign,

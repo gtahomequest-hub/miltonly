@@ -10,6 +10,9 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   if (pathname === "/coming-soon") return null;
   if (pathname?.startsWith("/rentals/ads")) return null;
+  // Sales featured page (paid Google Ads traffic) — strip site chrome so
+  // the page is a focused conversion surface, matching /rentals/ads.
+  if (pathname?.startsWith("/sales/ads")) return null;
   // Strip site chrome on /rentals/thank-you so the post-conversion page
   // renders Aamir-only: vCard download + intro + timeline + WhatsApp.
   // The ThankYouClient renders its own minimal logo-only header + slim
