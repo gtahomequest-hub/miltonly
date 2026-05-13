@@ -12,14 +12,29 @@ const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 // Honeypot field name — must match HONEYPOT_FIELD env on /api/leads.
 const HONEYPOT_FIELD = "company_website";
 
-// Budget brackets. Numeric `val` matches /api/leads budgetToInt() parsing
-// → priceRangeMax. $4,500+ uses 6000 as the upper-cap proxy so Aamir's
-// qualification has a meaningful number, not "any".
+// Budget brackets (rental variant). Numeric `val` matches /api/leads
+// budgetToInt() parsing → priceRangeMax. $4,500+ uses 6000 as the upper-cap
+// proxy so Aamir's qualification has a meaningful number, not "any".
 const BUDGET_OPTIONS = [
   { val: "2500", label: "Under $2,500" },
   { val: "3500", label: "$2,500 – $3,500" },
   { val: "4500", label: "$3,500 – $4,500" },
   { val: "6000", label: "$4,500+" },
+];
+
+// Buying timeline (sales variant). String `val` is sent verbatim to /api/leads
+// once the API gains buyer-intent handling in a follow-up commit.
+const TIMELINE_OPTIONS = [
+  { val: "asap", label: "ASAP" },
+  { val: "1-3months", label: "Next 1–3 months" },
+  { val: "3-6months", label: "3–6 months" },
+  { val: "browsing", label: "Just browsing" },
+];
+
+// Pre-approval status (sales variant).
+const PRE_APPROVED_OPTIONS = [
+  { val: "yes", label: "Yes, pre-approved" },
+  { val: "no", label: "Not yet" },
 ];
 
 // Email regex — same shape as /api/leads server-side check. Belt-and-suspenders
@@ -35,44 +50,54 @@ function formatPhone(v: string): string {
 }
 
 export interface LeadCaptureFormProps {
+  /** Form variant. Defaults to "rental" (preserves current behavior). */
+  variant?: "rental" | "sales";
   /** The `source` field sent to /api/leads. Required. Lets parent pages tag the lead provenance. */
   source: string;
-  /** The `homeType` field sent to /api/leads. Defaults to "any". */
+  /** Rental-variant only. The `homeType` field sent to /api/leads. Defaults to "any". */
   homeType?: string;
   /** Optional callback fired after successful submission, BEFORE the router.push to thank-you. */
   onSuccess?: (data: { id?: string; redirect?: string }) => void;
   /** Optional className for outer form wrapper, defaults to "" — lets pages style positioning. */
   className?: string;
-  /** Optional headline override. Defaults to "Get matched in 60 seconds". */
+  /** Optional headline override. Defaults differ by variant. */
   headline?: string;
-  /** Optional subheadline override. Defaults to the existing rental subhead. */
+  /** Optional subheadline override. Defaults differ by variant. */
   subheadline?: string;
-  /** Optional CTA button label. Defaults to "Text me my matches". */
+  /** Optional CTA button label. Defaults differ by variant. */
   ctaLabel?: string;
 }
 
 export default function LeadCaptureForm({
+  variant = "rental",
   source,
   homeType = "any",
   onSuccess,
   className = "",
-  headline = "Get matched in 60 seconds",
+  headline,
   subheadline,
-  ctaLabel = "Text me my matches",
+  ctaLabel,
 }: LeadCaptureFormProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isSales = variant === "sales";
 
-  // Form state — phone + email + budget. firstName is auto-filled per submit
-  // as `Lead ${phoneLast4}` so the existing /api/leads ads-path validation
-  // (>=2 chars) passes AND each row in the DB is identifiable when scrolling
-  // through recent leads without exposing a name field in the form.
+  // Shared form state across both variants.
+  // firstName is auto-filled per submit as `Lead ${phoneLast4}` so the
+  // existing /api/leads ads-path validation (>=2 chars) passes AND each row
+  // in the DB is identifiable when scrolling through recent leads without
+  // exposing a name field in the form.
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [budget, setBudget] = useState<string>("");
   const [honey, setHoney] = useState(""); // honeypot — must stay empty
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Variant-specific state. Inactive variant's state stays as empty string
+  // — never read, never sent.
+  const [budget, setBudget] = useState<string>("");           // rental only
+  const [timeline, setTimeline] = useState<string>("");        // sales only
+  const [preApproved, setPreApproved] = useState<string>("");  // sales only
 
   // Tracking state — captured from URL + persistent attributionPayload().
   const [tracking, setTracking] = useState({
@@ -89,9 +114,15 @@ export default function LeadCaptureForm({
     });
   }, [searchParams]);
 
+  const resolvedHeadline =
+    headline ?? (isSales ? "Get info on this listing" : "Get matched in 60 seconds");
   const resolvedSubheadline =
     subheadline ??
-    `Phone + email + budget. ${REALTOR_FIRST_NAME} texts 3–5 matches within the hour.`;
+    (isSales
+      ? `Phone + email + timeline. ${REALTOR_FIRST_NAME} replies within 4 hours.`
+      : `Phone + email + budget. ${REALTOR_FIRST_NAME} texts 3–5 matches within the hour.`);
+  const resolvedCtaLabel =
+    ctaLabel ?? (isSales ? "Send me the details" : "Text me my matches");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -108,9 +139,20 @@ export default function LeadCaptureForm({
       setError("Please enter a valid email address.");
       return;
     }
-    if (!budget) {
-      setError("Please select your budget.");
-      return;
+    if (isSales) {
+      if (!timeline) {
+        setError("Please select your buying timeline.");
+        return;
+      }
+      if (!preApproved) {
+        setError("Please tell us if you're pre-approved.");
+        return;
+      }
+    } else {
+      if (!budget) {
+        setError("Please select your budget.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -119,6 +161,13 @@ export default function LeadCaptureForm({
       const w = window as unknown as { gtag?: (...a: unknown[]) => void };
       if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "3-field" });
     }
+
+    // Variant-specific body fields. The rental shape (renter intent +
+    // budget + homeType) is unchanged from Commit 3 to preserve identical
+    // /rentals/ads behavior.
+    const variantBody = isSales
+      ? { intent: "buyer", timeline, preApproved }
+      : { intent: "renter", budget, homeType };
 
     try {
       const res = await fetch("/api/leads", {
@@ -131,9 +180,7 @@ export default function LeadCaptureForm({
           phone: phone.trim(),
           email: trimmedEmail,
           source,
-          intent: "renter",
-          budget,
-          homeType,
+          ...variantBody,
           utm_source: tracking.utm_source,
           utm_medium: tracking.utm_medium,
           utm_campaign: tracking.utm_campaign,
@@ -151,7 +198,10 @@ export default function LeadCaptureForm({
         setSubmitting(false);
         return;
       }
-      const redirect = data?.redirect || `/rentals/thank-you?lid=${data?.id || ""}`;
+      const fallback = isSales
+        ? `/sales/thank-you?lid=${data?.id || ""}`
+        : `/rentals/thank-you?lid=${data?.id || ""}`;
+      const redirect = data?.redirect || fallback;
       if (onSuccess) onSuccess({ id: data?.id, redirect });
       router.push(redirect);
     } catch {
@@ -170,7 +220,7 @@ export default function LeadCaptureForm({
         noValidate
       >
         <h2 className="text-[18px] sm:text-[22px] font-extrabold leading-tight text-[#07111f] mb-1.5">
-          {headline}
+          {resolvedHeadline}
         </h2>
         <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
           {resolvedSubheadline}
@@ -212,26 +262,74 @@ export default function LeadCaptureForm({
           </div>
         </div>
 
-        {/* Budget — 2x2 button grid */}
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
-          Monthly budget
-        </label>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {BUDGET_OPTIONS.map((o) => (
-            <button
-              key={o.val}
-              type="button"
-              onClick={() => setBudget(o.val)}
-              className={`h-12 rounded-lg text-[13px] sm:text-[14px] font-semibold border transition-all ${
-                budget === o.val
-                  ? "bg-[#07111f] text-white border-[#07111f]"
-                  : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
-              }`}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
+        {variant === "sales" ? (
+          <>
+            {/* Buying timeline — 2 cols on mobile, 4 cols on sm+ */}
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+              Buying timeline
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              {TIMELINE_OPTIONS.map((o) => (
+                <button
+                  key={o.val}
+                  type="button"
+                  onClick={() => setTimeline(o.val)}
+                  className={`h-12 rounded-lg text-[13px] sm:text-[14px] font-semibold border transition-all ${
+                    timeline === o.val
+                      ? "bg-[#07111f] text-white border-[#07111f]"
+                      : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Pre-approval — 2 cols */}
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+              Pre-approved for a mortgage?
+            </label>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {PRE_APPROVED_OPTIONS.map((o) => (
+                <button
+                  key={o.val}
+                  type="button"
+                  onClick={() => setPreApproved(o.val)}
+                  className={`h-12 rounded-lg text-[13px] sm:text-[14px] font-semibold border transition-all ${
+                    preApproved === o.val
+                      ? "bg-[#07111f] text-white border-[#07111f]"
+                      : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Budget — 2x2 button grid */}
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+              Monthly budget
+            </label>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {BUDGET_OPTIONS.map((o) => (
+                <button
+                  key={o.val}
+                  type="button"
+                  onClick={() => setBudget(o.val)}
+                  className={`h-12 rounded-lg text-[13px] sm:text-[14px] font-semibold border transition-all ${
+                    budget === o.val
+                      ? "bg-[#07111f] text-white border-[#07111f]"
+                      : "bg-white text-[#374151] border-[#e2e8f0] hover:border-[#94a3b8]"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Honeypot — silent spam trap */}
         <div style={{ position: "absolute", left: "-10000px", top: "-10000px" }} aria-hidden="true">
@@ -259,7 +357,7 @@ export default function LeadCaptureForm({
           disabled={submitting}
           className="w-full min-h-[52px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 disabled:cursor-not-allowed text-[#07111f] font-extrabold text-[15px] sm:text-[16px] rounded-xl transition-all shadow-lg shadow-[#f59e0b]/20 hover:shadow-xl active:scale-[0.99]"
         >
-          {submitting ? "Sending…" : ctaLabel}
+          {submitting ? "Sending…" : resolvedCtaLabel}
         </button>
         <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
           🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {BROKERAGE_SHORT_NAME}. Reply STOP to opt out.{" "}
