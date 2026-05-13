@@ -70,6 +70,10 @@ export interface LeadCaptureFormProps {
    *  when they submitted. Forwarded as `mlsNumber` in the /api/leads POST body so
    *  the realtor email / SMS can reference the listing. No visual effect. */
   mlsNumber?: string;
+  /** When true, the form's internal headline + subheadline are suppressed so
+   *  the parent (e.g. the sales-page Polaroid booking band) can render its own
+   *  unified header outside the form. Field grid + CTA button still render. */
+  hideHeader?: boolean;
 }
 
 export default function LeadCaptureForm({
@@ -82,6 +86,7 @@ export default function LeadCaptureForm({
   subheadline,
   ctaLabel,
   mlsNumber,
+  hideHeader = false,
 }: LeadCaptureFormProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -228,12 +233,16 @@ export default function LeadCaptureForm({
         className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-[#07111f]"
         noValidate
       >
-        <h2 className="text-[18px] sm:text-[22px] font-extrabold leading-tight text-[#07111f] mb-1.5">
-          {resolvedHeadline}
-        </h2>
-        <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
-          {resolvedSubheadline}
-        </p>
+        {!hideHeader && (
+          <>
+            <h2 className="text-[18px] sm:text-[22px] font-extrabold leading-tight text-[#07111f] mb-1.5">
+              {resolvedHeadline}
+            </h2>
+            <p className="text-[12px] sm:text-[13px] text-[#64748b] mb-3 sm:mb-4">
+              {resolvedSubheadline}
+            </p>
+          </>
+        )}
 
         {/* Phone + Email — side-by-side on desktop (sm+), stacked on mobile */}
         <div className="grid sm:grid-cols-2 gap-2 sm:gap-3 mb-3">

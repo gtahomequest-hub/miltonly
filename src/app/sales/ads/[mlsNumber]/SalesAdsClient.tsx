@@ -8,9 +8,7 @@ import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import PhotoLightbox from "@/components/landing/PhotoLightbox";
 import AamirTrustCard from "@/components/landing/AamirTrustCard";
-import LiveListingSlider, {
-  type LiveListingSliderListing,
-} from "@/components/landing/LiveListingSlider";
+import LiveListingSlider from "@/components/landing/LiveListingSlider";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
@@ -54,7 +52,9 @@ interface Listing {
 
 interface Props {
   listing: Listing;
-  sliderListings: LiveListingSliderListing[];
+  // Slider row shape is a structural subset of Listing — TS structural typing
+  // accepts the wider array when passed to the slider's narrower prop.
+  sliderListings: Listing[];
   propertyTypeLabel: string;
 }
 
@@ -127,12 +127,6 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
     setLightboxIndex(at);
     setLightboxOpen(true);
   }
-
-  const showCommunityStats =
-    listing.goWalkMinutes !== null ||
-    !!listing.schoolZone ||
-    listing.daysOnMarket !== null ||
-    days >= 0;
 
   return (
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
@@ -342,18 +336,6 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
                 </div>
               )}
 
-              {/* Live listing slider — continuous-scroll showcase of up to 10
-                  same-property-type sale listings. Smart-blend sort (same
-                  neighbourhood + closest price first, then other neighbourhoods
-                  by newest). LiveListingSlider hard-reloads on card click and
-                  renders nothing when fewer than 3 listings match the filter. */}
-              <div className="mt-8">
-                <LiveListingSlider
-                  listings={sliderListings}
-                  propertyTypeLabel={propertyTypeLabel}
-                  currentMlsNumber={listing.mlsNumber}
-                />
-              </div>
             </div>
 
             {/* RIGHT — top form + trust card (sticky on desktop). The
@@ -383,68 +365,55 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
         </div>
       </section>
 
-      {/* ── COMMUNITY STATS ── */}
-      {showCommunityStats && (
-        <section className="bg-[#0a1628] border-t border-[#1e3a5f] py-10 sm:py-14 mt-8">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <h2 className="text-[20px] sm:text-[24px] font-extrabold mb-5">
-              About {neighbourhoodClean}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              {listing.goWalkMinutes !== null && (
-                <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Walk to GO</div>
-                  <div className="text-[18px] font-extrabold text-[#f8f9fb]">{listing.goWalkMinutes} min</div>
+      {/* ── LIVE LISTING SLIDER ── full-width band, between the two-column
+          grid and the booking band. ~5 cards visible at a time at the
+          page's max-w-6xl width, vs 2-3 when the slider lived inside the
+          left column. The slider component handles its own card / track
+          chrome — this wrapper just gives it page gutters and rhythm. */}
+      <section className="bg-[#07111f] border-t border-[#1e3a5f] py-12 sm:py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <LiveListingSlider
+            listings={sliderListings}
+            propertyTypeLabel={propertyTypeLabel}
+            currentMlsNumber={listing.mlsNumber}
+          />
+        </div>
+      </section>
+
+      {/* ── BOOK A SHOWING BAND ── Polaroid layout: thin amber frame around
+          a dominant white card that contains the kicker, title, subtitle,
+          and form together. LeadCaptureForm renders with hideHeader so the
+          unified header above lives outside the form. */}
+      <section id="book-showing-form" className="bg-[#07111f] border-t border-[#1e3a5f] py-12 sm:py-16">
+        <div className="max-w-[540px] mx-auto px-4 sm:px-6">
+          <div className="bg-[#f59e0b] rounded-[14px] p-[12px]">
+            <div className="bg-white rounded-[10px] px-[26px] pt-[28px] pb-[24px]">
+              <div className="mb-[22px] pb-[18px] border-b border-[#f1f5f9]">
+                <div className="text-[10px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-[8px]">
+                  Schedule a viewing
                 </div>
-              )}
-              {listing.schoolZone && (
-                <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] mb-1">School zone</div>
-                  <div className="text-[14px] sm:text-[15px] font-bold text-[#f8f9fb] line-clamp-2">{listing.schoolZone}</div>
-                </div>
-              )}
-              {listing.daysOnMarket !== null && (
-                <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Days on market</div>
-                  <div className="text-[18px] font-extrabold text-[#f8f9fb]">{listing.daysOnMarket}d</div>
-                </div>
-              )}
-              {days >= 0 && (
-                <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] mb-1">Listed</div>
-                  <div className="text-[18px] font-extrabold text-[#f8f9fb]">{days}d ago</div>
-                </div>
-              )}
+                <h2 className="text-[22px] font-medium text-[#07111f] leading-[1.2] tracking-[-0.3px] mb-[6px]">
+                  Book a showing — {streetAddr}
+                </h2>
+                <p className="text-[13px] text-[#64748b] leading-[1.5]">
+                  {REALTOR_FIRST_NAME} confirms your time within 4 business hours.
+                </p>
+              </div>
+              <LeadCaptureForm
+                variant="sales"
+                source="sales-rentals-featured-book"
+                mlsNumber={listing.mlsNumber}
+                hideHeader
+                ctaLabel="Book my showing"
+              />
             </div>
           </div>
-        </section>
-      )}
-
-      {/* ── BOOK A SHOWING BAND ── */}
-      <section id="book-showing-form" className="bg-gradient-to-br from-[#f59e0b] to-[#fbbf24] py-12 sm:py-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-6 text-[#07111f]">
-            <h2 className="text-[26px] sm:text-[34px] font-extrabold mb-2 leading-tight">
-              Book a showing — {streetAddr}
-            </h2>
-            <p className="text-[14px] sm:text-[16px] text-[#07111f]/80">
-              {priceText} · {REALTOR_FIRST_NAME} confirms in 4 business hours
-            </p>
-          </div>
-          <LeadCaptureForm
-            variant="sales"
-            source="sales-rentals-featured-book"
-            mlsNumber={listing.mlsNumber}
-            headline="Book a showing"
-            subheadline={`${streetAddr} · ${priceText}`}
-            ctaLabel="Book my showing →"
-          />
-          <div className="mt-4 text-center text-[13px] text-[#07111f]/80">
+          <div className="mt-5 text-center text-[12px] text-[#94a3b8]">
             Prefer to skip the form?{" "}
             <a
               href={headerSms}
               onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_text_book_band', eventParams); }}
-              className="font-bold text-[#07111f] underline"
+              className="font-semibold text-[#fbbf24] hover:text-[#f59e0b] underline"
             >
               💬 Text {REALTOR_FIRST_NAME}
             </a>
@@ -452,7 +421,7 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
             <a
               href={headerTel}
               onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_call_book_band', eventParams); }}
-              className="font-bold text-[#07111f] underline"
+              className="font-semibold text-[#fbbf24] hover:text-[#f59e0b] underline"
             >
               📞 Call {REALTOR_FIRST_NAME}
             </a>
