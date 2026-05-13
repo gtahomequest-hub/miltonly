@@ -86,11 +86,17 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
       `,
     });
     if (result.error) {
-      console.error("[email send failed]", { leadId, source: data.source, error: result.error.message });
-    } else {
-      console.log("[email sent]", { leadId, source: data.source, resendId: result.data?.id });
+      const msg = result.error.message || JSON.stringify(result.error);
+      console.error("[email send failed]", { leadId, source: data.source, error: msg });
+      // Re-throw so withRetry at the call site can retry transient failures.
+      // The existing .catch() chain at /api/leads still fires after retries
+      // are exhausted; other callers' .catch() chains (off-market-leads etc.)
+      // already exist to absorb thrown errors.
+      throw new Error(msg);
     }
+    console.log("[email sent]", { leadId, source: data.source, resendId: result.data?.id });
   } catch (e) {
     console.error("[email send failed]", { leadId, source: data.source, error: e instanceof Error ? e.message : String(e) });
+    throw e;
   }
 }

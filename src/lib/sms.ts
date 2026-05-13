@@ -77,5 +77,9 @@ export async function notifyAamirBySMS(
       source: data.source,
       error: e instanceof Error ? e.message : String(e),
     });
+    // Re-throw so withRetry at the call site can retry transient Twilio
+    // failures (e.g. iad1 → twilio.com timeout). Callers that don't wrap
+    // with withRetry still have their existing .catch() chains in place.
+    throw e;
   }
 }

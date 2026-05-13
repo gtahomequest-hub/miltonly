@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { notifyNewLead } from "@/lib/email";
+import { withRetry } from "@/lib/notifications/retry";
 import { Resend } from "resend";
 import { NextRequest, NextResponse } from "next/server";
 import { hit } from "@/lib/rateLimit";
@@ -125,23 +126,35 @@ function sendAutoReply(args: {
     "*Not intended to solicit buyers or tenants currently under contract with another brokerage.",
   ].join("\n");
 
-  resend.emails
-    .send({
-      from: AUTO_REPLY_FROM,
-      to: email,
-      replyTo: AUTO_REPLY_REPLY_TO,
-      subject,
-      html,
-      text,
-    })
-    .then((result) => {
+  // Wrap the Resend send in withRetry so transient iad1 → resend.com
+  // network failures get absorbed. The Resend SDK returns { error: ... }
+  // on non-network failures (auth, domain, sandbox-restriction) AND
+  // throws on network failures — both paths route into the closure's
+  // throw so withRetry retries either way. Final-attempt failure falls
+  // into the outer .catch below which preserves the existing
+  // "[auto-reply send failed]" log line.
+  withRetry(
+    async () => {
+      const result = await resend!.emails.send({
+        from: AUTO_REPLY_FROM,
+        to: email,
+        replyTo: AUTO_REPLY_REPLY_TO,
+        subject,
+        html,
+        text,
+      });
       if (result.error) {
-        console.error("[auto-reply send failed]", { leadId, error: result.error.message });
-      } else {
-        console.log("[auto-reply sent]", { leadId, resendId: result.data?.id });
+        const msg = result.error.message || JSON.stringify(result.error);
+        throw new Error(msg);
       }
+      return result;
+    },
+    { label: "resend:auto-reply", leadId },
+  )
+    .then((result) => {
+      console.log("[auto-reply sent]", { leadId, resendId: result.data?.id });
     })
-    .catch((e) => console.error("Auto-reply send error:", e));
+    .catch((e) => console.error("[auto-reply send failed]", { leadId, error: e instanceof Error ? e.message : String(e) }));
 }
 
 const HOME_TYPE_TO_PROPERTY_TYPE: Record<string, string | null> = {
@@ -274,19 +287,26 @@ export async function POST(request: NextRequest) {
       });
 
       // Realtor email — preserves existing telemetry-instrumented pipeline.
-      notifyNewLead(
-        {
-          firstName: trimmedName,
-          email: finalEmail || undefined,
-          phone: normalizedPhone || undefined,
-          source: ADS_SOURCE,
-          intent: "renter",
-          timeline: moveIn,
-          propertyType: propertyType || undefined,
-          budget: priceRangeMax ? String(priceRangeMax) : undefined,
-          bedrooms: bedroomsInt !== null ? String(bedroomsInt) : undefined,
-        },
-        lead.id
+      // Wrapped in withRetry to absorb transient iad1 → resend.com network
+      // failures (1.5s / 3s / 6s backoff). The .catch() chain fires only
+      // after all retries are exhausted.
+      withRetry(
+        () =>
+          notifyNewLead(
+            {
+              firstName: trimmedName,
+              email: finalEmail || undefined,
+              phone: normalizedPhone || undefined,
+              source: ADS_SOURCE,
+              intent: "renter",
+              timeline: moveIn,
+              propertyType: propertyType || undefined,
+              budget: priceRangeMax ? String(priceRangeMax) : undefined,
+              bedrooms: bedroomsInt !== null ? String(bedroomsInt) : undefined,
+            },
+            lead.id,
+          ),
+        { label: "resend:realtor-email", leadId: lead.id },
       ).catch((e) => console.error("Email notify error:", e));
 
       // Auto-reply — fires within ~30s if email present. Skipped on honeypot
@@ -300,16 +320,22 @@ export async function POST(request: NextRequest) {
       // Twilio SMS to Aamir — redundant channel alongside email. Independent
       // .catch() so a Twilio failure never affects the Resend send (or vice
       // versa). The Lead row is the source of truth either way.
-      notifyAamirBySMS(
-        {
-          firstName: trimmedName,
-          phone: normalizedPhone || undefined,
-          source: ADS_SOURCE,
-          propertyType: propertyType || undefined,
-          budget: priceRangeMax ? String(priceRangeMax) : undefined,
-          timeline: moveIn,
-        },
-        lead.id,
+      // Wrapped in withRetry to absorb transient iad1 → twilio.com network
+      // failures (1.5s / 3s / 6s backoff).
+      withRetry(
+        () =>
+          notifyAamirBySMS(
+            {
+              firstName: trimmedName,
+              phone: normalizedPhone || undefined,
+              source: ADS_SOURCE,
+              propertyType: propertyType || undefined,
+              budget: priceRangeMax ? String(priceRangeMax) : undefined,
+              timeline: moveIn,
+            },
+            lead.id,
+          ),
+        { label: "twilio:sms", leadId: lead.id },
       ).catch((e) => console.error("[sms notify error]", e));
 
       // Renter cheat-sheet email — gated by env flag + email presence.
@@ -389,8 +415,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    notifyNewLead(body, lead.id).catch((e) => console.error("Email notify error:", e));
-    notifyAamirBySMS(body, lead.id).catch((e) => console.error("[sms notify error]", e));
+    // Both wrapped in withRetry to absorb transient iad1 outbound failures.
+    // Independent retry chains — Resend retry doesn't affect Twilio and vice versa.
+    withRetry(() => notifyNewLead(body, lead.id), { label: "resend:realtor-email", leadId: lead.id })
+      .catch((e) => console.error("Email notify error:", e));
+    withRetry(() => notifyAamirBySMS(body, lead.id), { label: "twilio:sms", leadId: lead.id })
+      .catch((e) => console.error("[sms notify error]", e));
 
     // Auto-reply for non-ads sources (listing detail, alerts, etc.) — same
     // skip rules: skip if no email, honeypot already short-circuited above.
