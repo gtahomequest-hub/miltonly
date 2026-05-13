@@ -2,14 +2,15 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
 import { config } from "@/lib/config";
 import { formatPriceFull, daysAgo, cleanNeighbourhoodName } from "@/lib/format";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import PhotoLightbox from "@/components/landing/PhotoLightbox";
 import AamirTrustCard from "@/components/landing/AamirTrustCard";
-import UnlockModal from "@/app/rentals/ads/UnlockModal";
+import LiveListingSlider, {
+  type LiveListingSliderListing,
+} from "@/components/landing/LiveListingSlider";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
@@ -53,7 +54,8 @@ interface Listing {
 
 interface Props {
   listing: Listing;
-  relatedListings: Listing[];
+  sliderListings: LiveListingSliderListing[];
+  propertyTypeLabel: string;
 }
 
 // Deterministic 1-12 viewer-count badge per mlsNumber. Stable across reloads
@@ -77,10 +79,9 @@ function getGtag(): GtagFn | null {
   return w.gtag || null;
 }
 
-function SalesAdsInner({ listing, relatedListings }: Props) {
+function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [unlockOpen, setUnlockOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
 
   const streetAddr = listing.address.split(",")[0];
@@ -341,57 +342,18 @@ function SalesAdsInner({ listing, relatedListings }: Props) {
                 </div>
               )}
 
-              {/* Related listings */}
-              {relatedListings.length > 0 && (
-                <div className="mt-8">
-                  <h2 className="text-[20px] sm:text-[24px] font-extrabold mb-4">
-                    More like this in {neighbourhoodClean}
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                    {relatedListings.map((l) => {
-                      const lStreet = l.address.split(",")[0];
-                      const lType = TYPE_DISPLAY_LABEL[l.propertyType?.toLowerCase()] || l.propertyType;
-                      return (
-                        <button
-                          key={l.mlsNumber}
-                          type="button"
-                          onClick={() => setUnlockOpen(true)}
-                          className="group relative block text-left bg-[#0c1e35] border border-[#1e3a5f] rounded-xl overflow-hidden hover:border-[#f59e0b]/50 transition-all"
-                          aria-label="Unlock this listing"
-                        >
-                          <div
-                            className="aspect-[4/3] bg-[#1e3a5f] bg-center bg-cover relative"
-                            style={l.photos[0] ? { backgroundImage: `url(${l.photos[0]})`, filter: "blur(14px) saturate(0.7)" } : {}}
-                          >
-                            {!l.photos[0] && (
-                              <div className="absolute inset-0 flex items-center justify-center text-[40px] opacity-30">🏠</div>
-                            )}
-                          </div>
-                          <div className="p-4 relative">
-                            {lType && (
-                              <span className="inline-block bg-[#f59e0b]/15 border border-[#f59e0b]/40 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1 mb-2">
-                                {lType}
-                              </span>
-                            )}
-                            <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 select-none">
-                              <span className="blur-[6px]">$X,XXX,XXX</span>
-                            </div>
-                            <div className="text-[13px] font-semibold text-[#cbd5e1] mb-2 line-clamp-1 blur-[5px] select-none">{lStreet}</div>
-                            <div className="flex gap-3 text-[12px] text-[#94a3b8] blur-[4px] select-none mb-3">
-                              <span>🛏 {l.bedrooms} bed</span>
-                              <span>🚿 {l.bathrooms} bath</span>
-                            </div>
-                            <span className="block w-full text-center bg-[#f59e0b] group-hover:bg-[#fbbf24] text-[#07111f] font-extrabold rounded-lg py-3 min-h-[48px] inline-flex items-center justify-center gap-1.5 text-[14px] transition-colors">
-                              <Lock className="w-4 h-4" aria-hidden />
-                              Unlock
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* Live listing slider — continuous-scroll showcase of up to 10
+                  same-property-type sale listings. Smart-blend sort (same
+                  neighbourhood + closest price first, then other neighbourhoods
+                  by newest). LiveListingSlider hard-reloads on card click and
+                  renders nothing when fewer than 3 listings match the filter. */}
+              <div className="mt-8">
+                <LiveListingSlider
+                  listings={sliderListings}
+                  propertyTypeLabel={propertyTypeLabel}
+                  currentMlsNumber={listing.mlsNumber}
+                />
+              </div>
             </div>
 
             {/* RIGHT — top form + trust card (sticky on desktop). The
@@ -541,13 +503,6 @@ function SalesAdsInner({ listing, relatedListings }: Props) {
         isOpen={lightboxOpen}
         initialIndex={lightboxIndex}
         onClose={() => setLightboxOpen(false)}
-      />
-
-      {/* ── UNLOCK MODAL ── reused from /rentals/ads ── */}
-      <UnlockModal
-        isOpen={unlockOpen}
-        onClose={() => setUnlockOpen(false)}
-        initialType={listing.propertyType}
       />
     </div>
   );

@@ -1,8 +1,9 @@
 // Sales featured page — Server Component. Hit by cold paid Google Ads
 // traffic. Fetches the listing by mlsNumber, validates it's active + for
 // sale + format-clean, redirects to /rentals on any invalid case so we
-// never waste ad spend on dead URLs. Pulls related listings (same
-// neighbourhood, falling back to city) and renders the client wrapper.
+// never waste ad spend on dead URLs. Pulls a smart-blend slate of up to 10
+// same-property-type sale listings (LiveListingSlider) and renders the
+// client wrapper.
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -16,14 +17,23 @@ export const dynamic = "force-dynamic";
 const MLS_RE = /^[A-Z][0-9]{8}$/;
 const SALE_TX_TYPE = "For Sale";
 const ACTIVE_STATUS = "active";
-const RELATED_LIMIT = 6;
-const RELATED_NEIGHBOURHOOD_MIN = 3;
+const SLIDER_LIMIT = 10;
 
 const TYPE_DISPLAY_LABEL: Record<string, string> = {
   condo: "Condo",
   detached: "Detached Home",
   semi: "Semi-Detached Home",
   townhouse: "Townhouse",
+};
+
+// Plural display label for the LiveListingSlider section kicker.
+// Keys match the canonical lowercased propertyType values stored in the DB
+// (see /rentals/ads page for the same set of canonical types).
+const PROPERTY_TYPE_LABEL_PLURAL: Record<string, string> = {
+  detached: "detached homes",
+  semi: "semis",
+  townhouse: "townhouses",
+  condo: "condos",
 };
 
 interface PageProps {
@@ -89,39 +99,61 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
   if (listing.status !== ACTIVE_STATUS) redirect("/rentals");
   if (listing.transactionType !== SALE_TX_TYPE) redirect("/rentals");
 
-  // Related listings — same neighbourhood first, fall back to city if fewer
-  // than RELATED_NEIGHBOURHOOD_MIN matches. Always excludes the current
-  // listing's MLS.
-  let related = await prisma.listing.findMany({
+  // Smart-blend slider — top 10 same-property-type active sale listings.
+  // Priority:
+  //   1. Same neighbourhood, sorted by closest price to the current listing.
+  //   2. Other neighbourhoods, sorted by listedAt desc (newest first).
+  // Prisma doesn't natively sort by "absolute price distance", so the
+  // closest-price sort happens in memory after the same-neighbourhood
+  // query. Both queries filter to the current listing's propertyType,
+  // active status, sale transactionType, and permAdvertise=true. The
+  // current listing's MLS is always excluded.
+  const sameNeighbourhood = await prisma.listing.findMany({
     where: {
       transactionType: SALE_TX_TYPE,
       status: ACTIVE_STATUS,
+      propertyType: listing.propertyType,
       neighbourhood: listing.neighbourhood,
       mlsNumber: { not: listing.mlsNumber },
       permAdvertise: true,
     },
-    orderBy: { listedAt: "desc" },
-    take: RELATED_LIMIT,
+    orderBy: { listedAt: "desc" }, // tiebreak before in-memory price sort
+    take: SLIDER_LIMIT,
   });
-  if (related.length < RELATED_NEIGHBOURHOOD_MIN) {
-    related = await prisma.listing.findMany({
+  const sortedSameNeighbourhood = [...sameNeighbourhood].sort(
+    (a, b) => Math.abs(a.price - listing.price) - Math.abs(b.price - listing.price),
+  );
+
+  let sliderListings = sortedSameNeighbourhood;
+  if (sliderListings.length < SLIDER_LIMIT) {
+    const otherNeighbourhoods = await prisma.listing.findMany({
       where: {
         transactionType: SALE_TX_TYPE,
         status: ACTIVE_STATUS,
-        city: listing.city,
+        propertyType: listing.propertyType,
+        neighbourhood: { not: listing.neighbourhood },
         mlsNumber: { not: listing.mlsNumber },
         permAdvertise: true,
       },
       orderBy: { listedAt: "desc" },
-      take: RELATED_LIMIT,
+      take: SLIDER_LIMIT - sliderListings.length,
     });
+    sliderListings = [...sliderListings, ...otherNeighbourhoods].slice(0, SLIDER_LIMIT);
   }
+
+  const propertyTypeLabel = PROPERTY_TYPE_LABEL_PLURAL[listing.propertyType?.toLowerCase()] || "sale listings";
 
   // Prisma Decimal/Date fields don't serialize through to a Client
   // Component cleanly — JSON.parse(JSON.stringify(...)) is the cheap fix
   // matching the existing /rentals/ads pattern.
   const listingSerialized = JSON.parse(JSON.stringify(listing));
-  const relatedSerialized = JSON.parse(JSON.stringify(related));
+  const sliderListingsSerialized = JSON.parse(JSON.stringify(sliderListings));
 
-  return <SalesAdsClient listing={listingSerialized} relatedListings={relatedSerialized} />;
+  return (
+    <SalesAdsClient
+      listing={listingSerialized}
+      sliderListings={sliderListingsSerialized}
+      propertyTypeLabel={propertyTypeLabel}
+    />
+  );
 }
