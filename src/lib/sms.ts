@@ -26,22 +26,57 @@ if (!twilioClient && process.env.NODE_ENV === "production") {
   console.warn("[sms] Twilio not configured — SMS notifications disabled");
 }
 
+const BUYER_TIMELINE_LABEL: Record<string, string> = {
+  asap: "ASAP",
+  "1-3months": "Next 1–3 months",
+  "3-6months": "3–6 months",
+  browsing: "Just browsing",
+};
+
 /**
  * Build the Aamir-facing SMS body for a new lead. Pure function — exported
  * for the prebuild regression test (scripts/test-sms-format.ts). No I/O,
  * no env reads, no Twilio dependency. Safe for any caller.
  *
- * Format (5 lines, ~160 chars):
+ * Renter format (5 lines, ~160 chars):
  *   🏠 New Milton lead [LAST4]
  *   {type} · ${budget} · {timeline}
  *   Call: {phone}
  *   Lead ID: {last 8 of leadId}
+ *
+ * Buyer format (intent === "buyer", sales variant):
+ *   🏠 NEW SALE LEAD
+ *   Lead [LAST4] · {phone} · {email}
+ *   Timeline: {label} · Pre-approved: {YES|NO}
+ *   Listing: {mlsNumber or "—"}
+ *   Source: {raw source tag}
  *
  * Falls back gracefully when fields are missing — never emits literal
  * "undefined" or breaks on a null phone.
  */
 export function buildAamirSMSBody(data: LeadData, leadId: string): string {
   const phoneLast4 = data.phone?.slice(-4) || "????";
+
+  if (data.intent === "buyer") {
+    const phoneStr = data.phone || "(no phone)";
+    const emailStr = data.email || "(no email)";
+    const timelineLabel = data.timeline
+      ? (BUYER_TIMELINE_LABEL[data.timeline] || data.timeline)
+      : "—";
+    const preApprovedStr = data.preApproved
+      ? data.preApproved.toUpperCase()
+      : "—";
+    const listingStr = data.mlsNumber || "—";
+    const sourceStr = data.source || "—";
+    return [
+      "🏠 NEW SALE LEAD",
+      `Lead [${phoneLast4}] · ${phoneStr} · ${emailStr}`,
+      `Timeline: ${timelineLabel} · Pre-approved: ${preApprovedStr}`,
+      `Listing: ${listingStr}`,
+      `Source: ${sourceStr}`,
+    ].join("\n");
+  }
+
   const budget = data.budget || data.priceRangeMax || "unknown";
   const type = data.propertyType || "unknown";
   const timeline = data.timeline || "asap";

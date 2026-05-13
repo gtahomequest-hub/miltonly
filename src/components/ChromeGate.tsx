@@ -17,5 +17,8 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   // Sign-in menu re-introducing distractions during the 60-min callback
   // window.
   if (pathname?.startsWith("/rentals/thank-you")) return null;
+  // Same rationale for the sales-side post-conversion page; 4-business-hour
+  // SLA copy on /sales/thank-you needs the same distraction-free chrome.
+  if (pathname?.startsWith("/sales/thank-you")) return null;
   return <>{children}</>;
 }

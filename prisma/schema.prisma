@@ -113,6 +113,10 @@ model Lead {
   parking         Int?
   basement        Boolean?
   timeline        String?
+  // Buyer-side fields (sales variant). Renter leads keep these NULL.
+  // preApproved: "yes" | "no". mlsNumber: the listing the lead was viewing.
+  preApproved     String?
+  mlsNumber       String?
   priceRangeMin   Int?
   priceRangeMax   Int?
   neighbourhoods  String[]

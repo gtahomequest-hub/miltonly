@@ -38,7 +38,22 @@ export interface KvcoreLeadInput {
   budget?: string;
   bedrooms?: string;
   propertyType?: string;
+  // Sales-variant fields. Present only on buyer leads.
+  preApproved?: string;
+  mlsNumber?: string;
 }
+
+const KVCORE_BUYER_TIMELINE_LABEL: Record<string, string> = {
+  asap: "ASAP",
+  "1-3months": "Next 1–3 months",
+  "3-6months": "3–6 months",
+  browsing: "Just browsing",
+};
+
+const KVCORE_PRE_APPROVED_LABEL: Record<string, string> = {
+  yes: "Yes, pre-approved",
+  no: "Not yet",
+};
 
 /**
  * Build the plain-text body kvCORE's parser ingests. Every label always
@@ -46,8 +61,36 @@ export interface KvcoreLeadInput {
  * doesn't have that field. Consistent line set is what kvCORE expects.
  * Exported separately so the body shape is testable without dispatching a
  * real Resend send.
+ *
+ * Two variants:
+ *   - Buyer (intent === "buyer"): sales-side body. Property Type +
+ *     Bedrooms stay blank (renter-only fields). Adds a Listing line and
+ *     prefixes Source with "Miltonly Sales -".
+ *   - Renter / other: existing rental shape, unchanged.
  */
 export function buildKvcoreParserBody(lead: KvcoreLeadInput): string {
+  if (lead.intent === "buyer") {
+    const timelineLabel = lead.timeline
+      ? (KVCORE_BUYER_TIMELINE_LABEL[lead.timeline] || lead.timeline)
+      : "";
+    const preApprovedLabel = lead.preApproved
+      ? (KVCORE_PRE_APPROVED_LABEL[lead.preApproved] || lead.preApproved)
+      : "";
+    return [
+      `First Name: ${lead.firstName ?? ""}`,
+      `Last Name: `,
+      `Email: ${lead.email ?? ""}`,
+      `Phone: ${lead.phone ?? ""}`,
+      `Source: Miltonly Sales - ${lead.source}`,
+      `Intent: buyer`,
+      `Timeline: ${timelineLabel}`,
+      `Pre-approved: ${preApprovedLabel}`,
+      `Property Type: `,
+      `Bedrooms: `,
+      `Listing: ${lead.mlsNumber ?? ""}`,
+    ].join("\n");
+  }
+
   return [
     `First Name: ${lead.firstName ?? ""}`,
     `Last Name: ${lead.lastName ?? ""}`,
