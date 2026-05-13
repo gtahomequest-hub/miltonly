@@ -31,6 +31,11 @@ export interface LeadData {
   // Always undefined for renter leads. Rendered as its own row in the
   // realtor email when present + non-empty.
   message?: string;
+  // Lead-magnet fields (Commit 4j).
+  // yourHomeAddress: the home-valuation submitter's current home address.
+  // notes: optional free-text from the home-valuation textarea.
+  yourHomeAddress?: string;
+  notes?: string;
   [key: string]: string | undefined;
 }
 
@@ -65,6 +70,9 @@ const SOURCE_LABEL: Record<string, string> = {
   "sales-rentals-featured-top": "Sales Featured Page · Top Form",
   "sales-rentals-featured-book": "Sales Featured Page · Book a Showing",
   "sales-rentals-featured-related": "Sales Featured Page · Related Listing Unlock",
+  "sales-rentals-featured-message": "Sales Featured Page · AamirTrustCard Message",
+  "sales-ads-market-pulse-unlock": "Sales Featured Page · Market Pulse Unlock",
+  "sales-ads-home-valuation": "Sales Featured Page · Home Valuation Request",
 };
 
 const BUYER_TIMELINE_LABEL: Record<string, string> = {
@@ -109,10 +117,15 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
   if (!resend || !TO) return;
 
   const isBuyer = data.intent === "buyer";
-  const sourceLine = isBuyer ? salesSourceLabel(data.source) : (SOURCE_LABEL[data.source || ""] || data.source);
+  const isMarketPulse = data.intent === "market-pulse-unlock";
+  const isHomeValuation = data.intent === "home-valuation";
+  const isLeadMagnet = isMarketPulse || isHomeValuation;
+  const sourceLine = (isBuyer || isLeadMagnet)
+    ? salesSourceLabel(data.source)
+    : (SOURCE_LABEL[data.source || ""] || data.source);
 
   let listingLine: string | null = null;
-  if (isBuyer) {
+  if (isBuyer || isLeadMagnet) {
     listingLine = await lookupListingForEmail(data.mlsNumber);
   }
 
@@ -130,33 +143,65 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     ? escapeHtml(data.message.trim()).replace(/\r?\n/g, "<br>")
     : undefined;
 
-  const rows: Array<[string, string | undefined]> = isBuyer
-    ? [
-        ["Name", data.firstName],
-        ["Phone", data.phone],
-        ["Email", data.email],
-        ["Source", sourceLine],
-        ["Intent", "buyer"],
-        ["Timeline", timelineLine],
-        ["Pre-approved", preApprovedLine],
-        ["Listing", listingLine || undefined],
-        ["Message", messageLine],
-      ]
-    : [
-        ["Name", data.firstName],
-        ["Phone", data.phone],
-        ["Email", data.email],
-        ["Source", sourceLine],
-        ["Intent", data.intent],
-        ["Timeline", timelineLine],
-        ["Property", data.street],
-        ["Type", data.propertyType],
-        ["Budget", data.budget],
-        ["Bedrooms", data.bedrooms],
-        ["Parking", data.parking],
-        ["Pet", data.pet],
-        ["Priority", data.priority],
-      ];
+  // Home-valuation: escape the home address + optional notes for the same
+  // injection-safety reason.
+  const yourHomeAddressLine = isHomeValuation && data.yourHomeAddress
+    ? escapeHtml(data.yourHomeAddress.trim())
+    : undefined;
+  const notesLine = isHomeValuation && data.notes && data.notes.trim().length > 0
+    ? escapeHtml(data.notes.trim()).replace(/\r?\n/g, "<br>")
+    : undefined;
+
+  let rows: Array<[string, string | undefined]>;
+  if (isHomeValuation) {
+    rows = [
+      ["Name", data.firstName],
+      ["Phone", data.phone],
+      ["Email", data.email],
+      ["Source", sourceLine],
+      ["Intent", "home-valuation"],
+      ["Your home", yourHomeAddressLine],
+      ["Notes", notesLine],
+      ["Triggered from listing", listingLine || undefined],
+    ];
+  } else if (isMarketPulse) {
+    rows = [
+      ["Name", data.firstName],
+      ["Phone", data.phone],
+      ["Email", data.email],
+      ["Source", sourceLine],
+      ["Intent", "market-pulse-unlock"],
+      ["Triggered from listing", listingLine || undefined],
+    ];
+  } else if (isBuyer) {
+    rows = [
+      ["Name", data.firstName],
+      ["Phone", data.phone],
+      ["Email", data.email],
+      ["Source", sourceLine],
+      ["Intent", "buyer"],
+      ["Timeline", timelineLine],
+      ["Pre-approved", preApprovedLine],
+      ["Listing", listingLine || undefined],
+      ["Message", messageLine],
+    ];
+  } else {
+    rows = [
+      ["Name", data.firstName],
+      ["Phone", data.phone],
+      ["Email", data.email],
+      ["Source", sourceLine],
+      ["Intent", data.intent],
+      ["Timeline", timelineLine],
+      ["Property", data.street],
+      ["Type", data.propertyType],
+      ["Budget", data.budget],
+      ["Bedrooms", data.bedrooms],
+      ["Parking", data.parking],
+      ["Pet", data.pet],
+      ["Priority", data.priority],
+    ];
+  }
 
   const filteredRows = rows.filter(([, v]) => v);
 
@@ -164,14 +209,24 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     .map(([k, v]) => `<tr><td style="padding:8px 12px;font-weight:600;color:#374151;border-bottom:1px solid #f1f5f9;">${k}</td><td style="padding:8px 12px;color:#07111f;border-bottom:1px solid #f1f5f9;">${v}</td></tr>`)
     .join("");
 
-  const subject = isBuyer
-    ? `📩 NEW SALE LEAD — ${data.firstName || "Unknown"}${data.phone ? ` (${data.phone})` : ""}`
-    : (() => {
-        const isHot = data.timeline === "ASAP" || data.timeline === "Within 1 month";
-        return `${isHot ? "🔥 HOT" : "📩"} New ${SOURCE_LABEL[data.source || ""] || "lead"} — ${data.firstName || "Unknown"}${data.phone ? ` (${data.phone})` : ""}`;
-      })();
+  const subject = isHomeValuation
+    ? `📩 NEW VALUATION REQUEST — ${data.yourHomeAddress || data.firstName || "Unknown"}`
+    : isMarketPulse
+      ? `📩 NEW MARKET-PULSE LEAD — ${data.firstName || "Unknown"}${data.phone ? ` (${data.phone})` : ""}`
+      : isBuyer
+        ? `📩 NEW SALE LEAD — ${data.firstName || "Unknown"}${data.phone ? ` (${data.phone})` : ""}`
+        : (() => {
+            const isHot = data.timeline === "ASAP" || data.timeline === "Within 1 month";
+            return `${isHot ? "🔥 HOT" : "📩"} New ${SOURCE_LABEL[data.source || ""] || "lead"} — ${data.firstName || "Unknown"}${data.phone ? ` (${data.phone})` : ""}`;
+          })();
 
-  const headerLabel = isBuyer ? "Miltonly — NEW SALE LEAD" : "Miltonly — New Lead";
+  const headerLabel = isHomeValuation
+    ? "Miltonly — NEW VALUATION REQUEST"
+    : isMarketPulse
+      ? "Miltonly — NEW MARKET-PULSE LEAD"
+      : isBuyer
+        ? "Miltonly — NEW SALE LEAD"
+        : "Miltonly — New Lead";
 
   try {
     const result = await resend.emails.send({

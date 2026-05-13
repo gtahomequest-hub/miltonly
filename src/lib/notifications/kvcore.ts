@@ -41,6 +41,10 @@ export interface KvcoreLeadInput {
   // Sales-variant fields. Present only on buyer leads.
   preApproved?: string;
   mlsNumber?: string;
+  // Lead-magnet fields (Commit 4j). Carried through so future kvCORE body
+  // variants can surface them; current renter-shaped fallback ignores them.
+  yourHomeAddress?: string;
+  notes?: string;
 }
 
 const KVCORE_BUYER_TIMELINE_LABEL: Record<string, string> = {

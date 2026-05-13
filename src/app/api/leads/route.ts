@@ -7,6 +7,8 @@ import { Resend } from "resend";
 import { NextRequest, NextResponse } from "next/server";
 import { hit } from "@/lib/rateLimit";
 import { notifyAamirBySMS } from "@/lib/sms";
+import { getMarketPulse } from "@/lib/market-pulse";
+import type { Prisma } from "@prisma/client";
 
 const HONEYPOT = process.env.HONEYPOT_FIELD || "company_website";
 const ADS_SOURCE = "ads-rentals-lp";
@@ -37,7 +39,7 @@ const AUTO_REPLY_REPLY_TO = process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL
 // Realtor notification (notifyNewLead) keeps working regardless.
 const AUTO_REPLY_ENABLED = process.env.ENABLE_AUTO_REPLY === "true";
 
-type AutoReplyVariant = "rental" | "sales";
+type AutoReplyVariant = "rental" | "sales" | "market-pulse" | "home-valuation";
 
 // Sales-variant auto-reply — same retry / send semantics as the rental
 // auto-reply, but with a sales-specific subject + body (4-business-hour
@@ -157,6 +159,212 @@ function sendSalesAutoReply(args: {
     .catch((e) => console.error("[auto-reply send failed]", { leadId, error: e instanceof Error ? e.message : String(e) }));
 }
 
+// Market-pulse subscriber auto-reply (Commit 4j). Confirms the unlock + sets
+// expectation that Aamir's richer report arrives when he calls back. Does
+// NOT promise an automated PDF — Aamir composes the follow-up himself.
+function sendMarketPulseAutoReply(args: {
+  leadId: string;
+  email: string;
+  safeName: string;
+}) {
+  if (!resend) return;
+  const { leadId, email, safeName } = args;
+  const realtorFirstName = config.realtor.name.split(" ")[0];
+  const subject = `Your ${config.CITY_NAME} market pulse — and ${realtorFirstName} will be in touch`;
+
+  const html = `
+    <p>Hi ${safeName},</p>
+    <p>${realtorFirstName} here. The on-page market pulse is yours — sold counts, average price, days on market, and sold-to-ask ratio for ${config.CITY_NAME} homes like the one you were viewing.</p>
+    <p>The richer report — with specific examples and how to read each stat — arrives when I call you back. ${config.sla.emailBody} For anything urgent before then, call or text ${config.realtor.phone} directly.</p>
+    <p>You'll also start getting my Monday ${config.CITY_NAME} market update — short, no fluff, written by me each week.</p>
+    <p>Talk soon,</p>
+    <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;font-size:14px;line-height:1.5;max-width:600px;margin-top:24px;">
+      <tr>
+        <td style="padding-top:24px;border-top:2px solid #F5A524;">
+          <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">
+            ${config.realtor.name}, REALTOR<sup>&reg;</sup>
+          </div>
+          <div style="font-size:13px;color:#F5A524;font-weight:600;letter-spacing:0.3px;margin-bottom:8px;">
+            RE/MAX Hall of Fame
+          </div>
+          <div style="font-size:13px;color:#555;margin-bottom:12px;">
+            ${config.brokerage.name}*
+          </div>
+          <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px;">
+            ${config.realtor.yearsExperience} years focused on ${config.CITY_NAME} &nbsp;&bull;&nbsp; 150+ families helped &nbsp;&bull;&nbsp; $55M+ in transactions
+          </div>
+          <div style="margin-top:12px;">
+            <a href="tel:${config.realtor.phoneE164}" style="color:#F5A524;text-decoration:none;font-weight:600;font-size:15px;">${config.realtor.phone}</a>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <a href="mailto:${config.realtor.email}" style="color:#1a1a1a;text-decoration:none;">${config.realtor.email}</a>
+          </div>
+          <div style="margin-top:6px;">
+            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">${config.SITE_DOMAIN}</a>
+          </div>
+          <div style="margin-top:18px;font-size:11px;color:#888;line-height:1.4;">
+            *Not intended to solicit buyers or sellers currently under contract with another brokerage. To unsubscribe from the weekly market update, reply STOP.
+          </div>
+        </td>
+      </tr>
+    </table>
+  `;
+  const text = [
+    `Hi ${safeName},`,
+    "",
+    `${realtorFirstName} here. The on-page market pulse is yours — sold counts, average price, days on market, and sold-to-ask ratio for ${config.CITY_NAME} homes like the one you were viewing.`,
+    "",
+    `The richer report — with specific examples and how to read each stat — arrives when I call you back. ${config.sla.emailBody} For anything urgent before then, call or text ${config.realtor.phone} directly.`,
+    "",
+    `You'll also start getting my Monday ${config.CITY_NAME} market update — short, no fluff, written by me each week.`,
+    "",
+    "Talk soon,",
+    "",
+    "—",
+    "",
+    `${config.realtor.name}, REALTOR®`,
+    "RE/MAX Hall of Fame",
+    `${config.brokerage.name}*`,
+    "",
+    `${config.realtor.yearsExperience} years focused on ${config.CITY_NAME} • 150+ families helped • $55M+ in transactions`,
+    "",
+    config.realtor.phone,
+    config.realtor.email,
+    config.SITE_DOMAIN,
+    "",
+    "*Not intended to solicit buyers or sellers currently under contract with another brokerage. To unsubscribe from the weekly market update, reply STOP.",
+  ].join("\n");
+
+  withRetry(
+    async () => {
+      const result = await resend!.emails.send({
+        from: AUTO_REPLY_FROM,
+        to: email,
+        replyTo: AUTO_REPLY_REPLY_TO,
+        subject,
+        html,
+        text,
+      });
+      if (result.error) {
+        const msg = result.error.message || JSON.stringify(result.error);
+        throw new Error(msg);
+      }
+      return result;
+    },
+    { label: "resend:auto-reply", leadId },
+  )
+    .then((result) => {
+      console.log("[auto-reply sent]", { leadId, resendId: result.data?.id });
+    })
+    .catch((e) => console.error("[auto-reply send failed]", { leadId, error: e instanceof Error ? e.message : String(e) }));
+}
+
+// Home-valuation submitter auto-reply (Commit 4j). 24-business-hour promise
+// for the manual CMA. Same chrome as the other variants.
+function sendHomeValuationAutoReply(args: {
+  leadId: string;
+  email: string;
+  safeName: string;
+}) {
+  if (!resend) return;
+  const { leadId, email, safeName } = args;
+  const realtorFirstName = config.realtor.name.split(" ")[0];
+  const subject = `Your ${config.CITY_NAME} home valuation — arriving within 24 business hours`;
+
+  const html = `
+    <p>Hi ${safeName},</p>
+    <p>${realtorFirstName} here. Got your valuation request. I'm pulling the comparables, recent listings, and current market conditions now — your written valuation lands in this inbox within 24 business hours.</p>
+    <p>If you want to talk before then, call or text ${config.realtor.phone}.</p>
+    <p>A few things to know while you wait:</p>
+    <ul>
+      <li>I do every valuation personally. No algorithm, no automated ballpark. Each one starts with a fresh comp pull.</li>
+      <li>The report is yours to keep. No obligation to list, no fees, no follow-up calls unless you want them.</li>
+      <li>If your timeline ends up being &gt;90 days out, I'll suggest checking back closer to listing time — the market shifts fast.</li>
+    </ul>
+    <p>Talk soon,</p>
+    <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;font-size:14px;line-height:1.5;max-width:600px;margin-top:24px;">
+      <tr>
+        <td style="padding-top:24px;border-top:2px solid #F5A524;">
+          <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">
+            ${config.realtor.name}, REALTOR<sup>&reg;</sup>
+          </div>
+          <div style="font-size:13px;color:#F5A524;font-weight:600;letter-spacing:0.3px;margin-bottom:8px;">
+            RE/MAX Hall of Fame
+          </div>
+          <div style="font-size:13px;color:#555;margin-bottom:12px;">
+            ${config.brokerage.name}*
+          </div>
+          <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px;">
+            ${config.realtor.yearsExperience} years focused on ${config.CITY_NAME} &nbsp;&bull;&nbsp; 150+ families helped &nbsp;&bull;&nbsp; $55M+ in transactions
+          </div>
+          <div style="margin-top:12px;">
+            <a href="tel:${config.realtor.phoneE164}" style="color:#F5A524;text-decoration:none;font-weight:600;font-size:15px;">${config.realtor.phone}</a>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <a href="mailto:${config.realtor.email}" style="color:#1a1a1a;text-decoration:none;">${config.realtor.email}</a>
+          </div>
+          <div style="margin-top:6px;">
+            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">${config.SITE_DOMAIN}</a>
+          </div>
+          <div style="margin-top:18px;font-size:11px;color:#888;line-height:1.4;">
+            *Not intended to solicit buyers or sellers currently under contract with another brokerage.
+          </div>
+        </td>
+      </tr>
+    </table>
+  `;
+  const text = [
+    `Hi ${safeName},`,
+    "",
+    `${realtorFirstName} here. Got your valuation request. I'm pulling the comparables, recent listings, and current market conditions now — your written valuation lands in this inbox within 24 business hours.`,
+    "",
+    `If you want to talk before then, call or text ${config.realtor.phone}.`,
+    "",
+    "A few things to know while you wait:",
+    "",
+    "  - I do every valuation personally. No algorithm, no automated ballpark. Each one starts with a fresh comp pull.",
+    "  - The report is yours to keep. No obligation to list, no fees, no follow-up calls unless you want them.",
+    "  - If your timeline ends up being more than 90 days out, I'll suggest checking back closer to listing time — the market shifts fast.",
+    "",
+    "Talk soon,",
+    "",
+    "—",
+    "",
+    `${config.realtor.name}, REALTOR®`,
+    "RE/MAX Hall of Fame",
+    `${config.brokerage.name}*`,
+    "",
+    `${config.realtor.yearsExperience} years focused on ${config.CITY_NAME} • 150+ families helped • $55M+ in transactions`,
+    "",
+    config.realtor.phone,
+    config.realtor.email,
+    config.SITE_DOMAIN,
+    "",
+    "*Not intended to solicit buyers or sellers currently under contract with another brokerage.",
+  ].join("\n");
+
+  withRetry(
+    async () => {
+      const result = await resend!.emails.send({
+        from: AUTO_REPLY_FROM,
+        to: email,
+        replyTo: AUTO_REPLY_REPLY_TO,
+        subject,
+        html,
+        text,
+      });
+      if (result.error) {
+        const msg = result.error.message || JSON.stringify(result.error);
+        throw new Error(msg);
+      }
+      return result;
+    },
+    { label: "resend:auto-reply", leadId },
+  )
+    .then((result) => {
+      console.log("[auto-reply sent]", { leadId, resendId: result.data?.id });
+    })
+    .catch((e) => console.error("[auto-reply send failed]", { leadId, error: e instanceof Error ? e.message : String(e) }));
+}
+
 // Fire-and-forget. Returns immediately so /api/leads response stays fast.
 // All errors are caught + logged; never propagated to the client.
 //
@@ -179,6 +387,12 @@ function sendAutoReply(args: {
 
   if (variant === "sales") {
     return sendSalesAutoReply({ leadId, email, safeName, listingAddress: salesContext?.listingAddress ?? null });
+  }
+  if (variant === "market-pulse") {
+    return sendMarketPulseAutoReply({ leadId, email, safeName });
+  }
+  if (variant === "home-valuation") {
+    return sendHomeValuationAutoReply({ leadId, email, safeName });
   }
 
   const subject = `Got your ${config.CITY_NAME} rental request — calling you in under 60 minutes`;
@@ -346,6 +560,202 @@ export async function POST(request: NextRequest) {
     }
 
     const { firstName, email, phone, source, intent, street, timeline, hasAgent } = body;
+
+    // ─── Lead-magnet intents (Commit 4j) — two-card section on /sales/ads ──
+    // market-pulse-unlock: CASL-consent + aggregate-stats unlock. Returns the
+    //                      market-pulse packet in the JSON response so the
+    //                      client can reveal without a second round-trip.
+    // home-valuation:      address + email + phone, triggers a manual CMA
+    //                      by Aamir. No on-page data return; just success ack.
+    // Both paths share CASL consent capture (consentText + consentTimestamp).
+    if (intent === "market-pulse-unlock" || intent === "home-valuation") {
+      const phoneRaw = (phone || "").toString();
+      const emailRaw = (email || "").toString().trim();
+      const hasPhone = phoneRaw.replace(/\D/g, "").length === 10;
+      const hasEmail = emailRaw.length > 0 && EMAIL_RE.test(emailRaw);
+
+      if (!hasPhone) {
+        return NextResponse.json({ ok: false, error: "Please enter a 10-digit phone number." }, { status: 400 });
+      }
+      if (!hasEmail) {
+        return NextResponse.json({ ok: false, error: "Please enter a valid email address." }, { status: 400 });
+      }
+
+      // CASL consent capture — express-consent leads must carry the literal
+      // disclosure text they saw + the moment they ticked the checkbox. This
+      // is the audit trail Aamir's brokerage shows to a CRTC complaint.
+      if (body.consent !== true) {
+        return NextResponse.json({ ok: false, error: "Please tick the consent checkbox to continue." }, { status: 400 });
+      }
+      const consentTextRaw = typeof body.consentText === "string" ? body.consentText.trim().slice(0, 2000) : "";
+      if (consentTextRaw.length < 20) {
+        return NextResponse.json({ ok: false, error: "Consent text missing. Reload the page and try again." }, { status: 400 });
+      }
+      const consentTimestamp = (() => {
+        const raw = typeof body.consentTimestamp === "string" ? body.consentTimestamp : "";
+        const d = raw ? new Date(raw) : new Date();
+        return Number.isFinite(d.getTime()) ? d : new Date();
+      })();
+
+      // Home-valuation branch needs an address; market-pulse needs match criteria.
+      let yourHomeAddressOut: string | null = null;
+      let matchCriteriaOut: Prisma.InputJsonValue | null = null;
+      let notesOut: string | null = null;
+
+      if (intent === "home-valuation") {
+        const addrRaw = typeof body.yourHomeAddress === "string" ? body.yourHomeAddress.trim() : "";
+        if (addrRaw.length < 4 || addrRaw.length > 200) {
+          return NextResponse.json({ ok: false, error: "Please enter the address of your current home." }, { status: 400 });
+        }
+        yourHomeAddressOut = addrRaw;
+        if (typeof body.notes === "string" && body.notes.trim().length > 0) {
+          notesOut = body.notes
+            // eslint-disable-next-line no-control-regex
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+            .replace(/<[^>]*>/g, "")
+            .trim()
+            .slice(0, 1000) || null;
+        }
+      } else {
+        const m = (body.matchCriteria && typeof body.matchCriteria === "object") ? body.matchCriteria as Record<string, unknown> : {};
+        const ptRaw = typeof m.propertyType === "string" ? m.propertyType : "";
+        const bedsRaw = typeof m.bedrooms === "number" && Number.isFinite(m.bedrooms) ? m.bedrooms : 0;
+        const cityRaw = typeof m.city === "string" ? m.city : "";
+        if (!ptRaw || !cityRaw) {
+          return NextResponse.json({ ok: false, error: "Match criteria missing. Reload the page and try again." }, { status: 400 });
+        }
+        matchCriteriaOut = {
+          propertyType: ptRaw,
+          bedrooms: bedsRaw,
+          city: cityRaw,
+          periodDays: 30,
+        };
+      }
+
+      const mlsRaw = typeof body.mlsNumber === "string" ? body.mlsNumber.trim() : "";
+      const MLS_RE_4J = /^[A-Z][0-9]{8}$/;
+      const mlsNumberOut = MLS_RE_4J.test(mlsRaw) ? mlsRaw : null;
+
+      const normalizedPhone = normalizePhone(phoneRaw);
+      const finalEmail = emailRaw.toLowerCase();
+      const trimmedName = (firstName || "").toString().trim() || `Lead ${phoneRaw.replace(/\D/g, "").slice(-4) || "0000"}`;
+
+      // Lead temperature: market-pulse subscribers are research-stage (warm);
+      // home-valuation submitters are move-up active sellers (hot).
+      const isHot = intent === "home-valuation";
+      const score = isHot ? "hot" : "warm";
+      const scorePoints = isHot ? 75 : 50;
+
+      const referrer = (body.referrer || request.headers.get("referer") || "").toString().slice(0, 300) || null;
+      const userAgent = (request.headers.get("user-agent") || "").slice(0, 300) || null;
+
+      const lead = await prisma.lead.create({
+        data: {
+          firstName: trimmedName,
+          email: finalEmail,
+          phone: normalizedPhone,
+          source: typeof source === "string" && source
+            ? source
+            : (intent === "home-valuation" ? "sales-ads-home-valuation" : "sales-ads-market-pulse-unlock"),
+          intent,
+          score,
+          scorePoints,
+          leadTemperatureAtSubmit: isHot ? "Hot" : "Warm",
+          mlsNumber: mlsNumberOut,
+          yourHomeAddress: yourHomeAddressOut,
+          notes: notesOut,
+          consentText: consentTextRaw,
+          consentTimestamp,
+          matchCriteria: matchCriteriaOut as Prisma.InputJsonValue | undefined,
+          utmSource: (body.utm_source || "").toString().slice(0, 80) || null,
+          utmMedium: (body.utm_medium || "").toString().slice(0, 80) || null,
+          utmCampaign: (body.utm_campaign || "").toString().slice(0, 120) || null,
+          utmKeyword: (body.utm_term || "").toString().slice(0, 120) || null,
+          utmContent: (body.utm_content || "").toString().slice(0, 120) || null,
+          gclid: (body.gclid || "").toString().slice(0, 200) || null,
+          utmSourceLast: (body.utm_source_last || "").toString().slice(0, 80) || null,
+          utmMediumLast: (body.utm_medium_last || "").toString().slice(0, 80) || null,
+          utmCampaignLast: (body.utm_campaign_last || "").toString().slice(0, 120) || null,
+          utmTermLast: (body.utm_term_last || "").toString().slice(0, 120) || null,
+          utmContentLast: (body.utm_content_last || "").toString().slice(0, 120) || null,
+          gclidLast: (body.gclid_last || "").toString().slice(0, 200) || null,
+          firstVisitAt: body.firstVisitAt ? new Date(body.firstVisitAt) : null,
+          landingPage: (body.landingPage || "").toString().slice(0, 300) || null,
+          referrer,
+          userAgent,
+          ip,
+        },
+      });
+
+      const notifyPayload = {
+        firstName: trimmedName,
+        email: finalEmail,
+        phone: normalizedPhone || undefined,
+        source: typeof source === "string" && source
+          ? source
+          : (intent === "home-valuation" ? "sales-ads-home-valuation" : "sales-ads-market-pulse-unlock"),
+        intent,
+        mlsNumber: mlsNumberOut || undefined,
+        yourHomeAddress: yourHomeAddressOut || undefined,
+        notes: notesOut || undefined,
+      };
+
+      // Realtor notification, fire-and-forget with retry.
+      withRetry(
+        () => notifyNewLead(notifyPayload, lead.id),
+        { label: "resend:realtor-email", leadId: lead.id },
+      ).catch((e) => console.error("Email notify error:", e));
+
+      // kvCORE parser email — dormant in prod (env-gated). Pass through so
+      // the BoldTrail parser sees the new lead with intent included.
+      sendKvcoreParserEmail(notifyPayload, lead.id)
+        .catch((e) => console.error("[kvcore notify error]", e));
+
+      // Twilio SMS to Aamir.
+      withRetry(
+        () => notifyAamirBySMS(notifyPayload, lead.id),
+        { label: "twilio:sms", leadId: lead.id },
+      ).catch((e) => console.error("[sms notify error]", e));
+
+      // Submitter auto-reply. Env-gated like the other variants. Intent
+      // determines copy: market-pulse subscribers get a "Monday update on
+      // the way" confirmation; home-valuation submitters get a 24h promise.
+      if (AUTO_REPLY_ENABLED) {
+        sendAutoReply({
+          leadId: lead.id,
+          email: finalEmail,
+          firstName: trimmedName,
+          variant: intent === "home-valuation" ? "home-valuation" : "market-pulse",
+        });
+      }
+
+      // For market-pulse-unlock: compute the aggregate stats packet and
+      // return it in the JSON response so the client reveals without an
+      // extra round-trip. Stats are public-grade (k-anonymity enforced in
+      // getMarketPulse). Failure to compute (e.g. SOLD_DATABASE_URL unset)
+      // returns null stats — client falls back to "report by email" copy.
+      let stats: Awaited<ReturnType<typeof getMarketPulse>> | null = null;
+      if (intent === "market-pulse-unlock" && matchCriteriaOut) {
+        try {
+          const mc = matchCriteriaOut as { propertyType: string; bedrooms: number; city: string };
+          stats = await getMarketPulse({
+            propertyType: mc.propertyType,
+            bedrooms: mc.bedrooms,
+            city: mc.city,
+          });
+        } catch (e) {
+          console.error("[market-pulse compute failed]", { leadId: lead.id, error: e instanceof Error ? e.message : String(e) });
+          stats = null;
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        id: lead.id,
+        ok: true,
+        stats,
+      });
+    }
 
     // ─── Sales / buyer intent — dedicated path (Commit 4a) ─────────────────
     // Reuses the helpers (rate limit, honeypot, normalizePhone, Lead write,

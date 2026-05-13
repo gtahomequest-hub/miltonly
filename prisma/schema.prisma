@@ -122,6 +122,23 @@ model Lead {
   // Server-side sanitized (trim + max 1000 chars + null-byte stripped) at
   // /api/leads. Surfaced in realtor email and SMS when present.
   message         String?
+  // Lead-magnet flow fields (Commit 4j).
+  //   yourHomeAddress  — home-valuation lead only. The address of the
+  //     submitter's CURRENT home (i.e. the property they want valued).
+  //     Different from `street`/`mlsNumber` (which point at the listing
+  //     they were viewing when they triggered the lead).
+  //   consentText      — CASL audit trail. Exact consent string the user
+  //     saw on the page at submit time. Captured so the disclosure
+  //     evidence is preserved even if the on-page copy is later edited.
+  //   consentTimestamp — when the user ticked the consent checkbox.
+  //   matchCriteria    — market-pulse-unlock only. JSON snapshot of the
+  //     filter slice that generated the aggregate report shown to the
+  //     submitter (propertyType, bedrooms, city, periodDays, match_basis).
+  //     Useful for nurture personalization in follow-up emails.
+  yourHomeAddress  String?
+  consentText      String?
+  consentTimestamp DateTime?
+  matchCriteria    Json?
   priceRangeMin   Int?
   priceRangeMax   Int?
   neighbourhoods  String[]

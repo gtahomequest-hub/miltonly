@@ -10,6 +10,8 @@ import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import PhotoLightbox from "@/components/landing/PhotoLightbox";
 import AamirTrustCard from "@/components/landing/AamirTrustCard";
 import LiveListingSlider from "@/components/landing/LiveListingSlider";
+import MarketPulseUnlockCard from "@/components/landing/MarketPulseUnlockCard";
+import HomeValuationCard from "@/components/landing/HomeValuationCard";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -385,35 +387,51 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
         </div>
       </section>
 
-      {/* ── BOOK A SHOWING BAND ── Polaroid layout: thin amber frame around
-          a dominant white card that contains the kicker, title, subtitle,
-          and form together. LeadCaptureForm renders with hideHeader so the
-          unified header above lives outside the form. */}
-      <section id="book-showing-form" className="bg-[#07111f] border-t border-[#1e3a5f] py-12 sm:py-16">
-        <div className="max-w-[540px] mx-auto px-4 sm:px-6">
-          <div className="bg-[#f59e0b] rounded-[14px] p-[12px]">
-            <div className="bg-white rounded-[10px] px-[26px] pt-[28px] pb-[24px]">
-              <div className="mb-[22px] pb-[18px] border-b border-[#f1f5f9]">
-                <div className="text-[10px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-[8px]">
-                  Schedule a viewing
-                </div>
-                <h2 className="text-[22px] font-medium text-[#07111f] leading-[1.2] tracking-[-0.3px] mb-[6px]">
-                  Book a showing — {streetAddr}
-                </h2>
-                <p className="text-[13px] text-[#64748b] leading-[1.5]">
-                  {config.sla.bookingBandSubline}
-                </p>
-              </div>
-              <LeadCaptureForm
-                variant="sales"
-                source="sales-rentals-featured-book"
-                mlsNumber={listing.mlsNumber}
-                formId="book"
-                hideHeader
-                chromeless
-                ctaLabel="Book my showing"
-              />
+      {/* ── TWO REPORTS LEAD MAGNET ── (Commit 4j) Replaces the duplicate
+          booking band with a self-segmenting two-card section:
+            Card 1 — Milton market pulse unlock (aggregate-only, VOW-safe).
+            Card 2 — Home valuation request (manual CMA by Aamir).
+          Soft-fallback SMS link beneath both for visitors who want neither
+          form. Sticky mobile bar primary action now goes directly to an
+          sms: deep link (no in-page anchor target needed). */}
+      <section className="bg-[#07111f] border-t border-[#1e3a5f] py-12 sm:py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="text-[10px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-2">
+              Two reports
             </div>
+            <h2 className="text-[24px] sm:text-[28px] font-medium text-[#f8f9fb] leading-[1.2] tracking-[-0.3px] max-w-[640px] mx-auto mb-2">
+              Two reports Aamir prepares for serious {config.CITY_NAME} buyers
+            </h2>
+            <p className="text-[13px] sm:text-[14px] text-[#94a3b8] leading-relaxed max-w-[520px] mx-auto">
+              Tell {REALTOR_FIRST_NAME} what you need. He prepares each one by hand.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <MarketPulseUnlockCard
+              propertyType={listing.propertyType}
+              bedrooms={listing.bedrooms}
+              city={listing.city}
+              mlsNumber={listing.mlsNumber}
+              propertyTypeLabel={(typeLabel || listing.propertyType).toLowerCase()}
+              listingStreetAddr={streetAddr}
+            />
+            <HomeValuationCard mlsNumber={listing.mlsNumber} />
+          </div>
+
+          <p className="text-center text-[12px] text-[#94a3b8] mt-6">
+            {REALTOR_FIRST_NAME} prepares these reports for every serious {config.CITY_NAME} buyer.
+          </p>
+
+          <div className="text-center mt-3">
+            <a
+              href={headerSms}
+              onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_text_aamir_section_fallback', { listing_mls: listing.mlsNumber, source: "sales-ads-section-fallback" }); }}
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#fbbf24] hover:text-[#f59e0b] underline"
+            >
+              💬 Still have questions? Text {REALTOR_FIRST_NAME}.
+            </a>
           </div>
         </div>
       </section>
@@ -519,15 +537,16 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
         </div>
       </footer>
 
-      {/* ── STICKY MOBILE BAR ── overrides primary action to scroll to booking band */}
+      {/* ── STICKY MOBILE BAR ── (Commit 4j) Primary action is now an SMS
+          deep link pre-filled with the listing's street address — replaces
+          the previous anchor-to-form approach. */}
       <StickyMobileBar
-        primaryAction="#book-showing-form"
-        primaryLabel="Book showing →"
+        primaryAction={headerSms}
+        primaryLabel={`💬 Text ${REALTOR_FIRST_NAME}`}
       />
-      {/* GA4 events for the sticky bar's call button. The StickyMobileBar
-          component owns the tel: link itself, so we register a delegated
-          listener instead of modifying the component. Mounted via useEffect
-          would race; doing it inline via a hidden tag is simpler. */}
+      {/* GA4 delegated listener — fires click_call_sticky / click_text_aamir_sticky
+          on tel: / sms: clicks inside the StickyMobileBar without modifying
+          that component. */}
       <StickyBarGaTracker eventParams={eventParams} />
 
       {/* ── LIGHTBOX ── */}
@@ -561,8 +580,9 @@ function StickyBarGaTracker({ eventParams }: { eventParams: Record<string, unkno
       if (!gtag) return;
       if (href.startsWith("tel:")) {
         gtag('event', 'click_call_sticky', eventParams);
-      } else if (href.startsWith("#") || href.includes("book-showing-form")) {
-        gtag('event', 'click_text_sticky', eventParams);
+      } else if (href.startsWith("sms:")) {
+        // Spec name per Commit 4j: click_text_aamir_sticky.
+        gtag('event', 'click_text_aamir_sticky', { ...eventParams, source: "sales-ads-sticky-mobile" });
       }
     }
     document.addEventListener("click", onClick, true);

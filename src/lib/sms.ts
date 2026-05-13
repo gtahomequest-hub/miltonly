@@ -57,6 +57,37 @@ const BUYER_TIMELINE_LABEL: Record<string, string> = {
 export function buildAamirSMSBody(data: LeadData, leadId: string): string {
   const phoneLast4 = data.phone?.slice(-4) || "????";
 
+  // Home-valuation lead-magnet (Commit 4j). The address of the submitter's
+  // current home is the headline detail Aamir needs — he'll pull comps for
+  // it before calling back.
+  if (data.intent === "home-valuation") {
+    const phoneStr = data.phone || "(no phone)";
+    const emailStr = data.email || "(no email)";
+    const addrStr = data.yourHomeAddress || "(no address)";
+    const sourceStr = data.source || "—";
+    return [
+      "📐 NEW VALUATION REQUEST",
+      `Lead [${phoneLast4}] · ${phoneStr} · ${emailStr}`,
+      `Their home: ${addrStr.length > 80 ? addrStr.slice(0, 79) + "…" : addrStr}`,
+      `Source: ${sourceStr}`,
+    ].join("\n");
+  }
+
+  // Market-pulse-unlock lead-magnet (Commit 4j). Aamir's follow-up
+  // composes a richer report — the SMS just confirms the new subscriber.
+  if (data.intent === "market-pulse-unlock") {
+    const phoneStr = data.phone || "(no phone)";
+    const emailStr = data.email || "(no email)";
+    const listingStr = data.mlsNumber || "—";
+    const sourceStr = data.source || "—";
+    return [
+      "📈 NEW MARKET-PULSE LEAD",
+      `Lead [${phoneLast4}] · ${phoneStr} · ${emailStr}`,
+      `From listing: ${listingStr}`,
+      `Source: ${sourceStr}`,
+    ].join("\n");
+  }
+
   if (data.intent === "buyer") {
     const phoneStr = data.phone || "(no phone)";
     const emailStr = data.email || "(no email)";
