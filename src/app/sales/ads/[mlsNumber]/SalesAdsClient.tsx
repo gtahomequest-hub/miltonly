@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Handshake, Landmark, Eye } from "lucide-react";
 import { config } from "@/lib/config";
 import { formatPriceFull, daysAgo, cleanNeighbourhoodName } from "@/lib/format";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
@@ -343,15 +344,31 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
                 the stacked TrustPillars — both now live inside the card
                 alongside the message-capture textarea. */}
             <aside className="lg:sticky lg:top-[80px] lg:self-start">
-              <div className="bg-[#fef3c7] rounded-2xl p-3 shadow-2xl">
-                <LeadCaptureForm
-                  variant="sales"
-                  source="sales-rentals-featured-top"
-                  mlsNumber={listing.mlsNumber}
-                  headline={`Book a showing — ${streetAddr}`}
-                  subheadline={`${REALTOR_FIRST_NAME} confirms within 4 business hours.`}
-                  ctaLabel="Send me details →"
-                />
+              {/* Top form — Polaroid layout to match the booking band. Narrower
+                  than the band (column width) but same amber-frame + dominant
+                  white card pattern for visual consistency across both
+                  conversion surfaces. */}
+              <div className="bg-[#f59e0b] rounded-[14px] p-[12px]">
+                <div className="bg-white rounded-[10px] px-[22px] pt-[24px] pb-[20px]">
+                  <div className="mb-[18px] pb-[14px] border-b border-[#f1f5f9]">
+                    <div className="text-[10px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-[6px]">
+                      Get info on this listing
+                    </div>
+                    <h3 className="text-[18px] font-medium text-[#07111f] leading-[1.2] tracking-[-0.2px] mb-[4px]">
+                      Send me the details
+                    </h3>
+                    <p className="text-[12px] text-[#64748b] leading-[1.5]">
+                      {REALTOR_FIRST_NAME} replies within 4 business hours.
+                    </p>
+                  </div>
+                  <LeadCaptureForm
+                    variant="sales"
+                    source="sales-rentals-featured-top"
+                    mlsNumber={listing.mlsNumber}
+                    hideHeader
+                    ctaLabel="Send me details"
+                  />
+                </div>
               </div>
 
               <AamirTrustCard
@@ -408,23 +425,80 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
               />
             </div>
           </div>
-          <div className="mt-5 text-center text-[12px] text-[#94a3b8]">
-            Prefer to skip the form?{" "}
-            <a
-              href={headerSms}
-              onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_text_book_band', eventParams); }}
-              className="font-semibold text-[#fbbf24] hover:text-[#f59e0b] underline"
-            >
-              💬 Text {REALTOR_FIRST_NAME}
-            </a>
-            <span className="mx-2">·</span>
-            <a
-              href={headerTel}
-              onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_call_book_band', eventParams); }}
-              className="font-semibold text-[#fbbf24] hover:text-[#f59e0b] underline"
-            >
-              📞 Call {REALTOR_FIRST_NAME}
-            </a>
+        </div>
+      </section>
+
+      {/* ── WHY WORK WITH AAMIR ── three benefit cards, full-width band
+          between the booking Polaroid and the footer. Cards stack vertically
+          on mobile, sit in a 3-column grid on md+ with a min-height so the
+          three card heights stay visually aligned. Each card: amber-accent
+          icon block, title, value-prop body, amber stat footer above a thin
+          divider. */}
+      <section className="bg-[#07111f] border-t border-[#1e3a5f] py-12 sm:py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 sm:mb-12 md:mb-14">
+            <div className="text-[11px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-3">
+              Why work with Aamir
+            </div>
+            <h2 className="text-[24px] sm:text-[28px] font-medium text-[#f8f9fb] leading-[1.2] tracking-[-0.4px] max-w-[560px] mx-auto mb-3">
+              Three things you get that other realtors won&apos;t give you
+            </h2>
+            <p className="text-[14px] text-[#94a3b8] leading-[1.6] max-w-[480px] mx-auto">
+              Buyer-side experience that pays for itself — every time.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-[14px] md:gap-[18px]">
+            <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-[14px] p-[28px_24px] sm:p-[32px_28px] min-h-[340px] md:min-h-[380px] flex flex-col">
+              <div className="w-[52px] h-[52px] rounded-[12px] bg-[#f59e0b]/[0.08] border border-[#f59e0b]/35 flex items-center justify-center mb-[22px]">
+                <Handshake className="w-[26px] h-[26px] text-[#fbbf24]" aria-hidden />
+              </div>
+              <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-[-0.1px] mb-[14px]">
+                Zero-cost world-class negotiating
+              </h3>
+              <p className="text-[13px] text-[#cbd5e1] leading-[1.7] flex-grow">
+                Let me represent you on the buyer side at zero cost to you. The seller pays my fee in every transaction. I&apos;ve negotiated $55M+ in {config.CITY_NAME} deals — that experience saves my buyers thousands on every offer, every closing condition, every counter.
+              </p>
+              <div className="mt-[22px] pt-[18px] border-t border-[#1e3a5f]">
+                <div className="text-[11px] font-medium tracking-[0.4px] uppercase text-[#fbbf24]">
+                  $55M+ negotiated · {config.realtor.yearsExperience} years
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-[14px] p-[28px_24px] sm:p-[32px_28px] min-h-[340px] md:min-h-[380px] flex flex-col">
+              <div className="w-[52px] h-[52px] rounded-[12px] bg-[#f59e0b]/[0.08] border border-[#f59e0b]/35 flex items-center justify-center mb-[22px]">
+                <Landmark className="w-[26px] h-[26px] text-[#fbbf24]" aria-hidden />
+              </div>
+              <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-[-0.1px] mb-[14px]">
+                Better mortgage rates through my network
+              </h3>
+              <p className="text-[13px] text-[#cbd5e1] leading-[1.7] flex-grow">
+                Looking for a sharper rate, or stuck waiting on pre-approval? My broker partners frequently beat the big banks by 0.25–0.50%. On a $700,000 mortgage, that&apos;s $14,000+ saved over the term — without lifting a finger to shop around yourself.
+              </p>
+              <div className="mt-[22px] pt-[18px] border-t border-[#1e3a5f]">
+                <div className="text-[11px] font-medium tracking-[0.4px] uppercase text-[#fbbf24]">
+                  $14K+ saved on a $700K mortgage
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-[14px] p-[28px_24px] sm:p-[32px_28px] min-h-[340px] md:min-h-[380px] flex flex-col">
+              <div className="w-[52px] h-[52px] rounded-[12px] bg-[#f59e0b]/[0.08] border border-[#f59e0b]/35 flex items-center justify-center mb-[22px]">
+                <Eye className="w-[26px] h-[26px] text-[#fbbf24]" aria-hidden />
+              </div>
+              <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-[-0.1px] mb-[14px]">
+                10,000+ homes worth of hidden-defect radar
+              </h3>
+              <p className="text-[13px] text-[#cbd5e1] leading-[1.7] flex-grow">
+                After walking through 10,000+ {config.CITY_NAME} homes in {config.realtor.yearsExperience} years, I spot what listing agents won&apos;t mention and what buyers miss — foundation hints, layout dead-ends, neighbourhood quirks. The stuff you&apos;d regret in year two but can&apos;t see in 30 minutes.
+              </p>
+              <div className="mt-[22px] pt-[18px] border-t border-[#1e3a5f]">
+                <div className="text-[11px] font-medium tracking-[0.4px] uppercase text-[#fbbf24]">
+                  10,000+ homes walked
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
