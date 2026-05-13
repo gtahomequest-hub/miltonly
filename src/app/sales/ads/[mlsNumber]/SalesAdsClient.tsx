@@ -6,9 +6,9 @@ import { Lock } from "lucide-react";
 import { config } from "@/lib/config";
 import { formatPriceFull, daysAgo, cleanNeighbourhoodName } from "@/lib/format";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
-import TrustPillars from "@/components/landing/TrustPillars";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import PhotoLightbox from "@/components/landing/PhotoLightbox";
+import AamirTrustCard from "@/components/landing/AamirTrustCard";
 import UnlockModal from "@/app/rentals/ads/UnlockModal";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
@@ -394,7 +394,10 @@ function SalesAdsInner({ listing, relatedListings }: Props) {
               )}
             </div>
 
-            {/* RIGHT — top form + trust card (sticky on desktop) */}
+            {/* RIGHT — top form + trust card (sticky on desktop). The
+                AamirTrustCard subsumes the old text/call quick-actions and
+                the stacked TrustPillars — both now live inside the card
+                alongside the message-capture textarea. */}
             <aside className="lg:sticky lg:top-[80px] lg:self-start">
               <div className="bg-[#fef3c7] rounded-2xl p-3 shadow-2xl">
                 <LeadCaptureForm
@@ -405,54 +408,14 @@ function SalesAdsInner({ listing, relatedListings }: Props) {
                   subheadline={`${REALTOR_FIRST_NAME} confirms within 4 business hours.`}
                   ctaLabel="Send me details →"
                 />
-                <div className="mt-2 text-center text-[12px] text-[#92400e]">
-                  Or text {REALTOR_FIRST_NAME} directly
-                  <div className="mt-1 flex items-center justify-center gap-2">
-                    <a
-                      href={headerSms}
-                      onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_text_aamir_card', eventParams); }}
-                      className="inline-flex items-center gap-1 text-[12px] font-bold text-[#07111f] underline"
-                    >
-                      💬 Text
-                    </a>
-                    <span className="text-[#92400e]">·</span>
-                    <a
-                      href={headerTel}
-                      onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_call_aamir_card', eventParams); }}
-                      className="inline-flex items-center gap-1 text-[12px] font-bold text-[#07111f] underline"
-                    >
-                      📞 Call
-                    </a>
-                  </div>
-                </div>
               </div>
 
-              {/* Trust card below the form */}
-              <div className="mt-4 bg-[#0c1e35] border border-[#1e3a5f] rounded-2xl p-4">
-                <TrustPillars variant="stacked" />
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="shrink-0 w-12 h-12 rounded-full bg-[#07111f] border border-[#f59e0b]/40 text-[#fbbf24] font-extrabold text-[18px] flex items-center justify-center">
-                    AY
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold text-[#f8f9fb] leading-tight">
-                      {config.realtor.name} · RE/MAX Hall of Fame
-                    </div>
-                    <div className="text-[11px] text-[#94a3b8]">
-                      {config.realtor.yearsExperience} yrs · 150+ {config.CITY_NAME} families · $55M+
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 inline-flex items-center gap-1.5 bg-[#f59e0b]/10 border border-[#f59e0b]/25 rounded-full px-3 py-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fbbf24] opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f59e0b]" />
-                  </span>
-                  <span className="text-[11px] font-bold tracking-wider text-[#fbbf24] uppercase">
-                    {viewerCount} viewed in last hour
-                  </span>
-                </div>
-              </div>
+              <AamirTrustCard
+                listingAddress={streetAddr}
+                mlsNumber={listing.mlsNumber}
+                viewerCount={viewerCount}
+                className="mt-4"
+              />
             </aside>
           </div>
         </div>

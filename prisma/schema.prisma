@@ -117,6 +117,11 @@ model Lead {
   // preApproved: "yes" | "no". mlsNumber: the listing the lead was viewing.
   preApproved     String?
   mlsNumber       String?
+  // Free-text message from the AamirTrustCard message capture flow.
+  // NULL for every other lead path (ads, modal, top form, booking band).
+  // Server-side sanitized (trim + max 1000 chars + null-byte stripped) at
+  // /api/leads. Surfaced in realtor email and SMS when present.
+  message         String?
   priceRangeMin   Int?
   priceRangeMax   Int?
   neighbourhoods  String[]

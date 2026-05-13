@@ -15,24 +15,26 @@ const ADS_SOURCE = "ads-rentals-lp";
 // continues to flow through `notifyNewLead` (src/lib/email.ts) — both fire when
 // CHEATSHEET_ENABLED=true; only `notifyNewLead` fires otherwise.
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const RESEND_FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <onboarding@resend.dev>`;
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL || `${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
 const RESEND_REPLY_TO = process.env.RESEND_REPLY_TO || process.env.REALTOR_EMAIL;
 
-// Auto-reply sender. Hardcoded to the Resend testing sender until the site
-// domain is verified in Resend dashboard. Display name keeps it personal —
-// "<First> from <SiteName>" rather than the raw onboarding@resend.dev address.
-// reply-to routes the lead's reply to the realtor's real inbox.
-const AUTO_REPLY_FROM = `${config.realtor.name.split(" ")[0]} from ${config.SITE_NAME} <onboarding@resend.dev>`;
+// Auto-reply sender. Reads RESEND_FROM_EMAIL first — in production this is
+// set to a Path B verified-domain sender (e.g. "Aamir from Miltonly
+// <aamir@mail.miltonly.com>") so the auto-reply lands from the realtor's
+// real domain. The fallback uses the site domain (still requires a verified
+// sub-domain on Resend) and only fires when the env var is missing. Both
+// renter and sales auto-reply paths share this constant — one verified
+// sender for the whole lead-facing surface.
+const AUTO_REPLY_FROM = process.env.RESEND_FROM_EMAIL
+  || `${config.realtor.name.split(" ")[0]} from ${config.SITE_NAME} <noreply@${config.SITE_DOMAIN}>`;
 const AUTO_REPLY_REPLY_TO = process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL || config.realtor.email;
 
 // AUTO-REPLY FEATURE FLAG (disabled by default 2026-05-12) — the lead-facing
-// auto-reply email currently fails for every real lead because the Resend
-// account is still on the onboarding@resend.dev sandbox sender, which can
-// only deliver to the account-owner inbox (gtahomequest@gmail.com). Sending
-// to a real lead address returns 422 "verify a domain at resend.com/domains".
-// Realtor notification (notifyNewLead) keeps working — only the lead-facing
-// auto-reply is gated. Re-enable by setting ENABLE_AUTO_REPLY=true in Vercel
-// after the verified-sender domain (Path B) ships.
+// auto-reply email previously failed for every real lead because the Resend
+// account was on a sandbox sender that could only deliver to the account
+// owner. Now that the Path B verified-domain sender is configured, set
+// ENABLE_AUTO_REPLY=true in Vercel to re-enable the lead-facing send.
+// Realtor notification (notifyNewLead) keeps working regardless.
 const AUTO_REPLY_ENABLED = process.env.ENABLE_AUTO_REPLY === "true";
 
 type AutoReplyVariant = "rental" | "sales";
@@ -382,6 +384,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Optional free-text message (from AamirTrustCard message capture).
+      // Sanitize: strip null bytes + obvious HTML tags, trim, cap at 1000.
+      // Empty / missing → null. Surfaced in realtor email + SMS when present.
+      let messageOut: string | null = null;
+      if (typeof body.message === "string" && body.message.trim().length > 0) {
+        const cleaned = body.message
+          .replace(/ /g, "")
+          .replace(/<[^>]*>/g, "")
+          .trim()
+          .slice(0, 1000);
+        if (cleaned.length > 0) messageOut = cleaned;
+      }
+
       // Contact-field validation. Mirror the ads-path: at least one of
       // phone / email must be present + parseable.
       const trimmedName = (firstName || "").toString().trim() || `Lead ${(phone || "").toString().replace(/\D/g, "").slice(-4) || "0000"}`;
@@ -420,6 +435,7 @@ export async function POST(request: NextRequest) {
           timeline: timelineRaw,
           preApproved: preApprovedRaw,
           mlsNumber: mlsNumberOut,
+          message: messageOut,
           utmSource: (body.utm_source || "").toString().slice(0, 80) || null,
           utmMedium: (body.utm_medium || "").toString().slice(0, 80) || null,
           utmCampaign: (body.utm_campaign || "").toString().slice(0, 120) || null,
@@ -449,6 +465,7 @@ export async function POST(request: NextRequest) {
         timeline: timelineRaw,
         preApproved: preApprovedRaw,
         mlsNumber: mlsNumberOut || undefined,
+        message: messageOut || undefined,
       };
 
       // Realtor email — NEW SALE LEAD subject + body shape from notifyNewLead.

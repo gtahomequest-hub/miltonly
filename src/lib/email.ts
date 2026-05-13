@@ -27,7 +27,24 @@ export interface LeadData {
   // Sales-variant fields (intent === "buyer"). Renter leads leave these undefined.
   preApproved?: string;
   mlsNumber?: string;
+  // Optional free-text message from the AamirTrustCard message capture flow.
+  // Always undefined for renter leads. Rendered as its own row in the
+  // realtor email when present + non-empty.
+  message?: string;
   [key: string]: string | undefined;
+}
+
+// Defensive HTML-escape for free-text fields that get inlined into the
+// realtor notification email. The visitor's message is sanitized server-side
+// at /api/leads (null-byte strip + naive HTML tag strip), but escaping here
+// is the second layer that protects against table-row injection.
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -106,6 +123,13 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
     ? (PRE_APPROVED_LABEL[data.preApproved] || data.preApproved)
     : undefined;
 
+  // Sales-variant: render the visitor's free-text message as its own row
+  // when present. Escaped before going into the HTML table so the body is
+  // injection-safe; newlines preserved as <br> for readability.
+  const messageLine = isBuyer && data.message && data.message.trim().length > 0
+    ? escapeHtml(data.message.trim()).replace(/\r?\n/g, "<br>")
+    : undefined;
+
   const rows: Array<[string, string | undefined]> = isBuyer
     ? [
         ["Name", data.firstName],
@@ -116,6 +140,7 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
         ["Timeline", timelineLine],
         ["Pre-approved", preApprovedLine],
         ["Listing", listingLine || undefined],
+        ["Message", messageLine],
       ]
     : [
         ["Name", data.firstName],

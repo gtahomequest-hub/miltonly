@@ -68,12 +68,20 @@ export function buildAamirSMSBody(data: LeadData, leadId: string): string {
       : "—";
     const listingStr = data.mlsNumber || "—";
     const sourceStr = data.source || "—";
+    const sourceLine = `Source: ${sourceStr}`;
+    // Sales leads with a free-text message (from the AamirTrustCard capture
+    // flow) get an extra clause on the source line: · "{message…}". Capped at
+    // 80 chars + ellipsis so the SMS stays within a reasonable segment count.
+    const messageRaw = data.message?.trim();
+    const sourceLineWithMessage = messageRaw
+      ? `${sourceLine} · "${messageRaw.length > 80 ? messageRaw.slice(0, 79) + "…" : messageRaw}"`
+      : sourceLine;
     return [
       "🏠 NEW SALE LEAD",
       `Lead [${phoneLast4}] · ${phoneStr} · ${emailStr}`,
       `Timeline: ${timelineLabel} · Pre-approved: ${preApprovedStr}`,
       `Listing: ${listingStr}`,
-      `Source: ${sourceStr}`,
+      sourceLineWithMessage,
     ].join("\n");
   }
 
