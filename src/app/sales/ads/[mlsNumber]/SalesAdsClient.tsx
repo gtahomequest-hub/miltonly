@@ -600,7 +600,7 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
               Two reports
             </div>
             <h2 className="text-[24px] sm:text-[28px] font-medium text-[#f8f9fb] leading-[1.2] tracking-[-0.3px] max-w-[640px] mx-auto mb-2">
-              Two reports Aamir prepares for serious {config.CITY_NAME} buyers
+              Two reports Aamir prepares for serious buyers and sellers
             </h2>
             <p className="text-[13px] sm:text-[14px] text-[#94a3b8] leading-relaxed max-w-[520px] mx-auto">
               Tell {REALTOR_FIRST_NAME} what you need. He prepares each one by hand.

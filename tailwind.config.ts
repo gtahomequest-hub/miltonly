@@ -103,23 +103,23 @@ const config: Config = {
       },
       // One-shot "breathe" pulse on the LiveListingSlider's right scroll
       // arrow. animation-iteration-count = 3 hard-stops the animation
-      // natively after ~5.4 s (3 × 1.8 s per cycle). No JS timer required.
+      // natively after 4.5 s (3 × 1.5 s per cycle). No JS timer required.
       // The 0% and 100% keyframes are identical (scale 1, zero-spread halo),
       // so the element returns cleanly to its rest state at the final frame.
       keyframes: {
         breatheOnce: {
           "0%, 100%": {
             transform: "scale(1)",
-            boxShadow: "0 0 0 0 rgba(251, 191, 36, 0.4)",
+            boxShadow: "0 0 0 0 rgba(251, 191, 36, 0.6)",
           },
           "50%": {
-            transform: "scale(1.08)",
-            boxShadow: "0 0 0 8px rgba(251, 191, 36, 0)",
+            transform: "scale(1.12)",
+            boxShadow: "0 0 0 12px rgba(251, 191, 36, 0)",
           },
         },
       },
       animation: {
-        "breathe-3x": "breatheOnce 1.8s ease-in-out 3",
+        "breathe-3x": "breatheOnce 1.5s ease-in-out 3",
       },
       screens: {
         xs: "475px",

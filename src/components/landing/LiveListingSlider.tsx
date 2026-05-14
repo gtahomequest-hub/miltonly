@@ -537,7 +537,7 @@ export default function LiveListingSlider({
           aria-disabled={!canScrollLeft}
           disabled={!canScrollLeft}
           onClick={() => scrollByPage(-1)}
-          className="lls-arrow absolute left-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0c1e35]/95 border border-[#1e3a5f] text-white text-[18px] items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#f59e0b]/40 transition-colors"
+          className="lls-arrow absolute left-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-white text-[#0c1e35] text-[18px] items-center justify-center shadow-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#fbbf24] hover:text-[#0c1e35] transition-colors"
         >
           ‹
         </button>
@@ -547,9 +547,9 @@ export default function LiveListingSlider({
           aria-disabled={!canScrollRight}
           disabled={!canScrollRight}
           onClick={() => scrollByPage(1)}
-          className={`lls-arrow absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0c1e35]/95 border border-[#1e3a5f] text-white text-[18px] items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#f59e0b]/40 transition-colors${
+          className={`lls-arrow absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-white text-[#0c1e35] text-[18px] items-center justify-center shadow-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#fbbf24] hover:text-[#0c1e35] transition-colors${
             canScrollRight && !hasInteracted
-              ? " motion-safe:animate-breathe-3x motion-reduce:bg-[#fbbf24]/15 motion-reduce:border-[#fbbf24]/50"
+              ? " motion-safe:animate-breathe-3x motion-reduce:ring-2 motion-reduce:ring-[#fbbf24]/60 motion-reduce:ring-offset-2 motion-reduce:ring-offset-[#07111f]"
               : ""
           }`}
         >
