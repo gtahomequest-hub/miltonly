@@ -57,7 +57,6 @@ interface Props {
   // Slider row shape is a structural subset of Listing — TS structural typing
   // accepts the wider array when passed to the slider's narrower prop.
   sliderListings: Listing[];
-  propertyTypeLabel: string;
 }
 
 // GA4 typing helper. Each event fires inline at the call site so every
@@ -70,7 +69,7 @@ function getGtag(): GtagFn | null {
   return w.gtag || null;
 }
 
-function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
+function SalesAdsInner({ listing, sliderListings }: Props) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -381,8 +380,12 @@ function SalesAdsInner({ listing, sliderListings, propertyTypeLabel }: Props) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <LiveListingSlider
             listings={sliderListings}
-            propertyTypeLabel={propertyTypeLabel}
             currentMlsNumber={listing.mlsNumber}
+            currentPropertyType={listing.propertyType}
+            currentBedrooms={listing.bedrooms}
+            currentNeighbourhood={listing.neighbourhood}
+            currentPrice={listing.price}
+            currentListingAddr={streetAddr}
           />
         </div>
       </section>

@@ -17,23 +17,18 @@ export const dynamic = "force-dynamic";
 const MLS_RE = /^[A-Z][0-9]{8}$/;
 const SALE_TX_TYPE = "For Sale";
 const ACTIVE_STATUS = "active";
-const SLIDER_LIMIT = 10;
+// Commit 4l: bumped from 10 → 80. The slider now ships with filter pills
+// (Similar / Detached / Semi / Townhouse / Condo / All Milton) that operate
+// against the full pool client-side. 80 covers each property-type bucket
+// with enough cards for the "Detached"/"Semi" filters to be meaningful in
+// a typical Milton inventory.
+const SLIDER_LIMIT = 80;
 
 const TYPE_DISPLAY_LABEL: Record<string, string> = {
   condo: "Condo",
   detached: "Detached Home",
   semi: "Semi-Detached Home",
   townhouse: "Townhouse",
-};
-
-// Plural display label for the LiveListingSlider section kicker.
-// Keys match the canonical lowercased propertyType values stored in the DB
-// (see /rentals/ads page for the same set of canonical types).
-const PROPERTY_TYPE_LABEL_PLURAL: Record<string, string> = {
-  detached: "detached homes",
-  semi: "semis",
-  townhouse: "townhouses",
-  condo: "condos",
 };
 
 interface PageProps {
@@ -99,49 +94,34 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
   if (listing.status !== ACTIVE_STATUS) redirect("/rentals");
   if (listing.transactionType !== SALE_TX_TYPE) redirect("/rentals");
 
-  // Smart-blend slider — top 10 same-property-type active sale listings.
-  // Priority:
-  //   1. Same neighbourhood, sorted by closest price to the current listing.
-  //   2. Other neighbourhoods, sorted by listedAt desc (newest first).
-  // Prisma doesn't natively sort by "absolute price distance", so the
-  // closest-price sort happens in memory after the same-neighbourhood
-  // query. Both queries filter to the current listing's propertyType,
-  // active status, sale transactionType, and permAdvertise=true. The
-  // current listing's MLS is always excluded.
-  const sameNeighbourhood = await prisma.listing.findMany({
+  // Slider pool — top 80 active Milton sale listings across all property
+  // types, ordered by recency. The slider component filters client-side
+  // (Similar / Detached / Semi / Townhouse / Condo / All Milton pills), so
+  // it needs a broad enough pool that each per-type bucket has 5-10 cards.
+  // Field selection trims the payload to what the slider actually renders.
+  const sliderListings = await prisma.listing.findMany({
     where: {
       transactionType: SALE_TX_TYPE,
       status: ACTIVE_STATUS,
-      propertyType: listing.propertyType,
-      neighbourhood: listing.neighbourhood,
+      city: listing.city,
       mlsNumber: { not: listing.mlsNumber },
       permAdvertise: true,
     },
-    orderBy: { listedAt: "desc" }, // tiebreak before in-memory price sort
+    orderBy: { listedAt: "desc" },
     take: SLIDER_LIMIT,
+    select: {
+      mlsNumber: true,
+      address: true,
+      price: true,
+      bedrooms: true,
+      bathrooms: true,
+      sqft: true,
+      photos: true,
+      listedAt: true,
+      propertyType: true,
+      neighbourhood: true,
+    },
   });
-  const sortedSameNeighbourhood = [...sameNeighbourhood].sort(
-    (a, b) => Math.abs(a.price - listing.price) - Math.abs(b.price - listing.price),
-  );
-
-  let sliderListings = sortedSameNeighbourhood;
-  if (sliderListings.length < SLIDER_LIMIT) {
-    const otherNeighbourhoods = await prisma.listing.findMany({
-      where: {
-        transactionType: SALE_TX_TYPE,
-        status: ACTIVE_STATUS,
-        propertyType: listing.propertyType,
-        neighbourhood: { not: listing.neighbourhood },
-        mlsNumber: { not: listing.mlsNumber },
-        permAdvertise: true,
-      },
-      orderBy: { listedAt: "desc" },
-      take: SLIDER_LIMIT - sliderListings.length,
-    });
-    sliderListings = [...sliderListings, ...otherNeighbourhoods].slice(0, SLIDER_LIMIT);
-  }
-
-  const propertyTypeLabel = PROPERTY_TYPE_LABEL_PLURAL[listing.propertyType?.toLowerCase()] || "sale listings";
 
   // Prisma Decimal/Date fields don't serialize through to a Client
   // Component cleanly — JSON.parse(JSON.stringify(...)) is the cheap fix
@@ -153,7 +133,6 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
     <SalesAdsClient
       listing={listingSerialized}
       sliderListings={sliderListingsSerialized}
-      propertyTypeLabel={propertyTypeLabel}
     />
   );
 }
