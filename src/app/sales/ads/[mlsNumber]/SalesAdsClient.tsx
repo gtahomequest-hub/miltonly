@@ -154,222 +154,296 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
         </div>
       </header>
 
-      {/* ── HERO + LISTING FACTS ── two-column on desktop ── */}
+      {/* ── HERO PHOTO GRID ── desktop: 3-photo composition (primary 4:3 +
+          2 right-column thumbs stacked). Mobile: primary photo full-width
+          followed by horizontal thumbnail scroll strip. Single <img>
+          element for the primary photo across all viewports keeps LCP
+          unambiguous; fetchpriority="high" + loading="eager" + decoding=
+          "async" hint the browser to prioritize it. Plain <img> (not
+          next/image) because the TREB CDN host isn't on the project's
+          images.remotePatterns whitelist — matches /rentals/ads and
+          /listings. */}
       <section className="bg-[#07111f] pt-4 sm:pt-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 lg:gap-8">
-            {/* LEFT — photos + facts + about + related */}
-            <div className="min-w-0">
-              {/* Photo grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-2 sm:gap-3">
-                {/* Primary photo */}
-                <button
-                  type="button"
-                  onClick={() => openLightbox(0)}
-                  className="relative overflow-hidden rounded-xl group block w-full h-[240px] sm:h-[420px] bg-[#0c1e35]"
-                  aria-label={`Open photo viewer (${totalPhotos} photos)`}
-                >
-                  {photos[0] ? (
-                    // External TREB CDN photos — plain <img>, not next/image,
-                    // matching the existing /rentals/ads and /listings patterns
-                    // (no images.remotePatterns whitelist for the TREB host).
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photos[0]}
-                      alt={`${streetAddr} primary photo`}
-                      loading="eager"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-[60px] opacity-30">🏠</div>
-                  )}
-                  {/* Top-left freshness badge */}
-                  {days >= 0 && days <= 14 && (
-                    <span className="absolute top-3 left-3 bg-[#07111f]/90 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2.5 py-1 rounded">
-                      NEW · {days}d ago
-                    </span>
-                  )}
-                  {/* Top-right photo counter */}
-                  {totalPhotos > 0 && (
-                    <span className="absolute top-3 right-3 bg-[#07111f]/90 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-white px-2.5 py-1 rounded">
-                      1 of {totalPhotos}
-                    </span>
-                  )}
-                  {/* Bottom price + address overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 bg-gradient-to-t from-[#07111f]/95 via-[#07111f]/60 to-transparent">
-                    <div className="text-[24px] sm:text-[28px] font-extrabold text-white leading-tight">{priceText}</div>
-                    <div className="text-[13px] sm:text-[14px] text-[#cbd5e1] font-semibold">
-                      {streetAddr} · {listing.city}
-                    </div>
-                  </div>
-                  {/* See-all-photos overlay (bottom-right) */}
-                  {totalPhotos > 1 && (
-                    <span className="absolute bottom-3 right-3 hidden sm:inline-flex items-center gap-1.5 bg-white/95 text-[#07111f] text-[12px] font-bold px-3 py-1.5 rounded-lg">
-                      See all {totalPhotos} photos
-                    </span>
-                  )}
-                </button>
-
-                {/* Secondary thumbnails (desktop only) */}
-                <div className="hidden sm:grid grid-rows-2 gap-3">
-                  {[1, 2].map((i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => openLightbox(Math.min(i, Math.max(0, totalPhotos - 1)))}
-                      disabled={!photos[i]}
-                      className="relative overflow-hidden rounded-xl bg-[#0c1e35] w-full h-[202px] disabled:opacity-40 disabled:cursor-default"
-                      aria-label={photos[i] ? `Open photo ${i + 1}` : "No additional photo"}
-                    >
-                      {photos[i] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={photos[i]}
-                          alt={`${streetAddr} photo ${i + 1}`}
-                          loading="lazy"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-[40px] opacity-20">🏠</div>
-                      )}
-                      {i === 2 && totalPhotos > 3 && (
-                        <span className="absolute inset-0 bg-[#07111f]/70 flex items-center justify-center text-white text-[14px] font-bold">
-                          +{totalPhotos - 3} more
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Facts row */}
-              <div className="mt-4 sm:mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[14px] sm:text-[15px] text-[#cbd5e1] font-semibold">
-                <span>🛏 {listing.bedrooms} bed</span>
-                <span>🚿 {listing.bathrooms} bath</span>
-                {listing.parking > 0 && <span>🚗 {listing.parking} parking</span>}
-                <span>📐 {listing.sqft ? `${listing.sqft.toLocaleString()} sqft` : "— sqft"}</span>
-                <span>🏠 {typeLabel}</span>
-              </div>
-
-              {/* Badge row */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="inline-block bg-[#f59e0b]/15 border border-[#f59e0b]/40 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1">
-                  {typeLabel}
-                </span>
-                <span className="inline-block bg-[#0c1e35] border border-[#1e3a5f] text-[#cbd5e1] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1">
-                  {neighbourhoodClean}
-                </span>
-                <span className="inline-block bg-green-500/10 border border-green-500/30 text-green-300 text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1">
-                  {listing.possessionDetails && /\d/.test(listing.possessionDetails)
-                    ? listing.possessionDetails
-                    : "Available now"}
-                </span>
-              </div>
-
-              {/* About card */}
-              {description && (
-                <div className="mt-6 bg-[#0a1628] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6">
-                  <h2 className="text-[18px] sm:text-[20px] font-extrabold mb-3">About this property</h2>
-                  <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed whitespace-pre-line">
-                    {descShown}
-                  </p>
-                  {descNeedsToggle && (
-                    <button
-                      type="button"
-                      onClick={() => setDescExpanded((v) => !v)}
-                      className="mt-3 text-[13px] font-bold text-[#fbbf24] hover:text-[#f59e0b] transition-colors"
-                    >
-                      {descExpanded ? "Show less" : "Show more"}
-                    </button>
-                  )}
-
-                  {/* Quick facts */}
-                  <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
-                    {(listing.heatType || listing.heatSource) && (
-                      <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
-                        <dt className="text-[#94a3b8]">Heat</dt>
-                        <dd className="text-[#f8f9fb] font-semibold text-right">{listing.heatType || listing.heatSource}</dd>
-                      </div>
-                    )}
-                    {listing.cooling && (
-                      <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
-                        <dt className="text-[#94a3b8]">Cooling</dt>
-                        <dd className="text-[#f8f9fb] font-semibold text-right">{listing.cooling}</dd>
-                      </div>
-                    )}
-                    {listing.garageType && (
-                      <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
-                        <dt className="text-[#94a3b8]">Parking</dt>
-                        <dd className="text-[#f8f9fb] font-semibold text-right">{listing.garageType}</dd>
-                      </div>
-                    )}
-                    {listing.lotSize && (
-                      <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
-                        <dt className="text-[#94a3b8]">Lot size</dt>
-                        <dd className="text-[#f8f9fb] font-semibold text-right">{listing.lotSize}</dd>
-                      </div>
-                    )}
-                    {listing.approximateAge && (
-                      <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
-                        <dt className="text-[#94a3b8]">Year built</dt>
-                        <dd className="text-[#f8f9fb] font-semibold text-right">{listing.approximateAge}</dd>
-                      </div>
-                    )}
-                    {listing.taxAmount && (
-                      <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
-                        <dt className="text-[#94a3b8]">Taxes</dt>
-                        <dd className="text-[#f8f9fb] font-semibold text-right">
-                          ${Math.round(listing.taxAmount).toLocaleString()}/year
-                          {listing.taxYear ? ` (${listing.taxYear})` : ""}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
+          <div className="lg:grid lg:grid-cols-[1.85fr_1fr] lg:gap-3 lg:items-stretch">
+            {/* Primary photo — renders at every breakpoint. On mobile the
+                lg:grid is dormant and this fills the parent; on lg+ it
+                claims the 1.85fr column. aspect-[4/3] keeps the slot sized
+                pre-load so the right column can stretch to match. */}
+            <button
+              type="button"
+              onClick={() => openLightbox(0)}
+              className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#0c1e35] block w-full group"
+              aria-label={`Open photo viewer (${totalPhotos} photos)`}
+            >
+              {photos[0] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={photos[0]}
+                  alt={`${streetAddr} primary photo`}
+                  fetchPriority="high"
+                  loading="eager"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-[60px] opacity-30">🏠</div>
               )}
+              {days >= 0 && days <= 14 && (
+                <span className="absolute top-3 left-3 bg-[#07111f]/90 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2.5 py-1 rounded">
+                  NEW · {days}d ago
+                </span>
+              )}
+              {totalPhotos > 0 && (
+                <span className="absolute top-3 right-3 bg-[#07111f]/90 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-white px-2.5 py-1 rounded">
+                  1 of {totalPhotos}
+                </span>
+              )}
+            </button>
 
+            {/* Right-column thumbs — desktop only. Two stacked tiles that
+                stretch to the primary photo's height via grid items-stretch.
+                Thumb [2] carries the "+N more" overlay as the single
+                gallery-CTA on desktop. */}
+            <div className="hidden lg:grid lg:grid-rows-2 lg:gap-3">
+              <button
+                type="button"
+                onClick={() => openLightbox(1)}
+                disabled={!photos[1]}
+                className="relative rounded-xl overflow-hidden bg-[#0c1e35] disabled:opacity-40 disabled:cursor-default"
+                aria-label="Open photo 2"
+              >
+                {photos[1] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photos[1]}
+                    alt={`${streetAddr} photo 2`}
+                    loading="eager"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-[40px] opacity-20">🏠</div>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => openLightbox(totalPhotos > 3 ? 3 : 2)}
+                disabled={!photos[2]}
+                className="relative rounded-xl overflow-hidden bg-[#0c1e35] disabled:opacity-40 disabled:cursor-default"
+                aria-label={totalPhotos > 3 ? `Open all ${totalPhotos} photos` : "Open photo 3"}
+              >
+                {photos[2] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photos[2]}
+                    alt={totalPhotos > 3 ? "" : `${streetAddr} photo 3`}
+                    aria-hidden={totalPhotos > 3 ? true : undefined}
+                    loading="eager"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-[40px] opacity-20">🏠</div>
+                )}
+                {totalPhotos > 3 && (
+                  <span className="absolute inset-0 bg-[#07111f]/70 flex items-center justify-center text-white text-[15px] font-bold tracking-wide">
+                    +{totalPhotos - 3} more
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile thumb strip — hidden on lg+. Horizontal scroll snap.
+              Renders thumbs for photos[1..3] and a "+N more" CTA tile when
+              the listing has > 4 photos. */}
+          <div className="lg:hidden mt-2 flex gap-2 overflow-x-auto snap-x pb-1">
+            {[1, 2, 3].map((idx) =>
+              photos[idx] ? (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => openLightbox(idx)}
+                  className="relative shrink-0 w-24 h-20 rounded overflow-hidden snap-start bg-[#0c1e35]"
+                  aria-label={`Open photo ${idx + 1}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photos[idx]}
+                    alt={`${streetAddr} photo ${idx + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </button>
+              ) : null,
+            )}
+            {totalPhotos > 4 && (
+              <button
+                type="button"
+                onClick={() => openLightbox(4)}
+                className="relative shrink-0 w-24 h-20 rounded overflow-hidden snap-start bg-[#0c1e35]"
+                aria-label={`Open all ${totalPhotos} photos`}
+              >
+                {photos[4] && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photos[4]}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+                <span className="absolute inset-0 bg-[#07111f]/70 flex items-center justify-center text-white text-[11px] font-bold tracking-wider">
+                  +{totalPhotos - 4}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROPERTY FACTS BAND ── full-width below the photo grid.
+          Row 1: price + address (flex-row baseline on lg, stacked on
+          mobile). Row 2: bed/bath/parking/sqft/type chips. Row 3: pill
+          badges. Bottom border separates the band from the description +
+          form section below. */}
+      <section className="bg-[#07111f] border-b border-[#1e3a5f]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
+          <div className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between gap-1 lg:gap-4">
+            <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-[#f8f9fb] leading-tight tracking-tight">
+              {priceText}
+            </div>
+            <div className="text-[14px] sm:text-[15px] text-[#cbd5e1] font-medium">
+              {streetAddr} · {listing.city}
+            </div>
+          </div>
+
+          <div className="mt-3 sm:mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[14px] sm:text-[15px] text-[#cbd5e1] font-semibold">
+            <span>🛏 {listing.bedrooms} bed</span>
+            <span>🚿 {listing.bathrooms} bath</span>
+            {listing.parking > 0 && <span>🚗 {listing.parking} parking</span>}
+            <span>📐 {listing.sqft ? `${listing.sqft.toLocaleString()} sqft` : "— sqft"}</span>
+            <span>🏠 {typeLabel}</span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="inline-block bg-[#f59e0b]/15 border border-[#f59e0b]/40 text-[#fbbf24] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1">
+              {typeLabel}
+            </span>
+            <span className="inline-block bg-[#0c1e35] border border-[#1e3a5f] text-[#cbd5e1] text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1">
+              {neighbourhoodClean}
+            </span>
+            <span className="inline-block bg-green-500/10 border border-green-500/30 text-green-300 text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1">
+              {listing.possessionDetails && /\d/.test(listing.possessionDetails)
+                ? listing.possessionDetails
+                : "Available now"}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DESCRIPTION + LEAD FORM ── two columns on lg+ (1.5fr description
+          / 1fr sticky form aside). Mobile stacks form first then
+          description for conversion priority. Form aside uses
+          lg:col-start-2 + lg:row-start-1 so the DOM-first form renders on
+          the right at desktop sizes. AamirTrustCard sits in the same
+          sticky aside below the form, separated by space-y-4. */}
+      <section className="bg-[#07111f]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 lg:gap-8">
+          <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-[80px] lg:self-start space-y-4">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="mb-4 pb-3 border-b border-[#f1f5f9]">
+                <div className="text-[10px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-1.5">
+                  Get info on this listing
+                </div>
+                <h3 className="text-[18px] font-medium text-[#07111f] leading-[1.2] tracking-[-0.2px] mb-1">
+                  Send me the details
+                </h3>
+                <p className="text-[12px] text-[#64748b] leading-[1.5]">
+                  {config.sla.topFormSubline}
+                </p>
+              </div>
+              <LeadCaptureForm
+                variant="sales"
+                source="sales-rentals-featured-top"
+                mlsNumber={listing.mlsNumber}
+                formId="top"
+                hideHeader
+                chromeless
+                ctaLabel="Send me details"
+              />
             </div>
 
-            {/* RIGHT — top form + trust card (sticky on desktop). The
-                AamirTrustCard subsumes the old text/call quick-actions and
-                the stacked TrustPillars — both now live inside the card
-                alongside the message-capture textarea. */}
-            <aside className="lg:sticky lg:top-[80px] lg:self-start">
-              {/* Top form — Polaroid layout to match the booking band. Narrower
-                  than the band (column width) but same amber-frame + dominant
-                  white card pattern for visual consistency across both
-                  conversion surfaces. */}
-              <div className="bg-[#f59e0b] rounded-[14px] p-[12px]">
-                <div className="bg-white rounded-[10px] px-[22px] pt-[24px] pb-[20px]">
-                  <div className="mb-[18px] pb-[14px] border-b border-[#f1f5f9]">
-                    <div className="text-[10px] font-medium tracking-[1.5px] uppercase text-[#f59e0b] mb-[6px]">
-                      Get info on this listing
-                    </div>
-                    <h3 className="text-[18px] font-medium text-[#07111f] leading-[1.2] tracking-[-0.2px] mb-[4px]">
-                      Send me the details
-                    </h3>
-                    <p className="text-[12px] text-[#64748b] leading-[1.5]">
-                      {config.sla.topFormSubline}
-                    </p>
-                  </div>
-                  <LeadCaptureForm
-                    variant="sales"
-                    source="sales-rentals-featured-top"
-                    mlsNumber={listing.mlsNumber}
-                    formId="top"
-                    hideHeader
-                    chromeless
-                    ctaLabel="Send me details"
-                  />
-                </div>
-              </div>
+            <AamirTrustCard
+              listingAddress={streetAddr}
+              mlsNumber={listing.mlsNumber}
+            />
+          </aside>
 
-              <AamirTrustCard
-                listingAddress={streetAddr}
-                mlsNumber={listing.mlsNumber}
-                className="mt-4"
-              />
-            </aside>
+          <div className="lg:col-start-1 lg:row-start-1 min-w-0">
+            {description && (
+              <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6">
+                <h2 className="text-[18px] sm:text-[20px] font-extrabold mb-3">About this property</h2>
+                <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed whitespace-pre-line">
+                  {descShown}
+                </p>
+                {descNeedsToggle && (
+                  <button
+                    type="button"
+                    onClick={() => setDescExpanded((v) => !v)}
+                    className="mt-3 text-[13px] font-bold text-[#fbbf24] hover:text-[#f59e0b] transition-colors"
+                  >
+                    {descExpanded ? "Show less" : "Show more"}
+                  </button>
+                )}
+
+                <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
+                  {(listing.heatType || listing.heatSource) && (
+                    <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
+                      <dt className="text-[#94a3b8]">Heat</dt>
+                      <dd className="text-[#f8f9fb] font-semibold text-right">{listing.heatType || listing.heatSource}</dd>
+                    </div>
+                  )}
+                  {listing.cooling && (
+                    <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
+                      <dt className="text-[#94a3b8]">Cooling</dt>
+                      <dd className="text-[#f8f9fb] font-semibold text-right">{listing.cooling}</dd>
+                    </div>
+                  )}
+                  {listing.garageType && (
+                    <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
+                      <dt className="text-[#94a3b8]">Parking</dt>
+                      <dd className="text-[#f8f9fb] font-semibold text-right">{listing.garageType}</dd>
+                    </div>
+                  )}
+                  {listing.lotSize && (
+                    <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
+                      <dt className="text-[#94a3b8]">Lot size</dt>
+                      <dd className="text-[#f8f9fb] font-semibold text-right">{listing.lotSize}</dd>
+                    </div>
+                  )}
+                  {listing.approximateAge && (
+                    <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
+                      <dt className="text-[#94a3b8]">Year built</dt>
+                      <dd className="text-[#f8f9fb] font-semibold text-right">{listing.approximateAge}</dd>
+                    </div>
+                  )}
+                  {listing.taxAmount && (
+                    <div className="flex justify-between gap-3 border-b border-[#1e3a5f]/60 py-1.5">
+                      <dt className="text-[#94a3b8]">Taxes</dt>
+                      <dd className="text-[#f8f9fb] font-semibold text-right">
+                        ${Math.round(listing.taxAmount).toLocaleString()}/year
+                        {listing.taxYear ? ` (${listing.taxYear})` : ""}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
           </div>
         </div>
       </section>
