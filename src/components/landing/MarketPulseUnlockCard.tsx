@@ -250,7 +250,7 @@ export default function MarketPulseUnlockCard({
         )}
 
         <div className="mt-[14px] text-[10px] text-[#64748b] tracking-[0.3px]">
-          Based on {stats.match_basis === "deferred" ? "Aamir&apos;s manual lookup" : stats.match_basis.replace(/_/g, " · ")}
+          Based on {stats.match_basis === "deferred" ? "Aamir's manual lookup" : stats.match_basis.replace(/_/g, " · ")}
         </div>
       </div>
     );
@@ -262,17 +262,25 @@ export default function MarketPulseUnlockCard({
       <div className="text-[10px] font-medium tracking-[1.4px] uppercase text-[#f59e0b] mb-[6px]">
         {headerKicker}
       </div>
-      <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-tight mb-[14px]">
+      <h3 className="text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-tight mb-[6px]">
         {headerTitle}
       </h3>
+      <p className="text-[12px] text-[#94a3b8] leading-[1.5] mb-[14px]">
+        See how this listing compares to recent sales.
+      </p>
 
-      {/* Blurred preview grid — purely decorative, no real data */}
+      {/* Locked preview grid — skeleton-bar placeholders. Labels match the
+          unlocked StatTile labels exactly so what's promised is what's
+          delivered (no bait-and-switch on currency placeholders that the
+          k-anon analytics path can't deliver). Lock-icon overlay sits on
+          top of the grid; aria-hidden lives on the skeleton bars (decorative)
+          so screen readers still read the labels. */}
       <div className="relative mb-[14px]">
-        <div className="grid grid-cols-2 gap-[10px] select-none" aria-hidden>
-          <BlurredTile label="Average price" />
-          <BlurredTile label="Days on market" />
-          <BlurredTile label="Sold-to-ask" />
-          <BlurredTile label="Sold count" />
+        <div className="grid grid-cols-2 gap-[10px] select-none">
+          <LockedTile label={`Sold (${PERIOD_DAYS}d)`} />
+          <LockedTile label="Days on market" />
+          <LockedTile label="Sold-to-ask" />
+          <LockedTile label="Market score" />
         </div>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-[#07111f]/85 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center border border-[#f59e0b]/40">
@@ -374,15 +382,18 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BlurredTile({ label }: { label: string }) {
+// Skeleton-bar placeholder tile for the locked state. Renders a solid amber
+// bar of consistent height matching the StatTile value row so the locked +
+// unlocked grids share layout. No characters, no blur — honest "data is
+// here, locked behind unlock CTA" affordance. Label matches the unlocked
+// StatTile exactly so what's promised is what's delivered.
+function LockedTile({ label }: { label: string }) {
   return (
     <div className="bg-[#07111f] border border-[#1e3a5f] rounded-[10px] p-[12px]">
       <div className="text-[10px] uppercase tracking-[0.5px] text-[#94a3b8] mb-[4px]">
         {label}
       </div>
-      <div className="text-[18px] font-medium text-[#fbbf24] blur-[6px] select-none">
-        $XXX,XXX
-      </div>
+      <div className="h-[22px] w-[60%] rounded bg-[#fbbf24]" aria-hidden />
     </div>
   );
 }
