@@ -119,7 +119,12 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
       photos: true,
       listedAt: true,
       propertyType: true,
-      neighbourhood: true,
+      // 4l-fix: similar-listings matcher uses architecturalStyle as the
+      // TRREB-native storeys signal (2-Storey vs Bungalow vs Backsplit 3 etc.)
+      // and approximateAge consolidated into 4 buckets. Both are selected
+      // for every slider candidate so the client-side matcher can tier on them.
+      architecturalStyle: true,
+      approximateAge: true,
     },
   });
 

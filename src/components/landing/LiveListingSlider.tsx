@@ -70,10 +70,13 @@ export interface LiveListingSliderListing {
   photos: string[];
   listedAt: string;
   propertyType: string;
-  /** Optional — only used by the "Similar" tier matcher; not rendered on
-   *  cards. Old call sites that don't pass it still work; those listings
-   *  just won't match Tier 1 / Tier 2 (same-neighbourhood) tightening. */
-  neighbourhood?: string;
+  // 4l-fix: similar-listings matcher uses these two TRREB-native fields.
+  // architecturalStyle is the storeys/archetype signal (2-Storey vs Bungalow
+  // vs Backsplit 3 vs Stacked Townhouse). approximateAge is the TRREB age
+  // enum ("New" / "0-5" / "6-10" / "6-15" / "11-15" / "16-30" / "31-50" /
+  // "51-99" / "100+") consolidated into 4 buckets by ageBucket().
+  architecturalStyle: string | null;
+  approximateAge: string | null;
 }
 
 export interface LiveListingSliderProps {
@@ -83,16 +86,16 @@ export interface LiveListingSliderProps {
   /** MLS number of the listing the user is currently viewing. Excluded from
    *  every filter result + used in GA event params. */
   currentMlsNumber: string;
-  /** Current listing's propertyType (e.g. "townhouse") — used by the
-   *  "Similar" matcher's Tier 1-3 propertyType filter. */
+  /** Current listing's propertyType (e.g. "detached") — Tier 1/2/3 filter. */
   currentPropertyType: string;
-  /** Current listing's bedroom count — used in Tier 1 ±1 bedroom match. */
-  currentBedrooms: number;
-  /** Current listing's neighbourhood — used in Tier 1+2 same-neighbourhood
-   *  match. */
-  currentNeighbourhood: string;
-  /** Current listing's price — used in Tier 1 ±25% price match. */
-  currentPrice: number;
+  /** Current listing's architecturalStyle (e.g. "2-Storey", "Bungalow").
+   *  TRREB-native storeys/archetype signal. Tier 1+2 filter. May be null on
+   *  rare listings missing the field — in which case Tier 1+2 are skipped. */
+  currentArchitecturalStyle: string | null;
+  /** Current listing's TRREB approximateAge string (e.g. "0-5", "31-50").
+   *  Consolidated into 4 buckets by ageBucket() for Tier 1 matching. May be
+   *  null — in which case Tier 1 is skipped (Rule B). */
+  currentApproximateAge: string | null;
   /** First-line street address of the current listing — used in the
    *  "Similar" header copy + SMS prefill body. */
   currentListingAddr: string;
@@ -101,9 +104,6 @@ export interface LiveListingSliderProps {
 }
 
 const MIN_VISIBLE = 3;
-const SIMILAR_MIN_TIER_FLOOR = 5; // need at least 5 results to lock a tier
-const PRICE_BAND_FRACTION = 0.25; // ±25% for Tier 1
-const BEDROOMS_BAND = 1;          // ±1 bedroom for Tier 1
 const IDLE_RESUME_MS = 5000;       // resume auto-scroll after 5s of no interaction
 const AUTO_SCROLL_INTERVAL_MS = 50;
 const AUTO_SCROLL_STEP_PX = 1;     // gentle drift — 20 px/sec at 50ms interval
@@ -120,6 +120,46 @@ function byNewest(a: LiveListingSliderListing, b: LiveListingSliderListing): num
   return new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime();
 }
 
+// 4l-fix: TRREB approximateAge string → consolidated buyer-profile bucket.
+// Pure helper, no I/O. Returns null for null/empty/unrecognized inputs so the
+// matcher can decide whether to apply Tier 1 (which requires a known bucket).
+export type AgeBucket = "new" | "5-15" | "15-30" | "30+";
+export function ageBucket(val: string | null | undefined): AgeBucket | null {
+  if (!val) return null;
+  const s = val.trim();
+  if (!s) return null;
+  switch (s) {
+    case "New":
+    case "0-5":
+      return "new";
+    case "6-10":
+    case "6-15":
+    case "11-15":
+      return "5-15";
+    case "16-30":
+      return "15-30";
+    case "31-50":
+    case "51-99":
+    case "100+":
+      return "30+";
+    default:
+      return null;
+  }
+}
+
+// Normalize architecturalStyle so a trailing-whitespace / case-only difference
+// doesn't split otherwise-identical archetypes. TRREB normally emits clean
+// strings ("2-Storey", "Bungalow", "Backsplit 3"); this is defensive.
+function normalizeStyle(v: string | null | undefined): string | null {
+  if (!v) return null;
+  const s = v.trim().toLowerCase();
+  return s.length ? s : null;
+}
+
+// Tier of the similar-listings match that produced a given result set.
+// Exposed for the recon/smoke-test script; not used at render time.
+export type SimilarTier = 1 | 2 | 3 | null;
+
 // Apply the active filter against the broad pool. Returns the cards the
 // slider should render (in display order), excluding the current listing.
 function filterListings(
@@ -128,9 +168,8 @@ function filterListings(
   ctx: {
     mlsNumber: string;
     propertyType: string;
-    bedrooms: number;
-    neighbourhood: string;
-    price: number;
+    architecturalStyle: string | null;
+    approximateAge: string | null;
   },
 ): LiveListingSliderListing[] {
   const eligible = pool.filter((l) => l.mlsNumber !== ctx.mlsNumber);
@@ -140,7 +179,7 @@ function filterListings(
   }
 
   if (filter === "similar") {
-    return computeSimilarTiered(eligible, ctx);
+    return computeSimilarTiered(eligible, ctx).listings;
   }
 
   // Property-type filter (detached / semi / townhouse / condo).
@@ -149,57 +188,91 @@ function filterListings(
     .sort(byNewest);
 }
 
-// "Similar to this listing" 4-tier matcher. Each tier loosens the criteria;
-// stop at the first tier that yields >= SIMILAR_MIN_TIER_FLOOR cards.
+// 4l-fix: "Similar to this listing" 3-tier matcher.
+//   Tier 1: same propertyType + same architecturalStyle + same age bucket
+//   Tier 2: same propertyType + same architecturalStyle (drops age)
+//   Tier 3: same propertyType only
+//
+// Rules locked with Aamir (Gate A clearance):
+//   A — Candidate listings with approximateAge that maps to null bucket are
+//       EXCLUDED from Tier 1. They remain eligible for Tier 2 and Tier 3.
+//   B — If the CURRENT listing has a null age bucket, Tier 1 is skipped
+//       entirely; we start at Tier 2. Dev-mode console.warn for visibility.
+//   Style — if the current listing has null architecturalStyle, Tiers 1+2
+//       are both skipped (they require a style match). Dev-mode warn.
+//
+// Floor: stop at the first tier that yields >= MIN_VISIBLE (3) cards. If
+// Tier 3 also yields <3, return whatever Tier 3 produced — better
+// honest-thin than dishonest-wrong (we never widen past propertyType).
 function computeSimilarTiered(
   pool: LiveListingSliderListing[],
   ctx: {
     propertyType: string;
-    bedrooms: number;
-    neighbourhood: string;
-    price: number;
+    architecturalStyle: string | null;
+    approximateAge: string | null;
   },
-): LiveListingSliderListing[] {
+): { tier: SimilarTier; listings: LiveListingSliderListing[] } {
   const ptKey = ctx.propertyType.toLowerCase();
-  const minPrice = ctx.price * (1 - PRICE_BAND_FRACTION);
-  const maxPrice = ctx.price * (1 + PRICE_BAND_FRACTION);
+  const styleKey = normalizeStyle(ctx.architecturalStyle);
+  const ageKey = ageBucket(ctx.approximateAge);
+  const isDev = process.env.NODE_ENV !== "production";
 
-  // Tier 1 — tight match
-  const tier1 = pool.filter(
-    (l) =>
-      (l.propertyType ?? "").toLowerCase() === ptKey &&
-      l.neighbourhood === ctx.neighbourhood &&
-      Math.abs(l.bedrooms - ctx.bedrooms) <= BEDROOMS_BAND &&
-      l.price >= minPrice &&
-      l.price <= maxPrice,
-  );
-  if (tier1.length >= SIMILAR_MIN_TIER_FLOOR) return tier1.sort(byNewest);
+  // Tier 1 — strictest: propertyType + style + age bucket
+  if (styleKey && ageKey) {
+    const tier1 = pool.filter(
+      (l) =>
+        (l.propertyType ?? "").toLowerCase() === ptKey &&
+        normalizeStyle(l.architecturalStyle) === styleKey &&
+        ageBucket(l.approximateAge) === ageKey, // Rule A: null bucket excluded
+    );
+    if (tier1.length >= MIN_VISIBLE) return { tier: 1, listings: tier1.sort(byNewest) };
+  } else if (!ageKey && isDev) {
+    // Rule B
+    console.warn("[LiveListingSlider] Tier 1 skipped: current listing has null age bucket");
+  }
 
-  // Tier 2 — same propertyType + same neighbourhood, any bedrooms / price
-  const tier2 = pool.filter(
-    (l) =>
-      (l.propertyType ?? "").toLowerCase() === ptKey &&
-      l.neighbourhood === ctx.neighbourhood,
-  );
-  if (tier2.length >= SIMILAR_MIN_TIER_FLOOR) return tier2.sort(byNewest);
+  // Tier 2 — same propertyType + same architecturalStyle (drops age)
+  if (styleKey) {
+    const tier2 = pool.filter(
+      (l) =>
+        (l.propertyType ?? "").toLowerCase() === ptKey &&
+        normalizeStyle(l.architecturalStyle) === styleKey,
+    );
+    if (tier2.length >= MIN_VISIBLE) return { tier: 2, listings: tier2.sort(byNewest) };
+  } else if (isDev) {
+    console.warn("[LiveListingSlider] Tiers 1+2 skipped: current listing has null architecturalStyle");
+  }
 
-  // Tier 3 — same propertyType, any neighbourhood (pool is already city-scoped)
+  // Tier 3 — same propertyType only. Last resort. We do NOT widen further;
+  // a bungalow detached should not surface bungalow semis (different buyer
+  // profile — freehold vs shared wall). If this returns <3 we accept that.
   const tier3 = pool.filter(
     (l) => (l.propertyType ?? "").toLowerCase() === ptKey,
   );
-  if (tier3.length >= SIMILAR_MIN_TIER_FLOOR) return tier3.sort(byNewest);
+  return { tier: tier3.length > 0 ? 3 : null, listings: tier3.sort(byNewest) };
+}
 
-  // Tier 4 — final fallback: everything in the pool, sorted by recency.
-  return [...pool].sort(byNewest);
+// Exposed for the recon/smoke-test script (scripts/smoke-similar-W13120162.ts).
+// Re-exports the internal matcher so test code can prove tier-of-match for
+// each card. Not used at render time — the React component goes through
+// filterListings() which discards the tier tag.
+export function computeSimilarMatch(
+  pool: LiveListingSliderListing[],
+  ctx: {
+    propertyType: string;
+    architecturalStyle: string | null;
+    approximateAge: string | null;
+  },
+): { tier: SimilarTier; listings: LiveListingSliderListing[] } {
+  return computeSimilarTiered(pool, ctx);
 }
 
 export default function LiveListingSlider({
   listings,
   currentMlsNumber,
   currentPropertyType,
-  currentBedrooms,
-  currentNeighbourhood,
-  currentPrice,
+  currentArchitecturalStyle,
+  currentApproximateAge,
   currentListingAddr,
   className = "",
 }: LiveListingSliderProps) {
@@ -215,11 +288,10 @@ export default function LiveListingSlider({
     () => ({
       mlsNumber: currentMlsNumber,
       propertyType: currentPropertyType,
-      bedrooms: currentBedrooms,
-      neighbourhood: currentNeighbourhood,
-      price: currentPrice,
+      architecturalStyle: currentArchitecturalStyle,
+      approximateAge: currentApproximateAge,
     }),
-    [currentMlsNumber, currentPropertyType, currentBedrooms, currentNeighbourhood, currentPrice],
+    [currentMlsNumber, currentPropertyType, currentArchitecturalStyle, currentApproximateAge],
   );
 
   const filtered = useMemo(

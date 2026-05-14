@@ -47,6 +47,9 @@ interface Listing {
   garageType: string | null;
   lotSize: string | null;
   approximateAge: string | null;
+  // 4l-fix: TRREB-native storeys/archetype signal used by LiveListingSlider's
+  // similar-listings matcher (e.g. "2-Storey", "Bungalow", "Backsplit 3").
+  architecturalStyle: string | null;
   taxAmount: number | null;
   taxYear: number | null;
   possessionDetails: string | null;
@@ -382,9 +385,8 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
             listings={sliderListings}
             currentMlsNumber={listing.mlsNumber}
             currentPropertyType={listing.propertyType}
-            currentBedrooms={listing.bedrooms}
-            currentNeighbourhood={listing.neighbourhood}
-            currentPrice={listing.price}
+            currentArchitecturalStyle={listing.architecturalStyle}
+            currentApproximateAge={listing.approximateAge}
             currentListingAddr={streetAddr}
           />
         </div>
