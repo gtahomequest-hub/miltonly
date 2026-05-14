@@ -308,8 +308,11 @@ export default function LeadCaptureForm({
             </label>
             <input
               id={phoneId}
+              name="phone"
               type="tel"
-              inputMode="tel"
+              inputMode="numeric"
+              pattern="\(\d{3}\) \d{3}-\d{4}"
+              title="10-digit phone number, format (647) 555-0123"
               required
               value={phone}
               onChange={(e) => setPhone(formatPhone(e.target.value))}
@@ -324,6 +327,7 @@ export default function LeadCaptureForm({
             </label>
             <input
               id={emailId}
+              name="email"
               type="email"
               inputMode="email"
               required
