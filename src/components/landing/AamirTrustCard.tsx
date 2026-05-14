@@ -45,11 +45,6 @@ export default function AamirTrustCard({
   className = "",
 }: AamirTrustCardProps) {
   const placeholder = `Hi ${REALTOR_FIRST_NAME}, I'm interested in ${listingAddress}. Is it still available, and when can I view it?`;
-  const prefillBody = `Hi ${REALTOR_FIRST_NAME}, I'd like info on ${listingAddress}`;
-
-  const smsHref = `sms:${config.realtor.phoneE164}?body=${encodeURIComponent(prefillBody)}`;
-  const waHref = `https://wa.me/${config.realtor.phoneE164.replace(/^\+/, "")}?text=${encodeURIComponent(prefillBody)}`;
-  const telHref = `tel:${config.realtor.phoneE164}`;
 
   const [messageText, setMessageText] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -149,35 +144,15 @@ export default function AamirTrustCard({
         </div>
       )}
 
-      {/* Or reach out another way */}
-      <div className="text-[9px] text-[#64748b] font-medium uppercase tracking-[1px] text-center mb-[10px]">
-        — or reach out another way —
-      </div>
-      <div className="grid grid-cols-3 gap-1.5">
-        <a
-          href={smsHref}
-          onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_text_aamir_card', { listing_mls: mlsNumber }); }}
-          className="h-[40px] inline-flex items-center justify-center gap-1 bg-[#0c1e35] border border-[#1e3a5f] text-white text-[11px] font-medium rounded-[6px] hover:border-[#94a3b8] transition-colors"
-        >
-          💬 Text
-        </a>
-        <a
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_whatsapp_aamir_card', { listing_mls: mlsNumber }); }}
-          className="h-[40px] inline-flex items-center justify-center gap-1 bg-[#25d366]/[0.08] border border-[#25d366]/40 text-[#25d366] text-[11px] font-medium rounded-[6px] hover:bg-[#25d366]/15 transition-colors"
-        >
-          🟢 WhatsApp
-        </a>
-        <a
-          href={telHref}
-          onClick={() => { const gtag = getGtag(); if (gtag) gtag('event', 'click_call_aamir_card', { listing_mls: mlsNumber }); }}
-          className="h-[40px] inline-flex items-center justify-center gap-1 bg-[#f59e0b]/[0.08] border border-[#f59e0b]/40 text-[#fbbf24] text-[11px] font-medium rounded-[6px] hover:bg-[#f59e0b]/15 transition-colors"
-        >
-          📞 Call
-        </a>
-      </div>
+      {/* The "— or reach out another way —" divider + the 3-button
+          (Text/WhatsApp/Call) grid was removed here. Header CTAs already
+          fire click_text_header and click_call_header on every page; the
+          duplicate row was both visual noise on a vertical card AND a
+          height contributor to the right-column overhang that left the
+          left column dead-space at the bottom. WhatsApp had its only
+          surface here — accepted loss, to be re-added as a deliberate
+          primary placement when analytics shows demand. The textarea
+          flow above remains the trust card's primary conversion path. */}
 
       {modalOpen && (
         <MessageCaptureModal

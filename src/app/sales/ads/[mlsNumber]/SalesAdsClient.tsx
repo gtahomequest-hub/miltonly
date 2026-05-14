@@ -13,6 +13,7 @@ import LiveListingSlider from "@/components/landing/LiveListingSlider";
 import MarketPulseUnlockCard from "@/components/landing/MarketPulseUnlockCard";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import { extractHighlights } from "@/lib/listing-highlights";
+import { extractKeyFacts } from "@/lib/listing-key-facts";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -63,6 +64,12 @@ interface Listing {
   construction: string | null;
   foundation: string | null;
   virtualTourUrl: string | null;
+  // Additional fields consumed by extractKeyFacts() in the key-facts card.
+  lotWidth: number | null;
+  lotDepth: number | null;
+  crossStreet: string | null;
+  directionFaces: string | null;
+  roof: string | null;
 }
 
 interface Props {
@@ -117,6 +124,23 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
     virtualTourUrl: listing.virtualTourUrl,
   });
   const highlightsHasContent = highlights.bullets.length > 0 || !!highlights.virtualTourUrl;
+
+  // Key Facts card content — structured metadata grid (cross-street,
+  // orientation, materials, fireplace, MLS#, taxes, lot dimensions when
+  // they pass the sanity floor). Card hides when keyFacts is empty.
+  const keyFacts = extractKeyFacts({
+    mlsNumber: listing.mlsNumber,
+    lotWidth: listing.lotWidth,
+    lotDepth: listing.lotDepth,
+    crossStreet: listing.crossStreet,
+    directionFaces: listing.directionFaces,
+    construction: listing.construction,
+    roof: listing.roof,
+    foundation: listing.foundation,
+    fireplace: listing.fireplace ?? false,
+    taxAmount: listing.taxAmount,
+    taxYear: listing.taxYear,
+  });
 
   const headerSms = `sms:${config.realtor.phoneE164}?body=${encodeURIComponent(`Hi ${REALTOR_FIRST_NAME}, I'd like info on ${streetAddr}`)}`;
   const headerTel = `tel:${config.realtor.phoneE164}`;
@@ -512,6 +536,32 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
                     View 3D virtual tour
                   </a>
                 )}
+              </div>
+            )}
+
+            {/* Key Facts card — structured-metadata two-column grid. Sits
+                below the Highlights card on desktop two-col layout to fill
+                the dead left-column space below "View 3D virtual tour".
+                Extractor skips lot dimensions when the sanity floor catches
+                a meter-mis-entry pattern (see src/lib/listing-key-facts.ts).
+                Card hides entirely when extractKeyFacts returns []. */}
+            {keyFacts.length > 0 && (
+              <div className="mt-4 bg-[#0a1628] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6">
+                <h2 className="text-[18px] sm:text-[20px] font-extrabold mb-3">
+                  Key facts
+                </h2>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  {keyFacts.map((f, i) => (
+                    <div key={i} className="min-w-0">
+                      <dt className="text-[12px] sm:text-[13px] text-[#94a3b8] leading-snug">
+                        {f.label}
+                      </dt>
+                      <dd className="text-[13px] sm:text-[14px] text-[#f8f9fb] font-medium mt-0.5 break-words">
+                        {f.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
           </div>
