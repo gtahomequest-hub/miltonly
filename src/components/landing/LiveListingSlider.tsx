@@ -318,6 +318,12 @@ export default function LiveListingSlider({
   const [paused, setPaused] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  // One-shot breathing-animation gate. Flipped true on the first user
+  // interaction (scroll / click / wheel / hover / pointer / filter pill)
+  // via pauseAutoScroll, which is already wired into all those firepoints.
+  // Once true, the right-arrow breathing class is dropped and never
+  // re-applies for the lifetime of the page.
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -338,7 +344,12 @@ export default function LiveListingSlider({
   );
 
   // Pause auto-scroll on any user interaction; resume after 5s of idle.
+  // Also flips hasInteracted true on the first call so the right-arrow
+  // breathing animation stops on first interaction (the six pauseAutoScroll
+  // firepoints — handleScroll / scrollByPage / onPointerDown / onWheel /
+  // onMouseEnter / filter-pill click — cover every meaningful interaction).
   function pauseAutoScroll() {
+    if (!hasInteracted) setHasInteracted(true);
     setPaused(true);
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     idleTimerRef.current = setTimeout(() => {
@@ -536,7 +547,11 @@ export default function LiveListingSlider({
           aria-disabled={!canScrollRight}
           disabled={!canScrollRight}
           onClick={() => scrollByPage(1)}
-          className="lls-arrow absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0c1e35]/95 border border-[#1e3a5f] text-white text-[18px] items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#f59e0b]/40 transition-colors"
+          className={`lls-arrow absolute right-2 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0c1e35]/95 border border-[#1e3a5f] text-white text-[18px] items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:border-[#f59e0b]/40 transition-colors${
+            canScrollRight && !hasInteracted
+              ? " motion-safe:animate-breathe-3x motion-reduce:bg-[#fbbf24]/15 motion-reduce:border-[#fbbf24]/50"
+              : ""
+          }`}
         >
           ›
         </button>
