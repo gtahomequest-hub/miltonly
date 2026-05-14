@@ -12,6 +12,7 @@ import AamirTrustCard from "@/components/landing/AamirTrustCard";
 import LiveListingSlider from "@/components/landing/LiveListingSlider";
 import MarketPulseUnlockCard from "@/components/landing/MarketPulseUnlockCard";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
+import { extractHighlights } from "@/lib/listing-highlights";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -53,6 +54,15 @@ interface Listing {
   taxAmount: number | null;
   taxYear: number | null;
   possessionDetails: string | null;
+  // Fields consumed by extractHighlights() in the highlights card. page.tsx
+  // does findUnique() without a `select`, so these come through on the
+  // listing payload — interface just widens to expose them.
+  interiorFeatures: string[];
+  exteriorFeatures: string[];
+  fireplace: boolean;
+  construction: string | null;
+  foundation: string | null;
+  virtualTourUrl: string | null;
 }
 
 interface Props {
@@ -89,6 +99,24 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
   const DESC_TRUNCATE = 400;
   const descNeedsToggle = description.length > DESC_TRUNCATE;
   const descShown = descExpanded || !descNeedsToggle ? description : description.slice(0, DESC_TRUNCATE).replace(/\s+\S*$/, "") + "…";
+
+  // Highlights card content — pulled from structured Listing fields plus
+  // conservatively parsed description signals. Card renders only when this
+  // produces at least one bullet or a virtualTourUrl.
+  const highlights = extractHighlights({
+    description: listing.description,
+    architecturalStyle: listing.architecturalStyle,
+    approximateAge: listing.approximateAge,
+    heatType: listing.heatType,
+    cooling: listing.cooling,
+    interiorFeatures: listing.interiorFeatures || [],
+    exteriorFeatures: listing.exteriorFeatures || [],
+    fireplace: listing.fireplace ?? false,
+    construction: listing.construction,
+    foundation: listing.foundation,
+    virtualTourUrl: listing.virtualTourUrl,
+  });
+  const highlightsHasContent = highlights.bullets.length > 0 || !!highlights.virtualTourUrl;
 
   const headerSms = `sms:${config.realtor.phoneE164}?body=${encodeURIComponent(`Hi ${REALTOR_FIRST_NAME}, I'd like info on ${streetAddr}`)}`;
   const headerTel = `tel:${config.realtor.phoneE164}`;
@@ -442,6 +470,48 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
                     </div>
                   )}
                 </dl>
+              </div>
+            )}
+
+            {/* Highlights card — fills left-column space below About on
+                desktop two-col layout. Bullets pulled from structured
+                Listing fields + conservatively parsed description signals
+                (extractHighlights). Card hides entirely when there's no
+                content (zero bullets + no virtualTourUrl). */}
+            {highlightsHasContent && (
+              <div className="mt-4 bg-[#0a1628] border border-[#1e3a5f] rounded-2xl p-5 sm:p-6">
+                <h2 className="text-[18px] sm:text-[20px] font-extrabold mb-3">
+                  Highlights from this listing
+                </h2>
+                {highlights.bullets.length > 0 && (
+                  <ul className="space-y-2">
+                    {highlights.bullets.map((b, i) => (
+                      <li
+                        key={i}
+                        className="flex gap-3 text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed"
+                      >
+                        <span
+                          className="text-[#fbbf24] mt-[2px] shrink-0 text-[18px] leading-none"
+                          aria-hidden
+                        >
+                          •
+                        </span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {highlights.virtualTourUrl && (
+                  <a
+                    href={highlights.virtualTourUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 inline-flex items-center justify-center gap-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-[#07111f] font-extrabold text-[14px] sm:text-[15px] px-5 py-3 rounded-lg transition-colors w-full sm:w-auto"
+                  >
+                    <span aria-hidden>▶</span>
+                    View 3D virtual tour
+                  </a>
+                )}
               </div>
             )}
           </div>
