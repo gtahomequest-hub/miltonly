@@ -120,6 +120,34 @@ function byNewest(a: LiveListingSliderListing, b: LiveListingSliderListing): num
   return new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime();
 }
 
+// Default filter pill is derived from the current listing's propertyType so
+// the slider opens on the matching archetype bucket (detached listing →
+// Detached pill, townhouse → Townhouse, etc.). Case-insensitive lookup
+// table accepts both production-normalized lowercase tokens AND raw TRREB
+// formats — belt-and-suspenders against ingest-normalization drift. Unknown
+// or empty input falls back to "similar" so the slider never crashes on an
+// unrecognized propertyType.
+const FILTER_LOOKUP: Record<string, FilterKey> = {
+  // Production-normalized (current ingest pipeline emits these directly).
+  detached: "detached",
+  semi: "semi",
+  townhouse: "townhouse",
+  condo: "condo",
+  // TRREB raw formats — present if a future ingest change ever bypasses
+  // normalization, or if a caller passes us pre-normalization data.
+  "semi-detached": "semi",
+  "att/row/townhouse": "townhouse",
+  "condo apartment": "condo",
+  "condo townhouse": "condo",
+};
+
+export function mapPropertyTypeToFilter(propertyType: string | null | undefined): FilterKey {
+  if (!propertyType) return "similar";
+  const lc = propertyType.trim().toLowerCase();
+  if (!lc) return "similar";
+  return FILTER_LOOKUP[lc] ?? "similar";
+}
+
 // 4l-fix: TRREB approximateAge string → consolidated buyer-profile bucket.
 // Pure helper, no I/O. Returns null for null/empty/unrecognized inputs so the
 // matcher can decide whether to apply Tier 1 (which requires a known bucket).
@@ -276,7 +304,17 @@ export default function LiveListingSlider({
   currentListingAddr,
   className = "",
 }: LiveListingSliderProps) {
-  const [activeFilter, setActiveFilter] = useState<FilterKey>("similar");
+  // Initial pill = propertyType-derived default (detached → Detached, etc.).
+  // Memoized so the auto-fallback effect below can compare reliably without
+  // re-deriving on every render. Memo dependency is the propertyType prop
+  // which is stable per page (one listing per route), so this evaluates once
+  // in practice — useMemo guards the edge case of a future re-render with a
+  // different prop value.
+  const initialFilter = useMemo(
+    () => mapPropertyTypeToFilter(currentPropertyType),
+    [currentPropertyType],
+  );
+  const [activeFilter, setActiveFilter] = useState<FilterKey>(initialFilter);
   const [paused, setPaused] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -388,21 +426,23 @@ export default function LiveListingSlider({
     }
   }
 
-  // Auto-fallback for the default "similar" filter when the visitor lands
-  // on a listing whose neighbourhood + property-type slice happens to be
-  // thin enough that even Tier 4 yields zero. Flip the default to "all" so
-  // the slider doesn't disappear on cold-traffic landings. Other filters
-  // (Detached/Semi/Townhouse/Condo) returning 0 just hide the slider —
-  // extremely unlikely in Milton inventory, and the spec accepts that.
+  // Auto-fallback safety net: if the propertyType-derived initial default
+  // pill (e.g. "Detached" for a detached listing) yields zero on first
+  // paint — extremely rare given Milton inventory but possible on a
+  // listing whose archetype bucket is briefly empty — flip to "All Milton"
+  // so the slider doesn't vanish on cold-traffic landings. Triggers only
+  // while activeFilter equals the initial derived default; once the
+  // visitor manually selects a different pill, an empty result respects
+  // their choice (slider hides via early return below).
   useEffect(() => {
     if (
-      activeFilter === "similar" &&
+      activeFilter === initialFilter &&
       filtered.length === 0 &&
       listings.length >= MIN_VISIBLE
     ) {
       setActiveFilter("all");
     }
-  }, [activeFilter, filtered.length, listings.length]);
+  }, [activeFilter, filtered.length, listings.length, initialFilter]);
 
   if (filtered.length === 0) return null;
 
