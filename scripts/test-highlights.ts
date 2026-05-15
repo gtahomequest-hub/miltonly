@@ -146,4 +146,52 @@ assert(
   "Fireplace true surfaces as a bullet",
 );
 
+// 5. transactionType branching — dollar prefix flips.
+// Sale default surfaces "Seller notes" prefix on the second dollar bullet.
+// Lease variant swaps to "Owner notes". Both share the first prefix.
+const DUAL_DOLLAR_DESC = {
+  description:
+    "Recent updates include $20,000 in kitchen renovations and $5,000 in landscaping improvements.",
+  architecturalStyle: null,
+  approximateAge: null,
+  heatType: null,
+  cooling: null,
+  interiorFeatures: [],
+  exteriorFeatures: [],
+  fireplace: false,
+  construction: null,
+  foundation: null,
+  virtualTourUrl: null,
+};
+
+const r5sale = extractHighlights(DUAL_DOLLAR_DESC, "For Sale");
+assert(
+  r5sale.bullets.some((b) => /^Seller notes \$5,000/.test(b)),
+  "tx=For Sale: second dollar bullet carries 'Seller notes' prefix",
+);
+assert(
+  !r5sale.bullets.some((b) => /^Owner notes/.test(b)),
+  "tx=For Sale: no 'Owner notes' prefix on any bullet",
+);
+
+const r5lease = extractHighlights(DUAL_DOLLAR_DESC, "For Lease");
+assert(
+  r5lease.bullets.some((b) => /^Owner notes \$5,000/.test(b)),
+  "tx=For Lease: second dollar bullet carries 'Owner notes' prefix",
+);
+assert(
+  !r5lease.bullets.some((b) => /^Seller notes/.test(b)),
+  "tx=For Lease: no 'Seller notes' prefix on any bullet",
+);
+
+// Both variants must still emit the first "Listed with" prefix.
+assert(
+  r5sale.bullets.some((b) => /^Listed with \$20,000/.test(b)),
+  "tx=For Sale: first dollar bullet keeps 'Listed with' prefix",
+);
+assert(
+  r5lease.bullets.some((b) => /^Listed with \$20,000/.test(b)),
+  "tx=For Lease: first dollar bullet keeps 'Listed with' prefix",
+);
+
 console.log("\n✓ All assertions passed.");

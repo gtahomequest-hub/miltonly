@@ -64,7 +64,10 @@ const MAX_BULLETS = 6;
 // Attribution prefixes for description-parsed dollar claims. Rotating through
 // the array spreads the attribution voice across the bullets so the card
 // doesn't read as "Listed with… Listed with… Listed with…" repetition.
-const DOLLAR_PREFIXES = ["Listed with", "Seller notes"] as const;
+// Second prefix flips by transactionType: "Seller notes" on sale, "Owner
+// notes" on lease — keeps the voice accurate to who's making the claim.
+const DOLLAR_PREFIXES_SALE = ["Listed with", "Seller notes"] as const;
+const DOLLAR_PREFIXES_LEASE = ["Listed with", "Owner notes"] as const;
 
 // Skip-rules documented as constants so future listings inherit them and a
 // future maintainer can read why these paths exist.
@@ -113,16 +116,16 @@ function tightenAfterDollar(s: string): string {
 }
 
 // Description signals — dollar amounts. Returns 0–2 bullets.
-function extractDollarBullets(description: string): string[] {
+function extractDollarBullets(description: string, prefixes: readonly string[]): string[] {
   const out: string[] = [];
   const dollarRe = /\$\s?(\d[\d,]+)/g;
   let m: RegExpExecArray | null;
-  while ((m = dollarRe.exec(description)) !== null && out.length < DOLLAR_PREFIXES.length) {
+  while ((m = dollarRe.exec(description)) !== null && out.length < prefixes.length) {
     const amount = m[1];
     const after = description.slice(m.index + m[0].length).replace(/^\+/, "");
     const tightened = tightenAfterDollar(after);
     if (tightened.length < 3) continue;
-    const prefix = DOLLAR_PREFIXES[out.length];
+    const prefix = prefixes[out.length];
     out.push(`${prefix} $${amount}+ ${tightened.toLowerCase()}`);
   }
   return out;
@@ -187,11 +190,17 @@ function extractStructuredBullets(input: HighlightInput): string[] {
   return out;
 }
 
-export function extractHighlights(input: HighlightInput): ExtractedHighlights {
+export type TransactionType = "For Sale" | "For Lease";
+
+export function extractHighlights(
+  input: HighlightInput,
+  transactionType: TransactionType = "For Sale",
+): ExtractedHighlights {
   const desc = input.description ?? "";
+  const prefixes = transactionType === "For Lease" ? DOLLAR_PREFIXES_LEASE : DOLLAR_PREFIXES_SALE;
   // Description-derived first — these are the highest-engagement bullets
   // (specific dollar claims + architectural distinctives).
-  const dollarBullets = desc ? extractDollarBullets(desc) : [];
+  const dollarBullets = desc ? extractDollarBullets(desc, prefixes) : [];
   const ceilingBullet = desc ? extractCeilingBullet(desc) : null;
   const structured = extractStructuredBullets(input);
 

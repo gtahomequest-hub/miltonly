@@ -24,6 +24,8 @@
 // back-filling existing rows. Until then, this floor + a dev-only
 // console.warn surface the affected listings to whoever is debugging.
 
+export type TransactionType = "For Sale" | "For Lease";
+
 export interface KeyFactsInput {
   mlsNumber: string;
   lotWidth: number | null;
@@ -36,6 +38,12 @@ export interface KeyFactsInput {
   fireplace: boolean;
   taxAmount: number | null;
   taxYear: number | null;
+  // Lease-only inputs. Consumed only when transactionType === "For Lease";
+  // ignored on sale calls. All optional so existing sale call sites don't
+  // need to pass them.
+  petsAllowed?: string | null;
+  rentIncludes?: string[];
+  furnished?: string | null;
 }
 
 export interface KeyFact {
@@ -58,8 +66,27 @@ function formatTax(amount: number, year: number | null): string {
   return year ? `$${dollars}/year (${year})` : `$${dollars}/year`;
 }
 
-export function extractKeyFacts(input: KeyFactsInput): KeyFact[] {
+// Pets-allowed value normalizer. TRREB field carries four observed values:
+// "Yes" | "Yes-with Restrictions" | "Restricted" | "No". "No" produces an
+// empty string so the caller can omit the row entirely (negative facts add
+// no value to the card, same convention as the fireplace=false skip).
+function formatPets(raw: string): string {
+  const v = raw.trim();
+  if (!v) return "";
+  const lc = v.toLowerCase();
+  if (lc === "yes") return "Pets allowed";
+  if (lc.startsWith("yes-with") || lc.startsWith("yes with")) return "Pets allowed (restrictions apply)";
+  if (lc === "restricted") return "Pets restricted";
+  if (lc === "no") return "";
+  return v;
+}
+
+export function extractKeyFacts(
+  input: KeyFactsInput,
+  transactionType: TransactionType = "For Sale",
+): KeyFact[] {
   const facts: KeyFact[] = [];
+  const isLease = transactionType === "For Lease";
 
   // Lot dimensions — both must be populated AND pass the sanity floor.
   // If either is missing or below the floor, both rows are omitted.
@@ -96,8 +123,30 @@ export function extractKeyFacts(input: KeyFactsInput): KeyFact[] {
   // input produces an empty array (card hides cleanly when nothing
   // is extractable, per spec).
   if (input.mlsNumber) facts.push({ label: "MLS #", value: input.mlsNumber });
-  if (input.taxAmount !== null) {
+  // Property taxes — sale only. Tenants don't pay the property tax line
+  // (it's baked into rent), so this row adds no decision value on lease.
+  if (!isLease && input.taxAmount !== null) {
     facts.push({ label: "Property taxes", value: formatTax(input.taxAmount, input.taxYear) });
+  }
+
+  // Lease-only rows — appended after the shared structured rows so they
+  // read as the tenancy-specific facts at the bottom of the card.
+  if (isLease) {
+    if (input.furnished && input.furnished.trim().length > 0) {
+      facts.push({ label: "Furnished", value: input.furnished.trim() });
+    }
+    if (input.petsAllowed && input.petsAllowed.trim().length > 0) {
+      const formatted = formatPets(input.petsAllowed);
+      if (formatted) facts.push({ label: "Pets", value: formatted });
+    }
+    if (input.rentIncludes && input.rentIncludes.length > 0) {
+      const cleaned = input.rentIncludes
+        .map((s) => (typeof s === "string" ? s.trim() : ""))
+        .filter((s) => s.length > 0);
+      if (cleaned.length > 0) {
+        facts.push({ label: "Included in rent", value: cleaned.join(", ") });
+      }
+    }
   }
 
   return facts;

@@ -24,26 +24,47 @@ const FILTERS: FilterDef[] = [
   { key: "all", label: "All Milton" },
 ];
 
+// Transaction-type variant. Drives header copy ("FOR SALE" vs "FOR LEASE")
+// and a couple of tx-specific SMS body strings on the trailing CTA card.
+export type SliderTransactionType = "For Sale" | "For Lease";
+
 // Per-filter section header above the card row.
-function headerForFilter(key: FilterKey, listingAddr: string): string {
+function headerForFilter(key: FilterKey, listingAddr: string, tx: SliderTransactionType): string {
+  const txTail = tx === "For Lease" ? "FOR LEASE" : "FOR SALE";
   switch (key) {
     case "similar":
       return `Homes like ${listingAddr}`.toUpperCase();
     case "detached":
-      return "DETACHED HOMES IN MILTON";
+      return `DETACHED HOMES IN MILTON ${txTail}`;
     case "semi":
-      return "SEMI-DETACHED HOMES IN MILTON";
+      return `SEMI-DETACHED HOMES IN MILTON ${txTail}`;
     case "townhouse":
-      return "MILTON TOWNHOUSES FOR SALE";
+      return `MILTON TOWNHOUSES ${txTail}`;
     case "condo":
-      return "MILTON CONDOS FOR SALE";
+      return `MILTON CONDOS ${txTail}`;
     case "all":
-      return "ALL MILTON LISTINGS";
+      return tx === "For Lease" ? "ALL MILTON RENTALS" : "ALL MILTON LISTINGS";
   }
 }
 
 // Per-filter SMS prefilled body for the trailing CTA card.
-function smsBodyForFilter(key: FilterKey, listingAddr: string): string {
+function smsBodyForFilter(key: FilterKey, listingAddr: string, tx: SliderTransactionType): string {
+  if (tx === "For Lease") {
+    switch (key) {
+      case "similar":
+        return `Hi Aamir, I'd like to see more rentals similar to ${listingAddr}.`;
+      case "detached":
+        return `Hi Aamir, I'd like to see more detached rentals in Milton.`;
+      case "semi":
+        return `Hi Aamir, I'd like to see more semi-detached rentals in Milton.`;
+      case "townhouse":
+        return `Hi Aamir, I'd like to see more townhouse rentals in Milton.`;
+      case "condo":
+        return `Hi Aamir, I'd like to see more condo rentals in Milton.`;
+      case "all":
+        return `Hi Aamir, I'd like to see more Milton rentals.`;
+    }
+  }
   switch (key) {
     case "similar":
       return `Hi Aamir, I'd like to see more homes similar to ${listingAddr}.`;
@@ -99,6 +120,14 @@ export interface LiveListingSliderProps {
   /** First-line street address of the current listing — used in the
    *  "Similar" header copy + SMS prefill body. */
   currentListingAddr: string;
+  /** Route prefix for in-slider card clicks. Defaults to "/sales/ads" so
+   *  existing sales callers don't need to change. Pass "/rentals/ads" from
+   *  the lease landing page. */
+  routePrefix?: string;
+  /** Transaction-type variant. Affects header copy ("FOR SALE" vs "FOR
+   *  LEASE"), SMS body copy on the trailing CTA card, and per-card price
+   *  formatting ("/mo" suffix appended for lease). Defaults to "For Sale". */
+  transactionType?: SliderTransactionType;
   /** Optional className for the outer wrapper. */
   className?: string;
 }
@@ -302,6 +331,8 @@ export default function LiveListingSlider({
   currentArchitecturalStyle,
   currentApproximateAge,
   currentListingAddr,
+  routePrefix = "/sales/ads",
+  transactionType = "For Sale",
   className = "",
 }: LiveListingSliderProps) {
   // Initial pill = propertyType-derived default (detached → Detached, etc.).
@@ -421,8 +452,10 @@ export default function LiveListingSlider({
     }
     if (typeof window !== "undefined") {
       // Hard reload (not Next router push) — fresh server data on each
-      // listing view, simpler analytics attribution.
-      window.location.href = `/sales/ads/${mlsNumber}`;
+      // listing view, simpler analytics attribution. routePrefix lets the
+      // lease page route into its own /rentals/ads/[mlsNumber] surface
+      // without crossing transaction types.
+      window.location.href = `${routePrefix}/${mlsNumber}`;
     }
   }
 
@@ -457,8 +490,8 @@ export default function LiveListingSlider({
 
   if (filtered.length === 0) return null;
 
-  const header = headerForFilter(activeFilter, currentListingAddr);
-  const smsBody = smsBodyForFilter(activeFilter, currentListingAddr);
+  const header = headerForFilter(activeFilter, currentListingAddr, transactionType);
+  const smsBody = smsBodyForFilter(activeFilter, currentListingAddr, transactionType);
   const smsHref = `sms:${config.realtor.phoneE164}?body=${encodeURIComponent(smsBody)}`;
 
   return (
@@ -614,6 +647,9 @@ export default function LiveListingSlider({
                 <div className="px-[12px] py-[10px]">
                   <div className="text-[15px] font-medium tracking-tight text-[#f8f9fb] leading-none mb-1">
                     {formatPriceFull(listing.price)}
+                    {transactionType === "For Lease" && (
+                      <span className="text-[10px] font-normal text-[#94a3b8] ml-1">/mo</span>
+                    )}
                   </div>
                   <div className="text-[11px] text-[#cbd5e1] whitespace-nowrap overflow-hidden text-ellipsis mb-1">
                     {streetAddr}
@@ -639,7 +675,7 @@ export default function LiveListingSlider({
           <a
             href={smsHref}
             onClick={handleCtaClick}
-            aria-label={`Text ${REALTOR_FIRST_NAME} about more ${activeFilter === "similar" ? "similar homes" : "Milton listings"}`}
+            aria-label={`Text ${REALTOR_FIRST_NAME} about more ${activeFilter === "similar" ? (transactionType === "For Lease" ? "similar rentals" : "similar homes") : (transactionType === "For Lease" ? "Milton rentals" : "Milton listings")}`}
             className="shrink-0 w-[240px] bg-[#f59e0b] hover:bg-[#fbbf24] rounded-[10px] overflow-hidden cursor-pointer flex flex-col items-center justify-center text-center px-5 py-7 transition-colors"
             style={{ minHeight: "100%" }}
           >
@@ -648,7 +684,7 @@ export default function LiveListingSlider({
               Looking for something specific?
             </div>
             <div className="text-[11px] text-[#07111f]/80 mb-4 leading-snug">
-              {REALTOR_FIRST_NAME} has more Milton listings.
+              {REALTOR_FIRST_NAME} has more Milton {transactionType === "For Lease" ? "rentals" : "listings"}.
             </div>
             <div className="text-[14px] font-bold text-[#07111f]">
               Text {REALTOR_FIRST_NAME} →

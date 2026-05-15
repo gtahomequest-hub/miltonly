@@ -167,4 +167,73 @@ try {
   (process.env as Record<string, string | undefined>).NODE_ENV = origEnv;
 }
 
+// ── transactionType="For Lease" branch ─────────────────────────────────
+// Lease keyFacts: taxes row omitted; furnished + pets + rentIncludes
+// appended when their inputs are populated. Sale call sites do not pass
+// the lease-only fields, so they remain undefined and the rows never emit.
+
+// L1. Lease drops taxes row even when taxAmount is populated.
+const lease1 = extractKeyFacts(FULL, "For Lease");
+assert(
+  !lease1.some((f) => f.label === "Property taxes"),
+  "lease/1 transactionType=For Lease omits Property taxes row",
+);
+
+// L2. Furnished value populated → "Furnished" row rendered.
+const lease2 = extractKeyFacts({ ...FULL, furnished: "Unfurnished" }, "For Lease");
+assert(
+  lease2.some((f) => f.label === "Furnished" && f.value === "Unfurnished"),
+  "lease/2 furnished populated → 'Furnished' row with passthrough value",
+);
+
+// L3. petsAllowed 4-value mapping.
+const PETS_CASES: Array<[string, string | null]> = [
+  ["Yes", "Pets allowed"],
+  ["Yes-with Restrictions", "Pets allowed (restrictions apply)"],
+  ["Restricted", "Pets restricted"],
+  ["No", null], // omitted entirely
+];
+for (const [raw, expected] of PETS_CASES) {
+  const r = extractKeyFacts({ ...FULL, petsAllowed: raw }, "For Lease");
+  const row = r.find((f) => f.label === "Pets");
+  if (expected === null) {
+    assert(row === undefined, `lease/3 petsAllowed="${raw}" → Pets row omitted`);
+  } else {
+    assert(row !== undefined && row.value === expected, `lease/3 petsAllowed="${raw}" → "${expected}"`);
+  }
+}
+
+// L4. rentIncludes joined with comma-space.
+const lease4 = extractKeyFacts(
+  { ...FULL, rentIncludes: ["Central Air Conditioning", "Common Elements", "Heat", "Parking", "Water"] },
+  "For Lease",
+);
+assert(
+  lease4.some(
+    (f) => f.label === "Included in rent" && f.value === "Central Air Conditioning, Common Elements, Heat, Parking, Water",
+  ),
+  "lease/4 rentIncludes joined with comma-space into 'Included in rent' row",
+);
+
+// L5. Empty rentIncludes → row omitted.
+const lease5 = extractKeyFacts({ ...FULL, rentIncludes: [] }, "For Lease");
+assert(
+  !lease5.some((f) => f.label === "Included in rent"),
+  "lease/5 empty rentIncludes → 'Included in rent' row omitted",
+);
+
+// L6. Sale variant explicitly ignores lease-only inputs even if passed.
+const sale6 = extractKeyFacts(
+  { ...FULL, furnished: "Furnished", petsAllowed: "Yes", rentIncludes: ["Heat"] },
+  "For Sale",
+);
+assert(
+  !sale6.some((f) => f.label === "Furnished" || f.label === "Pets" || f.label === "Included in rent"),
+  "lease/6 sale variant ignores lease-only inputs (rows do not emit)",
+);
+assert(
+  sale6.some((f) => f.label === "Property taxes"),
+  "lease/6 sale variant keeps Property taxes row",
+);
+
 console.log(`\n✓ All ${passed} assertions passed.`);

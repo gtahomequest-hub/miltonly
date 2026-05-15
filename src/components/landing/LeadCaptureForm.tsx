@@ -85,6 +85,10 @@ export interface LeadCaptureFormProps {
    *  white card). Internal field padding is preserved via a slimmer inner
    *  wrapper. Default false keeps the existing rental behavior. */
   chromeless?: boolean;
+  /** GA4 generate_lead value (CAD). Defaults differ by variant: 5000 for
+   *  sales (preserves the original buyer-side conversion value), 2000 for
+   *  rental (the lease tenant-side economic value per Phase 1 spec). */
+  leadValue?: number;
 }
 
 export default function LeadCaptureForm({
@@ -100,6 +104,7 @@ export default function LeadCaptureForm({
   hideHeader = false,
   formId,
   chromeless = false,
+  leadValue,
 }: LeadCaptureFormProps) {
   // Element-ID suffix so multiple LeadCaptureForm instances on one page don't
   // emit duplicate id="lead-form|lead-phone|lead-email" attributes. The
@@ -188,14 +193,11 @@ export default function LeadCaptureForm({
 
     setSubmitting(true);
 
-    // Renter-variant funnel event (legacy, out of scope for Commit 4k —
-    // renter GA is its own optimization pass). For SALES variant, the
-    // post-res.ok `generate_lead` event below is the conversion signal
-    // (transaction_id matches the /sales/thank-you fire for GA4 dedup).
-    if (!isSales && typeof window !== "undefined") {
-      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-      if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "3-field" });
-    }
+    // Renter-variant GA: F1.1/F1.4 fix — fire-after-success moved to the
+    // post-res.ok block below. Hardcoded `source: "rentals/ads"` replaced
+    // with the dynamic `source` prop so the surface-level attribution is
+    // preserved per surface (was lumping every rental form into one
+    // bucket on the audit before this commit).
 
     // Variant-specific body fields. The rental shape (renter intent +
     // budget + homeType) is unchanged from Commit 3 to preserve identical
@@ -238,20 +240,27 @@ export default function LeadCaptureForm({
         return;
       }
 
-      // Sales-variant GA4 conversion event — fire AFTER the API confirms
-      // res.ok so failed POSTs never count as conversions (audit F1.4 fix).
-      // The /sales/thank-you page also fires generate_lead on mount with the
-      // same transaction_id (lead.id) — GA4 dedupes the pair so only one
-      // billable conversion lands per lead, but Aamir's Google Ads gets the
-      // properly-attributed `source` + `intent` at the moment of submit.
-      if (isSales && typeof window !== "undefined") {
+      // GA4 conversion event — fires AFTER res.ok so failed POSTs never
+      // count as conversions (audit F1.4 fix). Both variants now fire it;
+      // value defaults differ (5000 sale, 2000 rental). The /sales|/rentals
+      // thank-you page fires the same event with the same transaction_id
+      // (lead.id) — GA4 dedupes the pair so only one billable conversion
+      // lands per lead, but the source + intent attribution is captured at
+      // the moment of submit.
+      if (typeof window !== "undefined") {
         const w = window as unknown as { gtag?: (...a: unknown[]) => void };
         if (w.gtag) {
+          // Also fire form_submit AFTER success for the rental variant so
+          // existing dashboards keep working without the pre-success fire.
+          if (!isSales) {
+            w.gtag("event", "form_submit", { source, form: "3-field" });
+          }
+          const resolvedValue = leadValue ?? (isSales ? 5000 : 2000);
           w.gtag("event", "generate_lead", {
             transaction_id: typeof data?.id === "string" ? data.id : "",
             source,
             intent: variantBody.intent,
-            value: 5000,
+            value: resolvedValue,
             currency: "CAD",
             listing_mls: mlsNumber || "",
           });
