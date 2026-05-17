@@ -129,6 +129,20 @@ async function runViewport(browser: Browser, url: string, vp: Viewport) {
     hasTouch: !vp.isDesktop,
   });
 
+  // tsx/esbuild injects helper references (__name, __publicField, etc.)
+  // into the transpiled source of functions we pass into page.evaluate.
+  // Those helpers don't exist in the page's JS context, so we shim them
+  // as no-ops before navigation.
+  await page.evaluateOnNewDocument(() => {
+    const g = globalThis as unknown as Record<string, unknown>;
+    if (typeof g.__name !== "function") g.__name = (fn: unknown) => fn;
+    if (typeof g.__publicField !== "function")
+      g.__publicField = (obj: Record<string, unknown>, key: string, value: unknown) => {
+        obj[key] = value;
+        return value;
+      };
+  });
+
   // Install LCP + CLS observers before navigation so they capture the full
   // lifecycle. The observed entries are stashed on window.__perf and read
   // back below.

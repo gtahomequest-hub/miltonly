@@ -1262,8 +1262,64 @@ export async function generatePhase41StreetContent(
   input: StreetGeneratorInput,
 ): Promise<Phase41GenerationResult> {
   const ahaPrompt = loadPhase41AboutHomesAmenitiesPrompt();
-  const marketPrompt = loadPhase41MarketPrompt();
+  let marketPrompt = loadPhase41MarketPrompt();
   const evalPrompt = loadPhase41EvaluativePrompt();
+
+  // Tier-2 thin-data branch (2026-05-09 product decision): every Milton
+  // street gets full Phase 4.1 narrative, but streets with totalListings < 5
+  // suppress numerical claims in the market section. Other sections (about,
+  // homes, amenities, gettingAround, schools, bestFitFor, differentPriorities)
+  // write fully. Validators stay active to catch any number that slips through.
+  //
+  // totalListings proxy: activeListingsCount + salesCount + leasesCount.
+  // The user's literal definition includes expired + terminated counts but
+  // those aren't currently in input.aggregates. Active+sold+leased is the
+  // closest available proxy — extend buildGeneratorInput later if exact
+  // expired/terminated counts become required.
+  const totalListings =
+    (input.activeListingsCount ?? 0) +
+    (input.aggregates.salesCount ?? 0) +
+    (input.aggregates.leasesCount ?? 0);
+  const isThinData = totalListings < 5;
+  if (isThinData) {
+    const thinDataPreamble = `THIN-DATA STREET — MARKET SECTION CONSTRAINT (Tier 2)
+
+This street has under 5 total listings (active + sold + leased combined).
+There is INSUFFICIENT data for quantitative market analysis.
+
+For the market section ONLY, the following are FORBIDDEN:
+- ANY specific dollar amount ("$X", "$XK", "$X.YM" — none allowed)
+- Sales counts, lease counts, transaction counts (no "X sales over the year")
+- Quarterly trend labels with associated prices (no "Q3 2025 typical was $X")
+- Yields, ratios, percentages of any kind (no "4.3% gross yield")
+- Specific comparable trades or named comparables
+- Days-on-market figures
+- Any number that traces to input.aggregates or input.quarterlyTrend
+
+Instead, write a QUALITATIVE market section focused on:
+- Limited recent activity ("This street trades rarely, with only a handful of recorded transactions over the past year")
+- The neighborhood character and what it suggests about the typical buyer/owner
+- Lot type, street feel, housing form (qualitative observations grounded in input.byType + input.nearby)
+- Why a buyer might be drawn to this kind of street despite the thin trade record
+
+Word count target for market section: 150-250 words. Substantive prose preferred over a one-line stub. The validators (numeric_ungrounded, temporal_pairing, qualitative_grounding) WILL fire on any number you emit — write zero numbers, full prose.
+
+OTHER SECTIONS (about, homes, amenities, gettingAround, schools, bestFitFor, differentPriorities) write fully as designed. The numerical-avoidance constraint applies ONLY to the market section.
+
+---
+
+`;
+    marketPrompt = thinDataPreamble + marketPrompt;
+    console.log(
+      `[Phase41] ${input.street.slug} TIER 2 (thin-data): totalListings=${totalListings} ` +
+      `(active=${input.activeListingsCount ?? 0} sold=${input.aggregates.salesCount ?? 0} leased=${input.aggregates.leasesCount ?? 0}) — ` +
+      `market prompt prepended with no-numerics instruction`
+    );
+  } else {
+    console.log(
+      `[Phase41] ${input.street.slug} TIER 1 (full-data): totalListings=${totalListings}`
+    );
+  }
 
   // Diagnostic feature flag: AI_PROVIDER_MARKET selects between modes for
   // the market call only. About/homes/amenities and evaluative stay on
