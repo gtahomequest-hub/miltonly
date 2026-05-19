@@ -144,20 +144,23 @@ function extractCeilingBullet(description: string): string | null {
   return onPhrase ? `${height}-foot ceilings on ${onPhrase.toLowerCase()}` : `${height}-foot ceilings`;
 }
 
+// Upper bound for the "new build" age bucket surfaced on the structured
+// bullet. Older homes aren't a highlight on a paid-traffic conversion page.
+const MAX_NEW_AGE_LABEL_YEARS = 15;
+
 // Structured bullets — architecture, premium-feature roll-up, heating,
 // construction stack. Each gated by isPremium() where applicable.
 function extractStructuredBullets(input: HighlightInput): string[] {
   const out: string[] = [];
 
-  // 1. Architecture + age (only for buildings 15 years or newer — older
-  //    isn't a highlight on a paid-traffic conversion page).
+  // 1. Architecture + age (only for newer builds — see MAX_NEW_AGE_LABEL_YEARS).
   if (input.architecturalStyle && input.approximateAge) {
     const style = input.architecturalStyle.toLowerCase();
     const age = input.approximateAge;
     if (age === "New" || age === "0-5") {
       out.push(`${capFirst(style)} home, built within last 5 years`);
     } else if (age === "6-10" || age === "6-15" || age === "11-15") {
-      out.push(`${capFirst(style)} home, 5 to 15 years new`);
+      out.push(`${capFirst(style)} home, 5 to ${MAX_NEW_AGE_LABEL_YEARS} years new`);
     }
     // 16-30, 31-50, 51-99, 100+ deliberately not surfaced.
   }

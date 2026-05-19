@@ -37,6 +37,65 @@ export const config = {
     phoneE164: "+16478399090",
     email: "aamir@miltonly.com",
     yearsExperience: 15,
+
+    // Languages business is conducted in. Person schema reads from this
+    // as `knowsLanguage`. Pending Aamir confirmation (item A6) on
+    // business-level competence for Hindi/Urdu/Punjabi vs conversational.
+    languages: ["English", "Hindi", "Urdu", "Punjabi"],
+
+    // Awards. Brokerage compliance must approve any new entries before
+    // they appear on a public marketing page.
+    awards: ["RE/MAX Hall of Fame"],
+
+    // Headline metrics for /about (and any future credibility surface).
+    // Each value is null until Aamir confirms (items A1-A5 outstanding
+    // per DEC-ABOUT-CANONICAL 2026-05-19). Components MUST render
+    // "Coming shortly" or "—" states for null values; do not invent
+    // numbers. When delivered, replace null + document the source and
+    // as-of date in docs/about-page-stats-sources.md for RECO defensibility.
+    metrics: {
+      // A1 confirmed: $57.5M closed lifetime. Composition (sale-side
+      // only vs combined sale + lease) still pending Aamir — does not
+      // block display; treat as a portfolio-wide figure until clarified.
+      totalVolumeClosed: "$57.5M" as string | null,
+      // A2 confirmed value is 165 — but uniqueness (unique families vs
+      // includes repeat clients) is still pending. Per gate brief,
+      // render as "—" in stat tiles until that disambiguation lands so
+      // we don't publish a number that could be challenged. When
+      // confirmed, set transactionCount and/or familiesServed.
+      transactionCount: null as number | null,
+      familiesServed: null as number | null,
+      yearsInMilton: null as number | null,         // A4 — may differ from yearsExperience
+      googleRating: null as number | null,          // A5 — e.g. 4.9
+      googleReviewsCount: null as number | null,    // A5 — review count
+    },
+
+    // Structured contact methods. Top-level phone/email above are
+    // preserved for existing callers; this nested shape exposes the
+    // WhatsApp + raw forms needed by /about components without breaking
+    // imports. Email here is the actual public contact channel
+    // (aamir@miltonly.com top-level is reserved for future routing).
+    contact: {
+      phoneDisplay: "(647) 839-9090",
+      phoneRaw: "16478399090",
+      phoneE164: "+16478399090",
+      email: "gtahomequest@gmail.com",
+      whatsapp: "16478399090",
+    },
+
+    // Service area — locked framing per DEC-ABOUT-CANONICAL 2026-05-19.
+    // Aamir is provincially licensed and actively serves anywhere in
+    // Ontario. primaryCity is for SEO/schema weighting only (deepest
+    // transaction history); it is NOT a service-area boundary.
+    // /about ServiceAreaSection must render Ontario-wide framing with
+    // Milton as a subtle home-base anchor — never shade Milton as a
+    // service-zone polygon.
+    areaServed: {
+      primaryCity: "Milton",
+      licensedRegion: "Ontario",
+      serviceAreaDisplay: "Serving buyers, sellers, and tenants across Ontario",
+      serviceAreaSubtext: "Deepest market data in Milton. Same standards anywhere in Ontario.",
+    },
   },
 
   // === Brokerage (RECO compliance) ===
