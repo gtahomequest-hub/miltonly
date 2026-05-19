@@ -66,7 +66,7 @@ export default function TermsPage() {
           <p>
             <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
             {config.brokerage.name}<br />
-            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
+            Email: <a href="mailto:aamir@miltonly.com" className="text-[#f59e0b] underline">aamir@miltonly.com</a><br />
             Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
           </p>
         </div>

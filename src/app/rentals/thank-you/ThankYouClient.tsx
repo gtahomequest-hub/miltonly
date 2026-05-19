@@ -79,7 +79,7 @@ function buildAamirVCard(): string {
     `ORG:${BROKERAGE_SHORT_NAME}`,
     `TITLE:${config.realtor.title}`,
     `TEL;TYPE=CELL:${config.realtor.phoneE164}`,
-    `EMAIL:${process.env.NEXT_PUBLIC_REALTOR_EMAIL || "gtahomequest@gmail.com"}`,
+    `EMAIL:${config.realtor.contact.email}`,
     `URL:${config.SITE_URL_WWW}`,
     "END:VCARD",
   ];

@@ -76,7 +76,7 @@ export default function PrivacyPage() {
             <li>Withdraw consent to be contacted at any time</li>
           </ul>
           <p>
-            To exercise any of these rights, email <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a> or call {config.realtor.phone}.
+            To exercise any of these rights, email <a href="mailto:aamir@miltonly.com" className="text-[#f59e0b] underline">aamir@miltonly.com</a> or call {config.realtor.phone}.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Cookies and analytics</h2>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
           <p>
             <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
             {config.brokerage.name}<br />
-            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
+            Email: <a href="mailto:aamir@miltonly.com" className="text-[#f59e0b] underline">aamir@miltonly.com</a><br />
             Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
           </p>
           <p className="text-[13px] text-[#64748b] mt-8">

@@ -37,6 +37,29 @@ export const config = {
     phoneE164: "+16478399090",
     email: "aamir@miltonly.com",
     yearsExperience: 15,
+
+    // Confirmed metrics powering the /about hero stat strip
+    // (2026-05-19). googleRating + googleReviewsCount stay null until
+    // Aamir's review-collection campaign starts producing volume;
+    // /about renders only the three confirmed cells in v1.
+    metrics: {
+      totalVolumeClosed: "$57.5M",
+      transactionCount: 165,
+      yearsInMilton: 15,
+      googleRating: null as number | null,
+      googleReviewsCount: null as number | null,
+    },
+
+    // Canonical contact substructure. Public-facing displays read
+    // from here so the canonical address is changed in one place.
+    // 2026-05-19: confirmed by Aamir, was historically displayed as
+    // gtahomequest@gmail.com via hardcoded references in
+    // AgentContactSection, /privacy, /terms, /exclusive sidebar, and
+    // the thank-you vCard fallbacks — all updated to read this value
+    // or its literal "aamir@miltonly.com" form in the same patch.
+    contact: {
+      email: "aamir@miltonly.com",
+    },
   },
 
   // === Brokerage (RECO compliance) ===

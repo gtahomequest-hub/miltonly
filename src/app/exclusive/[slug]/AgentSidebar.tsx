@@ -37,7 +37,7 @@ export default function AgentSidebar({ address, slug }: Props) {
           >
             💬 WhatsApp (647) 839-9090
           </a>
-          <p className="text-[11px] text-[#94a3b8] text-center mt-2">gtahomequest@gmail.com</p>
+          <p className="text-[11px] text-[#94a3b8] text-center mt-2">aamir@miltonly.com</p>
         </div>
       </div>
 

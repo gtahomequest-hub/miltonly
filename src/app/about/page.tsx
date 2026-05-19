@@ -22,6 +22,36 @@ export default function AboutPage() {
         <p className="text-[15px] text-[#94a3b8] max-w-[560px] mx-auto leading-relaxed">
           {config.realtor.name} has served {config.CITY_NAME} families for {config.realtor.yearsExperience} years as a full-time real estate professional. From first rentals to investment properties, buyers to sellers, {config.realtor.name.split(" ")[0]} provides complete representation at every stage.
         </p>
+
+        {/* Hero stat strip — confirmed metrics from config.realtor.metrics.
+            Three rows on mobile, three columns on desktop. Reads from
+            config so a future stat update only touches one file. */}
+        <div className="mt-10 max-w-[640px] mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-4">
+            <div className="text-[28px] font-extrabold text-[#fbbf24] leading-none">
+              {config.realtor.metrics.totalVolumeClosed}
+            </div>
+            <div className="text-[11px] uppercase tracking-[1.5px] text-[#94a3b8] mt-2">
+              closed
+            </div>
+          </div>
+          <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-4">
+            <div className="text-[28px] font-extrabold text-[#fbbf24] leading-none">
+              {config.realtor.metrics.transactionCount}
+            </div>
+            <div className="text-[11px] uppercase tracking-[1.5px] text-[#94a3b8] mt-2">
+              transactions
+            </div>
+          </div>
+          <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-4">
+            <div className="text-[28px] font-extrabold text-[#fbbf24] leading-none">
+              {config.realtor.metrics.yearsInMilton}
+            </div>
+            <div className="text-[11px] uppercase tracking-[1.5px] text-[#94a3b8] mt-2">
+              years in {config.CITY_NAME}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Awards */}
