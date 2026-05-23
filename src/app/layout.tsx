@@ -4,6 +4,7 @@ import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import MetaPixel from "@/components/MetaPixel";
 import UserProvider from "@/components/UserProvider";
 import ConsentBanner from "@/components/consent/ConsentBanner";
 import ChromeGate from "@/components/ChromeGate";
@@ -100,6 +101,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <GoogleAnalytics />
+        <MetaPixel />
         <AttributionCapture />
         <UserProvider>
           <ChromeGate>
