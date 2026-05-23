@@ -48,6 +48,10 @@ interface CreateLeadBody {
   fbp?: string;
   event_id?: string;
   event_source_url?: string;
+  // Sales-variant listings the lead was viewing at submit time. No
+  // dedicated column on ads.leads — routed into meta.mlsNumber JSONB
+  // for cross-schema attribution lookups later (street → ad → close).
+  mlsNumber?: string;
   // Dev-only escape hatch for verify-leads-pipeline.ts. Honored ONLY when
   // NODE_ENV !== 'production'. Ignored everywhere else so production
   // traffic can't bypass the alert email by setting this field.
@@ -206,6 +210,7 @@ export async function POST(req: NextRequest) {
         fbp: body.fbp,
         event_id: body.event_id,
         event_source_url: body.event_source_url,
+        mlsNumber: body.mlsNumber,
         user_agent: req.headers.get("user-agent") ?? undefined,
         ip_address: clientIpFrom(req),
         referer: req.headers.get("referer") ?? undefined,

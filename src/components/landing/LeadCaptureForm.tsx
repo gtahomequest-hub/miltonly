@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { attributionPayload } from "@/lib/attribution";
 import { config } from "@/lib/config";
+import { generateEventId, readFbCookies, firePixelLead } from "@/lib/pixel-client";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -265,6 +266,54 @@ export default function LeadCaptureForm({
             listing_mls: mlsNumber || "",
           });
         }
+      }
+
+      // PH3-DUALWRITE: This block writes to the new ads.leads pipeline in addition to
+      // the existing flow. The old path remains the source of truth until DEC-PH3-DUALWRITE
+      // is closed out (target: 2026-06-01). After cleanup, remove old flow entirely.
+      // See userMemories for context.
+      try {
+        const eventId = generateEventId();
+        const { fbc, fbp } = readFbCookies();
+        const resolvedValue = leadValue ?? (isSales ? 5000 : 2000);
+        firePixelLead({ eventId, value: resolvedValue, currency: "CAD" });
+
+        const controller = new AbortController();
+        const abortTimer = setTimeout(() => controller.abort(), 2000);
+        try {
+          const dwRes = await fetch("/api/leads/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              source,
+              intent: isSales ? "buy" : "rent",
+              email: trimmedEmail,
+              phone: phone.trim(),
+              ...(isSales ? { timeline } : { budget }),
+              utm_source: tracking.utm_source || undefined,
+              utm_medium: tracking.utm_medium || undefined,
+              utm_campaign: tracking.utm_campaign || undefined,
+              utm_content: tracking.utm_content || undefined,
+              fbclid: searchParams.get("fbclid") || undefined,
+              fbc,
+              fbp,
+              event_id: eventId,
+              event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
+              ...(mlsNumber ? { mlsNumber } : {}),
+            }),
+            signal: controller.signal,
+          });
+          if (!dwRes.ok) {
+            console.warn("[ph3-dualwrite] non-2xx response:", dwRes.status);
+          }
+        } catch (err) {
+          console.warn("[ph3-dualwrite] new pipeline failed or timed out:", err);
+        } finally {
+          clearTimeout(abortTimer);
+        }
+      } catch (err) {
+        // Catch-all so a Pixel / event_id generation failure doesn't break the old flow.
+        console.warn("[ph3-dualwrite] block threw before fetch:", err);
       }
 
       const fallback = isSales
