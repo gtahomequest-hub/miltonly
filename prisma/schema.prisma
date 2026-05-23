@@ -1,11 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
+  schemas   = ["public", "ads"]
 }
 
 model Listing {
@@ -95,6 +97,7 @@ model Listing {
   @@index([price])
   @@index([transactionType])
   @@index([leaseStatus])
+  @@schema("public")
 }
 
 model Lead {
@@ -198,6 +201,7 @@ model Lead {
   @@index([createdAt(sort: Desc)])
   @@index([leadStatus, isQualified, createdAt(sort: Desc)])
   @@index([source, leadStatus, createdAt(sort: Desc)])
+  @@schema("public")
 }
 
 model LeadActivity {
@@ -213,6 +217,7 @@ model LeadActivity {
   @@index([leadId, createdAt(sort: Desc)])
   @@index([type, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+  @@schema("public")
 }
 
 model VisitorProfile {
@@ -236,6 +241,8 @@ model VisitorProfile {
   lastVisit               DateTime
   firstVisit              DateTime @default(now())
   leadId                  String?
+
+  @@schema("public")
 }
 
 model CondoBuilding {
@@ -267,6 +274,7 @@ model CondoBuilding {
   lastUpdated       DateTime
 
   @@index([neighbourhood])
+  @@schema("public")
 }
 
 model StreetContent {
@@ -295,6 +303,8 @@ model StreetContent {
   vipFaqJson      String?   @db.Text // Deeper FAQs for hub pages
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@schema("public")
 }
 
 model StreetQueue {
@@ -307,6 +317,8 @@ model StreetQueue {
   createdAt   DateTime  @default(now())
   processedAt DateTime?
   updatedAt   DateTime  @updatedAt
+
+  @@schema("public")
 }
 
 model Partner {
@@ -319,6 +331,8 @@ model Partner {
   website String?
   bio     String?
   active  Boolean @default(true)
+
+  @@schema("public")
 }
 
 model ExclusiveListing {
@@ -357,6 +371,8 @@ model ExclusiveListing {
   rooms            Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@schema("public")
 }
 
 model ComplianceLog {
@@ -372,6 +388,7 @@ model ComplianceLog {
   createdAt     DateTime @default(now())
 
   @@index([checkDate])
+  @@schema("public")
 }
 
 model User {
@@ -400,6 +417,7 @@ model User {
   vowAcknowledgementUserAgent String?
 
   @@index([email])
+  @@schema("public")
 }
 
 model SavedSearch {
@@ -426,6 +444,7 @@ model SavedSearch {
 
   @@index([userId])
   @@index([alertEnabled])
+  @@schema("public")
 }
 
 // ───── Phase 4.1 — AI-generated street description persistence ──────────────
@@ -448,6 +467,8 @@ enum GenerationStatus {
   generating
   succeeded
   failed
+
+  @@schema("public")
 }
 
 model StreetGeneration {
@@ -468,6 +489,7 @@ model StreetGeneration {
 
   @@index([status])
   @@index([generatedAt])
+  @@schema("public")
 }
 
 // Structured review rows for streets that exhausted the generator's 3-attempt
@@ -481,6 +503,45 @@ model StreetGenerationReview {
   lastInputHash String
 
   @@index([lastAttemptAt])
+  @@schema("public")
 }
 
+// ───── Facebook Ads lead infrastructure ───────────────────────────────────
+// Isolated in the `ads` schema (DB1) — namespace-separated from public so
+// FB-driven leads never collide with the existing Lead/LeadActivity tables.
+// Joined cross-schema later for attribution analysis (street → ad → close).
+//
+// Backed by ads.leads created via raw SQL on Neon. The DB schema is the
+// source of truth; this model maps fields with @map / @@map.
 
+model AdsLead {
+  id              String   @id @default(uuid()) @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  source          String
+  campaign        String?
+  utmSource       String?  @map("utm_source")
+  utmMedium       String?  @map("utm_medium")
+  utmCampaign     String?  @map("utm_campaign")
+  utmContent      String?  @map("utm_content")
+  fbclid          String?
+  name            String?
+  email           String?
+  phone           String?
+  intent          String?
+  timeline        String?
+  budget          String?
+  bedrooms        String?
+  neighbourhood   String?
+  propertyAddress String?  @map("property_address")
+  notes           String?
+  status          String   @default("new")
+  meta            Json     @default("{}")
+
+  @@index([createdAt(sort: Desc)])
+  @@index([campaign])
+  @@index([status])
+  @@index([email])
+  @@index([phone])
+  @@map("leads")
+  @@schema("ads")
+}
