@@ -685,7 +685,7 @@ export function findTemporalPairings(
 
     // (a) Lookforward: "$X in Qn YYYY" within 15 chars after price end.
     const forwardCtx = prose.slice(pmEnd, Math.min(prose.length, pmEnd + 25));
-    const forwardMatch = forwardCtx.match(/^\s*(?:in\s+)?(Q[1-4]\s*['']?\d{2,4})/i);
+    const forwardMatch = forwardCtx.match(/^\s*(?:(?:in|by|during|through|across|toward|towards|over)\s+)?(Q[1-4]\s*['']?\d{2,4})/i);
     let nearest: { canonical: string; idx: number } | null = null;
     if (forwardMatch) {
       const qLocal = forwardMatch.index ?? 0;
@@ -814,7 +814,7 @@ export function findTemporalPairings(
     // The 25-char window covers natural prose like "single outlier sale in
     // Q3 2026" without picking up a quarter mentioned later in the sentence.
     const forwardCtx = prose.slice(cmEnd, Math.min(prose.length, cmEnd + 25));
-    const colocated = forwardCtx.match(/^\s*(?:in|during|over|across)?\s*(Q[1-4]\s*['']?\d{2,4})/i);
+    const colocated = forwardCtx.match(/^\s*(?:in|by|during|through|across|toward|towards|over)?\s*(Q[1-4]\s*['']?\d{2,4})/i);
     if (!colocated) continue; // no co-located quarter — don't fire (avoids 3.8a false positives)
 
     const canonical = normalizeQuarterLabel(colocated[1]);
