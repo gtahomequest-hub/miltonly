@@ -98,6 +98,40 @@ Use the input's quarterly trend, range, days-on-market, active listing count, an
 
 **Bad pattern (do NOT write closing paragraphs like these):** "Buyers looking at the street should be prepared to move when the right unit appears." or "Asleton is a street where expectations align closely with outcomes." or "Our team monitors the street closely and can provide detailed guidance on current listings and off-market opportunities." These are filler that reads as advisory closing, not market analysis.
 
+<!-- ========== NEW SECTION INSERTED BELOW ========== -->
+
+## MANDATORY: Quarterly data restatement (before writing prose)
+
+Before composing any sentence about price trend, you must internally restate the input's quarterly trend data as a literal sequence with explicit q-over-q deltas. Do this even though it does not appear in your final output.
+
+For each quarter present in the input, state to yourself:
+
+- Quarter label (e.g., "Q4 2024")
+- Typical price for that quarter (apply rounding from the tables above)
+- Direction from prior quarter: UP, DOWN, or FLAT
+- Magnitude of change from prior quarter
+
+Example internal restatement for a street where the input contains 4 quarters:
+
+- Q3 2024: $1.34M (no prior to compare)
+- Q4 2024: $1.225M, DOWN from $1.34M (approximately $115K decrease)
+- Q1 2025: $1.30M, UP from $1.225M (approximately $75K increase)
+- Q1 2026: $1.415M, UP from $1.30M (approximately $115K increase)
+
+Only AFTER this restatement may you write the prose. Constraints on prose:
+
+1. Every quarter-label you mention MUST appear in the input data. Do NOT invent quarters (e.g., "by mid-2026," "Q2 2026") that are not in the input. If the input contains quarters Q3 2024 through Q1 2026, you may not write about Q2 2026 under any phrasing.
+
+2. Every price you pair with a quarter MUST match the typical price for that quarter (within the rounding tolerance from the tables above). Pairing "$1M" with "Q4 2024" when the input typical for Q4 2024 is "$1.225M" is a hard violation.
+
+3. Every directional verb (firmed, softened, rose, eased, climbed, dipped, held, steadied, etc.) MUST match the actual UP/DOWN direction of the q-over-q delta you computed. If you write "prices firmed from Q4 2024 to Q1 2025," the Q1 2025 typical price must be HIGHER than the Q4 2024 typical price. If it is lower, use "softened" or "eased." If approximately flat, use "held" or "steadied."
+
+4. If the input shows variability without a clean monotonic trend (some quarters up, some down), describe it as "uneven" or "variable across quarters" or "non-linear." Do NOT impose a smooth single-direction arc that the data does not support.
+
+These rules are absolute. Inventing a quarter that is not in the input, mismatching a price to a quarter, or mismatching a directional verb to a delta direction will trigger a temporal_pairing validator failure and force a costly retry. The restatement step is the cheapest insurance against these failures.
+
+<!-- ========== NEW SECTION INSERTED ABOVE ========== -->
+
 ## MARKET SECTION — STRUCTURAL REQUIREMENTS
 
 This section MUST include each of the following as a discrete observation, using the actual numbers from input data. Aim for 220-260 words total across two paragraphs.
@@ -175,3 +209,4 @@ Before you emit the JSON, verify internally:
 8. Word count between 200 and 280 for full-data streets, 30+ for thin/zero.
 9. Heading matches "The market right now" or "Trade patterns."
 10. The `sections` array contains exactly one entry with `id: "market"`.
+11. Every quarter label in your prose appears in the input data. Every price-to-quarter pairing matches input typical for that quarter (within rounding tolerance). Every directional verb matches the actual q-over-q delta direction.
