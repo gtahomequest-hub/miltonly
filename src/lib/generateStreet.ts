@@ -489,7 +489,8 @@ export async function generateStreetContent(
     }
   }
 
-  const passed = description.length > 0;
+  const phase41Failed = phase41NeedsReview === true;
+  const passed = description.length > 0 && !phase41Failed;
   if (!passed) description = rawAiOutput;
 
   const metaTitle = `${streetName} ${config.CITY_NAME} Real Estate | Homes, Prices & Market Data`;
