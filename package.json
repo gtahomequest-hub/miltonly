@@ -2,6 +2,7 @@
   "name": "miltonly",
   "version": "0.1.0",
   "private": true,
+  "engines": { "node": "20.x" },
   "scripts": {
     "dev": "next dev",
     "prebuild": "tsx scripts/test-canonicalization-regression.ts && tsx scripts/test-faq-sentence-count.ts && tsx scripts/test-no-anthropic-temperature.ts && tsx scripts/test-sms-format.ts",
