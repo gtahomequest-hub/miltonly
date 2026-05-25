@@ -124,3 +124,43 @@ to confirm it behaves correctly on Node 20.
 - Audit src/lib/cache.ts no-store fetch behavior on Node 20
 - Document this constraint in PENDING-IDEAS-DECISIONS.md as 
   DEC-VERCEL-NODE-PIN for Homesly portfolio expansion
+
+## Step 2 verification
+
+Blast-radius audit run 2026-05-25 after deploying the Node 20 fix.
+
+### /streets/[slug] ISR: fully fixed
+
+Three random slugs tested (asleton-boulevard-milton, 
+pineview-trail-milton, silver-court-milton). All three returned 
+`X-Vercel-Cache: PRERENDER` on first curl and `X-Vercel-Cache: HIT` 
+on second curl 3-16 seconds later. `Cache-Control: public, max-age=0, 
+must-revalidate` on all responses. ISR is working as designed.
+
+### /neighbourhoods/[slug] and /schools/[slug]: force-dynamic by design
+
+Both routes export `export const dynamic = 'force-dynamic'` (line 16 
+and line 20 respectively). `no-store` headers and `X-Vercel-Cache: MISS` 
+are correct behavior for these routes. Not regressions — excluded from 
+ISR expectations.
+
+### Homepage /: leaks money (new ticket)
+
+Homepage has no `export const dynamic` or `revalidate` export. 
+routes-manifest classifies `/` as a staticRoute, but production serves 
+`private, no-cache, no-store` with `X-Vercel-Cache: MISS` on every 
+request. Root cause: `getMiltonSoldTotals()` (from src/lib/sold-data.ts) 
+uses a `no-store` fetch against Upstash Redis, which opts the page out 
+of static rendering at runtime. Every homepage visit costs a lambda + 
+Upstash invocation that should be served from CDN. Separate ticket 
+created: docs/tickets/upstash-nostore-audit.md.
+
+### 404 caching on /streets/[slug]: acceptable
+
+`/streets/this-does-not-exist-xyz` returns 404 with 
+`Cache-Control: public, max-age=0, must-revalidate` and caches for 
+the revalidate window (second curl shows `X-Vercel-Cache: HIT` with 
+`Age: 11`). This is known Next.js behavior for ISR routes with 
+`dynamicParams = true`. The 404 status code is preserved correctly — 
+no cache poisoning. Acceptable for now; mitigation (custom 404 with 
+shorter revalidate) deferred.
