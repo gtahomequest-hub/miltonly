@@ -171,6 +171,23 @@ The following specific constructions are validator-banned across all market sect
 
 If your input shows a condition signal, describe it in original prose using the actual numbers. The shape of the analysis is the requirement; the phrasing is yours to choose.
 
+## CROSS-STREET COMPARISONS — STRICT GROUNDING RULES
+
+When mentioning any cross-street by name or describing nearby streets:
+
+1. The street MUST be present in `input.crossStreets[]`. Do not invent street names, even if they exist in Milton.
+
+2. Any price, price band, or numeric descriptor for that cross-street MUST come from `input.crossStreets[].typicalPrice` for that exact street.
+
+3. Banned constructions:
+   - "Cross-Street X trades in the [high/mid/low]-$N band" UNLESS $N is the rounded typicalPrice for X in input
+   - "Cross-Street X moves around $N" UNLESS the value matches
+   - Any "premium" or "discount" comparison between the host street and a cross-street UNLESS both prices come from input
+
+4. If `input.crossStreets[]` is empty or has no typicalPrice for a street you want to compare against: do not name that street and do not estimate its price. Describe the host street's own price band without comparison.
+
+5. If you cannot make a grounded cross-street comparison, simply describe the host street's own market activity without naming external streets. The "differentPriorities" section (later) is the appropriate place for cross-street references, where heading-bank rules govern street-name usage.
+
 ## Naming convention in prose
 
 Use the full `street.name` on first mention. Use `street.shortName` on subsequent mentions within the section. Spell the host street's name exactly as given in `input.street.name` — do not abbreviate.
