@@ -1,0 +1,135 @@
+[
+  {
+    "slug": "bergamot-avenue-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 3,
+    "ms": 22143
+  },
+  {
+    "slug": "crawford-crescent-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 4,
+    "ms": 46356
+  },
+  {
+    "slug": "durno-court-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"durno-court-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 109\r\n}",
+    "ms": 392
+  },
+  {
+    "slug": "frost-court-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"frost-court-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 106\r\n}",
+    "ms": 287
+  },
+  {
+    "slug": "hartley-boulevard-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"hartley-boulevard-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 107\r\n}",
+    "ms": 308
+  },
+  {
+    "slug": "heslop-road-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"heslop-road-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=4 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 67517\r\n}",
+    "ms": 67703
+  },
+  {
+    "slug": "higginbotham-crescent-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"higginbotham-crescent-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 106\r\n}",
+    "ms": 312
+  },
+  {
+    "slug": "hutchinson-avenue-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"hutchinson-avenue-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 106\r\n}",
+    "ms": 292
+  },
+  {
+    "slug": "kitchen-court-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 12772
+  },
+  {
+    "slug": "mae-court-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 12102
+  },
+  {
+    "slug": "marigold-court-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 12409
+  },
+  {
+    "slug": "marigold-crescent-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"marigold-crescent-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 105\r\n}",
+    "ms": 308
+  },
+  {
+    "slug": "mcewan-drive-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"mcewan-drive-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 106\r\n}",
+    "ms": 307
+  },
+  {
+    "slug": "ramsey-place-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"ramsey-place-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 105\r\n}",
+    "ms": 293
+  },
+  {
+    "slug": "sorensen-court-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"sorensen-court-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 106\r\n}",
+    "ms": 306
+  },
+  {
+    "slug": "thimbleweed-court-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 12462
+  },
+  {
+    "slug": "twinflower-place-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 13554
+  },
+  {
+    "slug": "wetenhall-landing-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"wetenhall-landing-milton\",\r\n  \"error\": \"No stats available\",\r\n  \"durationMs\": 106\r\n}",
+    "ms": 316
+  },
+  {
+    "slug": "woodward-avenue-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 3,
+    "ms": 18539
+  }
+]

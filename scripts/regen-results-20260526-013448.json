@@ -1,0 +1,30 @@
+[
+  {
+    "slug": "amos-drive-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 13979
+  },
+  {
+    "slug": "first-line-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 16115
+  },
+  {
+    "slug": "mcfarland-court-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 14587
+  },
+  {
+    "slug": "taylor-court-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 12580
+  }
+]
