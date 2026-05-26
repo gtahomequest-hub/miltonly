@@ -12,7 +12,7 @@
 // year_built, appliances, flooring, fencing, internet_yn, video_link, etc.)
 // exist as columns but are never written from here.
 
-import { extractStreetName, streetNameToSlug } from "@/lib/streetUtils";
+import { extractStreetName, streetNameToSlug, deriveIdentity } from "@/lib/streetUtils";
 import { config } from "@/lib/config";
 
 // =============================================================================
@@ -372,8 +372,16 @@ export function mapAmpToSoldColumns(r: AmpRecord): Record<string, unknown> {
   const address =
     (r.UnparsedAddress as string | null) ||
     [r.StreetNumber, r.StreetName, r.StreetSuffix].filter(Boolean).join(" ");
-  const streetName = extractStreetName(address);
-  const streetSlug = streetNameToSlug(streetName);
+ const streetName = extractStreetName(address);
+// Canonicalize slug at write-time: deriveIdentity expands abbreviated
+// street-type tokens (crt -> court, dr -> drive, blvd -> boulevard, etc.)
+// and collapses directional suffixes. Without this, DB2 accumulates
+// abbreviated slugs that don't join cleanly to DB1's canonical forms.
+// See 2026-05-26 canonicalization migration (commit a1b2c3d4) for the
+// one-time cleanup of pre-existing abbreviated rows.
+const rawSlug = streetNameToSlug(streetName);
+const identity = deriveIdentity(rawSlug);
+const streetSlug = identity?.canonicalSlug ?? rawSlug;
   const listDate =
     (r.ListingContractDate as string | null) ??
     (r.OriginalEntryTimestamp as string | null) ??
