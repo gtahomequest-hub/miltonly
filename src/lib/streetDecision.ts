@@ -83,7 +83,7 @@ export async function makeStreetDecision(
 }
 
 export async function getStreetStats(streetSlug: string) {
-  // Active listings only — DB1 sold-derived computation removed post Phase 2.6.
+  // Active sale listings.
   const activeListings = await prisma.listing.findMany({
     where: { streetSlug, status: "active", permAdvertise: true },
     select: {
@@ -92,14 +92,48 @@ export async function getStreetStats(streetSlug: string) {
       daysOnMarket: true,
     },
   });
-
   // Sold-status count (no price/date data — just a count for context).
   const soldCount = await prisma.listing.count({
     where: { streetSlug, status: "sold" },
   });
-
-  if (activeListings.length === 0 && soldCount === 0) return null;
-
+  // Active lease listings — rentals also signal an active market.
+  const activeLeaseCount = await prisma.listing.count({
+    where: { streetSlug, status: "active", permAdvertise: true, leaseStatus: "active" },
+  });
+  // DB3 historical signal — sold + leased counts in the last 12 months.
+  // Reads analytics.street_sold_stats; falls back to 0 if DB3 unreachable or row absent.
+  let historicalSoldCount = 0;
+  let historicalLeasedCount = 0;
+  try {
+    const { getAnalyticsDb } = await import("@/lib/db");
+    const ad = getAnalyticsDb();
+    if (ad) {
+      const rows = await (ad`
+        SELECT
+          COALESCE(sold_count_12months, 0)   AS sold_count,
+          COALESCE(leased_count_12months, 0) AS leased_count
+        FROM analytics.street_sold_stats
+        WHERE street_slug = ${streetSlug}
+        LIMIT 1
+      ` as unknown as Promise<Array<{ sold_count: number; leased_count: number }>>);
+      if (rows.length > 0) {
+        historicalSoldCount = Number(rows[0].sold_count) || 0;
+        historicalLeasedCount = Number(rows[0].leased_count) || 0;
+      }
+    }
+  } catch {
+    // DB3 read failed — fall back to DB1-only gate.
+  }
+  // Gate: pass if ANY source has activity.
+  if (
+    activeListings.length === 0 &&
+    soldCount === 0 &&
+    activeLeaseCount === 0 &&
+    historicalSoldCount === 0 &&
+    historicalLeasedCount === 0
+  ) {
+    return null;
+  }
   const priceSources = activeListings.map((l) => l.price).filter((p): p is number => !!p && p > 0);
 
   const avgListPrice = priceSources.length > 0
@@ -140,6 +174,9 @@ export async function getStreetStats(streetSlug: string) {
     totalSold12mo: soldCount,   // status-flip count only — no price data
     avgDOM,
     activeCount: activeListings.length,
+    activeLeaseCount,
+    historicalSoldCount,
+    historicalLeasedCount,
     dominantPropertyType,
     typeBreakdown,
     // Trend/price-direction data moved to DB3 (gated). AI content gets a
