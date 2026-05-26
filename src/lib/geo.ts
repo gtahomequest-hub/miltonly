@@ -132,6 +132,8 @@ export const NEIGHBOURHOOD_CENTROIDS: Record<string, { lat: number; lng: number 
   "1051 - Walker":           { lat: 43.5110, lng: -79.8600 },
   // Non-coded forms used on a subset of records
   "Campbellville":           { lat: 43.4700, lng: -79.9900 },
+  "Moffat":                  { lat: 43.5272, lng: -80.0117 },
+  "Brookville/Haltonville":  { lat: 43.5910, lng: -79.9270 },
   // Omitted — no reliable centroid from public sources, or name is
   // ambiguous / covers a large rural area that would give misleading
   // nearby-distance signal:
