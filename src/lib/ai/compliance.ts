@@ -1021,7 +1021,7 @@ interface HalfResult {
 interface RunHalfParams {
   halfLabel: "desc" | "eval" | "aha" | "market";
   systemPrompt: string;
-  expectedSectionIds: StreetSectionId[];
+  expectedSectionIds: readonly StreetSectionId[];
   expectsFaq: boolean;
   input: StreetGeneratorInput;
   maxAttempts: number;
@@ -1542,7 +1542,88 @@ Original draft below:`;
     marketRes.totalOutputTokens += pass2OutputTokens;
     marketRes.totalCostUsd += pass2CostUsd;
   }
+// Fallback pass: when AI_PROVIDER_FALLBACK is set (e.g. "opus" or "sonnet")
+  // and any half exhausted its retry budget with remaining violations,
+  // re-run that specific half with the fallback provider/model. Surgical:
+  // only failed halves retry; passing halves are preserved. Cheaper than
+  // full regeneration; faster than manual review.
+  // Default empty → no fallback (preserves existing behavior).
+  const fallbackModeRaw = (process.env.AI_PROVIDER_FALLBACK || "").trim();
+  const fallbackMode: SimpleMode = resolveSimpleMode(fallbackModeRaw);
+  const fallbackEnabled = isClaudeMode(fallbackMode);
 
+  if (fallbackEnabled) {
+    const fallbackModel = claudeModelFor(fallbackMode);
+    const fallbackModelLabel =
+      fallbackMode === "claude-opus" ? "Claude Opus 4.7" :
+      fallbackMode === "claude-sonnet" ? "Claude Sonnet 4.6" :
+      fallbackMode === "claude-haiku" ? "Claude Haiku 4.5" :
+      "unknown";
+
+    const halvesToRetry: Array<{ label: "aha" | "market" | "eval"; res: HalfResult; promptText: string; sectionIds: readonly StreetSectionId[]; expectsFaq: boolean }> = [];
+    if (ahaRes.violations.length > 0) halvesToRetry.push({ label: "aha", res: ahaRes, promptText: ahaPrompt, sectionIds: ABOUT_HOMES_AMENITIES_SECTION_IDS, expectsFaq: false });
+    if (marketRes.violations.length > 0) halvesToRetry.push({ label: "market", res: marketRes, promptText: marketPrompt, sectionIds: MARKET_SECTION_IDS, expectsFaq: false });
+    if (evalRes.violations.length > 0) halvesToRetry.push({ label: "eval", res: evalRes, promptText: evalPrompt, sectionIds: EVALUATIVE_SECTION_IDS, expectsFaq: true });
+
+    if (halvesToRetry.length > 0) {
+      console.log(
+        `[Phase41] ${input.street.slug} FALLBACK: ${halvesToRetry.length} half(ves) failed primary pass — retrying with ${fallbackModelLabel}: ${halvesToRetry.map(h => h.label).join(", ")}`
+      );
+
+      const fallbackResults = await Promise.all(
+        halvesToRetry.map(({ label, promptText, sectionIds, expectsFaq }) =>
+          runHalfWithRetry({
+            halfLabel: label,
+            systemPrompt: promptText,
+            expectedSectionIds: sectionIds,
+            expectsFaq,
+            input,
+            maxAttempts: 3,
+            provider: "claude",
+            claudeModel: fallbackModel,
+          }).catch((e: unknown) => {
+            const errMsg = e instanceof Error ? e.message : String(e);
+            console.log(`[Phase41/${label}-fallback] ${input.street.slug}: fallback threw — ${errMsg}`);
+            return null;
+          })
+        ),
+      );
+
+      // Replace each half's result with the fallback result IF the fallback
+      // came back clean (zero violations). Otherwise keep the original failure
+      // — the throw below will still fire for streets even Opus can't save.
+      for (let i = 0; i < halvesToRetry.length; i++) {
+        const { label, res: originalRes } = halvesToRetry[i];
+        const fallbackRes = fallbackResults[i];
+
+        if (fallbackRes === null) {
+          console.log(`[Phase41/${label}-fallback] ${input.street.slug}: fallback failed entirely, keeping original violations`);
+          continue;
+        }
+
+        // Always accumulate fallback token/cost into original — we paid for it either way
+        originalRes.totalInputTokens += fallbackRes.totalInputTokens;
+        originalRes.totalOutputTokens += fallbackRes.totalOutputTokens;
+        originalRes.totalCostUsd += fallbackRes.totalCostUsd;
+        originalRes.attempts.push(...fallbackRes.attempts);
+
+        if (fallbackRes.violations.length === 0) {
+          // Fallback succeeded — replace the failed half's sections/faq/violations
+          console.log(
+            `[Phase41/${label}-fallback] ${input.street.slug}: SUCCESS — replacing ${originalRes.violations.length} violation(s) with clean output ` +
+            `(+${fallbackRes.totalCostUsd.toFixed(5)} cost, ${fallbackRes.attemptCount} attempt${fallbackRes.attemptCount === 1 ? "" : "s"})`
+          );
+          originalRes.sections = fallbackRes.sections;
+          originalRes.violations = [];
+          if (fallbackRes.faq !== undefined) originalRes.faq = fallbackRes.faq;
+        } else {
+          console.log(
+            `[Phase41/${label}-fallback] ${input.street.slug}: STILL FAILED — ${fallbackRes.violations.length} violation(s) after ${fallbackRes.attemptCount} attempt(s), keeping original`
+          );
+        }
+      }
+    }
+  }
   const totalInputTokens = ahaRes.totalInputTokens + marketRes.totalInputTokens + evalRes.totalInputTokens;
   const totalOutputTokens = ahaRes.totalOutputTokens + marketRes.totalOutputTokens + evalRes.totalOutputTokens;
   const totalCostUsd = ahaRes.totalCostUsd + marketRes.totalCostUsd + evalRes.totalCostUsd;

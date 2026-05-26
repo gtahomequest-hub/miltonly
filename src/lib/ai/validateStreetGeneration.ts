@@ -1407,7 +1407,7 @@ export function validateStreetGeneration(
  */
 export function validateSectionsSubset(
   sections: StreetSection[],
-  expectedIds: StreetSectionId[],
+  expectedIds: readonly StreetSectionId[],
   input: StreetGeneratorInput,
 ): ValidatorViolation[] {
   const violations: ValidatorViolation[] = [];
