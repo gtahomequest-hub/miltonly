@@ -39,7 +39,7 @@ function makeClient(envKey: string): Sql | null {
     }
     return null;
   }
-  return neon(url);
+  return neon(url, { fetchOptions: { next: { revalidate: 3600 } } });
 }
 
 // `undefined` = not yet attempted, `null` = attempted and env var was missing.

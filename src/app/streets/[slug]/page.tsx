@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getSession } from "@/lib/auth";
 import { config } from "@/lib/config";
 import { getStreetPageData, canonicalUrlFor } from "@/lib/street-data";
-import { getStreetSoldList } from "@/lib/sold-data";
 import { buildStreetPageSchema } from "@/lib/schema/street-schema";
 import { SchemaInjector } from "@/lib/schema/injector";
 import { Container } from "@/components/ui";
@@ -28,8 +26,20 @@ import { FinalCTAs } from "@/components/street/FinalCTAs";
 import { CornerWidget } from "@/components/street/CornerWidget";
 import { ExitIntent } from "@/components/street/ExitIntent";
 import { StreetPlaceholder } from "@/components/street/StreetPlaceholder";
+import { SoldRecordsIsland } from "@/components/street/SoldRecordsIsland";
+import { prisma } from "@/lib/prisma";
 
 interface Props { params: { slug: string } }
+
+export async function generateStaticParams() {
+  const streets = await prisma.streetContent.findMany({
+    where: { status: "published" },
+    select: { streetSlug: true },
+  });
+  return streets.map((s) => ({ slug: s.streetSlug }));
+}
+
+export const dynamicParams = true;
 
 export const revalidate = 3600;
 
@@ -69,30 +79,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StreetPage({ params }: Props) {
-  const [data, user, generation] = await Promise.all([
+  const [data, generation] = await Promise.all([
     getStreetPageData(params.slug),
-    getSession(),
-    // Phase 4.1 generated description. Null means "no generation on file, or
-    // stale/corrupt row" — caller falls back to the legacy description shape
-    // below. Never generates on-demand at render time.
     loadStreetGeneration(params.slug),
   ]);
   if (!data) notFound();
-
-  const canSeeRecords = !!(user && user.vowAcknowledgedAt);
-
-  // Fetch sold records only for users cleared through the VOW gate. The
-  // canServeRecordsToThisRequest() guard inside getStreetSoldList will
-  // also refuse if we miscomputed — belt + suspenders.
-  const soldTable = canSeeRecords
-    ? await getStreetSoldList(params.slug, "sale", 90, 20).catch(() => [])
-    : [];
-
-  const marketProps = {
-    ...data.marketActivity,
-    soldTable,
-    canSeeRecords,
-  };
 
   const ownerCtaPrice = pickOwnerCtaPrice(data);
   const contextHasContent = hasContextContent(data);
@@ -175,7 +166,9 @@ export default async function StreetPage({ params }: Props) {
 
       {data.detectedPattern && <PatternBlock {...data.detectedPattern} />}
 
-      <MarketActivity {...marketProps} />
+      <MarketActivity {...data.marketActivity}>
+        <SoldRecordsIsland slug={params.slug} streetName={data.street.name} />
+      </MarketActivity>
 
       <CommuteGrid {...data.commuteGrid} />
 

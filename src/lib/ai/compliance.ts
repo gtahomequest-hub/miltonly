@@ -1321,44 +1321,60 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, bestFitFor, dif
     );
   }
 
-  // Diagnostic feature flag: AI_PROVIDER_MARKET selects between modes for
-  // the market call only. About/homes/amenities and evaluative stay on
-  // DeepSeek single-pass.
-  //   "claude" or "opus"        — route market to Claude Opus (hybrid)
-  //   "sonnet"                  — route market to Claude Sonnet 4.6 (hybrid, Task 3a)
-  //   "haiku"                   — route market to Claude Haiku 4.5 (hybrid, Task 3b)
-  //   "deepseek-twopass"        — DeepSeek Pass 1 + general refinement Pass 2
-  //   "deepseek-twopass-causal" — DeepSeek Pass 1 + causal-only Pass 2 (Task 3d)
+  // Diagnostic feature flags: AI_PROVIDER_{MARKET,AHA,EVAL} select between
+  // providers for each section call independently. All default to DeepSeek.
+  //   "claude" or "opus"        — route to Claude Opus (hybrid)
+  //   "sonnet"                  — route to Claude Sonnet 4.6
+  //   "haiku"                   — route to Claude Haiku 4.5
+  //   "deepseek-twopass"        — DeepSeek Pass 1 + general refinement Pass 2 (market only)
+  //   "deepseek-twopass-causal" — DeepSeek Pass 1 + causal-only Pass 2 (market only)
   //   else (default)            — DeepSeek single-pass
   // NOT committed product features — used to characterize analytical-depth
   // vs cost trade-offs before lowering the market floor.
-  const marketModeRaw = (process.env.AI_PROVIDER_MARKET || "").trim();
-  type MarketMode = "deepseek" | "claude-opus" | "claude-sonnet" | "claude-haiku" | "deepseek-twopass" | "deepseek-twopass-causal";
-  const marketMode: MarketMode =
-    marketModeRaw === "claude" || marketModeRaw === "opus" ? "claude-opus" :
-    marketModeRaw === "sonnet" ? "claude-sonnet" :
-    marketModeRaw === "haiku" ? "claude-haiku" :
-    marketModeRaw === "deepseek-twopass-causal" ? "deepseek-twopass-causal" :
-    marketModeRaw === "deepseek-twopass" ? "deepseek-twopass" :
-    "deepseek";
-  if (marketMode === "claude-opus") {
-    console.log(`[Phase41] ${input.street.slug} HYBRID: market call routed to Claude Opus 4.7`);
-  } else if (marketMode === "claude-sonnet") {
-    console.log(`[Phase41] ${input.street.slug} HYBRID: market call routed to Claude Sonnet 4.6`);
-  } else if (marketMode === "claude-haiku") {
-    console.log(`[Phase41] ${input.street.slug} HYBRID: market call routed to Claude Haiku 4.5`);
-  } else if (marketMode === "deepseek-twopass") {
-    console.log(`[Phase41] ${input.street.slug} TWOPASS: market call uses DeepSeek Pass 1 + general refinement Pass 2`);
-  } else if (marketMode === "deepseek-twopass-causal") {
-    console.log(`[Phase41] ${input.street.slug} TWOPASS-CAUSAL: market call uses DeepSeek Pass 1 + causal-only refinement Pass 2`);
+
+  type SimpleMode = "deepseek" | "claude-opus" | "claude-sonnet" | "claude-haiku";
+  type MarketMode = SimpleMode | "deepseek-twopass" | "deepseek-twopass-causal";
+
+  function resolveSimpleMode(raw: string): SimpleMode {
+    const v = raw.trim();
+    if (v === "claude" || v === "opus") return "claude-opus";
+    if (v === "sonnet") return "claude-sonnet";
+    if (v === "haiku") return "claude-haiku";
+    return "deepseek";
   }
 
-  const isClaudeMarket = marketMode === "claude-opus" || marketMode === "claude-sonnet" || marketMode === "claude-haiku";
-  const claudeModelForMarket: ClaudeModelKey | undefined =
-    marketMode === "claude-opus" ? "opus" :
-    marketMode === "claude-sonnet" ? "sonnet" :
-    marketMode === "claude-haiku" ? "haiku" :
-    undefined;
+  const marketModeRaw = (process.env.AI_PROVIDER_MARKET || "").trim();
+  const marketMode: MarketMode =
+    marketModeRaw === "deepseek-twopass-causal" ? "deepseek-twopass-causal" :
+    marketModeRaw === "deepseek-twopass" ? "deepseek-twopass" :
+    resolveSimpleMode(marketModeRaw);
+
+  const ahaMode: SimpleMode = resolveSimpleMode(process.env.AI_PROVIDER_AHA || "");
+  const evalMode: SimpleMode = resolveSimpleMode(process.env.AI_PROVIDER_EVAL || "");
+
+  function isClaudeMode(mode: SimpleMode | MarketMode): boolean {
+    return mode === "claude-opus" || mode === "claude-sonnet" || mode === "claude-haiku";
+  }
+  function claudeModelFor(mode: SimpleMode | MarketMode): ClaudeModelKey | undefined {
+    if (mode === "claude-opus") return "opus";
+    if (mode === "claude-sonnet") return "sonnet";
+    if (mode === "claude-haiku") return "haiku";
+    return undefined;
+  }
+
+  for (const [label, mode] of [["market", marketMode], ["aha", ahaMode], ["eval", evalMode]] as const) {
+    if (mode === "claude-opus") {
+      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to Claude Opus 4.7`);
+    } else if (mode === "claude-sonnet") {
+      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to Claude Sonnet 4.6`);
+    } else if (mode === "claude-haiku") {
+      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to Claude Haiku 4.5`);
+    } else if (mode === "deepseek-twopass") {
+      console.log(`[Phase41] ${input.street.slug} TWOPASS: ${label} call uses DeepSeek Pass 1 + general refinement Pass 2`);
+    } else if (mode === "deepseek-twopass-causal") {
+      console.log(`[Phase41] ${input.street.slug} TWOPASS-CAUSAL: ${label} call uses DeepSeek Pass 1 + causal-only refinement Pass 2`);
+    }
+  }
 
   const [ahaRes, marketRes, evalRes] = await Promise.all([
     runHalfWithRetry({
@@ -1368,6 +1384,8 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, bestFitFor, dif
       expectsFaq: false,
       input,
       maxAttempts: 5,
+      provider: isClaudeMode(ahaMode) ? "claude" : "deepseek",
+      claudeModel: claudeModelFor(ahaMode),
     }),
     runHalfWithRetry({
       halfLabel: "market",
@@ -1376,8 +1394,8 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, bestFitFor, dif
       expectsFaq: false,
       input,
       maxAttempts: 5,
-      provider: isClaudeMarket ? "claude" : "deepseek",
-      claudeModel: claudeModelForMarket,
+      provider: isClaudeMode(marketMode) ? "claude" : "deepseek",
+      claudeModel: claudeModelFor(marketMode),
     }),
     runHalfWithRetry({
       halfLabel: "eval",
@@ -1386,6 +1404,8 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, bestFitFor, dif
       expectsFaq: true,
       input,
       maxAttempts: 5,
+      provider: isClaudeMode(evalMode) ? "claude" : "deepseek",
+      claudeModel: claudeModelFor(evalMode),
     }),
   ]);
 

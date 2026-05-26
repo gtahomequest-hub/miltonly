@@ -41,7 +41,7 @@ export default function OGImage() {
             lineHeight: 1.4,
           }}
         >
-          {config.CITY_NAME} {config.CITY_PROVINCE} Real Estate — Homes For Sale, Street Data &amp; Market Intelligence
+          {`${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate — Homes For Sale, Street Data & Market Intelligence`}
         </div>
         <div
           style={{

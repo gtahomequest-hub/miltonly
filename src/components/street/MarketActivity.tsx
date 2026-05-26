@@ -1,23 +1,16 @@
-import Link from "next/link";
 import { Container, SerifHeading, Eyebrow, Body } from "@/components/ui";
 import { PriceTrendChart } from "./charts/PriceTrendChart";
-import type { MarketActivityProps, SoldTableRow } from "@/types/street";
-import { formatCADShort } from "@/lib/charts/theme";
+import type { MarketActivityProps } from "@/types/street";
 
-export function MarketActivity(props: MarketActivityProps) {
+export function MarketActivity(props: MarketActivityProps & { children?: React.ReactNode }) {
   const {
     salesSummary,
     leasesSummary,
     priceChart,
     rentByBeds,
-    soldTable,
-    canSeeRecords,
-    currentPath,
     streetName,
-    streetSlug,
+    children,
   } = props;
-
-  const signinHref = `/signin?redirect=${encodeURIComponent(currentPath)}&intent=sold&street=${encodeURIComponent(streetSlug)}`;
 
   return (
     <section id="s6" className="border-b" style={{ paddingTop: 96, paddingBottom: 96, borderColor: "var(--line)" }}>
@@ -58,12 +51,7 @@ export function MarketActivity(props: MarketActivityProps) {
           </div>
         )}
 
-        <SoldTableBlock
-          rows={soldTable}
-          canSeeRecords={canSeeRecords}
-          signinHref={signinHref}
-          streetName={streetName}
-        />
+        {children}
       </Container>
     </section>
   );
@@ -86,70 +74,4 @@ function SummaryCard({ summary }: { summary: MarketActivityProps["salesSummary"]
   );
 }
 
-function SoldTableBlock({
-  rows,
-  canSeeRecords,
-  signinHref,
-  streetName,
-}: {
-  rows: SoldTableRow[];
-  canSeeRecords: boolean;
-  signinHref: string;
-  streetName: string;
-}) {
-  const gated = !canSeeRecords;
-
-  return (
-    <div className={`gated-wrap ${gated ? "is-gated" : ""}`}>
-      <table className="data-table">
-        <caption>Recent closed sales, {streetName}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Address</th>
-            <th scope="col">Beds</th>
-            <th scope="col">Sold</th>
-            <th scope="col">vs Ask</th>
-            <th scope="col">DOM</th>
-            <th scope="col">Listing brokerage</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr><td colSpan={7} style={{ textAlign: "center", color: "var(--ink-faint)", padding: 32 }}>No recent sales on record.</td></tr>
-          ) : (
-            rows.map((r) => (
-              <tr key={r.mls_number}>
-                <td>{r.sold_date.slice(0, 10)}</td>
-                <td>{r.address}</td>
-                <td>{r.beds ?? "—"}</td>
-                <td>{formatCADShort(r.sold_price)}</td>
-                <td>{(r.sold_to_ask_ratio * 100).toFixed(0)}%</td>
-                <td>{r.days_on_market}d</td>
-                <td style={{ color: "var(--ink-faint)", fontSize: 12 }}>{r.list_office_name ?? "—"}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      {gated && rows.length >= 3 && (
-        <div className="gate-overlay">
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.14em", color: "var(--gold)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
-            TREB VOW · Registered access
-          </div>
-          <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 500, marginBottom: 8 }}>
-            See every closed sale on {streetName}
-          </div>
-          <div style={{ fontFamily: "var(--sans)", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 18 }}>
-            Free with a verified email. Exact sold prices, DOM, and sold-to-ask ratios.
-          </div>
-          <Link href={signinHref} style={{ display: "inline-block", background: "var(--gold)", color: "var(--navy-deep)", padding: "12px 24px", fontFamily: "var(--sans)", fontWeight: 600, fontSize: 13, letterSpacing: "0.02em", textDecoration: "none" }}>
-            Sign in free to unlock →
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-}
 
