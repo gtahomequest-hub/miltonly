@@ -332,7 +332,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     soldRange,
   });
 
-  // ─── Market Activity (soldTable filled later by the page) ─────────
+  // ─── Market Activity ─────────
   const marketActivity = buildMarketActivity({
     slug,
     streetName,
@@ -1040,7 +1040,7 @@ function buildMarketActivity(input: {
   stats: RawSoldStats | null;
   monthlyRows: RawMonthly[];
 }): MarketActivityProps {
-  const { slug, streetName, stats, monthlyRows } = input;
+  const { streetName, stats, monthlyRows } = input;
   const salesCount = stats?.sold_count_90days ?? 0;
   const typical = num(stats?.avg_sold_price ?? null);
   const dom = num(stats?.avg_dom ?? null);
@@ -1087,11 +1087,7 @@ function buildMarketActivity(input: {
       { label: "3 bed", value: lease3 ? formatCADShort(roundPriceForProse(lease3)) : "—", detail: "typical" },
       { label: "4+ bed", value: lease4 ? formatCADShort(roundPriceForProse(lease4)) : "—", detail: "typical" },
     ] : undefined,
-    soldTable: [], // populated by the page when canSeeRecords = true
-    canSeeRecords: false, // overridden by the page
-    currentPath: `/streets/${slug}`,
     streetName,
-    streetSlug: slug,
   };
 }
 

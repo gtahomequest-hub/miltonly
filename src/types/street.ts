@@ -257,12 +257,7 @@ export interface MarketActivityProps {
   leasesSummary?: MarketSummary;
   priceChart: { data: QuarterlyDataPoint[]; caption: string } | null;
   rentByBeds?: RentByBedsTile[];
-  soldTable: SoldTableRow[];
-  /** If false, the table is blurred behind a VowGate prompt. */
-  canSeeRecords: boolean;
-  currentPath: string;
   streetName: string;
-  streetSlug: string;
 }
 
 // ───── CommuteGrid ────────────────────────────────────────────────────────

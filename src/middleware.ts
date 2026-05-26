@@ -110,8 +110,10 @@ export function middleware(req: NextRequest) {
   return NextResponse.rewrite(new URL("/coming-soon", req.url));
 }
 
-// Run on all routes except static files and Next.js internals.
-// The always-allow list above handles the fine-grained bypasses.
+// Narrowed to /streets/* — the only production-active logic is streetRedirect().
+// If MAINTENANCE_MODE is ever flipped back to true, expand this back to the
+// broad pattern ["/((?!_next/static|_next/image|favicon.ico).*)"] so the
+// maintenance gate covers all routes.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/streets/:path*"],
 };
