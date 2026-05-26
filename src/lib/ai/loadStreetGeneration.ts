@@ -44,38 +44,52 @@ export interface LoadedStreetGeneration {
 /**
  * Fetch the generated description for a street if one exists AND passed structural
  * narrowing. Returns null when:
- *   - no row exists
- *   - row exists but status !== "succeeded"
+ *   - no streetGeneration row exists
+ *   - the matching streetContent row is flagged needsReview=true
  *   - JSON columns fail runtime narrowing (corrupt or drift)
  * In all null cases, the caller should fall back to whatever legacy description
  * path already exists. On-demand generation at render time is NOT a fallback
  * path — backfill is the only generation path per Phase 4.1 spec.
+ *
+ * Note: streetGeneration has no `status` column — generation success is implicit
+ * in whether sectionsJson + faqJson exist and narrow correctly. Streets flagged
+ * by the publish gate (needsReview=true on streetContent) are quarantined here
+ * regardless, so the legacy description renders instead of suspect Phase 4.1
+ * prose.
  */
 export async function loadStreetGeneration(
   streetSlug: string
 ): Promise<LoadedStreetGeneration | null> {
-  const row = await prisma.streetGeneration
-    .findUnique({
-      where: { streetSlug },
-      select: { status: true, sectionsJson: true, faqJson: true },
-    })
-    .catch(() => null);
+  const [genRow, contentRow] = await Promise.all([
+    prisma.streetGeneration
+      .findUnique({
+        where: { streetSlug },
+        select: { sectionsJson: true, faqJson: true },
+      })
+      .catch(() => null),
+    prisma.streetContent
+      .findUnique({
+        where: { streetSlug },
+        select: { needsReview: true },
+      })
+      .catch(() => null),
+  ]);
 
-  if (!row) return null;
-  if (row.status !== "succeeded") return null;
+  if (!genRow) return null;
+  if (contentRow?.needsReview === true) return null;
 
-  if (!Array.isArray(row.sectionsJson)) return null;
-  if (!Array.isArray(row.faqJson)) return null;
+  if (!Array.isArray(genRow.sectionsJson)) return null;
+  if (!Array.isArray(genRow.faqJson)) return null;
 
   const sections: StreetSection[] = [];
-  for (const s of row.sectionsJson) {
+  for (const s of genRow.sectionsJson) {
     if (!isStreetSection(s)) return null;
     sections.push(s);
   }
   if (sections.length === 0) return null;
 
   const faq: StreetFAQItem[] = [];
-  for (const q of row.faqJson) {
+  for (const q of genRow.faqJson) {
     if (!isStreetFAQItem(q)) return null;
     faq.push(q);
   }
