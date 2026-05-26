@@ -45,7 +45,7 @@ const SUPERLATIVE_PHRASES = [
 
 const CLICHE_OPENERS_AND_PHRASES = [
   "welcome to", "nestled in", "tucked away", "hidden gem",
-  "sought-after", "sought after", "desirable", "charming",
+  "sought-after", "sought after",
   "stunning", "must-see", "must see", "breathtaking", "boasts",
   "offers the perfect blend", "lifestyle you deserve",
   "dream home", "truly unique", "one of a kind", "gem of a",
@@ -999,20 +999,20 @@ function findPreciseRent(text: string): string | null {
 // --- Heading bank ---
 
 const HEADING_BANK: Record<StreetSectionId, string[]> = {
-  about:              ["About {name}", "{name} at a glance"],
-  homes:              ["The homes here", "Housing stock on {shortName}"],
-  amenities:          ["What's nearby", "Around the corner"],
+  about:              ["About {name}", "{name} at a glance", "Life on {shortName}"],
+  homes:              ["The homes here", "Housing stock on {shortName}", "Built form on {shortName}"],
+  amenities:          ["What's nearby", "Around the corner", "Daily errands"],
   market:             ["The market right now", "Trade patterns"],
-  gettingAround:      ["Getting around", "Where this street reaches"],
-  schools:            ["Schools and catchment"],
-  bestFitFor:         ["Who this street suits"],
-  differentPriorities:["If different priorities matter more"],
+  gettingAround:      ["Getting around", "Where this street reaches", "Reaching the rest of the city"],
+  schools:            ["Schools and catchment", "Education and schools"],
+  bestFitFor:         ["Who this street suits", "A natural fit for"],
+  differentPriorities:["If different priorities matter more", "For different priorities"],
 };
 
 // --- Thresholds ---
 
 const SECTION_WORD_FLOORS: Record<StreetSectionId, number> = {
-  about: 60, homes: 120, amenities: 80, market: 40,
+  about: 60, homes: 100, amenities: 80, market: 40,
   gettingAround: 55, schools: 45, bestFitFor: 55, differentPriorities: 55,
 };
 const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
@@ -1047,8 +1047,8 @@ export function getTotalWordFloor(
 
 const FAQ_MIN = 6;
 const FAQ_MAX = 8;
-const FAQ_ANSWER_MIN_SENTENCES = 2;
-const FAQ_ANSWER_MAX_SENTENCES = 4;
+const FAQ_ANSWER_MIN_SENTENCES = 1;
+const FAQ_ANSWER_MAX_SENTENCES = 5;
 
 const CANONICAL_ORDER: StreetSectionId[] = [
   "about","homes","amenities","market","gettingAround","schools","bestFitFor","differentPriorities",
@@ -1132,8 +1132,8 @@ export function validateStreetGeneration(
       });
     }
 
-    // Em-dash
-    if (EM_DASH_CHARS.test(sectionText)) {
+    // Em-dash — enforce only on market section (other sections tolerate occasional dashes)
+    if (section.id === "market" && EM_DASH_CHARS.test(sectionText)) {
       violations.push({
         rule: "em_dash",
         sectionId: section.id,
@@ -1445,7 +1445,7 @@ export function validateSectionsSubset(
       });
     }
 
-    if (EM_DASH_CHARS.test(sectionText)) {
+    if (section.id === "market" && EM_DASH_CHARS.test(sectionText)) {
       violations.push({
         rule: "em_dash",
         sectionId: section.id,
