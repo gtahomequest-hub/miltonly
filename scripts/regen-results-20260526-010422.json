@@ -1,0 +1,93 @@
+[
+  {
+    "slug": "clark-boulevard-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"clark-boulevard-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=1 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 33027\r\n}",
+    "ms": 33971
+  },
+  {
+    "slug": "ferguson-drive-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 12990
+  },
+  {
+    "slug": "gollins-drive-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 12388
+  },
+  {
+    "slug": "gooch-crescent-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 22507
+  },
+  {
+    "slug": "heslop-road-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"heslop-road-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=4 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 29559\r\n}",
+    "ms": 29798
+  },
+  {
+    "slug": "moira-crescent-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 12841
+  },
+  {
+    "slug": "prosser-circle-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 12551
+  },
+  {
+    "slug": "raspberry-terrace-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"raspberry-terrace-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=3 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 29357\r\n}",
+    "ms": 29629
+  },
+  {
+    "slug": "sprague-place-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 11510
+  },
+  {
+    "slug": "trudeau-drive-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 4,
+    "ms": 25180
+  },
+  {
+    "slug": "vanier-drive-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 12656
+  },
+  {
+    "slug": "whitlock-avenue-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 13398
+  },
+  {
+    "slug": "woodward-avenue-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"woodward-avenue-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=2 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 28882\r\n}",
+    "ms": 29138
+  }
+]

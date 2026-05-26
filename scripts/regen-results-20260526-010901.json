@@ -1,0 +1,23 @@
+[
+  {
+    "slug": "heslop-road-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"heslop-road-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=3 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 27396\r\n}",
+    "ms": 27627
+  },
+  {
+    "slug": "raspberry-terrace-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 2,
+    "ms": 23963
+  },
+  {
+    "slug": "woodward-avenue-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"woodward-avenue-milton\",\r\n  \"error\": \"Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=2 violations after 5 attempts, eval=0 violations after 1 attempts.\",\r\n  \"durationMs\": 30118\r\n}",
+    "ms": 30318
+  }
+]

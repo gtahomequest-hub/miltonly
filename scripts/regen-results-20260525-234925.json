@@ -1,0 +1,37 @@
+[
+  {
+    "slug": "25-side-road-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"25-side-road-milton\",\r\n  \"error\": \"NoCentroidError(25-side-road-milton): no NEIGHBOURHOOD_CENTROIDS match for \\u00221041 - NA Rural Nassagaweya\\u0022\",\r\n  \"durationMs\": 385\r\n}",
+    "ms": 799
+  },
+  {
+    "slug": "4th-line-nassagaweya-line-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"4th-line-nassagaweya-line-milton\",\r\n  \"error\": \"NoCentroidError(4th-line-nassagaweya-line-milton): no NEIGHBOURHOOD_CENTROIDS match for \\u0022Rural Milton West\\u0022\",\r\n  \"durationMs\": 379\r\n}",
+    "ms": 590
+  },
+  {
+    "slug": "amos-drive-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"amos-drive-milton\",\r\n  \"error\": \"NoCentroidError(amos-drive-milton): no NEIGHBOURHOOD_CENTROIDS match for \\u0022Brookville/Haltonville\\u0022\",\r\n  \"durationMs\": 399\r\n}",
+    "ms": 640
+  },
+  {
+    "slug": "anderson-avenue-milton",
+    "ok": true,
+    "passed": true,
+    "attempts": 1,
+    "ms": 12612
+  },
+  {
+    "slug": "appleby-line-milton",
+    "ok": false,
+    "status": 500,
+    "error": "\r\n{\r\n  \"ok\": false,\r\n  \"slug\": \"appleby-line-milton\",\r\n  \"error\": \"NoCentroidError(appleby-line-milton): no NEIGHBOURHOOD_CENTROIDS match for \\u0022Rural Milton West\\u0022\",\r\n  \"durationMs\": 384\r\n}",
+    "ms": 630
+  }
+]
