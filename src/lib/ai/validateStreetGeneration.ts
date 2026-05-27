@@ -1006,7 +1006,8 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
   gettingAround:      ["Getting around", "Where this street reaches", "Reaching the rest of the city"],
   schools:            ["Schools and catchment", "Education and schools"],
   bestFitFor:         ["Who this street suits", "A natural fit for"],
-  differentPriorities:["If different priorities matter more", "For different priorities"],
+ differentPriorities:["If different priorities matter more", "For different priorities"],
+  neighbourhoodComparable: ["The {neighbourhood} comparable", "Comparable homes nearby", "What similar homes nearby look like"],
 };
 
 // --- Thresholds ---
@@ -1014,10 +1015,12 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
 const SECTION_WORD_FLOORS: Record<StreetSectionId, number> = {
   about: 60, homes: 100, amenities: 80, market: 40,
   gettingAround: 55, schools: 45, bestFitFor: 55, differentPriorities: 55,
+  neighbourhoodComparable: 80,
 };
 const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
   about: 180, homes: 350, amenities: 250, market: 350,
   gettingAround: 200, schools: 200, bestFitFor: 180, differentPriorities: 180,
+  neighbourhoodComparable: 250,
 };
 // v4 (Phase 4.1 / Piece D): tiered total-word floors calibrated to DeepSeek
 // V3 chat output distribution. Empirical smoke testing showed DeepSeek converges

@@ -9,7 +9,8 @@ export type StreetSectionId =
   | "gettingAround"
   | "schools"
   | "bestFitFor"
-  | "differentPriorities";
+  | "differentPriorities"
+  | "neighbourhoodComparable";  // Pass 1 — Track 2 two-block architecture
 
 export interface StreetSection {
   id: StreetSectionId;
@@ -23,7 +24,7 @@ export interface StreetFAQItem {
 }
 
 export interface StreetGeneratorOutput {
-  sections: StreetSection[];    // length = 8, ordered per canonical sequence
+  sections: StreetSection[];    // length 8-9 (neighbourhoodComparable optional — Pass 1)
   faq: StreetFAQItem[];         // length 6-8
 }
 
@@ -195,4 +196,26 @@ export interface StreetGeneratorInput {
     distinctivePattern: string;
     typicalPrice: number;
   }>;
+  // Pass 1 — Track 2 neighbourhood-comparable block.
+  // Populated by Block C's lookup function when DB3 + DB2 have data
+  // matching the street's dominant propertyType + bedroomCount filter.
+  // Absent when neighbourhood has no comparable activity OR the lookup
+  // fell below k=5 even after the type-only and whole-nbhd fallbacks.
+  // When absent, the neighbourhoodComparable section is not rendered
+  // and the prompt does not generate it.
+  neighbourhoodComparable?:  {
+    neighbourhood: string;
+    filterByPropertyType: string;
+    filterByBedroomCount: number | null;       // null in Pass 1 — no per-type-bed column in DB3
+    fallbackApplied: "type-only" | "whole-nbhd";
+    sampleSize: number;                         // sold_count_12months, ALL property types in neighbourhood
+    windowMonths: number;                       // always 12 for Pass 1
+    mostRecentSoldAt: string | null;            // ISO date — null in Pass 1, populated in Pass 2 via DB2
+    typicalSoldPrice: number | null;            // avg_sold_<type> for street's dominant type
+    priceRange: { low: number; high: number } | null;  // null in Pass 1 — no min/max columns
+    daysOnMarket: number | null;                // avg_dom, neighbourhood-wide
+    priceChangeYoy: number | null;              // YoY price change (decimal, e.g. 0.108 = +10.8%)
+    soldToAsk: number | null;                   // avg ratio (e.g. 0.984 = sold 1.6% below ask)
+    kAnonLevel: "full" | "thin" | "zero";       // derived from sold_count_12months thresholds
+  };
 }

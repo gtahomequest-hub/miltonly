@@ -119,6 +119,7 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
   schools:            ["Schools and catchment"],
   bestFitFor:         ["Who this street suits"],
   differentPriorities:["If different priorities matter more"],
+  neighbourhoodComparable: ["The {neighbourhood} comparable", "Comparable homes nearby", "What similar homes nearby look like"],
 };
 
 // --- Thresholds ---
@@ -126,10 +127,12 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
 const SECTION_WORD_FLOORS: Record<StreetSectionId, number> = {
   about: 60, homes: 120, amenities: 80, market: 40,
   gettingAround: 55, schools: 45, bestFitFor: 55, differentPriorities: 55,
+  neighbourhoodComparable: 80,
 };
 const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
   about: 180, homes: 350, amenities: 250, market: 350,
   gettingAround: 200, schools: 200, bestFitFor: 180, differentPriorities: 180,
+  neighbourhoodComparable: 250,
 };
 // v3: tiered total-word floors matching system prompt self-check #9 (1,200 target)
 // Thin and zero data streets get relaxed floors because market section collapses.
