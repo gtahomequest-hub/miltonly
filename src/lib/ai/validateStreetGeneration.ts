@@ -1064,7 +1064,7 @@ const CANONICAL_ORDER_T2: StreetSectionId[] = [
   "about","homes","amenities","market","neighbourhoodComparable","gettingAround","schools","bestFitFor","differentPriorities",
 ];
 // Back-compat alias for any imports outside this file
-const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
+export const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
 // --- Canonical FAQ question bank ---
 const FAQ_BANK_TEMPLATES: string[] = [
   "What is the typical price on {Street}?",
