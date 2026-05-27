@@ -195,7 +195,61 @@ Use the full `street.name` on first mention. Use `street.shortName` on subsequen
 ## Headings
 
 Do not invent heading text. Use "The market right now" or "Trade patterns." No other substitutions.
+<!-- ========== TRACK 2 PASS 1 — NEIGHBOURHOOD COMPARABLE SECTION ========== -->
 
+## NEIGHBOURHOOD COMPARABLE SECTION (Track 2 Pass 1)
+
+When `input.neighbourhoodComparable` is PRESENT, produce a SECOND section after market with `id: "neighbourhoodComparable"`. When `input.neighbourhoodComparable` is ABSENT or `null`, do not produce this section.
+
+### Purpose
+
+This section reads the surrounding neighbourhood's market behaviour for homes COMPARABLE to the host street. The reader uses it to orient: "what does the broader neighbourhood look like for homes like this?" It is NOT a substitute for the street-level market section. It is a parallel read at a wider scope.
+
+The reader sees this section AFTER market. Open with a clear pivot — the reader needs to know they're now reading neighbourhood-level data, not street-level data. Close in a register that flows toward the evaluative content that follows.
+
+### Voice
+
+All voice rules from the market section apply unchanged: editorial register, no first-person plural, no reader-contact, no source-citing, no MLS precision, no superlatives, no clichés, no em-dashes. Analytical vocabulary (`typical`, `average`, `median` in context) is permitted with the same suppression rules as market.
+
+### Specification
+
+**Length:** 80 to 250 words. Single paragraph for Pass 1.
+
+**Required observations** (each grounded in `input.neighbourhoodComparable` fields):
+
+1. **NEIGHBOURHOOD NAME AND COMPARABLE SCOPE** — open by naming the neighbourhood (use `input.neighbourhoodComparable.neighbourhood`) and stating the comparable filter (`input.neighbourhoodComparable.filterByPropertyType`). Make it explicit that this is neighbourhood-level, not street-level. Example shape (do not parrot verbatim): "Across {neighbourhood}, comparable {propertyType} homes have moved through a similar trade pattern."
+
+2. **TYPICAL PRICE WITH SAMPLE CONTEXT** — state `input.neighbourhoodComparable.typicalSoldPrice` with rounding per the rounding tables. Cite `input.neighbourhoodComparable.sampleSize` ONLY if it adds meaning (k≥10 = "full" can stand without explicit citation; k between 5 and 9 = "thin" should acknowledge the smaller sample). Do NOT cite the raw integer count as prose ("142 sales"). Use editorial framing.
+
+3. **YEAR-OVER-YEAR DIRECTION** — describe `input.neighbourhoodComparable.priceChangeYoy` direction. POSITIVE = "firmed" / "moved up modestly" / "climbed". NEGATIVE = "softened" / "eased back" / "drifted lower". FLAT (within ±1.5%) = "held steady" / "remained level". Match the directional verb to the actual sign. Magnitude is editorial — strong language for >5%, moderate for 2-5%, mild for under 2%.
+
+4. **SOLD-TO-ASK READ** — interpret `input.neighbourhoodComparable.soldToAsk`. >0.99 = buyers paying near or at ask. 0.95-0.99 = modest negotiation room. <0.95 = noticeable discounting. State the implication for buyer-seller balance, NOT the raw percentage.
+
+**Optional observation** when DOM differs meaningfully from street-level DOM:
+
+5. **PACE COMPARISON** — if `input.neighbourhoodComparable.daysOnMarket` is meaningfully different from `input.aggregates.daysOnMarket` (spread greater than 20 days in either direction), note it. Example shape: "Neighbourhood-wide pace runs faster than the street's own DOM, with comparable homes typically clearing in around {N} days."
+
+### Grounding rules (strict)
+
+- The ONLY fields that may anchor numbers in this section: `input.neighbourhoodComparable.typicalSoldPrice`, `priceChangeYoy`, `soldToAsk`, `daysOnMarket`, `sampleSize`. No other prices, no invented bands, no estimated ranges.
+- If `priceChangeYoy === null` or `soldToAsk === null` or `daysOnMarket === null`, OMIT that observation entirely. Do NOT fabricate.
+- Do NOT compute or imply a price differential between the neighbourhood and the host street, even if both have prices in the input. Pass 1 stays single-scope per observation.
+- Do NOT cite cross-streets here. Cross-street references are governed by the rules in the `differentPriorities` section, not this one.
+
+### Heading
+
+Use ONE of these two forms exactly as written, no substitutions:
+
+- "Comparable homes nearby"
+- "What similar homes nearby look like"
+
+Do NOT use the neighbourhood name in the heading. The neighbourhood name belongs in the opening sentence of the paragraph, not the heading.
+
+### Phrases to avoid
+
+Same banned constructions as market. Plus: do not begin with "Looking at the wider neighbourhood..." or "Zooming out..." — both are filler openers. Pivot via concrete fact, not transition phrase.
+
+<!-- ========== END TRACK 2 PASS 1 — NEIGHBOURHOOD COMPARABLE SECTION ========== -->
 ## Output schema
 
 Return a single JSON object matching this TypeScript type exactly. Return JSON only. No prose preamble, no code fences, no trailing commentary.
@@ -203,14 +257,14 @@ Return a single JSON object matching this TypeScript type exactly. Return JSON o
 ```typescript
 {
   sections: Array<{
-    id: "market";
+    id: "market" | "neighbourhoodComparable";
     heading: string;
     paragraphs: string[];
   }>;
 }
 ```
 
-The `sections` array must contain exactly ONE entry with `id: "market"`.
+The `sections` array must always contain ONE entry with `id: "market"`. When `input.neighbourhoodComparable` is present (non-null), the array must ALSO contain ONE entry with `id: "neighbourhoodComparable"`, placed AFTER the market entry. When `input.neighbourhoodComparable` is absent or null, the array contains only the `market` entry.
 
 ## Self-check before returning
 
@@ -227,3 +281,4 @@ Before you emit the JSON, verify internally:
 9. Heading matches "The market right now" or "Trade patterns."
 10. The `sections` array contains exactly one entry with `id: "market"`.
 11. Every quarter label in your prose appears in the input data. Every price-to-quarter pairing matches input typical for that quarter (within rounding tolerance). Every directional verb matches the actual q-over-q delta direction.
+12. If `input.neighbourhoodComparable` is present in the input, the `sections` array contains TWO entries (one with `id: "market"`, one with `id: "neighbourhoodComparable"`, in that order). If absent, only the `market` entry. The neighbourhoodComparable section uses ONLY the allowed fields from `input.neighbourhoodComparable` (`neighbourhood`, `filterByPropertyType`, `typicalSoldPrice`, `priceChangeYoy`, `soldToAsk`, `daysOnMarket`, `sampleSize`). No fabricated prices. No implied differentials between the street and the neighbourhood scope.

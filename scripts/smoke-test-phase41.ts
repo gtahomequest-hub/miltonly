@@ -258,12 +258,17 @@ async function main() {
 
   // Gate 5: Sections + FAQ shape — in-memory only.
   if (inMemV2) {
+    // Track 2 Pass 1: sections array can be 8 (no neighbourhoodComparable) or
+    // 9 (with neighbourhoodComparable). When 9, the new section is appended
+    // after differentPriorities. The first 8 IDs must remain canonical.
+    const canonicalEight = ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+    const len = inMemV2.sections.length;
+    const firstEightOk = canonicalEight.every((id, i) => inMemV2.sections[i]?.id === id);
+    const ninthOk = len === 8 || (len === 9 && inMemV2.sections[8]?.id === "neighbourhoodComparable");
     gate(
-      "Gate 5a: in-memory sections has 8 entries in canonical order",
-      inMemV2.sections.length === 8 &&
-        ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"]
-          .every((id, i) => inMemV2.sections[i]?.id === id),
-      `sections.length=${inMemV2.sections.length}, ids=[${inMemV2.sections.map(s => s.id).join(",")}]`,
+      "Gate 5a: in-memory sections has 8 or 9 entries in canonical order (Track 2 Pass 1)",
+      (len === 8 || len === 9) && firstEightOk && ninthOk,
+      `sections.length=${len}, ids=[${inMemV2.sections.map(s => s.id).join(",")}]`,
     );
     gate(
       "Gate 5b: in-memory FAQ has 6-8 items with question/answer shape",

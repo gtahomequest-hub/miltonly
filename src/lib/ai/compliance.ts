@@ -962,7 +962,7 @@ function loadPhase41EvaluativePrompt(): string {
 }
 
 const ABOUT_HOMES_AMENITIES_SECTION_IDS: StreetSectionId[] = ["about", "homes", "amenities"];
-const MARKET_SECTION_IDS: StreetSectionId[] = ["market"];
+const MARKET_SECTION_IDS: StreetSectionId[] = ["market", "neighbourhoodComparable"];
 const EVALUATIVE_SECTION_IDS: StreetSectionId[] = ["gettingAround", "schools", "bestFitFor", "differentPriorities"];
 
 // --- Phase 4.1 generator (DEC-PH41-CANONICAL) ---

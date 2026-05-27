@@ -1007,7 +1007,7 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
   schools:            ["Schools and catchment", "Education and schools"],
   bestFitFor:         ["Who this street suits", "A natural fit for"],
  differentPriorities:["If different priorities matter more", "For different priorities"],
-  neighbourhoodComparable: ["The {neighbourhood} comparable", "Comparable homes nearby", "What similar homes nearby look like"],
+  neighbourhoodComparable: ["Comparable homes nearby", "What similar homes nearby look like"],
 };
 
 // --- Thresholds ---
@@ -1136,7 +1136,7 @@ export function validateStreetGeneration(
     }
 
     // Em-dash — enforce only on market section (other sections tolerate occasional dashes)
-    if (section.id === "market" && EM_DASH_CHARS.test(sectionText)) {
+   if ((section.id === "market" || section.id === "neighbourhoodComparable") && EM_DASH_CHARS.test(sectionText)) {
       violations.push({
         rule: "em_dash",
         sectionId: section.id,
@@ -1172,7 +1172,7 @@ export function validateStreetGeneration(
     if (subLeak) {
       violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: subLeak.excerpt, severity: "hard" });
     }
-    if (section.id !== "market") {
+    if (section.id !== "market" && section.id !== "neighbourhoodComparable") {
       const ctxLeak = findMethodologyLeakContextual(sectionText);
       if (ctxLeak) {
         violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: ctxLeak.excerpt, severity: "hard" });
@@ -1448,7 +1448,7 @@ export function validateSectionsSubset(
       });
     }
 
-    if (section.id === "market" && EM_DASH_CHARS.test(sectionText)) {
+   if ((section.id === "market" || section.id === "neighbourhoodComparable") && EM_DASH_CHARS.test(sectionText)) {
       violations.push({
         rule: "em_dash",
         sectionId: section.id,
@@ -1481,7 +1481,7 @@ export function validateSectionsSubset(
     if (subLeakSub) {
       violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: subLeakSub.excerpt, severity: "hard" });
     }
-    if (section.id !== "market") {
+    if (section.id !== "market" && section.id !== "neighbourhoodComparable") {
       const ctxLeakSub = findMethodologyLeakContextual(sectionText);
       if (ctxLeakSub) {
         violations.push({ rule: "methodology_leak", sectionId: section.id, excerpt: ctxLeakSub.excerpt, severity: "hard" });

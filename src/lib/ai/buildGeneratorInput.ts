@@ -59,6 +59,7 @@ import {
 import { schools } from "@/lib/schools";
 import { extractStreetName, ruralSideRoadName } from "@/lib/streetUtils";
 import { NoCentroidError } from "@/lib/ai/errors";
+import { getNeighbourhoodComparable } from "@/lib/ai/neighbourhoodLookup";
 import type { StreetGeneratorInput } from "@/types/street-generator";
 
 // K-anonymity thresholds. Parallel to the same constants in street-data.ts.
@@ -403,7 +404,14 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 
   // ─── byType (union of sales + leases + active-listing types) ────────
   const byType = buildByType(soldSalesByType, soldLeasesByType, allListings);
-
+// ─── neighbourhoodComparable (Track 2 Pass 1 — Block C lookup) ──────
+  // Sequential after byType so dominantPropertyType is derivable. One extra
+  // DB3 round-trip outside the parallel batch above; ~50-100ms cost.
+  const neighbourhoodComparable = await resolveNeighbourhoodComparable(
+    allListings,
+    soldNeighbourhoodRows,
+    byType,
+  );
   // ─── leaseActivity.byBed (optional) ─────────────────────────────────
   const leaseActivity = buildLeaseActivity(leasesByBed, leasesCount);
 
@@ -479,6 +487,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   if (directionalStats.length > 1) input.directionalStats = directionalStats;
   if (leaseActivity) input.leaseActivity = leaseActivity;
   if (quarterlyTrend && quarterlyTrend.length > 0) input.quarterlyTrend = quarterlyTrend;
+ if (neighbourhoodComparable) input.neighbourhoodComparable = neighbourhoodComparable;
   return input;
 }
 
@@ -603,7 +612,32 @@ function pickDominantNeighbourhood(
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   return sorted[0][0];
 }
+function pickDominantPropertyType(byType: StreetGeneratorInput["byType"]): string | null {
+  let dominant: string | null = null;
+  let dominantCount = 0;
+  for (const [type, data] of Object.entries(byType)) {
+    if (data.count > dominantCount) {
+      dominantCount = data.count;
+      dominant = type;
+    }
+  }
+  return dominant;
+}
 
+async function resolveNeighbourhoodComparable(
+  listings: Listing[],
+  soldRows: Array<{ neighbourhood: string }>,
+  byType: StreetGeneratorInput["byType"],
+): Promise<StreetGeneratorInput["neighbourhoodComparable"]> {
+  const rawNeighbourhood = pickDominantNeighbourhood(listings, soldRows);
+  if (!rawNeighbourhood) return undefined;
+
+  const dominantType = pickDominantPropertyType(byType);
+  if (!dominantType) return undefined;
+
+  const result = await getNeighbourhoodComparable(rawNeighbourhood, dominantType);
+  return result ?? undefined;
+}
 // ---------------------------------------------------------------------------
 // byType — union of sales + leases + active-listing types with count rule:
 //   count = salesForType > 0 ? salesForType : leasesForType

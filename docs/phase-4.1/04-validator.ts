@@ -119,7 +119,7 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
   schools:            ["Schools and catchment"],
   bestFitFor:         ["Who this street suits"],
   differentPriorities:["If different priorities matter more"],
-  neighbourhoodComparable: ["The {neighbourhood} comparable", "Comparable homes nearby", "What similar homes nearby look like"],
+  neighbourhoodComparable: ["Comparable homes nearby", "What similar homes nearby look like"],
 };
 
 // --- Thresholds ---
