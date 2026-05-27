@@ -13,12 +13,12 @@ const VALID_SECTION_IDS = new Set<StreetSectionId>([
   "homes",
   "amenities",
   "market",
+  "neighbourhoodComparable", // Track 2 Pass 1 — optional 9th section
   "gettingAround",
   "schools",
   "bestFitFor",
   "differentPriorities",
 ]);
-
 function isStreetSection(v: unknown): v is StreetSection {
   if (!v || typeof v !== "object") return false;
   const s = v as Record<string, unknown>;

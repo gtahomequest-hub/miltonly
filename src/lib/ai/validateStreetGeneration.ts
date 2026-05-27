@@ -1015,7 +1015,11 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
 const SECTION_WORD_FLOORS: Record<StreetSectionId, number> = {
   about: 60, homes: 100, amenities: 80, market: 40,
   gettingAround: 55, schools: 45, bestFitFor: 55, differentPriorities: 55,
-  neighbourhoodComparable: 80,
+  // Track 2 Pass 1: DEC-PASS1-FLOOR-REVISED. Original spec set 80. Empirical
+  // evidence (aird-court 2026-05-27 smoke run) showed DeepSeek converges to
+  // 69-75 words on this section; 65 calibrates to that band with margin while
+  // still rejecting one-liner stubs. Re-evaluate at Pass 2.
+  neighbourhoodComparable: 65,
 };
 const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
   about: 180, homes: 350, amenities: 250, market: 350,
@@ -1053,10 +1057,14 @@ const FAQ_MAX = 8;
 const FAQ_ANSWER_MIN_SENTENCES = 1;
 const FAQ_ANSWER_MAX_SENTENCES = 5;
 
-const CANONICAL_ORDER: StreetSectionId[] = [
+const CANONICAL_ORDER_LEGACY: StreetSectionId[] = [
   "about","homes","amenities","market","gettingAround","schools","bestFitFor","differentPriorities",
 ];
-
+const CANONICAL_ORDER_T2: StreetSectionId[] = [
+  "about","homes","amenities","market","neighbourhoodComparable","gettingAround","schools","bestFitFor","differentPriorities",
+];
+// Back-compat alias for any imports outside this file
+const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
 // --- Canonical FAQ question bank ---
 const FAQ_BANK_TEMPLATES: string[] = [
   "What is the typical price on {Street}?",
@@ -1102,13 +1110,17 @@ export function validateStreetGeneration(
   const violations: ValidatorViolation[] = [];
 
   // Shape checks first (fail-fast)
-  if (!output.sections || output.sections.length !== 8) {
+ // Shape checks first (fail-fast)
+  // Accept legacy 8-section layout (pre-Track 2) or Track 2 Pass 1 9-section layout.
+  // The 9th section is neighbourhoodComparable, inserted at index 4 (right after market).
+  if (!output.sections || (output.sections.length !== 8 && output.sections.length !== 9)) {
     violations.push({ rule: "invalid_json_shape", excerpt: `sections length = ${output.sections?.length}`, severity: "hard" });
     return violations;
   }
-  for (let i = 0; i < 8; i++) {
-    if (output.sections[i].id !== CANONICAL_ORDER[i]) {
-      violations.push({ rule: "missing_section_id", excerpt: `position ${i} got id "${output.sections[i].id}", expected "${CANONICAL_ORDER[i]}"`, severity: "hard" });
+  const expectedOrder = output.sections.length === 9 ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
+  for (let i = 0; i < expectedOrder.length; i++) {
+    if (output.sections[i].id !== expectedOrder[i]) {
+      violations.push({ rule: "missing_section_id", excerpt: `position ${i} got id "${output.sections[i].id}", expected "${expectedOrder[i]}"`, severity: "hard" });
     }
   }
   if (!output.faq || output.faq.length < FAQ_MIN || output.faq.length > FAQ_MAX) {
@@ -2073,10 +2085,16 @@ function formatMissingSectionId(
   output: StreetGeneratorOutput,
 ): string[] {
   const present = output.sections.map(s => s.id);
-  const required: StreetSectionId[] = ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+  // Pick expected canonical order based on whether the output is legacy (8) or Track 2 (9).
+  const isT2 = output.sections.length === 9 || present.includes("neighbourhoodComparable");
+  const required: StreetSectionId[] = isT2
+    ? ["about", "homes", "amenities", "market", "neighbourhoodComparable", "gettingAround", "schools", "bestFitFor", "differentPriorities"]
+    : ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
   const missing = required.filter(r => !present.includes(r));
+  const orderStr = required.join(", ");
+  const countStr = isT2 ? "9" : "8";
   return [
-    `**missing_section_id**: Your output is missing required sections: ${missing.join(", ")}. The sections array MUST contain all 8 ids in canonical order: about, homes, amenities, market, gettingAround, schools, bestFitFor, differentPriorities. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
+    `**missing_section_id**: Your output is missing required sections or has them out of order. Missing: ${missing.length ? missing.join(", ") : "(none missing — likely a positional issue)"}. The sections array MUST contain all ${countStr} ids in canonical order: ${orderStr}. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
   ];
 }
 

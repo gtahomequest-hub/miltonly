@@ -258,16 +258,20 @@ async function main() {
 
   // Gate 5: Sections + FAQ shape — in-memory only.
   if (inMemV2) {
-    // Track 2 Pass 1: sections array can be 8 (no neighbourhoodComparable) or
-    // 9 (with neighbourhoodComparable). When 9, the new section is appended
-    // after differentPriorities. The first 8 IDs must remain canonical.
-    const canonicalEight = ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+   // Track 2 Pass 1: sections array can be 8 (legacy, no neighbourhoodComparable)
+    // or 9 (Track 2, with neighbourhoodComparable). When 9, the orchestrator's
+    // parallel-merge inserts neighbourhoodComparable at index 4, immediately
+    // after "market" — NOT appended at the end. Confirmed via aird-court smoke
+    // run 2026-05-27.
+    const canonicalLegacy = ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+    const canonicalT2 = ["about", "homes", "amenities", "market", "neighbourhoodComparable", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
     const len = inMemV2.sections.length;
-    const firstEightOk = canonicalEight.every((id, i) => inMemV2.sections[i]?.id === id);
-    const ninthOk = len === 8 || (len === 9 && inMemV2.sections[8]?.id === "neighbourhoodComparable");
+    const expectedOrder = len === 9 ? canonicalT2 : canonicalLegacy;
+    const orderOk = (len === 8 || len === 9) &&
+      expectedOrder.every((id, i) => inMemV2.sections[i]?.id === id);
     gate(
       "Gate 5a: in-memory sections has 8 or 9 entries in canonical order (Track 2 Pass 1)",
-      (len === 8 || len === 9) && firstEightOk && ninthOk,
+      orderOk,
       `sections.length=${len}, ids=[${inMemV2.sections.map(s => s.id).join(",")}]`,
     );
     gate(

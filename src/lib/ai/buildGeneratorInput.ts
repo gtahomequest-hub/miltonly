@@ -432,13 +432,24 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   );
 
   // ─── quarterlyTrend (optional; k-anon gated) ────────────────────────
+  // Track 2 Pass 1 — DEC-PASS1-QUARTERTREND-FILTER (2026-05-27).
+  // Single-trade quarters (count=1) are anchoring landmines: the model
+  // narrates outlier prices ("high-$1Ms", "softened to $X") that can never
+  // round-trip through the validator's ±4% tolerance, causing 5-attempt
+  // retry storms (aird-court, derry-road in the 11-street batch). Filter
+  // count=1 out of trend input so the model can only narrate multi-trade
+  // signal. Validator stays consistent — both sides see the same filtered
+  // trend. Streets with no count>=2 quarters fall back to undefined and
+  // the prompt's no-trend path triggers naturally.
   const quarterlyTrend =
     salesCount >= K_ANON_PRICE
-      ? monthlyToQuarterly(monthlyRows).map((q) => ({
-          quarter: q.quarter,
-          typical: q.value,
-          count: q.count,
-        }))
+      ? monthlyToQuarterly(monthlyRows)
+          .map((q) => ({
+            quarter: q.quarter,
+            typical: q.value,
+            count: q.count,
+          }))
+          .filter((q) => q.count >= 2)
       : undefined;
 
   // ─── nearby (parks, schools, mosques, grocery, hospital, GO, highway) ─
