@@ -68,6 +68,12 @@ Apply these rules before emitting any price in prose. Do not exercise judgment; 
 
 These rules are absolute. An MLS-level precise price in customer prose is a validator violation.
 
+**Note on rounding vs grounding (Workstream 1, 2026-05-28):**
+
+The post-processor `roundPricesInOutput` now leaves your prices UNCHANGED when they already trace to an input value within validator tolerance (±max($15K, 4%) for sale, ±max($150, 4%) for rent). Continue writing prices in the editorial forms above. A faithfully-cited input value (e.g., a quarterly typical of $1,225,000 written as "$1.225M") will pass both the rounding check and the grounding check via the new input-aware path, rather than being snapped to $1.25M and then rejected as ungrounded.
+
+If you emit a value that is NOT in input, the existing tier-rounding still applies, and `numeric_ungrounded` will fire as before. The change only affects how grounded values flow through the pipeline.
+
 ## Section specification
 
 **`market`** (2 paragraphs if `kAnonLevel === "full"`, 1 paragraph if `"thin"` or `"zero"`, 8–12 sentences total when full)

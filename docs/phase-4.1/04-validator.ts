@@ -493,3 +493,15 @@ export function formatViolationsForRetry(violations: ValidatorViolation[]): stri
   lines.push("", "Return the complete revised JSON. Do not include any prose commentary outside the JSON.");
   return lines.join("\n");
 }
+
+// Workstream 1 (2026-05-28): findPrecisePrice and findPreciseRent now accept an
+// optional input: StreetGeneratorInput parameter. When provided, non-tier-rounded
+// values that are within isPriceWithinInputTolerance of any input price/rent are
+// SKIPPED instead of returned as violations. This eliminates the conflict where
+// roundPricesInOutput would mutate a grounded value off-grid, and findPrecisePrice
+// would then fire on the post-rounded value.
+//
+// collectInputPrices, collectInputRents, and isPriceWithinInputTolerance are now
+// exported from validateStreetGeneration.ts.
+//
+// Source of truth: src/lib/ai/validateStreetGeneration.ts
