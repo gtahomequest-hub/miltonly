@@ -351,7 +351,7 @@ function parseDollarTokenForGrounding(tok: string): number | null {
   return Math.round(n * mul);
 }
 
-function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
+export function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
   for (const i of inputs) {
     if (i === 0) continue;
     const tol = Math.max(15_000, i * 0.04);
@@ -360,7 +360,7 @@ function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
   return false;
 }
 
-function collectInputPrices(input: StreetGeneratorInput): number[] {
+export function collectInputPrices(input: StreetGeneratorInput): number[] {
   const out: number[] = [];
   if (input.aggregates.typicalPrice) out.push(input.aggregates.typicalPrice);
   if (input.aggregates.priceRange) out.push(input.aggregates.priceRange.low, input.aggregates.priceRange.high);
@@ -373,7 +373,7 @@ function collectInputPrices(input: StreetGeneratorInput): number[] {
   return out;
 }
 
-function collectInputRents(input: StreetGeneratorInput): number[] {
+export function collectInputRents(input: StreetGeneratorInput): number[] {
   const out: number[] = [];
   for (const b of Object.values(input.leaseActivity?.byBed ?? {})) if (b.typicalRent) out.push(b.typicalRent);
   // Part 4 (2026-05-09): per-row records expose individual rents that ARE
@@ -967,31 +967,44 @@ function isRentProperlyRounded(figureStr: string): boolean {
   return value % 250 === 0;
 }
 
-function findPrecisePrice(text: string): string | null {
+function findPrecisePrice(text: string, input?: StreetGeneratorInput): string | null {
+  const inputPrices = input ? collectInputPrices(input) : [];
+  const inputRents = input ? collectInputRents(input) : [];
   DOLLAR_FIGURE.lastIndex = 0;
   let match;
   while ((match = DOLLAR_FIGURE.exec(text)) !== null) {
     const value = parseInt(match[1].replace(/,/g, ""), 10);
-    if (value < 10_000) continue;  // skip rent-sized figures
-    if (!isPriceProperlyRounded(value)) return match[0];
+    if (value < 10_000) continue;
+    if (!isPriceProperlyRounded(value)) {
+      if (isPriceWithinInputTolerance(value, inputPrices) || isPriceWithinInputTolerance(value, inputRents)) continue;
+      return match[0];
+    }
   }
   DOLLAR_SUFFIX.lastIndex = 0;
   while ((match = DOLLAR_SUFFIX.exec(text)) !== null) {
     const value = parseSuffixFigure(match[1], match[2]);
-    if (value < 10_000) continue;  // "$5K" etc. — sub-sale territory
-    if (!isPriceProperlyRounded(value)) return match[0];
+    if (value < 10_000) continue;
+    if (!isPriceProperlyRounded(value)) {
+      if (isPriceWithinInputTolerance(value, inputPrices) || isPriceWithinInputTolerance(value, inputRents)) continue;
+      return match[0];
+    }
   }
   return null;
 }
 
-function findPreciseRent(text: string): string | null {
+function findPreciseRent(text: string, input?: StreetGeneratorInput): string | null {
+  const inputRents = input ? collectInputRents(input) : [];
+  const inputPrices = input ? collectInputPrices(input) : [];
   RENT_FIGURE.lastIndex = 0;
   let match;
   while ((match = RENT_FIGURE.exec(text)) !== null) {
     const value = parseInt(match[1].replace(/,/g, ""), 10);
-    if (value < 500) continue;      // too low to be rent
-    if (value >= 20_000) continue;  // too high, would be sale-side
-    if (!isRentProperlyRounded(match[1])) return match[0];
+    if (value < 500) continue;
+    if (value >= 20_000) continue;
+    if (!isRentProperlyRounded(match[1])) {
+      if (isPriceWithinInputTolerance(value, inputRents) || isPriceWithinInputTolerance(value, inputPrices)) continue;
+      return match[0];
+    }
   }
   return null;
 }
@@ -1270,7 +1283,7 @@ export function validateStreetGeneration(
     }
 
     // Precise sale price (rounding violation)
-    const preciseSalePrice = findPrecisePrice(sectionText);
+    const preciseSalePrice = findPrecisePrice(sectionText, input);
     if (preciseSalePrice) {
       violations.push({
         rule: "precise_price",
@@ -1281,7 +1294,7 @@ export function validateStreetGeneration(
     }
 
     // Precise rent
-    const preciseRent = findPreciseRent(sectionText);
+    const preciseRent = findPreciseRent(sectionText, input);
     if (preciseRent) {
       violations.push({
         rule: "precise_price",
@@ -1360,9 +1373,9 @@ export function validateStreetGeneration(
   if (EM_DASH_CHARS.test(faqText)) {
     violations.push({ rule: "em_dash", excerpt: excerptAround(faqText, EM_DASH_CHARS), severity: "hard" });
   }
-  const faqSale = findPrecisePrice(faqText);
+  const faqSale = findPrecisePrice(faqText, input);
   if (faqSale) violations.push({ rule: "precise_price", excerpt: `FAQ sale price "${faqSale}" violates rounding`, severity: "hard" });
-  const faqRent = findPreciseRent(faqText);
+  const faqRent = findPreciseRent(faqText, input);
   if (faqRent) violations.push({ rule: "precise_price", excerpt: `FAQ rent "${faqRent}" violates rounding`, severity: "hard" });
   const faqLeak = findMethodologyLeak(faqText);
   if (faqLeak) {
@@ -1508,12 +1521,12 @@ export function validateSectionsSubset(
       }
     }
 
-    const preciseSalePrice = findPrecisePrice(sectionText);
+    const preciseSalePrice = findPrecisePrice(sectionText, input);
     if (preciseSalePrice) {
       violations.push({ rule: "precise_price", sectionId: section.id, excerpt: `sale price "${preciseSalePrice}" violates rounding rules`, severity: "hard" });
     }
 
-    const preciseRent = findPreciseRent(sectionText);
+    const preciseRent = findPreciseRent(sectionText, input);
     if (preciseRent) {
       violations.push({ rule: "precise_price", sectionId: section.id, excerpt: `rent "${preciseRent}" violates rounding rules`, severity: "hard" });
     }
@@ -1640,9 +1653,9 @@ export function validateFaq(
   if (EM_DASH_CHARS.test(faqText)) {
     violations.push({ rule: "em_dash", excerpt: excerptAround(faqText, EM_DASH_CHARS), severity: "hard" });
   }
-  const faqSale = findPrecisePrice(faqText);
+  const faqSale = findPrecisePrice(faqText, input);
   if (faqSale) violations.push({ rule: "precise_price", excerpt: `FAQ sale price "${faqSale}" violates rounding`, severity: "hard" });
-  const faqRent = findPreciseRent(faqText);
+  const faqRent = findPreciseRent(faqText, input);
   if (faqRent) violations.push({ rule: "precise_price", excerpt: `FAQ rent "${faqRent}" violates rounding`, severity: "hard" });
   const faqLeak = findMethodologyLeak(faqText);
   if (faqLeak) violations.push({ rule: "methodology_leak", excerpt: faqLeak.excerpt, severity: "hard" });

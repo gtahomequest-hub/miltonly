@@ -38,7 +38,8 @@
 // Real Milton rents are $1,500–$5,000/month; real Milton sales start
 // $400K+. The threshold cleanly separates the two.
 
-import type { StreetGeneratorOutput, StreetSectionId } from "@/types/street-generator";
+import type { StreetGeneratorOutput, StreetGeneratorInput, StreetSectionId } from "@/types/street-generator";
+import { collectInputPrices, collectInputRents, isPriceWithinInputTolerance } from "./validateStreetGeneration";
 
 interface Tier {
   upperExclusive: number;
@@ -200,17 +201,36 @@ interface RoundResult {
   changes: Change[];
 }
 
-function roundPricesInString(text: string): RoundResult {
+interface SkippedChange {
+  from: string;
+  value: number;
+  sale: boolean;
+  matchedInput: number;
+}
+
+function roundPricesInString(text: string, inputPrices: number[], inputRents: number[]): RoundResult & { skipped: SkippedChange[] } {
   const matches = findPriceTokens(text);
-  if (matches.length === 0) return { text, changes: [] };
+  if (matches.length === 0) return { text, changes: [], skipped: [] };
 
   const changes: Change[] = [];
-  // Process in reverse so earlier indices don't shift.
+  const skipped: SkippedChange[] = [];
   let result = text;
   for (let i = matches.length - 1; i >= 0; i--) {
     const m = matches[i];
     const { rounded, sale } = roundPrice(m.value);
     if (rounded === m.value) continue;
+
+    const candidates = sale ? inputPrices : inputRents;
+    const altCandidates = sale ? inputRents : inputPrices;
+    if (isPriceWithinInputTolerance(m.value, candidates) || isPriceWithinInputTolerance(m.value, altCandidates)) {
+      const matched = [...candidates, ...altCandidates].find(p => {
+        if (p === 0) return false;
+        return Math.abs(m.value - p) <= Math.max(15_000, p * 0.04);
+      }) ?? m.value;
+      skipped.unshift({ from: m.raw, value: m.value, sale, matchedInput: matched });
+      continue;
+    }
+
     const newToken = reformat(rounded, m.format);
     result = result.slice(0, m.start) + newToken + result.slice(m.end);
     changes.unshift({
@@ -222,22 +242,38 @@ function roundPricesInString(text: string): RoundResult {
       tierLabel: tierLabel(m.value, sale),
     });
   }
-  return { text: result, changes };
+  return { text: result, changes, skipped };
 }
 
 /**
  * Round every sale and rent price token in the generator's output to the
  * validator's tier-aware multiples. Returns a new output; input is not
  * mutated. Logs every replacement to console.
+ *
+ * When `input` is provided, tokens that are already within validator
+ * tolerance of an input value are left unchanged (grounding wins over
+ * rounding). When `input` is omitted, all tokens are rounded (legacy path).
  */
-export function roundPricesInOutput(output: StreetGeneratorOutput): StreetGeneratorOutput {
+export function roundPricesInOutput(
+  output: StreetGeneratorOutput,
+  input?: StreetGeneratorInput,
+): StreetGeneratorOutput {
+  const inputPrices = input ? collectInputPrices(input) : [];
+  const inputRents = input ? collectInputRents(input) : [];
+
   const newSections = output.sections.map((s) => {
     const newParagraphs = s.paragraphs.map((p) => {
-      const r = roundPricesInString(p);
+      const r = roundPricesInString(p, inputPrices, inputRents);
+      for (const sk of r.skipped) {
+        console.log(
+          `[roundPrices] section=${s.id as StreetSectionId} '${sk.from}' SKIPPED ` +
+          `(within tolerance of input $${sk.matchedInput.toLocaleString("en-US")})`
+        );
+      }
       for (const c of r.changes) {
         console.log(
           `[roundPrices] section=${s.id as StreetSectionId} '${c.from}' → '${c.to}' ` +
-          `(${c.sale ? "sale" : "rent"}, ${c.tierLabel})`
+          `(${c.sale ? "sale" : "rent"}, ${c.tierLabel}) (no input within tolerance)`
         );
       }
       return r.text;
@@ -246,11 +282,17 @@ export function roundPricesInOutput(output: StreetGeneratorOutput): StreetGenera
   });
 
   const newFaq = output.faq.map((f, i) => {
-    const r = roundPricesInString(f.answer);
+    const r = roundPricesInString(f.answer, inputPrices, inputRents);
+    for (const sk of r.skipped) {
+      console.log(
+        `[roundPrices] faq[${i}] '${sk.from}' SKIPPED ` +
+        `(within tolerance of input $${sk.matchedInput.toLocaleString("en-US")})`
+      );
+    }
     for (const c of r.changes) {
       console.log(
         `[roundPrices] faq[${i}] '${c.from}' → '${c.to}' ` +
-        `(${c.sale ? "sale" : "rent"}, ${c.tierLabel})`
+        `(${c.sale ? "sale" : "rent"}, ${c.tierLabel}) (no input within tolerance)`
       );
     }
     return { ...f, answer: r.text };
