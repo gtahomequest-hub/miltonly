@@ -1161,7 +1161,7 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
     const roundedHalf = roundPricesInOutput({
       sections: candidate.sections!,
       faq: expectsFaq && candidate.faq ? candidate.faq : [],
-    });
+    }, input);
     const sectionsForValidate = roundedHalf.sections;
     const faqForValidate = expectsFaq
       ? trimFaqAnswersToSentenceCap(roundedHalf.faq)
@@ -1500,7 +1500,7 @@ Original draft below:`;
       if (!parsed?.sections || !Array.isArray(parsed.sections)) {
         pass2Failure = "missing sections array";
       } else {
-        const rounded = roundPricesInOutput({ sections: parsed.sections, faq: [] });
+        const rounded = roundPricesInOutput({ sections: parsed.sections, faq: [] }, input);
         pass2Sections = rounded.sections;
         pass2Violations = validateSectionsSubset(pass2Sections, MARKET_SECTION_IDS, input);
         pass2Words = pass2Sections.reduce(
@@ -1667,7 +1667,7 @@ Original draft below:`;
     ...combinedRaw,
     faq: trimFaqAnswersToSentenceCap(combinedRaw.faq),
   };
-  const finalOutput = roundPricesInOutput(afterFaqTrim);
+  const finalOutput = roundPricesInOutput(afterFaqTrim, input);
 
   // Final validation on combined output. Catches total_word_floor (combined-
   // level only) and any cross-section interactions the partial validators
