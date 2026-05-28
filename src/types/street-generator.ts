@@ -71,6 +71,7 @@ export type ValidatorRule =
   | "numeric_ungrounded"
   | "temporal_pairing"
   | "qualitative_grounding"
+  | "per_trade_fabrication"
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---

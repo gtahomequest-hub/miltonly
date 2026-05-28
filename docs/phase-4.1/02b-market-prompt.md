@@ -53,9 +53,9 @@ Apply these rules before emitting any price in prose. Do not exercise judgment; 
 
 **Sale prices:**
 
-- Under $500,000 → round to nearest $10,000. Prose forms: "the mid-$480s," "around $475,000."
-- $500,000 to $999,999 → round to nearest $25,000. Prose forms: "the mid-$550s," "the high-$700s," "around $825,000."
-- $1,000,000 to $1,999,999 → round to nearest $50,000. Valid prose forms: "around $1M," "the low-$1Ms," "the mid-$1.3Ms," "around $1.5M," "just under $1.5M," "the high-$1.7Ms," "around $1.95M," "just under $2M." Two-decimal precision and bare-decimal forms ("$1.02M," "$1.07M," "$1.15M") are MLS exports, not advisor prose.
+- Under $500,000 → round to nearest $10,000. Required prose forms: "around $475,000," "approximately $480,000," "near $475,000."
+- $500,000 to $999,999 → round to nearest $25,000. Required prose forms: "around $825,000," "near $725,000," "approximately $625,000."
+- $1,000,000 to $1,999,999 → round to nearest $50,000. Valid prose forms: "around $1M," "around $1.5M," "just under $1.5M," "around $1.95M," "just under $2M." Two-decimal precision and bare-decimal forms ("$1.02M," "$1.07M," "$1.15M") are MLS exports, not advisor prose.
 - $2,000,000 and above → round to nearest $100,000.
 
 **Rental prices:**
@@ -64,9 +64,15 @@ Apply these rules before emitting any price in prose. Do not exercise judgment; 
 - $2,500 to $4,000 → round to nearest $100.
 - Over $4,000 → round to nearest $250.
 
-**Ranges:** Always round both endpoints. Prefer band language ("the high-$700s to the mid-$800s"). For stat-dense paragraphs, K/M shorthand is acceptable ("$748K to $875K," "$1.2M to $1.5M"). Never emit an un-rounded endpoint.
+**Ranges:** Always round both endpoints. State both endpoints as full numeric values: "$725,000 to $850,000," "$1.2M to $1.5M." Never emit an un-rounded endpoint.
 
 These rules are absolute. An MLS-level precise price in customer prose is a validator violation.
+
+**BRACKET-SHORTHAND PRICE EXPRESSIONS — FORBIDDEN (Workstream 2 / Class A):**
+
+The constructions "high-$770s," "mid-$920s," "low-$1.1Ms," "in the $700s," "the mid-700s," "the high-$1.7Ms," and similar thousand-bracket shorthand are FORBIDDEN. Even though they read naturally in real estate prose, downstream validators parse the literal "$770" or "$920" and treat it as a bare-thousands value (770, 920), creating a 1000x mismatch with input prices (776,667, 928,333) and firing numeric_ungrounded.
+
+Always emit full numeric values: write "around $776,000" not "the high-$770s," write "near $928,000" not "the mid-$920s," write "around $1.75M" not "the high-$1.7Ms." If you need to express imprecision, use the rounded full-number form ("around $725,000") not a tier-bracket form ("the mid-$700s").
 
 **Note on rounding vs grounding (Workstream 1, 2026-05-28):**
 
@@ -135,6 +141,21 @@ Only AFTER this restatement may you write the prose. Constraints on prose:
 4. If the input shows variability without a clean monotonic trend (some quarters up, some down), describe it as "uneven" or "variable across quarters" or "non-linear." Do NOT impose a smooth single-direction arc that the data does not support.
 
 These rules are absolute. Inventing a quarter that is not in the input, mismatching a price to a quarter, or mismatching a directional verb to a delta direction will trigger a temporal_pairing validator failure and force a costly retry. The restatement step is the cheapest insurance against these failures.
+
+**DIRECTION VERBS — MUST NAME EXPLICIT TRANSITION (Workstream 2 / Class C):**
+
+Every direction verb (firmed, softened, rose, eased, climbed, dipped, held, steadied, surged, fell, dropped, declined, compressed, pushed higher, pushed lower, etc.) MUST be paired with an explicit "from {prior quarter or value} to {target quarter or value}" transition. Free-standing direction verbs that do not name their transition are forbidden, because they cause temporal_pairing mis-attribution: the validator binds the verb to the nearest quarter token in the prose, which is often the wrong quarter.
+
+GOOD: "the typical price rose from $776,000 in Q4 2024 to $928,000 in Q2 2025"
+GOOD: "prices softened between Q3 2024 and Q4 2024, then firmed through Q2 2025"
+GOOD: "the range compressed between Q3 2024 and Q1 2026"
+BAD: "to $776,000 by Q4 2024, then firmed to $928,000 in Q2 2025" — "firmed" lacks an explicit "from/to" transition; the validator reads it as Q4 2024 firming
+BAD: "settled near $910,000 in Q1 2026. The range compressed" — "compressed" floats unattached to any transition
+BAD: "prices softened then firmed" — both verbs lack transitions
+
+If you cannot name an explicit transition for a direction verb (because the input lacks the data, or the trend is non-monotonic), DO NOT use the verb. Use neutral non-directional language instead: "the trend has been uneven across quarters," "trade activity has fluctuated without a clean directional read," "the typical price has moved through several inflection points."
+
+This rule is absolute. A direction verb without an explicit "from/to" transition will trigger temporal_pairing on the wrong quarter and force a costly retry.
 
 <!-- ========== NEW SECTION INSERTED ABOVE ========== -->
 
@@ -286,5 +307,7 @@ Before you emit the JSON, verify internally:
 8. Word count between 200 and 280 for full-data streets, 30+ for thin/zero.
 9. Heading matches "The market right now" or "Trade patterns."
 10. The `sections` array contains exactly one entry with `id: "market"`.
-11. Every quarter label in your prose appears in the input data. Every price-to-quarter pairing matches input typical for that quarter (within rounding tolerance). Every directional verb matches the actual q-over-q delta direction.
+11. Every quarter label in your prose appears in the input data. Every price-to-quarter pairing matches input typical for that quarter (within rounding tolerance). Every directional verb matches the actual q-over-q delta direction AND names an explicit "from/to" transition.
+12a. NO bracket-shorthand price expressions. Scan for "high-$", "mid-$", "low-$", "in the $", "the $X00s." Every price is a full number ("around $776,000"), not a tier bracket ("high-$770s").
+12b. NO singular per-trade claims about sales. The input exposes only aggregates (typicalPrice, byType, quarterlyTrend) — never an individual sale record. Phrases like "A three-bedroom condo unit changed hands around $X" or "one detached home sold for $Y in Q4 2024" or "a recent sale closed at $Z" are fabrications regardless of how close $X/$Y/$Z is to an aggregate. Use aggregate framing only: "the typical condo trades around $X" or "Q4 2024 trades clustered around $Y" or "comparable condos in the period sold around $Z."
 12. If `input.neighbourhoodComparable` is present in the input, the `sections` array contains TWO entries (one with `id: "market"`, one with `id: "neighbourhoodComparable"`, in that order). If absent, only the `market` entry. The neighbourhoodComparable section uses ONLY the allowed fields from `input.neighbourhoodComparable` (`neighbourhood`, `filterByPropertyType`, `typicalSoldPrice`, `priceChangeYoy`, `soldToAsk`, `daysOnMarket`, `sampleSize`). No fabricated prices. No implied differentials between the street and the neighbourhood scope.

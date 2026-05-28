@@ -333,54 +333,81 @@ export async function generateStreetContent(
         WHERE "StreetGeneration"."status" <> 'generating'::"GenerationStatus"
     `;
 
-    let phase41Result;
-    try {
-      phase41Result = await generatePhase41StreetContent(phase41Input);
-    } catch (err) {
-      // Phase41GenerationError carries violations + telemetry on retry-exhausted
-      // failures. Plain Errors (network hiccup, JSON parse hard fail before
-      // retry layer) carry no violations. Handle both.
-      const isPhase41Err = err instanceof Phase41GenerationError;
-      const violations = isPhase41Err ? err.payload.violations : [];
-      const attemptCountFromErr = isPhase41Err ? err.payload.attemptCount : 0;
-      const tokensInFromErr = isPhase41Err ? err.payload.totalInputTokens : 0;
-      const tokensOutFromErr = isPhase41Err ? err.payload.totalOutputTokens : 0;
-      const costFromErr = isPhase41Err ? err.payload.totalCostUsd : 0;
+    // Test-scaffold toggle (Workstream 2 / Step 2): when PHASE41_FORCE_FAIL_CLOSED=true,
+    // synthesize a v2Passed=false phase41Result without calling the LLM, so the
+    // fail-closed orchestration branch can be exercised in CI/verification
+    // without burning API tokens or waiting for a real combined-validator
+    // failure. Off in normal operation.
+    const forceFailClosed = (process.env.PHASE41_FORCE_FAIL_CLOSED || "").trim() === "true";
+    let phase41Result: Awaited<ReturnType<typeof generatePhase41StreetContent>>;
+    if (forceFailClosed) {
+      console.log(
+        `[generateStreetContent] ${streetSlug}: PHASE41_FORCE_FAIL_CLOSED=true — ` +
+        `synthesizing fail-closed phase41Result (no LLM calls). Verification path only.`
+      );
+      phase41Result = {
+        output: { sections: [], faq: [] },
+        attemptCount: 5,
+        validatorPassed: false,
+        finalViolations: [{
+          rule: "per_trade_fabrication",
+          excerpt: "PHASE41_FORCE_FAIL_CLOSED test scaffold — synthetic violation",
+          severity: "hard",
+        }],
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalCostUsd: 0,
+        attempts: [],
+      };
+    } else {
+      try {
+        phase41Result = await generatePhase41StreetContent(phase41Input);
+      } catch (err) {
+        // Phase41GenerationError carries violations + telemetry on retry-exhausted
+        // failures. Plain Errors (network hiccup, JSON parse hard fail before
+        // retry layer) carry no violations. Handle both.
+        const isPhase41Err = err instanceof Phase41GenerationError;
+        const violations = isPhase41Err ? err.payload.violations : [];
+        const attemptCountFromErr = isPhase41Err ? err.payload.attemptCount : 0;
+        const tokensInFromErr = isPhase41Err ? err.payload.totalInputTokens : 0;
+        const tokensOutFromErr = isPhase41Err ? err.payload.totalOutputTokens : 0;
+        const costFromErr = isPhase41Err ? err.payload.totalCostUsd : 0;
 
-      // Update the StreetGeneration row with telemetry and terminal status.
-      await prisma.streetGeneration.update({
-        where: { streetSlug },
-        data: {
-          status: "failed",
-          attemptCount: attemptCountFromErr,
-          tokensIn: tokensInFromErr,
-          tokensOut: tokensOutFromErr,
-          costUsd: costFromErr,
-          inputHash,
-        },
-      });
-
-      // Write the review row so admin tooling can surface the failure
-      // with violation details. Mirrors writeFailure() in
-      // scripts/backfill-descriptions.ts:560-595.
-      if (violations.length > 0) {
-        await prisma.streetGenerationReview.upsert({
+        // Update the StreetGeneration row with telemetry and terminal status.
+        await prisma.streetGeneration.update({
           where: { streetSlug },
-          update: {
-            violations: violations as unknown as object,
-            lastAttemptAt: new Date(),
-            lastInputHash: inputHash,
-          },
-          create: {
-            streetSlug,
-            violations: violations as unknown as object,
-            lastAttemptAt: new Date(),
-            lastInputHash: inputHash,
+          data: {
+            status: "failed",
+            attemptCount: attemptCountFromErr,
+            tokensIn: tokensInFromErr,
+            tokensOut: tokensOutFromErr,
+            costUsd: costFromErr,
+            inputHash,
           },
         });
-      }
 
-      throw err;
+        // Write the review row so admin tooling can surface the failure
+        // with violation details. Mirrors writeFailure() in
+        // scripts/backfill-descriptions.ts:560-595.
+        if (violations.length > 0) {
+          await prisma.streetGenerationReview.upsert({
+            where: { streetSlug },
+            update: {
+              violations: violations as unknown as object,
+              lastAttemptAt: new Date(),
+              lastInputHash: inputHash,
+            },
+            create: {
+              streetSlug,
+              violations: violations as unknown as object,
+              lastAttemptAt: new Date(),
+              lastInputHash: inputHash,
+            },
+          });
+        }
+
+        throw err;
+      }
     }
 
     const v2Passed = phase41Result.validatorPassed;
@@ -499,42 +526,62 @@ export async function generateStreetContent(
 
   const contentStatus = passed ? "published" : "draft";
 
-  await prisma.streetContent.upsert({
-    where: { streetSlug },
-    create: {
-      streetSlug,
-      streetName,
-      neighbourhood: stats.neighbourhood,
-      description,
-      rawAiOutput,
-      metaTitle,
-      metaDescription,
-      faqJson,
-      statsJson: JSON.stringify(stats),
-      marketDataHash,
-      status: contentStatus,
-      needsReview: phase41NeedsReview ?? !passed,
-      aiGenerated: true,
-      publishedAt: passed ? new Date() : null,
-      generatedAt: new Date(),
-      attempts,
-    },
-    update: {
-      description,
-      rawAiOutput,
-      neighbourhood: stats.neighbourhood,
-      metaTitle,
-      metaDescription,
-      faqJson,
-      statsJson: JSON.stringify(stats),
-      marketDataHash,
-      status: contentStatus,
-      needsReview: phase41NeedsReview ?? !passed,
-      publishedAt: passed ? new Date() : undefined,
-      generatedAt: new Date(),
-      attempts,
-    },
-  });
+  // Fail-closed gate (Workstream 2 / Step 2 / DEC-GROUNDING-GATE 2026-05-28):
+  // On phase41 v2 path validation failure (v2Passed=false), skip the
+  // StreetContent upsert entirely. StreetGeneration.status='failed' +
+  // StreetGenerationReview already capture the failure for the admin queue.
+  // Skipping the upsert preserves any prior published row exactly as-is.
+  // Brand-new streets that fail simply have no StreetContent row; the page
+  // renderer's getOrGenerateStreetContent fallback handles render time.
+  //
+  // Phase41GenerationError thrown from generatePhase41StreetContent (retry
+  // budget exhausted) already unwinds before this point — that path is
+  // fail-closed by construction. This guard handles the second failure
+  // mode where each half passes individually but combined validation fails.
+  if (phase41Failed) {
+    console.log(
+      `[generateStreetContent] ${streetSlug}: FAIL-CLOSED — StreetContent upsert skipped. ` +
+      `Failure recorded in StreetGeneration (status=failed) + StreetGenerationReview (violations). ` +
+      `Prior published StreetContent row (if any) preserved unchanged.`
+    );
+  } else {
+    await prisma.streetContent.upsert({
+      where: { streetSlug },
+      create: {
+        streetSlug,
+        streetName,
+        neighbourhood: stats.neighbourhood,
+        description,
+        rawAiOutput,
+        metaTitle,
+        metaDescription,
+        faqJson,
+        statsJson: JSON.stringify(stats),
+        marketDataHash,
+        status: contentStatus,
+        needsReview: phase41NeedsReview ?? !passed,
+        aiGenerated: true,
+        publishedAt: passed ? new Date() : null,
+        generatedAt: new Date(),
+        attempts,
+      },
+      update: {
+        description,
+        rawAiOutput,
+        neighbourhood: stats.neighbourhood,
+        metaTitle,
+        metaDescription,
+        faqJson,
+        statsJson: JSON.stringify(stats),
+        marketDataHash,
+        status: contentStatus,
+        needsReview: phase41NeedsReview ?? !passed,
+        publishedAt: passed ? new Date() : undefined,
+        generatedAt: new Date(),
+        attempts,
+      },
+    });
+  }
 
   if (!opts.skipSms) {
     await sendSMS(

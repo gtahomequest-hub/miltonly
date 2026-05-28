@@ -812,23 +812,36 @@ function buildProductTypeSections(input: {
 
 export function monthlyToQuarterly(rows: RawMonthly[]): QuarterlyDataPoint[] {
   // Aggregate 12 months into quarters (3 per year). Group by year + floor((month-1)/3).
-  const buckets = new Map<string, { totalPrice: number; totalCount: number; label: string }>();
+  const buckets = new Map<string, { totalPrice: number; totalCount: number; label: string; sortKey: number }>();
   for (const r of rows) {
     const q = Math.floor((r.month - 1) / 3) + 1;
     const key = `${r.year}-Q${q}`;
     const label = `Q${q} '${String(r.year).slice(2)}`;
-    const curr = buckets.get(key) ?? { totalPrice: 0, totalCount: 0, label };
+    // Workstream 2 / Step 5 (2026-05-28): preserve the (year, quarter)
+    // numeric pair as a sortKey so the final sort is chronological. Prior
+    // code used `a.quarter.localeCompare(b.quarter)` which sorted by
+    // string and placed `Q1 '26` before `Q2 '25` — wrong direction for
+    // any cross-year sequence. The validator's findTemporalPairings
+    // already re-sorts chronologically internally, but the prompt input
+    // was previously seeing the string-sorted order, forcing the model to
+    // mentally re-sort and causing it to mis-attribute Q-over-Q deltas.
+    const sortKey = r.year * 4 + q;
+    const curr = buckets.get(key) ?? { totalPrice: 0, totalCount: 0, label, sortKey };
     const price = num(r.avg_sold_price) ?? 0;
     curr.totalPrice += price * r.sold_count;
     curr.totalCount += r.sold_count;
     buckets.set(key, curr);
   }
-  const out: QuarterlyDataPoint[] = [];
+  const out: Array<QuarterlyDataPoint & { sortKey: number }> = [];
   Array.from(buckets.values()).forEach((v) => {
     if (v.totalCount === 0) return;
-    out.push({ quarter: v.label, value: v.totalPrice / v.totalCount, count: v.totalCount });
+    out.push({ quarter: v.label, value: v.totalPrice / v.totalCount, count: v.totalCount, sortKey: v.sortKey });
   });
-  return out.sort((a, b) => a.quarter.localeCompare(b.quarter)).slice(-8);
+  // Sort chronologically (year × 4 + quarter), then slice the most recent 8.
+  return out
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .slice(-8)
+    .map(({ quarter, value, count }) => ({ quarter, value, count }));
 }
 
 function trendLabel(points: QuarterlyDataPoint[]): string {

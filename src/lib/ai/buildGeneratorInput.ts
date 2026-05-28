@@ -112,6 +112,19 @@ interface RawRangeRow {
   n: number;
   lo: string | null;
   hi: string | null;
+  // Workstream 2 / Step 5 (2026-05-28): extend the live For-Sale aggregate
+  // query to also return AVG(sold_price) and AVG(days_on_market). Prior
+  // code pulled these from analytics.street_sold_stats which can be stale
+  // relative to the live sold.sold_records table — observed on
+  // centennial-forest-drive-milton where analytics said sold_count=10 but
+  // the live query returns 9. The mismatch caused priceRange=null when the
+  // analytics-reported salesCount was 10 (k threshold met by analytics,
+  // but the live MIN/MAX query found only 9 rows so the range was
+  // suppressed). Sourcing all sales-side aggregates from the SAME live
+  // query guarantees salesCount, typicalPrice, priceRange, and
+  // daysOnMarket are mutually consistent.
+  avg_price: string | null;
+  avg_dom: string | null;
 }
 
 interface RawCrossCandidate {
@@ -223,7 +236,9 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawRangeRow>(
       (db) => db`SELECT COUNT(*)::int AS n,
                          MIN(sold_price) AS lo,
-                         MAX(sold_price) AS hi
+                         MAX(sold_price) AS hi,
+                         AVG(sold_price) AS avg_price,
+                         AVG(days_on_market) AS avg_dom
                   FROM sold.sold_records
                   WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
@@ -380,15 +395,23 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   );
 
   // ─── Aggregates ─────────────────────────────────────────────────────
+  // Workstream 2 / Step 5 (2026-05-28): sales-side aggregates now come
+  // from the LIVE sold.sold_records range query (soldRangeRows) so that
+  // salesCount, typicalPrice, priceRange, and daysOnMarket are mutually
+  // consistent. analytics.street_sold_stats can be stale (centennial
+  // example: analytics=10 but live=9), creating a k-threshold mismatch
+  // where salesCount advertised k>=10 but priceRange's MIN/MAX query
+  // found <10 rows and suppressed itself. leasesCount stays sourced from
+  // analytics because no live "For Lease" count is in soldRangeRows.
   const stats = soldStatsRows[0] ?? null;
-  const salesCount = stats?.sold_count_12months ?? 0;
+  const rangeRow = soldRangeRows[0] ?? null;
+  const salesCount = rangeRow?.n ?? 0;
   const leasesCount = stats?.leased_count_12months ?? 0;
   const txCount = salesCount + leasesCount;
 
-  const typicalRaw = num(stats?.avg_sold_price ?? null);
+  const typicalRaw = num(rangeRow?.avg_price ?? null);
   const typicalPrice = salesCount >= K_ANON_PRICE && typicalRaw !== null ? typicalRaw : null;
 
-  const rangeRow = soldRangeRows[0] ?? null;
   const loRaw = num(rangeRow?.lo ?? null);
   const hiRaw = num(rangeRow?.hi ?? null);
   const priceRange =
@@ -396,7 +419,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
       ? { low: loRaw, high: hiRaw }
       : null;
 
-  const domRaw = num(stats?.avg_dom ?? null);
+  const domRaw = num(rangeRow?.avg_dom ?? null);
   const daysOnMarket = domRaw !== null ? Math.round(domRaw) : null;
 
   const kAnonLevel: "full" | "thin" | "zero" =

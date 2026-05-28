@@ -293,9 +293,13 @@ interface NumericExtraction {
 // later matches are dropped). Put more-specific shapes first so they win:
 //   "X of Y" before bare "X leases" (so "11 of 22" wins over "22 leases")
 //   "only X active" before bare "X active"
+//   "(high|mid|low)-$N(s)" before bare "$N" so tier-shorthand keeps its
+//     tier qualifier — otherwise `$770` claims the span for `high-$770s`
+//     and parseDollarTokenForGrounding can't scale 770 → 770_000.
+//     (Workstream 2 / Class A hardening 2026-05-28.)
 const NUMERIC_PATTERNS: Array<{ re: RegExp; type: NumericExtraction["type"] }> = [
-  { re: /\$[\d,]+(?:\.\d+)?[KkMm]?/g, type: "dollar" },
   { re: /(?:high|mid|low)-\$\d+(?:\.\d+)?[KkMm]?s?/g, type: "dollar" },
+  { re: /\$[\d,]+(?:\.\d+)?[KkMm]?/g, type: "dollar" },
   { re: /\b\d+(?:\.\d+)?%/g, type: "percent" },
   { re: /\b\d+\s+of\s+\d+\b/gi, type: "count" },
   { re: /\b(?:only|just)\s+\d+\s+active\b/gi, type: "count" },
@@ -370,6 +374,20 @@ export function collectInputPrices(input: StreetGeneratorInput): number[] {
   }
   for (const q of input.quarterlyTrend ?? []) if (q.typical) out.push(q.typical);
   for (const c of input.crossStreets ?? []) if (c.typicalPrice) out.push(c.typicalPrice);
+  // Workstream 2 / Step 4 hardening: neighbourhoodComparable.typicalSoldPrice
+  // is a legitimate input-anchored value the model cites in the
+  // neighbourhoodComparable section. Prior omission caused $600K-class
+  // false rejections when the model wrote rounded neighbourhood prices
+  // that matched input.neighbourhoodComparable but no other input field.
+  if (input.neighbourhoodComparable?.typicalSoldPrice) {
+    out.push(input.neighbourhoodComparable.typicalSoldPrice);
+  }
+  if (input.neighbourhoodComparable?.priceRange) {
+    out.push(
+      input.neighbourhoodComparable.priceRange.low,
+      input.neighbourhoodComparable.priceRange.high,
+    );
+  }
   return out;
 }
 
@@ -736,8 +754,13 @@ export function findTemporalPairings(
   // fire on a different quarter that happened to be in its ±80 char context
   // (e.g., "softened by Q3 2025, though a single sale in Q3 2026 reached..."
   // where "softened" applies to Q3 2025 but old logic also fired on Q3 2026).
+  // NOTE (Workstream 2 / Class C hardening 2026-05-28): "compressed" removed
+  // from downPattern. It is a range-narrowing verb ("the range compressed"),
+  // not a price-direction verb. Including it caused false-positives when the
+  // model legitimately described the SPREAD narrowing while the average held
+  // or moved in either direction (centennial-forest-drive raw output 2026-05-27).
   const upPattern = /\b(rose|climbed|firmed|surged|jumped|spiked|rebounded|increased|pushed[^.]{0,15}?higher|composite[^.]{0,15}?higher|all-type[^.]{0,15}?higher)\b/gi;
-  const downPattern = /\b(softened|dropped|declined|fell|slipped|pushed[^.]{0,15}?lower|sank|cooled|compressed)\b/gi;
+  const downPattern = /\b(softened|dropped|declined|fell|slipped|pushed[^.]{0,15}?lower|sank|cooled)\b/gi;
   type DirectionFinding = { idx: number; word: string; dir: "up" | "down" };
   const directionMatches: DirectionFinding[] = [];
   for (const dm of Array.from(prose.matchAll(upPattern))) {
@@ -747,46 +770,70 @@ export function findTemporalPairings(
     directionMatches.push({ idx: dm.index ?? 0, word: dm[0], dir: "down" });
   }
   for (const dirFind of directionMatches) {
-    // Find nearest quarter (within 50 chars in either direction).
-    let nearestQ: { canonical: string; idx: number; distance: number } | null = null;
+    // Workstream 2 / Class C hardening: accept the verb if ANY quarter in
+    // its ±50-char window has a transition supporting the stated direction.
+    // The prior nearest-only logic mis-fired on chained prose like
+    // "softened to $776K in Q4 2024, then firmed to $928K in Q2 2025" —
+    // "firmed" was bound to Q4 2024 (nearest) and flagged as wrong, even
+    // though the verb actually describes the Q4'24 → Q2'25 transition,
+    // which is up. The wider candidate sweep catches the intended quarter.
+    const candidates: Array<{ canonical: string; idx: number; distance: number; actualDirection: "up" | "down" | "flat" | "none" }> = [];
     for (const qm of matches) {
       const qIdx = qm.index ?? 0;
       const distance = Math.abs(qIdx - dirFind.idx);
       if (distance > 50) continue;
-      if (!nearestQ || distance < nearestQ.distance) {
-        nearestQ = { canonical: normalizeQuarterLabel(qm[0]), idx: qIdx, distance };
+      const canonical = normalizeQuarterLabel(qm[0]);
+      const inputTypical = trendMap.get(canonical);
+      if (inputTypical === undefined) {
+        candidates.push({ canonical, idx: qIdx, distance, actualDirection: "none" });
+        continue;
       }
+      const prev = prevMap.get(canonical);
+      if (prev === undefined) {
+        candidates.push({ canonical, idx: qIdx, distance, actualDirection: "none" });
+        continue;
+      }
+      const change = (inputTypical - prev) / prev;
+      const actualDirection: "up" | "down" | "flat" =
+        change > 0.05 ? "up" :
+        change < -0.05 ? "down" :
+        "flat";
+      candidates.push({ canonical, idx: qIdx, distance, actualDirection });
     }
-    if (!nearestQ) continue;
 
-    const inputTypical = trendMap.get(nearestQ.canonical);
-    if (inputTypical === undefined) continue;
-    const prev = prevMap.get(nearestQ.canonical);
-    if (prev === undefined) continue;
+    if (candidates.length === 0) continue;
 
-    const change = (inputTypical - prev) / prev;
-    const actualDirection: "up" | "down" | "flat" =
-      change > 0.05 ? "up" :
-      change < -0.05 ? "down" :
-      "flat";
-    const opposite =
-      (dirFind.dir === "up" && actualDirection === "down") ||
-      (dirFind.dir === "down" && actualDirection === "up");
-    if (!opposite) continue;
+    // Accept if any candidate's direction matches OR is flat (model can
+    // describe a flat as either soft "firmed" or soft "eased" by an editorial
+    // margin — only fire on opposite-direction mismatches, the existing
+    // tolerance).
+    const supports = candidates.some(
+      (c) => c.actualDirection === dirFind.dir || c.actualDirection === "flat"
+    );
+    if (supports) continue;
 
-    const key = `${nearestQ.canonical}|direction`;
+    // None of the candidates support the direction — fire on the nearest
+    // candidate that has a real transition (not "none"), preferring
+    // transitions over no-prior-quarter cases for the most informative
+    // error message.
+    const failingCandidate =
+      candidates.find((c) => c.actualDirection !== "none") ?? candidates[0];
+
+    const inputTypical = trendMap.get(failingCandidate.canonical);
+    const prev = prevMap.get(failingCandidate.canonical);
+    if (inputTypical === undefined || prev === undefined) continue;
+
+    const key = `${failingCandidate.canonical}|direction`;
     if (seenKeys.has(key)) continue;
     seenKeys.add(key);
-    const ctxStart = Math.max(0, Math.min(dirFind.idx, nearestQ.idx) - 30);
-    const ctxEnd = Math.min(prose.length, Math.max(dirFind.idx + dirFind.word.length, nearestQ.idx + 7) + 30);
+    const ctxStart = Math.max(0, Math.min(dirFind.idx, failingCandidate.idx) - 30);
+    const ctxEnd = Math.min(prose.length, Math.max(dirFind.idx + dirFind.word.length, failingCandidate.idx + 7) + 30);
     findings.push({
-      quarter: nearestQ.canonical,
+      quarter: failingCandidate.canonical,
       context: prose.slice(ctxStart, ctxEnd),
       reason:
-        `${nearestQ.canonical} described as ${dirFind.dir} (via "${dirFind.word}") but actual ` +
-        `q-over-q change vs prior is ${actualDirection} ` +
-        `($${Math.round(prev).toLocaleString("en-US")} → ` +
-        `$${Math.round(inputTypical).toLocaleString("en-US")})`,
+        `${failingCandidate.canonical} described as ${dirFind.dir} (via "${dirFind.word}") but no quarter in the ±50-char window has a matching transition ` +
+        `(actual q-over-q change vs prior: ${failingCandidate.actualDirection} from $${Math.round(prev).toLocaleString("en-US")} → $${Math.round(inputTypical).toLocaleString("en-US")})`,
       type: "direction_mismatch",
     });
   }
@@ -930,6 +977,155 @@ export function findQualitativeGroundingViolations(prose: string): QualitativeFi
         break; // one fire per subsegment match (don't double-fire on multiple comparatives)
       }
     }
+  }
+
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
+// Class B grounding gate — singular-per-trade fabrication detector.
+//
+// Surfaced by the centennial-forest-drive-milton diagnostic (2026-05-28):
+// the model emitted "A three-bedroom condo unit changed hands around $775,000
+// in Q4 2024" but input.aggregates exposes only quarterly + by-type means.
+// There are zero per-record sale rows in StreetGeneratorInput, so any
+// singular-trade assertion about a sale is fabrication by construction.
+//
+// Numeric-proximity grounding (findUngroundedNumerics) missed it because
+// $775K is within ±4% of the Q4'24 quarterly typical of $776,667 — the
+// price ANCHORS to a real aggregate but the CLAIM-TYPE (single trade,
+// specific date, specific bed count) is unsupported by the data shape.
+//
+// Architectural principle (DEC-GROUNDING-GATE 2026-05-28):
+//   Validation gates on CLAIM-TYPE vs DATA-EXISTENCE, not number proximity.
+//   If the prose makes a per-trade claim and the input has no per-trade
+//   record set, the rule fires regardless of how close the number is to an
+//   aggregate.
+//
+// Coverage:
+//   - Sale-side claims: input never exposes per-trade sales → always fire.
+//   - Lease-side claims: fire if input.leaseActivity.recentRecords is empty
+//     or absent (Part 4 exposes per-lease records when k≥5).
+//
+// Determiners that mark a singular-trade claim: a, an, one (and "a single",
+// "one single"). Aggregate signal words within the matched span (typical,
+// average, median, comparable, generally, usually, representative) suppress
+// the fire — "a typical condo" is aggregate language even though it has "a".
+// ---------------------------------------------------------------------------
+
+const PER_TRADE_PROPERTY_NOUNS = [
+  "condo", "townhouse", "townhome", "detached", "semi-detached", "semi",
+  "home", "unit", "property", "house", "bungalow",
+];
+const PER_TRADE_TRANSACTION_NOUNS = ["trade", "sale", "transaction"];
+const PER_TRADE_TRANSACTION_VERBS = [
+  "changed\\s+hands",
+  "sold\\s+(?:for|at|around|near)",
+  "traded\\s+(?:at|for|around|near)",
+  "went\\s+for",
+  "closed\\s+(?:at|near|around)",
+  "fetched",
+  "achieved",
+];
+const PER_TRADE_AGGREGATE_SIGNALS = [
+  "typical", "typically", "average", "median", "comparable", "generally",
+  "usually", "representative", "on\\s+average", "in\\s+general",
+];
+
+export interface PerTradeFabricationFinding {
+  matchedPhrase: string;
+  context: string;
+  side: "sale" | "lease";
+  reason: string;
+}
+
+/**
+ * Scan prose for singular-per-trade claims that the input data cannot support.
+ *
+ * Implements the claim-type-vs-data-existence principle: fires regardless of
+ * whether the cited dollar value is close to an aggregate, because the
+ * fabrication is structural (no per-trade record exists in input).
+ */
+export function findPerTradeFabrications(
+  prose: string,
+  input: StreetGeneratorInput,
+): PerTradeFabricationFinding[] {
+  const findings: PerTradeFabricationFinding[] = [];
+
+  const propertyNounAlt = PER_TRADE_PROPERTY_NOUNS.join("|");
+  const transactionNounAlt = PER_TRADE_TRANSACTION_NOUNS.join("|");
+  const aggregateAlt = PER_TRADE_AGGREGATE_SIGNALS.join("|");
+  const verbRe = new RegExp(`\\b(?:${PER_TRADE_TRANSACTION_VERBS.join("|")})\\b`, "i");
+  // Price pattern: comma-grouped ($725,000), K/M-suffix ($1.15M), or bare 3-7
+  // digit (rejected). Bare 1-2 digit prefaced by $ is allowed for tier
+  // shorthand ($770s) since the per-trade rule fires on shorthand too —
+  // emitting "$770" in a per-trade context is still fabrication, irrespective
+  // of whether the surrounding tier word would otherwise rescue the literal
+  // for findUngroundedNumerics.
+  const priceRe = /\$\d[\d.,]*[KkMm]?/;
+
+  // Determiner + optional adjectives (excluding aggregate signals via negative
+  // lookahead) + property or transaction noun. Up to 3 adjective slots covers
+  // "three-bedroom condo unit" / "single recent transaction" / etc.
+  const claimRe = new RegExp(
+    `\\b(a|an|one)\\s+` +
+    `(?:(?:(?!(?:${aggregateAlt})\\b)[a-z][a-z-]+)\\s+){0,3}` +
+    `(${propertyNounAlt}|${transactionNounAlt})\\b`,
+    "gi",
+  );
+
+  for (const m of Array.from(prose.matchAll(claimRe))) {
+    const mIdx = m.index ?? 0;
+    const mEnd = mIdx + m[0].length;
+    const noun = (m[2] || "").toLowerCase();
+    const isTransactionNoun = PER_TRADE_TRANSACTION_NOUNS.includes(noun);
+
+    // Look-after window for the transaction verb (property nouns) and for the
+    // price (both). Verb-attached property nouns need both; transaction nouns
+    // are themselves the event so only require a price.
+    const after = prose.slice(mEnd, Math.min(prose.length, mEnd + 120));
+    const verbMatch = isTransactionNoun ? { index: 0, length: 0 } : (() => {
+      const vm = after.match(verbRe);
+      return vm ? { index: vm.index ?? 0, length: vm[0].length } : null;
+    })();
+    if (!verbMatch) continue;
+
+    const claimEnd = mEnd + verbMatch.index + verbMatch.length;
+    const priceWindow = prose.slice(mEnd, Math.min(prose.length, claimEnd + 60));
+    if (!priceRe.test(priceWindow)) continue;
+
+    // Aggregate-signal override is enforced INSIDE the determiner→noun span
+    // via the regex's negative lookahead, which already blocks "a typical X",
+    // "a representative X", etc. from forming a match. A wider window check
+    // was tried and caused false suppression (e.g., a prior sentence's
+    // "typical price" suppressing a later legitimate fire). Span-internal
+    // lookahead is the right scope.
+    const ctxStart = Math.max(0, mIdx - 30);
+    const ctxEnd = Math.min(prose.length, claimEnd + 40);
+    const claimSpan = prose.slice(ctxStart, ctxEnd);
+
+    // Lease vs sale side: lease/rent vocabulary in the surrounding ~50 chars
+    // wins. Default is sale (the more common emission for centennial-class
+    // fabrications).
+    const sideCtx = prose.slice(Math.max(0, mIdx - 50), Math.min(prose.length, claimEnd + 60));
+    const isLease = /\b(lease|leased|rent|rental|tenant|monthly|month|\/mo)\b/i.test(sideCtx);
+
+    // Data-existence gate.
+    const hasLeaseRecords = (input.leaseActivity?.recentRecords?.length ?? 0) > 0;
+    if (isLease && hasLeaseRecords) continue;
+    // Sale-side has no per-trade record set in any current input shape, so
+    // the gate fires unconditionally for sale claims. If a per-trade sale
+    // record field is added to StreetGeneratorInput later, add the existence
+    // check here.
+
+    findings.push({
+      matchedPhrase: m[0],
+      context: claimSpan.replace(/\s+/g, " ").trim(),
+      side: isLease ? "lease" : "sale",
+      reason: isLease
+        ? `singular per-trade lease claim but input.leaseActivity.recentRecords is empty/absent — claim-type vs data-existence mismatch`
+        : `singular per-trade sale claim but input exposes no per-trade sale records (only aggregates: typicalPrice, byType, quarterlyTrend) — claim-type vs data-existence mismatch`,
+    });
   }
 
   return findings;
@@ -1282,6 +1478,24 @@ export function validateStreetGeneration(
       }
     }
 
+    // v10 (Workstream 2 / Step 1): per-trade fabrication.
+    // Claim-type vs data-existence check. Fires on singular-trade claims
+    // (a/an/one + property-noun + transaction-verb + price) when the input
+    // has no per-trade record set for that side (sale always; lease when
+    // leaseActivity.recentRecords is empty). Independent of numeric-proximity
+    // grounding — catches fabrications anchored to aggregate values.
+    if (section.id === "market" || section.id === "neighbourhoodComparable") {
+      const perTrade = findPerTradeFabrications(sectionText, input);
+      for (const p of perTrade) {
+        violations.push({
+          rule: "per_trade_fabrication",
+          sectionId: section.id,
+          excerpt: `${p.side}-side: "${p.matchedPhrase}" — ${p.reason}; ctx: ${p.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
     // Precise sale price (rounding violation)
     const preciseSalePrice = findPrecisePrice(sectionText, input);
     if (preciseSalePrice) {
@@ -1579,6 +1793,21 @@ export function validateSectionsSubset(
           rule: "qualitative_grounding",
           sectionId: section.id,
           excerpt: `${q.reason}; ctx: ${q.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
+    // v10 (Workstream 2 / Step 1): per-trade fabrication — partial-validator
+    // mirror so the market half retries on its own when the model fabricates
+    // a singular trade. Scoped to market + neighbourhoodComparable.
+    if (section.id === "market" || section.id === "neighbourhoodComparable") {
+      const perTrade = findPerTradeFabrications(sectionText, input);
+      for (const p of perTrade) {
+        violations.push({
+          rule: "per_trade_fabrication",
+          sectionId: section.id,
+          excerpt: `${p.side}-side: "${p.matchedPhrase}" — ${p.reason}; ctx: ${p.context}`,
           severity: "hard",
         });
       }
