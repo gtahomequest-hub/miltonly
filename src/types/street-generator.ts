@@ -72,6 +72,7 @@ export type ValidatorRule =
   | "temporal_pairing"
   | "qualitative_grounding"
   | "per_trade_fabrication"
+  | "comparison_mismatch"   // WS4 (DEC-WS4-3): hub compared-to-milton cross-sectional gate
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---
