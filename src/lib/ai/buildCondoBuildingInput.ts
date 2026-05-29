@@ -1,0 +1,277 @@
+// src/lib/ai/buildCondoBuildingInput.ts
+// WS4 patch 2 (DEC-WS4-5, ADR 0002) — input builder for the CONDO BUILDING tier.
+//
+//   buildCondoBuildingInput(buildingSlug) → CondoBuildingGeneratorInput
+//
+// This is the real work of the patch. The defining discipline is the
+// transaction_type SPLIT (entity-taxonomy spec, DEC-WS4-5): sale-side and
+// lease-side aggregates are computed by SEPARATE building-keyed queries and
+// NEVER merged. Mixing them is the `490 Gordon Krantz avg 2370` regression —
+// monthly rents (~$2,400) averaged with sale prices (~$700K) produce a nonsense
+// midpoint. The sale side feeds the market section + VIP; the lease side is
+// purely informational and can never reach `recencyWeightedSold` or the market
+// section.
+//
+// The SQL is building-keyed — `(street_number, street_slug)` per ADR 0001 DEC-4
+// — NOT a parameterization of the neighbourhood query. It REUSES
+// `assembleAggregates` / `assembleQuarterly` from buildHubInput verbatim (so the
+// k-anon discipline is identical: K_ANON_PRICE=5 typical, K_ANON_RANGE=10 range).
+// Building-tier k-anon bites far more often than neighbourhood tier — many
+// buildings have a handful of sale trades — and that is correct (DEC-WS4-4).
+//
+// Server-scoped by construction (Prisma DB1 + Neon serverless HTTP for DB2).
+// Consumed by WS5 generation orchestration + the WS4 fixtures.
+
+import { prisma } from "@/lib/prisma";
+import { getSoldDb } from "@/lib/db";
+import {
+  assembleAggregates,
+  assembleQuarterly,
+  type RawSaleAgg,
+  type RawQuarterRow,
+} from "@/lib/ai/buildHubInput";
+import type {
+  CondoBuildingGeneratorInput,
+  CondoLeaseInfo,
+  HubTypeBucket,
+  KAnonLevel,
+} from "@/types/hub-generator";
+
+const K_ANON_PRICE = 5;
+const K_ANON_RANGE = 10;
+const TREND_WINDOW_MONTHS = 30;
+const LEASE_RECORD_CAP = 10;
+
+type SqlClient = NonNullable<ReturnType<typeof getSoldDb>>;
+
+function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
+  const sd = getSoldDb();
+  if (!sd) return Promise.resolve([] as T[]);
+  return (build(sd) as Promise<T[]>).catch(() => [] as T[]);
+}
+
+function num(v: string | number | null | undefined): number | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === "number" ? v : parseFloat(String(v));
+  return Number.isFinite(n) ? n : null;
+}
+
+interface RawTypeAgg {
+  property_type: string;
+  n: number;
+  avg_price: string | null;
+  min_price: string | null;
+  max_price: string | null;
+}
+interface RawLeaseRecord {
+  street_number: string | null;
+  street_name: string | null;
+  rent: string | null;
+  beds: number | null;
+  days_on_market: number | null;
+  sold_month: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Building-keyed SQL. Every query filters property_type='condo' AND the
+// (street_number, street_slug) pair — the physical building, not the street.
+// SALE vs LEASE are physically distinct queries (the transaction_type split).
+// ---------------------------------------------------------------------------
+
+function saleAggQuery(streetNumber: string, streetSlug: string) {
+  return querySold<RawSaleAgg>((db) =>
+    db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
+              AVG(sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
+       FROM sold.sold_records
+       WHERE property_type = 'condo'
+         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND perm_advertise = TRUE AND transaction_type = 'For Sale'
+         AND sold_date >= NOW() - INTERVAL '12 months'`,
+  );
+}
+
+// SEPARATE lease aggregate — count only. Lease values are NEVER passed into the
+// sale aggregate; they exist solely to flag the lease side and gate per-trade
+// lease claims. This is the structural barrier against the 490 Gordon Krantz mix.
+function leaseAggQuery(streetNumber: string, streetSlug: string) {
+  return querySold<{ n: number; lo: string | null; hi: string | null }>((db) =>
+    db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi
+       FROM sold.sold_records
+       WHERE property_type = 'condo'
+         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND perm_advertise = TRUE AND transaction_type = 'For Lease'
+         AND sold_date >= NOW() - INTERVAL '12 months'`,
+  );
+}
+
+function saleByTypeQuery(streetNumber: string, streetSlug: string) {
+  return querySold<RawTypeAgg>((db) =>
+    db`SELECT property_type, COUNT(*)::int AS n,
+              AVG(sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
+       FROM sold.sold_records
+       WHERE property_type = 'condo'
+         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND perm_advertise = TRUE AND transaction_type = 'For Sale'
+         AND sold_date >= NOW() - INTERVAL '12 months'
+       GROUP BY property_type`,
+  );
+}
+
+function saleQuarterlyQuery(streetNumber: string, streetSlug: string) {
+  return querySold<RawQuarterRow>((db) =>
+    db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
+              EXTRACT(QUARTER FROM sold_date)::int AS qtr,
+              COUNT(*)::int AS cnt, AVG(sold_price) AS typical
+       FROM sold.sold_records
+       WHERE property_type = 'condo'
+         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND perm_advertise = TRUE AND transaction_type = 'For Sale'
+         AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+       GROUP BY yr, qtr ORDER BY yr, qtr`,
+  );
+}
+
+// Recent lease records — PII-redacted to street# + streetName (no unit, no full
+// address). Cap 10, most recent first. Fetched ONLY when the building's lease
+// count clears k (≥5); below that the per-trade lease gate fires (W2 lease-side
+// rule at building tier, DEC-WS4-5).
+function leaseRecordQuery(streetNumber: string, streetSlug: string) {
+  return querySold<RawLeaseRecord>((db) =>
+    db`SELECT street_number, street_name, sold_price AS rent, beds, days_on_market,
+              to_char(sold_date, 'YYYY-MM') AS sold_month
+       FROM sold.sold_records
+       WHERE property_type = 'condo'
+         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND perm_advertise = TRUE AND transaction_type = 'For Lease'
+         AND sold_date >= NOW() - INTERVAL '12 months'
+       ORDER BY sold_date DESC
+       LIMIT ${LEASE_RECORD_CAP}`,
+  );
+}
+
+function assembleSaleByType(sales: RawTypeAgg[]): Record<string, HubTypeBucket> {
+  const out: Record<string, HubTypeBucket> = {};
+  for (const t of sales) {
+    const count = t.n;
+    const typicalRaw = num(t.avg_price);
+    const lo = num(t.min_price);
+    const hi = num(t.max_price);
+    const kFlag: KAnonLevel = count === 0 ? "zero" : count >= K_ANON_PRICE ? "full" : "thin";
+    out[t.property_type] = {
+      count,
+      typicalPrice: count >= K_ANON_PRICE && typicalRaw !== null ? Math.round(typicalRaw) : null,
+      priceRange:
+        count >= K_ANON_RANGE && lo !== null && hi !== null
+          ? { low: Math.round(lo), high: Math.round(hi) }
+          : null,
+      kFlag,
+    };
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// buildCondoBuildingInput — deliverable B1.
+// ---------------------------------------------------------------------------
+
+export async function buildCondoBuildingInput(
+  buildingSlug: string,
+): Promise<CondoBuildingGeneratorInput> {
+  const b = await prisma.condoBuilding.findUnique({
+    where: { slug: buildingSlug },
+    include: { neighbourhoodEntity: { select: { name: true } } },
+  });
+  if (!b) throw new Error(`buildCondoBuildingInput: no CondoBuilding for slug "${buildingSlug}"`);
+  if (!b.streetNumber || !b.streetSlug) {
+    throw new Error(
+      `buildCondoBuildingInput: "${buildingSlug}" is missing the (streetNumber, streetSlug) key ` +
+        `(streetNumber=${b.streetNumber}, streetSlug=${b.streetSlug}); cannot key the building SQL.`,
+    );
+  }
+
+  const [saleRows, leaseRows, saleByTypeRows, saleQuarterRows] = await Promise.all([
+    saleAggQuery(b.streetNumber, b.streetSlug),
+    leaseAggQuery(b.streetNumber, b.streetSlug),
+    saleByTypeQuery(b.streetNumber, b.streetSlug),
+    saleQuarterlyQuery(b.streetNumber, b.streetSlug),
+  ]);
+
+  const leaseCount = leaseRows[0]?.n ?? 0;
+
+  // SALE aggregate — assembled from the SALE query ONLY. leaseCount is passed so
+  // txCount/kAnonLevel are meaningful, but typicalPrice/priceRange/DOM derive
+  // exclusively from sale.avg_price etc. (assembleAggregates never reads a lease
+  // field). This is the line the 490 Gordon Krantz regression crossed.
+  const saleAggregates = assembleAggregates(saleRows[0] ?? null, leaseCount);
+  const saleByType = assembleSaleByType(saleByTypeRows);
+  const saleQuarterly = assembleQuarterly(saleQuarterRows);
+
+  // LEASE side — informational. recentRecords only at k≥5 (gates the per-trade
+  // lease rule); rangeStats only at k≥10 (anti-fingerprinting).
+  const leaseKAnon: KAnonLevel =
+    leaseCount === 0 ? "zero" : leaseCount >= K_ANON_PRICE ? "full" : "thin";
+  const lease: CondoLeaseInfo = { leaseCount12mo: leaseCount, kAnonLevel: leaseKAnon };
+  if (leaseCount >= K_ANON_PRICE) {
+    const recs = await leaseRecordQuery(b.streetNumber, b.streetSlug);
+    lease.recentRecords = recs.map((r) => ({
+      address: `${r.street_number ?? ""} ${r.street_name ?? ""}`.trim(),
+      rent: Math.round(num(r.rent) ?? 0),
+      beds: r.beds ?? 0,
+      daysOnMarket: r.days_on_market ?? 0,
+      soldMonth: r.sold_month ?? "",
+    }));
+    if (leaseCount >= K_ANON_RANGE) {
+      const lo = num(leaseRows[0]?.lo ?? null);
+      const hi = num(leaseRows[0]?.hi ?? null);
+      if (lo !== null && hi !== null) lease.rangeStats = { min: Math.round(lo), max: Math.round(hi) };
+    }
+  }
+
+  // Fork (DEC-WS4-5). saleActive / leaseOnly are COMPLEMENTARY, keyed on the
+  // 12-month sale count alone — the only signal that grounds a current sale
+  // market section (saleAggQuery's window is 12 months; with saleCount12mo===0
+  // typicalPrice is null and there is nothing to ground regardless of history).
+  //
+  // Deviation from the DEC-WS4-5 prose "sale-active (saleCount12mo > 0 /
+  // recencyWeightedSold > 0)": a building with ONLY historical sales (>12mo;
+  // recencyWeightedSold>0 but saleCount12mo===0 — e.g. 490 Gordon Krantz, now
+  // lease-only) would otherwise be BOTH saleActive and leaseOnly, making
+  // vipEligible true on a lease-only building. That contradicts "lease-only is
+  // NEVER VIP" (ADR 0001 DEC-5). Keying on saleCount12mo makes the fork
+  // mutually exclusive; a grandfathered-VIP building still surfaces its sticky
+  // status via `isVip` (the DB field), but is not freshly VIP-ELIGIBLE while it
+  // has no current sale data. Documented in ADR 0002 patch-2 addendum.
+  const saleActive = b.saleCount12mo > 0;
+  const leaseOnly = b.saleCount12mo === 0;
+
+  return {
+    building: {
+      slug: b.slug,
+      displayName: b.displayName ?? b.buildingAddress ?? b.slug,
+      buildingAddress: b.buildingAddress,
+      streetNumber: b.streetNumber,
+      streetName: b.streetName,
+      streetSlug: b.streetSlug,
+      neighbourhoodName: b.neighbourhoodEntity?.name ?? b.neighbourhood ?? null,
+      totalUnits: b.totalUnits,
+      legalStories: b.legalStories,
+      managementCo: b.managementCo,
+      avgMaintenanceFee: b.avgMaintenanceFee,
+      yearBuilt: b.yearBuilt,
+      condoCorpNumbers: b.condoCorpNumbers ?? [],
+    },
+    saleAggregates,
+    saleByType,
+    saleQuarterly,
+    lease,
+    saleActive,
+    leaseOnly,
+    // Lease-only buildings are NEVER VIP (ADR 0001 DEC-5; schema keeps isVip
+    // false). vipEligible mirrors saleActive — only sale-active buildings can be
+    // scored by the existing recency-weighted classifier.
+    vipEligible: saleActive,
+    isVip: b.isVip,
+    currentRank: b.currentRank,
+    recencyWeightedSold: b.recencyWeightedSold,
+  };
+}
