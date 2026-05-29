@@ -153,3 +153,12 @@ Not git push. WS4 is done when:
 - The 361-vs-305 reconciliation, 4 null-neighbourhood streets, condo page generation
   (WS5 carry-forward items 1/2/4).
 - Polygon enrichment (parked indefinitely; nullable columns already reserved).
+
+## Addendum (2026-05-29) — local Prisma to Neon connection
+
+Local Prisma requires the UNPOOLED/direct DB1 endpoint. Drop the `-pooler` host
+segment and the `pgbouncer=true` param from DATABASE_URL; the pooled endpoint
+reproduces the WS3 P1001 Prisma-engine failure (pg driver connects, Prisma does
+not). Gate tests run with $env:DATABASE_URL pointed at the direct host for the
+session. The considered fix if this persists is the @prisma/adapter-neon driver
+adapter (WebSocket path), parked as a future patch.
