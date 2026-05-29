@@ -111,7 +111,12 @@ export interface HubGeneratorInput {
   neighbourhood: {
     slug: string;
     name: string;
-    profile: "urban_hub";   // dispatch key (DEC-WS4 scope correction) — never `kind`
+    // Dispatch key (DEC-WS4 scope correction) — never `kind`. WS4 patch 2
+    // (DEC-WS4-7) widened this union: rural_hub reuses this SAME input shape,
+    // built by buildRuralHubInput. A rural_hub input always has hasVipTier=false
+    // semantics, so `vipStreetCount` is always 0 and `projectedStreets` carries
+    // no VIP-first ordering requirement (the 9 rural pools have no VIP tier).
+    profile: "urban_hub" | "rural_hub";
     kind: string;
     rawStrings: string[];
   };
@@ -178,6 +183,96 @@ export interface HubSchemaProjection {
 // Validation-facing meta (parallel to StreetGenerationMeta).
 export interface HubGenerationMeta {
   neighbourhoodSlug: string;
+  generatedAt: string;
+  inputHash: string;
+  validatorPassed: boolean;
+  validatorViolations: ValidatorViolation[];
+}
+
+// ===========================================================================
+// CONDO BUILDING tier (WS4 patch 2, DEC-WS4-5 / DEC-WS4-7).
+// ===========================================================================
+// A condo building is keyed by (street_number, street_slug) → slug
+// "<num>-<street_slug>" (ADR 0001 DEC-4). The defining discipline of this tier
+// is the transaction_type SPLIT (entity-taxonomy spec): sale-side and lease-side
+// aggregates are computed by SEPARATE queries and NEVER merged. Mixing them is
+// the `490 Gordon Krantz avg 2370` regression (sale prices averaged with monthly
+// rents). `saleAggregates` feeds the market section + VIP; `lease` is purely
+// informational and can never enter `recencyWeightedSold` or the market section.
+
+export interface CondoBuildingAttributes {
+  slug: string;                    // "<streetNumber>-<streetSlug>"
+  displayName: string;             // = buildingAddress at backfill (no clean name source)
+  buildingAddress: string | null;
+  streetNumber: string | null;
+  streetName: string | null;
+  streetSlug: string | null;       // parent street for link-graph (/streets/[slug])
+  neighbourhoodName: string | null;
+  totalUnits: number | null;
+  legalStories: number | null;
+  managementCo: string | null;
+  avgMaintenanceFee: number | null;
+  yearBuilt: number | null;
+  condoCorpNumbers: string[];      // dirty/multi — attribute, never a key
+}
+
+// LEASE side — informational only. NEVER feeds the sale market section or VIP.
+// recentRecords is populated only when leaseCount12mo ≥ K_ANON_PRICE (5): the
+// W2 lease-side coverage rule applied at building tier (DEC-WS4-5). Below k, the
+// per-trade lease gate fires on any per-trade lease claim.
+export interface CondoLeaseInfo {
+  leaseCount12mo: number;
+  kAnonLevel: KAnonLevel;
+  recentRecords?: Array<{
+    address: string;       // PII-redacted: street# + streetName only
+    rent: number;          // monthly rent (For Lease sold_price)
+    beds: number;
+    daysOnMarket: number;
+    soldMonth: string;     // "YYYY-MM"
+  }>;
+  rangeStats?: { min: number; max: number };  // k ≥ 10
+}
+
+export interface CondoBuildingGeneratorInput {
+  building: CondoBuildingAttributes;
+  // SALE side ONLY (transaction_type='For Sale'). assembleAggregates derives
+  // typicalPrice/priceRange/DOM from the sale query alone — lease values cannot
+  // reach it. Same k-anon thresholds as every other tier (K_ANON_PRICE=5,
+  // K_ANON_RANGE=10); they bite far more often at building granularity.
+  saleAggregates: HubAggregates;
+  saleByType: Record<string, HubTypeBucket>;
+  saleQuarterly: HubQuarter[];
+  // LEASE side — separate query, informational only.
+  lease: CondoLeaseInfo;
+  // Fork (DEC-WS4-5).
+  saleActive: boolean;        // saleCount12mo > 0 OR recencyWeightedSold > 0
+  leaseOnly: boolean;         // saleCount12mo === 0 → standard-tier page, no sale market
+  vipEligible: boolean;       // === saleActive (lease-only never VIP — ADR 0001 DEC-5)
+  isVip: boolean;             // from CondoBuilding.isVip (sticky; lease-only stays false)
+  currentRank: number | null;
+  recencyWeightedSold: number;
+}
+
+// Condo page sections (DEC-WS4-5 B3). `condoMarket` is emitted only for
+// sale-active buildings; on a lease-only building it must not appear.
+export type CondoSectionId =
+  | "buildingHistory"   // editorial — year/stories/units where present
+  | "unitMix"           // editorial/aggregate — by-type from sale side
+  | "amenities"         // editorial
+  | "fees"              // editorial — maintenance fee framing
+  | "condoMarket"       // aggregate (sale-active ONLY) — per-trade/numeric/temporal gate
+  | "buySellCtas"       // editorial (sales register allowed here only)
+  | "faq"               // mixed (per-question)
+  | "schemaMarkup";     // projected
+
+export interface CondoSection {
+  id: CondoSectionId;
+  heading: string;
+  paragraphs: string[];
+}
+
+export interface CondoGenerationMeta {
+  buildingSlug: string;
   generatedAt: string;
   inputHash: string;
   validatorPassed: boolean;

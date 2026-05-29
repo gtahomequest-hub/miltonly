@@ -57,7 +57,10 @@ function num(v: string | number | null | undefined): number | null {
 // Raw DB row shapes (local; not re-exported)
 // ---------------------------------------------------------------------------
 
-interface RawSaleAgg {
+// Exported (WS4 patch 2): the condo builder reuses assembleAggregates /
+// assembleQuarterly verbatim and types its building-keyed SQL rows against these
+// shapes. Additive export only — urban aggregation logic is byte-identical.
+export interface RawSaleAgg {
   n: number;
   lo: string | null;
   hi: string | null;
@@ -71,7 +74,7 @@ interface RawTypeAgg {
   min_price: string | null;
   max_price: string | null;
 }
-interface RawQuarterRow {
+export interface RawQuarterRow {
   yr: number;
   qtr: number;
   cnt: number;
@@ -86,7 +89,7 @@ interface RawLeaseCount {
 // rollup so the two sides of compared-to-milton are derived identically.
 // ---------------------------------------------------------------------------
 
-function assembleAggregates(
+export function assembleAggregates(
   sale: RawSaleAgg | null,
   leasesCount: number,
 ): HubAggregates {
@@ -120,7 +123,7 @@ function assembleAggregates(
   };
 }
 
-function assembleQuarterly(rows: RawQuarterRow[]): HubQuarter[] {
+export function assembleQuarterly(rows: RawQuarterRow[]): HubQuarter[] {
   return rows
     .map((r) => {
       const typicalRaw = num(r.typical);
@@ -337,5 +340,97 @@ async function computeMiltonWideContext(): Promise<MiltonWideContext> {
     quarterlyTrend: assembleQuarterly(quarterlyRows),
     activeListingsCount: activeCount,
     neighbourhoodCount: hubCount,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// buildRuralHubInput — WS4 patch 2 deliverable A1 (DEC-WS4-7). The cheap
+// derivation: rural_hub = urban_hub minus VIP, minus market depth.
+//
+// It REUSES the exact same neighbourhood-scoped helpers as buildHubInput
+// (saleAggQuery / leaseCountQuery / quarterlyQuery / byTypeQuery /
+// assembleAggregates / assembleQuarterly / assembleByType) — no aggregation
+// logic is re-derived. The differences from urban are intentional and small:
+//
+//   1. Guard: throws unless profile === 'rural_hub' (the 9: 7 rural + 2
+//      thin-urban Bronte Meadows / Milton North). The two thin-urban hubs are
+//      kind=urban but profile=rural_hub (ADR 0002 scope correction) and route
+//      HERE, not to buildHubInput.
+//   2. No VIP semantics: rural pools have hasVipTier=false, so vipStreetCount
+//      is always 0 and projectedStreets carries no VIP-first sort requirement
+//      (ordered by currentRank only). All rural ResidentialStreet rows have
+//      isVip=false by construction (VIP classification skips non-urban_hub).
+//   3. The light-market section is k-anon gated exactly as urban (rural pools
+//      are thin, so typicalPrice/priceRange are frequently suppressed — that is
+//      expected and correct, not a defect).
+//
+// The returned shape is the SAME HubGeneratorInput (profile widened to accept
+// 'rural_hub' in src/types/hub-generator.ts). Rural validation reuses
+// validateHubSectionsSubset; a rural page has NO comparedToMilton section, so
+// comparison_mismatch never fires for rural (DEC-WS4-7 A3).
+export async function buildRuralHubInput(neighbourhoodSlug: string): Promise<HubGeneratorInput> {
+  const nbhd = await prisma.neighbourhood.findUnique({ where: { slug: neighbourhoodSlug } });
+  if (!nbhd) throw new Error(`buildRuralHubInput: no neighbourhood for slug "${neighbourhoodSlug}"`);
+  if (nbhd.profile !== "rural_hub") {
+    throw new Error(
+      `buildRuralHubInput: "${neighbourhoodSlug}" has profile="${nbhd.profile}", expected "rural_hub". ` +
+        `urban_hub routes to buildHubInput; standard_no_hub has no hub page (WS4 patch 2 A1).`,
+    );
+  }
+
+  const rawStrings = nbhd.rawStrings;
+
+  const [saleRows, leaseRows, quarterlyRows, byTypeRows, streets, activeListings] = await Promise.all([
+    saleAggQuery(rawStrings),
+    leaseCountQuery(rawStrings),
+    quarterlyQuery(rawStrings),
+    byTypeQuery(rawStrings),
+    prisma.residentialStreet.findMany({
+      where: { neighbourhoodId: nbhd.id },
+      // currentRank order only — no VIP-first requirement (rural has no VIP tier).
+      orderBy: [{ currentRank: "asc" }],
+      select: { slug: true, name: true, shortName: true, isVip: true, currentRank: true, soldCount12mo: true },
+    }),
+    prisma.listing.findMany({
+      where: { neighbourhood: { in: rawStrings }, permAdvertise: true, status: "active" },
+      select: { propertyType: true },
+    }),
+  ]);
+
+  const aggregates = assembleAggregates(saleRows[0] ?? null, leaseRows[0]?.n ?? 0);
+  const quarterlyTrend = assembleQuarterly(quarterlyRows);
+  const byType = assembleByType(byTypeRows);
+
+  const activeByType: Record<string, number> = {};
+  for (const l of activeListings) {
+    activeByType[l.propertyType] = (activeByType[l.propertyType] ?? 0) + 1;
+  }
+
+  const projectedStreets: HubProjectedStreet[] = streets.map((s) => ({
+    slug: s.slug,
+    displayName: expandStreetName(s.name),
+    shortName: s.shortName ?? shortNameFor(expandStreetName(s.name)),
+    isVip: s.isVip, // false for every rural street by construction
+    currentRank: s.currentRank,
+    soldCount12mo: s.soldCount12mo,
+  }));
+
+  return {
+    neighbourhood: {
+      slug: nbhd.slug,
+      name: nbhd.name,
+      profile: "rural_hub",
+      kind: nbhd.kind,
+      rawStrings,
+    },
+    aggregates,
+    byType,
+    quarterlyTrend,
+    activeListingsCount: activeListings.length,
+    activeByType,
+    projectedStreets,
+    vipStreetCount: 0, // rural pools have no VIP tier (hasVipTier=false)
+    streetCount: projectedStreets.length,
+    schools: { sourced: false },
   };
 }

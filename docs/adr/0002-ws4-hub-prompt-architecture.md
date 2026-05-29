@@ -188,6 +188,77 @@ expansion `crescent`. Pre-existing data defect, not a WS4 regression.
   the other" note). The fix script uses the shared pooled client; the rename is an atomic
   two-statement `$transaction`, so pooling is safe.
 
+## Addendum — WS4 patch 2 (2026-05-29): rural_hub + condo derivation (DEC-WS4-7 / DEC-WS4-5)
+
+rural_hub and condo-building tiers derived from the LOCKED, MERGED urban_hub
+pattern. No aggregation logic, grounding rule, or W2 detector re-derived — the
+patch is prompts + input builders + validator wiring + fixtures. Delivered:
+
+- **rural_hub (the cheap derivation).** `buildRuralHubInput(slug)` in
+  `buildHubInput.ts` reuses `saleAggQuery` / `leaseCountQuery` / `quarterlyQuery`
+  / `byTypeQuery` / `assembleAggregates` / `assembleQuarterly` / `assembleByType`
+  verbatim. Guard throws unless `profile==='rural_hub'` (the 9: 7 rural + 2
+  thin-urban Bronte Meadows / Milton North). No VIP semantics: `vipStreetCount`
+  is always 0, `projectedStreets` ordered by `currentRank` only (no VIP-first
+  sort). Same `HubGeneratorInput` shape (profile union widened to
+  `'urban_hub' | 'rural_hub'`). Rural validation reuses `validateHubSectionsSubset`;
+  a rural page has NO compared-to-Milton section, so `comparison_mismatch` never
+  fires for rural. Prompt set in `docs/phase-4.1/hub/rural/` (system + identity,
+  light market [k-anon, often suppressed — rural pools are thin], what's-distinctive,
+  rural-roads projected list, buy/sell CTAs, light FAQ, schema). No comparedToMilton
+  depth, no VIP section; W2 bracket-shorthand + from-X-to-Y constraints inherited.
+
+- **condo building (the real work — the transaction_type split).**
+  `buildCondoBuildingInput(slug)` is NEW building-keyed SQL on `(street_number,
+  street_slug)` (ADR 0001 DEC-4), NOT a parameterized neighbourhood query. SALE
+  and LEASE are physically separate queries; `assembleAggregates` derives
+  `typicalPrice`/`priceRange`/DOM from the SALE row alone (its lease parameter is
+  a COUNT, never a price). This is the structural barrier against the
+  `490 Gordon Krantz avg 2370` regression (monthly rents pooled into sale AVG).
+  Validator: `validateCondoSectionsSubset` re-points the W2 gate via
+  `condoInputToStreetAdapter`; one net-new hard rule, `condo_lease_only_market`,
+  fires when a `condoMarket` section is emitted on a lease-only building.
+  Fail-closed reuses the hubFailClosed pattern (`condoFailClosed.ts`,
+  `condo:<slug>` review key, StreetContent never touched). Prompt set in
+  `docs/phase-4.1/hub/condo/`.
+
+- **Fork-precedence correction (deviation from the DEC-WS4-5 prose).** DEC-WS4-5
+  wrote "sale-active (saleCount12mo > 0 / recencyWeightedSold > 0)". Building
+  `490-gordon-krantz-avenue-milton` exposed the defect: it has `saleCount12mo=0`
+  but `recencyWeightedSold=1.8` (sticky weight from sales >12mo ago), so the
+  literal `saleCount12mo>0 || recencyWeightedSold>0` made it BOTH `saleActive`
+  AND `leaseOnly`, with `vipEligible=saleActive=true` — a lease-only building
+  marked VIP-eligible, contradicting "lease-only is NEVER VIP" (ADR 0001 DEC-5).
+  **Resolution:** `saleActive` / `leaseOnly` are now complementary, keyed on
+  `saleCount12mo` alone — the only signal that can ground a 12-month sale market
+  section (with `saleCount12mo=0`, `typicalPrice` is null regardless of history).
+  A grandfathered building still surfaces sticky status via the `isVip` DB field,
+  but is not freshly VIP-ELIGIBLE without current sale data. Verified: 490 Gordon
+  Krantz → `saleActive=false, leaseOnly=true, vipEligible=false`; 460 Gordon
+  Krantz (saleCount12mo=3, sticky `isVip=true`) → `saleActive=true,
+  vipEligible=true`, with `typicalPrice=null` (3 sales < K_ANON_PRICE=5 — the
+  building-tier k-anon of DEC-WS4-4 biting as expected).
+
+- **Headline fixture.** `scripts/test-condo-txn-split.ts` (pure, deterministic):
+  19/19 PASS. A synthetic 490-GK-shaped building (7 sales ~$720K + 96 leases
+  ~$2,390/mo) proves the clean sale `typicalPrice=$720,571` vs the OLD pooled
+  `AVG(sold_price)=$51,198` (rent-contaminated); lease never enters
+  `recencyWeightedSold`; lease-only fork has null sale price, `vipEligible=false`,
+  and a `condoMarket` section fires `condo_lease_only_market`.
+  `scripts/test-condo-fail-closed.ts`: sub-k condo routes to
+  StreetGenerationReview, StreetContent untouched.
+
+- **No regression.** test-lane-a-regression, test-comparison-mismatch,
+  test-hub-fail-closed, test-fail-closed, test-class-b-grounding all PASS;
+  `tsc --noEmit` clean; prebuild canonicalization gate PASS; ALLOW_LIST stays
+  `["106-rottenburg-crt-milton"]`. urban_hub prompts/input/validator, the W2
+  detectors, and the deriveIdentity slug guard were not touched.
+
+- **Connectivity.** This session the DIRECT/unpooled endpoint
+  (`ep-patient-paper-aebh7f93`, no `-pooler`, no `pgbouncer`) connected; the
+  pooled host was not needed. Consistent with the "one endpoint works, which one
+  flips with Neon state" note — do not treat either as fixed.
+
 ## Addendum (2026-05-29) — local Prisma to Neon connection
 
 Local Prisma requires the UNPOOLED/direct DB1 endpoint. Drop the `-pooler` host
