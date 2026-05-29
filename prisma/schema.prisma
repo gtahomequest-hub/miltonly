@@ -245,19 +245,102 @@ model VisitorProfile {
   @@schema("public")
 }
 
+// ───── WS3 three-tier data model — neighbourhood / residential-street /
+// condo-building entities + the ingest review queue. (commit: ws3 entity taxonomy)
+//
+// Decisions locked by Brain Claude 2026-05-28 (see docs/adr/0001-three-tier-architecture.md):
+//   - Residential streets and condo buildings are DISTINCT primitives.
+//   - Condo building natural key = (street_number, street_name); condo_corp_number
+//     is dirty/non-unique so it is kept as an attribute array, not a key.
+//   - Neighbourhood string is NOT 1:1 — rawStrings[] holds every TREB variant
+//     (e.g. "1041 - NA Rural Nassagaweya" + "Nassagaweya") mapping to one entity.
+//   - VIP = top-20%-or-tied per neighbourhood per pool by recency-weighted SOLD
+//     (sale) count. Sticky once earned; currentRank refreshes each cycle.
+//   - Lease-only condo buildings are entities (standard tier) but never VIP.
+//   - kind (geographic) and profile (content depth) may diverge (e.g. Milton North
+//     = urban kind, rural_hub profile).
+//   - Coordinates / polygons are nullable; geocoding is parked (string assignment).
+model Neighbourhood {
+  id          String   @id @default(cuid())
+  slug        String   @unique          // canonical key, e.g. "nassagaweya"
+  name        String                    // "Nassagaweya"
+  rawStrings  String[]                  // every TREB string mapping here
+  profile     String   @default("urban_hub") // urban_hub | rural_hub | standard_no_hub
+  isHub       Boolean  @default(true)    // false only for standard_no_hub (Derry Green)
+  hasVipTier  Boolean  @default(true)    // true=urban_hub, false=rural/standard
+  kind        String   @default("urban") // urban | rural | industrial
+  centroidLat Float?                     // nullable — string assignment now; geocoding parked
+  centroidLng Float?
+  polygon     Json?                      // GeoJSON — future enrichment, no migration needed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  residentialStreets ResidentialStreet[]
+  condoBuildings     CondoBuilding[]
+
+  @@index([profile])
+  @@schema("public")
+}
+
+// Residential street entity. slug == existing street_slug so StreetContent /
+// StreetGeneration keep resolving at /streets/[slug] (parallel join layer, no rename).
+model ResidentialStreet {
+  id                     String   @id @default(cuid())
+  slug                   String   @unique   // = street_slug (canonical)
+  name                   String
+  shortName              String?
+  streetType             String?
+  neighbourhoodId        String?
+  neighbourhood          Neighbourhood? @relation(fields: [neighbourhoodId], references: [id])
+  neighbourhoodAmbiguous Boolean  @default(false)
+  soldCount12mo          Int      @default(0)   // raw sale count, trailing 12mo
+  recencyWeightedSold    Float    @default(0)   // weighted sale score (drives VIP rank)
+  isVip                  Boolean  @default(false) // STICKY once true
+  vipEarnedAt            DateTime?
+  currentRank            Int?                    // DYNAMIC, refreshes each cycle (WS5 prominence)
+  crossStreets           String[]
+  lastClassifiedAt       DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([neighbourhoodId])
+  @@index([isVip])
+  @@schema("public")
+}
+
+// Append-only review queue. resolveNeighbourhood() writes here when a raw TREB
+// string matches no Neighbourhood.rawStrings; Brain Claude reviews and either
+// extends an existing rawStrings[] or creates a new Neighbourhood. Never auto-create.
+model UnmappedNeighbourhoodString {
+  id        String   @id @default(cuid())
+  rawString String   @unique
+  source    String?  // "vow-sync" | "backfill" | ...
+  seenCount Int      @default(1)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+  resolved  Boolean  @default(false)
+
+  @@index([resolved])
+  @@schema("public")
+}
+
+// CondoBuilding — extended from the pre-WS3 (unused, 0-row) model into the condo
+// entity primitive. Legacy display fields relaxed to optional: the entity backfill
+// sources from sold records and has no coordinates (0% coverage; geocoding parked).
 model CondoBuilding {
   id                String   @id @default(cuid())
-  name              String
+  // Legacy display fields (relaxed to optional in WS3).
+  name              String?
   slug              String   @unique
-  address           String
-  neighbourhood     String
+  address           String?
+  neighbourhood     String?  // legacy raw string; new code uses neighbourhoodId
   yearBuilt         Int?
   totalUnits        Int?
   managementCo      String?
   amenities         String[]
   petFriendly       Boolean?
-  latitude          Float
-  longitude         Float
+  latitude          Float?
+  longitude         Float?
   goWalkMinutes     Int?
   avgSalePrice1bd   Int?
   avgSalePrice2bd   Int?
@@ -271,9 +354,31 @@ model CondoBuilding {
   priceGrowth1yr    Float?
   activeForSale     Int      @default(0)
   activeForRent     Int      @default(0)
-  lastUpdated       DateTime
+  lastUpdated       DateTime @default(now())
+
+  // ── WS3 entity-taxonomy fields ──────────────────────────────────────
+  buildingAddress        String?   // "490 Gordon Krantz Ave" — natural key
+  displayName            String?   // populated = buildingAddress at backfill (no clean name source)
+  streetNumber           String?
+  streetName             String?
+  streetSlug             String?   // parent street for link-graph
+  condoCorpNumbers       String[]  // dirty/multi — attribute, not key
+  legalStories           Int?
+  neighbourhoodId        String?
+  neighbourhoodEntity    Neighbourhood? @relation(fields: [neighbourhoodId], references: [id])
+  neighbourhoodAmbiguous Boolean  @default(false)
+  saleCount12mo          Int      @default(0) // sale trades, trailing 12mo
+  leaseCount12mo         Int      @default(0) // lease trades, trailing 12mo (informational)
+  recencyWeightedSold    Float    @default(0) // weighted SALE score (lease excluded — sale-only VIP)
+  isVip                  Boolean  @default(false) // STICKY; lease-only buildings stay false
+  vipEarnedAt            DateTime?
+  currentRank            Int?
+  lastClassifiedAt       DateTime?
 
   @@index([neighbourhood])
+  @@index([neighbourhoodId])
+  @@index([streetSlug])
+  @@index([isVip])
   @@schema("public")
 }
 
