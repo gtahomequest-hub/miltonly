@@ -5,7 +5,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const env: Record<string,string> = {};
-for (const l of readFileSync(resolve(__dirname,"..",".env.staging"),"utf8").split(/\r?\n/)) {
+for (const l of readFileSync(resolve(__dirname,"..",".env"),"utf8").split(/\r?\n/)) {
   const t=l.trim(); if(!t||t.startsWith("#"))continue; const i=t.indexOf("="); if(i===-1)continue;
   let v=t.slice(i+1).trim(); if((v.startsWith('"')&&v.endsWith('"'))||(v.startsWith("'")&&v.endsWith("'")))v=v.slice(1,-1);
   env[t.slice(0,i).trim()]=v;

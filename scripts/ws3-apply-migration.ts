@@ -30,14 +30,20 @@ function loadEnv(name: string) {
 }
 
 async function main() {
-  loadEnv(".env.staging");
-  const url = (process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL || "").trim();
-  const host = (url.match(/@([^/?]+)/) || [])[1] || "";
-  if (!host.startsWith("ep-old-unit-aeyqkwyt")) {
-    console.error(`❌ GUARD: target host ${host} is not ws3-staging. Refusing to run.`);
+  // PROD promotion (Option A, Brain-approved). Loads .env (prod ep-patient-paper).
+  // Requires explicit `--prod` argv so the script can never run by accident.
+  if (!process.argv.includes("--prod")) {
+    console.error("❌ GUARD: prod apply requires the explicit --prod flag. Refusing to run.");
     process.exit(1);
   }
-  console.log(`Target (staging): ${host}`);
+  loadEnv(".env");
+  const url = (process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL || "").trim();
+  const host = (url.match(/@([^/?]+)/) || [])[1] || "";
+  if (!host.startsWith("ep-patient-paper-aebh7f93")) {
+    console.error(`❌ GUARD: target host ${host} is not prod (ep-patient-paper-aebh7f93). Refusing to run.`);
+    process.exit(1);
+  }
+  console.log(`Target (PROD): ${host}`);
 
   const sql = readFileSync(SQL_PATH, "utf8");
   const checksum = createHash("sha256").update(sql, "utf8").digest("hex");

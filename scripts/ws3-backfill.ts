@@ -23,13 +23,16 @@ function loadEnv(name: string, into: Record<string, string>) {
     }
   } catch { /* ignore */ }
 }
-const staging: Record<string, string> = {}; loadEnv(".env.staging", staging);
+// PROD promotion (Option A). Three-layer guard: explicit --prod flag + prod env
+// (.env, ep-patient-paper) + prod-host assertion. READ source stays DB2 sold (.env.local).
+const prod: Record<string, string> = {}; loadEnv(".env", prod);
 const local: Record<string, string> = {}; loadEnv(".env.local", local);
 
-const STAGING_URL = (staging.DIRECT_DATABASE_URL || staging.DATABASE_URL || "").trim();
+const WRITE_URL = (prod.DIRECT_DATABASE_URL || prod.DATABASE_URL || "").trim();
 const SOLD_URL = (local.SOLD_DATABASE_URL || "").trim();
-const stHost = (STAGING_URL.match(/@([^/?]+)/) || [])[1] || "";
-if (!stHost.startsWith("ep-old-unit-aeyqkwyt")) { console.error(`❌ GUARD: write target ${stHost} is not ws3-staging.`); process.exit(1); }
+const wHost = (WRITE_URL.match(/@([^/?]+)/) || [])[1] || "";
+if (!process.argv.includes("--prod")) { console.error("❌ GUARD: prod backfill requires the explicit --prod flag. Refusing to run."); process.exit(1); }
+if (!wHost.startsWith("ep-patient-paper-aebh7f93")) { console.error(`❌ GUARD: write target ${wHost} is not prod (ep-patient-paper-aebh7f93). Refusing to run.`); process.exit(1); }
 
 const WEIGHT = `CASE
   WHEN sold_date >= NOW()-INTERVAL '12 months' THEN 1.0
@@ -48,10 +51,10 @@ function pickDominant(rows: NbAgg[]) {
 }
 
 async function main() {
-  const st = new pg.Client({ connectionString: STAGING_URL });
+  const st = new pg.Client({ connectionString: WRITE_URL });
   const sold = new pg.Client({ connectionString: SOLD_URL });
   await Promise.all([st.connect(), sold.connect()]);
-  console.log(`WRITE target (staging): ${stHost}`);
+  console.log(`WRITE target (PROD): ${wHost}`);
   console.log(`READ source  (DB2 sold): ${(SOLD_URL.match(/@([^/?]+)/) || [])[1]}`);
 
   try {

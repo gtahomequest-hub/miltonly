@@ -13,10 +13,11 @@ function loadEnv(name: string, into: Record<string,string>) {
     const k=t.slice(0,eq).trim(); let v=t.slice(eq+1).trim();
     if((v.startsWith('"')&&v.endsWith('"'))||(v.startsWith("'")&&v.endsWith("'")))v=v.slice(1,-1); into[k]=v; } } catch {}
 }
-const staging: Record<string,string>={}; loadEnv(".env.staging",staging);
-const URL=(staging.DIRECT_DATABASE_URL||staging.DATABASE_URL||"").trim();
+// PROD verification (read-only). Loads .env (prod). No writes.
+const prod: Record<string,string>={}; loadEnv(".env",prod);
+const URL=(prod.DIRECT_DATABASE_URL||prod.DATABASE_URL||"").trim();
 const host=(URL.match(/@([^/?]+)/)||[])[1]||"";
-if(!host.startsWith("ep-old-unit-aeyqkwyt")){console.error("GUARD: not staging");process.exit(1);}
+if(!host.startsWith("ep-patient-paper-aebh7f93")){console.error("GUARD: not prod");process.exit(1);}
 
 async function main(){
   const c=new pg.Client({connectionString:URL}); await c.connect();
