@@ -276,6 +276,24 @@ export function deriveIdentity(slug: string): StreetIdentity | null {
     if (IDENTITY_SUFFIX_TOKENS.has(t)) {
       suffixCanonical = IDENTITY_SUFFIX_CANON[t] ?? t;
       i--;
+      // WS4 patch 1B — collapse a DOUBLED suffix. Raw MLS occasionally
+      // concatenated StreetName + StreetSuffix without de-duplication, so the
+      // ingested slug carried both the abbreviation and its expansion
+      // ("Huffman Cres" + "Crescent" → huffman-cres-crescent-milton). Without
+      // this, deriveIdentity consumes only the trailing full-form token and
+      // leaves the abbreviation stuck in `base`, re-emitting the malformed slug
+      // unchanged through the write-time canonicalization guard in
+      // generateStreetContent. Drop any further adjacent prior token that
+      // canonicalizes to the SAME suffix. Targeted: only fires on a genuine
+      // doubled suffix (base tail == a duplicate of the suffix just consumed),
+      // never for a normal multi-word base. (WS3-deferred expandStreetName-at-
+      // canonicalization-boundary work, per ADR-0001.)
+      while (i >= 0) {
+        const prev = tokens[i].toLowerCase();
+        if (IDENTITY_SUFFIX_TOKENS.has(prev) && (IDENTITY_SUFFIX_CANON[prev] ?? prev) === suffixCanonical) {
+          i--;
+        } else break;
+      }
     }
   }
   const base = tokens.slice(0, i + 1).join("-").toLowerCase();

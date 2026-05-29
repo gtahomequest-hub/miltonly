@@ -154,6 +154,40 @@ Not git push. WS4 is done when:
   (WS5 carry-forward items 1/2/4).
 - Polygon enrichment (parked indefinitely; nullable columns already reserved).
 
+## Addendum — WS4 patch 1B (2026-05-29): malformed slug `huffman-cres-crescent-milton`
+
+A cache-fresh build turned `main` RED on the prebuild canonicalization-regression gate:
+the published slug `huffman-cres-crescent-milton` carried the abbreviation `cres` AND its
+expansion `crescent`. Pre-existing data defect, not a WS4 regression.
+
+- **Root cause.** Raw MLS concatenated `StreetName` ("Huffman Cres") + `StreetSuffix`
+  ("Crescent") without de-duplication → slug `huffman-cres-crescent-milton`. The write-time
+  canonicalization guard `deriveIdentity().canonicalSlug` (used by `generateStreetContent`)
+  failed to heal it: `deriveIdentity` consumes only the trailing full-form token
+  (`crescent`) and leaves the abbreviation `cres` stuck in `base`, so `canonicalSlug`
+  re-emits the malformed slug unchanged. `isMalformedSlug` also misses it — its doubled
+  abbrev+fullform branch requires a trailing numeric (the `asleton-blvd-boulevard-140`
+  shape), which this slug lacks.
+- **Recurrence guard (code).** `deriveIdentity` now collapses a doubled suffix: after
+  consuming the trailing suffix token, it drops any adjacent prior token that canonicalizes
+  to the SAME suffix. `huffman-cres-crescent-milton` and `asleton-blvd-boulevard-milton`
+  now canonicalize to `huffman-crescent-milton` / `asleton-boulevard-milton`. Targeted —
+  only fires on a genuine doubled suffix; all normal slugs (`park-road`, `crescent-road`,
+  `heights-court`) are unaffected. This is the WS3-deferred `expandStreetName`-at-the-
+  canonicalization-boundary work (ADR 0001 "known items") landed in the content layer.
+- **Data fix.** `scripts/ws4-fix-huffman-slug.ts` renamed the slug in a single transaction
+  across `StreetContent` + `StreetGeneration` (`huffman-cres-crescent-milton` →
+  `huffman-crescent-milton`), restoring the WS3 invariant `ResidentialStreet.slug ==
+  street_slug`. Rename, not dedupe (no clean content row existed). No redirect: WS6/Search
+  Console not submitted, so the malformed URL had zero organic equity (ADR 0001 DEC-6's
+  URL-preservation does not bind a never-indexed malformed URL). The ALLOW_LIST stays
+  `["106-rottenburg-crt-milton"]` — huffman was NOT added to it.
+- **Connectivity note.** The addendum's UNPOOLED-endpoint guidance is inverted in the local
+  environment: the unpooled host returns P1001 while the POOLED endpoint (`pgbouncer=true`)
+  connects reliably (consistent with ADR 0001's "Prisma engine reaches one endpoint but not
+  the other" note). The fix script uses the shared pooled client; the rename is an atomic
+  two-statement `$transaction`, so pooling is safe.
+
 ## Addendum (2026-05-29) — local Prisma to Neon connection
 
 Local Prisma requires the UNPOOLED/direct DB1 endpoint. Drop the `-pooler` host
