@@ -259,7 +259,31 @@ export function registeredDirectionsFor(base: string, suffixCanonical: string): 
 export function deriveIdentity(slug: string): StreetIdentity | null {
   const parts = slug.split("-");
   if (parts.length < 2 || parts[parts.length - 1] !== config.SLUG_SUFFIX) return null;
-  const tokens = parts.slice(0, -1); // drop -<SLUG_SUFFIX>
+  const rawTokens = parts.slice(0, -1); // drop -<SLUG_SUFFIX>
+  if (rawTokens.length === 0) return null;
+
+  // C1 (ws5-derive-identity-fix) — interior-city-token collapse. Raw MLS
+  // occasionally leaked the city name into the StreetName field, wedging an
+  // extra "milton" token directly after a street-type suffix:
+  //   "Carr Landing Dr Milton"          → carr-landing-dr-milton-milton
+  //   "Nipissing Rd Milton" + "Road"    → nipissing-rd-milton-road-milton
+  // Drop any INTERIOR (j>0) city token whose PRIOR token is a street-type
+  // suffix, then run normal suffix detection (which then sees the abbrev as the
+  // real suffix / collapses the doubled pair). Tightly guarded against false
+  // positives: a LEADING "milton" (the genuine name, e.g. milton-hts-crescent)
+  // is preserved because j>0; "Old Milton Road" → old-milton-road is preserved
+  // because the token before "milton" ("old") is not a street-type suffix.
+  const tokens =
+    rawTokens.length > 2
+      ? rawTokens.filter(
+          (tok, j) =>
+            !(
+              j > 0 &&
+              tok.toLowerCase() === config.SLUG_SUFFIX &&
+              IDENTITY_SUFFIX_TOKENS.has(rawTokens[j - 1].toLowerCase())
+            ),
+        )
+      : rawTokens;
   if (tokens.length === 0) return null;
 
   // Walk from the tail: trailing direction, then suffix.
