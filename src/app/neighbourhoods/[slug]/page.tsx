@@ -213,7 +213,10 @@ type HubData = NonNullable<Awaited<ReturnType<typeof getHubData>>>;
 
 // Renderer-emitted hub block: editorial sections + projected rural-roads list +
 // hub FAQ. The projected schema is injected into the page's <SchemaScript>.
-function HubBlock({ hub }: { hub: HubData }) {
+function HubBlock({ hub, extraFaq = [] }: { hub: HubData; extraFaq?: Array<{ question: string; answer: string }> }) {
+  // WS5 renderer-dedup: the hub FAQ + any carried legacy conversion Qs render
+  // ONCE here (merged), so a hub page never shows a doubled FAQ.
+  const mergedFaq = [...hub.faq, ...extraFaq];
   return (
     <>
       {hub.sections.length > 0 && (
@@ -249,12 +252,12 @@ function HubBlock({ hub }: { hub: HubData }) {
           </div>
         </section>
       )}
-      {hub.faq.length > 0 && (
+      {mergedFaq.length > 0 && (
         <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">Frequently asked about {hub.name}</h2>
             <div className="space-y-4">
-              {hub.faq.map((f) => (
+              {mergedFaq.map((f) => (
                 <details key={f.question} className="bg-[#f8f9fb] rounded-xl border border-[#e2e8f0] overflow-hidden group">
                   <summary className="px-5 py-4 text-[14px] font-bold text-[#07111f] cursor-pointer list-none">
                     {f.question}
@@ -337,6 +340,19 @@ export default async function NeighbourhoodPage({ params }: Props) {
     },
   ];
 
+  // WS5 renderer-dedup (sign-off): when a published hub exists, the hub FAQ
+  // supersedes the OVERLAPPING editorial Qs (avg price = faqs[0], streets = faqs[2]),
+  // but the two UNIQUE listing-derived conversion Qs survive — live homes-for-sale
+  // count (faqs[1]) and the "Register for full MLS access" hook (faqs[3]). These are
+  // carried into the hub FAQ (rendered once, in HubBlock via extraFaq) so the
+  // MLS-register lead surface is never silently removed from a hub page.
+  const carriedLegacyFaqs = hub ? [faqs[1], faqs[3]] : [];
+  // FAQPage JSON-LD must match the VISIBLE FAQ: the merged set when hub wins,
+  // else the full legacy set (case b unchanged).
+  const faqForSchema: Array<{ question: string; answer: string }> = hub
+    ? [...hub.faq.map((f) => ({ question: f.question, answer: f.answer })), ...carriedLegacyFaqs]
+    : faqs;
+
   const schemas = [
     // WS5 — projected hub Place schema (DEC-WS4-2), baked in when hub content exists.
     ...(hub?.schema ? [hub.schema as unknown as Record<string, unknown>] : []),
@@ -360,7 +376,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: faqs.map((f) => ({
+      mainEntity: faqForSchema.map((f) => ({
         "@type": "Question",
         name: f.question,
         acceptedAnswer: { "@type": "Answer", text: f.answer },
@@ -422,7 +438,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
         {/* Market snapshot bar â€” active-listing aggregates only.
            Sold-price intel surfaces in the gated NeighbourhoodSoldBlock below. */}
         {/* WS5 — rural hub editorial + projected roads (renders when HubContent exists). */}
-        {hub && <HubBlock hub={hub} />}
+        {hub && <HubBlock hub={hub} extraFaq={carriedLegacyFaqs} />}
 
         <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
           <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -472,8 +488,8 @@ export default async function NeighbourhoodPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Top streets */}
-        {data.topStreets.length > 0 && (
+        {/* Top streets — LEGACY; suppressed when the hub "Roads in" list supersedes it (WS5 dedup) */}
+        {!hub && data.topStreets.length > 0 && (
           <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
             <div className="max-w-6xl mx-auto">
               <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
@@ -556,7 +572,8 @@ export default async function NeighbourhoodPage({ params }: Props) {
           </section>
         )}
 
-        {/* FAQ */}
+        {/* FAQ — LEGACY; suppressed when the hub FAQ (incl. carried conversion Qs) supersedes it (WS5 dedup) */}
+        {!hub && (
         <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
@@ -582,6 +599,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
             </div>
           </div>
         </section>
+        )}
 
         {/* CTA */}
         <section className="bg-[#07111f] px-5 sm:px-11 py-14">
