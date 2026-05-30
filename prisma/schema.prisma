@@ -101,30 +101,30 @@ model Listing {
 }
 
 model Lead {
-  id              String    @id @default(cuid())
-  firstName       String
-  email           String?
-  phone           String?
-  intent          String // buyer|seller|renter|investor
-  score           String // hot|warm|cold
-  scorePoints     Int       @default(0)
-  hasAgent        Boolean?
-  isAgent         Boolean?
-  street          String?
-  bedrooms        Int?
-  bathrooms       Float?
-  parking         Int?
-  basement        Boolean?
-  timeline        String?
+  id                      String         @id @default(cuid())
+  firstName               String
+  email                   String?
+  phone                   String?
+  intent                  String // buyer|seller|renter|investor
+  score                   String // hot|warm|cold
+  scorePoints             Int            @default(0)
+  hasAgent                Boolean?
+  isAgent                 Boolean?
+  street                  String?
+  bedrooms                Int?
+  bathrooms               Float?
+  parking                 Int?
+  basement                Boolean?
+  timeline                String?
   // Buyer-side fields (sales variant). Renter leads keep these NULL.
   // preApproved: "yes" | "no". mlsNumber: the listing the lead was viewing.
-  preApproved     String?
-  mlsNumber       String?
+  preApproved             String?
+  mlsNumber               String?
   // Free-text message from the AamirTrustCard message capture flow.
   // NULL for every other lead path (ads, modal, top form, booking band).
   // Server-side sanitized (trim + max 1000 chars + null-byte stripped) at
   // /api/leads. Surfaced in realtor email and SMS when present.
-  message         String?
+  message                 String?
   // Lead-magnet flow fields (Commit 4j).
   //   yourHomeAddress  — home-valuation lead only. The address of the
   //     submitter's CURRENT home (i.e. the property they want valued).
@@ -138,53 +138,53 @@ model Lead {
   //     filter slice that generated the aggregate report shown to the
   //     submitter (propertyType, bedrooms, city, periodDays, match_basis).
   //     Useful for nurture personalization in follow-up emails.
-  yourHomeAddress  String?
-  consentText      String?
-  consentTimestamp DateTime?
-  matchCriteria    Json?
-  priceRangeMin   Int?
-  priceRangeMax   Int?
-  neighbourhoods  String[]
-  propertyType    String?
-  condoBuilding   String?
-  savedListings   String[]
-  comparisonsMade String[]
-  source          String // hero|seller_tool|buyer_alert|investor_report|street_page|condo_page|comparison|popup|chat|partner
+  yourHomeAddress         String?
+  consentText             String?
+  consentTimestamp        DateTime?
+  matchCriteria           Json?
+  priceRangeMin           Int?
+  priceRangeMax           Int?
+  neighbourhoods          String[]
+  propertyType            String?
+  condoBuilding           String?
+  savedListings           String[]
+  comparisonsMade         String[]
+  source                  String // hero|seller_tool|buyer_alert|investor_report|street_page|condo_page|comparison|popup|chat|partner
   // First-touch attribution — captured from the original ad click that
   // produced the user's first session. Preserved across navigation by
   // src/lib/attribution.ts (localStorage + cookie).
-  utmSource       String?
-  utmMedium       String?
-  utmCampaign     String?
-  utmKeyword      String?
-  utmContent      String?
-  gclid           String?
+  utmSource               String?
+  utmMedium               String?
+  utmCampaign             String?
+  utmKeyword              String?
+  utmContent              String?
+  gclid                   String?
   // Last-touch attribution — overwritten on each new ad click. Useful for
   // multi-touch analytics; first-touch is what Google Ads imports.
-  utmSourceLast   String?
-  utmMediumLast   String?
-  utmCampaignLast String?
-  utmTermLast     String?
-  utmContentLast  String?
-  gclidLast       String?
+  utmSourceLast           String?
+  utmMediumLast           String?
+  utmCampaignLast         String?
+  utmTermLast             String?
+  utmContentLast          String?
+  gclidLast               String?
   // Capture metadata for the first-touch session.
-  firstVisitAt    DateTime?
-  landingPage     String?
-  referrer        String?
-  userAgent       String?
-  ip              String?
-  notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lastContactAt   DateTime?
-  convertedAt     DateTime?
-  cookieId        String?
+  firstVisitAt            DateTime?
+  landingPage             String?
+  referrer                String?
+  userAgent               String?
+  ip                      String?
+  notes                   String?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  lastContactAt           DateTime?
+  convertedAt             DateTime?
+  cookieId                String?
   // Lead admin UI fields (MOD-58)
-  leadStatus              String?  @default("New") // New|Contacted|Qualified|Junk|Booked|Closed|Lost
+  leadStatus              String?        @default("New") // New|Contacted|Qualified|Junk|Booked|Closed|Lost
   qualificationReason     String?
   firstPage               String?
   internalReferrer        String?
-  isQualified             Boolean  @default(false)
+  isQualified             Boolean        @default(false)
   leadTemperatureAtSubmit String? // Hot|Warm|Cold
   // Activity log relation (MOD-58)
   activities              LeadActivity[]
@@ -262,16 +262,16 @@ model VisitorProfile {
 //   - Coordinates / polygons are nullable; geocoding is parked (string assignment).
 model Neighbourhood {
   id          String   @id @default(cuid())
-  slug        String   @unique          // canonical key, e.g. "nassagaweya"
-  name        String                    // "Nassagaweya"
-  rawStrings  String[]                  // every TREB string mapping here
+  slug        String   @unique // canonical key, e.g. "nassagaweya"
+  name        String // "Nassagaweya"
+  rawStrings  String[] // every TREB string mapping here
   profile     String   @default("urban_hub") // urban_hub | rural_hub | standard_no_hub
-  isHub       Boolean  @default(true)    // false only for standard_no_hub (Derry Green)
-  hasVipTier  Boolean  @default(true)    // true=urban_hub, false=rural/standard
+  isHub       Boolean  @default(true) // false only for standard_no_hub (Derry Green)
+  hasVipTier  Boolean  @default(true) // true=urban_hub, false=rural/standard
   kind        String   @default("urban") // urban | rural | industrial
-  centroidLat Float?                     // nullable — string assignment now; geocoding parked
+  centroidLat Float? // nullable — string assignment now; geocoding parked
   centroidLng Float?
-  polygon     Json?                      // GeoJSON — future enrichment, no migration needed
+  polygon     Json? // GeoJSON — future enrichment, no migration needed
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -285,23 +285,23 @@ model Neighbourhood {
 // Residential street entity. slug == existing street_slug so StreetContent /
 // StreetGeneration keep resolving at /streets/[slug] (parallel join layer, no rename).
 model ResidentialStreet {
-  id                     String   @id @default(cuid())
-  slug                   String   @unique   // = street_slug (canonical)
+  id                     String         @id @default(cuid())
+  slug                   String         @unique // = street_slug (canonical)
   name                   String
   shortName              String?
   streetType             String?
   neighbourhoodId        String?
   neighbourhood          Neighbourhood? @relation(fields: [neighbourhoodId], references: [id])
-  neighbourhoodAmbiguous Boolean  @default(false)
-  soldCount12mo          Int      @default(0)   // raw sale count, trailing 12mo
-  recencyWeightedSold    Float    @default(0)   // weighted sale score (drives VIP rank)
-  isVip                  Boolean  @default(false) // STICKY once true
+  neighbourhoodAmbiguous Boolean        @default(false)
+  soldCount12mo          Int            @default(0) // raw sale count, trailing 12mo
+  recencyWeightedSold    Float          @default(0) // weighted sale score (drives VIP rank)
+  isVip                  Boolean        @default(false) // STICKY once true
   vipEarnedAt            DateTime?
-  currentRank            Int?                    // DYNAMIC, refreshes each cycle (WS5 prominence)
+  currentRank            Int? // DYNAMIC, refreshes each cycle (WS5 prominence)
   crossStreets           String[]
   lastClassifiedAt       DateTime?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
   @@index([neighbourhoodId])
   @@index([isVip])
@@ -314,7 +314,7 @@ model ResidentialStreet {
 model UnmappedNeighbourhoodString {
   id        String   @id @default(cuid())
   rawString String   @unique
-  source    String?  // "vow-sync" | "backfill" | ...
+  source    String? // "vow-sync" | "backfill" | ...
   seenCount Int      @default(1)
   firstSeen DateTime @default(now())
   lastSeen  DateTime @default(now())
@@ -333,7 +333,7 @@ model CondoBuilding {
   name              String?
   slug              String   @unique
   address           String?
-  neighbourhood     String?  // legacy raw string; new code uses neighbourhoodId
+  neighbourhood     String? // legacy raw string; new code uses neighbourhoodId
   yearBuilt         Int?
   totalUnits        Int?
   managementCo      String?
@@ -357,20 +357,20 @@ model CondoBuilding {
   lastUpdated       DateTime @default(now())
 
   // ── WS3 entity-taxonomy fields ──────────────────────────────────────
-  buildingAddress        String?   // "490 Gordon Krantz Ave" — natural key
-  displayName            String?   // populated = buildingAddress at backfill (no clean name source)
+  buildingAddress        String? // "490 Gordon Krantz Ave" — natural key
+  displayName            String? // populated = buildingAddress at backfill (no clean name source)
   streetNumber           String?
   streetName             String?
-  streetSlug             String?   // parent street for link-graph
-  condoCorpNumbers       String[]  // dirty/multi — attribute, not key
+  streetSlug             String? // parent street for link-graph
+  condoCorpNumbers       String[] // dirty/multi — attribute, not key
   legalStories           Int?
   neighbourhoodId        String?
   neighbourhoodEntity    Neighbourhood? @relation(fields: [neighbourhoodId], references: [id])
-  neighbourhoodAmbiguous Boolean  @default(false)
-  saleCount12mo          Int      @default(0) // sale trades, trailing 12mo
-  leaseCount12mo         Int      @default(0) // lease trades, trailing 12mo (informational)
-  recencyWeightedSold    Float    @default(0) // weighted SALE score (lease excluded — sale-only VIP)
-  isVip                  Boolean  @default(false) // STICKY; lease-only buildings stay false
+  neighbourhoodAmbiguous Boolean        @default(false)
+  saleCount12mo          Int            @default(0) // sale trades, trailing 12mo
+  leaseCount12mo         Int            @default(0) // lease trades, trailing 12mo (informational)
+  recencyWeightedSold    Float          @default(0) // weighted SALE score (lease excluded — sale-only VIP)
+  isVip                  Boolean        @default(false) // STICKY; lease-only buildings stay false
   vipEarnedAt            DateTime?
   currentRank            Int?
   lastClassifiedAt       DateTime?
@@ -608,6 +608,62 @@ model StreetGenerationReview {
   lastInputHash String
 
   @@index([lastAttemptAt])
+  @@schema("public")
+}
+
+// ───── WS5 — neighbourhood hub-tier content persistence (A1) ────────────────
+// NEW models mirroring the StreetGeneration / StreetContent pair, keyed on
+// neighbourhoodSlug instead of streetSlug. They do NOT overload the street pair
+// (DEC-WS5 A1 persistence). The shared fail-closed queue stays StreetGeneration-
+// Review unchanged, keyed `hub:<slug>` (see src/lib/ai/hub/hubFailClosed.ts).
+//
+// HubGeneration mirrors StreetGeneration field-for-field (status via the existing
+// GenerationStatus enum). HubContent mirrors StreetContent's PUBLISHED-SURFACE
+// fields; the street-tier VIP-hub quartet (isVipHub/vipHubAt/vipDescription/
+// vipFaqJson) is intentionally omitted — rural is NO-VIP (locked) and that flag
+// was superseded by the WS3 entity model (ADR 0001). The street-tier parent
+// `neighbourhood` string is also dropped: a hub IS the neighbourhood.
+
+model HubGeneration {
+  neighbourhoodSlug String           @id
+  sectionsJson      Json
+  faqJson           Json
+  inputHash         String
+  status            GenerationStatus @default(succeeded)
+  generatedAt       DateTime         @default(now())
+  attemptCount      Int
+  wordCounts        Json
+  totalWords        Int
+  tokensIn          Int?
+  tokensOut         Int?
+  costUsd           Decimal?         @db.Decimal(10, 4)
+
+  @@index([status])
+  @@index([generatedAt])
+  @@schema("public")
+}
+
+model HubContent {
+  id                String    @id @default(cuid())
+  neighbourhoodSlug String    @unique
+  neighbourhoodName String
+  description       String    @db.Text
+  rawAiOutput       String?   @db.Text
+  status            String    @default("draft")
+  needsReview       Boolean   @default(true)
+  aiGenerated       Boolean   @default(true)
+  publishedAt       DateTime?
+  generatedAt       DateTime  @default(now())
+  marketDataHash    String?
+  attempts          Int       @default(0)
+  reviewNotes       String?   @db.Text
+  metaTitle         String?
+  metaDescription   String?
+  faqJson           String?   @db.Text
+  statsJson         String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
   @@schema("public")
 }
 

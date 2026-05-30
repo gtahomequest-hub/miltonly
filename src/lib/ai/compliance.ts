@@ -381,7 +381,7 @@ interface CallClaudeOptions {
   maxTokens?: number;
 }
 
-async function callClaude({
+export async function callClaude({
   modelKey,
   systemPrompt,
   userPrompt,
@@ -419,7 +419,7 @@ async function callClaude({
   return { text, inputTokens, outputTokens, costUsd };
 }
 
-async function callDeepSeek({
+export async function callDeepSeek({
   systemPrompt,
   userPrompt,
   responseFormat,

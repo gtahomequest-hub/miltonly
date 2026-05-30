@@ -12,6 +12,14 @@ import {
 } from "@/lib/schema";
 import FooterSection from "@/components/sections/FooterSection";
 import NeighbourhoodSoldBlock from "@/components/street/NeighbourhoodSoldBlock";
+// WS5 — rural hub-tier content (renders when a published HubContent row exists).
+import { buildRuralHubInput } from "@/lib/ai/buildHubInput";
+import {
+  projectStreetsSection,
+  projectHubSchema,
+  type ProjectedStreetsSection,
+} from "@/lib/ai/hub/projectHubEntities";
+import type { HubSection, HubSchemaProjection } from "@/types/hub-generator";
 
 export const dynamic = 'force-dynamic';
 
@@ -162,8 +170,119 @@ async function getNeighbourhoodData(slug: string) {
   };
 }
 
+// WS5 — load published rural hub content + projected (renderer-emitted) sections.
+// Returns null when no published HubContent row exists, so the page falls back to
+// the legacy listing-derived render below. Projected rural-roads + schema come
+// from projectStreetsSection / projectHubSchema (DEC-WS4-2), rebuilt from the
+// rural input; the rebuild is best-effort so prose still renders if it throws.
+async function getHubData(slug: string) {
+  const content = await prisma.hubContent.findUnique({
+    where: { neighbourhoodSlug: slug },
+  });
+  if (!content || content.status !== "published") return null;
+
+  const generation = await prisma.hubGeneration.findUnique({
+    where: { neighbourhoodSlug: slug },
+  });
+  const sections: HubSection[] =
+    generation && generation.status === "succeeded"
+      ? (generation.sectionsJson as unknown as HubSection[])
+      : [];
+
+  let roads: ProjectedStreetsSection | null = null;
+  let schema: HubSchemaProjection | null = null;
+  try {
+    const input = await buildRuralHubInput(slug);
+    roads = projectStreetsSection(input);
+    schema = projectHubSchema(input);
+  } catch {
+    // Projection rebuild is best-effort — render the prose without it.
+  }
+
+  let faq: Array<{ question: string; answer: string }> = [];
+  try {
+    faq = JSON.parse(content.faqJson || "[]");
+  } catch {
+    faq = [];
+  }
+
+  return { content, name: content.neighbourhoodName, sections, roads, schema, faq };
+}
+
+type HubData = NonNullable<Awaited<ReturnType<typeof getHubData>>>;
+
+// Renderer-emitted hub block: editorial sections + projected rural-roads list +
+// hub FAQ. The projected schema is injected into the page's <SchemaScript>.
+function HubBlock({ hub }: { hub: HubData }) {
+  return (
+    <>
+      {hub.sections.length > 0 && (
+        <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-3xl mx-auto space-y-8">
+            {hub.sections.map((s) => (
+              <div key={s.id}>
+                <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">{s.heading}</h2>
+                {s.paragraphs.map((p, i) => (
+                  <p key={i} className="text-[14px] text-[#475569] leading-relaxed mb-3">{p}</p>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {hub.roads && hub.roads.items.length > 0 && (
+        <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">Roads in {hub.name}</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {hub.roads.items.map((r) => (
+                <Link
+                  key={r.slug}
+                  href={r.url}
+                  className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:shadow-md transition-shadow"
+                >
+                  <p className="text-[14px] font-bold text-[#07111f]">{r.displayName}</p>
+                  <p className="text-[10px] text-[#94a3b8] mt-0.5">{r.soldCount12mo} sold (12mo)</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {hub.faq.length > 0 && (
+        <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">Frequently asked about {hub.name}</h2>
+            <div className="space-y-4">
+              {hub.faq.map((f) => (
+                <details key={f.question} className="bg-[#f8f9fb] rounded-xl border border-[#e2e8f0] overflow-hidden group">
+                  <summary className="px-5 py-4 text-[14px] font-bold text-[#07111f] cursor-pointer list-none">
+                    {f.question}
+                  </summary>
+                  <div className="px-5 pb-4 text-[13px] text-[#64748b] leading-relaxed">{f.answer}</div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const data = await getNeighbourhoodData(params.slug);
+  const [data, hub] = await Promise.all([
+    getNeighbourhoodData(params.slug),
+    getHubData(params.slug),
+  ]);
+  // Prefer hub-authored metadata when a published HubContent row exists.
+  if (hub?.content.metaTitle) {
+    return {
+      title: hub.content.metaTitle,
+      description: hub.content.metaDescription ?? undefined,
+      alternates: { canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}` },
+    };
+  }
   if (!data) return { title: "Neighbourhood Not Found" };
   return {
     title: `${data.name} ${config.CITY_NAME} â€” Homes For Sale, Prices & Neighbourhood Guide`,
@@ -179,8 +298,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function NeighbourhoodPage({ params }: Props) {
-  const data = await getNeighbourhoodData(params.slug);
-  if (!data) notFound();
+  const [data, hub] = await Promise.all([
+    getNeighbourhoodData(params.slug),
+    getHubData(params.slug),
+  ]);
+  if (!data && !hub) notFound();
+
+  // Published rural hub but no listing-derived data: render hub editorial +
+  // projected roads + projected schema on their own (fallback render).
+  if (!data) {
+    return (
+      <>
+        <SchemaScript schemas={hub!.schema ? [hub!.schema as unknown as Record<string, unknown>] : []} />
+        <div className="min-h-screen">
+          <HubBlock hub={hub!} />
+        </div>
+        <FooterSection />
+      </>
+    );
+  }
 
   const faqs = [
     {
@@ -202,6 +338,8 @@ export default async function NeighbourhoodPage({ params }: Props) {
   ];
 
   const schemas = [
+    // WS5 — projected hub Place schema (DEC-WS4-2), baked in when hub content exists.
+    ...(hub?.schema ? [hub.schema as unknown as Record<string, unknown>] : []),
     generateBreadcrumbSchema([
       { name: "Home", url: config.SITE_URL },
       {
@@ -283,6 +421,9 @@ export default async function NeighbourhoodPage({ params }: Props) {
 
         {/* Market snapshot bar â€” active-listing aggregates only.
            Sold-price intel surfaces in the gated NeighbourhoodSoldBlock below. */}
+        {/* WS5 — rural hub editorial + projected roads (renders when HubContent exists). */}
+        {hub && <HubBlock hub={hub} />}
+
         <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
           <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
