@@ -185,6 +185,12 @@ Selection rules:
 - "Why do homes on {Street} trade differently than other Milton streets?"
 - "What price range should I expect on {Street}?"
 
+**PRICE cluster — SUB-K DATA-DEPTH RULE (read before answering any price question).** When `input.aggregates.priceRange` is NULL (a thin / sub-k street whose sale range is suppressed for privacy), a price-cluster answer MUST NOT state the street's own typical, range, or shorthand band ("the high-$700s," "high-$800s to low-$900s," "$X to $Y," "settles in the $Y range"). Do not reconstruct the street's range from quarterly figures. Instead:
+- Decline at the street level: "a reliable street-level price isn't available given the thin recent activity on {Street}."
+- THEN, if `input.neighbourhoodComparable.typicalSoldPrice` is present AND its `kAnonLevel` is "full", you MAY redirect to the neighbourhood as a SINGLE rounded point — never a range: "across the {neighbourhood} area, comparable homes trade around $790,000." One figure only.
+- "What price range should I expect on {Street}?" is phrased to demand a range, but on a sub-k street you must NOT supply a street range. Answer with the single neighbourhood point (as above) or decline and point the reader to the broader area; never give a low–high band for the street.
+When `input.aggregates.priceRange` is NON-null (full-data street), answer the price questions normally with the rounding tables — the street's tier/range is allowed.
+
 **SPEED cluster:**
 - "How fast do homes sell on {Street}?"
 - "How has the market been moving on {Street} recently?"

@@ -93,7 +93,12 @@ Do NOT discuss in this section:
 
 Those topics belong in the `market` section. If you find yourself writing about how fast homes sell, when prices changed, or how rental yields compare, STOP — that content goes in market, not homes.
 
-Trade prices ARE allowed in homes (e.g., "townhomes in this pocket trade in the high-$700s to mid-$800s") because that's describing the stock's price tier. Trade PACE and TIMING belong in market.
+Trade prices in homes are CONDITIONAL ON DATA DEPTH. Trade PACE and TIMING always belong in market, not homes.
+
+- If `input.aggregates.priceRange` is NON-null (the street has a k-confident sale range, i.e. enough sales to publish a range): you MAY describe the stock's price tier (e.g., "townhomes in this pocket trade in the high-$700s to mid-$800s"), applying the rounding tables. This is the full-data case.
+- If `input.aggregates.priceRange` is NULL (a thin / sub-k street whose sale range is suppressed for privacy): you MUST NOT state the street's own price in any form — no tier, no typical, no shorthand, and above all no low–high band ("high-$800s to low-$900s", "the mid-$700s to low-$800s", "trade in the $700s", "$X to $Y"). The street's range is intentionally withheld; do not reconstruct it from quarterly figures or anything else. Instead either:
+  (a) omit price from the homes section entirely and describe the stock qualitatively (type, size, era, form, condition, exterior treatments, floor-plan variation); or
+  (b) if `input.neighbourhoodComparable.typicalSoldPrice` is present AND its `kAnonLevel` is "full", reference it ONCE as a SINGLE rounded NEIGHBOURHOOD-level point — never the street's own figure, and never a range — e.g., "townhomes across the {neighbourhood} area typically trade around $790,000." A single point only: a low–high range on a sub-k street (even a neighbourhood one in the street's prose) is forbidden and will fail validation.
 
 **`amenities`** (2 paragraphs, 6–10 sentences total)
 **This section MUST be between 160 and 220 words.** Outputs below 160 words will fail validation and force a retry. Aim for the middle of the range. What is within walking or driving distance. Parks, grocery, places of worship, hospital if close, notable institutional anchors. Use walking language for anything under ten minutes walkable, driving language for the rest. Do not list every nearby place; select the three to five that most shape daily rhythm. Heading: "What's nearby" or "Around the corner."

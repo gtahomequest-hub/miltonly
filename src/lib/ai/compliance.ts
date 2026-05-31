@@ -1280,12 +1280,17 @@ export async function generatePhase41StreetContent(
     (input.activeListingsCount ?? 0) +
     (input.aggregates.salesCount ?? 0) +
     (input.aggregates.leasesCount ?? 0);
-  const isThinData = totalListings < 5;
+  // Sub-k trigger (WS5): fire on under-5 total listings OR a k-anon-suppressed
+  // sale range (priceRange === null, i.e. salesCount < K_ANON_RANGE). The latter
+  // catches 5-9-sale / >=5-listing streets that are full enough for >=5 listings
+  // but still sub-k for a RANGE — they leaked a market band under the old
+  // totalListings-only key. Reuses the proven numberless preamble.
+  const isThinData = totalListings < 5 || input.aggregates.priceRange == null;
   if (isThinData) {
     const thinDataPreamble = `THIN-DATA STREET — MARKET SECTION CONSTRAINT (Tier 2)
 
-This street has under 5 total listings (active + sold + leased combined).
-There is INSUFFICIENT data for quantitative market analysis.
+This street is thin: it has under 5 total listings (active + sold + leased combined) OR its sale price range is k-anon suppressed (too few sales to publish a range).
+There is INSUFFICIENT data for quantitative market analysis, and the street's own price range must NOT be stated or reconstructed (no low–high band, no "$X to $Y", no tier shorthand like "high-$700s to low-$800s").
 
 For the market section ONLY, the following are FORBIDDEN:
 - ANY specific dollar amount ("$X", "$XK", "$X.YM" — none allowed)

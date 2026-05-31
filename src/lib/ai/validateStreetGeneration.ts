@@ -389,7 +389,13 @@ export function isPriceWithinInputTolerance(prose: number, inputs: number[]): bo
 // the street-tier blast-radius audit). Exported so the audit can detect with it.
 // ---------------------------------------------------------------------------
 
-const SUBK_PRICE_DOLLAR = `\\$\\d[\\d,]*(?:\\.\\d+)?[KkMm]?`;
+// Token includes the optional `high|mid|low-` tier prefix and trailing `s` so a
+// hundreds-shorthand band ("high-$700s to low-$800s") is captured whole and
+// scaled by parseDollarTokenForGrounding (tier + 100–999 → ×1000 → $700,000),
+// mirroring extractNumerics' first dollar pattern. Bare "$700s" (no tier) still
+// parses to 700 and falls below the sale-scale floor, exactly as findUngrounded-
+// Numerics treats it — only the tier-prefixed form scales.
+const SUBK_PRICE_DOLLAR = `(?:(?:high|mid|low)-)?\\$\\d[\\d,]*(?:\\.\\d+)?[KkMm]?s?`;
 // Each pattern carries a `bare` flag. NON-bare patterns are explicit band
 // vocabulary ("range of", "ranges from", "spanning", "$X–$Y range", dash band) —
 // they are bands by construction and fire regardless of trend verbs. The `bare`
@@ -1582,6 +1588,21 @@ export function validateStreetGeneration(
       }
     }
 
+    // WS5 (CHECKPOINT-2 remediation): sub-k price-band reassembly. BROADENED to
+    // ALL sections (not market-only): a sub-k band is a k-anon LEAK wherever it
+    // narrates (dymott leaked into "homes"). Self-gates on priceRange===null, so
+    // it adds zero firing surface on full-k pages. numeric_ungrounded / per-trade
+    // / temporal stay market-scoped by design — only this band block broadens.
+    const subkBand = findSubkRangeReassembly(sectionText, input);
+    for (const r of subkBand) {
+      violations.push({
+        rule: "subk_range_reassembly",
+        sectionId: section.id,
+        excerpt: `${r.reason}; ctx: ${r.context}`,
+        severity: "hard",
+      });
+    }
+
     // v10 (Workstream 2 / Step 1): per-trade fabrication.
     // Claim-type vs data-existence check. Fires on singular-trade claims
     // (a/an/one + property-noun + transaction-verb + price) when the input
@@ -1902,6 +1923,20 @@ export function validateSectionsSubset(
       }
     }
 
+    // WS5 (CHECKPOINT-2 remediation): sub-k price-band reassembly — partial-
+    // validator mirror, BROADENED to ALL sections (parity with the combined
+    // validator) so a band leaking into any section retries on its half.
+    // Self-gates on priceRange===null (sub-k≥10).
+    const subkBand = findSubkRangeReassembly(sectionText, input);
+    for (const r of subkBand) {
+      violations.push({
+        rule: "subk_range_reassembly",
+        sectionId: section.id,
+        excerpt: `${r.reason}; ctx: ${r.context}`,
+        severity: "hard",
+      });
+    }
+
     // v10 (Workstream 2 / Step 1): per-trade fabrication — partial-validator
     // mirror so the market half retries on its own when the model fabricates
     // a singular trade. Scoped to market + neighbourhoodComparable.
@@ -1997,6 +2032,17 @@ export function validateFaq(
     violations.push({
       rule: "sales_register_leak",
       excerpt: `FAQ ${faqSalesLeak.matchedPhrase}: ${faqSalesLeak.excerpt}`,
+      severity: "hard",
+    });
+  }
+  // WS5 (CHECKPOINT-2 remediation): sub-k price-band reassembly in the FAQ.
+  // The street FAQ previously ran no numeric/band grounding; this closes the
+  // 17 band-in-FAQ cases. findSubkRangeReassembly self-gates on priceRange===null
+  // (sub-k≥10), so full-k streets citing a real grounded range are untouched.
+  for (const r of findSubkRangeReassembly(faqText, input)) {
+    violations.push({
+      rule: "subk_range_reassembly",
+      excerpt: `FAQ: ${r.reason}; ctx: ${r.context}`,
       severity: "hard",
     });
   }
