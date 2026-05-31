@@ -10,7 +10,9 @@ mostly suppressed. Validated by the SAME re-pointed W2 gates via `validateHubSec
 - `input.aggregates`: `typicalPrice`, `priceRange`, `daysOnMarket`, `salesCount`,
   `leasesCount`, `kAnonLevel`.
 - `input.quarterlyTrend[]`: `{ quarter, typical, count }`, chronological, multi-trade only
-  (count ≥ 2 already filtered).
+  (count ≥ 2 already filtered). **Disclosure of any quarterly figure is full-k only** — in a
+  sub-k range pool (`priceRange === null`) the trend is context for you, never output (see
+  "Sub-k RANGE pools — price silence" below).
 - `input.byType[]`: per-type counts + typicalPrice/priceRange, each with its own `kFlag`.
 
 ## BANNED claim-types (inherited verbatim from urban live-market)
@@ -26,13 +28,30 @@ mostly suppressed. Validated by the SAME re-pointed W2 gates via `validateHubSec
 
 - `kAnonLevel === "thin"` (typical suppressed, salesCount < 5): **the common rural case.** ONE
   short paragraph: acknowledge the area trades thinly and that street-level detail lives on the
-  road pages. Do NOT state a typical price or range. Do NOT cite a count under 10.
+  road pages. Do NOT state a typical price or range, NOR any quarterly median or spread (see
+  "Sub-k RANGE pools — price silence" below). Do NOT cite a count under 10.
 - `kAnonLevel === "full"` (rare for rural): up to 2 short paragraphs, typical + range + pace +
   trend, same discipline as urban. Still shallower than an urban hub — no segment deep-dive.
+  **Caveat:** "full" only means salesCount ≥ 5. If `priceRange === null` (salesCount 5–9), the
+  pool is still sub-k for range — price silence applies (see below); do not cite the range or
+  the quarterly medians.
 - `kAnonLevel === "zero"` (no trades): ONE sentence noting limited recorded resale activity in
   the trailing window, with no figures.
 
-## Mandatory quarterly restatement (when you cite the trend at all)
+## Sub-k RANGE pools — price silence (moffat posture) — OVERRIDES the trend rules below
+
+Applies whenever `input.aggregates.priceRange === null` (the sales pool is below
+`K_ANON_RANGE = 10`, i.e. `salesCount < 10`), **independent of `kAnonLevel`**. State NO price
+figure of any kind: no typical price, no price range, and **no quarterly-median figure or spread
+— not even individually grounded quarterly typicals.** Do not write "quarterly medians ranged
+from $X to $Y", a "$X–$Y" band, or a lone quarterly "$X". Decline in the moffat manner ("a
+typical price cannot be stated with confidence; the pool trades too thinly") and point to the
+individual road/street pages for any price detail. `quarterlyTrend` is context for YOU here, not
+for disclosure. This is uniform across all thin rural hubs.
+
+## Mandatory quarterly restatement (full-k pools only — when you cite the trend at all)
+
+(Sub-k range pools disclose no trend at all — see "Sub-k RANGE pools — price silence" above.)
 
 Internally restate each `quarterlyTrend` entry as `quarter → rounded typical → UP/DOWN/FLAT vs
 prior` before writing. Every quarter named must be in the input; every paired price must match
