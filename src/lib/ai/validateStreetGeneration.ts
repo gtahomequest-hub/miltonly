@@ -364,6 +364,110 @@ export function isPriceWithinInputTolerance(prose: number, inputs: number[]): bo
   return false;
 }
 
+// ---------------------------------------------------------------------------
+// WS5 — sub-k price-RANGE reassembly gate (rule "subk_range_reassembly").
+//
+// The k-anon range gate suppresses input.aggregates.priceRange to null when the
+// pool is sub-K_ANON_RANGE (<10 sales). But prose can REASSEMBLE an equivalent
+// low–high band from grounded quarterly typicals (each quarter count>=2 is
+// individually citeable), defeating the suppression — findUngroundedNumerics
+// checks each endpoint independently and never sees the band-ness. This detector
+// fires a hard violation when priceRange===null AND the prose presents an
+// EXPLICIT low–high price band (range/spread vocabulary, or a dash band).
+//
+// Deliberately NARROW to avoid over-firing on legitimate quarterly TREND prose:
+//   - it requires explicit range/band vocabulary ("between X and Y", "range of
+//     X to Y", "ranges from X to Y", "spanning X to Y", "$X–$Y range") or a bare
+//     dash band ("$X–$Y") — it does NOT match a bare "from X to Y" (that is trend
+//     phrasing: "rose from … to …"), and
+//   - it EXEMPTS a band whose context carries a quarter label (Q3 2024, Q1'25) —
+//     naming grounded quarter points in a trend is allowed.
+// Sale-scale only (min endpoint >= $100K) and non-rent context, so rent bands and
+// the legit full-k range (priceRange non-null) never fire.
+// Shared (lives in the W2 detector module); CHECKPOINT-1 wires it into the HUB
+// validator only — the street validator is NOT yet calling it (deferred pending
+// the street-tier blast-radius audit). Exported so the audit can detect with it.
+// ---------------------------------------------------------------------------
+
+const SUBK_PRICE_DOLLAR = `\\$\\d[\\d,]*(?:\\.\\d+)?[KkMm]?`;
+// Each pattern carries a `bare` flag. NON-bare patterns are explicit band
+// vocabulary ("range of", "ranges from", "spanning", "$X–$Y range", dash band) —
+// they are bands by construction and fire regardless of trend verbs. The `bare`
+// pattern is the unqualified "$X to $Y": band-SHAPED but indistinguishable from
+// trend phrasing ("rose from $X to $Y"), so it fires ONLY when the context has
+// no trend anchor (and no quarter label) — see SUBK_TREND_ANCHOR below.
+const SUBK_RANGE_BAND_PATTERNS: Array<{ re: RegExp; bare: boolean }> = [
+  { re: new RegExp(`\\bbetween\\s+(${SUBK_PRICE_DOLLAR})\\s+and\\s+(${SUBK_PRICE_DOLLAR})`, "ig"), bare: false },
+  { re: new RegExp(`\\b(?:in\\s+the\\s+)?range\\s+of\\s+(${SUBK_PRICE_DOLLAR})\\s+(?:to|and|through|[–—-])\\s+(${SUBK_PRICE_DOLLAR})`, "ig"), bare: false },
+  { re: new RegExp(`\\brang(?:es|ing|ed)\\s+from\\s+(${SUBK_PRICE_DOLLAR})\\s+(?:to|and|through|[–—-])\\s+(${SUBK_PRICE_DOLLAR})`, "ig"), bare: false },
+  { re: new RegExp(`\\bspan(?:s|ning)?\\s+(?:from\\s+)?(${SUBK_PRICE_DOLLAR})\\s+(?:to|through|[–—-])\\s+(${SUBK_PRICE_DOLLAR})`, "ig"), bare: false },
+  { re: new RegExp(`(${SUBK_PRICE_DOLLAR})\\s*[–—]\\s*(${SUBK_PRICE_DOLLAR})\\s+range`, "ig"), bare: false },
+  { re: new RegExp(`(${SUBK_PRICE_DOLLAR})\\s*[–—]\\s*(${SUBK_PRICE_DOLLAR})`, "ig"), bare: false }, // dash band
+  { re: new RegExp(`(${SUBK_PRICE_DOLLAR})\\s+(?:to|through)\\s+(${SUBK_PRICE_DOLLAR})`, "ig"), bare: true }, // bare "$X to $Y"
+];
+const SUBK_QUARTER_ANCHOR = /Q[1-4]\s*['']?\s*\d{2,4}/i;
+const SUBK_RENT_CTX = /\b(rent|rental|lease|leased|tenant|month|monthly|\/mo)\b/i;
+// Trend anchor — turns a bare "$X to $Y" from a (banned) BAND into an (allowed)
+// TREND. Includes the directional preposition "from" ("rose from $X to $Y") per
+// the CHECKPOINT-1 decision, plus the movement verbs. Applied ONLY to the bare
+// pattern, so explicit band vocab ("ranged from …") is never exempted by it.
+const SUBK_TREND_ANCHOR =
+  /\b(?:from|ros(?:e)|rise|rising|risen|climb(?:ed|ing)?|eas(?:e|ed|ing)|fell|fall(?:ing|en)?|dip(?:ped|ping)?|firm(?:ed|ing)?|grew|grow(?:ing|n)?|gain(?:ed|ing)?|slip(?:ped|ping)?|slid|soften(?:ed|ing)?|cool(?:ed|ing)?|advanc(?:ed|ing)?|increas(?:ed|ing)?|decreas(?:ed|ing)?|declin(?:ed|ing)?|jump(?:ed|ing)?|edg(?:ed|ing)?|tick(?:ed|ing)?|mov(?:ed|ing)?|trend(?:ed|ing)?)\b/i;
+
+export interface SubkRangeFinding {
+  raw: string;
+  context: string;
+  reason: string;
+}
+
+export function findSubkRangeReassembly(
+  prose: string,
+  input: StreetGeneratorInput,
+): SubkRangeFinding[] {
+  // Gate: only when the aggregate sale price RANGE is k-anon suppressed.
+  if (input.aggregates.priceRange != null) return [];
+
+  const out: SubkRangeFinding[] = [];
+  const seen = new Set<string>();
+  for (const { re, bare } of SUBK_RANGE_BAND_PATTERNS) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(prose)) !== null) {
+      const loRaw = m[1];
+      const hiRaw = m[2];
+      const lo = parseDollarTokenForGrounding(loRaw);
+      const hi = parseDollarTokenForGrounding(hiRaw);
+      if (lo === null || hi === null) continue;
+      if (Math.min(lo, hi) < 100_000) continue; // rent / non-price scale
+      if (Math.abs(hi - lo) < 1) continue;       // single value, not a spread
+
+      const ctxStart = Math.max(0, m.index - 35);
+      const ctxEnd = Math.min(prose.length, m.index + m[0].length + 35);
+      const ctx = prose.slice(ctxStart, ctxEnd).replace(/\s+/g, " ").trim();
+      if (SUBK_RENT_CTX.test(ctx)) continue;        // rent band — not a sale priceRange
+      if (SUBK_QUARTER_ANCHOR.test(ctx)) continue;  // quarter-anchored trend — allowed
+      // Bare "$X to $Y" is band-shaped but ambiguous with trend prose; a trend
+      // anchor (from / rose / eased / …) in context marks it a TREND → exempt.
+      // Explicit band vocab (bare === false) is never exempted by trend verbs.
+      if (bare && SUBK_TREND_ANCHOR.test(ctx)) continue;
+
+      const key = `${loRaw}|${hiRaw}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        raw: m[0],
+        context: ctx,
+        reason:
+          `low–high price band "${loRaw} – ${hiRaw}" presented while the aggregate priceRange ` +
+          `is k-anon suppressed (sub-K_ANON_RANGE). Reassembling a sub-k range/band — even from ` +
+          `grounded quarterly typicals — is not permitted; name individual quarter-anchored points ` +
+          `or omit the band.`,
+      });
+    }
+  }
+  return out;
+}
+
 export function collectInputPrices(input: StreetGeneratorInput): number[] {
   const out: number[] = [];
   if (input.aggregates.typicalPrice) out.push(input.aggregates.typicalPrice);

@@ -32,7 +32,9 @@ import {
   findUngroundedNumerics,
   findTemporalPairings,
   findPerTradeFabrications,
+  findSubkRangeReassembly,
 } from "@/lib/ai/validateStreetGeneration";
+import type { HubFAQItem } from "@/types/hub-generator";
 
 // ---------------------------------------------------------------------------
 // Comparison vocabulary. Each verb asserts a direction on one axis.
@@ -293,6 +295,14 @@ export function validateHubSectionsSubset(
           severity: "hard",
         });
       }
+      // WS5 — sub-k range reassembly: a low–high band when priceRange is null.
+      for (const r of findSubkRangeReassembly(text, adapter)) {
+        violations.push({
+          rule: "subk_range_reassembly",
+          excerpt: `${r.reason}; ctx: ${r.context}`,
+          severity: "hard",
+        });
+      }
     }
 
     // comparedToMilton: the net-new cross-sectional gate (DEC-WS4-3).
@@ -315,5 +325,63 @@ export function validateHubSectionsSubset(
     }
   }
 
+  return violations;
+}
+
+// ---------------------------------------------------------------------------
+// validateHubFaq (WS5, Rule A) — the hub FAQ was previously UNVALIDATED for
+// grounding (the street tier validates its FAQ via validateFaq; the hub did
+// not, so brookville's "$2.0M–$2.25M" band slipped through). Run the aggregate
+// gates on the FAQ answers so a number in an FAQ answer must ground exactly
+// like a section: per-trade fabrication banned in EVERY answer; numeric
+// grounding + temporal pairing on aggregate-bucket answers; the sub-k range
+// gate on ANY answer (defense against mislabeling a price band as editorial).
+// ---------------------------------------------------------------------------
+
+export function validateHubFaq(
+  faq: HubFAQItem[],
+  input: HubGeneratorInput,
+): ValidatorViolation[] {
+  const violations: ValidatorViolation[] = [];
+  const adapter = hubInputToStreetAdapter(input);
+
+  for (const item of faq) {
+    const q = item.question.slice(0, 48);
+    const text = item.answer;
+
+    // Per-trade fabrication is banned in any answer (input has no per-trade rows).
+    for (const p of findPerTradeFabrications(text, adapter)) {
+      violations.push({
+        rule: "per_trade_fabrication",
+        excerpt: `FAQ "${q}": ${p.side}-side: "${p.matchedPhrase}" — ${p.reason}`,
+        severity: "hard",
+      });
+    }
+    // Sub-k range band is banned in ANY answer (mislabel-resistant).
+    for (const r of findSubkRangeReassembly(text, adapter)) {
+      violations.push({
+        rule: "subk_range_reassembly",
+        excerpt: `FAQ "${q}": ${r.reason}; ctx: ${r.context}`,
+        severity: "hard",
+      });
+    }
+    // Aggregate-bucket answers cite aggregates → numeric grounding + temporal.
+    if (item.bucket === "aggregate") {
+      for (const f of findUngroundedNumerics(text, adapter)) {
+        violations.push({
+          rule: "numeric_ungrounded",
+          excerpt: `FAQ "${q}": "${f.raw}" (${f.type}) — ${f.reason}`,
+          severity: "hard",
+        });
+      }
+      for (const t of findTemporalPairings(text, adapter)) {
+        violations.push({
+          rule: "temporal_pairing",
+          excerpt: `FAQ "${q}": ${t.type}: ${t.reason}`,
+          severity: "hard",
+        });
+      }
+    }
+  }
   return violations;
 }

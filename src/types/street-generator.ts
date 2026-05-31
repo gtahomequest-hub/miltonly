@@ -74,6 +74,7 @@ export type ValidatorRule =
   | "per_trade_fabrication"
   | "comparison_mismatch"   // WS4 (DEC-WS4-3): hub compared-to-milton cross-sectional gate
   | "condo_lease_only_market" // WS4 patch 2 (DEC-WS4-5): sale market section emitted on a lease-only building
+  | "subk_range_reassembly" // WS5: low–high price band reassembled while aggregate priceRange is k-anon suppressed
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---

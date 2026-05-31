@@ -39,6 +39,7 @@ import path from "path";
 import { buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import {
   validateHubSectionsSubset,
+  validateHubFaq,
   hubInputToStreetAdapter,
 } from "@/lib/ai/validateHubGeneration";
 import {
@@ -280,10 +281,12 @@ async function runHubHalfWithRetry(params: RunHubHalfParams): Promise<HubHalfRes
     const sectionsForValidate = rounded.sections;
     const faqForValidate = expectsFaq ? trimFaqAnswersToSentenceCap(rounded.faq as unknown as StreetFAQItem[]) as unknown as HubFAQItem[] : [];
 
-    // Validate: section-presence shape gate + the re-pointed W2 hub gate.
+    // Validate: section-presence shape gate + the re-pointed W2 hub gate +
+    // the FAQ grounding gate (WS5 Rule A — the FAQ was previously unvalidated).
     const violations: ValidatorViolation[] = [
       ...checkExpectedSections(sectionsForValidate, expectedSectionIds),
       ...validateHubSectionsSubset(sectionsForValidate, input, RURAL_NO_MILTON),
+      ...(expectsFaq ? validateHubFaq(faqForValidate, input) : []),
     ];
 
     attempts.push({ attemptN: attempt, violations, tokens: { in: response.inputTokens, out: response.outputTokens }, costUsd: response.costUsd });
@@ -405,7 +408,11 @@ export async function generateRuralHubContent(
 
   // Final validation on combined output (defense-in-depth; no combined-only hub
   // rule exists, but mirror the street contract: validatorPassed reflects this).
-  const finalViolations = validateHubSectionsSubset(finalOutput.sections, input, RURAL_NO_MILTON);
+  // Includes the FAQ grounding gate (WS5 Rule A) on the merged-and-trimmed FAQ.
+  const finalViolations = [
+    ...validateHubSectionsSubset(finalOutput.sections, input, RURAL_NO_MILTON),
+    ...validateHubFaq(finalOutput.faq as unknown as HubFAQItem[], input),
+  ];
   const wordTotal = finalOutput.sections.reduce((sum, s) => sum + s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length, 0);
   console.log(`[HubGen] ${neighbourhoodSlug} combined: ${wordTotal} words, editorial=${editorialRes.attemptCount}+market=${marketRes.attemptCount} attempts, total $${totalCostUsd.toFixed(5)}, ${finalViolations.length === 0 ? "PASS" : `FAIL (${finalViolations.length} combined violations)`}`);
 
