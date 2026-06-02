@@ -12,6 +12,13 @@ export const mockHomepageData: HomepageData = {
     headlineAccent: 'read closely.',
     lede: "Ask anything about the Milton market — or tell us what you're here to do.",
     askPlaceholder: 'I want to know what my home is worth…',
+    askExamples: [
+      'I need to sell in under 30 days…',
+      'I need to sell and buy at the same time…',
+      'I want a house close to a top school…',
+      'Where in Milton can I build rental income…',
+      "What's my home actually worth right now…",
+    ],
     pills: [
       { key: 'wealth', label: 'Build wealth', mostAsked: true },
       { key: 'sell', label: "What's my home worth?" },

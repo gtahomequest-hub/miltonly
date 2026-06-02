@@ -34,6 +34,8 @@ export interface HeroContent {
   headlineAccent: string; // "read closely." (italic gradient)
   lede: string;
   askPlaceholder: string;
+  /** rotating examples typed out in the ask bar */
+  askExamples: string[];
   pills: HeroIntentPill[];
 }
 

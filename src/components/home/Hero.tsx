@@ -1,6 +1,7 @@
 // src/components/home/Hero.tsx
 import type { HeroContent, MiltonStats, MlsTabKey, TrustInfo } from './types';
-import { IconSpark, TabIcon } from './icons';
+import { TabIcon } from './icons';
+import { AskBar } from './AskBar';
 import { compactPrice } from './format';
 
 interface HeroProps {
@@ -23,15 +24,7 @@ export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
           </h1>
           <p className="m-lede">{hero.lede}</p>
 
-          <div className="m-askbar" id="m-hero-askbar">
-            <span className="m-lead">
-              <IconSpark />
-            </span>
-            <input placeholder={hero.askPlaceholder} />
-            <button className="m-go" aria-label="Ask">
-              →
-            </button>
-          </div>
+          <AskBar examples={hero.askExamples} />
 
           <div className="m-pills">
             {hero.pills.map((p) => (
