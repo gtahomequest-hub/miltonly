@@ -3,7 +3,7 @@ import { IconSearch } from './icons';
 
 export function SearchBand() {
   return (
-    <div className="m-searchband">
+    <div className="m-searchband" id="m-searchband">
       <div className="m-wrap">
         <div className="m-searchbox">
           <IconSearch />

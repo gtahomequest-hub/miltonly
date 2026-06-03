@@ -9,11 +9,13 @@ export function HomeNav() {
 
   useEffect(() => {
     const onScroll = () => {
-      const el = document.getElementById('m-hero-askbar');
-      if (!el) return;
-      // reveal nav search once the hero ask bar has scrolled up past the fixed nav
-      const past = el.getBoundingClientRect().bottom < 70;
-      setSearchVisible(past);
+      // reveal nav search only after the page's main search band has scrolled
+      // up past the fixed nav (fallback to the hero ask bar if band absent)
+      const anchor =
+        document.getElementById('m-searchband') ||
+        document.getElementById('m-hero-askbar');
+      if (!anchor) return;
+      setSearchVisible(anchor.getBoundingClientRect().bottom < 70);
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -38,9 +40,15 @@ export function HomeNav() {
           <a href="#market">Market</a>
         </div>
 
+        {/* mirrors the hero ask bar: white pill, green lead circle, green go */}
         <div className={`m-navsearch${searchVisible ? ' m-show' : ''}`} aria-hidden={!searchVisible}>
-          <IconSearch />
+          <span className="m-navsearch-lead">
+            <IconSearch />
+          </span>
           <input placeholder="Search a street or home…" tabIndex={searchVisible ? 0 : -1} />
+          <button className="m-navsearch-go" aria-label="Search" tabIndex={searchVisible ? 0 : -1}>
+            →
+          </button>
         </div>
 
         <a className="m-navcta" href="#dual">

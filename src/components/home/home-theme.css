@@ -174,19 +174,20 @@
 .home-v2 .m-navsearch {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   flex: 0;
   width: 0;
-  max-width: 460px;
+  max-width: 480px;
   margin: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--m-surface);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0;
   opacity: 0;
   transform: translateY(-4px);
   pointer-events: none;
+  box-shadow: var(--m-sh);
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .home-v2 .m-navsearch.m-show {
@@ -196,35 +197,62 @@
   flex: 1;
   width: auto;
   margin: 0 28px;
-  padding: 8px 14px;
+  padding: 5px 5px 5px 12px;
   overflow: visible;
 }
 .home-v2 .m-navsearch:focus-within {
-  border-color: var(--m-accent-on);
-  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--m-accent);
+  box-shadow: var(--m-sh), 0 0 0 3px rgba(0, 255, 128, 0.15);
 }
-.home-v2 .m-navsearch svg {
-  width: 16px;
-  height: 16px;
-  stroke: rgba(255, 255, 255, 0.7);
-  fill: none;
-  stroke-width: 1.8;
+.home-v2 .m-navsearch-lead {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--m-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+.home-v2 .m-navsearch-lead svg {
+  width: 14px;
+  height: 14px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2;
 }
 .home-v2 .m-navsearch input {
   flex: 1;
   border: 0;
   outline: 0;
   background: transparent;
-  color: #fff;
+  color: var(--m-text-body);
   font-family: var(--m-sans);
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .home-v2 .m-navsearch input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: #9aa39c;
+}
+.home-v2 .m-navsearch-go {
+  background: var(--m-accent);
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+.home-v2 .m-navsearch-go:hover {
+  background: var(--m-accent-on);
 }
 @media (max-width: 820px) {
-  .home-v2 .m-navsearch {
+  .home-v2 .m-navsearch.m-show {
     margin: 0 12px;
   }
 }
