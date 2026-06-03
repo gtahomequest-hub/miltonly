@@ -107,10 +107,12 @@
   }
 }
 
-/* nav — same colour family as hero, single hairline border */
+/* nav — fixed (sticky is defeated by global html/body overflow-x:hidden) */
 .home-v2 .m-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 80;
   background: linear-gradient(180deg, #051f15 0%, #073126 100%);
   backdrop-filter: blur(14px);
