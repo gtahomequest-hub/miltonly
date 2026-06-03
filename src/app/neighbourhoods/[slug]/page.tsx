@@ -13,7 +13,7 @@ import {
 import FooterSection from "@/components/sections/FooterSection";
 import NeighbourhoodSoldBlock from "@/components/street/NeighbourhoodSoldBlock";
 // WS5 — rural hub-tier content (renders when a published HubContent row exists).
-import { buildRuralHubInput } from "@/lib/ai/buildHubInput";
+import { buildHubInput, buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import {
   projectStreetsSection,
   projectHubSchema,
@@ -170,11 +170,11 @@ async function getNeighbourhoodData(slug: string) {
   };
 }
 
-// WS5 — load published rural hub content + projected (renderer-emitted) sections.
-// Returns null when no published HubContent row exists, so the page falls back to
-// the legacy listing-derived render below. Projected rural-roads + schema come
-// from projectStreetsSection / projectHubSchema (DEC-WS4-2), rebuilt from the
-// rural input; the rebuild is best-effort so prose still renders if it throws.
+// WS5 — load published hub content (rural + urban) + projected (renderer-emitted)
+// sections. Returns null when no published HubContent row exists, so the page falls
+// back to the legacy listing-derived render below. Projected roads + schema come
+// from projectStreetsSection / projectHubSchema (DEC-WS4-2), rebuilt from the hub
+// input; the rebuild is best-effort so prose still renders if it throws.
 async function getHubData(slug: string) {
   const content = await prisma.hubContent.findUnique({
     where: { neighbourhoodSlug: slug },
@@ -192,7 +192,17 @@ async function getHubData(slug: string) {
   let roads: ProjectedStreetsSection | null = null;
   let schema: HubSchemaProjection | null = null;
   try {
-    const input = await buildRuralHubInput(slug);
+    // Dispatch keys on Neighbourhood.profile, never kind (DEC-WS4 scope
+    // correction): urban_hub → buildHubInput, rural_hub → buildRuralHubInput.
+    // Each builder guards on profile, so a mismatch still fails closed here.
+    const nbhd = await prisma.neighbourhood.findUnique({
+      where: { slug },
+      select: { profile: true },
+    });
+    const input =
+      nbhd?.profile === "urban_hub"
+        ? await buildHubInput(slug)
+        : await buildRuralHubInput(slug);
     roads = projectStreetsSection(input);
     schema = projectHubSchema(input);
   } catch {
