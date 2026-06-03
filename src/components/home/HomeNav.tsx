@@ -8,14 +8,20 @@ export function HomeNav() {
   const [searchVisible, setSearchVisible] = useState(false);
 
   useEffect(() => {
-    const target = document.getElementById('m-hero-askbar');
-    if (!target) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setSearchVisible(!entry.isIntersecting),
-      { rootMargin: '-66px 0px 0px 0px', threshold: 0 },
-    );
-    obs.observe(target);
-    return () => obs.disconnect();
+    const onScroll = () => {
+      const el = document.getElementById('m-hero-askbar');
+      if (!el) return;
+      // reveal nav search once the hero ask bar has scrolled up past the fixed nav
+      const past = el.getBoundingClientRect().bottom < 70;
+      setSearchVisible(past);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
   }, []);
 
   return (
@@ -25,7 +31,6 @@ export function HomeNav() {
           Milton<b>ly</b>
         </div>
 
-        {/* default links — hidden once search appears */}
         <div className={`m-navlinks${searchVisible ? ' m-hidden' : ''}`}>
           <a href="#index">Neighbourhoods</a>
           <a href="#vip">Explore streets</a>
@@ -33,13 +38,9 @@ export function HomeNav() {
           <a href="#market">Market</a>
         </div>
 
-        {/* search — fades in on scroll, takes the centre */}
         <div className={`m-navsearch${searchVisible ? ' m-show' : ''}`} aria-hidden={!searchVisible}>
           <IconSearch />
-          <input
-            placeholder="Search a street or home…"
-            tabIndex={searchVisible ? 0 : -1}
-          />
+          <input placeholder="Search a street or home…" tabIndex={searchVisible ? 0 : -1} />
         </div>
 
         <a className="m-navcta" href="#dual">

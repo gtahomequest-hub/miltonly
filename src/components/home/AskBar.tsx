@@ -9,54 +9,51 @@ interface Props {
 }
 
 export function AskBar({ examples }: Props) {
-  // animated placeholder text (shown as placeholder, not value, so it never blocks typing)
   const [placeholder, setPlaceholder] = useState('');
-  // once the user interacts, stop the animation for good
   const [value, setValue] = useState('');
   const stopped = useRef(false);
 
-  const idx = useRef(0);
-  const char = useRef(0);
-  const deleting = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
-    if (examples.length === 0) return;
+    if (!examples || examples.length === 0) return;
+
+    // reset cleanly on every mount (dev double-invoke safe)
+    let idx = 0;
+    let char = 0;
+    let deleting = false;
+    stopped.current = false;
+    let timer: ReturnType<typeof setTimeout>;
 
     const tick = () => {
       if (stopped.current) return;
-      const full = examples[idx.current % examples.length];
-      if (!deleting.current) {
-        char.current += 1;
-        setPlaceholder(full.slice(0, char.current));
-        if (char.current >= full.length) {
-          deleting.current = true;
-          timer.current = setTimeout(tick, 1700);
+      const full = examples[idx % examples.length];
+      if (!deleting) {
+        char += 1;
+        setPlaceholder(full.slice(0, char));
+        if (char >= full.length) {
+          deleting = true;
+          timer = setTimeout(tick, 1700);
           return;
         }
-        timer.current = setTimeout(tick, 52);
+        timer = setTimeout(tick, 52);
       } else {
-        char.current -= 1;
-        setPlaceholder(full.slice(0, char.current));
-        if (char.current <= 0) {
-          deleting.current = false;
-          idx.current += 1;
-          timer.current = setTimeout(tick, 350);
+        char -= 1;
+        setPlaceholder(full.slice(0, char));
+        if (char <= 0) {
+          deleting = false;
+          idx += 1;
+          timer = setTimeout(tick, 350);
           return;
         }
-        timer.current = setTimeout(tick, 26);
+        timer = setTimeout(tick, 26);
       }
     };
 
-    timer.current = setTimeout(tick, 600);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
+    timer = setTimeout(tick, 500);
+    return () => clearTimeout(timer);
   }, [examples]);
 
   const stop = () => {
     stopped.current = true;
-    if (timer.current) clearTimeout(timer.current);
     setPlaceholder('Ask anything about Milton…');
   };
 
