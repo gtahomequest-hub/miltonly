@@ -1,7 +1,7 @@
 // src/components/condo/sections.tsx
 import type { CondoData, CondoListing, CondoBedRow } from './types';
 import { fullPrice } from './format';
-import { IconWallet, IconBed, IconPaw, IconKeyR, IconCar, IconBuilding, IntentIcon } from './icons';
+import { IconWallet, IconPaw, IconKeyR, IconCar, IconBuilding, IntentIcon } from './icons';
 
 export function CondoHero({ data }: { data: CondoData }) {
   const f = data.facts;
