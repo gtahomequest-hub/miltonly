@@ -73,11 +73,13 @@ function torontoYesterdayWindow(): { startUtc: Date; endUtc: Date; isoDate: stri
   return { startUtc: yesterdayStartUtc, endUtc: yesterdayEndUtc, isoDate };
 }
 
-// Strips "1033 - HA Harrison" → "Harrison". The miltonly neighbourhood
-// values store the MLS area code prefix; for posts we want the clean name.
+// Strips "1033 - HA Harrison" → "Harrison" and "1051 - Walker" → "Walker".
+// The miltonly neighbourhood values store the MLS area code prefix; for posts
+// we want the clean name. The letter code is optional: some areas come
+// through as "NNNN - Name" with no code.
 function cleanNeighbourhoodName(raw: string): string {
-  // Pattern: "NNNN - XX Name" → "Name"
-  const match = raw.match(/^\d+\s*-\s*[A-Z]{1,3}\s+(.+)$/);
+  // Pattern: "NNNN - [XX ]Name" → "Name"
+  const match = raw.match(/^\d+\s*-\s*(?:[A-Z]{1,3}\s+)?(.+)$/);
   if (match) return match[1].trim();
   return raw.trim();
 }
