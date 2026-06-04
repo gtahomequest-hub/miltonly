@@ -7,16 +7,26 @@
 // "Yesterday" = the previous calendar day in America/Toronto timezone.
 //
 // Definitions:
-//   sales.newListings = transactionType=For Sale + listedAt in yesterday
-//   sales.sold        = status=sold + soldDate in yesterday + soldPrice present
+//   sales.newListings  = transactionType=For Sale + listedAt in yesterday
+//   sales.sold         = status=sold + soldDate in yesterday + soldPrice present
+//   sales.expired      = status=expired + updatedAt in yesterday (sale side)
 //   leases.newListings = transactionType=For Lease + listedAt in yesterday
 //   leases.leased      = status=rented + leaseStatus=leased + updatedAt in yesterday
+//   leases.terminated  = status=rented + leaseStatus=terminated + updatedAt in yesterday
+//   leases.expired     = status=rented + leaseStatus=expired + updatedAt in yesterday
 //
-// Note on leased: there's no leasedDate column in the schema, so we proxy
-// via updatedAt. This is approximately when the listing was marked rented,
-// not necessarily when the lease was signed. Good-enough signal for daily
-// market reports; if exact lease-close-date matters later, add leasedDate
-// to the schema and backfill.
+// Note on date proxying: only `sold` has a dedicated close-date (soldDate).
+// `leased`, `terminated`, and both `expired` buckets have no close/dead-date
+// column, so we proxy via updatedAt — approximately when ingest re-stamped the
+// listing into that state, not necessarily when the event occurred. Good-enough
+// for daily market reports; add explicit date columns + backfill if exactness
+// matters later.
+//
+// Note on sale-side state collapsing: ingest (mapListingStates) folds MLS
+// "Terminated"/"Suspended" into status=expired and "Sold Conditional" into
+// status=sold, so sales.expired here includes terminations and sales.sold
+// includes conditionals. Splitting those out is upstream ingest work, out of
+// scope for this endpoint.
 //
 // All queries respect IDX/DDF compliance: permAdvertise=true AND
 // displayAddress=true.
@@ -63,11 +73,13 @@ function torontoYesterdayWindow(): { startUtc: Date; endUtc: Date; isoDate: stri
   return { startUtc: yesterdayStartUtc, endUtc: yesterdayEndUtc, isoDate };
 }
 
-// Strips "1033 - HA Harrison" → "Harrison". The miltonly neighbourhood
-// values store the MLS area code prefix; for posts we want the clean name.
+// Strips "1033 - HA Harrison" → "Harrison" and "1051 - Walker" → "Walker".
+// The miltonly neighbourhood values store the MLS area code prefix; for posts
+// we want the clean name. The letter code is optional: some areas come
+// through as "NNNN - Name" with no code.
 function cleanNeighbourhoodName(raw: string): string {
-  // Pattern: "NNNN - XX Name" → "Name"
-  const match = raw.match(/^\d+\s*-\s*[A-Z]{1,3}\s+(.+)$/);
+  // Pattern: "NNNN - [XX ]Name" → "Name"
+  const match = raw.match(/^\d+\s*-\s*(?:[A-Z]{1,3}\s+)?(.+)$/);
   if (match) return match[1].trim();
   return raw.trim();
 }
@@ -98,8 +110,11 @@ function aggregate(byType: ByType): {
 type NeighbourhoodBuckets = {
   salesNew: ByType;
   salesSold: ByType;
+  salesExpired: ByType;
   leaseNew: ByType;
   leaseLeased: ByType;
+  leaseTerminated: ByType;
+  leaseExpired: ByType;
 };
 
 export async function GET(req: NextRequest) {
@@ -116,7 +131,15 @@ export async function GET(req: NextRequest) {
   const baseFilter = { city, permAdvertise: true, displayAddress: true };
   const dayWindow = { gte: startUtc, lte: endUtc };
 
-  const [salesNew, salesSold, leaseNew, leaseLeased] = await Promise.all([
+  const [
+    salesNew,
+    salesSold,
+    salesExpired,
+    leaseNew,
+    leaseLeased,
+    leaseTerminated,
+    leaseExpired,
+  ] = await Promise.all([
     prisma.listing.findMany({
       where: {
         ...baseFilter,
@@ -135,6 +158,17 @@ export async function GET(req: NextRequest) {
       },
       select: { neighbourhood: true, propertyType: true, soldPrice: true },
     }),
+    // Sale-side expired (includes MLS terminated/suspended via ingest collapse).
+    // No dead-date column, so window on updatedAt.
+    prisma.listing.findMany({
+      where: {
+        ...baseFilter,
+        transactionType: "For Sale",
+        status: "expired",
+        updatedAt: dayWindow,
+      },
+      select: { neighbourhood: true, propertyType: true, price: true },
+    }),
     prisma.listing.findMany({
       where: {
         ...baseFilter,
@@ -149,6 +183,26 @@ export async function GET(req: NextRequest) {
         transactionType: "For Lease",
         status: "rented",
         leaseStatus: "leased",
+        updatedAt: dayWindow,
+      },
+      select: { neighbourhood: true, propertyType: true, price: true },
+    }),
+    prisma.listing.findMany({
+      where: {
+        ...baseFilter,
+        transactionType: "For Lease",
+        status: "rented",
+        leaseStatus: "terminated",
+        updatedAt: dayWindow,
+      },
+      select: { neighbourhood: true, propertyType: true, price: true },
+    }),
+    prisma.listing.findMany({
+      where: {
+        ...baseFilter,
+        transactionType: "For Lease",
+        status: "rented",
+        leaseStatus: "expired",
         updatedAt: dayWindow,
       },
       select: { neighbourhood: true, propertyType: true, price: true },
@@ -169,8 +223,11 @@ export async function GET(req: NextRequest) {
       buckets[clean] = {
         salesNew: {},
         salesSold: {},
+        salesExpired: {},
         leaseNew: {},
         leaseLeased: {},
+        leaseTerminated: {},
+        leaseExpired: {},
       };
     }
     if (!buckets[clean][bucket][t]) buckets[clean][bucket][t] = { count: 0, sum: 0 };
@@ -180,9 +237,37 @@ export async function GET(req: NextRequest) {
 
   for (const r of salesNew) add("salesNew", r.neighbourhood, r.propertyType, r.price);
   for (const r of salesSold) add("salesSold", r.neighbourhood, r.propertyType, r.soldPrice);
+  for (const r of salesExpired)
+    add("salesExpired", r.neighbourhood, r.propertyType, r.price);
   for (const r of leaseNew) add("leaseNew", r.neighbourhood, r.propertyType, r.price);
   for (const r of leaseLeased)
     add("leaseLeased", r.neighbourhood, r.propertyType, r.price);
+  for (const r of leaseTerminated)
+    add("leaseTerminated", r.neighbourhood, r.propertyType, r.price);
+  for (const r of leaseExpired)
+    add("leaseExpired", r.neighbourhood, r.propertyType, r.price);
+
+  // Total activity across all 7 states — drives the neighbourhood filter and
+  // the most-active-first sort.
+  function neighbourhoodActivity(n: {
+    sales: { newListings: { count: number }; sold: { count: number }; expired: { count: number } };
+    leases: {
+      newListings: { count: number };
+      leased: { count: number };
+      terminated: { count: number };
+      expired: { count: number };
+    };
+  }): number {
+    return (
+      n.sales.newListings.count +
+      n.sales.sold.count +
+      n.sales.expired.count +
+      n.leases.newListings.count +
+      n.leases.leased.count +
+      n.leases.terminated.count +
+      n.leases.expired.count
+    );
+  }
 
   const neighbourhoodSummaries = Object.entries(buckets)
     .map(([name, b]) => ({
@@ -190,32 +275,17 @@ export async function GET(req: NextRequest) {
       sales: {
         newListings: aggregate(b.salesNew),
         sold: aggregate(b.salesSold),
+        expired: aggregate(b.salesExpired),
       },
       leases: {
         newListings: aggregate(b.leaseNew),
         leased: aggregate(b.leaseLeased),
+        terminated: aggregate(b.leaseTerminated),
+        expired: aggregate(b.leaseExpired),
       },
     }))
-    .filter(
-      (n) =>
-        n.sales.newListings.count > 0 ||
-        n.sales.sold.count > 0 ||
-        n.leases.newListings.count > 0 ||
-        n.leases.leased.count > 0
-    )
-    .sort((a, b) => {
-      const ac =
-        a.sales.newListings.count +
-        a.sales.sold.count +
-        a.leases.newListings.count +
-        a.leases.leased.count;
-      const bc =
-        b.sales.newListings.count +
-        b.sales.sold.count +
-        b.leases.newListings.count +
-        b.leases.leased.count;
-      return bc - ac;
-    });
+    .filter((n) => neighbourhoodActivity(n) > 0)
+    .sort((a, b) => neighbourhoodActivity(b) - neighbourhoodActivity(a));
 
   // City-wide totals.
   function totalByType(rows: Array<{ propertyType: string; price?: number | null; soldPrice?: number | null }>) {
@@ -232,13 +302,19 @@ export async function GET(req: NextRequest) {
     sales: {
       newListings: aggregate(totalByType(salesNew)),
       sold: aggregate(totalByType(salesSold)),
+      expired: aggregate(totalByType(salesExpired)),
     },
     leases: {
       newListings: aggregate(totalByType(leaseNew)),
       leased: aggregate(totalByType(leaseLeased)),
+      terminated: aggregate(totalByType(leaseTerminated)),
+      expired: aggregate(totalByType(leaseExpired)),
     },
   };
 
+  // hasActivity reflects the PRIMARY market signal (new + closed), not the
+  // dead-listing buckets (expired/terminated). Kept stable so existing
+  // consumers see the same meaning; the orchestrator no longer gates on it.
   const hasActivity =
     totals.sales.newListings.count +
       totals.sales.sold.count +

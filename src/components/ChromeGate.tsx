@@ -8,6 +8,9 @@ import { usePathname } from "next/navigation";
  */
 export default function ChromeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // Homepage uses the v2 <HomePage> which renders its own nav; suppress the
+  // global Navbar here. Exact match only — a prefix match would hide it site-wide.
+  if (pathname === "/") return null;
   if (pathname === "/coming-soon") return null;
   if (pathname?.startsWith("/rentals/ads")) return null;
   // Sales featured page (paid Google Ads traffic) — strip site chrome so
