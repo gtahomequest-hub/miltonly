@@ -24,11 +24,13 @@ import type {
 import type {
   CondoBuildingGeneratorInput,
   CondoSection,
+  HubFAQItem,
 } from "@/types/hub-generator";
 import {
   findUngroundedNumerics,
   findTemporalPairings,
   findPerTradeFabrications,
+  findSubkRangeReassembly,
 } from "@/lib/ai/validateStreetGeneration";
 
 // ---------------------------------------------------------------------------
@@ -160,6 +162,18 @@ export function validateCondoSectionsSubset(
           });
         }
       }
+      // WS5 — sub-k range reassembly: a low–high band when the building's sale
+      // priceRange is k-anon suppressed (salesCount<10 — 39/41 sale-active
+      // buildings). Mirror of validateHubGeneration's liveMarket wiring.
+      // Aggregate sections ONLY — the editorial fees section cites legitimate
+      // maintenance-fee bands and must not trip a price-band detector.
+      for (const r of findSubkRangeReassembly(text, adapter)) {
+        violations.push({
+          rule: "subk_range_reassembly",
+          excerpt: `${r.reason}; ctx: ${r.context}`,
+          severity: "hard",
+        });
+      }
     } else {
       // Editorial sections (history / amenities / fees / CTAs / FAQ): no numeric
       // gate (fees cites grounded building attributes the adapter doesn't carry),
@@ -175,5 +189,64 @@ export function validateCondoSectionsSubset(
     }
   }
 
+  return violations;
+}
+
+// ---------------------------------------------------------------------------
+// validateCondoFaq (WS5) — the condo analogue of validateHubFaq (Rule A). The
+// condo FAQ was previously UNVALIDATED — the exact hole the hub had before
+// Rule A (brookville's "$2.0M–$2.25M" band). Per-trade fabrication is banned
+// in EVERY answer; the sub-k range gate runs on EVERY answer (mislabel-
+// resistant — a price band cannot hide in an editorial-bucket answer); numeric
+// grounding + temporal pairing run on aggregate-bucket answers, which at condo
+// tier exist only on sale-active buildings (07-faq.md).
+// ---------------------------------------------------------------------------
+
+export function validateCondoFaq(
+  faq: HubFAQItem[],
+  input: CondoBuildingGeneratorInput,
+): ValidatorViolation[] {
+  const violations: ValidatorViolation[] = [];
+  const adapter = condoInputToStreetAdapter(input);
+
+  for (const item of faq) {
+    const q = item.question.slice(0, 48);
+    const text = item.answer;
+
+    // Per-trade fabrication is banned in any answer (input has no per-trade
+    // sale rows; lease records gate at k≥5 via the adapter).
+    for (const p of findPerTradeFabrications(text, adapter)) {
+      violations.push({
+        rule: "per_trade_fabrication",
+        excerpt: `FAQ "${q}": ${p.side}-side: "${p.matchedPhrase}" — ${p.reason}`,
+        severity: "hard",
+      });
+    }
+    // Sub-k range band is banned in ANY answer (mislabel-resistant).
+    for (const r of findSubkRangeReassembly(text, adapter)) {
+      violations.push({
+        rule: "subk_range_reassembly",
+        excerpt: `FAQ "${q}": ${r.reason}; ctx: ${r.context}`,
+        severity: "hard",
+      });
+    }
+    // Aggregate-bucket answers cite aggregates → numeric grounding + temporal.
+    if (item.bucket === "aggregate") {
+      for (const f of findUngroundedNumerics(text, adapter)) {
+        violations.push({
+          rule: "numeric_ungrounded",
+          excerpt: `FAQ "${q}": "${f.raw}" (${f.type}) — ${f.reason}`,
+          severity: "hard",
+        });
+      }
+      for (const t of findTemporalPairings(text, adapter)) {
+        violations.push({
+          rule: "temporal_pairing",
+          excerpt: `FAQ "${q}": ${t.type}: ${t.reason}`,
+          severity: "hard",
+        });
+      }
+    }
+  }
   return violations;
 }

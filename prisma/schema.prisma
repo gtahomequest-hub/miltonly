@@ -667,6 +667,53 @@ model HubContent {
   @@schema("public")
 }
 
+// WS5 — condo-building-tier persistence (mirror of HubGeneration/HubContent,
+// keyed by CondoBuilding.slug). CondoGeneration = telemetry + canonical
+// sections; CondoContent = the published surface. Fail-closed: a failed
+// generation never touches CondoContent (prior published row preserved).
+model CondoGeneration {
+  buildingSlug String           @id
+  sectionsJson Json
+  faqJson      Json
+  inputHash    String
+  status       GenerationStatus @default(succeeded)
+  generatedAt  DateTime         @default(now())
+  attemptCount Int
+  wordCounts   Json
+  totalWords   Int
+  tokensIn     Int?
+  tokensOut    Int?
+  costUsd      Decimal?         @db.Decimal(10, 4)
+
+  @@index([status])
+  @@index([generatedAt])
+  @@schema("public")
+}
+
+model CondoContent {
+  id              String    @id @default(cuid())
+  buildingSlug    String    @unique
+  buildingName    String
+  description     String    @db.Text
+  rawAiOutput     String?   @db.Text
+  status          String    @default("draft")
+  needsReview     Boolean   @default(true)
+  aiGenerated     Boolean   @default(true)
+  publishedAt     DateTime?
+  generatedAt     DateTime  @default(now())
+  marketDataHash  String?
+  attempts        Int       @default(0)
+  reviewNotes     String?   @db.Text
+  metaTitle       String?
+  metaDescription String?
+  faqJson         String?   @db.Text
+  statsJson       String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@schema("public")
+}
+
 // ───── Facebook Ads lead infrastructure ───────────────────────────────────
 // Isolated in the `ads` schema (DB1) — namespace-separated from public so
 // FB-driven leads never collide with the existing Lead/LeadActivity tables.
