@@ -2,7 +2,9 @@
   "name": "miltonly",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": "20.x" },
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
     "prebuild": "tsx scripts/test-canonicalization-regression.ts && tsx scripts/test-faq-sentence-count.ts && tsx scripts/test-no-anthropic-temperature.ts && tsx scripts/test-sms-format.ts",
@@ -22,6 +24,7 @@
     "@vercel/blob": "^2.3.3",
     "jose": "^6.2.2",
     "lucide-react": "^1.14.0",
+    "luxon": "^3.7.2",
     "mysql2": "^3.20.0",
     "next": "14.2.35",
     "pg": "^8.20.0",
@@ -34,6 +37,7 @@
     "twilio": "^5.13.1"
   },
   "devDependencies": {
+    "@types/luxon": "^3.7.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
