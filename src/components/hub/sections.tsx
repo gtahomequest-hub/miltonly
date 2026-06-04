@@ -11,6 +11,7 @@ import {
   IconTrain,
   IconSchool,
   IconTag,
+  IntentIcon,
 } from './icons';
 
 export function HubBreadcrumb({ name }: { name: string }) {
@@ -62,16 +63,30 @@ export function HubHero({ data }: { data: HubData }) {
   return (
     <header className="h-hero">
       <div className="h-wrap">
-        <span className="h-eyebrow">
-          {data.profile === 'rural' ? 'Rural Milton' : 'Milton neighbourhood'}
-        </span>
-        <h1>{data.name}</h1>
-        <p className="h-character">{data.character}</p>
-        <div className="h-herostats">
-          <Stat value={stats.typicalPrice} label="typical home" accentDollar />
-          <Stat value={stats.sold12mo} label="sold · last 12 months" />
-          <Stat value={stats.onMarket} label="on the market" />
-          <Stat value={stats.dom} label="median days on market" />
+        <div className="h-hero-grid">
+          <div className="h-hero-left">
+            <span className="h-eyebrow">
+              {data.profile === 'rural' ? 'Rural Milton' : 'Milton neighbourhood'}
+            </span>
+            <h1>{data.name}</h1>
+            <p className="h-character">{data.character}</p>
+            <div className="h-herostats">
+              <Stat value={stats.typicalPrice} label="typical home" accentDollar />
+              <Stat value={stats.sold12mo} label="sold · last 12 months" />
+              <Stat value={stats.onMarket} label="on the market" />
+            </div>
+          </div>
+          <div className="h-intents">
+            {data.intents.map((it) => (
+              <a className="h-intent" href={it.href} key={it.key}>
+                <span className="h-intent-ic">
+                  <IntentIcon k={it.key} />
+                </span>
+                <span className="h-intent-l">{it.label}</span>
+                <span className="h-intent-s">{it.sub}</span>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </header>

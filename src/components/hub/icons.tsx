@@ -17,3 +17,21 @@ export const IconArrow = () =>
   box(<path d="M5 12h14M13 6l6 6-6 6" />);
 export const IconSearch = () =>
   box(<><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></>);
+
+export const IconInvest = () =>
+  box(<><path d="M3 17l6-6 4 4 8-8" /><path d="M17 7h4v4" /></>);
+export const IconKey = () =>
+  box(<><circle cx="8" cy="15" r="4" /><path d="M11 12l9-9 2 2-2 2 1.5 1.5" /></>);
+
+export function IntentIcon({ k }: { k: 'buy' | 'sell' | 'rent' | 'invest' }) {
+  switch (k) {
+    case 'buy':
+      return <IconSearch />;
+    case 'sell':
+      return <IconTag />;
+    case 'rent':
+      return <IconKey />;
+    case 'invest':
+      return <IconInvest />;
+  }
+}

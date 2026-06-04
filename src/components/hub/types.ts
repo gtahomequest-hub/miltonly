@@ -74,11 +74,19 @@ export interface HubCta {
   href: string;
 }
 
+export interface HubIntentSquare {
+  key: 'buy' | 'sell' | 'rent' | 'invest';
+  label: string; // "I'm buying"
+  sub: string; // "See streets & listings here"
+  href: string;
+}
+
 export interface HubData {
   slug: string;
   name: string;
   profile: HubProfile;
   character: string; // one-line read shown in hero
+  intents: HubIntentSquare[]; // hero 2x2 intent grid
   stats: HubStats;
   atAGlance: HubAtAGlance;
   overview: string[]; // editorial read paragraphs (the depth)

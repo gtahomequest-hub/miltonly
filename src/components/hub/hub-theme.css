@@ -129,6 +129,65 @@
 .hub-v2 .h-hero .h-wrap {
   padding: 8px 32px 52px;
 }
+.hub-v2 .h-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .hub-v2 .h-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+.hub-v2 .h-intents {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.hub-v2 .h-intent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  padding: 20px 18px;
+  transition: 0.18s;
+}
+.hub-v2 .h-intent:hover {
+  background: rgba(0, 255, 128, 0.08);
+  border-color: rgba(0, 255, 128, 0.45);
+  transform: translateY(-3px);
+}
+.hub-v2 .h-intent-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--h-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.hub-v2 .h-intent-ic svg {
+  width: 16px;
+  height: 16px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 1.8;
+}
+.hub-v2 .h-intent-l {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #fff;
+}
+.hub-v2 .h-intent-s {
+  font-size: 12.5px;
+  color: var(--h-text-faint);
+  line-height: 1.5;
+}
 .hub-v2 .h-hero h1 {
   font-family: var(--h-serif);
   font-weight: 300;

@@ -9,6 +9,12 @@ export const mockHubUrban: HubData = {
   profile: 'urban',
   character:
     'An established central pocket — detached-led, mature trees, and a walkable line straight into downtown Milton. One of the most consistently traded neighbourhoods in the city.',
+  intents: [
+    { key: 'buy', label: "I'm buying", sub: 'See streets & listings here', href: '/neighbourhoods/dempsey/streets' },
+    { key: 'sell', label: "I'm selling", sub: 'What my Dempsey home is worth', href: '/sell' },
+    { key: 'rent', label: "I'm renting", sub: 'Lease listings in Dempsey', href: '/rentals' },
+    { key: 'invest', label: "I'm investing", sub: 'Yield & investor read', href: '/build-wealth' },
+  ],
   stats: { typicalPrice: 1_150_000, sold12mo: 96, onMarket: 14, dom: 21 },
   atAGlance: {
     priceRange: '$845K – $1.45M',
@@ -95,6 +101,12 @@ export const mockHubRural: HubData = {
   profile: 'rural',
   character:
     'Open countryside on Milton\u2019s western edge \u2014 acreage, hamlet quiet, and a pace measured in seasons rather than days on market.',
+  intents: [
+    { key: 'buy', label: "I'm buying", sub: 'Browse Moffat road pages', href: '/neighbourhoods/moffat/streets' },
+    { key: 'sell', label: "I'm selling", sub: 'Rural valuation, human-read', href: '/sell' },
+    { key: 'rent', label: "I'm renting", sub: 'Rural lease listings', href: '/rentals' },
+    { key: 'invest', label: "I'm investing", sub: 'Land & acreage read', href: '/build-wealth' },
+  ],
   stats: { typicalPrice: null, sold12mo: null, onMarket: 3, dom: null },
   atAGlance: {
     priceRange: null,
