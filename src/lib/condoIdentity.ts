@@ -172,3 +172,74 @@ export function condoCanonicalSlug(
   parts.push(config.SLUG_SUFFIX);
   return parts.join("-");
 }
+
+// ── Cluster grouping (shared by ws3-backfill and the dedup dry-run) ─────────
+//
+// Pure function: rows in, clusters out. Both the live backfill and the
+// read-only dry-run call THIS function, so what the dry-run prints is by
+// construction what the backfill would write.
+
+export interface CondoClusterRow {
+  street_number: string;
+  street_slug: string;
+  /** total trade count for this raw (number, slug[, …]) group — the suffix-vote weight */
+  cnt: number;
+}
+
+export interface CondoCluster<T extends CondoClusterRow> {
+  clusterKey: string;       // `${streetNumber}|${base}`
+  streetNumber: string;
+  base: string;
+  suffixCanonical: string;  // majority vote, weighted by cnt
+  canonicalSlug: string;
+  canonicalStreetSlug: string; // parent-street slug for the link graph
+  rows: T[];                // every raw row in the cluster (for aggregation)
+  memberSlugs: Map<string, number>; // raw entity slug -> summed cnt
+}
+
+export function groupCondoClusters<T extends CondoClusterRow>(
+  rows: readonly T[],
+): { clusters: Map<string, CondoCluster<T>>; rejected: T[] } {
+  const clusters = new Map<string, CondoCluster<T>>();
+  const rejected: T[] = [];
+  // pass 1 — assign rows to clusters, tally suffix votes
+  const votes = new Map<string, Map<string, number>>();
+  for (const r of rows) {
+    const ci = deriveCondoIdentity(r.street_number, r.street_slug);
+    if (!ci) { rejected.push(r); continue; }
+    let c = clusters.get(ci.clusterKey);
+    if (!c) {
+      c = {
+        clusterKey: ci.clusterKey, streetNumber: ci.streetNumber, base: ci.base,
+        suffixCanonical: "", canonicalSlug: "", canonicalStreetSlug: "",
+        rows: [], memberSlugs: new Map(),
+      };
+      clusters.set(ci.clusterKey, c);
+      votes.set(ci.clusterKey, new Map());
+    }
+    c.rows.push(r);
+    const rawSlug = `${r.street_number}-${r.street_slug}`;
+    c.memberSlugs.set(rawSlug, (c.memberSlugs.get(rawSlug) ?? 0) + r.cnt);
+    const v = votes.get(ci.clusterKey)!;
+    v.set(ci.suffixCanonical, (v.get(ci.suffixCanonical) ?? 0) + r.cnt);
+  }
+  // pass 2 — majority suffix (cnt-weighted; ties broken by non-empty then alpha
+  // for determinism) + canonical slugs
+  for (const c of Array.from(clusters.values())) {
+    const v = votes.get(c.clusterKey)!;
+    const ranked = Array.from(v.entries()).sort(
+      (a, b) => b[1] - a[1] || (b[0] ? 1 : 0) - (a[0] ? 1 : 0) || a[0].localeCompare(b[0]),
+    );
+    // a suffix-less variant must never outvote a suffixed sibling unless the
+    // cluster has ONLY suffix-less members (490-gordon-krantz: 1 trade,
+    // suffix-less, beside 78 avenue trades — avenue must win regardless)
+    const best = ranked.find(([s]) => s !== "") ?? ranked[0];
+    c.suffixCanonical = best ? best[0] : "";
+    c.canonicalSlug = condoCanonicalSlug(c.streetNumber, c.base, c.suffixCanonical);
+    const streetParts = [c.base];
+    if (c.suffixCanonical) streetParts.push(c.suffixCanonical);
+    streetParts.push(config.SLUG_SUFFIX);
+    c.canonicalStreetSlug = streetParts.join("-");
+  }
+  return { clusters, rejected };
+}

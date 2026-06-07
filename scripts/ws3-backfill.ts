@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEIGHBOURHOOD_SEED } from "../src/lib/neighbourhood";
+import { groupCondoClusters } from "../src/lib/condoIdentity";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 function loadEnv(name: string, into: Record<string, string>) {
@@ -143,25 +144,27 @@ async function main() {
       GROUP BY street_number, street_slug, neighbourhood`)).rows as Array<{street_number:string;street_slug:string;neighbourhood:string;name:string;cnt:number;weighted:number;sale12:number;lease12:number;corps:string[]|null;legal_stories:string|null;mgmt:string|null}>;
 
     interface CondoOut { slug:string; buildingAddress:string; streetNumber:string; streetName:string; streetSlug:string; nbId:string|null; nbSlug:string|null; ambiguous:boolean; corps:string[]; legalStories:number|null; mgmt:string|null; weighted:number; sale12:number; lease12:number; hasVip:boolean; }
-    const condoByKey = new Map<string, Array<typeof condoRows[number]>>();
-    for (const r of condoRows) {
-      const key = `${r.street_number}|${r.street_slug}`;
-      if (!condoByKey.has(key)) condoByKey.set(key, []);
-      condoByKey.get(key)!.push(r);
-    }
+    // 2026-06 dedup — group through deriveCondoIdentity instead of raw
+    // (street_number, street_slug): unit descriptors, doubled/conflicting
+    // suffixes, misspellings, direction noise and unit-prefixed street
+    // numbers all collapse onto one canonical building (A1 gap, condo path).
+    // Junk variants therefore stop being re-created here; deleting the
+    // existing junk rows is a separate one-shot migration.
+    const { clusters: condoClusters, rejected: condoRejected } = groupCondoClusters(condoRows);
+    for (const r of condoRejected) console.warn(`  condo row rejected by deriveCondoIdentity: ${r.street_number} | ${r.street_slug}`);
     const condoEntities = new Map<string, CondoOut>();
-    for (const [key, rows] of condoByKey) {
-      const [num, sslug] = key.split("|");
+    for (const [key, cluster] of condoClusters) {
+      const rows = cluster.rows;
       const domNb = pickDominant(rows.map((r) => ({ nb: r.neighbourhood, cnt: r.cnt, weighted: 0, count12: 0 })));
       const mappedSlugs = new Set(rows.map((r) => SEED_BY_RAW.get(r.neighbourhood)?.slug).filter(Boolean));
       const map = nbIdForRaw(domNb.nb);
-      const name = rows.sort((a,b)=>b.cnt-a.cnt)[0].name;
+      const name = [...rows].sort((a,b)=>b.cnt-a.cnt)[0].name;
       const corps = Array.from(new Set(rows.flatMap((r) => r.corps || [])));
       let legal: number | null = null;
       for (const r of rows) { const n = r.legal_stories ? parseInt(String(r.legal_stories).replace(/\D/g, ""), 10) : NaN; if (Number.isFinite(n)) legal = Math.max(legal ?? 0, n); }
-      const slug = `${num}-${sslug}`;
       condoEntities.set(key, {
-        slug, buildingAddress: `${num} ${name}`, streetNumber: num, streetName: name, streetSlug: sslug,
+        slug: cluster.canonicalSlug, buildingAddress: `${cluster.streetNumber} ${name}`,
+        streetNumber: cluster.streetNumber, streetName: name, streetSlug: cluster.canonicalStreetSlug,
         nbId: map.id, nbSlug: map.slug, ambiguous: mappedSlugs.size > 1, corps,
         legalStories: legal, mgmt: rows.find((r)=>r.mgmt)?.mgmt ?? null,
         weighted: Number(rows.reduce((s, r) => s + Number(r.weighted), 0).toFixed(4)),
@@ -170,7 +173,7 @@ async function main() {
         hasVip: map.hasVip,
       });
     }
-    console.log(`Condo building entities: ${condoEntities.size}.`);
+    console.log(`Condo building entities: ${condoEntities.size} canonical (from ${condoRows.length} raw DB2 rows).`);
 
     // ── 4. Write ResidentialStreet + CondoBuilding (upsert by slug) ────────
     for (const e of resiEntities.values()) {
