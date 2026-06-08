@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "prebuild": "tsx scripts/test-canonicalization-regression.ts && tsx scripts/test-faq-sentence-count.ts && tsx scripts/test-no-anthropic-temperature.ts && tsx scripts/test-sms-format.ts",
+    "prebuild": "tsx scripts/test-canonicalization-regression.ts && tsx scripts/test-condo-identity.ts && tsx scripts/test-faq-sentence-count.ts && tsx scripts/test-no-anthropic-temperature.ts && tsx scripts/test-sms-format.ts",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",

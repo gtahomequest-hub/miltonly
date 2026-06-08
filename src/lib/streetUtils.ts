@@ -152,7 +152,10 @@ export interface StreetIdentity {
   canonicalSlug: string;    // full-word form for display URL
 }
 
-const IDENTITY_SUFFIX_TOKENS: Set<string> = new Set([
+// Exported for deriveCondoIdentity (src/lib/condoIdentity.ts) — the condo
+// wrapper needs suffix-token recognition for its unit-descriptor strip. Export
+// is additive; identity derivation behaviour is unchanged.
+export const IDENTITY_SUFFIX_TOKENS: Set<string> = new Set([
   "blvd", "boulevard", "cres", "crescent", "crt", "court", "ct",
   "dr", "drive", "rd", "road", "st", "street", "ave", "avenue",
   "ln", "lane", "terr", "terrace", "ter", "trl", "trail",
@@ -169,7 +172,7 @@ const IDENTITY_SUFFIX_TOKENS: Set<string> = new Set([
   "pt", "cr", "wy", "townline", "head", "centre",
 ]);
 
-const IDENTITY_SUFFIX_CANON: Record<string, string> = {
+export const IDENTITY_SUFFIX_CANON: Record<string, string> = {
   blvd: "boulevard", boulevard: "boulevard",
   cres: "crescent", crescent: "crescent",
   crt: "court", court: "court", ct: "court",
