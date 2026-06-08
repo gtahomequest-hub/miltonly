@@ -30,6 +30,7 @@ import {
   type RawSaleAgg,
   type RawQuarterRow,
 } from "@/lib/ai/buildHubInput";
+import { groupCondoClusters, type CondoClusterRow } from "@/lib/condoIdentity";
 import type {
   CondoBuildingGeneratorInput,
   CondoLeaseInfo,
@@ -73,18 +74,24 @@ interface RawLeaseRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Building-keyed SQL. Every query filters property_type='condo' AND the
-// (street_number, street_slug) pair — the physical building, not the street.
-// SALE vs LEASE are physically distinct queries (the transaction_type split).
+// Cluster-union-keyed SQL. Every query filters property_type='condo' AND
+// (street_number || '|' || street_slug) = ANY(keys) — the UNION of the
+// canonical cluster's member (street_number, street_slug) pairs, NOT the single
+// synthetic canonical pair. The canonicalizer (deriveCondoIdentity /
+// groupCondoClusters) is wired into the backfill grouping AND here, so trades
+// living under variant/misspelled member slugs (e.g. 6415's lease records under
+// regional-road / reginal-road / regional-rd-25-road) roll up into the building
+// they belong to instead of vanishing. SALE vs LEASE stay physically distinct
+// queries (the transaction_type split); the union is only over street pairs.
 // ---------------------------------------------------------------------------
 
-function saleAggQuery(streetNumber: string, streetSlug: string) {
+function saleAggQuery(keys: string[]) {
   return querySold<RawSaleAgg>((db) =>
     db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
               AVG(sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
        FROM sold.sold_records
        WHERE property_type = 'condo'
-         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - INTERVAL '12 months'`,
   );
@@ -93,38 +100,38 @@ function saleAggQuery(streetNumber: string, streetSlug: string) {
 // SEPARATE lease aggregate — count only. Lease values are NEVER passed into the
 // sale aggregate; they exist solely to flag the lease side and gate per-trade
 // lease claims. This is the structural barrier against the 490 Gordon Krantz mix.
-function leaseAggQuery(streetNumber: string, streetSlug: string) {
+function leaseAggQuery(keys: string[]) {
   return querySold<{ n: number; lo: string | null; hi: string | null }>((db) =>
     db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi
        FROM sold.sold_records
        WHERE property_type = 'condo'
-         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Lease'
          AND sold_date >= NOW() - INTERVAL '12 months'`,
   );
 }
 
-function saleByTypeQuery(streetNumber: string, streetSlug: string) {
+function saleByTypeQuery(keys: string[]) {
   return querySold<RawTypeAgg>((db) =>
     db`SELECT property_type, COUNT(*)::int AS n,
               AVG(sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
        FROM sold.sold_records
        WHERE property_type = 'condo'
-         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - INTERVAL '12 months'
        GROUP BY property_type`,
   );
 }
 
-function saleQuarterlyQuery(streetNumber: string, streetSlug: string) {
+function saleQuarterlyQuery(keys: string[]) {
   return querySold<RawQuarterRow>((db) =>
     db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
               EXTRACT(QUARTER FROM sold_date)::int AS qtr,
               COUNT(*)::int AS cnt, AVG(sold_price) AS typical
        FROM sold.sold_records
        WHERE property_type = 'condo'
-         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
        GROUP BY yr, qtr ORDER BY yr, qtr`,
@@ -135,13 +142,13 @@ function saleQuarterlyQuery(streetNumber: string, streetSlug: string) {
 // address). Cap 10, most recent first. Fetched ONLY when the building's lease
 // count clears k (≥5); below that the per-trade lease gate fires (W2 lease-side
 // rule at building tier, DEC-WS4-5).
-function leaseRecordQuery(streetNumber: string, streetSlug: string) {
+function leaseRecordQuery(keys: string[]) {
   return querySold<RawLeaseRecord>((db) =>
     db`SELECT street_number, street_name, sold_price AS rent, beds, days_on_market,
               to_char(sold_date, 'YYYY-MM') AS sold_month
        FROM sold.sold_records
        WHERE property_type = 'condo'
-         AND street_number = ${streetNumber} AND street_slug = ${streetSlug}
+         AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Lease'
          AND sold_date >= NOW() - INTERVAL '12 months'
        ORDER BY sold_date DESC
@@ -170,6 +177,30 @@ function assembleSaleByType(sales: RawTypeAgg[]): Record<string, HubTypeBucket> 
   return out;
 }
 
+// Resolve the canonical cluster's MEMBER (street_number, street_slug) pairs as
+// "number|slug" keys, by re-running the SAME canonicalizer the backfill uses
+// over the live DB2 condo universe and selecting the cluster whose
+// canonicalSlug === buildingSlug. Returns null if no cluster matches (caller
+// falls back to the building's own key). Generation-only path — buildInput has
+// no render-path caller, so the one grouped DB2 scan per build is acceptable.
+async function resolveMemberKeys(buildingSlug: string): Promise<string[] | null> {
+  const rows = await querySold<CondoClusterRow>((db) =>
+    db`SELECT street_number, street_slug, COUNT(*)::int AS cnt
+       FROM sold.sold_records
+       WHERE property_type = 'condo'
+         AND street_number IS NOT NULL AND street_slug IS NOT NULL
+       GROUP BY street_number, street_slug`,
+  );
+  if (!rows.length) return null;
+  const { clusters } = groupCondoClusters(rows);
+  for (const c of Array.from(clusters.values())) {
+    if (c.canonicalSlug === buildingSlug) {
+      return Array.from(new Set(c.rows.map((r: CondoClusterRow) => `${r.street_number}|${r.street_slug}`)));
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // buildCondoBuildingInput — deliverable B1.
 // ---------------------------------------------------------------------------
@@ -189,11 +220,16 @@ export async function buildCondoBuildingInput(
     );
   }
 
+  // Union of the cluster's member street-keys (variant/misspelled slugs roll up
+  // onto this canonical building); fall back to the building's own key if the
+  // cluster can't be resolved (e.g. a lone building absent from the DB2 universe).
+  const memberKeys = (await resolveMemberKeys(buildingSlug)) ?? [`${b.streetNumber}|${b.streetSlug}`];
+
   const [saleRows, leaseRows, saleByTypeRows, saleQuarterRows] = await Promise.all([
-    saleAggQuery(b.streetNumber, b.streetSlug),
-    leaseAggQuery(b.streetNumber, b.streetSlug),
-    saleByTypeQuery(b.streetNumber, b.streetSlug),
-    saleQuarterlyQuery(b.streetNumber, b.streetSlug),
+    saleAggQuery(memberKeys),
+    leaseAggQuery(memberKeys),
+    saleByTypeQuery(memberKeys),
+    saleQuarterlyQuery(memberKeys),
   ]);
 
   const leaseCount = leaseRows[0]?.n ?? 0;
@@ -212,7 +248,7 @@ export async function buildCondoBuildingInput(
     leaseCount === 0 ? "zero" : leaseCount >= K_ANON_PRICE ? "full" : "thin";
   const lease: CondoLeaseInfo = { leaseCount12mo: leaseCount, kAnonLevel: leaseKAnon };
   if (leaseCount >= K_ANON_PRICE) {
-    const recs = await leaseRecordQuery(b.streetNumber, b.streetSlug);
+    const recs = await leaseRecordQuery(memberKeys);
     lease.recentRecords = recs.map((r) => ({
       address: `${r.street_number ?? ""} ${r.street_name ?? ""}`.trim(),
       rent: Math.round(num(r.rent) ?? 0),

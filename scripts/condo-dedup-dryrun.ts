@@ -35,7 +35,9 @@ if (!db1Host.startsWith("ep-patient-paper-aebh7f93")) {
   process.exit(1);
 }
 
-// ── SIGNED-OFF MAPPING (2026-06-07) — canonical -> expected member raw slugs ──
+// ── SIGNED-OFF MAPPING (2026-06-07, corrected) — canonical -> expected member raw slugs ──
+// Correction: +3 bare-letter suite dupes that surfaced after the original freeze
+// (770 a-114 / a-617, 8020 1803-b) folded into their canonical clusters. Approved.
 const APPROVED: Record<string, string[]> = {
   "1050-main-street-milton": ["1050-e-main-street-milton", "1050-main-street-milton"],
   "1105-leger-way-milton": ["1105-ledger-way-milton", "1105-leger-way-milton", "1105-leger-way-way-milton"],
@@ -51,9 +53,9 @@ const APPROVED: Record<string, string[]> = {
   "720-whitlock-avenue-milton": ["720-whitlock-ave-d204-milton", "720-whitlock-ave-d707-milton", "720-whitlock-ave-d810-milton", "720-whitlock-avenue-milton"],
   "750-whitlock-avenue-milton": ["750-whitelock-avenue-milton", "750-whitlock-ave-sw-712-milton", "750-whitlock-avenue-milton"],
   "760-whitlock-avenue-milton": ["760-whitlock-ave-b412-milton", "760-whitlock-ave-b508-milton", "760-whitlock-ave-b801-milton", "760-whitlock-ave-b807-milton", "760-whitlock-ave-b808-milton", "760-whitlock-ave-nw-502-milton", "760-whitlock-avenue-milton"],
-  "770-whitlock-avenue-milton": ["309-770-whitlock-avenue-milton", "770-whitlock-ave-a107-milton", "770-whitlock-ave-a112-milton", "770-whitlock-ave-a113-milton", "770-whitlock-ave-a313-milton", "770-whitlock-ave-a504-milton", "770-whitlock-ave-a509-milton", "770-whitlock-ave-a514-milton", "770-whitlock-ave-a711-milton", "770-whitlock-ave-a715-milton", "770-whitlock-avenue-milton"],
+  "770-whitlock-avenue-milton": ["309-770-whitlock-avenue-milton", "770-whitlock-ave-a-114-milton", "770-whitlock-ave-a-617-milton", "770-whitlock-ave-a107-milton", "770-whitlock-ave-a112-milton", "770-whitlock-ave-a113-milton", "770-whitlock-ave-a313-milton", "770-whitlock-ave-a504-milton", "770-whitlock-ave-a509-milton", "770-whitlock-ave-a514-milton", "770-whitlock-ave-a711-milton", "770-whitlock-ave-a715-milton", "770-whitlock-avenue-milton"],
   "8010-derry-road-milton": ["8010-derry-rd-road-milton", "8010-derry-road-milton", "8010-s-derry-road-milton", "8010-w-derry-road-milton"],
-  "8020-derry-road-milton": ["8020-derry-rd-drive-milton", "8020-derry-rd-na-w-608-milton", "8020-derry-rd-road-milton", "8020-derry-road-milton"],
+  "8020-derry-road-milton": ["8020-derry-rd-1803-b-milton", "8020-derry-rd-drive-milton", "8020-derry-rd-na-w-608-milton", "8020-derry-rd-road-milton", "8020-derry-road-milton"],
   "21-court-street-milton": ["21-crt-street-milton"], // rename, no merge target
 };
 
