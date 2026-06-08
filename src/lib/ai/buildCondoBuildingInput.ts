@@ -201,6 +201,24 @@ async function resolveMemberKeys(buildingSlug: string): Promise<string[] | null>
   return null;
 }
 
+// Placeholder-attribute scrub. DB2 writes literal "000" / "0" / "N/A" into the
+// management-company and condo-corp-number fields when the source MLS record
+// carries no real value. These must never reach the prompt — the generator
+// otherwise bakes "managed by 000" / "corporation number is 0" into the
+// published prose, and the renderer (CondoData) has no management/corp field to
+// strip it at display time. Cleaning at the input is the only durable fix.
+const PLACEHOLDER_ATTR = new Set(["", "0", "00", "000", "0000", "n/a", "na", "none", "null", "-"]);
+function scrubAttr(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  const t = v.trim();
+  return t === "" || PLACEHOLDER_ATTR.has(t.toLowerCase()) ? null : t;
+}
+function scrubCorpNumbers(arr: string[] | null | undefined): string[] {
+  return (arr ?? [])
+    .map((s) => (s ?? "").trim())
+    .filter((s) => s !== "" && !PLACEHOLDER_ATTR.has(s.toLowerCase()));
+}
+
 // ---------------------------------------------------------------------------
 // buildCondoBuildingInput — deliverable B1.
 // ---------------------------------------------------------------------------
@@ -291,10 +309,10 @@ export async function buildCondoBuildingInput(
       neighbourhoodName: b.neighbourhoodEntity?.name ?? b.neighbourhood ?? null,
       totalUnits: b.totalUnits,
       legalStories: b.legalStories,
-      managementCo: b.managementCo,
+      managementCo: scrubAttr(b.managementCo),
       avgMaintenanceFee: b.avgMaintenanceFee,
       yearBuilt: b.yearBuilt,
-      condoCorpNumbers: b.condoCorpNumbers ?? [],
+      condoCorpNumbers: scrubCorpNumbers(b.condoCorpNumbers),
     },
     saleAggregates,
     saleByType,

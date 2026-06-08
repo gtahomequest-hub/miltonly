@@ -110,6 +110,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Published condo-building pages from the WS5 condo pipeline.
+  const publishedCondos = await prisma.condoContent.findMany({
+    where: { status: "published" },
+    select: { buildingSlug: true, updatedAt: true },
+  });
+
+  const condoPages: MetadataRoute.Sitemap = publishedCondos.map((c) => ({
+    url: `${SITE_URL}/condos/${c.buildingSlug}`,
+    lastModified: c.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
   // School pages
   const schoolPages: MetadataRoute.Sitemap = [
     {
@@ -142,5 +155,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...soldStreetPages, ...schoolPages, ...mosquePages];
+  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...soldStreetPages, ...condoPages, ...schoolPages, ...mosquePages];
 }
