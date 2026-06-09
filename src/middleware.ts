@@ -54,6 +54,17 @@ const ALWAYS_ALLOW = [
 // + alphabetical tiebreak). Regenerate whenever the universe shifts.
 const SLUG_TO_CANONICAL = canonicalMap as Record<string, string>;
 
+// Hub-v2 cutover — legacy /neighbourhoods/<slug> 301s. The old HubBlock route
+// matched the munged Listing.neighbourhood slug forms; the new getHubData seam
+// resolves only the canonical Neighbourhood.slug. These three slugs are indexed
+// on prod under the legacy form, so 301 them to the canonical 200 target to
+// transfer index equity. Mirrors the streetRedirect sibling→canonical pattern.
+const NEIGHBOURHOOD_LEGACY_TO_CANONICAL: Record<string, string> = {
+  "1051---walker": "walker",
+  "brookvillehaltonville": "brookville-haltonville",
+  "rural-nassagaweya": "nassagaweya",
+};
+
 function streetRedirect(req: NextRequest): NextResponse | null {
   const { pathname } = req.nextUrl;
   if (!pathname.startsWith("/streets/")) return null;
@@ -66,11 +77,23 @@ function streetRedirect(req: NextRequest): NextResponse | null {
   return NextResponse.redirect(url, 301);
 }
 
+function neighbourhoodRedirect(req: NextRequest): NextResponse | null {
+  const { pathname } = req.nextUrl;
+  if (!pathname.startsWith("/neighbourhoods/")) return null;
+  const slug = pathname.slice("/neighbourhoods/".length).split("/")[0];
+  if (!slug) return null;
+  const canonical = NEIGHBOURHOOD_LEGACY_TO_CANONICAL[slug];
+  if (!canonical || canonical === slug) return null;
+  const url = req.nextUrl.clone();
+  url.pathname = `/neighbourhoods/${canonical}`;
+  return NextResponse.redirect(url, 301);
+}
+
 export function middleware(req: NextRequest) {
   // Sibling → canonical 301 redirect runs FIRST. Applies regardless of the
   // maintenance gate because SEO / crawler consistency needs it whether
   // we're pre-launch or live.
-  const redirect = streetRedirect(req);
+  const redirect = streetRedirect(req) ?? neighbourhoodRedirect(req);
   if (redirect) return redirect;
 
   if (!MAINTENANCE_MODE) return NextResponse.next();
@@ -110,10 +133,11 @@ export function middleware(req: NextRequest) {
   return NextResponse.rewrite(new URL("/coming-soon", req.url));
 }
 
-// Narrowed to /streets/* — the only production-active logic is streetRedirect().
+// Narrowed to /streets/* and /neighbourhoods/* — the only production-active
+// logic is the streetRedirect / neighbourhoodRedirect canonical 301s.
 // If MAINTENANCE_MODE is ever flipped back to true, expand this back to the
 // broad pattern ["/((?!_next/static|_next/image|favicon.ico).*)"] so the
 // maintenance gate covers all routes.
 export const config = {
-  matcher: ["/streets/:path*"],
+  matcher: ["/streets/:path*", "/neighbourhoods/:path*"],
 };
