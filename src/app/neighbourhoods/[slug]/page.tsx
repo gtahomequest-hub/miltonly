@@ -1,671 +1,73 @@
-﻿import { notFound } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { formatPriceFull } from "@/lib/format";
 import { config } from "@/lib/config";
+import { getHubData } from "@/lib/hubData";
+import HubPage from "@/components/hub/HubPage";
 import SchemaScript from "@/components/SchemaScript";
-import {
-  generateLocalBusinessSchema,
-  generateBreadcrumbSchema,
-  generateNeighbourhoodSchema,
-} from "@/lib/schema";
 import FooterSection from "@/components/sections/FooterSection";
-import NeighbourhoodSoldBlock from "@/components/street/NeighbourhoodSoldBlock";
-// WS5 — rural hub-tier content (renders when a published HubContent row exists).
-import { buildHubInput, buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import {
-  projectStreetsSection,
-  projectHubSchema,
-  type ProjectedStreetsSection,
-} from "@/lib/ai/hub/projectHubEntities";
-import type { HubSection, HubSchemaProjection } from "@/types/hub-generator";
+  generateNeighbourhoodSchema,
+  generateBreadcrumbSchema,
+  generateLocalBusinessSchema,
+  generateFAQSchema,
+} from "@/lib/schema";
+import { buildHubInput, buildRuralHubInput } from "@/lib/ai/buildHubInput";
+import { projectHubSchema } from "@/lib/ai/hub/projectHubEntities";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: { slug: string };
 }
 
-function cleanHoodName(raw: string): string {
-  return raw.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
-}
-
-function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-");
-}
-
-async function getNeighbourhoodData(slug: string) {
-  // Find the raw neighbourhood name that matches this slug
-  const allHoods = await prisma.listing.groupBy({
-    by: ["neighbourhood"],
-    _count: true,
-    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
-  });
-
-  const match = allHoods.find(
-    (h) => toSlug(cleanHoodName(h.neighbourhood)) === slug
-  );
-  if (!match) return null;
-
-  const rawName = match.neighbourhood;
-  const name = cleanHoodName(rawName);
-  const where = { neighbourhood: rawName, permAdvertise: true as const };
-
-  // Sold listings are no longer fetched here â€” sold data surfaces only
-  // through the gated NeighbourhoodSoldBlock fed from DB2 with VowGate.
-  const [allListings, activeListings, rentedListings] =
-    await Promise.all([
-      prisma.listing.findMany({ where, orderBy: { listedAt: "desc" } }),
-      prisma.listing.findMany({
-        where: { ...where, status: "active" },
-        orderBy: { listedAt: "desc" },
-        take: 12,
-      }),
-      prisma.listing.count({ where: { ...where, status: "rented" } }),
-    ]);
-
-  if (allListings.length === 0) return null;
-
-  // Active-listing aggregates only (Phase 2.6 â€” DB1 sold-derived fields
-  // removed from the public render tree; sold data surfaces only through
-  // the gated NeighbourhoodSoldBlock fed from DB2 with VowGate + k=10).
-  const active = allListings.filter((l) => l.status === "active");
-  const sold = allListings.filter((l) => l.status === "sold");
-  const activePrices = active.map((l) => l.price).sort((a, b) => a - b);
-  const avgPrice = activePrices.length > 0
-    ? Math.round(activePrices.reduce((s, p) => s + p, 0) / activePrices.length)
-    : 0;
-  const medianPrice = activePrices.length > 0
-    ? activePrices[Math.floor(activePrices.length / 2)]
-    : 0;
-  const avgListPrice = avgPrice; // alias â€” both are active-only avg list price
-
-  // DOM â€” active listings only
-  const activeWithDOM = active.filter(
-    (l) => l.daysOnMarket && l.daysOnMarket > 0
-  );
-  const avgDOM = activeWithDOM.length > 0
-    ? Math.round(
-        activeWithDOM.reduce((s, l) => s + (l.daysOnMarket || 0), 0) /
-          activeWithDOM.length
-      )
-    : 0;
-
-  // By type â€” active listings only
-  const types = ["detached", "semi", "townhouse", "condo", "other"];
-  const byType: Record<
-    string,
-    { count: number; avgPrice: number; activeCount: number }
-  > = {};
-  for (const t of types) {
-    const activeOfType = active.filter((l) => l.propertyType === t);
-    if (activeOfType.length > 0) {
-      byType[t] = {
-        count: activeOfType.length,
-        avgPrice: Math.round(
-          activeOfType.reduce((s, l) => s + l.price, 0) / activeOfType.length
-        ),
-        activeCount: activeOfType.length,
-      };
-    }
-  }
-
-  // Top streets
-  const streetGroups = await prisma.listing.groupBy({
-    by: ["streetSlug"],
-    _count: true,
-    _avg: { price: true },
-    where: { ...where },
-    orderBy: { _count: { streetSlug: "desc" } },
-    take: 12,
-  });
-
-  const topStreets = await Promise.all(
-    streetGroups.map(async (s) => {
-      const sample = await prisma.listing.findFirst({
-        where: { streetSlug: s.streetSlug, streetName: { not: null } },
-        select: { streetName: true },
-      });
-      const streetActive = await prisma.listing.count({
-        where: {
-          streetSlug: s.streetSlug,
-          status: "active",
-          permAdvertise: true,
-        },
-      });
-      return {
-        slug: s.streetSlug,
-        name: sample?.streetName || s.streetSlug,
-        count: s._count,
-        activeCount: streetActive,
-        avgPrice: Math.round(s._avg.price || 0),
-      };
-    })
-  );
-
-  return {
-    name,
-    slug,
-    rawName,
-    totalListings: allListings.length,
-    activeCount: active.length,
-    soldCount: sold.length,          // safe count only
-    rentedCount: rentedListings,
-    avgPrice,                        // active-only avg list price
-    avgListPrice,                    // alias for avgPrice
-    medianPrice,                     // active-only median
-    avgDOM,                          // active-only
-    byType,                          // active-only
-    topStreets,
-    activeListings: activeListings.map((l) =>
-      JSON.parse(JSON.stringify(l))
-    ),
-    // soldListings removed â€” sold records reach the render tree only via
-    // the gated NeighbourhoodSoldBlock below.
-    lastUpdated: new Date().toISOString().split("T")[0],
-  };
-}
-
-// WS5 — load published hub content (rural + urban) + projected (renderer-emitted)
-// sections. Returns null when no published HubContent row exists, so the page falls
-// back to the legacy listing-derived render below. Projected roads + schema come
-// from projectStreetsSection / projectHubSchema (DEC-WS4-2), rebuilt from the hub
-// input; the rebuild is best-effort so prose still renders if it throws.
-async function getHubData(slug: string) {
-  const content = await prisma.hubContent.findUnique({
-    where: { neighbourhoodSlug: slug },
-  });
-  if (!content || content.status !== "published") return null;
-
-  const generation = await prisma.hubGeneration.findUnique({
-    where: { neighbourhoodSlug: slug },
-  });
-  const sections: HubSection[] =
-    generation && generation.status === "succeeded"
-      ? (generation.sectionsJson as unknown as HubSection[])
-      : [];
-
-  let roads: ProjectedStreetsSection | null = null;
-  let schema: HubSchemaProjection | null = null;
-  try {
-    // Dispatch keys on Neighbourhood.profile, never kind (DEC-WS4 scope
-    // correction): urban_hub → buildHubInput, rural_hub → buildRuralHubInput.
-    // Each builder guards on profile, so a mismatch still fails closed here.
-    const nbhd = await prisma.neighbourhood.findUnique({
-      where: { slug },
-      select: { profile: true },
-    });
-    const input =
-      nbhd?.profile === "urban_hub"
-        ? await buildHubInput(slug)
-        : await buildRuralHubInput(slug);
-    roads = projectStreetsSection(input);
-    schema = projectHubSchema(input);
-  } catch {
-    // Projection rebuild is best-effort — render the prose without it.
-  }
-
-  let faq: Array<{ question: string; answer: string }> = [];
-  try {
-    faq = JSON.parse(content.faqJson || "[]");
-  } catch {
-    faq = [];
-  }
-
-  return { content, name: content.neighbourhoodName, sections, roads, schema, faq };
-}
-
-type HubData = NonNullable<Awaited<ReturnType<typeof getHubData>>>;
-
-// Renderer-emitted hub block: editorial sections + projected rural-roads list +
-// hub FAQ. The projected schema is injected into the page's <SchemaScript>.
-function HubBlock({ hub, extraFaq = [] }: { hub: HubData; extraFaq?: Array<{ question: string; answer: string }> }) {
-  // WS5 renderer-dedup: the hub FAQ + any carried legacy conversion Qs render
-  // ONCE here (merged), so a hub page never shows a doubled FAQ.
-  const mergedFaq = [...hub.faq, ...extraFaq];
-  return (
-    <>
-      {hub.sections.length > 0 && (
-        <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
-          <div className="max-w-3xl mx-auto space-y-8">
-            {hub.sections.map((s) => (
-              <div key={s.id}>
-                <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">{s.heading}</h2>
-                {s.paragraphs.map((p, i) => (
-                  <p key={i} className="text-[14px] text-[#475569] leading-relaxed mb-3">{p}</p>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {hub.roads && hub.roads.items.length > 0 && (
-        <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">Roads in {hub.name}</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {hub.roads.items.map((r) => (
-                <Link
-                  key={r.slug}
-                  href={r.url}
-                  className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:shadow-md transition-shadow"
-                >
-                  <p className="text-[14px] font-bold text-[#07111f]">{r.displayName}</p>
-                  <p className="text-[10px] text-[#94a3b8] mt-0.5">{r.soldCount12mo} sold (12mo)</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-      {mergedFaq.length > 0 && (
-        <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">Frequently asked about {hub.name}</h2>
-            <div className="space-y-4">
-              {mergedFaq.map((f) => (
-                <details key={f.question} className="bg-[#f8f9fb] rounded-xl border border-[#e2e8f0] overflow-hidden group">
-                  <summary className="px-5 py-4 text-[14px] font-bold text-[#07111f] cursor-pointer list-none">
-                    {f.question}
-                  </summary>
-                  <div className="px-5 pb-4 text-[13px] text-[#64748b] leading-relaxed">{f.answer}</div>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [data, hub] = await Promise.all([
-    getNeighbourhoodData(params.slug),
-    getHubData(params.slug),
-  ]);
-  // Prefer hub-authored metadata when a published HubContent row exists.
-  if (hub?.content.metaTitle) {
-    return {
-      title: hub.content.metaTitle,
-      description: hub.content.metaDescription ?? undefined,
-      alternates: { canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}` },
-    };
-  }
-  if (!data) return { title: "Neighbourhood Not Found" };
+  const content = await prisma.hubContent.findUnique({
+    where: { neighbourhoodSlug: params.slug },
+    select: { status: true, metaTitle: true, metaDescription: true, neighbourhoodName: true },
+  });
+  if (!content || content.status !== "published") return { title: "Neighbourhood Not Found" };
   return {
-    title: `${data.name} ${config.CITY_NAME} â€” Homes For Sale, Prices & Neighbourhood Guide`,
-    description: `Explore ${data.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${data.activeCount} active listings, avg price ${formatPriceFull(data.avgPrice)}. Streets, schools, market data. Updated daily.`,
-    alternates: {
-      canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}`,
-    },
-    openGraph: {
-      title: `${data.name} ${config.CITY_NAME} Real Estate â€” Live Data`,
-      description: `${data.activeCount} homes for sale in ${data.name}, ${config.CITY_NAME}. Avg ${formatPriceFull(data.avgPrice)}.`,
-    },
+    title: content.metaTitle ?? `${content.neighbourhoodName} ${config.CITY_NAME} — Neighbourhood Guide`,
+    description: content.metaDescription ?? undefined,
+    alternates: { canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}` },
   };
 }
 
 export default async function NeighbourhoodPage({ params }: Props) {
-  const [data, hub] = await Promise.all([
-    getNeighbourhoodData(params.slug),
-    getHubData(params.slug),
-  ]);
-  if (!data && !hub) notFound();
+  const data = await getHubData(params.slug);
+  if (!data) notFound();
 
-  // Published rural hub but no listing-derived data: render hub editorial +
-  // projected roads + projected schema on their own (fallback render).
-  if (!data) {
-    return (
-      <>
-        <SchemaScript schemas={hub!.schema ? [hub!.schema as unknown as Record<string, unknown>] : []} />
-        <div className="min-h-screen">
-          <HubBlock hub={hub!} />
-        </div>
-        <FooterSection />
-      </>
-    );
+  // Projected hub Place/ItemList schema (DEC-WS4-2) — rebuilt best-effort so the SEO
+  // the WS5 page carried is preserved; falls back to the neighbourhood schema if it throws.
+  let hubSchema: Record<string, unknown> | null = null;
+  try {
+    const input = data.profile === "urban" ? await buildHubInput(params.slug) : await buildRuralHubInput(params.slug);
+    hubSchema = projectHubSchema(input) as unknown as Record<string, unknown>;
+  } catch {
+    hubSchema = null;
   }
 
-  const faqs = [
-    {
-      question: `What is the average home price in ${data.name}, ${config.CITY_NAME}?`,
-      answer: `The average home price in ${data.name}, ${config.CITY_NAME} is ${formatPriceFull(data.avgPrice)} based on ${data.totalListings} listings. ${Object.entries(data.byType).map(([t, d]) => `${t.charAt(0).toUpperCase() + t.slice(1)} homes average ${formatPriceFull(d.avgPrice)}`).join(". ")}.`,
-    },
-    {
-      question: `How many homes are for sale in ${data.name} ${config.CITY_NAME}?`,
-      answer: `There are currently ${data.activeCount} active listings in ${data.name}, ${config.CITY_NAME}. Property types include ${Object.keys(data.byType).join(", ")}.`,
-    },
-    {
-      question: `What streets are in ${data.name}, ${config.CITY_NAME}?`,
-      answer: `Popular streets in ${data.name} include ${data.topStreets.slice(0, 5).map((s) => s.name).join(", ")}. These streets have the most listings and transaction activity in the neighbourhood.`,
-    },
-    {
-      question: `How fast do homes sell in ${data.name} ${config.CITY_NAME}?`,
-      answer: `Active listings in ${data.name}, ${config.CITY_NAME} average ${data.avgDOM || "â€”"} days on market. Register for full MLSÂ® access to see detailed market data, including historical transaction records for this neighbourhood.`,
-    },
-  ];
-
-  // WS5 renderer-dedup (sign-off): when a published hub exists, the hub FAQ
-  // supersedes the OVERLAPPING editorial Qs (avg price = faqs[0], streets = faqs[2]),
-  // but the two UNIQUE listing-derived conversion Qs survive — live homes-for-sale
-  // count (faqs[1]) and the "Register for full MLS access" hook (faqs[3]). These are
-  // carried into the hub FAQ (rendered once, in HubBlock via extraFaq) so the
-  // MLS-register lead surface is never silently removed from a hub page.
-  const carriedLegacyFaqs = hub ? [faqs[1], faqs[3]] : [];
-  // FAQPage JSON-LD must match the VISIBLE FAQ: the merged set when hub wins,
-  // else the full legacy set (case b unchanged).
-  const faqForSchema: Array<{ question: string; answer: string }> = hub
-    ? [...hub.faq.map((f) => ({ question: f.question, answer: f.answer })), ...carriedLegacyFaqs]
-    : faqs;
-
-  const schemas = [
-    // WS5 — projected hub Place schema (DEC-WS4-2), baked in when hub content exists.
-    ...(hub?.schema ? [hub.schema as unknown as Record<string, unknown>] : []),
+  const schemas: Array<Record<string, unknown>> = [
+    ...(hubSchema ? [hubSchema] : []),
     generateBreadcrumbSchema([
       { name: "Home", url: config.SITE_URL },
-      {
-        name: "Neighbourhoods",
-        url: `${config.SITE_URL}/neighbourhoods`,
-      },
-      {
-        name: `${data.name}, ${config.CITY_NAME}`,
-        url: `${config.SITE_URL}/neighbourhoods/${params.slug}`,
-      },
+      { name: "Neighbourhoods", url: `${config.SITE_URL}/neighbourhoods` },
+      { name: `${data.name}, ${config.CITY_NAME}`, url: `${config.SITE_URL}/neighbourhoods/${data.slug}` },
     ]),
     generateLocalBusinessSchema(),
     generateNeighbourhoodSchema({
       name: data.name,
       slug: data.slug,
-      description: `Real estate data for ${data.name} neighbourhood in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${data.activeCount} active listings, average price ${formatPriceFull(data.avgPrice)}.`,
+      description: data.character || `Real estate data for ${data.name}, ${config.CITY_NAME}.`,
     }),
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: faqForSchema.map((f) => ({
-        "@type": "Question",
-        name: f.question,
-        acceptedAnswer: { "@type": "Answer", text: f.answer },
-      })),
-    },
+    ...(data.faqs.length ? [generateFAQSchema(data.faqs)] : []),
   ];
 
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <div className="min-h-screen">
-        {/* Breadcrumb */}
-        <div className="bg-white border-b border-[#f1f5f9] px-5 sm:px-11 py-3">
-          <div className="flex items-center gap-2 text-[12px] text-[#94a3b8]">
-            <Link href="/" className="hover:text-[#07111f]">Home</Link>
-            <span>&rsaquo;</span>
-            <Link href="/neighbourhoods" className="hover:text-[#07111f]">Neighbourhoods</Link>
-            <span>&rsaquo;</span>
-            <span className="text-[#475569] font-medium">{data.name}, {config.CITY_NAME}</span>
-          </div>
-        </div>
-
-        {/* Hero */}
-        <section className="bg-[#07111f] px-5 sm:px-11 py-10 sm:py-12">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
-              <div>
-                <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-3">
-                  {data.name} &middot; {config.CITY_NAME} &middot; {config.CITY_PROVINCE}
-                </p>
-                <h1 className="text-[32px] sm:text-[40px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
-                  {data.name}, {config.CITY_NAME}
-                </h1>
-                <p className="text-[14px] sm:text-[16px] text-[rgba(248,249,251,0.6)] mt-3 max-w-lg leading-relaxed">
-                  {data.totalListings} listings &middot; Average {formatPriceFull(data.avgPrice)} &middot; {data.activeCount} active right now
-                </p>
-                <span className="inline-block mt-4 text-[10px] font-bold text-[#f59e0b] bg-[rgba(245,158,11,0.15)] px-3 py-1 rounded-full">
-                  Data updated {data.lastUpdated}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 shrink-0 lg:w-[340px]">
-                {[
-                  { value: formatPriceFull(data.avgPrice), label: "Avg list price" },
-                  { value: String(data.activeCount), label: "Active listings" },
-                  { value: data.avgDOM ? data.avgDOM + " days" : "â€”", label: "Avg days on market" },
-                  { value: String(data.soldCount), label: "Sold this year" },
-                ].map((s) => (
-                  <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
-                    <p className="text-[20px] font-extrabold text-[#f8f9fb]">{s.value}</p>
-                    <p className="text-[10px] text-[rgba(248,249,251,0.5)] mt-1">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Market snapshot bar â€” active-listing aggregates only.
-           Sold-price intel surfaces in the gated NeighbourhoodSoldBlock below. */}
-        {/* WS5 — rural hub editorial + projected roads (renders when HubContent exists). */}
-        {hub && <HubBlock hub={hub} extraFaq={carriedLegacyFaqs} />}
-
-        <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
-          <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {[
-              { value: formatPriceFull(data.avgListPrice), label: "Avg list price" },
-              { value: formatPriceFull(data.medianPrice), label: "Median list price" },
-              { value: String(data.soldCount), label: "Sold this year" },
-              { value: String(data.activeCount), label: "Active now" },
-              { value: String(data.rentedCount), label: "Rented" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-[18px] sm:text-[22px] font-extrabold text-[#07111f]">{s.value}</p>
-                <p className="text-[10px] text-[#78350f] font-semibold mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Price by type */}
-        <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-              Property types in {data.name}
-            </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {(["detached", "semi", "townhouse", "condo"] as const).map((type) => {
-                const d = data.byType[type];
-                return (
-                  <div key={type} className="bg-white rounded-xl border border-[#e2e8f0] p-5">
-                    <p className="text-[14px] font-bold text-[#07111f] capitalize mb-3">{type}</p>
-                    {d ? (
-                      <>
-                        <p className="text-[22px] font-extrabold text-[#07111f]">
-                          {formatPriceFull(d.avgPrice)}
-                        </p>
-                        <p className="text-[11px] text-[#94a3b8] mt-1">
-                          {d.count} listings &middot; {d.activeCount} active
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-[12px] text-[#94a3b8]">No recent data</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Top streets — LEGACY; suppressed when the hub "Roads in" list supersedes it (WS5 dedup) */}
-        {!hub && data.topStreets.length > 0 && (
-          <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-                Streets in {data.name}
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {data.topStreets.map((s) => (
-                  <Link
-                    key={s.slug}
-                    href={`/streets/${s.slug}`}
-                    className="bg-[#f8f9fb] rounded-xl border border-[#e2e8f0] p-4 hover:shadow-md transition-shadow"
-                  >
-                    <p className="text-[14px] font-bold text-[#07111f]">{s.name}</p>
-                    <p className="text-[16px] font-extrabold text-[#07111f] mt-1">
-                      {formatPriceFull(s.avgPrice)}
-                    </p>
-                    <p className="text-[10px] text-[#94a3b8] mt-0.5">
-                      {s.count} listings &middot; {s.activeCount} active
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Active listings preview */}
-        {data.activeListings.length > 0 && (
-          <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex items-baseline justify-between mb-6">
-                <h2 className="text-[18px] font-extrabold text-[#07111f]">
-                  Homes for sale in {data.name}
-                </h2>
-                <Link
-                  href={`/listings?neighbourhood=${encodeURIComponent(data.name)}`}
-                  className="text-[12px] text-[#f59e0b] font-semibold hover:underline"
-                >
-                  View all {data.activeCount}
-                </Link>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.activeListings.slice(0, 6).map((l: Record<string, unknown>) => (
-                  <Link
-                    key={l.mlsNumber as string}
-                    href={`/listings/${l.mlsNumber}`}
-                    className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden hover:shadow-lg transition-all"
-                  >
-                    <div className="aspect-[3/2] bg-[#f1f5f9]">
-                      {(l.photos as string[])?.[0] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={(l.photos as string[])[0]}
-                          alt={l.address as string}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#cbd5e1] text-[32px]">
-                          ðŸ 
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <p className="text-[18px] font-extrabold text-[#07111f]">
-                        {formatPriceFull(l.price as number)}
-                      </p>
-                      <p className="text-[12px] text-[#475569] mt-0.5">
-                        {l.bedrooms as number} bd &middot; {l.bathrooms as number} ba
-                        {l.sqft ? ` Â· ${(l.sqft as number).toLocaleString()} sqft` : ""}
-                      </p>
-                      <p className="text-[11px] text-[#94a3b8] mt-1 truncate">
-                        {l.address as string}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* FAQ — LEGACY; suppressed when the hub FAQ (incl. carried conversion Qs) supersedes it (WS5 dedup) */}
-        {!hub && (
-        <section className="bg-white px-5 sm:px-11 py-10 border-t border-[#e2e8f0]">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-              Frequently asked about {data.name}
-            </h2>
-            <div className="space-y-4">
-              {faqs.map((faq) => (
-                <details
-                  key={faq.question}
-                  className="bg-[#f8f9fb] rounded-xl border border-[#e2e8f0] overflow-hidden group"
-                >
-                  <summary className="px-5 py-4 text-[14px] font-bold text-[#07111f] cursor-pointer list-none flex items-center justify-between">
-                    {faq.question}
-                    <span className="text-[#94a3b8] group-open:rotate-180 transition-transform">
-                      &#9662;
-                    </span>
-                  </summary>
-                  <div className="px-5 pb-4 text-[13px] text-[#64748b] leading-relaxed">
-                    {faq.answer}
-                  </div>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-        )}
-
-        {/* CTA */}
-        <section className="bg-[#07111f] px-5 sm:px-11 py-14">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-[24px] sm:text-[28px] font-extrabold text-[#f8f9fb]">
-              Ready to explore {data.name}?
-            </h2>
-            <p className="text-[14px] text-[rgba(248,249,251,0.5)] mt-3 mb-8">
-              Whether you&apos;re buying, selling or watching the market â€” we&apos;ve got you covered.
-            </p>
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6">
-                <p className="text-[14px] font-bold text-[#f8f9fb] mb-2">Find your home</p>
-                <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-4">
-                  Browse {data.activeCount} active listings
-                </p>
-                <Link
-                  href={`/listings?neighbourhood=${encodeURIComponent(data.name)}`}
-                  className="block w-full bg-[#f59e0b] text-[#07111f] text-[12px] font-bold rounded-lg py-2.5 text-center"
-                >
-                  View listings
-                </Link>
-              </div>
-              <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6">
-                <p className="text-[14px] font-bold text-[#f8f9fb] mb-2">Get your home value</p>
-                <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-4">
-                  Based on real {data.name} sales
-                </p>
-                <Link
-                  href="/sell"
-                  className="block w-full bg-[#f59e0b] text-[#07111f] text-[12px] font-bold rounded-lg py-2.5 text-center"
-                >
-                  Get my estimate
-                </Link>
-              </div>
-              <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6">
-                <p className="text-[14px] font-bold text-[#f8f9fb] mb-2">Talk to an expert</p>
-                <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-4">
-                  {config.realtor.yearsExperience} years of {config.CITY_NAME} experience
-                </p>
-                <a
-                  href={`tel:${config.realtor.phoneE164}`}
-                  className="block w-full bg-[#f59e0b] text-[#07111f] text-[12px] font-bold rounded-lg py-2.5 text-center"
-                >
-                  Call {config.realtor.name.split(" ")[0]}
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-        <NeighbourhoodSoldBlock
-          neighbourhood={data.rawName}
-          displayName={data.name}
-          currentPath={`/neighbourhoods/${params.slug}`}
-        />
-      </div>
+      <HubPage data={data} />
       <FooterSection />
     </>
   );

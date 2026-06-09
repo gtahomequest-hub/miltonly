@@ -11,6 +11,9 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   // Homepage uses the v2 <HomePage> which renders its own nav; suppress the
   // global Navbar here. Exact match only — a prefix match would hide it site-wide.
   if (pathname === "/") return null;
+  // Hub v2: /neighbourhoods/<slug> ships its own forest-green HubPage header;
+  // suppress the global Navbar (exact-prefix so the /neighbourhoods index keeps it).
+  if (pathname?.startsWith("/neighbourhoods/")) return null;
   if (pathname === "/coming-soon") return null;
   if (pathname?.startsWith("/rentals/ads")) return null;
   // Sales featured page (paid Google Ads traffic) — strip site chrome so

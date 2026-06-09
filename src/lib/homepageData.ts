@@ -23,7 +23,7 @@ const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
 // STATIC editorial character lines (no DB source). Carried from mockData where
 // present; the rest authored factually. FLAGGED static — copy is Aamir's to refine.
-const CHARACTER: Record<string, string> = {
+export const NEIGHBOURHOOD_CHARACTER: Record<string, string> = {
   // urban
   beaty: "Family enclave near schools and parks.",
   bowes: "Newer west-end growth, townhome-heavy.",
@@ -90,7 +90,7 @@ export async function getHomepageData(): Promise<HomepageData> {
       const group: NeighbourhoodCard["group"] = nb.profile === "urban_hub" ? "urban" : "rural";
       const card: NeighbourhoodCard = {
         name: nb.name,
-        character: CHARACTER[nb.slug] ?? (group === "rural" ? "Rural Milton — large lots, thinner resale activity." : "Established Milton neighbourhood."),
+        character: NEIGHBOURHOOD_CHARACTER[nb.slug] ?? (group === "rural" ? "Rural Milton — large lots, thinner resale activity." : "Established Milton neighbourhood."),
         typicalPriceRounded,
         slug: nb.slug,
         group,

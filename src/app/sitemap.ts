@@ -69,25 +69,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Neighbourhood pages (dynamic from database)
-  const hoodGroups = await prisma.listing.groupBy({
-    by: ["neighbourhood"],
-    _count: true,
-    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
+  // Neighbourhood hub pages — canonical slugs from the published HubContent set,
+  // the SAME source getHubData() resolves. Previously these were derived by
+  // munging Listing.neighbourhood, which emitted legacy slug forms
+  // (1051---walker, brookvillehaltonville, rural-nassagaweya) that 404 on the
+  // hub-v2 route; HubContent.neighbourhoodSlug IS the canonical 200 target, so
+  // the sitemap now points only at slugs that render. (neighbourhoodSlug is
+  // @unique — no duplicates.)
+  const publishedHubs = await prisma.hubContent.findMany({
+    where: { status: "published" },
+    select: { neighbourhoodSlug: true, updatedAt: true },
   });
 
-  const neighbourhoodPages: MetadataRoute.Sitemap = hoodGroups
-    .filter((h) => h._count >= 5)
-    .map((h) => {
-      const name = h.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
-      const slug = name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
-      return {
-        url: `${SITE_URL}/neighbourhoods/${slug}`,
-        lastModified: now,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      };
-    });
+  const neighbourhoodPages: MetadataRoute.Sitemap = publishedHubs.map((h) => ({
+    url: `${SITE_URL}/neighbourhoods/${h.neighbourhoodSlug}`,
+    lastModified: h.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
 
   // Published street pages from pipeline
   const publishedStreets = await prisma.streetContent.findMany({
