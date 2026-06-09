@@ -6,54 +6,28 @@ import {
   generateBreadcrumbSchema,
 } from "@/lib/schema";
 import { homepageFAQs } from "@/lib/faqs";
-import { getHeroStats, getFeaturedListings, getPropertyTypeStats, getTrendingStreets } from "@/lib/stats";
-import { getMiltonSoldTotals } from "@/lib/sold-data";
 import { config } from "@/lib/config";
+import { getHomepageData } from "@/lib/homepageData";
+import HomePage from "@/components/home/HomePage";
 
-import HeroSection from "@/components/sections/HeroSection";
-import TrustBarSection from "@/components/sections/TrustBarSection";
-import IntelligenceCentre from "@/components/sections/IntelligenceCentre";
-import ExclusiveStrip from "@/components/sections/ExclusiveStrip";
-import FeaturedListings from "@/components/sections/FeaturedListings";
-import MortgageCalculator from "@/components/sections/MortgageCalculator";
-import SoldOnMyStreet from "@/components/sections/SoldOnMyStreet";
-import SeoLinkGrid from "@/components/sections/SeoLinkGrid";
-import PreFooterCTA from "@/components/sections/PreFooterCTA";
-import FooterSection from "@/components/sections/FooterSection";
+// Live Milton stats render per request; also keeps the homepage off the static
+// prerender path (the global Navbar is already suppressed on "/" via ChromeGate).
+export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const [stats, featured, typeStats, trendingStreets, soldTotals] = await Promise.all([
-    getHeroStats(),
-    getFeaturedListings(),
-    getPropertyTypeStats(),
-    getTrendingStreets(),
-    getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
-  ]);
+export default async function Page() {
+  const data = await getHomepageData();
 
   const schemas = [
     generateLocalBusinessSchema(),
     generateWebSiteSchema(),
     generateFAQSchema(homepageFAQs),
-    generateBreadcrumbSchema([
-      { name: `${config.CITY_NAME} Real Estate`, url: config.SITE_URL },
-    ]),
+    generateBreadcrumbSchema([{ name: `${config.CITY_NAME} Real Estate`, url: config.SITE_URL }]),
   ];
 
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <main>
-        <HeroSection stats={stats} typeStats={typeStats} trendingStreets={trendingStreets} />
-        <TrustBarSection stats={stats} soldLast30={soldTotals.last30} />
-        <IntelligenceCentre />
-        <ExclusiveStrip />
-        <FeaturedListings listings={featured} />
-        <MortgageCalculator />
-        <SoldOnMyStreet />
-        <SeoLinkGrid />
-      </main>
-      <PreFooterCTA />
-      <FooterSection />
+      <HomePage data={data} />
     </>
   );
 }
