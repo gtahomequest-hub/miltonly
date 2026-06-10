@@ -8,12 +8,12 @@ import type {
   TypeBlock,
   GlanceTile,
   MarketSummaryCard,
-  SoldRecordsBlock,
   ListingCard,
   ChartPoint,
 } from './types';
-import { compactPrice, fullPrice, shortPrice, pct, band, barFraction } from './format';
+import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './format';
 import { CommuteIcon } from './icons';
+import { StreetSoldRecords } from './SoldRecordsIsland';
 
 const DEFAULT_SILENT = 'sample too small to publish';
 
@@ -55,7 +55,7 @@ function Pill({ p }: { p: ProductPill }) {
       <span className="s-pill-t">{p.displayName}</span>
       <span className="s-pill-c">{p.count}</span>
       <span className={`s-pill-p${silent ? ' s-silent' : ''}`}>
-        {silent ? p.priceLabel : `${shortPrice(p.typicalPrice as number)} ${p.priceLabel}`}
+        {silent ? p.priceLabel : `${dollars(p.typicalPrice as number)} ${p.priceLabel}`}
       </span>
     </a>
   );
@@ -268,40 +268,23 @@ function TypeStatCell({
 }
 
 function TypeCard({ t }: { t: TypeBlock }) {
-  const publishable = t.typicalPrice !== null;
   return (
     <div className="s-type" id={`type-${t.type}`}>
       <div className="s-type-head">
         <h3>{t.displayName}</h3>
-        <span className="s-type-n">{t.salesCount} recent sales</span>
       </div>
       <p className="s-type-intro">{t.intro}</p>
       <div className="s-type-stats">
-        <TypeStatCell
-          label="Typical price"
-          value={publishable ? shortPrice(t.typicalPrice as number) : null}
-          detail={publishable ? `across ${t.salesCount} sales` : undefined}
-          silentNote="under publish threshold"
-        />
-        <TypeStatCell
-          label="Price band"
-          value={t.priceBand ? band(t.priceBand.low, t.priceBand.high) : null}
-          silentNote="—"
-        />
-        <TypeStatCell label="Time on market" value={t.dom !== null ? `${Math.round(t.dom)} days` : null} silentNote="—" />
-        <TypeStatCell label="Sold to ask" value={t.soldToAsk !== null ? pct(t.soldToAsk) : null} silentNote="—" />
-        {t.activeCount !== null && (
-          <TypeStatCell
-            label="Active listings"
-            value={String(t.activeCount)}
-            detail={t.activeAvgList !== null ? `avg list ${shortPrice(t.activeAvgList)}` : undefined}
-          />
-        )}
+        <TypeStatCell label="Typical price" value={t.typicalPrice} detail={t.typicalDetail} silentNote="under publish threshold" />
+        <TypeStatCell label="Price band" value={t.priceBand} silentNote="—" />
+        <TypeStatCell label="Time on market" value={t.dom} silentNote="—" />
+        <TypeStatCell label="Sold to ask" value={t.soldToAsk} silentNote="—" />
+        {t.active !== null && <TypeStatCell label="Active listings" value={t.active} detail={t.activeDetail} />}
       </div>
       {t.contactTeamPrompt && (
         <div className="s-contact-prompt">
-          Only {t.salesCount} recent {t.displayName.toLowerCase()} sale{t.salesCount === 1 ? '' : 's'} on record — too
-          few to publish a typical price without identifying a home.{' '}
+          Too few recent {t.displayName.toLowerCase()} sales on record to publish a typical price without identifying a
+          home.{' '}
           <a href="#valuation">Ask the team for a private read →</a>
         </div>
       )}
@@ -360,48 +343,6 @@ function SummaryCard({ card }: { card: MarketSummaryCard }) {
   );
 }
 
-function SoldRecords({ block }: { block: SoldRecordsBlock }) {
-  return (
-    <div className={`s-records${block.canSee ? '' : ' s-gated'}`}>
-      <div className="s-records-cap">{block.caption}</div>
-      <table className="s-rtable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Address</th>
-            <th>Beds</th>
-            <th>Sold</th>
-            <th>vs Ask</th>
-            <th>DOM</th>
-            <th>Listing brokerage</th>
-          </tr>
-        </thead>
-        <tbody>
-          {block.records.map((r) => (
-            <tr key={r.mlsNumber}>
-              <td>{r.date.slice(0, 10)}</td>
-              <td>{r.address}</td>
-              <td>{r.beds ?? '—'}</td>
-              <td>{shortPrice(r.soldPrice)}</td>
-              <td>{pct(r.soldToAsk)}</td>
-              <td>{r.dom}d</td>
-              <td className="s-r-brok">{r.brokerage ?? '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="s-gate">
-        <div className="s-gate-k">TREB VOW · Registered access</div>
-        <div className="s-gate-h">See every closed sale on {block.caption.replace(/^Recent closed sales,\s*/, '')}</div>
-        <div className="s-gate-p">Free with a verified email — exact sold prices, days on market, and sold-to-ask ratios.</div>
-        <a className="s-gate-btn" href={block.signinHref}>
-          Sign in free to unlock →
-        </a>
-      </div>
-    </div>
-  );
-}
-
 export function StreetMarket({ data }: { data: StreetV2Data }) {
   const m = data.market;
   return (
@@ -438,7 +379,7 @@ export function StreetMarket({ data }: { data: StreetV2Data }) {
             <div className="s-chart-cap">{m.priceChart.caption}</div>
           </div>
         )}
-        <SoldRecords block={data.soldRecords} />
+        <StreetSoldRecords slug={data.slug} streetName={data.name} />
       </div>
     </section>
   );

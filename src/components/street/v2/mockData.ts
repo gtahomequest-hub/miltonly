@@ -106,13 +106,13 @@ export const mockStreetRich: StreetV2Data = {
       type: 'detached',
       displayName: 'Detached',
       intro: 'Detached inventory on Main Street East has seen 18 closed sales recently — the deepest and priciest band on the street.',
-      salesCount: 18,
-      typicalPrice: 1_210_000,
-      priceBand: { low: 950_000, high: 1_550_000 },
-      dom: 19,
-      soldToAsk: 0.99,
-      activeCount: 3,
-      activeAvgList: 1_240_000,
+      typicalPrice: '$1.21M',
+      typicalDetail: 'across 18 sales',
+      priceBand: '$950K to $1.55M',
+      dom: '19 days',
+      soldToAsk: '99%',
+      active: '3',
+      activeDetail: 'avg list $1.24M',
       chart: {
         headline: 'Quarterly sold trend · Detached',
         note: 'Based on closed detached sales on Main Street East.',
@@ -125,13 +125,13 @@ export const mockStreetRich: StreetV2Data = {
       type: 'townhouse',
       displayName: 'Townhouse',
       intro: 'Townhomes broaden the entry point with 11 closed sales recently.',
-      salesCount: 11,
-      typicalPrice: 905_000,
-      priceBand: { low: 820_000, high: 1_010_000 },
-      dom: 16,
-      soldToAsk: 1.01,
-      activeCount: 2,
-      activeAvgList: 915_000,
+      typicalPrice: '$905K',
+      typicalDetail: 'across 11 sales',
+      priceBand: '$820K to $1.01M',
+      dom: '16 days',
+      soldToAsk: '101%',
+      active: '2',
+      activeDetail: 'avg list $915K',
       chart: null,
       contactTeamPrompt: false,
     },
@@ -180,17 +180,6 @@ export const mockStreetRich: StreetV2Data = {
       { label: '2 bed', value: '$2,650', detail: 'typical' },
       { label: '3 bed', value: '$3,200', detail: 'typical' },
       { label: '4+ bed', value: '$3,800', detail: 'typical' },
-    ],
-  },
-
-  soldRecords: {
-    caption: 'Recent closed sales, Main Street East',
-    canSee: false,
-    signinHref: '/signin?redirect=/streets/main-street-east-milton&intent=sold&street=main-street-east-milton',
-    records: [
-      { mlsNumber: 'W1', date: '2025-03-14', address: '142 Main Street East', beds: 4, soldPrice: 1_310_000, soldToAsk: 0.98, dom: 12, brokerage: 'Royal LePage Meadowtowne' },
-      { mlsNumber: 'W2', date: '2025-02-02', address: '88 Main Street East', beds: 3, soldPrice: 1_055_000, soldToAsk: 1.02, dom: 9, brokerage: 'RE/MAX Aboutowne' },
-      { mlsNumber: 'W3', date: '2025-01-19', address: '210 Main Street East', beds: 4, soldPrice: 1_480_000, soldToAsk: 0.97, dom: 22, brokerage: 'Keller Williams Edge' },
     ],
   },
 
@@ -374,13 +363,12 @@ export const mockStreetThin: StreetV2Data = {
       type: 'detached',
       displayName: 'Detached',
       intro: 'Detached inventory on Marigold Court has thin recent sale history.',
-      salesCount: 3,
       typicalPrice: null, // silent
       priceBand: null, // silent
       dom: null, // silent
       soldToAsk: null, // silent
-      activeCount: 1,
-      activeAvgList: 1_020_000,
+      active: '1',
+      activeDetail: 'avg list $1.02M',
       chart: null, // suppressed (k<5)
       contactTeamPrompt: true, // 0 < 3 < 5
     },
@@ -414,17 +402,6 @@ export const mockStreetThin: StreetV2Data = {
     leases: null, // no lease activity
     priceChart: null, // suppressed
     rentByBeds: null, // suppressed
-  },
-
-  soldRecords: {
-    caption: 'Recent closed sales, Marigold Court',
-    canSee: false,
-    signinHref: '/signin?redirect=/streets/marigold-court-milton&intent=sold&street=marigold-court-milton',
-    records: [
-      // present but blurred behind the gate; addresses still PII-safe street-level
-      { mlsNumber: 'M1', date: '2025-01-10', address: '14 Marigold Court', beds: 4, soldPrice: 1_010_000, soldToAsk: 0.99, dom: 18, brokerage: 'Royal LePage Meadowtowne' },
-      { mlsNumber: 'M2', date: '2024-11-22', address: '9 Marigold Court', beds: 3, soldPrice: 965_000, soldToAsk: 1.0, dom: 25, brokerage: 'RE/MAX Aboutowne' },
-    ],
   },
 
   commute: [

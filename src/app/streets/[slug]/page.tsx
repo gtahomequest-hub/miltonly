@@ -2,31 +2,14 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getStreetPageData, canonicalUrlFor } from "@/lib/street-data";
+import { mapStreetV2Data } from "@/lib/streetV2Data";
 import { buildStreetPageSchema } from "@/lib/schema/street-schema";
 import { SchemaInjector } from "@/lib/schema/injector";
-import { Container } from "@/components/ui";
 import { roundPriceForProse } from "@/lib/format";
 import { formatCAD } from "@/lib/charts/theme";
 import { loadStreetGeneration } from "@/lib/ai/loadStreetGeneration";
-import type { StreetPageData, StreetSection, StreetFAQItem, FAQItem } from "@/types/street";
-
-import { StreetHero } from "@/components/street/StreetHero";
-import { DescriptionSidebar } from "@/components/street/DescriptionSidebar";
-import { DescriptionBody } from "@/components/street/DescriptionBody";
-import { InlineCTASection } from "@/components/street/InlineCTASection";
-import { TypeSection } from "@/components/street/TypeSection";
-import { AtAGlanceGrid } from "@/components/street/AtAGlanceGrid";
-import { PatternBlock } from "@/components/street/PatternBlock";
-import { MarketActivity } from "@/components/street/MarketActivity";
-import { CommuteGrid } from "@/components/street/CommuteGrid";
-import { ActiveInventory } from "@/components/street/ActiveInventory";
-import { ContextCards } from "@/components/street/ContextCards";
-import { FAQ } from "@/components/street/FAQ";
-import { FinalCTAs } from "@/components/street/FinalCTAs";
-import { CornerWidget } from "@/components/street/CornerWidget";
-import { ExitIntent } from "@/components/street/ExitIntent";
-import { StreetPlaceholder } from "@/components/street/StreetPlaceholder";
-import { SoldRecordsIsland } from "@/components/street/SoldRecordsIsland";
+import type { StreetSection, FAQItem } from "@/types/street";
+import StreetV2Page from "@/components/street/v2/StreetPage";
 import { prisma } from "@/lib/prisma";
 
 interface Props { params: { slug: string } }
@@ -57,8 +40,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `Typical ${priceStr}${tx > 0 ? `, ${tx} transactions on file` : ""}`
     : `Street profile with live market data`;
 
-  // Base title gets the layout template appended (" | Miltonly"); the og/twitter
-  // paths don't apply that template so we embed the brand explicitly.
   const baseTitle = `${data.street.name}, ${config.CITY_NAME}, ${summary}`;
   const ogTitle = `${baseTitle} | ${config.SITE_NAME}`;
   const description =
@@ -85,147 +66,27 @@ export default async function StreetPage({ params }: Props) {
   ]);
   if (!data) notFound();
 
-  const ownerCtaPrice = pickOwnerCtaPrice(data);
-  const contextHasContent = hasContextContent(data);
+  // ── JSON-LD (unchanged from the legacy page — streets are indexed) ──────────
+  // Schema sources from the generation-aware sections + FAQ when a succeeded
+  // StreetGeneration exists; otherwise the legacy-shape fallback. Placeholder mode
+  // (no generation) -> faqs=[] so the FAQPage node is omitted, same as before.
+  const schemaSections: StreetSection[] = generation
+    ? generation.sections
+    : ((data.descriptionBody?.sections ?? []) as Array<{ id?: string; heading: string; paragraphs: string[] }>).map(
+        (s) => ({ id: isKnownSectionId(s.id) ? s.id : "about", heading: s.heading, paragraphs: s.paragraphs }),
+      );
+  const faqs: FAQItem[] = generation ? generation.faq.map((f) => ({ question: f.question, answer: f.answer })) : [];
+  const schema = buildStreetPageSchema(data, { faqs, sections: schemaSections });
 
-  // Description body: generated if a valid succeeded StreetGeneration row
-  // exists; otherwise a legacy-shape fallback from street-data.ts (also
-  // handles streets where content has never been generated).
-  const descriptionBodyProps = resolveDescriptionBody(data, generation);
-
-  // Placeholder mode: fire whenever there is no succeeded AI generation,
-  // regardless of whether legacy StreetContent.description exists. Before
-  // Step 13d this keyed off sections.length === 0, which let legacy-bearing
-  // failures (anderson-avenue, aspen-terrace) fall through to pre-Phase-4.1
-  // template prose — below the voice spec. Uniform graceful failure now.
-  //
-  // `generation` (from loadStreetGeneration) is already status-gated to
-  // succeed-only and returns null otherwise, so !generation is equivalent
-  // to "no succeeded StreetGeneration row."
-  const placeholderMode = !generation;
-
-  // FAQ: prefer generated FAQ when present; in placeholder mode, suppress
-  // entirely so template FAQs don't render under a "profile in preparation"
-  // body. Legacy path (content-bearing streets without an AI generation)
-  // still surfaces the template FAQs.
-  const faqs: FAQItem[] = generation
-    ? generation.faq.map((f) => ({ question: f.question, answer: f.answer }))
-    : placeholderMode
-      ? []
-      : data.faqs;
-
-  // Schema builder consumes the resolved FAQ + 8-section body so JSON-LD
-  // surfaces the generation's prose when available (FAQPage count, Alternatives
-  // ItemList). Falls back to the legacy-shape values when no generation row
-  // exists. Placeholder mode: faqs=[] and sections=[] cause FAQPage and
-  // Alternatives ItemList to be omitted automatically (existing gates).
-  const schema = buildStreetPageSchema(data, {
-    faqs,
-    sections: descriptionBodyProps.sections,
-  });
+  // ── Render: forest-v2 shell from the vetted data (restyle only) ─────────────
+  const v2 = mapStreetV2Data(data, generation);
 
   return (
     <>
       <SchemaInjector schema={schema} />
-
-      <StreetHero {...data.heroProps} />
-
-      {placeholderMode ? (
-        <StreetPlaceholder
-          streetName={data.street.name}
-          sidebar={data.descriptionSidebar}
-        />
-      ) : (
-        <section className="border-b" style={{ paddingTop: 96, paddingBottom: 96, borderColor: "var(--line)" }}>
-          <Container>
-            <div className="description-grid">
-              <DescriptionSidebar {...data.descriptionSidebar} />
-              <DescriptionBody
-                {...descriptionBodyProps}
-                inlineSlot={
-                  ownerCtaPrice > 0 ? (
-                    <InlineCTASection
-                      variant="owner"
-                      streetShort={data.street.shortName}
-                      typicalPrice={ownerCtaPrice}
-                    />
-                  ) : null
-                }
-                inlineSlotAfter={0}
-              />
-            </div>
-          </Container>
-        </section>
-      )}
-
-      {data.productTypes.map((pt) => (
-        <TypeSection key={pt.type} {...pt} />
-      ))}
-
-      <AtAGlanceGrid tiles={data.glanceTiles} />
-
-      {data.detectedPattern && <PatternBlock {...data.detectedPattern} />}
-
-      <MarketActivity {...data.marketActivity}>
-        <SoldRecordsIsland slug={params.slug} streetName={data.street.name} />
-      </MarketActivity>
-
-      <CommuteGrid {...data.commuteGrid} />
-
-      <ActiveInventory {...data.activeInventory} />
-
-      {contextHasContent && <ContextCards {...data.contextCards} />}
-
-      {faqs.length > 0 && <FAQ faqs={faqs} />}
-
-      <FinalCTAs {...data.finalCTAs} />
-
-      <CornerWidget {...data.cornerWidget} />
-      <ExitIntent streetName={data.street.name} streetShort={data.street.shortName} />
+      <StreetV2Page data={v2} />
     </>
   );
-}
-
-function pickOwnerCtaPrice(data: StreetPageData): number {
-  const firstTyped = data.productTypes.find((p) => p.typicalPrice > 0);
-  return firstTyped?.typicalPrice ?? 0;
-}
-
-function hasContextContent(data: StreetPageData): boolean {
-  const { similarStreets, neighbourhoods, schools } = data.contextCards;
-  return similarStreets.length + neighbourhoods.length + schools.length > 0;
-}
-
-/**
- * If a generated description exists (status=succeeded, narrowed shape),
- * return the { sections, faq } pair for DescriptionBody. Otherwise, adapt
- * the legacy-shape fallback from street-data.ts (which uses loose section
- * ids like "s1") into the StreetSection strict union. sectionsJson emitted
- * by the legacy path bypasses the StreetSectionId union at the type level
- * via the shape adapter below; this keeps the page renderable on streets
- * that have never been generated.
- */
-function resolveDescriptionBody(
-  data: StreetPageData,
-  generation: { sections: StreetSection[]; faq: StreetFAQItem[] } | null,
-): { sections: StreetSection[]; faq: StreetFAQItem[] } {
-  if (generation) {
-    return { sections: generation.sections, faq: generation.faq };
-  }
-  // Legacy fallback: street-data's descriptionBody.sections is a loose
-  // DescriptionSection[] (id optional, heading, paragraphs). Map it through
-  // the approved StreetSectionId union, defaulting unknown ids to "about".
-  const legacySections = (data.descriptionBody?.sections ?? []) as Array<{
-    id?: string;
-    heading: string;
-    paragraphs: string[];
-  }>;
-  const sections: StreetSection[] = legacySections.map((s) => ({
-    id: isKnownSectionId(s.id) ? s.id : "about",
-    heading: s.heading,
-    paragraphs: s.paragraphs,
-  }));
-  return { sections, faq: [] };
 }
 
 const KNOWN_SECTION_IDS = new Set([

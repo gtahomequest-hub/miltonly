@@ -106,17 +106,18 @@ export interface TypeBlock {
   type: ProductTypeKey;
   displayName: string;
   intro: string;
-  salesCount: number;
-  /** null => k<5 silent. */
-  typicalPrice: number | null;
-  priceBand: { low: number; high: number } | null; // null => not publishable
-  dom: number | null;
-  soldToAsk: number | null; // 0..1 ratio
-  activeCount: number | null;
-  activeAvgList: number | null;
+  // Pre-formatted from getStreetPageData's already-suppressed StatCell[] (k-anon
+  // applied upstream). null => the cell was suppressed => render the .s-silent state.
+  typicalPrice: string | null;
+  typicalDetail?: string;
+  priceBand: string | null;
+  dom: string | null;
+  soldToAsk: string | null;
+  active: string | null;
+  activeDetail?: string;
   /** null when k<5 or fewer than 3 quarters. */
   chart: { headline: string; note: string; trendLabel: string; data: ChartPoint[] } | null;
-  /** true at 0 < salesCount < 5 — surfaces the "contact the team" prompt, chart hidden. */
+  /** true at 0 < sales < 5 — surfaces the "contact the team" prompt, chart hidden. */
   contactTeamPrompt: boolean;
 }
 
@@ -157,28 +158,10 @@ export interface MarketBlock {
   rentByBeds: RentByBedTile[] | null;
 }
 
-// ───── Sold records island (TREB-VOW sign-in gated) ──────────────────────────
-
-export interface SoldRecord {
-  mlsNumber: string;
-  date: string;
-  address: string;
-  beds: number | null;
-  soldPrice: number;
-  soldToAsk: number; // 0..1
-  dom: number;
-  brokerage: string | null;
-}
-
-export interface SoldRecordsBlock {
-  caption: string;
-  /** Registered-access gate. When false: design shows the blurred/locked overlay. */
-  canSee: boolean;
-  /** Populated only when canSee (server). Below the gate the rows still render blurred behind the overlay. */
-  records: SoldRecord[];
-  /** sign-in deep link, preserving redirect + intent. */
-  signinHref: string;
-}
+// Sold records are rendered by a self-contained client island (StreetSoldRecords)
+// that fetches /api/streets/<slug>/sold-records and applies the TREB-VOW sign-in
+// gate per session — it is NOT part of this server-serializable seam (the gate is
+// auth-dependent and must resolve client-side, preserving unlock for signed-in users).
 
 // ───── Commute ───────────────────────────────────────────────────────────────
 
@@ -266,7 +249,6 @@ export interface StreetV2Data {
   productTypes: TypeBlock[];
   glance: GlanceTile[]; // exactly 12
   market: MarketBlock;
-  soldRecords: SoldRecordsBlock;
   commute: CommuteCategory[];
   activeListings: ListingCard[];
   context: ContextBlock;

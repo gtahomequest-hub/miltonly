@@ -29,6 +29,11 @@ export function band(low: number, high: number): string {
   return `${shortPrice(low)} to ${shortPrice(high)}`;
 }
 
+/** magnitude-aware: sale prices compact ($1.21M), rents in full ($2,650) */
+export function dollars(n: number): string {
+  return n >= 100_000 ? shortPrice(n) : fullPrice(n);
+}
+
 /** clamp bar height to a 0..1 fraction of the series max (min 4% so a bar always shows) */
 export function barFraction(value: number, max: number): number {
   if (max <= 0) return 0.04;

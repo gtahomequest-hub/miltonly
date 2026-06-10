@@ -20,6 +20,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   // /condos (redirect) and /streets (navy grid) INDEX routes and the live navy
   // /streets/<slug> page, which keep the navy nav until their own v2 cutover.
   if (pathname?.startsWith("/condos/")) return null; // condo-v2 building pages
+  if (pathname?.startsWith("/streets/")) return null; // street-v2 live page (trailing slash keeps the /streets index navy)
   if (pathname?.startsWith("/streets-v2-preview")) return null; // street-v2 design preview
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
