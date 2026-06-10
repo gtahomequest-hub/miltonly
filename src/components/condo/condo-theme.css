@@ -78,6 +78,8 @@
 /* hero */
 .condo-v2 .c-hero {
   position: relative;
+  /* top clearance for the fixed 66px SiteNav so it never overlaps hero content */
+  padding-top: 66px;
   background: var(--c-bg-deep);
   color: var(--c-text);
   overflow: hidden;

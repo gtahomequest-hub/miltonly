@@ -18,10 +18,12 @@ import {
   StreetFaq,
   StreetFinalCtas,
 } from './sections';
+import { SiteNav } from '../../nav/SiteNav';
 
 export function StreetV2Page({ data }: { data: StreetV2Data }) {
   return (
     <div className="street-v2">
+      <SiteNav variant="page" />
       <StreetHero data={data} />
       <StreetGlance data={data} />
       <StreetBody data={data} />

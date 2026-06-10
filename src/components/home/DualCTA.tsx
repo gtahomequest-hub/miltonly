@@ -12,7 +12,7 @@ export function DualCTA() {
                 Find the right street with the deepest local read in the city. Editorial depth
                 first, then live inventory.
               </p>
-              <a className="m-b2" href="/buy">
+              <a className="m-b2" href="/listings">
                 Start your search →
               </a>
             </div>

@@ -113,6 +113,8 @@
 /* hero */
 .hub-v2 .h-hero {
   position: relative;
+  /* top clearance for the fixed 66px SiteNav so it never overlaps hero content */
+  padding-top: 66px;
   background: var(--h-bg-deep);
   color: var(--h-text);
   overflow: hidden;
