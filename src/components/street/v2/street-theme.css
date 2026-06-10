@@ -114,6 +114,8 @@
 /* ───── hero ───── */
 .street-v2 .s-hero {
   position: relative;
+  /* top clearance for the fixed 66px SiteNav so it never overlaps hero content */
+  padding-top: 66px;
   background: var(--s-bg-deep);
   color: var(--s-text);
   overflow: hidden;

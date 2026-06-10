@@ -13,10 +13,12 @@ import {
   HubSiblings,
   HubDualCta,
 } from './sections';
+import { SiteNav } from '../nav/SiteNav';
 
 export function HubPage({ data }: { data: HubData }) {
   return (
     <div className="hub-v2">
+      <SiteNav variant="page" />
       <HubHero data={data} />
       <HubGlance data={data} />
       <HubOverview data={data} />
