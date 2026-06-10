@@ -48,7 +48,7 @@ export function HomeFooter({ footer, brand }: Props) {
             <h4>Work with us</h4>
             <a href="/sell">Home valuation</a>
             <a href="#mls">Build wealth</a>
-            <a href="/contact">Contact</a>
+            <a href="/about">Contact</a>
           </div>
         </div>
         <div className="m-compliance">

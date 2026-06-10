@@ -24,6 +24,8 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname?.startsWith("/streets-v2-preview")) return null; // street-v2 design preview
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
+  if (pathname === "/hub-preview") return null; // hub-v2 design preview (forest body owns chrome)
+  if (pathname === "/condo-preview") return null; // condo-v2 design preview (forest body owns chrome)
   if (pathname === "/coming-soon") return null;
   if (pathname?.startsWith("/rentals/ads")) return null;
   // Sales featured page (paid Google Ads traffic) — strip site chrome so

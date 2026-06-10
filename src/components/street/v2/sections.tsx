@@ -216,7 +216,7 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
                       <div className="s-inline-h">
                         Own on {data.shortName}? Typical is <b>{shortPrice(data.ownerCtaPrice)}</b>.
                       </div>
-                      <a href="#valuation">Value my home</a>
+                      <a href="/sell">Value my home</a>
                     </div>
                   )}
                 </div>
@@ -285,7 +285,7 @@ function TypeCard({ t }: { t: TypeBlock }) {
         <div className="s-contact-prompt">
           Too few recent {t.displayName.toLowerCase()} sales on record to publish a typical price without identifying a
           home.{' '}
-          <a href="#valuation">Ask the team for a private read →</a>
+          <a href="/sell">Ask the team for a private read →</a>
         </div>
       )}
       {t.chart && (

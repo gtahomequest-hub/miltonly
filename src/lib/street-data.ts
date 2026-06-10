@@ -915,7 +915,7 @@ function buildSidebar(input: {
       headline: `What is yours worth today?`,
       body: `A short conversation grounded in every sale we have tracked on ${streetName}.`,
       actionLabel: "Request a valuation",
-      actionHref: "#valuation",
+      actionHref: "/sell",
       trustLine: "Complimentary · Response within one hour",
     },
   };
@@ -1285,14 +1285,14 @@ function buildFinalCTAs(input: { streetName: string; shortName: string }): Final
       headline: `Selling on ${input.shortName}`,
       body: `A thoughtful conversation grounded in every sale we have tracked on ${input.streetName}.`,
       actionLabel: "Request a valuation",
-      actionHref: "#valuation",
+      actionHref: "/sell",
     },
     buyerCTA: {
       eyebrow: "For buyers",
       headline: `Buying on ${input.shortName}`,
       body: `Private access to new and upcoming listings before they go public.`,
       actionLabel: "Set an alert",
-      actionHref: "#alerts",
+      actionHref: "/listings",
       secondary: true,
     },
   };
