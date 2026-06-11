@@ -22,6 +22,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname?.startsWith("/condos/")) return null; // condo-v2 building pages
   if (pathname?.startsWith("/streets/")) return null; // street-v2 live page (trailing slash keeps the /streets index navy)
   if (pathname?.startsWith("/streets-v2-preview")) return null; // street-v2 design preview
+  if (pathname === "/sell") return null; // sell-v2 page renders its own SiteNav (exact match)
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
   if (pathname === "/hub-preview") return null; // hub-v2 design preview (forest body owns chrome)

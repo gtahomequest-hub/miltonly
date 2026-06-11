@@ -56,8 +56,10 @@ export interface HomeValuationCardProps {
   hint?: string;
   /** Visual theme. "dark" (default) matches the sales-page band. "light"
    *  swaps to a white surface with dark text for placement inside an aside
-   *  that uses the white-card-with-shadow pattern. */
-  theme?: "dark" | "light";
+   *  that uses the white-card-with-shadow pattern. "forest" is the light
+   *  surface with the v2 forest-green accents (sell-v2 hero placement) —
+   *  same fields, same submit pipeline, green instead of amber. */
+  theme?: "dark" | "light" | "forest";
   /** GA4 generate_lead value (CAD). Defaults to 7500 — the sales-page
    *  move-up-seller economic value. Lease landlord surfaces should pass
    *  5000 per the Phase 1 attribution spec. */
@@ -77,6 +79,9 @@ export default function HomeValuationCard({
   className = "",
 }: HomeValuationCardProps) {
   const isLight = theme === "light";
+  const isForest = theme === "forest";
+  // Forest reuses the light-surface neutrals; only the accent colour differs.
+  const onLight = isLight || isForest;
   const [submitted, setSubmitted] = useState(false);
   const [yourHomeAddress, setYourHomeAddress] = useState("");
   const [email, setEmail] = useState("");
@@ -184,24 +189,41 @@ export default function HomeValuationCard({
 
   // Theme-aware class bundles. Default ("dark") matches the original
   // sales-band styling; "light" swaps surface + text colors so the card
-  // reads correctly against a white aside.
-  const surfaceClass = isLight
-    ? "bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6"
-    : "bg-[#0a1628] border border-[#1e3a5f] rounded-[14px] p-[24px]";
-  const titleClass = isLight
+  // reads correctly against a white aside; "forest" keeps the light
+  // neutrals but swaps every amber accent for the v2 forest green.
+  const surfaceClass = isForest
+    ? "bg-white border border-[#dfe0dc] rounded-[14px] shadow-[0_18px_50px_rgba(7,49,38,0.18)] p-6"
+    : isLight
+      ? "bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-6"
+      : "bg-[#0a1628] border border-[#1e3a5f] rounded-[14px] p-[24px]";
+  const titleClass = onLight
     ? "text-[18px] font-medium text-[#07111f] leading-[1.3] tracking-tight mb-[14px]"
     : "text-[18px] font-medium text-[#f8f9fb] leading-[1.3] tracking-tight mb-[14px]";
-  const inputClass = isLight
-    ? "w-full h-11 px-3 rounded-[7px] border border-[#e2e8f0] bg-white text-[14px] text-[#07111f] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#f59e0b]"
-    : "w-full h-11 px-3 rounded-[7px] border border-[#1e3a5f] bg-[#07111f] text-[14px] text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#f59e0b]";
-  const textareaClass = isLight
-    ? "w-full px-3 py-2 rounded-[7px] border border-[#e2e8f0] bg-white text-[13px] text-[#07111f] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#f59e0b] resize-none mb-2"
-    : "w-full px-3 py-2 rounded-[7px] border border-[#1e3a5f] bg-[#07111f] text-[13px] text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#f59e0b] resize-none mb-2";
-  const consentTextClass = isLight ? "text-[11px] text-[#64748b] leading-[1.5]" : "text-[11px] text-[#94a3b8] leading-[1.5]";
-  const hintTextClass = isLight ? "text-[10px] text-[#64748b] leading-relaxed mt-2" : "text-[10px] text-[#64748b] leading-relaxed mt-2";
-  const errorClass = isLight
+  const inputClass = isForest
+    ? "w-full h-11 px-3 rounded-[7px] border border-[#dfe0dc] bg-white text-[14px] text-[#292b29] placeholder:text-[#9aa19c] focus:outline-none focus:border-[#017848]"
+    : isLight
+      ? "w-full h-11 px-3 rounded-[7px] border border-[#e2e8f0] bg-white text-[14px] text-[#07111f] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#f59e0b]"
+      : "w-full h-11 px-3 rounded-[7px] border border-[#1e3a5f] bg-[#07111f] text-[14px] text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#f59e0b]";
+  const textareaClass = isForest
+    ? "w-full px-3 py-2 rounded-[7px] border border-[#dfe0dc] bg-white text-[13px] text-[#292b29] placeholder:text-[#9aa19c] focus:outline-none focus:border-[#017848] resize-none mb-2"
+    : isLight
+      ? "w-full px-3 py-2 rounded-[7px] border border-[#e2e8f0] bg-white text-[13px] text-[#07111f] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#f59e0b] resize-none mb-2"
+      : "w-full px-3 py-2 rounded-[7px] border border-[#1e3a5f] bg-[#07111f] text-[13px] text-white placeholder:text-[#64748b] focus:outline-none focus:border-[#f59e0b] resize-none mb-2";
+  const consentTextClass = onLight ? "text-[11px] text-[#64748b] leading-[1.5]" : "text-[11px] text-[#94a3b8] leading-[1.5]";
+  const hintTextClass = onLight ? "text-[10px] text-[#64748b] leading-relaxed mt-2" : "text-[10px] text-[#64748b] leading-relaxed mt-2";
+  const errorClass = onLight
     ? "text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-[6px] px-2.5 py-1.5 mb-2"
     : "text-[12px] text-red-300 bg-red-900/20 border border-red-700/40 rounded-[6px] px-2.5 py-1.5 mb-2";
+  const kickerClass = isForest
+    ? "text-[10px] font-medium tracking-[1.4px] uppercase text-[#017848] mb-[6px]"
+    : "text-[10px] font-medium tracking-[1.4px] uppercase text-[#f59e0b] mb-[6px]";
+  const checkboxClass = isForest
+    ? "mt-0.5 h-4 w-4 rounded text-[#017848] focus:ring-[#017848] border-[#dfe0dc] bg-white"
+    : `mt-0.5 h-4 w-4 rounded text-[#f59e0b] focus:ring-[#f59e0b] ${isLight ? "border-[#e2e8f0] bg-white" : "border-[#1e3a5f] bg-[#07111f]"}`;
+  const submitClass = isForest
+    ? "w-full min-h-[44px] bg-[#017848] hover:bg-[#0a8f57] disabled:opacity-60 text-white font-extrabold text-[14px] rounded-[8px] transition-colors"
+    : "w-full min-h-[44px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 text-[#07111f] font-extrabold text-[14px] rounded-[8px] transition-colors";
+  const accentLinkClass = isForest ? "text-[#017848]" : isLight ? "text-[#f59e0b]" : "text-[#fbbf24]";
 
   // ── Submitted state ──
   if (submitted) {
@@ -210,17 +232,17 @@ export default function HomeValuationCard({
         <div className="bg-[#16a34a]/10 border border-[#16a34a]/40 rounded-[10px] p-[14px] flex items-start gap-2 mb-3">
           <Check className="w-4 h-4 text-[#16a34a] mt-0.5 shrink-0" aria-hidden />
           <div>
-            <div className={`text-[14px] font-semibold leading-snug ${isLight ? "text-[#16a34a]" : "text-[#86efac]"}`}>
+            <div className={`text-[14px] font-semibold leading-snug ${onLight ? "text-[#16a34a]" : "text-[#86efac]"}`}>
               Your request is in.
             </div>
-            <div className={`text-[13px] mt-1 ${isLight ? "text-[#16a34a]/90" : "text-[#86efac]/80"}`}>
+            <div className={`text-[13px] mt-1 ${onLight ? "text-[#16a34a]/90" : "text-[#86efac]/80"}`}>
               {REALTOR_FIRST_NAME} will email your written report within 24 business hours.
             </div>
           </div>
         </div>
-        <p className={`text-[12px] leading-relaxed ${isLight ? "text-[#64748b]" : "text-[#94a3b8]"}`}>
+        <p className={`text-[12px] leading-relaxed ${onLight ? "text-[#64748b]" : "text-[#94a3b8]"}`}>
           For anything urgent before then, call or text{" "}
-          <a href={`tel:${config.realtor.phoneE164}`} className={`font-semibold underline ${isLight ? "text-[#f59e0b]" : "text-[#fbbf24]"}`}>
+          <a href={`tel:${config.realtor.phoneE164}`} className={`font-semibold underline ${accentLinkClass}`}>
             {config.realtor.phone}
           </a>.
         </p>
@@ -231,7 +253,7 @@ export default function HomeValuationCard({
   // ── Default form state ──
   return (
     <div className={`${surfaceClass} ${className}`}>
-      <div className="text-[10px] font-medium tracking-[1.4px] uppercase text-[#f59e0b] mb-[6px]">
+      <div className={kickerClass}>
         {kicker}
       </div>
       <h3 className={titleClass}>
@@ -292,7 +314,7 @@ export default function HomeValuationCard({
             required
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
-            className={`mt-0.5 h-4 w-4 rounded text-[#f59e0b] focus:ring-[#f59e0b] ${isLight ? "border-[#e2e8f0] bg-white" : "border-[#1e3a5f] bg-[#07111f]"}`}
+            className={checkboxClass}
           />
           <span className={consentTextClass}>
             {CONSENT_TEXT}
@@ -323,13 +345,13 @@ export default function HomeValuationCard({
         <button
           type="submit"
           disabled={submitting}
-          className="w-full min-h-[44px] bg-[#f59e0b] hover:bg-[#fbbf24] disabled:opacity-60 text-[#07111f] font-extrabold text-[14px] rounded-[8px] transition-colors"
+          className={submitClass}
         >
           {submitting ? "Sending…" : ctaLabel}
         </button>
         <p className={hintTextClass}>
           {hint}{" "}
-          <Link href="/privacy" className={`underline ${isLight ? "hover:text-[#07111f]" : "hover:text-[#cbd5e1]"}`} target="_blank">View privacy</Link>.
+          <Link href="/privacy" className={`underline ${onLight ? "hover:text-[#07111f]" : "hover:text-[#cbd5e1]"}`} target="_blank">View privacy</Link>.
         </p>
       </form>
     </div>
