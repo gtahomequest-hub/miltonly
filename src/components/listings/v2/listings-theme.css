@@ -1,0 +1,1662 @@
+/* src/components/listings/v2/listings-theme.css
+   Scoped forest-v2 listings (MLS search) theme. Vars --lv-*; classes .lv-*;
+   gated behind .listings-v2. Shares the forest palette with home/hub/condo/
+   street; cannot bleed into :root or any other surface. */
+
+.listings-v2 {
+  --lv-bg-deep: #073126;
+  --lv-bg-body: #fffdfa;
+  --lv-bg-secondary: #f6f6f3;
+  --lv-surface: #ffffff;
+  --lv-border: #c7c9c5;
+  --lv-border-muted: #dfe0dc;
+  --lv-accent: #017848;
+  --lv-accent-bright: #004733;
+  --lv-green: #00ff80;
+  --lv-amber: #b06a00;
+  --lv-red: #b03434;
+  --lv-text: #ffffff;
+  --lv-text-sec: rgba(255, 255, 255, 0.8);
+  --lv-text-faint: rgba(255, 255, 255, 0.45);
+  --lv-text-body: #292b29;
+  --lv-text-muted: #6b6f6a;
+  --lv-serif: 'Fraunces', Georgia, serif;
+  --lv-sans: 'Inter', system-ui, sans-serif;
+  --lv-mono: 'JetBrains Mono', monospace;
+  --lv-maxw: 1240px;
+  --lv-sh-sm: 0 2px 8px rgba(7, 49, 38, 0.06);
+  --lv-sh: 0 18px 50px rgba(7, 49, 38, 0.12);
+  --lv-sh-lg: 0 30px 80px rgba(7, 49, 38, 0.2);
+  font-family: var(--lv-sans);
+  color: var(--lv-text-body);
+  background: var(--lv-bg-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.listings-v2 *,
+.listings-v2 *::before,
+.listings-v2 *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.listings-v2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.listings-v2 svg {
+  display: block;
+}
+.listings-v2 button {
+  font-family: inherit;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: inherit;
+}
+.listings-v2 .lv-wrap {
+  max-width: var(--lv-maxw);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.listings-v2 .lv-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--lv-accent);
+  font-weight: 600;
+}
+.listings-v2 .lv-block {
+  padding: 60px 0;
+}
+.listings-v2 .lv-block.lv-alt {
+  background: var(--lv-bg-secondary);
+}
+.listings-v2 .lv-sechead {
+  margin-bottom: 26px;
+}
+.listings-v2 .lv-sechead h2 {
+  font-family: var(--lv-serif);
+  font-weight: 400;
+  font-size: clamp(24px, 3vw, 32px);
+  color: var(--lv-text-body);
+  margin-top: 7px;
+  line-height: 1.12;
+}
+.listings-v2 .lv-sechead .lv-sub {
+  font-size: 14px;
+  color: var(--lv-text-muted);
+  margin-top: 8px;
+  max-width: 620px;
+}
+
+/* ═══ HERO — compact search band ═══ */
+.listings-v2 .lv-hero {
+  position: relative;
+  padding-top: 66px; /* fixed 66px SiteNav clearance */
+  background: var(--lv-bg-deep);
+  color: var(--lv-text);
+  overflow: hidden;
+  isolation: isolate;
+}
+.listings-v2 .lv-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(820px 460px at 82% 0%, rgba(1, 120, 72, 0.5), transparent 60%),
+    radial-gradient(640px 420px at 4% 115%, rgba(0, 255, 128, 0.07), transparent 55%);
+}
+.listings-v2 .lv-hero .lv-wrap {
+  padding-top: 14px;
+  padding-bottom: 64px; /* room for the overlapping stats band */
+}
+.listings-v2 .lv-crumb {
+  font-size: 12.5px;
+  color: var(--lv-text-sec);
+}
+.listings-v2 .lv-crumb a:hover {
+  color: #fff;
+}
+.listings-v2 .lv-crumb span {
+  color: var(--lv-text-faint);
+  margin: 0 8px;
+}
+
+/* mode tabs */
+.listings-v2 .lv-modes {
+  display: inline-flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 4px;
+  margin: 22px 0 18px;
+}
+.listings-v2 .lv-mode {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--lv-text-sec);
+  padding: 7px 18px;
+  border-radius: 999px;
+  transition: 0.16s;
+  display: inline-block;
+}
+.listings-v2 .lv-mode:hover {
+  color: #fff;
+}
+.listings-v2 .lv-mode.lv-on {
+  background: var(--lv-green);
+  color: var(--lv-bg-deep);
+}
+
+.listings-v2 .lv-hero h1 {
+  font-family: var(--lv-serif);
+  font-weight: 300;
+  font-size: clamp(32px, 4.2vw, 48px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  max-width: 700px;
+}
+.listings-v2 .lv-hero h1 em {
+  font-style: italic;
+  color: var(--lv-green);
+}
+.listings-v2 .lv-hero .lv-countline {
+  font-size: 14px;
+  color: var(--lv-text-faint);
+  margin-top: 10px;
+}
+.listings-v2 .lv-hero .lv-countline b {
+  color: var(--lv-text-sec);
+  font-weight: 600;
+}
+.listings-v2 .lv-livedot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lv-green);
+  margin-right: 7px;
+  vertical-align: 1px;
+  animation: lv-pulse 2.4s infinite;
+}
+@keyframes lv-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 128, 0.45); }
+  60% { box-shadow: 0 0 0 7px rgba(0, 255, 128, 0); }
+}
+
+/* keyword search */
+.listings-v2 .lv-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 620px;
+  margin-top: 26px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 6px 6px 6px 18px;
+  transition: 0.18s;
+}
+.listings-v2 .lv-search:focus-within {
+  border-color: rgba(0, 255, 128, 0.55);
+  background: rgba(255, 255, 255, 0.1);
+}
+.listings-v2 .lv-search svg {
+  color: var(--lv-text-faint);
+  flex-shrink: 0;
+}
+.listings-v2 .lv-search input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--lv-sans);
+  font-size: 14.5px;
+  color: #fff;
+  padding: 9px 0;
+}
+.listings-v2 .lv-search input::placeholder {
+  color: var(--lv-text-faint);
+}
+.listings-v2 .lv-search button {
+  background: var(--lv-accent);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 22px;
+  border-radius: 8px;
+  transition: 0.16s;
+  flex-shrink: 0;
+}
+.listings-v2 .lv-search button:hover {
+  background: #029258;
+}
+
+/* ═══ STATS BAND — overlap card ═══ */
+.listings-v2 .lv-statsband {
+  position: relative;
+  z-index: 2;
+  margin-top: -46px;
+}
+.listings-v2 .lv-statsband .lv-card {
+  background: var(--lv-surface);
+  border-radius: 16px;
+  box-shadow: var(--lv-sh-lg);
+  padding: 26px 34px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+}
+.listings-v2 .lv-stat .lv-stat-l {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lv-text-muted);
+  margin-bottom: 6px;
+}
+.listings-v2 .lv-stat .lv-stat-v {
+  font-family: var(--lv-serif);
+  font-size: 28px;
+  color: var(--lv-accent-bright);
+  line-height: 1;
+}
+.listings-v2 .lv-stat .lv-stat-s {
+  font-size: 12px;
+  color: var(--lv-text-muted);
+  margin-top: 7px;
+}
+@media (max-width: 860px) {
+  .listings-v2 .lv-statsband .lv-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 22px 24px;
+  }
+}
+
+/* ═══ FILTER RAIL ═══ */
+.listings-v2 .lv-rail {
+  position: sticky;
+  top: 66px; /* below fixed SiteNav */
+  z-index: 40;
+  background: rgba(255, 253, 250, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--lv-border-muted);
+  margin-top: 26px;
+}
+.listings-v2 .lv-rail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  flex-wrap: nowrap;
+}
+.listings-v2 .lv-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.listings-v2 .lv-pills::-webkit-scrollbar {
+  display: none;
+}
+.listings-v2 .lv-fpill {
+  position: relative;
+  flex-shrink: 0;
+}
+.listings-v2 .lv-fpill > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lv-text-body);
+  background: var(--lv-surface);
+  border: 1px solid var(--lv-border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  transition: 0.15s;
+  white-space: nowrap;
+}
+.listings-v2 .lv-fpill > button:hover {
+  border-color: var(--lv-accent);
+}
+.listings-v2 .lv-fpill > button svg {
+  color: var(--lv-text-muted);
+  transition: transform 0.15s;
+}
+.listings-v2 .lv-fpill.lv-open > button svg {
+  transform: rotate(180deg);
+}
+.listings-v2 .lv-fpill > button.lv-active {
+  background: rgba(1, 120, 72, 0.08);
+  border-color: var(--lv-accent);
+  color: var(--lv-accent-bright);
+  font-weight: 600;
+}
+.listings-v2 .lv-fpill > button.lv-active svg {
+  color: var(--lv-accent);
+}
+
+/* popover panel */
+.listings-v2 .lv-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 260px;
+  background: var(--lv-surface);
+  border: 1px solid var(--lv-border-muted);
+  border-radius: 14px;
+  box-shadow: var(--lv-sh);
+  padding: 18px;
+  z-index: 50;
+}
+.listings-v2 .lv-pop-l {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv-text-muted);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.listings-v2 .lv-seg {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.listings-v2 .lv-seg button {
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--lv-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: var(--lv-surface);
+  transition: 0.14s;
+}
+.listings-v2 .lv-seg button:hover {
+  border-color: var(--lv-accent);
+}
+.listings-v2 .lv-seg button.lv-on {
+  background: var(--lv-accent);
+  border-color: var(--lv-accent);
+  color: #fff;
+  font-weight: 600;
+}
+.listings-v2 .lv-pricegrid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.listings-v2 .lv-pricegrid span {
+  color: var(--lv-text-muted);
+  font-size: 12px;
+}
+.listings-v2 .lv-pricegrid input {
+  width: 100%;
+  font-family: var(--lv-mono);
+  font-size: 13px;
+  border: 1px solid var(--lv-border);
+  border-radius: 8px;
+  padding: 9px 10px;
+  outline: none;
+  color: var(--lv-text-body);
+  background: var(--lv-surface);
+}
+.listings-v2 .lv-pricegrid input:focus {
+  border-color: var(--lv-accent);
+}
+.listings-v2 .lv-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.listings-v2 .lv-presets button {
+  font-family: var(--lv-mono);
+  font-size: 11.5px;
+  color: var(--lv-accent);
+  background: rgba(1, 120, 72, 0.07);
+  border-radius: 6px;
+  padding: 5px 9px;
+  transition: 0.14s;
+}
+.listings-v2 .lv-presets button:hover {
+  background: rgba(1, 120, 72, 0.14);
+}
+.listings-v2 .lv-hoodlist {
+  max-height: 280px;
+  overflow-y: auto;
+  margin: -4px;
+  padding: 4px;
+}
+.listings-v2 .lv-hoodlist button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 13.5px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-align: left;
+  transition: 0.12s;
+}
+.listings-v2 .lv-hoodlist button:hover {
+  background: var(--lv-bg-secondary);
+}
+.listings-v2 .lv-hoodlist button.lv-on {
+  background: rgba(1, 120, 72, 0.08);
+  color: var(--lv-accent-bright);
+  font-weight: 600;
+}
+.listings-v2 .lv-hoodlist button svg {
+  color: var(--lv-accent);
+}
+.listings-v2 .lv-pop-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--lv-border-muted);
+}
+.listings-v2 .lv-pop-clear {
+  font-size: 12.5px;
+  color: var(--lv-text-muted);
+  text-decoration: underline;
+}
+.listings-v2 .lv-pop-apply {
+  background: var(--lv-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 8px;
+  transition: 0.14s;
+}
+.listings-v2 .lv-pop-apply:hover {
+  background: #029258;
+}
+
+/* rail right side */
+.listings-v2 .lv-rail-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.listings-v2 .lv-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-sort select {
+  font-family: var(--lv-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lv-text-body);
+  border: 1px solid var(--lv-border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--lv-surface);
+  cursor: pointer;
+  outline: none;
+}
+.listings-v2 .lv-viewtoggle {
+  display: inline-flex;
+  border: 1px solid var(--lv-border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--lv-surface);
+}
+.listings-v2 .lv-viewtoggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--lv-text-muted);
+  padding: 8px 14px;
+  transition: 0.15s;
+}
+.listings-v2 .lv-viewtoggle button.lv-on {
+  background: var(--lv-bg-deep);
+  color: #fff;
+}
+
+/* active filter chips */
+.listings-v2 .lv-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 0 0 12px;
+}
+.listings-v2 .lv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--lv-accent-bright);
+  background: rgba(1, 120, 72, 0.08);
+  border-radius: 999px;
+  padding: 5px 7px 5px 12px;
+}
+.listings-v2 .lv-chip button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(1, 120, 72, 0.14);
+  transition: 0.12s;
+}
+.listings-v2 .lv-chip button:hover {
+  background: var(--lv-accent);
+  color: #fff;
+}
+.listings-v2 .lv-chip button svg {
+  width: 9px;
+  height: 9px;
+}
+.listings-v2 .lv-clearall {
+  font-size: 12px;
+  color: var(--lv-text-muted);
+  text-decoration: underline;
+}
+
+/* mobile: all-filters trigger + drawer */
+.listings-v2 .lv-allfilters {
+  display: none;
+}
+@media (max-width: 760px) {
+  .listings-v2 .lv-allfilters {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lv-text-body);
+    background: var(--lv-surface);
+    border: 1px solid var(--lv-border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    flex-shrink: 0;
+  }
+  .listings-v2 .lv-fpill {
+    display: none;
+  }
+  .listings-v2 .lv-sort {
+    display: none;
+  }
+}
+.listings-v2 .lv-drawer-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 49, 38, 0.5);
+  z-index: 90;
+}
+.listings-v2 .lv-drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  background: var(--lv-surface);
+  border-radius: 20px 20px 0 0;
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 22px 22px 26px;
+  box-shadow: var(--lv-sh-lg);
+}
+.listings-v2 .lv-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.listings-v2 .lv-drawer-head h3 {
+  font-family: var(--lv-serif);
+  font-weight: 400;
+  font-size: 22px;
+}
+.listings-v2 .lv-drawer section {
+  padding: 16px 0;
+  border-top: 1px solid var(--lv-border-muted);
+}
+.listings-v2 .lv-drawer-apply {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  background: var(--lv-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+/* ═══ RESULTS HEADER ═══ */
+.listings-v2 .lv-reshead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 26px 0 18px;
+}
+.listings-v2 .lv-reshead .lv-rescount {
+  font-size: 14px;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-reshead .lv-rescount b {
+  font-family: var(--lv-serif);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--lv-text-body);
+  margin-right: 4px;
+}
+.listings-v2 .lv-savesearch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lv-accent);
+  border: 1px solid rgba(1, 120, 72, 0.4);
+  border-radius: 999px;
+  padding: 8px 16px;
+  transition: 0.15s;
+}
+.listings-v2 .lv-savesearch:hover {
+  background: rgba(1, 120, 72, 0.06);
+}
+.listings-v2 .lv-savesearch.lv-done {
+  background: rgba(1, 120, 72, 0.08);
+  cursor: default;
+}
+
+/* ═══ CARD GRID ═══ */
+.listings-v2 .lv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 1020px) {
+  .listings-v2 .lv-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .listings-v2 .lv-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══ THE CARD ═══ */
+.listings-v2 .lv-lcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--lv-surface);
+  border: 1px solid var(--lv-border-muted);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--lv-sh-sm);
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.listings-v2 .lv-lcard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--lv-sh);
+  border-color: rgba(1, 120, 72, 0.35);
+}
+.listings-v2 .lv-lcard.lv-sold-card {
+  border-color: var(--lv-border-muted);
+}
+.listings-v2 .lv-lphoto {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  background: linear-gradient(135deg, #eef0ec, #e2e6e0);
+  overflow: hidden;
+}
+.listings-v2 .lv-lphoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.listings-v2 .lv-lcard:hover .lv-lphoto img {
+  transform: scale(1.04);
+}
+.listings-v2 .lv-sold-card .lv-lphoto img {
+  filter: saturate(0.55);
+}
+.listings-v2 .lv-nophoto {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #aab0a8;
+  font-size: 12px;
+}
+.listings-v2 .lv-nophoto svg {
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.4;
+}
+
+/* photo overlays */
+.listings-v2 .lv-badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 60px);
+}
+.listings-v2 .lv-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+.listings-v2 .lv-badge.lv-new {
+  background: var(--lv-green);
+  color: var(--lv-bg-deep);
+}
+.listings-v2 .lv-badge.lv-reduced {
+  background: rgba(255, 244, 222, 0.95);
+  color: var(--lv-amber);
+}
+.listings-v2 .lv-badge.lv-soldb {
+  background: var(--lv-bg-deep);
+  color: #fff;
+}
+.listings-v2 .lv-badge.lv-tour {
+  background: rgba(7, 49, 38, 0.78);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.listings-v2 .lv-badge.lv-tour svg {
+  width: 11px;
+  height: 11px;
+}
+.listings-v2 .lv-photocount {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--lv-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(7, 49, 38, 0.72);
+  backdrop-filter: blur(4px);
+  border-radius: 7px;
+  padding: 4px 9px;
+}
+.listings-v2 .lv-photocount svg {
+  width: 12px;
+  height: 12px;
+}
+.listings-v2 .lv-heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2; /* above the stretched card link */
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 253, 250, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lv-bg-deep);
+  transition: 0.16s;
+  box-shadow: 0 2px 8px rgba(7, 49, 38, 0.18);
+}
+.listings-v2 .lv-heart:hover {
+  transform: scale(1.1);
+  color: var(--lv-accent);
+}
+.listings-v2 .lv-heart.lv-saved {
+  background: var(--lv-accent);
+  color: #fff;
+}
+.listings-v2 .lv-heart svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* card body */
+.listings-v2 .lv-lbody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px 18px 18px;
+}
+.listings-v2 .lv-lrow1 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.listings-v2 .lv-lprice {
+  font-family: var(--lv-serif);
+  font-size: 25px;
+  font-weight: 500;
+  color: var(--lv-accent-bright);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.listings-v2 .lv-lprice .lv-permo {
+  font-family: var(--lv-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-lprice .lv-was {
+  display: block;
+  font-family: var(--lv-sans);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--lv-text-muted);
+  text-decoration: line-through;
+  margin-top: 5px;
+}
+.listings-v2 .lv-sold-card .lv-lprice {
+  color: var(--lv-text-body);
+}
+.listings-v2 .lv-soldnote {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv-red);
+  margin-bottom: 4px;
+}
+.listings-v2 .lv-typepill {
+  font-family: var(--lv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lv-text-muted);
+  border: 1px solid var(--lv-border-muted);
+  border-radius: 6px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.listings-v2 .lv-typepill.lv-lease {
+  color: var(--lv-amber);
+  border-color: rgba(176, 106, 0, 0.3);
+  background: rgba(176, 106, 0, 0.06);
+}
+
+/* specs */
+.listings-v2 .lv-lspecs {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  font-family: var(--lv-mono);
+  font-size: 12px;
+  color: var(--lv-text-body);
+}
+.listings-v2 .lv-lspecs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.listings-v2 .lv-lspecs svg {
+  width: 15px;
+  height: 15px;
+  color: var(--lv-accent);
+}
+
+/* address + hood */
+.listings-v2 .lv-laddr {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lv-text-body);
+  margin-top: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.listings-v2 .lv-laddr.lv-redacted {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-lmeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+}
+.listings-v2 .lv-hoodchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--lv-accent);
+  transition: 0.14s;
+  position: relative;
+  z-index: 2;
+}
+.listings-v2 .lv-hoodchip:hover {
+  color: var(--lv-accent-bright);
+  text-decoration: underline;
+}
+.listings-v2 .lv-hoodchip svg {
+  width: 12px;
+  height: 12px;
+}
+.listings-v2 .lv-dom {
+  font-size: 11.5px;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-dom.lv-fresh {
+  color: var(--lv-accent);
+  font-weight: 600;
+}
+
+/* card footer */
+.listings-v2 .lv-lfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.listings-v2 .lv-book {
+  position: relative;
+  z-index: 2;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--lv-accent-bright);
+  border: 1px solid var(--lv-border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: 0.15s;
+}
+.listings-v2 .lv-book:hover {
+  background: var(--lv-accent);
+  border-color: var(--lv-accent);
+  color: #fff;
+}
+.listings-v2 .lv-broker {
+  font-size: 10px;
+  color: #a3a8a1;
+  text-align: right;
+  line-height: 1.45;
+  max-width: 55%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+/* the whole card is clickable via a stretched link */
+.listings-v2 .lv-stretch {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ═══ MAP VIEW (split) ═══ */
+.listings-v2 .lv-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 1020px) {
+  .listings-v2 .lv-split {
+    grid-template-columns: 1fr;
+  }
+  .listings-v2 .lv-split .lv-mapcol {
+    order: -1;
+  }
+}
+.listings-v2 .lv-mapcol {
+  position: sticky;
+  top: 132px; /* nav 66 + rail */
+}
+.listings-v2 .lv-split .lv-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 640px) {
+  .listings-v2 .lv-split .lv-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.listings-v2 .lv-map {
+  position: relative;
+  height: calc(100vh - 156px);
+  min-height: 420px;
+  max-height: 760px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--lv-border-muted);
+  box-shadow: var(--lv-sh-sm);
+  background: #e8ece7;
+}
+.listings-v2 .lv-tiles {
+  position: absolute;
+  inset: 0;
+}
+.listings-v2 .lv-tiles img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  user-select: none;
+  pointer-events: none;
+}
+.listings-v2 .lv-mappin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  font-family: var(--lv-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lv-bg-deep);
+  background: #fff;
+  border: 1.5px solid var(--lv-bg-deep);
+  border-radius: 999px;
+  padding: 4px 9px;
+  box-shadow: 0 2px 8px rgba(7, 49, 38, 0.25);
+  transition: 0.13s;
+  z-index: 2;
+}
+.listings-v2 .lv-mappin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  border-right: 1.5px solid var(--lv-bg-deep);
+  border-bottom: 1.5px solid var(--lv-bg-deep);
+}
+.listings-v2 .lv-mappin:hover,
+.listings-v2 .lv-mappin.lv-on {
+  background: var(--lv-bg-deep);
+  color: var(--lv-green);
+  z-index: 4;
+  transform: translate(-50%, -100%) scale(1.08);
+}
+.listings-v2 .lv-mappin.lv-lease-pin {
+  border-color: var(--lv-amber);
+}
+.listings-v2 .lv-mappin.lv-lease-pin::after {
+  border-color: var(--lv-amber);
+}
+.listings-v2 .lv-mapcard {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  right: 14px;
+  max-width: 330px;
+  display: flex;
+  gap: 12px;
+  background: var(--lv-surface);
+  border-radius: 12px;
+  box-shadow: var(--lv-sh);
+  padding: 10px;
+  z-index: 6;
+}
+.listings-v2 .lv-mapcard img,
+.listings-v2 .lv-mapcard .lv-mapcard-noimg {
+  width: 86px;
+  height: 66px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--lv-bg-secondary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aab0a8;
+}
+.listings-v2 .lv-mapcard-p {
+  font-family: var(--lv-serif);
+  font-size: 17px;
+  color: var(--lv-accent-bright);
+  line-height: 1.1;
+}
+.listings-v2 .lv-mapcard-a {
+  font-size: 12px;
+  color: var(--lv-text-body);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.listings-v2 .lv-mapcard-m {
+  font-family: var(--lv-mono);
+  font-size: 10.5px;
+  color: var(--lv-text-muted);
+  margin-top: 3px;
+}
+.listings-v2 .lv-mapcard-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-mapcard-x:hover {
+  background: var(--lv-bg-secondary);
+}
+.listings-v2 .lv-mapattr {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 9px;
+  color: rgba(41, 43, 41, 0.55);
+  background: rgba(255, 255, 255, 0.65);
+  padding: 1px 5px;
+  border-radius: 4px;
+  z-index: 5;
+}
+.listings-v2 .lv-mapattr a {
+  text-decoration: underline;
+}
+.listings-v2 .lv-mapzoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: var(--lv-sh-sm);
+  z-index: 5;
+}
+.listings-v2 .lv-mapzoom button {
+  width: 34px;
+  height: 34px;
+  background: var(--lv-surface);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--lv-text-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.listings-v2 .lv-mapzoom button:first-child {
+  border-bottom: 1px solid var(--lv-border-muted);
+}
+.listings-v2 .lv-mapzoom button:hover {
+  background: var(--lv-bg-secondary);
+}
+.listings-v2 .lv-mapcount {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--lv-bg-deep);
+  background: rgba(255, 253, 250, 0.92);
+  backdrop-filter: blur(4px);
+  border-radius: 999px;
+  padding: 6px 13px;
+  box-shadow: var(--lv-sh-sm);
+  z-index: 5;
+}
+
+/* ═══ PAGINATION ═══ */
+.listings-v2 .lv-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 42px 0 8px;
+}
+.listings-v2 .lv-pager a,
+.listings-v2 .lv-pager span.lv-cur {
+  min-width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--lv-mono);
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid var(--lv-border-muted);
+  color: var(--lv-text-body);
+  padding: 0 12px;
+  transition: 0.14s;
+}
+.listings-v2 .lv-pager a:hover {
+  border-color: var(--lv-accent);
+  color: var(--lv-accent-bright);
+}
+.listings-v2 .lv-pager span.lv-cur {
+  background: var(--lv-bg-deep);
+  border-color: var(--lv-bg-deep);
+  color: #fff;
+}
+.listings-v2 .lv-pager .lv-ell {
+  color: var(--lv-text-muted);
+  padding: 0 4px;
+}
+
+/* ═══ EMPTY STATE ═══ */
+.listings-v2 .lv-empty {
+  text-align: center;
+  padding: 70px 20px;
+  border: 1px dashed var(--lv-border);
+  border-radius: 16px;
+}
+.listings-v2 .lv-empty h3 {
+  font-family: var(--lv-serif);
+  font-weight: 400;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.listings-v2 .lv-empty p {
+  font-size: 14px;
+  color: var(--lv-text-muted);
+  margin-bottom: 18px;
+}
+.listings-v2 .lv-empty a {
+  display: inline-block;
+  background: var(--lv-accent);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 22px;
+  border-radius: 8px;
+}
+
+/* ═══ BROWSE BY NEIGHBOURHOOD (deep band) ═══ */
+.listings-v2 .lv-hoodband {
+  background: var(--lv-bg-deep);
+  color: var(--lv-text);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.listings-v2 .lv-hoodband::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(700px 420px at 10% 115%, rgba(1, 120, 72, 0.45), transparent 58%);
+}
+.listings-v2 .lv-hoodband .lv-sechead h2 {
+  color: #fff;
+}
+.listings-v2 .lv-hoodband .lv-sechead .lv-sub {
+  color: var(--lv-text-faint);
+}
+.listings-v2 .lv-hoodgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .listings-v2 .lv-hoodgrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .listings-v2 .lv-hoodgrid {
+    grid-template-columns: 1fr;
+  }
+}
+.listings-v2 .lv-hoodcard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  padding: 20px;
+  transition: 0.18s;
+}
+.listings-v2 .lv-hoodcard:hover {
+  background: rgba(0, 255, 128, 0.08);
+  border-color: rgba(0, 255, 128, 0.45);
+  transform: translateY(-3px);
+}
+.listings-v2 .lv-hoodcard .lv-hood-n {
+  font-family: var(--lv-serif);
+  font-size: 19px;
+  color: #fff;
+}
+.listings-v2 .lv-hoodcard .lv-hood-c {
+  font-size: 12px;
+  color: var(--lv-text-faint);
+}
+.listings-v2 .lv-hoodcard .lv-hood-p {
+  font-family: var(--lv-mono);
+  font-size: 12.5px;
+  color: var(--lv-green);
+  margin-top: 8px;
+}
+
+/* streets pill strip */
+.listings-v2 .lv-streets {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.listings-v2 .lv-streetpill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--lv-surface);
+  border: 1px solid var(--lv-border);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--lv-accent-bright);
+  transition: 0.16s;
+}
+.listings-v2 .lv-streetpill:hover {
+  border-color: var(--lv-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--lv-sh-sm);
+}
+.listings-v2 .lv-streetpill span {
+  font-family: var(--lv-mono);
+  font-size: 11px;
+  color: var(--lv-text-muted);
+}
+
+/* schools */
+.listings-v2 .lv-schoolgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 13px;
+}
+.listings-v2 .lv-school {
+  background: var(--lv-surface);
+  border: 1px solid var(--lv-border-muted);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: var(--lv-sh-sm);
+  transition: 0.18s;
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+}
+.listings-v2 .lv-school:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lv-sh);
+  border-color: rgba(1, 120, 72, 0.4);
+}
+.listings-v2 .lv-school svg {
+  width: 21px;
+  height: 21px;
+  color: var(--lv-accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.listings-v2 .lv-school .lv-school-n {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--lv-accent-bright);
+}
+.listings-v2 .lv-school .lv-school-m {
+  font-size: 12px;
+  color: var(--lv-text-muted);
+  margin-top: 3px;
+}
+.listings-v2 .lv-school .lv-school-f {
+  font-family: var(--lv-mono);
+  font-size: 11px;
+  color: var(--lv-accent);
+  margin-top: 6px;
+}
+
+/* ═══ ALERT CTA BAND ═══ */
+.listings-v2 .lv-alert {
+  position: relative;
+  background: var(--lv-bg-deep);
+  border-radius: 20px;
+  padding: 46px 44px;
+  color: var(--lv-text);
+  overflow: hidden;
+  box-shadow: var(--lv-sh-lg);
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 30px;
+  align-items: center;
+}
+@media (max-width: 760px) {
+  .listings-v2 .lv-alert {
+    grid-template-columns: 1fr;
+    padding: 34px 28px;
+  }
+}
+.listings-v2 .lv-alert::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(620px 340px at 14% 130%, rgba(1, 120, 72, 0.55), transparent 55%);
+}
+.listings-v2 .lv-alert > * {
+  position: relative;
+}
+.listings-v2 .lv-alert h3 {
+  font-family: var(--lv-serif);
+  font-weight: 300;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.15;
+}
+.listings-v2 .lv-alert h3 em {
+  font-style: italic;
+  color: var(--lv-green);
+}
+.listings-v2 .lv-alert p {
+  font-size: 14px;
+  color: var(--lv-text-sec);
+  line-height: 1.7;
+  margin-top: 10px;
+  max-width: 520px;
+}
+.listings-v2 .lv-alert .lv-alert-act {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.listings-v2 .lv-alert .lv-b1 {
+  display: inline-block;
+  text-align: center;
+  background: var(--lv-green);
+  color: var(--lv-bg-deep);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 13px 26px;
+  border-radius: 9px;
+  transition: 0.16s;
+}
+.listings-v2 .lv-alert .lv-b1:hover {
+  transform: translateY(-2px);
+}
+.listings-v2 .lv-alert .lv-trust {
+  font-size: 11.5px;
+  color: var(--lv-text-faint);
+  text-align: center;
+}
+
+/* ═══ FAQ ═══ */
+.listings-v2 .lv-faq {
+  max-width: 800px;
+}
+.listings-v2 .lv-faq-item {
+  border-bottom: 1px solid var(--lv-border-muted);
+  padding: 20px 0;
+}
+.listings-v2 .lv-faq-item:first-of-type {
+  border-top: 1px solid var(--lv-border-muted);
+}
+.listings-v2 .lv-faq-q {
+  font-family: var(--lv-serif);
+  font-size: 19px;
+  color: var(--lv-accent-bright);
+  margin-bottom: 9px;
+  font-weight: 400;
+}
+.listings-v2 .lv-faq-a {
+  font-size: 14.5px;
+  color: var(--lv-text-muted);
+  line-height: 1.75;
+}
+
+/* compliance attribution */
+.listings-v2 .lv-attr {
+  font-size: 11px;
+  color: var(--lv-text-muted);
+  text-align: center;
+  padding: 26px 20px 34px;
+  border-top: 1px solid var(--lv-border-muted);
+}
+
+/* ═══ BOOKING MODAL + TOAST ═══ */
+.listings-v2 .lv-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 49, 38, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.listings-v2 .lv-modal {
+  background: var(--lv-surface);
+  border-radius: 18px;
+  box-shadow: var(--lv-sh-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+}
+.listings-v2 .lv-modal h3 {
+  font-family: var(--lv-serif);
+  font-weight: 400;
+  font-size: 23px;
+  margin-bottom: 4px;
+}
+.listings-v2 .lv-modal .lv-modal-sub {
+  font-size: 13px;
+  color: var(--lv-text-muted);
+  margin-bottom: 4px;
+}
+.listings-v2 .lv-modal .lv-modal-mls {
+  font-family: var(--lv-mono);
+  font-size: 11px;
+  color: var(--lv-text-muted);
+  margin-bottom: 18px;
+}
+.listings-v2 .lv-modal input {
+  width: 100%;
+  font-family: var(--lv-sans);
+  font-size: 14px;
+  border: 1px solid var(--lv-border);
+  border-radius: 9px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  outline: none;
+  background: var(--lv-surface);
+  color: var(--lv-text-body);
+}
+.listings-v2 .lv-modal input:focus {
+  border-color: var(--lv-accent);
+}
+.listings-v2 .lv-modal .lv-modal-go {
+  width: 100%;
+  background: var(--lv-accent);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 13px;
+  border-radius: 9px;
+  margin-top: 4px;
+  transition: 0.15s;
+}
+.listings-v2 .lv-modal .lv-modal-go:hover {
+  background: #029258;
+}
+.listings-v2 .lv-modal .lv-modal-trust {
+  font-size: 11.5px;
+  color: var(--lv-text-muted);
+  text-align: center;
+  margin-top: 12px;
+}
+.listings-v2 .lv-modal .lv-modal-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lv-text-muted);
+}
+.listings-v2 .lv-modal .lv-modal-x:hover {
+  background: var(--lv-bg-secondary);
+}
+.listings-v2 .lv-toast {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  z-index: 110;
+  background: var(--lv-bg-deep);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid rgba(0, 255, 128, 0.35);
+  border-radius: 11px;
+  padding: 13px 18px;
+  box-shadow: var(--lv-sh-lg);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.listings-v2 .lv-toast b {
+  color: var(--lv-green);
+  font-weight: 700;
+}
