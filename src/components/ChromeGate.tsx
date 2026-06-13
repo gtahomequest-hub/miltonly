@@ -20,6 +20,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   // per route so the navy nav STILL renders on legacy/non-v2 pages — notably the
   // /condos (redirect) and /streets (navy grid) INDEX routes and the live navy
   // /streets/<slug> page, which keep the navy nav until their own v2 cutover.
+  if (pathname === "/condos") return null; // condos-v2 directory index renders its own SiteNav (exact match)
   if (pathname?.startsWith("/condos/")) return null; // condo-v2 building pages
   if (pathname === "/streets") return null; // streets-v2 directory index renders its own SiteNav (exact match)
   if (pathname?.startsWith("/streets/")) return null; // street-v2 live page (trailing slash = detail pages)
