@@ -1,9 +1,29 @@
+// src/app/streets/page.tsx
+// LIVE /streets — forest-v2 restyle of the A-Z street directory. RESTYLE ONLY:
+// the 4 bulk DB1 queries (city=Milton, permAdvertise=true) are byte-identical to
+// the legacy navy page; the search / A-Z / neighbourhood-chip mechanics are the
+// same (now owned by the reusable <DirectoryGrid>). Only the shell is repainted
+// forest — SiteNav + hero + FooterSection, scoped .dir-v2 theme. ChromeGate
+// suppresses the navy Navbar on /streets (exact) and /streets/<slug> (prefix).
+//
+// Two Wave-2 quirks folded in:
+//   - The dead "price alerts" form (no POST) is removed (nothing-fake rule).
+//   - Link graph: the index only lists streets with >=1 permAdvertise listing,
+//     which is exactly the existence-gate condition in getStreetPageData
+//     (null only when a street has NO listings AND no stats AND no content AND
+//     no sold record) — so every linked /streets/<slug> resolves 200. hasPage
+//     just toggles the "Full report" badge.
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
-import StreetsGrid from "./StreetsGrid";
+import { formatPriceFull } from "@/lib/format";
+import SiteNav from "@/components/nav/SiteNav";
+import FooterSection from "@/components/sections/FooterSection";
+import DirectoryGrid from "@/components/directory/DirectoryGrid";
+import type { DirectoryItem } from "@/components/directory/types";
+import "@/components/directory/directory-theme.css";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
@@ -81,21 +101,59 @@ export default async function StreetsIndexPage() {
 
   const publishedCount = await prisma.streetContent.count({ where: { status: "published" } });
 
-  return (
-    <div className="min-h-screen bg-[#f8f9fb]">
-      <div className="px-5 sm:px-11 py-8">
-        <p className="text-[10px] text-[#f59e0b] font-semibold uppercase tracking-[0.12em] mb-1">
-          Street Intelligence
-        </p>
-        <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.3px] mb-2">
-          Every {config.CITY_NAME} Street
-        </h1>
-        <p className="text-[13px] text-[#64748b] mb-8">
-          {streetData.length} streets with live price data · {publishedCount} full street reports published · Updated daily from TREB
-        </p>
+  // Map to the shared directory contract (presentation only).
+  const items: DirectoryItem[] = streetData.map((s) => {
+    const badges: DirectoryItem["badges"] = [];
+    if (s.isNew) badges.push({ label: "New", tone: "new" });
+    if (s.activeCount >= 5) badges.push({ label: "VIP Hub", tone: "vip" });
 
-        <StreetsGrid streets={streetData} neighbourhoods={neighbourhoods} />
-      </div>
+    const meta: DirectoryItem["meta"] = [
+      { label: `${s.count} listing${s.count === 1 ? "" : "s"}`, tone: "muted" },
+    ];
+    if (s.activeCount > 0) meta.push({ label: `${s.activeCount} active`, tone: "active" });
+    if (s.hasPage) meta.push({ label: "Full report", tone: "accent" });
+
+    return {
+      key: s.slug,
+      name: s.name,
+      href: `/streets/${s.slug}`,
+      searchExtra: s.neighbourhood,
+      group: s.neighbourhood,
+      subtitle: s.neighbourhood,
+      stat: formatPriceFull(s.avgPrice),
+      statLabel: "Average price",
+      badges,
+      meta,
+    };
+  });
+
+  return (
+    <div className="dir-v2">
+      <SiteNav variant="page" />
+
+      <section className="dir-hero">
+        <div className="dir-wrap">
+          <span className="dir-eyebrow">Street intelligence</span>
+          <h1>
+            Every {config.CITY_NAME} <em>street</em>
+          </h1>
+          <p className="dir-sub">
+            {streetData.length} streets with live price data · {publishedCount} full street
+            reports published · Updated daily from TREB MLS®
+          </p>
+        </div>
+      </section>
+
+      <DirectoryGrid
+        items={items}
+        groups={neighbourhoods.slice(0, 15)}
+        groupLabel="Neighbourhood"
+        groupAllLabel="All areas"
+        searchPlaceholder="Search streets by name or neighbourhood…"
+        itemNoun="street"
+      />
+
+      <FooterSection />
     </div>
   );
 }
