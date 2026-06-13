@@ -36,7 +36,6 @@ export default async function StreetsIndexPage() {
   const streets = await prisma.listing.groupBy({
     by: ["streetSlug"],
     _count: true,
-    _avg: { price: true },
     where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
     orderBy: { _count: { streetSlug: "desc" } },
   });
@@ -63,6 +62,26 @@ export default async function StreetsIndexPage() {
   });
   const activeMap = new Map(activeRows.map((r) => [r.streetSlug, r._count]));
 
+  // Bulk #2b: avg ACTIVE FOR-SALE list price per slug — the real, current,
+  // public home-price signal. Excludes lease (lease `price` is monthly rent,
+  // which blended the legacy "average" down to garbage on condo/rental-heavy
+  // streets) and excludes sold/expired (stale). Uses `price` (list price), NOT
+  // soldPrice — active list prices are public, so no k-anon/VOW gate. Streets
+  // with no active sale listing simply don't appear here → price null → omitted.
+  const salePriceRows = await prisma.listing.groupBy({
+    by: ["streetSlug"],
+    _avg: { price: true },
+    where: {
+      streetSlug: { in: slugs },
+      status: "active",
+      transactionType: { not: "For Lease" },
+      permAdvertise: true,
+    },
+  });
+  const salePriceMap = new Map(
+    salePriceRows.map((r) => [r.streetSlug, r._avg.price])
+  );
+
   // Bulk #3: published street pages
   const publishedRows = await prisma.streetContent.findMany({
     where: { streetSlug: { in: slugs }, status: "published" },
@@ -88,7 +107,12 @@ export default async function StreetsIndexPage() {
         : config.CITY_NAME,
       count: s._count,
       activeCount: activeMap.get(s.streetSlug) ?? 0,
-      avgPrice: Math.round(s._avg.price || 0),
+      // null when the street has no active for-sale listing — render NO price
+      // (never $0 / NaN / a blended figure).
+      avgSalePrice: (() => {
+        const v = salePriceMap.get(s.streetSlug);
+        return v != null && v > 0 ? Math.round(v) : null;
+      })(),
       hasPage: publishedSet.has(s.streetSlug),
       isNew: newSet.has(s.streetSlug),
     };
@@ -120,8 +144,9 @@ export default async function StreetsIndexPage() {
       searchExtra: s.neighbourhood,
       group: s.neighbourhood,
       subtitle: s.neighbourhood,
-      stat: formatPriceFull(s.avgPrice),
-      statLabel: "Average price",
+      // sale-only; omitted entirely when null so the card shows counts, no price
+      stat: s.avgSalePrice != null ? formatPriceFull(s.avgSalePrice) : undefined,
+      statLabel: s.avgSalePrice != null ? "Avg sale price" : undefined,
       badges,
       meta,
     };
