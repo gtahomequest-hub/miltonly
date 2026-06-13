@@ -25,6 +25,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname?.startsWith("/listings-v2-preview")) return null; // listings-v2 design preview
   if (pathname === "/listings") return null; // listings-v2 live page renders its own SiteNav (exact match — /listings/<mls> detail keeps the navy nav until its own v2 cutover)
   if (pathname === "/sell") return null; // sell-v2 page renders its own SiteNav (exact match)
+  if (pathname === "/sold") return null; // sold-v2 page renders its own SiteNav (exact match)
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
   if (pathname === "/hub-preview") return null; // hub-v2 design preview (forest body owns chrome)
