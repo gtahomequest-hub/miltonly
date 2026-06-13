@@ -101,13 +101,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // Sold-per-street pages — one per published street.
-  const soldStreetPages: MetadataRoute.Sitemap = publishedStreets.map((s) => ({
-    url: `${SITE_URL}/sold/${s.streetSlug}`,
-    lastModified: s.updatedAt,
-    changeFrequency: "daily" as const,
-    priority: 0.8,
-  }));
+  // Per-street sold data lives on the street pages (/streets/<slug>) via the
+  // VOW sold-records island — there is no /sold/<slug> route, so we do NOT emit
+  // /sold/<slug> URLs here (they 404'd). The /sold index itself is a staticPage.
 
   // Published condo-building pages from the WS5 condo pipeline.
   const publishedCondos = await prisma.condoContent.findMany({
@@ -154,5 +150,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...soldStreetPages, ...condoPages, ...schoolPages, ...mosquePages];
+  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...condoPages, ...schoolPages, ...mosquePages];
 }

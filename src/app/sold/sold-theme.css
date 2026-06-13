@@ -1,0 +1,326 @@
+/* src/app/sold/sold-theme.css
+   Scoped sold-page theme. Vars --sv-*; classes .sv-*; gated behind .sold-v2.
+   Shares the v2 forest palette 1:1 with sell-theme.css / condo-theme.css tokens;
+   cannot bleed into home, hub, condo, street, listings, or legacy navy pages.
+   RESTYLE ONLY — the VOW gate, queries, redaction, and attribution are unchanged
+   in page.tsx; this file only paints the shell forest. */
+
+.sold-v2 {
+  --sv-bg-deep: #073126;
+  --sv-bg-body: #fffdfa;
+  --sv-bg-secondary: #f6f6f3;
+  --sv-surface: #ffffff;
+  --sv-border: #c7c9c5;
+  --sv-border-muted: #dfe0dc;
+  --sv-accent: #017848;
+  --sv-accent-bright: #004733;
+  --sv-accent-on: #0a8f57;
+  --sv-green: #00ff80;
+  --sv-gold: #f4c870;
+  --sv-text: #ffffff;
+  --sv-text-sec: rgba(255, 255, 255, 0.8);
+  --sv-text-faint: rgba(255, 255, 255, 0.45);
+  --sv-text-body: #292b29;
+  --sv-text-muted: #6b6f6a;
+  --sv-serif: 'Fraunces', Georgia, serif;
+  --sv-sans: 'Inter', system-ui, sans-serif;
+  --sv-mono: 'JetBrains Mono', monospace;
+  --sv-maxw: 1100px;
+  --sv-sh-sm: 0 2px 8px rgba(7, 49, 38, 0.06);
+  --sv-sh: 0 18px 50px rgba(7, 49, 38, 0.12);
+  font-family: var(--sv-sans);
+  color: var(--sv-text-body);
+  background: var(--sv-bg-body);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.sold-v2 a {
+  color: inherit;
+  text-decoration: none;
+}
+.sold-v2 .sv-wrap {
+  max-width: var(--sv-maxw);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.sold-v2 .sv-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--sv-accent);
+  font-weight: 600;
+}
+
+/* ───── hero — 66px SiteNav clearance, forest radial flourish ───── */
+.sold-v2 .sv-hero {
+  position: relative;
+  padding-top: 66px;
+  background: var(--sv-bg-deep);
+  color: var(--sv-text);
+  overflow: hidden;
+  isolation: isolate;
+}
+.sold-v2 .sv-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(820px 480px at 80% 0%, rgba(1, 120, 72, 0.5), transparent 60%),
+    radial-gradient(640px 440px at 5% 110%, rgba(0, 255, 128, 0.07), transparent 55%);
+}
+.sold-v2 .sv-hero .sv-wrap {
+  padding: 52px 32px 48px;
+}
+.sold-v2 .sv-hero .sv-eyebrow {
+  color: var(--sv-green);
+}
+.sold-v2 .sv-hero h1 {
+  font-family: var(--sv-serif);
+  font-weight: 400;
+  font-size: clamp(32px, 4.6vw, 50px);
+  line-height: 1.08;
+  margin: 12px 0 14px;
+}
+.sold-v2 .sv-hero h1 em {
+  font-style: italic;
+  color: var(--sv-green);
+}
+.sold-v2 .sv-lede {
+  font-size: 15.5px;
+  color: var(--sv-text-sec);
+  max-width: 560px;
+  margin-bottom: 24px;
+}
+/* hero stat tiles — real totals */
+.sold-v2 .sv-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+.sold-v2 .sv-stat {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 128, 0.22);
+  border-radius: 12px;
+  padding: 16px 22px;
+  min-width: 150px;
+}
+.sold-v2 .sv-stat-v {
+  font-family: var(--sv-mono);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--sv-green);
+  line-height: 1.05;
+}
+.sold-v2 .sv-stat-l {
+  font-size: 12px;
+  color: var(--sv-text-sec);
+  margin-top: 6px;
+}
+/* hero sign-in CTA (anon) */
+.sold-v2 .sv-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 26px;
+  background: var(--sv-accent);
+  color: #fff;
+  border: 1px solid rgba(0, 255, 128, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: 0.2s;
+}
+.sold-v2 .sv-cta:hover {
+  background: var(--sv-accent-on);
+}
+
+/* ───── filter bar — pill chips ───── */
+.sold-v2 .sv-filters {
+  background: var(--sv-surface);
+  border-bottom: 1px solid var(--sv-border-muted);
+}
+.sold-v2 .sv-filters .sv-wrap {
+  padding-top: 20px;
+  padding-bottom: 20px;
+  display: grid;
+  gap: 12px;
+}
+.sold-v2 .sv-frow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sold-v2 .sv-flabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sv-text-muted);
+  margin-right: 6px;
+}
+.sold-v2 .sv-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--sv-border);
+  background: var(--sv-surface);
+  color: var(--sv-text-body);
+  transition: 0.15s;
+}
+.sold-v2 .sv-chip:hover {
+  border-color: var(--sv-accent);
+  color: var(--sv-accent-bright);
+}
+.sold-v2 .sv-chip.is-active {
+  background: var(--sv-accent);
+  border-color: var(--sv-accent);
+  color: #fff;
+}
+
+/* ───── results ───── */
+.sold-v2 .sv-results {
+  padding: 40px 0 60px;
+}
+.sold-v2 .sv-count {
+  font-size: 13px;
+  color: var(--sv-text-muted);
+  margin-bottom: 14px;
+}
+
+/* forest sold table — mirrors the street-v2 .s-rtable language */
+.sold-v2 .sv-records {
+  background: var(--sv-surface);
+  border: 1px solid var(--sv-border-muted);
+  border-radius: 13px;
+  box-shadow: var(--sv-sh-sm);
+  overflow: hidden;
+}
+.sold-v2 .sv-rtable-scroll {
+  overflow-x: auto;
+}
+.sold-v2 .sv-rtable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sold-v2 .sv-rtable th {
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sv-text-muted);
+  font-weight: 600;
+  padding: 13px 18px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--sv-border-muted);
+  background: var(--sv-bg-secondary);
+}
+.sold-v2 .sv-rtable th.sv-num,
+.sold-v2 .sv-rtable td.sv-num {
+  text-align: right;
+}
+.sold-v2 .sv-rtable td {
+  font-size: 13px;
+  padding: 13px 18px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--sv-border-muted);
+  color: var(--sv-text-body);
+}
+.sold-v2 .sv-rtable tr:last-child td {
+  border-bottom: 0;
+}
+.sold-v2 .sv-rtable tbody tr:hover {
+  background: var(--sv-bg-secondary);
+}
+.sold-v2 .sv-rtable .sv-addr {
+  font-weight: 600;
+  color: var(--sv-accent-bright);
+}
+.sold-v2 .sv-rtable .sv-sold {
+  font-family: var(--sv-mono);
+  font-weight: 600;
+  color: var(--sv-text-body);
+}
+/* VOW 6.3(c) — Listing Brokerage, same font family/size, just muted tone */
+.sold-v2 .sv-rtable .sv-brok {
+  color: var(--sv-text-muted);
+  font-size: 11.5px;
+  white-space: normal;
+  min-width: 160px;
+}
+.sold-v2 .sv-empty {
+  padding: 44px 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--sv-text-muted);
+}
+
+/* ───── anon gate card (replaces the old redundant "0 homes" teaser) ───── */
+.sold-v2 .sv-gate {
+  background: linear-gradient(180deg, #073126 0%, #051f15 100%);
+  border: 1px solid rgba(0, 255, 128, 0.22);
+  border-radius: 16px;
+  padding: 48px 28px;
+  text-align: center;
+  color: #fff;
+  box-shadow: var(--sv-sh);
+}
+.sold-v2 .sv-gate-k {
+  font-family: var(--sv-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--sv-green);
+  margin-bottom: 12px;
+}
+.sold-v2 .sv-gate-h {
+  font-family: var(--sv-serif);
+  font-weight: 400;
+  font-size: clamp(22px, 2.6vw, 28px);
+  margin-bottom: 10px;
+}
+.sold-v2 .sv-gate-p {
+  font-size: 13.5px;
+  color: var(--sv-text-sec);
+  max-width: 420px;
+  margin: 0 auto 22px;
+}
+
+/* ───── VOW consumer notice / TREB attribution ───── */
+.sold-v2 .sv-notice {
+  margin-top: 20px;
+  background: var(--sv-bg-secondary);
+  border: 1px solid var(--sv-border-muted);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--sv-text-muted);
+}
+.sold-v2 .sv-notice b {
+  display: block;
+  font-size: 12px;
+  color: var(--sv-text-body);
+  margin-bottom: 5px;
+}
+
+@media (max-width: 720px) {
+  .sold-v2 .sv-wrap {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .sold-v2 .sv-hero .sv-wrap {
+    padding: 40px 20px 40px;
+  }
+  .sold-v2 .sv-stat {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+}
