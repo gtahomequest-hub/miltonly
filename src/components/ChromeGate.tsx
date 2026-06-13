@@ -13,6 +13,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname === "/") return null;
   // Hub v2: /neighbourhoods/<slug> ships its own forest-green HubPage header;
   // suppress the global Navbar (exact-prefix so the /neighbourhoods index keeps it).
+  if (pathname === "/neighbourhoods") return null; // neighbourhoods-v2 directory index renders its own SiteNav (exact match)
   if (pathname?.startsWith("/neighbourhoods/")) return null;
   // Forest-v2 content pages own their top chrome via their own hero/header (the hub
   // pattern), so the legacy navy global Navbar is suppressed on each. Exact-prefix
