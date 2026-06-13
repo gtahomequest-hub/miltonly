@@ -1,9 +1,29 @@
+// src/app/streets/page.tsx
+// LIVE /streets — forest-v2 restyle of the A-Z street directory. RESTYLE ONLY:
+// the 4 bulk DB1 queries (city=Milton, permAdvertise=true) are byte-identical to
+// the legacy navy page; the search / A-Z / neighbourhood-chip mechanics are the
+// same (now owned by the reusable <DirectoryGrid>). Only the shell is repainted
+// forest — SiteNav + hero + FooterSection, scoped .dir-v2 theme. ChromeGate
+// suppresses the navy Navbar on /streets (exact) and /streets/<slug> (prefix).
+//
+// Two Wave-2 quirks folded in:
+//   - The dead "price alerts" form (no POST) is removed (nothing-fake rule).
+//   - Link graph: the index only lists streets with >=1 permAdvertise listing,
+//     which is exactly the existence-gate condition in getStreetPageData
+//     (null only when a street has NO listings AND no stats AND no content AND
+//     no sold record) — so every linked /streets/<slug> resolves 200. hasPage
+//     just toggles the "Full report" badge.
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
-import StreetsGrid from "./StreetsGrid";
+import { formatPriceFull } from "@/lib/format";
+import SiteNav from "@/components/nav/SiteNav";
+import FooterSection from "@/components/sections/FooterSection";
+import DirectoryGrid from "@/components/directory/DirectoryGrid";
+import type { DirectoryItem } from "@/components/directory/types";
+import "@/components/directory/directory-theme.css";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
@@ -16,7 +36,6 @@ export default async function StreetsIndexPage() {
   const streets = await prisma.listing.groupBy({
     by: ["streetSlug"],
     _count: true,
-    _avg: { price: true },
     where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
     orderBy: { _count: { streetSlug: "desc" } },
   });
@@ -43,6 +62,26 @@ export default async function StreetsIndexPage() {
   });
   const activeMap = new Map(activeRows.map((r) => [r.streetSlug, r._count]));
 
+  // Bulk #2b: avg ACTIVE FOR-SALE list price per slug — the real, current,
+  // public home-price signal. Excludes lease (lease `price` is monthly rent,
+  // which blended the legacy "average" down to garbage on condo/rental-heavy
+  // streets) and excludes sold/expired (stale). Uses `price` (list price), NOT
+  // soldPrice — active list prices are public, so no k-anon/VOW gate. Streets
+  // with no active sale listing simply don't appear here → price null → omitted.
+  const salePriceRows = await prisma.listing.groupBy({
+    by: ["streetSlug"],
+    _avg: { price: true },
+    where: {
+      streetSlug: { in: slugs },
+      status: "active",
+      transactionType: { not: "For Lease" },
+      permAdvertise: true,
+    },
+  });
+  const salePriceMap = new Map(
+    salePriceRows.map((r) => [r.streetSlug, r._avg.price])
+  );
+
   // Bulk #3: published street pages
   const publishedRows = await prisma.streetContent.findMany({
     where: { streetSlug: { in: slugs }, status: "published" },
@@ -68,7 +107,12 @@ export default async function StreetsIndexPage() {
         : config.CITY_NAME,
       count: s._count,
       activeCount: activeMap.get(s.streetSlug) ?? 0,
-      avgPrice: Math.round(s._avg.price || 0),
+      // null when the street has no active for-sale listing — render NO price
+      // (never $0 / NaN / a blended figure).
+      avgSalePrice: (() => {
+        const v = salePriceMap.get(s.streetSlug);
+        return v != null && v > 0 ? Math.round(v) : null;
+      })(),
       hasPage: publishedSet.has(s.streetSlug),
       isNew: newSet.has(s.streetSlug),
     };
@@ -81,21 +125,60 @@ export default async function StreetsIndexPage() {
 
   const publishedCount = await prisma.streetContent.count({ where: { status: "published" } });
 
-  return (
-    <div className="min-h-screen bg-[#f8f9fb]">
-      <div className="px-5 sm:px-11 py-8">
-        <p className="text-[10px] text-[#f59e0b] font-semibold uppercase tracking-[0.12em] mb-1">
-          Street Intelligence
-        </p>
-        <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.3px] mb-2">
-          Every {config.CITY_NAME} Street
-        </h1>
-        <p className="text-[13px] text-[#64748b] mb-8">
-          {streetData.length} streets with live price data · {publishedCount} full street reports published · Updated daily from TREB
-        </p>
+  // Map to the shared directory contract (presentation only).
+  const items: DirectoryItem[] = streetData.map((s) => {
+    const badges: DirectoryItem["badges"] = [];
+    if (s.isNew) badges.push({ label: "New", tone: "new" });
+    if (s.activeCount >= 5) badges.push({ label: "VIP Hub", tone: "vip" });
 
-        <StreetsGrid streets={streetData} neighbourhoods={neighbourhoods} />
-      </div>
+    const meta: DirectoryItem["meta"] = [
+      { label: `${s.count} listing${s.count === 1 ? "" : "s"}`, tone: "muted" },
+    ];
+    if (s.activeCount > 0) meta.push({ label: `${s.activeCount} active`, tone: "active" });
+    if (s.hasPage) meta.push({ label: "Full report", tone: "accent" });
+
+    return {
+      key: s.slug,
+      name: s.name,
+      href: `/streets/${s.slug}`,
+      searchExtra: s.neighbourhood,
+      group: s.neighbourhood,
+      subtitle: s.neighbourhood,
+      // sale-only; omitted entirely when null so the card shows counts, no price
+      stat: s.avgSalePrice != null ? formatPriceFull(s.avgSalePrice) : undefined,
+      statLabel: s.avgSalePrice != null ? "Avg sale price" : undefined,
+      badges,
+      meta,
+    };
+  });
+
+  return (
+    <div className="dir-v2">
+      <SiteNav variant="page" />
+
+      <section className="dir-hero">
+        <div className="dir-wrap">
+          <span className="dir-eyebrow">Street intelligence</span>
+          <h1>
+            Every {config.CITY_NAME} <em>street</em>
+          </h1>
+          <p className="dir-sub">
+            {streetData.length} streets with live price data · {publishedCount} full street
+            reports published · Updated daily from TREB MLS®
+          </p>
+        </div>
+      </section>
+
+      <DirectoryGrid
+        items={items}
+        groups={neighbourhoods.slice(0, 15)}
+        groupLabel="Neighbourhood"
+        groupAllLabel="All areas"
+        searchPlaceholder="Search streets by name or neighbourhood…"
+        itemNoun="street"
+      />
+
+      <FooterSection />
     </div>
   );
 }
