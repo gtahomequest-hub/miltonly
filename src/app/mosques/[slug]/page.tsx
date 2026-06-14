@@ -1,5 +1,8 @@
+// src/app/mosques/[slug]/page.tsx — forest-v2 via the shared PlaceDetail template.
+// RESTYLE ONLY: the hardcoded mosque lookup, the nearby-listings + market-stats
+// + nearby-streets queries (permAdvertise + city), the FAQ build, and the
+// JSON-LD (breadcrumb / LocalBusiness / FAQ / Mosque) are byte-identical.
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getMosqueBySlug, getMosquesByNeighbourhood } from "@/lib/mosques";
 import { prisma } from "@/lib/prisma";
@@ -11,7 +14,9 @@ import {
   generateLocalBusinessSchema,
   generateFAQSchema,
 } from "@/lib/schema";
-import MosqueListings from "./MosqueListings";
+import PlaceDetail from "@/components/places/PlaceDetail";
+import PlaceListings from "@/components/places/PlaceListings";
+import type { BadgeTone } from "@/components/places/types";
 
 interface Props {
   params: { slug: string };
@@ -19,10 +24,11 @@ interface Props {
 
 export const dynamic = "force-dynamic";
 
+const BADGE_TONE: Record<string, BadgeTone> = { masjid: "blue", musalla: "amber", centre: "green" };
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const mosque = getMosqueBySlug(params.slug);
   if (!mosque) return { title: "Mosque Not Found" };
-
   return {
     title: `Homes Near ${mosque.name} ${config.CITY_NAME} — Listings & Prices`,
     description: `Find homes for sale near ${mosque.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${mosque.address}. Live TREB listings, prices, and neighbourhood data. ${mosque.affiliation}.`,
@@ -46,7 +52,6 @@ export default async function MosqueDetailPage({ params }: Props) {
   const mosque = getMosqueBySlug(params.slug);
   if (!mosque) notFound();
 
-  // Fetch nearby active listings
   const listings = await prisma.listing.findMany({
     where: {
       status: "active",
@@ -58,9 +63,6 @@ export default async function MosqueDetailPage({ params }: Props) {
     take: 30,
   });
 
-  // Market stats — active listings only. DB1 sold fields are no longer
-  // populated (Phase 2.6 migration 2026-04-17); avg sold is now surfaced
-  // via the gated DB2 pipeline on street/neighbourhood pages, not here.
   const allListings = await prisma.listing.findMany({
     where: {
       permAdvertise: true,
@@ -71,12 +73,8 @@ export default async function MosqueDetailPage({ params }: Props) {
   });
 
   const active = allListings.filter((l) => l.status === "active");
-  const avgPrice =
-    active.length > 0
-      ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length)
-      : 0;
+  const avgPrice = active.length > 0 ? Math.round(active.reduce((s, l) => s + l.price, 0) / active.length) : 0;
 
-  // By type
   const types = ["detached", "semi", "townhouse", "condo"];
   const byType = types
     .map((t) => {
@@ -89,7 +87,6 @@ export default async function MosqueDetailPage({ params }: Props) {
     })
     .filter((t) => t.count > 0);
 
-  // Nearby streets
   const nearbyStreets = await prisma.listing.groupBy({
     by: ["streetSlug"],
     where: {
@@ -102,27 +99,17 @@ export default async function MosqueDetailPage({ params }: Props) {
     orderBy: { _count: { streetSlug: "desc" } },
     take: 6,
   });
-
   const streetDetails = await Promise.all(
     nearbyStreets.map(async (s) => {
       const sample = await prisma.listing.findFirst({
         where: { streetSlug: s.streetSlug },
         select: { streetName: true },
       });
-      return {
-        slug: s.streetSlug,
-        name: sample?.streetName || s.streetSlug,
-        count: s._count,
-        avgPrice: Math.round(s._avg.price || 0),
-      };
+      return { slug: s.streetSlug, name: sample?.streetName || s.streetSlug, count: s._count, avgPrice: Math.round(s._avg.price || 0) };
     })
   );
 
-  // Other mosques in same neighbourhood
-  const nearbyMosques = getMosquesByNeighbourhood(mosque.neighbourhood).filter(
-    (m) => m.slug !== mosque.slug
-  );
-
+  const nearbyMosques = getMosquesByNeighbourhood(mosque.neighbourhood).filter((m) => m.slug !== mosque.slug);
   const typeLabel = mosque.type === "masjid" ? "masjid" : mosque.type === "musalla" ? "musalla" : "community centre";
 
   const faqs = [
@@ -171,210 +158,45 @@ export default async function MosqueDetailPage({ params }: Props) {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <div className="min-h-screen">
-        {/* Breadcrumb */}
-        <div className="bg-white border-b border-[#f1f5f9] px-5 sm:px-11 py-3">
-          <div className="flex items-center gap-2 text-[12px] text-[#94a3b8]">
-            <Link href="/" className="hover:text-[#07111f]">Home</Link>
-            <span>&rsaquo;</span>
-            <Link href="/mosques" className="hover:text-[#07111f]">Mosques</Link>
-            <span>&rsaquo;</span>
-            <span className="text-[#475569] font-medium">{mosque.name}</span>
-          </div>
-        </div>
-
-        {/* Hero */}
-        <section className="bg-[#07111f] px-5 sm:px-11 py-10 sm:py-12">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <span
-                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      mosque.type === "masjid"
-                        ? "bg-[#dbeafe] text-[#1e40af]"
-                        : mosque.type === "musalla"
-                        ? "bg-[#fef3c7] text-[#92400e]"
-                        : "bg-[#f0fdf4] text-[#15803d]"
-                    }`}
-                  >
-                    {typeLabel}
-                  </span>
-                  <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em]">
-                    {mosque.neighbourhood} &middot; {config.CITY_NAME}
-                  </p>
-                </div>
-                <h1 className="text-[28px] sm:text-[36px] font-extrabold text-[#f8f9fb] tracking-[-0.5px] leading-[1.05]">
-                  Homes Near {mosque.name}
-                </h1>
-                <p className="text-[14px] sm:text-[16px] text-[rgba(248,249,251,0.6)] mt-3 max-w-lg leading-relaxed">
-                  {mosque.address} &middot; {mosque.affiliation}
-                </p>
-                {mosque.notes && (
-                  <p className="text-[13px] text-[rgba(248,249,251,0.4)] mt-2 max-w-lg leading-relaxed">
-                    {mosque.notes}
-                  </p>
-                )}
-                {mosque.services.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-4">
-                    {mosque.services.map((s) => (
-                      <span key={s} className="text-[10px] font-semibold text-[#f59e0b] bg-[rgba(245,158,11,0.15)] px-2 py-0.5 rounded-full">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 shrink-0 lg:w-[340px]">
-                {[
-                  { value: String(active.length), label: "Active listings nearby" },
-                  { value: avgPrice > 0 ? formatPriceFull(avgPrice) : "\u2014", label: "Avg asking price" },
-                  { value: String(allListings.length), label: "Total listings" },
-                ].map((s) => (
-                  <div key={s.label} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-[14px_16px]">
-                    <p className="text-[20px] font-extrabold text-[#f8f9fb]">{s.value}</p>
-                    <p className="text-[10px] text-[rgba(248,249,251,0.5)] mt-1">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Price by type */}
-        {byType.length > 0 && (
-          <section className="bg-[#fbbf24] px-5 sm:px-11 py-5">
-            <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {byType.map((t) => (
-                <div key={t.type} className="text-center">
-                  <p className="text-[20px] font-extrabold text-[#07111f]">{formatPriceFull(t.avgPrice)}</p>
-                  <p className="text-[10px] text-[#78350f] font-semibold mt-0.5 capitalize">
-                    {t.type} ({t.count} active)
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Listings */}
-        <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-              Homes for sale near {mosque.name}
-            </h2>
-            <MosqueListings listings={serializedListings} mosqueName={mosque.name} />
-          </div>
-        </section>
-
-        {/* Nearby streets */}
-        {streetDetails.length > 0 && (
-          <section className="bg-white px-5 sm:px-11 py-10">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-                Streets near {mosque.name}
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {streetDetails.map((s) => (
-                  <Link
-                    key={s.slug}
-                    href={`/streets/${s.slug}`}
-                    className="bg-[#f8f9fb] rounded-xl border border-[#e2e8f0] p-4 hover:shadow-md transition-shadow"
-                  >
-                    <p className="text-[14px] font-bold text-[#07111f]">{s.name}</p>
-                    <p className="text-[16px] font-extrabold text-[#07111f] mt-1">
-                      {formatPriceFull(s.avgPrice)}
-                    </p>
-                    <p className="text-[10px] text-[#94a3b8] mt-0.5">
-                      {s.count} active listings
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Other mosques nearby */}
-        {nearbyMosques.length > 0 && (
-          <section className="bg-[#f8f9fb] px-5 sm:px-11 py-10">
-            <div className="max-w-6xl mx-auto">
-              <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-                Other mosques in {mosque.neighbourhood}
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {nearbyMosques.map((m) => (
-                  <Link
-                    key={m.slug}
-                    href={`/mosques/${m.slug}`}
-                    className="bg-white rounded-xl border border-[#e2e8f0] p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-[14px] font-bold text-[#07111f]">{m.name}</p>
-                      <span
-                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
-                          m.type === "masjid"
-                            ? "bg-[#dbeafe] text-[#1e40af]"
-                            : m.type === "musalla"
-                            ? "bg-[#fef3c7] text-[#92400e]"
-                            : "bg-[#f0fdf4] text-[#15803d]"
-                        }`}
-                      >
-                        {m.type === "masjid" ? "MASJID" : m.type === "musalla" ? "MUSALLA" : "CENTRE"}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#94a3b8]">{m.address}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* FAQ */}
-        <section className="bg-white px-5 sm:px-11 py-10">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-6">
-              Frequently asked questions
-            </h2>
-            <div className="space-y-4">
-              {faqs.map((faq, i) => (
-                <div key={i} className="border border-[#e2e8f0] rounded-xl p-5">
-                  <h3 className="text-[14px] font-bold text-[#07111f] mb-2">{faq.question}</h3>
-                  <p className="text-[13px] text-[#64748b] leading-relaxed">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="bg-[#07111f] px-5 sm:px-11 py-14">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-[24px] sm:text-[28px] font-extrabold text-[#f8f9fb]">
-              Looking for a home near {mosque.name}?
-            </h2>
-            <p className="text-[14px] text-[rgba(248,249,251,0.5)] mt-3 mb-8">
-              {config.realtor.name.split(" ")[0]} knows {config.CITY_NAME} inside out. Let him help you find the right home for your family.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <a
-                href={`tel:${config.realtor.phoneE164}`}
-                className="bg-[#f59e0b] text-[#07111f] text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#fbbf24] transition-colors"
-              >
-                Call {config.realtor.name.split(" ")[0]}
-              </a>
-              <Link
-                href="/book"
-                className="bg-[#0c1e35] border border-[#1e3a5f] text-[#f8f9fb] text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#1e3a5f] transition-colors"
-              >
-                Book a showing
-              </Link>
-            </div>
-          </div>
-        </section>
-      </div>
+      <PlaceDetail
+        breadcrumb={[
+          { label: "Home", href: "/" },
+          { label: "Mosques", href: "/mosques" },
+          { label: mosque.name },
+        ]}
+        badge={{ label: typeLabel, tone: BADGE_TONE[mosque.type] }}
+        heroEyebrow={`${mosque.neighbourhood} · ${config.CITY_NAME}`}
+        title={`Homes Near ${mosque.name}`}
+        metaLine={`${mosque.address} · ${mosque.affiliation}${mosque.notes ? ` · ${mosque.notes}` : ""}`}
+        serviceChips={mosque.services}
+        stats={[
+          { value: String(active.length), label: "Active listings nearby" },
+          { value: avgPrice > 0 ? formatPriceFull(avgPrice) : "—", label: "Avg asking price" },
+          { value: String(allListings.length), label: "Total listings" },
+        ]}
+        byType={byType.map((t) => ({ type: t.type, count: t.count, avgPrice: formatPriceFull(t.avgPrice) }))}
+        listingsHeading={`Homes for sale near ${mosque.name}`}
+        listings={<PlaceListings listings={serializedListings} placeName={mosque.name} />}
+        streetsHeading={`Streets near ${mosque.name}`}
+        streets={streetDetails.map((s) => ({
+          name: s.name,
+          href: `/streets/${s.slug}`,
+          price: formatPriceFull(s.avgPrice),
+          sub: `${s.count} active listings`,
+        }))}
+        siblingsHeading={`Other mosques in ${mosque.neighbourhood}`}
+        siblings={nearbyMosques.map((m) => ({
+          name: m.name,
+          href: `/mosques/${m.slug}`,
+          badge: { label: m.type === "masjid" ? "Masjid" : m.type === "musalla" ? "Musalla" : "Centre", tone: BADGE_TONE[m.type] },
+          sub: m.address,
+        }))}
+        faqs={faqs}
+        cta={{
+          heading: `Looking for a home near ${mosque.name}?`,
+          body: `${config.realtor.name.split(" ")[0]} knows ${config.CITY_NAME} inside out. Let him help you find the right home for your family.`,
+        }}
+      />
     </>
   );
 }
