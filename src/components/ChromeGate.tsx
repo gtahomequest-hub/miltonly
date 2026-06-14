@@ -32,6 +32,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname?.startsWith("/mosques/")) return null; // mosque-v2 detail pages
   if (pathname === "/schools") return null; // schools-v2 directory renders its own SiteNav (exact match)
   if (pathname?.startsWith("/schools/")) return null; // school-v2 detail pages
+  if (pathname === "/blog") return null; // blog noindex placeholder renders its own SiteNav (exact match)
   if (pathname === "/sold") return null; // sold-v2 page renders its own SiteNav (exact match)
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
