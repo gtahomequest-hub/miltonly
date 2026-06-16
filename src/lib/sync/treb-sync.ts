@@ -11,7 +11,7 @@ const SELECT_FIELDS = [
   "StreetNumber", "StreetName", "StreetSuffix", "UnitNumber",
   "PostalCode", "StateOrProvince",
   "BedroomsTotal", "BathroomsTotalInteger",
-  "PropertyType", "PropertySubType", "TransactionType",
+  "PropertyType", "PropertySubType", "ParcelOfTiedLand", "TransactionType",
   "MlsStatus", "LivingAreaRange", "Basement",
   "ParkingTotal",
   "PublicRemarks", "OriginalEntryTimestamp",
@@ -44,6 +44,7 @@ interface AmpProperty {
   BathroomsTotalInteger: number | null;
   PropertyType: string | null;
   PropertySubType: string | null;
+  ParcelOfTiedLand: string | null;
   TransactionType: string | null;
   MlsStatus: string | null;
   LivingAreaRange: string | null;
@@ -226,6 +227,12 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           basement: Array.isArray(item.Basement) ? item.Basement.length > 0 : false,
           sqft: parseLivingAreaRange(item.LivingAreaRange),
           propertyType: mapPropertyType(item.PropertyType, item.PropertySubType),
+          // Additive tenure passthrough (ownership-type axis). Raw values; no
+          // mapping/collapsing — the whole point is to preserve what
+          // mapPropertyType discards.
+          propertySubType: item.PropertySubType || null,
+          parcelOfTiedLand: item.ParcelOfTiedLand || null,
+          propertyTypeRaw: item.PropertyType || null,
           status: mapStatus(item.MlsStatus, item.TransactionType),
           description: item.PublicRemarks || null,
           latitude: item.Latitude || 0,

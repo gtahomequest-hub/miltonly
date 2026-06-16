@@ -24,6 +24,12 @@ model Listing {
   basement           Boolean
   sqft               Int?
   propertyType       String // detached|semi|townhouse|condo
+  // Ownership-type axis (additive — populated by ingest from PropTx; null on
+  // pre-sync rows). propertyType stays the existing geometry bucket; these add
+  // the tenure dimension it can't express.
+  propertySubType    String? // raw PropTx PropertySubType: Condo Apartment|Condo Townhouse|Detached|Semi-Detached|Att/Row/Townhouse|...
+  parcelOfTiedLand   String? // PropTx ParcelOfTiedLand flag: Yes|No (the POTL signal)
+  propertyTypeRaw    String? // raw PropTx PropertyType: "Residential Freehold" | "Residential Condo & Other" (top-level tenure)
   status             String // active|sold|rented|expired
   // Lease lifecycle state for status='rented' rows. NULL for sale-side records.
   // Values: active|leased|expired|terminated|cancelled|suspended|withdrawn
