@@ -4,8 +4,8 @@
 // (FREEHOLD_CONFIG): static editorial + LIVE grounded stats (active LIST from
 // DB1, sold from the VOW analytics DB, k-anon gated). condo + POTL plug in later
 // as configs against the same seam + template.
-import type { Metadata } from "next";
 import { config } from "@/lib/config";
+import { generateMetadata as genMeta } from "@/lib/seo";
 import { getTenureHubData, FREEHOLD_CONFIG } from "@/lib/tenureHubData";
 import TenureHubPage from "@/components/tenure/TenureHubPage";
 import SchemaScript from "@/components/SchemaScript";
@@ -14,11 +14,14 @@ import { generateBreadcrumbSchema, generateLocalBusinessSchema, generateFAQSchem
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+// Use the shared SEO helper (like /condos) so openGraph + twitter tags are
+// freehold-specific instead of falling back to the homepage defaults. The
+// helper sets og:url + og:title + og:description + canonical from these values.
+export const metadata = genMeta({
   title: `Freehold Homes in ${config.CITY_NAME} — Detached, Semi & Freehold Townhomes`,
   description: `Freehold homes for sale in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: own the home and the land with no condo fee. Live prices for detached, semi, and freehold townhomes, plus how freehold compares to condo and POTL ownership.`,
-  alternates: { canonical: `${config.SITE_URL}/freehold` },
-};
+  canonical: `${config.SITE_URL}/freehold`,
+});
 
 export default async function FreeholdPage() {
   const data = await getTenureHubData(FREEHOLD_CONFIG);
