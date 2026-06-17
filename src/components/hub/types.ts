@@ -100,4 +100,8 @@ export interface HubData {
   siblings: HubSibling[];
   ctaBuyer: HubCta;
   ctaSeller: HubCta;
+  // Optional tenure-hub glance label overrides (condo/POTL). Neighbourhood hubs
+  // and the shared HubPage/HubGlance ignore this; only the tenure render reads it,
+  // with defaults so unset = the freehold labels (freehold stays byte-identical).
+  glanceLabels?: { fee?: string; vs?: string };
 }

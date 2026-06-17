@@ -14,6 +14,7 @@ const exploreRight = [
   { href: "/compare", label: "Compare" },
   { href: "/condos", label: "Condos" },
   { href: "/freehold", label: "Freehold" },
+  { href: "/condos-guide", label: "Condo Guide" },
   { href: "/schools", label: "Schools" },
   { href: "/mosques", label: "Mosques" },
   { href: "/about", label: "About" },

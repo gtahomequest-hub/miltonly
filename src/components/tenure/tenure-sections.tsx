@@ -86,8 +86,8 @@ export function TenureGlance({ data }: { data: HubData }) {
     { ic: <IconTag />, l: "Price range", v: g.priceRange, silent: g.priceRange === null },
     { ic: <IconHome />, l: "Home types", v: g.dominantType, silent: false },
     { ic: <IconPeople />, l: "Best suits", v: g.suits.join(", "), silent: false },
-    { ic: <IconKey />, l: "Monthly fee", v: g.commute, silent: false },
-    { ic: <IconInvest />, l: "vs Condo", v: g.schools, silent: false },
+    { ic: <IconKey />, l: data.glanceLabels?.fee ?? "Monthly fee", v: g.commute, silent: false },
+    { ic: <IconInvest />, l: data.glanceLabels?.vs ?? "vs Condo", v: g.schools, silent: false },
   ];
   return (
     <div className="h-glance">

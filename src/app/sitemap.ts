@@ -54,6 +54,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      // /condos-guide — condo ownership-axis hub (decision page, distinct from the
+      // /condos directory). Indexable SEO page for "condos in Milton" intent.
+      url: `${SITE_URL}/condos-guide`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/rentals`,
       lastModified: now,
       changeFrequency: "daily",

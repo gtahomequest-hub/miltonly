@@ -43,15 +43,27 @@ export interface TenureConfig {
   character: string; // hero one-liner
   // SUBTYPE set the live stat queries filter on (trimmed-match, condo-town-clean)
   subTypes: string[]; // ['Detached','Semi-Detached','Att/Row/Townhouse','Duplex']
+  // ---- generalization knobs (defaults reproduce freehold output byte-identically) ----
+  activeNoun?: { one: string; many: string }; // default {one:"freehold home", many:"freehold homes"}
+  inventoryNoun?: string; // default "freehold" — "Across active <x> listings" / "Active <x> inventory by size"
+  // by-subtype display: marketCompare label + the cost-sentence fragment per subtype.
+  subTypeDisplay?: Array<{ match: string; compareLabel: string; costLabel: string }>;
+  costMiddle?: "subtype" | "fee"; // default "subtype" — what the cost block's middle live-line injects
+  priceFloor?: number; // default 0 — drop sub-floor anomalies (parking/locker) from PRICE stats only
+  showFee?: boolean; // default false — compute + inject a typical monthly-fee range (condo)
+  feeSentenceTemplate?: string; // {lo}/{hi} tokens; only used when showFee and fee data is k-safe
+  soldTail?: string; // default freehold tail — editorial sentence after the sold numbers
   // editorial blocks (static, verbatim). {tokens} are injected from live stats.
   lede: string;
   threeWay: string;
   costIntro: string; // before the (live) cost line
   costMid: string; // before the (live) by-subtype line
   costEnd: string;
+  feeCredibility?: string; // optional extra block (condo's status-certificate paragraph) after the cost block
   whoSuits: string;
   honestTradeoff: string;
   glanceStatic: TenureGlanceItem[]; // non-numeric glance rows (tenure framing)
+  glanceLabels?: { fee?: string; vs?: string }; // override the fee/vs glance row labels (condo: vs->"vs Freehold")
   faqs: { question: string; answer: string }[];
   ctaBuyer: { heading: string; body: string; buttonLabel: string; href: string };
   ctaSeller: { heading: string; body: string; buttonLabel: string; href: string };
@@ -81,7 +93,7 @@ async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
   if (!db) return { n: 0, typical: null, lo: null, hi: null, dom: null };
   try {
     const rows = (await db`
-      SELECT COUNT(*)::int AS n,
+      SELECT COUNT(DISTINCT mls_number)::int AS n,
              AVG(sold_price) AS avg_price,
              MIN(sold_price) AS lo, MAX(sold_price) AS hi,
              AVG(days_on_market) AS dom
@@ -109,21 +121,39 @@ async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
 // ---- the seam --------------------------------------------------------------
 
 export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | null> {
+  // config defaults (reproduce freehold output byte-identically when unset)
+  const activeNoun = cfg.activeNoun ?? { one: "freehold home", many: "freehold homes" };
+  const inventoryNoun = cfg.inventoryNoun ?? "freehold";
+  const subTypeDisplay = cfg.subTypeDisplay ?? [
+    { match: "Detached", compareLabel: "Detached", costLabel: "detached homes" },
+    { match: "Att/Row/Townhouse", compareLabel: "Freehold townhome", costLabel: "freehold townhomes" },
+    { match: "Semi-Detached", compareLabel: "Semi-detached", costLabel: "semis" },
+  ];
+  const costMiddle = cfg.costMiddle ?? "subtype";
+  const priceFloor = cfg.priceFloor ?? 0;
+  const soldTail =
+    cfg.soldTail ??
+    "Freehold is the deepest, most liquid segment of the Milton market — detached homes lead it, with freehold townhomes and semis trading faster at lower prices.";
+
   // ACTIVE side — DB1 Prisma, active SALE-only LIST price, clean subType filter.
   const activeRows = await prisma.listing.findMany({
     where: { city: "Milton", permAdvertise: true, status: "active" },
-    select: { propertySubType: true, price: true, bedrooms: true, transactionType: true },
+    select: {
+      propertySubType: true, price: true, bedrooms: true, transactionType: true, maintenanceFeeAmt: true,
+    },
   });
   const inSet = (s: string | null) => cfg.subTypes.includes(norm(s));
   const isSale = (t: string | null) => (t ?? "").toLowerCase() !== "for lease";
 
-  const freeholdActive = activeRows.filter((r) => inSet(r.propertySubType));
-  const saleActive = freeholdActive.filter(
-    (r) => isSale(r.transactionType) && typeof r.price === "number" && (r.price as number) > 0,
+  const tenureActive = activeRows.filter((r) => inSet(r.propertySubType));
+  // PRICE stats use sale-priced rows ABOVE the plausibility floor (drops parking/
+  // locker anomalies). The inventory COUNT (activeCount) is unfiltered.
+  const saleActive = tenureActive.filter(
+    (r) => isSale(r.transactionType) && typeof r.price === "number" && (r.price as number) > priceFloor,
   );
   const prices = saleActive.map((r) => r.price as number);
 
-  const activeCount = freeholdActive.length;
+  const activeCount = tenureActive.length;
   const medianList = median(prices);
   const loList = prices.length ? Math.min(...prices) : null;
   const hiList = prices.length ? Math.max(...prices) : null;
@@ -133,23 +163,38 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     const xs = saleActive.filter((r) => norm(r.propertySubType) === label).map((r) => r.price as number);
     return xs.length >= K_ANON_PRICE ? median(xs) : null;
   }
-  const detMed = subMedian("Detached");
-  const townMed = subMedian("Att/Row/Townhouse");
-  const semiMed = subMedian("Semi-Detached");
+  const subMeds = subTypeDisplay.map((d) => ({ ...d, value: subMedian(d.match) }));
 
-  // by-bedroom (active freehold) — k-gated, 2..6 then 6+ bucket
+  // by-bedroom (active tenure) — k-gated, 1..5 then 6+ bucket (1-bed surfaces for
+  // condos; stays sub-k/suppressed for freehold so freehold output is unchanged)
   const bedBuckets: { label: string; count: number }[] = [];
   const bedCounts = new Map<number, number>();
-  for (const r of freeholdActive) {
+  for (const r of tenureActive) {
     if (typeof r.bedrooms === "number") bedCounts.set(r.bedrooms, (bedCounts.get(r.bedrooms) ?? 0) + 1);
   }
-  for (let b = 2; b <= 5; b++) {
+  for (let b = 1; b <= 5; b++) {
     const c = bedCounts.get(b) ?? 0;
     if (c >= K_ANON_PRICE) bedBuckets.push({ label: `${b} bed`, count: c });
   }
   let sixPlus = 0;
   for (const [b, c] of Array.from(bedCounts.entries())) if (b >= 6) sixPlus += c;
   if (sixPlus >= K_ANON_PRICE) bedBuckets.push({ label: "6+ bed", count: sixPlus });
+
+  // typical monthly fee range (condo) — p25..p75 of maintenanceFeeAmt, k-gated,
+  // floored at $50 to drop junk (e.g. $0.64). Omitted entirely if not k-safe.
+  let feeLive = "";
+  if (cfg.showFee) {
+    const fees = tenureActive
+      .map((r) => r.maintenanceFeeAmt)
+      .filter((v): v is number => typeof v === "number" && v >= 50)
+      .sort((a, b) => a - b);
+    if (fees.length >= K_ANON_PRICE && cfg.feeSentenceTemplate) {
+      const q = (p: number) => fees[Math.floor(p * (fees.length - 1))];
+      const lo = Math.round(q(0.25) / 10) * 10;
+      const hi = Math.round(q(0.75) / 10) * 10;
+      feeLive = cfg.feeSentenceTemplate.replace("{lo}", fullPrice(lo)).replace("{hi}", fullPrice(hi));
+    }
+  }
 
   // SOLD side — DB2 analytics, k-anon gated.
   const sold = await freeholdSold(cfg.subTypes);
@@ -167,21 +212,24 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
 
   // ---- editorial assembly (inject live numbers; drop the sentence if null) ----
   const costLive = hasActive
-    ? `Right now Milton has ${activeCount} active freehold ${activeCount === 1 ? "home" : "homes"}, with a median asking price of ${fullPrice(medianList as number)}${loList && hiList ? ` and asking prices running from ${fullPrice(loList)} to ${fullPrice(hiList)}` : ""}.`
+    ? `Right now Milton has ${activeCount} active ${activeCount === 1 ? activeNoun.one : activeNoun.many}, with a median asking price of ${fullPrice(medianList as number)}${loList && hiList ? ` and asking prices running from ${fullPrice(loList)} to ${fullPrice(hiList)}` : ""}.`
     : "";
+  // by-subtype cost sentence: "<label0> typically ask <p0>, <labelN> <pN>"
   const subParts: string[] = [];
-  if (detMed) subParts.push(`detached homes typically ask ${fullPrice(detMed)}`);
-  if (townMed) subParts.push(`freehold townhomes ${fullPrice(townMed)}`);
-  if (semiMed) subParts.push(`semis ${fullPrice(semiMed)}`);
-  const subLive = subParts.length
-    ? `Across active freehold listings, ${subParts.join(", ")}.`
-    : "";
+  subMeds.forEach((s, i) => {
+    if (s.value) subParts.push(i === 0 ? `${s.costLabel} typically ask ${fullPrice(s.value)}` : `${s.costLabel} ${fullPrice(s.value)}`);
+  });
+  const subLive = subParts.length ? `Across active ${inventoryNoun} listings, ${subParts.join(", ")}.` : "";
 
-  const costParagraph = [cfg.costIntro, costLive, cfg.costMid, subLive, cfg.costEnd]
+  // the cost block's middle live-line: by-subtype (freehold) or fee range (condo)
+  const middleLive = costMiddle === "fee" ? feeLive : subLive;
+  const costParagraph = [cfg.costIntro, costLive, cfg.costMid, middleLive, cfg.costEnd]
     .filter(Boolean)
     .join(" ");
 
-  const overview = [cfg.lede, cfg.threeWay, costParagraph, cfg.whoSuits, cfg.honestTradeoff];
+  const overview = [cfg.lede, cfg.threeWay, costParagraph, cfg.feeCredibility, cfg.whoSuits, cfg.honestTradeoff].filter(
+    (p): p is string => Boolean(p),
+  );
 
   // glance: tenure-static rows + a live price-range row at the top
   const priceRange =
@@ -191,11 +239,11 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
   const commentaryParas: string[] = [];
   if (sold.n >= K_ANON_PRICE && sold.typical) {
     commentaryParas.push(
-      `Over the last 12 months, ${sold.n.toLocaleString("en-CA")} freehold homes sold across Milton at a typical price of ${fullPrice(sold.typical)}${sold.dom ? `, taking about ${sold.dom} days on market` : ""}. Freehold is the deepest, most liquid segment of the Milton market — detached homes lead it, with freehold townhomes and semis trading faster at lower prices.`,
+      `Over the last 12 months, ${sold.n.toLocaleString("en-CA")} ${activeNoun.many} sold across Milton at a typical price of ${fullPrice(sold.typical)}${sold.dom ? `, taking about ${sold.dom} days on market` : ""}. ${soldTail}`,
     );
   } else {
     commentaryParas.push(
-      `There isn't enough recent freehold sales activity to publish a reliable typical sold price right now. Active asking prices above are the better current guide; ask Aamir for the latest closed comparables.`,
+      `There isn't enough recent ${inventoryNoun} sales activity to publish a reliable typical sold price right now. Active asking prices above are the better current guide; ask Aamir for the latest closed comparables.`,
     );
   }
   if (bedBuckets.length) {
@@ -203,15 +251,18 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       .sort((a, b) => b.count - a.count)
       .map((b) => `${b.label} (${b.count})`)
       .join(", ");
-    commentaryParas.push(`Active freehold inventory by size: ${bedText}.`);
+    commentaryParas.push(`Active ${inventoryNoun} inventory by size: ${bedText}.`);
   }
 
-  // marketCompare rows = by-subtype active median (what "freehold" actually spans)
-  const marketCompare = [
-    detMed ? { metricLabel: "Detached", neighbourhoodValue: fullPrice(detMed), miltonValue: medianList ? fullPrice(medianList) : "—", delta: "active asking median" } : null,
-    townMed ? { metricLabel: "Freehold townhome", neighbourhoodValue: fullPrice(townMed), miltonValue: medianList ? fullPrice(medianList) : "—", delta: "active asking median" } : null,
-    semiMed ? { metricLabel: "Semi-detached", neighbourhoodValue: fullPrice(semiMed), miltonValue: medianList ? fullPrice(medianList) : "—", delta: "active asking median" } : null,
-  ].filter(Boolean) as HubData["marketCompare"];
+  // marketCompare rows = by-subtype active median (what the tenure actually spans)
+  const marketCompare = subMeds
+    .filter((s) => s.value)
+    .map((s) => ({
+      metricLabel: s.compareLabel,
+      neighbourhoodValue: fullPrice(s.value as number),
+      miltonValue: medianList ? fullPrice(medianList) : "—",
+      delta: "active asking median",
+    })) as HubData["marketCompare"];
 
   const glance = {
     priceRange,
@@ -229,6 +280,7 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     intents: cfg.intents,
     stats,
     atAGlance: glance,
+    glanceLabels: cfg.glanceLabels,
     overview,
     marketCompare,
     commentary: { paragraphs: commentaryParas, source: cfg.marketSourceLabel },
@@ -310,6 +362,93 @@ export const FREEHOLD_CONFIG: TenureConfig = {
     heading: "Selling a freehold home?",
     body: "Whether freehold, condo, or POTL fits a buyer best comes down to stage, budget, and how hands-on they want to be. Get a free, no-obligation valuation of your Milton home from Aamir.",
     buttonLabel: "Get my home value",
+    href: "/sell",
+  },
+  marketSourceLabel: "TREB / PropTx MLS® sold data, last 12 months · Milton",
+};
+
+// ---------------------------------------------------------------------------
+// CONDO CONFIG (config #2). The DECISION/guide page (/condos-guide) — distinct
+// from the /condos directory. Condo set INCLUDES condo-townhouses (the 45 that
+// freehold correctly excludes belong here). Same seam, same composer.
+// ---------------------------------------------------------------------------
+
+export const CONDO_CONFIG: TenureConfig = {
+  slug: "condos-guide",
+  h1: "Condos in Milton",
+  eyebrow: "Milton ownership type",
+  character:
+    "Own your unit and a share of the building — a monthly fee buys you out of the roof, the grounds, the snow. Milton's most accessible way in.",
+  subTypes: ["Condo Apartment", "Condo Townhouse"],
+  priceFloor: 100000, // drop the one parking/locker anomaly ($20k) from price stats
+  activeNoun: { one: "condo", many: "condos" },
+  inventoryNoun: "condo",
+  subTypeDisplay: [
+    { match: "Condo Apartment", compareLabel: "Condo apartment", costLabel: "condo apartments" },
+    { match: "Condo Townhouse", compareLabel: "Condo townhome", costLabel: "condo townhomes" },
+  ],
+  costMiddle: "fee",
+  showFee: true,
+  feeSentenceTemplate:
+    "Across active Milton condo listings, monthly fees typically run from {lo} to {hi} — but they vary widely by building, unit size, and what the fee includes, so treat the range as a starting point, not a rule.",
+  soldTail:
+    "Condos are Milton's most accessible ownership tier — apartments lead on price, while condo townhomes trade higher for the extra space and a more freehold-like feel.",
+  glanceLabels: { vs: "vs Freehold" },
+  lede:
+    "Buying a condo means you own your unit and a share of everything around it — the building, the grounds, the amenities — and a condo corporation maintains all of it on behalf of every owner. You pay a monthly fee for that, and in exchange you stop being personally responsible for the roof, the elevator, the lobby, the snow. For the right buyer that trade is the whole appeal: a lock-and-leave home where someone else handles the upkeep. In Milton, condos run from high-rise and mid-rise apartments to condo townhomes, and they're the most accessible entry point into ownership here — the fee buys you in at a price freehold often can't match.",
+  threeWay:
+    "The choice between a condo and a freehold home isn't about which is better — it's about who you want handling maintenance and how you want to pay for it. With freehold you own the land, pay no fee, and carry every repair yourself. With a condo you pay a predictable monthly fee and the corporation handles the shared building and grounds. Neither is cheaper in the long run; they just distribute the cost differently. A freehold owner who doesn't budget for a new roof gets a nasty surprise; a condo owner trades that surprise for a fee they pay whether or not anything breaks this year. If you value predictability, low personal maintenance, amenities, or a lock-and-leave lifestyle, a condo fits. If you want maximum control, no recurring fee, and a yard, freehold is the better match. And watch for the in-between: a POTL townhome is owned freehold but still carries a smaller monthly fee for shared roads and common elements — freehold ownership with a condo-style fee attached.",
+  costIntro:
+    "Condos are Milton's more accessible price tier, which is exactly why they matter for first-time buyers and downsizers.",
+  costMid:
+    "The fee is the number to understand alongside the price: a lower purchase price with a higher monthly fee can cost more over time than it first appears, and a suspiciously low fee can be a warning sign, not a bargain.",
+  costEnd:
+    "Compare the all-in monthly cost — mortgage plus fee — not just the sticker price, when you weigh a condo against a freehold home.",
+  feeCredibility:
+    "This is where condo buyers get into trouble, and where it pays to look closely. A condo fee covers two things: day-to-day operating costs (heat, water, insurance, management, maintenance of common areas) and contributions to the reserve fund — the corporation's savings for big future repairs like the roof, elevators, and parking garage. A healthy condo has a well-funded reserve and a fee that reflects the real cost of running the building. The danger sign is a building that keeps its fee artificially low to look attractive on a listing, underfunds the reserve, and then hits owners with a special assessment — a one-time bill, sometimes tens of thousands of dollars, when a major repair can't wait. Before you buy any condo, the status certificate tells you the corporation's financial health, the reserve-fund balance, any planned increases, and whether litigation or special assessments are pending. Reading it properly is the single most important step in buying a condo — and it's exactly the kind of thing worth having an experienced agent walk through with you.",
+  whoSuits:
+    "Condos tend to fit first-time buyers getting into the market, downsizers trading a house and its upkeep for simplicity, investors who want a lower-maintenance rental, and anyone who travels or works long hours and would rather not own a lawn and a snow shovel. In Milton specifically, condo townhomes appeal to buyers who want a bit more space and a freehold-like feel while keeping the shared-maintenance convenience. If your life is busy, mobile, or just starting out, a condo's trade — fee for freedom-from-upkeep — is often the right one.",
+  honestTradeoff:
+    "A condo asks you to give up some control. You're one vote among many; the corporation sets the rules, decides what gets maintained and when, and can restrict things from renovations to pets to short-term rentals. The fee can rise, and a poorly run building can become a genuine financial liability. But a well-run condo is one of the simplest, most predictable ways to own — no roof to worry about, no lot to maintain, costs you can plan around. The difference between a great condo purchase and a regretted one is almost always the building's financial health, not the unit itself. Buy the corporation, not just the condo.",
+  glanceStatic: [
+    { label: "Home types", value: "Condo apartments & condo townhomes" },
+    { label: "Best suits", value: "First-time buyers, downsizers, investors" },
+    { label: "Monthly fee", value: "Yes — covers shared upkeep & the reserve fund" },
+    { label: "vs Condo", value: "Predictable costs, low personal upkeep" },
+  ],
+  faqs: [
+    {
+      question: "What does a condo fee in Milton cover?",
+      answer:
+        "A condo fee covers two things: day-to-day operating costs (heat, water, insurance, management, upkeep of common areas) and contributions to the reserve fund — the corporation's savings for major future repairs like the roof, elevators, and garage. A healthy fee reflects the real cost of running the building; a suspiciously low fee can mean an underfunded reserve and a future special assessment.",
+    },
+    {
+      question: "What is a status certificate and why does it matter?",
+      answer:
+        "The status certificate is the condo corporation's financial and legal disclosure — reserve-fund balance, planned fee increases, pending special assessments or litigation, and the rules. Reviewing it properly is the single most important step in buying a condo: you're buying the corporation's financial health, not just the unit. Have an experienced agent walk through it with you before you commit.",
+    },
+    {
+      question: "Condo or freehold in Milton — which should I buy?",
+      answer:
+        "Neither is cheaper overall; they distribute cost differently. A condo means a predictable monthly fee and someone else handling shared maintenance — good for predictability, low upkeep, and a lock-and-leave lifestyle. Freehold means no fee, full control, and a yard, but you carry every repair yourself. Watch for POTL townhomes, which are freehold but still carry a smaller fee for shared roads and common elements.",
+    },
+  ],
+  intents: [
+    { key: "buy", label: "Browse condo buildings", sub: "Milton condos directory", href: "/condos" },
+    { key: "sell", label: "What's my home worth", sub: "Free Milton valuation", href: "/sell" },
+    { key: "invest", label: "Compare freehold", sub: "Freehold homes in Milton", href: "/freehold" },
+    { key: "rent", label: "Explore neighbourhoods", sub: "Milton area by area", href: "/neighbourhoods" },
+  ],
+  ctaBuyer: {
+    heading: "Find the right condo",
+    body: "Browse Milton's condo buildings, or tell Aamir what you're after — apartment or condo townhome, which neighbourhood, what budget — and get help reading the status certificate before you commit.",
+    buttonLabel: "Browse condo buildings",
+    href: "/condos",
+  },
+  ctaSeller: {
+    heading: "Selling a condo?",
+    body: "Whether a condo or a freehold home fits a buyer best comes down to their stage, budget, and how much they want to own versus outsource. Get a free, no-obligation valuation of your Milton condo from Aamir.",
+    buttonLabel: "Get my condo's value",
     href: "/sell",
   },
   marketSourceLabel: "TREB / PropTx MLS® sold data, last 12 months · Milton",
