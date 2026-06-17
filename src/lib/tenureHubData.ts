@@ -64,6 +64,10 @@ export interface TenureConfig {
   honestTradeoff: string;
   glanceStatic: TenureGlanceItem[]; // non-numeric glance rows (tenure framing)
   glanceLabels?: { fee?: string; vs?: string }; // override the fee/vs glance row labels (condo: vs->"vs Freehold")
+  // section-title + breadcrumb labels (per ownership type). Defaults reproduce
+  // freehold's strings byte-identically; condo/POTL each supply their own.
+  breadcrumbLabel?: string; // default "Freehold" — the 3rd breadcrumb crumb
+  sectionTitles?: { explained: string; market: string; faq: string };
   faqs: { question: string; answer: string }[];
   ctaBuyer: { heading: string; body: string; buttonLabel: string; href: string };
   ctaSeller: { heading: string; body: string; buttonLabel: string; href: string };
@@ -281,6 +285,12 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     stats,
     atAGlance: glance,
     glanceLabels: cfg.glanceLabels,
+    breadcrumbLabel: cfg.breadcrumbLabel ?? "Freehold",
+    sectionTitles: cfg.sectionTitles ?? {
+      explained: "Freehold in Milton, explained",
+      market: "How freehold trades in Milton",
+      faq: "Freehold questions",
+    },
     overview,
     marketCompare,
     commentary: { paragraphs: commentaryParas, source: cfg.marketSourceLabel },
@@ -394,6 +404,12 @@ export const CONDO_CONFIG: TenureConfig = {
   soldTail:
     "Condos are Milton's most accessible ownership tier — apartments lead on price, while condo townhomes trade higher for the extra space and a more freehold-like feel.",
   glanceLabels: { vs: "vs Freehold" },
+  breadcrumbLabel: "Condos",
+  sectionTitles: {
+    explained: "Condos in Milton, explained",
+    market: "How condos trade in Milton",
+    faq: "Condo questions",
+  },
   lede:
     "Buying a condo means you own your unit and a share of everything around it — the building, the grounds, the amenities — and a condo corporation maintains all of it on behalf of every owner. You pay a monthly fee for that, and in exchange you stop being personally responsible for the roof, the elevator, the lobby, the snow. For the right buyer that trade is the whole appeal: a lock-and-leave home where someone else handles the upkeep. In Milton, condos run from high-rise and mid-rise apartments to condo townhomes, and they're the most accessible entry point into ownership here — the fee buys you in at a price freehold often can't match.",
   threeWay:

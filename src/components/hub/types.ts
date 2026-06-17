@@ -104,4 +104,9 @@ export interface HubData {
   // and the shared HubPage/HubGlance ignore this; only the tenure render reads it,
   // with defaults so unset = the freehold labels (freehold stays byte-identical).
   glanceLabels?: { fee?: string; vs?: string };
+  // Optional tenure-hub section-title + breadcrumb overrides (per ownership type).
+  // Only the tenure render (tenure-sections) reads these; defaults reproduce the
+  // freehold strings so freehold stays byte-identical and POTL supplies its own.
+  breadcrumbLabel?: string;
+  sectionTitles?: { explained: string; market: string; faq: string };
 }
