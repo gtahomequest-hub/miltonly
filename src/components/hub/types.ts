@@ -109,4 +109,8 @@ export interface HubData {
   // freehold strings so freehold stays byte-identical and POTL supplies its own.
   breadcrumbLabel?: string;
   sectionTitles?: { explained: string; market: string; faq: string };
+  // NULL-STATS mode (POTL): sub-k activity -> no stats shown at all. When true,
+  // the tenure render hides the hero stat tiles, the at-a-glance card, and the
+  // market section entirely (editorial + FAQ + CTA only). Number-free by design.
+  nullStats?: boolean;
 }

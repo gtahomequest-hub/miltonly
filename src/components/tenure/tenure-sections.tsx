@@ -11,9 +11,28 @@
 // geo-only sections (Streets, VIP, Condos, Siblings) are intentionally omitted —
 // no /neighbourhoods/<slug>/streets 404, no geo headers.
 
+import React from "react";
 import type { HubData } from "../hub/types";
 import { fullPrice } from "../hub/format";
 import { IconHome, IconPeople, IconTag, IconKey, IconInvest, IntentIcon } from "../hub/icons";
+
+// Inline-link prose: turns [[label|/href]] tokens into anchors, leaving all other
+// text untouched. Used so editorial paragraphs can link cross-tenure references
+// (e.g. freehold/condo's "POTL" mention -> /potl) without an HTML renderer.
+function renderProse(text: string): React.ReactNode {
+  const parts = text.split(/(\[\[[^\]|]+\|[^\]]+\]\])/g);
+  if (parts.length === 1) return text;
+  return parts.map((seg, i) => {
+    const m = seg.match(/^\[\[([^\]|]+)\|([^\]]+)\]\]$/);
+    return m ? (
+      <a key={i} href={m[2]}>
+        {m[1]}
+      </a>
+    ) : (
+      <React.Fragment key={i}>{seg}</React.Fragment>
+    );
+  });
+}
 
 function Stat({ value, label, accentDollar }: { value: number | null; label: string; accentDollar?: boolean }) {
   if (value === null) {
@@ -57,11 +76,13 @@ export function TenureHero({ data, eyebrow }: { data: HubData; eyebrow: string }
             <span className="h-eyebrow">{eyebrow}</span>
             <h1>{data.name}</h1>
             <p className="h-character">{data.character}</p>
-            <div className="h-herostats">
-              <Stat value={stats.typicalPrice} label="typical sold · 12 mo" accentDollar />
-              <Stat value={stats.sold12mo} label="sold · last 12 months" />
-              <Stat value={stats.onMarket} label="on the market" />
-            </div>
+            {!data.nullStats && (
+              <div className="h-herostats">
+                <Stat value={stats.typicalPrice} label="typical sold · 12 mo" accentDollar />
+                <Stat value={stats.sold12mo} label="sold · last 12 months" />
+                <Stat value={stats.onMarket} label="on the market" />
+              </div>
+            )}
           </div>
           <div className="h-intents">
             {data.intents.map((it) => (
@@ -81,6 +102,7 @@ export function TenureHero({ data, eyebrow }: { data: HubData; eyebrow: string }
 }
 
 export function TenureGlance({ data }: { data: HubData }) {
+  if (data.nullStats) return null; // null-stats (POTL): no at-a-glance stat card
   const g = data.atAGlance;
   const items = [
     { ic: <IconTag />, l: "Price range", v: g.priceRange, silent: g.priceRange === null },
@@ -116,7 +138,7 @@ export function TenureOverview({ data }: { data: HubData }) {
         </div>
         <div className="h-overview">
           {data.overview.map((p, i) => (
-            <p key={i}>{p}</p>
+            <p key={i}>{renderProse(p)}</p>
           ))}
         </div>
       </div>
@@ -125,6 +147,7 @@ export function TenureOverview({ data }: { data: HubData }) {
 }
 
 export function TenureMarket({ data }: { data: HubData }) {
+  if (data.nullStats) return null; // null-stats (POTL): no "how it trades" market section
   return (
     <section className="h-block h-alt">
       <div className="h-wrap">

@@ -53,15 +53,23 @@ export interface TenureConfig {
   showFee?: boolean; // default false — compute + inject a typical monthly-fee range (condo)
   feeSentenceTemplate?: string; // {lo}/{hi} tokens; only used when showFee and fee data is k-safe
   soldTail?: string; // default freehold tail — editorial sentence after the sold numbers
+  // NULL-STATS mode (POTL): sub-k activity -> the seam runs NO stat queries and
+  // returns editorial-only HubData (nullStats:true); the composer hides every
+  // stat-bearing section. overviewParas supplies the body verbatim (the cost-
+  // structured fields below are freehold/condo-shaped and unused for null-stats).
+  nullStats?: boolean;
+  overviewParas?: string[]; // null-stats body paragraphs (used verbatim as overview)
   // editorial blocks (static, verbatim). {tokens} are injected from live stats.
-  lede: string;
-  threeWay: string;
-  costIntro: string; // before the (live) cost line
-  costMid: string; // before the (live) by-subtype line
-  costEnd: string;
+  // Optional so a null-stats config (POTL) can omit them; the normal path filters
+  // falsy values, so freehold/condo output is unchanged.
+  lede?: string;
+  threeWay?: string;
+  costIntro?: string; // before the (live) cost line
+  costMid?: string; // before the (live) by-subtype line
+  costEnd?: string;
   feeCredibility?: string; // optional extra block (condo's status-certificate paragraph) after the cost block
-  whoSuits: string;
-  honestTradeoff: string;
+  whoSuits?: string;
+  honestTradeoff?: string;
   glanceStatic: TenureGlanceItem[]; // non-numeric glance rows (tenure framing)
   glanceLabels?: { fee?: string; vs?: string }; // override the fee/vs glance row labels (condo: vs->"vs Freehold")
   // section-title + breadcrumb labels (per ownership type). Defaults reproduce
@@ -125,6 +133,47 @@ async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
 // ---- the seam --------------------------------------------------------------
 
 export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | null> {
+  // NULL-STATS path (POTL): sub-k activity -> run NO stat queries (no DB hit) and
+  // return an editorial-only HubData. The composer hides every stat-bearing
+  // section (hero tiles, at-a-glance, market). Intentionally number-free.
+  if (cfg.nullStats) {
+    const glanceVal = (label: string) => cfg.glanceStatic.find((g) => g.label === label)?.value ?? "";
+    return {
+      slug: cfg.slug,
+      name: cfg.h1,
+      profile: "urban",
+      character: cfg.character,
+      intents: cfg.intents,
+      stats: { typicalPrice: null, sold12mo: null, onMarket: null, dom: null },
+      atAGlance: {
+        priceRange: null,
+        dominantType: glanceVal("Home types"),
+        suits: glanceVal("Best suits").split(",").map((s) => s.trim()).filter(Boolean),
+        commute: glanceVal("Monthly fee"),
+        schools: glanceVal("vs Condo"),
+      },
+      glanceLabels: cfg.glanceLabels,
+      breadcrumbLabel: cfg.breadcrumbLabel ?? "Freehold",
+      sectionTitles: cfg.sectionTitles ?? {
+        explained: "Freehold in Milton, explained",
+        market: "How freehold trades in Milton",
+        faq: "Freehold questions",
+      },
+      overview: cfg.overviewParas ?? [],
+      marketCompare: [],
+      commentary: { paragraphs: [], source: cfg.marketSourceLabel },
+      streets: [],
+      streetCount: 0,
+      vipStreets: [],
+      condos: [],
+      faqs: cfg.faqs,
+      siblings: [],
+      ctaBuyer: cfg.ctaBuyer,
+      ctaSeller: cfg.ctaSeller,
+      nullStats: true,
+    };
+  }
+
   // config defaults (reproduce freehold output byte-identically when unset)
   const activeNoun = cfg.activeNoun ?? { one: "freehold home", many: "freehold homes" };
   const inventoryNoun = cfg.inventoryNoun ?? "freehold";
@@ -322,7 +371,7 @@ export const FREEHOLD_CONFIG: TenureConfig = {
   lede:
     "Buying freehold means you own the home and the land outright — no condo corporation, no monthly fee, no board deciding what happens to your property. It's the most complete ownership in Ontario, and in Milton it's the default: the town's explosive growth over the last two decades filled it with detached homes, semis, and freehold townhomes, so most of what you'll tour here is freehold. The appeal is control. The catch is that control and responsibility are the same thing — the roof, the furnace, the lot, the snow are all yours to maintain and, eventually, to replace.",
   threeWay:
-    "Most Milton buyers are really choosing between three ownership types, not two, and the difference is who handles maintenance and who pays for it. Freehold: you own everything, pay no fee, and carry all the upkeep yourself. Condo: you own your unit, pay a monthly fee, and the corporation maintains the building, grounds, and amenities. POTL (Parcel of Tied Land — common in Milton's newer townhome developments): you own your home freehold, but pay a smaller monthly fee toward shared elements like private roads, visitor parking, and snow removal. It catches buyers off guard — a “freehold” townhome with a fee attached — which is why it's worth understanding before you're surprised by it at the offer stage. Freehold is the right fit if you want maximum control and no recurring fee, and you're prepared to budget for your own maintenance. If predictable costs and someone-else-handles-it convenience matter more, condo or POTL may serve you better.",
+    "Most Milton buyers are really choosing between three ownership types, not two, and the difference is who handles maintenance and who pays for it. Freehold: you own everything, pay no fee, and carry all the upkeep yourself. Condo: you own your unit, pay a monthly fee, and the corporation maintains the building, grounds, and amenities. [[POTL|/potl]] (Parcel of Tied Land — common in Milton's newer townhome developments): you own your home freehold, but pay a smaller monthly fee toward shared elements like private roads, visitor parking, and snow removal. It catches buyers off guard — a “freehold” townhome with a fee attached — which is why it's worth understanding before you're surprised by it at the offer stage. Freehold is the right fit if you want maximum control and no recurring fee, and you're prepared to budget for your own maintenance. If predictable costs and someone-else-handles-it convenience matter more, condo or POTL may serve you better.",
   costIntro:
     "Freehold spans Milton's widest price range, because the category runs from attached townhomes up to large detached homes.",
   costMid:
@@ -413,7 +462,7 @@ export const CONDO_CONFIG: TenureConfig = {
   lede:
     "Buying a condo means you own your unit and a share of everything around it — the building, the grounds, the amenities — and a condo corporation maintains all of it on behalf of every owner. You pay a monthly fee for that, and in exchange you stop being personally responsible for the roof, the elevator, the lobby, the snow. For the right buyer that trade is the whole appeal: a lock-and-leave home where someone else handles the upkeep. In Milton, condos run from high-rise and mid-rise apartments to condo townhomes, and they're the most accessible entry point into ownership here — the fee buys you in at a price freehold often can't match.",
   threeWay:
-    "The choice between a condo and a freehold home isn't about which is better — it's about who you want handling maintenance and how you want to pay for it. With freehold you own the land, pay no fee, and carry every repair yourself. With a condo you pay a predictable monthly fee and the corporation handles the shared building and grounds. Neither is cheaper in the long run; they just distribute the cost differently. A freehold owner who doesn't budget for a new roof gets a nasty surprise; a condo owner trades that surprise for a fee they pay whether or not anything breaks this year. If you value predictability, low personal maintenance, amenities, or a lock-and-leave lifestyle, a condo fits. If you want maximum control, no recurring fee, and a yard, freehold is the better match. And watch for the in-between: a POTL townhome is owned freehold but still carries a smaller monthly fee for shared roads and common elements — freehold ownership with a condo-style fee attached.",
+    "The choice between a condo and a freehold home isn't about which is better — it's about who you want handling maintenance and how you want to pay for it. With freehold you own the land, pay no fee, and carry every repair yourself. With a condo you pay a predictable monthly fee and the corporation handles the shared building and grounds. Neither is cheaper in the long run; they just distribute the cost differently. A freehold owner who doesn't budget for a new roof gets a nasty surprise; a condo owner trades that surprise for a fee they pay whether or not anything breaks this year. If you value predictability, low personal maintenance, amenities, or a lock-and-leave lifestyle, a condo fits. If you want maximum control, no recurring fee, and a yard, freehold is the better match. And watch for the in-between: a [[POTL|/potl]] townhome is owned freehold but still carries a smaller monthly fee for shared roads and common elements — freehold ownership with a condo-style fee attached.",
   costIntro:
     "Condos are Milton's more accessible price tier, which is exactly why they matter for first-time buyers and downsizers.",
   costMid:
@@ -468,4 +517,78 @@ export const CONDO_CONFIG: TenureConfig = {
     href: "/sell",
   },
   marketSourceLabel: "TREB / PropTx MLS® sold data, last 12 months · Milton",
+};
+
+// ---------------------------------------------------------------------------
+// POTL CONFIG (config #3, the last ownership axis). NULL-STATS: POTL has sub-k
+// active listings, so the page shows NO numbers at all (nullStats: true ->
+// the seam runs no queries; the composer hides hero tiles, the at-a-glance
+// card, and the market section). Pure editorial explainer + FAQ + CTA.
+// ---------------------------------------------------------------------------
+
+export const POTL_CONFIG: TenureConfig = {
+  slug: "potl",
+  h1: 'POTL Homes in Milton — What "Parcel of Tied Land" Actually Means',
+  eyebrow: "Milton ownership type",
+  character:
+    "It looks like freehold, is sold like freehold, and comes with a small monthly fee like a condo. Here's exactly what Parcel of Tied Land means — before you make an offer.",
+  subTypes: [], // null-stats: no stat queries run
+  nullStats: true,
+  breadcrumbLabel: "POTL",
+  sectionTitles: {
+    explained: "POTL in Milton, explained",
+    market: "How POTL works in Milton", // hidden (null-stats); set so it never leaks a freehold default
+    faq: "POTL questions",
+  },
+  glanceLabels: { vs: "vs Freehold" }, // glance is hidden under null-stats; set for forward use
+  glanceStatic: [
+    { label: "Home types", value: "Freehold townhomes tied to a common parcel" },
+    { label: "Best suits", value: "Townhome buyers in newer Milton developments" },
+    { label: "Monthly fee", value: "Yes — modest, for shared roads & common elements" },
+    { label: "vs Condo", value: "Freehold home plus a small shared-land fee" },
+  ],
+  overviewParas: [
+    "If you're reading this, there's a good chance you found a townhome you like in Milton, looked closer, and saw three letters that didn't quite make sense: POTL. It stands for Parcel of Tied Land, and it's the ownership type that catches more Milton buyers off guard than any other — because it looks like freehold, is sold like freehold, but comes with a monthly fee like a condo. Here's exactly what it is, why it exists, and whether it should change how you feel about the home.",
+    "With a POTL home, you own your house and the land it sits on outright — that part is true freehold. You get a deed, you own the structure and the lot, and no condo corporation owns your unit. But your property is tied to a shared parcel of common land — the private roads, visitor parking, walkways, snow removal, sometimes landscaping or a shared amenity — that serves the whole development. A small condo corporation owns and maintains that common parcel, and every owner pays a monthly fee toward it. So you own your home freehold, and you co-own the shared bits through a fee. It's freehold ownership with a condo-style arrangement bolted onto the common areas.",
+    "POTL became common in Milton for a simple reason: the town's newer townhome developments are often built with private internal roads and shared spaces the municipality doesn't maintain. Someone has to plow those roads, light them, and repair them — so the developer sets up a small common-elements corporation and ties every home to it. That's why you'll see POTL most often in newer townhome communities here. It lets builders create dense, well-kept developments with shared infrastructure while still selling the individual homes as freehold.",
+    "The three-way picture makes POTL easy to place. Pure freehold: you own everything, no fee, you handle all your own maintenance. Condo: you own your unit, pay a fee, and the corporation maintains the building and grounds. POTL: you own your home freehold like the first, but pay a (usually smaller) fee for shared common elements like the second. The POTL fee is typically lower than a full condo fee, because it covers only the shared land and infrastructure — not a building envelope, elevators, or amenities. You're still responsible for your own home's roof, furnace, and everything inside your lot, exactly like a freehold owner.",
+    "For most buyers, the answer is: not much — but go in informed. A POTL fee is usually modest, and it pays for things you'd otherwise have no way to handle yourself (you can't personally plow a private road shared by forty homes). The home is still yours, freehold. What's worth checking is the same discipline that protects any fee-based ownership: understand what the fee covers, whether it's been stable, and that the common-elements corporation is run responsibly. The fee is real and ongoing, so factor it into your monthly budget the way you would a condo fee — just usually a smaller one. The buyers who feel blindsided by POTL are almost always the ones who didn't know it was POTL until late in the process. Knowing now, before you make an offer, is the whole point.",
+    "POTL isn't a catch or a downside — it's a structure, and a common one in Milton's newer townhome market. You own your home freehold; you pay a modest fee for shared land you genuinely benefit from. The only mistake is being surprised by it. If you've found a POTL home and want to understand exactly what its fee covers and whether the arrangement is sound, that's worth a conversation before you write the offer.",
+  ],
+  faqs: [
+    {
+      question: "What does POTL mean in Ontario?",
+      answer:
+        "Parcel of Tied Land: you own your home and lot freehold, but it's tied to a shared common-elements parcel (private roads, visitor parking, snow removal) maintained by a small condo corporation, funded by a monthly fee. Freehold ownership with a fee for the shared land.",
+    },
+    {
+      question: "Is a POTL home freehold or condo?",
+      answer:
+        "Both, in a sense. The home and lot are freehold — you own them outright with a deed. The shared common elements are condo-style — co-owned and maintained by a corporation you pay a monthly fee to. Lower fee than a full condo, since it covers only shared land, not a building.",
+    },
+    {
+      question: "Should POTL stop me from buying a townhome I like?",
+      answer:
+        "Usually not. The fee is typically modest and covers shared infrastructure you couldn't maintain alone. The home is still yours freehold. Just understand what the fee covers and that the corporation is well-run before you offer — being surprised by POTL late is the only real pitfall.",
+    },
+  ],
+  intents: [
+    { key: "invest", label: "Compare freehold", sub: "Freehold homes in Milton", href: "/freehold" },
+    { key: "buy", label: "Compare condos", sub: "Condos in Milton", href: "/condos-guide" },
+    { key: "rent", label: "Explore neighbourhoods", sub: "Milton area by area", href: "/neighbourhoods" },
+    { key: "sell", label: "What's my home worth", sub: "Free Milton valuation", href: "/sell" },
+  ],
+  ctaBuyer: {
+    heading: "Found a POTL townhome?",
+    body: "Want to know exactly what you're signing up for? Aamir will walk through what the fee covers and whether the common-elements corporation is sound — before you write the offer.",
+    buttonLabel: "Browse Milton listings",
+    href: "/listings",
+  },
+  ctaSeller: {
+    heading: "Selling a POTL home?",
+    body: "Whether freehold, condo, or POTL fits a buyer best comes down to their stage, budget, and how hands-on they want to be. Get a free, no-obligation valuation of your Milton home from Aamir.",
+    buttonLabel: "Get my home value",
+    href: "/sell",
+  },
+  marketSourceLabel: "TREB / PropTx MLS® · Milton",
 };
