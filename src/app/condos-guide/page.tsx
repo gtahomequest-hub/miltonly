@@ -7,6 +7,7 @@
 import { config } from "@/lib/config";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { getTenureHubData, CONDO_CONFIG } from "@/lib/tenureHubData";
+import { COMPARE_TEASER, getCompareContrast, FREEHOLD_VS_CONDO_CONFIG } from "@/lib/comparisonData";
 import TenureHubPage from "@/components/tenure/TenureHubPage";
 import SchemaScript from "@/components/SchemaScript";
 import FooterSection from "@/components/sections/FooterSection";
@@ -23,6 +24,8 @@ export const metadata = genMeta({
 
 export default async function CondosGuidePage() {
   const data = await getTenureHubData(CONDO_CONFIG);
+  // Live contrast for the teaser; condo leads the line to match this hub's framing.
+  const compareContrast = await getCompareContrast(FREEHOLD_VS_CONDO_CONFIG, "B");
 
   const schemas: Array<Record<string, unknown>> = [
     generateBreadcrumbSchema([
@@ -41,12 +44,7 @@ export default async function CondosGuidePage() {
         <TenureHubPage
           data={data}
           eyebrow={CONDO_CONFIG.eyebrow}
-          compareLink={{
-            title: "Condo vs. freehold — see them side by side",
-            sub: "Live Milton prices, fees, and the three trades laid out plainly to help you decide.",
-            label: "Compare freehold vs condo",
-            href: "/compare/freehold-vs-condo",
-          }}
+          compareLink={{ ...COMPARE_TEASER.condo, contrast: compareContrast }}
         />
       )}
       <FooterSection />

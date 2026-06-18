@@ -12,6 +12,7 @@
 // all-null compareFacts and the table renders silent cells (never $0/NaN).
 
 import type { HubData } from "@/components/hub/types";
+import type { CompareContrast } from "@/components/compare/CompareModule";
 import {
   getTenureHubData,
   FREEHOLD_CONFIG,
@@ -191,3 +192,60 @@ export const COMPARISONS: ComparisonIndexEntry[] = [
     sideBLabel: "Condo",
   },
 ];
+
+// ---------------------------------------------------------------------------
+// COMPARE TEASER — the cross-link strip dropped on the tenure hubs (/freehold +
+// /condos-guide) via the standalone CompareModule. Lifted from the two page.tsx
+// literals so both reference ONE source (no copy-paste per placement). Each side
+// frames its headline toward the other tenure; both point at the same canonical
+// comparison. Text-only fields here; the live stat contrast is resolved
+// separately by getCompareContrast (below) at request time.
+// ---------------------------------------------------------------------------
+
+interface CompareTeaserCopy {
+  title: string;
+  sub: string;
+  label: string;
+  href: string;
+}
+
+const TEASER_SUB =
+  "Live Milton prices, fees, and the three trades laid out plainly to help you decide.";
+const TEASER_LABEL = "Compare freehold vs condo";
+const TEASER_HREF = `/compare/${FREEHOLD_VS_CONDO_CONFIG.slug}`;
+
+export const COMPARE_TEASER: { freehold: CompareTeaserCopy; condo: CompareTeaserCopy } = {
+  freehold: {
+    title: "Freehold vs. condo — see them side by side",
+    sub: TEASER_SUB,
+    label: TEASER_LABEL,
+    href: TEASER_HREF,
+  },
+  condo: {
+    title: "Condo vs. freehold — see them side by side",
+    sub: TEASER_SUB,
+    label: TEASER_LABEL,
+    href: TEASER_HREF,
+  },
+};
+
+// Live two-value median contrast for the teaser, sourced from the SAME
+// k-anon-gated compareFacts the flagship table uses (no new data path). Returns
+// null when either median is sub-k -> the teaser then shows its text sub only.
+// `lead` decides which tenure heads the line so each hub leads with its own.
+export async function getCompareContrast(
+  cfg: ComparisonConfig,
+  lead: "A" | "B" = "A",
+): Promise<CompareContrast | null> {
+  const [a, b] = await Promise.all([
+    getTenureHubData(cfg.sideA.tenureConfig),
+    getTenureHubData(cfg.sideB.tenureConfig),
+  ]);
+  const av = a?.compareFacts?.medianList ?? null;
+  const bv = b?.compareFacts?.medianList ?? null;
+  if (av == null || bv == null) return null;
+  const sideA = { aLabel: cfg.sideA.label, aValue: av, bLabel: cfg.sideB.label, bValue: bv };
+  return lead === "B"
+    ? { aLabel: sideA.bLabel, aValue: sideA.bValue, bLabel: sideA.aLabel, bValue: sideA.aValue }
+    : sideA;
+}
