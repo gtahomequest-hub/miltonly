@@ -88,10 +88,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     },
     {
+      // /compare — now a real forest INDEX of comparison pages (was a thin navy
+      // "coming soon" street-vs-street stub). Points the crawl at the live
+      // comparisons below.
       url: `${SITE_URL}/compare`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7,
+    },
+    {
+      // /compare/freehold-vs-condo — the COMPARE flagship: grounded two-column
+      // freehold-vs-condo decision page. Indexable for "freehold vs condo Milton".
+      url: `${SITE_URL}/compare/freehold-vs-condo`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
     {
       url: `${SITE_URL}/sold`,

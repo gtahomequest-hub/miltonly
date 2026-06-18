@@ -37,6 +37,8 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname === "/freehold") return null; // freehold tenure-hub renders its own SiteNav (exact match)
   if (pathname === "/condos-guide") return null; // condo tenure-hub renders its own SiteNav (exact match)
   if (pathname === "/potl") return null; // POTL tenure-hub renders its own SiteNav (exact match)
+  if (pathname === "/compare") return null; // compare-v2 forest INDEX renders its own SiteNav (exact match)
+  if (pathname?.startsWith("/compare/")) return null; // compare flagship + future sub-routes (forest ComparePage)
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
   if (pathname === "/hub-preview") return null; // hub-v2 design preview (forest body owns chrome)

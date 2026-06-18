@@ -23,7 +23,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
-import type { HubData, HubStats } from "@/components/hub/types";
+import type { HubData, HubStats, TenureCompareFacts } from "@/components/hub/types";
 import { fullPrice, compactPrice } from "@/components/hub/format";
 
 const K_ANON_PRICE = 5;
@@ -171,6 +171,13 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       ctaBuyer: cfg.ctaBuyer,
       ctaSeller: cfg.ctaSeller,
       nullStats: true,
+      // Forward-safety: a null-stats side (future POTL-pair comparisons) emits
+      // all-null facts so the /compare table degrades to silent cells cleanly.
+      compareFacts: {
+        activeCount: null, medianList: null, listLo: null, listHi: null,
+        soldTypical: null, soldCount: null, dom: null, subtypeMedians: [],
+        hasFee: Boolean(cfg.showFee), feeLo: null, feeHi: null,
+      },
     };
   }
 
@@ -236,16 +243,20 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
   // typical monthly fee range (condo) — p25..p75 of maintenanceFeeAmt, k-gated,
   // floored at $50 to drop junk (e.g. $0.64). Omitted entirely if not k-safe.
   let feeLive = "";
+  let feeLo: number | null = null;
+  let feeHi: number | null = null;
   if (cfg.showFee) {
     const fees = tenureActive
       .map((r) => r.maintenanceFeeAmt)
       .filter((v): v is number => typeof v === "number" && v >= 50)
       .sort((a, b) => a - b);
-    if (fees.length >= K_ANON_PRICE && cfg.feeSentenceTemplate) {
+    if (fees.length >= K_ANON_PRICE) {
       const q = (p: number) => fees[Math.floor(p * (fees.length - 1))];
-      const lo = Math.round(q(0.25) / 10) * 10;
-      const hi = Math.round(q(0.75) / 10) * 10;
-      feeLive = cfg.feeSentenceTemplate.replace("{lo}", fullPrice(lo)).replace("{hi}", fullPrice(hi));
+      feeLo = Math.round(q(0.25) / 10) * 10;
+      feeHi = Math.round(q(0.75) / 10) * 10;
+      if (cfg.feeSentenceTemplate) {
+        feeLive = cfg.feeSentenceTemplate.replace("{lo}", fullPrice(feeLo)).replace("{hi}", fullPrice(feeHi));
+      }
     }
   }
 
@@ -317,6 +328,24 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       delta: "active asking median",
     })) as HubData["marketCompare"];
 
+  // COMPARE FACTS — the same k-safe numbers above, surfaced structurally for the
+  // /compare side-by-side table. No new queries: every value is already computed.
+  const compareFacts: TenureCompareFacts = {
+    activeCount: activeCount > 0 ? activeCount : null,
+    medianList,
+    listLo: loList,
+    listHi: hiList,
+    soldTypical: sold.typical,
+    soldCount: sold.n > 0 ? sold.n : null,
+    dom: sold.dom,
+    subtypeMedians: subMeds
+      .filter((s): s is typeof s & { value: number } => s.value != null)
+      .map((s) => ({ label: s.compareLabel, value: s.value })),
+    hasFee: Boolean(cfg.showFee),
+    feeLo,
+    feeHi,
+  };
+
   const glance = {
     priceRange,
     dominantType: cfg.glanceStatic.find((g) => g.label === "Home types")?.value ?? "Detached, semis & freehold townhomes",
@@ -352,6 +381,7 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     siblings: [],
     ctaBuyer: cfg.ctaBuyer,
     ctaSeller: cfg.ctaSeller,
+    compareFacts,
   } satisfies HubData;
 }
 

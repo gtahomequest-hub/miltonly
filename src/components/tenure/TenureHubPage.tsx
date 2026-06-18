@@ -11,6 +11,7 @@
 // (POTL: stats=null -> hero "not stated", numeric editorial dropped -> a clean
 // editorial-only page through this same composer).
 import "../hub/hub-theme.css";
+import "../compare/compare-theme.css"; // cmp-strip classes for the optional compare cross-link band
 import type { HubData } from "../hub/types";
 import { SiteNav } from "../nav/SiteNav";
 import {
@@ -20,9 +21,21 @@ import {
   TenureMarket,
   TenureFaqs,
   TenureDualCta,
+  TenureCompareStrip,
 } from "./tenure-sections";
 
-export function TenureHubPage({ data, eyebrow }: { data: HubData; eyebrow: string }) {
+// compareLink is OPTIONAL + additive — when present (freehold + condos-guide), a
+// slim "Compare freehold vs condo" band renders after the market section. When
+// absent (POTL, neighbourhood-adjacent uses), the page is byte-unchanged.
+export function TenureHubPage({
+  data,
+  eyebrow,
+  compareLink,
+}: {
+  data: HubData;
+  eyebrow: string;
+  compareLink?: { title: string; sub: string; label: string; href: string };
+}) {
   return (
     <div className="hub-v2">
       <SiteNav variant="page" />
@@ -30,6 +43,7 @@ export function TenureHubPage({ data, eyebrow }: { data: HubData; eyebrow: strin
       <TenureGlance data={data} />
       <TenureOverview data={data} />
       <TenureMarket data={data} />
+      {compareLink && <TenureCompareStrip link={compareLink} />}
       <TenureFaqs data={data} />
       <TenureDualCta data={data} />
     </div>

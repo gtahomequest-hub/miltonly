@@ -41,7 +41,18 @@ export default async function FreeholdPage() {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      {data && <TenureHubPage data={data} eyebrow={FREEHOLD_CONFIG.eyebrow} />}
+      {data && (
+        <TenureHubPage
+          data={data}
+          eyebrow={FREEHOLD_CONFIG.eyebrow}
+          compareLink={{
+            title: "Freehold vs. condo — see them side by side",
+            sub: "Live Milton prices, fees, and the three trades laid out plainly to help you decide.",
+            label: "Compare freehold vs condo",
+            href: "/compare/freehold-vs-condo",
+          }}
+        />
+      )}
       <FooterSection />
     </>
   );
