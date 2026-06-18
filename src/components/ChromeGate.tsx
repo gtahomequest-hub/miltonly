@@ -35,6 +35,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname === "/blog") return null; // blog noindex placeholder renders its own SiteNav (exact match)
   if (pathname === "/sold") return null; // sold-v2 page renders its own SiteNav (exact match)
   if (pathname === "/freehold") return null; // freehold tenure-hub renders its own SiteNav (exact match)
+  if (pathname === "/condos-guide") return null; // condo tenure-hub renders its own SiteNav (exact match)
   if (pathname === "/guide-preview") return null; // guides-v2 article preview
   if (pathname === "/guides-preview") return null; // guides-v2 index preview
   if (pathname === "/hub-preview") return null; // hub-v2 design preview (forest body owns chrome)

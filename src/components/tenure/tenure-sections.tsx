@@ -50,7 +50,7 @@ export function TenureHero({ data, eyebrow }: { data: HubData; eyebrow: string }
           <span>/</span>
           <a href="/listings">Buy</a>
           <span>/</span>
-          Freehold
+          {data.breadcrumbLabel ?? "Freehold"}
         </div>
         <div className="h-hero-grid">
           <div className="h-hero-left">
@@ -86,8 +86,8 @@ export function TenureGlance({ data }: { data: HubData }) {
     { ic: <IconTag />, l: "Price range", v: g.priceRange, silent: g.priceRange === null },
     { ic: <IconHome />, l: "Home types", v: g.dominantType, silent: false },
     { ic: <IconPeople />, l: "Best suits", v: g.suits.join(", "), silent: false },
-    { ic: <IconKey />, l: "Monthly fee", v: g.commute, silent: false },
-    { ic: <IconInvest />, l: "vs Condo", v: g.schools, silent: false },
+    { ic: <IconKey />, l: data.glanceLabels?.fee ?? "Monthly fee", v: g.commute, silent: false },
+    { ic: <IconInvest />, l: data.glanceLabels?.vs ?? "vs Condo", v: g.schools, silent: false },
   ];
   return (
     <div className="h-glance">
@@ -112,7 +112,7 @@ export function TenureOverview({ data }: { data: HubData }) {
       <div className="h-wrap">
         <div className="h-sechead">
           <span className="h-eyebrow">The read</span>
-          <h2>Freehold in Milton, explained</h2>
+          <h2>{data.sectionTitles?.explained ?? "Freehold in Milton, explained"}</h2>
         </div>
         <div className="h-overview">
           {data.overview.map((p, i) => (
@@ -130,7 +130,7 @@ export function TenureMarket({ data }: { data: HubData }) {
       <div className="h-wrap">
         <div className="h-sechead">
           <span className="h-eyebrow">The market</span>
-          <h2>How freehold trades in Milton</h2>
+          <h2>{data.sectionTitles?.market ?? "How freehold trades in Milton"}</h2>
         </div>
         {data.marketCompare.length > 0 && (
           <div className="h-compare">
@@ -161,7 +161,7 @@ export function TenureFaqs({ data }: { data: HubData }) {
       <div className="h-wrap">
         <div className="h-sechead">
           <span className="h-eyebrow">Common questions</span>
-          <h2>Freehold questions</h2>
+          <h2>{data.sectionTitles?.faq ?? "Freehold questions"}</h2>
         </div>
         <div className="h-faq">
           {data.faqs.map((f, i) => (
