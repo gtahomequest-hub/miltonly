@@ -1,0 +1,442 @@
+/* src/components/compare/compare-theme.css
+   COMPARE-local classes. Scoped under .hub-v2 so they inherit the EXACT forest
+   tokens (--h-*) from hub-theme.css — same palette, fonts, shadows as the tenure
+   hubs. hub-theme.css is NOT edited (zero regression to the 16 neighbourhood hubs
+   + 3 tenure hubs); these .cmp-* rules live only on the /compare surface. */
+
+/* ---- two-column grounded table ---- */
+.hub-v2 .cmp-table {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-radius: 16px;
+  box-shadow: var(--h-sh);
+  overflow: hidden;
+}
+.hub-v2 .cmp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) 1fr 1fr;
+  border-bottom: 1px solid var(--h-border-muted);
+}
+.hub-v2 .cmp-row:last-child {
+  border-bottom: 0;
+}
+/* column header row (Freehold | Condo) sits on the deep forest band */
+.hub-v2 .cmp-row.cmp-head {
+  background: var(--h-bg-deep);
+}
+.hub-v2 .cmp-row.cmp-head .cmp-cell {
+  border-right-color: rgba(255, 255, 255, 0.12);
+}
+.hub-v2 .cmp-colhead {
+  padding: 20px 22px;
+}
+.hub-v2 .cmp-colhead .cmp-col-l {
+  font-family: var(--h-serif);
+  font-size: 21px;
+  color: #fff;
+  line-height: 1.1;
+}
+.hub-v2 .cmp-colhead .cmp-col-s {
+  font-size: 12.5px;
+  color: var(--h-text-faint);
+  line-height: 1.5;
+  margin-top: 5px;
+}
+.hub-v2 .cmp-colhead.cmp-corner .cmp-col-l {
+  font-family: var(--h-sans);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--h-green);
+  font-weight: 600;
+}
+.hub-v2 .cmp-cell {
+  padding: 16px 22px;
+  border-right: 1px solid var(--h-border-muted);
+}
+.hub-v2 .cmp-cell:last-child {
+  border-right: 0;
+}
+.hub-v2 .cmp-metric {
+  display: flex;
+  align-items: center;
+  background: var(--h-bg-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--h-text-muted);
+  letter-spacing: 0.01em;
+}
+.hub-v2 .cmp-val {
+  font-family: var(--h-serif);
+  font-size: 20px;
+  color: var(--h-accent-bright);
+  line-height: 1.2;
+}
+.hub-v2 .cmp-val .cmp-unit {
+  font-family: var(--h-sans);
+  font-size: 12px;
+  color: var(--h-text-muted);
+  font-weight: 500;
+  margin-left: 4px;
+}
+.hub-v2 .cmp-val.cmp-silent {
+  font-family: var(--h-sans);
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--h-text-muted);
+}
+.hub-v2 .cmp-val.cmp-nofee {
+  font-family: var(--h-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--h-accent);
+  font-style: normal;
+}
+.hub-v2 .cmp-src {
+  font-family: var(--h-mono);
+  font-size: 11px;
+  color: var(--h-text-muted);
+  margin-top: 16px;
+}
+@media (max-width: 620px) {
+  .hub-v2 .cmp-cell,
+  .hub-v2 .cmp-colhead {
+    padding: 13px 13px;
+  }
+  .hub-v2 .cmp-val {
+    font-size: 16px;
+  }
+  .hub-v2 .cmp-colhead .cmp-col-l {
+    font-size: 17px;
+  }
+  .hub-v2 .cmp-metric {
+    font-size: 11.5px;
+  }
+}
+
+/* ---- by-home-type split panel (subtypes differ per side, so not row-aligned) ---- */
+.hub-v2 .cmp-bytype {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+@media (max-width: 620px) {
+  .hub-v2 .cmp-bytype {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-v2 .cmp-bt {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-radius: 13px;
+  padding: 20px 22px;
+  box-shadow: var(--h-sh-sm);
+}
+.hub-v2 .cmp-bt .cmp-bt-h {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--h-accent);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.hub-v2 .cmp-bt .cmp-bt-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--h-border-muted);
+}
+.hub-v2 .cmp-bt .cmp-bt-row:first-of-type {
+  border-top: 0;
+}
+.hub-v2 .cmp-bt .cmp-bt-l {
+  font-size: 13.5px;
+  color: var(--h-text-body);
+}
+.hub-v2 .cmp-bt .cmp-bt-v {
+  font-family: var(--h-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--h-accent-bright);
+  white-space: nowrap;
+}
+.hub-v2 .cmp-bt .cmp-bt-empty {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--h-text-muted);
+}
+
+/* ---- the three trades ---- */
+.hub-v2 .cmp-trades {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 26px;
+}
+@media (max-width: 860px) {
+  .hub-v2 .cmp-trades {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-v2 .cmp-trade {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-top: 4px solid var(--h-accent);
+  border-radius: 13px;
+  padding: 26px 24px;
+  box-shadow: var(--h-sh-sm);
+}
+.hub-v2 .cmp-trade .cmp-trade-n {
+  font-family: var(--h-serif);
+  font-size: 19px;
+  color: var(--h-accent-bright);
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.hub-v2 .cmp-trade .cmp-trade-b {
+  font-size: 14.5px;
+  color: var(--h-text-muted);
+  line-height: 1.7;
+}
+.hub-v2 .cmp-trades-intro {
+  font-family: var(--h-serif);
+  font-size: 19px;
+  line-height: 1.7;
+  color: #222;
+  max-width: 760px;
+}
+
+/* ---- who-should-choose (two sides) ---- */
+.hub-v2 .cmp-choose {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 760px) {
+  .hub-v2 .cmp-choose {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-v2 .cmp-side {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-radius: 15px;
+  padding: 30px 30px;
+  box-shadow: var(--h-sh-sm);
+}
+.hub-v2 .cmp-side .cmp-side-tag {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--h-accent);
+  background: rgba(1, 120, 72, 0.1);
+  padding: 4px 11px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+.hub-v2 .cmp-side h3 {
+  font-family: var(--h-serif);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--h-accent-bright);
+  margin-bottom: 12px;
+}
+.hub-v2 .cmp-side p {
+  font-size: 15px;
+  color: var(--h-text-muted);
+  line-height: 1.75;
+  margin-bottom: 18px;
+}
+.hub-v2 .cmp-side .cmp-side-link {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--h-accent);
+  border-bottom: 1px solid var(--h-accent);
+  padding-bottom: 2px;
+}
+
+/* ---- bottom-line + tradeoff prose (reuses commentary look) ---- */
+.hub-v2 .cmp-prose {
+  background: var(--h-surface);
+  border-radius: 16px;
+  padding: 38px 44px;
+  box-shadow: var(--h-sh);
+  position: relative;
+  overflow: hidden;
+}
+.hub-v2 .cmp-prose::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--h-accent);
+}
+.hub-v2 .cmp-prose p {
+  font-family: var(--h-serif);
+  font-size: 18px;
+  line-height: 1.8;
+  color: #222;
+}
+@media (max-width: 600px) {
+  .hub-v2 .cmp-prose {
+    padding: 26px 22px;
+  }
+}
+
+/* ---- CTA row ---- */
+.hub-v2 .cmp-ctas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 26px;
+}
+@media (max-width: 760px) {
+  .hub-v2 .cmp-ctas {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 440px) {
+  .hub-v2 .cmp-ctas {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-v2 .cmp-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 13px;
+  padding: 20px 18px;
+  transition: 0.18s;
+}
+.hub-v2 .cmp-cta:hover {
+  background: rgba(0, 255, 128, 0.08);
+  border-color: rgba(0, 255, 128, 0.45);
+  transform: translateY(-3px);
+}
+.hub-v2 .cmp-cta .cmp-cta-l {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #fff;
+}
+.hub-v2 .cmp-cta .cmp-cta-s {
+  font-size: 12.5px;
+  color: var(--h-text-faint);
+  line-height: 1.5;
+}
+
+/* ---- /compare INDEX cards ---- */
+.hub-v2 .cmp-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.hub-v2 .cmp-card {
+  display: block;
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-radius: 15px;
+  padding: 28px 28px;
+  box-shadow: var(--h-sh-sm);
+  transition: 0.2s;
+}
+.hub-v2 .cmp-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--h-sh);
+  border-color: rgba(1, 120, 72, 0.4);
+}
+.hub-v2 .cmp-card .cmp-card-vs {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+.hub-v2 .cmp-card .cmp-card-pill {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--h-accent-bright);
+  background: rgba(1, 120, 72, 0.09);
+  padding: 5px 12px;
+  border-radius: 7px;
+}
+.hub-v2 .cmp-card .cmp-card-x {
+  font-family: var(--h-mono);
+  font-size: 11px;
+  color: var(--h-text-muted);
+}
+.hub-v2 .cmp-card h3 {
+  font-family: var(--h-serif);
+  font-weight: 500;
+  font-size: 23px;
+  color: var(--h-accent-bright);
+  margin-bottom: 9px;
+}
+.hub-v2 .cmp-card p {
+  font-size: 14px;
+  color: var(--h-text-muted);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+.hub-v2 .cmp-card .cmp-card-go {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--h-accent);
+}
+
+/* ---- tenure-hub compare strip (the cross-link added to /freehold + /condos-guide) ---- */
+.hub-v2 .cmp-strip-wrap {
+  padding: 0 0 8px;
+}
+.hub-v2 .cmp-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: var(--h-bg-deep);
+  border-radius: 16px;
+  padding: 26px 32px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--h-sh);
+}
+.hub-v2 .cmp-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(560px 320px at 88% 120%, rgba(1, 120, 72, 0.5), transparent 55%);
+}
+.hub-v2 .cmp-strip > * {
+  position: relative;
+}
+.hub-v2 .cmp-strip .cmp-strip-t {
+  font-family: var(--h-serif);
+  font-size: 21px;
+  line-height: 1.25;
+}
+.hub-v2 .cmp-strip .cmp-strip-s {
+  font-size: 13.5px;
+  color: var(--h-text-sec);
+  margin-top: 5px;
+  max-width: 520px;
+}
+.hub-v2 .cmp-strip .cmp-strip-b {
+  display: inline-block;
+  background: var(--h-green);
+  color: #06281d;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  white-space: nowrap;
+}

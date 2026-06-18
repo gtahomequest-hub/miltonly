@@ -199,6 +199,31 @@ export function TenureFaqs({ data }: { data: HubData }) {
   );
 }
 
+// Slim cross-link band -> the /compare flagship. Additive, optional (only the
+// tenure hubs that pass compareLink render it); reuses the compare-theme cmp-strip
+// classes (scoped .hub-v2). Does NOT touch the stat/header sections above it.
+export function TenureCompareStrip({
+  link,
+}: {
+  link: { title: string; sub: string; label: string; href: string };
+}) {
+  return (
+    <section className="h-block cmp-strip-wrap">
+      <div className="h-wrap">
+        <div className="cmp-strip">
+          <div>
+            <div className="cmp-strip-t">{link.title}</div>
+            <div className="cmp-strip-s">{link.sub}</div>
+          </div>
+          <a className="cmp-strip-b" href={link.href}>
+            {link.label} →
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function TenureDualCta({ data }: { data: HubData }) {
   return (
     <section className="h-block">

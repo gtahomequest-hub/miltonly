@@ -113,4 +113,27 @@ export interface HubData {
   // the tenure render hides the hero stat tiles, the at-a-glance card, and the
   // market section entirely (editorial + FAQ + CTA only). Number-free by design.
   nullStats?: boolean;
+  // COMPARE FACTS (optional, additive). Surfaces the SAME already-computed,
+  // k-anon-gated numbers getTenureHubData bakes into prose, as a structured
+  // object — so the /compare two-column composer can render a grounded
+  // side-by-side table from the SAME seam (no new queries, no new data layer).
+  // Only the ComparePage reads this; every existing consumer (neighbourhood
+  // hubs, tenure hubs) ignores it -> zero regression. Every field null-degrades.
+  compareFacts?: TenureCompareFacts;
+}
+
+/** Structured, k-safe facts for the /compare side-by-side table. Mirrors the
+ *  numbers getTenureHubData already computes; nulls are silent (never $0/NaN). */
+export interface TenureCompareFacts {
+  activeCount: number | null; // onMarket inventory count (unfiltered)
+  medianList: number | null; // active sale-only median LIST price
+  listLo: number | null; // active sale-only min/max LIST (plausibility-floored)
+  listHi: number | null;
+  soldTypical: number | null; // avg sold 12mo, k-anon gated (K>=5)
+  soldCount: number | null; // DISTINCT mls sold 12mo
+  dom: number | null; // avg days on market (sold-derived)
+  subtypeMedians: { label: string; value: number }[]; // k-gated active medians
+  hasFee: boolean; // this tenure carries a monthly fee (condo) vs none (freehold)
+  feeLo: number | null; // typical monthly-fee range, k-gated (condo only)
+  feeHi: number | null;
 }
