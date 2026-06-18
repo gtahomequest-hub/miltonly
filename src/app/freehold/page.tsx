@@ -7,6 +7,7 @@
 import { config } from "@/lib/config";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { getTenureHubData, FREEHOLD_CONFIG } from "@/lib/tenureHubData";
+import { COMPARE_TEASER, getCompareContrast, FREEHOLD_VS_CONDO_CONFIG } from "@/lib/comparisonData";
 import TenureHubPage from "@/components/tenure/TenureHubPage";
 import SchemaScript from "@/components/SchemaScript";
 import FooterSection from "@/components/sections/FooterSection";
@@ -25,6 +26,9 @@ export const metadata = genMeta({
 
 export default async function FreeholdPage() {
   const data = await getTenureHubData(FREEHOLD_CONFIG);
+  // Live freehold-vs-condo median contrast for the teaser (sourced from the same
+  // k-anon compareFacts as the flagship); freehold leads the line. null if sub-k.
+  const compareContrast = await getCompareContrast(FREEHOLD_VS_CONDO_CONFIG, "A");
 
   // Defensive: the seam returns a valid HubData even with no stats (editorial-
   // only). If the DB is wholly unreachable it still returns a shell; render it.
@@ -45,12 +49,7 @@ export default async function FreeholdPage() {
         <TenureHubPage
           data={data}
           eyebrow={FREEHOLD_CONFIG.eyebrow}
-          compareLink={{
-            title: "Freehold vs. condo — see them side by side",
-            sub: "Live Milton prices, fees, and the three trades laid out plainly to help you decide.",
-            label: "Compare freehold vs condo",
-            href: "/compare/freehold-vs-condo",
-          }}
+          compareLink={{ ...COMPARE_TEASER.freehold, contrast: compareContrast }}
         />
       )}
       <FooterSection />

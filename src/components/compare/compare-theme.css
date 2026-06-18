@@ -392,51 +392,6 @@
   color: var(--h-accent);
 }
 
-/* ---- tenure-hub compare strip (the cross-link added to /freehold + /condos-guide) ---- */
-.hub-v2 .cmp-strip-wrap {
-  padding: 0 0 8px;
-}
-.hub-v2 .cmp-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  background: var(--h-bg-deep);
-  border-radius: 16px;
-  padding: 26px 32px;
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--h-sh);
-}
-.hub-v2 .cmp-strip::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(560px 320px at 88% 120%, rgba(1, 120, 72, 0.5), transparent 55%);
-}
-.hub-v2 .cmp-strip > * {
-  position: relative;
-}
-.hub-v2 .cmp-strip .cmp-strip-t {
-  font-family: var(--h-serif);
-  font-size: 21px;
-  line-height: 1.25;
-}
-.hub-v2 .cmp-strip .cmp-strip-s {
-  font-size: 13.5px;
-  color: var(--h-text-sec);
-  margin-top: 5px;
-  max-width: 520px;
-}
-.hub-v2 .cmp-strip .cmp-strip-b {
-  display: inline-block;
-  background: var(--h-green);
-  color: #06281d;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 12px 24px;
-  border-radius: 8px;
-  white-space: nowrap;
-}
+/* The tenure-hub compare strip moved OUT of this .hub-v2-scoped file into the
+ * self-contained src/components/compare/CompareModule.css (standalone, droppable
+ * on any forest page). No .cmp-strip* rules live here anymore. */
