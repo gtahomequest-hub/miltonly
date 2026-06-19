@@ -10,6 +10,7 @@ import { formatCAD } from "@/lib/charts/theme";
 import { loadStreetGeneration } from "@/lib/ai/loadStreetGeneration";
 import type { StreetSection, FAQItem } from "@/types/street";
 import StreetV2Page from "@/components/street/v2/StreetPage";
+import { getStreetCompareContrast } from "@/lib/comparisonData";
 import { prisma } from "@/lib/prisma";
 
 interface Props { params: { slug: string } }
@@ -81,10 +82,14 @@ export default async function StreetPage({ params }: Props) {
   // ── Render: forest-v2 shell from the vetted data (restyle only) ─────────────
   const v2 = mapStreetV2Data(data, generation);
 
+  // Live freehold-vs-condo median contrast for the CompareModule teaser. City-wide
+  // (same on every street) + cached -> one DB pass shared across all street pages.
+  const compareContrast = await getStreetCompareContrast();
+
   return (
     <>
       <SchemaInjector schema={schema} />
-      <StreetV2Page data={v2} />
+      <StreetV2Page data={v2} compareContrast={compareContrast} />
     </>
   );
 }

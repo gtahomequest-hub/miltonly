@@ -11,6 +11,7 @@
 // A null-stats side (future POTL pairs) degrades cleanly — getTenureHubData emits
 // all-null compareFacts and the table renders silent cells (never $0/NaN).
 
+import { unstable_cache } from "next/cache";
 import type { HubData } from "@/components/hub/types";
 import type { CompareContrast } from "@/components/compare/CompareModule";
 import {
@@ -249,3 +250,15 @@ export async function getCompareContrast(
     ? { aLabel: sideA.bLabel, aValue: sideA.bValue, bLabel: sideA.aLabel, bValue: sideA.aValue }
     : sideA;
 }
+
+// Cached freehold-vs-condo contrast for OFF-HUB placements. The street pages are
+// SSG (552 of them + ISR), and the medians are city-wide (identical on every
+// street), so computing per-page would fire two tenure queries x hundreds of
+// pages. unstable_cache collapses that to ONE DB pass per revalidate window,
+// shared by all callers. Hubs keep using the uncached getCompareContrast (they're
+// force-dynamic). lead "A" -> freehold leads the line.
+export const getStreetCompareContrast = unstable_cache(
+  async (): Promise<CompareContrast | null> => getCompareContrast(FREEHOLD_VS_CONDO_CONFIG, "A"),
+  ["compare-contrast:freehold-vs-condo"],
+  { revalidate: 3600 },
+);
