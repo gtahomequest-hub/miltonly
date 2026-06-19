@@ -11,7 +11,6 @@
 // A null-stats side (future POTL pairs) degrades cleanly — getTenureHubData emits
 // all-null compareFacts and the table renders silent cells (never $0/NaN).
 
-import { unstable_cache } from "next/cache";
 import type { HubData } from "@/components/hub/types";
 import type { CompareContrast } from "@/components/compare/CompareModule";
 import {
@@ -251,14 +250,21 @@ export async function getCompareContrast(
     : sideA;
 }
 
-// Cached freehold-vs-condo contrast for OFF-HUB placements. The street pages are
-// SSG (552 of them + ISR), and the medians are city-wide (identical on every
-// street), so computing per-page would fire two tenure queries x hundreds of
-// pages. unstable_cache collapses that to ONE DB pass per revalidate window,
-// shared by all callers. Hubs keep using the uncached getCompareContrast (they're
-// force-dynamic). lead "A" -> freehold leads the line.
-export const getStreetCompareContrast = unstable_cache(
-  async (): Promise<CompareContrast | null> => getCompareContrast(FREEHOLD_VS_CONDO_CONFIG, "A"),
-  ["compare-contrast:freehold-vs-condo"],
-  { revalidate: 3600 },
-);
+// Freehold-vs-condo contrast for OFF-HUB placements (street pages etc.). The
+// medians are CITY-WIDE -- identical on every one of the 552 SSG street pages --
+// so this must resolve ONCE per build, never per page. (unstable_cache did not
+// reliably collapse it: each build worker cold-misses the incremental cache and
+// re-runs the fetch, so 552 SSG pages still triggered many resolutions.)
+//
+// Module-level memoized PROMISE: the first caller in a worker starts the fetch;
+// every other page awaits that same in-flight/resolved promise -> ~one resolution
+// per build worker (a handful total) instead of 552. Still fully LIVE -- the value
+// comes from getCompareContrast -> compareFacts, recomputed on every build/deploy;
+// only the FETCH is hoisted, never the dollar figures (which drift with the market).
+// This is the pattern every future placement should inherit (critical at Homesly's
+// 60-70k pages). lead "A" -> freehold leads the line.
+let _streetContrast: Promise<CompareContrast | null> | undefined;
+export function getStreetCompareContrast(): Promise<CompareContrast | null> {
+  if (!_streetContrast) _streetContrast = getCompareContrast(FREEHOLD_VS_CONDO_CONFIG, "A");
+  return _streetContrast;
+}
