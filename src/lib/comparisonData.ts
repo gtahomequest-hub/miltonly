@@ -249,3 +249,22 @@ export async function getCompareContrast(
     ? { aLabel: sideA.bLabel, aValue: sideA.bValue, bLabel: sideA.aLabel, bValue: sideA.aValue }
     : sideA;
 }
+
+// Freehold-vs-condo contrast for OFF-HUB placements (street pages etc.). The
+// medians are CITY-WIDE -- identical on every one of the 552 SSG street pages --
+// so this must resolve ONCE per build, never per page. (unstable_cache did not
+// reliably collapse it: each build worker cold-misses the incremental cache and
+// re-runs the fetch, so 552 SSG pages still triggered many resolutions.)
+//
+// Module-level memoized PROMISE: the first caller in a worker starts the fetch;
+// every other page awaits that same in-flight/resolved promise -> ~one resolution
+// per build worker (a handful total) instead of 552. Still fully LIVE -- the value
+// comes from getCompareContrast -> compareFacts, recomputed on every build/deploy;
+// only the FETCH is hoisted, never the dollar figures (which drift with the market).
+// This is the pattern every future placement should inherit (critical at Homesly's
+// 60-70k pages). lead "A" -> freehold leads the line.
+let _streetContrast: Promise<CompareContrast | null> | undefined;
+export function getStreetCompareContrast(): Promise<CompareContrast | null> {
+  if (!_streetContrast) _streetContrast = getCompareContrast(FREEHOLD_VS_CONDO_CONFIG, "A");
+  return _streetContrast;
+}

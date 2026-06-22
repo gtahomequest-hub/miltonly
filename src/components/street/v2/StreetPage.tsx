@@ -19,8 +19,24 @@ import {
   StreetFinalCtas,
 } from './sections';
 import { SiteNav } from '../../nav/SiteNav';
+import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
+import { COMPARE_TEASER } from '@/lib/comparisonData';
 
-export function StreetV2Page({ data }: { data: StreetV2Data }) {
+// FIRST off-hub placement of the standalone CompareModule. A street buyer is
+// implicitly choosing freehold vs condo, so the existing freehold-vs-condo teaser
+// (COMPARE_TEASER, same as the hubs) is the right nudge. Dropped after the market
+// section ("you've seen the prices -> deciding freehold vs condo?"). Additive only
+// -- it touches none of the street's own data/stats/lead-flow/VOW. compareContrast
+// is optional (city-wide medians, cached upstream); the module degrades to its sub
+// text if absent. street-v2 is NOT .hub-v2, so the module proves its self-contained
+// var(--h-x, <fallback>) CSS renders forest off-hub.
+export function StreetV2Page({
+  data,
+  compareContrast,
+}: {
+  data: StreetV2Data;
+  compareContrast?: CompareContrast | null;
+}) {
   return (
     <div className="street-v2">
       <SiteNav variant="page" />
@@ -29,6 +45,7 @@ export function StreetV2Page({ data }: { data: StreetV2Data }) {
       <StreetBody data={data} />
       <StreetTypes data={data} />
       <StreetMarket data={data} />
+      <CompareModule {...COMPARE_TEASER.freehold} contrast={compareContrast} />
       <StreetCommute data={data} />
       <StreetInventory data={data} />
       <StreetContext data={data} />
