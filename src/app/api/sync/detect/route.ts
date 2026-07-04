@@ -18,7 +18,7 @@ const SELECT_FIELDS = [
   "StreetNumber", "StreetName", "StreetSuffix", "UnitNumber",
   "PostalCode", "StateOrProvince",
   "BedroomsTotal", "BathroomsTotalInteger",
-  "PropertyType", "PropertySubType", "TransactionType",
+  "PropertyType", "PropertySubType", "ParcelOfTiedLand", "TransactionType",
   "MlsStatus", "StandardStatus", "LivingAreaRange", "Basement",
   "ParkingTotal",
   "PublicRemarks", "OriginalEntryTimestamp",
@@ -52,6 +52,7 @@ interface AmpProperty {
   BathroomsTotalInteger: number | null;
   PropertyType: string | null;
   PropertySubType: string | null;
+  ParcelOfTiedLand: string | null;
   TransactionType: string | null;
   MlsStatus: string | null;
   StandardStatus: string | null;
@@ -277,6 +278,14 @@ export async function POST(request: NextRequest) {
           basement: Array.isArray(item.Basement) ? item.Basement.length > 0 : false,
           sqft: parseLivingAreaRange(item.LivingAreaRange),
           propertyType: mapPropertyType(item.PropertyType, item.PropertySubType),
+          // Additive tenure passthrough (ownership-type axis). Raw values; no
+          // mapping/collapsing — the whole point is to preserve what
+          // mapPropertyType discards. Mirrors src/lib/sync/treb-sync.ts exactly
+          // (no storage-time trim; the "Semi-Detached " trailing space PropTx
+          // ships is handled by TRIM()/norm() at read time in the tenure seam).
+          propertySubType: item.PropertySubType || null,
+          parcelOfTiedLand: item.ParcelOfTiedLand || null,
+          propertyTypeRaw: item.PropertyType || null,
           status: states.status,
           leaseStatus: states.leaseStatus,
           ...(shouldStampPriceChange ? { lastPriceChangeAt: new Date() } : {}),
