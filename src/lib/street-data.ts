@@ -204,6 +204,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
             AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
             AND sold_date >= NOW() - INTERVAL '12 months'
+            AND sold_date <= NOW()
           GROUP BY property_type
         ` as unknown as Promise<RawTypeAgg[]>).catch(() => [] as RawTypeAgg[])
       : Promise.resolve([] as RawTypeAgg[]),
@@ -217,6 +218,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
             AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
             AND sold_date >= NOW() - INTERVAL '12 months'
+            AND sold_date <= NOW()
         ` as unknown as Promise<Array<{ n: number; lo: string | null; hi: string | null }>>).catch(() => [] as Array<{ n: number; lo: string | null; hi: string | null }>)
       : Promise.resolve([] as Array<{ n: number; lo: string | null; hi: string | null }>),
     // Centroid fallback: if DB1 has no current listings (expired/sold-only streets),

@@ -114,6 +114,7 @@ async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
         AND transaction_type = 'For Sale'
         AND TRIM(property_sub_type) = ANY(${subTypes}::text[])
         AND sold_date >= NOW() - INTERVAL '12 months'
+        AND sold_date <= NOW()
     `) as Array<{ n: number; avg_price: string | null; lo: string | null; hi: string | null; dom: string | null }>;
     const r = rows[0];
     const n = r?.n ?? 0;
