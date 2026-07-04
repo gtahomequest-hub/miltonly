@@ -78,7 +78,7 @@ async function siblingsFor(slug: string, profile: HubProfile): Promise<HubSiblin
   const rows: Array<{ neighbourhood: string; n: number; total: number }> = sold
     ? ((await sold`SELECT neighbourhood, COUNT(*)::int AS n, COALESCE(SUM(sold_price),0)::float AS total
          FROM sold.sold_records
-         WHERE perm_advertise = TRUE AND transaction_type = 'For Sale' AND sold_date >= NOW() - INTERVAL '12 months'
+         WHERE perm_advertise = TRUE AND transaction_type = 'For Sale' AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
          GROUP BY neighbourhood`) as Array<{ neighbourhood: string; n: number; total: number }>)
     : [];
   const byRaw = new Map(rows.map((r) => [r.neighbourhood, r]));

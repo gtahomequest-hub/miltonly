@@ -73,6 +73,7 @@ export async function getHomepageData(): Promise<HomepageData> {
          FROM sold.sold_records
          WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
            AND sold_date >= NOW() - INTERVAL '12 months'
+           AND sold_date <= NOW()
          GROUP BY neighbourhood`) as SoldAgg[])
     : [];
   const aggByRaw = new Map(soldRows.map((r) => [r.neighbourhood, r]));
