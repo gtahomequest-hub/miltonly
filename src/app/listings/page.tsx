@@ -12,6 +12,7 @@ import FooterSection from '@/components/sections/FooterSection';
 import SchemaScript from '@/components/SchemaScript';
 import { generateFAQSchema } from '@/lib/schema';
 import { getListingsV2Data, parseListingsQuery } from '@/lib/listingsV2Data';
+import { getStreetCompareContrast } from '@/lib/comparisonData';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,13 @@ interface Props {
 
 export default async function ListingsPage({ searchParams }: Props) {
   const query = parseListingsQuery(searchParams);
-  const data = await getListingsV2Data(query);
+  // City-wide freehold-vs-condo contrast for the CompareModule teaser — same
+  // hoisted memoized-promise seam the street pages use (one resolution per
+  // process; /listings is force-dynamic so this is a warm-cache hit per request).
+  const [data, compareContrast] = await Promise.all([
+    getListingsV2Data(query),
+    getStreetCompareContrast(),
+  ]);
 
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -43,7 +50,7 @@ export default async function ListingsPage({ searchParams }: Props) {
   return (
     <>
       <SchemaScript schemas={[generateFAQSchema(data.faqs), articleSchema]} />
-      <ListingsV2Page data={data} />
+      <ListingsV2Page data={data} compareContrast={compareContrast} />
       <FooterSection />
     </>
   );
