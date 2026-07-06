@@ -1,0 +1,31 @@
+/* src/app/value/value-theme.css
+   /value door-hanger landing — layers on top of sell-theme.css within the
+   .sell-v2 scope. Only loaded by the /value route, so these rules never
+   reach /sell. Mobile-first single column; widens the hero copy that the
+   /sell two-column lede intentionally clamps to 480px. */
+
+.sell-v2 .v-col {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-bottom: 56px;
+}
+.sell-v2 .v-col .s-lede {
+  max-width: none;
+}
+.sell-v2 .v-ask {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--s-text);
+  max-width: none;
+  margin: 0 0 18px;
+}
+.sell-v2 .v-form {
+  margin-bottom: 24px;
+}
+.sell-v2 .v-trust {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--s-text-sec);
+  max-width: none;
+  margin: 22px 0 14px;
+}
