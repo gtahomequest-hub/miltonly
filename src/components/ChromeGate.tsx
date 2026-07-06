@@ -28,6 +28,7 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname?.startsWith("/listings-v2-preview")) return null; // listings-v2 design preview
   if (pathname === "/listings") return null; // listings-v2 live page renders its own SiteNav (exact match — /listings/<mls> detail keeps the navy nav until its own v2 cutover)
   if (pathname === "/sell") return null; // sell-v2 page renders its own SiteNav (exact match)
+  if (pathname?.startsWith("/value")) return null; // door-hanger valuation landing (focused conversion, mirrors /sales/ads — SiteNav owns chrome)
   if (pathname === "/mosques") return null; // mosques-v2 directory renders its own SiteNav (exact match)
   if (pathname?.startsWith("/mosques/")) return null; // mosque-v2 detail pages
   if (pathname === "/schools") return null; // schools-v2 directory renders its own SiteNav (exact match)
