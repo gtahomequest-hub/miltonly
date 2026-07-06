@@ -14,6 +14,7 @@ import "../hub/hub-theme.css";
 import "./compare-theme.css";
 import React from "react";
 import { SiteNav } from "../nav/SiteNav";
+import CompareDecisionTool from "./CompareDecisionTool";
 import { fullPrice, compactPrice } from "../hub/format";
 import type { TenureCompareFacts } from "../hub/types";
 import type { ComparisonData } from "@/lib/comparisonData";
@@ -208,6 +209,29 @@ export function ComparePage({ data, source }: { data: ComparisonData; source: st
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* the decision tool — the ONE client island (besides SiteNav). Sliders
+          map 1:1 onto the three trades the reader just finished; the header +
+          sub stay server-rendered static text. Facts come off the SAME data
+          object the grounded table used — no second fetch. */}
+      <section className="h-block">
+        <div className="h-wrap">
+          <div className="h-sechead">
+            <span className="h-eyebrow">Decide it live</span>
+            <h2>Which side fits you? Weight what matters.</h2>
+          </div>
+          <p className="cmp-tool-sub">
+            Move the three sliders to match what you actually care about. The answer updates live, using
+            today&apos;s real Milton numbers.
+          </p>
+          <CompareDecisionTool
+            factsA={facts(data.sideA)}
+            factsB={facts(data.sideB)}
+            hrefA={cfg.sideA.href}
+            hrefB={cfg.sideB.href}
+          />
         </div>
       </section>
 
