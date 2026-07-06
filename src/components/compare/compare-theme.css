@@ -392,6 +392,134 @@
   color: var(--h-accent);
 }
 
+/* ---- the decision tool (client island) ---- */
+.hub-v2 .cmp-tool-sub {
+  font-family: var(--h-serif);
+  font-size: 18px;
+  line-height: 1.7;
+  color: #222;
+  max-width: 720px;
+  margin-bottom: 26px;
+}
+.hub-v2 .cmp-tool {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+@media (max-width: 860px) {
+  .hub-v2 .cmp-tool {
+    grid-template-columns: 1fr;
+  }
+}
+.hub-v2 .cmp-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hub-v2 .cmp-slider {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-radius: 13px;
+  padding: 18px 22px 16px;
+  box-shadow: var(--h-sh-sm);
+}
+.hub-v2 .cmp-slider-tag {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--h-accent);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.hub-v2 .cmp-slider-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--h-text-muted);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.hub-v2 .cmp-slider-ends span:last-child {
+  text-align: right;
+}
+.hub-v2 .cmp-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--h-accent);
+  cursor: pointer;
+  height: 22px;
+}
+.hub-v2 .cmp-slider-live {
+  font-family: var(--h-mono);
+  font-size: 11px;
+  color: var(--h-text-muted);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.hub-v2 .cmp-readout {
+  background: var(--h-surface);
+  border: 1px solid var(--h-border-muted);
+  border-radius: 15px;
+  padding: 30px 32px;
+  box-shadow: var(--h-sh);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.hub-v2 .cmp-readout::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--h-accent);
+}
+.hub-v2 .cmp-readout-h {
+  font-family: var(--h-serif);
+  font-size: 24px;
+  color: var(--h-accent-bright);
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+.hub-v2 .cmp-readout-b {
+  font-size: 15px;
+  color: var(--h-text-muted);
+  line-height: 1.75;
+  margin-bottom: 20px;
+}
+.hub-v2 .cmp-readout-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+.hub-v2 .cmp-readout-cta {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--h-accent);
+  border-radius: 9px;
+  padding: 11px 18px;
+  transition: 0.18s;
+}
+.hub-v2 .cmp-readout-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+.hub-v2 .cmp-readout-cta-sec {
+  color: var(--h-accent);
+  background: rgba(1, 120, 72, 0.08);
+  border: 1px solid rgba(1, 120, 72, 0.3);
+}
+@media (max-width: 600px) {
+  .hub-v2 .cmp-readout {
+    padding: 24px 20px;
+  }
+}
+
 /* The tenure-hub compare strip moved OUT of this .hub-v2-scoped file into the
  * self-contained src/components/compare/CompareModule.css (standalone, droppable
  * on any forest page). No .cmp-strip* rules live here anymore. */
