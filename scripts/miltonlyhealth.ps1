@@ -30,10 +30,10 @@
     If dot-sourced, uses return instead of exit to avoid killing the shell.
 
 .EXAMPLE
-    & "C:\Users\inpse\miltonly\scripts\miltonlyhealth.ps1"
+    & "C:\Users\inspe\miltonly\scripts\miltonlyhealth.ps1"
 
 .EXAMPLE
-    function miltonlyhealth { & "C:\Users\inpse\miltonly\scripts\miltonlyhealth.ps1" }
+    function miltonlyhealth { & "C:\Users\inspe\miltonly\scripts\miltonlyhealth.ps1" }
     miltonlyhealth
 #>
 
@@ -51,7 +51,7 @@ try {
     $OutputEncoding = [System.Text.Encoding]::UTF8
 } catch { }
 
-$script:ProjectRoot = 'C:\Users\inpse\miltonly'
+$script:ProjectRoot = 'C:\Users\inspe\miltonly'
 $script:BaseUrl     = 'https://www.miltonly.com'
 $script:results     = @{ passed = 0; warned = 0; failed = 0; skipped = 0 }
 $script:cachedHomepage = $null
@@ -997,3 +997,5 @@ if ($MyInvocation.InvocationName -eq '.') {
 exit $exitCode
 
 #endregion Main
+
+
