@@ -4,7 +4,7 @@ import AgentContactSection from "@/components/AgentContactSection";
 
 export const metadata = genMeta({
   title: `About ${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent`,
-  description: `${config.realtor.name} has served ${config.CITY_NAME} families for ${config.realtor.yearsExperience} years as a full-time real estate professional. RE/MAX Hall of Fame Award recipient. Buy, sell, or rent in ${config.CITY_NAME}.`,
+  description: `${config.realtor.name} has helped 235+ families over ${config.realtor.yearsExperience} years as a full-time real estate professional. RE/MAX Hall of Fame Award recipient. Buy, sell, or rent in ${config.CITY_NAME}.`,
   canonical: `${config.SITE_URL}/about`,
 });
 
@@ -20,7 +20,7 @@ export default function AboutPage() {
           {config.realtor.title} · {config.brokerage.name}
         </p>
         <p className="text-[15px] text-[#94a3b8] max-w-[560px] mx-auto leading-relaxed">
-          {config.realtor.name} has served {config.CITY_NAME} families for {config.realtor.yearsExperience} years as a full-time real estate professional. From first rentals to investment properties, buyers to sellers, {config.realtor.name.split(" ")[0]} provides complete representation at every stage.
+          {config.realtor.name} has helped 235+ families over {config.realtor.yearsExperience} years as a full-time real estate professional. From first rentals to investment properties, buyers to sellers, {config.realtor.name.split(" ")[0]} provides complete representation at every stage.
         </p>
       </section>
 

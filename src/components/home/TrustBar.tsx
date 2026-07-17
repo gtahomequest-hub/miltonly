@@ -6,7 +6,7 @@ export function TrustBar({ trust }: { trust: TrustInfo }) {
     <div className="m-trustbar">
       <div className="m-wrap">
         <div className="m-ti">
-          <span className="m-g">★ {trust.rating}</span> from {trust.reviewCount}+ Milton clients
+          <span className="m-g">★ {trust.rating}</span> from {trust.reviewCount}+ families helped
         </div>
         {trust.credentials.map((c, i) => (
           <div className="m-ti" key={c}>

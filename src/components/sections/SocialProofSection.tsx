@@ -25,14 +25,14 @@ export default function SocialProofSection() {
         <div className="text-center mb-12">
           <span className="section-label text-brand-500">Social Proof</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-navy mt-2">
-            Trusted by {config.CITY_NAME} Families
+            Trusted by 235+ Families
           </h2>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
           {[
-            { value: "14", label: "Years Experience" },
+            { value: String(config.realtor.yearsExperience), label: "Years Experience" },
             { value: "🏆", label: "RE/MAX Hall of Fame" },
             { value: "12", label: "Avg. Days to Sell" },
             { value: "286+", label: "Active Listings" },

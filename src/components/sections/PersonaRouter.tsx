@@ -159,7 +159,7 @@ export default function PersonaRouter() {
         Tell us where you are. We&apos;ll point you to the right {config.CITY_NAME}.
       </h2>
       <p className="text-sm md:text-base text-slate-400 leading-relaxed max-w-2xl">
-        Aamir has helped 400+ {config.CITY_NAME} families across these three paths. Pick yours, leave a phone, and get a personalized 10-minute call within 1 business day.
+        Aamir has helped 235+ families across these three paths. Pick yours, leave a phone, and get a personalized 10-minute call within 1 business day.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-8">
         {PERSONAS.map((p) => (

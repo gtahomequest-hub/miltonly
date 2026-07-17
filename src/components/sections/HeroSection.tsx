@@ -427,7 +427,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           {[
             { value: `${config.realtor.yearsExperience} years`, label: `${config.CITY_NAME} specialist` },
             { value: "47", label: "5-star Google reviews" },
-            { value: "300+", label: `${config.CITY_NAME} families helped` },
+            { value: "235+", label: "Families helped" },
           ].map((stat) => (
             <div key={stat.label}>
               <div className="text-[22px] font-extrabold text-[#f59e0b]">{stat.value}</div>

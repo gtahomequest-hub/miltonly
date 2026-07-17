@@ -205,7 +205,7 @@ export default function ThankYouClient({ lead, isSpam }: Props) {
             </div>
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <p className="text-[15px] sm:text-[16px] text-[#f8f9fb] leading-relaxed mb-2">
-                Hi, I&apos;m {REALTOR_FIRST_NAME}. I&apos;m RE/MAX Hall of Fame and have helped 150+ {config.CITY_NAME} families buy and sell in the last {config.realtor.yearsExperience} years.
+                Hi, I&apos;m {REALTOR_FIRST_NAME}. I&apos;m RE/MAX Hall of Fame and have helped 235+ families buy and sell in the last {config.realtor.yearsExperience} years.
               </p>
               <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed mb-2">
                 {config.sla.thankYouAamirIntro} When you see a {config.CITY_NAME} number call you, that&apos;s me — save my contact above so you don&apos;t miss it.

@@ -152,7 +152,7 @@ function AdsClientInner({
                 {headline}
               </h1>
               <p className="text-[14px] sm:text-[17px] text-[#cbd5e1] leading-snug max-w-xl mb-3 sm:mb-5">
-                Same {REALTOR_FIRST_NAME} who&apos;s done $55M+ in {config.CITY_NAME} real estate and helped 150+ families. Replies in under 60 minutes.
+                Same {REALTOR_FIRST_NAME} who&apos;s done $55M+ in {config.CITY_NAME} real estate and helped 235+ families. Replies in under 60 minutes.
               </p>
 
               {/* TRUST PILLARS — 3 pills, horizontal row, compact on mobile */}
@@ -318,7 +318,7 @@ function AdsClientInner({
           <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">{config.realtor.name}</h2>
           <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_SHORT_NAME}</p>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-2xl mx-auto mb-7">
-            <strong className="text-white">{config.realtor.yearsExperience} years renting {config.CITY_NAME}, full-time.</strong> 150+ {config.CITY_NAME} families helped, $55M+ leased &amp; sold. You&apos;ll work with {REALTOR_FIRST_NAME} directly — not an assistant, not a junior agent. From first call to signed lease.
+            <strong className="text-white">{config.realtor.yearsExperience} years renting {config.CITY_NAME}, full-time.</strong> 235+ families helped, $55M+ leased &amp; sold. You&apos;ll work with {REALTOR_FIRST_NAME} directly — not an assistant, not a junior agent. From first call to signed lease.
           </p>
           <div className="flex flex-wrap justify-center gap-2 mb-8">
             {[

@@ -29,7 +29,7 @@ export const mockHomepageData: HomepageData = {
 
   trust: {
     rating: 4.9,
-    reviewCount: 600,
+    reviewCount: 235,
     credentials: ['RE/MAX Hall of Fame', 'MLS-grounded data', 'Updated daily'],
     idx: '1809031',
     vow: '1848370',

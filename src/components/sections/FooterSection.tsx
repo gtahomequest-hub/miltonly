@@ -50,7 +50,7 @@ export default function FooterSection() {
             </Link>
 
             <p className="text-sm text-slate-300 leading-relaxed mt-5">
-              Aamir Yaqoob is a RE/MAX Hall of Fame realtor with {config.realtor.yearsExperience} years serving {config.CITY_NAME}, {config.CITY_PROVINCE}. He&apos;s helped 400+ {config.CITY_NAME} families buy, sell, and invest — with a focus on first-time buyers, newcomers to Canada, and move-up families. Real data, no fluff.
+              Aamir Yaqoob is a RE/MAX Hall of Fame realtor with {config.realtor.yearsExperience} years serving {config.CITY_NAME}, {config.CITY_PROVINCE}. He&apos;s helped 235+ families buy, sell, and invest — with a focus on first-time buyers, newcomers to Canada, and move-up families. Real data, no fluff.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">

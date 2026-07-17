@@ -1,3 +1,5 @@
+import { config } from "@/lib/config";
+
 interface Props {
   headline?: string;
 }
@@ -10,7 +12,7 @@ export default function AgentContactSection({ headline = "Your Milton Real Estat
         <p className="acs-brokerage">Sales Representative · RE/MAX Realty Specialists Inc.</p>
         <p className="acs-tagline">{headline}</p>
         <p className="acs-bio">
-          With 14 years of full-time experience, Aamir knows that real estate is about far more than price — it is about finding the right fit, the right protection, and the right outcome. Whether you are a tenant, a landlord, or ready to buy or sell, Aamir represents your interests completely.
+          With {config.realtor.yearsExperience} years of full-time experience, Aamir knows that real estate is about far more than price — it is about finding the right fit, the right protection, and the right outcome. Whether you are a tenant, a landlord, or ready to buy or sell, Aamir represents your interests completely.
         </p>
         <div className="acs-awards">
           <div className="acs-award">🏆 RE/MAX Hall of Fame Award</div>
@@ -18,7 +20,7 @@ export default function AgentContactSection({ headline = "Your Milton Real Estat
           <div className="acs-award">🏆 RE/MAX 100% Club Award</div>
         </div>
         <div className="acs-pills">
-          <span className="acs-pill">14 Years Full-Time</span>
+          <span className="acs-pill">{config.realtor.yearsExperience} Years Full-Time</span>
           <span className="acs-pill">Tenants &amp; Landlords</span>
           <span className="acs-pill">Buyers &amp; Sellers</span>
           <span className="acs-pill">Milton Specialist</span>
