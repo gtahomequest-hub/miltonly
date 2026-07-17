@@ -94,7 +94,7 @@ function sendSalesAutoReply(args: {
             </a>
           </div>
           <div style="margin-top:6px;">
-            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
+            <a href="${config.SITE_URL}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
               ${config.SITE_DOMAIN}
             </a>
           </div>
@@ -199,7 +199,7 @@ function sendMarketPulseAutoReply(args: {
             <a href="mailto:${config.realtor.email}" style="color:#1a1a1a;text-decoration:none;">${config.realtor.email}</a>
           </div>
           <div style="margin-top:6px;">
-            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">${config.SITE_DOMAIN}</a>
+            <a href="${config.SITE_URL}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">${config.SITE_DOMAIN}</a>
           </div>
           <div style="margin-top:18px;font-size:11px;color:#888;line-height:1.4;">
             *Not intended to solicit buyers or sellers currently under contract with another brokerage. To unsubscribe from the weekly market update, reply STOP.
@@ -302,7 +302,7 @@ function sendHomeValuationAutoReply(args: {
             <a href="mailto:${config.realtor.email}" style="color:#1a1a1a;text-decoration:none;">${config.realtor.email}</a>
           </div>
           <div style="margin-top:6px;">
-            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">${config.SITE_DOMAIN}</a>
+            <a href="${config.SITE_URL}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">${config.SITE_DOMAIN}</a>
           </div>
           <div style="margin-top:18px;font-size:11px;color:#888;line-height:1.4;">
             *Not intended to solicit buyers or sellers currently under contract with another brokerage.
@@ -437,7 +437,7 @@ function sendAutoReply(args: {
             </a>
           </div>
           <div style="margin-top:6px;">
-            <a href="${config.SITE_URL_WWW}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
+            <a href="${config.SITE_URL}" style="color:#1a1a1a;text-decoration:none;font-size:13px;">
               ${config.SITE_DOMAIN}
             </a>
           </div>
@@ -1084,7 +1084,7 @@ export async function POST(request: NextRequest) {
       // Renter cheat-sheet email — gated by env flag + email presence.
       // TODO: swap RESEND_FROM_EMAIL to leads@<site domain> once domain is verified in Resend dashboard
       if (process.env.CHEATSHEET_ENABLED === "true" && finalEmail && resend) {
-        const pdfUrl = process.env.CHEATSHEET_PDF_URL || `${config.SITE_URL_WWW}/${config.SLUG_SUFFIX}-rental-cheat-sheet.pdf`;
+        const pdfUrl = process.env.CHEATSHEET_PDF_URL || `${config.SITE_URL}/${config.SLUG_SUFFIX}-rental-cheat-sheet.pdf`;
         resend.emails
           .send({
             from: RESEND_FROM,

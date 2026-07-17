@@ -18,7 +18,6 @@ export const config = {
 
   // === URLs and domain ===
   SITE_URL: "https://miltonly.com",
-  SITE_URL_WWW: "https://www.miltonly.com",
   SITE_DOMAIN: "miltonly.com",
   SITE_NAME: "Miltonly",
 

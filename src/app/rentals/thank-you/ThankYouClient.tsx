@@ -80,7 +80,7 @@ function buildAamirVCard(): string {
     `TITLE:${config.realtor.title}`,
     `TEL;TYPE=CELL:${config.realtor.phoneE164}`,
     `EMAIL:${process.env.NEXT_PUBLIC_REALTOR_EMAIL || "gtahomequest@gmail.com"}`,
-    `URL:${config.SITE_URL_WWW}`,
+    `URL:${config.SITE_URL}`,
     "END:VCARD",
   ];
   // RFC 6350 / 2426 prefer CRLF line endings. iOS Contacts is lenient but

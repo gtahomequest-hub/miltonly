@@ -53,7 +53,7 @@ Every recommendation should evaluate against this. Time-to-revenue is the lens. 
 
 ## What Miltonly is
 
-Milton, Ontario's only dedicated real estate intelligence site. **Live at https://www.miltonly.com** since 2026-04-17.
+Milton, Ontario's only dedicated real estate intelligence site. **Live at https://miltonly.com** since 2026-04-17 (canonical host flipped from www to apex 2026-07-17).
 
 - Hyperlocal data layer: 700+ AI-generated street pages, 23 schools, 7 mosques, 20+ neighbourhoods.
 - TREB MLS integration via IDX agreement #1809031 (active listings) + VOW agreement #1848370 (closed sales + leases).
@@ -105,7 +105,7 @@ These are final until Aamir explicitly reopens them. The full list is `DO-NOT-RE
 
 **TREB integration gotchas (each earned through pain)**
 - Always `.trim()` TREB env vars (`TREB_API_TOKEN`, `TREB_API_URL`, `VOW_TOKEN`) at import — Vercel-stored values carry trailing whitespace that corrupts query strings + Authorization headers silently.
-- Always target `https://www.miltonly.com` directly — bare `miltonly.com` 307-redirects to `www` and `fetch()` strips `Authorization` on cross-origin redirects.
+- Always target the apex `https://miltonly.com` directly (canonical since 2026-07-17) — `www.miltonly.com` 308-redirects to apex and `fetch()` strips `Authorization` on cross-origin redirects.
 - AMPRE is OData v4.0, not v4.01: `in` operator unsupported, use `or`-chained `eq`. Keep `or`-chains ≤ 10 terms (ES `max_clause_count` rejects at 50).
 - AMPRE `CloseDate` is `Edm.Date`, no `$filter` — use `ModificationTimestamp` for cursor pagination.
 - `null === null` is `true` — guard staleness/hash equality with `existing !== null && current === existing` always.

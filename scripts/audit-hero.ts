@@ -32,7 +32,7 @@ const VIEWPORTS = [
 ] as const;
 type Viewport = (typeof VIEWPORTS)[number];
 
-const DEFAULT_URL = "https://www.miltonly.com/sales/ads/W13120162";
+const DEFAULT_URL = "https://miltonly.com/sales/ads/W13120162";
 const OUTPUT_DIR = path.resolve(process.cwd(), "audit-reports");
 
 // Computed style props we read per element. Kept lean so the page.evaluate
