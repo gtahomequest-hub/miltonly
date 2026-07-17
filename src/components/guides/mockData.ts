@@ -144,7 +144,7 @@ export const mockGuidesIndex: GuidesIndexData = {
     heading: 'Ready to start looking?',
     body: 'Reading is the easy part. When you want eyes on actual Milton listings, I’m here.',
     buttonLabel: 'Start your search',
-    href: '/buy',
+    href: '/listings',
   },
   ctaSeller: {
     heading: 'Thinking of selling?',
@@ -223,7 +223,7 @@ export const mockGuideArticle: GuideArticleData = {
     heading: 'Ready to put this to work?',
     body: 'A guide gets you oriented. A first conversation gets you a plan built around your actual numbers.',
     buttonLabel: 'Start your search',
-    href: '/buy',
+    href: '/listings',
   },
   ctaSeller: {
     heading: 'Have a home to sell first?',

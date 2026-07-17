@@ -13,7 +13,7 @@ export const mockHubUrban: HubData = {
     { key: 'buy', label: "I'm buying", sub: 'See streets & listings here', href: '/neighbourhoods/dempsey/streets' },
     { key: 'sell', label: "I'm selling", sub: 'What my Dempsey home is worth', href: '/sell' },
     { key: 'rent', label: "I'm renting", sub: 'Lease listings in Dempsey', href: '/rentals' },
-    { key: 'invest', label: "I'm investing", sub: 'Yield & investor read', href: '/build-wealth' },
+    { key: 'invest', label: "I'm investing", sub: 'Yield & investor read', href: '/#mls' },
   ],
   stats: { typicalPrice: 1_150_000, sold12mo: 96, onMarket: 14, dom: 21 },
   atAGlance: {
@@ -105,7 +105,7 @@ export const mockHubRural: HubData = {
     { key: 'buy', label: "I'm buying", sub: 'Browse Moffat road pages', href: '/neighbourhoods/moffat/streets' },
     { key: 'sell', label: "I'm selling", sub: 'Rural valuation, human-read', href: '/sell' },
     { key: 'rent', label: "I'm renting", sub: 'Rural lease listings', href: '/rentals' },
-    { key: 'invest', label: "I'm investing", sub: 'Land & acreage read', href: '/build-wealth' },
+    { key: 'invest', label: "I'm investing", sub: 'Land & acreage read', href: '/#mls' },
   ],
   stats: { typicalPrice: null, sold12mo: null, onMarket: 3, dom: null },
   atAGlance: {
