@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Miltonly.com 12-point production health audit.
+    Miltonly.com 15-point production health audit.
 
 .DESCRIPTION
     Performs a comprehensive health check of the miltonly.com production environment:
@@ -17,10 +17,20 @@
      10.  Cache-Control sanity           — No no-cache/no-store on key routes
      11.  Static asset 404 sweep         — All link/script/img assets resolve
      12.  Vercel runtime drift          — Node version + ISR prerender sanity
+     13.  GSC index status              — URL Inspection on 3 sentinel pages
+     14.  GSC search performance        — latest day vs trailing 7-day average
+     15.  GSC sitemap state             — submitted/indexed counts, fetch age
 
-    Runtime:  ~15-25 seconds (network-dependent)
-    Timeout:  15 seconds max per external command
-    Modules:  None required (pure PowerShell 5.1+)
+    Runtime:  ~20-45 seconds (network-dependent)
+    Timeout:  15 seconds max per external command (60s for the GSC probe)
+    Modules:  No PowerShell modules required (PS 5.1+); checks 4, 5 and 13-15
+              spawn node against the project's npm deps (prisma, googleapis)
+
+    Checks 13-15 talk READ-ONLY to Google Search Console for the domain
+    property sc-domain:miltonly.com. They need GSC_SERVICE_ACCOUNT_KEY in
+    .env (service-account JSON, single line) and the googleapis npm package,
+    and SKIP with one line each (fail soft) when either is missing or the
+    API errors. Quota: exactly 3 URL Inspection calls per run.
 
     Exit codes:
       0 — all checks PASS, WARN, or SKIP
@@ -30,10 +40,10 @@
     If dot-sourced, uses return instead of exit to avoid killing the shell.
 
 .EXAMPLE
-    & "C:\Users\inpse\miltonly\scripts\miltonlyhealth.ps1"
+    & "C:\Users\inspe\miltonly\scripts\miltonlyhealth.ps1"
 
 .EXAMPLE
-    function miltonlyhealth { & "C:\Users\inpse\miltonly\scripts\miltonlyhealth.ps1" }
+    function miltonlyhealth { & "C:\Users\inspe\miltonly\scripts\miltonlyhealth.ps1" }
     miltonlyhealth
 #>
 
@@ -51,10 +61,12 @@ try {
     $OutputEncoding = [System.Text.Encoding]::UTF8
 } catch { }
 
-$script:ProjectRoot = 'C:\Users\inpse\miltonly'
+$script:ProjectRoot = 'C:\Users\inspe\miltonly'
 $script:BaseUrl     = 'https://www.miltonly.com'
 $script:results     = @{ passed = 0; warned = 0; failed = 0; skipped = 0 }
 $script:cachedHomepage = $null
+$script:gscData        = $null
+$script:gscDataFetched = $false
 
 #region Helpers ────────────────────────────────────────────────────────────────
 
@@ -74,7 +86,7 @@ function Write-CheckResult {
         default { $icon = '?';         $color = 'White'  }
     }
 
-    $prefix = '  [{0,2}/12]' -f $Number
+    $prefix = '  [{0,2}/15]' -f $Number
     $padded = $Name.PadRight(30)
 
     Write-Host $prefix -NoNewline -ForegroundColor White
@@ -912,6 +924,356 @@ function Test-VercelRuntimeDrift {
     }
 }
 
+function Get-GscData {
+    # One node invocation serves checks 13-15 (cached like Get-CachedHomepage).
+    # The probe is READ-ONLY against GSC and makes exactly 3 URL Inspection
+    # calls (one per sentinel) plus 2 Search Analytics queries + sitemaps.list.
+    if ($script:gscDataFetched) { return $script:gscData }
+    $script:gscDataFetched = $true
+
+    $tempFile = Join-Path $script:ProjectRoot '.healthcheck-gsc.mjs'
+
+    try {
+        $js = @'
+// Read-only Google Search Console probe for miltonlyhealth checks 13-15.
+// NO writes. Quota: exactly 3 URL Inspection calls per run.
+import { readFileSync } from 'node:fs';
+import { google } from 'googleapis';
+
+const PROPERTY = 'sc-domain:miltonly.com';
+const HOST = 'https://www.miltonly.com';
+const SENTINELS = [
+  'https://www.miltonly.com/',
+  'https://www.miltonly.com/streets/bronte-street-milton',
+  'https://www.miltonly.com/neighbourhoods/dempsey',
+];
+
+function envKey() {
+  if (process.env.GSC_SERVICE_ACCOUNT_KEY) return process.env.GSC_SERVICE_ACCOUNT_KEY;
+  try {
+    const m = readFileSync('.env', 'utf8').match(/^GSC_SERVICE_ACCOUNT_KEY=(.*)$/m);
+    if (!m) return null;
+    let v = m[1].trim();
+    if ((v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))) {
+      v = v.slice(1, -1);
+    }
+    return v || null;
+  } catch { return null; }
+}
+
+const errMsg = (e, max = 120) => (e instanceof Error ? e.message : String(e)).slice(0, max);
+const dayStr = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOString().slice(0, 10);
+
+// coverageState (human sentence) -> compact verdict for the report line.
+function compactVerdict(coverageState, verdict) {
+  const c = (coverageState || '').toLowerCase();
+  if (c.includes('indexed')) {
+    if (c.startsWith('crawled')) return 'crawled-not-indexed';
+    if (c.startsWith('discovered')) return 'discovered';
+    return 'indexed';
+  }
+  if (verdict) return verdict.toLowerCase(); // PASS/NEUTRAL/FAIL fallback
+  return 'unknown';
+}
+
+const rawKey = envKey();
+if (!rawKey) {
+  console.log(JSON.stringify({ error: 'GSC_SERVICE_ACCOUNT_KEY not set (checked process env and .env)' }));
+  process.exit(0);
+}
+
+let sc;
+try {
+  const auth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(rawKey),
+    scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+  });
+  sc = google.searchconsole({ version: 'v1', auth });
+} catch (e) {
+  console.log(JSON.stringify({ error: 'GSC auth setup failed: ' + errMsg(e) }));
+  process.exit(0);
+}
+
+const out = { index: null, perf: null, sitemaps: null };
+
+// (13) index status - exactly 3 inspection calls, one per sentinel
+try {
+  const urls = [];
+  for (const url of SENTINELS) {
+    const path = url.replace(HOST, '') || '/';
+    try {
+      const res = await sc.urlInspection.index.inspect({
+        requestBody: { inspectionUrl: url, siteUrl: PROPERTY },
+      });
+      const r = (res.data.inspectionResult || {}).indexStatusResult || {};
+      const canon = r.googleCanonical || null;
+      const norm = (u) => (u && u.length > 1 ? u.replace(/\/+$/, '') : u);
+      urls.push({
+        path,
+        verdict: compactVerdict(r.coverageState, r.verdict),
+        coverageState: r.coverageState || null,
+        lastCrawl: r.lastCrawlTime ? r.lastCrawlTime.slice(0, 10) : null,
+        canonical: canon,
+        canonicalOk: canon ? norm(canon) === norm(url) : null,
+      });
+    } catch (e) {
+      urls.push({ path, inspectError: errMsg(e, 100) });
+    }
+  }
+  out.index = { urls };
+} catch (e) {
+  out.index = { sectionError: errMsg(e) };
+}
+
+// (14) search performance - GSC data lags ~2 days, so "yesterday" is the
+// latest day with rows, compared against the up-to-7 days before it.
+try {
+  const perf = await sc.searchanalytics.query({
+    siteUrl: PROPERTY,
+    requestBody: { startDate: dayStr(10), endDate: dayStr(1), dimensions: ['date'] },
+  });
+  const rows = (perf.data.rows || []).slice()
+    .sort((a, b) => String(a.keys && a.keys[0]).localeCompare(String(b.keys && b.keys[0])));
+  let latest = null;
+  let avg = null;
+  if (rows.length > 0) {
+    const last = rows[rows.length - 1];
+    latest = {
+      date: last.keys ? last.keys[0] : '?',
+      impressions: last.impressions || 0,
+      clicks: last.clicks || 0,
+    };
+    const prior = rows.slice(0, -1).slice(-7);
+    if (prior.length > 0) {
+      avg = {
+        days: prior.length,
+        impressions: prior.reduce((s, r) => s + (r.impressions || 0), 0) / prior.length,
+        clicks: prior.reduce((s, r) => s + (r.clicks || 0), 0) / prior.length,
+      };
+    }
+  }
+  const topQ = await sc.searchanalytics.query({
+    siteUrl: PROPERTY,
+    requestBody: { startDate: dayStr(8), endDate: dayStr(1), dimensions: ['query'], rowLimit: 5 },
+  });
+  const topQueries = (topQ.data.rows || []).map((q) => ({
+    query: q.keys ? q.keys[0] : '?',
+    clicks: q.clicks || 0,
+    impressions: q.impressions || 0,
+  }));
+  out.perf = { latest, avg, topQueries };
+} catch (e) {
+  out.perf = { sectionError: errMsg(e) };
+}
+
+// (15) sitemap state
+try {
+  const sm = await sc.sitemaps.list({ siteUrl: PROPERTY });
+  out.sitemaps = {
+    maps: (sm.data.sitemap || []).map((m) => ({
+      path: m.path,
+      submitted: (m.contents || []).reduce((s, c) => s + Number(c.submitted || 0), 0),
+      indexed: (m.contents || []).reduce((s, c) => s + Number(c.indexed || 0), 0),
+      lastDownloaded: m.lastDownloaded ? m.lastDownloaded.slice(0, 10) : null,
+      isPending: !!m.isPending,
+    })),
+  };
+} catch (e) {
+  out.sitemaps = { sectionError: errMsg(e) };
+}
+
+console.log(JSON.stringify(out));
+'@
+        Write-TempScript -Path $tempFile -Content $js
+        $result = Invoke-WithTimeout -Command "node `"$tempFile`"" -TimeoutSeconds 60
+
+        if ($result.TimedOut) {
+            $script:gscData = @{ error = 'GSC probe timed out' }
+            return $script:gscData
+        }
+
+        $raw = Remove-AnsiCodes $result.Stdout
+        $data = ConvertFrom-JsonSafe $raw
+
+        if (-not $data) {
+            $hint = $raw.Trim()
+            if ($hint.Length -gt 120) { $hint = $hint.Substring(0, 117) + '...' }
+            if (-not $hint) { $hint = 'GSC probe produced no output' }
+            $script:gscData = @{ error = $hint }
+            return $script:gscData
+        }
+
+        $script:gscData = $data
+        return $script:gscData
+    }
+    catch {
+        $script:gscData = @{ error = $_.Exception.Message }
+        return $script:gscData
+    }
+    finally {
+        Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Write-GscDetailLine {
+    param([string]$Text)
+    Write-Host "            $Text" -ForegroundColor Gray
+}
+
+function Test-GscIndexStatus {
+    $data = Get-GscData
+
+    if ($data.error) {
+        Write-CheckResult -Number 13 -Status 'SKIP' -Name 'GSC Index Status' -Detail $data.error
+        return
+    }
+    if (-not $data.index -or $data.index.sectionError) {
+        $why = if ($data.index) { $data.index.sectionError } else { 'no index data in GSC probe output' }
+        Write-CheckResult -Number 13 -Status 'SKIP' -Name 'GSC Index Status' -Detail $why
+        return
+    }
+
+    $urls = @($data.index.urls)
+    $problems = @()
+    $detailLines = @()
+    $inspected = 0
+    $indexed = 0
+
+    foreach ($u in $urls) {
+        if ($u.inspectError) {
+            # Per-URL API failure is fail-soft: informational, never a flag.
+            $detailLines += "$($u.path)  inspect failed: $($u.inspectError)"
+            continue
+        }
+        $inspected++
+        $crawl = if ($u.lastCrawl) { $u.lastCrawl } else { 'never' }
+        $canonNote = if ($null -eq $u.canonicalOk) { 'canonical: n/a' }
+                     elseif ($u.canonicalOk)       { 'canonical: ok' }
+                     else                          { "canonical: $($u.canonical)" }
+        $detailLines += "$($u.path)  $($u.verdict) | last crawl: $crawl | $canonNote"
+
+        if ($u.verdict -eq 'indexed') { $indexed++ }
+        else { $problems += "$($u.path) is $($u.verdict)" }
+
+        if ($u.canonicalOk -eq $false) {
+            $problems += "$($u.path) Google-selected canonical is $($u.canonical) (expected www form)"
+        }
+    }
+
+    if ($inspected -eq 0) {
+        Write-CheckResult -Number 13 -Status 'SKIP' -Name 'GSC Index Status' -Detail 'All sentinel inspections failed'
+    }
+    elseif ($problems.Count -eq 0) {
+        Write-CheckResult -Number 13 -Status 'PASS' -Name 'GSC Index Status' -Detail "$indexed/$($urls.Count) sentinels indexed, canonicals ok"
+    }
+    else {
+        Write-CheckResult -Number 13 -Status 'WARN' -Name 'GSC Index Status' -Detail ($problems -join '; ')
+    }
+    foreach ($l in $detailLines) { Write-GscDetailLine $l }
+}
+
+function Test-GscSearchPerformance {
+    $data = Get-GscData
+
+    if ($data.error) {
+        Write-CheckResult -Number 14 -Status 'SKIP' -Name 'GSC Search Performance' -Detail $data.error
+        return
+    }
+    if (-not $data.perf -or $data.perf.sectionError) {
+        $why = if ($data.perf) { $data.perf.sectionError } else { 'no performance data in GSC probe output' }
+        Write-CheckResult -Number 14 -Status 'SKIP' -Name 'GSC Search Performance' -Detail $why
+        return
+    }
+
+    $p = $data.perf
+    if (-not $p.latest) {
+        Write-CheckResult -Number 14 -Status 'WARN' -Name 'GSC Search Performance' -Detail 'No search analytics rows in the last 10 days'
+        return
+    }
+
+    $li = [double]$p.latest.impressions
+    $lc = [double]$p.latest.clicks
+
+    if ($p.avg) {
+        $ai = [math]::Round([double]$p.avg.impressions, 1)
+        $ac = [math]::Round([double]$p.avg.clicks, 1)
+        $summary = "$($p.latest.date): $li impr, $lc clicks | trailing $($p.avg.days)d avg: $ai impr, $ac clicks"
+        # Cliff detector: latest day under 50% of trailing average impressions.
+        # avg >= 10 guard keeps tiny-number noise from false-alarming.
+        if ($ai -ge 10 -and $li -lt ($ai * 0.5)) {
+            Write-CheckResult -Number 14 -Status 'WARN' -Name 'GSC Search Performance' -Detail "Impressions cliff: $li < 50% of $ai avg | $summary"
+        }
+        else {
+            Write-CheckResult -Number 14 -Status 'PASS' -Name 'GSC Search Performance' -Detail $summary
+        }
+    }
+    else {
+        Write-CheckResult -Number 14 -Status 'PASS' -Name 'GSC Search Performance' -Detail "$($p.latest.date): $li impr, $lc clicks (no trailing window yet)"
+    }
+
+    $topQ = @($p.topQueries)
+    if ($topQ.Count -gt 0) {
+        Write-GscDetailLine 'top queries by clicks (7d):'
+        foreach ($q in $topQ) {
+            Write-GscDetailLine "  `"$($q.query)`" - $($q.clicks) clicks, $($q.impressions) impressions"
+        }
+    }
+    else {
+        Write-GscDetailLine 'top queries by clicks (7d): none'
+    }
+}
+
+function Test-GscSitemapState {
+    $data = Get-GscData
+
+    if ($data.error) {
+        Write-CheckResult -Number 15 -Status 'SKIP' -Name 'GSC Sitemap State' -Detail $data.error
+        return
+    }
+    if (-not $data.sitemaps -or $data.sitemaps.sectionError) {
+        $why = if ($data.sitemaps) { $data.sitemaps.sectionError } else { 'no sitemap data in GSC probe output' }
+        Write-CheckResult -Number 15 -Status 'SKIP' -Name 'GSC Sitemap State' -Detail $why
+        return
+    }
+
+    $maps = @($data.sitemaps.maps)
+    if ($maps.Count -eq 0) {
+        Write-CheckResult -Number 15 -Status 'WARN' -Name 'GSC Sitemap State' -Detail 'No sitemaps submitted for sc-domain:miltonly.com'
+        return
+    }
+
+    $stale = @()
+    $detailLines = @()
+
+    foreach ($m in $maps) {
+        $short = $m.path -replace [regex]::Escape($script:BaseUrl), ''
+        if (-not $short) { $short = $m.path }
+        $dl = if ($m.lastDownloaded) { $m.lastDownloaded } else { 'never' }
+        $lineText = "$short  submitted: $($m.submitted), indexed: $($m.indexed), last fetched: $dl"
+
+        if ($m.isPending) {
+            $detailLines += "$lineText (pending first fetch)"
+            continue
+        }
+        $detailLines += $lineText
+
+        $tooOld = $true
+        if ($m.lastDownloaded) {
+            try { $tooOld = ((Get-Date) - [datetime]$m.lastDownloaded).TotalDays -gt 7 }
+            catch { $tooOld = $true }
+        }
+        if ($tooOld) { $stale += "$short last fetched $dl" }
+    }
+
+    if ($stale.Count -gt 0) {
+        Write-CheckResult -Number 15 -Status 'WARN' -Name 'GSC Sitemap State' -Detail "Not fetched by Google in >7 days: $($stale -join '; ')"
+    }
+    else {
+        Write-CheckResult -Number 15 -Status 'PASS' -Name 'GSC Sitemap State' -Detail "$($maps.Count) sitemap(s), all fetched within 7 days"
+    }
+    foreach ($l in $detailLines) { Write-GscDetailLine $l }
+}
+
 #endregion Checks
 
 #region Main ───────────────────────────────────────────────────────────────────
@@ -940,6 +1302,9 @@ $checks = @(
     @{ N = 10; Name = 'Cache-Control Sanity';  Fn = 'Test-CacheControlSanity'  }
     @{ N = 11; Name = 'Static Asset 404s';     Fn = 'Test-StaticAsset404Sweep' }
     @{ N = 12; Name = 'Vercel Runtime Drift'; Fn = 'Test-VercelRuntimeDrift' }
+    @{ N = 13; Name = 'GSC Index Status';       Fn = 'Test-GscIndexStatus'       }
+    @{ N = 14; Name = 'GSC Search Performance'; Fn = 'Test-GscSearchPerformance' }
+    @{ N = 15; Name = 'GSC Sitemap State';      Fn = 'Test-GscSitemapState'      }
 )
 
 foreach ($chk in $checks) {
@@ -997,3 +1362,5 @@ if ($MyInvocation.InvocationName -eq '.') {
 exit $exitCode
 
 #endregion Main
+
+

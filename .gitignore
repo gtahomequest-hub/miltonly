@@ -98,3 +98,4 @@ scripts/_migration-log.json
 scripts/regen-*.txt
 scripts/regen-*.json
 batch-output*.log
+.env*
