@@ -60,7 +60,7 @@ export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
 
           <div className="m-trustlogos">
             <span>
-              ★ {trust.rating} · {trust.reviewCount}+ clients
+              ★ {trust.rating} · {trust.reviewCount}+ families helped
             </span>
             <span>·</span>
             <b>{trust.credentials[0]}</b>

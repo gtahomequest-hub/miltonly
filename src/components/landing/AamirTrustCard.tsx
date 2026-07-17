@@ -90,7 +90,7 @@ export default function AamirTrustCard({
       {/* Stats row — 1px navy gap created by the outer bg showing through */}
       <div className="grid grid-cols-3 gap-px bg-[#1e3a5f] rounded-[8px] overflow-hidden mb-4">
         <Stat number={String(config.realtor.yearsExperience)} label="Years" />
-        <Stat number="150+" label="Families" />
+        <Stat number="235+" label="Families helped" />
         <Stat number="$55M+" label="Closed" />
       </div>
 

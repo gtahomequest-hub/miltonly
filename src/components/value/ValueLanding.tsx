@@ -45,7 +45,7 @@ export default function ValueLanding({ locationName, data }: ValueLandingProps) 
     : `${locationName} is one of Milton's smaller, tightly-held pockets — homes here don't change hands often, which makes public averages misleading. That's exactly why a real, address-specific read matters more here than anywhere: a handful of sales can't tell you what your home is worth, but 15 years of selling across Milton can.`;
 
   const ask = `Want your home's specific value? Enter your address and I'll send you a personal valuation — grounded in ${locationName} sold data, not an algorithm's guess.`;
-  const trust = `Aamir Yaqoob — RE/MAX Hall of Fame — 15+ years in Milton — $57M+ in local sales, 165+ Milton families. Your valuation comes from someone who actually sells in ${locationName}, not a call centre.`;
+  const trust = `Aamir Yaqoob — RE/MAX Hall of Fame — 15+ years in Milton — $57M+ in local sales, 235+ families helped. Your valuation comes from someone who actually sells in ${locationName}, not a call centre.`;
 
   return (
     <div className="sell-v2">

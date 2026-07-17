@@ -18,7 +18,7 @@ export const metadata = genMeta({
 // with no DB module in its graph.
 const TRUST = {
   rating: "4.9",
-  reviewCount: "600+",
+  reviewCount: "235+",
   idx: "1809031",
   vow: "1848370",
 };
@@ -126,7 +126,7 @@ export default function SellPage() {
             </div>
             <div className="s-proof">
               <div className="s-proof-stat">{TRUST.reviewCount}</div>
-              <div className="s-proof-label">{config.CITY_NAME} clients served</div>
+              <div className="s-proof-label">Families helped</div>
             </div>
             <div className="s-proof">
               <div className="s-proof-stat">IDX #{TRUST.idx}</div>

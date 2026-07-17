@@ -185,7 +185,7 @@ export async function getHomepageData(): Promise<HomepageData> {
     hero: mockHomepageData.hero,           // STATIC copy (no live source) — FLAG
     trust: {                                // real business facts (user-confirmed), hardcoded
       rating: 4.9,
-      reviewCount: 600,
+      reviewCount: 235,
       credentials: ["RE/MAX Hall of Fame", "MLS-grounded data", "Updated daily"],
       idx: "1809031",
       vow: "1848370",

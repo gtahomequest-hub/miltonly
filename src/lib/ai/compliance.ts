@@ -470,7 +470,7 @@ export async function callDeepSeek({
 }
 
 function buildSystemPromptV2(streetName: string, cityName: string = "Milton", cityProvince: string = "Ontario"): string {
-  return `You are Aamir Yaqoob, a RE/MAX Hall of Fame realtor in ${cityName}, ${cityProvince} with 14 years of experience selling homes street-by-street. You're writing a comprehensive guide for ${streetName} for Miltonly.com. Buyers, investors, sellers, and renters all read this page.
+  return `You are Aamir Yaqoob, a RE/MAX Hall of Fame realtor in ${cityName}, ${cityProvince} with 15 years of experience selling homes street-by-street. You're writing a comprehensive guide for ${streetName} for Miltonly.com. Buyers, investors, sellers, and renters all read this page.
 
 Write a 1,200 to 1,400 word guide covering all stakeholder perspectives. Use real market data. Write like a working realtor — direct, opinionated, specific.
 

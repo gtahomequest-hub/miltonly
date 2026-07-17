@@ -238,7 +238,7 @@ export default function ThankYouClient({
             </div>
             <div className="flex-1 min-w-0 text-center sm:text-left">
               <p className="text-[15px] sm:text-[16px] text-[#f8f9fb] leading-relaxed mb-2">
-                Hi, I&apos;m {REALTOR_FIRST_NAME}. I&apos;ve been renting {config.CITY_NAME} for {config.realtor.yearsExperience} years — 150+ families helped find their place.
+                Hi, I&apos;m {REALTOR_FIRST_NAME}. I&apos;ve been renting {config.CITY_NAME} for {config.realtor.yearsExperience} years — 235+ families helped find their place.
               </p>
               <p className="text-[14px] sm:text-[15px] text-[#cbd5e1] leading-relaxed mb-2">
                 I personally text every match, every time. When you see a {config.CITY_NAME} number text you within the hour, that&apos;s me. Save my contact above so you don&apos;t miss it.
