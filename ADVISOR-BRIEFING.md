@@ -19,7 +19,7 @@ Licensed Realtor based in Milton, Ontario. RE/MAX Realty Specialists Inc. System
 
 The only Milton-dedicated real estate site. Not a portal. Not an agent site. A **data intelligence layer** for Milton buyers and sellers. Every page targets a specific Milton search query with real data and zero competition from any dedicated site.
 
-**Live URL:** https://www.miltonly.com
+**Live URL:** https://miltonly.com
 
 ---
 

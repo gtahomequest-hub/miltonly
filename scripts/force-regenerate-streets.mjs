@@ -72,10 +72,10 @@ loadEnvLocal();
 
 // --- config ------------------------------------------------------------------
 const CRON_SECRET = (process.env.CRON_SECRET || "").trim();
-// Canonical host. `miltonly.com` issues a 307 to `www.miltonly.com`, and
+// Canonical host. `www.miltonly.com` issues a 308 to apex `miltonly.com`, and
 // fetch strips the Authorization header on cross-origin redirects, which
 // produced 401s on every call. Target the canonical host directly.
-const BASE_URL_DEFAULT = (process.env.MILTONLY_URL || "https://www.miltonly.com").trim();
+const BASE_URL_DEFAULT = (process.env.MILTONLY_URL || "https://miltonly.com").trim();
 const INTER_CALL_DELAY_MS = 2000;
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // match endpoint maxDuration
 
@@ -164,7 +164,7 @@ function sleep(ms) {
 // Auth: both ?secret= query param AND Authorization: Bearer header are
 // included. The endpoint accepts either. Query param is the primary auth
 // because fetch strips Authorization on cross-origin redirects (observed
-// on miltonly.com → www.miltonly.com 307), and ?secret= survives any
+// on the old miltonly.com → www 307; now www → apex 308), and ?secret= survives any
 // redirect since it's part of the URL itself. The Bearer header is
 // retained as a secondary so an overridden MILTONLY_URL that lands on a
 // canonical origin without a redirect still authenticates cleanly.

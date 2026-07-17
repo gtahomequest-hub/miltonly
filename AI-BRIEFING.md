@@ -75,7 +75,7 @@ DB2 and DB3 today point at the same Neon instance — separate named schemas, sp
 
 Milton, Ontario's only dedicated real estate intelligence site. Street-level data, AI-generated content, and TREB/PropTx MLS listings via IDX Agreement #1809031. Not a portal — a hyperlocal data layer targeting every deep Milton search query with zero competition from any dedicated site.
 
-**Live URL:** https://www.miltonly.com
+**Live URL:** https://miltonly.com
 **Project folder:** `C:\Users\inpse\miltonly`
 **GitHub:** github.com/gtahomequest-hub/miltonly
 **Vercel:** gtahomequest-hubs-projects/miltonly (auto-deploys from `main`)
@@ -321,7 +321,7 @@ d03d5c5 Add homepage-exclusive source label
 
 ## Critical URL + auth guardrails (learned the hard way 2026-04-17)
 
-- **Always target `https://www.miltonly.com` directly in authenticated scripts.** Bare `miltonly.com` 307-redirects to `www` and `fetch()` drops the `Authorization` header on cross-origin redirects. Same rule for `homesly.ca`. Use `?secret=` query param as auth belt-and-suspenders so the secret rides the URL (survives any redirect).
+- **Always target the apex `https://miltonly.com` directly in authenticated scripts** (canonical flipped to apex 2026-07-17). `www.miltonly.com` 308-redirects to the apex and `fetch()` drops the `Authorization` header on cross-origin redirects. homesly.ca still uses a `www` canonical — target whichever host is primary for the domain, never the redirecting one. Use `?secret=` query param as auth belt-and-suspenders so the secret rides the URL (survives any redirect).
 - **`.env.local` may contain literal `\n` inside double-quoted values** — loaders must interpret `\n`/`\r`/`\t`/`\"`/`\\` inside `"..."` (standard dotenv behavior) before `.trim()` can strip the resulting whitespace.
 - **AMPRE OData v4.0** — no `in` operator. Use `or`-chain of `eq`. Keep chains ≤ 10 terms to stay under ES `max_clause_count`.
 - **`null === null` is `true`** — guard staleness comparisons explicitly (`stored !== null && current === stored`).

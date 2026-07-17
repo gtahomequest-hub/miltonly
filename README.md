@@ -2,7 +2,7 @@
 
 Milton, Ontario's dedicated real estate intelligence site.
 
-**Live:** https://www.miltonly.com
+**Live:** https://miltonly.com
 
 Hyperlocal data layer covering 700+ Milton streets, 23 schools, 7 mosques, 20+ neighbourhoods, with TREB/PropTx MLS listings via IDX agreement #1809031 and VOW agreement #1848370 (closed sales + leases).
 

@@ -24,7 +24,7 @@ import { sendCapiEvent, hashUserData } from "@/lib/meta-capi";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const FALLBACK_EVENT_SOURCE_URL = "https://www.miltonly.com/";
+const FALLBACK_EVENT_SOURCE_URL = "https://miltonly.com/";
 
 interface CreateLeadBody {
   source?: string;

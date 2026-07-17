@@ -62,7 +62,7 @@ try {
 } catch { }
 
 $script:ProjectRoot = 'C:\Users\inspe\miltonly'
-$script:BaseUrl     = 'https://www.miltonly.com'
+$script:BaseUrl     = 'https://miltonly.com'
 $script:results     = @{ passed = 0; warned = 0; failed = 0; skipped = 0 }
 $script:cachedHomepage = $null
 $script:gscData        = $null
@@ -941,11 +941,11 @@ import { readFileSync } from 'node:fs';
 import { google } from 'googleapis';
 
 const PROPERTY = 'sc-domain:miltonly.com';
-const HOST = 'https://www.miltonly.com';
+const HOST = 'https://miltonly.com';
 const SENTINELS = [
-  'https://www.miltonly.com/',
-  'https://www.miltonly.com/streets/bronte-street-milton',
-  'https://www.miltonly.com/neighbourhoods/dempsey',
+  'https://miltonly.com/',
+  'https://miltonly.com/streets/bronte-street-milton',
+  'https://miltonly.com/neighbourhoods/dempsey',
 ];
 
 function envKey() {
@@ -1156,7 +1156,7 @@ function Test-GscIndexStatus {
         else { $problems += "$($u.path) is $($u.verdict)" }
 
         if ($u.canonicalOk -eq $false) {
-            $problems += "$($u.path) Google-selected canonical is $($u.canonical) (expected www form)"
+            $problems += "$($u.path) Google-selected canonical is $($u.canonical) (expected apex form)"
         }
     }
 

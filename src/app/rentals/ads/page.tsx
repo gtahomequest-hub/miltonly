@@ -143,7 +143,7 @@ export default async function RentalsAdsPage({
     "@graph": [
       {
         "@type": "RealEstateAgent",
-        "@id": `${config.SITE_URL_WWW}/#${realtorFirstName}`,
+        "@id": `${config.SITE_URL}/#${realtorFirstName}`,
         name: config.realtor.name,
         jobTitle: config.realtor.title,
         worksFor: {
@@ -151,7 +151,7 @@ export default async function RentalsAdsPage({
           name: brokerageShort,
         },
         telephone: config.realtor.phoneE164,
-        url: config.SITE_URL_WWW,
+        url: config.SITE_URL,
         areaServed: [
           { "@type": "City", name: config.CITY_NAME, addressRegion: config.CITY_PROVINCE_CODE, addressCountry: config.CITY_COUNTRY_CODE },
           { "@type": "City", name: "Halton Hills", addressRegion: config.CITY_PROVINCE_CODE, addressCountry: config.CITY_COUNTRY_CODE },
@@ -174,11 +174,11 @@ export default async function RentalsAdsPage({
       },
       {
         "@type": "LocalBusiness",
-        "@id": `${config.SITE_URL_WWW}/#business`,
+        "@id": `${config.SITE_URL}/#business`,
         name: `${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent | RE/MAX`,
-        image: `${config.SITE_URL_WWW}/og-image.jpg`,
+        image: `${config.SITE_URL}/og-image.jpg`,
         telephone: config.realtor.phoneE164,
-        url: config.SITE_URL_WWW,
+        url: config.SITE_URL,
         address: {
           "@type": "PostalAddress",
           streetAddress: "178 Lemieux Ct",
@@ -192,12 +192,12 @@ export default async function RentalsAdsPage({
       },
       {
         "@type": "WebPage",
-        "@id": `${config.SITE_URL_WWW}/rentals/ads`,
+        "@id": `${config.SITE_URL}/rentals/ads`,
         name: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
         description:
           `Find your ${config.CITY_NAME} rental with ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live TREB listings hand-matched. Reply within 60 min.`,
-        isPartOf: { "@id": `${config.SITE_URL_WWW}/#business` },
-        about: { "@id": `${config.SITE_URL_WWW}/#${realtorFirstName}` },
+        isPartOf: { "@id": `${config.SITE_URL}/#business` },
+        about: { "@id": `${config.SITE_URL}/#${realtorFirstName}` },
       },
     ],
   };

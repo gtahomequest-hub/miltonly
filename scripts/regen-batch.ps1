@@ -16,7 +16,7 @@ if (-not $secret) {
 $slugFile = "scripts/regen-final-push.txt"
 $slugs = Get-Content $slugFile | Where-Object { $_.Trim() -ne "" }
 
-$baseUrl = "https://www.miltonly.com"
+$baseUrl = "https://miltonly.com"
 $total = $slugs.Count
 $ok = 0
 $fail = 0

@@ -10,11 +10,11 @@ import canonicalMap from "@/lib/_generated/canonical-map.json";
 //   Set MAINTENANCE_MODE = false below, then git push.
 //
 // To PREVIEW the real site while gate is on:
-//   Visit https://www.miltonly.com/?preview=miltonly-aamir-2026
+//   Visit https://miltonly.com/?preview=miltonly-aamir-2026
 //   This sets a cookie. Future visits bypass the gate.
 //
 // To clear preview cookie:
-//   Visit https://www.miltonly.com/?preview=off
+//   Visit https://miltonly.com/?preview=off
 // ============================================================
 
 const MAINTENANCE_MODE = false;
