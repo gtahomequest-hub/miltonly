@@ -26,7 +26,7 @@ function intentsFor(slug: string): CondoData["intents"] {
     { key: "buy", label: "I'm buying", sub: "See units for sale here", href: `/condos/${slug}#listings` },
     { key: "sell", label: "I'm selling", sub: "What my unit is worth", href: "/sell" },
     { key: "rent", label: "I'm renting", sub: "Lease listings in the building", href: `/condos/${slug}#listings` },
-    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/build-wealth" },
+    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/#mls" },
   ];
 }
 
@@ -169,7 +169,7 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
       heading: `Interested in ${name}?`,
       body: "Register to be alerted the moment a unit is listed, with grounded pricing from real building comparables.",
       buttonLabel: "Get listing alerts",
-      href: "/buy",
+      href: "/listings",
     },
     ctaSeller: {
       heading: `Own a unit at ${name}?`,

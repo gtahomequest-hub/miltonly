@@ -7,7 +7,7 @@ const intents = (slug: string): CondoData['intents'] => [
   { key: 'buy', label: "I'm buying", sub: 'See units for sale here', href: `/condos/${slug}#listings` },
   { key: 'sell', label: "I'm selling", sub: 'What my unit is worth', href: '/sell' },
   { key: 'rent', label: "I'm renting", sub: 'Lease listings in the building', href: `/condos/${slug}#listings` },
-  { key: 'invest', label: "I'm investing", sub: 'Yield & rental rules', href: '/build-wealth' },
+  { key: 'invest', label: "I'm investing", sub: 'Yield & rental rules', href: '/#mls' },
 ];
 
 export const mockCondoRich: CondoData = {
@@ -55,7 +55,7 @@ export const mockCondoRich: CondoData = {
     { name: 'Main & Martin', slug: 'main-and-martin', meta: '48 units · est. ~$580K' },
     { name: 'Mill Pond Residences', slug: 'mill-pond-residences', meta: '120 units · est. ~$610K' },
   ],
-  ctaBuyer: { heading: 'Interested in Bronte Mill Lofts?', body: 'Units here move quietly. Register to be alerted the moment one is listed.', buttonLabel: 'Get listing alerts', href: '/buy' },
+  ctaBuyer: { heading: 'Interested in Bronte Mill Lofts?', body: 'Units here move quietly. Register to be alerted the moment one is listed.', buttonLabel: 'Get listing alerts', href: '/listings' },
   ctaSeller: { heading: 'Own a unit here?', body: 'Get a grounded valuation built on real Bronte Mill comparables.', buttonLabel: 'Value my unit', href: '/sell' },
 };
 
@@ -87,7 +87,7 @@ export const mockCondoThin: CondoData = {
     { question: 'How much are units at Derry Green Tower A?', answer: 'There isn\u2019t enough resale history yet to state a reliable typical price. Active listings are the best current guide.' },
   ],
   nearbyCondos: [],
-  ctaBuyer: { heading: 'Watching Derry Green Tower A?', body: 'Register for alerts as units and pricing data come available.', buttonLabel: 'Get alerts', href: '/buy' },
+  ctaBuyer: { heading: 'Watching Derry Green Tower A?', body: 'Register for alerts as units and pricing data come available.', buttonLabel: 'Get alerts', href: '/listings' },
   ctaSeller: { heading: 'Own a unit here?', body: 'Early in a building\u2019s life, valuation needs a human read. Let\u2019s talk.', buttonLabel: 'Request a valuation', href: '/sell' },
 };
 

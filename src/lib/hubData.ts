@@ -39,7 +39,7 @@ function intentsFor(slug: string): HubIntentSquare[] {
     { key: "buy", label: "I'm buying", sub: "Streets & listings here", href: `/neighbourhoods/${slug}#streets` },
     { key: "sell", label: "I'm selling", sub: "What my home is worth", href: "/sell" },
     { key: "rent", label: "I'm renting", sub: "Lease in this area", href: "/rentals" },
-    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/build-wealth" },
+    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/#mls" },
   ];
 }
 
@@ -192,7 +192,7 @@ export async function getHubData(slug: string): Promise<HubData | null> {
       heading: `Thinking of buying in ${name}?`,
       body: `Get the street-by-street read and the live listings for ${name}, ${"Milton"}.`,
       buttonLabel: "Explore listings",
-      href: "/buy",
+      href: "/listings",
     },
     ctaSeller: {
       heading: `Own a home in ${name}?`,
