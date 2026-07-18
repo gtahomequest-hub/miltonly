@@ -13,7 +13,8 @@ import { config } from "@/lib/config";
 import "./globals.css";
 
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
-const OG_DESCRIPTION = `The only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, school zones, GO commute data, and live TREB listings.`;
+const ENCYCLOPEDIA_LABEL = `${config.CITY_NAME} Real Estate Encyclopedia`;
+const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, school zones, GO commute data, and live TREB listings.`;
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -54,7 +55,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(config.SITE_URL),
   title: {
-    default: `${REAL_ESTATE_LABEL}, Homes For Sale, Street Data & Market Intelligence | ${config.SITE_NAME}`,
+    default: `${ENCYCLOPEDIA_LABEL} — ${REAL_ESTATE_LABEL}, Homes For Sale & Street Data | ${config.SITE_NAME}`,
     template: `%s | ${config.SITE_NAME}`,
   },
   description: config.seo.defaultDescription,
@@ -66,7 +67,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_CA",
     siteName: config.SITE_NAME,
-    title: `${REAL_ESTATE_LABEL} | ${config.SITE_NAME}`,
+    title: `${ENCYCLOPEDIA_LABEL} | ${config.SITE_NAME}`,
     description: OG_DESCRIPTION,
     url: config.SITE_URL,
     images: [
@@ -80,7 +81,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${REAL_ESTATE_LABEL} | ${config.SITE_NAME}`,
+    title: `${ENCYCLOPEDIA_LABEL} | ${config.SITE_NAME}`,
     description: OG_DESCRIPTION,
     images: [`${config.SITE_URL}/og-image.jpg`],
   },

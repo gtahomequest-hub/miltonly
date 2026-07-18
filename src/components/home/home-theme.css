@@ -276,6 +276,20 @@
 .home-v2 .m-hero .m-wrap {
   padding: 66px 32px 60px;
 }
+/* Tagline punchline — the ONE warm gradient on the site (scarcity rule:
+   this hero eyebrow only). Solid warm fallback where background-clip:text
+   is unsupported. */
+.home-v2 .m-hero .m-eyebrow {
+  color: #ffc400;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .home-v2 .m-hero .m-eyebrow {
+    background: linear-gradient(90deg, #ffd600 0%, #ff3d3d 45%, #ff4fa3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
 .home-v2 .m-hero .m-inner {
   max-width: 760px;
   margin: 0 auto;
@@ -880,8 +894,11 @@
 .home-v2 .m-vow .m-txt span {
   color: var(--m-text-sec);
 }
-/* the ONE signal-colour control: the VOW lead-capture button */
-.home-v2 .m-vow button {
+/* the ONE signal-colour control: the VOW lead-capture button (link-as-button) */
+.home-v2 .m-vow button,
+.home-v2 .m-vow a[role='button'] {
+  display: inline-block;
+  text-align: center;
   background: var(--m-green);
   color: #073126;
   border: 0;

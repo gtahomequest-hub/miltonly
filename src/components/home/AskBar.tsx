@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { IconSpark } from './icons';
 
 interface Props {
@@ -9,9 +10,21 @@ interface Props {
 }
 
 export function AskBar({ examples }: Props) {
+  const router = useRouter();
   const [placeholder, setPlaceholder] = useState('');
   const [value, setValue] = useState('');
   const stopped = useRef(false);
+
+  // Route the question by intent to the page that answers it:
+  // valuation -> /sell, lease -> /rentals, everything else -> listings search.
+  const ask = () => {
+    const q = value.trim();
+    if (!q) return;
+    const s = q.toLowerCase();
+    if (/\b(worth|value|valuation|sell|selling|apprais)/.test(s)) router.push('/sell');
+    else if (/\b(rent|rental|lease|leasing|tenant)/.test(s)) router.push('/rentals');
+    else router.push(`/listings?q=${encodeURIComponent(q)}`);
+  };
 
   useEffect(() => {
     if (!examples || examples.length === 0) return;
@@ -58,7 +71,14 @@ export function AskBar({ examples }: Props) {
   };
 
   return (
-    <div className="m-askbar" id="m-hero-askbar">
+    <form
+      className="m-askbar"
+      id="m-hero-askbar"
+      onSubmit={(e) => {
+        e.preventDefault();
+        ask();
+      }}
+    >
       <span className="m-lead">
         <IconSpark />
       </span>
@@ -72,9 +92,9 @@ export function AskBar({ examples }: Props) {
         }}
         aria-label="Ask anything about Milton"
       />
-      <button className="m-go" aria-label="Ask">
+      <button type="submit" className="m-go" aria-label="Ask">
         →
       </button>
-    </div>
+    </form>
   );
 }

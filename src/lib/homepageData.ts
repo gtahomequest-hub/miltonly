@@ -62,11 +62,14 @@ export async function getHomepageData(): Promise<HomepageData> {
   };
 
   // ── neighbourhoods: table + per-neighbourhood DB2 sale aggregate (k-anon) ──
-  const [nbRows, totalNbhd, sold] = await Promise.all([
+  const [nbRows, totalNbhd, sold, publishedHubs] = await Promise.all([
     prisma.neighbourhood.findMany({ select: { slug: true, name: true, rawStrings: true, profile: true } }),
     prisma.neighbourhood.count(),
     Promise.resolve(getSoldDb()),
+    // only link cards whose hub page actually resolves (unpublished hub = 404)
+    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
   ]);
+  const publishedSlugs = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
   type SoldAgg = { neighbourhood: string; n: number; total: number };
   const soldRows: SoldAgg[] = sold
     ? ((await sold`SELECT neighbourhood, COUNT(*)::int AS n, COALESCE(SUM(sold_price),0)::float AS total
@@ -80,6 +83,7 @@ export async function getHomepageData(): Promise<HomepageData> {
 
   const neighbourhoods: NeighbourhoodCard[] = nbRows
     .filter((nb) => nb.profile !== "standard_no_hub") // industrial/no-hub (Derry Green) is not a featured card
+    .filter((nb) => publishedSlugs.has(nb.slug)) // no card may link to a 404
     .map((nb) => {
       let n = 0;
       let total = 0;

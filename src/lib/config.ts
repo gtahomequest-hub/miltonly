@@ -96,7 +96,7 @@ export const config = {
       "Milton neighbourhood comparison",
     ],
     defaultTitleSuffix: "Milton Ontario Real Estate — Homes For Sale, Street Data & Market Intelligence",
-    defaultDescription: "Milton Ontario's only dedicated real estate platform. Search homes for sale, compare streets and neighbourhoods, get your home value, and access street-level market data. Live TREB listings updated daily.",
+    defaultDescription: "The Milton Real Estate Encyclopedia — Milton Ontario's only dedicated real estate platform. Search homes for sale, compare streets and neighbourhoods, get your home value, and access street-level market data. Live TREB listings updated daily.",
   },
 
   // === Featured neighbourhoods (for footer/links) ===
