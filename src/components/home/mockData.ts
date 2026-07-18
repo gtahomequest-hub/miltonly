@@ -7,7 +7,7 @@ export const mockHomepageData: HomepageData = {
   stats: { typicalPrice: 1_090_000, sold12mo: 412, onMarket: 87, dom: 24 },
 
   hero: {
-    eyebrow: 'The definitive read on Milton real estate',
+    eyebrow: 'Milton Real Estate Encyclopedia',
     headline: 'Milton,',
     headlineAccent: 'read closely.',
     lede: "Ask anything about the Milton market — or tell us what you're here to do.",

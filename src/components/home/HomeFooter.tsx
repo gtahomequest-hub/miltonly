@@ -16,7 +16,7 @@ export function HomeFooter({ footer, brand }: Props) {
           <div className="m-fcol m-brand">
             <div className="m-logo">Miltonly</div>
             <p>
-              The definitive read on Milton real estate — neighbourhood by neighbourhood, street by
+              Milton Real Estate Encyclopedia — neighbourhood by neighbourhood, street by
               street.
             </p>
           </div>

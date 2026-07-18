@@ -2,6 +2,16 @@
 import type { MlsExploreConfig, MlsLens, MlsTabKey } from './types';
 import { TabIcon } from './icons';
 
+// Each lens's VOW CTA resolves to the page that delivers on its label.
+// "wealth" goes through the real VOW register wall (/signin) — that gate is
+// the lead capture; the rest land on their public surfaces.
+const VOW_CTA_HREF: Record<MlsTabKey, string> = {
+  wealth: '/signin?redirect=%2Flistings',
+  buy: '/listings',
+  sell: '/sell',
+  rent: '/rentals',
+};
+
 function Panel({ lens }: { lens: MlsLens }) {
   return (
     <div className="m-panel">
@@ -36,7 +46,9 @@ function Panel({ lens }: { lens: MlsLens }) {
         <div className="m-txt">
           {lens.vow.text} <span>{lens.vow.sub}</span>
         </div>
-        <button>{lens.vow.buttonLabel}</button>
+        <a href={VOW_CTA_HREF[lens.key]} role="button">
+          {lens.vow.buttonLabel}
+        </a>
       </div>
 
       {lens.compareRow && (

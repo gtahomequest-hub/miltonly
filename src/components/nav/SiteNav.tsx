@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
 
@@ -37,7 +38,15 @@ const PAGE_LINKS = [
  */
 export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
   const isHome = variant === 'home';
+  const router = useRouter();
   const [searchVisible, setSearchVisible] = useState(false);
+  const [navQuery, setNavQuery] = useState('');
+
+  const submitNavSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = navQuery.trim();
+    router.push(q ? `/listings?q=${encodeURIComponent(q)}` : '/listings');
+  };
 
   useEffect(() => {
     if (!isHome) return; // page variant has no scroll-reveal dependency
@@ -79,21 +88,29 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
 
         {isHome && (
           /* mirrors the hero ask bar: white pill, green lead circle, green go */
-          <div
+          <form
             className={`m-navsearch${searchVisible ? ' m-show' : ''}`}
             aria-hidden={!searchVisible}
+            onSubmit={submitNavSearch}
           >
             <span className="m-navsearch-lead">
               <IconSearch />
             </span>
             <input
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
               placeholder="Search a street or home…"
               tabIndex={searchVisible ? 0 : -1}
             />
-            <button className="m-navsearch-go" aria-label="Search" tabIndex={searchVisible ? 0 : -1}>
+            <button
+              type="submit"
+              className="m-navsearch-go"
+              aria-label="Search"
+              tabIndex={searchVisible ? 0 : -1}
+            >
               →
             </button>
-          </div>
+          </form>
         )}
 
         <a className="m-navcta" href={ctaHref}>
