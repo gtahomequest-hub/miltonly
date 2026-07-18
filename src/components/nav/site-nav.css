@@ -67,3 +67,131 @@
     display: none;
   }
 }
+
+/* ── Mobile hamburger + panel (sn-*) ──────────────────────────────────
+   Self-contained classes shared by BOTH nav variants (.m-nav on the
+   homepage, .site-nav everywhere else). Nothing here touches the
+   existing .m-nav / .site-nav cascades; above 820px the burger is
+   display:none and the panel is never rendered, so desktop output is
+   byte-identical. Forest tokens resolved to literals like the rest of
+   this file. */
+nav .sn-burger {
+  display: none;
+  background: transparent;
+  border: 0;
+  padding: 10px;
+  margin-left: 12px;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+nav .sn-burger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: #ffffff;
+}
+nav .sn-burger:active {
+  background: rgba(0, 255, 128, 0.12);
+}
+@media (max-width: 820px) {
+  nav .sn-burger {
+    display: flex;
+  }
+}
+@media (max-width: 480px) {
+  .site-nav .m-navcta {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .site-nav .m-wrap {
+    padding: 0 16px;
+  }
+  nav .sn-burger {
+    margin-left: 6px;
+  }
+}
+nav .sn-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: #073126;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px 32px;
+  overflow-y: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+nav .sn-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 66px;
+  flex-shrink: 0;
+}
+nav .sn-panel-head .m-logo {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 23px;
+  font-weight: 500;
+  color: #ffffff;
+}
+nav .sn-panel-head .m-logo b {
+  color: #00ff80;
+}
+nav .sn-close {
+  background: transparent;
+  border: 0;
+  color: #ffffff;
+  font-size: 34px;
+  line-height: 1;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+nav .sn-close:active {
+  color: #00ff80;
+  background: rgba(0, 255, 128, 0.12);
+}
+nav .sn-panel-links {
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+}
+nav .sn-panel-links a {
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  font-size: 19px;
+  font-weight: 500;
+  padding: 16px 4px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+nav .sn-panel-links a:active,
+nav .sn-panel-links a:focus-visible {
+  color: #00ff80;
+}
+nav .sn-panel-cta {
+  margin-top: 28px;
+  background: #017848;
+  color: #ffffff;
+  text-decoration: none;
+  text-align: center;
+  padding: 15px 20px;
+  min-height: 44px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid rgba(0, 255, 128, 0.3);
+}
+nav .sn-panel-cta:active {
+  background: #0a8f57;
+}

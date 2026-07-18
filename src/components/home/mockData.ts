@@ -131,11 +131,12 @@ export const mockHomepageData: HomepageData = {
         description:
           "Not a listings grid — an investor's read on Milton: yield potential, multi-unit, pre-construction, and the neighbourhoods where the trend line points up.",
         chips: [
+          // no live yield-sort or pre-con surface exists -> no href (editorial, de-styled)
           { label: 'Highest est. yield' },
-          { label: 'Multi-unit' },
+          { label: 'Multi-unit', href: '/listings?q=duplex' },
           { label: 'Pre-construction' },
-          { label: 'Appreciation trend' },
-          { label: 'Compare yields', compare: true },
+          { label: 'Appreciation trend', href: '/sold' },
+          { label: 'Compare yields', compare: true, href: '/compare/freehold-vs-condo' },
         ],
         listings: [
           { title: 'Triplex · Clarke', meta: '3 units · ~$1.2M', signal: '▲ est. gross yield ~5.1%' },
@@ -164,11 +165,12 @@ export const mockHomepageData: HomepageData = {
         description:
           'Street-matched live listings, paired with the editorial read for that street. Authority first, then inventory — the listings everyone has, on the street guides only we have.',
         chips: [
-          { label: 'By neighbourhood' },
-          { label: 'By price band' },
-          { label: 'Detached' },
-          { label: 'Townhome' },
-          { label: 'Compare streets', compare: true },
+          { label: 'By neighbourhood', href: '/neighbourhoods' },
+          { label: 'By price band', href: '/listings?sort=price_asc' },
+          { label: 'Detached', href: '/listings?type=detached' },
+          { label: 'Townhome', href: '/listings?type=townhouse' },
+          // no street-comparison surface exists -> the streets directory is the honest target
+          { label: 'Compare streets', compare: true, href: '/streets' },
         ],
         listings: [
           { title: 'Farmstead Drive', meta: '3 active · full street guide', signal: 'read the street →' },
@@ -189,9 +191,9 @@ export const mockHomepageData: HomepageData = {
         description:
           "A grounded valuation built on real comparable sales on your street and neighbourhood — not an algorithm's guess. The number, then the strategy.",
         chips: [
-          { label: 'Enter your address' },
-          { label: 'Recent comparables' },
-          { label: 'Time-to-sell read' },
+          { label: 'Enter your address', href: '/sell' },
+          { label: 'Recent comparables', href: '/sold' },
+          { label: 'Time-to-sell read', href: '/sold' },
         ],
         vow: {
           text: "Get your home's grounded value.",
@@ -206,7 +208,12 @@ export const mockHomepageData: HomepageData = {
         headline: 'Milton lease, read straight',
         description:
           "Live lease stock drawn from 6,270 records — and the quiet bridge: today's renter is tomorrow's Build-Wealth lead, so the path upward is always one tab away.",
-        chips: [{ label: 'By bedrooms' }, { label: 'By neighbourhood' }, { label: 'Lease range' }],
+        chips: [
+          // /rentals carries the live lease feed with beds/lease-term filters on-page
+          { label: 'By bedrooms', href: '/rentals' },
+          { label: 'By neighbourhood', href: '/rentals' },
+          { label: 'Lease range', href: '/rentals' },
+        ],
         vow: {
           text: 'See current lease listings.',
           sub: 'Register for the full lease feed.',

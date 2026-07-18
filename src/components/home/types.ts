@@ -65,6 +65,7 @@ export interface VipStreet {
 export interface MlsChip {
   label: string;
   compare?: boolean; // true => dashed Compare-as-mode chip
+  href?: string; // live destination; absent => editorial chip, no click affordance
 }
 
 export interface MlsListingCard {
