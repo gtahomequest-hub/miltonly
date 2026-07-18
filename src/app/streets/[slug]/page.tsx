@@ -31,6 +31,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getStreetPageData(params.slug);
   if (!data) return { title: "Street Not Found" };
 
+  // SERP override (GSC 2026-07-18 keyword report): "bennett boulevard milton"
+  // sits on page 1 (pos 7.6) with zero clicks. Slug-scoped rewrite leading
+  // with the searcher's words; the shared title formula below is unchanged.
+  if (params.slug === "bennett-boulevard-milton") {
+    const tx = data.heroProps.rawTotalTransactions ?? 0;
+    const title = `${data.street.name}, Milton — Homes, Sales & Street Guide`;
+    const description =
+      `${data.street.name} in Milton's Beaty neighbourhood — ` +
+      `${tx > 0 ? `every sale on file (${tx} transactions tracked), ` : ""}` +
+      `current listings, and the full street read: home types, prices, and how the street trades.`;
+    const og = `${title} | ${config.SITE_NAME}`;
+    return {
+      title,
+      description,
+      alternates: { canonical: canonicalUrlFor(params.slug) },
+      openGraph: { title: og, description, url: canonicalUrlFor(params.slug), type: "article" },
+      twitter: { card: "summary_large_image", title: og, description },
+    };
+  }
+
   // Round prices for prose surfaces (title, meta description, og:title).
   // Schema.org markup keeps the precise DB value — see buildStreetPageSchema.
   const rawPrice = data.heroProps.rawTypicalPrice ?? null;
