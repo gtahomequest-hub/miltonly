@@ -1,7 +1,7 @@
 // src/components/nav/SiteNav.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
@@ -35,12 +35,19 @@ const PAGE_LINKS = [
  * variant="page": renders class="site-nav" (styled by site-nav.css, self-contained
  *   forest palette) with cross-page links and NO scroll-reveal — the search
  *   anchors don't exist off the homepage.
+ *
+ * Mobile (<=820px): both variants hide the inline links and render the sn-*
+ * hamburger + full-screen panel (self-contained classes in site-nav.css, shared
+ * by both variants; the existing .m-nav / .site-nav cascades are untouched).
  */
 export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
   const isHome = variant === 'home';
   const router = useRouter();
   const [searchVisible, setSearchVisible] = useState(false);
   const [navQuery, setNavQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const burgerRef = useRef<HTMLButtonElement>(null);
 
   const submitNavSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +74,43 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
       window.removeEventListener('resize', onScroll);
     };
   }, [isHome]);
+
+  // Mobile panel: body scroll lock + ESC close + focus trap while open.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const panel = panelRef.current;
+    const focusables = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [],
+      );
+    focusables()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        burgerRef.current?.focus();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const els = focusables();
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const links = isHome ? HOME_LINKS : PAGE_LINKS;
   const ctaHref = isHome ? '#dual' : '/sell';
@@ -116,7 +160,49 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
         <a className="m-navcta" href={ctaHref}>
           What&apos;s my home worth?
         </a>
+
+        <button
+          ref={burgerRef}
+          className="sn-burger"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
       </div>
+
+      {menuOpen && (
+        <div className="sn-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Site menu">
+          <div className="sn-panel-head">
+            <div className="m-logo">
+              Milton<b>ly</b>
+            </div>
+            <button
+              className="sn-close"
+              aria-label="Close menu"
+              onClick={() => {
+                setMenuOpen(false);
+                burgerRef.current?.focus();
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div className="sn-panel-links">
+            {links.map((l) => (
+              <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)}>
+                {l.label}
+              </a>
+            ))}
+          </div>
+          <a className="sn-panel-cta" href={ctaHref} onClick={() => setMenuOpen(false)}>
+            What&apos;s my home worth?
+          </a>
+        </div>
+      )}
     </nav>
   );
 }

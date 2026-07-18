@@ -160,6 +160,15 @@
     display: none;
   }
 }
+@media (max-width: 480px) {
+  .home-v2 .m-navcta {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .home-v2 .m-nav .m-wrap {
+    padding: 0 16px;
+  }
+}
 
 /* scroll-reveal search in the nav */
 .home-v2 .m-navlinks {
@@ -842,6 +851,13 @@
 }
 .home-v2 .m-chip:hover {
   border-color: var(--m-accent);
+}
+/* editorial chip without a destination: no click affordance */
+.home-v2 .m-chip.m-flat {
+  cursor: default;
+}
+.home-v2 .m-chip.m-flat:hover {
+  border-color: var(--m-border);
 }
 .home-v2 .m-chip.m-cmp {
   border-style: dashed;

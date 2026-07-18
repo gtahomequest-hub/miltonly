@@ -23,11 +23,18 @@ function Panel({ lens }: { lens: MlsLens }) {
       <div className="m-desc">{lens.description}</div>
 
       <div className="m-chips">
-        {lens.chips.map((c) => (
-          <span key={c.label} className={`m-chip${c.compare ? ' m-cmp' : ''}`}>
-            {c.compare ? `⇄ ${c.label}` : c.label}
-          </span>
-        ))}
+        {lens.chips.map((c) =>
+          c.href ? (
+            <a key={c.label} href={c.href} className={`m-chip${c.compare ? ' m-cmp' : ''}`}>
+              {c.compare ? `⇄ ${c.label}` : c.label}
+            </a>
+          ) : (
+            /* editorial chip - no live destination, so no click affordance */
+            <span key={c.label} className={`m-chip m-flat${c.compare ? ' m-cmp' : ''}`}>
+              {c.compare ? `⇄ ${c.label}` : c.label}
+            </span>
+          ),
+        )}
       </div>
 
       {lens.listings && lens.listings.length > 0 && (
