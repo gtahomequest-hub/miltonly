@@ -94,6 +94,9 @@ scripts/list-leads.ts
 scripts/_*.ts
 scripts/_migration-log.json
 
+# GSC coverage audit local state + artifacts (scripts/gsc-coverage-audit.ts)
+scripts/gsc-coverage-out/
+
 # Throwaway regen + batch logs
 scripts/regen-*.txt
 scripts/regen-*.json
