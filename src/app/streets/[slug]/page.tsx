@@ -51,20 +51,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  // Round prices for prose surfaces (title, meta description, og:title).
-  // Schema.org markup keeps the precise DB value — see buildStreetPageSchema.
+  // Round prices for prose surfaces (meta description, og). Schema.org markup
+  // keeps the precise DB value — see buildStreetPageSchema.
+  // Title formula proven by the Bennett SERP rewrite (GSC 2026-07-18 report):
+  // searcher-word order, no data in the title — the live-data hook moves to
+  // the DESCRIPTION (typical price where k-safe, transactions-tracked
+  // fallback where sub-k, mirroring the Bennett fail-soft).
   const rawPrice = data.heroProps.rawTypicalPrice ?? null;
   const priceStr = rawPrice ? formatCAD(roundPriceForProse(rawPrice)) : "";
   const tx = data.heroProps.rawTotalTransactions ?? 0;
 
-  const summary = priceStr
-    ? `Typical ${priceStr}${tx > 0 ? `, ${tx} transactions on file` : ""}`
-    : `Street profile with live market data`;
+  const hook = priceStr
+    ? `homes typically ${priceStr}${tx > 0 ? ` across ${tx} recorded sales` : ""}`
+    : tx > 0
+      ? `every sale on file (${tx} transactions tracked), current listings, and the full street read`
+      : `current listings and the full street read`;
 
-  const baseTitle = `${data.street.name}, ${config.CITY_NAME}, ${summary}`;
+  const baseTitle = `${data.street.name}, ${config.CITY_NAME} — Homes, Prices & Sales History`;
   const ogTitle = `${baseTitle} | ${config.SITE_NAME}`;
   const description =
-    `${data.street.name} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}. ${data.street.characterSummary || summary}`.trim();
+    `${data.street.name} in ${config.CITY_NAME}, ${config.CITY_PROVINCE} — ${hook}. ${data.street.characterSummary || ""}`.trim();
 
   return {
     title: baseTitle,
