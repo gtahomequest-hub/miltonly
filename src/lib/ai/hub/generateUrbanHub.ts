@@ -18,10 +18,10 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { config } from "@/lib/config";
 import { buildHubInput, buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
 import { HubGenerationError } from "@/lib/ai/hub/generateHubContent";
+import { buildHubMeta } from "@/lib/ai/hub/hubMeta";
 import {
   generateUrbanHubContent,
   type UrbanProviderOpts,
@@ -144,9 +144,11 @@ export async function generateUrbanHub(
   await routeHubGeneration(neighbourhoodSlug, [], inputHash); // clears prior review row
 
   const description = sections.flatMap((s) => s.paragraphs).join("\n\n");
-  const metaTitle = `${input.neighbourhood.name} ${config.CITY_NAME} Neighbourhood Guide | Homes, Streets & Market`;
-  const metaDescription =
-    `${input.neighbourhood.name}, ${config.CITY_NAME}: local character, a live market read, how it compares to the rest of Milton, and the streets that make up the area.`;
+  const { metaTitle, metaDescription } = buildHubMeta(
+    input.neighbourhood.name,
+    { typicalPrice: input.aggregates.typicalPrice, salesCount: input.aggregates.salesCount },
+    "urban",
+  );
 
   await prisma.hubContent.upsert({
     where: { neighbourhoodSlug },
