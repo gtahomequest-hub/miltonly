@@ -31,6 +31,7 @@
   font-size: 23px;
   font-weight: 500;
   color: #ffffff;
+  text-decoration: none; /* the logo is a home link (an <a>) */
 }
 .site-nav .m-logo b {
   color: #00ff80;
@@ -140,6 +141,7 @@ nav .sn-panel-head .m-logo {
   font-size: 23px;
   font-weight: 500;
   color: #ffffff;
+  text-decoration: none;
 }
 nav .sn-panel-head .m-logo b {
   color: #00ff80;

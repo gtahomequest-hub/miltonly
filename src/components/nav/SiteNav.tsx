@@ -118,9 +118,9 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
   return (
     <nav className={isHome ? 'm-nav' : 'site-nav'}>
       <div className="m-wrap">
-        <div className="m-logo">
+        <a className="m-logo" href="/" aria-label="Miltonly home">
           Milton<b>ly</b>
-        </div>
+        </a>
 
         <div className={`m-navlinks${isHome && searchVisible ? ' m-hidden' : ''}`}>
           {links.map((l) => (
@@ -177,9 +177,9 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
       {menuOpen && (
         <div className="sn-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Site menu">
           <div className="sn-panel-head">
-            <div className="m-logo">
+            <a className="m-logo" href="/" aria-label="Miltonly home" onClick={() => setMenuOpen(false)}>
               Milton<b>ly</b>
-            </div>
+            </a>
             <button
               className="sn-close"
               aria-label="Close menu"
