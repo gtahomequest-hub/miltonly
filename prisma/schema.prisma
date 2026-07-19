@@ -759,3 +759,65 @@ model AdsLead {
   @@map("leads")
   @@schema("ads")
 }
+
+// ───── Organic Growth Loop piece 1 — SENSE (GSC-informed SEO queue) ─────────
+// Filled weekly by /api/seo/sense (keyword classes + light coverage). Later
+// pieces (admin approval tab, ACT enqueuer, digest) consume these tables;
+// nothing here touches streetQueue or any generation path.
+
+model SeoOpportunity {
+  id          String   @id @default(cuid())
+  query       String
+  class       String // SEEN_NOT_CLICKED | STRIKING_DISTANCE | NO_PAGE_MATCH | THIN_ENTITY
+  entityType  String   @default("none") // street | none
+  entitySlug  String?
+  targetPage  String? // page currently riding the query (path form)
+  impressions Int
+  clicks      Int
+  position    Float
+  status      String   @default("pending") // pending | approved | rejected | auto_queued | done
+  senseRunId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([query, class])
+  @@index([status])
+  @@index([class])
+  @@schema("public")
+}
+
+// Append-only audit trail for every automated SEO-loop action.
+model SeoActionLog {
+  id            String   @id @default(cuid())
+  action        String
+  opportunityId String?
+  detail        Json     @default("{}")
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model SenseRun {
+  id                String    @id @default(cuid())
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  keywordRows       Int       @default(0)
+  coverageInspected Int       @default(0)
+  coverageMode      String    @default("light") // light | full
+  indexedCount      Int?
+  error             String?
+
+  @@index([startedAt])
+  @@schema("public")
+}
+
+// Singleton resume-state for light-mode coverage inspection (serverless has
+// no durable FS; this replaces the CLI audit script's local state.json).
+model SeoCoverageState {
+  id        String   @id
+  stateJson Json
+  updatedAt DateTime @updatedAt
+
+  @@schema("public")
+}
