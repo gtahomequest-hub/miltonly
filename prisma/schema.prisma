@@ -775,6 +775,12 @@ model SeoOpportunity {
   impressions Int
   clicks      Int
   position    Float
+  // Metrics from the PREVIOUS sense run (shifted on upsert when a new run
+  // refreshes the row) — the digest's week-over-week movers source. Chosen
+  // over a per-run SeoMetricSnapshot table: no row explosion, one read.
+  prevImpressions Int?
+  prevClicks      Int?
+  prevPosition    Float?
   status      String   @default("pending") // pending | approved | rejected | auto_queued | done
   senseRunId  String
   createdAt   DateTime @default(now())
@@ -806,6 +812,10 @@ model SenseRun {
   coverageInspected Int       @default(0)
   coverageMode      String    @default("light") // light | full
   indexedCount      Int?
+  // Whole-property 90d totals across ALL queries (incl. winning/branded) —
+  // the digest's headline numbers, so it never re-calls GSC.
+  totalImpressions  Int?
+  totalClicks       Int?
   error             String?
 
   @@index([startedAt])

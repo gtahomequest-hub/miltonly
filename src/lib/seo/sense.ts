@@ -200,8 +200,12 @@ export async function runSense(): Promise<SenseSummary> {
 
       const existing = await prisma.seoOpportunity.findUnique({
         where: { query_class: { query: c.query, class: cls } },
-        select: { id: true },
+        select: { id: true, impressions: true, clicks: true, position: true, senseRunId: true },
       });
+      // Shift current metrics into prev* when a NEW run refreshes the row —
+      // the digest's week-over-week movers source. Same-run re-upserts keep
+      // the existing prev values.
+      const shiftPrev = existing !== null && existing.senseRunId !== run.id;
       const row = await prisma.seoOpportunity.upsert({
         where: { query_class: { query: c.query, class: cls } },
         create: {
@@ -223,6 +227,13 @@ export async function runSense(): Promise<SenseSummary> {
           clicks: c.clicks,
           position: c.position,
           senseRunId: run.id,
+          ...(shiftPrev
+            ? {
+                prevImpressions: existing.impressions,
+                prevClicks: existing.clicks,
+                prevPosition: existing.position,
+              }
+            : {}),
         },
       });
       if (existing) updated++;
@@ -242,6 +253,11 @@ export async function runSense(): Promise<SenseSummary> {
     // 4) Light coverage (positives refresh + capped inspection, resumable).
     const cov = await lightCoverage(sc, sitemapUrls);
 
+    // Whole-property 90d totals (incl. winning/branded) — digest headline
+    // numbers, so the digest never re-calls GSC.
+    const totalImpressions = classified.reduce((s, c) => s + c.impressions, 0);
+    const totalClicks = classified.reduce((s, c) => s + c.clicks, 0);
+
     await prisma.senseRun.update({
       where: { id: run.id },
       data: {
@@ -249,6 +265,8 @@ export async function runSense(): Promise<SenseSummary> {
         keywordRows: classified.length,
         coverageInspected: cov.inspected,
         indexedCount: cov.indexedCount,
+        totalImpressions,
+        totalClicks,
       },
     });
     await prisma.seoActionLog.create({
