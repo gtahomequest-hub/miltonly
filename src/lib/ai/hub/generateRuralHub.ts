@@ -21,9 +21,9 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { config } from "@/lib/config";
 import { buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
+import { buildHubMeta } from "@/lib/ai/hub/hubMeta";
 import {
   generateRuralHubContent,
   HubGenerationError,
@@ -129,9 +129,11 @@ export async function generateRuralHub(neighbourhoodSlug: string): Promise<Gener
   await routeHubGeneration(neighbourhoodSlug, [], inputHash); // clears prior review row
 
   const description = sections.flatMap((s) => s.paragraphs).join("\n\n");
-  const metaTitle = `${input.neighbourhood.name} ${config.CITY_NAME} Neighbourhood Guide | Homes, Roads & Market`;
-  const metaDescription =
-    `${input.neighbourhood.name}, ${config.CITY_NAME}: local character, a light market read, and the roads that make up the area.`;
+  const { metaTitle, metaDescription } = buildHubMeta(
+    input.neighbourhood.name,
+    { typicalPrice: input.aggregates.typicalPrice, salesCount: input.aggregates.salesCount },
+    "rural",
+  );
 
   await prisma.hubContent.upsert({
     where: { neighbourhoodSlug },
