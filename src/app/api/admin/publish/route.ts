@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminCookieValue } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { revalidatePath } from "next/cache";
 import { sendSMS } from "@/lib/smsAlert";
 
 export async function POST(request: NextRequest) {
-  const adminCookie = request.cookies.get("miltonly_admin");
-  if (adminCookie?.value !== "1") {
+  if (!verifyAdminCookieValue(request.cookies.get("miltonly_admin")?.value)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

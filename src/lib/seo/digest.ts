@@ -22,6 +22,7 @@ interface DigestData {
   newSinceLastDigest: { count: number; byClass: Record<string, number>; top: Array<{ query: string; class: string; impressions: number; position: number; targetPage: string | null }> };
   movers: Array<{ query: string; impressions: number; prevImpressions: number; position: number; delta: number }>;
   thinEntities: Array<{ query: string; entitySlug: string | null; impressions: number; position: number }>;
+  autoQueued: Array<{ streetSlug: string; query: string; when: string; outcome: string }>;
   killSwitchOn: boolean;
 }
 
@@ -82,9 +83,33 @@ export async function collectDigestData(): Promise<DigestData> {
     })
   ).map((r) => ({ query: r.query, entitySlug: r.entitySlug, impressions: r.impressions, position: r.position }));
 
+  // ACT audit trail for the week: every autonomous enqueue + its generation
+  // outcome (looked up live from StreetGeneration so the digest reflects
+  // what the hourly drain actually did).
+  const actLogs = await prisma.seoActionLog.findMany({
+    where: { action: "act_enqueued", createdAt: { gte: new Date(Date.now() - 7 * 86400000) } },
+    orderBy: { createdAt: "desc" },
+  });
+  const autoQueued: DigestData["autoQueued"] = [];
+  for (const log of actLogs) {
+    const detail = (log.detail ?? {}) as { streetSlug?: string; query?: string };
+    const slug = detail.streetSlug ?? "?";
+    let outcome = "queued, awaiting drain";
+    if (slug !== "?") {
+      const gen = await prisma.streetGeneration.findUnique({ where: { streetSlug: slug }, select: { status: true } });
+      const q = await prisma.streetQueue.findUnique({ where: { streetSlug: slug }, select: { status: true, lastError: true } });
+      if (gen?.status === "succeeded") outcome = "generated + published (gate passed)";
+      else if (gen?.status === "failed" || q?.status === "failed") outcome = "generation failed closed -> review queue";
+      else if (q?.status === "ineligible") outcome = "drain ruled ineligible (data floor)";
+      else if (q?.status === "processing") outcome = "generating now";
+    }
+    autoQueued.push({ streetSlug: slug, query: detail.query ?? "?", when: log.createdAt.toISOString().slice(0, 10), outcome });
+  }
+
   return {
     runNow,
     runPrev,
+    autoQueued,
     pendingCount: statusCounts["pending"] ?? 0,
     statusCounts,
     newSinceLastDigest: {
@@ -126,7 +151,12 @@ export function renderDigestText(d: DigestData): string {
     L.push(`  * "${t.query}" [${t.class}] ${t.impressions} impr, pos ${t.position.toFixed(1)}${t.targetPage ? `, riding ${t.targetPage}` : ""}`);
   }
   L.push("");
-  L.push(`THIN-ENTITY SPOTLIGHT (auto-generation candidates, awaiting piece 4): ${d.thinEntities.length}`);
+  L.push(`AUTO-QUEUED THIS WEEK: ${d.autoQueued.length}`);
+  for (const a of d.autoQueued) {
+    L.push(`  ${a.when}  ${a.streetSlug}  <- "${a.query}"  [${a.outcome}]`);
+  }
+  L.push("");
+  L.push(`THIN-ENTITY SPOTLIGHT (auto-generation candidates): ${d.thinEntities.length}`);
   for (const t of d.thinEntities) {
     L.push(`  ${t.entitySlug ?? "?"}  <- "${t.query}" (${t.impressions} impr, pos ${t.position.toFixed(1)})`);
   }
@@ -206,6 +236,21 @@ export function renderDigestHtml(d: DigestData): string {
       <table style="width:100%;border-collapse:collapse;">
         <tr><th ${th}>Query</th><th ${th}>Class</th><th ${th}>Impr</th><th ${th}>Pos</th><th ${th}>Riding</th></tr>
         ${newTop}
+      </table>
+
+      <h3 ${h3}>Auto-queued this week: ${d.autoQueued.length}</h3>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><th ${th}>When</th><th ${th}>Street</th><th ${th}>Trigger query</th><th ${th}>Outcome</th></tr>
+        ${
+          d.autoQueued.length
+            ? d.autoQueued
+                .map(
+                  (a) =>
+                    `<tr><td ${td}>${a.when}</td><td ${td}>${esc(a.streetSlug)}</td><td ${td}>${esc(a.query)}</td><td ${td}>${esc(a.outcome)}</td></tr>`,
+                )
+                .join("")
+            : `<tr><td ${td} colspan="4">none this week</td></tr>`
+        }
       </table>
 
       <h3 ${h3}>Thin-entity spotlight (auto-gen candidates)</h3>

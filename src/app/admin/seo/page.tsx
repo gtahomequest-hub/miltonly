@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { verifyAdminCookieValue } from "@/lib/adminAuth";
 import AdminSeoClient from "./AdminSeoClient";
 
 // Organic growth loop piece 3 — the SEO approval queue. Same gate pattern as
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminSeoPage() {
   const cookieStore = cookies();
-  const isAuth = cookieStore.get("miltonly_admin")?.value === "1";
+  const isAuth = verifyAdminCookieValue(cookieStore.get("miltonly_admin")?.value);
   if (!isAuth) {
     // Reuse the review page's login flow: send the operator there to sign in.
     return (
