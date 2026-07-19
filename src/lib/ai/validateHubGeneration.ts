@@ -34,6 +34,7 @@ import {
   findPerTradeFabrications,
   findSubkRangeReassembly,
 } from "@/lib/ai/validateStreetGeneration";
+import { findCatchmentVocabulary } from "@/lib/ai/catchmentVocabulary";
 import type { HubFAQItem } from "@/types/hub-generator";
 
 // ---------------------------------------------------------------------------
@@ -226,7 +227,6 @@ export function hubInputToStreetAdapter(input: HubGeneratorInput): StreetGenerat
     },
     neighbourhoods: [input.neighbourhood.name],
     aggregates: {
-      txCount: input.aggregates.txCount,
       salesCount: input.aggregates.salesCount,
       leasesCount: input.aggregates.leasesCount,
       typicalPrice: input.aggregates.typicalPrice,
@@ -269,6 +269,18 @@ export function validateHubSectionsSubset(
 
   for (const section of sections) {
     const text = section.paragraphs.join("\n\n");
+
+    // WS4 catchment ban (amended 2026-07-19, batch-001 remediation): applies
+    // on EVERY tier. School names + distances only; no catchment/boundary/
+    // assignment vocabulary anywhere in hub prose.
+    const catchment = findCatchmentVocabulary(text);
+    if (catchment) {
+      violations.push({
+        rule: "catchment_vocabulary",
+        excerpt: `"${catchment.matched}": ${catchment.excerpt}`,
+        severity: "hard",
+      });
+    }
 
     // liveMarket / inventorySnapshot: aggregate sections. Per-trade claims are
     // banned (input has no per-trade rows) and numerics must ground — the W2
@@ -348,6 +360,16 @@ export function validateHubFaq(
   for (const item of faq) {
     const q = item.question.slice(0, 48);
     const text = item.answer;
+
+    // WS4 catchment ban (all tiers, 2026-07-19): question or answer.
+    const catchment = findCatchmentVocabulary(`${item.question} ${item.answer}`);
+    if (catchment) {
+      violations.push({
+        rule: "catchment_vocabulary",
+        excerpt: `FAQ "${q}": "${catchment.matched}": ${catchment.excerpt}`,
+        severity: "hard",
+      });
+    }
 
     // Per-trade fabrication is banned in any answer (input has no per-trade rows).
     for (const p of findPerTradeFabrications(text, adapter)) {

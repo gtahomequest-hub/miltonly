@@ -263,8 +263,9 @@ async function main() {
     // parallel-merge inserts neighbourhoodComparable at index 4, immediately
     // after "market" — NOT appended at the end. Confirmed via aird-court smoke
     // run 2026-05-27.
-    const canonicalLegacy = ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
-    const canonicalT2 = ["about", "homes", "amenities", "market", "neighbourhoodComparable", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+    // bestFitFor removed 2026-07-19 (fair housing) — 7/8-section architecture.
+    const canonicalLegacy = ["about", "homes", "amenities", "market", "gettingAround", "schools", "differentPriorities"];
+    const canonicalT2 = ["about", "homes", "amenities", "market", "neighbourhoodComparable", "gettingAround", "schools", "differentPriorities"];
     const len = inMemV2.sections.length;
     const expectedOrder = len === 9 ? canonicalT2 : canonicalLegacy;
     const orderOk = (len === 8 || len === 9) &&

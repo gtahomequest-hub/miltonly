@@ -263,10 +263,11 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                   ORDER BY COUNT(*) DESC
                   LIMIT 3`
     ),
-    // TODO: real crossStreet selection heuristic is part of prospecting
-    // intelligence layer; this is a Phase 4.1 fallback — pick top-2 by abs
-    // typicalPrice delta from k≥5 streets. Exclude all siblings of this
-    // identity so a cross-street suggestion never points back at itself.
+    // Comparison-street candidates: all k≥5 streets town-wide. GEOGRAPHIC
+    // scoping happens in buildCrossStreets (batch-001 fix, 2026-07-19):
+    // candidates are filtered to the subject's own neighbourhood(s) plus
+    // centroid-adjacent ones before ranking. Exclude all siblings of this
+    // identity so a comparison suggestion never points back at itself.
     queryAnalytics<RawCrossCandidate>(
       (db) => db`SELECT street_slug, avg_sold_price
                  FROM analytics.street_sold_stats
@@ -484,8 +485,14 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   // ─── activeListingsCount ────────────────────────────────────────────
   const activeListingsCount = allListings.filter((l) => l.status === "active").length;
 
-  // ─── crossStreets (2 picks via abs-delta; second query for dominant type)
-  const crossStreets = await buildCrossStreets(slug, typicalRaw, crossCandidates);
+  // ─── crossStreets (comparison streets, neighbourhood-scoped; see helper)
+  const crossStreets = await buildCrossStreets(
+    typicalRaw,
+    crossCandidates,
+    siblingSlugs,
+    collectSubjectNeighbourhoodStrings(allListings, soldNeighbourhoodRows),
+    centroid,
+  );
 
   // ─── Compose output. primaryBuilder / dominantStyle / lotSize omitted
   //     because no pipeline source exists yet — absent rather than fabricated.
@@ -501,7 +508,10 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     },
     neighbourhoods,
     aggregates: {
-      txCount,
+      // txCount (sales + leases blended) removed from the payload 2026-07-19
+      // (batch-001 fix): exposing a pre-blended pool count legitimized "N
+      // total transactions" claims via the numeric-grounding whitelist. It is
+      // still computed locally above for kAnonLevel derivation.
       salesCount,
       leasesCount,
       typicalPrice,
@@ -1003,22 +1013,76 @@ function buildCommute(
 }
 
 // ---------------------------------------------------------------------------
-// crossStreets — temporary Phase 4.1 heuristic.
-// Pick top 2 from DB3 candidates by absolute typicalPrice delta, then run a
-// single DB2 query across those 2 slugs to derive the dominant product type.
+// crossStreets — MARKET-COMPARISON streets, geographically scoped.
 //
-// TODO: real crossStreet selection heuristic is part of prospecting
-// intelligence layer; this is a Phase 4.1 fallback.
+// Batch-001 root-cause fix (2026-07-19): the prior heuristic ranked ALL k≥5
+// streets town-wide by LARGEST price delta, which deterministically selected
+// the same extreme-priced outliers (Wettlaufer/Apple at the top, Martin/
+// Millside at the bottom) as "alternatives" for nearly every mid-market
+// street, across mutually exclusive neighbourhoods.
+//
+// New selection:
+//   1. Allowed geography = the subject's own raw DB2/DB1 neighbourhood
+//      strings, plus any NEIGHBOURHOOD_CENTROIDS entry within
+//      ADJACENT_NEIGHBOURHOOD_KM of the subject centroid (adjacent-
+//      neighbourhood tolerance).
+//   2. Candidates (k≥5, town-wide) are kept only if DB2 shows sold records
+//      for them inside the allowed geography.
+//   3. Rank by absolute price delta WITHIN that set, take top 2 — a
+//      different-priced street is a meaningful alternative only once it is
+//      genuinely nearby.
+//   4. No in-geography candidate → return []. The prompts' empty-crossStreets
+//      path (qualitative alternatives, zero street names, enforced by the
+//      invented_cross_street rule) handles suppression.
+//
+// The entries are COMPARISON streets, not physical connectors — the prompts
+// and the adjacency_claim validator rule enforce that framing.
 // ---------------------------------------------------------------------------
 
+const ADJACENT_NEIGHBOURHOOD_KM = 2.0;
+
+function collectSubjectNeighbourhoodStrings(
+  listings: Listing[],
+  soldRows: Array<{ neighbourhood: string }>,
+): string[] {
+  const out = new Set<string>();
+  for (const l of listings) if (l.neighbourhood) out.add(l.neighbourhood);
+  for (const r of soldRows) if (r.neighbourhood) out.add(r.neighbourhood);
+  return Array.from(out);
+}
+
 async function buildCrossStreets(
-  subjectSlug: string,
   subjectPrice: number | null,
   candidates: RawCrossCandidate[],
+  siblingSlugs: string[],
+  subjectNeighbourhoods: string[],
+  centroid: { lat: number; lng: number },
 ): Promise<StreetGeneratorInput["crossStreets"]> {
   if (subjectPrice === null || candidates.length === 0) return [];
+  if (subjectNeighbourhoods.length === 0) return [];
+
+  // Allowed geography: subject's raw neighbourhood strings + centroid-adjacent
+  // neighbourhoods (NEIGHBOURHOOD_CENTROIDS is keyed by raw TREB form, the
+  // same form DB2 sold_records.neighbourhood carries).
+  const allowed = new Set<string>(subjectNeighbourhoods);
+  for (const [name, c] of Object.entries(NEIGHBOURHOOD_CENTROIDS)) {
+    if (haversineKm(centroid.lat, centroid.lng, c.lat, c.lng) <= ADJACENT_NEIGHBOURHOOD_KM) {
+      allowed.add(name);
+    }
+  }
+  const allowedNames = Array.from(allowed);
+
+  const inGeoRows = await querySold<{ street_slug: string }>(
+    (db) => db`SELECT DISTINCT street_slug
+               FROM sold.sold_records
+               WHERE neighbourhood = ANY(${allowedNames}::text[])
+                 AND street_slug <> ALL(${siblingSlugs}::text[])`
+  );
+  const inGeo = new Set(inGeoRows.map((r) => r.street_slug));
+  if (inGeo.size === 0) return [];
 
   const ranked = candidates
+    .filter((c) => inGeo.has(c.street_slug))
     .map((c) => ({ slug: c.street_slug, price: num(c.avg_sold_price) }))
     .filter((c): c is { slug: string; price: number } => c.price !== null)
     .map((c) => ({ ...c, delta: Math.abs(c.price - subjectPrice) }))
