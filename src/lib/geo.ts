@@ -61,7 +61,10 @@ export const PARKS: POI[] = [
   { name: "Willmott Park", lat: 43.4980, lng: -79.9070, icon: "🌳" },
   { name: "Ford District Park", lat: 43.4950, lng: -79.9260, icon: "🌳" },
   { name: "Escarpment View Park", lat: 43.5300, lng: -79.8550, icon: "🌳" },
-  { name: "Velodrome Park", lat: 43.5340, lng: -79.8950, icon: "🌳" },
+  // "Velodrome Park" removed 2026-07-19 (batch-001 triage): no Town of Milton
+  // source confirms a park by this name, and these coords sit in northwest
+  // Milton while the actual velodrome (Mattamy National Cycling Centre) is on
+  // Pan Am Blvd in the southeast. Re-add only with a verified name + location.
 ];
 
 // Highway 401 on-ramps. Milton has two; pick whichever is nearer per street.

@@ -85,6 +85,29 @@ export function countSentences(text: string): number {
 }
 
 /**
+ * Split text into sentences using the same abbreviation-safe masking as
+ * countSentences, preserving each sentence's terminator. Joining the result
+ * with "" reproduces the input (modulo trailing whitespace). Used by the
+ * render-time catchment scrub so "St. Scholastica" never splits mid-name.
+ */
+export function splitSentences(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  const masked = maskAbbreviations(trimmed);
+  const matches = masked.match(/[^.!?]+[.!?]+(?:\s+|$)?/g);
+  if (!matches) return [trimmed];
+  // Preserve any unterminated tail fragment (prose that doesn't end in .!?)
+  // so scrub-and-rejoin never silently drops content.
+  const consumed = matches.reduce((n, m) => n + m.length, 0);
+  const out = matches.map(unmask);
+  if (consumed < masked.length) {
+    const tail = unmask(masked.slice(consumed));
+    if (tail.trim()) out.push(tail);
+  }
+  return out;
+}
+
+/**
  * Trim each FAQ answer that exceeds maxSentences down to maxSentences,
  * preserving abbreviations and decimal numbers verbatim. Returns a new
  * array; the input is not mutated.

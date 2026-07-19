@@ -7,6 +7,10 @@
 
 import { prisma } from "@/lib/prisma";
 import type { StreetSection, StreetFAQItem, StreetSectionId } from "@/types/street-generator";
+import {
+  filterStreetSectionsForRender,
+  filterStreetFaqForRender,
+} from "@/lib/ai/streetContentRenderFilter";
 
 const VALID_SECTION_IDS = new Set<StreetSectionId>([
   "about",
@@ -94,5 +98,18 @@ export async function loadStreetGeneration(
     faq.push(q);
   }
 
-  return { sections, faq };
+  // Render-time compliance filter (batch-001 triage + WS4 catchment
+  // amendment, 2026-07-19): drops the fair-housing "Who this street suits"
+  // section + FAQ twin, scrubs catchment/boundary/assignment vocabulary, and
+  // renames the legacy "Schools and catchment" heading. Applied here — the
+  // single choke point feeding the page renderer, JSON-LD schema, and v2
+  // mapper — so all previously generated rows are cleaned immediately, until
+  // the regen wave replaces them. bestFitFor stays in VALID_SECTION_IDS above
+  // so legacy rows still narrow successfully before filtering. Full rules in
+  // src/lib/ai/streetContentRenderFilter.ts.
+  const visibleSections = filterStreetSectionsForRender(sections);
+  if (visibleSections.length === 0) return null;
+  const visibleFaq = filterStreetFaqForRender(faq);
+
+  return { sections: visibleSections, faq: visibleFaq };
 }
