@@ -15,6 +15,12 @@
  *   - AI_PROVIDER unset OR "anthropic" → existing behaviour (no change)
  *   - AI_PROVIDER="deepseek_v2" → DeepSeek 7-pass for long-form, Anthropic
  *     remains the only option for the legacy short-form function
+ *   - AI_PROVIDER="phase41_v2" → structured 8-section + FAQ path (production)
+ *
+ * All DeepSeek requests use DEEPSEEK_MODEL (deepseek-v4-flash since
+ * 2026-07-18; deepseek-chat deprecated 2026-07-24) via callDeepSeek().
+ * AI_PROVIDER_FALLBACK ("opus"/"sonnet"/"haiku") routes retry passes to
+ * Anthropic and is independent of the DeepSeek model choice.
  *
  * Production callers should use the NEW generateLongFormStreetDescription()
  * function for the multi-section 1,200-1,500 word output. The legacy
@@ -212,9 +218,13 @@ export async function generateStreetDescription(
 //
 // Validator updates resolve DEF-13, DEF-14, DEF-16 simultaneously.
 
-const DEEPSEEK_MODEL = "deepseek-chat";
-const DEEPSEEK_INPUT_PRICE_PER_M = 0.27;
-const DEEPSEEK_OUTPUT_PRICE_PER_M = 1.10;
+// Migrated from deepseek-chat (deprecated 2026-07-24) on 2026-07-18. v4-flash
+// keeps the same chat/completions endpoint + native response_format json_object
+// contract. Pricing per api-docs.deepseek.com 2026-07 (cache-miss input rate;
+// cache-hit input is cheaper, so logged cost is a slight overestimate).
+const DEEPSEEK_MODEL = "deepseek-v4-flash";
+const DEEPSEEK_INPUT_PRICE_PER_M = 0.14;
+const DEEPSEEK_OUTPUT_PRICE_PER_M = 0.28;
 
 const KNOWN_ANCHORS_V2 = [
   "Milton GO", "Milton GO station", "Highway 401", "Highway 407",
@@ -437,6 +447,12 @@ export async function callDeepSeek({
     ],
     temperature,
     max_tokens: maxTokens,
+    // v4-flash defaults to thinking mode, and its reasoning trace bills into
+    // max_tokens - a long trace can exhaust the budget and return EMPTY
+    // content ("DeepSeek returned no text", observed asleton 2026-07-18).
+    // Disabled = the non-thinking model, which is the faithful equivalent of
+    // the deprecated deepseek-chat contract this pipeline was built against.
+    thinking: { type: "disabled" },
   };
   if (responseFormat) {
     requestBody.response_format = responseFormat;
