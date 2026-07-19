@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hook = priceStr
     ? `homes typically ${priceStr}${tx > 0 ? ` across ${tx} recorded sales` : ""}`
     : tx > 0
-      ? `every sale on file (${tx} transactions tracked), current listings, and the full street read`
+      ? `every sale on file (${tx} transaction${tx === 1 ? "" : "s"} tracked), current listings, and the full street read`
       : `current listings and the full street read`;
 
   const baseTitle = `${data.street.name}, ${config.CITY_NAME} — Homes, Prices & Sales History`;
