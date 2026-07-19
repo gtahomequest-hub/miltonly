@@ -1808,7 +1808,13 @@ export function validateStreetGeneration(
       || phrase.includes(input.street.name)
       || phraseIsHostSelfReference
       || input.neighbourhoods.some(n => phrase.includes(n))
-      || KNOWN_ANCHORS.some(a => phrase.includes(a));
+      || KNOWN_ANCHORS.some(a => phrase.includes(a))
+      // Grounded amenity names from input.nearby are legal references — the
+      // qualitative differentPriorities path explicitly directs the model to
+      // describe alternatives via "proximity to specific named amenities that
+      // appear in input.nearby" (pears-court pilot: "Centennial Park" burned
+      // 5 retries as a false-positive invented street).
+      || collectNearbyAmenityNames(input).some(a => phrase.includes(a) || a.includes(phrase));
     if (!isAllowed) {
       violations.push({
         rule: "invented_cross_street",
@@ -2133,7 +2139,10 @@ export function validateSectionsSubset(
         || phrase.includes(input.street.name)
         || phraseIsHostSelfReference
         || input.neighbourhoods.some((n) => phrase.includes(n))
-        || KNOWN_ANCHORS.some((a) => phrase.includes(a));
+        || KNOWN_ANCHORS.some((a) => phrase.includes(a))
+        // Grounded amenity names from input.nearby are legal (see the mirror
+        // comment in the combined validator — pears-court false positive).
+        || collectNearbyAmenityNames(input).some((a) => phrase.includes(a) || a.includes(phrase));
       if (!isAllowed) {
         violations.push({ rule: "invented_cross_street", sectionId: "differentPriorities", excerpt: phrase, severity: "hard" });
       }
@@ -2252,6 +2261,21 @@ function excerptAround(text: string, pattern: RegExp): string {
 
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Names from input.nearby — grounded amenities the prompts explicitly allow
+ *  as qualitative reference points; never "invented streets". */
+function collectNearbyAmenityNames(input: StreetGeneratorInput): string[] {
+  const out: string[] = [];
+  for (const p of input.nearby.parks) out.push(p.name);
+  for (const s of input.nearby.schoolsPublic) out.push(s.name);
+  for (const s of input.nearby.schoolsCatholic) out.push(s.name);
+  for (const m of input.nearby.mosques) out.push(m.name);
+  for (const g of input.nearby.grocery) out.push(g.name);
+  if (input.nearby.hospital) out.push(input.nearby.hospital.name);
+  if (input.nearby.goStation) out.push(input.nearby.goStation.name);
+  if (input.nearby.highway) out.push(input.nearby.highway.name);
+  return out;
 }
 
 function extractCandidateStreetNames(text: string): string[] {
