@@ -101,7 +101,12 @@ export default function AdminReviewClient({ drafts, recentPublished, queueStats 
     <div className="min-h-screen bg-[#f8f9fb]">
       {/* Header */}
       <div className="bg-[#07111f] text-white px-6 py-4">
-        <h1 className="text-[18px] font-extrabold">Miltonly Admin — Content Review</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-[18px] font-extrabold">Miltonly Admin — Content Review</h1>
+          <a href="/admin/seo" className="text-[12px] text-[#94a3b8] hover:text-white">
+            SEO Queue &rarr;
+          </a>
+        </div>
         <div className="flex gap-6 mt-2 text-[11px]">
           <span className="text-[#f59e0b] font-bold">{drafts.length} drafts to review</span>
           <span className="text-[#64748b]">{queueStats.pending} pending in queue</span>
