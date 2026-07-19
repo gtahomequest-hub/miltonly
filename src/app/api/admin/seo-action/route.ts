@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminCookieValue } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
+import { runAct } from "@/lib/seo/act";
 
 // Organic growth loop piece 3 — approve/reject SeoOpportunity rows.
 // STATUS + AUDIT LOG ONLY: no streetQueue writes, no generation (piece 4
 // wires approve -> enqueue). Transitions are allowed FROM pending only.
 export async function POST(request: NextRequest) {
-  const adminCookie = request.cookies.get("miltonly_admin");
-  if (adminCookie?.value !== "1") {
+  if (!verifyAdminCookieValue(request.cookies.get("miltonly_admin")?.value)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -37,5 +38,20 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ updated: rows.length, skipped: ids.length - rows.length });
+  // Approving THIN_ENTITY rows also runs the ACT enqueuer immediately, so a
+  // manual approval works ahead of the weekly sweep. Same gates, cap, and
+  // audit trail as the weekly run; kill switch off -> status-only (reported).
+  let act: Awaited<ReturnType<typeof runAct>> | null = null;
+  if (action === "approved") {
+    const thinIds = rows.filter((r) => r.class === "THIN_ENTITY").map((r) => r.id);
+    if (thinIds.length > 0) act = await runAct("approve", thinIds);
+  }
+
+  return NextResponse.json({
+    updated: rows.length,
+    skipped: ids.length - rows.length,
+    act: act
+      ? { enqueued: act.enqueued, skipped: act.skipped, capRemaining: act.capRemaining, killSwitchOn: act.killSwitchOn }
+      : null,
+  });
 }

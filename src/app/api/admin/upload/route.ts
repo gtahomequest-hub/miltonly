@@ -1,9 +1,9 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminCookieValue } from "@/lib/adminAuth";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const adminCookie = request.cookies.get("miltonly_admin");
-  if (adminCookie?.value !== "1") {
+  if (!verifyAdminCookieValue(request.cookies.get("miltonly_admin")?.value)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

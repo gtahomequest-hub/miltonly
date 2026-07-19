@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminCookieValue } from "@/lib/adminAuth";
 
 function checkAuth(req: NextRequest) {
-  const cookie = req.cookies.get("miltonly_admin");
-  return cookie?.value === "1";
+  return verifyAdminCookieValue(req.cookies.get("miltonly_admin")?.value);
 }
 
 function slugify(s: string) {

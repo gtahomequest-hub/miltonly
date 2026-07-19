@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { verifyAdminCookieValue } from "@/lib/adminAuth";
 import AdminReviewClient from "./AdminReviewClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminReviewPage() {
   const cookieStore = cookies();
-  const adminCookie = cookieStore.get("miltonly_admin");
-  const isAuth = adminCookie?.value === "1";
+  const isAuth = verifyAdminCookieValue(cookieStore.get("miltonly_admin")?.value);
 
   if (!isAuth) {
     return <LoginGate />;

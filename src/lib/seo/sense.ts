@@ -14,6 +14,7 @@ import {
   type SearchConsole,
 } from "./gscClient";
 import { buildEntities, classifyKeywords, pullKeywordData } from "./keywords";
+import { runAct } from "./act";
 
 const COVERAGE_STATE_ID = "coverage";
 // Weekly inspection budget. Sized for the 300s Vercel maxDuration: measured
@@ -250,7 +251,18 @@ export async function runSense(): Promise<SenseSummary> {
       byClass[cls] = (byClass[cls] || 0) + 1;
     }
 
-    // 4) Light coverage (positives refresh + capped inspection, resumable).
+    // 4) ACT auto tier (piece 4): enqueue eligible THIN_ENTITY streets into
+    //    streetQueue - the existing hourly drain generates behind the
+    //    grounding gate. All gates + cap + audit live in runAct.
+    const act = await runAct("sense");
+    if (act.enqueued.length > 0 || act.skipped.length > 0) {
+      console.log(
+        `[seo/sense] ACT: enqueued ${act.enqueued.length} (${act.enqueued.map((e) => e.streetSlug).join(", ") || "-"}), ` +
+          `skipped ${act.skipped.length}, cap remaining ${act.capRemaining}`,
+      );
+    }
+
+    // 5) Light coverage (positives refresh + capped inspection, resumable).
     const cov = await lightCoverage(sc, sitemapUrls);
 
     // Whole-property 90d totals (incl. winning/branded) — digest headline
