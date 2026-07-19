@@ -12,6 +12,11 @@ import { calcMarketDataHash, deriveIdentity } from "@/lib/streetUtils";
 import { sendSMS } from "@/lib/smsAlert";
 import { buildGeneratorInput } from "@/lib/ai/buildGeneratorInput";
 import {
+  buildStreetMetaTitle,
+  buildStreetMetaDescription,
+  type StreetMetaStats,
+} from "@/lib/streetMeta";
+import {
   generateStreetDescription as aiGenerate,
   generateLongFormStreetDescription,
   generatePhase41StreetContent,
@@ -208,8 +213,11 @@ function buildFaqJson(
       a: `The most common property type on ${streetName} is ${stats.dominantPropertyType}. The street is in the ${stats.neighbourhood} neighbourhood of Milton, Ontario.`,
     },
     {
-      q: `What school zone is ${streetName} Milton in?`,
-      a: `${streetName} in Milton falls within the ${stats.schoolZone || "Milton public"} school catchment area.`,
+      // WS4 catchment amendment (2026-07-19): school names + distances only —
+      // no zone/catchment/assignment claims until HDSB/HCDSB boundary data
+      // is sourced and wired in.
+      q: `Which schools are near ${streetName} in Milton?`,
+      a: `Milton public and Catholic schools operate near ${streetName}. The street guide lists the closest schools with travel distances.`,
     },
     {
       q: `How far is ${streetName} Milton from the GO station?`,
@@ -280,6 +288,11 @@ export async function generateStreetContent(
   let phase41FaqOverride: string | null = null;
   let phase41NeedsReview: boolean | null = null;
   let phase41V2Out: GenerateResult["v2"] = undefined;
+  // Meta stats sourced from the SAME phase41 input aggregates the body uses
+  // (batch-001 triage fix). Null until the phase41 branch populates it; the
+  // legacy fallback below maps legacy stats with zeros converted to null so
+  // a missing stat is omitted from the meta, never rendered as 0 / $0.
+  let phase41MetaStats: StreetMetaStats | null = null;
 
   const marketDataHash = calcMarketDataHash(stats);
   let description = "";
@@ -311,6 +324,11 @@ export async function generateStreetContent(
     }
 
     const phase41Input = await buildGeneratorInput(streetSlug);
+    phase41MetaStats = {
+      salesCount: phase41Input.aggregates.salesCount,
+      typicalPrice: phase41Input.aggregates.typicalPrice,
+      daysOnMarket: phase41Input.aggregates.daysOnMarket,
+    };
     const inputHash = crypto
       .createHash("sha256")
       .update(JSON.stringify(phase41Input))
@@ -520,8 +538,15 @@ export async function generateStreetContent(
   const passed = description.length > 0 && !phase41Failed;
   if (!passed) description = rawAiOutput;
 
-  const metaTitle = `${streetName} ${config.CITY_NAME} Real Estate | Homes, Prices & Market Data`;
-  const metaDescription = `${stats.totalSold12mo} homes sold on ${streetName} recently. Average list price ${formatPrice(stats.avgListPrice)}. ${stats.avgDOM} days on market. ${config.CITY_NAME}'s most detailed street guide.`;
+  const metaTitle = buildStreetMetaTitle(streetName);
+  const metaDescription = buildStreetMetaDescription(
+    streetName,
+    phase41MetaStats ?? {
+      salesCount: stats.totalSold12mo,
+      typicalPrice: null, // legacy avgListPrice is a LIST price; never label it a trade price
+      daysOnMarket: stats.avgDOM > 0 ? stats.avgDOM : null,
+    }
+  );
   const faqJson = phase41FaqOverride ?? buildFaqJson(streetName, stats);
 
   const contentStatus = passed ? "published" : "draft";
