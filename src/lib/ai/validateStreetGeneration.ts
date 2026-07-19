@@ -32,6 +32,7 @@ import type {
 } from "@/types/street-generator";
 import { config } from "@/lib/config";
 import { countSentences } from "./trimFaqAnswers";
+import { findCatchmentVocabulary } from "./catchmentVocabulary";
 
 // --- Denylists ---
 
@@ -49,6 +50,11 @@ const CLICHE_OPENERS_AND_PHRASES = [
   "stunning", "must-see", "must see", "breathtaking", "boasts",
   "offers the perfect blend", "lifestyle you deserve",
   "dream home", "truly unique", "one of a kind", "gem of a",
+  // Batch-001 B11: retired prompt-example fragments that were copied verbatim
+  // across 4+ published pages. The prompts' examples are now placeholder-ized;
+  // these bans catch any model that still echoes the old phrasing.
+  "quiet enough that the road network",
+  "without the through-traffic noise",
 ];
 
 // Two-pass methodology-leak detection. Substring-match for unambiguous phrases
@@ -520,7 +526,10 @@ export function collectInputRents(input: StreetGeneratorInput): number[] {
 
 function collectInputCounts(input: StreetGeneratorInput): number[] {
   const out: number[] = [];
-  out.push(input.aggregates.salesCount, input.aggregates.leasesCount, input.aggregates.txCount, input.activeListingsCount);
+  // txCount removed from the payload 2026-07-19 (batch-001): whitelisting the
+  // blended sales+leases sum legitimized "N total transactions" mixed-pool
+  // prose. Only per-pool counts ground numeric claims now.
+  out.push(input.aggregates.salesCount, input.aggregates.leasesCount, input.activeListingsCount);
   for (const t of Object.values(input.byType)) out.push(t.count);
   for (const b of Object.values(input.leaseActivity?.byBed ?? {})) out.push(b.count);
   for (const q of input.quarterlyTrend ?? []) out.push(q.count);
@@ -1315,6 +1324,91 @@ function findPreciseRent(text: string, input?: StreetGeneratorInput): string | n
   return null;
 }
 
+// --- Batch-001 remediation rules (2026-07-19) ---
+
+// mixed_pool_claim: the sale pool and the lease pool may never combine inside
+// one claim, ratio, or derived figure (street-tier extension of the condo-tier
+// transaction_type split). Patterns cover the constructions observed verbatim
+// in batch-001 (gross yields, cap rates, lease-to-sale ratios, blended
+// "N total transactions", "X leases against Y sales").
+const MIXED_POOL_PATTERNS: RegExp[] = [
+  /\bgross\s+yields?\b/i,
+  /\bcap\s+rates?\b/i,
+  /\byields?\s+(?:around|near|of|at|in\s+the|land(?:ing)?|sit(?:ting)?)\b/i,
+  /\blease[\s-]?to[\s-]?sales?\b/i,
+  /\bsale[\s-]?to[\s-]?lease\b/i,
+  /\brent[\s-]?to[\s-]?price\b/i,
+  /\bprice[\s-]?to[\s-]?rent\b/i,
+  /\btotal\s+transactions?\b/i,
+  /\b(?:split|divided)\s+between[^.!?]{0,80}\bsales?\b[^.!?]{0,80}\bleases?\b/i,
+  /\b(?:split|divided)\s+between[^.!?]{0,80}\bleases?\b[^.!?]{0,80}\bsales?\b/i,
+  /\bleases?\s+against\s+[^.!?]{0,40}\bsales?\b/i,
+  /\bsales?\s+against\s+[^.!?]{0,40}\bleases?\b/i,
+];
+
+export interface MixedPoolFinding { matched: string; excerpt: string }
+
+export function findMixedPoolClaims(text: string): MixedPoolFinding[] {
+  const out: MixedPoolFinding[] = [];
+  for (const re of MIXED_POOL_PATTERNS) {
+    const single = new RegExp(re.source, re.flags.replace("g", ""));
+    const m = single.exec(text);
+    if (m) out.push({ matched: m[0], excerpt: excerptAround(text, single) });
+  }
+  return out;
+}
+
+// adjacency_claim: crossStreets[] entries are market-comparison streets, not
+// physical neighbours. Any sentence placing one on the map relative to the
+// subject street is a fabrication (batch-001 B8: "runs between Wettlaufer
+// Terrace and Apple Terrace" published across mutually exclusive
+// neighbourhoods).
+const ADJACENCY_PHRASES =
+  /\b(?:runs?\s+between|running\s+between|runs?\s+into|connects?\s+(?:to|with)|connecting\s+(?:to|with)|intersect(?:s|ing)?|at\s+the\s+corner\s+of|corner\s+of|cross[-\s]?streets?|adjoin(?:s|ing)?|abut(?:s|ting)?|branch(?:es|ing)?\s+off)\b/i;
+
+export interface AdjacencyFinding { street: string; excerpt: string }
+
+export function findAdjacencyClaims(
+  text: string,
+  crossStreets: StreetGeneratorInput["crossStreets"],
+): AdjacencyFinding[] {
+  if (crossStreets.length === 0) return [];
+  const out: AdjacencyFinding[] = [];
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    if (!ADJACENCY_PHRASES.test(sentence)) continue;
+    for (const c of crossStreets) {
+      if (c.shortName && sentence.includes(c.shortName)) {
+        out.push({
+          street: c.shortName,
+          excerpt: sentence.trim().slice(0, 160),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// builder_without_high_confidence, absent-builder arm: buildGeneratorInput
+// deliberately omits primaryBuilder (no data pipeline exists), so ANY builder
+// name in prose is a fabrication when the field is absent. Batch-001 B10:
+// "Mattamy" named on 6 pages with no builder input at all.
+const KNOWN_BUILDER_NAMES = [
+  "Mattamy", "Great Gulf", "Fernbrook", "Heathwood", "Branthaven",
+  "Primont", "Coscorp", "Arista", "Greenpark", "Sundial",
+];
+
+export function findUngroundedBuilderName(
+  text: string,
+  input: StreetGeneratorInput,
+): string | null {
+  if (input.primaryBuilder) return null; // presence case handled separately
+  for (const name of KNOWN_BUILDER_NAMES) {
+    if (wordBoundaryRegex(name).test(text)) return name;
+  }
+  return null;
+}
+
 // --- Heading bank ---
 
 const HEADING_BANK: Record<StreetSectionId, string[]> = {
@@ -1323,7 +1417,13 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
   amenities:          ["What's nearby", "Around the corner", "Daily errands"],
   market:             ["The market right now", "Trade patterns"],
   gettingAround:      ["Getting around", "Where this street reaches", "Reaching the rest of the city"],
-  schools:            ["Schools and catchment", "Education and schools"],
+  // "Schools and catchment" retired 2026-07-19 (WS4 catchment ban); legacy
+  // rows carrying it are renamed at render by streetContentRenderFilter.
+  schools:            ["Schools nearby", "Education and schools"],
+  // bestFitFor retired 2026-07-19 (fair housing). Key kept only because the
+  // Record is typed over StreetSectionId, which retains the id for legacy
+  // persisted rows. New outputs containing this id fail the canonical-order
+  // check below.
   bestFitFor:         ["Who this street suits", "A natural fit for"],
  differentPriorities:["If different priorities matter more", "For different priorities"],
   neighbourhoodComparable: ["Comparable homes nearby", "What similar homes nearby look like"],
@@ -1353,9 +1453,11 @@ const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
 // floors give the model achievable targets while preserving voice-quality discipline.
 // If production-ranked pages underperform at this length, raise floors and add
 // retry-feedback or multi-pass generation in a future phase.
-const TOTAL_WORD_FLOOR_FULL = 900;
-const TOTAL_WORD_FLOOR_THIN = 800;
-const TOTAL_WORD_FLOOR_ZERO = 750;
+// Lowered by ~130 on 2026-07-19: the bestFitFor section (110-150 words) was
+// retired (fair housing), so the page architecture is now 7-8 sections.
+const TOTAL_WORD_FLOOR_FULL = 770;
+const TOTAL_WORD_FLOOR_THIN = 670;
+const TOTAL_WORD_FLOOR_ZERO = 620;
 const TOTAL_WORD_CEILING = 2000;
 
 /** Effective total-word floor for a given kAnonLevel. Single source of truth
@@ -1376,11 +1478,13 @@ const FAQ_MAX = 8;
 const FAQ_ANSWER_MIN_SENTENCES = 1;
 const FAQ_ANSWER_MAX_SENTENCES = 5;
 
+// bestFitFor removed from both orders 2026-07-19 (fair housing) — a new
+// output containing it fails the order/section check and burns a retry.
 const CANONICAL_ORDER_LEGACY: StreetSectionId[] = [
-  "about","homes","amenities","market","gettingAround","schools","bestFitFor","differentPriorities",
+  "about","homes","amenities","market","gettingAround","schools","differentPriorities",
 ];
 const CANONICAL_ORDER_T2: StreetSectionId[] = [
-  "about","homes","amenities","market","neighbourhoodComparable","gettingAround","schools","bestFitFor","differentPriorities",
+  "about","homes","amenities","market","neighbourhoodComparable","gettingAround","schools","differentPriorities",
 ];
 // Back-compat alias for any imports outside this file
 export const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
@@ -1394,8 +1498,9 @@ const FAQ_BANK_TEMPLATES: string[] = [
   "What kinds of homes are on {Street}?",
   "Are lots on {Street} larger or smaller than typical?",
   "What year was most of {Street} built?",
-  "Which schools serve {Street}?",
-  "Is {Street} in a strong school catchment?",
+  // "Which schools serve {Street}?" + catchment question retired 2026-07-19
+  // (WS4 catchment ban — "serve" implies assignment; proximity phrasing only).
+  "Which schools are close to {Street}?",
   "How far is {Street} from Toronto?",
   "What's the commute from {Street} to Pearson?",
   "Is {Street} close to the 401 or 407?",
@@ -1404,8 +1509,8 @@ const FAQ_BANK_TEMPLATES: string[] = [
   "What's the rental market like on {Street}?",
   "What do two-bedroom condos rent for on {Street}?",
   "Is {Street} a good fit for investors?",
-  "What's the typical cap rate pattern on {Street}?",
-  "Who is {Street} a good fit for?",
+  // Cap-rate question retired 2026-07-19 (answering requires mixing sale +
+  // lease pools). "Who is {Street} a good fit for?" retired (fair housing).
   "If {Street} isn't the right fit, what similar streets should I look at?",
 ];
 
@@ -1430,13 +1535,14 @@ export function validateStreetGeneration(
 
   // Shape checks first (fail-fast)
  // Shape checks first (fail-fast)
-  // Accept legacy 8-section layout (pre-Track 2) or Track 2 Pass 1 9-section layout.
-  // The 9th section is neighbourhoodComparable, inserted at index 4 (right after market).
-  if (!output.sections || (output.sections.length !== 8 && output.sections.length !== 9)) {
+  // Accept the 7-section layout (no neighbourhoodComparable) or the Track 2
+  // 8-section layout. neighbourhoodComparable sits at index 4 (after market).
+  // Counts dropped from 8/9 on 2026-07-19: bestFitFor retired (fair housing).
+  if (!output.sections || (output.sections.length !== 7 && output.sections.length !== 8)) {
     violations.push({ rule: "invalid_json_shape", excerpt: `sections length = ${output.sections?.length}`, severity: "hard" });
     return violations;
   }
-  const expectedOrder = output.sections.length === 9 ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
+  const expectedOrder = output.sections.length === 8 ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
   for (let i = 0; i < expectedOrder.length; i++) {
     if (output.sections[i].id !== expectedOrder[i]) {
       violations.push({ rule: "missing_section_id", excerpt: `position ${i} got id "${output.sections[i].id}", expected "${expectedOrder[i]}"`, severity: "hard" });
@@ -1603,6 +1709,26 @@ export function validateStreetGeneration(
       });
     }
 
+    // Batch-001 remediation (2026-07-19) — combined-validator wiring, ALL sections:
+    // catchment vocabulary (WS4 grounded-external-only), mixed sale/lease pool
+    // claims, physical-adjacency claims about comparison streets, and builder
+    // names with no primaryBuilder in the input. Catchment scans the heading
+    // too (the retired "Schools and catchment" heading carries the word).
+    const catchment = findCatchmentVocabulary(`${section.heading}\n${sectionText}`);
+    if (catchment) {
+      violations.push({ rule: "catchment_vocabulary", sectionId: section.id, excerpt: `"${catchment.matched}": ${catchment.excerpt}`, severity: "hard" });
+    }
+    for (const mp of findMixedPoolClaims(sectionText)) {
+      violations.push({ rule: "mixed_pool_claim", sectionId: section.id, excerpt: `"${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+    }
+    for (const adj of findAdjacencyClaims(sectionText, input.crossStreets)) {
+      violations.push({ rule: "adjacency_claim", sectionId: section.id, excerpt: `"${adj.street}" placed physically: ${adj.excerpt}`, severity: "hard" });
+    }
+    const ungroundedBuilder = findUngroundedBuilderName(sectionText, input);
+    if (ungroundedBuilder) {
+      violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilder}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
+    }
+
     // v10 (Workstream 2 / Step 1): per-trade fabrication.
     // Claim-type vs data-existence check. Fires on singular-trade claims
     // (a/an/one + property-noun + transaction-verb + price) when the input
@@ -1732,6 +1858,16 @@ export function validateStreetGeneration(
     });
   }
 
+  // Batch-001 remediation (2026-07-19): FAQ answers carry the same catchment
+  // and mixed-pool bans as section prose (combined-validator wiring).
+  const faqCatchmentC = findCatchmentVocabulary(faqText);
+  if (faqCatchmentC) {
+    violations.push({ rule: "catchment_vocabulary", excerpt: `FAQ "${faqCatchmentC.matched}": ${faqCatchmentC.excerpt}`, severity: "hard" });
+  }
+  for (const mp of findMixedPoolClaims(faqText)) {
+    violations.push({ rule: "mixed_pool_claim", excerpt: `FAQ "${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+  }
+
   // v3: FAQ questions must match bank verbatim (dedicated rule)
   const allowedQuestions = new Set(
     FAQ_BANK_TEMPLATES.map(t => t.replace("{Street}", input.street.name))
@@ -1764,7 +1900,7 @@ export function validateStreetGeneration(
 /**
  * Run per-section validation rules on a SUBSET of sections (descriptive
  * half: about/homes/amenities/market, OR evaluative half: gettingAround/
- * schools/bestFitFor/differentPriorities). Skips total_word_floor (combined-
+ * schools/differentPriorities). Skips total_word_floor (combined-
  * level only), FAQ rules (separate validateFaq), and the
  * builder_without_high_confidence check (only meaningful when homes is
  * present, but harmless for descriptive call which does include homes).
@@ -1937,6 +2073,25 @@ export function validateSectionsSubset(
       });
     }
 
+    // Batch-001 remediation (2026-07-19) — partial-validator mirror so each
+    // half retries on its own: catchment vocabulary (heading included), mixed
+    // sale/lease pool claims, adjacency claims about comparison streets,
+    // ungrounded builder.
+    const catchmentSub = findCatchmentVocabulary(`${section.heading}\n${sectionText}`);
+    if (catchmentSub) {
+      violations.push({ rule: "catchment_vocabulary", sectionId: section.id, excerpt: `"${catchmentSub.matched}": ${catchmentSub.excerpt}`, severity: "hard" });
+    }
+    for (const mp of findMixedPoolClaims(sectionText)) {
+      violations.push({ rule: "mixed_pool_claim", sectionId: section.id, excerpt: `"${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+    }
+    for (const adj of findAdjacencyClaims(sectionText, input.crossStreets)) {
+      violations.push({ rule: "adjacency_claim", sectionId: section.id, excerpt: `"${adj.street}" placed physically: ${adj.excerpt}`, severity: "hard" });
+    }
+    const ungroundedBuilderSub = findUngroundedBuilderName(sectionText, input);
+    if (ungroundedBuilderSub) {
+      violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilderSub}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
+    }
+
     // v10 (Workstream 2 / Step 1): per-trade fabrication — partial-validator
     // mirror so the market half retries on its own when the model fabricates
     // a singular trade. Scoped to market + neighbourhoodComparable.
@@ -2045,6 +2200,15 @@ export function validateFaq(
       excerpt: `FAQ: ${r.reason}; ctx: ${r.context}`,
       severity: "hard",
     });
+  }
+  // Batch-001 remediation (2026-07-19): catchment vocabulary + mixed-pool
+  // claims are banned in FAQ answers exactly as in section prose.
+  const faqCatchment = findCatchmentVocabulary(faqText);
+  if (faqCatchment) {
+    violations.push({ rule: "catchment_vocabulary", excerpt: `FAQ "${faqCatchment.matched}": ${faqCatchment.excerpt}`, severity: "hard" });
+  }
+  for (const mp of findMixedPoolClaims(faqText)) {
+    violations.push({ rule: "mixed_pool_claim", excerpt: `FAQ "${mp.matched}": ${mp.excerpt}`, severity: "hard" });
   }
 
   const allowedQuestions = new Set(
@@ -2243,9 +2407,27 @@ function formatRuleViolations(
       return formatQualitativeGrounding(violations);
     case "total_word_ceiling":
       return formatTotalWordCeiling(output);
+    case "catchment_vocabulary":
+      return [
+        `**catchment_vocabulary**: You used school catchment/boundary/assignment language. The input contains school NAMES and computed DISTANCES only — no catchment or boundary data exists in this pipeline, so any assignment claim is fabricated. Banned everywhere: "catchment", "boundary", "zoned for/to", "draws from", "feeds into", "assigned to", "school zone", "feeder school", and "draw(s) to" in school context. State proximity only ("X is N minutes away") and note that school assignment should be confirmed with the boards.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "mixed_pool_claim":
+      return [
+        `**mixed_pool_claim**: You combined the sale pool and the lease pool inside one claim. Never emit lease-to-sale ratios, gross yields, cap rates, rent-vs-price comparisons, or blended "N total transactions" sums. A sentence may cite sale figures or lease figures, never both. Rewrite with the pools in separate sentences, each sourced only from its own input fields.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "adjacency_claim":
+      return [
+        `**adjacency_claim**: You placed a comparison street from input.crossStreets[] on the map relative to the subject street. These entries are MARKET COMPARISONS from the same neighbourhood, not physical neighbours — never write "runs between", "connects to", "intersects", "corner of", or "cross-street" about them. Frame them only as alternatives elsewhere in the neighbourhood.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
     case "invalid_json_shape":
       return [
-        "**invalid_json_shape**: Your output did not match the required JSON schema. Return a single JSON object with exactly two top-level keys: `sections` (array of 8 objects) and `faq` (array of 6-8 objects). Each section has `id`, `heading`, `paragraphs[]`. Each FAQ has `question`, `answer`. No code fences, no preamble.",
+        "**invalid_json_shape**: Your output did not match the required JSON schema. Return a single JSON object with exactly two top-level keys: `sections` (array of 7 objects, or 8 when the input carries neighbourhoodComparable) and `faq` (array of 6-8 objects). Each section has `id`, `heading`, `paragraphs[]`. Each FAQ has `question`, `answer`. No code fences, no preamble.",
       ];
     default:
       return [
@@ -2270,16 +2452,15 @@ function formatTotalWordFloor(
   }
 
   const kAnon = input.aggregates.kAnonLevel;
-  const floor = kAnon === "full" ? 900 : kAnon === "thin" ? 800 : 750;
-  const target = kAnon === "full" ? 1400 : kAnon === "thin" ? 1100 : 950;
+  const floor = getTotalWordFloor(kAnon);
+  const target = kAnon === "full" ? 1270 : kAnon === "thin" ? 970 : 820;
   const deficit = target - total;
 
   const expansionPriority: Array<{ id: string; reason: string }> = [
     { id: "homes", reason: "add detail on architectural style, exterior treatments, lot characteristics, and how the stock behaves in trade" },
     { id: "market", reason: "describe trade pace, what the quarterly trend shows, range texture, and buyer-seller dynamics" },
     { id: "amenities", reason: "add second-tier walking-distance places (grocery, parks, places of worship) and describe daily-rhythm patterns" },
-    { id: "bestFitFor", reason: "elaborate on lifestyle tradeoffs the buyer accepts in exchange for what the street offers" },
-    { id: "differentPriorities", reason: "expand the priority comparison with cross-streets from input.crossStreets[] (verbatim shortNames only)" },
+    { id: "differentPriorities", reason: "expand the priority comparison with comparison streets from input.crossStreets[] (verbatim shortNames only; never as physical neighbours)" },
   ];
 
   const lines = [
@@ -2423,8 +2604,7 @@ function formatHeadingOutOfBank(violations: ValidatorViolation[]): string[] {
     `  - amenities: "What's nearby" or "Around the corner"`,
     `  - market: "The market right now" or "Trade patterns"`,
     `  - gettingAround: "Getting around" or "Where this street reaches"`,
-    `  - schools: "Schools and catchment"`,
-    `  - bestFitFor: "Who this street suits"`,
+    `  - schools: "Schools nearby" or "Education and schools"`,
     `  - differentPriorities: "If different priorities matter more"`,
   );
   return lines;
@@ -2446,7 +2626,7 @@ function formatFaqQuestionOutOfBank(violations: ValidatorViolation[], input: Str
   }
   lines.push(
     ``,
-    `Every FAQ question must be drawn VERBATIM from the canonical bank with only "{Street}" replaced with "${streetName}". Do not paraphrase. Do not invent new questions. Refer to the FAQ bank in the system prompt for the 21 valid templates organized by cluster (PRICE, SPEED, HOUSING STOCK, SCHOOLS, COMMUTE, BUILDER, RENTAL, INVESTOR, ROUTING).`,
+    `Every FAQ question must be drawn VERBATIM from the canonical bank with only "{Street}" replaced with "${streetName}". Do not paraphrase. Do not invent new questions. Refer to the FAQ bank in the system prompt for the 18 valid templates organized by cluster (PRICE, SPEED, HOUSING STOCK, SCHOOLS, COMMUTE, BUILDER, RENTAL, INVESTOR, ROUTING).`,
   );
   return lines;
 }
@@ -2477,14 +2657,15 @@ function formatMissingSectionId(
   output: StreetGeneratorOutput,
 ): string[] {
   const present = output.sections.map(s => s.id);
-  // Pick expected canonical order based on whether the output is legacy (8) or Track 2 (9).
-  const isT2 = output.sections.length === 9 || present.includes("neighbourhoodComparable");
+  // Pick expected canonical order based on whether the output is base (7) or Track 2 (8).
+  // bestFitFor removed 2026-07-19 (fair housing).
+  const isT2 = output.sections.length === 8 || present.includes("neighbourhoodComparable");
   const required: StreetSectionId[] = isT2
-    ? ["about", "homes", "amenities", "market", "neighbourhoodComparable", "gettingAround", "schools", "bestFitFor", "differentPriorities"]
-    : ["about", "homes", "amenities", "market", "gettingAround", "schools", "bestFitFor", "differentPriorities"];
+    ? ["about", "homes", "amenities", "market", "neighbourhoodComparable", "gettingAround", "schools", "differentPriorities"]
+    : ["about", "homes", "amenities", "market", "gettingAround", "schools", "differentPriorities"];
   const missing = required.filter(r => !present.includes(r));
   const orderStr = required.join(", ");
-  const countStr = isT2 ? "9" : "8";
+  const countStr = isT2 ? "8" : "7";
   return [
     `**missing_section_id**: Your output is missing required sections or has them out of order. Missing: ${missing.length ? missing.join(", ") : "(none missing — likely a positional issue)"}. The sections array MUST contain all ${countStr} ids in canonical order: ${orderStr}. Even for kAnonLevel="zero" streets, the market section is required (collapse to one paragraph acknowledging no resale history).`,
   ];

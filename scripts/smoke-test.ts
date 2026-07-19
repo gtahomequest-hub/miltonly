@@ -30,6 +30,7 @@ import crypto from "node:crypto";
 const SLUG = "main-st-e-milton";
 const PAGE_URL = `http://localhost:3000/streets/${SLUG}`;
 const HEALTH_URL = "http://localhost:3000/";
+// bestFitFor removed 2026-07-19 (fair housing) — 7-section base architecture.
 const EXPECTED_SECTION_IDS = [
   "about",
   "homes",
@@ -37,7 +38,6 @@ const EXPECTED_SECTION_IDS = [
   "market",
   "gettingAround",
   "schools",
-  "bestFitFor",
   "differentPriorities",
 ];
 const MIN_FAQ_ITEMS = 6;

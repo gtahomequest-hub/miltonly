@@ -32,6 +32,7 @@ import {
   findPerTradeFabrications,
   findSubkRangeReassembly,
 } from "@/lib/ai/validateStreetGeneration";
+import { findCatchmentVocabulary } from "@/lib/ai/catchmentVocabulary";
 
 // ---------------------------------------------------------------------------
 // Adapter — re-point the W2 street-tier rules at condo (SALE-side) input. The
@@ -55,7 +56,6 @@ export function condoInputToStreetAdapter(input: CondoBuildingGeneratorInput): S
     },
     neighbourhoods: input.building.neighbourhoodName ? [input.building.neighbourhoodName] : [],
     aggregates: {
-      txCount: input.saleAggregates.txCount,
       salesCount: input.saleAggregates.salesCount,
       leasesCount: input.saleAggregates.leasesCount,
       typicalPrice: input.saleAggregates.typicalPrice,
@@ -120,6 +120,18 @@ export function validateCondoSectionsSubset(
 
   for (const section of sections) {
     const text = section.paragraphs.join("\n\n");
+
+    // WS4 catchment ban (amended 2026-07-19, batch-001 remediation): applies
+    // on EVERY tier. School names + distances only; no catchment/boundary/
+    // assignment vocabulary anywhere in condo prose.
+    const catchment = findCatchmentVocabulary(text);
+    if (catchment) {
+      violations.push({
+        rule: "catchment_vocabulary",
+        excerpt: `"${catchment.matched}": ${catchment.excerpt}`,
+        severity: "hard",
+      });
+    }
 
     // The sale market section cannot exist on a lease-only building — there is
     // no sale-side data to ground it (DEC-WS4-5 fork).
@@ -212,6 +224,16 @@ export function validateCondoFaq(
   for (const item of faq) {
     const q = item.question.slice(0, 48);
     const text = item.answer;
+
+    // WS4 catchment ban (all tiers, 2026-07-19): question or answer.
+    const catchment = findCatchmentVocabulary(`${item.question} ${item.answer}`);
+    if (catchment) {
+      violations.push({
+        rule: "catchment_vocabulary",
+        excerpt: `FAQ "${q}": "${catchment.matched}": ${catchment.excerpt}`,
+        severity: "hard",
+      });
+    }
 
     // Per-trade fabrication is banned in any answer (input has no per-trade
     // sale rows; lease records gate at k≥5 via the adapter).

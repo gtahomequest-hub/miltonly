@@ -24,7 +24,9 @@ export interface StreetFAQItem {
 }
 
 export interface StreetGeneratorOutput {
-  sections: StreetSection[];    // length 8-9 (neighbourhoodComparable optional — Pass 1)
+  // length 7-8 (neighbourhoodComparable optional — Pass 1; bestFitFor retired
+  // 2026-07-19, remains in StreetSectionId only for legacy persisted rows)
+  sections: StreetSection[];
   faq: StreetFAQItem[];         // length 6-8
 }
 
@@ -51,6 +53,9 @@ export interface ValidatorViolation {
 }
 
 export type ValidatorRule =
+  | "mixed_pool_claim"      // batch-001: sale + lease pools combined in one claim (ratio/yield/blended total)
+  | "catchment_vocabulary"  // WS4 locked: catchment/boundary/assignment language (grounded-external only)
+  | "adjacency_claim"       // batch-001: physical-adjacency claim about a comparison street
   | "em_dash"
   | "superlative"
   | "cliche_opener"
@@ -129,7 +134,10 @@ export interface StreetGeneratorInput {
     evidence?: string;
   };
   aggregates: {
-    txCount: number;
+    // txCount removed 2026-07-19 (batch-001): a pre-blended sales+leases sum
+    // in the payload legitimized mixed-pool "N total transactions" prose via
+    // the numeric-grounding whitelist. Pools stay separate: salesCount /
+    // leasesCount only.
     salesCount: number;
     leasesCount: number;
     typicalPrice: number | null;

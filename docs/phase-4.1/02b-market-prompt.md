@@ -179,7 +179,9 @@ Use specific input numbers. Do not fall back to generic categories. If the input
 
 **5. DAYS ON MARKET** — state the typical DOM with one sentence of interpretation. Example shape: "Days on market average around X, indicating [pace read]." This section is permitted analytical vocabulary like "average" or "median" in legitimate context (the validator's contextual exception applies here).
 
-**6. LEASE-TO-SALE READ** — state the lease-to-sale ratio and what it implies. Calculate gross yield using actual lease range and sale price from input. Example shape: "X leases against Y sales over the period, with three-bedroom units leasing in the [range] against comparable sale prices in the [range], implying gross yields near Z%."
+**6. RENTAL READ (pool-separated)** — when `input.leaseActivity` is present, describe the street's rental activity in its OWN sentences, sourced only from `input.leaseActivity` (typical rents per bed-count, lease velocity, furnished/unfurnished mix where the records support it). When `input.leaseActivity` is absent, omit this element entirely.
+
+**HARD RULE — sale and lease pools never mix (street-tier extension of the condo-tier transaction_type split, batch-001 remediation 2026-07-19).** Never combine a sale figure and a lease figure inside one claim, ratio, or derived number. Forbidden regardless of phrasing: lease-to-sale ratios, "N total transactions" sums that pool sales and leases together, gross yields, cap rates, rent-versus-price comparisons, and any "X leases against Y sales" construction. A sentence may cite the sale pool or the lease pool, never both. The validator hard-fails any mixed-pool claim (`mixed_pool_claim`) and the retry is costly.
 
 Each of these MUST use street-specific numbers from the input. Do NOT use generic phrases like "well-priced units" or "stable market" without grounding in specific data.
 
@@ -309,7 +311,7 @@ Before you emit the JSON, verify internally:
 4. No first-person plural pronouns or sales-register language.
 5. No MLS-level precise prices in prose. Every price matches the rounding tables. Scan for: "$" followed by digits with two-decimal precision (e.g., "$1.02M," "$1.05M," "$487,500," "$0.95M").
 6. No banned parrot phrases ("end units and units with finished basements", "interior units without basement finish trade", "investor demand is anchored").
-7. Section uses analytical depth: recent comp + trend + condition/micro-location + lease-to-sale read where input supports it.
+7. Section uses analytical depth: recent comp + trend + condition/micro-location + pool-separated rental read where input supports it. No claim mixes the sale pool and the lease pool.
 8. Word count between 200 and 280 for full-data streets, 30+ for thin/zero.
 9. Heading matches "The market right now" or "Trade patterns."
 10. The `sections` array contains exactly one entry with `id: "market"`.
