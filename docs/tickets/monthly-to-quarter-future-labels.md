@@ -41,3 +41,14 @@ Medium-high: it fabricates history on every street with current-quarter
 trades and re-fires each new quarter. Should land before the full
 ~355-street roll so the regen wave doesn't bake current-quarter labels
 into every page.
+
+## RESOLVED 2026-07-20 (commit 224bb91)
+- All 12-month sold_records windows in buildGeneratorInput bounded with
+  `sold_date <= NOW()` (covers lease recentRecords/byBed + sale
+  aggregates - the August 2026 lease class).
+- quarterlyTrend filtered through `dropUnfinishedQuarters` (pure helper,
+  exported, injectable `now`); render-side charts intentionally untouched.
+- New hard validator rule `future_period_claim` (all sections + FAQ):
+  un-ended quarter labels and un-begun month-years fail closed.
+- compute-sold-stats monthly rows NOT changed (input-seam filter makes it
+  moot for generation; charts may legitimately show quarter-to-date).
