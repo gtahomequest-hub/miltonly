@@ -1580,6 +1580,67 @@ export function findComparatorNeighbourhoodClaims(
   });
 }
 
+// future_period_claim (B13, docs/tickets/monthly-to-quarter-future-labels.md,
+// 2026-07-20): prose must never present a period that has not completed as
+// history. Batch-001/002 carried "a three-bedroom townhouse rented around
+// $3,156 per month in August 2026" and "climbing to $984,500 in Q3 2026"
+// written mid-July 2026. Input-side guards (sold_date <= NOW(),
+// dropUnfinishedQuarters) remove the source data; this rule fails closed on
+// anything that still leaks through:
+//   - a quarter label (Qn YYYY / Qn 'YY) whose quarter has not ENDED, and
+//   - a month-year whose month has not BEGUN (a begun-but-incomplete month
+//     may carry real dated events, so it is allowed).
+// `now` is injectable for deterministic tests.
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const FUTURE_QUARTER_RE = /\bQ([1-4])\s*['']?\s*(\d{2,4})\b/g;
+const FUTURE_MONTH_RE = new RegExp(`\\b(${MONTH_NAMES.join("|")})\\s+(\\d{4})\\b`, "g");
+
+export interface FuturePeriodFinding { raw: string; excerpt: string; reason: string }
+
+export function findFuturePeriodClaims(
+  text: string,
+  now: Date = new Date(),
+): FuturePeriodFinding[] {
+  const out: FuturePeriodFinding[] = [];
+  const seen = new Set<string>();
+  const push = (raw: string, index: number, reason: string) => {
+    const key = raw.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    const start = Math.max(0, index - 50);
+    const end = Math.min(text.length, index + raw.length + 50);
+    out.push({ raw, reason, excerpt: "..." + text.slice(start, end).replace(/\s+/g, " ").trim() + "..." });
+  };
+
+  FUTURE_QUARTER_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = FUTURE_QUARTER_RE.exec(text)) !== null) {
+    const qn = parseInt(m[1], 10);
+    let year = parseInt(m[2], 10);
+    if (year < 100) year += 2000;
+    const nextQuarterStart = qn === 4 ? Date.UTC(year + 1, 0, 1) : Date.UTC(year, qn * 3, 1);
+    if (nextQuarterStart > now.getTime()) {
+      push(m[0], m.index, `quarter has not ended as of ${now.toISOString().slice(0, 10)} — cannot be presented as history`);
+    }
+  }
+
+  FUTURE_MONTH_RE.lastIndex = 0;
+  while ((m = FUTURE_MONTH_RE.exec(text)) !== null) {
+    const monthIdx = MONTH_NAMES.indexOf(m[1]);
+    const year = parseInt(m[2], 10);
+    const monthStart = Date.UTC(year, monthIdx, 1);
+    if (monthStart > now.getTime()) {
+      push(m[0], m.index, `month has not begun as of ${now.toISOString().slice(0, 10)} — cannot carry a dated event`);
+    }
+  }
+
+  return out;
+}
+
 // builder_without_high_confidence, absent-builder arm: buildGeneratorInput
 // deliberately omits primaryBuilder (no data pipeline exists), so ANY builder
 // name in prose is a fabrication when the field is absent. Batch-001 B10:
@@ -1918,6 +1979,9 @@ export function validateStreetGeneration(
     for (const cn of findComparatorNeighbourhoodClaims(sectionText, input.crossStreets, input.neighbourhoods)) {
       violations.push({ rule: "comparator_neighbourhood_claim", sectionId: section.id, excerpt: `"${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
     }
+    for (const fp of findFuturePeriodClaims(sectionText)) {
+      violations.push({ rule: "future_period_claim", sectionId: section.id, excerpt: `"${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
+    }
     const ungroundedBuilder = findUngroundedBuilderName(sectionText, input);
     if (ungroundedBuilder) {
       violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilder}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
@@ -2069,6 +2133,9 @@ export function validateStreetGeneration(
   }
   for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
     violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
+  }
+  for (const fp of findFuturePeriodClaims(faqText)) {
+    violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
   // v3: FAQ questions must match bank verbatim (dedicated rule)
@@ -2293,6 +2360,9 @@ export function validateSectionsSubset(
     for (const cn of findComparatorNeighbourhoodClaims(sectionText, input.crossStreets, input.neighbourhoods)) {
       violations.push({ rule: "comparator_neighbourhood_claim", sectionId: section.id, excerpt: `"${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
     }
+    for (const fp of findFuturePeriodClaims(sectionText)) {
+      violations.push({ rule: "future_period_claim", sectionId: section.id, excerpt: `"${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
+    }
     const ungroundedBuilderSub = findUngroundedBuilderName(sectionText, input);
     if (ungroundedBuilderSub) {
       violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilderSub}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
@@ -2421,6 +2491,9 @@ export function validateFaq(
   }
   for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
     violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
+  }
+  for (const fp of findFuturePeriodClaims(faqText)) {
+    violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
   const allowedQuestions = new Set(
@@ -2655,6 +2728,12 @@ function formatRuleViolations(
     case "comparator_neighbourhood_claim":
       return [
         `**comparator_neighbourhood_claim**: You stated a comparison street's location without grounding. A comparator's location comes ONLY from its input.crossStreets[].neighbourhood field, quoted exactly ("in {neighbourhood}"). If that field is absent, write NO location for that street: no neighbourhood name near its mention, no "same neighbourhood", no "elsewhere in the neighbourhood", no "both in {X}", no "nearby". Never infer a comparator's location from the subject street's neighbourhood. Rewrite the flagged sentences either quoting the supplied neighbourhood or dropping the location wording entirely.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "future_period_claim":
+      return [
+        `**future_period_claim**: You referenced a time period that has not completed as if it were history. Never name a quarter that has not ended or a month that has not begun. Only quarters present in input.quarterlyTrend may be narrated, and every dated event must come from input record months. Remove or replace the flagged period references; do not relabel them as forecasts (forecasting is also banned).`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];

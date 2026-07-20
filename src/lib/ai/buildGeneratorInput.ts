@@ -191,6 +191,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Sale'
                     AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
                   GROUP BY property_type`
     ),
     querySold<RawTypeAgg>(
@@ -204,6 +205,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Lease'
                     AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
                   GROUP BY property_type`
     ),
     querySold<RawLeaseByBed>(
@@ -215,6 +217,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Lease'
                     AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
                   GROUP BY bed
                   ORDER BY bed`
     ),
@@ -230,6 +233,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Lease'
                     AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
                   ORDER BY sold_date DESC
                   LIMIT 10`
     ),
@@ -243,7 +247,8 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                   WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
                     AND transaction_type = 'For Sale'
-                    AND sold_date >= NOW() - INTERVAL '12 months'`
+                    AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt`
     ),
     querySold<{ lat: string | null; lng: string | null }>(
       (db) => db`SELECT lat, lng FROM sold.sold_records
@@ -317,6 +322,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
             AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
           GROUP BY street_slug
       ` as unknown as Promise<Array<{ street_slug: string; n_sales: number; avg_sale: string | null; min_sale: string | null; max_sale: string | null; dominant_type: string | null }>>).catch(() => [])
     : [];
@@ -465,15 +471,21 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   // signal. Validator stays consistent — both sides see the same filtered
   // trend. Streets with no count>=2 quarters fall back to undefined and
   // the prompt's no-trend path triggers naturally.
+  // B13 (docs/tickets/monthly-to-quarter-future-labels.md, 2026-07-20): a
+  // quarter that has not ENDED as of generation time must never reach the
+  // prompt as a trend point — the model narrates trend input as completed
+  // history ("climbing to $984,500 in Q3 2026" written 18 days into Q3).
+  // Filtered here at the consumption seam so the render-side quarterly
+  // charts (which may legitimately show quarter-to-date bars) are untouched.
   const quarterlyTrend =
     salesCount >= K_ANON_PRICE
-      ? monthlyToQuarterly(monthlyRows)
-          .map((q) => ({
+      ? dropUnfinishedQuarters(
+          monthlyToQuarterly(monthlyRows).map((q) => ({
             quarter: q.quarter,
             typical: q.value,
             count: q.count,
-          }))
-          .filter((q) => q.count >= 2)
+          })),
+        ).filter((q) => q.count >= 2)
       : undefined;
 
   // ─── nearby (parks, schools, mosques, grocery, hospital, GO, highway) ─
@@ -1056,6 +1068,30 @@ const ADJACENT_NEIGHBOURHOOD_KM = 2.0;
 const MIN_COMPARATOR_SPREAD_ABS = 75_000;
 const MIN_COMPARATOR_SPREAD_PCT = 0.10;
 
+/** B13 pure helper (exported for unit tests): keep only quarters that have
+ *  fully ENDED as of `now`. Labels arrive in monthlyToQuarterly's
+ *  "Q3 '26" form (4-digit years tolerated). Unparseable labels are dropped
+ *  (fail-closed: never present an unknown period as history). */
+export function dropUnfinishedQuarters<T extends { quarter: string }>(
+  quarters: T[],
+  now: Date = new Date(),
+): T[] {
+  return quarters.filter((q) => {
+    const m = q.quarter.match(/Q([1-4])\s*'?(\d{2,4})/);
+    if (!m) return false;
+    const qn = parseInt(m[1], 10);
+    let year = parseInt(m[2], 10);
+    if (year < 100) year += 2000;
+    // Start of the NEXT quarter (UTC). The quarter has ended iff that
+    // instant is not in the future.
+    const nextQuarterStart =
+      qn === 4
+        ? Date.UTC(year + 1, 0, 1)
+        : Date.UTC(year, qn * 3, 1);
+    return nextQuarterStart <= now.getTime();
+  });
+}
+
 /** Pure ranking helper (exported for unit tests): candidates with
  *  |price - subjectPrice| >= max($75K, 10% of subject), sorted by smallest
  *  delta first, top 2. */
@@ -1131,6 +1167,7 @@ async function buildCrossStreets(
                    AND perm_advertise = TRUE
                    AND transaction_type = 'For Sale'
                    AND sold_date >= NOW() - INTERVAL '12 months'
+                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
                  GROUP BY street_slug, property_type`
     ),
     // Each comparator's OWN dominant neighbourhood string, so the prompt can

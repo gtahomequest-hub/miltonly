@@ -17,7 +17,11 @@ import {
   validateFaq,
   validateStreetGeneration,
 } from "../src/lib/ai/validateStreetGeneration";
-import { rankComparatorCandidates } from "../src/lib/ai/buildGeneratorInput";
+import {
+  rankComparatorCandidates,
+  dropUnfinishedQuarters,
+} from "../src/lib/ai/buildGeneratorInput";
+import { findFuturePeriodClaims } from "../src/lib/ai/validateStreetGeneration";
 
 let passed = 0;
 let failed = 0;
@@ -295,6 +299,68 @@ console.log("=== comparator_neighbourhood_claim wiring ===");
     answer: "Consider Wettlaufer Terr, in Bronte Meadows, for detached homes around $1.8M.",
   }];
   check("grounded claim passes through validateFaq", !validateFaq(faqGood, inputWithNbhd).some(v => v.rule === "comparator_neighbourhood_claim"));
+}
+
+console.log("=== B13: dropUnfinishedQuarters ===");
+{
+  const NOW = new Date(Date.UTC(2026, 6, 20)); // 2026-07-20, mid Q3 2026
+  const qs = [
+    { quarter: "Q3 '25" }, { quarter: "Q4 '25" }, { quarter: "Q1 '26" },
+    { quarter: "Q2 '26" }, { quarter: "Q3 '26" }, { quarter: "garbage" },
+  ];
+  const kept = dropUnfinishedQuarters(qs, NOW).map(q => q.quarter);
+  check("ended quarters kept", JSON.stringify(kept) === JSON.stringify(["Q3 '25", "Q4 '25", "Q1 '26", "Q2 '26"]),
+    `got ${JSON.stringify(kept)}`);
+  check("quarter ending exactly at now boundary counts as ended",
+    dropUnfinishedQuarters([{ quarter: "Q2 '26" }], new Date(Date.UTC(2026, 6, 1))).length === 1);
+}
+
+console.log("=== B13: findFuturePeriodClaims ===");
+{
+  const NOW = new Date(Date.UTC(2026, 6, 20)); // 2026-07-20
+  check("unfinished current quarter fires",
+    findFuturePeriodClaims("climbing to $984,500 in Q3 2026", NOW).length > 0);
+  check("short-form quarter fires",
+    findFuturePeriodClaims("the trend into Q3 '26 looked firm", NOW).length > 0);
+  check("completed quarter passes",
+    findFuturePeriodClaims("prices eased through Q2 2026 before steadying", NOW).length === 0);
+  check("future month fires",
+    findFuturePeriodClaims("a townhouse rented around $3,150 per month in August 2026", NOW).length > 0);
+  check("current (begun) month passes",
+    findFuturePeriodClaims("a unit rented in July 2026 at $3,000 per month", NOW).length === 0);
+  check("past month passes",
+    findFuturePeriodClaims("a four-bedroom leased in May 2026", NOW).length === 0);
+  check("far-future year fires",
+    findFuturePeriodClaims("completion expected in January 2027", NOW).length > 0);
+  check("prose without periods passes",
+    findFuturePeriodClaims("Homes here trade steadily with buyers meeting sellers near asking.", NOW).length === 0);
+}
+
+console.log("=== future_period_claim wiring (time-proof far-future probe) ===");
+{
+  const viaSections = validateSectionsSubset(
+    [{ id: "market", heading: "The market right now", paragraphs: [
+      "The typical townhouse traded around $800,000 across the year, a pace consistent with the wider pocket. A three-bedroom unit rented around $3,000 per month in January 2099, anchoring the rental read for the street across the period of recent activity.",
+    ] }],
+    ["market"],
+    input,
+  );
+  check("future period fires through validateSectionsSubset", viaSections.some(v => v.rule === "future_period_claim"));
+
+  const cleanFaq6 = Array.from({ length: 6 }, (_, i) => ({
+    question: ["What is the typical price on Testwood Crescent?",
+      "How fast do homes sell on Testwood Crescent?",
+      "What kinds of homes are on Testwood Crescent?",
+      "Which schools are close to Testwood Crescent?",
+      "How far is Testwood Crescent from Toronto?",
+      "If Testwood Crescent isn't the right fit, what similar streets should I look at?"][i],
+    answer: "The answer is factual and short; it stays inside the rounding rules.",
+  }));
+  const faqFuture = [...cleanFaq6.slice(0, 5), {
+    question: "How fast do homes sell on Testwood Crescent?",
+    answer: "Homes typically find buyers within a few months; one traded in Q1 2099.",
+  }];
+  check("future period fires through validateFaq", validateFaq(faqFuture, input).some(v => v.rule === "future_period_claim"));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

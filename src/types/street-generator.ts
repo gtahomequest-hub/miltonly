@@ -57,6 +57,7 @@ export type ValidatorRule =
   | "catchment_vocabulary"  // WS4 locked: catchment/boundary/assignment language (grounded-external only)
   | "adjacency_claim"       // batch-001: physical-adjacency claim about a comparison street
   | "comparator_neighbourhood_claim" // batch-002: comparator location stated without / against crossStreets[].neighbourhood data
+  | "future_period_claim"   // B13: a not-yet-completed quarter/month presented as history
   | "em_dash"
   | "superlative"
   | "cliche_opener"
