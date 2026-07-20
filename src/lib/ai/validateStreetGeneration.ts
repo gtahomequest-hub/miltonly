@@ -1758,6 +1758,10 @@ const FAIR_HOUSING_PATTERNS: RegExp[] = [
   /\b(?:suits?|suited\s+(?:to|for)|appeals?\s+to|attracts?)\s+(?:young\s+)?(?:famil(?:y|ies)|first[- ]time\s+(?:buyers?|purchasers?)|downsizers?|investors?\s+alike|professionals?|retirees?|empty[- ]nesters?|long[- ]term\s+renters?)/i,
   /\bfamilies\s+and\s+(?:downsizers?|professionals?|retirees?|investors?)\s+alike\b/i,
   /\b(?:typical|the)\s+buyer\s+(?:profile|here|skews|tends|is\s+drawn)\b/i,
+  // batch-003 calibration miss (woodlawn): "a stable, family-oriented buyer
+  // profile" dodged the article-anchored form above. Any "buyer profile" is
+  // buyer characterization.
+  /\bbuyer\s+profiles?\b/i,
   /\bbuyers?\s+drawn\s+(?:here|to)\b[^.!?]{0,60}\b(?:typically|looking\s+for)\b/i,
   /\bowner[- ]occup(?:ied|ancy|iers?)\b/i,
   /\boriginal\s+owners?\s+still\b/i,
