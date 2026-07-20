@@ -81,8 +81,8 @@ For single-direction streets, continue with a single-narrative body.
 **`about`** (1 paragraph, 4–6 sentences)
 **This section MUST be between 110 and 150 words.** Outputs below 110 words will fail validation and force a retry. Aim for the middle of the range. Identity of the street in one tight paragraph. What kind of street it is, where it sits in the Milton grid, what immediately frames it. Avoid statistics here; this is scene-setting. Heading: choose from "About {name}" or "{name} at a glance." If the heading contains the full `name`, the first mention of the street in the paragraph may use `shortName` to avoid immediate redundancy.
 
-**`homes`** (1–2 paragraphs, 5–9 sentences total)
-**This section MUST be between 90 and 160 words.** Outputs below 90 words will fail validation and force a retry. Housing stock — **grounded fields only**. What you may state: the unit mix and counts from `input.byType` (detached/semi/townhouse/condo), which type dominates, the price tier per the data-depth rules below, active listing presence, `dominantStyle` if the input carries it, `lotSize` if the input carries it, and the builder ONLY per the primaryBuilder gate. Heading: "The homes here" or "Housing stock on {shortName}."
+**`homes`** (1–2 paragraphs, 4–8 sentences total)
+**This section MUST be between 55 and 140 words.** A short, fully-grounded section beats a long one padded with banned physical detail — never pad toward the ceiling. Outputs below 90 words will fail validation and force a retry. Housing stock — **grounded fields only**. What you may state: the unit mix and counts from `input.byType` (detached/semi/townhouse/condo), which type dominates, the price tier per the data-depth rules below, active listing presence, `dominantStyle` if the input carries it, `lotSize` if the input carries it, and the builder ONLY per the primaryBuilder gate. Heading: "The homes here" or "Housing stock on {shortName}."
 
 **HARD BAN — physical detail without an input field (batch-002 P1, fail-closed).** The input payload carries NO build-era, lot-dimension, square-footage, interior, or exterior-material fields. You must therefore write NONE of the following, ever, unless the named field is present: build years or eras ("built in the early 2000s", "dates from the 1990s", construction phases); lot widths/depths/frontages or any measurement in feet; square footage; bedroom/bathroom counts for the sale stock; floor-plan descriptions (open-concept, main-floor family room, primary/master suites, powder rooms); interior finishes (hardwood, quartz, ensuites, finished or unfinished basements); exterior materials and forms (brick-and-vinyl, stone accents, gabled roofs, covered porches, interlock). A hard validator rule (`physical_detail_ungrounded`) rejects any of these. If the grounded facts run short, write a SHORTER section — padding with invented fabric is the failure mode this ban exists to stop.
 
@@ -157,3 +157,15 @@ Before you emit the JSON, verify internally:
 9. Each section hits its word target floor.
 10. Headings match approved variants exactly.
 11. The `sections` array contains exactly three entries with the IDs `about`, `homes`, `amenities` in that order.
+
+## FAIR-HOUSING REGISTER — HARD BAN (Option C ruling, 2026-07-20; read before writing ANY section)
+
+Never characterize who lives on, belongs on, or should live on / buy on the street. A deterministic validator rule (`fair_housing_register`) plus a semantic LLM judge reject ALL of the following, and rephrasing into a synonym fails the judge anyway:
+
+- "family-oriented" (or family-friendly) attached to the street/character/atmosphere/enclave/feel/profile/pocket/market — in ANY section including market
+- "suits / suited to / appeals to / attracts" + any buyer class (families, first-time buyers, downsizers, investors, professionals, retirees)
+- "Buyers drawn here/to this street are typically looking for..." or "the typical buyer is..." — any buyer characterization
+- "neighbours know one another", "close-knit", "sense of community", children playing/riding bikes
+- tenure claims: "owner-occupied", "owner-occupancy", "original owners still", "anchored/transient tenants/renters" — you cannot know tenure from the input, and zero active listings does NOT mean owner-occupied
+
+Instead: describe the street, the stock, and the data. "Turnover is low" is legal; "owners tend to stay" is not. "Three-bedroom townhomes dominate" is legal; "family-oriented townhomes" is not. If a sentence is about PEOPLE rather than the street or the numbers, delete it — do not rephrase it.

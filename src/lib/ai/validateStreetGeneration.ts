@@ -1800,15 +1800,19 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
 // --- Thresholds ---
 
 const SECTION_WORD_FLOORS: Record<StreetSectionId, number> = {
-  // homes floor lowered 100→55 on 2026-07-20 (batch-002 P1): ungrounded
-  // physical detail is banned, so an honest homes section is short.
-  about: 60, homes: 55, amenities: 80, market: 40,
+  // homes floor lowered 100→55→40 on 2026-07-20 (batch-002 P1): ungrounded
+  // physical detail is banned, so an honest homes section is short. The 55
+  // floor caused a see-saw in the batch-003 regen (model padded back with
+  // banned physical detail to clear the floor, then failed P1).
+  about: 60, homes: 40, amenities: 80, market: 40,
   gettingAround: 55, schools: 45, bestFitFor: 55, differentPriorities: 55,
   // Track 2 Pass 1: DEC-PASS1-FLOOR-REVISED. Original spec set 80. Empirical
   // evidence (aird-court 2026-05-27 smoke run) showed DeepSeek converges to
   // 69-75 words on this section; 65 calibrates to that band with margin while
   // still rejecting one-liner stubs. Re-evaluate at Pass 2.
-  neighbourhoodComparable: 65,
+  // 65→55 on 2026-07-20: three batch-003 streets churned retries at 60-64
+  // words against the 65 floor.
+  neighbourhoodComparable: 55,
 };
 const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
   about: 180, homes: 350, amenities: 250, market: 350,

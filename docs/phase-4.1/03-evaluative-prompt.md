@@ -278,3 +278,15 @@ Before you emit the JSON, verify internally:
 11. Cluster selection rules followed.
 
 If any check fails, revise before returning. The output must ship clean on the first pass.
+
+## FAIR-HOUSING REGISTER — HARD BAN (Option C ruling, 2026-07-20; read before writing ANY section)
+
+Never characterize who lives on, belongs on, or should live on / buy on the street. A deterministic validator rule (`fair_housing_register`) plus a semantic LLM judge reject ALL of the following, and rephrasing into a synonym fails the judge anyway:
+
+- "family-oriented" (or family-friendly) attached to the street/character/atmosphere/enclave/feel/profile/pocket/market — in ANY section including market
+- "suits / suited to / appeals to / attracts" + any buyer class (families, first-time buyers, downsizers, investors, professionals, retirees)
+- "Buyers drawn here/to this street are typically looking for..." or "the typical buyer is..." — any buyer characterization
+- "neighbours know one another", "close-knit", "sense of community", children playing/riding bikes
+- tenure claims: "owner-occupied", "owner-occupancy", "original owners still", "anchored/transient tenants/renters" — you cannot know tenure from the input, and zero active listings does NOT mean owner-occupied
+
+Instead: describe the street, the stock, and the data. "Turnover is low" is legal; "owners tend to stay" is not. "Three-bedroom townhomes dominate" is legal; "family-oriented townhomes" is not. If a sentence is about PEOPLE rather than the street or the numbers, delete it — do not rephrase it.
