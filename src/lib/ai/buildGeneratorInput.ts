@@ -1141,13 +1141,38 @@ async function buildCrossStreets(
   }
   const allowedNames = Array.from(allowed);
 
-  const inGeoRows = await querySold<{ street_slug: string }>(
-    (db) => db`SELECT DISTINCT street_slug
+  // Batch-002 N6: pull the FULL neighbourhood distribution for every
+  // candidate that touches the allowed geography, so we can (a) exclude
+  // multi-neighbourhood arterials (Fourth Line: Bowes 9 / Beaty 8 / rural 6 —
+  // a poor "street" comparator whose label is ambiguous) and (b) verify the
+  // candidate's DOMINANT neighbourhood centroid is genuinely near the subject
+  // (belt over the string-set filter that admitted a 5.5km comparator).
+  const inGeoRows = await querySold<{ street_slug: string; neighbourhood: string; n: number }>(
+    (db) => db`SELECT street_slug, neighbourhood, COUNT(*)::int AS n
                FROM sold.sold_records
-               WHERE neighbourhood = ANY(${allowedNames}::text[])
-                 AND street_slug <> ALL(${siblingSlugs}::text[])`
+               WHERE street_slug IN (
+                 SELECT DISTINCT street_slug FROM sold.sold_records
+                 WHERE neighbourhood = ANY(${allowedNames}::text[])
+               )
+                 AND street_slug <> ALL(${siblingSlugs}::text[])
+               GROUP BY street_slug, neighbourhood`
   );
-  const inGeo = new Set(inGeoRows.map((r) => r.street_slug));
+  const DOMINANT_SHARE_MIN = 0.7;
+  const bySlug = new Map<string, Array<{ neighbourhood: string; n: number }>>();
+  for (const r of inGeoRows) {
+    (bySlug.get(r.street_slug) ?? bySlug.set(r.street_slug, []).get(r.street_slug)!)
+      .push({ neighbourhood: r.neighbourhood, n: r.n });
+  }
+  const inGeo = new Set<string>();
+  for (const [candSlug, rows] of Array.from(bySlug.entries())) {
+    const total = rows.reduce((s, r) => s + r.n, 0);
+    const dominant = rows.slice().sort((a, b) => b.n - a.n)[0];
+    if (total === 0 || dominant.n / total < DOMINANT_SHARE_MIN) continue; // arterial / split identity
+    if (!allowed.has(dominant.neighbourhood)) continue; // dominant must be in-geography, not a minority overlap
+    const dc = NEIGHBOURHOOD_CENTROIDS[dominant.neighbourhood];
+    if (dc && haversineKm(centroid.lat, centroid.lng, dc.lat, dc.lng) > ADJACENT_NEIGHBOURHOOD_KM) continue;
+    inGeo.add(candSlug);
+  }
   if (inGeo.size === 0) return [];
 
   const inGeoCandidates = candidates

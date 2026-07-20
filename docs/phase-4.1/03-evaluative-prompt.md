@@ -106,6 +106,8 @@ The good pattern selects two or three commute relationships and embeds them in g
 **`schools`** (1–2 paragraphs, 4–8 sentences)
 **This section MUST be between 90 and 130 words.** Outputs below 90 words will fail validation and force a retry. Aim for the middle of the range. Proximity ONLY. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; present proximity and let the reader investigate the rest. Heading: "Schools nearby."
 
+**SPATIAL PRECISION BAN (batch-002 N4).** Distances in the input are computed from neighbourhood centroids, not per-street geocoding. A small `distanceMin` licenses "under a minute's walk" at most — NEVER "directly on the street", "right on {Street} itself", "adjacent to the street", "at the doorstep", "steps away", or "zero-minute walk", for any school, park, or station. A hard validator rule (`spatial_precision_claim`) rejects these.
+
 **PROXIMITY, NEVER ASSIGNMENT (WS4 catchment ban — re-read the ban at the top of this prompt before writing).** Every claim in this section is of the shape "school X is N minutes away [on foot / by car]". You do not know, and must not imply, which school any address is assigned to: no "catchment", no "serves the street", no "students attend", no "draws", no "feeds", no boundary or zoning language of any kind. School names come ONLY from `input.nearby.schoolsPublic` / `input.nearby.schoolsCatholic`; distances come ONLY from their `distanceMin` values. A school whose `distanceMin` is null may be named as nearby but never given a distance. Close the section by noting that school assignment should be confirmed with the boards directly.
 
 **This section is editorial narrative, not enumeration.** Weave walkability and the street's position relative to the named schools into a coherent paragraph. A list of school names with drive times is a failure of voice — even if technically prose, it reads as a directory entry.
@@ -202,8 +204,8 @@ When `input.aggregates.priceRange` is NON-null (full-data street), answer the pr
 
 **HOUSING STOCK cluster:**
 - "What kinds of homes are on {Street}?"
-- "Are lots on {Street} larger or smaller than typical?"
-- "What year was most of {Street} built?"
+
+(The lot-size and build-year questions are retired 2026-07-20 — batch-002 P1: answering either requires physical data the input does not carry. The remaining question is answered from `input.byType` only: type mix and dominance, no eras, no dimensions, no interiors.)
 
 **SCHOOLS cluster:**
 - "Which schools are close to {Street}?"

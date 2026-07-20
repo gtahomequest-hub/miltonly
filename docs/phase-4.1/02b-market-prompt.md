@@ -90,7 +90,7 @@ Trade patterns. Typical price expressed per the rounding tables above. Range if 
 
 If `kAnonLevel === "thin"`, collapse to one paragraph that acknowledges the street trades rarely enough that suitability is discussed elsewhere on the page.
 
-If `kAnonLevel === "zero"`, collapse to one paragraph noting that as new construction the street has no resale history yet, and reframe what's available.
+If `kAnonLevel === "zero"`, collapse to one paragraph noting that the street has **no recorded resale activity in the window** — and attribute NO cause. Do not call the street "new construction", "pre-sale", "a fresh phase", or say "pricing will be set by the developer": zero recorded sales usually means an established street with low turnover, and the input contains no build-era data. (Batch-002 N2: this instruction's old "as new construction" wording produced hard self-contradictions on four pages.) Describe what IS grounded: the type mix, active listings count, and the neighbourhood comparable as the pricing reference.
 
 Heading: "The market right now" or "Trade patterns."
 
