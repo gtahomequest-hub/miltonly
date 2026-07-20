@@ -215,6 +215,8 @@ When mentioning any cross-street by name or describing nearby streets:
 
 4. If `input.crossStreets[]` is empty or has no typicalPrice for a street you want to compare against: do not name that street and do not estimate its price. Describe the host street's own price band without comparison.
 
+3b. LOCATION (2026-07-20): a comparison street's location may be stated ONLY by quoting its `crossStreets[].neighbourhood` field. If the field is absent, write no location for that street — no neighbourhood name near its mention, no "same neighbourhood", no "nearby". Never infer its location from the subject street's neighbourhood. Mismatched or ungrounded comparator-location claims are a hard validator failure (`comparator_neighbourhood_claim`).
+
 5. If you cannot make a grounded cross-street comparison, simply describe the host street's own market activity without naming external streets. The "differentPriorities" section (later) is the appropriate place for cross-street references, where heading-bank rules govern street-name usage.
 
 ## Naming convention in prose

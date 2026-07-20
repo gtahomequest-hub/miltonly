@@ -1028,18 +1028,51 @@ function buildCommute(
 //      neighbourhood tolerance).
 //   2. Candidates (k≥5, town-wide) are kept only if DB2 shows sold records
 //      for them inside the allowed geography.
-//   3. Rank by absolute price delta WITHIN that set, take top 2 — a
-//      different-priced street is a meaningful alternative only once it is
-//      genuinely nearby.
-//   4. No in-geography candidate → return []. The prompts' empty-crossStreets
-//      path (qualitative alternatives, zero street names, enforced by the
-//      invented_cross_street rule) handles suppression.
+//   3. Rank by SMALLEST absolute price delta ABOVE a minimum spread, take
+//      top 2 (batch-002 fix, 2026-07-20). The prior largest-delta-first
+//      ranking inside the geo set re-selected the same town-extreme streets
+//      (Wettlaufer/Millside/Pringle) for most of urban Milton, because the
+//      2km adjacency tolerance reaches several small neighbourhoods and the
+//      extreme always wins a max-delta sort. Smallest-delta-above-spread
+//      picks the NEAREST meaningfully different street instead: a real
+//      alternative at a genuinely different price point, without
+//      deterministic convergence on outliers.
+//   4. No in-geography candidate above the spread → return []. The prompts'
+//      empty-crossStreets path (qualitative alternatives, zero street names,
+//      enforced by the invented_cross_street rule) handles suppression.
 //
 // The entries are COMPARISON streets, not physical connectors — the prompts
-// and the adjacency_claim validator rule enforce that framing.
+// and the adjacency_claim validator rule enforce that framing. Each entry
+// also carries its OWN dominant DB2 neighbourhood (batch-002 fix) so prose
+// location claims about a comparator are grounded in data, never inferred —
+// enforced by the comparator_neighbourhood_claim validator rule.
 // ---------------------------------------------------------------------------
 
 const ADJACENT_NEIGHBOURHOOD_KM = 2.0;
+
+// A comparator must differ from the subject by at least this much to count
+// as "a different price point" — and among qualifying candidates the
+// SMALLEST delta wins, so picks stay in the subject's own market tier.
+const MIN_COMPARATOR_SPREAD_ABS = 75_000;
+const MIN_COMPARATOR_SPREAD_PCT = 0.10;
+
+/** Pure ranking helper (exported for unit tests): candidates with
+ *  |price - subjectPrice| >= max($75K, 10% of subject), sorted by smallest
+ *  delta first, top 2. */
+export function rankComparatorCandidates(
+  subjectPrice: number,
+  candidates: Array<{ slug: string; price: number }>,
+): Array<{ slug: string; price: number; delta: number }> {
+  const minSpread = Math.max(
+    MIN_COMPARATOR_SPREAD_ABS,
+    subjectPrice * MIN_COMPARATOR_SPREAD_PCT,
+  );
+  return candidates
+    .map((c) => ({ ...c, delta: Math.abs(c.price - subjectPrice) }))
+    .filter((c) => c.delta >= minSpread)
+    .sort((a, b) => a.delta - b.delta)
+    .slice(0, 2);
+}
 
 function collectSubjectNeighbourhoodStrings(
   listings: Listing[],
@@ -1081,26 +1114,42 @@ async function buildCrossStreets(
   const inGeo = new Set(inGeoRows.map((r) => r.street_slug));
   if (inGeo.size === 0) return [];
 
-  const ranked = candidates
+  const inGeoCandidates = candidates
     .filter((c) => inGeo.has(c.street_slug))
     .map((c) => ({ slug: c.street_slug, price: num(c.avg_sold_price) }))
-    .filter((c): c is { slug: string; price: number } => c.price !== null)
-    .map((c) => ({ ...c, delta: Math.abs(c.price - subjectPrice) }))
-    .sort((a, b) => b.delta - a.delta)
-    .slice(0, 2);
+    .filter((c): c is { slug: string; price: number } => c.price !== null);
+  const ranked = rankComparatorCandidates(subjectPrice, inGeoCandidates);
 
   if (ranked.length === 0) return [];
 
   const picks = ranked.map((r) => r.slug);
-  const dominantRows = await querySold<RawCrossDominantType>(
-    (db) => db`SELECT street_slug, property_type, COUNT(*)::int AS n
-               FROM sold.sold_records
-               WHERE street_slug = ANY(${picks})
-                 AND perm_advertise = TRUE
-                 AND transaction_type = 'For Sale'
-                 AND sold_date >= NOW() - INTERVAL '12 months'
-               GROUP BY street_slug, property_type`
-  );
+  const [dominantRows, comparatorNbhdRows] = await Promise.all([
+    querySold<RawCrossDominantType>(
+      (db) => db`SELECT street_slug, property_type, COUNT(*)::int AS n
+                 FROM sold.sold_records
+                 WHERE street_slug = ANY(${picks})
+                   AND perm_advertise = TRUE
+                   AND transaction_type = 'For Sale'
+                   AND sold_date >= NOW() - INTERVAL '12 months'
+                 GROUP BY street_slug, property_type`
+    ),
+    // Each comparator's OWN dominant neighbourhood string, so the prompt can
+    // state its location from data instead of inferring it (batch-002 fix).
+    querySold<{ street_slug: string; neighbourhood: string | null }>(
+      (db) => db`SELECT street_slug,
+                        MODE() WITHIN GROUP (ORDER BY neighbourhood) AS neighbourhood
+                 FROM sold.sold_records
+                 WHERE street_slug = ANY(${picks})
+                   AND neighbourhood IS NOT NULL
+                 GROUP BY street_slug`
+    ),
+  ]);
+  const nbhdByStreet: Record<string, string> = {};
+  for (const r of comparatorNbhdRows) {
+    if (!r.neighbourhood) continue;
+    const clean = stripLeadingCodePrefix(cleanNeighbourhoodName(r.neighbourhood));
+    if (clean.length > 0) nbhdByStreet[r.street_slug] = clean;
+  }
 
   const dominantByStreet: Record<string, string> = {};
   const grouped: Record<string, RawCrossDominantType[]> = {};
@@ -1115,12 +1164,17 @@ async function buildCrossStreets(
   return ranked.map((r) => {
     const dominantType = dominantByStreet[r.slug] ?? "mixed";
     const roundedPrice = formatCADShort(roundPriceForProse(r.price));
-    return {
+    const entry: StreetGeneratorInput["crossStreets"][number] = {
       slug: r.slug,
       shortName: shortNameFor(expandStreetName(deslugify(r.slug))),
       distinctivePattern: `${dominantType} trading around ${roundedPrice}`,
       typicalPrice: r.price,
     };
+    // Only attach a neighbourhood when DB2 actually names one — the prompts
+    // and comparator_neighbourhood_claim rule treat an absent field as
+    // "no location claim permitted".
+    if (nbhdByStreet[r.slug]) entry.neighbourhood = nbhdByStreet[r.slug];
+    return entry;
   });
 }
 
