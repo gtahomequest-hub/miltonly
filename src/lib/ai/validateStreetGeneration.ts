@@ -1472,11 +1472,16 @@ export function findComparatorNeighbourhoodClaims(
   const sentences = text.split(/(?<=[.!?])\s+/);
   for (const sentence of sentences) {
     // Comparators referenced in this sentence — full shortName or bare base
-    // name (case-sensitive word match so "Apple Terr"'s base doesn't fire on
-    // "apple trees").
+    // name. BOTH matches are word-boundary regexes (case-sensitive, so
+    // "Apple Terr"'s base doesn't fire on "apple trees"): a substring
+    // includes() here made a comparator short-named "Clark" fire on every
+    // mention of the subject's own "Clarke" neighbourhood (cedar-hedge,
+    // regen run 2026-07-20), burning the full retry budget.
+    const wordRe = (s: string) =>
+      new RegExp(`\\b${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
     const mentioned = comparators.filter((c) => {
-      if (c.shortName && sentence.includes(c.shortName)) return true;
-      if (c.base && new RegExp(`\\b${c.base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(sentence)) return true;
+      if (c.shortName && wordRe(c.shortName).test(sentence)) return true;
+      if (c.base && wordRe(c.base).test(sentence)) return true;
       return false;
     });
     if (mentioned.length === 0) continue;
@@ -1493,10 +1498,8 @@ export function findComparatorNeighbourhoodClaims(
     // grounded prose. A mention with NO preceding comparator in the sentence
     // is checked against ALL mentioned comparators (fail-closed).
     const comparatorPositions = mentioned.map((c) => {
-      const byShort = c.shortName ? sentence.indexOf(c.shortName) : -1;
-      const byBase = c.base
-        ? sentence.search(new RegExp(`\\b${c.base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`))
-        : -1;
+      const byShort = c.shortName ? sentence.search(wordRe(c.shortName)) : -1;
+      const byBase = c.base ? sentence.search(wordRe(c.base)) : -1;
       const idx = byShort >= 0 && byBase >= 0 ? Math.min(byShort, byBase) : Math.max(byShort, byBase);
       return { c, idx };
     });

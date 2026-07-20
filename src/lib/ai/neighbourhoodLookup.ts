@@ -115,8 +115,17 @@ export async function getNeighbourhoodComparable(
   const typicalSoldPrice = parseNumeric(row[column]);
   if (typicalSoldPrice === null) return null;
 
+  // Clean display form (batch-002 fix, 2026-07-20): the raw DB3 string
+  // ("1027 - CL Clarke") was reaching the prompt verbatim and the model
+  // published it ("Across 1027 - CL Clarke, comparable homes..."). Strip the
+  // MLS district prefix; fall back to the raw value if cleaning empties it.
+  const { cleanNeighbourhoodName } = await import("@/lib/format");
+  const cleanedNeighbourhood =
+    cleanNeighbourhoodName(row.neighbourhood).replace(/^\s*\d+\s*-\s*/, "").trim() ||
+    row.neighbourhood;
+
   return {
-    neighbourhood: row.neighbourhood,
+    neighbourhood: cleanedNeighbourhood,
     filterByPropertyType: dominantPropertyType.toLowerCase(),
     filterByBedroomCount: null,                            // Pass 1: deferred to Block D
     fallbackApplied: "type-only",                          // Pass 1 always type-only

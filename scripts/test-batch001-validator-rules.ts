@@ -226,6 +226,19 @@ console.log("=== findComparatorNeighbourhoodClaims ===");
     findComparatorNeighbourhoodClaims(
       "In Timberlea, Thimbleweed Crt trades around $950,000.",
       twoCs, subjNbhds).length > 0);
+
+  // Substring-collision regression (cedar-hedge, regen 2026-07-20): a
+  // comparator short-named "Clark" must NOT count as mentioned inside the
+  // word "Clarke" (the subject's own neighbourhood).
+  const clarkCs = [{ slug: "clark-boulevard-milton", shortName: "Clark", distinctivePattern: "d", typicalPrice: 950_000, neighbourhood: "Beaty" }];
+  check("'Clark' comparator does not fire on the subject's 'Clarke' neighbourhood prose",
+    findComparatorNeighbourhoodClaims(
+      "Cedar Hedge Road runs through the Clarke neighbourhood in Milton's north end.",
+      clarkCs, ["Clarke"]).length === 0);
+  check("real 'Clark' mention with wrong neighbourhood still fires",
+    findComparatorNeighbourhoodClaims(
+      "Clark offers detached homes in Clarke at a similar price point.",
+      clarkCs, ["Clarke"]).length > 0);
 }
 
 console.log("=== comparator_neighbourhood_claim wiring ===");
