@@ -56,6 +56,7 @@ export type ValidatorRule =
   | "mixed_pool_claim"      // batch-001: sale + lease pools combined in one claim (ratio/yield/blended total)
   | "catchment_vocabulary"  // WS4 locked: catchment/boundary/assignment language (grounded-external only)
   | "adjacency_claim"       // batch-001: physical-adjacency claim about a comparison street
+  | "comparator_neighbourhood_claim" // batch-002: comparator location stated without / against crossStreets[].neighbourhood data
   | "em_dash"
   | "superlative"
   | "cliche_opener"
@@ -209,6 +210,11 @@ export interface StreetGeneratorInput {
     shortName: string;
     distinctivePattern: string;
     typicalPrice: number;
+    // The comparator's OWN dominant DB2 neighbourhood (cleaned display form,
+    // e.g. "Willmott") — batch-002 fix 2026-07-20. Prose may state the
+    // comparator's location ONLY by quoting this field; when absent, no
+    // location claim is permitted (comparator_neighbourhood_claim rule).
+    neighbourhood?: string;
   }>;
   // Pass 1 — Track 2 neighbourhood-comparable block.
   // Populated by Block C's lookup function when DB3 + DB2 have data

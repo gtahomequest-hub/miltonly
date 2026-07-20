@@ -11,11 +11,13 @@ import type { StreetGeneratorInput, StreetGeneratorOutput } from "../src/types/s
 import {
   findMixedPoolClaims,
   findAdjacencyClaims,
+  findComparatorNeighbourhoodClaims,
   findUngroundedBuilderName,
   validateSectionsSubset,
   validateFaq,
   validateStreetGeneration,
 } from "../src/lib/ai/validateStreetGeneration";
+import { rankComparatorCandidates } from "../src/lib/ai/buildGeneratorInput";
 
 let passed = 0;
 let failed = 0;
@@ -159,6 +161,88 @@ console.log("=== canonical shape (bestFitFor removed) ===");
   check("legacy 8-section layout with bestFitFor now fails order check", with8Legacy.some(v => v.rule === "missing_section_id"));
   const with7 = validateStreetGeneration(mk(["about","homes","amenities","market","gettingAround","schools","differentPriorities"]), input);
   check("7-section layout passes the shape/order gate", !with7.some(v => v.rule === "invalid_json_shape" || v.rule === "missing_section_id"));
+}
+
+console.log("=== rankComparatorCandidates (batch-002: smallest delta above minimum spread) ===");
+{
+  // Subject $800K; min spread = max($75K, 10%) = $80K.
+  const cands = [
+    { slug: "same-tier", price: 830_000 },      // delta 30K < spread -> excluded
+    { slug: "step-up", price: 950_000 },        // delta 150K -> qualifies
+    { slug: "town-extreme", price: 1_800_000 }, // delta 1M -> qualifies but ranks LAST
+    { slug: "step-down", price: 650_000 },      // delta 150K -> qualifies
+  ];
+  const ranked = rankComparatorCandidates(800_000, cands);
+  check("below-spread candidate excluded", !ranked.some(r => r.slug === "same-tier"));
+  check("town extreme no longer wins", !ranked.some(r => r.slug === "town-extreme"));
+  check("nearest meaningfully-different picks win",
+    ranked.length === 2 && ranked.every(r => ["step-up", "step-down"].includes(r.slug)));
+  check("empty when nothing clears the spread",
+    rankComparatorCandidates(800_000, [{ slug: "x", price: 810_000 }]).length === 0);
+}
+
+console.log("=== findComparatorNeighbourhoodClaims ===");
+{
+  const csNoNbhd = [{ slug: "wettlaufer-terrace-milton", shortName: "Wettlaufer Terr", distinctivePattern: "d", typicalPrice: 1_800_000 }];
+  const csWithNbhd = [{ ...csNoNbhd[0], neighbourhood: "Bronte Meadows" }];
+  const subjNbhds = ["Willmott"];
+
+  check("no-data comparator + neighbourhood mention fires (fail closed)",
+    findComparatorNeighbourhoodClaims("Elsewhere in Willmott, Wettlaufer Terr offers detached homes.", csNoNbhd, subjNbhds).length > 0);
+  check("mismatched neighbourhood fires",
+    findComparatorNeighbourhoodClaims("Wettlaufer Terr sits in Timberlea at a higher price point.", csWithNbhd, subjNbhds).length > 0);
+  check("matching data neighbourhood passes",
+    findComparatorNeighbourhoodClaims("In Bronte Meadows, Wettlaufer Terr trades around $1.8M.", csWithNbhd, subjNbhds).length === 0);
+  check("generic same-neighbourhood without data fires",
+    findComparatorNeighbourhoodClaims("Wettlaufer Terr keeps you in the same neighbourhood.", csNoNbhd, subjNbhds).length > 0);
+  check("generic same-neighbourhood with mismatched data fires",
+    findComparatorNeighbourhoodClaims("Both Wettlaufer Terr and the subject sit in the same neighbourhood.", csWithNbhd, subjNbhds).length > 0);
+  check("generic same-neighbourhood grounded passes",
+    findComparatorNeighbourhoodClaims("Wettlaufer Terr stays in the same neighbourhood.", csWithNbhd, ["Bronte Meadows"]).length === 0);
+  check("bare base-name mention is caught",
+    findComparatorNeighbourhoodClaims("Consider Wettlaufer for detached homes in Coates.", csWithNbhd, subjNbhds).length > 0);
+  check("neighbourhood word as a STREET name does not fire",
+    findComparatorNeighbourhoodClaims("Wettlaufer Terr trades differently than Scott Boulevard.", csWithNbhd, subjNbhds).length === 0);
+  check("no comparator in sentence never fires",
+    findComparatorNeighbourhoodClaims("The subject street sits in Willmott near the park.", csWithNbhd, subjNbhds).length === 0);
+  check("price-only comparator sentence passes without location wording",
+    findComparatorNeighbourhoodClaims("Wettlaufer Terr offers detached homes around $1.8M, a step up in price.", csNoNbhd, subjNbhds).length === 0);
+}
+
+console.log("=== comparator_neighbourhood_claim wiring ===");
+{
+  const inputWithNbhd: StreetGeneratorInput = {
+    ...input,
+    crossStreets: [{ slug: "wettlaufer-terrace-milton", shortName: "Wettlaufer Terr", distinctivePattern: "d", typicalPrice: 1_800_000, neighbourhood: "Bronte Meadows" }],
+  };
+  const viaSections = validateSectionsSubset(
+    [{ id: "differentPriorities", heading: "If different priorities matter more", paragraphs: [
+      "For buyers seeking detached homes in Willmott, Wettlaufer Terr trades around $1.8M, a clear step up from the subject street. The alternative suits those prioritizing lot size and interior space over entry price, and the tradeoff reads plainly in the numbers across recent activity.",
+    ] }],
+    ["differentPriorities"],
+    inputWithNbhd,
+  );
+  check("mismatched claim fires through validateSectionsSubset", viaSections.some(v => v.rule === "comparator_neighbourhood_claim"));
+
+  const cleanFaq = Array.from({ length: 6 }, (_, i) => ({
+    question: ["What is the typical price on Testwood Crescent?",
+      "How fast do homes sell on Testwood Crescent?",
+      "What kinds of homes are on Testwood Crescent?",
+      "Which schools are close to Testwood Crescent?",
+      "How far is Testwood Crescent from Toronto?",
+      "If Testwood Crescent isn't the right fit, what similar streets should I look at?"][i],
+    answer: "The answer is factual and short; it stays inside the rounding rules.",
+  }));
+  const faqBad = [...cleanFaq.slice(0, 5), {
+    question: "If Testwood Crescent isn't the right fit, what similar streets should I look at?",
+    answer: "Consider Wettlaufer Terr for detached homes; both are in Willmott with similar access.",
+  }];
+  check("mismatched claim fires through validateFaq", validateFaq(faqBad, inputWithNbhd).some(v => v.rule === "comparator_neighbourhood_claim"));
+  const faqGood = [...cleanFaq.slice(0, 5), {
+    question: "If Testwood Crescent isn't the right fit, what similar streets should I look at?",
+    answer: "Consider Wettlaufer Terr, in Bronte Meadows, for detached homes around $1.8M.",
+  }];
+  check("grounded claim passes through validateFaq", !validateFaq(faqGood, inputWithNbhd).some(v => v.rule === "comparator_neighbourhood_claim"));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

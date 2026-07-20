@@ -33,6 +33,8 @@ import type {
 import { config } from "@/lib/config";
 import { countSentences } from "./trimFaqAnswers";
 import { findCatchmentVocabulary } from "./catchmentVocabulary";
+import { cleanNeighbourhoodName } from "@/lib/format";
+import { NEIGHBOURHOOD_CENTROIDS } from "@/lib/geo";
 
 // --- Denylists ---
 
@@ -1389,6 +1391,152 @@ export function findAdjacencyClaims(
   return out;
 }
 
+// comparator_neighbourhood_claim (batch-002 remediation, 2026-07-20): a
+// comparator's location may be stated ONLY from crossStreets[].neighbourhood.
+// Batch-002 re-audit prep found Wettlaufer/Millside/Pringle asserted to be
+// "in Bronte Meadows / Old Milton / Timberlea / Coates" on different pages —
+// the model inferring each comparator into the HOST's neighbourhood because
+// the prompts framed comparators as same-neighbourhood. This class fails
+// closed: any neighbourhood name in a sentence that mentions a comparator
+// must equal that comparator's supplied neighbourhood; generic
+// same-neighbourhood phrasing requires the comparator's data neighbourhood to
+// match the subject's. No data → no location claim of any kind.
+
+// Suffix tokens that turn a neighbourhood word into a STREET name ("Scott
+// Boulevard" must not read as a mention of the Scott neighbourhood).
+const STREET_SUFFIX_LOOKAHEAD =
+  "(?:Street|St|Avenue|Ave|Boulevard|Blvd|Drive|Dr|Crescent|Cres|Court|Crt|Ct|Lane|Ln|Way|Place|Pl|Trail|Trl|Terrace|Terr|Circle|Cir|Road|Rd|Gate|Common|Heights|Grove|Close|Walk|Hill|Ridge|Line|Parkway|Pkwy)";
+
+// Trailing tokens stripped from a comparator shortName to get the base name
+// the model may use alone in prose ("Wettlaufer Terr" -> "Wettlaufer").
+const COMPARATOR_SUFFIX_TOKENS = new Set([
+  "street", "st", "avenue", "ave", "boulevard", "blvd", "drive", "dr",
+  "crescent", "cres", "court", "crt", "ct", "lane", "ln", "way", "place",
+  "pl", "trail", "trl", "terrace", "terr", "circle", "cir", "road", "rd",
+  "gate", "common", "heights", "grove", "close", "walk", "hill", "ridge",
+  "line", "parkway", "pkwy",
+  "n", "s", "e", "w", "north", "south", "east", "west",
+]);
+
+function comparatorBaseName(shortName: string): string {
+  const tokens = shortName.trim().split(/\s+/);
+  while (
+    tokens.length > 1 &&
+    COMPARATOR_SUFFIX_TOKENS.has(tokens[tokens.length - 1].toLowerCase().replace(/\.$/, ""))
+  ) {
+    tokens.pop();
+  }
+  return tokens.join(" ");
+}
+
+const SAME_NEIGHBOURHOOD_PHRASES =
+  /\b(?:the\s+)?same\s+neighbourhood\b|\bin\s+the\s+neighbourhood\b|\belsewhere\s+in\s+the\s+neighbourhood\b/i;
+
+function canonicalNeighbourhoodNames(
+  crossStreets: StreetGeneratorInput["crossStreets"],
+  inputNeighbourhoods: string[],
+): string[] {
+  const names = new Set<string>();
+  for (const key of Object.keys(NEIGHBOURHOOD_CENTROIDS)) {
+    const clean = cleanNeighbourhoodName(key).replace(/^\s*\d+\s*-\s*/, "").trim();
+    if (clean) names.add(clean);
+  }
+  for (const n of inputNeighbourhoods) if (n) names.add(n.trim());
+  for (const c of crossStreets) if (c.neighbourhood) names.add(c.neighbourhood.trim());
+  // "Milton" is the town, not a neighbourhood claim.
+  names.delete("Milton");
+  return Array.from(names).filter((n) => n.length >= 4);
+}
+
+export interface ComparatorNeighbourhoodFinding {
+  street: string;
+  claimed: string;
+  expected: string | null;
+  excerpt: string;
+}
+
+export function findComparatorNeighbourhoodClaims(
+  text: string,
+  crossStreets: StreetGeneratorInput["crossStreets"],
+  inputNeighbourhoods: string[],
+): ComparatorNeighbourhoodFinding[] {
+  if (crossStreets.length === 0) return [];
+  const out: ComparatorNeighbourhoodFinding[] = [];
+  const nbhdNames = canonicalNeighbourhoodNames(crossStreets, inputNeighbourhoods);
+  const inputNbhdLower = new Set(inputNeighbourhoods.map((n) => n.toLowerCase()));
+  const comparators = crossStreets.map((c) => ({
+    ...c,
+    base: comparatorBaseName(c.shortName),
+  }));
+
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    // Comparators referenced in this sentence — full shortName or bare base
+    // name (case-sensitive word match so "Apple Terr"'s base doesn't fire on
+    // "apple trees").
+    const mentioned = comparators.filter((c) => {
+      if (c.shortName && sentence.includes(c.shortName)) return true;
+      if (c.base && new RegExp(`\\b${c.base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(sentence)) return true;
+      return false;
+    });
+    if (mentioned.length === 0) continue;
+
+    const mentionedBasesLower = new Set(mentioned.map((c) => c.base.toLowerCase()));
+
+    // 1. Explicit neighbourhood names near a comparator mention.
+    for (const name of nbhdNames) {
+      // A neighbourhood word immediately followed by a street suffix is a
+      // street name, not a location claim.
+      const re = new RegExp(
+        `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b(?!\\s+${STREET_SUFFIX_LOOKAHEAD}\\b)`,
+        "i",
+      );
+      if (!re.test(sentence)) continue;
+      // Skip when the "neighbourhood" word is actually the comparator's own
+      // base name (e.g. a street named after the neighbourhood).
+      if (mentionedBasesLower.has(name.toLowerCase())) continue;
+
+      for (const c of mentioned) {
+        const ok = !!c.neighbourhood && c.neighbourhood.toLowerCase() === name.toLowerCase();
+        if (!ok) {
+          out.push({
+            street: c.shortName,
+            claimed: name,
+            expected: c.neighbourhood ?? null,
+            excerpt: sentence.trim().slice(0, 180),
+          });
+        }
+      }
+    }
+
+    // 2. Generic same-neighbourhood phrasing: only allowed when EVERY
+    // comparator in the sentence has a data neighbourhood matching the
+    // subject's own neighbourhood list.
+    if (SAME_NEIGHBOURHOOD_PHRASES.test(sentence)) {
+      for (const c of mentioned) {
+        const ok = !!c.neighbourhood && inputNbhdLower.has(c.neighbourhood.toLowerCase());
+        if (!ok) {
+          out.push({
+            street: c.shortName,
+            claimed: "same neighbourhood (generic)",
+            expected: c.neighbourhood ?? null,
+            excerpt: sentence.trim().slice(0, 180),
+          });
+        }
+      }
+    }
+  }
+
+  // Dedupe on (street, claimed).
+  const seen = new Set<string>();
+  return out.filter((f) => {
+    const key = `${f.street}|${f.claimed.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // builder_without_high_confidence, absent-builder arm: buildGeneratorInput
 // deliberately omits primaryBuilder (no data pipeline exists), so ANY builder
 // name in prose is a fabrication when the field is absent. Batch-001 B10:
@@ -1724,6 +1872,9 @@ export function validateStreetGeneration(
     for (const adj of findAdjacencyClaims(sectionText, input.crossStreets)) {
       violations.push({ rule: "adjacency_claim", sectionId: section.id, excerpt: `"${adj.street}" placed physically: ${adj.excerpt}`, severity: "hard" });
     }
+    for (const cn of findComparatorNeighbourhoodClaims(sectionText, input.crossStreets, input.neighbourhoods)) {
+      violations.push({ rule: "comparator_neighbourhood_claim", sectionId: section.id, excerpt: `"${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
+    }
     const ungroundedBuilder = findUngroundedBuilderName(sectionText, input);
     if (ungroundedBuilder) {
       violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilder}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
@@ -1872,6 +2023,9 @@ export function validateStreetGeneration(
   }
   for (const mp of findMixedPoolClaims(faqText)) {
     violations.push({ rule: "mixed_pool_claim", excerpt: `FAQ "${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+  }
+  for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
+    violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
   }
 
   // v3: FAQ questions must match bank verbatim (dedicated rule)
@@ -2093,6 +2247,9 @@ export function validateSectionsSubset(
     for (const adj of findAdjacencyClaims(sectionText, input.crossStreets)) {
       violations.push({ rule: "adjacency_claim", sectionId: section.id, excerpt: `"${adj.street}" placed physically: ${adj.excerpt}`, severity: "hard" });
     }
+    for (const cn of findComparatorNeighbourhoodClaims(sectionText, input.crossStreets, input.neighbourhoods)) {
+      violations.push({ rule: "comparator_neighbourhood_claim", sectionId: section.id, excerpt: `"${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
+    }
     const ungroundedBuilderSub = findUngroundedBuilderName(sectionText, input);
     if (ungroundedBuilderSub) {
       violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilderSub}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
@@ -2218,6 +2375,9 @@ export function validateFaq(
   }
   for (const mp of findMixedPoolClaims(faqText)) {
     violations.push({ rule: "mixed_pool_claim", excerpt: `FAQ "${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+  }
+  for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
+    violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
   }
 
   const allowedQuestions = new Set(
@@ -2445,7 +2605,13 @@ function formatRuleViolations(
       ];
     case "adjacency_claim":
       return [
-        `**adjacency_claim**: You placed a comparison street from input.crossStreets[] on the map relative to the subject street. These entries are MARKET COMPARISONS from the same neighbourhood, not physical neighbours — never write "runs between", "connects to", "intersects", "corner of", or "cross-street" about them. Frame them only as alternatives elsewhere in the neighbourhood.`,
+        `**adjacency_claim**: You placed a comparison street from input.crossStreets[] on the map relative to the subject street. These entries are MARKET COMPARISONS, not physical neighbours — never write "runs between", "connects to", "intersects", "corner of", or "cross-street" about them. Frame them as alternatives at a different price point; state their location only per the comparator_neighbourhood_claim rule (from crossStreets[].neighbourhood, or not at all).`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "comparator_neighbourhood_claim":
+      return [
+        `**comparator_neighbourhood_claim**: You stated a comparison street's location without grounding. A comparator's location comes ONLY from its input.crossStreets[].neighbourhood field, quoted exactly ("in {neighbourhood}"). If that field is absent, write NO location for that street: no neighbourhood name near its mention, no "same neighbourhood", no "elsewhere in the neighbourhood", no "both in {X}", no "nearby". Never infer a comparator's location from the subject street's neighbourhood. Rewrite the flagged sentences either quoting the supplied neighbourhood or dropping the location wording entirely.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];
