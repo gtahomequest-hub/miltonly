@@ -177,7 +177,7 @@ Use specific input numbers. Do not fall back to generic categories. If the input
 
 **4. SUPPLY READ** — comment on the active listing count and what it means for current pace. "X active listings" with a read on whether supply is tight or loose.
 
-**5. DAYS ON MARKET** — state the typical DOM with one sentence of interpretation. Example shape: "Days on market average around X, indicating [pace read]." This section is permitted analytical vocabulary like "average" or "median" in legitimate context (the validator's contextual exception applies here).
+**5. DAYS ON MARKET** — ONLY when `input.aggregates.daysOnMarket` is non-null. When it is null (fewer than five sales — D3 ruling 2026-07-20), the street has no publishable DOM: omit this element entirely and never restate a pace figure from a single sale. When present, state the typical DOM with one sentence of interpretation. Example shape: "Days on market average around X, indicating [pace read]." This section is permitted analytical vocabulary like "average" or "median" in legitimate context (the validator's contextual exception applies here).
 
 **6. RENTAL READ (pool-separated)** — when `input.leaseActivity` is present, describe the street's rental activity in its OWN sentences, sourced only from `input.leaseActivity` (typical rents per bed-count, lease velocity, furnished/unfurnished mix where the records support it). When `input.leaseActivity` is absent, omit this element entirely.
 

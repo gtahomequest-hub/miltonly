@@ -1739,6 +1739,44 @@ export function findSpatialPrecisionClaims(text: string): SpatialFinding[] {
   return out;
 }
 
+// fair_housing_register — DETERMINISTIC FLOOR (batch-002 N1, Option C ruling
+// 2026-07-20). Catches the stable constructions observed verbatim across
+// batches 001-002 instantly and for free; the LLM judge in compliance.ts
+// remains the actual semantic gate for paraphrases. Patterns target
+// characterization of who lives, belongs, or should live on the street —
+// never amenity facts ("family-sized units" / "family-oriented parks" are
+// stock/amenity descriptors and stay legal; the judge adjudicates nuance).
+const FAIR_HOUSING_PATTERNS: RegExp[] = [
+  /\bfamily[- ]friendly\b/i,
+  /\bfamily[- ]oriented\s+(?:character|atmosphere|enclave|feel|profile|street|streets|pocket|lifestyle|community|neighbourhood|market|development)\b/i,
+  /\b(?:built|street)\s+for\s+family\s+life\b/i,
+  /\b(?:a\s+)?street\s+built\s+for\s+famil(?:y|ies)\b/i,
+  /\bneighbours?\s+(?:know|recognize)\s+(?:one\s+another|each\s+other)\b/i,
+  /\bchildren\s+(?:play|still\s+ride|ride\s+bikes)\b/i,
+  /\bclose[- ]knit\b/i,
+  /\bdemographic/i,
+  /\b(?:suits?|suited\s+(?:to|for)|appeals?\s+to|attracts?)\s+(?:young\s+)?(?:famil(?:y|ies)|first[- ]time\s+(?:buyers?|purchasers?)|downsizers?|investors?\s+alike|professionals?|retirees?|empty[- ]nesters?|long[- ]term\s+renters?)/i,
+  /\bfamilies\s+and\s+(?:downsizers?|professionals?|retirees?|investors?)\s+alike\b/i,
+  /\b(?:typical|the)\s+buyer\s+(?:profile|here|skews|tends|is\s+drawn)\b/i,
+  /\bbuyers?\s+drawn\s+(?:here|to)\b[^.!?]{0,60}\b(?:typically|looking\s+for)\b/i,
+  /\bowner[- ]occup(?:ied|ancy|iers?)\b/i,
+  /\boriginal\s+owners?\s+still\b/i,
+  /\b(?:anchored|transient)\s+(?:tenants?|renters?|demand)\b/i,
+  /\bfamilies\s+heading\s+to\b/i,
+];
+
+export interface FairHousingFinding { matched: string; excerpt: string }
+
+export function findFairHousingRegister(text: string): FairHousingFinding[] {
+  const out: FairHousingFinding[] = [];
+  for (const re of FAIR_HOUSING_PATTERNS) {
+    const single = new RegExp(re.source, re.flags.replace("g", ""));
+    const m = single.exec(text);
+    if (m) out.push({ matched: m[0], excerpt: excerptAround(text, single) });
+  }
+  return out;
+}
+
 // --- Heading bank ---
 
 const HEADING_BANK: Record<StreetSectionId, string[]> = {
@@ -2074,7 +2112,9 @@ export function validateStreetGeneration(
         violations.push({ rule: "physical_detail_ungrounded", sectionId: section.id, excerpt: `${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
       }
     }
-    for (const s of findSpatialPrecisionClaims(sectionText)) {
+    for (const fh of findFairHousingRegister(sectionText)) {
+      violations.push({ rule: "fair_housing_register", sectionId: section.id, excerpt: `"${fh.matched}": ${fh.excerpt}`, severity: "hard" });
+    }    for (const s of findSpatialPrecisionClaims(sectionText)) {
       violations.push({ rule: "spatial_precision_claim", sectionId: section.id, excerpt: `"${s.matched}": ${s.excerpt}`, severity: "hard" });
     }
 
@@ -2226,7 +2266,9 @@ export function validateStreetGeneration(
   for (const p of findUngroundedPhysicalDetails(faqText, input, { eraOnly: true })) {
     violations.push({ rule: "physical_detail_ungrounded", excerpt: `FAQ ${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
   }
-  for (const s of findSpatialPrecisionClaims(faqText)) {
+  for (const fh of findFairHousingRegister(faqText)) {
+    violations.push({ rule: "fair_housing_register", excerpt: `FAQ "${fh.matched}": ${fh.excerpt}`, severity: "hard" });
+  }  for (const s of findSpatialPrecisionClaims(faqText)) {
     violations.push({ rule: "spatial_precision_claim", excerpt: `FAQ "${s.matched}": ${s.excerpt}`, severity: "hard" });
   }
   for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
@@ -2471,7 +2513,9 @@ export function validateSectionsSubset(
         violations.push({ rule: "physical_detail_ungrounded", sectionId: section.id, excerpt: `${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
       }
     }
-    for (const s of findSpatialPrecisionClaims(sectionText)) {
+    for (const fh of findFairHousingRegister(sectionText)) {
+      violations.push({ rule: "fair_housing_register", sectionId: section.id, excerpt: `"${fh.matched}": ${fh.excerpt}`, severity: "hard" });
+    }    for (const s of findSpatialPrecisionClaims(sectionText)) {
       violations.push({ rule: "spatial_precision_claim", sectionId: section.id, excerpt: `"${s.matched}": ${s.excerpt}`, severity: "hard" });
     }
 
@@ -2600,7 +2644,9 @@ export function validateFaq(
   for (const p of findUngroundedPhysicalDetails(faqText, input, { eraOnly: true })) {
     violations.push({ rule: "physical_detail_ungrounded", excerpt: `FAQ ${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
   }
-  for (const s of findSpatialPrecisionClaims(faqText)) {
+  for (const fh of findFairHousingRegister(faqText)) {
+    violations.push({ rule: "fair_housing_register", excerpt: `FAQ "${fh.matched}": ${fh.excerpt}`, severity: "hard" });
+  }  for (const s of findSpatialPrecisionClaims(faqText)) {
     violations.push({ rule: "spatial_precision_claim", excerpt: `FAQ "${s.matched}": ${s.excerpt}`, severity: "hard" });
   }
   for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {

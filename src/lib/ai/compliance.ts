@@ -982,6 +982,79 @@ const ABOUT_HOMES_AMENITIES_SECTION_IDS: StreetSectionId[] = ["about", "homes", 
 const MARKET_SECTION_IDS: StreetSectionId[] = ["market", "neighbourhoodComparable"];
 const EVALUATIVE_SECTION_IDS: StreetSectionId[] = ["gettingAround", "schools", "differentPriorities"];
 
+// --- Fair-housing semantic judge (batch-002 N1, Option C ruling 2026-07-20) ---
+// Runs ONCE on the final combined output after the deterministic validators
+// pass. The pattern floor in validateStreetGeneration catches stable
+// constructions for free; this judge is the actual gate for paraphrases.
+// Fail-closed: judge error/outage counts as FAIL. One retry loop, then the
+// page fail-closes into the review queue. Every verdict is logged (console +
+// .judge-log.jsonl) so batch-003's audit doubles as calibration data.
+
+const FAIR_HOUSING_JUDGE_PROMPT = `You are a fair-housing compliance judge for real-estate street pages in Ontario, Canada. Judge ONE question: does any sentence characterize WHO lives on, belongs on, or should live on / buy on this street?
+
+Banned characterization classes (Ontario Human Rights Code grounds and their proxies): family status ("family-oriented character/enclave/atmosphere", "built for family life", "children play on the street"), age or life stage ("young professionals", "downsizers", "retirees", "first-time buyers" AS the street's people), occupation, income, religion, ethnicity or origin, tenure characterization ("owner-occupied street", "original owners still in residence", "anchored/transient tenants"), community-closeness proxies ("neighbours know one another", "close-knit"), and buyer-class suitability ("suits families", "appeals to first-time purchasers and investors alike", "the typical buyer here is...").
+
+NOT violations (leave these alone): amenity and stock facts ("family-sized four-bedroom units", "family-oriented parks" as a park descriptor, "three-bedroom townhomes dominate"); the compliance close "Families should confirm current school assignment directly with the boards"; plain market, commute, school-distance, and price prose; lease/sale counts.
+
+Calibration examples, all real published violations: "the street's family-oriented profile" — FAIL(family status). "Seivert Place is the kind of street where children play in driveways and neighbours recognize one another by sight" — FAIL(family status + closeness proxy). "a cohesive stretch of townhomes that suits families and downsizers alike" — FAIL(suitability). "appeals to families and professionals alike" — FAIL(family status + occupation). "nearly every home is owner-occupied" — FAIL(tenure). "Buyers drawn here are typically looking for a quiet, family-oriented enclave" — FAIL(buyer characterization). Versus: "Townhouses dominate, with nine sales clustering around $803,000" — PASS. "Willmott Park sits at the street's edge, a five-minute walk" — PASS.
+
+Return ONLY a JSON object: {"pass": boolean, "findings": [{"span": "<verbatim offending text, <=140 chars>", "class": "<banned class>"}]}. Empty findings array when pass is true. No commentary.`;
+
+interface JudgeVerdict {
+  pass: boolean;
+  findings: Array<{ span: string; class: string }>;
+  judgeError?: string;
+}
+
+async function judgeFairHousing(
+  output: StreetGeneratorOutput,
+  slug: string,
+  round: number,
+): Promise<JudgeVerdict> {
+  let verdict: JudgeVerdict;
+  try {
+    const body = [
+      ...output.sections.map((s) => `## ${s.heading}\n${s.paragraphs.join("\n")}`),
+      ...output.faq.map((q) => `Q: ${q.question}\nA: ${q.answer}`),
+    ].join("\n\n");
+    const res = await callDeepSeek({
+      systemPrompt: FAIR_HOUSING_JUDGE_PROMPT,
+      userPrompt: body,
+      maxTokens: 800,
+      temperature: 0,
+    });
+    const jsonMatch = res.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error(`no JSON in judge response: ${res.text.slice(0, 120)}`);
+    const parsed = JSON.parse(jsonMatch[0]) as { pass?: unknown; findings?: unknown };
+    verdict = {
+      pass: parsed.pass === true,
+      findings: Array.isArray(parsed.findings)
+        ? (parsed.findings as Array<{ span?: unknown; class?: unknown }>)
+            .filter((f) => typeof f?.span === "string")
+            .map((f) => ({ span: String(f.span).slice(0, 140), class: String(f.class ?? "unspecified") }))
+        : [],
+    };
+  } catch (e) {
+    // Fail-closed per ruling: a judge error is a FAIL, never a silent pass.
+    verdict = { pass: false, findings: [], judgeError: (e as Error).message.slice(0, 200) };
+  }
+  const logRow = {
+    slug,
+    ts: new Date().toISOString(),
+    round,
+    pass: verdict.pass,
+    findings: verdict.findings,
+    judgeError: verdict.judgeError,
+  };
+  console.log(`[Phase41/judge] ${slug} round=${round} ${verdict.pass ? "PASS" : "FAIL"}` +
+    (verdict.judgeError ? ` (judge error: ${verdict.judgeError})` : "") +
+    (verdict.findings.length ? ` findings=${verdict.findings.map((f) => `"${f.span}"[${f.class}]`).join("; ")}` : ""));
+  try {
+    fs.appendFileSync(path.join(process.cwd(), ".judge-log.jsonl"), JSON.stringify(logRow) + "\n");
+  } catch { /* logging must never block generation */ }
+  return verdict;
+}
+
 // --- Phase 4.1 generator (DEC-PH41-CANONICAL) ---
 
 interface Phase41Attempt {
@@ -1277,10 +1350,25 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
  */
 export async function generatePhase41StreetContent(
   input: StreetGeneratorInput,
+  // Internal recursion flag for the fair-housing judge retry (Option C ruling,
+  // 2026-07-20): set to the judge's findings on the single retry round. Never
+  // pass from external callers.
+  __judgeRetryFeedback?: string,
 ): Promise<Phase41GenerationResult> {
-  const ahaPrompt = loadPhase41AboutHomesAmenitiesPrompt();
+  let ahaPrompt = loadPhase41AboutHomesAmenitiesPrompt();
   let marketPrompt = loadPhase41MarketPrompt();
-  const evalPrompt = loadPhase41EvaluativePrompt();
+  let evalPrompt = loadPhase41EvaluativePrompt();
+  if (__judgeRetryFeedback) {
+    const block =
+      `\n\n---\nFAIR-HOUSING JUDGE RETRY (previous output failed the semantic gate):\n` +
+      `${__judgeRetryFeedback}\n` +
+      `Rewrite WITHOUT any characterization of who lives, belongs, or should live on the street ` +
+      `(no household shape, tenure, occupation, age, buyer-class suitability, or community-character ` +
+      `proxies). Describe the street and the data; let the reader draw fit conclusions.\n---\n`;
+    ahaPrompt += block;
+    marketPrompt += block;
+    evalPrompt += block;
+  }
 
   // Tier-2 thin-data branch (2026-05-09 product decision): every Milton
   // street gets full Phase 4.1 narrative, but streets with totalListings < 5
@@ -1707,6 +1795,45 @@ Original draft below:`;
     `total $${totalCostUsd.toFixed(5)}, ` +
     `${finalViolations.length === 0 ? "PASS" : `FAIL (${finalViolations.length} combined violations)`}`
   );
+
+  // Fair-housing semantic judge (Option C ruling): once on the final combined
+  // output, only when the deterministic validators passed. One retry round
+  // with the findings appended to all three prompts; a second failure (or a
+  // judge error at any round) fail-closes into the review queue.
+  if (finalViolations.length === 0) {
+    const round = __judgeRetryFeedback ? 2 : 1;
+    const verdict = await judgeFairHousing(finalOutput, input.street.slug, round);
+    if (!verdict.pass) {
+      const findingText = verdict.judgeError
+        ? `judge unavailable (${verdict.judgeError}) — fail-closed per ruling`
+        : verdict.findings.map((f) => `"${f.span}" [${f.class}]`).join("; ");
+      if (round === 1 && !verdict.judgeError) {
+        console.log(`[Phase41/judge] ${input.street.slug} retrying full generation with judge feedback`);
+        const retry = await generatePhase41StreetContent(input, findingText);
+        return {
+          ...retry,
+          totalInputTokens: totalInputTokens + retry.totalInputTokens,
+          totalOutputTokens: totalOutputTokens + retry.totalOutputTokens,
+          totalCostUsd: totalCostUsd + retry.totalCostUsd,
+          attempts: [...attempts, ...retry.attempts],
+        };
+      }
+      return {
+        output: finalOutput,
+        attemptCount,
+        validatorPassed: false,
+        finalViolations: [{
+          rule: "fair_housing_register",
+          excerpt: `semantic judge (round ${round}): ${findingText}`,
+          severity: "hard",
+        }],
+        totalInputTokens,
+        totalOutputTokens,
+        totalCostUsd,
+        attempts,
+      };
+    }
+  }
 
   return {
     output: finalOutput,
