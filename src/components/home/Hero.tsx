@@ -16,14 +16,11 @@ export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
     <header className="m-hero">
       <div className="m-wrap">
         <div className="m-inner">
-          {/* 2026-07-20 mockup: the eyebrow is promoted to the headline as a
-              two-tone split — gradient "Milton" over white "Real Estate
-              Encyclopedia". The old eyebrow slot is gone; the warm gradient
-              lives ONLY on line 1 (sitewide scarcity rule intact). */}
+          <span className="m-eyebrow">{hero.eyebrow}</span>
           <h1>
-            <span className="m-hl-milton">{hero.headline}</span>
+            {hero.headline}
             <br />
-            <span className="m-hl-ency">{hero.headlineAccent}</span>
+            <span className="m-grad">{hero.headlineAccent}</span>
           </h1>
           <p className="m-lede">{hero.lede}</p>
 

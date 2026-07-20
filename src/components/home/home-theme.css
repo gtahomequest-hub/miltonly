@@ -285,6 +285,20 @@
 .home-v2 .m-hero .m-wrap {
   padding: 66px 32px 60px;
 }
+/* Tagline punchline — the ONE warm gradient on the site (scarcity rule:
+   this hero eyebrow only). Solid warm fallback where background-clip:text
+   is unsupported. */
+.home-v2 .m-hero .m-eyebrow {
+  color: #ffc400;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .home-v2 .m-hero .m-eyebrow {
+    background: linear-gradient(90deg, #ffd600 0%, #ff3d3d 45%, #ff4fa3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
 .home-v2 .m-hero .m-inner {
   max-width: 760px;
   margin: 0 auto;
@@ -298,25 +312,13 @@
   letter-spacing: -0.02em;
   margin: 16px 0 14px;
 }
-/* Two-tone headline (2026-07-20 mockup). Line 1 "Milton" carries the ONE
-   warm gradient on the site (scarcity rule: this element only) at the h1's
-   own Fraunces size/weight — identical optical styling to the retired
-   "Milton," headline. Solid warm fallback where background-clip:text is
-   unsupported. Line 2 "Real Estate Encyclopedia" is pure white at ~62%. */
-.home-v2 .m-hero h1 .m-hl-milton {
-  color: #ffc400;
-}
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .home-v2 .m-hero h1 .m-hl-milton {
-    background: linear-gradient(90deg, #ffd600 0%, #ff3d3d 45%, #ff4fa3 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-}
-.home-v2 .m-hero h1 .m-hl-ency {
-  font-size: 0.62em;
-  color: #ffffff;
+.home-v2 .m-hero h1 .m-grad {
+  font-style: italic;
+  font-weight: 400;
+  background: linear-gradient(100deg, #00ff80, #7cffb0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .home-v2 .m-hero .m-lede {
   font-size: 16.5px;

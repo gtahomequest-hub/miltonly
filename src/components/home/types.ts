@@ -29,8 +29,9 @@ export interface HeroIntentPill {
 }
 
 export interface HeroContent {
-  headline: string; // "Milton" — h1 line 1, warm gradient (the site's only one)
-  headlineAccent: string; // "Real Estate Encyclopedia" — h1 line 2, white, ~62% size
+  eyebrow: string;
+  headline: string; // "Milton,"
+  headlineAccent: string; // "read closely." (italic gradient)
   lede: string;
   askPlaceholder: string;
   /** rotating examples typed out in the ask bar */

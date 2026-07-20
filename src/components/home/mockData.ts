@@ -7,10 +7,11 @@ export const mockHomepageData: HomepageData = {
   stats: { typicalPrice: 1_090_000, sold12mo: 412, onMarket: 87, dom: 24 },
 
   hero: {
-    headline: 'Milton',
-    headlineAccent: 'Real Estate Encyclopedia',
-    lede: 'Every street. Every sale. Every answer.',
-    askPlaceholder: 'Ask anything about the Milton market…',
+    eyebrow: 'Milton Real Estate Encyclopedia',
+    headline: 'Milton,',
+    headlineAccent: 'read closely.',
+    lede: "Ask anything about the Milton market — or tell us what you're here to do.",
+    askPlaceholder: 'I want to know what my home is worth…',
     askExamples: [
       'I need to sell in under 30 days…',
       'I need to sell and buy at the same time…',

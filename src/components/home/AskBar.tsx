@@ -11,9 +11,7 @@ interface Props {
 
 export function AskBar({ examples }: Props) {
   const router = useRouter();
-  // 2026-07-20: the retired hero subline's intent ("Ask anything about the
-  // Milton market") now lives here as the resting placeholder.
-  const [placeholder, setPlaceholder] = useState('Ask anything about the Milton market…');
+  const [placeholder, setPlaceholder] = useState('');
   const [value, setValue] = useState('');
   const stopped = useRef(false);
 
@@ -69,7 +67,7 @@ export function AskBar({ examples }: Props) {
 
   const stop = () => {
     stopped.current = true;
-    setPlaceholder('Ask anything about the Milton market…');
+    setPlaceholder('Ask anything about Milton…');
   };
 
   return (
