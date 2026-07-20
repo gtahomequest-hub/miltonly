@@ -1407,10 +1407,11 @@ For the market section ONLY, the following are FORBIDDEN:
 - Any number that traces to input.aggregates or input.quarterlyTrend
 
 Instead, write a QUALITATIVE market section focused on:
-- Limited recent activity ("This street trades rarely, with only a handful of recorded transactions over the past year")
-- The neighborhood character and what it suggests about the typical buyer/owner
-- Lot type, street feel, housing form (qualitative observations grounded in input.byType + input.nearby)
-- Why a buyer might be drawn to this kind of street despite the thin trade record
+- Limited recent activity ("This street trades rarely, with few recorded transactions over the past year")
+- The street's position and surroundings (grounded in input.neighbourhoods + input.nearby)
+- Housing form and type mix (qualitative observations grounded in input.byType)
+- The neighbourhood comparable as the pricing reference when present
+NEVER characterize the buyer or owner: no "the typical buyer/owner...", no "buyers drawn to this kind of street...", no tenure or turnover-by-choice claims. The fair-housing gate (fair_housing_register + semantic judge) hard-fails these — describe the street and the data, not the people.
 
 Word count target for market section: 150-250 words. Substantive prose preferred over a one-line stub. The validators (numeric_ungrounded, temporal_pairing, qualitative_grounding) WILL fire on any number you emit — write zero numbers, full prose.
 
