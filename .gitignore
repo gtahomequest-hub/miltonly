@@ -102,3 +102,6 @@ scripts/regen-*.txt
 scripts/regen-*.json
 batch-output*.log
 .env*
+
+# Fair-housing judge verdict log (calibration data, local)
+.judge-log.jsonl

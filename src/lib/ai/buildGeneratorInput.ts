@@ -427,7 +427,11 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
       : null;
 
   const domRaw = num(rangeRow?.avg_dom ?? null);
-  const daysOnMarket = domRaw !== null ? Math.round(domRaw) : null;
+  // D3 ruling (2026-07-20, batch-003 gate): a DOM "average" below n=5 is a
+  // single-digit-sample artifact published as a statistic. Suppress like the
+  // k-anon price gates — null means the prompt/validator/meta all omit it.
+  const daysOnMarket =
+    domRaw !== null && salesCount >= K_ANON_PRICE ? Math.round(domRaw) : null;
 
   const kAnonLevel: "full" | "thin" | "zero" =
     txCount === 0 ? "zero" : salesCount >= K_ANON_PRICE ? "full" : "thin";
@@ -753,7 +757,9 @@ function buildLeaseActivity(
   const byBed: Record<string, { count: number; typicalRent: number }> = {};
   for (const r of rows) {
     const typical = num(r.typical);
-    if (r.n > 0 && typical !== null) {
+    // D3 ruling (2026-07-20): single-record per-bed rents suppressed — one
+    // lease is an identifiable tenancy, not a "typical rent". n >= 2 required.
+    if (r.n >= 2 && typical !== null) {
       const bedKey = String(r.bed ?? 0);
       byBed[bedKey] = { count: r.n, typicalRent: typical };
     }

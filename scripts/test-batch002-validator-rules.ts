@@ -9,6 +9,7 @@ import {
   findUngroundedPhysicalDetails,
   findSpatialPrecisionClaims,
   findMixedPoolClaims,
+  findFairHousingRegister,
   validateSectionsSubset,
 } from "../src/lib/ai/validateStreetGeneration";
 import { findCatchmentVocabulary } from "../src/lib/ai/catchmentVocabulary";
@@ -74,6 +75,18 @@ console.log("=== wiring: homes section fail-closed ===");
   );
   check("homes section fires physical_detail_ungrounded", v.some(x => x.rule === "physical_detail_ungrounded"));
 }
+
+console.log("=== fair_housing_register (deterministic floor) ===");
+check("family-oriented enclave fires", findFairHousingRegister("Buyers drawn here are typically looking for a quiet, family-oriented enclave.").length > 0);
+check("neighbours know one another fires", findFairHousingRegister("This is a street where neighbours know one another.").length > 0);
+check("children play fires", findFairHousingRegister("The kind of street where children play in driveways.").length > 0);
+check("suits families and downsizers fires", findFairHousingRegister("A cohesive stretch of townhomes that suits families and downsizers alike.").length > 0);
+check("owner-occupied fires", findFairHousingRegister("Nearly every home is owner-occupied.").length > 0);
+check("built for family life fires", findFairHousingRegister("Asleton feels like a street built for family life.").length > 0);
+check("families and professionals alike fires", findFairHousingRegister("The street appeals to families and professionals alike.").length > 0);
+check("family-oriented parks (amenity) does not fire", findFairHousingRegister("Harrison is known for its family-oriented parks.").length === 0);
+check("boards-confirmation close does not fire", findFairHousingRegister("Families should confirm current school assignment directly with the boards.").length === 0);
+check("plain market prose does not fire", findFairHousingRegister("Townhouses dominate, with nine sales clustering around $803,000.").length === 0);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

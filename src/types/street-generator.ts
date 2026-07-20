@@ -58,6 +58,7 @@ export type ValidatorRule =
   | "adjacency_claim"       // batch-001: physical-adjacency claim about a comparison street
   | "physical_detail_ungrounded" // batch-002 P1: era/lot/sqft/interior/exterior claims with no input field
   | "spatial_precision_claim"    // batch-002 N4: on-street/adjacent/zero-minute claims from centroid distances
+  | "fair_housing_register"      // batch-002 N1: resident/buyer characterization (pattern floor + LLM judge)
   | "comparator_neighbourhood_claim" // batch-002: comparator location stated without / against crossStreets[].neighbourhood data
   | "future_period_claim"   // B13: a not-yet-completed quarter/month presented as history
   | "em_dash"

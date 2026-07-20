@@ -81,7 +81,8 @@ async function main() {
       const metaDescription = buildStreetMetaDescription(row.streetName, {
         salesCount: n,
         typicalPrice: n >= K_ANON_PRICE && avgPrice !== null && Number.isFinite(avgPrice) ? avgPrice : null,
-        daysOnMarket: avgDom !== null && Number.isFinite(avgDom) ? avgDom : null,
+        // D3 ruling (2026-07-20): DOM below n=5 suppressed, mirroring buildGeneratorInput.
+        daysOnMarket: n >= K_ANON_PRICE && avgDom !== null && Number.isFinite(avgDom) ? avgDom : null,
       });
 
       const sane = !/\$0\b|NaN|undefined|null/.test(metaTitle + " " + metaDescription);
