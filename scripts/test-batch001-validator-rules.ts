@@ -207,6 +207,25 @@ console.log("=== findComparatorNeighbourhoodClaims ===");
     findComparatorNeighbourhoodClaims("The subject street sits in Willmott near the park.", csWithNbhd, subjNbhds).length === 0);
   check("price-only comparator sentence passes without location wording",
     findComparatorNeighbourhoodClaims("Wettlaufer Terr offers detached homes around $1.8M, a step up in price.", csNoNbhd, subjNbhds).length === 0);
+
+  // Pairwise attribution (regen 2026-07-20 false-positive fix): two
+  // comparators in one sentence, each with its own CORRECT neighbourhood.
+  const twoCs = [
+    { slug: "thimbleweed-court-milton", shortName: "Thimbleweed Crt", distinctivePattern: "d", typicalPrice: 950_000, neighbourhood: "Walker" },
+    { slug: "baverstock-crescent-milton", shortName: "Baverstock Cres", distinctivePattern: "d", typicalPrice: 760_000, neighbourhood: "Clarke" },
+  ];
+  check("two grounded comparators in one sentence pass (pairwise, not cross-product)",
+    findComparatorNeighbourhoodClaims(
+      "Buyers exploring comparable options might consider Thimbleweed in Walker for townhouses trading around $950,000, or Baverstock in Clarke for townhouses around $760,000.",
+      twoCs, subjNbhds).length === 0);
+  check("two comparators with SWAPPED neighbourhoods still fire",
+    findComparatorNeighbourhoodClaims(
+      "Consider Thimbleweed in Clarke for townhouses, or Baverstock in Walker for a lower price point.",
+      twoCs, subjNbhds).length > 0);
+  check("leading neighbourhood with no preceding comparator falls back to fail-closed",
+    findComparatorNeighbourhoodClaims(
+      "In Timberlea, Thimbleweed Crt trades around $950,000.",
+      twoCs, subjNbhds).length > 0);
 }
 
 console.log("=== comparator_neighbourhood_claim wiring ===");

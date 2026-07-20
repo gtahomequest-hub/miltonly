@@ -1483,28 +1483,55 @@ export function findComparatorNeighbourhoodClaims(
 
     const mentionedBasesLower = new Set(mentioned.map((c) => c.base.toLowerCase()));
 
-    // 1. Explicit neighbourhood names near a comparator mention.
+    // 1. Explicit neighbourhood names near a comparator mention. Each
+    // neighbourhood mention is attributed to the NEAREST comparator mention
+    // BEFORE it in the sentence (the natural "X in N" prose order), so a
+    // two-comparator sentence where each street carries its own correct
+    // neighbourhood ("Thimbleweed in Walker, or Baverstock in Clarke") is
+    // judged pairwise instead of cross-firing every (street, name) combo —
+    // regen run 2026-07-20 showed the cross-product version rejecting fully
+    // grounded prose. A mention with NO preceding comparator in the sentence
+    // is checked against ALL mentioned comparators (fail-closed).
+    const comparatorPositions = mentioned.map((c) => {
+      const byShort = c.shortName ? sentence.indexOf(c.shortName) : -1;
+      const byBase = c.base
+        ? sentence.search(new RegExp(`\\b${c.base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`))
+        : -1;
+      const idx = byShort >= 0 && byBase >= 0 ? Math.min(byShort, byBase) : Math.max(byShort, byBase);
+      return { c, idx };
+    });
+
     for (const name of nbhdNames) {
       // A neighbourhood word immediately followed by a street suffix is a
       // street name, not a location claim.
       const re = new RegExp(
         `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b(?!\\s+${STREET_SUFFIX_LOOKAHEAD}\\b)`,
-        "i",
+        "gi",
       );
-      if (!re.test(sentence)) continue;
       // Skip when the "neighbourhood" word is actually the comparator's own
       // base name (e.g. a street named after the neighbourhood).
       if (mentionedBasesLower.has(name.toLowerCase())) continue;
 
-      for (const c of mentioned) {
-        const ok = !!c.neighbourhood && c.neighbourhood.toLowerCase() === name.toLowerCase();
-        if (!ok) {
-          out.push({
-            street: c.shortName,
-            claimed: name,
-            expected: c.neighbourhood ?? null,
-            excerpt: sentence.trim().slice(0, 180),
-          });
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(sentence)) !== null) {
+        const nameIdx = m.index;
+        // Nearest comparator mentioned BEFORE this neighbourhood name.
+        let owner: (typeof comparatorPositions)[number] | null = null;
+        for (const cp of comparatorPositions) {
+          if (cp.idx < 0 || cp.idx >= nameIdx) continue;
+          if (!owner || cp.idx > owner.idx) owner = cp;
+        }
+        const toCheck = owner ? [owner.c] : mentioned;
+        for (const c of toCheck) {
+          const ok = !!c.neighbourhood && c.neighbourhood.toLowerCase() === name.toLowerCase();
+          if (!ok) {
+            out.push({
+              street: c.shortName,
+              claimed: name,
+              expected: c.neighbourhood ?? null,
+              excerpt: sentence.trim().slice(0, 180),
+            });
+          }
         }
       }
     }
