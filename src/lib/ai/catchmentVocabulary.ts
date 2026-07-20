@@ -39,6 +39,11 @@ const BAN_PATTERNS: BanPattern[] = [
   { re: /\bfeeder\s+schools?\b/gi },
   { re: /\bdraws?\s+to\b/gi, schoolContextOnly: true },
   { re: /\bdrawing\s+to\b/gi, schoolContextOnly: true },
+  // Batch-002 N5: "schools serve the area" is an assignment claim in school
+  // context ("several public schools serve the area, including X" implies X's
+  // service area covers the street). Non-school usage ("places of worship
+  // serve the area") stays legal via the context gate.
+  { re: /\bserv(?:es?|ing)\s+the\s+(?:area|street|neighbourhood)\b/gi, schoolContextOnly: true },
 ];
 
 export interface CatchmentFinding {

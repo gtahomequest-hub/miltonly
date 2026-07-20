@@ -227,8 +227,18 @@ function roundPricesInString(text: string, inputPrices: number[], inputRents: nu
         if (p === 0) return false;
         return Math.abs(m.value - p) <= Math.max(15_000, p * 0.04);
       }) ?? m.value;
-      skipped.unshift({ from: m.raw, value: m.value, sale, matchedInput: matched });
-      continue;
+      // Batch-002 N3: grounded values must STILL read as prose. The old
+      // unconditional skip published raw aggregates ("$836,667", "$1,255,000").
+      // Round grounded values too, unless snapping to the tier would push the
+      // figure outside grounding tolerance of its matched input (rare tiny
+      // values) — only then keep the original to protect the grounding gate.
+      const groundingTol = Math.max(sale ? 15_000 : 150, matched * 0.04);
+      const stillGrounded = Math.abs(rounded - matched) <= groundingTol;
+      if (!stillGrounded) {
+        skipped.unshift({ from: m.raw, value: m.value, sale, matchedInput: matched });
+        continue;
+      }
+      // fall through to rounding
     }
 
     const newToken = reformat(rounded, m.format);

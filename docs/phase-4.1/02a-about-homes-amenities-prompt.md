@@ -81,12 +81,14 @@ For single-direction streets, continue with a single-narrative body.
 **`about`** (1 paragraph, 4–6 sentences)
 **This section MUST be between 110 and 150 words.** Outputs below 110 words will fail validation and force a retry. Aim for the middle of the range. Identity of the street in one tight paragraph. What kind of street it is, where it sits in the Milton grid, what immediately frames it. Avoid statistics here; this is scene-setting. Heading: choose from "About {name}" or "{name} at a glance." If the heading contains the full `name`, the first mention of the street in the paragraph may use `shortName` to avoid immediate redundancy.
 
-**`homes`** (2 paragraphs, 8–12 sentences total)
-**This section MUST be between 170 and 240 words.** Outputs below 170 words will fail validation and force a retry. Aim for the middle of the range. Housing stock. Dominant types, approximate sizes, unit mix across detached/semi/townhouse/condo where relevant, dominant architectural style if the input carries it, typical lot size if present. If `primaryBuilder.confidence === "high"`, name the builder factually and once. If `"medium"`, remain silent on the builder entirely; describe observable patterns without attribution or hedging. First paragraph describes what's built. Second paragraph describes texture, typology, condition patterns, exterior treatments, or floor-plan variations across the street. Heading: "The homes here" or "Housing stock on {shortName}."
+**`homes`** (1–2 paragraphs, 5–9 sentences total)
+**This section MUST be between 90 and 160 words.** Outputs below 90 words will fail validation and force a retry. Housing stock — **grounded fields only**. What you may state: the unit mix and counts from `input.byType` (detached/semi/townhouse/condo), which type dominates, the price tier per the data-depth rules below, active listing presence, `dominantStyle` if the input carries it, `lotSize` if the input carries it, and the builder ONLY per the primaryBuilder gate. Heading: "The homes here" or "Housing stock on {shortName}."
 
-**HOMES SECTION SCOPE — read this before writing the second paragraph:**
+**HARD BAN — physical detail without an input field (batch-002 P1, fail-closed).** The input payload carries NO build-era, lot-dimension, square-footage, interior, or exterior-material fields. You must therefore write NONE of the following, ever, unless the named field is present: build years or eras ("built in the early 2000s", "dates from the 1990s", construction phases); lot widths/depths/frontages or any measurement in feet; square footage; bedroom/bathroom counts for the sale stock; floor-plan descriptions (open-concept, main-floor family room, primary/master suites, powder rooms); interior finishes (hardwood, quartz, ensuites, finished or unfinished basements); exterior materials and forms (brick-and-vinyl, stone accents, gabled roofs, covered porches, interlock). A hard validator rule (`physical_detail_ungrounded`) rejects any of these. If the grounded facts run short, write a SHORTER section — padding with invented fabric is the failure mode this ban exists to stop.
 
-This section describes the housing STOCK on the street: architecture, era, builder (when high-confidence), lot characteristics, exterior treatments, floor plans, condition, who built it.
+**HOMES SECTION SCOPE:**
+
+This section describes the housing STOCK on the street strictly as the data shows it: type mix, dominance, price tier, availability.
 
 Do NOT discuss in this section:
 
@@ -109,9 +111,9 @@ Trade prices in homes are CONDITIONAL ON DATA DEPTH. Trade PACE and TIMING alway
 
 ## Word target for these three sections
 
-The three sections together MUST sum to between 440 and 610 words on full-data streets. Each section has its own explicit floor and ceiling stated above. Hit each section's range — under-writing any section is a hard validator failure that forces a retry. These targets are calibrated to observed-output averages with safety margin; they are not aspirational.
+The three sections together MUST sum to between 360 and 530 words on full-data streets. (Lowered 2026-07-20: the homes section shrank when ungrounded physical detail was banned — do not pad it back with fabric.) Each section has its own explicit floor and ceiling stated above. Hit each section's range — under-writing any section is a hard validator failure that forces a retry. These targets are calibrated to observed-output averages with safety margin; they are not aspirational.
 
-If you are running short, do not pad with caveats or filler. Expand with grounded observation: in `homes`, more detail on architectural style, exterior treatments, lot characteristics. In `amenities`, second-tier walking-distance places (grocery, parks, places of worship) and daily-rhythm patterns. In `about`, more on the street's geographic and historical position within Milton.
+If you are running short, do not pad with caveats or filler — and NEVER pad `homes` with physical fabric (era, dimensions, interiors, exteriors are banned above). Expand with grounded observation: in `amenities`, second-tier driving-distance places (grocery, parks, places of worship) from `input.nearby` and daily-rhythm patterns. In `about`, more on the street's geographic position within Milton using `input.neighbourhoods` and `input.nearby` anchors. Spatial-precision claims ("directly on the street", "steps away", "zero-minute walk") about schools/parks/stations are banned everywhere (`spatial_precision_claim`) — distances are centroid-derived; "under a minute's walk" is the maximum precision permitted.
 
 ## Naming convention in prose
 

@@ -1349,6 +1349,12 @@ const MIXED_POOL_PATTERNS: RegExp[] = [
   /\b(?:split|divided)\s+between[^.!?]{0,80}\bleases?\b[^.!?]{0,80}\bsales?\b/i,
   /\bleases?\s+against\s+[^.!?]{0,40}\bsales?\b/i,
   /\bsales?\s+against\s+[^.!?]{0,40}\bleases?\b/i,
+  // Batch-002 N5 gap: "24 leases versus 11 sales" slipped past the
+  // "against"-shaped patterns.
+  /\bleases?\s+(?:versus|vs\.?)\s+[^.!?]{0,40}\bsales?\b/i,
+  /\bsales?\s+(?:versus|vs\.?)\s+[^.!?]{0,40}\bleases?\b/i,
+  /\blease\s+activity\s+outpaces\s+sales?\b/i,
+  /\bsales?\s+activity\s+outpaces\s+leas/i,
 ];
 
 export interface MixedPoolFinding { matched: string; excerpt: string }
@@ -1661,6 +1667,78 @@ export function findUngroundedBuilderName(
   return null;
 }
 
+// physical_detail_ungrounded (batch-002 P1, full comparator treatment):
+// physical claims may only be stated when a supplied input field grounds them.
+// The generator input carries NO era, lot, sqft, interior, or exterior fields
+// today, so each pattern fires unless its (future) field is present. Scoped by
+// callers to about/homes/amenities prose + era claims in FAQ answers — market
+// bedroom/rent claims ground to leaseActivity and are exempt.
+const PHYSICAL_ERA_PATTERNS: RegExp[] = [
+  /\bbuilt\s+(?:in|around|circa|during|by)\s+(?:the\s+)?(?:early|mid|late)?[\s-]*\d{4}s?\b/i,
+  /\bdate\s+from\s+the\s+(?:early|mid|late)?[\s-]*\d{4}s?\b/i,
+  /\b(?:early|mid|late)[\s-]\d{4}s\s+construction\b/i,
+  /\bconstruction\s+(?:wave|phase|era)\b/i,
+  /\bbuilt\s+in\s+(?:one|a)\s+single\s+phase\b/i,
+  /\bbuilt\s+in\s+two\s+phases\b/i,
+];
+const PHYSICAL_DIMENSION_PATTERNS: RegExp[] = [
+  /\bfrontages?\b[^.!?]{0,60}\b(?:feet|foot|ft)\b/i,
+  /\b\d{2}\s*(?:to|–|-)\s*\d{2}\s*(?:feet|foot|ft)\b/i,
+  /\b\d{1,2},\d{3}\s*(?:to|–|-)\s*\d{1,2},\d{3}\s*square\s+feet\b/i,
+  /\bsquare\s+(?:feet|footage)\b/i,
+  /\blot\s+(?:width|depth|size)s?\b/i,
+];
+const PHYSICAL_FINISH_PATTERNS: RegExp[] = [
+  /\b(?:hardwood|quartz|granite|ensuite|walk-in\s+closets?|open-concept|open-plan|finished\s+basements?|unfinished\s+basements?|powder\s+rooms?|crown\s+moulding|primary\s+suites?|master\s+suites?)\b/i,
+  /\b(?:brick\s+and\s+(?:vinyl|stone)|stone\s+accents?|vinyl\s+siding|gabled\s+roofs?|asphalt\s+shingle|covered\s+front\s+(?:porches?|entries)|interlock(?:ing)?\s+(?:brick|walkways?))\b/i,
+];
+
+export interface PhysicalDetailFinding { matched: string; kind: string; excerpt: string }
+
+export function findUngroundedPhysicalDetails(
+  text: string,
+  input: StreetGeneratorInput,
+  opts?: { eraOnly?: boolean },
+): PhysicalDetailFinding[] {
+  const out: PhysicalDetailFinding[] = [];
+  const scan = (patterns: RegExp[], kind: string) => {
+    for (const re of patterns) {
+      const single = new RegExp(re.source, re.flags.replace("g", ""));
+      const m = single.exec(text);
+      if (m) out.push({ matched: m[0], kind, excerpt: excerptAround(text, single) });
+    }
+  };
+  scan(PHYSICAL_ERA_PATTERNS, "era"); // no input field exists for build era
+  if (!opts?.eraOnly) {
+    if (!input.lotSize) scan(PHYSICAL_DIMENSION_PATTERNS, "dimension");
+    if (!input.dominantStyle) scan(PHYSICAL_FINISH_PATTERNS, "finish");
+  }
+  return out;
+}
+
+// spatial_precision_claim (batch-002 N4): distances come from NEIGHBOURHOOD
+// centroids, so on-street/adjacent/doorstep/zero-minute claims about schools,
+// parks, or stations are fabricated precision (the same school was published
+// as "directly adjacent" to two different streets). Ban until per-street
+// geocoding exists.
+const SPATIAL_PRECISION =
+  /\b(?:directly\s+(?:on|adjacent)|right\s+on|on\s+the\s+(?:street|lane|court|crescent|boulevard)\s+itself|zero-minute\s+walk|at\s+(?:the\s+)?(?:street'?s\s+|court'?s\s+)?doorstep|steps\s+(?:from|away)|adjacent\s+to\s+the\s+(?:street|lane|court|crescent|boulevard))\b/i;
+// Case-sensitive abbreviations (PS/SS/ES) alongside case-insensitive words —
+// a bare /i flag would make "es" a false-positive context everywhere.
+const SPATIAL_ENTITY_CONTEXT = /\b([Ss]chool|[Pp]ark|[Cc]onservation|[Ss]tation|[Cc]entre|[Hh]ospital|[Ee]lementary|[Ss]econdary|PS|SS|ES)\b/;
+
+export interface SpatialFinding { matched: string; excerpt: string }
+
+export function findSpatialPrecisionClaims(text: string): SpatialFinding[] {
+  const out: SpatialFinding[] = [];
+  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    if (!SPATIAL_ENTITY_CONTEXT.test(sentence)) continue;
+    const m = SPATIAL_PRECISION.exec(sentence);
+    if (m) out.push({ matched: m[0], excerpt: sentence.trim().slice(0, 160) });
+  }
+  return out;
+}
+
 // --- Heading bank ---
 
 const HEADING_BANK: Record<StreetSectionId, string[]> = {
@@ -1684,7 +1762,9 @@ const HEADING_BANK: Record<StreetSectionId, string[]> = {
 // --- Thresholds ---
 
 const SECTION_WORD_FLOORS: Record<StreetSectionId, number> = {
-  about: 60, homes: 100, amenities: 80, market: 40,
+  // homes floor lowered 100→55 on 2026-07-20 (batch-002 P1): ungrounded
+  // physical detail is banned, so an honest homes section is short.
+  about: 60, homes: 55, amenities: 80, market: 40,
   gettingAround: 55, schools: 45, bestFitFor: 55, differentPriorities: 55,
   // Track 2 Pass 1: DEC-PASS1-FLOOR-REVISED. Original spec set 80. Empirical
   // evidence (aird-court 2026-05-27 smoke run) showed DeepSeek converges to
@@ -1705,11 +1785,12 @@ const SECTION_WORD_CEILINGS: Record<StreetSectionId, number> = {
 // floors give the model achievable targets while preserving voice-quality discipline.
 // If production-ranked pages underperform at this length, raise floors and add
 // retry-feedback or multi-pass generation in a future phase.
-// Lowered by ~130 on 2026-07-19: the bestFitFor section (110-150 words) was
-// retired (fair housing), so the page architecture is now 7-8 sections.
-const TOTAL_WORD_FLOOR_FULL = 770;
-const TOTAL_WORD_FLOOR_THIN = 670;
-const TOTAL_WORD_FLOOR_ZERO = 620;
+// Lowered ~130 on 2026-07-19 (bestFitFor retired) and a further ~80 on
+// 2026-07-20 (batch-002 P1: homes section shrank when ungrounded physical
+// detail was banned).
+const TOTAL_WORD_FLOOR_FULL = 690;
+const TOTAL_WORD_FLOOR_THIN = 590;
+const TOTAL_WORD_FLOOR_ZERO = 540;
 const TOTAL_WORD_CEILING = 2000;
 
 /** Effective total-word floor for a given kAnonLevel. Single source of truth
@@ -1748,8 +1829,8 @@ const FAQ_BANK_TEMPLATES: string[] = [
   "How fast do homes sell on {Street}?",
   "How has the market been moving on {Street} recently?",
   "What kinds of homes are on {Street}?",
-  "Are lots on {Street} larger or smaller than typical?",
-  "What year was most of {Street} built?",
+  // Lot-size + build-year questions retired 2026-07-20 (batch-002 P1):
+  // answering either requires physical data the input does not carry.
   // "Which schools serve {Street}?" + catchment question retired 2026-07-19
   // (WS4 catchment ban — "serve" implies assignment; proximity phrasing only).
   "Which schools are close to {Street}?",
@@ -1986,6 +2067,16 @@ export function validateStreetGeneration(
     if (ungroundedBuilder) {
       violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilder}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
     }
+    // Batch-002 P1 + N4 (combined-validator wiring): physical detail only from
+    // supplied fields (about/homes/amenities); spatial precision banned everywhere.
+    if (section.id === "about" || section.id === "homes" || section.id === "amenities") {
+      for (const p of findUngroundedPhysicalDetails(sectionText, input)) {
+        violations.push({ rule: "physical_detail_ungrounded", sectionId: section.id, excerpt: `${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
+      }
+    }
+    for (const s of findSpatialPrecisionClaims(sectionText)) {
+      violations.push({ rule: "spatial_precision_claim", sectionId: section.id, excerpt: `"${s.matched}": ${s.excerpt}`, severity: "hard" });
+    }
 
     // v10 (Workstream 2 / Step 1): per-trade fabrication.
     // Claim-type vs data-existence check. Fires on singular-trade claims
@@ -2130,6 +2221,13 @@ export function validateStreetGeneration(
   }
   for (const mp of findMixedPoolClaims(faqText)) {
     violations.push({ rule: "mixed_pool_claim", excerpt: `FAQ "${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+  }
+  // Batch-002 P1 + N4 (combined-validator FAQ wiring).
+  for (const p of findUngroundedPhysicalDetails(faqText, input, { eraOnly: true })) {
+    violations.push({ rule: "physical_detail_ungrounded", excerpt: `FAQ ${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
+  }
+  for (const s of findSpatialPrecisionClaims(faqText)) {
+    violations.push({ rule: "spatial_precision_claim", excerpt: `FAQ "${s.matched}": ${s.excerpt}`, severity: "hard" });
   }
   for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
     violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
@@ -2367,6 +2465,15 @@ export function validateSectionsSubset(
     if (ungroundedBuilderSub) {
       violations.push({ rule: "builder_without_high_confidence", sectionId: section.id, excerpt: `builder "${ungroundedBuilderSub}" named but input has NO primaryBuilder field — fabricated attribution`, severity: "hard" });
     }
+    // Batch-002 P1 + N4 (partial-validator mirror).
+    if (section.id === "about" || section.id === "homes" || section.id === "amenities") {
+      for (const p of findUngroundedPhysicalDetails(sectionText, input)) {
+        violations.push({ rule: "physical_detail_ungrounded", sectionId: section.id, excerpt: `${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
+      }
+    }
+    for (const s of findSpatialPrecisionClaims(sectionText)) {
+      violations.push({ rule: "spatial_precision_claim", sectionId: section.id, excerpt: `"${s.matched}": ${s.excerpt}`, severity: "hard" });
+    }
 
     // v10 (Workstream 2 / Step 1): per-trade fabrication — partial-validator
     // mirror so the market half retries on its own when the model fabricates
@@ -2488,6 +2595,13 @@ export function validateFaq(
   }
   for (const mp of findMixedPoolClaims(faqText)) {
     violations.push({ rule: "mixed_pool_claim", excerpt: `FAQ "${mp.matched}": ${mp.excerpt}`, severity: "hard" });
+  }
+  // Batch-002 P1 + N4: era claims and spatial-precision claims in FAQ answers.
+  for (const p of findUngroundedPhysicalDetails(faqText, input, { eraOnly: true })) {
+    violations.push({ rule: "physical_detail_ungrounded", excerpt: `FAQ ${p.kind}: "${p.matched}": ${p.excerpt}`, severity: "hard" });
+  }
+  for (const s of findSpatialPrecisionClaims(faqText)) {
+    violations.push({ rule: "spatial_precision_claim", excerpt: `FAQ "${s.matched}": ${s.excerpt}`, severity: "hard" });
   }
   for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
     violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
@@ -2765,7 +2879,7 @@ function formatTotalWordFloor(
 
   const kAnon = input.aggregates.kAnonLevel;
   const floor = getTotalWordFloor(kAnon);
-  const target = kAnon === "full" ? 1270 : kAnon === "thin" ? 970 : 820;
+  const target = kAnon === "full" ? 1190 : kAnon === "thin" ? 890 : 740;
   const deficit = target - total;
 
   const expansionPriority: Array<{ id: string; reason: string }> = [
