@@ -239,6 +239,26 @@ console.log("=== findComparatorNeighbourhoodClaims ===");
     findComparatorNeighbourhoodClaims(
       "Clark offers detached homes in Clarke at a similar price point.",
       clarkCs, ["Clarke"]).length > 0);
+
+  // Subject-own neighbourhood as comparison context (holdsworth FP,
+  // 2026-07-20): grounded comparator + reference to the SUBJECT's area is
+  // legitimate; a PLACEMENT of the comparator into the subject's area is not.
+  const lancasterCs = [
+    { slug: "lancaster-boulevard-milton", shortName: "Lancaster Blvd", distinctivePattern: "d", typicalPrice: 1_050_000, neighbourhood: "Beaty" },
+    { slug: "laurier-avenue-milton", shortName: "Laurier Ave", distinctivePattern: "d", typicalPrice: 1_050_000, neighbourhood: "Timberlea" },
+  ];
+  check("subject-own neighbourhood as comparison context passes",
+    findComparatorNeighbourhoodClaims(
+      "Lancaster in Beaty offers detached homes trading around $1.05M, a slightly lower price point than the Coates area's typical detached home.",
+      lancasterCs, ["Coates"]).length === 0);
+  check("two grounded comparators vs subject-area comparison passes",
+    findComparatorNeighbourhoodClaims(
+      "Lancaster in Beaty and Laurier in Timberlea both offer detached homes trading around $1.05M, providing alternatives at a slightly lower price point than the Coates area.",
+      lancasterCs, ["Coates"]).length === 0);
+  check("PLACING a comparator in the subject's own neighbourhood still fires",
+    findComparatorNeighbourhoodClaims(
+      "Lancaster sits in Coates as well, with detached homes around $1.05M.",
+      lancasterCs, ["Coates"]).length > 0);
 }
 
 console.log("=== comparator_neighbourhood_claim wiring ===");

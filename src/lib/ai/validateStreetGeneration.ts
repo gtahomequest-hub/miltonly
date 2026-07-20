@@ -1260,7 +1260,10 @@ const DOLLAR_FIGURE = /\$(\d{1,3}(?:,\d{3})+)(?!\d)/g;
 // past the rounding check.
 const DOLLAR_SUFFIX = /\$(\d+(?:\.\d+)?)(K|M)\b/g;
 // v3: widened to accept 5-digit rents ($10,500) in addition to 4-digit ($2,100)
-const RENT_FIGURE = /\$(\d{1,2},?\d{3})(?!\d)/g;
+// batch-002 (2026-07-20): reject a ",ddd" continuation so the leading "$1,120"
+// of a sale figure like "$1,120,000" no longer parses as an un-rounded rent
+// (the M-boundary mis-parse that repeatedly failed nakerville's homes section).
+const RENT_FIGURE = /\$(\d{1,2},?\d{3})(?!\d)(?!,\d{3})/g;
 
 function isPriceProperlyRounded(value: number): boolean {
   if (isNaN(value)) return true;
@@ -1505,10 +1508,20 @@ export function findComparatorNeighbourhoodClaims(
     });
 
     for (const name of nbhdNames) {
-      // A neighbourhood word immediately followed by a street suffix is a
-      // street name, not a location claim.
+      // The SUBJECT's own neighbourhood legitimately appears near comparator
+      // mentions as comparison context ("a lower price point than the Coates
+      // area's typical") — holdsworth burned its retry budget on exactly
+      // that (2026-07-20). For subject-own names, only a PLACEMENT claim
+      // ("in/within/inside {N}") fires — which still catches the original
+      // batch-002 defect ("both are elsewhere in Bronte Meadows"). Names
+      // that are NOT the subject's own keep firing on bare mention,
+      // fail-closed.
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const isSubjectOwn = inputNbhdLower.has(name.toLowerCase());
       const re = new RegExp(
-        `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b(?!\\s+${STREET_SUFFIX_LOOKAHEAD}\\b)`,
+        isSubjectOwn
+          ? `\\b(?:in|within|inside)\\s+(?:the\\s+)?${escaped}\\b(?!\\s+${STREET_SUFFIX_LOOKAHEAD}\\b)`
+          : `\\b${escaped}\\b(?!\\s+${STREET_SUFFIX_LOOKAHEAD}\\b)`,
         "gi",
       );
       // Skip when the "neighbourhood" word is actually the comparator's own
