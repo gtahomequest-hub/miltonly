@@ -505,15 +505,17 @@
 @media (max-width: 480px) {
   .home-v2 .m-pill-btn {
     font-size: 12px;
-    padding: 10px 6px;
-    gap: 5px;
+    padding: 10px 5px;
+    gap: 4px;
   }
   .home-v2 .m-pill-btn svg {
     display: none;
   }
   .home-v2 .m-pill-btn .m-most {
     font-size: 8px;
-    padding: 2px 5px;
+    letter-spacing: 0.02em;
+    padding: 2px 4px;
+    margin-left: 0;
   }
 }
 
