@@ -563,20 +563,26 @@
 }
 
 /* search band */
+/* 2026-07-21 Option B: titled section opening the light zone (above The
+   Market Read), depth-styled bar per the approved mockup. Section header
+   inherits the sibling m-sechead pattern untouched. */
 .home-v2 .m-searchband {
-  padding: 48px 0 8px;
+  padding: 64px 0 4px;
 }
 .home-v2 .m-searchbox {
   max-width: 640px;
-  margin: 0 auto;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--m-surface);
-  border: 1.5px solid var(--m-border);
+  background: #ffffff;
+  border: 1.5px solid #a7d8bf;
   border-radius: 12px;
   padding: 8px 8px 8px 20px;
-  box-shadow: var(--m-sh-sm);
+  box-shadow:
+    0 1px 2px rgba(15, 40, 30, 0.05),
+    0 6px 18px rgba(1, 120, 72, 0.12),
+    0 14px 34px rgba(15, 40, 30, 0.08);
   transition: 0.2s;
 }
 .home-v2 .m-searchbox:focus-within {
@@ -613,13 +619,18 @@
   cursor: pointer;
 }
 .home-v2 .m-searchhint {
-  text-align: center;
+  text-align: left;
   font-size: 12.5px;
   color: var(--m-text-muted);
   margin-top: 14px;
 }
-.home-v2 .m-searchhint b {
+.home-v2 .m-searchhint a {
   color: var(--m-accent);
+  font-weight: 600;
+  border-bottom: 1px solid rgba(1, 120, 72, 0.35);
+}
+.home-v2 .m-searchhint a:hover {
+  border-bottom-color: var(--m-accent);
 }
 
 /* sections */
