@@ -24,7 +24,12 @@
   --m-text-body: #292b29;
   --m-text-muted: #6b6f6a;
 
-  --m-serif: 'Fraunces', Georgia, serif;
+  /* Font-binding rule (the Fraunces lesson, 2026-07-20): every next/font
+     face registers a HASHED family name exposed only via its CSS variable.
+     A literal family name here binds to NOTHING and silently falls back
+     while computed style still reports the requested name. Always bind
+     through var(--font-*). */
+  --m-serif: var(--font-fraunces), Georgia, serif;
   --m-sans: 'Inter', system-ui, sans-serif;
   --m-mono: 'JetBrains Mono', monospace;
 
@@ -285,40 +290,49 @@
 .home-v2 .m-hero .m-wrap {
   padding: 66px 32px 60px;
 }
-/* Tagline punchline — the ONE warm gradient on the site (scarcity rule:
-   this hero eyebrow only). Solid warm fallback where background-clip:text
-   is unsupported. */
-.home-v2 .m-hero .m-eyebrow {
-  color: #ffc400;
-}
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .home-v2 .m-hero .m-eyebrow {
-    background: linear-gradient(90deg, #ffd600 0%, #ff3d3d 45%, #ff4fa3 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-}
 .home-v2 .m-hero .m-inner {
   max-width: 760px;
   margin: 0 auto;
   text-align: center;
 }
+/* Two-tone headline (2026-07-20 final direction, Aamir-approved mockup).
+   Line 1 "Milton": Kaushan Script (only weight 400) carrying the site's ONE
+   warm gradient (scarcity rule: this element only), with breathing room on
+   the right so the script "n" flourish never clips, and a solid #FFC400
+   fallback where background-clip:text is unsupported. Line 2 "Real Estate
+   Encyclopedia": Playfair Display 500, pure white, ~57% of line 1, with a
+   gap clearing the script's descenders. */
 .home-v2 .m-hero h1 {
-  font-family: var(--m-serif);
-  font-weight: 300;
-  font-size: clamp(40px, 5.6vw, 62px);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
   margin: 16px 0 14px;
+  line-height: 1;
 }
-.home-v2 .m-hero h1 .m-grad {
-  font-style: italic;
+.home-v2 .m-hero h1 .m-hl-milton {
+  display: inline-block;
+  font-family: var(--font-kaushan), cursive;
   font-weight: 400;
-  background: linear-gradient(100deg, #00ff80, #7cffb0);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: clamp(52px, 7.4vw, 88px);
+  line-height: 1.18;
+  letter-spacing: 0;
+  padding: 0 0.18em 0.06em 0.08em;
+  color: #ffc400;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .home-v2 .m-hero h1 .m-hl-milton {
+    background: linear-gradient(90deg, #ffc400 0%, #ff3d3d 50%, #ffc400 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+.home-v2 .m-hero h1 .m-hl-ency {
+  display: inline-block;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(30px, 4.2vw, 50px);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  margin-top: 10px;
+  color: #ffffff;
 }
 .home-v2 .m-hero .m-lede {
   font-size: 16.5px;
