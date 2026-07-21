@@ -136,8 +136,8 @@ export function HeroMap() {
           <use href="#mhPinShape" transform="translate(905 330)" />
           <text className="mh-plabel" x="895" y="348" textAnchor="end">Milton GO Station</text>
 
-          <use href="#mhPinShape" transform="translate(885 505)" />
-          <text className="mh-plabel" x="875" y="523" textAnchor="end">Milton Sports Centre</text>
+          <use href="#mhPinShape" transform="translate(925 540)" />
+          <text className="mh-plabel" x="935" y="545">Milton Sports Centre</text>
 
           <use href="#mhPinShape" transform="translate(1060 140)" />
           <text className="mh-plabel" x="1050" y="158" textAnchor="end">Toronto Premium Outlets</text>

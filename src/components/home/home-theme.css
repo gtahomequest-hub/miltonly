@@ -324,8 +324,10 @@
    carries 0.12 on .mh-map, landmark pins sit brighter at 0.25 on .mh-pins -
    texture only, the hero text stays dominant. The SVG's own mask handles the
    edge vignette + headline clearing. Shifted so the urban core sits behind
-   the headline; at <=480px the inset widens so the slice crop keeps some
-   pins in frame. Static, aria-hidden, pointer-events:none, zero JS. */
+   the headline; the 390 slice crop shows only that central column, so the
+   pins (placed in the open flanks, outside the headline clearing) are a
+   desktop-only detail by geometry - the mobile map stays line-work texture.
+   Static, aria-hidden, pointer-events:none, zero JS. */
 .home-v2 .m-hero .m-heromap {
   position: absolute;
   inset: -6% -8% -4% -10%;
@@ -396,11 +398,6 @@
   font-weight: 500;
   letter-spacing: 0.04em;
   opacity: 0.85;
-}
-@media (max-width: 480px) {
-  .home-v2 .m-hero .m-heromap {
-    inset: -6% -46% -4% -46%;
-  }
 }
 .home-v2 .m-hero .m-inner {
   max-width: 760px;
