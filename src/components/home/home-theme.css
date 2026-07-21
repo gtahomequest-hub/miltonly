@@ -444,20 +444,22 @@
 }
 
 /* intent pills — INSIDE the ask card (white background), 2026-07-21.
-   Subtle outlined pills with green accents; 44px+ tap targets. */
+   Deliberate 2x2 grid at every width (chip-balance fix: flex-wrap left
+   "Renting" orphaned 3+1 on desktop). Subtle outlined pills with green
+   accents; 44px+ tap targets. */
 .home-v2 .m-pills {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
   margin: 0 8px;
   padding: 12px 4px 0;
   border-top: 1px solid #ecebe6;
 }
 .home-v2 .m-pill-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 7px;
   min-height: 44px;
   background: #ffffff;
