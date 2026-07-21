@@ -333,6 +333,10 @@
   margin: 16px 0 14px;
   line-height: 1;
 }
+/* 2026-07-21: "Milton" is SOLID WHITE for now (gradient removed from the
+   hero entirely - the nav wordmark is the site's only gradient element).
+   Hierarchy vs the white Playfair line comes from scale alone: the script
+   at ~1.75x dominates. */
 .home-v2 .m-hero h1 .m-hl-milton {
   display: inline-block;
   font-family: var(--font-kaushan), cursive;
@@ -341,15 +345,7 @@
   line-height: 1.18;
   letter-spacing: 0;
   padding: 0 0.18em 0.06em 0.08em;
-  color: #ffc400;
-}
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .home-v2 .m-hero h1 .m-hl-milton {
-    background: linear-gradient(90deg, #ffc400 0%, #ff3d3d 50%, #ffc400 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
+  color: #ffffff;
 }
 .home-v2 .m-hero h1 .m-hl-ency {
   display: inline-block;
@@ -369,22 +365,34 @@
 }
 
 /* ask bar */
+/* Ask CARD (2026-07-21, Better.com pattern): one white rounded container
+   holding the input row + the intent chips. The card carries the chrome
+   (border/shadow/focus ring); the inner askbar row is flattened. */
+.home-v2 .m-askcard {
+  background: var(--m-surface);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  box-shadow: var(--m-sh-lg);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 6px 10px 14px;
+  transition: 0.2s;
+}
+.home-v2 .m-askcard:focus-within {
+  border-color: var(--m-accent);
+  box-shadow: var(--m-sh-lg), 0 0 0 4px rgba(0, 255, 128, 0.18);
+}
 .home-v2 .m-askbar {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: var(--m-surface);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 16px;
-  padding: 18px 18px 18px 26px;
-  box-shadow: var(--m-sh-lg);
-  max-width: 640px;
-  margin: 0 auto;
-  transition: 0.2s;
-}
-.home-v2 .m-askbar:focus-within {
-  border-color: var(--m-accent);
-  box-shadow: var(--m-sh-lg), 0 0 0 4px rgba(0, 255, 128, 0.18);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 8px 8px 16px;
+  box-shadow: none;
+  max-width: none;
+  margin: 0;
 }
 .home-v2 .m-askbar .m-lead {
   width: 26px;
@@ -435,40 +443,38 @@
   background: var(--m-accent-on);
 }
 
-/* intent pills */
+/* intent pills — INSIDE the ask card (white background), 2026-07-21.
+   Subtle outlined pills with green accents; 44px+ tap targets. */
 .home-v2 .m-pills {
   display: flex;
-  gap: 10px;
-  flex-wrap: nowrap;
+  gap: 8px;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  margin: 18px auto 0;
-  max-width: 760px;
-}
-@media (max-width: 760px) {
-  .home-v2 .m-pills {
-    flex-wrap: wrap;
-  }
+  margin: 0 8px;
+  padding: 12px 4px 0;
+  border-top: 1px solid #ecebe6;
 }
 .home-v2 .m-pill-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: var(--m-text);
+  min-height: 44px;
+  background: #ffffff;
+  border: 1px solid #d9dbd5;
+  color: var(--m-text-body);
   font-family: var(--m-sans);
   font-size: 13px;
   font-weight: 500;
-  padding: 10px 15px;
+  padding: 10px 14px;
   border-radius: 30px;
   cursor: pointer;
   white-space: nowrap;
   transition: 0.18s;
 }
 .home-v2 .m-pill-btn:hover {
-  background: rgba(0, 255, 128, 0.1);
-  border-color: rgba(0, 255, 128, 0.45);
+  background: rgba(1, 120, 72, 0.06);
+  border-color: var(--m-accent);
 }
 .home-v2 .m-pill-btn svg {
   width: 15px;
@@ -478,8 +484,8 @@
   stroke-width: 1.7;
 }
 .home-v2 .m-pill-btn.m-feat {
-  border-color: rgba(0, 255, 128, 0.5);
-  background: rgba(0, 255, 128, 0.08);
+  border-color: rgba(1, 120, 72, 0.55);
+  background: rgba(1, 120, 72, 0.05);
 }
 .home-v2 .m-pill-btn .m-most {
   background: var(--m-accent);
@@ -493,12 +499,13 @@
   margin-left: 2px;
 }
 
-/* dim inline hero stats */
+/* dim inline hero stats — 2026-07-21: moved ABOVE the ask card (Better
+   pattern: credibility primes before the ask). */
 .home-v2 .m-herostats {
   display: flex;
   gap: 48px;
   justify-content: center;
-  margin-top: 40px;
+  margin: 2px 0 34px;
   flex-wrap: wrap;
 }
 .home-v2 .m-herostats .m-hs .m-n {
