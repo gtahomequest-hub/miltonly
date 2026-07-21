@@ -1,23 +1,96 @@
 // src/components/home/HeroMap.tsx
 //
 // Stylized inline SVG sketch of Milton for the hero background (2026-07-21,
-// Aamir-directed; cartography pass same day). Deliberately simplified, NOT
-// cartographically exact: the recognizable road skeleton, the Escarpment
-// edge, a rough town boundary, faint neighbourhood labels, and six outline
-// teardrop pins at real landmarks. Line work + labels only - no area fills,
-// no water/parks. One dull faded-yellow tone.
+// Aamir-directed; cartography pass + center-exclusion/data-array pass same
+// day). Deliberately simplified, NOT cartographically exact: the
+// recognizable road skeleton, the Escarpment edge, a rough town boundary,
+// and a single MAP_LOCATIONS data array of neighbourhood / landmark / road
+// labels. Line work + labels + outline teardrop pins only - no area fills,
+// no water/parks. One dull faded-yellow tone (#d4c05a); signal green is
+// reserved for interactive elements and never appears here.
 //
-// Layering: .mh-map carries the base 0.12 opacity; each .mh-pins pin group
-// breathes 0.25 -> 0.08 on a staggered CSS opacity loop (static at 0.25
-// under prefers-reduced-motion; labels never animate). The #mhMask mask
-// gives the map an edge vignette (dissolves before the hero boundary) plus
-// a soft radial clearing under the central headline/card column; pins are
-// unmasked. Pins are inline groups, NOT <use> instances - use-shadow clones
-// don't match document CSS type selectors, which is how the pins once
-// rendered default-fill black. Each pin's local (0,0) is the teardrop TIP,
-// and every translate() coordinate is derived from the DRAWN road beziers
-// (not true geography) so tips touch the sketched intersections. Zero JS,
-// zero deps, no external fetch; aria-hidden + pointer-events:none.
+// Center exclusion: home-theme.css applies a radial-gradient CSS mask to
+// the WHOLE .m-heromap container, fading the entire layer (lines, labels,
+// pins) to zero behind the H1 / stat row / search card and leaving edges at
+// full presence. Because of that, locations are deliberately edge-biased:
+// central placements would be invisible. Geographic accuracy is therefore
+// approximate-by-design - each label keeps its true compass bearing from
+// the town core but is pushed outward into the visible ring.
+//
+// Layers inside the SVG: .mh-map = geometry only, opacity 0.12, with the
+// #mhMask edge vignette so line work still dissolves before the hero rim;
+// .mh-labels = all text at per-type opacities (neighbourhood 0.2, landmark
+// 0.18, road 0.12), unmasked in-SVG; .mh-pins = teardrop pins (tip at
+// local (0,0), translate() places the tip) breathing 0.22 -> 0.08 on
+// staggered inline animation-delays (static under prefers-reduced-motion).
+// Zero JS, zero deps, no external fetch; aria-hidden + pointer-events:none.
+
+type MapLocationType = 'neighbourhood' | 'landmark' | 'road';
+
+interface MapLocation {
+  name: string;
+  x: number;
+  y: number;
+  type: MapLocationType;
+  pinned: boolean;
+  /** road labels rotate to run along their drawn road */
+  angle?: number;
+}
+
+// Coordinates are viewBox units (0-1200 x 0-800), placed relative to the
+// DRAWN road skeleton below, edge-biased per the center mask.
+const MAP_LOCATIONS: MapLocation[] = [
+  // roads - rotated text, no pin
+  { name: '401', x: 948, y: 100, type: 'road', pinned: false, angle: -4 },
+  { name: '407', x: 1092, y: 88, type: 'road', pinned: false, angle: 26 },
+  { name: 'Steeles Ave', x: 998, y: 198, type: 'road', pinned: false, angle: -3.5 },
+  { name: 'Main St', x: 1008, y: 344, type: 'road', pinned: false, angle: -3 },
+  { name: 'Derry Rd', x: 1012, y: 474, type: 'road', pinned: false, angle: -5.5 },
+  { name: 'Britannia Rd', x: 994, y: 608, type: 'road', pinned: false, angle: -5.5 },
+  { name: 'Bronte St', x: 312, y: 648, type: 'road', pinned: false, angle: -87 },
+  { name: 'Ontario St', x: 482, y: 758, type: 'road', pinned: false, angle: -88 },
+  { name: 'Thompson Rd', x: 672, y: 745, type: 'road', pinned: false, angle: -88 },
+  { name: 'James Snow Pkwy', x: 958, y: 312, type: 'road', pinned: false, angle: -83 },
+  { name: 'Niagara Escarpment', x: 176, y: 360, type: 'road', pinned: false, angle: -80 },
+
+  // neighbourhoods - letter-spaced caps, no pin
+  { name: 'Milton Heights', x: 258, y: 182, type: 'neighbourhood', pinned: false },
+  { name: 'Mountain View', x: 310, y: 130, type: 'neighbourhood', pinned: false },
+  { name: 'Scott', x: 250, y: 218, type: 'neighbourhood', pinned: false },
+  { name: 'Dorset Park', x: 350, y: 98, type: 'neighbourhood', pinned: false },
+  { name: 'Timberlea', x: 800, y: 180, type: 'neighbourhood', pinned: false },
+  { name: 'Dempsey', x: 880, y: 205, type: 'neighbourhood', pinned: false },
+  { name: 'Clarke', x: 1010, y: 415, type: 'neighbourhood', pinned: false },
+  { name: 'Beaty', x: 960, y: 500, type: 'neighbourhood', pinned: false },
+  { name: 'Walker', x: 1090, y: 520, type: 'neighbourhood', pinned: false },
+  { name: 'Cobban', x: 1075, y: 615, type: 'neighbourhood', pinned: false },
+  { name: 'Bowes', x: 1000, y: 700, type: 'neighbourhood', pinned: false },
+  { name: 'Coates', x: 845, y: 678, type: 'neighbourhood', pinned: false },
+  { name: 'Ford', x: 760, y: 726, type: 'neighbourhood', pinned: false },
+  { name: 'Willmott', x: 560, y: 735, type: 'neighbourhood', pinned: false },
+  { name: 'Harrison', x: 345, y: 655, type: 'neighbourhood', pinned: false },
+  { name: 'Old Milton', x: 368, y: 738, type: 'neighbourhood', pinned: false },
+  { name: 'Bronte Meadows', x: 270, y: 505, type: 'neighbourhood', pinned: false },
+
+  // landmarks - pinned teardrops, label rides the tip at +(9,13)
+  { name: 'Country Heritage Park', x: 150, y: 180, type: 'landmark', pinned: true },
+  { name: 'Kelso Conservation Area', x: 196, y: 258, type: 'landmark', pinned: true },
+  { name: 'Mill Pond', x: 365, y: 135, type: 'landmark', pinned: true },
+  { name: 'Rattlesnake Point', x: 180, y: 560, type: 'landmark', pinned: true },
+  { name: 'Downtown Milton', x: 255, y: 618, type: 'landmark', pinned: true },
+  { name: 'Milton District Hospital', x: 330, y: 690, type: 'landmark', pinned: true },
+  { name: 'Milton Mall', x: 1105, y: 255, type: 'landmark', pinned: true },
+  { name: 'Milton GO Station', x: 1060, y: 367, type: 'landmark', pinned: true },
+  { name: 'Milton Sports Centre', x: 990, y: 560, type: 'landmark', pinned: true },
+];
+
+// Outline teardrop, tip at local (0,0), ~14 units tall.
+const PIN_PATH =
+  'M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z';
+
+const ROADS = MAP_LOCATIONS.filter((l) => l.type === 'road');
+const NEIGHBOURHOODS = MAP_LOCATIONS.filter((l) => l.type === 'neighbourhood');
+const LANDMARKS = MAP_LOCATIONS.filter((l) => l.type === 'landmark');
 
 export function HeroMap() {
   return (
@@ -28,7 +101,8 @@ export function HeroMap() {
         focusable="false"
       >
         <defs>
-          {/* edge vignette: full strength mid-band, dissolved at the rim */}
+          {/* edge vignette for the line work: full strength mid-band,
+              dissolved at the rim */}
           <radialGradient
             id="mhEdge"
             gradientUnits="userSpaceOnUse"
@@ -40,22 +114,8 @@ export function HeroMap() {
             <stop offset="0.6" stopColor="#fff" />
             <stop offset="1" stopColor="#000" />
           </radialGradient>
-          {/* headline clearing: drops the map to ~45% of itself mid-column */}
-          <radialGradient
-            id="mhClear"
-            gradientUnits="userSpaceOnUse"
-            cx="600"
-            cy="430"
-            r="280"
-            gradientTransform="translate(600 430) scale(1 1.18) translate(-600 -430)"
-          >
-            <stop offset="0" stopColor="#000" stopOpacity="0.55" />
-            <stop offset="0.6" stopColor="#000" stopOpacity="0.38" />
-            <stop offset="1" stopColor="#000" stopOpacity="0" />
-          </radialGradient>
           <mask id="mhMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="800">
             <rect width="1200" height="800" fill="url(#mhEdge)" />
-            <ellipse cx="600" cy="430" rx="280" ry="330" fill="url(#mhClear)" />
           </mask>
         </defs>
 
@@ -92,81 +152,47 @@ export function HeroMap() {
           <path className="mh-road" d="M202,562 C 500,541 900,506 1155,481" />
           <path className="mh-road" d="M232,702 C 550,676 900,641 1150,616" />
           <path className="mh-road" d="M332,242 C 326,400 332,550 321,722" />
+          <path className="mh-road" d="M492,236 C 488,360 494,470 486,760" />
           <path className="mh-road" d="M661,236 C 666,380 656,520 666,702" />
           <path className="mh-road" d="M901,142 C 941,260 901,420 931,560 C 941,610 931,652 941,692" />
-
-          {/* road labels - Title Case, rotated along their road */}
-          <text className="mh-rlabel" x="948" y="100" transform="rotate(-4 948 100)">401</text>
-          <text className="mh-rlabel" x="1092" y="88" transform="rotate(26 1092 88)">407</text>
-          <text className="mh-rlabel" x="998" y="198" transform="rotate(-3.5 998 198)">Steeles Ave</text>
-          <text className="mh-rlabel" x="1008" y="344" transform="rotate(-3 1008 344)">Main St</text>
-          <text className="mh-rlabel" x="1012" y="474" transform="rotate(-5.5 1012 474)">Derry Rd</text>
-          <text className="mh-rlabel" x="994" y="608" transform="rotate(-5.5 994 608)">Britannia Rd</text>
-          <text className="mh-rlabel" x="312" y="648" transform="rotate(-87 312 648)">Bronte St</text>
-          <text className="mh-rlabel" x="680" y="648" transform="rotate(-88 680 648)">Thompson Rd</text>
-          <text className="mh-rlabel" x="958" y="312" transform="rotate(-83 958 312)">James Snow Pkwy</text>
-          <text className="mh-rlabel" x="176" y="360" transform="rotate(-80 176 360)">Niagara Escarpment</text>
-
-          {/* neighbourhood labels - letter-spaced caps, roughly placed */}
-          <text className="mh-nlabel" x="258" y="182">Milton Heights</text>
-          <text className="mh-nlabel" x="402" y="322">Scott</text>
-          <text className="mh-nlabel" x="562" y="330">Timberlea</text>
-          <text className="mh-nlabel" x="762" y="300">Dempsey</text>
-          <text className="mh-nlabel" x="500" y="458">Old Milton</text>
-          <text className="mh-nlabel" x="392" y="502">Bronte Meadows</text>
-          <text className="mh-nlabel" x="790" y="432">Clarke</text>
-          <text className="mh-nlabel" x="948" y="472">Beaty</text>
-          <text className="mh-nlabel" x="388" y="622">Harrison</text>
-          <text className="mh-nlabel" x="562" y="642">Willmott</text>
-          <text className="mh-nlabel" x="760" y="726">Ford</text>
         </g>
 
-        {/* landmark pins - tip-anchored on the DRAWN road skeleton, each a
-            breathing group; labels sit outside the groups so only the
-            teardrop animates, at a consistent tip+(9,13) offset. Pin order
-            fixes the nth-of-type animation stagger. */}
+        <g className="mh-labels">
+          {ROADS.map((l) => (
+            <text
+              key={l.name}
+              className="mh-rlabel"
+              x={l.x}
+              y={l.y}
+              transform={`rotate(${l.angle ?? 0} ${l.x} ${l.y})`}
+            >
+              {l.name}
+            </text>
+          ))}
+          {NEIGHBOURHOODS.map((l) => (
+            <text key={l.name} className="mh-nlabel" x={l.x} y={l.y}>
+              {l.name}
+            </text>
+          ))}
+          {LANDMARKS.map((l) => (
+            <text key={l.name} className="mh-plabel" x={l.x + 9} y={l.y + 13}>
+              {l.name}
+            </text>
+          ))}
+        </g>
+
         <g className="mh-pins">
-          {/* Escarpment edge, west */}
-          <g className="mh-pin" transform="translate(206 300)">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
-          <text className="mh-plabel" x="215" y="313">Kelso</text>
-
-          {/* on Main St between Bronte and Ontario */}
-          <g className="mh-pin" transform="translate(478 405)">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
-          <text className="mh-plabel" x="487" y="418">Downtown Milton</text>
-
-          {/* just south of Derry x Bronte */}
-          <g className="mh-pin" transform="translate(327 566)">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
-          <text className="mh-plabel" x="336" y="579">Milton District Hospital</text>
-
-          {/* just south of Main St, west of Thompson (Ontario-side) */}
-          <g className="mh-pin" transform="translate(645 396)">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
-          <text className="mh-plabel" x="654" y="409">Milton GO Station</text>
-
-          {/* Derry x Thompson, a touch east */}
-          <g className="mh-pin" transform="translate(680 530)">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
-          <text className="mh-plabel" x="689" y="543">Milton Sports Centre</text>
-
-          {/* 401 x James Snow corner */}
-          <g className="mh-pin" transform="translate(898 132)">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
-          <text className="mh-plabel" x="907" y="145">Toronto Premium Outlets</text>
+          {LANDMARKS.filter((l) => l.pinned).map((l, i) => (
+            <g
+              key={l.name}
+              className="mh-pin"
+              transform={`translate(${l.x} ${l.y})`}
+              style={{ animationDelay: `${(i * 0.55).toFixed(2)}s` }}
+            >
+              <path d={PIN_PATH} />
+              <circle cx="0" cy="-9.2" r="1.7" />
+            </g>
+          ))}
         </g>
       </svg>
     </div>
