@@ -144,7 +144,9 @@
    sanctioned gradient text on this page = nav logo + hero "Milton" only. */
 .home-v2 .m-nav .m-logo {
   font-family: var(--font-kaushan), cursive;
-  font-size: 28px;
+  /* 24px (2026-07-21 refinement): understated nav-brand scale, tuned to the
+     old 23px serif wordmark's visual height; Kaushan reads large per px. */
+  font-size: 24px;
   font-weight: 400;
   line-height: 1.4;
   display: inline-block;
