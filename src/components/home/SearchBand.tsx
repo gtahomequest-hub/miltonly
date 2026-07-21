@@ -16,23 +16,31 @@ export function SearchBand() {
   };
 
   return (
-    <div className="m-searchband" id="m-searchband">
+    /* 2026-07-21 Option B (approved mockup): the band is a titled section
+       anchoring the light zone - sibling section-header pattern inherited
+       verbatim (m-sechead / m-eyebrow / h2, The Market Read's classes).
+       Routing untouched; #m-searchband id kept for the nav scroll-reveal. */
+    <section className="m-searchband" id="m-searchband">
       <div className="m-wrap">
+        <div className="m-sechead">
+          <span className="m-eyebrow">Find your street</span>
+          <h2>Search the encyclopedia</h2>
+        </div>
         <form className="m-searchbox" onSubmit={submit}>
           <IconSearch />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search a street, neighbourhood, or homes for sale in Milton"
+            placeholder="Search a street, neighbourhood, or address…"
             aria-label="Search Milton streets, neighbourhoods, or listings"
           />
           <button type="submit">Search</button>
         </form>
         <div className="m-searchhint">
-          One bar, two doors — <b>find your street</b> for editorial depth, or{' '}
-          <b>explore listings</b> for live MLS.
+          One bar, two doors — <a href="/streets">find your street</a> for editorial depth, or{' '}
+          <a href="/listings">explore listings</a> for live MLS.
         </div>
       </div>
-    </div>
+    </section>
   );
 }

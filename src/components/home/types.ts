@@ -29,9 +29,8 @@ export interface HeroIntentPill {
 }
 
 export interface HeroContent {
-  eyebrow: string;
-  headline: string; // "Milton,"
-  headlineAccent: string; // "read closely." (italic gradient)
+  headline: string; // "Milton" — h1 line 1, Kaushan Script, warm gradient (the site's only one)
+  headlineAccent: string; // "Real Estate Encyclopedia" — h1 line 2, Playfair Display 500 white
   lede: string;
   askPlaceholder: string;
   /** rotating examples typed out in the ask bar */

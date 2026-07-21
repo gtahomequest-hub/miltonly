@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Kaushan_Script, Playfair_Display } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
@@ -43,6 +43,22 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-jetbrains",
+  display: "swap",
+});
+// Hero headline faces (2026-07-20, Aamir-approved mockup). Bound ONLY via
+// their CSS variables — next/font registers hashed family names, so a literal
+// "Kaushan Script" / "Playfair Display" declaration binds to nothing (the
+// Fraunces lesson, commit de80bcb).
+const kaushan = Kaushan_Script({
+  subsets: ["latin"],
+  weight: "400", // its only weight
+  variable: "--font-kaushan",
+  display: "swap",
+});
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: "500",
+  variable: "--font-playfair",
   display: "swap",
 });
 
@@ -99,7 +115,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} ${kaushan.variable} ${playfair.variable} font-sans antialiased`}
       >
         <GoogleAnalytics />
         <MetaPixel />

@@ -16,29 +16,17 @@ export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
     <header className="m-hero">
       <div className="m-wrap">
         <div className="m-inner">
-          <span className="m-eyebrow">{hero.eyebrow}</span>
+          {/* 2026-07-21 iteration (Better.com conversion pattern): white
+              Kaushan "Milton" over Playfair white (the gradient now lives
+              ONLY on the nav wordmark); stat row primes credibility ABOVE
+              the ask card; the four intent chips sit INSIDE the card below
+              the input; trust line closes below the card. */}
           <h1>
-            {hero.headline}
+            <span className="m-hl-milton">{hero.headline}</span>
             <br />
-            <span className="m-grad">{hero.headlineAccent}</span>
+            <span className="m-hl-ency">{hero.headlineAccent}</span>
           </h1>
           <p className="m-lede">{hero.lede}</p>
-
-          <AskBar examples={hero.askExamples} />
-
-          <div className="m-pills">
-            {hero.pills.map((p) => (
-              <button
-                key={p.key}
-                className={`m-pill-btn${p.mostAsked ? ' m-feat' : ''}`}
-                onClick={() => onIntent(p.key)}
-              >
-                <TabIcon k={p.key} />
-                {p.label}
-                {p.mostAsked && <span className="m-most">Most asked</span>}
-              </button>
-            ))}
-          </div>
 
           <div className="m-herostats">
             <div className="m-hs">
@@ -55,6 +43,23 @@ export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
             <div className="m-hs">
               <div className="m-n">{stats.onMarket}</div>
               <div className="m-l">on the market today</div>
+            </div>
+          </div>
+
+          <div className="m-askcard">
+            <AskBar examples={hero.askExamples} />
+            <div className="m-pills">
+              {hero.pills.map((p) => (
+                <button
+                  key={p.key}
+                  className={`m-pill-btn${p.mostAsked ? ' m-feat' : ''}`}
+                  onClick={() => onIntent(p.key)}
+                >
+                  <TabIcon k={p.key} />
+                  {p.label}
+                  {p.mostAsked && <span className="m-most">Most asked</span>}
+                </button>
+              ))}
             </div>
           </div>
 
