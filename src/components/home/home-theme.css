@@ -324,10 +324,10 @@
    carries 0.12 on .mh-map, landmark pins sit brighter at 0.25 on .mh-pins -
    texture only, the hero text stays dominant. The SVG's own mask handles the
    edge vignette + headline clearing. Shifted so the urban core sits behind
-   the headline; the 390 slice crop shows only that central column, so the
-   pins (placed in the open flanks, outside the headline clearing) are a
-   desktop-only detail by geometry - the mobile map stays line-work texture.
-   Static, aria-hidden, pointer-events:none, zero JS. */
+   the headline; the 390 slice crop shows only the central column, so only
+   the central pins (GO, Downtown) reach the mobile frame. The only motion
+   is the pins' staggered opacity breathe (disabled under
+   prefers-reduced-motion). aria-hidden, pointer-events:none, zero JS. */
 .home-v2 .m-hero .m-heromap {
   position: absolute;
   inset: -6% -8% -4% -10%;
@@ -341,8 +341,41 @@
 .home-v2 .m-heromap .mh-map {
   opacity: 0.12;
 }
-.home-v2 .m-heromap .mh-pins {
+/* Each pin breathes 0.25 -> 0.08 on its own staggered phase; the layer
+   itself stays at 1 so per-pin opacity is the only multiplier. Labels are
+   outside the .mh-pin groups and never animate. */
+.home-v2 .m-heromap .mh-pin {
   opacity: 0.25;
+  animation: mh-pin-breathe 4.8s ease-in-out infinite;
+}
+.home-v2 .m-heromap .mh-pins g:nth-of-type(2) {
+  animation-delay: 0.8s;
+}
+.home-v2 .m-heromap .mh-pins g:nth-of-type(3) {
+  animation-delay: 1.6s;
+}
+.home-v2 .m-heromap .mh-pins g:nth-of-type(4) {
+  animation-delay: 2.4s;
+}
+.home-v2 .m-heromap .mh-pins g:nth-of-type(5) {
+  animation-delay: 3.2s;
+}
+.home-v2 .m-heromap .mh-pins g:nth-of-type(6) {
+  animation-delay: 4s;
+}
+@keyframes mh-pin-breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.08;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-v2 .m-heromap .mh-pin {
+    animation: none;
+  }
 }
 .home-v2 .m-heromap path,
 .home-v2 .m-heromap circle {
@@ -376,6 +409,10 @@
 .home-v2 .m-heromap .mh-pins circle {
   stroke-width: 1.2;
 }
+.home-v2 .m-heromap .mh-pins .mh-pin path {
+  fill: #d4c05a;
+  fill-opacity: 0.15;
+}
 .home-v2 .m-heromap text {
   font-family: var(--m-sans);
   fill: #d4c05a;
@@ -397,7 +434,7 @@
   font-size: 8.5px;
   font-weight: 500;
   letter-spacing: 0.04em;
-  opacity: 0.85;
+  opacity: 0.21;
 }
 .home-v2 .m-hero .m-inner {
   max-width: 760px;

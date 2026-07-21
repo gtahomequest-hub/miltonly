@@ -7,12 +7,17 @@
 // teardrop pins at real landmarks. Line work + labels only - no area fills,
 // no water/parks. One dull faded-yellow tone.
 //
-// Layering: .mh-map carries the base 0.12 opacity; .mh-pins sits at 0.25 so
-// pins read as points of interest above the line work (home-theme.css). The
-// #mhMask mask gives the map an edge vignette (dissolves before the hero
-// boundary) plus a soft radial clearing under the central headline/card
-// column; pins are unmasked and placed outside that clearing. Zero JS, zero
-// deps, no external fetch; aria-hidden + pointer-events:none.
+// Layering: .mh-map carries the base 0.12 opacity; each .mh-pins pin group
+// breathes 0.25 -> 0.08 on a staggered CSS opacity loop (static at 0.25
+// under prefers-reduced-motion; labels never animate). The #mhMask mask
+// gives the map an edge vignette (dissolves before the hero boundary) plus
+// a soft radial clearing under the central headline/card column; pins are
+// unmasked. Pins are inline groups, NOT <use> instances - use-shadow clones
+// don't match document CSS type selectors, which is how the pins once
+// rendered default-fill black. Each pin's local (0,0) is the teardrop TIP,
+// and every translate() coordinate is derived from the DRAWN road beziers
+// (not true geography) so tips touch the sketched intersections. Zero JS,
+// zero deps, no external fetch; aria-hidden + pointer-events:none.
 
 export function HeroMap() {
   return (
@@ -52,11 +57,6 @@ export function HeroMap() {
             <rect width="1200" height="800" fill="url(#mhEdge)" />
             <ellipse cx="600" cy="430" rx="280" ry="330" fill="url(#mhClear)" />
           </mask>
-          {/* outline teardrop pin, tip at local (0,0), ~14 units tall */}
-          <g id="mhPinShape">
-            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
-            <circle cx="0" cy="-9.2" r="1.7" />
-          </g>
         </defs>
 
         <g className="mh-map" mask="url(#mhMask)">
@@ -121,26 +121,52 @@ export function HeroMap() {
           <text className="mh-nlabel" x="760" y="726">Ford</text>
         </g>
 
-        {/* landmark pins - slightly brighter than the map, outside the
-            headline clearing (open flanks only) */}
+        {/* landmark pins - tip-anchored on the DRAWN road skeleton, each a
+            breathing group; labels sit outside the groups so only the
+            teardrop animates, at a consistent tip+(9,13) offset. Pin order
+            fixes the nth-of-type animation stagger. */}
         <g className="mh-pins">
-          <use href="#mhPinShape" transform="translate(186 268)" />
-          <text className="mh-plabel" x="198" y="252">Kelso</text>
+          {/* Escarpment edge, west */}
+          <g className="mh-pin" transform="translate(206 300)">
+            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
+            <circle cx="0" cy="-9.2" r="1.7" />
+          </g>
+          <text className="mh-plabel" x="215" y="313">Kelso</text>
 
-          <use href="#mhPinShape" transform="translate(300 430)" />
-          <text className="mh-plabel" x="252" y="448">Downtown Milton</text>
+          {/* on Main St between Bronte and Ontario */}
+          <g className="mh-pin" transform="translate(478 405)">
+            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
+            <circle cx="0" cy="-9.2" r="1.7" />
+          </g>
+          <text className="mh-plabel" x="487" y="418">Downtown Milton</text>
 
-          <use href="#mhPinShape" transform="translate(310 560)" />
-          <text className="mh-plabel" x="246" y="578">Milton District Hospital</text>
+          {/* just south of Derry x Bronte */}
+          <g className="mh-pin" transform="translate(327 566)">
+            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
+            <circle cx="0" cy="-9.2" r="1.7" />
+          </g>
+          <text className="mh-plabel" x="336" y="579">Milton District Hospital</text>
 
-          <use href="#mhPinShape" transform="translate(905 330)" />
-          <text className="mh-plabel" x="895" y="348" textAnchor="end">Milton GO Station</text>
+          {/* just south of Main St, west of Thompson (Ontario-side) */}
+          <g className="mh-pin" transform="translate(645 396)">
+            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
+            <circle cx="0" cy="-9.2" r="1.7" />
+          </g>
+          <text className="mh-plabel" x="654" y="409">Milton GO Station</text>
 
-          <use href="#mhPinShape" transform="translate(925 540)" />
-          <text className="mh-plabel" x="935" y="545">Milton Sports Centre</text>
+          {/* Derry x Thompson, a touch east */}
+          <g className="mh-pin" transform="translate(680 530)">
+            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
+            <circle cx="0" cy="-9.2" r="1.7" />
+          </g>
+          <text className="mh-plabel" x="689" y="543">Milton Sports Centre</text>
 
-          <use href="#mhPinShape" transform="translate(1060 140)" />
-          <text className="mh-plabel" x="1050" y="158" textAnchor="end">Toronto Premium Outlets</text>
+          {/* 401 x James Snow corner */}
+          <g className="mh-pin" transform="translate(898 132)">
+            <path d="M0 0 C-3.8 -5.2 -5 -7 -5 -9 A5 5 0 1 1 5 -9 C5 -7 3.8 -5.2 0 0 Z" />
+            <circle cx="0" cy="-9.2" r="1.7" />
+          </g>
+          <text className="mh-plabel" x="907" y="145">Toronto Premium Outlets</text>
         </g>
       </svg>
     </div>
