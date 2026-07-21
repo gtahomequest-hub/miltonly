@@ -138,6 +138,31 @@
 .home-v2 .m-logo b {
   color: var(--m-green);
 }
+/* 2026-07-21 (Aamir): the NAV wordmark adopts the hero "Milton" treatment -
+   Kaushan + the warm gradient, whole word (green "ly" retired). Scoped to
+   .m-nav so the FOOTER brand wordmark (also .m-logo) stays untouched -
+   sanctioned gradient text on this page = nav logo + hero "Milton" only. */
+.home-v2 .m-nav .m-logo {
+  font-family: var(--font-kaushan), cursive;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.4;
+  display: inline-block;
+  padding: 2px 0.16em 3px 0.06em;
+  color: #ffc400;
+}
+.home-v2 .m-nav .m-logo b {
+  color: inherit;
+  font-weight: inherit;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .home-v2 .m-nav .m-logo {
+    background: linear-gradient(90deg, #ffc400 0%, #ff3d3d 50%, #ffc400 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
 .home-v2 .m-navlinks {
   display: flex;
   gap: 32px;

@@ -26,15 +26,33 @@
   height: 66px;
   color: #ffffff;
 }
+/* 2026-07-21 (Aamir): the wordmark adopts the hero "Milton" treatment -
+   Kaushan Script (bound via the next/font variable, never a literal name)
+   + the warm gradient. Whole word carries it (the green "ly" is retired).
+   Scarcity rule updated: gradient text = the nav logo + the hero "Milton",
+   nothing else ever. Inline-block + padding so ascenders and the trailing
+   "y" stroke never clip in the 66px bar. */
 .site-nav .m-logo {
-  font-family: 'Fraunces', Georgia, serif;
-  font-size: 23px;
-  font-weight: 500;
-  color: #ffffff;
+  font-family: var(--font-kaushan), cursive;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.4;
+  display: inline-block;
+  padding: 2px 0.16em 3px 0.06em;
+  color: #ffc400;
   text-decoration: none; /* the logo is a home link (an <a>) */
 }
 .site-nav .m-logo b {
-  color: #00ff80;
+  color: inherit;
+  font-weight: inherit;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .site-nav .m-logo {
+    background: linear-gradient(90deg, #ffc400 0%, #ff3d3d 50%, #ffc400 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 .site-nav .m-navlinks {
   display: flex;
@@ -136,15 +154,29 @@ nav .sn-panel-head {
   height: 66px;
   flex-shrink: 0;
 }
+/* Panel-header wordmark instance: identical hero treatment (see the nav-bar
+   rule above). */
 nav .sn-panel-head .m-logo {
-  font-family: 'Fraunces', Georgia, serif;
-  font-size: 23px;
-  font-weight: 500;
-  color: #ffffff;
+  font-family: var(--font-kaushan), cursive;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.4;
+  display: inline-block;
+  padding: 2px 0.16em 3px 0.06em;
+  color: #ffc400;
   text-decoration: none;
 }
 nav .sn-panel-head .m-logo b {
-  color: #00ff80;
+  color: inherit;
+  font-weight: inherit;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  nav .sn-panel-head .m-logo {
+    background: linear-gradient(90deg, #ffc400 0%, #ff3d3d 50%, #ffc400 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 nav .sn-close {
   background: transparent;
