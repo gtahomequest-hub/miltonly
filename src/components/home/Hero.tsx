@@ -2,6 +2,7 @@
 import type { HeroContent, MiltonStats, MlsTabKey, TrustInfo } from './types';
 import { TabIcon } from './icons';
 import { AskBar } from './AskBar';
+import { HeroMap } from './HeroMap';
 import { compactPrice } from './format';
 
 interface HeroProps {
@@ -14,6 +15,7 @@ interface HeroProps {
 export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
   return (
     <header className="m-hero">
+      <HeroMap />
       <div className="m-wrap">
         <div className="m-inner">
           {/* 2026-07-21 iteration (Better.com conversion pattern): white

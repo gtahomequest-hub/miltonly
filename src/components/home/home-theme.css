@@ -316,6 +316,131 @@
 }
 .home-v2 .m-hero .m-wrap {
   padding: 66px 32px 60px;
+  position: relative;
+  z-index: 1;
+}
+/* Faded-yellow Milton map sketch behind the hero (2026-07-21; center-
+   exclusion + data-array pass same day). One dull desaturated tone
+   (#d4c05a): line work at 0.12 on .mh-map, labels at per-type opacities on
+   .mh-labels (neighbourhood 0.2, landmark 0.18, road 0.12), pins breathing
+   0.22 -> 0.08 - texture only, the hero text stays dominant. The CSS mask
+   below fades the ENTIRE layer (lines, labels, pins) to zero behind the
+   H1 / stat row / search card and keeps full presence at the edges; the
+   SVG's internal #mhMask still dissolves the line work at the hero rim.
+   Locations are edge-biased to match. The only motion is the pins'
+   staggered opacity breathe (disabled under prefers-reduced-motion).
+   aria-hidden, pointer-events:none, zero JS. */
+.home-v2 .m-hero .m-heromap {
+  position: absolute;
+  inset: -6% -8% -4% -10%;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    ellipse 65% 75% at 50% 55%,
+    transparent 0%,
+    transparent 35%,
+    black 75%
+  );
+  mask-image: radial-gradient(
+    ellipse 65% 75% at 50% 55%,
+    transparent 0%,
+    transparent 35%,
+    black 75%
+  );
+}
+.home-v2 .m-hero .m-heromap svg {
+  width: 100%;
+  height: 100%;
+}
+.home-v2 .m-heromap .mh-map {
+  opacity: 0.12;
+}
+/* Each pin breathes 0.22 -> 0.08 on its own phase (per-pin inline
+   animation-delay, staggered 0.55s in source order); the layer stays at 1
+   so per-pin opacity is the only multiplier. Labels live in .mh-labels
+   and never animate. */
+.home-v2 .m-heromap .mh-pin {
+  opacity: 0.22;
+  animation: mh-pin-breathe 4.8s ease-in-out infinite;
+}
+@keyframes mh-pin-breathe {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.08;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-v2 .m-heromap .mh-pin {
+    animation: none;
+  }
+}
+.home-v2 .m-heromap path,
+.home-v2 .m-heromap circle {
+  fill: none;
+  stroke: #d4c05a;
+}
+.home-v2 .m-heromap .mh-grid {
+  stroke-width: 0.5;
+  opacity: 0.22;
+}
+.home-v2 .m-heromap .mh-boundary {
+  stroke-width: 0.9;
+  stroke-dasharray: 5 7;
+  opacity: 0.55;
+}
+.home-v2 .m-heromap .mh-esc {
+  stroke-width: 0.9;
+  stroke-dasharray: 5 7;
+  opacity: 0.8;
+}
+.home-v2 .m-heromap .mh-esc2 {
+  opacity: 0.45;
+}
+.home-v2 .m-heromap .mh-hwy {
+  stroke-width: 2;
+}
+.home-v2 .m-heromap .mh-road {
+  stroke-width: 1.3;
+}
+.home-v2 .m-heromap .mh-pins path,
+.home-v2 .m-heromap .mh-pins circle {
+  stroke-width: 1.2;
+}
+.home-v2 .m-heromap .mh-pins .mh-pin path {
+  fill: #d4c05a;
+  fill-opacity: 0.15;
+}
+.home-v2 .m-heromap text {
+  font-family: var(--m-sans);
+  fill: #d4c05a;
+  stroke: none;
+}
+.home-v2 .m-heromap .mh-rlabel {
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  opacity: 0.12;
+}
+.home-v2 .m-heromap .mh-nlabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.2;
+}
+.home-v2 .m-heromap .mh-plabel {
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  opacity: 0.18;
+}
+/* below md the slice crop + center mask leave road labels as pure noise */
+@media (max-width: 767px) {
+  .home-v2 .m-heromap .mh-rlabel {
+    display: none;
+  }
 }
 .home-v2 .m-hero .m-inner {
   max-width: 760px;
