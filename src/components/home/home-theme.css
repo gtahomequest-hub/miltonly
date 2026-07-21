@@ -500,6 +500,22 @@
   border-radius: 5px;
   margin-left: 2px;
 }
+/* <=480px: compress chips so both 2x2 columns hold their labels without
+   overflow (icons are decorative - dropped to buy width; badge slimmed). */
+@media (max-width: 480px) {
+  .home-v2 .m-pill-btn {
+    font-size: 12px;
+    padding: 10px 6px;
+    gap: 5px;
+  }
+  .home-v2 .m-pill-btn svg {
+    display: none;
+  }
+  .home-v2 .m-pill-btn .m-most {
+    font-size: 8px;
+    padding: 2px 5px;
+  }
+}
 
 /* dim inline hero stats — 2026-07-21: moved ABOVE the ask card (Better
    pattern: credibility primes before the ask). */
