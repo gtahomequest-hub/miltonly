@@ -351,6 +351,23 @@
 .home-v2 .m-hero .m-heromap svg {
   width: 100%;
   height: 100%;
+  /* top fade (2026-07-22): dissolve ALL map content before the hero's
+     top edge so top-band labels never sit half-clipped under the sticky
+     nav. Lives on the inner svg so it composes with the container's
+     radial center-exclusion mask by nesting - no mask-composite, which
+     would union (not intersect) where unsupported. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 120px,
+    #000 200px
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 120px,
+    #000 200px
+  );
 }
 .home-v2 .m-heromap .mh-map {
   opacity: 0.12;
@@ -657,7 +674,9 @@
   font-family: var(--m-serif);
   font-weight: 400;
   font-size: clamp(38px, 5vw, 56px);
-  color: rgba(246, 241, 232, 0.42);
+  /* 0.42 -> 0.8 (2026-07-22): numbers must instantly out-rank the map
+     labels behind them; captions below stay quiet */
+  color: rgba(246, 241, 232, 0.8);
   line-height: 1;
   letter-spacing: -0.02em;
 }
