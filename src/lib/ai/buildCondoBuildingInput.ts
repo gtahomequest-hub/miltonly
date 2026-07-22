@@ -93,7 +93,8 @@ function saleAggQuery(keys: string[]) {
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
-         AND sold_date >= NOW() - INTERVAL '12 months'`,
+         AND sold_date >= NOW() - INTERVAL '12 months'
+         AND sold_date <= NOW()`,
   );
 }
 
@@ -107,7 +108,8 @@ function leaseAggQuery(keys: string[]) {
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Lease'
-         AND sold_date >= NOW() - INTERVAL '12 months'`,
+         AND sold_date >= NOW() - INTERVAL '12 months'
+         AND sold_date <= NOW()`,
   );
 }
 
@@ -120,6 +122,7 @@ function saleByTypeQuery(keys: string[]) {
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - INTERVAL '12 months'
+         AND sold_date <= NOW()
        GROUP BY property_type`,
   );
 }
@@ -134,6 +137,7 @@ function saleQuarterlyQuery(keys: string[]) {
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+         AND sold_date <= NOW()
        GROUP BY yr, qtr ORDER BY yr, qtr`,
   );
 }

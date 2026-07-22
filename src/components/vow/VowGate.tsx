@@ -77,6 +77,7 @@ async function loadTeaser(
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
+                  AND sold_date <= NOW()
               ) ELSE NULL END AS price_min,
               CASE WHEN s.sold_count_90days >= 10 THEN (
                 SELECT MAX(sold_price) FROM sold.sold_records
@@ -84,6 +85,7 @@ async function loadTeaser(
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
+                  AND sold_date <= NOW()
               ) ELSE NULL END AS price_max
             FROM analytics.street_sold_stats s
             WHERE s.street_slug = ${street}
@@ -121,6 +123,7 @@ async function loadTeaser(
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
+                  AND sold_date <= NOW()
               ) ELSE NULL END AS price_min,
               CASE WHEN n.sold_count_90days >= 10 THEN (
                 SELECT MAX(sold_price) FROM sold.sold_records
@@ -128,6 +131,7 @@ async function loadTeaser(
                   AND perm_advertise = TRUE
                   AND transaction_type = 'For Sale'
                   AND sold_date >= NOW() - INTERVAL '90 days'
+                  AND sold_date <= NOW()
               ) ELSE NULL END AS price_max
             FROM analytics.neighbourhood_sold_stats n
             WHERE n.neighbourhood = ${neighbourhood}

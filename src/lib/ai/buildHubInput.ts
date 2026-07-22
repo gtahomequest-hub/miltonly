@@ -174,12 +174,14 @@ function saleAggQuery(rawStrings: string[] | null) {
            FROM sold.sold_records
            WHERE neighbourhood = ANY(${rawStrings}::text[])
              AND perm_advertise = TRUE AND transaction_type = 'For Sale'
-             AND sold_date >= NOW() - INTERVAL '12 months'`
+             AND sold_date >= NOW() - INTERVAL '12 months'
+             AND sold_date <= NOW()`
       : db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
                   AVG(sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
            FROM sold.sold_records
            WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
-             AND sold_date >= NOW() - INTERVAL '12 months'`,
+             AND sold_date >= NOW() - INTERVAL '12 months'
+             AND sold_date <= NOW()`,
   );
 }
 
@@ -189,10 +191,12 @@ function leaseCountQuery(rawStrings: string[] | null) {
       ? db`SELECT COUNT(*)::int AS n FROM sold.sold_records
            WHERE neighbourhood = ANY(${rawStrings}::text[])
              AND perm_advertise = TRUE AND transaction_type = 'For Lease'
-             AND sold_date >= NOW() - INTERVAL '12 months'`
+             AND sold_date >= NOW() - INTERVAL '12 months'
+             AND sold_date <= NOW()`
       : db`SELECT COUNT(*)::int AS n FROM sold.sold_records
            WHERE perm_advertise = TRUE AND transaction_type = 'For Lease'
-             AND sold_date >= NOW() - INTERVAL '12 months'`,
+             AND sold_date >= NOW() - INTERVAL '12 months'
+             AND sold_date <= NOW()`,
   );
 }
 
@@ -206,6 +210,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
            WHERE neighbourhood = ANY(${rawStrings}::text[])
              AND perm_advertise = TRUE AND transaction_type = 'For Sale'
              AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+             AND sold_date <= NOW()
            GROUP BY yr, qtr ORDER BY yr, qtr`
       : db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
                   EXTRACT(QUARTER FROM sold_date)::int AS qtr,
@@ -213,6 +218,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
            FROM sold.sold_records
            WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
              AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+             AND sold_date <= NOW()
            GROUP BY yr, qtr ORDER BY yr, qtr`,
   );
 }
@@ -225,6 +231,7 @@ function byTypeQuery(rawStrings: string[]) {
        WHERE neighbourhood = ANY(${rawStrings}::text[])
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - INTERVAL '12 months'
+         AND sold_date <= NOW()
        GROUP BY property_type`,
   );
 }

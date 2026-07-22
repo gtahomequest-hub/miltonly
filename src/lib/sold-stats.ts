@@ -47,6 +47,7 @@ export async function computeStreetSaleStats(streetSlug: string): Promise<void> 
         AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '90 days'
+        AND sold_date <= NOW()
     ),
     d365 AS (
       SELECT * FROM sold.sold_records
@@ -54,6 +55,7 @@ export async function computeStreetSaleStats(streetSlug: string): Promise<void> 
         AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '365 days'
+        AND sold_date <= NOW()
     ),
     prev AS (
       SELECT AVG(sold_price) AS avg_prev FROM sold.sold_records
@@ -145,6 +147,7 @@ export async function computeStreetSaleStats(streetSlug: string): Promise<void> 
       AND transaction_type = 'For Sale'
       AND perm_advertise = TRUE
       AND sold_date >= NOW() - INTERVAL '24 months'
+      AND sold_date <= NOW()
     GROUP BY 1, 2
     ORDER BY 1, 2
   `) as Array<{
@@ -184,6 +187,7 @@ export async function computeStreetLeaseStats(streetSlug: string): Promise<void>
         AND transaction_type = 'For Lease'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '90 days'
+        AND sold_date <= NOW()
     ),
     d365 AS (
       SELECT 1 AS n FROM sold.sold_records
@@ -191,6 +195,7 @@ export async function computeStreetLeaseStats(streetSlug: string): Promise<void>
         AND transaction_type = 'For Lease'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '365 days'
+        AND sold_date <= NOW()
     )
     SELECT
       (SELECT AVG(sold_price) FROM d90)                              AS avg_leased_price,
@@ -263,6 +268,7 @@ export async function computeNeighbourhoodSaleStats(neighbourhood: string): Prom
         AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '90 days'
+        AND sold_date <= NOW()
     ),
     d365 AS (
       SELECT * FROM sold.sold_records
@@ -270,6 +276,7 @@ export async function computeNeighbourhoodSaleStats(neighbourhood: string): Prom
         AND transaction_type = 'For Sale'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '365 days'
+        AND sold_date <= NOW()
     ),
     prev AS (
       SELECT AVG(sold_price) AS avg_prev FROM sold.sold_records
@@ -359,6 +366,7 @@ export async function computeNeighbourhoodSaleStats(neighbourhood: string): Prom
       AND transaction_type = 'For Sale'
       AND perm_advertise = TRUE
       AND sold_date >= NOW() - INTERVAL '24 months'
+      AND sold_date <= NOW()
     GROUP BY 1, 2
     ORDER BY 1, 2
   `) as Array<{ year: number; month: number; avg_sold_price: string | null; sold_count: number; avg_dom: string | null }>;
@@ -392,6 +400,7 @@ export async function computeNeighbourhoodLeaseStats(neighbourhood: string): Pro
         AND transaction_type = 'For Lease'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '90 days'
+        AND sold_date <= NOW()
     ),
     d365 AS (
       SELECT 1 AS n FROM sold.sold_records
@@ -399,6 +408,7 @@ export async function computeNeighbourhoodLeaseStats(neighbourhood: string): Pro
         AND transaction_type = 'For Lease'
         AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '365 days'
+        AND sold_date <= NOW()
     )
     SELECT
       (SELECT AVG(sold_price) FROM d90)                              AS avg_leased_price,
@@ -471,6 +481,7 @@ export async function computeAllStats(): Promise<{
     WHERE transaction_type = 'For Sale'
       AND perm_advertise = TRUE
       AND sold_date >= NOW() - INTERVAL '365 days'
+      AND sold_date <= NOW()
   `) as Array<{ street_slug: string }>;
   for (let i = 0; i < saleStreets.length; i += BATCH) {
     await Promise.all(saleStreets.slice(i, i + BATCH).map((r) => computeStreetSaleStats(r.street_slug)));
@@ -481,6 +492,7 @@ export async function computeAllStats(): Promise<{
     WHERE transaction_type = 'For Lease'
       AND perm_advertise = TRUE
       AND sold_date >= NOW() - INTERVAL '365 days'
+      AND sold_date <= NOW()
   `) as Array<{ street_slug: string }>;
   for (let i = 0; i < leaseStreets.length; i += BATCH) {
     await Promise.all(leaseStreets.slice(i, i + BATCH).map((r) => computeStreetLeaseStats(r.street_slug)));
@@ -491,6 +503,7 @@ export async function computeAllStats(): Promise<{
     WHERE transaction_type = 'For Sale'
       AND perm_advertise = TRUE
       AND sold_date >= NOW() - INTERVAL '365 days'
+      AND sold_date <= NOW()
   `) as Array<{ neighbourhood: string }>;
   for (let i = 0; i < saleNbhds.length; i += BATCH) {
     await Promise.all(saleNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodSaleStats(r.neighbourhood)));
@@ -501,6 +514,7 @@ export async function computeAllStats(): Promise<{
     WHERE transaction_type = 'For Lease'
       AND perm_advertise = TRUE
       AND sold_date >= NOW() - INTERVAL '365 days'
+      AND sold_date <= NOW()
   `) as Array<{ neighbourhood: string }>;
   for (let i = 0; i < leaseNbhds.length; i += BATCH) {
     await Promise.all(leaseNbhds.slice(i, i + BATCH).map((r) => computeNeighbourhoodLeaseStats(r.neighbourhood)));
