@@ -26,6 +26,11 @@ const TTL_MS = 60 * 60 * 1000;
 
 const cleanName = (n: string) => expandStreetName(n).replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
 
+// Some ResidentialStreet rows are really unit-level addresses ("Main Street East
+// Unit 3", "… Ground Floor Apartment", "Solomon Court Main&up") — keep them out of
+// autocomplete so real streets aren't buried.
+const UNIT_LIKE = /\b(unit|apt|apartment|suite|ph|penthouse|floor|flr|upper|lower|bsmt|basement|ground|rear)\b|[/&#]/i;
+
 export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
   if (_cache && Date.now() - _cacheAt < TTL_MS) return _cache;
   const soldDb = getSoldDb();
@@ -56,6 +61,7 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
     entries.push({ type: "neighbourhood", name: nb.name, slug: nb.slug, secondary: `Neighbourhood · ${n} street${n === 1 ? "" : "s"}` });
   }
   for (const s of streets) {
+    if (UNIT_LIKE.test(s.name)) continue; // skip unit-level rows
     const homes = homesBySlug.get(s.slug) ?? 0;
     const nb = s.neighbourhood?.name ?? "Milton";
     entries.push({
