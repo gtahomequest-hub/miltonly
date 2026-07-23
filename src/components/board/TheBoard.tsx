@@ -95,13 +95,14 @@ function Chart({ data }: { data: BoardTab['chart'] }) {
 function headline(tab: BoardTab, metric: MetricKey) {
   switch (metric) {
     case 'typical':
-      return { value: money1k(tab.typical.value), block: tab.typical as MetricBlock, prov: `${tab.typical.window} · ${tab.typical.sample.toLocaleString('en-CA')} sales · mix adjusted`, goodWhenDown: false };
+      return { value: money1k(tab.typical.value), block: tab.typical as MetricBlock, prov: `${tab.typical.window} · ${tab.typical.sample.toLocaleString('en-CA')} sales · mix adjusted · median · urban Milton`, goodWhenDown: false, showMonth: true };
     case 'salesVolume':
-      return { value: tab.salesVolume.value === null ? '—' : tab.salesVolume.value.toLocaleString('en-CA'), block: tab.salesVolume, prov: `${tab.salesVolume.window} · ${(tab.salesVolume.value ?? 0).toLocaleString('en-CA')} sales`, goodWhenDown: false };
+      // Volume shows year-over-year only — MoM on a count is too noisy (FIX 2).
+      return { value: tab.salesVolume.value === null ? '—' : tab.salesVolume.value.toLocaleString('en-CA'), block: tab.salesVolume, prov: `${tab.salesVolume.window} · ${(tab.salesVolume.value ?? 0).toLocaleString('en-CA')} sales · urban Milton`, goodWhenDown: false, showMonth: false };
     case 'daysToSell':
-      return { value: tab.daysToSell.value === null ? '—' : `${Math.round(tab.daysToSell.value)} days`, block: tab.daysToSell, prov: `${tab.daysToSell.window} · ${tab.daysToSell.sample} sales`, goodWhenDown: true };
+      return { value: tab.daysToSell.value === null ? '—' : `${Math.round(tab.daysToSell.value)} days`, block: tab.daysToSell, prov: `${tab.daysToSell.window} · ${tab.daysToSell.sample} sales · urban Milton`, goodWhenDown: true, showMonth: true };
     case 'soldToAsk':
-      return { value: pct1(tab.soldToAsk.value), block: tab.soldToAsk, prov: `${tab.soldToAsk.window} · ${tab.soldToAsk.sample} sales`, goodWhenDown: false };
+      return { value: pct1(tab.soldToAsk.value), block: tab.soldToAsk, prov: `${tab.soldToAsk.window} · ${tab.soldToAsk.sample} sales · urban Milton`, goodWhenDown: false, showMonth: true };
   }
 }
 
@@ -157,7 +158,7 @@ export function TheBoard({ board }: { board: BoardTab[] }) {
         <div className="brd-headline">
           <div className="brd-big">{h.value}</div>
           <div className="brd-deltas">
-            <DeltaChip value={h.block.deltaMonth} label="vs last month" goodWhenDown={h.goodWhenDown} />
+            {h.showMonth && <DeltaChip value={h.block.deltaMonth} label="vs last month" goodWhenDown={h.goodWhenDown} />}
             <DeltaChip value={h.block.deltaYear} label="vs last year" goodWhenDown={h.goodWhenDown} />
           </div>
           <div className="brd-prov">{h.prov}</div>
