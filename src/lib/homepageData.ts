@@ -8,7 +8,9 @@
 //   - commentary   : TEMPLATED from the real stats (no LLM Milton-wide commentary exists)
 //   - footer/counts: live entity counts
 //   - trust        : real business facts (user-confirmed), hardcoded
-//   - hero / mls   : STATIC editorial carried from mockData (no live source) — see FLAGS in the report
+//   - hero         : STATIC editorial carried from mockData (no live source)
+//   - mls          : NOT built — the "Explore Milton MLS" homepage section was removed
+//                    (duplicated the hero quick-picks); the MlsExplore component stays in-repo for reuse
 //   - character    : STATIC editorial map below (the Neighbourhood table has no character field)
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
@@ -16,7 +18,7 @@ import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { expandStreetName } from "@/lib/street-data";
 import { fullPrice } from "@/components/home/format";
 import { mockHomepageData } from "@/components/home/mockData";
-import type { HomepageData, NeighbourhoodCard, MlsLens, MlsListingCard } from "@/components/home/types";
+import type { HomepageData, NeighbourhoodCard } from "@/components/home/types";
 
 const K_ANON_PRICE = 5;
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
@@ -134,47 +136,10 @@ export async function getHomepageData(): Promise<HomepageData> {
     source: "Grounded in trailing-12-month TREB sold data · updated continuously",
   };
 
-  // ── MLS lenses: wire real counts, strip every fabricated figure (rule: nothing fake) ──
-  // BUY: top 3 VIP streets by LIVE active count (>0 only) + Clarke's real typical.
-  // WEALTH: drop the fabricated sample property cards. RENT: remove the fake "6,270
-  // records" figure (no live lease inventory to count). SELL: unchanged.
-  const vipActiveRows = await prisma.$queryRaw<Array<{ slug: string; name: string; act: number }>>`
-    SELECT r.slug AS slug, r.name AS name,
-           COUNT(l.id) FILTER (WHERE l.status = 'active' AND l."permAdvertise")::int AS act
-    FROM "ResidentialStreet" r
-    LEFT JOIN "Listing" l ON l."streetSlug" = r.slug
-    WHERE r."isVip" = true
-    GROUP BY r.slug, r.name, r."soldCount12mo"
-    ORDER BY act DESC, r."soldCount12mo" DESC
-    LIMIT 3`;
-  const buyStreetCards: MlsListingCard[] = vipActiveRows
-    .filter((v) => v.act > 0)
-    .map((v) => ({
-      title: cleanName(v.name),
-      meta: `${v.act} active · full street guide`,
-      signal: "read the street →",
-    }));
-  const clarke = neighbourhoods.find((n) => n.slug === "clarke");
-  const buyListings: MlsListingCard[] = clarke?.typicalPriceRounded
-    ? [...buyStreetCards, { title: "Clarke area", meta: `typically ${fullPrice(clarke.typicalPriceRounded)}`, signal: "browse listings →" }]
-    : buyStreetCards;
-
-  const lenses: MlsLens[] = mockHomepageData.mls.lenses.map((lens) => {
-    if (lens.key === "wealth") {
-      const rest = { ...lens };
-      delete rest.listings; // no fabricated property cards
-      return rest;
-    }
-    if (lens.key === "buy") return { ...lens, listings: buyListings };
-    if (lens.key === "rent")
-      return {
-        ...lens,
-        description:
-          "Milton's lease market, read straight — and the quiet bridge: today's renter is tomorrow's Build-Wealth lead, so the path upward is always one tab away.",
-      };
-    return lens; // sell unchanged
-  });
-  const mls = { defaultTab: mockHomepageData.mls.defaultTab, lenses };
+  // The homepage no longer renders the "Explore Milton MLS" section (it duplicated
+  // the hero quick-picks), so no `mls` lens config is built or serialized to the
+  // client. The MlsExplore component is retained in-repo for reuse on a future
+  // Explore-MLS surface. See the removal report for the routing follow-up.
 
   // ── footer ──
   const footer = {
@@ -199,7 +164,6 @@ export async function getHomepageData(): Promise<HomepageData> {
     neighbourhoodCount: totalNbhd,
     vipStreets,
     streetCount,
-    mls,                                    // real BUY counts; WEALTH/RENT fabricated figures stripped
     footer,
   };
 }
