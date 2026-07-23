@@ -22,10 +22,10 @@ export interface TrustInfo {
   vow: string; // "1848370"
 }
 
-export interface HeroIntentPill {
-  key: MlsTabKey; // routes to the matching MLS tab + scrolls
+export interface HeroPill {
   label: string;
-  mostAsked?: boolean; // true => "Most asked" badge
+  href: string; // real destination the pill navigates to
+  cta?: boolean; // true => "Talk to Aamir" conversion style (outlined accent, not signal green)
 }
 
 export interface HeroContent {
@@ -35,7 +35,7 @@ export interface HeroContent {
   askPlaceholder: string;
   /** rotating examples typed out in the ask bar */
   askExamples: string[];
-  pills: HeroIntentPill[];
+  pills: HeroPill[];
 }
 
 /** MarketCommentary === the prose (spec: "string"); kept as paragraphs + source. */

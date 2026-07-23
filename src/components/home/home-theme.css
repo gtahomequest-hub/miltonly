@@ -202,6 +202,67 @@
   }
 }
 
+/* desktop mega-menu (home variant): click-popover under each nav trigger.
+   Triggers live inside .m-navlinks, which is display:none <=820px, so the
+   whole mega layer is desktop-only automatically; mobile keeps the hamburger. */
+.home-v2 .m-navitem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.home-v2 .m-navtrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--m-sans);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+  transition: color 0.2s ease;
+}
+.home-v2 .m-navtrigger:hover,
+.home-v2 .m-navtrigger.m-open {
+  color: #fff;
+}
+.home-v2 .m-caret {
+  font-size: 9px;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+.home-v2 .m-navtrigger.m-open .m-caret {
+  transform: rotate(180deg);
+}
+.home-v2 .m-megapanel {
+  position: fixed;
+  top: 64px;
+  z-index: 90;
+  min-width: 224px;
+  display: flex;
+  flex-direction: column;
+  /* darker than the forest hero behind it, with a crisp bright edge + strong
+     shadow so it reads as a floating surface, not a blend. */
+  background: #04160f;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 8px;
+}
+.home-v2 .m-megapanel a {
+  display: block;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13.5px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.home-v2 .m-megapanel a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
 /* scroll-reveal search in the nav */
 .home-v2 .m-navlinks {
   transition: opacity 0.25s ease;
@@ -590,8 +651,8 @@
    "Renting" orphaned 3+1 on desktop). Subtle outlined pills with green
    accents; 44px+ tap targets. */
 .home-v2 .m-pills {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 0 8px;
   padding: 12px 4px 0;
@@ -601,7 +662,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 96px;
   gap: 7px;
   min-height: 44px;
   background: #ffffff;
@@ -619,6 +681,20 @@
 .home-v2 .m-pill-btn:hover {
   background: rgba(1, 120, 72, 0.06);
   border-color: var(--m-accent);
+}
+/* "Talk to Aamir" — conversion action: outlined accent, NOT signal green
+   (signal green stays reserved for the search arrow + primary CTAs). */
+.home-v2 .m-pill-cta {
+  flex-grow: 0;
+  color: var(--m-accent);
+  border-color: var(--m-accent);
+  font-weight: 600;
+  background: #ffffff;
+}
+.home-v2 .m-pill-cta:hover {
+  background: var(--m-accent);
+  border-color: var(--m-accent);
+  color: #fff;
 }
 .home-v2 .m-pill-btn svg {
   width: 15px;
@@ -1297,19 +1373,90 @@
 }
 
 /* footer */
+/* V1 deep-forest footer (#021F18 — forest family, not charcoal/navy). */
 .home-v2 .m-footer {
-  background: var(--m-bg-deep);
+  background: #021f18;
   color: var(--m-text-sec);
   padding: 58px 0 30px;
 }
+/* brand + search-well row */
+.home-v2 .m-ftop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding-bottom: 40px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.home-v2 .m-fbrand {
+  max-width: 360px;
+}
+.home-v2 .m-fbrand p {
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+/* lighter well over the deep forest */
+.home-v2 .m-fsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 340px;
+  max-width: 460px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 6px 6px 6px 16px;
+  transition: 0.2s;
+}
+.home-v2 .m-fsearch:focus-within {
+  border-color: var(--m-accent-on);
+  background: rgba(255, 255, 255, 0.1);
+}
+.home-v2 .m-fsearch input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-family: var(--m-sans);
+  font-size: 14px;
+}
+.home-v2 .m-fsearch input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.home-v2 .m-fsearch button {
+  background: var(--m-accent);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.2s;
+}
+.home-v2 .m-fsearch button:hover {
+  background: var(--m-accent-on);
+}
 .home-v2 .m-fgrid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 26px;
 }
 @media (max-width: 780px) {
   .home-v2 .m-fgrid {
     grid-template-columns: 1fr 1fr;
+  }
+  .home-v2 .m-ftop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .home-v2 .m-fsearch {
+    max-width: none;
   }
 }
 .home-v2 .m-fcol h4 {
@@ -1329,15 +1476,11 @@
 .home-v2 .m-fcol a:hover {
   color: var(--m-green);
 }
-.home-v2 .m-fcol.m-brand .m-logo {
+.home-v2 .m-fbrand .m-logo {
   font-family: var(--m-serif);
   font-size: 25px;
   color: #fff;
   margin-bottom: 12px;
-}
-.home-v2 .m-fcol.m-brand p {
-  font-size: 13.5px;
-  line-height: 1.7;
 }
 .home-v2 .m-compliance {
   border-top: 1px solid rgba(255, 255, 255, 0.08);

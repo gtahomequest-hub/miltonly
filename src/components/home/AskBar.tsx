@@ -11,9 +11,11 @@ interface Props {
 
 export function AskBar({ examples }: Props) {
   const router = useRouter();
-  // 2026-07-20: the retired hero subline's intent ("Ask anything about the
-  // Milton market") now lives here as the resting placeholder.
-  const [placeholder, setPlaceholder] = useState('Ask anything about the Milton market…');
+  // V1 street-first: the resting placeholder invites a street/condo/neighbourhood.
+  // (Search routing itself is unchanged — free text still resolves via /listings?q=;
+  // true street-first routing is out of V1 scope.)
+  const RESTING_PLACEHOLDER = 'Type any Milton street, condo, or neighbourhood';
+  const [placeholder, setPlaceholder] = useState(RESTING_PLACEHOLDER);
   const [value, setValue] = useState('');
   const stopped = useRef(false);
 
@@ -69,7 +71,7 @@ export function AskBar({ examples }: Props) {
 
   const stop = () => {
     stopped.current = true;
-    setPlaceholder('Ask anything about the Milton market…');
+    setPlaceholder(RESTING_PLACEHOLDER);
   };
 
   return (
@@ -92,7 +94,7 @@ export function AskBar({ examples }: Props) {
           stopped.current = true;
           setValue(e.target.value);
         }}
-        aria-label="Ask anything about Milton"
+        aria-label="Search a Milton street, condo, or neighbourhood"
       />
       <button type="submit" className="m-go" aria-label="Ask">
         →

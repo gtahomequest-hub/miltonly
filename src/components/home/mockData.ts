@@ -10,19 +10,22 @@ export const mockHomepageData: HomepageData = {
     headline: 'Milton',
     headlineAccent: 'Real Estate Encyclopedia',
     lede: 'Every street. Every sale. Every answer.',
-    askPlaceholder: 'Ask anything about the Milton market…',
+    // Street-first placeholder (V1). AskBar shows this as the resting placeholder;
+    // askExamples animate over it as street/condo/neighbourhood prompts.
+    askPlaceholder: 'Type any Milton street, condo, or neighbourhood',
     askExamples: [
-      'I need to sell in under 30 days…',
-      'I need to sell and buy at the same time…',
-      'I want a house close to a top school…',
-      'Where in Milton can I build rental income…',
-      "What's my home actually worth right now…",
+      'Farmstead Drive',
+      'Hawthorne Village',
+      'Dempsey',
+      'Main Street East',
+      'Bronte Meadows',
     ],
     pills: [
-      { key: 'wealth', label: 'Build wealth', mostAsked: true },
-      { key: 'sell', label: "What's my home worth?" },
-      { key: 'buy', label: 'Homes for sale' },
-      { key: 'rent', label: 'Renting' },
+      { label: 'Value my home', href: '/sell' },
+      { label: 'Buying', href: '/listings' },
+      { label: 'Selling', href: '/sell' },
+      { label: 'Renting', href: '/rentals' },
+      { label: 'Talk to Aamir', href: '/about', cta: true },
     ],
   },
 
