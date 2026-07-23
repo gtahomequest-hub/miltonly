@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconSpark } from './icons';
+import { resolveHeroHref } from '@/lib/heroSearchClient';
 
 interface Props {
   examples: string[];
@@ -11,21 +12,32 @@ interface Props {
 
 export function AskBar({ examples }: Props) {
   const router = useRouter();
-  // 2026-07-20: the retired hero subline's intent ("Ask anything about the
-  // Milton market") now lives here as the resting placeholder.
-  const [placeholder, setPlaceholder] = useState('Ask anything about the Milton market…');
+  // V1 street-first: the resting placeholder invites a street/condo/neighbourhood.
+  // (Search routing itself is unchanged — free text still resolves via /listings?q=;
+  // true street-first routing is out of V1 scope.)
+  const RESTING_PLACEHOLDER = 'Type any Milton street, condo, or neighbourhood';
+  const [placeholder, setPlaceholder] = useState(RESTING_PLACEHOLDER);
   const [value, setValue] = useState('');
   const stopped = useRef(false);
+  const submitting = useRef(false);
 
-  // Route the question by intent to the page that answers it:
-  // valuation -> /sell, lease -> /rentals, everything else -> listings search.
-  const ask = () => {
+  // Resolve typed text to a real destination, entity-FIRST (street -> condo ->
+  // neighbourhood), then intent (worth/value -> /sell, rent -> /rentals), then
+  // /listings?q=. The match runs server-side via /api/hero-search so it can hit
+  // the entity tables; on any failure we fall back to listings search.
+  const ask = async () => {
     const q = value.trim();
-    if (!q) return;
-    const s = q.toLowerCase();
-    if (/\b(worth|value|valuation|sell|selling|apprais)/.test(s)) router.push('/sell');
-    else if (/\b(rent|rental|lease|leasing|tenant)/.test(s)) router.push('/rentals');
-    else router.push(`/listings?q=${encodeURIComponent(q)}`);
+    if (!q) {
+      router.push('/listings');
+      return;
+    }
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      router.push(await resolveHeroHref(q));
+    } finally {
+      submitting.current = false;
+    }
   };
 
   useEffect(() => {
@@ -69,7 +81,7 @@ export function AskBar({ examples }: Props) {
 
   const stop = () => {
     stopped.current = true;
-    setPlaceholder('Ask anything about the Milton market…');
+    setPlaceholder(RESTING_PLACEHOLDER);
   };
 
   return (
@@ -92,7 +104,7 @@ export function AskBar({ examples }: Props) {
           stopped.current = true;
           setValue(e.target.value);
         }}
-        aria-label="Ask anything about Milton"
+        aria-label="Search a Milton street, condo, or neighbourhood"
       />
       <button type="submit" className="m-go" aria-label="Ask">
         →

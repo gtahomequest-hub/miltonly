@@ -1,6 +1,5 @@
 // src/components/home/Hero.tsx
-import type { HeroContent, MiltonStats, MlsTabKey, TrustInfo } from './types';
-import { TabIcon } from './icons';
+import type { HeroContent, MiltonStats, TrustInfo } from './types';
 import { AskBar } from './AskBar';
 import { HeroMap } from './HeroMap';
 import { compactPrice } from './format';
@@ -9,10 +8,9 @@ interface HeroProps {
   hero: HeroContent;
   stats: MiltonStats;
   trust: TrustInfo;
-  onIntent: (k: MlsTabKey) => void;
 }
 
-export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
+export function Hero({ hero, stats, trust }: HeroProps) {
   return (
     <header className="m-hero">
       <HeroMap />
@@ -52,15 +50,13 @@ export function Hero({ hero, stats, trust, onIntent }: HeroProps) {
             <AskBar examples={hero.askExamples} />
             <div className="m-pills">
               {hero.pills.map((p) => (
-                <button
-                  key={p.key}
-                  className={`m-pill-btn${p.mostAsked ? ' m-feat' : ''}`}
-                  onClick={() => onIntent(p.key)}
+                <a
+                  key={p.label}
+                  href={p.href}
+                  className={`m-pill-btn${p.cta ? ' m-pill-cta' : ''}`}
                 >
-                  <TabIcon k={p.key} />
                   {p.label}
-                  {p.mostAsked && <span className="m-most">Most asked</span>}
-                </button>
+                </a>
               ))}
             </div>
           </div>

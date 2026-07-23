@@ -5,15 +5,18 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
+import { resolveHeroHref } from '@/lib/heroSearchClient';
 
 type Variant = 'home' | 'page';
 
-// Homepage scroll-to-section anchors (the sections only exist on "/").
+// Homepage links. Desktop renders these as mega-menu triggers (see MEGA_PANELS);
+// the `href` is the mobile-panel destination and the desktop fallback. "Explore
+// MLS" now points at /listings (the old #mls anchor died with the MLS section).
 const HOME_LINKS = [
-  { href: '#index', label: 'Neighbourhoods' },
-  { href: '#vip', label: 'Explore streets' },
-  { href: '#mls', label: 'Explore MLS' },
-  { href: '#market', label: 'Market' },
+  { href: '/neighbourhoods', label: 'Neighbourhoods' },
+  { href: '/streets', label: 'Explore streets' },
+  { href: '/listings', label: 'Explore MLS' },
+  { href: '/sold', label: 'Market' },
 ];
 
 // Cross-page links for every other forest page — real routes only.
@@ -23,6 +26,36 @@ const PAGE_LINKS = [
   { href: '/listings', label: 'Explore MLS' },
   { href: '/sold', label: 'Market' },
 ];
+
+// Desktop mega-menu panels, keyed by nav label (real routes only). Modelled on
+// the FiltersBar click-popover pattern (click to open, outside-click / Esc to
+// close). V1: home variant only — page-variant rollout is a later pass.
+const MEGA_PANELS: Record<string, { href: string; label: string }[]> = {
+  Neighbourhoods: [
+    { href: '/neighbourhoods', label: 'All neighbourhoods' },
+    { href: '/condos', label: 'Condo buildings' },
+    { href: '/schools', label: 'Schools' },
+    { href: '/mosques', label: 'Mosques' },
+    { href: '/map', label: 'Map view' },
+  ],
+  'Explore streets': [
+    { href: '/streets', label: 'All streets' },
+    { href: '/map', label: 'Street map' },
+    { href: '/sold', label: 'Recent sales' },
+  ],
+  'Explore MLS': [
+    { href: '/listings', label: 'Homes for sale' },
+    { href: '/rentals', label: 'For rent' },
+    { href: '/sold', label: 'Recently sold' },
+    { href: '/compare', label: 'Compare' },
+    { href: '/exclusive', label: 'Exclusive listings' },
+  ],
+  Market: [
+    { href: '/sold', label: 'Sold data & trends' },
+    { href: '/freehold', label: 'Freehold market' },
+    { href: '/condos', label: 'Condo market' },
+  ],
+};
 
 /**
  * The shared forest nav bar.
@@ -46,13 +79,48 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
   const [searchVisible, setSearchVisible] = useState(false);
   const [navQuery, setNavQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [megaOpen, setMegaOpen] = useState<string | null>(null);
+  const [megaLeft, setMegaLeft] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const burgerRef = useRef<HTMLButtonElement>(null);
+  const navLinksRef = useRef<HTMLDivElement>(null);
 
-  const submitNavSearch = (e: React.FormEvent) => {
+  const toggleMega = (label: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (megaOpen === label) {
+      setMegaOpen(null);
+      return;
+    }
+    setMegaLeft(e.currentTarget.getBoundingClientRect().left);
+    setMegaOpen(label);
+  };
+
+  // Mega-menu dismissal: outside-click, Esc, and scroll/resize (fixed panels
+  // would otherwise drift from their trigger).
+  useEffect(() => {
+    if (!megaOpen) return;
+    const close = () => setMegaOpen(null);
+    const onDown = (e: MouseEvent) => {
+      if (navLinksRef.current && !navLinksRef.current.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', close, { passive: true });
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', close);
+      window.removeEventListener('resize', close);
+    };
+  }, [megaOpen]);
+
+  const submitNavSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const q = navQuery.trim();
-    router.push(q ? `/listings?q=${encodeURIComponent(q)}` : '/listings');
+    // Same entity-first resolver as the hero — one search behaviour sitewide.
+    router.push(await resolveHeroHref(navQuery));
   };
 
   useEffect(() => {
@@ -122,12 +190,51 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
           Milton<b>ly</b>
         </a>
 
-        <div className={`m-navlinks${isHome && searchVisible ? ' m-hidden' : ''}`}>
-          {links.map((l) => (
-            <a key={l.href} href={l.href}>
-              {l.label}
-            </a>
-          ))}
+        <div
+          ref={navLinksRef}
+          className={`m-navlinks${isHome && searchVisible ? ' m-hidden' : ''}`}
+        >
+          {links.map((l) => {
+            const panel = isHome ? MEGA_PANELS[l.label] : undefined;
+            if (!panel) {
+              return (
+                <a key={l.label} href={l.href}>
+                  {l.label}
+                </a>
+              );
+            }
+            const open = megaOpen === l.label;
+            return (
+              <div key={l.label} className="m-navitem">
+                <button
+                  type="button"
+                  className={`m-navtrigger${open ? ' m-open' : ''}`}
+                  aria-haspopup="true"
+                  aria-expanded={open}
+                  onClick={(e) => toggleMega(l.label, e)}
+                >
+                  {l.label}
+                  <span className="m-caret" aria-hidden="true">
+                    ▾
+                  </span>
+                </button>
+                {open && (
+                  <div className="m-megapanel" style={{ left: megaLeft }} role="menu">
+                    {panel.map((p) => (
+                      <a
+                        key={p.href + p.label}
+                        href={p.href}
+                        role="menuitem"
+                        onClick={() => setMegaOpen(null)}
+                      >
+                        {p.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {isHome && (

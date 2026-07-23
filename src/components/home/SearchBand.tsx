@@ -4,15 +4,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconSearch } from './icons';
+import { resolveHeroHref } from '@/lib/heroSearchClient';
 
 export function SearchBand() {
   const router = useRouter();
   const [q, setQ] = useState('');
 
-  const submit = (e: React.FormEvent) => {
+  // Same entity-first resolver as the hero (street/condo/neighbourhood -> intent
+  // -> /listings?q=). One search behaviour sitewide.
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const query = q.trim();
-    router.push(query ? `/listings?q=${encodeURIComponent(query)}` : '/listings');
+    router.push(await resolveHeroHref(q));
   };
 
   return (
