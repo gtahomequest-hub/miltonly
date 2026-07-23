@@ -14,7 +14,6 @@ const METRICS = [
 ] as const;
 type MetricKey = (typeof METRICS)[number]['key'];
 
-const money = (n: number | null) => (n === null ? '—' : '$' + Math.round(n).toLocaleString('en-CA'));
 const money1k = (n: number | null) => (n === null ? '—' : '$' + (Math.round(n / 1000) * 1000).toLocaleString('en-CA'));
 const pct1 = (n: number | null) => (n === null ? '—' : (n * 100).toFixed(1) + '%');
 const titleCase = (slug: string) =>
