@@ -2,12 +2,22 @@
 import type { HeroContent, MiltonStats, TrustInfo } from './types';
 import { AskBar } from './AskBar';
 import { HeroMap } from './HeroMap';
+import { IconSell, IconSearch, IconRent, IconChat } from './icons';
 import { compactPrice } from './format';
 
 interface HeroProps {
   hero: HeroContent;
   stats: MiltonStats;
   trust: TrustInfo;
+}
+
+// Leading icon for each pill (existing repo icon set — no dependency).
+function PillIcon({ label }: { label: string }) {
+  if (label === 'Value my home') return <IconSell />;
+  if (label === 'Buying') return <IconSearch />;
+  if (label === 'Renting') return <IconRent />;
+  if (label === 'Talk to Aamir') return <IconChat />;
+  return null;
 }
 
 export function Hero({ hero, stats, trust }: HeroProps) {
@@ -55,20 +65,24 @@ export function Hero({ hero, stats, trust }: HeroProps) {
                   href={p.href}
                   className={`m-pill-btn${p.cta ? ' m-pill-cta' : ''}`}
                 >
+                  <span className="m-pill-ic">
+                    <PillIcon label={p.label} />
+                  </span>
                   {p.label}
                 </a>
               ))}
             </div>
-          </div>
-
-          <div className="m-trustlogos">
-            <span>
-              ★ {trust.rating} · {trust.reviewCount}+ families helped
-            </span>
-            <span>·</span>
-            <b>{trust.credentials[0]}</b>
-            <span>·</span>
-            <span>TRREB · RECO</span>
+            {/* trust markers now live in a flush bar inside the card */}
+            <div className="m-cardtrust">
+              <span className="m-stars" aria-hidden="true">★★★★★</span>
+              <span>{trust.rating.toFixed(1)}</span>
+              <span className="m-td">·</span>
+              <span>{trust.reviewCount}+ families helped</span>
+              <span className="m-td">·</span>
+              <b>{trust.credentials[0]}</b>
+              <span className="m-td">·</span>
+              <span>TRREB · RECO</span>
+            </div>
           </div>
         </div>
       </div>
