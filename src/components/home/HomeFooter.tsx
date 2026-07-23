@@ -1,5 +1,6 @@
 // src/components/home/HomeFooter.tsx
 import type { FooterData, TrustInfo } from './types';
+import { FooterSearch } from './FooterSearch';
 
 interface Props {
   footer: FooterData;
@@ -21,18 +22,7 @@ export function HomeFooter({ footer, brand }: Props) {
             <div className="m-logo">Miltonly</div>
             <p>Milton Real Estate Encyclopedia — neighbourhood by neighbourhood, street by street.</p>
           </div>
-          {/* Native GET form → /listings?q=… (no client JS needed). */}
-          <form className="m-fsearch" action="/listings" method="get" role="search">
-            <input
-              name="q"
-              type="search"
-              placeholder="Find a street, condo building, or neighbourhood"
-              aria-label="Find a street, condo building, or neighbourhood"
-            />
-            <button type="submit" aria-label="Search">
-              →
-            </button>
-          </form>
+          <FooterSearch />
         </div>
 
         <div className="m-fgrid">

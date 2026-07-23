@@ -1,114 +1,153 @@
 // src/lib/heroSearch.ts
-// Hero search resolver: turn typed text into a real destination, entity-FIRST.
-// Order (per Board V1 FIX 1): ResidentialStreet -> CondoBuilding -> Neighbourhood
-// -> intent keywords (worth/value -> /sell, rent/lease -> /rentals) -> /listings?q=.
+// Hero/search resolver: turn typed text into a real destination, entity-first.
 //
-// Matching is deterministic NORMALIZED-EXACT, not fuzzy — NO new dependency.
-// Both the query and each entity's canonical SLUG are reduced to a "core key"
-// by lowercasing, dropping "milton"/province tokens, and stripping trailing
-// street-type + directional tokens. So "twiss", "Twiss Rd", and
-// "Twiss Road Milton" all reduce to "twiss" and hit /streets/twiss-road-milton.
+// TWO-TIER match so a bare neighbourhood name and a same-named street can both
+// resolve correctly (Board V1 FIX 1 + collision flip):
 //
-// Entity-before-intent is the whole point: "Holdsworth Cres" (a real street whose
-// name contains "worth") resolves to the STREET, not /sell; bare "worth" has no
-// street key and falls through to the /sell intent.
+//   Tier 1 — EXACT full key (keep street-type + directional tokens, expand
+//            abbreviations, drop milton/province). Order: street -> condo ->
+//            neighbourhood. So "Beaty Trail" and "Twiss Road" match their STREET
+//            exactly; a bare "Beaty"/"Dempsey" doesn't match any street's full
+//            key but DOES match the neighbourhood's -> neighbourhood.
+//   Tier 2 — LOOSE core key (also strip trailing street-type + directional
+//            tokens). Order flips to NEIGHBOURHOOD -> street -> condo, so on a
+//            genuine collision the neighbourhood wins. "twiss" (no neighbourhood)
+//            still falls to the street here.
+//   Then intent keywords (worth/value -> /sell, rent/lease -> /rentals), then
+//   /listings?q=.
+//
+// Result: "Beaty" -> /neighbourhoods/beaty, "Beaty Trail" -> the street,
+//         "twiss" -> the street, "Holdsworth Cres" -> the street (not /sell).
 //
 // Keys are built from the clean canonical SLUG, never the messy `name` field
-// ("Twiss Rd", "Farmstead. Dr"). Collisions (two distinct streets reducing to the
-// same core, e.g. Main St E / Main St W -> "main") are marked AMBIGUOUS and
-// excluded, so we never guess — those fall through to /listings?q= search.
+// ("Twiss Rd", "Farmstead. Dr"). A key mapping to >1 distinct slug is AMBIGUOUS
+// and excluded, so we never guess — those fall through.
 
 import { prisma } from "@/lib/prisma";
 
 const DROP = new Set(["milton", "on", "ont", "ontario", "canada", "ca"]);
 
-// Street-type + directional tokens stripped from the TAIL of a name/slug.
+// Abbreviation + directional expansion, applied per token for the FULL key so a
+// typed abbreviation matches the slug's full words ("rd" -> "road", "s" -> "south").
+const EXPAND: Record<string, string> = {
+  rd: "road", av: "avenue", ave: "avenue", st: "street", dr: "drive",
+  blvd: "boulevard", cres: "crescent", crt: "court", ct: "court", cir: "circle",
+  pl: "place", ln: "lane", trl: "trail", ter: "terrace", terr: "terrace",
+  pkwy: "parkway", sq: "square", gt: "gate", grv: "grove", hts: "heights",
+  n: "north", s: "south", e: "east", w: "west",
+  ne: "northeast", nw: "northwest", se: "southeast", sw: "southwest",
+};
+
+// Trailing street-type + directional tokens stripped for the LOOSE key.
 const TAIL = new Set([
-  // directionals
   "n", "s", "e", "w", "north", "south", "east", "west", "ne", "nw", "se", "sw",
-  // street types (Ontario common)
   "rd", "road", "ave", "av", "avenue", "st", "street", "dr", "drive", "blvd", "boulevard",
   "cres", "crescent", "crt", "ct", "court", "way", "ln", "lane", "pl", "place", "cir", "circle",
   "terr", "ter", "terrace", "gate", "gt", "grove", "grv", "trail", "trl", "hts", "heights",
   "pkwy", "parkway", "sq", "square", "row", "close", "common", "commons", "gardens", "gdns",
   "green", "grn", "mews", "path", "ridge", "run", "walk", "bay", "line", "cross", "crossing",
-  "hollow", "hill", "view", "vale", "glen", "manor", "park", "pass", "point", "pt", "gardens",
+  "hollow", "hill", "view", "vale", "glen", "manor", "park", "pass", "point", "pt",
 ]);
 
-/** Reduce a name or slug to its comparable "core" (letters/digits only). */
-export function coreKey(input: string): string {
-  const toks = input
+function tokens(input: string): string[] {
+  return input
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .split(" ")
     .filter(Boolean)
     .filter((t) => !DROP.has(t));
+}
+
+/** Full key: keep every token, expand abbreviations/directionals. */
+export function fullKey(input: string): string {
+  return tokens(input).map((t) => EXPAND[t] ?? t).join("");
+}
+
+/** Loose key: strip trailing street-type + directional tokens. */
+export function looseKey(input: string): string {
+  const toks = tokens(input);
   while (toks.length > 1 && TAIL.has(toks[toks.length - 1])) toks.pop();
   return toks.join("");
 }
 
-type Index = {
-  streets: Map<string, string>;
-  condos: Map<string, string>;
-  neighbourhoods: Map<string, string>;
-};
+type KeyMap = { full: Map<string, string>; loose: Map<string, string> };
+type Index = { streets: KeyMap; condos: KeyMap; neighbourhoods: KeyMap };
 
 let _cache: Index | null = null;
 let _cacheAt = 0;
-const TTL_MS = 60 * 60 * 1000; // entities change rarely; refresh hourly
+const TTL_MS = 60 * 60 * 1000;
 
-/** Build a key->slug map, dropping any key that maps to >1 distinct slug. */
-function buildMap(rows: { slug: string }[]): Map<string, string> {
-  const map = new Map<string, string>();
-  const ambiguous = new Set<string>();
+/** Build full+loose key->slug maps, dropping keys that map to >1 distinct slug. */
+function buildKeyMap(rows: { slug: string }[]): KeyMap {
+  const full = new Map<string, string>();
+  const loose = new Map<string, string>();
+  const fAmb = new Set<string>();
+  const lAmb = new Set<string>();
   for (const r of rows) {
-    const k = coreKey(r.slug);
-    if (!k) continue;
-    const existing = map.get(k);
-    if (existing === undefined) map.set(k, r.slug);
-    else if (existing !== r.slug) ambiguous.add(k);
+    const fk = fullKey(r.slug);
+    if (fk) {
+      const ex = full.get(fk);
+      if (ex === undefined) full.set(fk, r.slug);
+      else if (ex !== r.slug) fAmb.add(fk);
+    }
+    const lk = looseKey(r.slug);
+    if (lk) {
+      const ex = loose.get(lk);
+      if (ex === undefined) loose.set(lk, r.slug);
+      else if (ex !== r.slug) lAmb.add(lk);
+    }
   }
-  ambiguous.forEach((k) => map.delete(k));
-  return map;
+  fAmb.forEach((k) => full.delete(k));
+  lAmb.forEach((k) => loose.delete(k));
+  return { full, loose };
 }
 
 async function getIndex(): Promise<Index> {
   if (_cache && Date.now() - _cacheAt < TTL_MS) return _cache;
   const [streets, condos, neighbourhoods] = await Promise.all([
-    // most-sold first so a first-wins collision (before ambiguity check) favours it
-    prisma.residentialStreet.findMany({
-      select: { slug: true },
-      orderBy: { soldCount12mo: "desc" },
-    }),
+    prisma.residentialStreet.findMany({ select: { slug: true }, orderBy: { soldCount12mo: "desc" } }),
     prisma.condoBuilding.findMany({ select: { slug: true } }),
     prisma.neighbourhood.findMany({ select: { slug: true } }),
   ]);
   _cache = {
-    streets: buildMap(streets),
-    condos: buildMap(condos),
-    neighbourhoods: buildMap(neighbourhoods),
+    streets: buildKeyMap(streets),
+    condos: buildKeyMap(condos),
+    neighbourhoods: buildKeyMap(neighbourhoods),
   };
   _cacheAt = Date.now();
   return _cache;
 }
 
-/** Resolve typed hero-search text to a destination href. */
+/** Resolve typed text to a destination href. */
 export async function resolveHeroSearch(raw: string): Promise<string> {
   const q = raw.trim();
   if (!q) return "/listings";
 
-  const key = coreKey(q);
-  if (key) {
+  const fk = fullKey(q);
+  const lk = looseKey(q);
+  if (fk || lk) {
     const idx = await getIndex();
-    const street = idx.streets.get(key);
-    if (street) return `/streets/${street}`;
-    const condo = idx.condos.get(key);
-    if (condo) return `/condos/${condo}`;
-    const nb = idx.neighbourhoods.get(key);
-    if (nb) return `/neighbourhoods/${nb}`;
+    // Tier 1 — exact full key: street -> condo -> neighbourhood.
+    if (fk) {
+      const s = idx.streets.full.get(fk);
+      if (s) return `/streets/${s}`;
+      const c = idx.condos.full.get(fk);
+      if (c) return `/condos/${c}`;
+      const n = idx.neighbourhoods.full.get(fk);
+      if (n) return `/neighbourhoods/${n}`;
+    }
+    // Tier 2 — loose key: neighbourhood -> street -> condo (collision flip).
+    if (lk) {
+      const n = idx.neighbourhoods.loose.get(lk);
+      if (n) return `/neighbourhoods/${n}`;
+      const s = idx.streets.loose.get(lk);
+      if (s) return `/streets/${s}`;
+      const c = idx.condos.loose.get(lk);
+      if (c) return `/condos/${c}`;
+    }
   }
 
-  // Intent keywords run AFTER entity matching (so real streets win).
+  // Intent keywords run AFTER entity matching so real streets win.
   const s = q.toLowerCase();
   if (/\b(worth|value|valuation|sell|selling|apprais)/.test(s)) return "/sell";
   if (/\b(rent|rental|lease|leasing|tenant)/.test(s)) return "/rentals";

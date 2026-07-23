@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconSpark } from './icons';
+import { resolveHeroHref } from '@/lib/heroSearchClient';
 
 interface Props {
   examples: string[];
@@ -33,11 +34,7 @@ export function AskBar({ examples }: Props) {
     if (submitting.current) return;
     submitting.current = true;
     try {
-      const res = await fetch(`/api/hero-search?q=${encodeURIComponent(q)}`);
-      const data = (await res.json()) as { href?: string };
-      router.push(data.href || `/listings?q=${encodeURIComponent(q)}`);
-    } catch {
-      router.push(`/listings?q=${encodeURIComponent(q)}`);
+      router.push(await resolveHeroHref(q));
     } finally {
       submitting.current = false;
     }

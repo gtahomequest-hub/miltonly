@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
+import { resolveHeroHref } from '@/lib/heroSearchClient';
 
 type Variant = 'home' | 'page';
 
@@ -116,10 +117,10 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
     };
   }, [megaOpen]);
 
-  const submitNavSearch = (e: React.FormEvent) => {
+  const submitNavSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const q = navQuery.trim();
-    router.push(q ? `/listings?q=${encodeURIComponent(q)}` : '/listings');
+    // Same entity-first resolver as the hero — one search behaviour sitewide.
+    router.push(await resolveHeroHref(navQuery));
   };
 
   useEffect(() => {
