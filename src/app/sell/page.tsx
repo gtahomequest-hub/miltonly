@@ -17,7 +17,7 @@ export const metadata = genMeta({
 // (src/lib/homepageData.ts) — repeated as literals so /sell stays static
 // with no DB module in its graph.
 const TRUST = {
-  rating: "4.9",
+  rating: "5.0",
   reviewCount: "235+",
   idx: "1809031",
   vow: "1848370",

@@ -15,7 +15,7 @@ export interface MiltonStats {
 }
 
 export interface TrustInfo {
-  rating: number; // 4.9
+  rating: number; // 5.0
   reviewCount: number; // 235
   credentials: string[]; // ["RE/MAX Hall of Fame", "MLS-grounded data", "Updated daily"]
   idx: string; // "1809031"

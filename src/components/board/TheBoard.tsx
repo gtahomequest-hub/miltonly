@@ -1,16 +1,16 @@
 // src/components/board/TheBoard.tsx
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { BoardTab, MetricBlock } from '@/lib/board/computeBoard';
-import { ThinSegmentCard } from './ThinSegmentCard';
 import './board.css';
 
+// Short labels for the compact inline metric selector (Price · Volume · Days · Sold/ask).
 const METRICS = [
-  { key: 'typical', label: 'Typical price' },
-  { key: 'salesVolume', label: 'Sales volume' },
-  { key: 'daysToSell', label: 'Days to sell' },
-  { key: 'soldToAsk', label: 'Sold to ask' },
+  { key: 'typical', label: 'Price' },
+  { key: 'salesVolume', label: 'Volume' },
+  { key: 'daysToSell', label: 'Days' },
+  { key: 'soldToAsk', label: 'Sold/ask' },
 ] as const;
 type MetricKey = (typeof METRICS)[number]['key'];
 
@@ -143,35 +143,41 @@ export function TheBoard({ board }: { board: BoardTab[] }) {
           </div>
         )}
 
-        <div className="brd-metrics">
-          {METRICS.map((m) => (
-            <button
-              key={m.key}
-              className={`brd-metric${m.key === metric ? ' brd-metric-on' : ''}`}
-              onClick={() => setMetric(m.key)}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="brd-headline">
-          <div className="brd-big">{h.value}</div>
-          <div className="brd-deltas">
-            {h.showMonth && <DeltaChip value={h.block.deltaMonth} label="vs last month" goodWhenDown={h.goodWhenDown} />}
-            <DeltaChip value={h.block.deltaYear} label="vs last year" goodWhenDown={h.goodWhenDown} />
+        {/* compact two-column core: left = selector/headline/deltas/provenance,
+            right = chart. Stacks to one column below 900px. */}
+        <div className="brd-core">
+          <div className="brd-left">
+            <div className="brd-metricsel">
+              {METRICS.map((m, i) => (
+                <Fragment key={m.key}>
+                  {i > 0 && <span className="brd-msep" aria-hidden="true">·</span>}
+                  <button
+                    className={`brd-msel${m.key === metric ? ' brd-msel-on' : ''}`}
+                    onClick={() => setMetric(m.key)}
+                  >
+                    {m.label}
+                  </button>
+                </Fragment>
+              ))}
+            </div>
+            <div className="brd-big">{h.value}</div>
+            <div className="brd-deltas">
+              {h.showMonth && <DeltaChip value={h.block.deltaMonth} label="vs last month" goodWhenDown={h.goodWhenDown} />}
+              <DeltaChip value={h.block.deltaYear} label="vs last year" goodWhenDown={h.goodWhenDown} />
+            </div>
+            <div className="brd-prov">{h.prov}</div>
           </div>
-          <div className="brd-prov">{h.prov}</div>
+          <div className="brd-right">
+            <Chart data={tab.chart} />
+          </div>
         </div>
 
         {metric === 'typical' && <PriceBandBar band={tab.priceBand} typical={tab.typical.value} />}
 
-        <Chart data={tab.chart} />
-
         <div className="brd-tiles">
           <div className="brd-tile">
             <div className="brd-tile-v">{tab.salesVolume.value?.toLocaleString('en-CA') ?? '—'}</div>
-            <div className="brd-tile-l">Sales volume<span>trailing 12 months</span></div>
+            <div className="brd-tile-l">Sales volume<span>trailing 12mo</span></div>
           </div>
           <div className="brd-tile">
             <div className="brd-tile-v">{tab.daysToSell.value === null ? '—' : Math.round(tab.daysToSell.value)}</div>
@@ -187,16 +193,16 @@ export function TheBoard({ board }: { board: BoardTab[] }) {
           </div>
         </div>
 
+        {/* Board-only: one suppression line instead of four thin cards (the
+            ThinSegmentCard component stays for style/type pages). */}
         {tab.suppressed.length > 0 && (
-          <div className="brd-thins">
-            {tab.suppressed.map((c) => (
-              <ThinSegmentCard
-                key={`${c.type}-${c.slug}`}
-                label={`${titleCase(c.slug)} · ${c.type}`}
-                count={c.count}
-                window={tab.widenedTo}
-              />
-            ))}
+          <div className="brd-supline">
+            <span className="brd-supicon" aria-hidden="true">ⓘ</span>
+            <span className="brd-suptext">
+              {tab.suppressed.length} segment{tab.suppressed.length === 1 ? '' : 's'} too thin to publish:{' '}
+              {tab.suppressed.map((c) => `${titleCase(c.slug)} ${c.type}`).join(', ')}.
+            </span>
+            <a className="brd-suplink" href="/sell">Get a grounded valuation →</a>
           </div>
         )}
       </div>

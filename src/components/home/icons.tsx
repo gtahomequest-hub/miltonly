@@ -46,6 +46,36 @@ export const IconRent = () =>
     </>,
   );
 
+// Conversation icon — "Talk to Aamir" pill.
+export const IconChat = () =>
+  box(
+    <>
+      <path d="M21 15a2 2 0 0 1-2 2H8l-4 3V6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2z" />
+    </>,
+  );
+
+// Entity-type icons for the hero autocomplete rows.
+export const IconPin = () =>
+  box(
+    <>
+      <path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </>,
+  );
+export const IconRoad = () =>
+  box(
+    <>
+      <path d="M6 21 9 3M18 21 15 3M12 5v2M12 11v2M12 17v2" />
+    </>,
+  );
+export const IconBuilding = () =>
+  box(
+    <>
+      <path d="M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 21V9h3a1 1 0 0 1 1 1v11M2 21h20" />
+      <path d="M8 8h1M11 8h1M8 12h1M11 12h1M8 16h1M11 16h1" />
+    </>,
+  );
+
 export const TabIcon = ({ k }: { k: MlsTabKey }) => {
   switch (k) {
     case 'wealth':

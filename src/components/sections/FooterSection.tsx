@@ -30,7 +30,7 @@ const legalLinks = [
 const trustBadges = [
   "🏆 RE/MAX Hall of Fame",
   `📅 ${config.realtor.yearsExperience} years in ${config.CITY_NAME}`,
-  "⭐ 4.9/5 Google reviews",
+  "⭐ 5.0/5 Google reviews",
 ];
 
 const WHATSAPP_HREF = `https://wa.me/${config.realtor.phoneE164.replace("+", "")}?text=Hi%20Aamir%2C%20I%20found%20you%20on%20miltonly.com`;
