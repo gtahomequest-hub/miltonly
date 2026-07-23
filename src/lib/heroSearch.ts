@@ -68,7 +68,7 @@ function buildMap(rows: { slug: string }[]): Map<string, string> {
     if (existing === undefined) map.set(k, r.slug);
     else if (existing !== r.slug) ambiguous.add(k);
   }
-  for (const k of ambiguous) map.delete(k);
+  ambiguous.forEach((k) => map.delete(k));
   return map;
 }
 
