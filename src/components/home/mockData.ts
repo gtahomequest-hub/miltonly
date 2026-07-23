@@ -21,9 +21,12 @@ export const mockHomepageData: HomepageData = {
       'Bronte Meadows',
     ],
     pills: [
+      // "Selling" dropped: no seller destination distinct from /sell (the
+      // valuation surface "Value my home" already targets). /value is a noindex
+      // per-neighbourhood door-hanger landing, not a nav target. Four pills
+      // rather than two identical /sell routes — see FIX 2 report.
       { label: 'Value my home', href: '/sell' },
       { label: 'Buying', href: '/listings' },
-      { label: 'Selling', href: '/sell' },
       { label: 'Renting', href: '/rentals' },
       { label: 'Talk to Aamir', href: '/about', cta: true },
     ],

@@ -18,16 +18,29 @@ export function AskBar({ examples }: Props) {
   const [placeholder, setPlaceholder] = useState(RESTING_PLACEHOLDER);
   const [value, setValue] = useState('');
   const stopped = useRef(false);
+  const submitting = useRef(false);
 
-  // Route the question by intent to the page that answers it:
-  // valuation -> /sell, lease -> /rentals, everything else -> listings search.
-  const ask = () => {
+  // Resolve typed text to a real destination, entity-FIRST (street -> condo ->
+  // neighbourhood), then intent (worth/value -> /sell, rent -> /rentals), then
+  // /listings?q=. The match runs server-side via /api/hero-search so it can hit
+  // the entity tables; on any failure we fall back to listings search.
+  const ask = async () => {
     const q = value.trim();
-    if (!q) return;
-    const s = q.toLowerCase();
-    if (/\b(worth|value|valuation|sell|selling|apprais)/.test(s)) router.push('/sell');
-    else if (/\b(rent|rental|lease|leasing|tenant)/.test(s)) router.push('/rentals');
-    else router.push(`/listings?q=${encodeURIComponent(q)}`);
+    if (!q) {
+      router.push('/listings');
+      return;
+    }
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      const res = await fetch(`/api/hero-search?q=${encodeURIComponent(q)}`);
+      const data = (await res.json()) as { href?: string };
+      router.push(data.href || `/listings?q=${encodeURIComponent(q)}`);
+    } catch {
+      router.push(`/listings?q=${encodeURIComponent(q)}`);
+    } finally {
+      submitting.current = false;
+    }
   };
 
   useEffect(() => {
