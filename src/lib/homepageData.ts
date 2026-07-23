@@ -1,26 +1,22 @@
 // src/lib/homepageData.ts
-// THE SEAM (read side). getHomepageData() returns the HomepageData shape the
-// home-v2 layout consumes, wiring REAL data where a live source exists:
-//   - stats        : buildMiltonWideContext() — the SAME Milton-wide rollup the urban hubs use
-//   - neighbourhoods: Neighbourhood table + a per-neighbourhood DB2 sale aggregate
-//                     (k-anon: typicalPriceRounded null when <5 sales -> silent card)
-//   - vipStreets   : ResidentialStreet VIP classification
-//   - commentary   : TEMPLATED from the real stats (no LLM Milton-wide commentary exists)
-//   - footer/counts: live entity counts
-//   - trust        : real business facts (user-confirmed), hardcoded
-//   - hero         : STATIC editorial carried from mockData (no live source)
-//   - mls          : NOT built — the "Explore Milton MLS" homepage section was removed
-//                    (duplicated the hero quick-picks); the MlsExplore component stays in-repo for reuse
-//   - character    : STATIC editorial map below (the Neighbourhood table has no character field)
+// THE SEAM (read side). getHomepageData() returns the HomepageData the streamlined
+// home-v2 layout consumes (Nav → Hero → Board → TrustBand → Footer):
+//   - stats.typicalPrice : ALL-MILTON MEDIAN (dedicated query) — matches the Board's
+//                          median kind; sold12mo/onMarket/dom from buildMiltonWideContext()
+//   - footer/counts      : light live queries (top-3 neighbourhoods, top-2 VIP streets, counts)
+//   - trust              : real business facts (user-confirmed), hardcoded
+//   - hero               : STATIC editorial carried from mockData (no live source)
+// Perf trim: the per-neighbourhood sold aggregate, the neighbourhood-card array, the
+// VIP strip, the templated commentary, and the mls config are NO LONGER computed —
+// their homepage sections were removed. NEIGHBOURHOOD_CHARACTER below is retained
+// because hubData.ts imports it.
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { expandStreetName } from "@/lib/street-data";
-import { fullPrice } from "@/components/home/format";
 import { mockHomepageData } from "@/components/home/mockData";
-import type { HomepageData, NeighbourhoodCard } from "@/components/home/types";
+import type { HomepageData } from "@/components/home/types";
 
-const K_ANON_PRICE = 5;
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
 // STATIC editorial character lines (no DB source). Carried from mockData where
@@ -54,116 +50,71 @@ export const NEIGHBOURHOOD_CHARACTER: Record<string, string> = {
 };
 
 export async function getHomepageData(): Promise<HomepageData> {
-  // ── stats: the hubs' Milton-wide rollup (single source of truth) ──
+  // ── stats ──
+  // sold12mo / onMarket / dom come from the shared Milton-wide rollup (unchanged).
+  // typicalPrice is the ALL-MILTON MEDIAN (FIX 1): a dedicated median query so the
+  // hero's "typical" reads the same kind of figure as the Board (median, not the
+  // right-tail-inflated mean). All-Milton scope; no coupling to board_stats. Falls
+  // back to the rollup mean if the sold DB is unavailable.
   const mw = await buildMiltonWideContext();
+  const soldDb = getSoldDb();
+  let medianAll: number | null = null;
+  if (soldDb) {
+    const r = (await soldDb`SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY sold_price) AS med
+      FROM sold.sold_records
+      WHERE transaction_type = 'For Sale' AND perm_advertise = TRUE
+        AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`) as Array<{ med: unknown }>;
+    const m = r[0]?.med;
+    medianAll = m != null && Number.isFinite(Number(m)) ? Number(m) : null;
+  }
+  const typicalSource = medianAll ?? mw.aggregates.typicalPrice;
   const stats = {
-    typicalPrice: mw.aggregates.typicalPrice != null ? round5k(mw.aggregates.typicalPrice) : 0,
+    typicalPrice: typicalSource != null ? round5k(typicalSource) : 0,
     sold12mo: mw.aggregates.salesCount,
     onMarket: mw.activeListingsCount,
     dom: mw.aggregates.daysOnMarket ?? 0,
   };
 
-  // ── neighbourhoods: table + per-neighbourhood DB2 sale aggregate (k-anon) ──
-  const [nbRows, totalNbhd, sold, publishedHubs] = await Promise.all([
-    prisma.neighbourhood.findMany({ select: { slug: true, name: true, rawStrings: true, profile: true } }),
+  // ── footer only (perf trim) ──
+  // The homepage now renders just the Board as its market read, so the heavy
+  // per-neighbourhood sold aggregate, the neighbourhood-card array, the VIP-street
+  // strip, and the templated commentary are no longer computed. The footer needs
+  // only top-3 neighbourhoods + top-2 VIP streets + counts — all light queries.
+  const cleanName = (n: string) => expandStreetName(n).replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
+  const [nbTop, totalNbhd, vipRows, streetCount, publishedHubs] = await Promise.all([
+    prisma.neighbourhood.findMany({
+      where: { profile: { not: "standard_no_hub" } },
+      orderBy: { name: "asc" },
+      select: { slug: true, name: true },
+    }),
     prisma.neighbourhood.count(),
-    Promise.resolve(getSoldDb()),
-    // only link cards whose hub page actually resolves (unpublished hub = 404)
-    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
-  ]);
-  const publishedSlugs = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
-  type SoldAgg = { neighbourhood: string; n: number; total: number };
-  const soldRows: SoldAgg[] = sold
-    ? ((await sold`SELECT neighbourhood, COUNT(*)::int AS n, COALESCE(SUM(sold_price),0)::float AS total
-         FROM sold.sold_records
-         WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
-           AND sold_date >= NOW() - INTERVAL '12 months'
-           AND sold_date <= NOW()
-         GROUP BY neighbourhood`) as SoldAgg[])
-    : [];
-  const aggByRaw = new Map(soldRows.map((r) => [r.neighbourhood, r]));
-
-  const neighbourhoods: NeighbourhoodCard[] = nbRows
-    .filter((nb) => nb.profile !== "standard_no_hub") // industrial/no-hub (Derry Green) is not a featured card
-    .filter((nb) => publishedSlugs.has(nb.slug)) // no card may link to a 404
-    .map((nb) => {
-      let n = 0;
-      let total = 0;
-      for (const raw of nb.rawStrings) {
-        const r = aggByRaw.get(raw);
-        if (r) { n += r.n; total += r.total; }
-      }
-      const typicalPriceRounded = n >= K_ANON_PRICE && total > 0 ? round5k(total / n) : null;
-      const group: NeighbourhoodCard["group"] = nb.profile === "urban_hub" ? "urban" : "rural";
-      const card: NeighbourhoodCard = {
-        name: nb.name,
-        character: NEIGHBOURHOOD_CHARACTER[nb.slug] ?? (group === "rural" ? "Rural Milton — large lots, thinner resale activity." : "Established Milton neighbourhood."),
-        typicalPriceRounded,
-        slug: nb.slug,
-        group,
-      };
-      if (typicalPriceRounded === null) card.silentNote = "typical price not stated — thin activity; see road pages";
-      return card;
-    })
-    // urban first (price desc), then rural (price desc, silent last)
-    .sort((a, b) =>
-      a.group !== b.group
-        ? a.group === "urban" ? -1 : 1
-        : (b.typicalPriceRounded ?? -1) - (a.typicalPriceRounded ?? -1),
-    );
-
-  // ── VIP streets + street count ──
-  const [vipRows, streetCount] = await Promise.all([
     prisma.residentialStreet.findMany({
       where: { isVip: true },
       orderBy: { soldCount12mo: "desc" },
-      take: 6,
-      select: { name: true, slug: true, soldCount12mo: true },
+      take: 2,
+      select: { name: true, slug: true },
     }),
     prisma.residentialStreet.count(),
+    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
   ]);
-  // expandStreetName leaves a stray abbreviation period on a few raw names
-  // ("Farmstead. Dr" -> "Farmstead. Drive"); collapse "<word>. " to "<word> ".
-  const cleanName = (n: string) => expandStreetName(n).replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
-  const vipStreets = vipRows.map((s) => ({ name: cleanName(s.name), soldCount: s.soldCount12mo, slug: s.slug }));
-
-  // ── commentary: TEMPLATED from the real stats (no Milton-wide LLM commentary exists) ──
-  const commentary = {
-    paragraphs: [
-      `The typical Milton home has traded near ${fullPrice(stats.typicalPrice)} over the trailing twelve months, drawn from ${stats.sold12mo.toLocaleString("en-CA")} recorded sales across the town's ${totalNbhd} neighbourhoods.`,
-      `Homes are taking about ${stats.dom} days to sell, with ${stats.onMarket.toLocaleString("en-CA")} listings active right now. The read below moves by neighbourhood, where the real differences live.`,
-    ],
-    source: "Grounded in trailing-12-month TREB sold data · updated continuously",
-  };
-
-  // The homepage no longer renders the "Explore Milton MLS" section (it duplicated
-  // the hero quick-picks), so no `mls` lens config is built or serialized to the
-  // client. The MlsExplore component is retained in-repo for reuse on a future
-  // Explore-MLS surface. See the removal report for the routing follow-up.
-
-  // ── footer ──
+  const publishedSlugs = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
   const footer = {
-    topNeighbourhoods: neighbourhoods.slice(0, 3).map((n) => ({ name: n.name, slug: n.slug })),
-    topStreets: vipStreets.slice(0, 2).map((s) => ({ name: s.name, slug: s.slug })),
+    topNeighbourhoods: nbTop.filter((n) => publishedSlugs.has(n.slug)).slice(0, 3).map((n) => ({ name: n.name, slug: n.slug })),
+    topStreets: vipRows.map((s) => ({ name: cleanName(s.name), slug: s.slug })),
     neighbourhoodCount: totalNbhd,
     streetCount,
   };
 
   return {
     stats,
-    hero: mockHomepageData.hero,           // STATIC copy (no live source) — FLAG
-    trust: {                                // real business facts (user-confirmed), hardcoded
+    hero: mockHomepageData.hero, // STATIC copy (no live source) — FLAG
+    trust: {
       rating: 4.9,
       reviewCount: 235,
       credentials: ["RE/MAX Hall of Fame", "MLS-grounded data", "Updated daily"],
       idx: "1809031",
       vow: "1848370",
     },
-    commentary,
-    neighbourhoods,
-    neighbourhoodCount: totalNbhd,
-    vipStreets,
-    streetCount,
     footer,
   };
 }

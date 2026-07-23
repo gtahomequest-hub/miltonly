@@ -101,10 +101,14 @@ export async function loadBoardInputs(): Promise<{ sales: Sale[]; active: Record
   for (const nb of nbs) for (const raw of nb.rawStrings) rawToSlug.set(raw, { slug: nb.slug, kind: nb.kind });
 
   const lotFt = `CASE WHEN lot_size_units='Metres' THEN lot_width*3.28084 WHEN lot_size_units='Acres' THEN 9999 ELSE lot_width END`;
+  // dom = LIST-TO-FIRM (contract_date − list_date), i.e. true "days to sell".
+  // The stored days_on_market is list-to-CLOSE and is NOT used here.
+  const domFirm = `CASE WHEN contract_date IS NOT NULL AND list_date IS NOT NULL AND contract_date >= list_date
+    THEN EXTRACT(EPOCH FROM (contract_date - list_date)) / 86400 END`;
   const rows = (await sold`
     SELECT property_type, neighbourhood, sold_price,
            EXTRACT(EPOCH FROM sold_date) * 1000 AS t_ms,
-           days_on_market, sold_to_ask_ratio,
+           (${sold.unsafe(domFirm)}) AS dom_firm, sold_to_ask_ratio,
            (${sold.unsafe(lotFt)}) AS lot_ft
     FROM sold.sold_records
     WHERE transaction_type = 'For Sale' AND perm_advertise = TRUE
@@ -122,7 +126,7 @@ export async function loadBoardInputs(): Promise<{ sales: Sale[]; active: Record
     const price = num(r.sold_price);
     const t = num(r.t_ms);
     if (price === null || t === null) continue;
-    sales.push({ type, slug: map.slug, price, t, dom: num(r.days_on_market), sta: num(r.sold_to_ask_ratio) });
+    sales.push({ type, slug: map.slug, price, t, dom: num(r.dom_firm), sta: num(r.sold_to_ask_ratio) });
   }
 
   const grp = await prisma.listing.groupBy({

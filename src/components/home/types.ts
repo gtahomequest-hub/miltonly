@@ -109,11 +109,13 @@ export interface HomepageData {
   stats: MiltonStats;
   hero: HeroContent;
   trust: TrustInfo;
-  commentary: MarketCommentary;
-  neighbourhoods: NeighbourhoodCard[];
-  neighbourhoodCount: number;
-  vipStreets: VipStreet[];
-  streetCount: number;
+  // Optional: the Board is the homepage's market read now, so getHomepageData no
+  // longer computes these (perf trim). mockData still provides them for reference.
+  commentary?: MarketCommentary;
+  neighbourhoods?: NeighbourhoodCard[];
+  neighbourhoodCount?: number;
+  vipStreets?: VipStreet[];
+  streetCount?: number;
   mls?: MlsExploreConfig; // homepage no longer renders the MLS-explore section; kept optional for reuse
 
   footer: FooterData;
