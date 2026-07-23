@@ -27,8 +27,12 @@ export function extractStreetName(fullAddress: string): string {
   // Also handles partial slash leftovers like "/269"
   address = address.replace(/^\d*\/\d+\s+/, "");
 
-  // Step 4: Remove leading house number (digits at start)
-  address = address.replace(/^\d+\s+/, "");
+  // Step 4: Remove leading house number (digits at start) — but NOT for rural
+  // numbered roads where the number IS the street name ("5 Side Rd", "5 Line",
+  // "3 Side Rd", "5 Rd", "10 Concession").
+  if (!/^\d+\s+(?:side\s*r|sideroad|line\b|rd\b|road\b|con\b|concession)/i.test(address)) {
+    address = address.replace(/^\d+\s+/, "");
+  }
 
   // Step 4b: Remove leading "E " artifact from addresses like "1050 E Main Street"
   // (the house number was stripped but the leading direction stayed)
@@ -64,18 +68,51 @@ export function extractStreetName(fullAddress: string): string {
     address = address.replace(regex, abbr);
   }
 
-  // Step 8: Remove trailing junk suffixes (run twice to catch chained junk like "Basement Apt.")
-  const junkRegex =
-    /\s+(Basement|BASEMENT|Bsmt|BSMT|Basemen|Bsmnt|Lower|LOWER|Upper|UPPER|Main|MAIN|Suite|Garden|N\/A|Apt\.?|bonus|SS\d*|Parking\s*\w*)[\s.]*\w*$/i;
-  address = address.replace(junkRegex, "");
-  address = address.replace(junkRegex, ""); // second pass for chained junk
+  // Step 7b (AUDIT 2026-07): strip from the first unit-introducing PUNCTUATION
+  // onward — real street names never contain & / # [ ] or a comma+descriptor.
+  // Catches "Solomon Crt Main&up", "Farmstead Dr Main/upper", "Ave #upper",
+  // "Blvd [bsmt]", "Way ,60,".
+  address = address.replace(/\s*[&#/[\]].*$/, "");
+  address = address.replace(/\s*,\s*\d.*$/, ""); // ", 60" / ",60,"
+  address = address.replace(/\s*,\s*(?:unit|apt|suite|upper|lower|bsmt|basement|main).*$/i, "");
 
-  // Step 9: Remove trailing bare unit/floor numbers like "Derry Rd 1004" or "Main St E 107"
-  // Matches: suffix + optional direction (N/S/E/W) + number
+  // Step 8 (HARDENED, AUDIT 2026-07): strip a trailing unit / floor / level
+  // descriptor AND everything after it. NOTE: "Garden"/"Gardens" was removed —
+  // it is a legitimate Milton street type, not junk.
+  address = address.replace(/\s+n\s*\/?\s*a\b.*$/i, ""); // spaced/plain "N/A" placeholder → the "-n-a" bug
+  // "Mill" is intentionally NOT junk (English Mill Court / Mill Street are real).
+  const JUNK =
+    "Basement|Basemn|Basemnt|Bsment|Bsmnt|Bsmt|Basmt|Basmnt|" +
+    "Suite|Ste|Unit|Units|Unt|Apartment|Apt|" +
+    "Floor|Flr|Level|Lvl|Lot|Ground|Rear|Loft|Bonus|Parking|" +
+    "Penthouse|Coach|Entire|Property|Upr|Upl|Mn";
+  address = address.replace(new RegExp(`\\s+(?:${JUNK})\\b.*$`, "i"), "");
+  address = address.replace(/\s+(?:Upper|Lower|Main|Mn|Upr)[\s,.]*$/i, ""); // trailing floor word (+ stray punct)
+  address = address.replace(/\s+Ll$/i, ""); // "…Ll" (lower level)
+
+  // Step 8b: leading unit descriptor followed by a NUMBER — "Upper 384 Cedric
+  // Terr" → drop "Upper 384". The trailing \d+ is REQUIRED so a leading real
+  // word ("Main St East", "Lower Base Line") is never stripped.
   address = address.replace(
-    /\b(Ave|Rd|St|Blvd|Crt|Dr|Cres|Pl|Trl|Cir|Ln|Terr|Grv|Hts|Hllw|Way|Point|Gate|Landing|Line|Close|Crossing|Gardens)(\s+[NSEW])?\s+#?\d+[A-Z]?$/i,
-    "$1$2"
+    /^(?:upper|lower|unit|apt|apartment|suite|ph|penthouse|ground|rear|basement|bsmt)\s+\d+\s*/i,
+    "",
   );
+  // Step 8c: attached unit tokens with no space — "Rose Way Th28", "Unit44", "Lot#b3"
+  address = address.replace(/\s+(?:th|unit|apt|lot)#?\d+[a-z]?$/i, "");
+
+  // Recognized street-type tail set (drives steps 9/9b).
+  const SUF =
+    "Ave|Rd|St|Blvd|Crt|Dr|Cres|Pl|Trl|Cir|Ln|Terr|Grv|Hts|Hllw|Way|Point|Pt|Gate|" +
+    "Landing|Line|Close|Crossing|Garden|Gardens|Common|Green|Mews|Row|Vale|Villas|" +
+    "Path|Walk|Ridge|Grove|Hill|Square|Park|Heights|Terrace|Trail|Circle|Court|Drive|" +
+    "Crescent|Boulevard|Avenue|Road|Street|Place|Lane";
+
+  // Step 9: trailing bare unit/floor NUMBER after suffix (+ optional direction).
+  address = address.replace(new RegExp(`\\b(${SUF})(\\s+[NSEW])?\\s+#?\\d+[A-Za-z]?$`, "i"), "$1$2");
+  // Step 9b: trailing lone LETTER after a complete street — "Main St E B" → "Main St E".
+  address = address.replace(new RegExp(`\\b(${SUF})(\\s+[NSEW])?\\s+[A-Za-z]$`, "i"), "$1$2");
+  // Step 9c: strip trailing stray punctuation / dashes.
+  address = address.replace(/[\s,.\-]+$/, "");
 
   // Step 10: Normalize case — proper title case
   address = address
@@ -91,6 +128,48 @@ export function extractStreetName(fullAddress: string): string {
     .join(" ");
 
   return address.trim();
+}
+
+// ── Residential canonicalization + reject guard (AUDIT 2026-07) ──────────────
+//
+// Mirrors deriveCondoIdentity's intent for the RESIDENTIAL tier: fold a unit /
+// floor / basement "address" onto its base street, and REJECT anything that
+// still reads as a unit rather than a street so it is never emitted as a
+// canonical ResidentialStreet slug. Pure (no DB). Used by the ws3 backfill's
+// street path (going forward) and by the audit dry-run (to prove the fix).
+
+// If a cleaned name STILL contains one of these, it is not a street.
+// NOTE: "upper"/"lower" are NOT reject triggers — they survive cleanup only as
+// legitimate LEADING street words ("Lower Base Line", a registered road); the
+// trailing "…Upper/Lower" unit forms are already stripped by extractStreetName.
+const UNIT_RESIDUAL_RE =
+  /\b(unit|units|apt|apartment|suite|ste|floor|flr|level|lvl|basement|bsmt|bsment|basmt|ground|rear|loft|penthouse|coach|entire|property|bonus|parking|th\d+|unt)\b/i;
+
+export interface ResidentialCanon {
+  cleanName: string;          // hardened extractStreetName output
+  canonicalSlug: string | null;
+  identity: StreetIdentity | null;
+  rejected: boolean;          // true => not a real street (unit/floor/unsalvageable)
+  reason: string;
+}
+
+export function canonicalizeResidential(rawName: string): ResidentialCanon {
+  const cleanName = extractStreetName(rawName);
+  if (!cleanName) {
+    return { cleanName, canonicalSlug: null, identity: null, rejected: true, reason: "empty after cleanup" };
+  }
+  if (UNIT_RESIDUAL_RE.test(cleanName)) {
+    return { cleanName, canonicalSlug: null, identity: null, rejected: true, reason: "unit/floor token remains" };
+  }
+  const slug = streetNameToSlug(cleanName);
+  const identity = deriveIdentity(slug);
+  return {
+    cleanName,
+    canonicalSlug: identity ? identity.canonicalSlug : slug,
+    identity,
+    rejected: false,
+    reason: "",
+  };
 }
 
 /**
@@ -170,6 +249,9 @@ export const IDENTITY_SUFFIX_TOKENS: Set<string> = new Set([
   // townline/head/centre are rare registry suffixes (3 / 1 / 1 entries).
   "landing", "ldg", "crossing", "garden", "path",
   "pt", "cr", "wy", "townline", "head", "centre",
+  // Street-directory reconciliation — legitimate Milton street types the
+  // identity layer previously did not recognize (audit 2026-07).
+  "green", "row", "vale", "villas", "mews", "gardens",
 ]);
 
 export const IDENTITY_SUFFIX_CANON: Record<string, string> = {
@@ -205,6 +287,7 @@ export const IDENTITY_SUFFIX_CANON: Record<string, string> = {
   townline: "townline",
   head: "head",
   centre: "centre",
+  green: "green", row: "row", vale: "vale", villas: "villas", mews: "mews",
 };
 
 // Step 13m-2a — accept spelled-out directional tokens (KENNEDY CIRCLE EAST
