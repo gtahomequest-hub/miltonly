@@ -83,7 +83,7 @@ export interface MlsLens {
   key: MlsTabKey;
   tabLabel: string;
   badgeLabel: string; // "Active lens"
-  badgePill?: string; // wealth only: "the tab nobody else has"
+  badgePill?: string; // wealth only: short badge pill (currently unset)
   headline: string;
   description: string;
   chips: MlsChip[];
@@ -114,6 +114,7 @@ export interface HomepageData {
   neighbourhoodCount: number;
   vipStreets: VipStreet[];
   streetCount: number;
-  mls: MlsExploreConfig;
+  mls?: MlsExploreConfig; // homepage no longer renders the MLS-explore section; kept optional for reuse
+
   footer: FooterData;
 }

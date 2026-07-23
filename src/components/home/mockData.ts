@@ -125,7 +125,6 @@ export const mockHomepageData: HomepageData = {
         key: 'wealth',
         tabLabel: 'Build wealth',
         badgeLabel: 'Active lens',
-        badgePill: 'the tab nobody else has',
         headline: 'Where Milton capital compounds',
         description:
           "Not a listings grid — an investor's read on Milton: yield potential, multi-unit, pre-construction, and the neighbourhoods where the trend line points up.",
@@ -151,10 +150,6 @@ export const mockHomepageData: HomepageData = {
           sub: 'Register for VOW access — off-market and yield data.',
           buttonLabel: 'Unlock the pipeline',
         },
-        compareRow:
-          'lives here as a mode — stack two properties or neighbourhoods side by side on yield and trend.',
-        vowNote:
-          'The VOW register wall is the lead capture · yield figures grounded and rounded, framed as estimates, never per-listing precise.',
       },
       {
         key: 'buy',
