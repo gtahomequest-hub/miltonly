@@ -181,7 +181,9 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
   }, [menuOpen]);
 
   const links = isHome ? HOME_LINKS : PAGE_LINKS;
-  const ctaHref = isHome ? '#dual' : '/sell';
+  // DualCTA (id="dual") was removed from the homepage; the CTA points at /sell in
+  // both variants now (no dead #dual anchor).
+  const ctaHref = '/sell';
 
   return (
     <nav className={isHome ? 'm-nav' : 'site-nav'}>
