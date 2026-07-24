@@ -15,7 +15,10 @@ import { requireAnalyticsDb, getAnalyticsDb, getSoldDb } from "@/lib/db";
 import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import { saleAggQuery, byTypeQuery, assembleAggregates, assembleByType } from "@/lib/ai/buildHubInput";
 import { NEIGHBOURHOOD_CENTROIDS, GO_STATION, haversineKm } from "@/lib/geo";
-import { schools } from "@/lib/schools";
+// NOTE: nearest-school DISTANCE was dropped (Phase 0 scoped fix, 2026-07). schools.ts
+// coords were geocoded TO the neighbourhood centroids (±300m), so nearest-school
+// haversine was centroid-to-centroid (== 0) — a geocoding artifact, not a real signal.
+// GO distance (centroid -> GO_STATION) is genuine and stays.
 
 export interface NeighbourhoodMatchRow {
   neighbourhood_slug: string;
@@ -31,8 +34,6 @@ export interface NeighbourhoodMatchRow {
   dom_avg: number | null;
   has_centroid: boolean;
   dist_go_km: number | null;
-  dist_nearest_school_km: number | null;
-  nearest_school_name: string | null;
   computed_at: string;
 }
 
@@ -62,16 +63,6 @@ function centroidFor(rawStrings: string[]): { lat: number; lng: number } | null 
   return null;
 }
 
-function nearestSchool(lat: number, lng: number): { km: number; name: string } | null {
-  let best: { km: number; name: string } | null = null;
-  for (const s of schools) {
-    if (typeof s.lat !== "number" || typeof s.lng !== "number") continue;
-    const km = haversineKm(lat, lng, s.lat, s.lng);
-    if (!best || km < best.km) best = { km, name: s.name };
-  }
-  return best;
-}
-
 export async function computeNeighbourhoodMatchRows(): Promise<NeighbourhoodMatchRow[]> {
   const out: NeighbourhoodMatchRow[] = [];
   const now = new Date().toISOString();
@@ -86,7 +77,6 @@ export async function computeNeighbourhoodMatchRows(): Promise<NeighbourhoodMatc
     const byType = assembleByType(byTypeRows);
     const centroid = centroidFor(raw);
     const go = centroid ? round2(haversineKm(centroid.lat, centroid.lng, GO_STATION.lat, GO_STATION.lng)) : null;
-    const sch = centroid ? nearestSchool(centroid.lat, centroid.lng) : null;
     out.push({
       neighbourhood_slug: nb.slug,
       neighbourhood_name: nb.name,
@@ -101,8 +91,6 @@ export async function computeNeighbourhoodMatchRows(): Promise<NeighbourhoodMatc
       dom_avg: agg.daysOnMarket, // NULL when no sales (assembleAggregates), never 0
       has_centroid: !!centroid,
       dist_go_km: go,
-      dist_nearest_school_km: sch ? round2(sch.km) : null,
-      nearest_school_name: sch ? sch.name : null,
       computed_at: now,
     });
   }
@@ -125,21 +113,21 @@ export async function writeNeighbourhoodMatchStats(rows: NeighbourhoodMatchRow[]
     dom_avg int,
     has_centroid boolean NOT NULL,
     dist_go_km numeric,
-    dist_nearest_school_km numeric,
-    nearest_school_name text,
     computed_at timestamptz NOT NULL DEFAULT NOW()
   )`;
+  // Schema evolution (Phase 0 scoped fix): drop the retired degenerate school columns
+  // if they linger on an already-created table.
+  await a`ALTER TABLE analytics.neighbourhood_match_stats DROP COLUMN IF EXISTS dist_nearest_school_km`;
+  await a`ALTER TABLE analytics.neighbourhood_match_stats DROP COLUMN IF EXISTS nearest_school_name`;
   await a`TRUNCATE analytics.neighbourhood_match_stats`;
   for (const r of rows) {
     await a`INSERT INTO analytics.neighbourhood_match_stats
       (neighbourhood_slug, neighbourhood_name, profile, kind,
        typical_detached, typical_semi, typical_town, typical_condo,
-       sold_12mo, sold_90d, dom_avg, has_centroid,
-       dist_go_km, dist_nearest_school_km, nearest_school_name, computed_at)
+       sold_12mo, sold_90d, dom_avg, has_centroid, dist_go_km, computed_at)
       VALUES (${r.neighbourhood_slug}, ${r.neighbourhood_name}, ${r.profile}, ${r.kind},
        ${r.typical_detached}, ${r.typical_semi}, ${r.typical_town}, ${r.typical_condo},
-       ${r.sold_12mo}, ${r.sold_90d}, ${r.dom_avg}, ${r.has_centroid},
-       ${r.dist_go_km}, ${r.dist_nearest_school_km}, ${r.nearest_school_name}, NOW())`;
+       ${r.sold_12mo}, ${r.sold_90d}, ${r.dom_avg}, ${r.has_centroid}, ${r.dist_go_km}, NOW())`;
   }
 }
 
