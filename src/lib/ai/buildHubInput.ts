@@ -141,7 +141,7 @@ export function assembleQuarterly(rows: RawQuarterRow[]): HubQuarter[] {
     .sort((a, b) => a.sortKey - b.sortKey);
 }
 
-function assembleByType(sales: RawTypeAgg[]): Record<string, HubTypeBucket> {
+export function assembleByType(sales: RawTypeAgg[]): Record<string, HubTypeBucket> {
   const out: Record<string, HubTypeBucket> = {};
   for (const t of sales) {
     const count = t.n;
@@ -167,7 +167,9 @@ function assembleByType(sales: RawTypeAgg[]): Record<string, HubTypeBucket> {
 // TREB neighbourhood strings. `null` rawStrings means Milton-wide (no filter).
 // ---------------------------------------------------------------------------
 
-function saleAggQuery(rawStrings: string[] | null) {
+// Exported (GENI Phase 0): the neighbourhood match-stats compute reuses these EXACT
+// public hub aggregate queries so its prices/volume/DOM are byte-identical to the hub page.
+export function saleAggQuery(rawStrings: string[] | null) {
   return querySold<RawSaleAgg>((db) =>
     rawStrings
       ? db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
@@ -224,7 +226,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
   );
 }
 
-function byTypeQuery(rawStrings: string[]) {
+export function byTypeQuery(rawStrings: string[]) {
   return querySold<RawTypeAgg>((db) =>
     db`SELECT property_type, COUNT(*)::int AS n,
               AVG(sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
