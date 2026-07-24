@@ -95,7 +95,7 @@ export const mockHomepageData: HomepageData = {
       name: 'Moffat',
       character: 'Open countryside, acreage, quiet.',
       typicalPriceRounded: null,
-      silentNote: 'typical price not stated — thin activity; see road pages',
+      silentNote: 'typical price not stated — thin activity in the last 12 months; see road pages',
       slug: 'moffat',
       group: 'rural',
     },

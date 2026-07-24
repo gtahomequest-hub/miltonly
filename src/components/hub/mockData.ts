@@ -122,7 +122,7 @@ export const mockHubRural: HubData = {
   marketCompare: [],
   commentary: {
     paragraphs: [
-      'Activity in Moffat is too thin to state a meaningful typical price \u2014 a handful of varied rural transactions a year rather than a liquid market. Where numbers would mislead, we stay silent and point to the road-level detail instead.',
+      'Activity in Moffat is too thin over the trailing 12 months to state a meaningful typical price \u2014 a handful of varied rural transactions a year rather than a liquid market. Where numbers would mislead, we stay silent and point to the road-level detail instead.',
     ],
     source: 'Grounded in trailing-12-month TREB sold data \u00b7 thin-activity rural area',
   },
