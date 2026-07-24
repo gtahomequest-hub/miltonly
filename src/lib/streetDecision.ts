@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { calcMarketDataHash } from "@/lib/streetUtils";
+import { calcMarketDataHash } from "@/lib/marketDataHash";
 
 // Post Phase 2.6 (2026-04-17): this module's stats pipeline was restructured
 // to stop reading DB1 sold-derived fields. DB1 no longer stores soldPrice or
