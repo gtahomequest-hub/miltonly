@@ -21,6 +21,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { expandStreetName, shortNameFor } from "@/lib/street-data";
+import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
 import type {
   HubGeneratorInput,
   HubAggregates,
@@ -261,7 +262,7 @@ export async function buildHubInput(neighbourhoodSlug: string): Promise<HubGener
     quarterlyQuery(rawStrings),
     byTypeQuery(rawStrings),
     prisma.residentialStreet.findMany({
-      where: { neighbourhoodId: nbhd.id },
+      where: { neighbourhoodId: nbhd.id, ...SURFACED_STREET_WHERE }, // surfaced only — no dormant/pageless entities in hub street lists
       // currentRank order, VIP first (DEC-WS4-2). Nulls sort last.
       orderBy: [{ isVip: "desc" }, { currentRank: "asc" }],
       select: { slug: true, name: true, shortName: true, isVip: true, currentRank: true, soldCount12mo: true },
@@ -393,7 +394,7 @@ export async function buildRuralHubInput(neighbourhoodSlug: string): Promise<Hub
     quarterlyQuery(rawStrings),
     byTypeQuery(rawStrings),
     prisma.residentialStreet.findMany({
-      where: { neighbourhoodId: nbhd.id },
+      where: { neighbourhoodId: nbhd.id, ...SURFACED_STREET_WHERE }, // surfaced only — no dormant/pageless entities in hub street lists
       // currentRank order only — no VIP-first requirement (rural has no VIP tier).
       orderBy: [{ currentRank: "asc" }],
       select: { slug: true, name: true, shortName: true, isVip: true, currentRank: true, soldCount12mo: true },

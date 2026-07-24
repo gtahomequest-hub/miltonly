@@ -67,6 +67,11 @@ standard tier — backed by three first-class entities. Six decisions are locked
 
 - 24 neighbourhoods (14 urban_hub + 9 rural_hub [7 rural + 2 thin urban] + 1 standard).
 - 915 ResidentialStreet (732 For-Sale-bearing) — all 361 published slugs resolve, 0 orphans.
+  <!-- Correction 2026-07: 361 was the WS3 staging snapshot. LIVE = 926 ResidentialStreet,
+       ~422 published StreetContent, ~385 succeeded StreetGeneration. (Registry ingest then
+       added an entity for every official street — see the ResidentialStreet.hasPublishedPage
+       surfacing gate; dormant entities exist but are unsurfaced.) -->
+
 - 108 CondoBuilding (47 sale-active + 61 lease-only/no-sale).
 - VIP: 139 residential + 15 condo = 154. Promote-both fired in Dempsey (9→10) and Scott (10→11).
 
@@ -81,6 +86,8 @@ standard tier — backed by three first-class entities. Six decisions are locked
 
 ## Known items deferred to later workstreams (do not fix in WS3)
 
+<!-- Correction 2026-07: these WS3-snapshot figures are stale. LIVE = ~422 published
+     StreetContent / ~385 succeeded StreetGeneration (was 361 / 305). -->
 - **361 published StreetContent rows vs 305 succeeded StreetGeneration.** 56 published
   pages render via a fallback/older path. WS5 reconciliation.
 - **4 published-only residential streets have no neighbourhood** (`country-lane-court`,

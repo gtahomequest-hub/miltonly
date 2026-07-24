@@ -10,6 +10,8 @@ import { formatCAD } from "@/lib/charts/theme";
 import { loadStreetGeneration } from "@/lib/ai/loadStreetGeneration";
 import type { StreetSection, FAQItem } from "@/types/street";
 import StreetV2Page from "@/components/street/v2/StreetPage";
+import StreetMinimalPage from "@/components/street/v2/StreetMinimalPage";
+import { getMinimalStreetView } from "@/lib/streetMinimal";
 import { getStreetCompareContrast } from "@/lib/comparisonData";
 import { prisma } from "@/lib/prisma";
 
@@ -87,6 +89,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StreetPage({ params }: Props) {
+  // Minimal-template branch (registry ingest): a deliberately-published zero/low-
+  // sale street renders the honest deterministic layout, NOT the generated page.
+  // Standard pages (template='standard', the ~423 live) are untouched below.
+  const minimal = await getMinimalStreetView(params.slug);
+  if (minimal) {
+    const data = await getStreetPageData(params.slug);
+    if (!data) notFound();
+    const v2 = mapStreetV2Data(data, null);
+    v2.eyebrow = minimal.eyebrow;
+    v2.subtitle = minimal.whereItIs;
+    const schema = buildStreetPageSchema(data, { faqs: [], sections: [] });
+    return (
+      <>
+        <SchemaInjector schema={schema} />
+        <StreetMinimalPage data={v2} view={minimal} />
+      </>
+    );
+  }
+
   const [data, generation] = await Promise.all([
     getStreetPageData(params.slug),
     loadStreetGeneration(params.slug),

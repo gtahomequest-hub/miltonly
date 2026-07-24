@@ -152,6 +152,8 @@ Not git push. WS4 is done when:
 - Hub generation + homepage rebuild (WS5).
 - The 361-vs-305 reconciliation, 4 null-neighbourhood streets, condo page generation
   (WS5 carry-forward items 1/2/4).
+  <!-- Correction 2026-07: 361/305 was the WS3 staging snapshot. LIVE = 926 ResidentialStreet,
+       ~422 published StreetContent, ~385 succeeded StreetGeneration. -->
 - Polygon enrichment (parked indefinitely; nullable columns already reserved).
 
 ## Addendum — WS4 patch 1B (2026-05-29): malformed slug `huffman-cres-crescent-milton`
