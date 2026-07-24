@@ -88,6 +88,12 @@ async function main() {
   const publish = missing.filter(r => { const c = soldByReg.get(r.slug) || 0; const l = listByReg.get(r.slug) || 0; return (c >= 1 && c <= 4) || (c === 0 && l > 0); });
   const publishSlugs = new Set(publish.map(r => r.slug));
 
+  // Some of these were entity-missing but NOT content-missing: they already have
+  // real generated content. Those publish as STANDARD (their generated page), not
+  // minimal — never hide real content behind the minimal template.
+  const gen = await p.streetGeneration.findMany({ where: { streetSlug: { in: [...publishSlugs] }, status: "succeeded" }, select: { streetSlug: true } });
+  const hasGen = new Set(gen.map(g => g.streetSlug));
+
   console.log(`=== registry-entity-backfill ${COMMIT ? "(COMMIT)" : "(DRY RUN)"} ===`);
   console.log(`  registry: ${REG.length} | existing rows: ${rows.length} | missing entities to create: ${missing.length}`);
   console.log(`  to PUBLISH (minimal template): ${publish.length}`);
@@ -114,23 +120,35 @@ async function main() {
   console.log(`  PHASE 1 — entities created: ${created}, already existed: ${skipped}, dormant DEFERRED (run without --skip-dormant post-merge): ${dormantDeferred}`);
 
   // ── PHASE 2: publish the 19 (StreetContent minimal + flag + neighbourhood) ──
-  console.log(`\n  PHASE 2 — publishing ${publish.length} minimal pages:`);
+  const minimalCount = publish.filter(r => !hasGen.has(r.slug)).length;
+  console.log(`\n  PHASE 2 — publishing ${publish.length} pages (${minimalCount} minimal + ${publish.length - minimalCount} standard/has-generated-content):`);
   for (const r of publish) {
     const raw = domNb(r.slug); const nb = raw ? nbByRaw.get(raw) : null;
     const nm = titleCase(r.name);
     const sold = soldByReg.get(r.slug) || 0; const list = listByReg.get(r.slug) || 0;
-    const desc = `No home resales are recorded on ${nm} in the last ~2 years of Milton sales. ` +
-      `${nb ? `Area market context for ${nb.name}, ` : ""}nearby streets, schools, and any active listings are below. ` +
-      `This page fills in with ${nm}'s own price history when a home here sells.`;
+    const isStandard = hasGen.has(r.slug); // real content exists -> standard page, never minimal
+    const tmpl = isStandard ? "standard" : "minimal";
+    const desc = isStandard
+      ? undefined // keep the generated page's own description untouched
+      : `No home resales are recorded on ${nm} in the last ~2 years of Milton sales. ` +
+        `${nb ? `Area market context for ${nb.name}, ` : ""}nearby streets, schools, and any active listings are below. ` +
+        `This page fills in with ${nm}'s own price history when a home here sells.`;
     if (COMMIT) {
-      await p.streetContent.upsert({
-        where: { streetSlug: r.slug },
-        create: { streetSlug: r.slug, streetName: nm, neighbourhood: raw ?? null, description: desc, status: "published", template: "minimal", needsReview: false, aiGenerated: false, publishedAt: new Date() },
-        update: { streetName: nm, neighbourhood: raw ?? null, description: desc, status: "published", template: "minimal", needsReview: false, publishedAt: new Date() },
-      });
+      if (isStandard) {
+        // entity-missing but content-complete: ensure published+standard, don't touch its description
+        await p.streetContent.update({ where: { streetSlug: r.slug }, data: { status: "published", template: "standard", needsReview: false, publishedAt: new Date() } }).catch(async () => {
+          await p.streetContent.create({ data: { streetSlug: r.slug, streetName: nm, neighbourhood: raw ?? null, description: `${nm} in Milton.`, status: "published", template: "standard", needsReview: false, aiGenerated: true, publishedAt: new Date() } });
+        });
+      } else {
+        await p.streetContent.upsert({
+          where: { streetSlug: r.slug },
+          create: { streetSlug: r.slug, streetName: nm, neighbourhood: raw ?? null, description: desc!, status: "published", template: "minimal", needsReview: false, aiGenerated: false, publishedAt: new Date() },
+          update: { streetName: nm, neighbourhood: raw ?? null, description: desc!, status: "published", template: "minimal", needsReview: false, publishedAt: new Date() },
+        });
+      }
       await p.residentialStreet.update({ where: { slug: r.slug }, data: { hasPublishedPage: true, neighbourhoodId: nb?.id ?? undefined } });
     }
-    console.log(`    ${nm.padEnd(30)} [${r.slug}] nb=${nb?.name ?? "?"} raw="${raw ?? "?"}" sold=${sold} listings=${list}`);
+    console.log(`    [${tmpl.padEnd(8)}] ${nm.padEnd(30)} [${r.slug}] nb=${nb?.name ?? "?"} sold=${sold} listings=${list}`);
   }
 
   // ── PHASE 3: reconcile hasPublishedPage with published StreetContent ──
