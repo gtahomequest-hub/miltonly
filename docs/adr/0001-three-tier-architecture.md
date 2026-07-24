@@ -67,6 +67,10 @@ standard tier — backed by three first-class entities. Six decisions are locked
 
 - 24 neighbourhoods (14 urban_hub + 9 rural_hub [7 rural + 2 thin urban] + 1 standard).
 - 915 ResidentialStreet (732 For-Sale-bearing) — all 361 published slugs resolve, 0 orphans.
+  <!-- CORRECTION (street audit 2026-07): 361 was the WS3-snapshot figure. LIVE counts
+       are now 926 ResidentialStreet, 422 published StreetContent, 385 StreetGeneration
+       succeeded. See docs/street-audit / feat/street-ingest-hardening. -->
+
 - 108 CondoBuilding (47 sale-active + 61 lease-only/no-sale).
 - VIP: 139 residential + 15 condo = 154. Promote-both fired in Dempsey (9→10) and Scott (10→11).
 
@@ -83,6 +87,8 @@ standard tier — backed by three first-class entities. Six decisions are locked
 
 - **361 published StreetContent rows vs 305 succeeded StreetGeneration.** 56 published
   pages render via a fallback/older path. WS5 reconciliation.
+  <!-- CORRECTION (street audit 2026-07): live counts are now 422 published / 385 succeeded. -->
+
 - **4 published-only residential streets have no neighbourhood** (`country-lane-court`,
   `kelso-road`, `french-gardens`, `wise-crossing-n-a`; the last is a malformed slug).
   No DB2 trades and null StreetContent.neighbourhood. Manual assignment / cleanup later.
