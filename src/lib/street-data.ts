@@ -243,12 +243,15 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       : Promise.resolve([] as Array<{ one: number }>),
   ]);
 
-  // Existence gate — slug is unknown only if it has no presence in any DB:
-  // no current DB1 listings, no DB3 pre-computed aggregates, no DB1 StreetContent,
-  // and no DB2 historical sold record.
+  // Existence gate — a street page renders only from a PRIMARY signal: current DB1
+  // listings, a DB1 StreetContent row, or a DB2 historical sold record. DB3
+  // analytics.street_sold_stats is DERIVED (computed from DB2 sold) and must NEVER
+  // be the sole basis for a page — a stale/orphaned DB3 row (no entity, no sold, no
+  // content) otherwise rendered a phantom 200 placeholder that could be crawled.
+  // (Registry cleanup 2026-07: this closes the phantom-200 path; soldStatsRows is
+  // still used below to POPULATE stats on pages that legitimately exist.)
   if (
     allListings.length === 0 &&
-    soldStatsRows.length === 0 &&
     !streetContent &&
     soldExistsRows.length === 0
   ) {
