@@ -337,6 +337,24 @@ model UnmappedNeighbourhoodString {
   @@schema("public")
 }
 
+// Step 5 (registry ingest, 2026-07) — fail-loud queue for street_slugs minted by
+// vow-sync that canonicalizeResidential could NOT match to the Town registry and
+// are NOT on the off-registry allowlist. Mirrors UnmappedNeighbourhoodString: we
+// log + review rather than auto-create a page. A genuinely-new subdivision street
+// gets added to the registry (clears the queue); a junk/unit leak gets dismissed.
+model StreetSlugReview {
+  streetSlug String   @id
+  sampleName String // a raw MLS street_name that produced this slug
+  seenCount  Int      @default(1)
+  firstSeen  DateTime @default(now())
+  lastSeen   DateTime @default(now())
+  resolved   Boolean  @default(false)
+  source     String? // "vow-sync" | ...
+
+  @@index([resolved])
+  @@schema("public")
+}
+
 // CondoBuilding — extended from the pre-WS3 (unused, 0-row) model into the condo
 // entity primitive. Legacy display fields relaxed to optional: the entity backfill
 // sources from sold records and has no coordinates (0% coverage; geocoding parked).

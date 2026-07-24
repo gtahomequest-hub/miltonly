@@ -8,7 +8,8 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
-import { calcMarketDataHash, deriveIdentity } from "@/lib/streetUtils";
+import { deriveIdentity } from "@/lib/streetUtils";
+import { calcMarketDataHash } from "@/lib/marketDataHash";
 import { sendSMS } from "@/lib/smsAlert";
 import { buildGeneratorInput } from "@/lib/ai/buildGeneratorInput";
 import {

@@ -1,4 +1,6 @@
-import { createHash } from "crypto";
+// NOTE: keep this module EDGE-SAFE — no Node-only imports. The Edge middleware
+// imports deriveIdentity for computed variant→canonical 301s. calcMarketDataHash
+// (the only crypto user) now lives in ./marketDataHash.
 import { config } from "@/lib/config";
 
 // Trailing-city regex for extractStreetName — matches ", <CityName>", ", <ProvinceCode>",
@@ -382,22 +384,4 @@ export function streetNameToSlug(streetName: string): string {
 
 // Calculates a market-data hash for staleness detection of the AI-generated
 // street-content pipeline. Hash inputs post Phase 2.6 reflect the new
-// active-only stats shape — no sold-price-derived fields, since DB1 no longer
-// stores them. Changing this hash invalidates existing streetContent rows
-// and forces regeneration, which is the intended behaviour after a semantic
-// shift like this.
-export function calcMarketDataHash(stats: {
-  avgListPrice: number;
-  totalSold12mo: number;
-  avgDOM: number;
-  dominantPropertyType: string;
-}): string {
-  const hashInput = [
-    Math.round(stats.avgListPrice / 10000),
-    stats.totalSold12mo,
-    Math.round(stats.avgDOM),
-    stats.dominantPropertyType,
-  ].join("|");
-
-  return createHash("sha256").update(hashInput).digest("hex").slice(0, 16);
-}
+// calcMarketDataHash moved to ./marketDataHash (keeps streetUtils Edge-safe).

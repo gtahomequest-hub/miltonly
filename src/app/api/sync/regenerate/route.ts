@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calcMarketDataHash } from "@/lib/streetUtils";
+import { calcMarketDataHash } from "@/lib/marketDataHash";
 import { getStreetStats } from "@/lib/streetDecision";
 
 export const maxDuration = 120;

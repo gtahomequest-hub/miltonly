@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import canonicalMap from "@/lib/_generated/canonical-map.json";
+import validCanonicalSlugs from "@/lib/_generated/valid-canonical-slugs.json";
+import noRedirectSlugs from "@/lib/_generated/no-redirect-slugs.json";
+import { deriveIdentity } from "@/lib/streetUtils";
 
 // ============================================================
 // PRE-LAUNCH GATE
@@ -54,6 +57,15 @@ const ALWAYS_ALLOW = [
 // + alphabetical tiebreak). Regenerate whenever the universe shifts.
 const SLUG_TO_CANONICAL = canonicalMap as Record<string, string>;
 
+// Valid canonical slugs (render-bearing streets + off-registry roads), emitted by
+// generate-canonical-map.ts. The computed variant→canonical rule only redirects when
+// the canonical is in this set — so it NEVER 301s into a 404.
+const VALID_CANONICALS = new Set<string>(validCanonicalSlugs as string[]);
+// Slugs that must NEVER be a redirect source: official registry streets (canonical in
+// their own right — incl. the distinct directional NAMES Kennedy Circle East/West) and
+// off-registry rural roads. Guarded FIRST, so nothing (static map or computed) redirects them.
+const NO_REDIRECT = new Set<string>(noRedirectSlugs as string[]);
+
 // Hub-v2 cutover — legacy /neighbourhoods/<slug> 301s. The old HubBlock route
 // matched the munged Listing.neighbourhood slug forms; the new getHubData seam
 // resolves only the canonical Neighbourhood.slug. These three slugs are indexed
@@ -65,13 +77,37 @@ const NEIGHBOURHOOD_LEGACY_TO_CANONICAL: Record<string, string> = {
   "rural-nassagaweya": "nassagaweya",
 };
 
+// Resolve a requested /streets/[slug] to its canonical slug, or null for no redirect.
+// Order of precedence (single hop, never into a 404):
+//   1. Static curated map (generate-canonical-map.ts) — an override for any case the
+//      computed rule would get wrong.
+//   2. Off-registry rural roads (Side Roads, Second Line, Nipissing Rd) — never touched.
+//   3. Computed rule — deriveIdentity's canonical (abbreviation/direction/doubled-suffix/
+//      -n-a collapse). Redirect only when it differs AND resolves (VALID_CANONICALS).
+function canonicalFor(slug: string): string | null {
+  // 0. Official registry + off-registry slugs are canonical themselves — never redirect
+  //    them (protects Kennedy Circle East/West and every rural road), regardless of map.
+  if (NO_REDIRECT.has(slug)) return null;
+  // 1. Static curated override.
+  const mapped = SLUG_TO_CANONICAL[slug];
+  if (mapped && mapped !== slug) return mapped;
+  // 2. Computed rule — deriveIdentity canonical, only when it differs AND resolves.
+  const id = deriveIdentity(slug);
+  if (!id) return null; // malformed → let the route 404
+  const canonical = id.canonicalSlug;
+  if (canonical === slug) return null; // already canonical
+  if (!VALID_CANONICALS.has(canonical)) return null; // never 301 into a 404
+  if (NO_REDIRECT.has(canonical)) return canonical; // canonical is an official/off-reg street — fine to land there
+  return canonical;
+}
+
 function streetRedirect(req: NextRequest): NextResponse | null {
   const { pathname } = req.nextUrl;
   if (!pathname.startsWith("/streets/")) return null;
   const slug = pathname.slice("/streets/".length).split("/")[0];
   if (!slug) return null;
-  const canonical = SLUG_TO_CANONICAL[slug];
-  if (!canonical || canonical === slug) return null;
+  const canonical = canonicalFor(slug);
+  if (!canonical) return null;
   const url = req.nextUrl.clone();
   url.pathname = `/streets/${canonical}`;
   return NextResponse.redirect(url, 301);
