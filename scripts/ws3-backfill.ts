@@ -11,6 +11,10 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEIGHBOURHOOD_SEED } from "../src/lib/neighbourhood";
 import { groupCondoClusters } from "../src/lib/condoIdentity";
+import { canonicalizeResidential } from "../src/lib/canonicalizeResidential";
+
+// Title-case a registry name ("ABBOTT STREET" -> "Abbott Street") for display.
+const titleCase = (s: string) => s.toLowerCase().split(/\s+/).map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 function loadEnv(name: string, into: Record<string, string>) {
@@ -92,10 +96,17 @@ async function main() {
       WHERE property_type IN ('detached','semi','townhouse') AND street_slug IS NOT NULL
       GROUP BY street_slug, neighbourhood`)).rows as Array<NbAgg & { entity: string }>;
 
+    // Group by CANONICAL registry slug (Step-4-proper durability): junk/dupe/typo
+    // street_slugs collapse onto their official entity, so cleanup survives re-runs.
+    // Off-registry rural roads pass through unchanged.
     const resiByEntity = new Map<string, NbAgg[]>();
+    const canonName = new Map<string, string>();
     for (const r of resiRows) {
-      if (!resiByEntity.has(r.entity)) resiByEntity.set(r.entity, []);
-      resiByEntity.get(r.entity)!.push(r);
+      const c = canonicalizeResidential(r.name, r.entity);
+      const key = c.canonicalSlug || r.entity;
+      if (!resiByEntity.has(key)) resiByEntity.set(key, []);
+      resiByEntity.get(key)!.push(r);
+      if (c.canonicalName && !canonName.has(key)) canonName.set(key, titleCase(c.canonicalName));
     }
 
     // Published-slug coverage from DB1 staging StreetContent.
@@ -110,7 +121,7 @@ async function main() {
       const map = nbIdForRaw(dom.neighbourhood!);
       resiEntities.set(entity, {
         slug: entity,
-        name: dom.name || publishedMap.get(entity)?.name || entity,
+        name: canonName.get(entity) || dom.name || publishedMap.get(entity)?.name || entity,
         nbId: map.id, nbSlug: map.slug, ambiguous: mappedSlugs.size > 1,
         weighted: Number(rows.reduce((s, r) => s + Number(r.weighted), 0).toFixed(4)),
         count12: rows.reduce((s, r) => s + Number(r.count12), 0),
