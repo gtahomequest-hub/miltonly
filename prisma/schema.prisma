@@ -306,11 +306,18 @@ model ResidentialStreet {
   currentRank            Int? // DYNAMIC, refreshes each cycle (WS5 prominence)
   crossStreets           String[]
   lastClassifiedAt       DateTime?
+  // Surfacing gate (registry ingest, 2026-07): an entity is surfaced in hero
+  // search / autocomplete / hub lists when it renders a real page — the shared
+  // predicate is `recencyWeightedSold > 0 OR hasPublishedPage`. Pageless dormant
+  // entities (0 sold, 0 listings) stay in the DB, unsurfaced, until a first sale
+  // or listing flips this (auto-promotion). Set true when a page is published.
+  hasPublishedPage       Boolean        @default(false)
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
 
   @@index([neighbourhoodId])
   @@index([isVip])
+  @@index([hasPublishedPage])
   @@schema("public")
 }
 
@@ -396,6 +403,12 @@ model StreetContent {
   description     String    @db.Text
   rawAiOutput     String?   @db.Text
   status          String    @default("draft")
+  // Render template: "standard" (full generated 8-section page) or "minimal"
+  // (registry ingest, 2026-07 — a deterministic honest layout for zero/low-sale
+  // streets: schools, neighbourhood-level market context, nearby streets, live
+  // listings, and a plain no-resales statement; NO LLM prose). Route branches on
+  // this so the ~423 standard pages are untouched.
+  template        String    @default("standard")
   needsReview     Boolean   @default(true)
   aiGenerated     Boolean   @default(true)
   publishedAt     DateTime?

@@ -12,6 +12,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { expandStreetName } from "@/lib/street-data";
+import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
 
 export interface HeroIndexEntry {
   type: "neighbourhood" | "street" | "condo";
@@ -36,9 +37,12 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
   const soldDb = getSoldDb();
   const [nbs, streets, condos, homesRows] = await Promise.all([
     prisma.neighbourhood.findMany({
-      select: { slug: true, name: true, _count: { select: { residentialStreets: true } } },
+      // Count only surfaced streets so the "· N streets" line stays honest after
+      // the dormant-entity backfill (pageless entities are not shown anywhere).
+      select: { slug: true, name: true, _count: { select: { residentialStreets: { where: SURFACED_STREET_WHERE } } } },
     }),
     prisma.residentialStreet.findMany({
+      where: SURFACED_STREET_WHERE, // dormant/pageless entities never appear in autocomplete
       select: { slug: true, name: true, neighbourhood: { select: { name: true } } },
     }),
     prisma.condoBuilding.findMany({

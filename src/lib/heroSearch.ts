@@ -24,6 +24,7 @@
 // and excluded, so we never guess — those fall through.
 
 import { prisma } from "@/lib/prisma";
+import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
 
 const DROP = new Set(["milton", "on", "ont", "ontario", "canada", "ca"]);
 
@@ -105,7 +106,9 @@ function buildKeyMap(rows: { slug: string }[]): KeyMap {
 async function getIndex(): Promise<Index> {
   if (_cache && Date.now() - _cacheAt < TTL_MS) return _cache;
   const [streets, condos, neighbourhoods] = await Promise.all([
-    prisma.residentialStreet.findMany({ select: { slug: true }, orderBy: { soldCount12mo: "desc" } }),
+    // Surfaced entities only — dormant/pageless registry entities never resolve
+    // (they would 404). See streetSurface.ts.
+    prisma.residentialStreet.findMany({ where: SURFACED_STREET_WHERE, select: { slug: true }, orderBy: { soldCount12mo: "desc" } }),
     prisma.condoBuilding.findMany({ select: { slug: true } }),
     prisma.neighbourhood.findMany({ select: { slug: true } }),
   ]);

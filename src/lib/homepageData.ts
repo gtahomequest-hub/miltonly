@@ -11,6 +11,7 @@
 // their homepage sections were removed. NEIGHBOURHOOD_CHARACTER below is retained
 // because hubData.ts imports it.
 import { prisma } from "@/lib/prisma";
+import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
 import { getSoldDb } from "@/lib/db";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { expandStreetName } from "@/lib/street-data";
@@ -94,7 +95,7 @@ export async function getHomepageData(): Promise<HomepageData> {
       take: 2,
       select: { name: true, slug: true },
     }),
-    prisma.residentialStreet.count(),
+    prisma.residentialStreet.count({ where: SURFACED_STREET_WHERE }), // surfaced only — dormant/pageless entities don't count toward the public "streets" figure
     prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
   ]);
   const publishedSlugs = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
