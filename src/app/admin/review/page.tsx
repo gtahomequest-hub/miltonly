@@ -49,12 +49,63 @@ export default async function AdminReviewPage() {
     publishedAt: p.publishedAt?.toISOString() || null,
   }));
 
+  // Step 5 — street_slugs vow-sync minted that don't match the registry / off-registry
+  // allowlist. Fail-loud queue; review before any become pages.
+  const slugReviews = await prisma.streetSlugReview.findMany({
+    where: { resolved: false },
+    orderBy: [{ seenCount: "desc" }, { lastSeen: "desc" }],
+    take: 200,
+  });
+
   return (
-    <AdminReviewClient
-      drafts={serializedDrafts}
-      recentPublished={serializedPublished}
-      queueStats={queueStats}
-    />
+    <>
+      <AdminReviewClient
+        drafts={serializedDrafts}
+        recentPublished={serializedPublished}
+        queueStats={queueStats}
+      />
+      <section className="bg-[#07111f] px-6 py-8 border-t border-[#1e3a5f]">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-[16px] font-extrabold text-[#f8f9fb] mb-1">
+            Street-slug review{" "}
+            <span className="text-[#f59e0b]">({slugReviews.length})</span>
+          </h2>
+          <p className="text-[12px] text-[#64748b] mb-4">
+            Slugs sync minted that canonicalizeResidential could not match to the Town registry
+            and are not on the off-registry allowlist. A real new street → add to the registry;
+            junk → dismiss. No page is auto-created for these.
+          </p>
+          {slugReviews.length === 0 ? (
+            <p className="text-[13px] text-[#22c55e]">Queue clear — every minted slug resolves.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px] text-[#cbd5e1]">
+                <thead>
+                  <tr className="text-left text-[#64748b] border-b border-[#1e3a5f]">
+                    <th className="py-2 pr-4">street_slug</th>
+                    <th className="py-2 pr-4">sample name</th>
+                    <th className="py-2 pr-4">seen</th>
+                    <th className="py-2 pr-4">first</th>
+                    <th className="py-2">last</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {slugReviews.map((r) => (
+                    <tr key={r.streetSlug} className="border-b border-[#0f2136]">
+                      <td className="py-2 pr-4 font-mono text-[#f8f9fb]">{r.streetSlug}</td>
+                      <td className="py-2 pr-4">{r.sampleName}</td>
+                      <td className="py-2 pr-4">{r.seenCount}</td>
+                      <td className="py-2 pr-4">{r.firstSeen.toISOString().slice(0, 10)}</td>
+                      <td className="py-2">{r.lastSeen.toISOString().slice(0, 10)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+    </>
   );
 }
 

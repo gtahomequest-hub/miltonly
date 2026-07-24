@@ -983,6 +983,8 @@ export async function runSoldSync(opts: {
   let roomsWritten = 0;
   let pagesFetched = 0;
   let totalProcessed = 0;
+  // Step 5 — distinct minted street_slugs, validated against the registry after the run.
+  const mintedSlugs = new Map<string, string>(); // slug -> a sample street_name
 
   while (true) {
     let filter: string;
@@ -1029,6 +1031,8 @@ export async function runSoldSync(opts: {
       }
 
       const mapped = mapAmpToSoldColumns(item);
+      const mSlug = String(mapped.street_slug ?? ""); const mName = String(mapped.street_name ?? "");
+      if (mSlug && !mintedSlugs.has(mSlug)) mintedSlugs.set(mSlug, mName);
       const values = buildSoldRecordValues(mapped);
 
       try {
@@ -1101,9 +1105,20 @@ export async function runSoldSync(opts: {
     if (pagesFetched > 400) break;
   }
 
+  // Step 5 — sync-time registry validation: queue any minted slug that canonicalizeResidential
+  // can't match to the registry and isn't off-registry. Non-fatal (never blocks the sync).
+  let slugsQueued = 0;
+  try {
+    const { reviewMintedStreetSlugs } = await import("@/lib/streetSlugReview");
+    slugsQueued = await reviewMintedStreetSlugs(Array.from(mintedSlugs).map(([streetSlug, streetName]) => ({ streetName, streetSlug })));
+  } catch (err) {
+    console.error(`[sync/sold] street-slug review failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   const durationMs = Date.now() - started;
   console.log(
     `[sync/sold] mode=${isBackfill ? "backfill" : "incremental"} ` +
+      `slugsQueuedForReview=${slugsQueued} ` +
       `pages=${pagesFetched} inserted=${inserted} updated=${updated} ` +
       `skipped=${skipped} media=${mediaWritten} rooms=${roomsWritten} ` +
       `duration=${durationMs}ms`
