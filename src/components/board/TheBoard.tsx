@@ -199,7 +199,7 @@ export function TheBoard({ board }: { board: BoardTab[] }) {
           <div className="brd-supline">
             <span className="brd-supicon" aria-hidden="true">ⓘ</span>
             <span className="brd-suptext">
-              {tab.suppressed.length} segment{tab.suppressed.length === 1 ? '' : 's'} too thin to publish:{' '}
+              {tab.suppressed.length} segment{tab.suppressed.length === 1 ? '' : 's'} too thin to publish over the last 12 months:{' '}
               {tab.suppressed.map((c) => `${titleCase(c.slug)} ${c.type}`).join(', ')}.
             </span>
             <a className="brd-suplink" href="/sell">Get a grounded valuation →</a>

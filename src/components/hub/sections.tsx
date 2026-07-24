@@ -111,7 +111,7 @@ export function HubGlance({ data }: { data: HubData }) {
               <div className="h-gi-ic">{it.ic}</div>
               <div className="h-gi-l">{it.l}</div>
               <div className={`h-gi-v${it.silent ? ' h-silent' : ''}`}>
-                {it.v ?? 'not stated — thin activity'}
+                {it.v ?? 'not stated — thin activity in the last 12 months'}
               </div>
             </div>
           ))}
@@ -177,7 +177,7 @@ function StreetCard({ s }: { s: HubStreetCard }) {
       ? `${s.soldCount} sold · typically ${fullPrice(s.typicalPriceRounded as number)}`
       : s.soldCount !== null
         ? `${s.soldCount} sold`
-        : 'thin activity — see street guide';
+        : 'thin activity in the last 12 months — see street guide';
   return (
     <a className="h-st" href={`/streets/${s.slug}`}>
       {s.signal && <span className="h-st-sig">{s.signal}</span>}

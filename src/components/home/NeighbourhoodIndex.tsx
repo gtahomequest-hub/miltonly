@@ -10,7 +10,7 @@ function Card({ n }: { n: NeighbourhoodCard }) {
       <div className="m-ch">{n.character}</div>
       <div className={`m-pr${silent ? ' m-silent' : ''}`}>
         {silent
-          ? n.silentNote ?? 'typical price not stated — thin activity'
+          ? n.silentNote ?? 'typical price not stated — thin activity in the last 12 months'
           : `typically ${fullPrice(n.typicalPriceRounded as number)}`}
       </div>
     </a>
