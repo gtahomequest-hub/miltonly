@@ -81,7 +81,8 @@ export interface SafeStreetStats {
 }
 
 /** Validates that no raw listing data leaks into a prompt */
-function validatePromptSafety(text: string): { safe: boolean; reason?: string } {
+// Exported (GENI Phase 1): the area-finder input firewall runs this PII/leak check first.
+export function validatePromptSafety(text: string): { safe: boolean; reason?: string } {
   // Check for MLS number patterns (e.g., W1234567, C1234567, N1234567)
   if (/\b[A-Z]\d{7,}\b/.test(text)) {
     return { safe: false, reason: "Prompt contains what appears to be an MLS number" };
