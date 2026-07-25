@@ -52,6 +52,9 @@ Return ONLY this JSON shape:
 
 RULES:
 - Include a key in "criteria" ONLY if the sentence clearly states it. Omit everything else. No nulls.
+- propertyType: set ONLY when the sentence NAMES a specific listing type — detached, semi / semi-detached,
+  townhouse / town / freehold town, condo / apartment / condominium. Generic dwelling words ("home", "house",
+  "place", "property", "somewhere to live") are NOT a type — OMIT propertyType (price and beds do the filtering).
 - There is NO field for area quality, vibe, "who lives there", safety, family-ness, prestige, diversity, or demographics. NEVER invent one.
 - Put into "declined" any criterion the user asked for that we CANNOT ground with data:
   commute time to a specific place/workplace, walkability / walk score, quiet / noise, parks,
@@ -106,6 +109,21 @@ export async function parseWithLLM(residue: string): Promise<Stage2Result> {
       }
       case "nearGO": { if (v === true || v === "true") criteria.nearGO = true; break; }
     }
+  }
+
+  // DEC-GENI-9 — deterministic guard against propertyType over-inference. propertyType survives
+  // ONLY when the residue actually NAMES that listing type; a generic dwelling word ("home",
+  // "house", "place", "property") must NOT infer one (inferring "detached" narrows a common query
+  // to near-zero matches — typical detached is $1.0M-$1.36M in every urban hub). Dropped silently
+  // (the user didn't ask for it) so the query stays clean rather than gaining a note.
+  if (criteria.propertyType) {
+    const t = criteria.propertyType;
+    const named =
+      (t === "detached" && /\bdetached\b/i.test(residue)) ||
+      (t === "semi" && /\bsemi(?:[-\s]?detached)?\b/i.test(residue)) ||
+      (t === "townhouse" && /\btownhou?se\b|\btownhome\b|\btown\b|\bfreehold\s+town/i.test(residue)) ||
+      (t === "condo" && /\bcondo(?:minium)?\b|\bapartment\b/i.test(residue));
+    if (!named) delete criteria.propertyType;
   }
 
   // Carry the model's declined[] through (defensively typed).

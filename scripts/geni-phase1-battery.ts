@@ -43,6 +43,9 @@ const CASES: Array<[string, string[]]> = [
   ["FALSE-POSITIVE BOUNDARY ('family home' is a listing descriptor, must NOT over-decline)", [
     "3 bed family home under $900k",
   ]],
+  ["DEC-GENI-9 — generic dwelling word must NOT infer a propertyType", [
+    "house under $1M",
+  ]],
 ];
 
 // Identify which of the three notes fired (by a distinctive substring of each).
