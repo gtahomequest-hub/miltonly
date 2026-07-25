@@ -37,7 +37,22 @@ const CASES: Array<[string, string[]]> = [
   ["ALLOWLIST DROP -> drop off-schema, keep objective", [
     "detached under $1M with a pool and granite counters",
   ]],
+  ["PURE-REDIRECT NOTE (ungroundable-only, NO objective residue, NO protected)", [
+    "walkable quiet area near my office",
+  ]],
+  ["FALSE-POSITIVE BOUNDARY ('family home' is a listing descriptor, must NOT over-decline)", [
+    "3 bed family home under $900k",
+  ]],
 ];
+
+// Identify which of the three notes fired (by a distinctive substring of each).
+function noteType(note?: string): string {
+  if (!note) return "none";
+  if (note.includes("not on who lives there")) return "STEER";
+  if (note.includes("I can't match neighbourhoods on that")) return "PURE-REDIRECT";
+  if (note.includes("listing ID or a full address")) return "PII";
+  return "unknown";
+}
 
 async function main() {
   const { parseGeniQuery } = await import("@/lib/geni/parseGeniQuery");
@@ -54,7 +69,7 @@ async function main() {
         `  criteria=${JSON.stringify(r.criteria)}` +
         (r.neutralized.length ? `  neutralized=${JSON.stringify(r.neutralized.map((n) => n.removed))}` : "") +
         (r.declined.length ? `  declined=${JSON.stringify(r.declined.map((d) => d.field))}` : "") +
-        (r.note ? `\n       note="${r.note}"` : ""));
+        (r.note ? `\n       note[${noteType(r.note)}]="${r.note}"` : ""));
       if (r.declined.length) for (const d of r.declined) console.log(`         · declined ${d.field}: ${d.reason}`);
     }
   }
