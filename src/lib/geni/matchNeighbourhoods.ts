@@ -120,13 +120,17 @@ export async function matchNeighbourhoods(parseResult: GeniParseResult): Promise
     const typical = isRent ? null : typicalRaw;
     const domAvg = isRent ? null : n(r.dom_avg);
     const sold12mo = isRent ? null : n(r.sold_12mo);
-    const isRural = r.kind === "rural";
-    const typicalLowConfidence = !isRent && typical !== null && isRural; // DEC-GENI-7
-    const aboveTypicalBudget = !isRent && c.maxPrice != null && typical !== null && !isRural && typical > c.maxPrice;
+    // DEC-GENI-7: price-mean confidence keys off PROFILE, not geographic kind. rural_hub
+    // profiles (incl. the two thin-urban kind=urban rural_hub neighbourhoods, Bronte Meadows
+    // & Milton North) have tiny-n means → we neither CREDIT (budget tag) nor PENALIZE
+    // (entry-level framing) on them. Only urban_hub means are confidence-bearing.
+    const budgetConfident = r.profile === "urban_hub";
+    const typicalLowConfidence = !isRent && typical !== null && !budgetConfident;
+    const aboveTypicalBudget = !isRent && c.maxPrice != null && typical !== null && budgetConfident && typical > c.maxPrice;
 
     const tags: MatchTag[] = [];
-    // budget_comfortable — urban only (DEC-GENI-7: never a rural budget signal), sale only.
-    if (!isRent && c.maxPrice != null && typical !== null && r.kind === "urban") {
+    // budget_comfortable — urban_hub profile only (DEC-GENI-7: never a rural-profile budget signal), sale only.
+    if (!isRent && c.maxPrice != null && typical !== null && budgetConfident) {
       tags.push({ key: "budget_comfortable", met: typical <= c.maxPrice });
     }
     // near_go — the only proximity signal; needs a centroid.
