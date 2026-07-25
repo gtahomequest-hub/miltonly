@@ -11,31 +11,17 @@
 // DEC-GENI-3: GO/school distance = geo.ts NEIGHBOURHOOD_CENTROIDS + haversine over the
 //   schools.ts roster (lat/lng schools only). Centroid-less neighbourhoods -> NULL, has_centroid=false.
 // NULL-never-0: sub-k / absent price & DOM -> NULL (never 0). Volume counts are public (0 is real).
-import { requireAnalyticsDb, getAnalyticsDb, getSoldDb } from "@/lib/db";
+import { requireAnalyticsDb, getSoldDb } from "@/lib/db";
 import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
+import type { NeighbourhoodMatchRow } from "./neighbourhoodMatchRead";
+// The READER (getNeighbourhoodMatchStats) + the row type live in neighbourhoodMatchRead.ts —
+// server-only-free — so the matcher can import them without this compute chain (buildHubInput).
 import { saleAggQuery, byTypeQuery, assembleAggregates, assembleByType } from "@/lib/ai/buildHubInput";
 import { NEIGHBOURHOOD_CENTROIDS, GO_STATION, haversineKm } from "@/lib/geo";
 // NOTE: nearest-school DISTANCE was dropped (Phase 0 scoped fix, 2026-07). schools.ts
 // coords were geocoded TO the neighbourhood centroids (±300m), so nearest-school
 // haversine was centroid-to-centroid (== 0) — a geocoding artifact, not a real signal.
 // GO distance (centroid -> GO_STATION) is genuine and stays.
-
-export interface NeighbourhoodMatchRow {
-  neighbourhood_slug: string;
-  neighbourhood_name: string;
-  profile: string;
-  kind: string;
-  typical_detached: number | null;
-  typical_semi: number | null;
-  typical_town: number | null;
-  typical_condo: number | null;
-  sold_12mo: number | null;
-  sold_90d: number | null;
-  dom_avg: number | null;
-  has_centroid: boolean;
-  dist_go_km: number | null;
-  computed_at: string;
-}
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -137,13 +123,4 @@ export async function computeAndWriteNeighbourhoodMatchStats(): Promise<Neighbou
   return rows;
 }
 
-// ── Reader (thin — plain SELECT *; later phases read through this) ──
-export async function getNeighbourhoodMatchStats(): Promise<NeighbourhoodMatchRow[]> {
-  const a = getAnalyticsDb();
-  if (!a) return [];
-  try {
-    return (await a`SELECT * FROM analytics.neighbourhood_match_stats ORDER BY neighbourhood_slug`) as NeighbourhoodMatchRow[];
-  } catch {
-    return [];
-  }
-}
+// Reader moved to ./neighbourhoodMatchRead (server-only-free). See import above.
