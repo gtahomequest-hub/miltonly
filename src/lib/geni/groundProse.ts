@@ -103,6 +103,28 @@ export interface FormatIssue {
 
 const SUPERLATIVES = /\b(best|greatest|premier|finest|unbeatable|prestigious|top-rated|most\s+desirable|second\s+to\s+none)\b/i;
 
+// DEC-GENI-11 EXTENSION: current-availability is deterministic-card-only. The prose may make
+// NO present-inventory claim, numeric OR qualitative. PAST sales ("N sold last year") and days
+// on market stay allowed — those are stable drivers. "on the market" is exempted only in the
+// DOM idiom "days on the market".
+const AVAILABILITY_BANS: Array<{ re: RegExp; label: string }> = [
+  { re: /\bavailable\b/i, label: "available" },
+  { re: /\blisted\b/i, label: "listed" },
+  { re: /\bfor\s+sale\b/i, label: "for sale" },
+  { re: /\binventor(?:y|ies)\b/i, label: "inventory" },
+  { re: /\bon\s+offer\b/i, label: "on offer" },
+  { re: /(?<!days\s)\bon\s+the\s+market\b/i, label: "on the market" },
+  { re: /\b(?:limited|few|plenty|scarce|sparse|ample|handful)\b[^.]{0,24}\b(?:home|homes|inventory|listing|listings|supply|selection|options?|properties|units?)\b/i, label: "availability quantifier + supply" },
+  { re: /\b(?:home|homes|inventory|listing|listings|supply|selection|options?|properties|units?)\b[^.]{0,24}\b(?:are\s+)?(?:limited|few|plentiful|plenty|scarce|sparse|ample)\b/i, label: "supply + availability quantifier" },
+];
+
+/** DEC-GENI-11: present-availability language, numeric or qualitative. Empty = clean. */
+export function findAvailabilityClaims(prose: string): string[] {
+  const hits: string[] = [];
+  for (const { re, label } of AVAILABILITY_BANS) if (re.test(prose)) hits.push(label);
+  return hits;
+}
+
 /**
  * GUARD 0 (cheap, deterministic): enforce the hard length cap and the boutique-voice
  * bans the model routinely violates (em-dash, "median", superlatives). A format failure
@@ -120,5 +142,8 @@ export function checkFormat(prose: string): FormatIssue[] {
   if (/[—–]/.test(prose)) issues.push({ reason: "contains an em/en dash (voice ban)" });
   if (/\bmedian\b/i.test(prose)) issues.push({ reason: "says 'median' (use 'typical')" });
   if (SUPERLATIVES.test(prose)) issues.push({ reason: `contains a superlative (${prose.match(SUPERLATIVES)?.[0]})` });
+  for (const a of findAvailabilityClaims(prose)) {
+    issues.push({ reason: `present-availability language ("${a}") — availability is deterministic-card-only (DEC-GENI-11)` });
+  }
   return issues;
 }

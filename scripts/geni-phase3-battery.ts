@@ -10,7 +10,7 @@ for (const f of ["../.env", "../.env.local"]) { try { for (const line of readFil
 
 async function main() {
   const { explainMatch, runExplainPipeline, bucketMaxPrice } = await import("@/lib/geni/explainMatch");
-  const { findUngroundedInDrivers, checkFormat } = await import("@/lib/geni/groundProse");
+  const { findUngroundedInDrivers, checkFormat, findAvailabilityClaims } = await import("@/lib/geni/groundProse");
   type Ref = Parameters<typeof explainMatch>[0];
   type Bucket = Parameters<typeof explainMatch>[1];
   type Drivers = Parameters<typeof explainMatch>[2];
@@ -75,19 +75,30 @@ async function main() {
     line(`  result prose: ${r === null ? "null (deterministic fallback)" : `"${r}"`}`);
   }
 
-  // ── LIVE-COUNT EXCLUSION (DEC-GENI-11) ──
-  line("\n═══ LIVE-COUNT EXCLUSION — '2 listed right now' has no grounding (count not in payload) ═══");
+  // ── LIVE-COUNT EXCLUSION (DEC-GENI-11 + extension) — two enforcement points ──
+  line("\n═══ LIVE-COUNT EXCLUSION (DEC-GENI-11) — availability phrasing AND bare count both rejected ═══");
   {
-    const attempts: unknown[] = [];
-    const countProse = "Detached homes in Dorset Park typically sell around $1.0M, and the Milton GO is about 1.5 km away, with only 2 listed right now.";
-    const r = await runExplainPipeline(DORSET, detachedNearGo, dorsetDrivers, {
-      generate: async () => countProse,
-      onAttempt: (i) => attempts.push(i),
+    // (a) present-inventory phrasing → lexical availability gate (format stage)
+    const attemptsA: any[] = [];
+    const rA = await runExplainPipeline(DORSET, detachedNearGo, dorsetDrivers, {
+      generate: async () => "Detached homes in Dorset Park typically sell around $1.0M, and the Milton GO is about 1.5 km away, with only 2 listed right now.",
+      onAttempt: (i) => attemptsA.push(i),
     });
-    const gf = attempts.find((a: any) => a.stage === "grounding_fail") as any;
-    line(`  grounding gate fired on a live count: ${!!gf}`);
-    if (gf) gf.detail.forEach((h: any) => line(`    CAUGHT: "${h.raw}" — ${h.reason}`));
-    line(`  result prose: ${r === null ? "null (deterministic fallback)" : `"${r}"`}`);
+    const availFail = attemptsA.find((a) => a.stage === "format_fail" && a.detail.some((d: any) => /availability|DEC-GENI-11/.test(d.reason)));
+    line(`  (a) "2 listed right now" rejected by the availability lexical gate: ${!!availFail}`);
+    if (availFail) availFail.detail.filter((d: any) => /availability|DEC-GENI-11/.test(d.reason)).forEach((d: any) => line(`      CAUGHT: ${d.reason}`));
+    line(`      result: ${rA === null ? "null (deterministic fallback)" : `"${rA}"`}`);
+
+    // (b) a bare count not in the payload volume → numeric grounding gate
+    const attemptsB: any[] = [];
+    const rB = await runExplainPipeline(DORSET, detachedNearGo, dorsetDrivers, {
+      generate: async () => "Detached homes in Dorset Park typically sell around $1.0M, 1.5 km from the Milton GO, with 12 sales this quarter.",
+      onAttempt: (i) => attemptsB.push(i),
+    });
+    const gf = attemptsB.find((a) => a.stage === "grounding_fail");
+    line(`  (b) bare count "12 sales" (payload volume is 41) rejected by grounding gate: ${!!gf}`);
+    if (gf) gf.detail.forEach((h: any) => line(`      CAUGHT: "${h.raw}" — ${h.reason}`));
+    line(`      result: ${rB === null ? "null (deterministic fallback)" : `"${rB}"`}`);
   }
 
   // ── CACHE HIT — 2nd call for same (slug,bucket) makes NO generate call ──
@@ -135,12 +146,18 @@ async function main() {
     if (gf) gf.detail.forEach((h: any) => line(`    CAUGHT: "${h.raw}" — ${h.reason}`));
     line(`  result prose: ${r === null ? "null (structurally cannot claim a budget fit)" : `"${r}"`}`);
 
-    // (iii) a clean rural generation (inventory/GO only, no $) passes grounding + a pass-judge
-    const clean = await runExplainPipeline(BRONTE, detachedNearGo, bronteDrivers, {
-      generate: async () => "Bronte Meadows sits about 1.6 km from the Milton GO station and has detached homes available in your search. Inventory here is limited but present.",
-      judge: async () => ({ pass: true }),
-    });
-    line(`  clean rural prose (no budget claim) accepted: ${clean !== null}  → "${clean}"`);
+    // (iii) a clean rural generation — REAL end-to-end. Must ground on GO + past sales/DOM only,
+    // with NO availability language (DEC-GENI-11 extension) and NO budget claim.
+    const clean = await runExplainPipeline(BRONTE, detachedNearGo, bronteDrivers, {});
+    line(`  clean rural prose accepted (real gen): ${clean !== null}`);
+    if (clean) {
+      line(`    → "${clean}"`);
+      const avail = findAvailabilityClaims(clean);
+      line(`    availability language present: ${avail.length ? avail.join(", ") : "NONE"}  (must be NONE)`);
+      line(`    dollar figures present: ${/\$/.test(clean)}  (must be false — no budget claim, rural has no typical)`);
+    } else {
+      line("    (real API returned null — fail-closed; deterministic proof is the injected cases above.)");
+    }
   }
 
   // ── FAIL-CLOSED — DeepSeek error and judge error both → null ──
@@ -164,10 +181,12 @@ async function main() {
     const med = checkFormat("The median detached price here is about one million dollars and the area sits close to transit lines.");
     const sup = checkFormat("This is the finest detached neighbourhood in all of Milton for a buyer on any budget at all right now.");
     const long = checkFormat(Array.from({ length: 80 }, () => "word").join(" "));
+    const avail = checkFormat("Detached homes here sell around $1.0M with plenty of options available on the market right now near the GO.");
     line(`  em-dash rejected: ${em.some((i) => /dash/.test(i.reason))}`);
     line(`  'median' rejected: ${med.some((i) => /median/.test(i.reason))}`);
     line(`  superlative rejected: ${sup.some((i) => /superlative/.test(i.reason))}`);
     line(`  over-length rejected: ${long.some((i) => /length/.test(i.reason))}`);
+    line(`  availability language rejected (DEC-GENI-11 ext): ${avail.some((i) => /availability/.test(i.reason))}`);
   }
 
   process.exit(0);

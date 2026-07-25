@@ -64,10 +64,10 @@ HARD RULES:
 - 2 to 3 sentences, 40 to 60 words. Never longer.
 - Ground EVERY number ONLY in the numeric facts given below. Invent nothing. If a fact is absent, do not mention it.
 - The buyer's budget is NOT given to you as a figure. Refer to their budget only in words ("within your budget", "at the upper end of your budget"). NEVER state a budget dollar figure — the only dollar figure you may write is the typical price fact, if one is given.
-- Never state how many homes are currently listed, available, or for sale. You are not given that number.
+- Do NOT mention current availability, inventory, or how many homes are listed, available, or for sale. Say nothing about what is on the market now, in numbers OR in words ("available", "limited inventory", "plenty of options" are all banned). You MAY cite PAST sales (homes sold in the past year) and average days on market.
 - Say "typical" never "median". Round currency by band ($1.0M, $850K, $700K).
 - No em dashes. No superlatives (best, finest, premier, most desirable). No percentages. No methodology or data-source talk.
-- Explain ONLY objective fit: price/budget, property type, distance to the GO station, sales activity (fast-selling or high volume), sale vs rent, inventory availability in general terms.
+- Explain ONLY objective fit: price/budget, property type, distance to the GO station, and PAST sales activity (homes sold in the past year, days on market, fast-selling or high volume), sale vs rent.
 - NEVER describe who lives in the area or who it suits (no families, professionals, retirees, "good for kids", "nice part of town", "close-knit", "safe/quiet neighbourhood").
 
 Return ONLY JSON: {"prose": "<your explanation>"}.`;
