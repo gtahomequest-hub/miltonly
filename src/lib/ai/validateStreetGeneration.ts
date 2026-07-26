@@ -290,7 +290,7 @@ export function findMarketTemplateParrot(text: string): { excerpt: string; match
 //   - DOM: ±5 days
 //   - Counts: exact match required (or in input counts pool)
 
-interface NumericExtraction {
+export interface NumericExtraction {
   raw: string;
   index: number;
   context: string;
@@ -319,7 +319,7 @@ const NUMERIC_PATTERNS: Array<{ re: RegExp; type: NumericExtraction["type"] }> =
   { re: /\b(?:post|pre|after|before)[- ]?\d{4}\b/gi, type: "year" },
 ];
 
-function extractNumerics(prose: string): NumericExtraction[] {
+export function extractNumerics(prose: string): NumericExtraction[] {
   const out: NumericExtraction[] = [];
   const seen = new Set<string>();
   // Track [start, end) spans per type so overlapping matches in the same
@@ -348,7 +348,7 @@ function extractNumerics(prose: string): NumericExtraction[] {
   return out;
 }
 
-function parseDollarTokenForGrounding(tok: string): number | null {
+export function parseDollarTokenForGrounding(tok: string): number | null {
   let s = tok.replace(/[$,\s]/g, "").toLowerCase();
   const tier = s.match(/^(high|mid|low)-(.+)$/);
   if (tier) s = tier[2];
