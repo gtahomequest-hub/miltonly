@@ -39,7 +39,7 @@ export interface BuildingAttributes {
   kFloors: { saleTypical: boolean; saleRange: boolean; leaseTypical: boolean; identityOnly: boolean };
   amenities: { rendered: string[]; detail: AmenityCount[]; recordsWithAny: number; note: string | null; label: string };
   feeIncludes: { items: string[]; detail: AmenityCount[]; recordsCarrying: number; threshold: number; stated: boolean; note: string | null };
-  management: { company: string | null; rawTop: AmenityCount[]; note: string | null };
+  management: { company: string | null; allTimeCompany: string | null; window: "recent" | "all-time" | "none"; recentCount: number; mostRecent: string | null; rawTop: AmenityCount[]; note: string | null };
   buildingName: { name: string; source: "association_name" | "address"; isRealName: boolean; rawTop: AmenityCount[]; note: string | null };
   gyield: {
     headlinePct: number | null;
@@ -64,7 +64,7 @@ interface RawAttrRow {
   sold_date: string | null;
 }
 
-const PLACEHOLDER = new Set(["", "0", "00", "000", "n/a", "na", "none", "null", "-", "unknown"]);
+const PLACEHOLDER = new Set(["", "0", "00", "000", "n/a", "na", "none", "null", "-", "unknown", "tba", "tbd", "tbc", "pending", "n / a"]);
 const isPlaceholder = (s: string) => PLACEHOLDER.has(s.trim().toLowerCase());
 
 /** array (text[]) or ", "-joined text → clean, deduped items for ONE record */
@@ -128,14 +128,17 @@ function foldFeeIncludes(rows: RawAttrRow[]): BuildingAttributes["feeIncludes"] 
   const perRecord = rows.map((r) => splitMulti(r.association_fee_includes)).filter((r) => r.length);
   const recordsCarrying = perRecord.length;
   const threshold = Math.ceil(recordsCarrying / 2); // >= half
-  if (recordsCarrying < 2) {
-    return { items: [], detail: [], recordsCarrying, threshold, stated: false, note: "not stated — confirm with management" };
-  }
   const tally = tallyByRecord(perRecord);
   const detail = Array.from(tally.values())
     .map((e) => ({ amenity: e.display, count: e.count }))
     .sort((a, b) => b.count - a.count || a.amenity.localeCompare(b.amenity));
-  const items = detail.filter((d) => d.count >= threshold).map((d) => d.amenity);
+  // DEC-CONDO-2 noise floor: fee-includes is a financial claim. Require >=3 records to CARRY
+  // fee data before stating anything, and each item must appear in >=2 records AND >=half of
+  // carriers. Below the building floor → "not stated" (a single agent's list is not a fact).
+  if (recordsCarrying < 3) {
+    return { items: [], detail, recordsCarrying, threshold, stated: false, note: "not stated — confirm with management (fewer than 3 sold records state the fee inclusions)" };
+  }
+  const items = detail.filter((d) => d.count >= 2 && d.count >= threshold).map((d) => d.amenity);
   return {
     items,
     detail,
@@ -152,31 +155,65 @@ const MGMT_GENERIC = /\b(condominium|condo|corporation|corp|services?|service|pr
 function mgmtBrandKey(v: string): string {
   return v.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(MGMT_GENERIC, " ").replace(/\s+/g, " ").trim();
 }
-function foldManagement(values: string[]): BuildingAttributes["management"] {
-  const clean = values.map((v) => v.trim()).filter((v) => v && !isPlaceholder(v) && !PHONE_ONLY.test(v));
-  const rawCounts = new Map<string, number>();
-  for (const v of clean) rawCounts.set(v, (rawCounts.get(v) ?? 0) + 1);
-  const rawTop = Array.from(rawCounts.entries())
-    .map(([value, count]) => ({ amenity: value, count }))
-    .sort((a, b) => b.count - a.count || a.amenity.localeCompare(b.amenity));
-  if (!clean.length) return { company: null, rawTop, note: "no valid management company on record" };
-  // brand-key frequency (merges "Crossbridge Condominium Services" / "Crossbridge Property Mgmt")
+// modal-after-brand-merge over a set of values → {display, groups} (groups = distinct brand
+// buckets, so groups-1 = outlier/typo variants dropped).
+function modalBrand(values: string[]): { display: string | null; groups: number; modalCount: number } {
+  if (!values.length) return { display: null, groups: 0, modalCount: 0 };
   const brand = new Map<string, { count: number; display: Map<string, number> }>();
-  for (const v of clean) {
+  for (const v of values) {
     const k = mgmtBrandKey(v) || v.toLowerCase();
-    const e = brand.get(k) ?? { count: 0, display: new Map() };
+    const e = brand.get(k) ?? { count: 0, display: new Map<string, number>() };
     e.count += 1;
     e.display.set(v, (e.display.get(v) ?? 0) + 1);
     brand.set(k, e);
   }
   const modal = Array.from(brand.entries()).sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))[0];
-  // outlier drop: keep only the modal brand group; its display = most-frequent original value
   const display = Array.from(modal[1].display.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
-  const droppedOutliers = brand.size - 1;
+  return { display, groups: brand.size, modalCount: modal[1].count };
+}
+
+const MGMT_RECENT_N = 6; // modal over the most-recent N records = "current" manager
+
+// DEC-CONDO-3: management is POINT-IN-TIME. After the outlier drop (phone/typo/junk/TBA/TBD),
+// pick the modal over the MOST-RECENT N=6 records (recency-ordered) — a record-count window, NOT
+// a calendar window: a dense/new building can have its whole history inside 24 months (830 megson,
+// which switched Howland Green → CIE in early 2025), so a calendar window can't isolate the switch.
+// The most-recent-N modal flips to the new manager only once it dominates the recent window (so a
+// single stray record can't flip it), and leaves stable buildings untouched. Falls back to the
+// all-time modal when fewer than 2 dated records exist.
+function foldManagement(records: Array<{ value: string; soldDate: string | null }>): BuildingAttributes["management"] {
+  const clean = records
+    .map((r) => ({ value: r.value.trim(), soldDate: r.soldDate }))
+    .filter((r) => r.value && !isPlaceholder(r.value) && !PHONE_ONLY.test(r.value));
+  const rawCounts = new Map<string, number>();
+  for (const r of clean) rawCounts.set(r.value, (rawCounts.get(r.value) ?? 0) + 1);
+  const rawTop = Array.from(rawCounts.entries())
+    .map(([value, count]) => ({ amenity: value, count }))
+    .sort((a, b) => b.count - a.count || a.amenity.localeCompare(b.amenity));
+  if (!clean.length) {
+    return { company: null, allTimeCompany: null, window: "none", recentCount: 0, mostRecent: null, rawTop, note: "no valid management company on record" };
+  }
+  const allTime = modalBrand(clean.map((r) => r.value));
+  const dated = clean.filter((r) => r.soldDate).sort((a, b) => Date.parse(b.soldDate!) - Date.parse(a.soldDate!));
+  const mostRecent = dated[0]?.value ?? null;
+  const recentSet = dated.slice(0, MGMT_RECENT_N);
+  const useRecent = recentSet.length >= 2;
+  const chosen = useRecent ? modalBrand(recentSet.map((r) => r.value)) : allTime;
+  const changed = !!(allTime.display && chosen.display && mgmtBrandKey(allTime.display) !== mgmtBrandKey(chosen.display));
+  const droppedOutliers = chosen.groups - 1;
+  const parts: string[] = [];
+  parts.push(useRecent ? `current = modal of most-recent ${recentSet.length} record(s)` : "all-time modal (fewer than 2 dated records)");
+  if (changed) parts.push(`manager CHANGED — all-time modal was "${allTime.display}"`);
+  if (droppedOutliers > 0) parts.push(`dropped ${droppedOutliers} outlier/typo variant(s) in-window`);
+  else if (chosen.modalCount < 2) parts.push("single record — low confidence");
   return {
-    company: display,
+    company: chosen.display,
+    allTimeCompany: allTime.display,
+    window: useRecent ? "recent" : "all-time",
+    recentCount: recentSet.length,
+    mostRecent,
     rawTop,
-    note: droppedOutliers > 0 ? `modal after dropping ${droppedOutliers} outlier/typo variant(s)` : (modal[1].count < 2 ? "single record — low confidence" : null),
+    note: parts.join("; ") || null,
   };
 }
 
@@ -291,7 +328,11 @@ export async function buildBuildingAttributes(buildingSlug: string): Promise<Bui
   // folds
   const amenities = foldAmenities(attrRows);
   const feeIncludes = foldFeeIncludes(attrRows);
-  const management = foldManagement(attrRows.map((r) => r.property_management_company ?? "").filter(Boolean));
+  const management = foldManagement(
+    attrRows
+      .map((r) => ({ value: r.property_management_company ?? "", soldDate: r.sold_date }))
+      .filter((r) => r.value),
+  );
   const buildingName = foldName(attrRows.map((r) => r.association_name ?? "").filter(Boolean), addressFallback);
 
   // ── YIELD (DEC-CONDO-4) — k-gated both sides; median x12 / median ──

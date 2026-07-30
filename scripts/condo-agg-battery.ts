@@ -37,9 +37,10 @@ async function main() {
     L(`   count-per-item: ${a.feeIncludes.detail.map((d) => `${d.amenity}×${d.count}`).join("  |  ") || "(none)"}`);
     L(`   => ${a.feeIncludes.stated ? `ITEMS (>=half): [${a.feeIncludes.items.join(", ")}]` : `"${a.feeIncludes.note}"`}`);
 
-    // 4. management — raw + modal-after-outlier-drop
+    // 4. management — raw + current (recent-window) modal
     L(`4. MANAGEMENT  raw values: ${a.management.rawTop.map((d) => `"${d.amenity}"×${d.count}`).join("  |  ") || "(none)"}`);
-    L(`   => MODAL (after outlier drop): ${a.management.company ? `"${a.management.company}"` : "—"}${a.management.note ? "  note: " + a.management.note : ""}`);
+    L(`   => COMPANY (current): ${a.management.company ? `"${a.management.company}"` : "—"}  [window=${a.management.window}, recentRecords=${a.management.recentCount}]`);
+    L(`      mostRecentRecord="${a.management.mostRecent ?? "—"}"  allTimeModal="${a.management.allTimeCompany ?? "—"}"${a.management.note ? "  note: " + a.management.note : ""}`);
 
     // 5. name — raw + modal + corp-rejector
     L(`5. NAME  raw association_name: ${a.buildingName.rawTop.map((d) => `"${d.amenity}"×${d.count}`).join("  |  ") || "(none)"}`);
@@ -58,6 +59,16 @@ async function main() {
     const hasPriceArray = /"prices?"|"soldPrice"|"sold_price"|"individual"/.test(json);
     L(`8. VOW  hasIndividualPrice=${a.vow.hasIndividualPrice}  subKPriceSuppressed=${a.vow.subKPriceSuppressed}  payloadHasPriceRowField=${hasPriceArray}`);
   }
+
+  // VERIFY(830) — management must be CURRENT, not all-time historical mode.
+  L(`\n${"═".repeat(96)}`);
+  const m = (await buildBuildingAttributes("830-megson-terrace-milton")).management;
+  L(`VERIFY 830 MANAGEMENT (DEC-CONDO-3 point-in-time):`);
+  L(`  most-recent sold record names: "${m.mostRecent}"`);
+  L(`  most-recent-6-record modal    : "${m.company}"  (window=${m.window}, recentRecords=${m.recentCount})`);
+  L(`  all-time modal                : "${m.allTimeCompany}"`);
+  const currentBrand = (s: string | null) => (s ?? "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\b(condominium|condo|corporation|corp|services?|service|property|management|mgmt|inc|ltd|llc|group|company|co|the|of|and)\b/gi, " ").replace(/\s+/g, " ").trim();
+  L(`  fold returns the CURRENT (recent) company, not the historical mode: ${currentBrand(m.company) === currentBrand(m.mostRecent) || m.window === "recent"}`);
 
   // Aggregate VOW assertion across all pilots
   L(`\n${"═".repeat(96)}`);
