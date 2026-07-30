@@ -72,7 +72,6 @@ export function condoInputToStreetAdapter(input: CondoBuildingGeneratorInput): S
       ? {
           byBed: {},
           recentRecords: input.lease.recentRecords.map((r) => ({
-            mlsNumber: "",
             address: r.address,
             listPrice: r.rent,
             soldPrice: r.rent, // = monthly rent for For Lease records

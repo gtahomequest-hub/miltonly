@@ -94,7 +94,6 @@ interface RawLeaseByBed {
 // Per-row lease record for sample-based grounded content (Part 4, 2026-05-09).
 // Pulled from DB2 sold.sold_records; cap=10 most-recent in 12mo window.
 interface RawLeaseRecord {
-  mls_number: string;
   address: string;
   list_price: string | null;
   sold_price: string | null;
@@ -225,7 +224,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     // in 12mo window. Feeds buildLeaseSampleRecords which applies k-anon
     // gating before exposing to the prompt input.
     querySold<RawLeaseRecord>(
-      (db) => db`SELECT mls_number, address, list_price, sold_price,
+      (db) => db`SELECT address, list_price, sold_price,
                         beds, baths, sqft_range, days_on_market,
                         property_type, sold_date, lease_term, furnished
                   FROM sold.sold_records
@@ -825,7 +824,10 @@ function buildLeaseSampleRecords(
       const baths = num(r.baths);
       const sd = r.sold_date instanceof Date ? r.sold_date : new Date(r.sold_date);
       return {
-        mlsNumber: r.mls_number,
+        // COMPLIANCE (feat/compliance-mls-leak): the PropTx MLS identifier is deliberately NOT
+        // assembled into the prompt payload — "no PropTx identifiers in prompts" (PropTx data
+        // agreement). It is not even SELECTed above. The prompt-safety choke in callDeepSeek/
+        // callClaude is the backstop if one ever sneaks back in.
         address: redactAddressForPrompt(r.address),
         listPrice,
         soldPrice,

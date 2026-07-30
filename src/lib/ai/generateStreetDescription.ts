@@ -35,6 +35,7 @@ import type {
   ValidatorViolation,
 } from "@/types/street-generator";
 import { formatViolationsForRetry } from "./validateStreetGeneration";
+import { assertPromptSafe } from "./compliance";
 
 // Error classes consolidated in src/lib/ai/errors.ts; re-exported here so
 // existing callers that import from this module keep working.
@@ -88,6 +89,10 @@ export async function generateStreetDescription(
   const attemptNumber = isRetry ? 2 : 1; // 3 not distinguishable without retry-state; caller supplements.
 
   const userMessage = buildUserMessage(input, priorViolations, priorOutput);
+
+  // Prompt-safety choke (shared, fail-closed) — this generator calls the model directly, so it
+  // must invoke the same gate as callClaude/callDeepSeek. No prompt reaches the model unscanned.
+  assertPromptSafe(SYSTEM_PROMPT, userMessage);
 
   const client = getClient();
   const response = await client.messages.create({

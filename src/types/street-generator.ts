@@ -166,7 +166,8 @@ export interface StreetGeneratorInput {
     // market section + housing-stock detail in homes + tenant-fit signals
     // in bestFitFor. Address is PII-redacted (street# + streetName only).
     recentRecords?: Array<{
-      mlsNumber: string;
+      // NOTE: no mlsNumber — PropTx identifiers must never enter the prompt payload
+      // (feat/compliance-mls-leak). Address is PII-redacted to street# + streetName.
       address: string;
       listPrice: number;
       soldPrice: number;        // = monthly rent for For Lease records
