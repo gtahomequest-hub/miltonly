@@ -54,6 +54,46 @@ function velo(n: number): string {
   return "Rarely";
 }
 
+// Amenity synonym-merge (Fix 2). Build A vets amenities at >=2 sales but leaves TREB synonyms as
+// separate strings (Gym / Exercise Room, BBQs Allowed / Community BBQ, Party Room / Meeting Room /
+// combined). Collapse each real amenity to one canonical label, deduped, first-seen order (which is
+// count-desc from Build A).
+const AMENITY_CANON: Array<{ canon: string; syn: string[] }> = [
+  { canon: "Gym", syn: ["gym", "exercise room", "fitness", "fitness centre", "fitness center", "workout room", "gym/exercise room"] },
+  { canon: "Party & Meeting Room", syn: ["party room", "meeting room", "party room/meeting room", "party/meeting room", "party & meeting room", "party rm", "meeting rm"] },
+  { canon: "BBQ Area", syn: ["bbq", "bbqs allowed", "community bbq", "barbeque", "barbecue", "bbq area"] },
+  { canon: "Rooftop Deck", syn: ["rooftop deck", "roof deck", "rooftop terrace", "rooftop patio", "sundeck", "rooftop deck/garden"] },
+  { canon: "Garden", syn: ["garden", "courtyard"] },
+  { canon: "Media Room", syn: ["media room", "theatre", "theater", "screening room"] },
+  { canon: "Game Room", syn: ["game room", "games room", "billiards", "billiard room"] },
+  { canon: "Recreation Room", syn: ["recreation room", "rec room"] },
+  { canon: "Pool", syn: ["pool", "indoor pool", "outdoor pool", "swimming pool", "lap pool"] },
+  { canon: "Bike Storage", syn: ["bike storage", "bicycle storage"] },
+  { canon: "Elevator", syn: ["elevator", "elevators", "lift"] },
+  { canon: "Guest Suites", syn: ["guest suites", "guest suite"] },
+  { canon: "Concierge", syn: ["concierge"] },
+  { canon: "Security", syn: ["security guard", "security system", "24 hour security", "gatehouse", "security"] },
+  { canon: "Car Wash", syn: ["car wash"] },
+  { canon: "Visitor Parking", syn: ["visitor parking"] },
+  { canon: "Sauna", syn: ["sauna"] },
+];
+const AMEN_LOOKUP = new Map<string, string>();
+for (const g of AMENITY_CANON) for (const s of g.syn) AMEN_LOOKUP.set(s, g.canon);
+const normAmen = (s: string) => s.toLowerCase().replace(/[^a-z0-9/ ]+/g, "").replace(/\s+/g, " ").trim();
+
+export function canonicalizeAmenities(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const it of items) {
+    const canon = AMEN_LOOKUP.get(normAmen(it)) ?? it.trim();
+    const k = canon.toLowerCase();
+    if (!canon || seen.has(k)) continue;
+    seen.add(k);
+    out.push(canon);
+  }
+  return out;
+}
+
 function activity(a: Attrs): Activity {
   const s = a.records.sale12mo, l = a.records.lease12mo, t = s + l;
   if (s >= 5 && l >= 5) {
@@ -86,7 +126,7 @@ export function toCondoView(a: Attrs, narrative: string | null): CondoView {
     perBed: a.gyield.perBed
       .filter((p) => p.yieldPct != null)
       .map((p) => ({ beds: p.beds, yieldPct: p.yieldPct as number, buy: p.saleMedian, rent: p.leaseMedian })),
-    amenities: a.amenities.rendered.filter((x) => !x.includes("/")), // drop TREB combo tokens (dupe split parts)
+    amenities: canonicalizeAmenities(a.amenities.rendered), // synonym-merged + deduped (Fix 2)
     amenitiesRecords: a.amenities.recordsWithAny >= 5 ? a.amenities.recordsWithAny : null,
     feeStated: a.feeIncludes.stated,
     feeItems: a.feeIncludes.stated ? a.feeIncludes.items : [],

@@ -5,6 +5,7 @@
 // reads listing descriptions/remarks. Wiring the live condo generator is a separate later pass.
 import { assertPromptSafe } from "@/lib/ai/compliance";
 import { formatPrice } from "@/lib/format";
+import { canonicalizeAmenities } from "./condoView";
 import type { BuildingAttributes } from "./buildingAttributes.types";
 
 type Attrs = Omit<BuildingAttributes, "_debug">;
@@ -43,9 +44,8 @@ export function composeCondoBrief(a: Attrs): { text: string | null } {
     else if (a.kFloors.saleTypical) parts.push("It resells actively, with steady owner turnover.");
   }
 
-  // 3 — amenities (only what Build A already vetted at >=2 sales; drop TREB combo tokens like
-  // "Party Room/Meeting Room" that duplicate their split parts)
-  const amen = a.amenities.rendered.filter((x) => !x.includes("/"));
+  // 3 — amenities (only what Build A already vetted at >=2 sales; synonym-merged + deduped)
+  const amen = canonicalizeAmenities(a.amenities.rendered);
   if (amen.length >= 2) parts.push(`Its sold listings consistently feature ${list(amen, 3)}.`);
 
   // 4 — fees / management

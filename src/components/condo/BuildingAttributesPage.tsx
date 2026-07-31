@@ -9,6 +9,7 @@ import "./condo-theme.css";
 import "./condo-b.css";
 import type { CondoView } from "@/lib/ai/condoView";
 import { SiteNav } from "../nav/SiteNav";
+import CondoCTAs from "./CondoCTAs";
 import { config } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 
@@ -48,8 +49,8 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
 
             <div className="cb-lens" data-lens={lens} role="group" aria-label="Read this building as a buyer or a seller">
               <span className="cb-lens-thumb" aria-hidden />
-              <button type="button" className="cb-lens-btn" aria-pressed={buyer} onClick={() => setLens("buyer")}>I&rsquo;m buying</button>
-              <button type="button" className="cb-lens-btn" aria-pressed={!buyer} onClick={() => setLens("seller")}>I&rsquo;m selling</button>
+              <button type="button" className="cb-lens-btn" aria-pressed={buyer} onClick={() => setLens("buyer")}>I’m buying</button>
+              <button type="button" className="cb-lens-btn" aria-pressed={!buyer} onClick={() => setLens("seller")}>I’m selling</button>
             </div>
 
             <div className="cb-relation">
@@ -73,15 +74,15 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
             <p className="cb-rel-read cb-swap">
               {yld != null ? (
                 buyer
-                  ? <>That <Word>{yld}% yield</Word> is the catch: it&rsquo;s high enough that investors want these units too — so as a buyer here, you&rsquo;re competing with landlords, not just other families.</>
-                  : <>Two buyers want your unit at once: an owner to <Word>live in it</Word>, an investor for that <Word>{yld}% return</Word>. That second pool doesn&rsquo;t exist for most listings — here it bids up yours.</>
+                  ? <>That <Word>{yld}% yield</Word> is the catch: it’s high enough that investors want these units too — so as a buyer here, you’re competing with landlords, not just other families.</>
+                  : <>Two buyers want your unit at once: an owner to <Word>live in it</Word>, an investor for that <Word>{yld}% return</Word>. That second pool doesn’t exist for most listings — here it bids up yours.</>
               ) : !v.saleTypical && rnt != null ? (
                 buyer
-                  ? <>Sales are rare, so there&rsquo;s no crowd of competing buyers — but it&rsquo;s a <Word>proven rental</Word> building, which is the whole case if you&rsquo;re here to invest.</>
+                  ? <>Sales are rare, so there’s no crowd of competing buyers — but it’s a <Word>proven rental</Word> building, which is the whole case if you’re here to invest.</>
                   : <>Owners rarely sell here, so a listing stands out — and the <Word>rental demand</Word> underneath means investor buyers are already watching this address.</>
               ) : (
                 buyer
-                  ? <>Until this building trades more, the <Word>{nbhd} market</Word> is your best guide to what you&rsquo;d pay.</>
+                  ? <>Until this building trades more, the <Word>{nbhd} market</Word> is your best guide to what you’d pay.</>
                   : <>Too few of its own trades to price it yet — the <Word>{nbhd} market</Word> is what a buyer will compare against.</>
               )}
             </p>
@@ -120,7 +121,7 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
                   </div>
                   <p className="cb-verdict cb-swap">
                     {act.leasesPct >= 55
-                      ? (buyer ? <>Leasing is the busier market — investors are <Word>active in this building</Word>, so you&rsquo;ll compete with them, and your unit would let easily.</> : <>An active rental market means <Word>investor buyers</Word> are watching — a second pool alongside owner-occupiers.</>)
+                      ? (buyer ? <>Leasing is the busier market — investors are <Word>active in this building</Word>, so you’ll compete with them, and your unit would let easily.</> : <>An active rental market means <Word>investor buyers</Word> are watching — a second pool alongside owner-occupiers.</>)
                       : (buyer ? <>Resale is the busier market — a <Word>live-in building</Word> where units turn over to owners.</> : <>Owners drive this market — sell to <Word>end-users</Word> who want a home, not a spreadsheet.</>)}
                   </p>
                 </div>
@@ -129,18 +130,6 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
                 <div className="cb-mix">
                   <p className="cb-mix-qual">{act.leaseHeavy ? <>Recent activity is <b>overwhelmingly leasing</b> — resales are rare here.</> : <>Recent activity is <b>mostly resale</b> — it seldom trades as a rental.</>}</p>
                   <p className="cb-verdict cb-swap">{act.leaseHeavy ? (buyer ? <>A <Word>rental-active</Word> building — strong for income, quieter to resell.</> : <>Your natural buyer is an <Word>investor</Word>; the rental track record is your pitch.</>) : (buyer ? <>A <Word>live-in</Word> building — neighbours are owners, not tenants.</> : <>End-user demand leads — sell the <Word>home</Word>, not the yield.</>)}</p>
-                </div>
-              )}
-
-              {yld != null && buy != null && rnt != null && (
-                <div className="cb-mix" style={{ marginTop: 34, maxWidth: 720 }}>
-                  <div className="cb-flow">
-                    <div><div className="cb-flow-n">{money(buy)}</div><div className="cb-flow-l">typical buy</div></div>
-                    <span className="cb-flow-op">→</span>
-                    <div><div className="cb-flow-n">${(Math.round(rnt) * 12).toLocaleString("en-CA")}</div><div className="cb-flow-l">rent / year</div></div>
-                    <span className="cb-flow-op">=</span>
-                    <div><div className="cb-flow-n cb-yield">{yld}%</div><div className="cb-flow-l">gross return</div></div>
-                  </div>
                 </div>
               )}
 
@@ -178,7 +167,7 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
                   {buy != null ? (
                     <><div className="cb-side-num">{money(buy)}</div><div className="cb-side-meta">{v.saleVelo.toLowerCase()} resold · past year</div><div className="cb-side-read cb-swap">{buyer ? "Your buy-in — the typical closing price." : "Your comparables — what recent sellers got."}</div></>
                   ) : (
-                    <><div className="cb-side-num">not shown</div><div className="cb-side-meta">too few recent sales for a typical price</div><div className="cb-side-read">We won&rsquo;t publish a price the record can&rsquo;t support.</div></>
+                    <><div className="cb-side-num">not shown</div><div className="cb-side-meta">too few recent sales for a typical price</div><div className="cb-side-read">We won’t publish a price the record can’t support.</div></>
                   )}
                 </div>
                 <div className="cb-mid">
@@ -216,10 +205,10 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
                     <span className="cb-cmp-track"><span className="cb-cmp-fill cb-area" style={{ width: `${Math.min(100, Math.round((area / Math.max(buy, area)) * 100))}%` }} /></span>
                     <span className="cb-cmp-v">{money(area)}</span>
                   </div>
-                  <p className="cb-verdict">{buy > area * 1.06 ? <>You pay a <Word>premium</Word> over the {nbhd} typical — worth it only if this building&rsquo;s amenities and yield justify it.</> : buy < area * 0.94 ? <>A <Word>value entry</Word> — priced below the {nbhd} typical.</> : <>Priced <Word>right in line</Word> with the {nbhd} market — no premium to argue over.</>}</p>
+                  <p className="cb-verdict">{buy > area * 1.06 ? <>You pay a <Word>premium</Word> over the {nbhd} typical — worth it only if this building’s amenities and yield justify it.</> : buy < area * 0.94 ? <>A <Word>value entry</Word> — priced below the {nbhd} typical.</> : <>Priced <Word>right in line</Word> with the {nbhd} market — no premium to argue over.</>}</p>
                 </div>
               ) : (
-                <p className="cb-sec-lead">Sales here are too quiet to price the building itself — the {nbhd} typical of <strong>{money(area)}</strong> is the honest anchor for what you&rsquo;d pay.</p>
+                <p className="cb-sec-lead">Sales here are too quiet to price the building itself — the {nbhd} typical of <strong>{money(area)}</strong> is the honest anchor for what you’d pay.</p>
               )}
             </div>
           </section>
@@ -232,14 +221,14 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
               <div className="cb-sechead"><div className="cb-sec-eyebrow">Your buyers</div><h2 className="cb-sec-h2">{v.hasTrades ? "Who’s bidding on your unit." : "Who you’d be selling to."}</h2></div>
               <p className="cb-sec-lead">
                 {yld != null
-                  ? <>Two pools at once. Owner-occupiers who want to live here, and investors chasing the ~{yld}% yield — that second group is why units here don&rsquo;t linger. Price for both and you sell fast.</>
+                  ? <>Two pools at once. Owner-occupiers who want to live here, and investors chasing the ~{yld}% yield — that second group is why units here don’t linger. Price for both and you sell fast.</>
                   : v.hasTrades && act.mode !== "none" && (act.mode === "qual" ? act.leaseHeavy : act.leasesPct >= 55)
                     ? <>Your natural buyer is an <strong>investor</strong> — this is a rental-active building, and the leasing track record is what closes them.</>
                     : v.hasTrades && area != null
                       ? <>Your buyers are mostly <strong>owner-occupiers</strong> — lead with the home and amenities, and price against the {nbhd} typical of {money(area)}.</>
                       : area != null
-                        ? <>This building doesn&rsquo;t trade often enough yet to name your buyers — price against the <strong>{nbhd}</strong> typical of {money(area)}, which is what any buyer will compare to.</>
-                        : <>There isn&rsquo;t enough of its own record yet to profile your buyers.</>}
+                        ? <>This building doesn’t trade often enough yet to name your buyers — price against the <strong>{nbhd}</strong> typical of {money(area)}, which is what any buyer will compare to.</>
+                        : <>There isn’t enough of its own record yet to profile your buyers.</>}
               </p>
               {v.hasTrades && (
                 <div className="cb-velo" style={{ marginTop: 22 }}>
@@ -279,8 +268,8 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
             <div className="c-wrap">
               <div className="cb-sechead">
                 <div className="cb-sec-eyebrow">Inside the building</div>
-                <h2 className="cb-sec-h2">Amenities, from the building&rsquo;s own sold listings.</h2>
-                <p className="cb-sec-lead">Only what appears on two or more of this building&rsquo;s sales{v.amenitiesRecords != null ? ` (${v.amenitiesRecords} on record)` : ""} — not a brochure.</p>
+                <h2 className="cb-sec-h2">Amenities, from the building’s own sold listings.</h2>
+                <p className="cb-sec-lead">Only what appears on two or more of this building’s sales{v.amenitiesRecords != null ? ` (${v.amenitiesRecords} on record)` : ""} — not a brochure.</p>
               </div>
               <div className="cb-chips">{v.amenities.map((am) => <span className="cb-chip" key={am}>{am}</span>)}</div>
               <div className="cb-aside cb-swap">{buyer ? <>What your maintenance fee actually buys. <b>Confirm the current list with management.</b></> : <>The features to <b>lead your listing with</b> — make yours stand out from the comparables.</>}</div>
@@ -292,14 +281,14 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
         {v.hasTrades && (
           <section className="cb-block cb-alt">
             <div className="c-wrap">
-              <div className="cb-sechead"><div className="cb-sec-eyebrow">Running the building</div><h2 className="cb-sec-h2">Fees &amp; management.</h2></div>
+              <div className="cb-sechead"><div className="cb-sec-eyebrow">Running the building</div><h2 className="cb-sec-h2">Fees & management.</h2></div>
               <div className="cb-two">
                 <div className="cb-panel">
                   <div className="cb-panel-h">Maintenance fee includes</div>
                   {v.feeStated ? (
                     <div className="cb-chips">{v.feeItems.map((it) => <span className="cb-chip" key={it}>{it.replace(/ Included$/i, "")}</span>)}</div>
                   ) : (
-                    <><div className="cb-panel-v cb-silent-v">Not stated — confirm with management</div><div className="cb-panel-note">Too few of this building&rsquo;s sales spelled out the inclusions to assert a list.</div></>
+                    <><div className="cb-panel-v cb-silent-v">Not stated — confirm with management</div><div className="cb-panel-note">Too few of this building’s sales spelled out the inclusions to assert a list.</div></>
                   )}
                 </div>
                 <div className="cb-panel">
@@ -320,20 +309,23 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
               {area != null ? (
                 <>
                   <div className="cb-area-n">{money(area)}</div>
-                  <p className="cb-area-t">{v.identityOnly || !v.saleTypical ? <>is what condos across <strong>{nbhd}</strong> typically sell for — the honest anchor for {buyer ? "what you&rsquo;d pay" : "what to expect"} until this building trades more.</> : <>is the typical condo price across <strong>{nbhd}</strong>, the backdrop this building trades against.</>}</p>
+                  <p className="cb-area-t">{v.identityOnly || !v.saleTypical ? <>is what condos across <strong>{nbhd}</strong> typically sell for — the honest anchor for {buyer ? "what you’d pay" : "what to expect"} until this building trades more.</> : <>is the typical condo price across <strong>{nbhd}</strong>, the backdrop this building trades against.</>}</p>
                 </>
               ) : (
-                <p className="cb-area-t">Neighbourhood condo pricing for {nbhd} isn&rsquo;t available yet — this building will fill in as the record grows.</p>
+                <p className="cb-area-t">Neighbourhood condo pricing for {nbhd} isn’t available yet — this building will fill in as the record grows.</p>
               )}
             </div>
           </div>
         </section>
 
+        {/* ---------------- CONVERSION (both CTAs, every building) ---------------- */}
+        <CondoCTAs buildingName={name} neighbourhood={nbhd} thin={v.identityOnly || !v.hasTrades} />
+
         {/* ---------------- METHOD ---------------- */}
         <section className="cb-block">
           <div className="c-wrap">
             <p className="cb-method">
-              <b>How we built this page.</b> Every figure comes from {name}&rsquo;s own recorded sales and leases — nothing is estimated, and no listing&rsquo;s description or private remarks are used. &ldquo;Typical&rdquo; means the median of five or more comparable trades; below that we say so rather than show a shaky number, we never display an individual unit&rsquo;s price, and we only ever show whole-building proportions — never a count small enough to point at one owner. The short summary above is assembled sentence-by-sentence from these same aggregate numbers — composed, not written by a model. Where a building&rsquo;s own record is thin, the {config.CITY_NAME} neighbourhood context carries the page.
+              <b>How we built this page.</b> Every figure comes from {name}’s own recorded sales and leases — nothing is estimated, and no listing’s description or private remarks are used. “Typical” means the median of five or more comparable trades; below that we say so rather than show a shaky number, we never display an individual unit’s price, and we only ever show whole-building proportions — never a count small enough to point at one owner. The short summary above is assembled sentence-by-sentence from these same aggregate numbers — composed, not written by a model. Where a building’s own record is thin, the {config.CITY_NAME} neighbourhood context carries the page.
             </p>
           </div>
         </section>
