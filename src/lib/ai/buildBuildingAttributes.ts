@@ -31,7 +31,7 @@ function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
 
 // ── types ──────────────────────────────────────────────────────────────────
 // The public shape lives in a server-free module so the 'use client' render page can import it.
-import type { AmenityCount, BuildingAttributes } from "./buildingAttributes.types";
+import type { BuildingAttributes } from "./buildingAttributes.types";
 export type { AmenityCount, BuildingAttributes } from "./buildingAttributes.types";
 
 interface RawAttrRow {
