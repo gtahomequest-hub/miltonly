@@ -14,6 +14,7 @@ import {
 } from "@/lib/schema";
 import { buildBuildingAttributes } from "@/lib/ai/buildBuildingAttributes";
 import { generateCondoNarrative } from "@/lib/ai/condoNarrative";
+import { toCondoView } from "@/lib/ai/condoView";
 import BuildingAttributesPage from "@/components/condo/BuildingAttributesPage";
 import { isCondoPilot } from "@/lib/condoPilots";
 
@@ -57,6 +58,8 @@ export default async function CondoBuildingPage({ params }: Props) {
     const { _debug, ...safe } = attrs; // eslint-disable-line @typescript-eslint/no-unused-vars
     // Grounded, fail-closed narrative (routes through callDeepSeek's assertPromptSafe choke).
     const { prose: narrative } = await generateCondoNarrative(safe).catch(() => ({ prose: null }));
+    // Sanitize to a display-safe view — ONLY this crosses to the client (serialized into the HTML).
+    const view = toCondoView(safe, narrative);
     const schemas: Array<Record<string, unknown>> = [
       generateCondoSchema({ name: safe.buildingName.name, slug: safe.slug, address: safe.displayName, latitude: 0, longitude: 0 }),
       generateBreadcrumbSchema([
@@ -69,7 +72,7 @@ export default async function CondoBuildingPage({ params }: Props) {
     return (
       <>
         <SchemaScript schemas={schemas} />
-        <BuildingAttributesPage attrs={safe} narrative={narrative} />
+        <BuildingAttributesPage view={view} />
         <FooterSection />
       </>
     );
