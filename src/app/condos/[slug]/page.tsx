@@ -12,6 +12,11 @@ import {
   generateLocalBusinessSchema,
   generateFAQSchema,
 } from "@/lib/schema";
+import { buildBuildingAttributes } from "@/lib/ai/buildBuildingAttributes";
+import { composeCondoBrief } from "@/lib/ai/condoBrief";
+import { toCondoView } from "@/lib/ai/condoView";
+import BuildingAttributesPage from "@/components/condo/BuildingAttributesPage";
+import { isCondoPilot } from "@/lib/condoPilots";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +25,19 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  // Build B pilots: metadata from the building entity (no CondoContent required).
+  if (isCondoPilot(params.slug)) {
+    const b = await prisma.condoBuilding.findUnique({
+      where: { slug: params.slug },
+      select: { displayName: true, buildingAddress: true },
+    });
+    const nm = b?.displayName ?? b?.buildingAddress ?? params.slug;
+    return {
+      title: `${nm} — ${config.CITY_NAME} Condo Building`,
+      description: `Sales, leases, gross yield and amenities for ${nm} in ${config.CITY_NAME} — every figure from the building's own recorded trades.`,
+      alternates: { canonical: `${config.SITE_URL}/condos/${params.slug}` },
+    };
+  }
   const content = await prisma.condoContent.findUnique({
     where: { buildingSlug: params.slug },
     select: { status: true, metaTitle: true, metaDescription: true, buildingName: true },
@@ -33,6 +51,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CondoBuildingPage({ params }: Props) {
+  // Build B pilots render ONLY the buildBuildingAttributes payload (no CondoContent/LLM prose).
+  if (isCondoPilot(params.slug)) {
+    const attrs = await buildBuildingAttributes(params.slug).catch(() => null);
+    if (!attrs) notFound();
+    const { _debug, ...safe } = attrs; // eslint-disable-line @typescript-eslint/no-unused-vars
+    // Template-composed brief (deterministic, no model call; assertPromptSafe belt, fail-closed).
+    const { text: brief } = composeCondoBrief(safe);
+    // Sanitize to a display-safe view — ONLY this crosses to the client (serialized into the HTML).
+    const view = toCondoView(safe, brief);
+    const schemas: Array<Record<string, unknown>> = [
+      generateCondoSchema({ name: safe.buildingName.name, slug: safe.slug, address: safe.displayName, latitude: 0, longitude: 0 }),
+      generateBreadcrumbSchema([
+        { name: "Home", url: config.SITE_URL },
+        { name: "Condos", url: `${config.SITE_URL}/condos` },
+        { name: safe.buildingName.name, url: `${config.SITE_URL}/condos/${safe.slug}` },
+      ]),
+      generateLocalBusinessSchema(),
+    ];
+    return (
+      <>
+        <SchemaScript schemas={schemas} />
+        <BuildingAttributesPage view={view} />
+        <FooterSection />
+      </>
+    );
+  }
+
   const data = await getCondoData(params.slug);
   if (!data) notFound();
 
