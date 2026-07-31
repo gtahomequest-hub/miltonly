@@ -123,8 +123,8 @@ export default function SoldAggregates({ data }: { data: SoldAggregatesData }) {
                       </td>
                       <td className="sv-num sv-nb-count">{nb.count.toLocaleString("en-CA")}</td>
                       <td className="sv-num">
-                        {nb.medianPrice != null ? (
-                          <span className="sv-nb-price">{money(nb.medianPrice)}</span>
+                        {nb.typicalPrice != null ? (
+                          <span className="sv-nb-price">{money(nb.typicalPrice)}</span>
                         ) : (
                           <span className="sv-silent">{SILENT}</span>
                         )}

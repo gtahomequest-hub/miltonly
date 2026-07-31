@@ -11,6 +11,11 @@
 //     interquartile (p25–p75) band, so a lone luxury/rural sale can't skew it.
 //   - DEC-SOLD-UPPER-BOUND: EVERY window carries `sold_date <= NOW()` alongside
 //     the 12-month lower bound, so future-dated closings never inflate a figure.
+//   - AGGREGATE KIND matches the linked sibling (DEC-GENI-1 consistency): the Milton-wide
+//     overall + by-type + trend use the MEDIAN (== the homepage/Board top-level convention),
+//     while each NEIGHBOURHOOD row uses the MEAN via the hub's own saleAggQuery (== the
+//     /neighbourhoods/[slug] page it links to). No surface shows two "typical" prices one
+//     click apart.
 //   - deterministic — every number traces to one of these queries. No LLM.
 //
 // Computed ON-DEMAND from DB2 (sold.sold_records), NOT from the DB3
@@ -24,6 +29,11 @@ import { cached, CACHE_TTL } from "./cache";
 import { prisma } from "./prisma";
 import { config } from "./config";
 import { NEIGHBOURHOOD_SEED } from "./neighbourhood";
+// Reuse the EXACT hub aggregate query + assembly so the neighbourhood table can't drift
+// from the /neighbourhoods/[slug] LIVE stat it links to (DEC-GENI-1 consistency precedent).
+// (The hubs' generated prose/meta can carry older numbers — a hub-internal staleness, out
+// of scope here; this binds /sold to the hub's live computed typical.)
+import { saleAggQuery, assembleAggregates } from "./ai/buildHubInput";
 
 const K_ANON_PRICE = 5;
 const K_ANON_RANGE = 10;
@@ -34,7 +44,9 @@ const num = (v: unknown): number | null => {
   const x = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(x) ? x : null;
 };
-const round1k = (v: number | null): number | null => (v === null ? null : Math.round(v / 1000) * 1000);
+// Round to nearest $5k — the sitewide convention (homepageData + hubData both use
+// round5k), so /sold figures render byte-identical to the homepage + hub pages.
+const round5k = (v: number | null): number | null => (v === null ? null : Math.round(v / 5000) * 5000);
 
 // ── OVERALL — Milton-wide, trailing 12 months ────────────────────────────
 export interface SoldOverall {
@@ -70,9 +82,9 @@ export async function getMiltonSoldOverall(): Promise<SoldOverall> {
     const sta = num(r.avg_sta);
     return {
       count: n,
-      medianPrice: kPrice ? round1k(num(r.median)) : null,
-      bandLow: kRange ? round1k(num(r.p25)) : null,
-      bandHigh: kRange ? round1k(num(r.p75)) : null,
+      medianPrice: kPrice ? round5k(num(r.median)) : null,
+      bandLow: kRange ? round5k(num(r.p25)) : null,
+      bandHigh: kRange ? round5k(num(r.p75)) : null,
       avgDom: kPrice && num(r.avg_dom) !== null ? Math.round(num(r.avg_dom) as number) : null,
       soldToAskPct: kPrice && sta !== null ? Math.round(sta * 1000) / 10 : null,
     };
@@ -114,7 +126,7 @@ export async function getMiltonSoldByType(): Promise<SoldTypeRow[]> {
         slug: t.slug,
         label: t.label,
         count: n,
-        medianPrice: n >= K_ANON_PRICE && r ? round1k(num(r.median)) : null,
+        medianPrice: n >= K_ANON_PRICE && r ? round5k(num(r.median)) : null,
       };
     });
   });
@@ -125,13 +137,16 @@ export interface SoldNbhdRow {
   slug: string;
   name: string;
   count: number;
-  medianPrice: number | null; // k>=5 (suppressed rows still render + still link)
+  // MEAN typical (NOT median). This row links to /neighbourhoods/{slug}, which renders the
+  // k-safe MEAN (hubData.ts round5k(SUM/COUNT)); using the mean here — via the hub's own
+  // saleAggQuery — keeps the two prices byte-identical one click apart (DEC-GENI-1).
+  typicalPrice: number | null; // k>=5 (suppressed rows still render + still link)
 }
 
 export async function getMiltonSoldByNeighbourhood(): Promise<SoldNbhdRow[]> {
   const db = getSoldDb();
   if (!db) return [];
-  return cached("sold-agg:by-nbhd-12mo", CACHE_TTL.stats, async () => {
+  return cached("sold-agg:by-nbhd-12mo-mean", CACHE_TTL.stats, async () => {
     // Published hubs are the link universe — the exact set the sitemap emits.
     const published = await prisma.hubContent.findMany({
       where: { status: "published" },
@@ -144,22 +159,17 @@ export async function getMiltonSoldByNeighbourhood(): Promise<SoldNbhdRow[]> {
 
     const rows = await Promise.all(
       hubs.map(async (h) => {
-        const res = (await db`
-          SELECT
-            COUNT(*)::int AS n,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS median
-          FROM sold.sold_records
-          WHERE city = ${CITY} AND perm_advertise = TRUE AND transaction_type = 'For Sale'
-            AND neighbourhood = ANY(${h.rawStrings})
-            AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
-        `) as Array<Record<string, unknown>>;
-        const r = res[0] ?? {};
-        const n = num(r.n) ?? 0;
+        // Reuse the hub page's EXACT sale query + assembly. assembleAggregates applies the
+        // SAME k-anon gate (typicalPrice null when <5) and mean the hub's live stat uses, so
+        // this row's value == /neighbourhoods/{slug}'s live typical. round5k for clean display
+        // (the hub's own sibling chips also round5k — hubData.ts:92).
+        const sale = (await saleAggQuery(h.rawStrings))[0] ?? null;
+        const agg = assembleAggregates(sale, 0);
         return {
           slug: h.slug,
           name: h.name,
-          count: n,
-          medianPrice: n >= K_ANON_PRICE ? round1k(num(r.median)) : null,
+          count: agg.salesCount,
+          typicalPrice: agg.typicalPrice != null ? round5k(agg.typicalPrice) : null,
         } as SoldNbhdRow;
       })
     );
@@ -198,7 +208,7 @@ export async function getMiltonSoldQuarterly(): Promise<SoldQuarterRow[]> {
         return {
           label: `Q${num(r.q)} ${num(r.y)}`,
           count: n,
-          medianPrice: n >= K_ANON_PRICE ? round1k(num(r.median)) : null,
+          medianPrice: n >= K_ANON_PRICE ? round5k(num(r.median)) : null,
         } as SoldQuarterRow;
       })
       .reverse(); // oldest → newest for a left-to-right trend
