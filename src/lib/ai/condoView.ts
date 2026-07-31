@@ -9,9 +9,12 @@ import type { BuildingAttributes } from "./buildingAttributes.types";
 
 type Attrs = Omit<BuildingAttributes, "_debug">;
 
-export type Ownership =
-  | { mode: "split"; ownerPct: number; rentPct: number }
-  | { mode: "qual"; rentHeavy: boolean }
+// ACTIVITY (Ruling 2) — the past-12-month sale-vs-lease TRANSACTION mix, labeled as activity, NOT
+// occupancy/tenure (sold != owner-occupied). % split only when BOTH sides clear 5 (so no sub-5
+// count is back-derivable); approximate counts only when >=5; otherwise qualitative.
+export type Activity =
+  | { mode: "split"; salesPct: number; leasesPct: number; salesApprox: number; leasesApprox: number }
+  | { mode: "qual"; leaseHeavy: boolean }
   | { mode: "none" };
 
 export interface CondoView {
@@ -29,7 +32,7 @@ export interface CondoView {
   yieldPct: number | null;
   area: number | null;
   // aggregate viz (proportions / bands only)
-  ownership: Ownership;
+  activity: Activity;
   saleVelo: string; // banded word, never a count
   leaseVelo: string;
   totalTradesLabel: number | null; // only when >=10 (safe aggregate)
@@ -51,11 +54,14 @@ function velo(n: number): string {
   return "Rarely";
 }
 
-function ownership(a: Attrs): Ownership {
-  const s = a.records.saleAll, l = a.records.leaseAll, t = s + l;
-  if (t < 10) return { mode: "none" };
-  if (Math.min(s, l) >= 5) { const ownerPct = Math.round((s / t) * 100); return { mode: "split", ownerPct, rentPct: 100 - ownerPct }; }
-  return { mode: "qual", rentHeavy: l > s };
+function activity(a: Attrs): Activity {
+  const s = a.records.sale12mo, l = a.records.lease12mo, t = s + l;
+  if (s >= 5 && l >= 5) {
+    const salesPct = Math.round((s / t) * 100);
+    return { mode: "split", salesPct, leasesPct: 100 - salesPct, salesApprox: s, leasesApprox: l };
+  }
+  if (Math.max(s, l) >= 5) return { mode: "qual", leaseHeavy: l > s };
+  return { mode: "none" };
 }
 
 export function toCondoView(a: Attrs, narrative: string | null): CondoView {
@@ -73,14 +79,14 @@ export function toCondoView(a: Attrs, narrative: string | null): CondoView {
     rent: a.gyield.leaseMedian,
     yieldPct: a.gyield.headlinePct,
     area: a.areaContext.typicalCondo,
-    ownership: ownership(a),
+    activity: activity(a),
     saleVelo: a.kFloors.saleTypical ? velo(a.records.sale12mo) : "Rarely",
     leaseVelo: a.records.lease12mo >= 1 ? velo(a.records.lease12mo) : "Rarely",
     totalTradesLabel: total >= 10 ? total : null,
     perBed: a.gyield.perBed
       .filter((p) => p.yieldPct != null)
       .map((p) => ({ beds: p.beds, yieldPct: p.yieldPct as number, buy: p.saleMedian, rent: p.leaseMedian })),
-    amenities: a.amenities.rendered,
+    amenities: a.amenities.rendered.filter((x) => !x.includes("/")), // drop TREB combo tokens (dupe split parts)
     amenitiesRecords: a.amenities.recordsWithAny >= 5 ? a.amenities.recordsWithAny : null,
     feeStated: a.feeIncludes.stated,
     feeItems: a.feeIncludes.stated ? a.feeIncludes.items : [],

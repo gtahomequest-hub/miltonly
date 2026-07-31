@@ -29,7 +29,8 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
   const [lens, setLens] = useState<Lens>("buyer");
   const v = view;
   const buyer = lens === "buyer";
-  const { name, neighbourhood: nbhd, buy, rent: rnt, yieldPct: yld, area, ownership: own } = v;
+  const { name, neighbourhood: nbhd, buy, rent: rnt, yieldPct: yld, area } = v;
+  const act = v.activity;
 
   return (
     <div className="condo-v2">
@@ -79,7 +80,9 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
                   ? <>Sales are rare, so there&rsquo;s no crowd of competing buyers — but it&rsquo;s a <Word>proven rental</Word> building, which is the whole case if you&rsquo;re here to invest.</>
                   : <>Owners rarely sell here, so a listing stands out — and the <Word>rental demand</Word> underneath means investor buyers are already watching this address.</>
               ) : (
-                <>We lead with the <Word>{nbhd} market</Word> until this building has enough of its own recent trades to speak for itself.</>
+                buyer
+                  ? <>Until this building trades more, the <Word>{nbhd} market</Word> is your best guide to what you&rsquo;d pay.</>
+                  : <>Too few of its own trades to price it yet — the <Word>{nbhd} market</Word> is what a buyer will compare against.</>
               )}
             </p>
           </div>
@@ -96,36 +99,36 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
         )}
 
         {/* ---------------- HOW THE BUILDING IS MADE UP (aggregate viz) ---------------- */}
-        {(own.mode !== "none" || yld != null || v.saleTypical || v.leaseTypical) && (
+        {(act.mode !== "none" || yld != null || v.saleTypical || v.leaseTypical) && (
           <section className="cb-block">
             <div className="c-wrap">
               <div className="cb-sechead">
-                <div className="cb-sec-eyebrow">How it&rsquo;s made up</div>
-                <h2 className="cb-sec-h2">{buyer ? "What you&rsquo;re buying into." : "What you&rsquo;re selling into."}</h2>
-                <p className="cb-sec-lead">Whole-building proportions — never a single unit or a small count.</p>
+                <div className="cb-sec-eyebrow">Its market · past 12 months</div>
+                <h2 className="cb-sec-h2">{buyer ? "How active it is." : "How much moves here."}</h2>
+                <p className="cb-sec-lead">Recorded sale and lease activity — labelled as activity, never occupancy, and never a count small enough to point at one unit.</p>
               </div>
 
-              {own.mode === "split" && (
+              {act.mode === "split" && (
                 <div className="cb-mix">
                   <div className="cb-mix-bar">
-                    <div className="cb-mix-seg cb-mix-owner" style={{ width: `${own.ownerPct}%` }}>{own.ownerPct}%</div>
-                    <div className="cb-mix-seg cb-mix-rent" style={{ width: `${own.rentPct}%` }}>{own.rentPct}%</div>
+                    <div className="cb-mix-seg cb-mix-owner" style={{ width: `${act.salesPct}%` }}>{act.salesPct}%</div>
+                    <div className="cb-mix-seg cb-mix-rent" style={{ width: `${act.leasesPct}%` }}>{act.leasesPct}%</div>
                   </div>
                   <div className="cb-mix-legend">
-                    <span><span className="cb-mix-dot" style={{ background: "#017848" }} />Owner-occupier resale</span>
-                    <span><span className="cb-mix-dot" style={{ background: "#0d3a2b" }} />Investor rental</span>
+                    <span><span className="cb-mix-dot" style={{ background: "#017848" }} />Resale activity · ~{act.salesApprox} sales</span>
+                    <span><span className="cb-mix-dot" style={{ background: "#0d3a2b" }} />Rental activity · ~{act.leasesApprox} leases</span>
                   </div>
                   <p className="cb-verdict cb-swap">
-                    {own.rentPct >= 55
-                      ? (buyer ? <>Investors own a big share here — expect <Word>competition for units</Word>, and easy tenancy if you rent yours out.</> : <>A landlord-heavy building: your buyer pool leans <Word>investor</Word>, which keeps demand steady through any market.</>)
-                      : (buyer ? <>Mostly <Word>owner-occupiers</Word> — a live-in building, calmer to buy into.</> : <>An owner-occupier building — your buyers are mostly <Word>end-users</Word> who&rsquo;ll pay for a home they&rsquo;ll live in.</>)}
+                    {act.leasesPct >= 55
+                      ? (buyer ? <>Leasing is the busier market — investors are <Word>active in this building</Word>, so you&rsquo;ll compete with them, and your unit would let easily.</> : <>An active rental market means <Word>investor buyers</Word> are watching — a second pool alongside owner-occupiers.</>)
+                      : (buyer ? <>Resale is the busier market — a <Word>live-in building</Word> where units turn over to owners.</> : <>Owners drive this market — sell to <Word>end-users</Word> who want a home, not a spreadsheet.</>)}
                   </p>
                 </div>
               )}
-              {own.mode === "qual" && (
+              {act.mode === "qual" && (
                 <div className="cb-mix">
-                  <p className="cb-mix-qual">{own.rentHeavy ? <>Overwhelmingly an <b>investor-rented</b> building — leases far outnumber resales.</> : <>Predominantly <b>owner-occupied</b> — it rarely trades as a rental.</>}</p>
-                  <p className="cb-verdict cb-swap">{own.rentHeavy ? (buyer ? <>You&rsquo;re buying into a <Word>rental community</Word> — great for income, quieter for resale.</> : <>Your natural buyer is an <Word>investor</Word>; the rental track record is your pitch.</>) : (buyer ? <>A <Word>live-in</Word> building — you&rsquo;ll neighbour owners, not tenants.</> : <>End-user buyers dominate — sell the <Word>home</Word>, not the yield.</>)}</p>
+                  <p className="cb-mix-qual">{act.leaseHeavy ? <>Recent activity is <b>overwhelmingly leasing</b> — resales are rare here.</> : <>Recent activity is <b>mostly resale</b> — it seldom trades as a rental.</>}</p>
+                  <p className="cb-verdict cb-swap">{act.leaseHeavy ? (buyer ? <>A <Word>rental-active</Word> building — strong for income, quieter to resell.</> : <>Your natural buyer is an <Word>investor</Word>; the rental track record is your pitch.</>) : (buyer ? <>A <Word>live-in</Word> building — neighbours are owners, not tenants.</> : <>End-user demand leads — sell the <Word>home</Word>, not the yield.</>)}</p>
                 </div>
               )}
 
@@ -223,21 +226,27 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
         )}
 
         {/* ---------------- LENS-EXCLUSIVE: SELLER (who's buying) ---------------- */}
-        {!buyer && v.hasTrades && (
+        {!buyer && (
           <section className="cb-block">
             <div className="c-wrap">
-              <div className="cb-sechead"><div className="cb-sec-eyebrow">Your buyers</div><h2 className="cb-sec-h2">Who&rsquo;s bidding on your unit.</h2></div>
+              <div className="cb-sechead"><div className="cb-sec-eyebrow">Your buyers</div><h2 className="cb-sec-h2">{v.hasTrades ? "Who’s bidding on your unit." : "Who you’d be selling to."}</h2></div>
               <p className="cb-sec-lead">
                 {yld != null
-                  ? <>Two pools at once. Owner-occupiers who want to live here, and investors chasing the ~{yld}% yield. That second group is why units here don&rsquo;t linger — price for both and you sell fast.</>
-                  : own.mode !== "none" && (own.mode === "qual" ? own.rentHeavy : own.rentPct >= 55)
-                    ? <>Your natural buyer is an <strong>investor</strong> — this is a landlord&rsquo;s building, and the rental track record is what closes them.</>
-                    : <>Your buyers are mostly <strong>owner-occupiers</strong> — sell the home, the amenities, the neighbourhood, not a spreadsheet.</>}
+                  ? <>Two pools at once. Owner-occupiers who want to live here, and investors chasing the ~{yld}% yield — that second group is why units here don&rsquo;t linger. Price for both and you sell fast.</>
+                  : v.hasTrades && act.mode !== "none" && (act.mode === "qual" ? act.leaseHeavy : act.leasesPct >= 55)
+                    ? <>Your natural buyer is an <strong>investor</strong> — this is a rental-active building, and the leasing track record is what closes them.</>
+                    : v.hasTrades && area != null
+                      ? <>Your buyers are mostly <strong>owner-occupiers</strong> — lead with the home and amenities, and price against the {nbhd} typical of {money(area)}.</>
+                      : area != null
+                        ? <>This building doesn&rsquo;t trade often enough yet to name your buyers — price against the <strong>{nbhd}</strong> typical of {money(area)}, which is what any buyer will compare to.</>
+                        : <>There isn&rsquo;t enough of its own record yet to profile your buyers.</>}
               </p>
-              <div className="cb-velo" style={{ marginTop: 22 }}>
-                <div className="cb-velo-item"><div className="cb-velo-band">{v.saleTypical ? v.saleVelo : "Rarely"}</div><div className="cb-velo-l">how fast units here resell</div></div>
-                <div className="cb-velo-item"><div className="cb-velo-band">{v.leaseVelo}</div><div className="cb-velo-l">rental demand under your price</div></div>
-              </div>
+              {v.hasTrades && (
+                <div className="cb-velo" style={{ marginTop: 22 }}>
+                  <div className="cb-velo-item"><div className="cb-velo-band">{v.saleTypical ? v.saleVelo : "Rarely"}</div><div className="cb-velo-l">how fast units here resell</div></div>
+                  <div className="cb-velo-item"><div className="cb-velo-band">{v.leaseVelo}</div><div className="cb-velo-l">rental demand under your price</div></div>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -324,7 +333,7 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
         <section className="cb-block">
           <div className="c-wrap">
             <p className="cb-method">
-              <b>How we built this page.</b> Every figure comes from {name}&rsquo;s own recorded sales and leases — nothing is estimated, and no listing&rsquo;s description or private remarks are used. &ldquo;Typical&rdquo; means the median of five or more comparable trades; below that we say so rather than show a shaky number, we never display an individual unit&rsquo;s price, and we only ever show whole-building proportions — never a count small enough to point at one owner. The short summary above is written from these aggregate numbers and checked against them. Where a building&rsquo;s own record is thin, the {config.CITY_NAME} neighbourhood context carries the page.
+              <b>How we built this page.</b> Every figure comes from {name}&rsquo;s own recorded sales and leases — nothing is estimated, and no listing&rsquo;s description or private remarks are used. &ldquo;Typical&rdquo; means the median of five or more comparable trades; below that we say so rather than show a shaky number, we never display an individual unit&rsquo;s price, and we only ever show whole-building proportions — never a count small enough to point at one owner. The short summary above is assembled sentence-by-sentence from these same aggregate numbers — composed, not written by a model. Where a building&rsquo;s own record is thin, the {config.CITY_NAME} neighbourhood context carries the page.
             </p>
           </div>
         </section>
