@@ -343,11 +343,11 @@ export async function getMiltonSoldTotals(): Promise<{ last30: number; last90: n
         (SELECT COUNT(*) FROM sold.sold_records
           WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
-            AND sold_date >= NOW() - INTERVAL '30 days')::int AS last30,
+            AND sold_date >= NOW() - INTERVAL '30 days' AND sold_date <= NOW())::int AS last30,
         (SELECT COUNT(*) FROM sold.sold_records
           WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
-            AND sold_date >= NOW() - INTERVAL '90 days')::int AS last90
+            AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW())::int AS last90
     `) as Array<{ last30: number; last90: number }>;
     return rows[0] ?? { last30: 0, last90: 0 };
   });
@@ -360,7 +360,7 @@ export async function getDistinctSoldNeighbourhoods(): Promise<string[]> {
       SELECT DISTINCT neighbourhood FROM sold.sold_records
       WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
         AND transaction_type = 'For Sale'
-        AND sold_date >= NOW() - INTERVAL '90 days'
+        AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW()
       ORDER BY neighbourhood ASC
     `) as Array<{ neighbourhood: string }>;
     return rows.map((r) => r.neighbourhood);

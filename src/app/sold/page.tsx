@@ -24,14 +24,19 @@ import {
   getDistinctSoldNeighbourhoods,
   getRecentSoldList,
 } from "@/lib/sold-data";
+import { getMiltonSoldAggregates, getMiltonSoldOverall } from "@/lib/soldAggregates";
 import SiteNav from "@/components/nav/SiteNav";
 import FooterSection from "@/components/sections/FooterSection";
 import SoldTableForest from "@/components/sold/SoldTableForest";
+import SoldAggregates from "@/components/sold/SoldAggregates";
+import SoldValuationCTA from "@/components/sold/SoldValuationCTA";
 import VowAcknowledgementPrompt from "@/components/vow/VowAcknowledgementPrompt";
 import "./sold-theme.css";
 
 // Always server-render (live sold counts).
 export const revalidate = 0;
+
+const money = (n: number) => "$" + Math.round(n).toLocaleString("en-CA");
 
 type TypeFilter = "sale" | "lease";
 
@@ -51,15 +56,31 @@ interface PageProps {
 }
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const totals = await getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 }));
+  const [totals, overall] = await Promise.all([
+    getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
+    getMiltonSoldOverall().catch(() => null),
+  ]);
+  // Live-data hook (street-tier formula): typical median + 12mo count. k-safe —
+  // Milton-wide always clears k, but fall back to the 90-day count if suppressed.
+  const typical = overall?.medianPrice ?? null;
+  const count12 = overall?.count ?? 0;
+  const title =
+    typical != null
+      ? `${config.CITY_NAME} Sold Home Prices — Typically ${money(typical)} Across ${count12.toLocaleString("en-CA")} Sales`
+      : `${config.CITY_NAME} sold homes — ${totals.last90} recent real estate sales`;
+  const description =
+    typical != null
+      ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE} — typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from TREB MLS®.`
+      : `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`;
   return genMeta({
-    title: `${config.CITY_NAME} sold homes — ${totals.last90} recent real estate sales`,
-    description: `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`,
+    title,
+    description,
     canonical: `${config.SITE_URL}/sold${searchParams?.nbhd ? `?nbhd=${encodeURIComponent(searchParams.nbhd)}` : ""}`,
     keywords: [
       `${config.CITY_NAME} sold homes`,
+      `${config.CITY_NAME} sold prices`,
       `${config.CITY_NAME} real estate sold prices`,
-      `recent sales ${config.CITY_NAME} ${config.CITY_PROVINCE}`,
+      `recently sold homes ${config.CITY_NAME}`,
       `${config.CITY_NAME} house sold prices`,
       `${config.CITY_NAME} MLS sold data`,
     ],
@@ -78,9 +99,12 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   // Defence-in-depth: records are only FETCHED when the viewer is authed +
   // acknowledged. getRecentSoldList itself re-gates and returns [] otherwise,
   // so no anon request ever touches sold.sold_records or its cache.
-  const [totals, neighbourhoods, records] = await Promise.all([
+  const [totals, neighbourhoods, aggregates, records] = await Promise.all([
     getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
     getDistinctSoldNeighbourhoods().catch(() => [] as string[]),
+    // Public k-anon aggregate layer — always fetched (no gate); each fetcher
+    // fails soft internally so this never throws.
+    getMiltonSoldAggregates(),
     canSeeRecords
       ? getRecentSoldList(typeParam, 90, 60, {
           neighbourhood: nbhdFilter,
@@ -130,6 +154,12 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
           )}
         </div>
       </section>
+
+      {/* INDEXABLE aggregate layer — public, ABOVE the gate. Milton-wide k-anon
+          aggregates only (medians/counts/bands); no individual sold record ever
+          crosses into this server HTML. */}
+      <SoldAggregates data={aggregates} />
+      <SoldValuationCTA />
 
       {/* filter pill chips */}
       <section className="sv-filters">
