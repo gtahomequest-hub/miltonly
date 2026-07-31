@@ -1,0 +1,231 @@
+/* condo-b.css — Build B: the /condos/[slug] building page.
+   Scoped under .condo-v2 so it inherits the deep-forest tokens (--c-*) from condo-theme.css.
+   New vocabulary lives under .cb-* and NEVER leaks outside .condo-v2.
+   Signature: the Buyer<->Seller lens + the "two markets" bridge. */
+
+.condo-v2 .cb {
+  --cb-ink: var(--c-text-body);
+  --cb-muted: var(--c-text-muted);
+  --cb-line: var(--c-border-muted);
+  --cb-forest: var(--c-bg-deep);
+  --cb-accent: var(--c-accent);
+  --cb-neon: var(--c-green);
+  --cb-gold: #d9a94e;
+}
+
+/* ---------- HERO ---------- */
+.condo-v2 .cb-hero {
+  position: relative;
+  background: var(--cb-forest);
+  color: #eafff4;
+  padding: 108px 0 64px;
+  overflow: hidden;
+}
+.condo-v2 .cb-hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 88% -10%, rgba(0, 255, 128, 0.16), transparent 55%),
+    radial-gradient(90% 80% at 6% 110%, rgba(1, 120, 72, 0.55), transparent 60%);
+}
+.condo-v2 .cb-hero > .c-wrap { position: relative; z-index: 1; }
+.condo-v2 .cb-crumb {
+  font-family: var(--c-mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(234, 255, 244, .62); margin-bottom: 26px;
+}
+.condo-v2 .cb-crumb a { color: inherit; text-decoration: none; }
+.condo-v2 .cb-crumb a:hover { color: var(--cb-neon); }
+.condo-v2 .cb-eyebrow {
+  font-family: var(--c-mono); font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--cb-neon); margin-bottom: 14px;
+}
+.condo-v2 .cb-title {
+  font-family: var(--c-serif); font-weight: 300; line-height: 1.02;
+  font-size: clamp(38px, 6vw, 66px); letter-spacing: -.01em; margin: 0 0 10px; color: #fff;
+}
+.condo-v2 .cb-sub {
+  font-family: var(--c-serif); font-size: clamp(17px, 2.1vw, 22px); font-weight: 300; font-style: italic;
+  color: rgba(234, 255, 244, .8); max-width: 42ch; margin: 0 0 34px;
+}
+
+/* lens toggle */
+.condo-v2 .cb-lens {
+  display: inline-flex; align-items: stretch; position: relative; isolation: isolate;
+  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 999px; padding: 5px; gap: 4px; backdrop-filter: blur(6px);
+}
+.condo-v2 .cb-lens-btn {
+  position: relative; z-index: 1; appearance: none; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--c-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+  color: rgba(234, 255, 244, .7); padding: 11px 22px; border-radius: 999px; transition: color .25s var(--ease-out);
+}
+.condo-v2 .cb-lens-btn[aria-pressed="true"] { color: #05231a; }
+.condo-v2 .cb-lens-thumb {
+  position: absolute; z-index: 0; top: 5px; bottom: 5px; left: 5px; width: calc(50% - 6px);
+  background: var(--cb-neon); border-radius: 999px; box-shadow: 0 6px 22px rgba(0, 255, 128, .35);
+  transition: transform .34s var(--out-expo, cubic-bezier(.16, 1, .3, 1));
+}
+.condo-v2 .cb-lens[data-lens="seller"] .cb-lens-thumb { transform: translateX(calc(100% + 4px)); }
+
+/* hero headline stat */
+.condo-v2 .cb-headline {
+  margin-top: 40px; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 30px 48px; align-items: end;
+}
+.condo-v2 .cb-hstat-num {
+  font-family: var(--c-serif); font-weight: 300; line-height: .92; letter-spacing: -.02em;
+  font-size: clamp(52px, 8.5vw, 96px); color: #fff;
+}
+.condo-v2 .cb-hstat-num .cb-unit { font-size: .42em; color: var(--cb-neon); font-style: italic; margin-left: 6px; }
+.condo-v2 .cb-hstat-cap {
+  font-family: var(--c-mono); font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(234, 255, 244, .6); margin-top: 12px;
+}
+.condo-v2 .cb-hstat-read {
+  font-family: var(--c-serif); font-size: 17px; line-height: 1.5; color: rgba(234, 255, 244, .9);
+  border-left: 2px solid var(--cb-neon); padding-left: 16px;
+}
+.condo-v2 .cb-lensword {
+  font-style: italic; color: var(--cb-neon);
+}
+
+/* fade the lens-dependent copy on switch */
+.condo-v2 .cb-swap { transition: opacity .28s var(--ease-out); }
+.condo-v2 .cb-swap.cb-swapping { opacity: 0; }
+
+/* ---------- SECTION SHELL ---------- */
+.condo-v2 .cb-block { padding: 66px 0; }
+.condo-v2 .cb-block.cb-alt { background: var(--c-bg-secondary); }
+.condo-v2 .cb-sechead { margin-bottom: 30px; max-width: 62ch; }
+.condo-v2 .cb-sec-eyebrow {
+  font-family: var(--c-mono); font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--cb-accent); margin-bottom: 12px;
+}
+.condo-v2 .cb-sec-h2 {
+  font-family: var(--c-serif); font-weight: 400; font-size: clamp(26px, 3.6vw, 38px);
+  line-height: 1.08; letter-spacing: -.01em; color: #10241c; margin: 0 0 10px;
+}
+.condo-v2 .cb-sec-lead {
+  font-family: var(--c-serif); font-size: 18px; line-height: 1.55; color: var(--cb-muted); margin: 0;
+}
+
+/* ---------- THE TWO-MARKETS BRIDGE ---------- */
+.condo-v2 .cb-bridge {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 0;
+  border: 1px solid var(--cb-line); border-radius: 18px; overflow: hidden; background: #fff;
+  box-shadow: var(--c-sh);
+}
+.condo-v2 .cb-side { padding: 34px 32px; display: flex; flex-direction: column; gap: 6px; }
+.condo-v2 .cb-side.cb-sale { background: linear-gradient(180deg, #ffffff, #f4faf6); }
+.condo-v2 .cb-side.cb-lease { background: linear-gradient(180deg, #072a20, #05221a); color: #eafff4; }
+.condo-v2 .cb-side-eyebrow {
+  font-family: var(--c-mono); font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--cb-accent);
+}
+.condo-v2 .cb-side.cb-lease .cb-side-eyebrow { color: var(--cb-neon); }
+.condo-v2 .cb-side-num {
+  font-family: var(--c-serif); font-weight: 300; font-size: clamp(34px, 4.6vw, 50px); line-height: 1;
+  color: #10241c; letter-spacing: -.02em;
+}
+.condo-v2 .cb-side.cb-lease .cb-side-num { color: #fff; }
+.condo-v2 .cb-side-num .cb-permo { font-size: .34em; color: var(--cb-muted); font-style: italic; margin-left: 4px; }
+.condo-v2 .cb-side.cb-lease .cb-side-num .cb-permo { color: rgba(234, 255, 244, .7); }
+.condo-v2 .cb-side-meta { font-family: var(--c-mono); font-size: 12px; color: var(--cb-muted); margin-top: 4px; }
+.condo-v2 .cb-side.cb-lease .cb-side-meta { color: rgba(234, 255, 244, .72); }
+.condo-v2 .cb-side-read {
+  font-family: var(--c-serif); font-size: 15px; line-height: 1.5; color: var(--cb-ink); margin-top: 14px;
+}
+.condo-v2 .cb-side.cb-lease .cb-side-read { color: rgba(234, 255, 244, .9); }
+.condo-v2 .cb-side.cb-silent .cb-side-num { color: var(--cb-muted); font-style: italic; font-size: 26px; }
+
+/* the yield medallion in the middle */
+.condo-v2 .cb-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 178px; padding: 22px; background: var(--cb-forest); color: #fff; position: relative;
+}
+.condo-v2 .cb-mid::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(70% 60% at 50% 30%, rgba(0, 255, 128, .22), transparent 70%);
+}
+.condo-v2 .cb-mid-label {
+  position: relative; font-family: var(--c-mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(234, 255, 244, .7);
+}
+.condo-v2 .cb-mid-num {
+  position: relative; font-family: var(--c-serif); font-weight: 300; font-size: clamp(40px, 5vw, 58px);
+  color: var(--cb-neon); line-height: 1; margin: 6px 0;
+}
+.condo-v2 .cb-mid-sub { position: relative; font-family: var(--c-mono); font-size: 10.5px; color: rgba(234, 255, 244, .6); text-align: center; }
+.condo-v2 .cb-bridge-read {
+  font-family: var(--c-serif); font-size: 17px; line-height: 1.6; color: var(--cb-ink); margin: 22px auto 0; max-width: 72ch;
+  border-left: 2px solid var(--cb-accent); padding-left: 18px;
+}
+
+/* ---------- ACTIVITY / STAT TILES ---------- */
+.condo-v2 .cb-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.condo-v2 .cb-tile { background: #fff; border: 1px solid var(--cb-line); border-radius: 14px; padding: 22px 20px; }
+.condo-v2 .cb-alt .cb-tile { background: #fff; }
+.condo-v2 .cb-tile-n { font-family: var(--c-serif); font-weight: 300; font-size: 40px; line-height: 1; color: #10241c; }
+.condo-v2 .cb-tile-n.cb-silent-n { font-size: 22px; font-style: italic; color: var(--cb-muted); }
+.condo-v2 .cb-tile-l { font-family: var(--c-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--cb-muted); margin-top: 10px; }
+.condo-v2 .cb-tile-read { font-family: var(--c-serif); font-size: 14px; line-height: 1.45; color: var(--cb-ink); margin-top: 10px; }
+
+/* ---------- PER-BED ---------- */
+.condo-v2 .cb-beds { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.condo-v2 .cb-bedcard { border: 1px solid var(--cb-line); border-radius: 14px; padding: 20px; background: #fff; }
+.condo-v2 .cb-bed-h { font-family: var(--c-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--cb-accent); }
+.condo-v2 .cb-bed-y { font-family: var(--c-serif); font-weight: 300; font-size: 34px; color: #10241c; line-height: 1; margin: 10px 0 4px; }
+.condo-v2 .cb-bed-y.cb-dash { color: var(--cb-muted); font-style: italic; font-size: 22px; }
+.condo-v2 .cb-bed-meta { font-family: var(--c-mono); font-size: 11px; color: var(--cb-muted); line-height: 1.6; }
+
+/* ---------- CHIPS / AMENITIES ---------- */
+.condo-v2 .cb-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+.condo-v2 .cb-chip {
+  font-family: var(--c-sans); font-size: 13.5px; font-weight: 500; color: #06321f;
+  background: #e7f7ee; border: 1px solid #bfe6cf; border-radius: 999px; padding: 8px 15px;
+}
+.condo-v2 .cb-chip.cb-more { background: transparent; color: var(--cb-muted); border-color: var(--cb-line); }
+.condo-v2 .cb-aside {
+  font-family: var(--c-serif); font-size: 15px; line-height: 1.55; color: var(--cb-ink); margin-top: 18px;
+  padding: 14px 18px; background: #fff; border: 1px dashed var(--cb-line); border-radius: 12px;
+}
+.condo-v2 .cb-aside b { color: var(--cb-accent); font-weight: 600; }
+
+/* ---------- FEES / MANAGEMENT ---------- */
+.condo-v2 .cb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.condo-v2 .cb-panel { background: #fff; border: 1px solid var(--cb-line); border-radius: 14px; padding: 26px; }
+.condo-v2 .cb-panel-h { font-family: var(--c-mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--cb-accent); margin-bottom: 14px; }
+.condo-v2 .cb-panel-v { font-family: var(--c-serif); font-size: 20px; color: #10241c; }
+.condo-v2 .cb-panel-v.cb-silent-v { font-style: italic; font-size: 16px; color: var(--cb-muted); }
+.condo-v2 .cb-panel-note { font-family: var(--c-mono); font-size: 11px; color: var(--cb-muted); margin-top: 10px; line-height: 1.6; }
+
+/* ---------- AREA CONTEXT ---------- */
+.condo-v2 .cb-area {
+  background: var(--cb-forest); color: #eafff4; border-radius: 18px; padding: 40px 38px; position: relative; overflow: hidden;
+}
+.condo-v2 .cb-area::before { content: ""; position: absolute; inset: 0; background: radial-gradient(80% 70% at 12% 120%, rgba(0, 255, 128, .14), transparent 60%); }
+.condo-v2 .cb-area > * { position: relative; }
+.condo-v2 .cb-area-eyebrow { font-family: var(--c-mono); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--cb-neon); margin-bottom: 12px; }
+.condo-v2 .cb-area-n { font-family: var(--c-serif); font-weight: 300; font-size: clamp(34px, 5vw, 52px); color: #fff; line-height: 1; }
+.condo-v2 .cb-area-t { font-family: var(--c-serif); font-size: 18px; line-height: 1.55; color: rgba(234, 255, 244, .85); margin-top: 14px; max-width: 60ch; }
+
+/* identity-only lead */
+.condo-v2 .cb-identity { text-align: left; }
+.condo-v2 .cb-identity .cb-area-n { font-size: clamp(30px, 4.4vw, 46px); }
+
+/* ---------- METHOD FOOTER ---------- */
+.condo-v2 .cb-method {
+  font-family: var(--c-sans); font-size: 13px; line-height: 1.7; color: var(--cb-muted);
+  border-top: 1px solid var(--cb-line); padding: 26px 0 10px; max-width: 80ch;
+}
+.condo-v2 .cb-method b { color: var(--cb-ink); font-weight: 600; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+  .condo-v2 .cb-headline { grid-template-columns: 1fr; gap: 22px; }
+  .condo-v2 .cb-bridge { grid-template-columns: 1fr; }
+  .condo-v2 .cb-mid { min-width: 0; padding: 26px; flex-direction: row; gap: 16px; }
+  .condo-v2 .cb-two { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .condo-v2 .cb-lens-thumb, .condo-v2 .cb-swap { transition: none; }
+}
