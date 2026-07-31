@@ -229,3 +229,64 @@
 @media (prefers-reduced-motion: reduce) {
   .condo-v2 .cb-lens-thumb, .condo-v2 .cb-swap { transition: none; }
 }
+
+/* ============ REVISION: relationship hero, narrative, aggregate viz ============ */
+
+/* the three-number RELATIONSHIP in the hero (buy | rent | yield) */
+.condo-v2 .cb-relation { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px 26px; margin-top: 34px; }
+.condo-v2 .cb-rel-item { display: flex; flex-direction: column; gap: 4px; }
+.condo-v2 .cb-rel-num { font-family: var(--c-serif); font-weight: 300; font-size: clamp(34px, 5.2vw, 58px); line-height: .95; color: #fff; letter-spacing: -.02em; }
+.condo-v2 .cb-rel-num .cb-permo { font-size: .32em; font-style: italic; color: rgba(234,255,244,.7); margin-left: 3px; }
+.condo-v2 .cb-rel-num.cb-yield { color: var(--cb-neon); }
+.condo-v2 .cb-rel-num.cb-quiet { font-size: clamp(20px,3vw,26px); font-style: italic; color: rgba(234,255,244,.62); }
+.condo-v2 .cb-rel-label { font-family: var(--c-mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: rgba(234,255,244,.6); }
+.condo-v2 .cb-rel-op { font-family: var(--c-serif); font-size: 26px; color: rgba(234,255,244,.45); padding-bottom: 12px; }
+.condo-v2 .cb-rel-read {
+  font-family: var(--c-serif); font-size: clamp(17px,2vw,21px); line-height: 1.5; color: #eafff4;
+  max-width: 60ch; margin: 26px 0 0; border-left: 2px solid var(--cb-neon); padding-left: 18px;
+}
+
+/* generated narrative block */
+.condo-v2 .cb-narr-wrap { background: var(--c-bg-secondary); }
+.condo-v2 .cb-narr {
+  font-family: var(--c-serif); font-size: clamp(19px, 2.3vw, 24px); line-height: 1.55; color: #17281f;
+  max-width: 40ch; margin: 0; font-weight: 300;
+}
+.condo-v2 .cb-narr::first-letter { color: var(--cb-accent); font-weight: 400; }
+.condo-v2 .cb-narr-tag { font-family: var(--c-mono); font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; color: var(--cb-accent); margin-bottom: 16px; }
+
+/* trade-mix (owner vs investor) */
+.condo-v2 .cb-mix { max-width: 640px; }
+.condo-v2 .cb-mix-bar { height: 46px; border-radius: 10px; overflow: hidden; display: flex; border: 1px solid var(--cb-line); }
+.condo-v2 .cb-mix-owner { background: linear-gradient(180deg,#0a8f57,#017848); }
+.condo-v2 .cb-mix-rent { background: linear-gradient(180deg,#0d3a2b,#062a20); }
+.condo-v2 .cb-mix-seg { display: flex; align-items: center; padding: 0 14px; color: #eafff4; font-family: var(--c-mono); font-size: 12px; font-weight: 600; letter-spacing: .06em; min-width: 0; white-space: nowrap; }
+.condo-v2 .cb-mix-legend { display: flex; gap: 22px; margin-top: 14px; font-family: var(--c-sans); font-size: 13.5px; color: var(--cb-ink); }
+.condo-v2 .cb-mix-dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+.condo-v2 .cb-mix-qual { font-family: var(--c-serif); font-size: 22px; color: #17281f; }
+.condo-v2 .cb-mix-qual b { color: var(--cb-accent); }
+
+/* yield flow: buy -> annual rent -> return */
+.condo-v2 .cb-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 6px 14px; margin-top: 8px; }
+.condo-v2 .cb-flow-n { font-family: var(--c-serif); font-weight: 300; font-size: clamp(26px,3.4vw,40px); color: #10241c; line-height: 1; }
+.condo-v2 .cb-flow-n.cb-yield { color: var(--cb-accent); }
+.condo-v2 .cb-flow-n.cb-quiet { font-size: 20px; font-style: italic; color: var(--cb-muted); }
+.condo-v2 .cb-flow-l { font-family: var(--c-mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--cb-muted); margin-top: 8px; }
+.condo-v2 .cb-flow-op { font-family: var(--c-serif); font-size: 26px; color: var(--cb-line); }
+
+/* velocity bands */
+.condo-v2 .cb-velo { display: flex; gap: 28px; flex-wrap: wrap; }
+.condo-v2 .cb-velo-item { }
+.condo-v2 .cb-velo-band { font-family: var(--c-serif); font-size: 24px; color: #10241c; }
+.condo-v2 .cb-velo-l { font-family: var(--c-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--cb-muted); margin-top: 6px; }
+
+/* lens-exclusive compare (buyer: vs neighbourhood) */
+.condo-v2 .cb-cmp { display: grid; gap: 12px; max-width: 640px; }
+.condo-v2 .cb-cmp-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 14px; }
+.condo-v2 .cb-cmp-k { font-family: var(--c-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--cb-muted); }
+.condo-v2 .cb-cmp-track { height: 12px; background: #e7ece8; border-radius: 6px; overflow: hidden; }
+.condo-v2 .cb-cmp-fill { height: 100%; border-radius: 6px; }
+.condo-v2 .cb-cmp-fill.cb-bld { background: var(--cb-accent); }
+.condo-v2 .cb-cmp-fill.cb-area { background: #9db8ab; }
+.condo-v2 .cb-cmp-v { font-family: var(--c-serif); font-size: 18px; color: #10241c; }
+.condo-v2 .cb-verdict { font-family: var(--c-serif); font-size: 17px; line-height: 1.5; color: var(--cb-ink); margin-top: 18px; border-left: 2px solid var(--cb-accent); padding-left: 16px; }
