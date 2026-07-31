@@ -120,7 +120,10 @@ export const SELECT_FIELDS: readonly string[] = [
   "TransactionBrokerCompensation",
   "AssignmentYN", "FractionalOwnershipYN", "IslandYN", "MortgageComment",
   // Remarks & media
-  "PublicRemarks", "PublicRemarksExtras", "PrivateRemarks",
+  // PrivateRemarks REMOVED from the AMPRE $select (feat/compliance-remarks-purge): it is
+  // broker-only VOW data (showing instructions, lockbox/access references) not licensed for
+  // retention. No longer fetched, so it can never repopulate broker_remarks or raw_vow_data.
+  "PublicRemarks", "PublicRemarksExtras",
   "VirtualTourURLUnbranded", "VirtualTourURLBranded",
   "VirtualTourURLUnbranded2", "VirtualTourURLBranded2",
   "SalesBrochureUrl",
@@ -368,6 +371,15 @@ export const SOLD_RECORD_COLUMNS: readonly string[] = [
 // SOLD_RECORD_COLUMNS in order to build the VALUES list.
 // =============================================================================
 
+// COMPLIANCE (feat/compliance-remarks-purge): broker-only PrivateRemarks must never be RETAINED,
+// including inside the raw_vow_data catch-all. Shallow-copy the record minus PrivateRemarks
+// before it is stringified into the blob.
+function stripPrivateRemarks(rec: AmpRecord): Record<string, unknown> {
+  const copy: Record<string, unknown> = { ...(rec as Record<string, unknown>) };
+  delete copy.PrivateRemarks;
+  return copy;
+}
+
 export function mapAmpToSoldColumns(r: AmpRecord): Record<string, unknown> {
   const address =
     (r.UnparsedAddress as string | null) ||
@@ -521,7 +533,10 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
     permission_to_advertise: boolOrNull(r.PermissionToContactListingBrokerToAdvertise),
     public_remarks: r.PublicRemarks as string | null,
     public_remarks_extras: r.PublicRemarksExtras as string | null,
-    broker_remarks: r.PrivateRemarks as string | null,
+    // COMPLIANCE (feat/compliance-remarks-purge): broker-only PrivateRemarks is no longer
+    // retained — hard-nulled here so the column stays empty even if the feed ever echoes the
+    // field despite the $select removal. (Was: r.PrivateRemarks.)
+    broker_remarks: null,
     virtual_tour_url_unbranded: r.VirtualTourURLUnbranded as string | null,
     virtual_tour_url_branded: r.VirtualTourURLBranded as string | null,
 
@@ -676,8 +691,10 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
     virtual_tour_url_unbranded2: r.VirtualTourURLUnbranded2 as string | null,
     virtual_tour_url_branded2: r.VirtualTourURLBranded2 as string | null,
 
-    // Catch-all — stringify so pg gets a text value we can cast in SQL
-    raw_vow_data: JSON.stringify(r),
+    // Catch-all — stringify so pg gets a text value we can cast in SQL. PrivateRemarks
+    // (broker-only) is stripped so it is never retained inside the raw blob either, even if the
+    // feed echoes it despite the $select removal (feat/compliance-remarks-purge).
+    raw_vow_data: JSON.stringify(stripPrivateRemarks(r)),
   };
 }
 
