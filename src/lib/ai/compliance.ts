@@ -170,12 +170,10 @@ export async function generateStreetDescription(
   userPrompt: string,
   stats: SafeStreetStats
 ): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
-  // Validate the user prompt doesn't contain raw data
-  const safety = validatePromptSafety(userPrompt);
-  if (!safety.safe) {
-    console.error(`[AI Compliance] Blocked unsafe prompt: ${safety.reason}`);
-    throw new Error(`AI compliance violation: ${safety.reason}`);
-  }
+  // Prompt-safety choke (shared, fail-closed) — the SAME gate as callClaude/callDeepSeek.
+  // This legacy path calls anthropic.messages.create directly (not via callClaude), so it must
+  // invoke the choke itself; assertPromptSafe scans both system + user messages.
+  assertPromptSafe(systemPrompt, userPrompt);
 
   const anthropic = getClient();
 
@@ -392,6 +390,23 @@ interface CallClaudeOptions {
   maxTokens?: number;
 }
 
+/**
+ * UNBYPASSABLE prompt-safety choke. EVERY external model call goes through callClaude or
+ * callDeepSeek, and both run this at entry — so no prompt reaches any model without passing.
+ * Fails CLOSED: a system or user message containing a PropTx MLS number, a TREB listing key,
+ * or a full address+postal throws BEFORE any network call. This is the single enforcement point
+ * (Miltonly "no PropTx identifiers in prompts" rule + the PropTx data agreement); a future
+ * generation path physically cannot skip it without bypassing the only two model-call functions.
+ */
+export function assertPromptSafe(systemPrompt: string, userPrompt: string): void {
+  for (const [label, text] of [["system", systemPrompt], ["user", userPrompt]] as const) {
+    const safety = validatePromptSafety(text ?? "");
+    if (!safety.safe) {
+      throw new Error(`AI compliance: prompt blocked at safety gate (${label} message) — ${safety.reason}`);
+    }
+  }
+}
+
 export async function callClaude({
   modelKey,
   systemPrompt,
@@ -399,6 +414,7 @@ export async function callClaude({
   jsonOnly = false,
   maxTokens = 3000,
 }: CallClaudeOptions): Promise<DeepSeekRawResponse> {
+  assertPromptSafe(systemPrompt, userPrompt); // choke — before any API work
   const anthropic = getClient();
   const model = CLAUDE_MODELS[modelKey];
   const finalSystem = jsonOnly
@@ -437,6 +453,7 @@ export async function callDeepSeek({
   maxTokens = 3000,
   temperature = 0.7,
 }: CallDeepSeekOptions): Promise<DeepSeekRawResponse> {
+  assertPromptSafe(systemPrompt, userPrompt); // choke — before any API work
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
 
