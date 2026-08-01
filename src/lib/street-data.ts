@@ -1257,15 +1257,42 @@ async function buildContextCards(input: {
     })
   );
 
-  const neighbourhoodCards = neighbourhoods
-    .map(cleanNeighbourhoodName)
-    .filter((n) => n.length > 0)
-    .slice(0, 2)
-    .map((n) => ({
-      slug: n.toLowerCase().replace(/\s+/g, "-"),
-      name: n,
-      summary: `Explore the ${n} area of ${config.CITY_NAME}, its streets and comparable housing stock.`,
-    }));
+  // RESOLVE the up-link through the Neighbourhood REGISTRY, then require a PUBLISHED hub — the slug
+  // was a slugified NAME-GUESS, never validated. That both 404'd (Walker's raw "1051 - Walker"
+  // name-guessed to /neighbourhoods/1051---walker; "Brookville/Haltonville" kept its slash) AND
+  // under-linked. Registry resolution maps every raw/name/slug variant to its canonical slug, so
+  // Walker/Brookville now link CORRECTLY; a neighbourhood with no published hub, or one that can't
+  // be resolved, emits NO link rather than a broken one.
+  const [pubHubRows, nbhdRows] = await Promise.all([
+    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
+    prisma.neighbourhood.findMany({ select: { slug: true, name: true, rawStrings: true } }),
+  ]);
+  const publishedHubSlugs = new Set(pubHubRows.map((h) => h.neighbourhoodSlug));
+  const hubSlugify = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const resolveMap = new Map<string, string>(); // normalized key -> canonical slug
+  const nameBySlug = new Map<string, string>();
+  for (const nb of nbhdRows) {
+    nameBySlug.set(nb.slug, nb.name);
+    for (const key of [nb.slug, nb.name, ...nb.rawStrings]) {
+      const k = hubSlugify(key);
+      if (k) resolveMap.set(k, nb.slug);
+    }
+  }
+  const seenHub = new Set<string>();
+  const neighbourhoodCards: Array<{ slug: string; name: string; summary: string }> = [];
+  for (const raw of neighbourhoods.map(cleanNeighbourhoodName)) {
+    if (!raw || raw.length === 0) continue;
+    const resolved = resolveMap.get(hubSlugify(raw));
+    if (!resolved || !publishedHubSlugs.has(resolved) || seenHub.has(resolved)) continue;
+    seenHub.add(resolved);
+    const name = nameBySlug.get(resolved) ?? raw;
+    neighbourhoodCards.push({
+      slug: resolved,
+      name,
+      summary: `Explore the ${name} area of ${config.CITY_NAME}, its streets and comparable housing stock.`,
+    });
+    if (neighbourhoodCards.length >= 2) break;
+  }
 
   const schoolCards = schools
     .filter((s) => neighbourhoods.some((n) => s.neighbourhood.includes(n) || n.includes(s.neighbourhood)))

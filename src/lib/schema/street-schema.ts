@@ -251,16 +251,11 @@ export function buildStreetPageSchema(
     if (saleOffer) graph.push(saleOffer);
   }
 
-  const diffPriorities = resolved.sections.find(
-    (s) => s.id === "differentPriorities"
-  );
-  const alternatives = diffPriorities
-    ? buildAlternativesItemListSchema(
-        diffPriorities.paragraphs.map((p) => ({ strong: "", body: p })),
-        data.street.slug,
-      )
-    : null;
-  if (alternatives) graph.push(alternatives);
+  // DROPPED (A2): the "alternative streets" ItemList sourced from prose paragraphs, so every item
+  // had an EMPTY name (strong:"") and NO url — an ItemList that names and points at nothing. Prose
+  // can't yield real published-street slugs, so rather than ship an inert node we omit it. Genuine
+  // street-to-street linking now lives on /neighbourhoods/[slug]/streets (published 200s only).
+  // (buildAlternativesItemListSchema is left exported for its unit test; simply no longer emitted.)
 
   const nearby = buildNearbyPlacesItemListSchema(
     data.descriptionSidebar.nearbyPlaces,
