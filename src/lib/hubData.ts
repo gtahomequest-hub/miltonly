@@ -8,6 +8,7 @@
 // getCondoData / getHomepageData null-tolerance.
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
+import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
 import { buildHubInput, buildRuralHubInput, buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { NEIGHBOURHOOD_CHARACTER } from "@/lib/homepageData";
 import { fullPrice, compactPrice } from "@/components/hub/format";
@@ -101,6 +102,16 @@ export async function getHubData(slug: string): Promise<HubData | null> {
   if (!nbhd) return null;
   const profile: HubProfile = nbhd.profile === "urban_hub" ? "urban" : "rural";
 
+  // Published-street count for this neighbourhood (drives the overflow gate): streets whose
+  // StreetContent.status="published" AND that have a canonical ResidentialStreet row here.
+  const nbhdStreetSlugs = (
+    await prisma.residentialStreet.findMany({ where: { neighbourhoodId: nbhd.id }, select: { slug: true } })
+  ).map((r) => r.slug);
+  const publishedStreetCount = nbhdStreetSlugs.length
+    ? await prisma.streetContent.count({ where: { status: "published", streetSlug: { in: nbhdStreetSlugs } } })
+    : 0;
+  const hasStreetOverflow = publishedStreetCount > HUB_STREET_LADDER_CAP;
+
   const generation = await prisma.hubGeneration.findUnique({ where: { neighbourhoodSlug: slug } });
   const sections: HubSection[] =
     generation && generation.status === "succeeded" ? ((generation.sectionsJson as unknown as HubSection[]) ?? []) : [];
@@ -143,7 +154,7 @@ export async function getHubData(slug: string): Promise<HubData | null> {
   const ps = input?.projectedStreets ?? [];
   const streets: HubStreetCard[] = [...ps]
     .sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0) || b.soldCount12mo - a.soldCount12mo)
-    .slice(0, 12)
+    .slice(0, HUB_STREET_LADDER_CAP)
     .map((s) => ({ name: s.displayName, slug: s.slug, soldCount: s.soldCount12mo, typicalPriceRounded: null, signal: s.isVip ? "VIP street" : undefined }));
   const vipStreets: HubVipStreet[] =
     profile === "urban"
@@ -184,6 +195,7 @@ export async function getHubData(slug: string): Promise<HubData | null> {
     commentary,
     streets,
     streetCount: input?.streetCount ?? streets.length,
+    hasStreetOverflow,
     vipStreets,
     condos,
     faqs,

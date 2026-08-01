@@ -94,6 +94,10 @@ export interface HubData {
   commentary: HubMarketCommentary;
   streets: HubStreetCard[];
   streetCount: number;
+  // True only when this neighbourhood has MORE published streets than the ladder cap — gates the
+  // "View all streets →" overflow link so it never points at a redundant/thin page. Optional so
+  // tenure hubs (condo/POTL) that never have a street-overflow page can leave it unset (= no link).
+  hasStreetOverflow?: boolean;
   vipStreets: HubVipStreet[]; // urban only; empty for rural
   condos: HubCondoBuilding[]; // empty when none
   faqs: HubFaq[];

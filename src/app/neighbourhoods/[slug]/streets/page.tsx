@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
+import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
 import { getNeighbourhoodStreetIndex } from "@/lib/neighbourhoodStreets";
 import { generateBreadcrumbSchema } from "@/lib/schema";
 import SiteNav from "@/components/nav/SiteNav";
@@ -20,6 +21,15 @@ const money = (n: number) => "$" + Math.round(n).toLocaleString("en-CA");
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getNeighbourhoodStreetIndex(params.slug).catch(() => null);
   if (!data) return { title: "Neighbourhood Not Found" };
+  if (data.publishedCount <= HUB_STREET_LADDER_CAP) {
+    // Below the overflow floor: the page redirects to the hub. Declare it non-indexable + canonical
+    // to the hub so a crawler that reaches the URL doesn't index a redundant page.
+    return {
+      title: `${data.name} Streets — ${config.CITY_NAME}`,
+      robots: { index: false, follow: true },
+      alternates: { canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}` },
+    };
+  }
   const hook =
     data.typicalPrice != null
       ? ` — typically ${money(data.typicalPrice)}${data.sold12mo ? `, ${data.sold12mo} sold in the last 12 months` : ""}`
@@ -40,6 +50,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function NeighbourhoodStreetsPage({ params }: Props) {
   const data = await getNeighbourhoodStreetIndex(params.slug);
   if (!data) notFound();
+  // OVERFLOW FLOOR: at or below the ladder cap the hub already links every published street, so
+  // this page would be redundant + thin. Redirect (307, temporary — the count moves as pages
+  // publish) to the hub rather than 404: the ≤cap streets ARE on the hub, so consolidate there
+  // instead of dead-ending a crawler.
+  if (data.publishedCount <= HUB_STREET_LADDER_CAP) redirect(`/neighbourhoods/${params.slug}`);
 
   const schemas: Array<Record<string, unknown>> = [
     generateBreadcrumbSchema([

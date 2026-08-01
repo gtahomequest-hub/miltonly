@@ -86,19 +86,30 @@ export function buildLocalBusinessSchema(data: StreetPageData): object {
  * Street as a Place, contained in its neighbourhood(s), contained in Milton, Ontario.
  */
 export function buildPlaceSchema(data: StreetPageData): object {
-  // Name-only Place — the @id was `/neighbourhoods/${slugifyNbhd(n)}`, an UNVALIDATED name-guess
-  // that emitted broken hub URLs (Walker → /neighbourhoods/1051---walker). A Place with a name and
-  // no @id/url is valid schema and carries no dead link; the crawlable up-link (registry-resolved
-  // to a PUBLISHED hub) lives in the page body (StreetContext).
-  const containedInPlace = data.street.neighbourhoods.map((n) => ({
-    "@type": "Place",
-    name: n,
-    containedInPlace: {
-      "@type": "City",
-      name: config.CITY_NAME,
-      containedInPlace: { "@type": "AdministrativeArea", name: config.CITY_PROVINCE },
-    },
-  }));
+  // containedInPlace prefers the RESOLVED published-hub links (data.contextCards.neighbourhoods —
+  // registry-resolved + gated on published HubContent, the SAME resolution as the visible up-link),
+  // so the @id is a real /neighbourhoods/<slug> URL, not the old name-guess that emitted broken hub
+  // URLs (Walker → /neighbourhoods/1051---walker). When nothing resolves to a published hub, fall
+  // back to name-only Places (valid schema, no dead link).
+  const city = {
+    "@type": "City",
+    name: config.CITY_NAME,
+    containedInPlace: { "@type": "AdministrativeArea", name: config.CITY_PROVINCE },
+  };
+  const resolvedHubs = data.contextCards?.neighbourhoods ?? [];
+  const containedInPlace =
+    resolvedHubs.length > 0
+      ? resolvedHubs.map((h) => ({
+          "@type": "Place",
+          name: h.name,
+          "@id": `${SITE_URL}/neighbourhoods/${h.slug}`,
+          containedInPlace: city,
+        }))
+      : data.street.neighbourhoods.map((n) => ({
+          "@type": "Place",
+          name: n,
+          containedInPlace: city,
+        }));
 
   return {
     "@type": "Place",

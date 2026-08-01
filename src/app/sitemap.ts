@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
+import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
 import { schools } from "@/lib/schools";
 import { mosques } from "@/lib/mosques";
 
@@ -161,6 +162,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // Neighbourhood street-OVERFLOW pages (/neighbourhoods/<slug>/streets) — ONLY where a published
+  // hub has MORE published streets than the ladder cap. Below that floor the route redirects to the
+  // hub (redundant + thin), so it must NOT be declared here. Count = published StreetContent joined
+  // to a canonical ResidentialStreet row per neighbourhood — the SAME gate getHubData.hasStreetOverflow uses.
+  const publishedHubSlugSet = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
+  const rsForPublished = await prisma.residentialStreet.findMany({
+    where: { slug: { in: publishedStreets.map((s) => s.streetSlug) }, neighbourhoodId: { not: null } },
+    select: { neighbourhoodId: true },
+  });
+  const nbhdSlugById = new Map(
+    (await prisma.neighbourhood.findMany({ select: { id: true, slug: true } })).map((n) => [n.id, n.slug]),
+  );
+  const publishedCountByHub = new Map<string, number>();
+  for (const r of rsForPublished) {
+    const hubSlug = r.neighbourhoodId ? nbhdSlugById.get(r.neighbourhoodId) : null;
+    if (hubSlug && publishedHubSlugSet.has(hubSlug)) publishedCountByHub.set(hubSlug, (publishedCountByHub.get(hubSlug) ?? 0) + 1);
+  }
+  const streetOverflowPages: MetadataRoute.Sitemap = Array.from(publishedCountByHub.entries())
+    .filter(([, count]) => count > HUB_STREET_LADDER_CAP)
+    .map(([hubSlug]) => ({
+      url: `${SITE_URL}/neighbourhoods/${hubSlug}/streets`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
   // School pages
   const schoolPages: MetadataRoute.Sitemap = [
     {
@@ -193,5 +220,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...condoPages, ...schoolPages, ...mosquePages];
+  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages];
 }
