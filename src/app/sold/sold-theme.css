@@ -427,6 +427,22 @@
   font-size: 12px;
   color: var(--sv-text-muted);
 }
+/* two labelled price anchors (midpoint = median, average = mean) side by side */
+.sold-v2 .sv-snap-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.sold-v2 .sv-snap-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+/* the AVERAGE tile — bright-green accent so it's distinguishable at a glance from the midpoint */
+.sold-v2 .sv-snap-hero-alt {
+  border-left-color: var(--sv-green);
+}
 
 /* by property type */
 .sold-v2 .sv-types {

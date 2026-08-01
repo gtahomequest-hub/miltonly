@@ -51,7 +51,8 @@ const round5k = (v: number | null): number | null => (v === null ? null : Math.r
 // ── OVERALL — Milton-wide, trailing 12 months ────────────────────────────
 export interface SoldOverall {
   count: number;
-  medianPrice: number | null; // k>=5
+  medianPrice: number | null; // k>=5 — the MIDPOINT (matches homepage/Board)
+  meanPrice: number | null; // k>=5 — the AVERAGE (== the statistic each neighbourhood row uses)
   bandLow: number | null; // p25, k>=10
   bandHigh: number | null; // p75, k>=10
   avgDom: number | null; // k>=5
@@ -59,11 +60,12 @@ export interface SoldOverall {
 }
 
 export async function getMiltonSoldOverall(): Promise<SoldOverall> {
-  const empty: SoldOverall = { count: 0, medianPrice: null, bandLow: null, bandHigh: null, avgDom: null, soldToAskPct: null };
+  const empty: SoldOverall = { count: 0, medianPrice: null, meanPrice: null, bandLow: null, bandHigh: null, avgDom: null, soldToAskPct: null };
   const db = getSoldDb();
   if (!db) return empty;
-  return cached("sold-agg:overall-12mo", CACHE_TTL.stats, async () => {
-    const rows = (await db`
+  return cached("sold-agg:overall-12mo-v2", CACHE_TTL.stats, async () => {
+    const [rows, townSale] = await Promise.all([
+      db`
       SELECT
         COUNT(*)::int AS n,
         PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY sold_price) AS median,
@@ -74,15 +76,21 @@ export async function getMiltonSoldOverall(): Promise<SoldOverall> {
       FROM sold.sold_records
       WHERE city = ${CITY} AND perm_advertise = TRUE AND transaction_type = 'For Sale'
         AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
-    `) as Array<Record<string, unknown>>;
+    ` as Promise<Array<Record<string, unknown>>>,
+      // Town-wide MEAN via the SAME rollup the neighbourhood rows + hub pages use, so the
+      // snapshot average is the identical statistic (anchor for the mean-based table below).
+      saleAggQuery(null),
+    ]);
     const r = rows[0] ?? {};
     const n = num(r.n) ?? 0;
     const kPrice = n >= K_ANON_PRICE;
     const kRange = n >= K_ANON_RANGE;
     const sta = num(r.avg_sta);
+    const townAgg = assembleAggregates(townSale[0] ?? null, 0); // typicalPrice already k-gated (null <5)
     return {
       count: n,
       medianPrice: kPrice ? round5k(num(r.median)) : null,
+      meanPrice: townAgg.typicalPrice != null ? round5k(townAgg.typicalPrice) : null,
       bandLow: kRange ? round5k(num(r.p25)) : null,
       bandHigh: kRange ? round5k(num(r.p75)) : null,
       avgDom: kPrice && num(r.avg_dom) !== null ? Math.round(num(r.avg_dom) as number) : null,
