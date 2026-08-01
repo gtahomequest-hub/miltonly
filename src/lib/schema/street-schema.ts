@@ -86,10 +86,13 @@ export function buildLocalBusinessSchema(data: StreetPageData): object {
  * Street as a Place, contained in its neighbourhood(s), contained in Milton, Ontario.
  */
 export function buildPlaceSchema(data: StreetPageData): object {
+  // Name-only Place — the @id was `/neighbourhoods/${slugifyNbhd(n)}`, an UNVALIDATED name-guess
+  // that emitted broken hub URLs (Walker → /neighbourhoods/1051---walker). A Place with a name and
+  // no @id/url is valid schema and carries no dead link; the crawlable up-link (registry-resolved
+  // to a PUBLISHED hub) lives in the page body (StreetContext).
   const containedInPlace = data.street.neighbourhoods.map((n) => ({
     "@type": "Place",
     name: n,
-    "@id": `${SITE_URL}/neighbourhoods/${slugifyNbhd(n)}`,
     containedInPlace: {
       "@type": "City",
       name: config.CITY_NAME,
@@ -288,9 +291,7 @@ function categoryToSchemaType(category: string): string {
   return "Place";
 }
 
-function slugifyNbhd(name: string): string {
-  return name.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-}
+// (slugifyNbhd removed — it produced unvalidated /neighbourhoods/ @id URLs; see buildPlaceSchema.)
 
 // ────────────────────────────────────────────────────────────────────
 // Inference helpers — pull numeric meta out of the stat cells.
