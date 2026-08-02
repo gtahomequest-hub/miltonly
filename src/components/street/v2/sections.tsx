@@ -561,6 +561,15 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
   // dormant street records its first sale, auto-promotion publishes it and the alert fires).
   const nbhd = data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton';
   const dormant = data.tier === 'identity-only' || data.tier === 'area-only';
+  // ABSENCE phrasing ("no resales … yet") is TRUE only where the street has zero sales in the
+  // window; every other sub-k5 street has a record that just can't support a published price →
+  // SUPPRESSION phrasing. The copy carries its population gate (data.hasAnySale). Alert CTA stays
+  // on all — only the copy changes.
+  const ctaBody = !dormant
+    ? buyer.body
+    : data.hasAnySale
+      ? `Too few recent sales on ${data.shortName} to publish a typical price yet — the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`
+      : `No resales recorded on ${data.shortName} yet — a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`;
   return (
     <section className="s-block">
       <div className="s-wrap">
@@ -581,11 +590,7 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
               shortName={data.shortName}
               neighbourhood={nbhd}
               headline={dormant ? `Be first when ${data.shortName} trades` : buyer.headline}
-              body={
-                dormant
-                  ? `No resales recorded on ${data.shortName} yet — this is a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`
-                  : buyer.body
-              }
+              body={ctaBody}
               dormant={dormant}
             />
           </div>

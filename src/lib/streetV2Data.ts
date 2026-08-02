@@ -264,6 +264,7 @@ export function mapStreetV2Data(
         }
       : null,
     tier: data.enrichment.tier,
+    hasAnySale: data.enrichment.hasAnySale,
 
     lastUpdated: data.lastUpdated,
   };

@@ -45,6 +45,10 @@ export interface StreetEnrichment {
   tier: StreetTier;
   // raw counts kept for the gate/disclosure (12mo vs full, both sides)
   counts: { sale12mo: number; saleFull: number; lease12mo: number; leaseFull: number };
+  // TRUE when the street has >=1 resale anywhere in the licensed window. Gates the
+  // "No resales recorded … yet" copy so it renders ONLY on genuinely zero-sale streets —
+  // the copy was written for the ~zero population and must carry that gate with it.
+  hasAnySale: boolean;
 }
 
 const num = (v: unknown): number | null => {
@@ -134,6 +138,7 @@ export async function buildStreetEnrichment(params: {
     leaseBasis: leaseG.basis,
     tier,
     counts: { sale12mo: sale12moCount, saleFull: saleG.fullCount, lease12mo: lease12moCount, leaseFull: leaseG.fullCount },
+    hasAnySale: bestSale > 0,
   };
 }
 

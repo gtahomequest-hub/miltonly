@@ -271,6 +271,9 @@ export interface StreetV2Data {
     basis: string;
   } | null;
   tier: 'priced-sale' | 'priced-lease' | 'area-only' | 'identity-only';
+  /** TRUE when the street has >=1 resale in the licensed window. Gates the dormant CTA copy so
+   *  "No resales recorded yet" renders ONLY where there are genuinely zero sales. */
+  hasAnySale: boolean;
 
   lastUpdated: string;
 }

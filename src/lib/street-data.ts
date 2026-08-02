@@ -358,6 +358,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     streetName,
     stats,
     monthlyRows,
+    enrichment,
   });
 
   // ─── Commute + nearby ─────────────────────────────────────────────
@@ -793,20 +794,22 @@ function buildProductTypeSections(input: {
     const lo = num(agg?.min_price ?? null);
     const hi = num(agg?.max_price ?? null);
     const kOk = n >= K_ANON_PRICE;
+    // (fix f) COLLAPSE, DON'T FILL — a type card renders ONLY for a type that clears k>=5 on
+    // sold price. Sub-k types were rendering a card of dashes ("under publish threshold"); their
+    // active listings still surface in the Active Inventory section. If NO type clears k, `sections`
+    // stays empty and the "By the home" block is omitted entirely (StreetTypes returns null).
+    if (!kOk) continue;
 
     const statsSold: StatCell[] = [];
-    if (kOk) {
-      statsSold.push({ label: "Typical price", value: formatCADShort(roundPriceForProse(typicalPrice)), detail: `across ${n} sales` });
-      if (lo !== null && hi !== null) {
-        statsSold.push({ label: "Price band", value: `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}` });
-      }
-      const dom = num(agg?.avg_dom ?? null);
-      if (dom !== null) statsSold.push({ label: "Time on market", value: `${Math.round(dom)} days`, detail: "typical" });
-      const ratio = num(agg?.avg_sold_to_ask ?? null);
-      if (ratio !== null) statsSold.push({ label: "Sold to ask", value: `${Math.round(ratio * 100)}%` });
-    } else if (n > 0) {
-      statsSold.push({ label: "Recent sales", value: String(n), detail: "under the publish threshold" });
+    // kOk is guaranteed here (sub-k types were skipped above). Count carries its window (fix a).
+    statsSold.push({ label: "Typical price", value: formatCADShort(roundPriceForProse(typicalPrice)), detail: `across ${n} sales · last 12 months` });
+    if (lo !== null && hi !== null) {
+      statsSold.push({ label: "Price band", value: `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}` });
     }
+    const dom = num(agg?.avg_dom ?? null);
+    if (dom !== null) statsSold.push({ label: "Time on market", value: `${Math.round(dom)} days`, detail: "typical" });
+    const ratio = num(agg?.avg_sold_to_ask ?? null);
+    if (ratio !== null) statsSold.push({ label: "Sold to ask", value: `${Math.round(ratio * 100)}%` });
 
     // Active inventory stats for the type
     if (activeForType.length > 0) {
@@ -1079,8 +1082,10 @@ function buildGlanceTiles(input: {
     tiles.push({ label: "Leases (12m)", value: String(stats?.leased_count_12months ?? 0), detail: "closed" });
   }
 
-  // Exactly 12 tiles
-  return tiles.slice(0, 12);
+  // (fix f) COLLAPSE, DON'T FILL — drop tiles that would render as a bare "—" so the at-a-glance
+  // grid never reads as a wall of dashes. Real values (incl. legitimate 0-counts) stay; suppressed
+  // metrics simply don't take a tile. Cap at 12.
+  return tiles.filter((t) => t.value !== "—").slice(0, 12);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -1092,10 +1097,10 @@ function buildMarketActivity(input: {
   streetName: string;
   stats: RawSoldStats | null;
   monthlyRows: RawMonthly[];
+  enrichment: StreetEnrichment;
 }): MarketActivityProps {
-  const { streetName, stats, monthlyRows } = input;
-  const salesCount = stats?.sold_count_90days ?? 0;
-  const typical = num(stats?.avg_sold_price ?? null);
+  const { streetName, stats, monthlyRows, enrichment } = input;
+  const salesCount = stats?.sold_count_90days ?? 0; // 90-DAY count — labelled as such below (fix a)
   const dom = num(stats?.avg_dom ?? null);
 
   const quarterly = monthlyToQuarterly(monthlyRows);
@@ -1105,16 +1110,29 @@ function buildMarketActivity(input: {
   const lease3 = num(stats?.avg_leased_price_3bed ?? null);
   const lease4 = num(stats?.avg_leased_price_4bed ?? null);
   const anyLease = (stats?.leased_count_12months ?? 0) >= K_ANON_PRICE && (lease1 || lease2 || lease3 || lease4);
+  // (fix b) roundPriceForProse is a HOUSE-PRICE rounder (nearest ~$10k); applied to a monthly
+  // rent it collapses ~$2,200 to "$0" — a fabricated number. Suppress any rent that rounds to <=0
+  // rather than publish "$0". (Narrow: market-card lease path only; the hero's k-gated lease pill
+  // carries the real rent. Properly re-formatting rents is the sitewide-audit's job.)
+  const rentCell = (x: number | null) => (x != null && roundPriceForProse(x) > 0 ? formatCADShort(roundPriceForProse(x)) : "—");
+  // (fix c) Typical sold mirrors the graduated hero/glance basis (12mo preferred, ~26mo fallback),
+  // not the 90-day-gated DB3 value — so glance and market card can never disagree.
+  const gSale = enrichment.saleBasis;
+  const heroTypical = num(stats?.avg_sold_price ?? null);
+  const typicalSold = gSale
+    ? formatCADShort(roundPriceForProse(gSale.window === "12mo" && heroTypical ? heroTypical : gSale.typical))
+    : "—";
 
   return {
     salesSummary: {
       title: "Sales",
       body: salesCount > 0
-        ? `Sale activity on ${streetName} in the recent period. Stats reflect closed transactions only.`
-        : `No closed sales on record for ${streetName} in the recent period.`,
+        ? `Sale activity on ${streetName} in the last 90 days. Stats reflect closed transactions only.`
+        : `No closed sales on record for ${streetName} in the last 90 days.`,
       stats: [
-        { label: "Recent sales", value: String(salesCount) },
-        { label: "Typical sold", value: typical && salesCount >= K_ANON_PRICE ? formatCADShort(roundPriceForProse(typical)) : "—" },
+        // (fix a) window-label the count so it reads as complementary to the hero's 12-month basis.
+        { label: "Recent sales · last 90 days", value: String(salesCount) },
+        { label: "Typical sold", value: typicalSold },
         { label: "Days on market", value: dom !== null ? String(Math.round(dom)) : "—" },
       ],
     },
@@ -1122,8 +1140,8 @@ function buildMarketActivity(input: {
       title: "Leases",
       body: `Rental activity on ${streetName} across recent months. Breakdown by bed count below.`,
       stats: [
-        { label: "Recent leases", value: String(stats?.leased_count_12months ?? 0) },
-        { label: "Typical rent", value: num(stats?.avg_leased_price ?? null) ? formatCADShort(roundPriceForProse(num(stats?.avg_leased_price ?? null)!)) : "—" },
+        { label: "Recent leases · last 12 months", value: String(stats?.leased_count_12months ?? 0) },
+        { label: "Typical rent", value: rentCell(num(stats?.avg_leased_price ?? null)) },
         { label: "Days on market", value: num(stats?.avg_lease_dom ?? null) !== null ? String(Math.round(num(stats?.avg_lease_dom ?? null)!)) : "—" },
       ],
     } : undefined,
@@ -1134,12 +1152,18 @@ function buildMarketActivity(input: {
       data: quarterly,
       caption: `Typical sold price across all product types on ${streetName}, plotted with transaction volume.`,
     } : null,
-    rentByBeds: anyLease ? [
-      { label: "1 bed", value: lease1 ? formatCADShort(roundPriceForProse(lease1)) : "—", detail: "typical" },
-      { label: "2 bed", value: lease2 ? formatCADShort(roundPriceForProse(lease2)) : "—", detail: "typical" },
-      { label: "3 bed", value: lease3 ? formatCADShort(roundPriceForProse(lease3)) : "—", detail: "typical" },
-      { label: "4+ bed", value: lease4 ? formatCADShort(roundPriceForProse(lease4)) : "—", detail: "typical" },
-    ] : undefined,
+    rentByBeds: (() => {
+      if (!anyLease) return undefined;
+      const rows = [
+        { label: "1 bed", value: rentCell(lease1), detail: "typical" },
+        { label: "2 bed", value: rentCell(lease2), detail: "typical" },
+        { label: "3 bed", value: rentCell(lease3), detail: "typical" },
+        { label: "4+ bed", value: rentCell(lease4), detail: "typical" },
+      ];
+      // (fix f) collapse a per-bed grid that is entirely "—" (every value suppressed by the
+      // $0 fix) — don't render scaffolding with no cell to show.
+      return rows.some((r) => r.value !== "—") ? rows : undefined;
+    })(),
     streetName,
   };
 }
