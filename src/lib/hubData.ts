@@ -107,9 +107,21 @@ export async function getHubData(slug: string): Promise<HubData | null> {
   const nbhdStreetSlugs = (
     await prisma.residentialStreet.findMany({ where: { neighbourhoodId: nbhd.id }, select: { slug: true } })
   ).map((r) => r.slug);
-  const publishedStreetCount = nbhdStreetSlugs.length
-    ? await prisma.streetContent.count({ where: { status: "published", streetSlug: { in: nbhdStreetSlugs } } })
-    : 0;
+  // PUBLISHED-ONLY gate for the ladder + VIP strip + overflow. The ladder used SURFACED_STREET_WHERE
+  // (rws>0 OR hasPublishedPage), which let ~101 unpublished streets fill ladder/VIP slots across the
+  // 22 hubs — internal links to pages that carry no published guide (and that DEC-SEO-1 will 404).
+  // The set below is this neighbourhood's streets that DO carry a published StreetContent page.
+  const publishedStreetSlugs = new Set(
+    nbhdStreetSlugs.length
+      ? (
+          await prisma.streetContent.findMany({
+            where: { status: "published", streetSlug: { in: nbhdStreetSlugs } },
+            select: { streetSlug: true },
+          })
+        ).map((r) => r.streetSlug)
+      : [],
+  );
+  const publishedStreetCount = publishedStreetSlugs.size;
   const hasStreetOverflow = publishedStreetCount > HUB_STREET_LADDER_CAP;
 
   const generation = await prisma.hubGeneration.findUnique({ where: { neighbourhoodSlug: slug } });
@@ -151,7 +163,11 @@ export async function getHubData(slug: string): Promise<HubData | null> {
     faqs = [];
   }
 
-  const ps = input?.projectedStreets ?? [];
+  // Ladder + VIP source: PUBLISHED-ONLY. Filter the surfaced projection to streets that carry a
+  // published page (was: the raw surfaced projection, rws>0 OR hasPublishedPage). No cap change and
+  // no top-up with surfaced-unpublished — ladders SHRINK where published inventory < 12 slots. That
+  // is the honest null-not-zero outcome; short states are framed deliberately in the HubStreets view.
+  const ps = (input?.projectedStreets ?? []).filter((s) => publishedStreetSlugs.has(s.slug));
   const streets: HubStreetCard[] = [...ps]
     .sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0) || b.soldCount12mo - a.soldCount12mo)
     .slice(0, HUB_STREET_LADDER_CAP)
@@ -194,7 +210,7 @@ export async function getHubData(slug: string): Promise<HubData | null> {
     marketCompare,
     commentary,
     streets,
-    streetCount: input?.streetCount ?? streets.length,
+    streetCount: publishedStreetCount, // published guides in this hub (ladder is published-only)
     hasStreetOverflow,
     vipStreets,
     condos,

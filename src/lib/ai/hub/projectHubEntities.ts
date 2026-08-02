@@ -71,8 +71,20 @@ export function projectStreetsSection(input: HubGeneratorInput): ProjectedStreet
  * the neighbourhood typicalPrice cleared k-anon (non-null), so the schema never
  * advertises a price the body had to suppress.
  */
-export function projectHubSchema(input: HubGeneratorInput): HubSchemaProjection {
-  const streets = input.projectedStreets;
+export function projectHubSchema(
+  input: HubGeneratorInput,
+  renderedStreets?: ReadonlyArray<{ name: string; slug: string }>,
+): HubSchemaProjection {
+  // The ItemList MUST mirror what the hub PAGE renders — its published-only, capped
+  // ladder + VIP set — not the full surfaced projection and not the full published list.
+  // Schema is the machine-readable twin of the visible list; marking up content not on the
+  // page sits against Google's structured-data guidance, and it is redundant: the /streets
+  // overflow page carries its own full uncapped published-only ItemList where those streets
+  // actually render. When renderedStreets is supplied we use it verbatim (name + url, in
+  // rendered order); absent → the surfaced projection (backward-compatible for any other caller).
+  const items = renderedStreets
+    ? renderedStreets.map((s) => ({ name: s.name, url: streetUrl(s.slug) }))
+    : input.projectedStreets.map((s) => ({ name: s.displayName, url: streetUrl(s.slug) }));
   const schema: HubSchemaProjection = {
     "@context": "https://schema.org",
     "@type": "Place",
@@ -80,12 +92,12 @@ export function projectHubSchema(input: HubGeneratorInput): HubSchemaProjection 
     containedInPlace: { "@type": "City", name: config.CITY_NAME },
     mainEntity: {
       "@type": "ItemList",
-      numberOfItems: streets.length,
-      itemListElement: streets.map((s, i) => ({
+      numberOfItems: items.length,
+      itemListElement: items.map((it, i) => ({
         "@type": "ListItem" as const,
         position: i + 1,
-        name: s.displayName,
-        url: streetUrl(s.slug),
+        name: it.name,
+        url: it.url,
       })),
     },
   };

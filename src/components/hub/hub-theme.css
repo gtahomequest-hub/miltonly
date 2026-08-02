@@ -405,6 +405,19 @@
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 13px;
 }
+/* short-ladder state: fixed-width cards, left-aligned, so 1-3 published guides read as
+   deliberate ("few guides so far") rather than a stretched, broken-looking grid. */
+.hub-v2 .h-streets.h-streets-short {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 300px));
+  justify-content: start;
+}
+.hub-v2 .h-streets-note {
+  font-family: var(--h-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--h-text-sec);
+  max-width: 640px;
+}
 .hub-v2 .h-st {
   background: var(--h-surface);
   border: 1px solid var(--h-border-muted);

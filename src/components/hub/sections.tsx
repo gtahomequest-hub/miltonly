@@ -188,6 +188,12 @@ function StreetCard({ s }: { s: HubStreetCard }) {
 }
 
 export function HubStreets({ data }: { data: HubData }) {
+  // The ladder is PUBLISHED-ONLY, so it shrinks where a neighbourhood has few published guides.
+  // A short ladder must read as deliberate, not broken (THE THREE RULES · layout). Two guarded
+  // states: 0 published streets → a note, no empty grid; 1–3 → a framing line + fixed-width cards
+  // (left-aligned) so a lone card is obviously "few guides so far", not a rendering failure.
+  const n = data.streets.length;
+  const short = n > 0 && n <= 3;
   return (
     <section className="h-block">
       <div className="h-wrap">
@@ -202,11 +208,26 @@ export function HubStreets({ data }: { data: HubData }) {
             </a>
           )}
         </div>
-        <div className="h-streets" style={{ marginTop: 28 }}>
-          {data.streets.map((s) => (
-            <StreetCard key={s.slug} s={s} />
-          ))}
-        </div>
+        {n === 0 ? (
+          <p className="h-streets-note" style={{ marginTop: 20 }}>
+            Street-by-street guides for {data.name} publish as each road builds a full sold record — the
+            market read above covers the neighbourhood in the meantime.
+          </p>
+        ) : (
+          <>
+            {short && (
+              <p className="h-streets-note" style={{ marginTop: 18 }}>
+                {data.name} has {n} street {n === 1 ? 'guide' : 'guides'} published so far; more appear
+                here as each road builds a full record.
+              </p>
+            )}
+            <div className={`h-streets${short ? ' h-streets-short' : ''}`} style={{ marginTop: short ? 16 : 28 }}>
+              {data.streets.map((s) => (
+                <StreetCard key={s.slug} s={s} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
