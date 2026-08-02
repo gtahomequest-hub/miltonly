@@ -70,7 +70,19 @@ export default async function NeighbourhoodPage({ params }: Props) {
   let hubSchema: Record<string, unknown> | null = null;
   try {
     const input = data.profile === "urban" ? await buildHubInput(params.slug) : await buildRuralHubInput(params.slug);
-    hubSchema = projectHubSchema(input) as unknown as Record<string, unknown>;
+    // PUBLISHED-ONLY: the hub JSON-LD ItemList must list only streets with a published
+    // page (same gate as the visible ladder/VIP). Without this the schema advertises the
+    // surfaced-but-unpublished /streets/ URLs that DEC-SEO-1 will 404 (moffat: 5 -> 1).
+    const projectedSlugs = input.projectedStreets.map((s) => s.slug);
+    const publishedSlugs = new Set(
+      projectedSlugs.length
+        ? (await prisma.streetContent.findMany({
+            where: { status: "published", streetSlug: { in: projectedSlugs } },
+            select: { streetSlug: true },
+          })).map((r) => r.streetSlug)
+        : [],
+    );
+    hubSchema = projectHubSchema(input, publishedSlugs) as unknown as Record<string, unknown>;
   } catch {
     hubSchema = null;
   }

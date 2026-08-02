@@ -71,8 +71,18 @@ export function projectStreetsSection(input: HubGeneratorInput): ProjectedStreet
  * the neighbourhood typicalPrice cleared k-anon (non-null), so the schema never
  * advertises a price the body had to suppress.
  */
-export function projectHubSchema(input: HubGeneratorInput): HubSchemaProjection {
-  const streets = input.projectedStreets;
+export function projectHubSchema(
+  input: HubGeneratorInput,
+  publishedSlugs?: ReadonlySet<string>,
+): HubSchemaProjection {
+  // PUBLISHED-ONLY ItemList (mirrors the visible published-only ladder/VIP). When a
+  // published set is supplied, the JSON-LD lists only streets with a published page —
+  // it must never advertise a /streets/ URL the page doesn't show and that DEC-SEO-1
+  // will 404. Uncapped (all published in the hub, not just the top-12 ladder). Absent
+  // set → original surfaced projection (backward-compatible for any other caller).
+  const streets = publishedSlugs
+    ? input.projectedStreets.filter((s) => publishedSlugs.has(s.slug))
+    : input.projectedStreets;
   const schema: HubSchemaProjection = {
     "@context": "https://schema.org",
     "@type": "Place",
