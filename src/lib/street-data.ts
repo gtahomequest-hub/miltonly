@@ -18,7 +18,7 @@ import type { Listing } from "@prisma/client";
 import { prisma } from "./prisma";
 import { config } from "./config";
 import { getAnalyticsDb, getSoldDb } from "./db";
-import { buildStreetEnrichment, windowDisclosure, leaseDisclosure, type StreetEnrichment } from "./streetEnrichment";
+import { buildStreetEnrichment, windowDisclosure, type StreetEnrichment } from "./streetEnrichment";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
@@ -708,13 +708,15 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     });
   }
 
+  // Labels stay EXACT ("Recent sales" / "Recent leases") — mapStreetV2Data keys the v2
+  // pill rows off them, and the window disclosure is rendered in the v2 hero (a "· last
+  // 12 months" span on sales + hero.leaseWindowNote on leases), not baked into the label.
   const productTypePills: ProductPillRow[] = [];
   if (soldPills.length > 0) {
-    // per-type pills are always the 12mo sold aggregate — disclose it on the row.
-    productTypePills.push({ label: "Recent sales · last 12 months", dotColor: "navy", pills: soldPills });
+    productTypePills.push({ label: "Recent sales", dotColor: "navy", pills: soldPills });
   }
   if (leasePills.length > 0 && leaseBasis) {
-    productTypePills.push({ label: `Recent leases · ${leaseDisclosure(leaseBasis)}`, dotColor: "blue", pills: leasePills });
+    productTypePills.push({ label: "Recent leases", dotColor: "blue", pills: leasePills });
   }
 
   return {
