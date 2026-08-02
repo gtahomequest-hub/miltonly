@@ -9,6 +9,7 @@
 
 import type { ReactNode } from "react";
 import type { StreetSection, StreetFAQItem } from "./street-generator";
+import type { StreetEnrichment } from "@/lib/streetEnrichment";
 export type { StreetSection, StreetFAQItem, StreetSectionId, StreetGeneratorOutput, StreetGenerationMeta, StreetGeneratorInput, ValidatorViolation, ValidatorRule } from "./street-generator";
 
 // ───── Primitive building blocks ──────────────────────────────────────────
@@ -69,6 +70,10 @@ export interface HeroStat {
   value: ReactNode;
   /** Optional sub-text row below the value. */
   sub?: string;
+  /** Mandatory window+sample disclosure for a priced tile ("across 33 sales in the
+   *  last 12 months"). Present on every published price so two streets computed on
+   *  different windows never compare silently. */
+  basis?: string;
 }
 
 export interface ProductPillData {
@@ -416,5 +421,7 @@ export interface StreetPageData {
   faqs: FAQItem[];
   finalCTAs: FinalCTAsProps;
   cornerWidget: CornerWidgetProps;
+  /** DEC-CONDO-6 street port: area-context anchor + graduated sale/lease basis + tier. */
+  enrichment: StreetEnrichment;
   lastUpdated: string;
 }

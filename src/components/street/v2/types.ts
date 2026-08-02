@@ -34,6 +34,9 @@ export interface StreetStat {
   textValue?: string | null;
   /** optional sub-line (e.g. price range). null => omitted (e.g. range below k>=10). */
   sub?: string | null;
+  /** mandatory window+sample disclosure on a priced tile ("across 33 sales in the last
+   *  12 months"). null => not a priced tile. */
+  basis?: string | null;
   /** copy shown in the silent state. Defaults to "sample too small to publish". */
   silentNote?: string;
 }
@@ -53,6 +56,8 @@ export interface StreetHeroData {
   stats: StreetStat[]; // up to 4 tiles (housing mix, typical price, transactions, active)
   salePills: ProductPill[];
   leasePills: ProductPill[]; // empty when leased_count < k
+  /** window disclosure for the lease pill ("last 12 months" / "last ~2 years"); null when no lease. */
+  leaseWindowNote?: string | null;
 }
 
 // ───── Prose (the 8 + optional 9th generated sections) ───────────────────────
@@ -254,5 +259,18 @@ export interface StreetV2Data {
   context: ContextBlock;
   faqs: StreetFaq[];
   finalCtas: { seller: StreetCta; buyer: StreetCta };
+
+  /** DEC-CONDO-6 street port. areaContext = the street's neighbourhood typical price
+   *  (hub-identical, k-anon), the anchor for sub-k5 pages. tier drives how prominent it
+   *  is + the identity-only floor copy. */
+  areaContext: {
+    neighbourhoodName: string;
+    neighbourhoodSlug: string | null;
+    typicalPrice: number | null;
+    /** the hub's window basis, disclosed on the number. */
+    basis: string;
+  } | null;
+  tier: 'priced-sale' | 'priced-lease' | 'area-only' | 'identity-only';
+
   lastUpdated: string;
 }

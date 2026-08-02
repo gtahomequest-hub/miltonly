@@ -18,6 +18,7 @@ import type { Listing } from "@prisma/client";
 import { prisma } from "./prisma";
 import { config } from "./config";
 import { getAnalyticsDb, getSoldDb } from "./db";
+import { buildStreetEnrichment, windowDisclosure, leaseDisclosure, type StreetEnrichment } from "./streetEnrichment";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
@@ -304,6 +305,18 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   const stats = soldStatsRows[0] ?? null;
   const soldRange = soldRange12moRows[0] ?? null;
 
+  // ─── DEC-CONDO-6 enrichment (area-context + graduated sale/lease + tier) ───
+  // Prefer the 12mo figure (byte-identical to today's page); fall back to the full
+  // ~26mo window ONLY where 12mo is sub-k5. Full-window queries fire lazily inside.
+  const enrichment = await buildStreetEnrichment({
+    slug,
+    siblingSlugs,
+    sale12moCount: stats?.sold_count_12months ?? 0,
+    sale12moAvg: num(stats?.avg_sold_price ?? null),
+    lease12moCount: stats?.leased_count_12months ?? 0,
+    lease12moAvg: num(stats?.avg_leased_price ?? null),
+  });
+
   // ─── Hero + product pills ─────────────────────────────────────────
   const heroProps = buildHero({
     streetName,
@@ -313,6 +326,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     allListings,
     streetContent,
     typeAggs: soldTypeAggRows,
+    enrichment,
   });
 
   // ─── Product type sections ────────────────────────────────────────
@@ -335,6 +349,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     allListings,
     typeAggs: soldTypeAggRows,
     soldRange,
+    enrichment,
   });
 
   // ─── Market Activity ─────────
@@ -396,6 +411,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     faqs,
     finalCTAs,
     cornerWidget,
+    enrichment,
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -594,10 +610,11 @@ interface HeroBuildInput {
   allListings: Listing[];
   streetContent: { description: string } | null;
   typeAggs: RawTypeAgg[];
+  enrichment: StreetEnrichment;
 }
 
 function buildHero(input: HeroBuildInput): StreetHeroProps {
-  const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs } = input;
+  const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs, enrichment } = input;
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
   const eyebrow = `Street Profile · ${cleanNbhds.slice(0, 3).join(" · ") || config.CITY_NAME} · ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
   const subtitle = streetContent?.description
@@ -615,14 +632,22 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
 
   const typical = num(stats?.avg_sold_price ?? null);
   const countFor12mo = stats?.sold_count_12months ?? 0;
-  if (typical && countFor12mo >= K_ANON_PRICE) {
+  // GRADUATED sale price. saleBasis.window==='12mo' fires on exactly the old condition
+  // (typical && sold_count_12months>=5), so rich pages keep the identical value; the
+  // 'full' path is the ~26mo fallback that un-barrens sub-k5-in-12mo streets. Every
+  // priced tile carries the mandatory window+sample disclosure (basis).
+  const saleBasis = enrichment.saleBasis;
+  if (saleBasis) {
+    const is12 = saleBasis.window === "12mo";
+    const priceVal = is12 && typical ? typical : saleBasis.typical; // 12mo path byte-identical
     const lo = num(soldRange?.lo ?? null);
     const hi = num(soldRange?.hi ?? null);
-    const showRange = soldRange && soldRange.n >= K_ANON_RANGE && lo !== null && hi !== null;
+    const showRange = is12 && soldRange && soldRange.n >= K_ANON_RANGE && lo !== null && hi !== null;
     heroStats.push({
       label: "Typical price",
-      value: formatCAD(roundPriceForProse(typical)),
+      value: formatCAD(roundPriceForProse(priceVal)),
       sub: showRange ? `range ${formatCADShort(roundPriceForProse(lo!))} to ${formatCADShort(roundPriceForProse(hi!))}` : undefined,
+      basis: windowDisclosure(saleBasis),
     });
   } else {
     heroStats.push({
@@ -668,29 +693,28 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     });
   }
 
-  // Lease pills — simpler shape, only condo and townhouse tend to have data.
+  // Lease pill — GRADUATED (12mo preferred, ~26mo fallback) so lease-deep-but-sale-thin
+  // streets light up (the ~38). One rent pill, k>=5 gated inside leaseBasis.
   const leasePills: ProductPillData[] = [];
-  const lease1 = num(stats?.avg_leased_price_1bed ?? null);
-  const lease2 = num(stats?.avg_leased_price_2bed ?? null);
-  const lease3 = num(stats?.avg_leased_price_3bed ?? null);
-  if ((stats?.leased_count_12months ?? 0) >= K_ANON_PRICE && (lease2 || lease1 || lease3)) {
-    const typicalRent = num(stats?.avg_leased_price ?? null) || (lease2 ?? lease1 ?? lease3) || null;
+  const leaseBasis = enrichment.leaseBasis;
+  if (leaseBasis) {
     leasePills.push({
       type: "condo",
       displayName: "Lease",
-      count: stats!.leased_count_12months,
-      typicalPrice: typicalRent,
-      priceLabel: typicalRent ? "typical / mo" : "sample too small",
+      count: leaseBasis.count,
+      typicalPrice: leaseBasis.typical,
+      priceLabel: "typical / mo",
       anchor: "#type-condo",
     });
   }
 
   const productTypePills: ProductPillRow[] = [];
   if (soldPills.length > 0) {
-    productTypePills.push({ label: "Recent sales", dotColor: "navy", pills: soldPills });
+    // per-type pills are always the 12mo sold aggregate — disclose it on the row.
+    productTypePills.push({ label: "Recent sales · last 12 months", dotColor: "navy", pills: soldPills });
   }
-  if (leasePills.length > 0) {
-    productTypePills.push({ label: "Recent leases", dotColor: "blue", pills: leasePills });
+  if (leasePills.length > 0 && leaseBasis) {
+    productTypePills.push({ label: `Recent leases · ${leaseDisclosure(leaseBasis)}`, dotColor: "blue", pills: leasePills });
   }
 
   return {
@@ -699,8 +723,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     subtitle,
     heroStats,
     productTypePills,
-    rawTypicalPrice:
-      typical && countFor12mo >= K_ANON_PRICE ? typical : null,
+    // 12mo path keeps the exact prior raw value (byte-identical render); 'full' path
+    // exposes the ~26mo graduated price so widened streets stop rendering "—".
+    rawTypicalPrice: saleBasis
+      ? (saleBasis.window === "12mo" && typical ? typical : saleBasis.typical)
+      : null,
     rawTotalTransactions: totalTransactions,
   };
 }
@@ -967,8 +994,9 @@ function buildGlanceTiles(input: {
   allListings: Listing[];
   typeAggs: RawTypeAgg[];
   soldRange: { n: number; lo: string | null; hi: string | null } | null;
+  enrichment: StreetEnrichment;
 }): GlanceTile[] {
-  const { stats, allListings, typeAggs, soldRange } = input;
+  const { stats, allListings, typeAggs, soldRange, enrichment } = input;
   const active = allListings.filter((l) => l.status === "active");
 
   const tiles: GlanceTile[] = [];
@@ -976,10 +1004,15 @@ function buildGlanceTiles(input: {
   tiles.push({ label: "Transactions tracked", value: String(stats?.sold_count_12months ?? 0), detail: "recent activity" });
 
   const typical = num(stats?.avg_sold_price ?? null);
+  // GRADUATED to match the hero: 12mo value byte-identical, ~26mo fallback un-barrens,
+  // detail carries the mandatory window+sample disclosure.
+  const gSale = enrichment.saleBasis;
   tiles.push({
     label: "Typical sold",
-    value: typical && (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE ? formatCADShort(roundPriceForProse(typical)) : "—",
-    detail: (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE ? "across sale records" : "under publish threshold",
+    value: gSale
+      ? formatCADShort(roundPriceForProse(gSale.window === "12mo" && typical ? typical : gSale.typical))
+      : "—",
+    detail: gSale ? windowDisclosure(gSale) : "under publish threshold",
   });
 
   const dom = num(stats?.avg_dom ?? null);
