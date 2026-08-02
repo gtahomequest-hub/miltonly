@@ -781,6 +781,16 @@
   pointer-events: none;
   user-select: none;
 }
+/* The .s-gate overlay is position:absolute; inset:0, so its height tracks the container. For an
+   anon/gated page the sold-records table body is EMPTY, collapsing the container to cap+header
+   (~98px) — shorter than the overlay's own content (~135px desktop, up to ~189px for a long street
+   name wrapping at mobile widths) — so overflow:hidden clipped the headline top + CTA bottom and the
+   cap bled through the translucent gradient. Reserve enough height for the overlay to fully contain
+   its content at every viewport. Applies ONLY to the gated state — an authed page with rows sizes to
+   the table as before. (Presentation only; the gate's behaviour/copy/reveal are unchanged.) */
+.street-v2 .s-records.s-gated {
+  min-height: 240px;
+}
 .street-v2 .s-records .s-gate {
   position: absolute;
   inset: 0;
