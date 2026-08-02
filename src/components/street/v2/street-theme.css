@@ -789,7 +789,14 @@
    its content at every viewport. Applies ONLY to the gated state — an authed page with rows sizes to
    the table as before. (Presentation only; the gate's behaviour/copy/reveal are unchanged.) */
 .street-v2 .s-records.s-gated {
-  min-height: 240px;
+  min-height: 220px;
+}
+/* Mobile: the headline "See every closed sale on <street>" wraps to 3+ lines for long names
+   (measured up to ~241px content at 390px), so reserve more there. */
+@media (max-width: 720px) {
+  .street-v2 .s-records.s-gated {
+    min-height: 300px;
+  }
 }
 .street-v2 .s-records .s-gate {
   position: absolute;
