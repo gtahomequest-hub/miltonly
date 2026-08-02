@@ -14,8 +14,18 @@ function money(n: number | null): string {
 }
 const full = (n: number | null) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
 
+// The registry name arrives abbreviated + directional ("Clarriage Crt E"); show the canonical
+// display form. (Production would use expandStreetName; inlined here to stay self-contained.)
+function cleanName(raw: string): string {
+  return raw
+    .replace(/\bCrt\b/gi, 'Court').replace(/\bDr\b/gi, 'Drive').replace(/\bRd\b/gi, 'Road')
+    .replace(/\bAve\b/gi, 'Avenue').replace(/\bBlvd\b/gi, 'Boulevard').replace(/\bCres\b/gi, 'Crescent')
+    .replace(/\s+[EWNS]$/, '').trim();
+}
+
 export function TerminalStreetPage({ facts, analysis }: { facts: ClarriageFacts; analysis: string[] }) {
   const f = facts;
+  const displayName = cleanName(f.name);
   // group the sqft distribution into the two markets the street actually is
   const condoSqft = f.mix.sqft.filter((s) => /^[5-9]\d\d|^1000/.test(s.range)).reduce((a, s) => a + s.n, 0);
   const freeholdSqft = f.mix.sqft.filter((s) => /^1[1-9]\d\d|^[2-9]\d\d\d/.test(s.range)).reduce((a, s) => a + s.n, 0);
@@ -29,7 +39,7 @@ export function TerminalStreetPage({ facts, analysis }: { facts: ClarriageFacts;
       <header className="tp-hero">
         <div className="tp-wrap">
           <div className="tp-eyebrow">Street profile · {f.neighbourhood} · Milton, ON</div>
-          <h1 className="tp-h1">{f.name}</h1>
+          <h1 className="tp-h1">{displayName}</h1>
           <p className="tp-thesis">
             Two housing markets on one street: the 1440&nbsp;Clarriage&nbsp;Court condominium, and a row of
             freehold townhomes and semis. Read the average with that in mind.
