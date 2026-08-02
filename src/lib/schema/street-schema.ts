@@ -86,16 +86,30 @@ export function buildLocalBusinessSchema(data: StreetPageData): object {
  * Street as a Place, contained in its neighbourhood(s), contained in Milton, Ontario.
  */
 export function buildPlaceSchema(data: StreetPageData): object {
-  const containedInPlace = data.street.neighbourhoods.map((n) => ({
-    "@type": "Place",
-    name: n,
-    "@id": `${SITE_URL}/neighbourhoods/${slugifyNbhd(n)}`,
-    containedInPlace: {
-      "@type": "City",
-      name: config.CITY_NAME,
-      containedInPlace: { "@type": "AdministrativeArea", name: config.CITY_PROVINCE },
-    },
-  }));
+  // containedInPlace prefers the RESOLVED published-hub links (data.contextCards.neighbourhoods —
+  // registry-resolved + gated on published HubContent, the SAME resolution as the visible up-link),
+  // so the @id is a real /neighbourhoods/<slug> URL, not the old name-guess that emitted broken hub
+  // URLs (Walker → /neighbourhoods/1051---walker). When nothing resolves to a published hub, fall
+  // back to name-only Places (valid schema, no dead link).
+  const city = {
+    "@type": "City",
+    name: config.CITY_NAME,
+    containedInPlace: { "@type": "AdministrativeArea", name: config.CITY_PROVINCE },
+  };
+  const resolvedHubs = data.contextCards?.neighbourhoods ?? [];
+  const containedInPlace =
+    resolvedHubs.length > 0
+      ? resolvedHubs.map((h) => ({
+          "@type": "Place",
+          name: h.name,
+          "@id": `${SITE_URL}/neighbourhoods/${h.slug}`,
+          containedInPlace: city,
+        }))
+      : data.street.neighbourhoods.map((n) => ({
+          "@type": "Place",
+          name: n,
+          containedInPlace: city,
+        }));
 
   return {
     "@type": "Place",
@@ -251,16 +265,11 @@ export function buildStreetPageSchema(
     if (saleOffer) graph.push(saleOffer);
   }
 
-  const diffPriorities = resolved.sections.find(
-    (s) => s.id === "differentPriorities"
-  );
-  const alternatives = diffPriorities
-    ? buildAlternativesItemListSchema(
-        diffPriorities.paragraphs.map((p) => ({ strong: "", body: p })),
-        data.street.slug,
-      )
-    : null;
-  if (alternatives) graph.push(alternatives);
+  // DROPPED (A2): the "alternative streets" ItemList sourced from prose paragraphs, so every item
+  // had an EMPTY name (strong:"") and NO url — an ItemList that names and points at nothing. Prose
+  // can't yield real published-street slugs, so rather than ship an inert node we omit it. Genuine
+  // street-to-street linking now lives on /neighbourhoods/[slug]/streets (published 200s only).
+  // (buildAlternativesItemListSchema is left exported for its unit test; simply no longer emitted.)
 
   const nearby = buildNearbyPlacesItemListSchema(
     data.descriptionSidebar.nearbyPlaces,
@@ -293,9 +302,7 @@ function categoryToSchemaType(category: string): string {
   return "Place";
 }
 
-function slugifyNbhd(name: string): string {
-  return name.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-}
+// (slugifyNbhd removed — it produced unvalidated /neighbourhoods/ @id URLs; see buildPlaceSchema.)
 
 // ────────────────────────────────────────────────────────────────────
 // Inference helpers — pull numeric meta out of the stat cells.

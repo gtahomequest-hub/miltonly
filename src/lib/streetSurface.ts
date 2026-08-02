@@ -18,3 +18,10 @@ import type { Prisma } from "@prisma/client";
 export const SURFACED_STREET_WHERE = {
   OR: [{ recencyWeightedSold: { gt: 0 } }, { hasPublishedPage: true }],
 } satisfies Prisma.ResidentialStreetWhereInput;
+
+// The hub street-ladder cap. The /neighbourhoods/[slug]/streets OVERFLOW page (and the hub's
+// "View all streets →" link, and its sitemap entry) only exist when a neighbourhood has MORE
+// published streets than the ladder can show — otherwise the ladder already links every published
+// street and the overflow page would be redundant + thin (scaled-content risk). Floor = published
+// street count STRICTLY GREATER THAN this cap.
+export const HUB_STREET_LADDER_CAP = 12;

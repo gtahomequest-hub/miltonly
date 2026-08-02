@@ -196,9 +196,11 @@ export function HubStreets({ data }: { data: HubData }) {
             <span className="h-eyebrow">Street by street</span>
             <h2>Streets in {data.name}</h2>
           </div>
-          <a className="h-more" href={`/neighbourhoods/${data.slug}/streets`}>
-            View all streets →
-          </a>
+          {data.hasStreetOverflow && (
+            <a className="h-more" href={`/neighbourhoods/${data.slug}/streets`}>
+              View all streets →
+            </a>
+          )}
         </div>
         <div className="h-streets" style={{ marginTop: 28 }}>
           {data.streets.map((s) => (
