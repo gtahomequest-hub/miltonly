@@ -32,7 +32,7 @@
   background: radial-gradient(120% 140% at 100% 0%, var(--tp-deep-2), var(--tp-deep) 60%);
   color: #fff;
   padding: 34px 0 30px;
-  border-bottom: 1px solid rgba(0, 255, 128, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .tp-eyebrow { font-family: var(--tp-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
 .tp-h1 { font-family: var(--tp-serif); font-weight: 400; font-size: clamp(32px, 8vw, 52px); line-height: 1.02; margin: 10px 0 0; letter-spacing: -0.01em; }
