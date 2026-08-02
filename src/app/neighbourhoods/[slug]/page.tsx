@@ -70,19 +70,17 @@ export default async function NeighbourhoodPage({ params }: Props) {
   let hubSchema: Record<string, unknown> | null = null;
   try {
     const input = data.profile === "urban" ? await buildHubInput(params.slug) : await buildRuralHubInput(params.slug);
-    // PUBLISHED-ONLY: the hub JSON-LD ItemList must list only streets with a published
-    // page (same gate as the visible ladder/VIP). Without this the schema advertises the
-    // surfaced-but-unpublished /streets/ URLs that DEC-SEO-1 will 404 (moffat: 5 -> 1).
-    const projectedSlugs = input.projectedStreets.map((s) => s.slug);
-    const publishedSlugs = new Set(
-      projectedSlugs.length
-        ? (await prisma.streetContent.findMany({
-            where: { status: "published", streetSlug: { in: projectedSlugs } },
-            select: { streetSlug: true },
-          })).map((r) => r.streetSlug)
-        : [],
-    );
-    hubSchema = projectHubSchema(input, publishedSlugs) as unknown as Record<string, unknown>;
+    // The hub JSON-LD ItemList mirrors exactly what the page renders: the published-only,
+    // capped ladder (data.streets) plus any VIP-strip street not already in it. data.streets /
+    // data.vipStreets are already published-only + capped by getHubData, so the schema declares
+    // no /streets/ URL that isn't visible on the page (and none that DEC-SEO-1 will 404). The full
+    // per-neighbourhood published list is declared separately by the /streets overflow page.
+    const ladderSlugs = new Set(data.streets.map((s) => s.slug));
+    const renderedStreets = [
+      ...data.streets.map((s) => ({ name: s.name, slug: s.slug })),
+      ...data.vipStreets.filter((v) => !ladderSlugs.has(v.slug)).map((v) => ({ name: v.name, slug: v.slug })),
+    ];
+    hubSchema = projectHubSchema(input, renderedStreets) as unknown as Record<string, unknown>;
   } catch {
     hubSchema = null;
   }
