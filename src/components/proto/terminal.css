@@ -1,14 +1,19 @@
-/* src/components/proto/terminal.css — PROTOTYPE v5 (recomposed on ONE grid; data/copy unchanged).
+/* src/components/proto/terminal.css — PROTOTYPE v6 (five observed defects fixed; data/copy unchanged).
    ONE 12-col grid · 3 module widths (full-bleed / wide-8 / narrow-4) · 2 full-bleed only (hero, CTA) ·
    4 type steps (display/head/label/body) · 1 section-boundary rhythm · same treatment per kind of thing.
-   Palette: forest #073126, accent #017848, signal green (CTA only), neutrals. */
+   Palette: forest #073126, accent #017848, signal green (CTA only), neutrals.
+   v6: (1) hero/body/CTA share ONE spine — .tp-grid + .tp-mod, so there is a single left edge;
+   (2) "The read" is an explicit 2-col grid, not CSS multicol — no empty column region is possible;
+   (3) bar tone is semantic (subject = accent, context = muted), never positional;
+   (4) the quarterly axis is contiguous — a quarter with no recorded sales is a hatched, labelled slot;
+   (5) the schools caveat is a caption-style footnote line, not an inline run-on. */
 .tp {
   --forest: #073126;
   --forest-2: #0a3f30;
   --accent: #017848;
   --accent-deep: #063a29;
   --signal: #00ff80;            /* CTA ONLY */
-  --tone-a: #bccdc4;            /* the lighter bar (condo / street) */
+  --tone-context: #bccdc4;      /* the muted bar — means "context", never "second in the array" */
   --ink: #17221d;
   --muted: #56635b;
   --faint: #8a978d;
@@ -22,6 +27,7 @@
   --maxw: 1200px;
   --gut: clamp(20px, 5vw, 48px);
   --sec-gap: clamp(40px, 5vw, 60px);   /* the ONE section-boundary value */
+  --col-gap: 24px;                     /* the ONE grid gutter */
   /* four type steps — nothing else exists */
   --t-display: clamp(52px, 11vw, 84px);
   --t-head: 27px;
@@ -34,7 +40,15 @@
   overflow-x: clip;
 }
 .tp * { box-sizing: border-box; }
-.tp-wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gut); }
+
+/* ══ THE SPINE ══════════════════════════════════════════════════════════════════════════════════
+   ONE rule pair owns horizontal position for the WHOLE page. .tp-grid is the 12-col field;
+   .tp-mod is the wide 8-col module (cols 3–10). Hero, body sections and CTA all use them, so the
+   hero eyebrow, the h1, the display number and every section h2 resolve to the SAME left x by
+   construction — not by two rules that happen to agree. Full-bleed bands stay full-bleed: the band
+   is the parent, the spine is the child. */
+.tp-grid { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gut); }
+.tp-mod { min-width: 0; }
 
 /* ── the four type steps ── */
 .tp-display { font-family: var(--serif); font-weight: 500; font-size: var(--t-display); line-height: 0.85; letter-spacing: -0.035em; }
@@ -57,8 +71,7 @@
 .tp-kv .tp-lbl { color: rgba(255, 255, 255, 0.55); }
 .tp-kv b { color: #fff; }
 
-/* ══ BODY — the 12-col grid. Sections live in cols 3–10 (wide = 8). ══ */
-.tp-body { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gut); }
+/* ══ BODY — sections are .tp-mod on the shared spine ══ */
 .tp-sec + .tp-sec { margin-top: var(--sec-gap); }
 .tp-sec-head { margin-bottom: 18px; }
 .tp-sec-head .tp-lbl { display: block; margin-bottom: 6px; color: var(--accent); }
@@ -69,28 +82,44 @@
 .tp-lbl { display: block; }
 .tp-stat .tp-lbl { margin-bottom: 6px; }
 .tp-stat .tp-body-t { color: var(--ink); }
-.tp-cap-inline { color: var(--faint); }
+/* a footnote under a stat — caption style, its own line, never run into the data above it.
+   Two class names deep so it beats .tp-cap's own !important margin regardless of source order. */
+.tp-stat .tp-stat-note { margin-top: 8px !important; }
 
-/* ── the ONE chart (split == comparison) ── */
+/* ── the ONE chart (split == comparison). Tone is SEMANTIC: subject strong, context muted. ── */
 .tp-chart { display: flex; flex-direction: column; gap: 12px; }
 .tp-chart-row { display: grid; grid-template-columns: minmax(96px, 150px) 1fr auto; align-items: center; gap: 16px; }
 .tp-chart-lbl { margin: 0; }
 .tp-chart-track { height: 26px; background: var(--line-2); border-radius: 2px; overflow: hidden; }
 .tp-chart-fill { display: block; height: 100%; border-radius: 2px; }
-.tp-tone-a { background: var(--tone-a); }
-.tp-tone-b { background: var(--accent); }
+.tp-tone-subject { background: var(--accent); }
+.tp-tone-context { background: var(--tone-context); }
 .tp-chart-val { font-family: var(--mono); font-size: var(--t-head); font-weight: 500; color: var(--accent-deep); font-variant-numeric: tabular-nums; line-height: 1; }
 .tp-cap { font-family: var(--mono) !important; font-size: var(--t-label) !important; line-height: 1.4 !important; color: var(--faint) !important; text-transform: none; letter-spacing: 0; margin: 4px 0 0 !important; }
 
 /* ── the sparkline: a data label with a shape (not a section) ── */
-.tp-spark { display: flex; align-items: flex-end; gap: 6px; height: 88px; margin: 10px 0 8px; max-width: 360px; }
+.tp-spark { display: flex; align-items: flex-end; gap: 6px; height: 96px; margin: 10px 0 8px; max-width: 520px; }
 .tp-spark-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; }
 .tp-spark-bar { width: 100%; background: var(--accent); border-radius: 2px 2px 0 0; position: relative; min-height: 3px; }
 .tp-spark-n { position: absolute; top: -15px; left: 0; color: var(--muted); }
-.tp-spark-x { margin-top: 6px; letter-spacing: -0.02em; }
+/* a quarter with no recorded sales: zero height, but VISIBLE — hatched slot, its own label, an
+   explicit 0. The silence is shown, not skipped. */
+.tp-spark-bar.is-empty { background: none; min-height: 0; }
+.tp-spark-bar.is-empty::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 10px;
+  background: repeating-linear-gradient(45deg, var(--tone-context) 0 2px, transparent 2px 5px);
+}
+/* clear of the hatch, so the explicit 0 stays legible instead of sitting on top of it */
+.tp-spark-bar.is-empty .tp-spark-n { top: -28px; color: var(--faint); font-weight: 500; }
+/* the labels' top rule is the axis baseline — so a zero-height quarter still sits on a visible floor */
+.tp-spark-x { margin-top: 0; padding-top: 6px; border-top: 1px solid var(--line); letter-spacing: -0.02em; }
 
-/* ── Layer 2 — same grid; two prose columns, pull-quote a full-width break ── */
-.tp-read-p { font-family: var(--serif); color: #2b3730; margin: 0 0 14px; break-inside: avoid; }
+/* ── Layer 2 — each block is its OWN multicol container and the pull-quote is a sibling BETWEEN
+   them, so nothing uses column-span and no flow is ever fragmented. Paragraphs may break across the
+   column boundary, which is what lets the two columns equalise in HEIGHT. ── */
+.tp-read-p { font-family: var(--serif); color: #2b3730; margin: 0 0 14px; }
+.tp-read-p:last-child { margin-bottom: 0; }
+.tp-read-cols { column-count: 1; }
 .tp-pull { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: var(--t-head); line-height: 1.28; color: var(--accent-deep); text-align: center; margin: 8px auto 18px; max-width: 34ch; }
 
 /* ══ CTA — full-bleed #2 (direct child of .tp) ══ */
@@ -102,16 +131,25 @@
 
 /* ══ DESKTOP: the grid engages ══ */
 @media (min-width: 760px) {
-  .tp-hero { padding: 46px 0 40px; }
-  .tp-hero-grid { grid-template-columns: 1.25fr 0.75fr; gap: clamp(40px, 6vw, 88px); }
-  /* 12 columns; every section is the wide 8-col module, centred (cols 3–10) */
-  .tp-body { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; row-gap: var(--sec-gap); }
-  .tp-sec { grid-column: 3 / 11; }
+  /* the spine — 12 columns; the wide module is cols 3–10. Hero, sections and CTA all inherit this. */
+  .tp-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); }
+  .tp-mod { grid-column: 3 / 11; }
+  .tp-body { row-gap: var(--sec-gap); }
   .tp-sec + .tp-sec { margin-top: 0; }              /* row-gap owns the rhythm */
+
+  .tp-hero { padding: 46px 0 40px; }
+  /* the hero's own split is 5 cols + 3 cols of the same 12 — it lands on real grid lines */
+  .tp-hero-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); row-gap: 0; column-gap: var(--col-gap); align-items: end; }
+  .tp-hero-figure { grid-column: 1 / 6; }
+  .tp-hero-rail { grid-column: 6 / 9; }
+
   /* content is a 2-up grid; stats are the narrow (4-col) module, spanning items are wide (8-col) */
-  .tp-sec-c { grid-template-columns: 1fr 1fr; column-gap: 24px; row-gap: 24px; }
+  .tp-sec-c { grid-template-columns: 1fr 1fr; column-gap: var(--col-gap); row-gap: 24px; }
   .tp-span { grid-column: 1 / -1; }
-  .tp-read-body { column-count: 2; column-gap: 40px; column-rule: 1px solid var(--line-2); }
-  .tp-pull { column-span: all; max-width: none; padding: 12px 0; margin: 8px 0 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+  /* a plain balanced 2-col flow — no spanner inside it, so the browser balances it normally */
+  .tp-read-cols { column-count: 2; column-gap: 40px; column-rule: 1px solid var(--line-2); column-fill: balance; }
+  .tp-pull { max-width: none; padding: 12px 0; margin: 22px 0 22px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
   .tp-cta-in { flex-direction: row; justify-content: space-between; align-items: center; }
 }
