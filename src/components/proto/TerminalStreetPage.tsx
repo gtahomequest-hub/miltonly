@@ -1,8 +1,10 @@
 // src/components/proto/TerminalStreetPage.tsx
 // PROTOTYPE two-layer street page. Server component. Layer 1 = deterministic blocks (every number lives
-// here). Layer 2 = grounded prose with no volatile numbers. New file — imports none of the files
-// feat/street-tier-rich touches. v3: layout only (focal rhythm + scrollbar-safe bleed); data/copy unchanged.
+// here). Layer 2 = grounded prose with no volatile numbers. v5: ONE 12-col grid, one stat treatment, one
+// shared bar-chart component (split + comparison), 2 full-bleed only (hero + CTA, both direct children of
+// .tp so full-width is pure CSS — no scrollbar script). Data, blocks and copy are VERBATIM from prior pass.
 import './terminal.css';
+import type { ReactNode } from 'react';
 import type { ClarriageFacts } from '@/lib/proto/clarriageData';
 
 // ---- number formatters (compact for headlines, full for rents) ----
@@ -23,208 +25,199 @@ function cleanName(raw: string): string {
     .replace(/\s+[EWNS]$/, '').trim();
 }
 
-// Scrollbar-safe full-bleed: `100vw` includes the classic (layout) scrollbar, so a 100vw band overshoots
-// the content area by the scrollbar width. There is no pure-CSS "viewport minus scrollbar" unit (vw AND
-// dvw both include it), so a one-shot measurement exposes it as --sbw for calc(). ~120 bytes, runs once
-// + on resize; the CSS falls back to 0px before it runs (overflow-x:clip covers that first frame).
-const SBW_SCRIPT =
-  "(function(){var d=document.documentElement;function s(){d.style.setProperty('--sbw',(window.innerWidth-d.clientWidth)+'px')}s();window.addEventListener('resize',s)})();";
+// ── the ONE stat treatment: a mono label + a body line. Every fact-block on the page is one of these. ──
+function Stat({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
+  return (
+    <div className={wide ? 'tp-stat tp-span' : 'tp-stat'}>
+      <div className="tp-lbl">{label}</div>
+      <p className="tp-body-t">{children}</p>
+    </div>
+  );
+}
+
+// ── the ONE chart: horizontal bars on a shared axis. Split and comparison are the SAME component. ──
+type Row = { label: string; value: string; pct: number; tone: 'a' | 'b' };
+function BarChart({ rows, caption }: { rows: Row[]; caption: string }) {
+  return (
+    <div className="tp-chart tp-span" role="img" aria-label={caption}>
+      {rows.map((r) => (
+        <div className="tp-chart-row" key={r.label}>
+          <div className="tp-lbl tp-chart-lbl">{r.label}</div>
+          <div className="tp-chart-track"><i className={`tp-chart-fill tp-tone-${r.tone}`} style={{ width: `${Math.max(2, r.pct)}%` }} /></div>
+          <div className="tp-chart-val">{r.value}</div>
+        </div>
+      ))}
+      <div className="tp-cap">{caption}</div>
+    </div>
+  );
+}
 
 export function TerminalStreetPage({ facts, analysis }: { facts: ClarriageFacts; analysis: string[] }) {
   const f = facts;
   const displayName = cleanName(f.name);
-  // group the sqft distribution into the two markets the street actually is
   const condoSqft = f.mix.sqft.filter((s) => /^[5-9]\d\d|^1000/.test(s.range)).reduce((a, s) => a + s.n, 0);
   const freeholdSqft = f.mix.sqft.filter((s) => /^1[1-9]\d\d|^[2-9]\d\d\d/.test(s.range)).reduce((a, s) => a + s.n, 0);
+  const maxSqft = Math.max(1, condoSqft, freeholdSqft);
   const maxQ = Math.max(1, ...f.quarterlyVolume.map((q) => q.n));
-  // sold-to-ask temperature: below 100% reads cooler. Position on a 90-105 scale.
-  const staPos = f.sale.soldToAsk != null ? Math.max(0, Math.min(100, ((f.sale.soldToAsk - 90) / 15) * 100)) : null;
-  // street-vs-Ford comparison bar widths (visualising two numbers that already appear in the blocks below)
   const areaTypical = f.area?.typical ?? null;
   const cmpBase = Math.max(f.sale.median ?? 0, areaTypical ?? 0) || 1;
-  const streetPct = f.sale.median != null ? Math.round((f.sale.median / cmpBase) * 100) : 0;
-  const fordPct = areaTypical != null ? Math.round((areaTypical / cmpBase) * 100) : 0;
+  const rents = f.rental.byBed.filter((b) => b.median != null);
 
   return (
     <div className="tp">
-      <script dangerouslySetInnerHTML={{ __html: SBW_SCRIPT }} />
-      {/* ── HERO — one dominant number as a design element ── */}
+      {/* ══ HERO — the one moment of maximum contrast (full-bleed #1) ══ */}
       <header className="tp-hero">
-        <div className="tp-wrap">
-          <div className="tp-eyebrow">Street profile · {f.neighbourhood} · Milton, ON</div>
-          <h1 className="tp-h1">{displayName}</h1>
-          <p className="tp-thesis">
+        <div className="tp-wrap tp-hero-in">
+          <div className="tp-lbl tp-hero-eyebrow">Street profile · {f.neighbourhood} · Milton, ON</div>
+          <h1 className="tp-head tp-h1">{displayName}</h1>
+          <p className="tp-body-t tp-thesis">
             Two housing markets on one street: the 1440&nbsp;Clarriage&nbsp;Court condominium, and a row of
             freehold townhomes and semis. Read the average with that in mind.
           </p>
           <div className="tp-hero-grid">
-            <div className="tp-hero-num">
-              <div className="tp-bignum">{money(f.sale.median)}</div>
-              <div className="tp-bignum-l">typical sold price</div>
-              <div className="tp-bignum-s">median of {f.sale.fullN} sales · last ~2 years</div>
+            <div>
+              <div className="tp-display">{money(f.sale.median)}</div>
+              <div className="tp-lbl tp-display-l">typical sold price · median of {f.sale.fullN} sales · last ~2 years</div>
             </div>
-            <div className="tp-hero-side">
-              <div className="tp-kv"><span>Range</span><b>{f.sale.range ? `${money(f.sale.range.lo)} – ${money(f.sale.range.hi)}` : '—'}</b></div>
-              <div className="tp-kv"><span>Days to sell</span><b>{f.sale.dom ?? '—'}</b></div>
-              <div className="tp-kv"><span>Sold-to-ask</span><b>{f.sale.soldToAsk != null ? `${f.sale.soldToAsk}%` : '—'}</b></div>
-              {staPos != null && (
-                <div className="tp-temp" aria-label={`Sold-to-ask ${f.sale.soldToAsk}% — cooler`}>
-                  <div className="tp-temp-track"><span className="tp-temp-mark" style={{ left: `${staPos}%` }} /></div>
-                  <div className="tp-temp-lbls"><span>cooler</span><span>at ask</span><span>hotter</span></div>
-                </div>
-              )}
+            <div className="tp-hero-rail">
+              <div className="tp-kv"><span className="tp-lbl">Range</span><b className="tp-body-t">{f.sale.range ? `${money(f.sale.range.lo)} – ${money(f.sale.range.hi)}` : '—'}</b></div>
+              <div className="tp-kv"><span className="tp-lbl">Days to sell</span><b className="tp-body-t">{f.sale.dom ?? '—'}</b></div>
+              <div className="tp-kv"><span className="tp-lbl">Sold-to-ask</span><b className="tp-body-t">{f.sale.soldToAsk != null ? `${f.sale.soldToAsk}%` : '—'}</b></div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="tp-wrap tp-body">
-        {/* ── H2: what it's made of — FOCAL: the full-bleed split (shape) ── */}
+      <main className="tp-body">
+        {/* 1 · what it's made of */}
         <section className="tp-sec">
-          <h2 className="tp-h2">What Clarriage Court is made of</h2>
-          <div className="tp-block tp-lead">
-            <h3 className="tp-h3">Why one price can&rsquo;t describe this street</h3>
-            <p>
+          <div className="tp-sec-head"><h2 className="tp-head">What Clarriage Court is made of</h2></div>
+          <div className="tp-sec-c">
+            <Stat label="Why one price can’t describe this street" wide>
               Home sizes here split cleanly into two groups: condominium units of roughly {condoSqft ? `${condoSqft} recorded sales at ` : ''}500–999&nbsp;sq&nbsp;ft, and
               freehold houses of {freeholdSqft ? `${freeholdSqft} at ` : ''}1,100&nbsp;sq&nbsp;ft and up. A stacked apartment and a house with a yard trade under the same street name,
               which is why a single midpoint understates the freehold end and overstates the condo end.
-            </p>
-          </div>
-          {/* the shape that earns full-bleed: condo vs freehold under one address */}
-          <div className="tp-split tp-bleed">
-            <div className="tp-split-a"><b>{condoSqft}</b><span>condo-scale sales<br />500–999 sq ft</span></div>
-            <div className="tp-split-bar"><i style={{ flex: condoSqft || 1 }} className="tp-split-condo" /><i style={{ flex: freeholdSqft || 1 }} className="tp-split-free" /></div>
-            <div className="tp-split-b"><b>{freeholdSqft}</b><span>freehold-scale sales<br />1,100 sq ft +</span></div>
-          </div>
-          <div className="tp-block">
-            <h3 className="tp-h3">The 1440 Clarriage Court condo anchors the small-unit end</h3>
-            <p>
+            </Stat>
+            <BarChart
+              caption="Recorded sales by home size"
+              rows={[
+                { label: 'Condo-scale · 500–999 sq ft', value: String(condoSqft), pct: (condoSqft / maxSqft) * 100, tone: 'a' },
+                { label: 'Freehold-scale · 1,100 sq ft +', value: String(freeholdSqft), pct: (freeholdSqft / maxSqft) * 100, tone: 'b' },
+              ]}
+            />
+            <Stat label="The 1440 Clarriage Court condo anchors the small-unit end" wide>
               The building is on record as a distinct condominium on this street. It supplies the compact, entry-priced
-              units and drives the street&rsquo;s unusually deep rental market below. Its exact unit count and build year
-              aren&rsquo;t in our data yet — see the gap list.
-            </p>
+              units and drives the street’s unusually deep rental market below. Its exact unit count and build year
+              aren’t in our data yet — see the gap list.
+            </Stat>
           </div>
         </section>
 
-        {/* ── H2: cost — FOCAL: street-vs-Ford comparison ── */}
+        {/* 2 · cost */}
         <section className="tp-sec">
-          <h2 className="tp-h2">What it costs, and why the average misleads</h2>
-          {areaTypical != null && f.sale.median != null && (
-            <div className="tp-compare" role="img" aria-label={`Clarriage typical ${money(f.sale.median)} versus ${f.area?.neighbourhood ?? 'Ford'} typical ${money(areaTypical)}`}>
-              <div className="tp-cmp-row">
-                <span className="tp-cmp-lbl">Clarriage Court</span>
-                <span className="tp-cmp-track"><i className="tp-cmp-fill tp-cmp-street" style={{ width: `${streetPct}%` }} /></span>
-                <b className="tp-cmp-val">{money(f.sale.median)}</b>
-              </div>
-              <div className="tp-cmp-row">
-                <span className="tp-cmp-lbl">{f.area?.neighbourhood ?? 'Ford'} area</span>
-                <span className="tp-cmp-track"><i className="tp-cmp-fill tp-cmp-area" style={{ width: `${fordPct}%` }} /></span>
-                <b className="tp-cmp-val">{money(areaTypical)}</b>
-              </div>
-              <div className="tp-cmp-cap">Typical sold price · median, last ~2 years</div>
-            </div>
-          )}
-          <div className="tp-grid2">
-            <div className="tp-block"><h3 className="tp-h3">The typical price</h3><p><b className="tp-inline">{full(f.sale.median)}</b> is the median across {f.sale.fullN} sales over the last two years. It is a true midpoint, but a midpoint between two different products.</p></div>
-            <div className="tp-block"><h3 className="tp-h3">The spread is the story</h3><p>Sales run from <b className="tp-inline">{money(f.sale.range?.lo ?? null)}</b> to <b className="tp-inline">{money(f.sale.range?.hi ?? null)}</b> — the low end a condo unit, the high end a large freehold home. Few Milton streets span this range.</p></div>
-            <div className="tp-block"><h3 className="tp-h3">What the last year looked like</h3><p>Over the last 12 months the median was <b className="tp-inline">{full(f.sale.median12)}</b> across {f.sale.n12} sales — below the two-year figure, because recent trading skewed toward the condo end.</p></div>
-            <div className="tp-block"><h3 className="tp-h3">How it sits against Ford</h3><p>The {f.area?.neighbourhood ?? 'Ford'} neighbourhood&rsquo;s typical home sells around <b className="tp-inline">{full(areaTypical)}</b>. Clarriage sits below it — its condo share is the reason, and its entry point into Ford is the opportunity.</p></div>
+          <div className="tp-sec-head"><h2 className="tp-head">What it costs, and why the average misleads</h2></div>
+          <div className="tp-sec-c">
+            {areaTypical != null && f.sale.median != null && (
+              <BarChart
+                caption="Typical sold price · median, last ~2 years"
+                rows={[
+                  { label: 'Clarriage Court', value: money(f.sale.median), pct: (f.sale.median / cmpBase) * 100, tone: 'a' },
+                  { label: `${f.area?.neighbourhood ?? 'Ford'} area`, value: money(areaTypical), pct: (areaTypical / cmpBase) * 100, tone: 'b' },
+                ]}
+              />
+            )}
+            <Stat label="The typical price"><b className="tp-num">{full(f.sale.median)}</b> is the median across {f.sale.fullN} sales over the last two years. It is a true midpoint, but a midpoint between two different products.</Stat>
+            <Stat label="The spread is the story">Sales run from <b className="tp-num">{money(f.sale.range?.lo ?? null)}</b> to <b className="tp-num">{money(f.sale.range?.hi ?? null)}</b> — the low end a condo unit, the high end a large freehold home. Few Milton streets span this range.</Stat>
+            <Stat label="What the last year looked like">Over the last 12 months the median was <b className="tp-num">{full(f.sale.median12)}</b> across {f.sale.n12} sales — below the two-year figure, because recent trading skewed toward the condo end.</Stat>
+            <Stat label="How it sits against Ford">The {f.area?.neighbourhood ?? 'Ford'} neighbourhood’s typical home sells around <b className="tp-num">{full(areaTypical)}</b>. Clarriage sits below it — its condo share is the reason, and its entry point into Ford is the opportunity.</Stat>
           </div>
         </section>
 
-        {/* ── H2: how it trades — FOCAL: compact volume sparkline (shape) beside the pace ── */}
+        {/* 3 · how it trades */}
         <section className="tp-sec">
-          <h2 className="tp-h2">How it trades</h2>
-          <div className="tp-trades">
-            <div className="tp-spark">
-              <div className="tp-bars" role="img" aria-label="Quarterly sales volume">
+          <div className="tp-sec-head"><h2 className="tp-head">How it trades</h2></div>
+          <div className="tp-sec-c">
+            <div className="tp-stat tp-span">
+              <div className="tp-lbl">Sales volume, quarter by quarter</div>
+              <div className="tp-spark" role="img" aria-label="Quarterly sales volume">
                 {f.quarterlyVolume.map((q) => (
-                  <div className="tp-bar-col" key={q.q}>
-                    <div className="tp-bar" style={{ height: `${Math.round((q.n / maxQ) * 100)}%` }}><span className="tp-bar-n">{q.n}</span></div>
-                    <div className="tp-bar-x">{q.q}</div>
+                  <div className="tp-spark-col" key={q.q}>
+                    <div className="tp-spark-bar" style={{ height: `${Math.round((q.n / maxQ) * 100)}%` }}><span className="tp-num tp-spark-n">{q.n}</span></div>
+                    <div className="tp-lbl tp-spark-x">{q.q}</div>
                   </div>
                 ))}
               </div>
-              <div className="tp-spark-cap">Sales volume, quarter by quarter</div>
+              <p className="tp-cap">Shown as transaction count, not price: with only a handful of sales per quarter, a per-quarter price line would sit below our publish threshold. Volume is the honest shape.</p>
             </div>
-            <div className="tp-trades-txt">
-              <div className="tp-block"><h3 className="tp-h3">The pace</h3><p>A home takes about <b className="tp-inline">{f.sale.dom ?? '—'} days</b> to sell and closes near <b className="tp-inline">{f.sale.soldToAsk ?? '—'}%</b> of asking — a patient, slightly-below-ask market, not a bidding-war street.</p></div>
-              <div className="tp-block"><h3 className="tp-h3">Direction, read safely</h3><p>The two figures that clear our threshold — the two-year median <b className="tp-inline">{money(f.pricePoints.full)}</b> and the last-12-month median <b className="tp-inline">{money(f.pricePoints.last12)}</b> — point down, but that reflects a shift in <em>what</em> sold as much as any change in value.</p></div>
-            </div>
+            <Stat label="The pace">A home takes about <b className="tp-num">{f.sale.dom ?? '—'} days</b> to sell and closes near <b className="tp-num">{f.sale.soldToAsk ?? '—'}%</b> of asking — a patient, slightly-below-ask market, not a bidding-war street.</Stat>
+            <Stat label="Direction, read safely">The two figures that clear our threshold — the two-year median <b className="tp-num">{money(f.pricePoints.full)}</b> and the last-12-month median <b className="tp-num">{money(f.pricePoints.last12)}</b> — point down, but that reflects a shift in <em>what</em> sold as much as any change in value.</Stat>
           </div>
-          <p className="tp-sub tp-foot">
-            Shown as transaction count, not price: with only a handful of sales per quarter, a per-quarter price line
-            would sit below our publish threshold. Volume is the honest shape.
-          </p>
         </section>
 
-        {/* ── H2: rental depth — FOCAL: display rent number ── */}
+        {/* 4 · rental depth */}
         <section className="tp-sec">
-          <h2 className="tp-h2">The rental market runs deeper than the sales market</h2>
-          <div className="tp-grid2">
-            <div className="tp-block"><h3 className="tp-h3">More homes lease here than sell</h3><p>The street recorded <b className="tp-inline">{f.rental.n} leases</b> in the last year against {f.sale.n12} sales — a condo-anchored signature. Typical rent runs <b className="tp-inline">{full(f.rental.median)}/mo</b>, leased in about <b className="tp-inline">{f.rental.dom ?? '—'} days</b>.</p></div>
-            <div className="tp-block">
-              <h3 className="tp-h3">By bedroom</h3>
-              <div className="tp-rents">
-                {f.rental.byBed.filter((b) => b.median != null).map((b) => (
-                  <div className="tp-rent" key={b.beds}><b>{full(b.median)}</b><span>{b.beds}-bed · {b.n} leases</span></div>
-                ))}
-                {f.rental.byBed.filter((b) => b.median != null).length === 0 && <p className="tp-sub">Per-bedroom rents are below the publish threshold.</p>}
-              </div>
-            </div>
+          <div className="tp-sec-head"><h2 className="tp-head">The rental market runs deeper than the sales market</h2></div>
+          <div className="tp-sec-c">
+            <Stat label="More homes lease here than sell">The street recorded <b className="tp-num">{f.rental.n} leases</b> in the last year against {f.sale.n12} sales — a condo-anchored signature. Typical rent runs <b className="tp-num">{full(f.rental.median)}/mo</b>, leased in about <b className="tp-num">{f.rental.dom ?? '—'} days</b>.</Stat>
+            <Stat label="By bedroom">
+              {rents.length ? rents.map((b, i) => (
+                <span key={b.beds}>{i > 0 ? ' · ' : ''}<b className="tp-num">{full(b.median)}</b> {b.beds}-bed · {b.n} leases</span>
+              )) : 'Per-bedroom rents are below the publish threshold.'}
+            </Stat>
           </div>
         </section>
 
-        {/* ── H2: location ── */}
+        {/* 5 · location */}
         <section className="tp-sec">
-          <h2 className="tp-h2">Where it sits, and what&rsquo;s reachable</h2>
-          <div className="tp-grid2">
-            <div className="tp-block"><h3 className="tp-h3">Commute reach</h3><p>Milton GO is about <b className="tp-inline">{f.commute.goDriveMin} min</b> by car and a Highway&nbsp;401 on-ramp about <b className="tp-inline">{f.commute.hwy401DriveMin} min</b> — measured from the {f.neighbourhood} area, not the doorstep.</p></div>
-            <div className="tp-block">
-              <h3 className="tp-h3">Nearest schools</h3>
-              <ul className="tp-schools">
-                {f.schoolsNearby.map((s) => (
-                  <li key={s.name}><span className={`tp-dot tp-${s.board}`} />{s.name} <em>· ~{s.approxMin} min</em></li>
-                ))}
-              </ul>
-              <p className="tp-sub">Distances are {f.neighbourhood}-area approximations — per-street geocoding isn&rsquo;t populated yet.</p>
-            </div>
+          <div className="tp-sec-head"><h2 className="tp-head">Where it sits, and what’s reachable</h2></div>
+          <div className="tp-sec-c">
+            <Stat label="Commute reach">Milton GO is about <b className="tp-num">{f.commute.goDriveMin} min</b> by car and a Highway&nbsp;401 on-ramp about <b className="tp-num">{f.commute.hwy401DriveMin} min</b> — measured from the {f.neighbourhood} area, not the doorstep.</Stat>
+            <Stat label="Nearest schools">
+              {f.schoolsNearby.map((s, i) => (
+                <span key={s.name}>{i > 0 ? ' · ' : ''}{s.name} <b className="tp-num">~{s.approxMin} min</b></span>
+              ))}
+              <span className="tp-cap-inline"> Distances are {f.neighbourhood}-area approximations — per-street geocoding isn’t populated yet.</span>
+            </Stat>
           </div>
         </section>
 
-        {/* ── H2: on the market ── */}
+        {/* 6 · on the market */}
         {f.active.total > 0 && (
           <section className="tp-sec">
-            <h2 className="tp-h2">On the market right now</h2>
-            <div className="tp-block"><p><b className="tp-inline">{f.active.total}</b> active listing — a {f.active.type} at <b className="tp-inline">{full(f.active.price)}</b>. Live inventory turns over; this is a snapshot.</p></div>
+            <div className="tp-sec-head"><h2 className="tp-head">On the market right now</h2></div>
+            <div className="tp-sec-c">
+              <p className="tp-body-t tp-span"><b className="tp-num">{f.active.total}</b> active listing — a {f.active.type} at <b className="tp-num">{full(f.active.price)}</b>. Live inventory turns over; this is a snapshot.</p>
+            </div>
           </section>
         )}
 
-        {/* ── LAYER 2 — grounded synthesis, TWO-COLUMN newspaper prose (fills the width). The pull-quote
-             (verbatim lift) spans both columns as a mid-article break (FOCAL: pull-quote). ── */}
-        <section className="tp-sec tp-read">
-          <div className="tp-read-eyebrow">The read</div>
-          <h2 className="tp-h2">How to actually think about Clarriage Court</h2>
-          <div className="tp-read-body">
-            {analysis.flatMap((p, i) => {
-              const nodes = [<p className="tp-read-p" key={`p${i}`}>{p}</p>];
-              if (i === 2) nodes.push(
-                <aside className="tp-pull" key="pull">&ldquo;&hellip;one address offering two very different ways in.&rdquo;</aside>
-              );
-              return nodes;
-            })}
+        {/* 7 · the read (Layer 2) — same grid; prose in two columns, pull-quote a full-width break */}
+        <section className="tp-sec">
+          <div className="tp-sec-head"><div className="tp-lbl tp-read-eyebrow">The read</div><h2 className="tp-head">How to actually think about Clarriage Court</h2></div>
+          <div className="tp-sec-c">
+            <div className="tp-read-body tp-span">
+              {analysis.flatMap((p, i) => {
+                const nodes = [<p className="tp-body-t tp-read-p" key={`p${i}`}>{p}</p>];
+                if (i === 2) nodes.push(
+                  <aside className="tp-pull" key="pull">&ldquo;&hellip;one address offering two very different ways in.&rdquo;</aside>
+                );
+                return nodes;
+              })}
+            </div>
           </div>
-        </section>
-
-        {/* ── conversion (the one place signal green is allowed) ── */}
-        <section className="tp-cta tp-bleed">
-          <div>
-            <div className="tp-cta-h">Track Clarriage Court</div>
-            <div className="tp-cta-p">Get an email when a home here is listed, sold, or leased.</div>
-          </div>
-          <a className="tp-cta-btn" href="/signin?intent=alert&street=clarriage-court-milton">Set an alert →</a>
         </section>
       </main>
+
+      {/* ══ CONVERSION (full-bleed #2) — the one place signal green is allowed ══ */}
+      <section className="tp-cta">
+        <div className="tp-wrap tp-cta-in">
+          <div>
+            <div className="tp-head tp-cta-h">Track Clarriage Court</div>
+            <div className="tp-body-t tp-cta-p">Get an email when a home here is listed, sold, or leased.</div>
+          </div>
+          <a className="tp-cta-btn" href="/signin?intent=alert&street=clarriage-court-milton">Set an alert →</a>
+        </div>
+      </section>
     </div>
   );
 }
