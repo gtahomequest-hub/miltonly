@@ -41,7 +41,29 @@ export interface ClarriageFacts {
   commute: { goDriveMin: number; hwy401DriveMin: number };
   schoolsNearby: Array<{ name: string; board: string; approxMin: number }>;
   active: { total: number; type: string | null; price: number | null };
+  /** LIVE IDX inventory. Unlike sold data, an active listing is a specific property that MAY be
+   *  shown, so this is the one place on the page an address appears. Every row is status='active'
+   *  AND permAdvertise=true — asserted below, not merely queried — and the address is RECO-gated
+   *  server-side so a withheld one never reaches the client. */
+  activeListings: ActiveListing[];
   gaps: string[];
+}
+
+export interface ActiveListing {
+  mlsNumber: string;
+  /** already gated — 'Address withheld by seller' when displayAddress is false */
+  address: string;
+  displayAddress: boolean;
+  price: number;
+  propertyType: string;
+  transactionType: string;
+  bedrooms: number;
+  bathrooms: number;
+  parking: number;
+  sqft: number | null;
+  photo: string | null;
+  listOfficeName: string | null;
+  daysOnMarket: number | null;
 }
 
 // SQL row shapes (neon returns NUMERIC as string; ::int columns as number).
@@ -77,7 +99,18 @@ export async function getClarriageFacts(): Promise<ClarriageFacts> {
     q<LeaseRow>(sold!`SELECT COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) med, AVG(days_on_market) dom FROM sold.sold_records WHERE street_slug=ANY(${sibs}::text[]) AND perm_advertise=TRUE AND transaction_type='For Lease' AND sold_date<=NOW() AND sold_date>=NOW()-INTERVAL '12 months'`).then((r) => r[0] ?? { n: 0, med: null, dom: null }),
     q<LeaseBedRow>(sold!`SELECT COALESCE(beds,0)::int beds, COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) med FROM sold.sold_records WHERE street_slug=ANY(${sibs}::text[]) AND perm_advertise=TRUE AND transaction_type='For Lease' AND sold_date<=NOW() AND sold_date>=NOW()-INTERVAL '12 months' GROUP BY beds ORDER BY beds`),
     prisma.condoBuilding.findMany({ where: { OR: [{ streetSlug: { in: sibs } }, { slug: { contains: "clarriage" } }] }, select: { name: true, yearBuilt: true, totalUnits: true } }),
-    prisma.listing.findMany({ where: { streetSlug: { in: sibs }, status: "active", permAdvertise: true }, select: { propertyType: true, price: true } }),
+    // The live /listings where-builder's active clause, verbatim: permAdvertise=true + status='active'
+    // (see buildWhere in src/lib/listingsV2Data.ts). status='active' is what excludes sold, expired
+    // and rented rows — the model's status enum is active|sold|rented|expired.
+    prisma.listing.findMany({
+      where: { streetSlug: { in: sibs }, status: "active", permAdvertise: true },
+      select: {
+        mlsNumber: true, address: true, displayAddress: true, price: true, propertyType: true,
+        transactionType: true, bedrooms: true, bathrooms: true, parking: true, sqft: true,
+        photos: true, listOfficeName: true, daysOnMarket: true, status: true, permAdvertise: true,
+      },
+      orderBy: { price: "desc" },
+    }),
     rs?.neighbourhood ? q<AreaRow>(sold!`SELECT COUNT(*)::int n, AVG(sold_price) avg FROM sold.sold_records WHERE neighbourhood=ANY(${rs.neighbourhood.rawStrings}::text[]) AND perm_advertise=TRUE AND transaction_type='For Sale' AND sold_date>=NOW()-INTERVAL '12 months' AND sold_date<=NOW()`).then((r) => r[0] ?? null) : Promise.resolve(null),
   ]);
 
@@ -94,6 +127,28 @@ export async function getClarriageFacts(): Promise<ClarriageFacts> {
     .map((s) => ({ name: s.name, board: s.board, approxMin: s.km < 1.5 ? walkMinutes(s.km) : driveMinutes(s.km) }));
   const goMin = driveMinutes(haversineKm(c.lat, c.lng, GO_STATION.lat, GO_STATION.lng));
   const hwyMin = driveMinutes(Math.min(...HIGHWAY_ONRAMPS.map((r) => haversineKm(c.lat, c.lng, r.lat, r.lng))));
+
+  // BELT AND BRACES over the where-clause: re-assert the display gate in code, so a schema drift or
+  // a future edit to the query can never surface a sold / expired / leased row through this page.
+  const activeListings: ActiveListing[] = activeRows
+    .filter((r) => r.status === "active" && r.permAdvertise === true)
+    .map((r) => ({
+      mlsNumber: r.mlsNumber,
+      // RECO/IDX redaction applied SERVER-side, mirroring gateAddress() in listingsV2Data.ts —
+      // a withheld address never reaches the client.
+      address: r.displayAddress ? r.address : "Address withheld by seller",
+      displayAddress: r.displayAddress,
+      price: r.price,
+      propertyType: r.propertyType,
+      transactionType: r.transactionType ?? "For Sale",
+      bedrooms: r.bedrooms,
+      bathrooms: r.bathrooms,
+      parking: r.parking,
+      sqft: r.sqft,
+      photo: r.photos[0] ?? null,
+      listOfficeName: r.listOfficeName,
+      daysOnMarket: r.daysOnMarket,
+    }));
 
   const active = activeRows[0] ?? null;
   const condo = condoRows[0] ?? null;
@@ -117,6 +172,7 @@ export async function getClarriageFacts(): Promise<ClarriageFacts> {
     commute: { goDriveMin: goMin, hwy401DriveMin: hwyMin },
     schoolsNearby,
     active: { total: activeRows.length, type: active?.propertyType ?? null, price: active?.price ?? null },
+    activeListings,
     gaps,
   };
 }

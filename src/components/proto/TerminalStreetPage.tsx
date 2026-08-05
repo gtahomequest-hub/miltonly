@@ -6,8 +6,14 @@
 // muted); the quarterly axis is contiguous with empty quarters shown, not skipped; the schools caveat
 // is a footnote line. Data, blocks and copy are VERBATIM from prior passes.
 import './terminal.css';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { ClarriageFacts } from '@/lib/proto/clarriageData';
+import type { ClarriageFacts, ActiveListing } from '@/lib/proto/clarriageData';
+// REUSED FROM THE LIVE CARD, not reimplemented: the same pure formatters
+// src/components/listings/v2/ListingCard.tsx uses for price, brokerage/address title-casing and
+// the property-type label. The compliance contract travels with them — brokerage · MLS® on every
+// card, /listings/[mls] as the link target, and the server-side RECO address gate in the loader.
+import { fullPrice, titleCase, TYPE_LABELS } from '@/components/listings/v2/format';
 
 // ---- number formatters (compact for headlines, full for rents) ----
 function money(n: number | null): string {
@@ -103,6 +109,80 @@ function ReadBlock({ paras, idPrefix }: { paras: string[]; idPrefix: string }) {
   );
 }
 
+// ── live inventory ──────────────────────────────────────────────────────────────────────────────
+// The highest-intent moment on the page, so it sits directly under the hero. Active IDX, so unlike
+// every sold aggregate above it a SPECIFIC property may be named.
+// COLLAPSE, DON'T FILL: with no active listings this returns null — no heading, no placeholder, no
+// "none currently". Most streets are that case and the page must not carry a hole for them.
+const MAX_CARDS = 3;
+
+// ⚠ TWO LIVE DEFECTS, repaired here, still present on /listings — logged for a separate fix.
+// The live card runs titleCase() over both the address and the brokerage, and on this street's real
+// row that DEGRADES already-clean values:
+//   "1403 Clarriage Court, Milton, ON L9E 1L6" -> "... Milton, on L9e 1l6"   ('on' is in titleCase's
+//     SMALL_WORDS, and the postal code gets sentence-cased)
+//   "ROYAL LEPAGE REAL ESTATE SERVICES LTD."   -> "... Ltd.."                (the Ltd -> "Ltd." fixup
+//     re-punctuates a source that already ends in a period)
+// Feeds are mixed-case so title-casing is still right in general — these restore the two tails it
+// gets wrong rather than abandoning it.
+const POSTAL = /\b[a-z]\d[a-z]\s*\d[a-z]\d\b/gi;
+const PROVINCE_BEFORE_POSTAL = /\b(on|ab|bc|mb|nb|nl|ns|nt|nu|pe|qc|sk|yt)\b(?=[\s,]+[a-z]\d[a-z]\s*\d[a-z]\d\b)/gi;
+const addressCase = (raw: string) =>
+  titleCase(raw).replace(PROVINCE_BEFORE_POSTAL, (m) => m.toUpperCase()).replace(POSTAL, (m) => m.toUpperCase());
+const brokerCase = (raw: string) => titleCase(raw).replace(/\.{2,}/g, '.');
+
+function ListingCard({ l }: { l: ActiveListing }) {
+  const isLease = l.transactionType === 'For Lease';
+  const type = TYPE_LABELS[l.propertyType] ?? titleCase(l.propertyType);
+  const broker = l.listOfficeName ? brokerCase(l.listOfficeName) : 'TREB MLS®';
+  const addr = addressCase(l.address);
+  const specs = [`${l.bedrooms} bd`, `${l.bathrooms} ba`, l.parking > 0 ? `${l.parking} pkg` : null, type]
+    .filter(Boolean).join(' · ');
+  return (
+    <article className="tp-lst">
+      <div className="tp-lst-photo">
+        {l.photo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={l.photo} alt="" loading="lazy" />
+        ) : (
+          <div className="tp-lst-nophoto"><span className="tp-lbl">No photo</span></div>
+        )}
+      </div>
+      <div className="tp-lst-body">
+        {/* price uses the existing mono head step — the same one the bar-chart values use */}
+        <div className="tp-lst-price">{fullPrice(l.price)}{isLease && <span className="tp-lst-permo">/mo</span>}</div>
+        <div className="tp-lbl tp-lst-specs">{specs}</div>
+        <h3 className={`tp-body-t tp-lst-addr${l.displayAddress ? '' : ' tp-lst-withheld'}`}>{addr}</h3>
+        <div className="tp-cap tp-lst-broker">{broker} · MLS&reg; {l.mlsNumber}</div>
+      </div>
+      {/* the whole card is the link — no button, so signal green stays CTA-only */}
+      <Link className="tp-lst-hit" href={`/listings/${l.mlsNumber}`} aria-label={`View ${addr}`} />
+    </article>
+  );
+}
+
+function ActiveListings({ listings, streetName }: { listings: ActiveListing[]; streetName: string }) {
+  if (listings.length === 0) return null;   // ← the collapse. Nothing renders, not even the heading.
+  const shown = listings.slice(0, MAX_CARDS);
+  const overflow = listings.length - shown.length;
+  return (
+    <section className="tp-sec tp-mod">
+      <div className="tp-sec-head"><h2 className="tp-head">On the market right now</h2></div>
+      <div className={`tp-lst-row tp-lst-n${shown.length}`}>
+        {shown.map((l) => <ListingCard key={l.mlsNumber} l={l} />)}
+      </div>
+      <div className="tp-lst-foot">
+        <p className="tp-cap">Live inventory turns over; this is a snapshot.</p>
+        {overflow > 0 && (
+          <Link className="tp-lst-all" href={`/listings?q=${encodeURIComponent(streetName)}`}>
+            See all {listings.length} listings →
+          </Link>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function TerminalStreetPage({ facts, analysis }: { facts: ClarriageFacts; analysis: string[] }) {
   const f = facts;
   const displayName = cleanName(f.name);
@@ -148,6 +228,9 @@ export function TerminalStreetPage({ facts, analysis }: { facts: ClarriageFacts;
       </header>
 
       <main className="tp-grid tp-body">
+        {/* 0 · live inventory — directly under the hero, and absent entirely when there is none */}
+        <ActiveListings listings={f.activeListings} streetName={displayName} />
+
         {/* 1 · what it's made of */}
         <section className="tp-sec tp-mod">
           <div className="tp-sec-head"><h2 className="tp-head">What Clarriage Court is made of</h2></div>
@@ -251,15 +334,9 @@ export function TerminalStreetPage({ facts, analysis }: { facts: ClarriageFacts;
           </div>
         </section>
 
-        {/* 6 · on the market */}
-        {f.active.total > 0 && (
-          <section className="tp-sec tp-mod">
-            <div className="tp-sec-head"><h2 className="tp-head">On the market right now</h2></div>
-            <div className="tp-sec-c">
-              <p className="tp-body-t tp-span"><b className="tp-num">{f.active.total}</b> active listing — a {f.active.type} at <b className="tp-num">{full(f.active.price)}</b>. Live inventory turns over; this is a snapshot.</p>
-            </div>
-          </section>
-        )}
+        {/* 6 · on the market — FOLDED into the card block under the hero. The old text line stated
+               the same three facts the card now shows (count, type, price), so it is gone rather
+               than duplicated; its one non-duplicated clause, the turnover caveat, moved with it. */}
 
         {/* 7 · the read (Layer 2) — same grid; two balanced column blocks, pull-quote between them */}
         <section className="tp-sec tp-mod">
