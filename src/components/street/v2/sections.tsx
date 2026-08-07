@@ -14,6 +14,7 @@ import type {
 import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './format';
 import { CommuteIcon } from './icons';
 import { StreetSoldRecords } from './SoldRecordsIsland';
+import StreetAlertCTA from './StreetAlertCTA';
 
 const DEFAULT_SILENT = 'sample too small to publish';
 
@@ -44,6 +45,7 @@ function HeroStat({ stat }: { stat: StreetStat }) {
       </div>
       <div className="s-l">{stat.label}</div>
       {stat.sub && <div className="s-sub">{stat.sub}</div>}
+      {stat.basis && <div className="s-basis">{stat.basis}</div>}
     </div>
   );
 }
@@ -99,7 +101,7 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
           <div className="s-pillrow">
             <span className="s-pillrow-l">
               <span className="s-dot" />
-              Recent sales
+              Recent sales <span className="s-pillrow-win">· last 12 months</span>
             </span>
             {data.hero.salePills.map((p) => (
               <Pill key={p.type} p={p} />
@@ -110,7 +112,7 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
           <div className="s-pillrow">
             <span className="s-pillrow-l">
               <span className="s-dot s-dot-blue" />
-              Recent leases
+              Recent leases{data.hero.leaseWindowNote && <span className="s-pillrow-win"> · {data.hero.leaseWindowNote}</span>}
             </span>
             {data.hero.leasePills.map((p) => (
               <Pill key={`lease-${p.type}`} p={p} />
@@ -553,6 +555,21 @@ export function StreetFaq({ data }: { data: StreetV2Data }) {
 
 export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
   const { seller, buyer } = data.finalCtas;
+  // The buyer "Set an alert" button used to link to /listings and capture nothing (a
+  // dead button). It is now StreetAlertCTA → the live lead pipeline. For dormant streets
+  // the copy leads with the honest "no resales yet" framing (the loop this closes: when a
+  // dormant street records its first sale, auto-promotion publishes it and the alert fires).
+  const nbhd = data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton';
+  const dormant = data.tier === 'identity-only' || data.tier === 'area-only';
+  // ABSENCE phrasing ("no resales … yet") is TRUE only where the street has zero sales in the
+  // window; every other sub-k5 street has a record that just can't support a published price →
+  // SUPPRESSION phrasing. The copy carries its population gate (data.hasAnySale). Alert CTA stays
+  // on all — only the copy changes.
+  const ctaBody = !dormant
+    ? buyer.body
+    : data.hasAnySale
+      ? `Too few recent sales on ${data.shortName} to publish a typical price yet — the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`
+      : `No resales recorded on ${data.shortName} yet — a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`;
   return (
     <section className="s-block">
       <div className="s-wrap">
@@ -568,14 +585,66 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
                 {seller.actionLabel} →
               </a>
             </div>
-            <div className="s-fcard">
-              <h3>{buyer.headline}</h3>
-              <p>{buyer.body}</p>
-              <a className="s-b2" href={buyer.actionHref}>
-                {buyer.actionLabel}
-              </a>
-            </div>
+            <StreetAlertCTA
+              streetName={data.name}
+              shortName={data.shortName}
+              neighbourhood={nbhd}
+              headline={dormant ? `Be first when ${data.shortName} trades` : buyer.headline}
+              body={ctaBody}
+              dormant={dormant}
+            />
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───── area-context anchor (DEC-CONDO-6 street port) ───── */
+// Renders ONLY for sub-k5 pages (tier !== 'priced-sale') — rich pages stay byte-identical.
+// The neighbourhood typical is the hub's own figure (drift-free) and is labelled
+// strictly area-grain. Two distinct copies, mirroring the condo tier: identity-only leans
+// entirely on the area ("too few to price it on its own yet"); area/lease pages state the
+// suppression ("we won't publish a price the record can't support").
+export function StreetAreaContext({ data }: { data: StreetV2Data }) {
+  if (data.tier === 'priced-sale') return null;
+  const ac = data.areaContext;
+  const identity = data.tier === 'identity-only';
+  return (
+    <section className="s-block s-areacx">
+      <div className="s-wrap">
+        <div className="s-sechead">
+          <span className="s-eyebrow">{identity ? 'Where this street sits' : 'Neighbourhood context'}</span>
+          <h2>{identity ? `New to the record` : `The market around ${data.shortName}`}</h2>
+        </div>
+        <div className="s-areacx-card">
+          {ac && ac.typicalPrice != null ? (
+            <>
+              <div className="s-areacx-num">
+                <b>$</b>
+                {compactPrice(ac.typicalPrice)}
+              </div>
+              <div className="s-areacx-lbl">
+                the typical home price across{' '}
+                {ac.neighbourhoodSlug ? (
+                  <a href={`/neighbourhoods/${ac.neighbourhoodSlug}`}>{ac.neighbourhoodName}</a>
+                ) : (
+                  ac.neighbourhoodName
+                )}{' '}
+                — the neighbourhood, not {data.shortName} specifically
+              </div>
+              <div className="s-basis">{ac.basis}</div>
+              <p className="s-areacx-read">
+                {identity
+                  ? `Too few recent trades on ${data.shortName} to price it on its own yet — the ${ac.neighbourhoodName} market is your best guide to what you'd pay here, and this page fills in with ${data.shortName}'s own numbers as homes trade.`
+                  : `${data.shortName} hasn't had enough recent sales to publish its own typical price, and we won't publish a price the record can't support. The ${ac.neighbourhoodName} typical above is the honest anchor until it does.`}
+              </p>
+            </>
+          ) : (
+            <p className="s-areacx-read">
+              Neighbourhood pricing for {ac?.neighbourhoodName ?? 'this area'} isn&rsquo;t published yet — {data.shortName} will fill in with its own price history as homes trade.
+            </p>
+          )}
         </div>
       </div>
     </section>

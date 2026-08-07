@@ -292,6 +292,9 @@ export const mockStreetRich: StreetV2Data = {
     },
   },
 
+  areaContext: null,
+  tier: 'priced-sale',
+  hasAnySale: true,
   lastUpdated: '2026-06-09T00:00:00.000Z',
 };
 
@@ -469,6 +472,9 @@ export const mockStreetThin: StreetV2Data = {
     },
   },
 
+  areaContext: null,
+  tier: 'priced-sale',
+  hasAnySale: true,
   lastUpdated: '2026-06-09T00:00:00.000Z',
 };
 

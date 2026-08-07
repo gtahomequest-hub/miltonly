@@ -781,6 +781,23 @@
   pointer-events: none;
   user-select: none;
 }
+/* The .s-gate overlay is position:absolute; inset:0, so its height tracks the container. For an
+   anon/gated page the sold-records table body is EMPTY, collapsing the container to cap+header
+   (~98px) — shorter than the overlay's own content (~135px desktop, up to ~189px for a long street
+   name wrapping at mobile widths) — so overflow:hidden clipped the headline top + CTA bottom and the
+   cap bled through the translucent gradient. Reserve enough height for the overlay to fully contain
+   its content at every viewport. Applies ONLY to the gated state — an authed page with rows sizes to
+   the table as before. (Presentation only; the gate's behaviour/copy/reveal are unchanged.) */
+.street-v2 .s-records.s-gated {
+  min-height: 220px;
+}
+/* Mobile: the headline "See every closed sale on <street>" wraps to 3+ lines for long names
+   (measured up to ~241px content at 390px), so reserve more there. */
+@media (max-width: 720px) {
+  .street-v2 .s-records.s-gated {
+    min-height: 300px;
+  }
+}
 .street-v2 .s-records .s-gate {
   position: absolute;
   inset: 0;
@@ -1071,3 +1088,76 @@
   padding: 12px 24px;
   border-radius: 7px;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   DEC-CONDO-6 street port — window disclosure · area-context · alerts CTA
+   ───────────────────────────────────────────────────────────── */
+/* window+sample disclosure under the hero typical price (dark hero) */
+.street-v2 .s-hs .s-basis {
+  font-family: var(--s-mono);
+  font-size: 10.5px;
+  color: var(--s-text-faint);
+  margin-top: 3px;
+  letter-spacing: 0.01em;
+}
+.street-v2 .s-pillrow-win { color: var(--s-text-faint); font-weight: 400; font-size: 11px; }
+
+/* area-context anchor (light body section) */
+.street-v2 .s-areacx .s-areacx-card {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border-muted);
+  border-radius: 14px;
+  padding: 30px 32px;
+  box-shadow: var(--s-sh-sm);
+  max-width: 660px;
+}
+.street-v2 .s-areacx-num {
+  font-family: var(--s-serif);
+  font-size: 44px;
+  font-weight: 500;
+  color: var(--s-accent-bright);
+  line-height: 1;
+}
+.street-v2 .s-areacx-num b { font-size: 24px; vertical-align: super; font-weight: 400; margin-right: 2px; }
+.street-v2 .s-areacx-lbl { font-size: 14px; color: var(--s-text-body); margin-top: 12px; line-height: 1.55; }
+.street-v2 .s-areacx-lbl a { color: var(--s-accent); border-bottom: 1px solid rgba(1, 120, 72, 0.3); }
+.street-v2 .s-areacx-card .s-basis { font-family: var(--s-mono); font-size: 11px; color: var(--s-text-muted); margin-top: 8px; }
+.street-v2 .s-areacx-read {
+  font-size: 14px;
+  color: var(--s-text-muted);
+  margin-top: 16px;
+  line-height: 1.6;
+  border-top: 1px solid var(--s-border-muted);
+  padding-top: 16px;
+}
+
+/* alerts CTA — lives in the dark final-CTA grid, so the input is light-on-dark */
+.street-v2 .s-alertcard { display: flex; flex-direction: column; }
+.street-v2 .s-alert-form { margin-top: 8px; }
+.street-v2 .s-alert-row { display: flex; gap: 8px; }
+.street-v2 .s-alert-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9px;
+  font-family: var(--s-sans);
+  font-size: 14px;
+  background: #ffffff;
+  color: var(--s-text-body);
+}
+.street-v2 .s-alert-row button {
+  padding: 11px 18px;
+  border: none;
+  border-radius: 9px;
+  background: var(--s-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.street-v2 .s-alert-row button:disabled { opacity: 0.6; cursor: default; }
+.street-v2 .s-alert-fine { font-size: 11.5px; color: var(--s-text-faint); margin-top: 8px; }
+.street-v2 .s-alert-err { font-size: 12.5px; color: #ffb4a1; margin-top: 8px; }
+.street-v2 .s-alert-done { font-size: 14px; color: var(--s-green); margin-top: 10px; line-height: 1.5; }

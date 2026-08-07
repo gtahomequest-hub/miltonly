@@ -18,6 +18,7 @@ import type { Listing } from "@prisma/client";
 import { prisma } from "./prisma";
 import { config } from "./config";
 import { getAnalyticsDb, getSoldDb } from "./db";
+import { buildStreetEnrichment, windowDisclosure, type StreetEnrichment } from "./streetEnrichment";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
@@ -304,6 +305,18 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   const stats = soldStatsRows[0] ?? null;
   const soldRange = soldRange12moRows[0] ?? null;
 
+  // ─── DEC-CONDO-6 enrichment (area-context + graduated sale/lease + tier) ───
+  // Prefer the 12mo figure (byte-identical to today's page); fall back to the full
+  // ~26mo window ONLY where 12mo is sub-k5. Full-window queries fire lazily inside.
+  const enrichment = await buildStreetEnrichment({
+    slug,
+    siblingSlugs,
+    sale12moCount: stats?.sold_count_12months ?? 0,
+    sale12moAvg: num(stats?.avg_sold_price ?? null),
+    lease12moCount: stats?.leased_count_12months ?? 0,
+    lease12moAvg: num(stats?.avg_leased_price ?? null),
+  });
+
   // ─── Hero + product pills ─────────────────────────────────────────
   const heroProps = buildHero({
     streetName,
@@ -313,6 +326,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     allListings,
     streetContent,
     typeAggs: soldTypeAggRows,
+    enrichment,
   });
 
   // ─── Product type sections ────────────────────────────────────────
@@ -335,6 +349,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     allListings,
     typeAggs: soldTypeAggRows,
     soldRange,
+    enrichment,
   });
 
   // ─── Market Activity ─────────
@@ -343,6 +358,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     streetName,
     stats,
     monthlyRows,
+    enrichment,
   });
 
   // ─── Commute + nearby ─────────────────────────────────────────────
@@ -396,6 +412,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     faqs,
     finalCTAs,
     cornerWidget,
+    enrichment,
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -594,10 +611,11 @@ interface HeroBuildInput {
   allListings: Listing[];
   streetContent: { description: string } | null;
   typeAggs: RawTypeAgg[];
+  enrichment: StreetEnrichment;
 }
 
 function buildHero(input: HeroBuildInput): StreetHeroProps {
-  const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs } = input;
+  const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs, enrichment } = input;
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
   const eyebrow = `Street Profile · ${cleanNbhds.slice(0, 3).join(" · ") || config.CITY_NAME} · ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
   const subtitle = streetContent?.description
@@ -615,14 +633,22 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
 
   const typical = num(stats?.avg_sold_price ?? null);
   const countFor12mo = stats?.sold_count_12months ?? 0;
-  if (typical && countFor12mo >= K_ANON_PRICE) {
+  // GRADUATED sale price. saleBasis.window==='12mo' fires on exactly the old condition
+  // (typical && sold_count_12months>=5), so rich pages keep the identical value; the
+  // 'full' path is the ~26mo fallback that un-barrens sub-k5-in-12mo streets. Every
+  // priced tile carries the mandatory window+sample disclosure (basis).
+  const saleBasis = enrichment.saleBasis;
+  if (saleBasis) {
+    const is12 = saleBasis.window === "12mo";
+    const priceVal = is12 && typical ? typical : saleBasis.typical; // 12mo path byte-identical
     const lo = num(soldRange?.lo ?? null);
     const hi = num(soldRange?.hi ?? null);
-    const showRange = soldRange && soldRange.n >= K_ANON_RANGE && lo !== null && hi !== null;
+    const showRange = is12 && soldRange && soldRange.n >= K_ANON_RANGE && lo !== null && hi !== null;
     heroStats.push({
       label: "Typical price",
-      value: formatCAD(roundPriceForProse(typical)),
+      value: formatCAD(roundPriceForProse(priceVal)),
       sub: showRange ? `range ${formatCADShort(roundPriceForProse(lo!))} to ${formatCADShort(roundPriceForProse(hi!))}` : undefined,
+      basis: windowDisclosure(saleBasis),
     });
   } else {
     heroStats.push({
@@ -668,28 +694,29 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     });
   }
 
-  // Lease pills — simpler shape, only condo and townhouse tend to have data.
+  // Lease pill — GRADUATED (12mo preferred, ~26mo fallback) so lease-deep-but-sale-thin
+  // streets light up (the ~38). One rent pill, k>=5 gated inside leaseBasis.
   const leasePills: ProductPillData[] = [];
-  const lease1 = num(stats?.avg_leased_price_1bed ?? null);
-  const lease2 = num(stats?.avg_leased_price_2bed ?? null);
-  const lease3 = num(stats?.avg_leased_price_3bed ?? null);
-  if ((stats?.leased_count_12months ?? 0) >= K_ANON_PRICE && (lease2 || lease1 || lease3)) {
-    const typicalRent = num(stats?.avg_leased_price ?? null) || (lease2 ?? lease1 ?? lease3) || null;
+  const leaseBasis = enrichment.leaseBasis;
+  if (leaseBasis) {
     leasePills.push({
       type: "condo",
       displayName: "Lease",
-      count: stats!.leased_count_12months,
-      typicalPrice: typicalRent,
-      priceLabel: typicalRent ? "typical / mo" : "sample too small",
+      count: leaseBasis.count,
+      typicalPrice: leaseBasis.typical,
+      priceLabel: "typical / mo",
       anchor: "#type-condo",
     });
   }
 
+  // Labels stay EXACT ("Recent sales" / "Recent leases") — mapStreetV2Data keys the v2
+  // pill rows off them, and the window disclosure is rendered in the v2 hero (a "· last
+  // 12 months" span on sales + hero.leaseWindowNote on leases), not baked into the label.
   const productTypePills: ProductPillRow[] = [];
   if (soldPills.length > 0) {
     productTypePills.push({ label: "Recent sales", dotColor: "navy", pills: soldPills });
   }
-  if (leasePills.length > 0) {
+  if (leasePills.length > 0 && leaseBasis) {
     productTypePills.push({ label: "Recent leases", dotColor: "blue", pills: leasePills });
   }
 
@@ -699,8 +726,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     subtitle,
     heroStats,
     productTypePills,
-    rawTypicalPrice:
-      typical && countFor12mo >= K_ANON_PRICE ? typical : null,
+    // 12mo path keeps the exact prior raw value (byte-identical render); 'full' path
+    // exposes the ~26mo graduated price so widened streets stop rendering "—".
+    rawTypicalPrice: saleBasis
+      ? (saleBasis.window === "12mo" && typical ? typical : saleBasis.typical)
+      : null,
     rawTotalTransactions: totalTransactions,
   };
 }
@@ -764,20 +794,22 @@ function buildProductTypeSections(input: {
     const lo = num(agg?.min_price ?? null);
     const hi = num(agg?.max_price ?? null);
     const kOk = n >= K_ANON_PRICE;
+    // (fix f) COLLAPSE, DON'T FILL — a type card renders ONLY for a type that clears k>=5 on
+    // sold price. Sub-k types were rendering a card of dashes ("under publish threshold"); their
+    // active listings still surface in the Active Inventory section. If NO type clears k, `sections`
+    // stays empty and the "By the home" block is omitted entirely (StreetTypes returns null).
+    if (!kOk) continue;
 
     const statsSold: StatCell[] = [];
-    if (kOk) {
-      statsSold.push({ label: "Typical price", value: formatCADShort(roundPriceForProse(typicalPrice)), detail: `across ${n} sales` });
-      if (lo !== null && hi !== null) {
-        statsSold.push({ label: "Price band", value: `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}` });
-      }
-      const dom = num(agg?.avg_dom ?? null);
-      if (dom !== null) statsSold.push({ label: "Time on market", value: `${Math.round(dom)} days`, detail: "typical" });
-      const ratio = num(agg?.avg_sold_to_ask ?? null);
-      if (ratio !== null) statsSold.push({ label: "Sold to ask", value: `${Math.round(ratio * 100)}%` });
-    } else if (n > 0) {
-      statsSold.push({ label: "Recent sales", value: String(n), detail: "under the publish threshold" });
+    // kOk is guaranteed here (sub-k types were skipped above). Count carries its window (fix a).
+    statsSold.push({ label: "Typical price", value: formatCADShort(roundPriceForProse(typicalPrice)), detail: `across ${n} sales · last 12 months` });
+    if (lo !== null && hi !== null) {
+      statsSold.push({ label: "Price band", value: `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}` });
     }
+    const dom = num(agg?.avg_dom ?? null);
+    if (dom !== null) statsSold.push({ label: "Time on market", value: `${Math.round(dom)} days`, detail: "typical" });
+    const ratio = num(agg?.avg_sold_to_ask ?? null);
+    if (ratio !== null) statsSold.push({ label: "Sold to ask", value: `${Math.round(ratio * 100)}%` });
 
     // Active inventory stats for the type
     if (activeForType.length > 0) {
@@ -967,8 +999,9 @@ function buildGlanceTiles(input: {
   allListings: Listing[];
   typeAggs: RawTypeAgg[];
   soldRange: { n: number; lo: string | null; hi: string | null } | null;
+  enrichment: StreetEnrichment;
 }): GlanceTile[] {
-  const { stats, allListings, typeAggs, soldRange } = input;
+  const { stats, allListings, typeAggs, soldRange, enrichment } = input;
   const active = allListings.filter((l) => l.status === "active");
 
   const tiles: GlanceTile[] = [];
@@ -976,10 +1009,15 @@ function buildGlanceTiles(input: {
   tiles.push({ label: "Transactions tracked", value: String(stats?.sold_count_12months ?? 0), detail: "recent activity" });
 
   const typical = num(stats?.avg_sold_price ?? null);
+  // GRADUATED to match the hero: 12mo value byte-identical, ~26mo fallback un-barrens,
+  // detail carries the mandatory window+sample disclosure.
+  const gSale = enrichment.saleBasis;
   tiles.push({
     label: "Typical sold",
-    value: typical && (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE ? formatCADShort(roundPriceForProse(typical)) : "—",
-    detail: (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE ? "across sale records" : "under publish threshold",
+    value: gSale
+      ? formatCADShort(roundPriceForProse(gSale.window === "12mo" && typical ? typical : gSale.typical))
+      : "—",
+    detail: gSale ? windowDisclosure(gSale) : "under publish threshold",
   });
 
   const dom = num(stats?.avg_dom ?? null);
@@ -1044,8 +1082,10 @@ function buildGlanceTiles(input: {
     tiles.push({ label: "Leases (12m)", value: String(stats?.leased_count_12months ?? 0), detail: "closed" });
   }
 
-  // Exactly 12 tiles
-  return tiles.slice(0, 12);
+  // (fix f) COLLAPSE, DON'T FILL — drop tiles that would render as a bare "—" so the at-a-glance
+  // grid never reads as a wall of dashes. Real values (incl. legitimate 0-counts) stay; suppressed
+  // metrics simply don't take a tile. Cap at 12.
+  return tiles.filter((t) => t.value !== "—").slice(0, 12);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -1057,10 +1097,10 @@ function buildMarketActivity(input: {
   streetName: string;
   stats: RawSoldStats | null;
   monthlyRows: RawMonthly[];
+  enrichment: StreetEnrichment;
 }): MarketActivityProps {
-  const { streetName, stats, monthlyRows } = input;
-  const salesCount = stats?.sold_count_90days ?? 0;
-  const typical = num(stats?.avg_sold_price ?? null);
+  const { streetName, stats, monthlyRows, enrichment } = input;
+  const salesCount = stats?.sold_count_90days ?? 0; // 90-DAY count — labelled as such below (fix a)
   const dom = num(stats?.avg_dom ?? null);
 
   const quarterly = monthlyToQuarterly(monthlyRows);
@@ -1070,16 +1110,29 @@ function buildMarketActivity(input: {
   const lease3 = num(stats?.avg_leased_price_3bed ?? null);
   const lease4 = num(stats?.avg_leased_price_4bed ?? null);
   const anyLease = (stats?.leased_count_12months ?? 0) >= K_ANON_PRICE && (lease1 || lease2 || lease3 || lease4);
+  // (fix b) roundPriceForProse is a HOUSE-PRICE rounder (nearest ~$10k); applied to a monthly
+  // rent it collapses ~$2,200 to "$0" — a fabricated number. Suppress any rent that rounds to <=0
+  // rather than publish "$0". (Narrow: market-card lease path only; the hero's k-gated lease pill
+  // carries the real rent. Properly re-formatting rents is the sitewide-audit's job.)
+  const rentCell = (x: number | null) => (x != null && roundPriceForProse(x) > 0 ? formatCADShort(roundPriceForProse(x)) : "—");
+  // (fix c) Typical sold mirrors the graduated hero/glance basis (12mo preferred, ~26mo fallback),
+  // not the 90-day-gated DB3 value — so glance and market card can never disagree.
+  const gSale = enrichment.saleBasis;
+  const heroTypical = num(stats?.avg_sold_price ?? null);
+  const typicalSold = gSale
+    ? formatCADShort(roundPriceForProse(gSale.window === "12mo" && heroTypical ? heroTypical : gSale.typical))
+    : "—";
 
   return {
     salesSummary: {
       title: "Sales",
       body: salesCount > 0
-        ? `Sale activity on ${streetName} in the recent period. Stats reflect closed transactions only.`
-        : `No closed sales on record for ${streetName} in the recent period.`,
+        ? `Sale activity on ${streetName} in the last 90 days. Stats reflect closed transactions only.`
+        : `No closed sales on record for ${streetName} in the last 90 days.`,
       stats: [
-        { label: "Recent sales", value: String(salesCount) },
-        { label: "Typical sold", value: typical && salesCount >= K_ANON_PRICE ? formatCADShort(roundPriceForProse(typical)) : "—" },
+        // (fix a) window-label the count so it reads as complementary to the hero's 12-month basis.
+        { label: "Recent sales · last 90 days", value: String(salesCount) },
+        { label: "Typical sold", value: typicalSold },
         { label: "Days on market", value: dom !== null ? String(Math.round(dom)) : "—" },
       ],
     },
@@ -1087,8 +1140,8 @@ function buildMarketActivity(input: {
       title: "Leases",
       body: `Rental activity on ${streetName} across recent months. Breakdown by bed count below.`,
       stats: [
-        { label: "Recent leases", value: String(stats?.leased_count_12months ?? 0) },
-        { label: "Typical rent", value: num(stats?.avg_leased_price ?? null) ? formatCADShort(roundPriceForProse(num(stats?.avg_leased_price ?? null)!)) : "—" },
+        { label: "Recent leases · last 12 months", value: String(stats?.leased_count_12months ?? 0) },
+        { label: "Typical rent", value: rentCell(num(stats?.avg_leased_price ?? null)) },
         { label: "Days on market", value: num(stats?.avg_lease_dom ?? null) !== null ? String(Math.round(num(stats?.avg_lease_dom ?? null)!)) : "—" },
       ],
     } : undefined,
@@ -1099,12 +1152,18 @@ function buildMarketActivity(input: {
       data: quarterly,
       caption: `Typical sold price across all product types on ${streetName}, plotted with transaction volume.`,
     } : null,
-    rentByBeds: anyLease ? [
-      { label: "1 bed", value: lease1 ? formatCADShort(roundPriceForProse(lease1)) : "—", detail: "typical" },
-      { label: "2 bed", value: lease2 ? formatCADShort(roundPriceForProse(lease2)) : "—", detail: "typical" },
-      { label: "3 bed", value: lease3 ? formatCADShort(roundPriceForProse(lease3)) : "—", detail: "typical" },
-      { label: "4+ bed", value: lease4 ? formatCADShort(roundPriceForProse(lease4)) : "—", detail: "typical" },
-    ] : undefined,
+    rentByBeds: (() => {
+      if (!anyLease) return undefined;
+      const rows = [
+        { label: "1 bed", value: rentCell(lease1), detail: "typical" },
+        { label: "2 bed", value: rentCell(lease2), detail: "typical" },
+        { label: "3 bed", value: rentCell(lease3), detail: "typical" },
+        { label: "4+ bed", value: rentCell(lease4), detail: "typical" },
+      ];
+      // (fix f) collapse a per-bed grid that is entirely "—" (every value suppressed by the
+      // $0 fix) — don't render scaffolding with no cell to show.
+      return rows.some((r) => r.value !== "—") ? rows : undefined;
+    })(),
     streetName,
   };
 }

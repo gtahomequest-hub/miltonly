@@ -56,6 +56,7 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number): StreetStat[] {
       kind: 'price',
       value: hp.rawTypicalPrice ?? null, // null => k-anon silent
       sub: range,
+      basis: typical?.basis ?? null, // window+sample disclosure (mandatory on priced tiles)
       silentNote: 'sample too small to publish',
     },
     { label: 'Transactions tracked', kind: 'count', value: hp.rawTotalTransactions ?? 0 },
@@ -159,6 +160,9 @@ export function mapStreetV2Data(
       stats: mapHeroStats(hp, activeCount),
       salePills: saleRow ? saleRow.pills.map(mapPill) : [],
       leasePills: leaseRow ? leaseRow.pills.map(mapPill) : [],
+      leaseWindowNote: data.enrichment.leaseBasis
+        ? data.enrichment.leaseBasis.window === '12mo' ? 'last 12 months' : 'last ~2 years'
+        : null,
     },
 
     // Prose: generated 8(+1) sections verbatim. No generation => placeholder state.
@@ -249,6 +253,18 @@ export function mapStreetV2Data(
       seller: { ...data.finalCTAs.sellerCTA },
       buyer: { ...data.finalCTAs.buyerCTA },
     },
+
+    // DEC-CONDO-6 street port — area-context anchor + tier.
+    areaContext: data.enrichment.areaContext
+      ? {
+          neighbourhoodName: data.enrichment.areaContext.neighbourhoodName,
+          neighbourhoodSlug: data.enrichment.areaContext.neighbourhoodSlug,
+          typicalPrice: data.enrichment.areaContext.typicalPrice,
+          basis: 'across sales in the last 12 months', // hub typical is the 12mo neighbourhood aggregate
+        }
+      : null,
+    tier: data.enrichment.tier,
+    hasAnySale: data.enrichment.hasAnySale,
 
     lastUpdated: data.lastUpdated,
   };

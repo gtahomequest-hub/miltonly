@@ -9,6 +9,7 @@ import type { StreetV2Data } from './types';
 import {
   StreetHero,
   StreetGlance,
+  StreetAreaContext,
   StreetBody,
   StreetTypes,
   StreetMarket,
@@ -42,6 +43,7 @@ export function StreetV2Page({
       <SiteNav variant="page" />
       <StreetHero data={data} />
       <StreetGlance data={data} />
+      <StreetAreaContext data={data} />
       <StreetBody data={data} />
       <StreetTypes data={data} />
       <StreetMarket data={data} />
