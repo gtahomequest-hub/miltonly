@@ -24,6 +24,14 @@ export interface ResaleClaimCopy {
   body: string;
   /** buyer-CTA body (both shells) */
   ctaBody: string;
+  /** minimal shell's "why we're showing you the area instead" sentence. Was hardcoded future-tense
+   *  ("…until a home on X trades"), which asserts absence in different words — the same false claim
+   *  in a component the first pass never touched. */
+  areaFallbackLine: string;
+  /** seller-CTA body. A thin street cannot honestly promise depth ("grounded in every sale we have
+   *  tracked") — on two sales that reads as boilerplate written for rich streets. Same population
+   *  gate as the buyer copy. */
+  sellerBody: (streetName: string) => string;
 }
 
 export function resaleClaim(
@@ -39,6 +47,9 @@ export function resaleClaim(
       body: `Homes have changed hands on ${shortName}, but not often enough recently for us to publish a typical price — the record's there, it just can't support a number yet. We'd rather show you nothing than a figure the record can't stand behind.`,
       // verbatim the suppression copy the full shell has always used
       ctaBody: `Too few recent sales on ${shortName} to publish a typical price yet — the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`,
+      areaFallbackLine: `With too few recent sales on ${shortName} to price it on its own, the area read below is the closest honest signal we can give you.`,
+      sellerBody: (streetName) =>
+        `Few recent sales on ${streetName} means less to compare against — which is exactly when pricing needs judgement rather than a formula. A conversation grounded in what the record does show, and in the ${shortName} homes we've tracked.`,
     };
   }
   return {
@@ -47,5 +58,8 @@ export function resaleClaim(
     body: absenceBody ?? `No resales recorded on ${shortName} yet — a real street with quiet turnover, not a page without homes.`,
     // verbatim the absence copy the full shell has always used
     ctaBody: `No resales recorded on ${shortName} yet — a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`,
+    areaFallbackLine: `The area read below is the closest market signal we can offer honestly until a home on ${shortName} trades.`,
+    sellerBody: (streetName) =>
+      `No resale on record for ${streetName} yet, so there is no local comparable to lean on — pricing here is a judgement call, and worth a conversation before you list.`,
   };
 }

@@ -54,8 +54,8 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
               {view.neighbourhoodName && view.neighbourhoodSlug && (
                 <p>
                   It sits within{' '}
-                  <a href={`/neighbourhoods/${view.neighbourhoodSlug}`}>{view.neighbourhoodName}</a>. The area read below
-                  is the closest market signal we can offer honestly until a home on {view.shortName} trades.
+                  <a href={`/neighbourhoods/${view.neighbourhoodSlug}`}>{view.neighbourhoodName}</a>.{' '}
+                  {claim.areaFallbackLine}
                 </p>
               )}
             </div>

@@ -104,9 +104,18 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
   }
 
   const inArea = nbName ? ` in Milton's ${nbName} neighbourhood` : " in Milton";
-  const whereItIs = typeLabel
-    ? `${name} is a ${typeLabel}${inArea}.`
-    : `${name} is${inArea}.`;
+  // "X is a <type>" only reads as English for type nouns that are ordinary countable places.
+  // "Richardson Way is a way", "Kelso Line is a line", "Holland Heights is a heights" do not.
+  // For those the type is dropped from the sentence — it is still stated exactly once, in the
+  // Street facts row ("Street type: Way"), and it is visible in the name itself.
+  const ARTICLE_READS_NATURALLY = new Set([
+    "crescent", "court", "drive", "road", "place", "street", "avenue",
+    "boulevard", "lane", "trail", "circle", "terrace", "close", "path",
+  ]);
+  const whereItIs =
+    typeLabel && ARTICLE_READS_NATURALLY.has(typeLabel.toLowerCase())
+      ? `${name} is a ${typeLabel}${inArea}.`
+      : `${name} is${inArea}.`;
 
   const noData =
     `No home resales are recorded on ${shortName} in our data window — the last ~2 years of ` +

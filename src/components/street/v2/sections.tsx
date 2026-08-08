@@ -579,7 +579,10 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
           <div className="s-finalgrid" style={{ marginTop: 24 }}>
             <div className="s-fcard">
               <h3>{seller.headline}</h3>
-              <p>{seller.body}</p>
+              {/* The stock seller copy promises "grounded in every sale we have tracked" — on a
+                  street the page is simultaneously arguing has too few sales to price, that reads
+                  as boilerplate written for rich streets. Same population gate as the buyer copy. */}
+              <p>{alertFraming ? claim.sellerBody(data.name) : seller.body}</p>
               <a className="s-b1" href={seller.actionHref}>
                 {seller.actionLabel} →
               </a>
