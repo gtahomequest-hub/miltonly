@@ -413,6 +413,14 @@
   font-size: 11px;
   color: var(--s-text-muted);
 }
+/* shown when every travel time in the block is suppressed — states the grain we can support */
+.street-v2 .s-near-note {
+  margin-top: 10px;
+  font-family: var(--s-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--s-text-muted);
+}
 .street-v2 .s-side-cta {
   background: var(--s-bg-deep);
   border-radius: 14px;

@@ -117,7 +117,8 @@ export interface StreetHeroProps {
 export interface NearbyPlace {
   category: string;    // "Park" / "School" / "Mosque" / "Grocery"
   name: string;
-  distance: string;    // "5 min walk" / "2 km"
+  /** null => suppressed: no per-street coordinate exists to derive a travel time from */
+  distance: string | null;    // "5 min walk" / "2 km"
   icon?: string;       // Unicode or short string
   href?: string;
 }
@@ -269,8 +270,8 @@ export interface MarketActivityProps {
 
 export interface CommuteDestination {
   name: string;
-  primaryTime: string;     // "7 min drive"
-  secondaryTime?: string;  // "25 min transit"
+  primaryTime: string | null;     // "7 min drive"; null => suppressed (no per-street coord)
+  secondaryTime?: string | null;  // "25 min transit"; null => suppressed
   /** schema.org @type for this destination. */
   schemaType?:
     | "CollegeOrUniversity"

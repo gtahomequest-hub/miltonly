@@ -154,6 +154,12 @@ export function StreetGlance({ data }: { data: StreetV2Data }) {
 
 function Sidebar({ data }: { data: StreetV2Data }) {
   const { sidebar } = data;
+  // The sidebar seller CTA was the last ungated copy on the page: "grounded in every sale we have
+  // tracked on X" rendered on 412 of 431 pages, contradicted the tiered CTA below it on 191, and
+  // was flatly false on 26 streets with no resale on record. Same predicate as everything else.
+  const claim = resaleClaim(data.shortName, data.hasAnySale);
+  const subK5 = data.tier === 'identity-only' || data.tier === 'area-only';
+  const ctaBody = subK5 || claim.claimsAbsence ? claim.sellerBody(data.name) : sidebar.cta.body;
   return (
     <aside className="s-side">
       {sidebar.facts.length > 0 && (
@@ -174,15 +180,19 @@ function Sidebar({ data }: { data: StreetV2Data }) {
             <div className="s-near" key={n.name}>
               {n.icon && <span className="s-near-ic">{n.icon}</span>}
               <span className="s-near-n">{n.name}</span>
-              <span className="s-near-d">{n.distance}</span>
+              {/* distance is null until a per-street coordinate exists — name only, no figure */}
+              {n.distance && <span className="s-near-d">{n.distance}</span>}
             </div>
           ))}
+          {sidebar.nearby.every((n) => !n.distance) && (
+            <div className="s-near-note">In Milton. Travel times aren&rsquo;t street-specific yet.</div>
+          )}
         </div>
       )}
       <div className="s-side-cta">
         <span className="s-eyebrow">{sidebar.cta.eyebrow}</span>
         <h4>{sidebar.cta.headline}</h4>
-        <p>{sidebar.cta.body}</p>
+        <p>{ctaBody}</p>
         <a className="s-b1" href={sidebar.cta.actionHref}>
           {sidebar.cta.actionLabel}
         </a>
@@ -414,10 +424,12 @@ export function StreetCommute({ data }: { data: StreetV2Data }) {
               {c.destinations.map((d) => (
                 <div className="s-cd" key={d.name}>
                   <span className="s-cd-n">{d.name}</span>
-                  <span className="s-cd-t">
-                    {d.primaryTime}
-                    {d.secondaryTime ? ` · ${d.secondaryTime}` : ''}
-                  </span>
+                  {d.primaryTime && (
+                    <span className="s-cd-t">
+                      {d.primaryTime}
+                      {d.secondaryTime ? ` · ${d.secondaryTime}` : ''}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
