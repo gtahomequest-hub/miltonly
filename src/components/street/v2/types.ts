@@ -267,8 +267,9 @@ export interface StreetV2Data {
     neighbourhoodName: string;
     neighbourhoodSlug: string | null;
     typicalPrice: number | null;
-    /** the hub's window basis, disclosed on the number. */
-    basis: string;
+    /** the hub's window + sample-count disclosure, shown under the number.
+     *  null when the typical itself is suppressed — nothing published, nothing to disclose. */
+    basis: string | null;
   } | null;
   tier: 'priced-sale' | 'priced-lease' | 'area-only' | 'identity-only';
   /** TRUE when the street has >=1 resale in the licensed window. Gates the dormant CTA copy so

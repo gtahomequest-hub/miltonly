@@ -11,6 +11,7 @@
 // where getStreetPageData suppressed one.
 import 'server-only';
 import { getStreetPageData } from '@/lib/street-data';
+import { windowDisclosure } from '@/lib/streetEnrichment';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import type {
   StreetPageData,
@@ -59,8 +60,17 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number): StreetStat[] {
       basis: typical?.basis ?? null, // window+sample disclosure (mandatory on priced tiles)
       silentNote: 'sample too small to publish',
     },
-    { label: 'Transactions tracked', kind: 'count', value: hp.rawTotalTransactions ?? 0 },
-    { label: 'Active right now', kind: 'count', value: activeCount },
+    // EVERY count states its subject and its window. This mapper REBUILDS the hero tiles, so a sub
+    // set upstream in buildHero never reaches the v2 shell — it has to be set here.
+    // "Transactions tracked" is sales + leases over 12 months; the pill row beside it counts SALES
+    // ONLY over the same window. Unlabelled, the two numbers read as a contradiction.
+    {
+      label: 'Transactions tracked',
+      kind: 'count',
+      value: hp.rawTotalTransactions ?? 0,
+      sub: (hp.rawTotalTransactions ?? 0) > 0 ? 'sales + leases · last 12 months' : 'no closed deals · last 12 months',
+    },
+    { label: 'Active right now', kind: 'count', value: activeCount, sub: 'live listings · today' },
   ];
 }
 
@@ -260,7 +270,17 @@ export function mapStreetV2Data(
           neighbourhoodName: data.enrichment.areaContext.neighbourhoodName,
           neighbourhoodSlug: data.enrichment.areaContext.neighbourhoodSlug,
           typicalPrice: data.enrichment.areaContext.typicalPrice,
-          basis: 'across sales in the last 12 months', // hub typical is the 12mo neighbourhood aggregate
+          // Was the literal 'across sales in the last 12 months' — no sample count, and it read as a
+          // typo under a published dollar figure on 213 live pages. Same disclosure helper every
+          // other published price on the page uses, so the count and the plural are real.
+          basis:
+            data.enrichment.areaContext.sampleCount != null
+              ? windowDisclosure({
+                  typical: data.enrichment.areaContext.typicalPrice ?? 0,
+                  count: data.enrichment.areaContext.sampleCount,
+                  window: '12mo',
+                })
+              : null,
         }
       : null,
     tier: data.enrichment.tier,

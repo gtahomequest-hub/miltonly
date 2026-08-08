@@ -614,13 +614,27 @@ interface HeroBuildInput {
   enrichment: StreetEnrichment;
 }
 
+/** Any phrasing that asserts nothing has ever traded on the street. Kept beside the one gate in
+ *  resaleClaim.ts — this is the detector for prose we did not author (stored generation output),
+ *  not a second source of copy. */
+const ASSERTS_NO_SALES =
+  /no (home )?resales? (are |have been )?recorded|no recent turnover|yet to (trade|sell|change hands)|no homes have (sold|traded)|never (sold|traded)|until a home[^.]*trades|nothing has (traded|sold)/i;
+
 function buildHero(input: HeroBuildInput): StreetHeroProps {
   const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs, enrichment } = input;
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
   const eyebrow = `Street Profile · ${cleanNbhds.slice(0, 3).join(" · ") || config.CITY_NAME} · ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
-  const subtitle = streetContent?.description
-    ? characterSummaryFrom(streetContent.description) || `A street in ${CITY_PROVINCE_LABEL}.`
-    : `A street in ${CITY_PROVINCE_LABEL}.`;
+  // The hero subtitle is STORED LLM prose (StreetContent.description), so it sits outside the
+  // resaleClaim gate — and on 2 published streets it asserted "No home resales are recorded on X"
+  // while the same page's CTA correctly said "too few recent sales" (Nakerville sold 2026-07-30).
+  // Structural safety net: a stored sentence may not assert absence on a street that has sales.
+  // This suppresses a false claim; it never invents one. The stored copy still wants regenerating.
+  const rawSummary = streetContent?.description ? characterSummaryFrom(streetContent.description) : null;
+  const summaryClaimsAbsence = rawSummary != null && ASSERTS_NO_SALES.test(rawSummary);
+  const subtitle =
+    rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale)
+      ? rawSummary
+      : `A street in ${CITY_PROVINCE_LABEL}.`;
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -665,13 +679,16 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   heroStats.push({
     label: "Transactions tracked",
     value: String(totalTransactions),
-    sub: totalTransactions > 0 ? "closed deals on file" : "new street",
+    // EVERY count states its window and its subject. This tile is sales + leases over 12 months;
+    // the pill row beside it counts SALES ONLY over the same window, which is why the two numbers
+    // differ. Unlabelled, they read as a contradiction.
+    sub: totalTransactions > 0 ? "sales + leases · last 12 months" : "no closed deals · last 12 months",
   });
 
   heroStats.push({
     label: "Active right now",
     value: String(allListings.filter((l) => l.status === "active").length),
-    sub: "live on the market",
+    sub: "live listings · today",
   });
 
   // Product pills — below k=5 sample size, suppress typicalPrice (null) and
@@ -1006,7 +1023,10 @@ function buildGlanceTiles(input: {
 
   const tiles: GlanceTile[] = [];
 
-  tiles.push({ label: "Transactions tracked", value: String(stats?.sold_count_12months ?? 0), detail: "recent activity" });
+  // RELABELLED: this tile counts SALES ONLY, while the hero tile of the same former label counted
+  // sales + leases — the same words over two different numbers on one screen. Distinct subject,
+  // distinct label, explicit window.
+  tiles.push({ label: "Sales tracked", value: String(stats?.sold_count_12months ?? 0), detail: "last 12 months" });
 
   const typical = num(stats?.avg_sold_price ?? null);
   // GRADUATED to match the hero: 12mo value byte-identical, ~26mo fallback un-barrens,
@@ -1024,14 +1044,14 @@ function buildGlanceTiles(input: {
   tiles.push({
     label: "Typical DOM",
     value: dom !== null ? `${Math.round(dom)}d` : "—",
-    detail: "closed sales",
+    detail: "closed sales · last 12 months",
   });
 
   const ratio = num(stats?.avg_sold_to_ask ?? null);
   tiles.push({
     label: "Sold to ask",
     value: ratio !== null ? `${Math.round(ratio * 100)}%` : "—",
-    detail: "buyer competition",
+    detail: "closed sales · last 12 months",
   });
 
   // Type split — 2 tiles
@@ -1041,7 +1061,7 @@ function buildGlanceTiles(input: {
     tiles.push({
       label: `${displayNameFor(t.property_type)} sold`,
       value: t.n >= K_ANON_PRICE && avgPrice ? formatCADShort(roundPriceForProse(avgPrice)) : String(t.n),
-      detail: t.n >= K_ANON_PRICE ? `across ${t.n}` : `${t.n} transactions`,
+      detail: t.n >= K_ANON_PRICE ? `across ${t.n} sales · last 12 months` : `${t.n} ${t.n === 1 ? "sale" : "sales"} · last 12 months`,
     });
   }
 
@@ -1053,10 +1073,10 @@ function buildGlanceTiles(input: {
     if (hi !== null) tiles.push({ label: "Highest sold", value: formatCADShort(roundPriceForProse(hi)), detail: "last 12 mo" });
   } else {
     tiles.push({ label: "Sale range", value: "—", detail: "under publish threshold" });
-    tiles.push({ label: "Activity", value: `${stats?.sold_count_90days ?? 0}`, detail: "recent window" });
+    tiles.push({ label: "Activity", value: `${stats?.sold_count_90days ?? 0}`, detail: "sales · last 90 days" });
   }
 
-  tiles.push({ label: "Active right now", value: String(active.length), detail: "live listings" });
+  tiles.push({ label: "Active right now", value: String(active.length), detail: "live listings · today" });
 
   // YoY
   const yoy = num(stats?.price_change_yoy ?? null);
@@ -1079,7 +1099,7 @@ function buildGlanceTiles(input: {
     const monthName = new Date(2024, peak - 1, 1).toLocaleString("en-CA", { month: "short" });
     tiles.push({ label: "Busiest month", value: monthName, detail: "most closings" });
   } else {
-    tiles.push({ label: "Leases (12m)", value: String(stats?.leased_count_12months ?? 0), detail: "closed" });
+    tiles.push({ label: "Leases", value: String(stats?.leased_count_12months ?? 0), detail: "closed · last 12 months" });
   }
 
   // (fix f) COLLAPSE, DON'T FILL — drop tiles that would render as a bare "—" so the at-a-glance
