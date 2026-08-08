@@ -32,6 +32,13 @@ export interface ResaleClaimCopy {
    *  tracked") — on two sales that reads as boilerplate written for rich streets. Same population
    *  gate as the buyer copy. */
   sellerBody: (streetName: string) => string;
+  /** eyebrow + H2 for the area-context block on identity-tier pages. The heading used to be the
+   *  flat literal "New to the record", keyed on TIER — so it rendered on 113 pages of which 90 had
+   *  sales on record. A heading is scanned alone and is what gets lifted into search snippets and
+   *  AI summaries, so the sentence beneath it does not rescue it. Gated on hasAnySale like
+   *  everything else here. */
+  areaEyebrow: string;
+  areaHeading: string;
 }
 
 export function resaleClaim(
@@ -50,6 +57,9 @@ export function resaleClaim(
       areaFallbackLine: `With too few recent sales on ${shortName} to price it on its own, the area read below is the closest honest signal we can give you.`,
       sellerBody: (streetName) =>
         `Few recent sales on ${streetName} means less to compare against — which is exactly when pricing needs judgement rather than a formula. A conversation grounded in what the record does show, and in the ${shortName} homes we've tracked.`,
+      areaEyebrow: 'Where this street sits',
+      // homes HAVE sold here — the record is thin, not empty. Same register as the heading above.
+      areaHeading: 'Too few recent sales to price it on its own',
     };
   }
   return {
@@ -61,5 +71,8 @@ export function resaleClaim(
     areaFallbackLine: `The area read below is the closest market signal we can offer honestly until a home on ${shortName} trades.`,
     sellerBody: (streetName) =>
       `No resale on record for ${streetName} yet, so there is no local comparable to lean on — pricing here is a judgement call, and worth a conversation before you list.`,
+    areaEyebrow: 'Where this street sits',
+    // true only here: the record really is empty
+    areaHeading: 'New to the record',
   };
 }

@@ -612,12 +612,15 @@ export function StreetAreaContext({ data }: { data: StreetV2Data }) {
   if (data.tier === 'priced-sale') return null;
   const ac = data.areaContext;
   const identity = data.tier === 'identity-only';
+  // TIER decides which framing this block uses; hasAnySale decides what the heading may CLAIM.
+  // Keyed on tier alone, "New to the record" shipped on 113 pages, 90 of which had sales.
+  const claim = resaleClaim(data.shortName, data.hasAnySale);
   return (
     <section className="s-block s-areacx">
       <div className="s-wrap">
         <div className="s-sechead">
-          <span className="s-eyebrow">{identity ? 'Where this street sits' : 'Neighbourhood context'}</span>
-          <h2>{identity ? `New to the record` : `The market around ${data.shortName}`}</h2>
+          <span className="s-eyebrow">{identity ? claim.areaEyebrow : 'Neighbourhood context'}</span>
+          <h2>{identity ? claim.areaHeading : `The market around ${data.shortName}`}</h2>
         </div>
         <div className="s-areacx-card">
           {ac && ac.typicalPrice != null ? (
