@@ -43,7 +43,7 @@ const RULES: RegExp[] = [
   /\b(?:roughly|about|approximately|just|barely|under|over|around)?\s*(?:an?|half an|a quarter)\s+(?:hour|hours)\b/i,
   /\b(?:a|an)\s+(?:short|quick|brief|easy|long|straight)\s+(?:drive|walk|ride|commute|trip)\b/i,
   /\b(?:minutes|moments|seconds)\s+(?:from|away|by)\b/i,
-  /\bwithin\s+(?:a\s+)?(?:short|easy|quick)\s+(?:drive|walk|ride)\b/i,
+  /\bwithin\s+(?:a\s+)?(?:short|easy|quick)\s+(?:drive|walk|ride|stroll)\b/i,
 ];
 
 /** Per-property claims. Only suppressed where the record cannot possibly source them. */
@@ -125,6 +125,12 @@ function isHollow(paragraph: string): boolean {
   return VACUOUS.test(paragraph);
 }
 
+/** A single sentence made circular by the removal of its own figure:
+ *  "Across Campbellville, comparable detached homes have sold at broadly comparable levels." */
+function isVacuousSentence(sentence: string): boolean {
+  return VACUOUS.test(sentence);
+}
+
 export interface StripOpts { noRecord?: boolean }
 
 function drop(sentence: string, opts?: StripOpts): boolean {
@@ -146,12 +152,20 @@ export function stripNumericSentences(text: string | null | undefined, opts?: St
 export function stripNumericParagraphs(paragraphs: string[], opts?: StripOpts): string[] {
   const out: string[] = [];
   for (const para of paragraphs) {
-    const original = splitSentences(para);
-    const kept = original.filter((s) => !drop(s, opts));
+    const kept: string[] = [];
+    let prevDropped = false;
+    for (const s of splitSentences(para)) {
+      // A dangling reference can appear anywhere a cut landed, not only at the paragraph opener:
+      // "Mae Court is a very low-density street. THE PROPERTY is set back from the road…" — the
+      // opener survived and the danger is in the sentence after the hole. So the check follows the
+      // hole: whenever a sentence goes, the next survivor is tested against it, and cascades.
+      let dropIt = drop(s, opts) || isVacuousSentence(s);
+      if (!dropIt && prevDropped && opensOnDanglingReference(s)) dropIt = true;
+      if (dropIt) { prevDropped = true; continue; }
+      kept.push(s);
+      prevDropped = false;
+    }
     if (kept.length === 0) continue;
-    // did we cut anything BEFORE the surviving opener? only then can it dangle
-    const lostALeadingSentence = original[0] !== kept[0];
-    if (lostALeadingSentence && opensOnDanglingReference(kept[0])) continue;
     const joined = kept.join(' ').replace(/\s+/g, ' ').trim();
     if (isHollow(joined)) continue;
     out.push(joined);
