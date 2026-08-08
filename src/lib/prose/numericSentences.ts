@@ -44,16 +44,23 @@ const RULES: RegExp[] = [
   /\b(?:a|an)\s+(?:short|quick|brief|easy|long|straight)\s+(?:drive|walk|ride|commute|trip)\b/i,
   /\b(?:minutes|moments|seconds)\s+(?:from|away|by)\b/i,
   /\bwithin\s+(?:a\s+)?(?:short|easy|quick)\s+(?:drive|walk|ride|stroll)\b/i,
+
+  // Realtor puffery dressed as proximity. This is the register we already refused when ruling on
+  // listing-description mining — we declined to launder it out of broker remarks, so we do not
+  // publish our own version of it. Distinct from qualitative orientation ("within walking
+  // distance"), which is kept: that describes, this sells.
+  /\b(?:steps from|on the doorstep|a stone's throw|moments away)\b/i,
 ];
 
 /** Per-property claims. Only suppressed where the record cannot possibly source them. */
 const PROPERTY_DETAIL =
   /\b(?:square feet|sq\.? ?ft|bedrooms?|bathrooms?|garages?|driveways?|siding|brick|stucco|storeys?|stories|frontage|lot size|basements?|kitchens?|roofs?|porch|backyard|floor plans?)\b/i;
 
-/** AMBIGUOUS proximity language — reported, NOT suppressed. "Within walking distance of downtown"
- *  may be defensible for a street that genuinely is; that is a judgement call, not a rule. */
+/** KEPT proximity language — qualitative orientation, not an asserted measurement. Thomas Street
+ *  genuinely does sit a block north of Main Street East. Reported for visibility, not suppressed;
+ *  all of it becomes provable when Address Points lands, so this is an interim position. */
 export const AMBIGUOUS_PROXIMITY =
-  /\b(?:within walking distance|walkable|steps from|a stone's throw|close to downtown|near the (?:core|centre|center)|on the doorstep)\b/i;
+  /\b(?:within walking distance|walkable|close to downtown|near the (?:core|centre|center))\b/i;
 
 /** Does this sentence assert a number, or an unverifiable travel duration? */
 export function sentenceHasNumber(sentence: string): boolean {
