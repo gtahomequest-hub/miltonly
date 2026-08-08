@@ -151,6 +151,9 @@ export function mapStreetV2Data(
 ): StreetV2Data {
   const hp = data.heroProps;
   const activeCount = data.activeInventory.listings.length;
+  // No sale on record and nothing listed => a per-property claim in the prose has no source
+  // anywhere. Only there do we suppress property detail that carries no number.
+  const stripOpts = { noRecord: !data.enrichment.hasAnySale && activeCount === 0 };
   const ma = data.marketActivity;
   const saleRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent sales');
   const leaseRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent leases');
@@ -165,7 +168,8 @@ export function mapStreetV2Data(
     name: data.street.name,
     shortName: data.street.shortName,
     eyebrow: hp.eyebrow,
-    subtitle: hp.subtitle || data.street.characterSummary,
+    // the fallback is stored prose too — strip it rather than let it round the guard
+    subtitle: hp.subtitle || stripNumericSentences(data.street.characterSummary, stripOpts),
     neighbourhoods: data.street.neighbourhoods,
 
     hero: {
@@ -183,7 +187,7 @@ export function mapStreetV2Data(
     placeholder: !generation,
     sections: generation
       ? generation.sections
-          .map((s) => ({ id: s.id, heading: s.heading, paragraphs: stripNumericParagraphs(s.paragraphs) }))
+          .map((s) => ({ id: s.id, heading: s.heading, paragraphs: stripNumericParagraphs(s.paragraphs, stripOpts) }))
           .filter((s) => s.paragraphs.length > 0)
       : [],
     ownerCtaPrice: ownerTyped ? ownerTyped.typicalPrice : null,
@@ -267,7 +271,7 @@ export function mapStreetV2Data(
     // Campbellville typical. An answer with nothing qualitative left takes its question with it.
     faqs: generation
       ? generation.faq
-          .map((f) => ({ question: f.question, answer: stripNumericSentences(f.answer) }))
+          .map((f) => ({ question: f.question, answer: stripNumericSentences(f.answer, stripOpts) }))
           .filter((f) => f.answer.length > 0)
       : [],
 
