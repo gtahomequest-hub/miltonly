@@ -11,6 +11,7 @@
 // where getStreetPageData suppressed one.
 import 'server-only';
 import { getStreetPageData } from '@/lib/street-data';
+import { windowDisclosure } from '@/lib/streetEnrichment';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import type {
   StreetPageData,
@@ -260,7 +261,17 @@ export function mapStreetV2Data(
           neighbourhoodName: data.enrichment.areaContext.neighbourhoodName,
           neighbourhoodSlug: data.enrichment.areaContext.neighbourhoodSlug,
           typicalPrice: data.enrichment.areaContext.typicalPrice,
-          basis: 'across sales in the last 12 months', // hub typical is the 12mo neighbourhood aggregate
+          // Was the literal 'across sales in the last 12 months' — no sample count, and it read as a
+          // typo under a published dollar figure on 213 live pages. Same disclosure helper every
+          // other published price on the page uses, so the count and the plural are real.
+          basis:
+            data.enrichment.areaContext.sampleCount != null
+              ? windowDisclosure({
+                  typical: data.enrichment.areaContext.typicalPrice ?? 0,
+                  count: data.enrichment.areaContext.sampleCount,
+                  window: '12mo',
+                })
+              : null,
         }
       : null,
     tier: data.enrichment.tier,

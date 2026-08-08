@@ -35,6 +35,9 @@ export interface StreetAreaContext {
   neighbourhoodName: string;
   neighbourhoodSlug: string | null;
   typicalPrice: number | null; // hub-identical neighbourhood typical (k-anon; null when sub-k)
+  /** sales backing that typical — the sample count its disclosure must state. Null when the
+   *  typical itself is suppressed (nothing published, nothing to disclose). */
+  sampleCount: number | null;
 }
 export type StreetTier = "priced-sale" | "priced-lease" | "area-only" | "identity-only";
 
@@ -74,6 +77,23 @@ async function fullWindowAgg(siblingSlugs: string[], tx: "For Sale" | "For Lease
   return { count: rows[0]?.n ?? 0, avg: num(rows[0]?.avg ?? null) };
 }
 
+// Does the record hold ANY resale for this street, ever? No date guard (a firm sale closing next
+// week still counts as recorded) and no price guard (a row without a price is still a transaction).
+// This is the sole predicate behind the "No resales recorded … yet" claim — see resaleClaim.ts.
+async function anySaleOnRecord(siblingSlugs: string[]): Promise<boolean> {
+  const sd = getSoldDb();
+  if (!sd) return false;
+  const rows = await (sd`
+    SELECT 1 AS hit
+    FROM sold.sold_records
+    WHERE street_slug = ANY(${siblingSlugs}::text[])
+      AND perm_advertise = TRUE
+      AND transaction_type = 'For Sale'
+    LIMIT 1
+  ` as unknown as Promise<Array<{ hit: number }>>).catch(() => [] as Array<{ hit: number }>);
+  return rows.length > 0;
+}
+
 // Graduate one side: prefer 12mo when it clears k>=5, else fall back to the full window.
 async function graduate(
   siblingSlugs: string[],
@@ -110,8 +130,16 @@ export async function buildStreetEnrichment(params: {
   if (nbhd) {
     // SAME functions the hub page uses → typicalPrice byte-identical to the hub.
     const sale = await saleAggQuery(nbhd.rawStrings).catch(() => []);
-    const typicalPrice = assembleAggregates(sale[0] ?? null, 0).typicalPrice;
-    areaContext = { neighbourhoodName: nbhd.name, neighbourhoodSlug: nbhd.slug, typicalPrice };
+    const agg = assembleAggregates(sale[0] ?? null, 0);
+    const typicalPrice = agg.typicalPrice;
+    areaContext = {
+      neighbourhoodName: nbhd.name,
+      neighbourhoodSlug: nbhd.slug,
+      typicalPrice,
+      // the same aggregate that produced the typical also carries its sample size — carry it through
+      // so the disclosure can state a real count instead of the countless "across sales" literal
+      sampleCount: typicalPrice != null ? agg.salesCount : null,
+    };
   }
 
   // ── graduated sale + lease ──
@@ -123,6 +151,15 @@ export async function buildStreetEnrichment(params: {
   const bestSale = Math.max(sale12moCount, saleG.fullCount);
   const bestLease = Math.max(lease12moCount, leaseG.fullCount);
   const identityOnly = bestSale < K_IDENTITY && bestLease < K_IDENTITY;
+
+  // ── hasAnySale: EXISTENCE, not closure ────────────────────────────────────────────────────────
+  // bestSale is built from windows that both carry `sold_date <= NOW()`. That guard is a PRICE rule
+  // — never publish a figure off a deal that hasn't closed — and it is the wrong test for the
+  // binary claim "no resales recorded on this street". 215 For Sale records in the table are firm
+  // with a future closing date; on 6 published streets they were the ONLY sale, so the page claimed
+  // the record was empty when a sale was closing days later. Ask the record directly, and only when
+  // we are actually about to make the absence claim (bestSale === 0), so priced pages pay nothing.
+  const hasAnySale = bestSale > 0 ? true : await anySaleOnRecord(siblingSlugs);
 
   const tier: StreetTier = saleG.basis
     ? "priced-sale"
@@ -138,7 +175,7 @@ export async function buildStreetEnrichment(params: {
     leaseBasis: leaseG.basis,
     tier,
     counts: { sale12mo: sale12moCount, saleFull: saleG.fullCount, lease12mo: lease12moCount, leaseFull: leaseG.fullCount },
-    hasAnySale: bestSale > 0,
+    hasAnySale,
   };
 }
 

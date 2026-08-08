@@ -8,9 +8,13 @@ import './street-theme.css';
 import type { StreetV2Data } from './types';
 import type { MinimalStreetView } from '@/lib/streetMinimal';
 import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
+import { resaleClaim } from './resaleClaim';
 import { SiteNav } from '../../nav/SiteNav';
 
 export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: MinimalStreetView }) {
+  // the shared gate — absence only where the record is genuinely empty (see resaleClaim.ts).
+  // view.noData is this shell's own street-specific absence prose; it is kept for the zero case.
+  const claim = resaleClaim(view.shortName, data.hasAnySale, view.noData);
   const facts: Array<{ label: string; value: string }> = [];
   if (view.neighbourhoodName) facts.push({ label: 'Neighbourhood', value: view.neighbourhoodName });
   if (view.typeLabel) facts.push({ label: 'Street type', value: view.typeLabel.charAt(0).toUpperCase() + view.typeLabel.slice(1) });
@@ -21,15 +25,18 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
       <SiteNav variant="page" />
       <StreetHero data={data} />
 
-      {/* Section 6 — the trust anchor. Plain, prominent, no hedging. */}
+      {/* Section 6 — the trust anchor. Plain, prominent, no hedging.
+          It used to hardcode "No resales recorded yet" for every street that reached this shell,
+          including streets that had just sold. Same gate as the full shell now — resaleClaim() is
+          the only place either shell decides between absence and suppression. */}
       <section className="s-block">
         <div className="s-wrap">
           <div
             className="s-placeholder"
             style={{ borderLeft: '3px solid var(--s-green, #2f6b3f)', paddingLeft: 20 }}
           >
-            <h3>No resales recorded yet</h3>
-            <p>{view.noData}</p>
+            <h3>{claim.heading}</h3>
+            <p>{claim.body}</p>
           </div>
         </div>
       </section>

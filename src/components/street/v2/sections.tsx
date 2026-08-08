@@ -15,6 +15,7 @@ import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './for
 import { CommuteIcon } from './icons';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
+import { resaleClaim } from './resaleClaim';
 
 const DEFAULT_SILENT = 'sample too small to publish';
 
@@ -560,16 +561,14 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
   // the copy leads with the honest "no resales yet" framing (the loop this closes: when a
   // dormant street records its first sale, auto-promotion publishes it and the alert fires).
   const nbhd = data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton';
-  const dormant = data.tier === 'identity-only' || data.tier === 'area-only';
-  // ABSENCE phrasing ("no resales … yet") is TRUE only where the street has zero sales in the
-  // window; every other sub-k5 street has a record that just can't support a published price →
-  // SUPPRESSION phrasing. The copy carries its population gate (data.hasAnySale). Alert CTA stays
-  // on all — only the copy changes.
-  const ctaBody = !dormant
-    ? buyer.body
-    : data.hasAnySale
-      ? `Too few recent sales on ${data.shortName} to publish a typical price yet — the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`
-      : `No resales recorded on ${data.shortName} yet — a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`;
+  const subK5 = data.tier === 'identity-only' || data.tier === 'area-only';
+  // ONE gate, ONE wording — shared with the minimal shell via resaleClaim().
+  const claim = resaleClaim(data.shortName, data.hasAnySale);
+  // The absence claim is gated on hasAnySale ALONE, not on tier. A street can clear k>=5 on LEASES
+  // and still have no resale on record (tier 'priced-lease'); those pages previously said nothing
+  // at all, so the claim set and the zero-sale set disagreed in both directions.
+  const alertFraming = subK5 || claim.claimsAbsence;
+  const ctaBody = alertFraming ? claim.ctaBody : buyer.body;
   return (
     <section className="s-block">
       <div className="s-wrap">
@@ -589,9 +588,9 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
               streetName={data.name}
               shortName={data.shortName}
               neighbourhood={nbhd}
-              headline={dormant ? `Be first when ${data.shortName} trades` : buyer.headline}
+              headline={alertFraming ? `Be first when ${data.shortName} trades` : buyer.headline}
               body={ctaBody}
-              dormant={dormant}
+              dormant={alertFraming}
             />
           </div>
         </div>
@@ -633,7 +632,7 @@ export function StreetAreaContext({ data }: { data: StreetV2Data }) {
                 )}{' '}
                 — the neighbourhood, not {data.shortName} specifically
               </div>
-              <div className="s-basis">{ac.basis}</div>
+              {ac.basis && <div className="s-basis">{ac.basis}</div>}
               <p className="s-areacx-read">
                 {identity
                   ? `Too few recent trades on ${data.shortName} to price it on its own yet — the ${ac.neighbourhoodName} market is your best guide to what you'd pay here, and this page fills in with ${data.shortName}'s own numbers as homes trade.`
