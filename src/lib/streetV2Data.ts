@@ -60,8 +60,17 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number): StreetStat[] {
       basis: typical?.basis ?? null, // window+sample disclosure (mandatory on priced tiles)
       silentNote: 'sample too small to publish',
     },
-    { label: 'Transactions tracked', kind: 'count', value: hp.rawTotalTransactions ?? 0 },
-    { label: 'Active right now', kind: 'count', value: activeCount },
+    // EVERY count states its subject and its window. This mapper REBUILDS the hero tiles, so a sub
+    // set upstream in buildHero never reaches the v2 shell — it has to be set here.
+    // "Transactions tracked" is sales + leases over 12 months; the pill row beside it counts SALES
+    // ONLY over the same window. Unlabelled, the two numbers read as a contradiction.
+    {
+      label: 'Transactions tracked',
+      kind: 'count',
+      value: hp.rawTotalTransactions ?? 0,
+      sub: (hp.rawTotalTransactions ?? 0) > 0 ? 'sales + leases · last 12 months' : 'no closed deals · last 12 months',
+    },
+    { label: 'Active right now', kind: 'count', value: activeCount, sub: 'live listings · today' },
   ];
 }
 

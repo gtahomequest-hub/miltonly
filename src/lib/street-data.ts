@@ -1099,7 +1099,7 @@ function buildGlanceTiles(input: {
     const monthName = new Date(2024, peak - 1, 1).toLocaleString("en-CA", { month: "short" });
     tiles.push({ label: "Busiest month", value: monthName, detail: "most closings" });
   } else {
-    tiles.push({ label: "Leases (12m)", value: String(stats?.leased_count_12months ?? 0), detail: "closed" });
+    tiles.push({ label: "Leases", value: String(stats?.leased_count_12months ?? 0), detail: "closed · last 12 months" });
   }
 
   // (fix f) COLLAPSE, DON'T FILL — drop tiles that would render as a bare "—" so the at-a-glance
