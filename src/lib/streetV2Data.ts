@@ -12,6 +12,7 @@
 import 'server-only';
 import { getStreetPageData } from '@/lib/street-data';
 import { windowDisclosure } from '@/lib/streetEnrichment';
+import { stripNumericSentences, stripNumericParagraphs, answersQuestion } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import type {
   StreetPageData,
@@ -129,7 +130,8 @@ function mapMarketStats(cells: StatCell[]): MarketStat[] {
   return cells.map((c) => ({ label: c.label, value: unsilent(c.value) }));
 }
 function mapSummary(s: MarketSummary): MarketSummaryCard {
-  return { title: s.title, body: s.body, stats: mapMarketStats(s.stats) };
+  // body is generated prose; the stats beside it are the deterministic layer and stay.
+  return { title: s.title, body: stripNumericSentences(s.body), stats: mapMarketStats(s.stats) };
 }
 
 const COMMUTE_ICON: Record<string, CommuteCategory['icon']> = {
@@ -149,6 +151,9 @@ export function mapStreetV2Data(
 ): StreetV2Data {
   const hp = data.heroProps;
   const activeCount = data.activeInventory.listings.length;
+  // No sale on record and nothing listed => a per-property claim in the prose has no source
+  // anywhere. Only there do we suppress property detail that carries no number.
+  const stripOpts = { noRecord: !data.enrichment.hasAnySale && activeCount === 0 };
   const ma = data.marketActivity;
   const saleRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent sales');
   const leaseRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent leases');
@@ -163,7 +168,8 @@ export function mapStreetV2Data(
     name: data.street.name,
     shortName: data.street.shortName,
     eyebrow: hp.eyebrow,
-    subtitle: hp.subtitle || data.street.characterSummary,
+    // the fallback is stored prose too — strip it rather than let it round the guard
+    subtitle: hp.subtitle || stripNumericSentences(data.street.characterSummary, stripOpts),
     neighbourhoods: data.street.neighbourhoods,
 
     hero: {
@@ -175,10 +181,14 @@ export function mapStreetV2Data(
         : null,
     },
 
-    // Prose: generated 8(+1) sections verbatim. No generation => placeholder state.
+    // Prose: generated sections with EVERY numeric sentence suppressed (see numericSentences.ts).
+    // A section whose paragraphs are all numeric drops out entirely rather than rendering a
+    // heading over nothing.
     placeholder: !generation,
     sections: generation
-      ? generation.sections.map((s) => ({ id: s.id, heading: s.heading, paragraphs: s.paragraphs }))
+      ? generation.sections
+          .map((s) => ({ id: s.id, heading: s.heading, paragraphs: stripNumericParagraphs(s.paragraphs, stripOpts) }))
+          .filter((s) => s.paragraphs.length > 0)
       : [],
     ownerCtaPrice: ownerTyped ? ownerTyped.typicalPrice : null,
 
@@ -257,7 +267,15 @@ export function mapStreetV2Data(
 
     // FAQ: generated when present; placeholder (no generation) => none, matching the
     // legacy page's FAQ suppression in placeholder mode.
-    faqs: generation ? generation.faq.map((f) => ({ question: f.question, answer: f.answer })) : [],
+    // FAQ answers are stored generation output too — mae-court's carried a THIRD conflicting
+    // Campbellville typical. An answer with nothing qualitative left takes its question with it.
+    faqs: generation
+      ? generation.faq
+          .map((f) => ({ question: f.question, answer: stripNumericSentences(f.answer, stripOpts) }))
+          // empty AND non-responsive both go: an answer left addressing a different subject than
+          // its question ("What kinds of homes…" -> "Lots tend to be generous…") is worse than none
+          .filter((f) => answersQuestion(f.question, f.answer))
+      : [],
 
     finalCtas: {
       seller: { ...data.finalCTAs.sellerCTA },

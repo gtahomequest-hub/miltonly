@@ -78,7 +78,8 @@ export interface StreetFact {
 export interface NearbyPlace {
   category: string;
   name: string;
-  distance: string;
+  /** null => suppressed until a per-street coordinate exists */
+  distance: string | null;
   icon?: string;
   href?: string;
 }
@@ -172,8 +173,8 @@ export interface MarketBlock {
 
 export interface CommuteDestination {
   name: string;
-  primaryTime: string;
-  secondaryTime?: string;
+  primaryTime: string | null;
+  secondaryTime?: string | null;
   href?: string;
 }
 

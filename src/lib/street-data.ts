@@ -19,6 +19,7 @@ import { prisma } from "./prisma";
 import { config } from "./config";
 import { getAnalyticsDb, getSoldDb } from "./db";
 import { buildStreetEnrichment, windowDisclosure, type StreetEnrichment } from "./streetEnrichment";
+import { stripNumericSentences } from "./prose/numericSentences";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
@@ -629,7 +630,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   // while the same page's CTA correctly said "too few recent sales" (Nakerville sold 2026-07-30).
   // Structural safety net: a stored sentence may not assert absence on a street that has sales.
   // This suppresses a false claim; it never invents one. The stored copy still wants regenerating.
-  const rawSummary = streetContent?.description ? characterSummaryFrom(streetContent.description) : null;
+  // The hero summary is stored generation output: strip numeric sentences first (compliance
+  // suppression), then the existing absence guard, then fall back to the neutral line.
+  const rawSummary = streetContent?.description
+    ? stripNumericSentences(characterSummaryFrom(streetContent.description))
+    : null;
   const summaryClaimsAbsence = rawSummary != null && ASSERTS_NO_SALES.test(rawSummary);
   const subtitle =
     rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale)
@@ -963,7 +968,11 @@ function buildSidebar(input: {
 
   return {
     streetFacts: facts,
-    nearbyPlaces: nearbyPlacesFor(centroid).slice(0, 6),
+    // POI names survive (they are genuinely Milton locations); the minute figures do not,
+    // until a per-street coordinate exists to derive them from.
+    nearbyPlaces: nearbyPlacesFor(centroid)
+      .slice(0, 6)
+      .map((p) => (isStreetSpecificCoord(centroid) ? p : { ...p, distance: null })),
     sidebarCTA: {
       eyebrow: `For ${shortName} owners`,
       headline: `What is yours worth today?`,
@@ -973,6 +982,22 @@ function buildSidebar(input: {
       trustLine: "Complimentary · Response within one hour",
     },
   };
+}
+
+/** ADDRESS-POINTS HOOK — the one predicate behind every travel-time figure on a street page.
+ *
+ *  Every published street currently falls back to the Milton-centre centroid, because DB1 carries
+ *  no usable per-street coordinate. The audit measured the consequence: all 407 full-shell pages
+ *  render a BYTE-IDENTICAL distance set, so "Milton GO · 4 min drive" is asserted equally on a
+ *  town-centre street and on an escarpment street 20 minutes out. A per-street claim we cannot
+ *  support is suppressed until we can.
+ *
+ *  Self-restoring: when Address Points lands and real coordinates flow through, this returns true
+ *  and every minute figure comes back with no other change. */
+export function isStreetSpecificCoord(c: { lat: number; lng: number } | null): boolean {
+  if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return false;
+  if (c.lat === 0 || c.lng === 0) return false;                       // the DB1 feed gap
+  return Math.abs(c.lat - 43.51) < 0.6 && Math.abs(c.lng + 79.88) < 0.6; // plausibly Milton
 }
 
 function nearbyPlacesFor(centroid: { lat: number; lng: number } | null): NearbyPlace[] {
@@ -1266,7 +1291,15 @@ function buildCommuteGrid(centroid: { lat: number; lng: number } | null): Commut
     },
   ];
 
-  return { categories };
+  // Same suppression as the Nearby list: destination names stay, travel times go until a
+  // per-street coordinate can support them. See isStreetSpecificCoord.
+  if (isStreetSpecificCoord(centroid)) return { categories };
+  return {
+    categories: categories.map((cat) => ({
+      ...cat,
+      destinations: cat.destinations.map((d) => ({ ...d, primaryTime: null, secondaryTime: null })),
+    })),
+  };
 }
 
 /* ─────────────────────────────────────────────────────────────────────
