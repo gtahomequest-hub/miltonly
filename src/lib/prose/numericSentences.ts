@@ -82,8 +82,11 @@ export function splitSentences(text: string): string[] {
       const before = text.slice(start, m.index);
       const lastTok = (/([A-Za-z][A-Za-z.'’]*)$/.exec(before) ?? [])[1] ?? '';
       const bare = lastTok.replace(/\.+$/, '').toLowerCase();
-      // a known abbreviation, or a single-letter initial => not a sentence boundary
-      if (ABBREV.has(bare) || /^[a-z]$/.test(bare)) continue;
+      // A known abbreviation, or an initial => not a sentence boundary.
+      // Initials come as a single letter ("Anne J. MacArthur") or as a chain with internal periods
+      // and no spaces ("Bishop P.F. Reding", "E.W. Foster PS") — the chain form is what left 65
+      // pages still truncated after the first fix.
+      if (ABBREV.has(bare) || /^[a-z](?:\.[a-z])*$/.test(bare)) continue;
     }
     const s = text.slice(start, m.index + 1).trim();
     if (s) out.push(s);
