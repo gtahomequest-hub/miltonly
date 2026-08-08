@@ -6,106 +6,17 @@
 // faq_answer_length retry-feedback loop where the model can't reliably
 // count its own sentences.
 //
-// Sentence boundary detection uses a hardcoded inspectable abbreviation
-// list plus a decimal-number rule. Both this module's countSentences and
-// the validator's faq-length check rely on the same logic, so the trim
-// will not produce output the validator subsequently flags.
+// SENTENCE BOUNDARIES NOW COME FROM @/lib/prose/sentences — the single shared splitter. The
+// abbreviation-masking logic that used to live here (and its 2026-05-09 multi-initial canary fix)
+// moved there intact and was merged with the street-side splitter. countSentences and
+// splitSentences are re-exported so existing importers keep working unchanged.
 
 import type { StreetFAQItem } from "@/types/street-generator";
+import { splitSentences, countSentences, maskedSegments, _internal } from "@/lib/prose/sentences";
 
-// Abbreviations whose trailing period is not a sentence terminator.
-// Matched case-insensitively at a word boundary, immediately followed by `.`.
-const ABBREVS = [
-  "St", "Mr", "Mrs", "Ms", "Dr", "Mt",
-  "Ave", "Blvd", "Pkwy", "Rd", "Ln", "Cres", "Crt",
-  "N", "S", "E", "W", "NE", "NW", "SE", "SW",
-  "etc", "Jr", "Sr", "vs", "Inc", "Co", "Ltd",
-];
+export { splitSentences, countSentences };
 
-// Sentinel character used to temporarily replace abbreviation/decimal
-// periods so they don't get treated as sentence terminators during the
-// split. A Private-Use Area codepoint that should never appear in
-// real-world Milton prose.
-const SENTINEL = String.fromCharCode(0xE000);
-
-// Multi-period abbreviations need their own patterns since each internal
-// period must be masked, not just the trailing one.
-const MULTI_PERIOD_ABBREVS: Array<[RegExp, string]> = [
-  [/\be\.g\./gi, `e${SENTINEL}g${SENTINEL}`],
-  [/\bi\.e\./gi, `i${SENTINEL}e${SENTINEL}`],
-  [/\bU\.S\./g, `U${SENTINEL}S${SENTINEL}`],
-];
-
-function maskAbbreviations(text: string): string {
-  let masked = text;
-  // Generic multi-initial pattern FIRST: "X.Y." / "X.Y.Z." / longer chains
-  // where each initial is a single uppercase letter immediately followed by
-  // a period. Catches E.W., W.I., P.F., P.F.C., U.S.A., J.K., I.B.M., etc.
-  // Must run before MULTI_PERIOD_ABBREVS so a `U.S.A.` chain is captured
-  // whole — otherwise `U.S.` gets masked first and the trailing `A.` is
-  // left dangling and counted as a sentence boundary.
-  // Two-letter words like "Mr." / "St." / "Dr." don't match (regex requires
-  // the first character to be the only letter before the period, which
-  // Mr/St/Dr fail since "M" is followed by "r" not "."). Single isolated
-  // initials like "I." or "A." also don't match — by design, they're more
-  // often actual sentence terminators than abbreviations.
-  // Found via 2026-05-09 lift-validation canary on Whitlock schools FAQ.
-  masked = masked.replace(/\b([A-Z])\.([A-Z])\.((?:[A-Z]\.)*)/g, (match) =>
-    match.replace(/\./g, SENTINEL),
-  );
-  for (const [re, repl] of MULTI_PERIOD_ABBREVS) {
-    masked = masked.replace(re, repl);
-  }
-  for (const ab of ABBREVS) {
-    const re = new RegExp(`\\b${ab}\\.`, "gi");
-    masked = masked.replace(re, (match) => match.slice(0, -1) + SENTINEL);
-  }
-  // Decimal numbers like 1.2, $1.2, 3.14 — masks the period between digits.
-  masked = masked.replace(/(\d)\.(\d)/g, `$1${SENTINEL}$2`);
-  return masked;
-}
-
-function unmask(text: string): string {
-  return text.split(SENTINEL).join(".");
-}
-
-/**
- * Count sentences in a piece of text. Uses the same masking logic as the
- * trim function, so the count this returns is the same count the trim is
- * targeting. Imported by the validator for FAQ-length checks.
- *
- * A sentence ends in . ! or ?. Whitespace-only and empty parts are dropped.
- */
-export function countSentences(text: string): number {
-  const trimmed = text.trim();
-  if (!trimmed) return 0;
-  const masked = maskAbbreviations(trimmed);
-  const parts = masked.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
-  return parts.length;
-}
-
-/**
- * Split text into sentences using the same abbreviation-safe masking as
- * countSentences, preserving each sentence's terminator. Joining the result
- * with "" reproduces the input (modulo trailing whitespace). Used by the
- * render-time catchment scrub so "St. Scholastica" never splits mid-name.
- */
-export function splitSentences(text: string): string[] {
-  const trimmed = text.trim();
-  if (!trimmed) return [];
-  const masked = maskAbbreviations(trimmed);
-  const matches = masked.match(/[^.!?]+[.!?]+(?:\s+|$)?/g);
-  if (!matches) return [trimmed];
-  // Preserve any unterminated tail fragment (prose that doesn't end in .!?)
-  // so scrub-and-rejoin never silently drops content.
-  const consumed = matches.reduce((n, m) => n + m.length, 0);
-  const out = matches.map(unmask);
-  if (consumed < masked.length) {
-    const tail = unmask(masked.slice(consumed));
-    if (tail.trim()) out.push(tail);
-  }
-  return out;
-}
+const { unmask } = _internal;
 
 /**
  * Trim each FAQ answer that exceeds maxSentences down to maxSentences,
@@ -119,11 +30,10 @@ export function trimFaqAnswersToSentenceCap(
   maxSentences = 4,
 ): StreetFAQItem[] {
   return faq.map((item) => {
-    const masked = maskAbbreviations(item.answer);
     // Each match captures a sentence body + its terminator + optional trailing
     // whitespace. The number of matches equals the sentence count from
     // countSentences for any well-formed input.
-    const matches = masked.match(/[^.!?]+[.!?]+(?:\s+|$)?/g) || [];
+    const matches = maskedSegments(item.answer);
     if (matches.length <= maxSentences) return item;
 
     const kept = matches.slice(0, maxSentences).join("");

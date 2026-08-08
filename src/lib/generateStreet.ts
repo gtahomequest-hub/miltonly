@@ -17,6 +17,7 @@ import {
   buildStreetMetaDescription,
   type StreetMetaStats,
 } from "@/lib/streetMeta";
+import { splitSentences } from "@/lib/prose/sentences";
 import {
   generateStreetDescription as aiGenerate,
   generateLongFormStreetDescription,
@@ -121,7 +122,7 @@ function validateContent(text: string, streetName: string): ValidationResult {
   if (wordCount < 280) failures.push(`Too short: ${wordCount} words (min 280)`);
   if (wordCount > 360) failures.push(`Too long: ${wordCount} words (max 360)`);
 
-  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  const sentences = splitSentences(text).filter((s) => s.trim().length > 0);
   for (const s of sentences) {
     const sw = s.trim().split(/\s+/).filter(Boolean).length;
     if (sw > 30) failures.push(`Sentence too long (${sw} words): "${s.trim().slice(0, 60)}..."`);

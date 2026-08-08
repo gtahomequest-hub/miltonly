@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AI Compliance Gatekeeper
  *
  * This is the ONLY file in the codebase that calls external LLM APIs.
@@ -38,6 +38,7 @@ import {
   formatViolationsForRetry,
 } from './validateStreetGeneration';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
+import { splitSentences } from '@/lib/prose/sentences';
 import { roundPricesInOutput } from './roundPricesInOutput';
 import type {
   StreetGeneratorInput,
@@ -281,7 +282,7 @@ export interface ValidationResultV2 {
 }
 
 function calculateSentenceLengthStdDev(text: string): number {
-  const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+  const sentences = splitSentences(text).filter((s) => s.trim().length > 0);
   const lengths = sentences.map((s) => s.trim().split(/\s+/).filter(Boolean).length);
   if (lengths.length === 0) return 0;
   const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
@@ -725,7 +726,7 @@ export function trimToWordCap(text: string, targetWordCount: number = 1400): Tri
     for (let lIdx = 0; lIdx < sections[sIdx].bodyLines.length; lIdx++) {
       const line = sections[sIdx].bodyLines[lIdx];
       // Split the line into sentences
-      const sentences = line.match(/[^.!?]+[.!?]+/g) || (line.trim() ? [line] : []);
+      const sentences = splitSentences(line).length ? splitSentences(line) : (line.trim() ? [line] : []);
       for (let sentIdx = 0; sentIdx < sentences.length; sentIdx++) {
         const sentence = sentences[sentIdx];
         const cls = classifySentence(sentence);
@@ -775,7 +776,7 @@ export function trimToWordCap(text: string, targetWordCount: number = 1400): Tri
     const newBodyLines: string[] = [];
     for (let lIdx = 0; lIdx < section.bodyLines.length; lIdx++) {
       const line = section.bodyLines[lIdx];
-      const sentences = line.match(/[^.!?]+[.!?]+/g) || (line.trim() ? [line] : []);
+      const sentences = splitSentences(line).length ? splitSentences(line) : (line.trim() ? [line] : []);
       if (sentences.length === 0) {
         newBodyLines.push(line);
         continue;
