@@ -12,7 +12,7 @@
 import 'server-only';
 import { getStreetPageData } from '@/lib/street-data';
 import { windowDisclosure } from '@/lib/streetEnrichment';
-import { stripNumericSentences, stripNumericParagraphs } from '@/lib/prose/numericSentences';
+import { stripNumericSentences, stripNumericParagraphs, answersQuestion } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import type {
   StreetPageData,
@@ -272,7 +272,9 @@ export function mapStreetV2Data(
     faqs: generation
       ? generation.faq
           .map((f) => ({ question: f.question, answer: stripNumericSentences(f.answer, stripOpts) }))
-          .filter((f) => f.answer.length > 0)
+          // empty AND non-responsive both go: an answer left addressing a different subject than
+          // its question ("What kinds of homes…" -> "Lots tend to be generous…") is worse than none
+          .filter((f) => answersQuestion(f.question, f.answer))
       : [],
 
     finalCtas: {
