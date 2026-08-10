@@ -41,15 +41,21 @@ const RULES: RegExp[] = [
   // unverifiable; a spelled one in prose is the same unverifiable claim.
   // "takes roughly an hour", "a short drive", "minutes from", "moments from"
   /\b(?:roughly|about|approximately|just|barely|under|over|around)?\s*(?:an?|half an|a quarter)\s+(?:hour|hours)\b/i,
-  /\b(?:a|an)\s+(?:short|quick|brief|easy|long|straight)\s+(?:drive|walk|ride|commute|trip)\b/i,
+  // "a short drive" and its whole family. A corpus sweep — rather than patching the reported
+  // phrase — turned up stroll/hop/jaunt alongside the drive/walk/ride forms.
+  /\b(?:a|an)\s+(?:short|quick|brief|easy|long|straight|gentle|leisurely)\s+(?:drive|walk|ride|commute|trip|stroll|hop|jaunt)\b/i,
   /\b(?:minutes|moments|seconds)\s+(?:from|away|by)\b/i,
-  /\bwithin\s+(?:a\s+)?(?:short|easy|quick)\s+(?:drive|walk|ride|stroll)\b/i,
+  // POSSESSIVE durations — "under a minute's walk", "within a minute's walk", "an hour's drive".
+  // 35 pages. The old rule matched only the plural noun, so every possessive slipped through.
+  /\b(?:under|within|barely|just|about|roughly|around)?\s*(?:a|an|one)\s+(?:minute|hour)'s\s+(?:walk|drive|ride|stroll|commute)\b/i,
+  // "within a few minutes", "within minutes", "within a short walk" — 21 pages.
+  /\bwithin\s+(?:a\s+)?(?:short|easy|quick|gentle|few\s+)?(?:drive|walk|ride|stroll|minutes?)\b/i,
 
   // Realtor puffery dressed as proximity. This is the register we already refused when ruling on
   // listing-description mining — we declined to launder it out of broker remarks, so we do not
   // publish our own version of it. Distinct from qualitative orientation ("within walking
   // distance"), which is kept: that describes, this sells.
-  /\b(?:steps from|on the doorstep|a stone's throw|moments away)\b/i,
+  /\b(?:steps from|on the doorstep|a stone's throw|moments away|just around the corner)\b/i,
 ];
 
 /** Per-property claims. Only suppressed where the record cannot possibly source them. */
@@ -68,41 +74,11 @@ export function sentenceHasNumber(sentence: string): boolean {
 }
 
 // ── sentence splitting ───────────────────────────────────────────────────────────────────────
-// A naive ". followed by a capital" split breaks on "St. Scholastica" and ships the fragment
-// "Catholic elementary students attend St." while dropping the rest of the sentence. "St." appears
-// 572 times across 250 of the 431 pages; middle initials ("Anne J. MacArthur", "W. F. Reding")
-// are the same shape. Neither is a sentence boundary.
-const ABBREV = new Set([
-  'st', 'ste', 'mt', 'dr', 'ave', 'av', 'rd', 'blvd', 'cres', 'ct', 'cir', 'ln', 'pl', 'ter', 'hwy',
-  'mr', 'mrs', 'ms', 'jr', 'sr', 'prof', 'rev', 'hon',
-  'inc', 'ltd', 'co', 'corp', 'no', 'approx', 'est', 'dept', 'vs', 'etc', 'ca', 'cf',
-  'ps', 'ss', 'es', 'jk', 'sk', 'ont', 'on',
-]);
-
-export function splitSentences(text: string): string[] {
-  const out: string[] = [];
-  let start = 0;
-  const re = /([.!?])(\s+)(?=["'“‘(]?[A-Z])/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    if (m[1] === '.') {
-      const before = text.slice(start, m.index);
-      const lastTok = (/([A-Za-z][A-Za-z.'’]*)$/.exec(before) ?? [])[1] ?? '';
-      const bare = lastTok.replace(/\.+$/, '').toLowerCase();
-      // A known abbreviation, or an initial => not a sentence boundary.
-      // Initials come as a single letter ("Anne J. MacArthur") or as a chain with internal periods
-      // and no spaces ("Bishop P.F. Reding", "E.W. Foster PS") — the chain form is what left 65
-      // pages still truncated after the first fix.
-      if (ABBREV.has(bare) || /^[a-z](?:\.[a-z])*$/.test(bare)) continue;
-    }
-    const s = text.slice(start, m.index + 1).trim();
-    if (s) out.push(s);
-    start = m.index + m[0].length;
-  }
-  const tail = text.slice(start).trim();
-  if (tail) out.push(tail);
-  return out;
-}
+// Was a local implementation. It now lives in ./sentences as THE shared splitter: five separate
+// splitters existed across src/, and the naive ones cut three hero subtitles mid-name at
+// "Louis St. Laurent Avenue". One operation, one implementation, every caller on it.
+export { splitSentences } from './sentences';
+import { splitSentences } from './sentences';
 
 // ── coherence ────────────────────────────────────────────────────────────────────────────────
 // Subjects that are always available on a street page — the page IS the street, so "The street

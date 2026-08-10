@@ -20,6 +20,7 @@ import { config } from "./config";
 import { getAnalyticsDb, getSoldDb } from "./db";
 import { buildStreetEnrichment, windowDisclosure, type StreetEnrichment } from "./streetEnrichment";
 import { stripNumericSentences } from "./prose/numericSentences";
+import { firstSentence } from "./prose/sentences";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
@@ -565,8 +566,11 @@ function computeCentroid(listings: Listing[]): { lat: number; lng: number } | nu
 
 function characterSummaryFrom(description: string | null | undefined): string {
   if (!description) return "";
-  const firstSentence = description.split(/[.!?](?=\s|$)/)[0].trim();
-  return firstSentence.length > 30 ? firstSentence + "." : "";
+  // Was description.split(/[.!?](?=\s|$)/)[0] — its own naive splitter, which cut three hero
+  // subtitles mid-name at "Louis St. Laurent Avenue". Shared splitter now; it keeps the
+  // terminator, so nothing is re-appended.
+  const first = firstSentence(description);
+  return first.length > 30 ? first : "";
 }
 
 function parseFaqs(
