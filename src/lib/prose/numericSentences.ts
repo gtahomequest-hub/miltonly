@@ -55,7 +55,7 @@ const RULES: RegExp[] = [
   // listing-description mining — we declined to launder it out of broker remarks, so we do not
   // publish our own version of it. Distinct from qualitative orientation ("within walking
   // distance"), which is kept: that describes, this sells.
-  /\b(?:steps from|on the doorstep|a stone's throw|moments away)\b/i,
+  /\b(?:steps from|on the doorstep|a stone's throw|moments away|just around the corner)\b/i,
 ];
 
 /** Per-property claims. Only suppressed where the record cannot possibly source them. */
