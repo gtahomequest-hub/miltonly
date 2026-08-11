@@ -55,7 +55,8 @@ interface PageProps {
   };
 }
 
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+// No searchParams: every filtered view canonicalises to /sold, so the metadata no longer varies.
+export async function generateMetadata(): Promise<Metadata> {
   const [totals, overall] = await Promise.all([
     getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
     getMiltonSoldOverall().catch(() => null),
