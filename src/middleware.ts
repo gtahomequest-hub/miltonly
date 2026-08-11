@@ -3,6 +3,10 @@ import canonicalMap from "@/lib/_generated/canonical-map.json";
 import validCanonicalSlugs from "@/lib/_generated/valid-canonical-slugs.json";
 import noRedirectSlugs from "@/lib/_generated/no-redirect-slugs.json";
 import { deriveIdentity } from "@/lib/streetUtils";
+import { config as siteConfig } from "@/lib/config";
+
+// City slug suffix — every canonical street slug ends "-milton".
+const SLUG_SUFFIX = siteConfig.SLUG_SUFFIX;
 
 // ============================================================
 // PRE-LAUNCH GATE
@@ -91,6 +95,18 @@ function canonicalFor(slug: string): string | null {
   // 1. Static curated override.
   const mapped = SLUG_TO_CANONICAL[slug];
   if (mapped && mapped !== slug) return mapped;
+  // 1.5 SUFFIX-LESS FORM — "asleton-boulevard" → "asleton-boulevard-milton".
+  //     29 real, published streets were 404ing purely for a missing city suffix, discarding every
+  //     inbound signal they had. ONE computed rule rather than 29 hand-written redirects — the 22
+  //     curated entries already in next.config proved that per-slug does not scale. Gated on
+  //     VALID_CANONICALS both ways, so it can never 301 into a 404.
+  if (!slug.endsWith(`-${SLUG_SUFFIX}`)) {
+    const withSuffix = `${slug}-${SLUG_SUFFIX}`;
+    if (VALID_CANONICALS.has(withSuffix)) return withSuffix;
+    // the suffixed form may itself need identity canonicalisation (abbreviation/direction variants)
+    const suffixedId = deriveIdentity(withSuffix);
+    if (suffixedId && VALID_CANONICALS.has(suffixedId.canonicalSlug)) return suffixedId.canonicalSlug;
+  }
   // 2. Computed rule — deriveIdentity canonical, only when it differs AND resolves.
   const id = deriveIdentity(slug);
   if (!id) return null; // malformed → let the route 404

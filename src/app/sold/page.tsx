@@ -21,7 +21,7 @@ import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import {
   getMiltonSoldTotals,
-  getDistinctSoldNeighbourhoods,
+  getSoldNeighbourhoodOptions,
   getRecentSoldList,
 } from "@/lib/sold-data";
 import { getMiltonSoldAggregates, getMiltonSoldOverall } from "@/lib/soldAggregates";
@@ -75,7 +75,9 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   return genMeta({
     title,
     description,
-    canonical: `${config.SITE_URL}/sold${searchParams?.nbhd ? `?nbhd=${encodeURIComponent(searchParams.nbhd)}` : ""}`,
+    // Every filtered view canonicalises to /sold. The params are a UI affordance, not a page:
+    // they were generating crawlable permutations carrying raw MLS strings.
+    canonical: `${config.SITE_URL}/sold`,
     keywords: [
       `${config.CITY_NAME} sold homes`,
       `${config.CITY_NAME} sold prices`,
@@ -93,21 +95,26 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
-  const nbhdFilter = searchParams?.nbhd;
+  const nbhdParam = searchParams?.nbhd;
   const ptypeFilter = searchParams?.ptype;
 
   // Defence-in-depth: records are only FETCHED when the viewer is authed +
   // acknowledged. getRecentSoldList itself re-gates and returns [] otherwise,
   // so no anon request ever touches sold.sold_records or its cache.
-  const [totals, neighbourhoods, aggregates, records] = await Promise.all([
+  // Resolve the neighbourhood param FIRST — the records query needs the raw MLS string, while the
+  // URL only ever carries the slug. Accepts a raw string too, so existing inbound links still work.
+  const neighbourhoods = await getSoldNeighbourhoodOptions().catch(() => []);
+  const nbhdOpt = nbhdParam ? neighbourhoods.find((o) => o.slug === nbhdParam || o.raw === nbhdParam) : undefined;
+  const nbhdRaw = nbhdOpt?.raw;
+
+  const [totals, aggregates, records] = await Promise.all([
     getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
-    getDistinctSoldNeighbourhoods().catch(() => [] as string[]),
     // Public k-anon aggregate layer — always fetched (no gate); each fetcher
     // fails soft internally so this never throws.
     getMiltonSoldAggregates(),
     canSeeRecords
       ? getRecentSoldList(typeParam, 90, 60, {
-          neighbourhood: nbhdFilter,
+          neighbourhood: nbhdRaw,
           property_type: ptypeFilter,
         }).catch(() => [])
       : Promise.resolve([]),
@@ -116,8 +123,10 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   const txnLabel = typeParam === "sale" ? "sold" : "leased";
   const signinHref = `/signin?redirect=${encodeURIComponent("/sold")}`;
 
-  // Filter-chip hrefs — preserve the exact GET-param contract (type/ptype/nbhd).
-  const nbhdQ = nbhdFilter ? `&nbhd=${encodeURIComponent(nbhdFilter)}` : "";
+  // Filter-chip hrefs — the GET-param contract still works, but the URL now carries the SLUG.
+  const nbhdSlug = nbhdOpt?.slug;
+  const nbhdLabel = nbhdOpt?.name;
+  const nbhdQ = nbhdSlug ? `&nbhd=${encodeURIComponent(nbhdSlug)}` : "";
   const ptypeQ = ptypeFilter ? `&ptype=${ptypeFilter}` : "";
 
   return (
@@ -148,7 +157,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             </div>
           </div>
           {!authed && (
-            <Link href={signinHref} className="sv-cta">
+            <Link href={signinHref} className="sv-cta" rel="nofollow">
               Sign in free to see exact sold prices →
             </Link>
           )}
@@ -167,13 +176,13 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
           <div className="sv-frow">
             <span className="sv-flabel">Transaction</span>
             <Link
-              href={`/sold${nbhdFilter ? `?nbhd=${encodeURIComponent(nbhdFilter)}` : ""}`}
+              href={`/sold${nbhdSlug ? `?nbhd=${encodeURIComponent(nbhdSlug)}` : ""}`}
               className={`sv-chip${typeParam === "sale" ? " is-active" : ""}`}
             >
               Sold
             </Link>
             <Link
-              href={`/sold?type=lease${nbhdQ}`}
+              href={`/sold?type=lease${nbhdQ}`} rel="nofollow"
               className={`sv-chip${typeParam === "lease" ? " is-active" : ""}`}
             >
               Leased
@@ -183,7 +192,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
           <div className="sv-frow">
             <span className="sv-flabel">Property type</span>
             <Link
-              href={`/sold?type=${typeParam}${nbhdQ}`}
+              href={`/sold?type=${typeParam}${nbhdQ}`} rel="nofollow"
               className={`sv-chip${!ptypeFilter ? " is-active" : ""}`}
             >
               All
@@ -191,7 +200,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             {PROPERTY_TYPES.map((t) => (
               <Link
                 key={t.slug}
-                href={`/sold?type=${typeParam}&ptype=${t.slug}${nbhdQ}`}
+                href={`/sold?type=${typeParam}&ptype=${t.slug}${nbhdQ}`} rel="nofollow"
                 className={`sv-chip${ptypeFilter === t.slug ? " is-active" : ""}`}
               >
                 {t.label}
@@ -203,18 +212,19 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             <div className="sv-frow">
               <span className="sv-flabel">Neighbourhood</span>
               <Link
-                href={`/sold?type=${typeParam}${ptypeQ}`}
-                className={`sv-chip${!nbhdFilter ? " is-active" : ""}`}
+                href={`/sold?type=${typeParam}${ptypeQ}`} rel="nofollow"
+                className={`sv-chip${!nbhdSlug ? " is-active" : ""}`}
               >
                 All
               </Link>
               {neighbourhoods.slice(0, 10).map((nb) => (
                 <Link
-                  key={nb}
-                  href={`/sold?type=${typeParam}&nbhd=${encodeURIComponent(nb)}${ptypeQ}`}
-                  className={`sv-chip${nbhdFilter === nb ? " is-active" : ""}`}
+                  key={nb.slug}
+                  href={`/sold?type=${typeParam}&nbhd=${encodeURIComponent(nb.slug)}${ptypeQ}`}
+                  className={`sv-chip${nbhdSlug === nb.slug ? " is-active" : ""}`}
+                  rel="nofollow"
                 >
-                  {nb}
+                  {nb.name}
                 </Link>
               ))}
             </div>
@@ -229,7 +239,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             <>
               <p className="sv-count">
                 Showing {records.length} {txnLabel} record{records.length === 1 ? "" : "s"} — last 90 days
-                {nbhdFilter ? ` · ${nbhdFilter}` : ""}
+                {nbhdLabel ? ` · ${nbhdLabel}` : ""}
                 {ptypeFilter
                   ? ` · ${PROPERTY_TYPES.find((t) => t.slug === ptypeFilter)?.label ?? ptypeFilter}`
                   : ""}
@@ -252,7 +262,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
                 Free with a verified email — exact sold prices, days on market, and
                 sold-to-ask ratios, updated daily from TREB MLS<sup>®</sup> data.
               </p>
-              <Link href={signinHref} className="sv-cta">
+              <Link href={signinHref} className="sv-cta" rel="nofollow">
                 Sign in free to unlock →
               </Link>
             </div>

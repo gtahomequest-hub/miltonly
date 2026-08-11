@@ -85,7 +85,7 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
         <div className="s-gate-k">TREB VOW · Registered access</div>
         <div className="s-gate-h">See every closed sale on {streetName}</div>
         <div className="s-gate-p">Free with a verified email — exact sold prices, days on market, and sold-to-ask ratios.</div>
-        <Link className="s-gate-btn" href={signinHref}>
+        <Link className="s-gate-btn" href={signinHref} rel="nofollow">
           Sign in free to unlock →
         </Link>
       </div>
