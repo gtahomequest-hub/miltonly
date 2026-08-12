@@ -208,7 +208,7 @@ export function AlertBand() {
             </p>
           </div>
           <div className="lv-alert-act">
-            <Link className="lv-b1" href="/signin?redirect=/listings">
+            <Link className="lv-b1" href="/signin?redirect=/listings" rel="nofollow">
               Create a free account
             </Link>
             <span className="lv-trust">No spam · {config.realtor.name} only emails matches</span>

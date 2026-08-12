@@ -3,6 +3,12 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/sold/:slug", destination: "/streets/:slug", permanent: true },
+      // Dead marketing paths with clear intent, 404ing and discarding whatever signal they carry.
+      // Nothing in src/ emits either any more — they are historic/external. /mo and /10 are NOT
+      // redirected: they are artifacts (a truncated "$X / mo" rent string and a pagination
+      // fragment) with no destination a user could have meant, so they keep 404ing.
+      { source: "/buy", destination: "/listings", permanent: true },
+      { source: "/build-wealth", destination: "/listings", permanent: true },
       // Google Ads property-type landing pages — temporary 302 redirects to the
       // single /rentals/ads page until dedicated per-property-type pages ship.
       // ?type= preserves the intent for analytics + future form pre-filling.

@@ -8,6 +8,7 @@ import { getSoldDb, getAnalyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
 import { getSession } from "./auth";
 import { config } from "./config";
+import { prisma } from "./prisma";
 import type {
   SoldRecord,
   StreetSoldStats,
@@ -351,6 +352,58 @@ export async function getMiltonSoldTotals(): Promise<{ last30: number; last90: n
     `) as Array<{ last30: number; last90: number }>;
     return rows[0] ?? { last30: 0, last90: 0 };
   });
+}
+
+/** One neighbourhood filter option: a stable slug for the URL, a clean name for the label, and the
+ *  raw MLS string the query actually needs.
+ *
+ *  The chips used to put the RAW MLS string straight into the query — "?nbhd=1026 - CB Cobban".
+ *  Some of those raw strings contain literal newlines, so we were emitting crawlable URLs with
+ *  control characters in them, and every one was a distinct path for a crawler to spend budget on.
+ *  The slug is stable, readable and safe; the raw string never leaves the server. */
+export interface SoldNeighbourhoodOption {
+  slug: string;
+  name: string;
+  raw: string;
+}
+
+/** Slugify a raw MLS neighbourhood string as a last resort — "1026 - CB Cobban" -> "cobban". */
+function slugifyRawNeighbourhood(raw: string): string {
+  return raw
+    .replace(/[\r\n]+/g, " ")
+    .replace(/^\s*\d+\s*-\s*[A-Z]{1,3}\s+/, "") // strip the "1026 - CB " MLS prefix
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Distinct sold neighbourhoods as {slug,name,raw}, joined to the Neighbourhood registry where
+ *  possible so the slug matches the rest of the site. */
+export async function getSoldNeighbourhoodOptions(): Promise<SoldNeighbourhoodOption[]> {
+  const raws = await getDistinctSoldNeighbourhoods();
+  if (raws.length === 0) return [];
+  const registry = await prisma.neighbourhood
+    .findMany({ select: { slug: true, name: true, rawStrings: true } })
+    .catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>);
+  const byRaw = new Map<string, { slug: string; name: string }>();
+  for (const n of registry) for (const r of n.rawStrings ?? []) byRaw.set(r, { slug: n.slug, name: n.name });
+  return raws.map((raw) => {
+    const hit = byRaw.get(raw);
+    return {
+      raw,
+      slug: hit?.slug ?? slugifyRawNeighbourhood(raw),
+      name: hit?.name ?? slugifyRawNeighbourhood(raw).replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    };
+  });
+}
+
+/** Accepts a slug (new) or a raw MLS string (old bookmarks / existing inbound links) and returns
+ *  the raw string the sold queries need. Undefined when the param matches nothing. */
+export async function resolveSoldNeighbourhoodParam(param: string | undefined): Promise<string | undefined> {
+  if (!param) return undefined;
+  const opts = await getSoldNeighbourhoodOptions();
+  return opts.find((o) => o.slug === param)?.raw ?? opts.find((o) => o.raw === param)?.raw;
 }
 
 export async function getDistinctSoldNeighbourhoods(): Promise<string[]> {
