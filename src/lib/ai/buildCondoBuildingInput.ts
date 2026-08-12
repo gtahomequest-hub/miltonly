@@ -38,8 +38,7 @@ import type {
   KAnonLevel,
 } from "@/types/hub-generator";
 
-const K_ANON_PRICE = 5;
-const K_ANON_RANGE = 10;
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const TREND_WINDOW_MONTHS = 30;
 const LEASE_RECORD_CAP = 10;
 

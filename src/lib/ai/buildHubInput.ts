@@ -33,8 +33,7 @@ import type {
 } from "@/types/hub-generator";
 
 // K-anonymity thresholds — identical to buildGeneratorInput.ts / street-data.ts.
-const K_ANON_PRICE = 5;
-const K_ANON_RANGE = 10;
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 
 // Trend window. 30 months captures ~10 quarters of recent signal (matches the
 // depth observed for hub-scale pools like Dempsey: 141 sales / 12mo).

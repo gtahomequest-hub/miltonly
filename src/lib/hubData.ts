@@ -18,7 +18,7 @@ import type {
 } from "@/components/hub/types";
 import type { HubSection, HubGeneratorInput, HubTypeBucket } from "@/types/hub-generator";
 
-const K_ANON_PRICE = 5;
+import { K_ANON_PRICE } from "@/lib/kAnon";
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
 function firstSentence(s: string): string {

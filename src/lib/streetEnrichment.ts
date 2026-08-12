@@ -22,7 +22,7 @@ import { getSoldDb } from "@/lib/db";
 import { saleAggQuery, assembleAggregates } from "@/lib/ai/buildHubInput";
 
 const K_TYPICAL = 5;   // price floor — NEVER dropped
-const K_IDENTITY = 3;  // below this on BOTH sides → identity-only
+import { K_IDENTITY } from "@/lib/kAnon";  // below this on BOTH sides → identity-only
 
 export type PriceWindow = "12mo" | "full";
 

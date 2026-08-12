@@ -63,8 +63,7 @@ import { getNeighbourhoodComparable } from "@/lib/ai/neighbourhoodLookup";
 import type { StreetGeneratorInput } from "@/types/street-generator";
 
 // K-anonymity thresholds. Parallel to the same constants in street-data.ts.
-const K_ANON_PRICE = 5;
-const K_ANON_RANGE = 10;
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 
 // ---------------------------------------------------------------------------
 // Raw DB row shapes (kept local; not re-exported to avoid cross-module coupling)

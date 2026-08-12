@@ -35,8 +35,7 @@ import { NEIGHBOURHOOD_SEED } from "./neighbourhood";
 // of scope here; this binds /sold to the hub's live computed typical.)
 import { saleAggQuery, assembleAggregates } from "./ai/buildHubInput";
 
-const K_ANON_PRICE = 5;
-const K_ANON_RANGE = 10;
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const CITY = config.PRISMA_CITY_VALUE;
 
 const num = (v: unknown): number | null => {
