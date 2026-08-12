@@ -18,7 +18,9 @@ type Stats =
       avgList: number | null;
       avgDom: number | null;
       soldToAskPct: number | null;
-      priceYoyPct: number | null;
+      // No priceYoyPct: it spans two 365-day windows and the stats row carries
+      // no count for the prior one, so /api/sold-stats cannot floor it and no
+      // longer returns it.
       temperature: string | null;
       lastUpdated: string;
     };
@@ -49,6 +51,9 @@ export default function SoldOnMyStreet() {
   const [showSuggest, setShowSuggest] = useState(false);
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  // /api/sold-stats is VOW-gated (same rail as /api/sold). An unauthenticated
+  // or un-acknowledged visitor gets the honest gate, never an error or a blank.
+  const [gate, setGate] = useState<null | "signin" | "vow">(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,8 +108,11 @@ export default function SoldOnMyStreet() {
     }
     setSearching(true);
     setStats(null);
+    setGate(null);
     try {
       const res = await fetch(`/api/sold-stats?name=${encodeURIComponent(selectedName)}`);
+      if (res.status === 401) { setGate("signin"); return; }
+      if (res.status === 403) { setGate("vow"); return; }
       if (!res.ok) throw new Error();
       const data: Stats = await res.json();
       setStats(data);
@@ -126,7 +134,9 @@ export default function SoldOnMyStreet() {
     setSubmitting(true);
     try {
       let notes = `Street: ${selectedName ?? streetInput}.`;
-      if (stats && stats.found && !stats.sparse) {
+      if (gate) {
+        notes += ` Requested before ${gate === "signin" ? "sign-in" : "VOW acknowledgement"} — stats not shown.`;
+      } else if (stats && stats.found && !stats.sparse) {
         notes += ` Stats: ${stats.count90} sales (90d), avg ${formatMoneyShort(stats.avgSold)}, ${stats.avgDom !== null ? Math.round(stats.avgDom) : "?"}d DOM, ${stats.soldToAskPct ?? "?"}% sold-to-ask, ${stats.temperature ?? "?"}.`;
       } else if (stats && stats.found && stats.sparse) {
         notes += ` Sparse-data fallback (count90=${stats.count90}, count12=${stats.count12}).`;
@@ -157,6 +167,8 @@ export default function SoldOnMyStreet() {
   const hasStats = stats !== null && stats.found;
   const showRich = hasStats && !stats.sparse;
   const temp = showRich ? tempBadge(stats.temperature) : null;
+  const showPanel = hasStats || gate !== null;
+  const signinHref = `/signin?redirect=%2F&intent=sold${selectedName ? `&street=${encodeURIComponent(selectedName)}` : ""}`;
 
   return (
     <section className="bg-[#07111f] border-t border-[#1e3a5f] px-5 sm:px-11 py-12">
@@ -191,23 +203,24 @@ export default function SoldOnMyStreet() {
           <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-lg p-4">
             <p className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">What you&apos;ll see</p>
             <ul className="space-y-1.5 text-[13px] text-[#f8f9fb]">
-              <li>✅ 90-day sale count, avg price, days-on-market</li>
-              <li>✅ Sold-to-asking ratio + year-over-year trend</li>
-              <li>✅ Live market temperature (hot/warm/cool/cold)</li>
+              <li>🔒 90-day sale count, avg price, days-on-market</li>
+              <li>🔒 Sold-to-asking ratio + live market temperature</li>
               <li>✅ Free CMA from Aamir — what your home is worth today</li>
             </ul>
             <p className="mt-3 text-[10px] text-[#64748b] leading-relaxed">
-              🛡️ TREB VOW compliant. Per-address detail provided privately by a licensed agent (Aamir Yaqoob, RE/MAX).
+              🛡️ TREB VOW compliant. 🔒 items need a free verified account; streets with too few recent sales stay
+              suppressed for seller privacy. Per-address detail provided privately by a licensed agent
+              (Aamir Yaqoob, RE/MAX).
             </p>
           </div>
         </div>
 
         {/* RIGHT — Search + result */}
         <div className="lg:col-span-3">
-          {!hasStats && !success && (
+          {!showPanel && !success && (
             <form onSubmit={handleSearch} className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6 sm:p-7">
               <p className="text-[20px] font-extrabold text-[#f8f9fb] mb-2">See what sold on your street</p>
-              <p className="text-[13px] text-[#94a3b8] mb-5">Free aggregate preview — no signup needed for the stats.</p>
+              <p className="text-[13px] text-[#94a3b8] mb-5">Free — a verified account is required to view sold figures.</p>
 
               <div className="relative mb-3">
                 <label className="text-[12px] font-bold text-[#94a3b8] uppercase tracking-wider mb-1.5 block" htmlFor="sold-street">Your street</label>
@@ -246,12 +259,34 @@ export default function SoldOnMyStreet() {
             </form>
           )}
 
-          {hasStats && !success && (
+          {showPanel && !success && (
             <div className="bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-6 sm:p-7">
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[15px] font-bold text-[#f8f9fb]">📍 Recently sold on {selectedName} · last 90 days</p>
-                <button onClick={() => { setStats(null); setSelectedName(null); setStreetInput(""); }} className="text-[12px] text-[#94a3b8] hover:text-[#f59e0b]">← New search</button>
+                <p className="text-[15px] font-bold text-[#f8f9fb]">
+                  {gate ? `🔒 ${selectedName} · sold figures` : `📍 Recently sold on ${selectedName} · last 90 days`}
+                </p>
+                <button onClick={() => { setStats(null); setGate(null); setSelectedName(null); setStreetInput(""); }} className="text-[12px] text-[#94a3b8] hover:text-[#f59e0b]">← New search</button>
               </div>
+
+              {gate && (
+                <div className="mb-5">
+                  <p className="text-[13px] text-[#94a3b8] leading-relaxed mb-4">
+                    {gate === "signin"
+                      ? "Closed sale figures are TREB VOW data. They're available to verified members only — free to create, takes a minute."
+                      : "One more step: accept the VOW terms on your account and street-level sold figures unlock."}
+                  </p>
+                  <a
+                    href={signinHref}
+                    rel="nofollow"
+                    className="inline-block bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold px-5 py-3 rounded-xl hover:bg-[#fbbf24] transition-colors"
+                  >
+                    {gate === "signin" ? "🔓 Sign in to see the numbers" : "🔓 Accept the terms"}
+                  </a>
+                  <p className="mt-3 text-[12px] text-[#64748b] leading-relaxed">
+                    Prefer not to sign up? Aamir will send the same street report by email — use the form below.
+                  </p>
+                </div>
+              )}
 
               {showRich && (
                 <>
@@ -282,22 +317,15 @@ export default function SoldOnMyStreet() {
                   <p className="text-[13px] text-[#94a3b8] mb-1">
                     Sold-to-ask: <span className="text-[#f8f9fb] font-bold">{stats.soldToAskPct}%</span> {stats.soldToAskPct !== null && stats.soldToAskPct >= 100 ? "(over asking)" : "(under asking)"}
                   </p>
-                  {stats.priceYoyPct !== null && (
-                    <p className="text-[13px] text-[#94a3b8] mb-5">
-                      Year-over-year: <span className={`font-bold ${stats.priceYoyPct >= 0 ? "text-[#34d399]" : "text-[#f87171]"}`}>
-                        {stats.priceYoyPct >= 0 ? "↑ +" : "↓ "}{stats.priceYoyPct}%
-                      </span>
-                    </p>
-                  )}
                 </>
               )}
 
               {hasStats && stats.sparse && (
                 <div className="mb-5">
                   <p className="text-[13px] text-[#94a3b8] leading-relaxed">
-                    {stats.count12 > 0
-                      ? `Only ${stats.count12} sale${stats.count12 === 1 ? "" : "s"} on this street in the last 12 months — too few for a meaningful 90-day average without compromising seller privacy.`
-                      : "Not enough recent activity on this street to publish public stats."}{" "}
+                    {stats.count90 > 0
+                      ? `Only ${stats.count90} sale${stats.count90 === 1 ? "" : "s"} on this street in the last 90 days — too few to publish an average without identifying an individual sale.`
+                      : "No sales on this street in the last 90 days, so there is nothing to average."}{" "}
                     Aamir can run a custom comp analysis covering nearby streets.
                   </p>
                 </div>

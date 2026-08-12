@@ -51,8 +51,7 @@ import type {
   QuarterlyDataPoint,
 } from "@/types/street";
 
-const K_ANON_PRICE = 5;
-const K_ANON_RANGE = 10;
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const SITE_URL = config.SITE_URL;
 const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 

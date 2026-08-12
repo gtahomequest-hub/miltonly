@@ -26,8 +26,7 @@ import { getSoldDb } from "@/lib/db";
 import type { HubData, HubStats, TenureCompareFacts } from "@/components/hub/types";
 import { fullPrice, compactPrice } from "@/components/hub/format";
 
-const K_ANON_PRICE = 5;
-const K_ANON_RANGE = 10;
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 
 // ---- config contract -------------------------------------------------------
 

@@ -20,7 +20,7 @@ import { getNeighbourhoodMatchStats } from "@/lib/geni/neighbourhoodMatchRead";
 
 const K_TYPICAL = 5;
 const K_RANGE = 10;
-const K_IDENTITY = 3;
+import { K_IDENTITY } from "@/lib/kAnon";
 
 type SqlClient = NonNullable<ReturnType<typeof getSoldDb>>;
 function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
