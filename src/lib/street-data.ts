@@ -914,13 +914,17 @@ function buildProductTypeSections(input: {
     const statsSold: StatCell[] = [];
     // kOk is guaranteed here (sub-k types were skipped above). Count carries its window (fix a).
     statsSold.push({ label: "Typical price", value: formatCADShort(roundPriceForProse(typicalPrice)), detail: `across ${n} sales · last 12 months` });
-    if (lo !== null && hi !== null) {
-      statsSold.push({ label: "Price band", value: `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}` });
+    // A band's endpoints ARE two individual sale prices — the cheapest and the dearest
+    // home that traded. That is why a range takes K_ANON_RANGE, not the card's k>=5.
+    // The card floor was licensing a band off as few as five sales here, while the
+    // sidebar and glance bands beside it already required ten.
+    if (lo !== null && hi !== null && n >= K_ANON_RANGE) {
+      statsSold.push({ label: "Price band", value: `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}`, detail: `across ${n} sales · last 12 months` });
     }
     const dom = num(agg?.avg_dom ?? null);
-    if (dom !== null) statsSold.push({ label: "Time on market", value: `${Math.round(dom)} days`, detail: "typical" });
+    if (dom !== null) statsSold.push({ label: "Time on market", value: `${Math.round(dom)} days`, detail: `across ${n} sales · last 12 months` });
     const ratio = num(agg?.avg_sold_to_ask ?? null);
-    if (ratio !== null) statsSold.push({ label: "Sold to ask", value: `${Math.round(ratio * 100)}%` });
+    if (ratio !== null) statsSold.push({ label: "Sold to ask", value: `${Math.round(ratio * 100)}%`, detail: `across ${n} sales · last 12 months` });
 
     // Active inventory stats for the type
     if (activeForType.length > 0) {
