@@ -24,7 +24,7 @@ import { firstSentence } from "./prose/sentences";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
-import { cleanNeighbourhoodName, roundPriceForProse } from "./format";
+import { cleanNeighbourhoodName, roundPriceForProse, roundRentForProse } from "./format";
 import { formatCAD, formatCADShort } from "./charts/theme";
 import type {
   StreetPageData,
@@ -800,7 +800,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
       type,
       displayName: displayNameFor(type),
       count: agg.n,
-      typicalPrice: publishable ? typicalPrice : null,
+      // ROUNDED HERE, not at the surface. The pill handed the v2 shell a RAW mean while the type
+      // card beside it rendered roundPriceForProse of the same number — one metric, two values,
+      // on 46 pages ($884K pill vs $875K card). Round once, at the point of publication, and
+      // every surface that formats it lands on the same string.
+      typicalPrice: publishable ? roundPriceForProse(typicalPrice!) : null,
       priceLabel: publishable ? "typical" : "sample too small",
       anchor: `#type-${type}`,
     });
@@ -815,7 +819,7 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
       type: "condo",
       displayName: "Lease",
       count: leaseBasis.count,
-      typicalPrice: leaseBasis.typical,
+      typicalPrice: roundRentForProse(leaseBasis.typical),
       priceLabel: "typical / mo",
       anchor: "#type-condo",
     });
@@ -838,10 +842,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     subtitle,
     heroStats,
     productTypePills,
-    // The raw value the v2 shell renders. One source now — the graduated basis — on
-    // both paths; it used to fork to DB3's 90-day average on the 12-month path, which
-    // is how a one-sale price reached the tile under a five-sale basis line.
-    rawTypicalPrice: saleBasis ? saleBasis.typical : null,
+    // The value the v2 shell renders — ROUNDED, like every other surface. It was going out raw
+    // while the glance tile and the sidebar fact rendered roundPriceForProse of the same figure,
+    // so 165 pages showed "$995K" in the hero and "$1M" two inches below it. The reader cannot
+    // tell whether that is one number or two.
+    rawTypicalPrice: saleBasis ? roundPriceForProse(saleBasis.typical) : null,
     rawTotalTransactions: totalTransactions,
   };
 }
@@ -956,7 +961,7 @@ function buildProductTypeSections(input: {
         : `${displayNameFor(type)} inventory on ${streetName} is currently active but has thin recent sale history.`,
       streetName,
       streetShort: shortName,
-      typicalPrice: kOk ? typicalPrice : 0,
+      typicalPrice: kOk ? roundPriceForProse(typicalPrice) : 0,
       statsSold,
       chartSold,
       showContactTeamPrompt: !kOk && n > 0,
@@ -1278,11 +1283,15 @@ function buildMarketActivity(input: {
   // 12-month count. A bucket is always smaller than the pool that vouched for it.
   const bedAgg = (b: number) => leaseBeds.find((x) => Number(x.bed) === b) ?? null;
   const anyLease = leaseBeds.some((b) => Number(b.n) >= K_ANON_PRICE);
-  // (fix b) roundPriceForProse is a HOUSE-PRICE rounder (nearest ~$10k); applied to a monthly
-  // rent it collapses ~$2,200 to "$0" — a fabricated number. Suppress any rent that rounds to <=0
-  // rather than publish "$0". (Narrow: market-card lease path only; the hero's k-gated lease pill
-  // carries the real rent. Properly re-formatting rents is the sitewide-audit's job.)
-  const rentCell = (x: number | null) => (x != null && roundPriceForProse(x) > 0 ? formatCADShort(roundPriceForProse(x)) : "—");
+  // WAS: roundPriceForProse — a HOUSE-price rounder whose smallest step is $10,000 — applied to a
+  // monthly rent, which collapsed every rent to $0, which the code then suppressed as "—". The
+  // hero lease pill published the same metric from the same basis at full precision. One metric,
+  // one publishing and one not, on 139 pages. Rents now round to $25 and print in full, matching
+  // the pill's `dollars()` exactly.
+  const rentCell = (x: number | null) => {
+    const r = x != null ? roundRentForProse(x) : 0;
+    return r > 0 ? formatCAD(r) : "—";
+  };
   // (fix c) Typical sold mirrors the graduated hero/glance basis — and now uses its value
   // rather than substituting the 90-day DB3 figure on the 12-month path.
   const gSale = enrichment.saleBasis;
