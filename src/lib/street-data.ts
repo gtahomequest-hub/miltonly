@@ -1313,7 +1313,11 @@ function buildMarketActivity(input: {
         { label: "Days on market · last 12 months", value: dom !== null && n >= K_ANON_PRICE ? String(Math.round(dom)) : "—" },
       ],
     },
-    leasesSummary: leaseN > 0 ? {
+    // The card renders whenever a rent is PUBLISHABLE, not only when the 12-month count is
+    // non-zero. Five streets carried a lease pill off the graduated ~2-year basis while their
+    // 12-month count was 0, so the card vanished and the hero published a rent the market
+    // section silently omitted — the same one-metric-two-answers problem in a different shape.
+    leasesSummary: (leaseN > 0 || gLease) ? {
       title: "Leases",
       body: `Rental activity on ${streetName} across recent months. Breakdown by bed count below.`,
       stats: [
