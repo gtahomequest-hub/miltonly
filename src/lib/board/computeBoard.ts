@@ -22,8 +22,9 @@
 
 import { requireSoldDb, requireAnalyticsDb } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
+import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 
-const K = 5; // k-anon floor per cell
+const K = K_ANON_PRICE; // k-anon floor per cell
 const DAY = 86_400_000;
 const STEPS = [28, 56, 91, 182, 365]; // widening ladder (days)
 const TYPES = ["detached", "townhouse", "semi", "condo"] as const;
@@ -233,8 +234,11 @@ export function computeBoardFromSales(sales: Sale[], active: Record<Ptype, numbe
     const activeN = tab === "overall" ? Object.values(active).reduce((a, b) => a + b, 0) : active[tab as Ptype];
     const monthsSupply = vol12 > 0 ? activeN / (vol12 / 12) : null;
 
+    // A band publishes its own endpoints, so it takes K_ANON_RANGE, not the cell floor
+    // K. Milton-wide-per-type scope means this never bites in practice — which is
+    // exactly why it went unnoticed. Wrong is wrong at any n.
     const prices12 = inWin(scope, nowMs - 365 * DAY, nowMs).map((s) => s.price);
-    const priceBand = prices12.length >= K ? {
+    const priceBand = prices12.length >= K_ANON_RANGE ? {
       p5: percentile(prices12, 0.05), p25: percentile(prices12, 0.25), p50: percentile(prices12, 0.5),
       p75: percentile(prices12, 0.75), p95: percentile(prices12, 0.95),
     } : null;

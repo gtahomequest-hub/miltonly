@@ -99,6 +99,31 @@ interface RawTypeAgg {
   avg_sold_to_ask: string | null;
 }
 
+/* ONE SAMPLE, ONE ROW. Every street figure below — typical, band, DOM, sold-to-ask —
+ * comes out of a single 12-month sibling-union query, so `n` is literally the count of
+ * the rows each average was taken over. That is the invariant the page had been missing:
+ * it was floor-checking DB3's `sold_count_12months` while publishing DB3's `avg_*`
+ * columns, which computeStreetSaleStats builds over a NINETY-day CTE and stores per
+ * single slug. Different window, different population, same tile. */
+interface RawSale12mo {
+  n: number;
+  avg: string | null;
+  lo: string | null;
+  hi: string | null;
+  dom: string | null;
+  sta: string | null;
+}
+interface RawLease12mo {
+  n: number;
+  avg: string | null;
+  dom: string | null;
+}
+interface RawLeaseBedAgg {
+  bed: number;
+  n: number;
+  avg: string | null;
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    SIBLING RESOLUTION (Step 13m-1)
    ───────────────────────────────────────────────────────────────────── */
@@ -167,7 +192,9 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     monthlyRows,
     streetContent,
     soldTypeAggRows,
-    soldRange12moRows,
+    sale12moRows,
+    lease12moRows,
+    leaseBedRows,
     soldCoordsRows,
     soldExistsRows,
   ] = await Promise.all([
@@ -210,19 +237,57 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           GROUP BY property_type
         ` as unknown as Promise<RawTypeAgg[]>).catch(() => [] as RawTypeAgg[])
       : Promise.resolve([] as RawTypeAgg[]),
+    // THE street sale sample. n, avg, band, DOM and sold-to-ask all come from these
+    // rows and nothing else, so any floor checked against n is checked against the
+    // exact sample the figure was computed over.
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
+                 AVG(sold_price) AS avg,
                  MIN(sold_price) AS lo,
-                 MAX(sold_price) AS hi
+                 MAX(sold_price) AS hi,
+                 AVG(days_on_market) AS dom,
+                 AVG(sold_to_ask_ratio) AS sta
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
             AND transaction_type = 'For Sale'
             AND sold_date >= NOW() - INTERVAL '12 months'
             AND sold_date <= NOW()
-        ` as unknown as Promise<Array<{ n: number; lo: string | null; hi: string | null }>>).catch(() => [] as Array<{ n: number; lo: string | null; hi: string | null }>)
-      : Promise.resolve([] as Array<{ n: number; lo: string | null; hi: string | null }>),
+        ` as unknown as Promise<RawSale12mo[]>).catch(() => [] as RawSale12mo[])
+      : Promise.resolve([] as RawSale12mo[]),
+    // Same treatment for the lease side — the market card used to read DB3's
+    // avg_leased_price, which is also a 90-day average, under a 12-month count.
+    sd
+      ? (sd`
+          SELECT COUNT(*)::int AS n,
+                 AVG(sold_price) AS avg,
+                 AVG(days_on_market) AS dom
+          FROM sold.sold_records
+          WHERE street_slug = ANY(${siblingSlugs}::text[])
+            AND perm_advertise = TRUE
+            AND transaction_type = 'For Lease'
+            AND sold_date >= NOW() - INTERVAL '12 months'
+            AND sold_date <= NOW()
+        ` as unknown as Promise<RawLease12mo[]>).catch(() => [] as RawLease12mo[])
+      : Promise.resolve([] as RawLease12mo[]),
+    // Per-bed rents carry their OWN counts. A bed bucket is a subset of the lease
+    // pool, so the pool's count can never license it.
+    sd
+      ? (sd`
+          SELECT LEAST(beds, 4)::int AS bed,
+                 COUNT(*)::int AS n,
+                 AVG(sold_price) AS avg
+          FROM sold.sold_records
+          WHERE street_slug = ANY(${siblingSlugs}::text[])
+            AND perm_advertise = TRUE
+            AND transaction_type = 'For Lease'
+            AND beds IS NOT NULL AND beds >= 1
+            AND sold_date >= NOW() - INTERVAL '12 months'
+            AND sold_date <= NOW()
+          GROUP BY 1
+        ` as unknown as Promise<RawLeaseBedAgg[]>).catch(() => [] as RawLeaseBedAgg[])
+      : Promise.resolve([] as RawLeaseBedAgg[]),
     // Centroid fallback: if DB1 has no current listings (expired/sold-only streets),
     // sample any stored lat/lng from DB2 sold records so nearbyPlaces + schema Place
     // still surface geography-aware content.
@@ -304,18 +369,25 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   }
 
   const stats = soldStatsRows[0] ?? null;
-  const soldRange = soldRange12moRows[0] ?? null;
+  const sale12 = sale12moRows[0] ?? null;
+  const lease12 = lease12moRows[0] ?? null;
+  const soldRange = sale12 ? { n: sale12.n, lo: sale12.lo, hi: sale12.hi } : null;
 
   // ─── DEC-CONDO-6 enrichment (area-context + graduated sale/lease + tier) ───
-  // Prefer the 12mo figure (byte-identical to today's page); fall back to the full
-  // ~26mo window ONLY where 12mo is sub-k5. Full-window queries fire lazily inside.
+  // Prefer the 12mo figure; fall back to the full ~26mo window ONLY where 12mo is
+  // sub-k5. Full-window queries fire lazily inside.
+  //
+  // COUNT AND AVERAGE NOW COME FROM THE SAME ROWS. They used to be paired across
+  // sources — DB3's 12-month count with DB3's 90-day average — so a "12-month
+  // typical" on a street with five sales in the year but one in the quarter was
+  // that one sale's price. The pairing was the defect, not the floor.
   const enrichment = await buildStreetEnrichment({
     slug,
     siblingSlugs,
-    sale12moCount: stats?.sold_count_12months ?? 0,
-    sale12moAvg: num(stats?.avg_sold_price ?? null),
-    lease12moCount: stats?.leased_count_12months ?? 0,
-    lease12moAvg: num(stats?.avg_leased_price ?? null),
+    sale12moCount: sale12?.n ?? 0,
+    sale12moAvg: num(sale12?.avg ?? null),
+    lease12moCount: lease12?.n ?? 0,
+    lease12moAvg: num(lease12?.avg ?? null),
   });
 
   // ─── Hero + product pills ─────────────────────────────────────────
@@ -342,14 +414,15 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
 
   // ─── Description body + sidebar ───────────────────────────────────
   const descriptionBody = buildDescriptionBody(streetContent);
-  const descriptionSidebar = buildSidebar({ shortName, streetName, stats, centroid, neighbourhoods, soldRange });
+  const descriptionSidebar = buildSidebar({ shortName, streetName, sale12, centroid, neighbourhoods, enrichment });
 
   // ─── At a glance (12 tiles) ───────────────────────────────────────
   const glanceTiles = buildGlanceTiles({
     stats,
+    sale12,
+    lease12,
     allListings,
     typeAggs: soldTypeAggRows,
-    soldRange,
     enrichment,
   });
 
@@ -358,6 +431,9 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     slug,
     streetName,
     stats,
+    sale12,
+    lease12,
+    leaseBeds: leaseBedRows,
     monthlyRows,
     enrichment,
   });
@@ -380,7 +456,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   });
 
   // ─── FAQs ──────────────────────────────────────────────────────────
-  const faqs = parseFaqs(streetContent?.faqJson, { streetName, shortName, stats });
+  const faqs = parseFaqs(streetContent?.faqJson, { streetName, shortName, sale12, enrichment });
 
   // ─── Final CTAs + corner widget ───────────────────────────────────
   const finalCTAs = buildFinalCTAs({ streetName, shortName });
@@ -574,7 +650,7 @@ function characterSummaryFrom(description: string | null | undefined): string {
 
 function parseFaqs(
   faqJson: string | null | undefined,
-  ctx: { streetName: string; shortName: string; stats: RawSoldStats | null }
+  ctx: { streetName: string; shortName: string; sale12: RawSale12mo | null; enrichment: StreetEnrichment }
 ): FAQItem[] {
   if (faqJson) {
     try {
@@ -584,20 +660,26 @@ function parseFaqs(
       }
     } catch { /* fall through */ }
   }
-  // Fallback template — grounded in aggregate stats only.
-  const { streetName, stats } = ctx;
-  const typical = num(stats?.avg_sold_price ?? null);
+  // Fallback template — grounded in aggregate stats only, and only where the aggregate
+  // clears its own floor. This used to read DB3's avg_sold_price and avg_dom with NO
+  // k check at all, phrased as "the recent period" over a 90-day figure. It is not
+  // rendered today (generated FAQs win on every published page) but it is a caller of
+  // the same bad read, so it moves onto the same sample as everything else.
+  const { streetName, sale12, enrichment } = ctx;
+  const basis = enrichment.saleBasis;
+  const n = sale12?.n ?? 0;
+  const dom = num(sale12?.dom ?? null);
   return [
     {
       question: `What is the typical price on ${streetName}?`,
-      answer: typical
-        ? `Typical sold price on ${streetName} in the recent period was ${formatCADShort(roundPriceForProse(typical))}. Range varies by product type. See the deep-link sections above for detached, townhouse, and condo breakdowns.`
+      answer: basis
+        ? `Typical sold price on ${streetName} was ${formatCADShort(roundPriceForProse(basis.typical))} ${windowDisclosure(basis)}. Range varies by product type. See the deep-link sections above for detached, townhouse, and condo breakdowns.`
         : `Sale activity on ${streetName} has been limited recently. Contact our team for a private read.`,
     },
     {
       question: `How fast do homes sell on ${streetName}?`,
-      answer: stats?.avg_dom
-        ? `Typical days on market is around ${Math.round(num(stats.avg_dom) ?? 0)} days.`
+      answer: dom !== null && n >= K_ANON_PRICE
+        ? `Typical days on market is around ${Math.round(dom)} days, across ${n} ${n === 1 ? "sale" : "sales"} in the last 12 months.`
         : `Days on market varies by product type and season.`,
     },
   ];
@@ -653,16 +735,21 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     sub: mix.description || undefined,
   });
 
-  const typical = num(stats?.avg_sold_price ?? null);
   const countFor12mo = stats?.sold_count_12months ?? 0;
-  // GRADUATED sale price. saleBasis.window==='12mo' fires on exactly the old condition
-  // (typical && sold_count_12months>=5), so rich pages keep the identical value; the
-  // 'full' path is the ~26mo fallback that un-barrens sub-k5-in-12mo streets. Every
-  // priced tile carries the mandatory window+sample disclosure (basis).
+  // GRADUATED sale price: the 12-month average where it clears k>=5, else the ~26mo
+  // fallback. The value is ALWAYS saleBasis.typical, which is computed over exactly the
+  // sample saleBasis.count reports and windowDisclosure() names.
+  //
+  // It used to be `is12 && typical ? typical : saleBasis.typical` — on the 12-month path
+  // it substituted DB3's avg_sold_price, a NINETY-day average, under a 12-month basis
+  // line. That was deliberate, to keep already-rich pages byte-identical through the
+  // tier port. Byte-identical is a regression test; it is not a correctness test, and
+  // here it carried a k-anon breach forward: on 50 pages the published "typical" was
+  // computed over fewer than five sales, on 16 of them over exactly one.
   const saleBasis = enrichment.saleBasis;
   if (saleBasis) {
     const is12 = saleBasis.window === "12mo";
-    const priceVal = is12 && typical ? typical : saleBasis.typical; // 12mo path byte-identical
+    const priceVal = saleBasis.typical;
     const lo = num(soldRange?.lo ?? null);
     const hi = num(soldRange?.hi ?? null);
     const showRange = is12 && soldRange && soldRange.n >= K_ANON_RANGE && lo !== null && hi !== null;
@@ -751,11 +838,10 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     subtitle,
     heroStats,
     productTypePills,
-    // 12mo path keeps the exact prior raw value (byte-identical render); 'full' path
-    // exposes the ~26mo graduated price so widened streets stop rendering "—".
-    rawTypicalPrice: saleBasis
-      ? (saleBasis.window === "12mo" && typical ? typical : saleBasis.typical)
-      : null,
+    // The raw value the v2 shell renders. One source now — the graduated basis — on
+    // both paths; it used to fork to DB3's 90-day average on the 12-month path, which
+    // is how a one-sale price reached the tile under a five-sale basis line.
+    rawTypicalPrice: saleBasis ? saleBasis.typical : null,
     rawTotalTransactions: totalTransactions,
   };
 }
@@ -842,7 +928,11 @@ function buildProductTypeSections(input: {
       statsSold.push({ label: "Active listings", value: String(activeForType.length), detail: `avg list ${formatCADShort(roundPriceForProse(priceSum / activeForType.length))}` });
     }
 
-    const typeMonthly: QuarterlyDataPoint[] = kOk ? monthlyToQuarterly(monthlyRows) : [];
+    // Same per-point floor as the market card: a quarter below k is an individual
+    // price on a line, whatever the street total says.
+    const typeMonthly: QuarterlyDataPoint[] = kOk
+      ? monthlyToQuarterly(monthlyRows).filter((q) => (q.count ?? 0) >= K_ANON_PRICE)
+      : [];
 
     const chartSold = kOk && typeMonthly.length >= 3
       ? {
@@ -943,31 +1033,43 @@ function buildDescriptionBody(
   };
 }
 
+// Sidebar facts are TILES, not prose — and until now nothing audited them. Every
+// figure here carries its own sample and window in the value, because the fact list
+// has no basis slot and a bare "$1M · Typical price" is a claim with no provenance.
 function buildSidebar(input: {
   shortName: string;
   streetName: string;
-  stats: RawSoldStats | null;
+  sale12: RawSale12mo | null;
   centroid: { lat: number; lng: number } | null;
   neighbourhoods: string[];
-  soldRange: { n: number; lo: string | null; hi: string | null } | null;
+  enrichment: StreetEnrichment;
 }): DescriptionSidebarProps {
-  const { shortName, streetName, stats, centroid, neighbourhoods, soldRange } = input;
+  const { shortName, streetName, sale12, centroid, neighbourhoods, enrichment } = input;
 
   const facts: Record<string, string> = {};
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
   facts["Neighbourhood"] = cleanNbhds.slice(0, 2).join(", ") || config.CITY_NAME;
-  const typical = num(stats?.avg_sold_price ?? null);
-  if (typical && (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE) {
-    facts["Typical price"] = formatCADShort(roundPriceForProse(typical));
+
+  const n = sale12?.n ?? 0;
+  const basis = enrichment.saleBasis;
+  if (basis) {
+    facts["Typical price"] = `${formatCADShort(roundPriceForProse(basis.typical))} · ${windowDisclosure(basis)}`;
   }
-  if (soldRange && soldRange.n >= K_ANON_RANGE) {
-    const lo = num(soldRange.lo);
-    const hi = num(soldRange.hi);
-    if (lo !== null && hi !== null) facts["Price band"] = `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))}`;
+  // A range leaks its own endpoints, so it takes the higher floor — against the same n.
+  if (n >= K_ANON_RANGE) {
+    const lo = num(sale12!.lo);
+    const hi = num(sale12!.hi);
+    if (lo !== null && hi !== null) {
+      facts["Price band"] = `${formatCADShort(roundPriceForProse(lo))} to ${formatCADShort(roundPriceForProse(hi))} · across ${n} sales in the last 12 months`;
+    }
   }
-  const dom = num(stats?.avg_dom ?? null);
-  if (dom !== null) facts["Typical days on market"] = `${Math.round(dom)} days`;
-  if (stats?.sold_count_12months) facts["Transactions tracked"] = String(stats.sold_count_12months);
+  // WAS: `if (dom !== null)` over DB3's 90-day avg_dom — no floor of any kind. On 171
+  // pages that printed one identified sale's days-on-market as the street's "typical".
+  const dom = num(sale12?.dom ?? null);
+  if (dom !== null && n >= K_ANON_PRICE) {
+    facts["Typical days on market"] = `${Math.round(dom)} days · across ${n} sales in the last 12 months`;
+  }
+  if (n > 0) facts["Sales tracked"] = `${n} · last 12 months`;
 
   return {
     streetFacts: facts,
@@ -1041,45 +1143,47 @@ function nearbyPlacesFor(centroid: { lat: number; lng: number } | null): NearbyP
 
 function buildGlanceTiles(input: {
   stats: RawSoldStats | null;
+  sale12: RawSale12mo | null;
+  lease12: RawLease12mo | null;
   allListings: Listing[];
   typeAggs: RawTypeAgg[];
-  soldRange: { n: number; lo: string | null; hi: string | null } | null;
   enrichment: StreetEnrichment;
 }): GlanceTile[] {
-  const { stats, allListings, typeAggs, soldRange, enrichment } = input;
+  const { stats, sale12, lease12, allListings, typeAggs, enrichment } = input;
   const active = allListings.filter((l) => l.status === "active");
+  const n = sale12?.n ?? 0;
+  const soldRange = sale12 ? { n: sale12.n, lo: sale12.lo, hi: sale12.hi } : null;
 
   const tiles: GlanceTile[] = [];
 
   // RELABELLED: this tile counts SALES ONLY, while the hero tile of the same former label counted
   // sales + leases — the same words over two different numbers on one screen. Distinct subject,
   // distinct label, explicit window.
-  tiles.push({ label: "Sales tracked", value: String(stats?.sold_count_12months ?? 0), detail: "last 12 months" });
+  tiles.push({ label: "Sales tracked", value: String(n), detail: "last 12 months" });
 
-  const typical = num(stats?.avg_sold_price ?? null);
-  // GRADUATED to match the hero: 12mo value byte-identical, ~26mo fallback un-barrens,
-  // detail carries the mandatory window+sample disclosure.
+  // Same graduated basis as the hero, same value, same disclosure. No 90-day substitution.
   const gSale = enrichment.saleBasis;
   tiles.push({
     label: "Typical sold",
-    value: gSale
-      ? formatCADShort(roundPriceForProse(gSale.window === "12mo" && typical ? typical : gSale.typical))
-      : "—",
+    value: gSale ? formatCADShort(roundPriceForProse(gSale.typical)) : "—",
     detail: gSale ? windowDisclosure(gSale) : "under publish threshold",
   });
 
-  const dom = num(stats?.avg_dom ?? null);
+  // WAS: DB3's 90-day avg_dom and avg_sold_to_ask, both captioned "last 12 months" and
+  // neither floored. 236 pages published one of these off fewer than five sales. Now the
+  // 12-month figures, floored against the count of the rows they average.
+  const dom = num(sale12?.dom ?? null);
   tiles.push({
     label: "Typical DOM",
-    value: dom !== null ? `${Math.round(dom)}d` : "—",
-    detail: "closed sales · last 12 months",
+    value: dom !== null && n >= K_ANON_PRICE ? `${Math.round(dom)}d` : "—",
+    detail: n >= K_ANON_PRICE ? `across ${n} sales · last 12 months` : "under publish threshold",
   });
 
-  const ratio = num(stats?.avg_sold_to_ask ?? null);
+  const ratio = num(sale12?.sta ?? null);
   tiles.push({
     label: "Sold to ask",
-    value: ratio !== null ? `${Math.round(ratio * 100)}%` : "—",
-    detail: "closed sales · last 12 months",
+    value: ratio !== null && n >= K_ANON_PRICE ? `${Math.round(ratio * 100)}%` : "—",
+    detail: n >= K_ANON_PRICE ? `across ${n} sales · last 12 months` : "under publish threshold",
   });
 
   // Type split — 2 tiles
@@ -1097,8 +1201,8 @@ function buildGlanceTiles(input: {
   if (soldRange && soldRange.n >= K_ANON_RANGE) {
     const lo = num(soldRange.lo);
     const hi = num(soldRange.hi);
-    if (lo !== null) tiles.push({ label: "Lowest sold", value: formatCADShort(roundPriceForProse(lo)), detail: "last 12 mo" });
-    if (hi !== null) tiles.push({ label: "Highest sold", value: formatCADShort(roundPriceForProse(hi)), detail: "last 12 mo" });
+    if (lo !== null) tiles.push({ label: "Lowest sold", value: formatCADShort(roundPriceForProse(lo)), detail: `across ${soldRange.n} sales · last 12 months` });
+    if (hi !== null) tiles.push({ label: "Highest sold", value: formatCADShort(roundPriceForProse(hi)), detail: `across ${soldRange.n} sales · last 12 months` });
   } else {
     tiles.push({ label: "Sale range", value: "—", detail: "under publish threshold" });
     tiles.push({ label: "Activity", value: `${stats?.sold_count_90days ?? 0}`, detail: "sales · last 90 days" });
@@ -1106,28 +1210,34 @@ function buildGlanceTiles(input: {
 
   tiles.push({ label: "Active right now", value: String(active.length), detail: "live listings · today" });
 
-  // YoY
-  const yoy = num(stats?.price_change_yoy ?? null);
-  tiles.push({
-    label: "Trend",
-    value: yoy !== null ? `${yoy >= 0 ? "+" : ""}${(yoy * 100).toFixed(1)}%` : "—",
-    detail: "year over year",
-  });
+  // THE "TREND" TILE IS GONE. price_change_yoy compares a 365-day average against the
+  // 365 days before it, and nothing anywhere counts the prior window — so there is no n
+  // to floor it against. It was rendering on 277 pages, unfloored, on the same figure
+  // that was pulled out of /api/sold-stats for exactly this reason. A figure whose
+  // sample cannot be counted cannot be published.
 
-  // Market temperature
-  tiles.push({
-    label: "Market state",
-    value: (stats?.market_temperature ?? "balanced").replace(/^\w/, (c) => c.toUpperCase()),
-    detail: "per current activity",
-  });
+  // Market temperature is classified from the 90-day sold-to-ask and DOM, so it takes
+  // the 90-day count as its floor — and it is never defaulted. It used to fall back to
+  // the literal "balanced" whenever the column was null, which printed a market verdict
+  // for 165 streets with ZERO closed sales in the window.
+  const temp = stats?.market_temperature ?? null;
+  const c90 = stats?.sold_count_90days ?? 0;
+  if (temp && c90 >= K_ANON_PRICE) {
+    tiles.push({
+      label: "Market state",
+      value: temp.replace(/^\w/, (c) => c.toUpperCase()),
+      detail: `across ${c90} closed sales · last 90 days`,
+    });
+  }
 
-  // Peak month
+  // Peak month is the modal closing month over the year — a shape, not a price, but it
+  // is still derived from the sale pool, so it waits for the same floor.
   const peak = stats?.peak_month;
-  if (peak) {
+  if (peak && n >= K_ANON_PRICE) {
     const monthName = new Date(2024, peak - 1, 1).toLocaleString("en-CA", { month: "short" });
-    tiles.push({ label: "Busiest month", value: monthName, detail: "most closings" });
+    tiles.push({ label: "Busiest month", value: monthName, detail: `most closings · across ${n} sales` });
   } else {
-    tiles.push({ label: "Leases", value: String(stats?.leased_count_12months ?? 0), detail: "closed · last 12 months" });
+    tiles.push({ label: "Leases", value: String(lease12?.n ?? 0), detail: "closed · last 12 months" });
   }
 
   // (fix f) COLLAPSE, DON'T FILL — drop tiles that would render as a bare "—" so the at-a-glance
@@ -1144,32 +1254,36 @@ function buildMarketActivity(input: {
   slug: string;
   streetName: string;
   stats: RawSoldStats | null;
+  sale12: RawSale12mo | null;
+  lease12: RawLease12mo | null;
+  leaseBeds: RawLeaseBedAgg[];
   monthlyRows: RawMonthly[];
   enrichment: StreetEnrichment;
 }): MarketActivityProps {
-  const { streetName, stats, monthlyRows, enrichment } = input;
+  const { streetName, stats, sale12, lease12, leaseBeds, monthlyRows, enrichment } = input;
   const salesCount = stats?.sold_count_90days ?? 0; // 90-DAY count — labelled as such below (fix a)
-  const dom = num(stats?.avg_dom ?? null);
+  const n = sale12?.n ?? 0;
+  const dom = num(sale12?.dom ?? null);
+  const leaseN = lease12?.n ?? 0;
+  const leaseDom = num(lease12?.dom ?? null);
 
   const quarterly = monthlyToQuarterly(monthlyRows);
 
-  const lease1 = num(stats?.avg_leased_price_1bed ?? null);
-  const lease2 = num(stats?.avg_leased_price_2bed ?? null);
-  const lease3 = num(stats?.avg_leased_price_3bed ?? null);
-  const lease4 = num(stats?.avg_leased_price_4bed ?? null);
-  const anyLease = (stats?.leased_count_12months ?? 0) >= K_ANON_PRICE && (lease1 || lease2 || lease3 || lease4);
+  // Per-bed rents now carry their OWN counts. They used to come from DB3's
+  // avg_leased_price_<N>bed — 90-day averages of a BED SUBSET, licensed by the pool's
+  // 12-month count. A bucket is always smaller than the pool that vouched for it.
+  const bedAgg = (b: number) => leaseBeds.find((x) => Number(x.bed) === b) ?? null;
+  const anyLease = leaseBeds.some((b) => Number(b.n) >= K_ANON_PRICE);
   // (fix b) roundPriceForProse is a HOUSE-PRICE rounder (nearest ~$10k); applied to a monthly
   // rent it collapses ~$2,200 to "$0" — a fabricated number. Suppress any rent that rounds to <=0
   // rather than publish "$0". (Narrow: market-card lease path only; the hero's k-gated lease pill
   // carries the real rent. Properly re-formatting rents is the sitewide-audit's job.)
   const rentCell = (x: number | null) => (x != null && roundPriceForProse(x) > 0 ? formatCADShort(roundPriceForProse(x)) : "—");
-  // (fix c) Typical sold mirrors the graduated hero/glance basis (12mo preferred, ~26mo fallback),
-  // not the 90-day-gated DB3 value — so glance and market card can never disagree.
+  // (fix c) Typical sold mirrors the graduated hero/glance basis — and now uses its value
+  // rather than substituting the 90-day DB3 figure on the 12-month path.
   const gSale = enrichment.saleBasis;
-  const heroTypical = num(stats?.avg_sold_price ?? null);
-  const typicalSold = gSale
-    ? formatCADShort(roundPriceForProse(gSale.window === "12mo" && heroTypical ? heroTypical : gSale.typical))
-    : "—";
+  const gLease = enrichment.leaseBasis;
+  const typicalSold = gSale ? formatCADShort(roundPriceForProse(gSale.typical)) : "—";
 
   return {
     salesSummary: {
@@ -1179,37 +1293,49 @@ function buildMarketActivity(input: {
         : `No closed sales on record for ${streetName} in the last 90 days.`,
       stats: [
         // (fix a) window-label the count so it reads as complementary to the hero's 12-month basis.
+        // EVERY label below names the window of the figure beside it — the card used to sit under
+        // a "last 90 days" heading with two 90-day figures and one graduated one, undistinguished.
         { label: "Recent sales · last 90 days", value: String(salesCount) },
-        { label: "Typical sold", value: typicalSold },
-        { label: "Days on market", value: dom !== null ? String(Math.round(dom)) : "—" },
+        { label: gSale ? `Typical sold · ${gSale.window === "12mo" ? "last 12 months" : "last ~2 years"}` : "Typical sold", value: typicalSold },
+        { label: "Days on market · last 12 months", value: dom !== null && n >= K_ANON_PRICE ? String(Math.round(dom)) : "—" },
       ],
     },
-    leasesSummary: (stats?.leased_count_12months ?? 0) > 0 ? {
+    leasesSummary: leaseN > 0 ? {
       title: "Leases",
       body: `Rental activity on ${streetName} across recent months. Breakdown by bed count below.`,
       stats: [
-        { label: "Recent leases · last 12 months", value: String(stats?.leased_count_12months ?? 0) },
-        { label: "Typical rent", value: rentCell(num(stats?.avg_leased_price ?? null)) },
-        { label: "Days on market", value: num(stats?.avg_lease_dom ?? null) !== null ? String(Math.round(num(stats?.avg_lease_dom ?? null)!)) : "—" },
+        { label: "Recent leases · last 12 months", value: String(leaseN) },
+        { label: gLease ? `Typical rent · ${gLease.window === "12mo" ? "last 12 months" : "last ~2 years"}` : "Typical rent", value: gLease ? rentCell(gLease.typical) : "—" },
+        { label: "Days on market · last 12 months", value: leaseDom !== null && leaseN >= K_ANON_PRICE ? String(Math.round(leaseDom)) : "—" },
       ],
     } : undefined,
-    // K-anonymity: don't publish a quarterly line chart when the street has fewer
-    // than 5 total closed sales across the window. With a tiny sample, each quarter
-    // reveals individual transaction prices on the line.
-    priceChart: (quarterly.length >= 3 && (stats?.sold_count_12months ?? 0) >= K_ANON_PRICE) ? {
-      data: quarterly,
-      caption: `Typical sold price across all product types on ${streetName}, plotted with transaction volume.`,
-    } : null,
+    // K-anonymity, PER PLOTTED POINT. The old gate checked the street's TOTAL count and
+    // then plotted every quarter, so a street with 12 sales in a year could still put a
+    // quarter of 1 on the line — and a point on a price chart is a price. The comment
+    // above the old gate said exactly this ("each quarter reveals individual transaction
+    // prices") and then guarded the wrong number. Quarters below k are dropped; a chart
+    // needs at least 3 surviving points to be worth drawing.
+    priceChart: (() => {
+      const pts = quarterly.filter((q) => (q.count ?? 0) >= K_ANON_PRICE);
+      if (pts.length < 3) return null;
+      return {
+        data: pts,
+        caption: `Typical sold price across all product types on ${streetName}, plotted with transaction volume. Quarters with fewer than ${K_ANON_PRICE} closed sales are not plotted.`,
+      };
+    })(),
     rentByBeds: (() => {
       if (!anyLease) return undefined;
-      const rows = [
-        { label: "1 bed", value: rentCell(lease1), detail: "typical" },
-        { label: "2 bed", value: rentCell(lease2), detail: "typical" },
-        { label: "3 bed", value: rentCell(lease3), detail: "typical" },
-        { label: "4+ bed", value: rentCell(lease4), detail: "typical" },
-      ];
-      // (fix f) collapse a per-bed grid that is entirely "—" (every value suppressed by the
-      // $0 fix) — don't render scaffolding with no cell to show.
+      const cell = (b: number, label: string) => {
+        const a = bedAgg(b);
+        const cnt = a ? Number(a.n) : 0;
+        const avg = a ? num(a.avg) : null;
+        return cnt >= K_ANON_PRICE && avg !== null
+          ? { label, value: rentCell(avg), detail: `across ${cnt} leases · last 12 months` }
+          : { label, value: "—", detail: "under publish threshold" };
+      };
+      const rows = [cell(1, "1 bed"), cell(2, "2 bed"), cell(3, "3 bed"), cell(4, "4+ bed")];
+      // (fix f) collapse a per-bed grid that is entirely "—" — don't render scaffolding
+      // with no cell to show.
       return rows.some((r) => r.value !== "—") ? rows : undefined;
     })(),
     streetName,
