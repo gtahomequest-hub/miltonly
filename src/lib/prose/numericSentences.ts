@@ -95,6 +95,21 @@ function opensOnDanglingReference(sentence: string): boolean {
   return DANGLING_START.test(sentence);
 }
 
+/** The narrower rule, for text that stands alone (a FAQ answer, not running prose).
+ *
+ *  DANGLING_START includes `^the \w+`, which is right mid-paragraph — "The property is set back"
+ *  after a cut has nothing to attach to — but wrong at the top of a standalone block, where
+ *  "The nearby options include…" is a perfectly good opener. What is NEVER resolvable at the top
+ *  of a standalone block is a pronoun or a counting demonstrative: "Both", "These", "They",
+ *  "The former". Those are the only ones this fires on. */
+const UNRESOLVED_STANDALONE_OPENER =
+  /^(?:both|either|neither|these|those|they|them|their|it|its|this|that|such|the former|the latter|the two|the three|all three)\b/i;
+
+function opensOnUnresolvedReference(sentence: string): boolean {
+  if (SELF_EVIDENT_SUBJECT.test(sentence)) return false;
+  return UNRESOLVED_STANDALONE_OPENER.test(sentence);
+}
+
 /** Reduced to a content-free assertion: a lone sentence that says nothing once its figure is gone.
  *  "Across Campbellville, comparable detached homes have sold at broadly comparable levels." */
 const VACUOUS =
@@ -122,10 +137,32 @@ function drop(sentence: string, opts?: StripOpts): boolean {
   return false;
 }
 
-/** Drop every sentence carrying a number. Returns '' when nothing qualitative survives. */
-export function stripNumericSentences(text: string | null | undefined, opts?: StripOpts): string {
+/** Drop every sentence carrying a number. Returns '' when nothing qualitative survives.
+ *
+ *  `standalone` marks text that is NOT read in sequence with anything else — a FAQ answer, a
+ *  hero subtitle. In running prose the dangling check only fires after a cut, because an opener
+ *  can legitimately refer back to the previous paragraph. A standalone block has no previous
+ *  paragraph, so an opening "Both provide alternatives…" is dangling whether or not this
+ *  particular block is where the antecedent was cut. That distinction is why 132 FAQ answers
+ *  survived the coherence pass: the sentence naming the two streets was numeric and lived in a
+ *  DIFFERENT item, so no cut had been recorded here when the opener was tested. */
+export function stripNumericSentences(
+  text: string | null | undefined,
+  opts?: StripOpts & { standalone?: boolean },
+): string {
   if (!text) return '';
-  const kept = splitSentences(text).filter((s) => !drop(s, opts));
+  const sents = splitSentences(text);
+  const kept: string[] = [];
+  let prevDropped = false;
+  for (const s of sents) {
+    let dropIt = drop(s, opts);
+    // Standalone: the FIRST surviving sentence must resolve on its own, cut or no cut.
+    if (!dropIt && opts?.standalone && kept.length === 0 && opensOnUnresolvedReference(s)) dropIt = true;
+    if (!dropIt && prevDropped && opensOnDanglingReference(s)) dropIt = true;
+    if (dropIt) { prevDropped = true; continue; }
+    kept.push(s);
+    prevDropped = false;
+  }
   return kept.join(' ').replace(/\s+/g, ' ').trim();
 }
 
@@ -178,6 +215,23 @@ const STOP = new Set(['what', 'kinds', 'kind', 'the', 'are', 'is', 'on', 'in', '
   'homes', 'home', 'street', 'court', 'place', 'road', 'drive', 'crescent', 'way', 'terrace', 'lane']);
 
 /** Does the surviving answer still address its question? */
+/** A caveat is not content. "Schools nearby" was rendering as a heading over one line —
+ *  "Families should confirm current school assignment directly with the boards." — on 51 pages,
+ *  because suppression took every substantive sentence and left the compliance close standing.
+ *  A section whose surviving paragraphs are ALL disclaimer collapses, same rule as empty
+ *  scaffolding: a heading is a promise that something follows it. */
+const DISCLAIMER_ONLY =
+  /^(?:families|buyers|readers|users|visitors)?\s*(?:should|must|are advised to)\s*(?:confirm|verify|check|consult)\b|^(?:confirm|verify|check)\b[^.]*\b(?:directly with|with the (?:board|boards|city|town|school))\b|^information\s+(?:is\s+)?(?:deemed\s+)?reliable but|^(?:all\s+)?figures?\s+(?:are|is)\s+(?:approximate|indicative|subject to change)/i;
+
+export function isDisclaimer(paragraph: string): boolean {
+  return DISCLAIMER_ONLY.test(paragraph.trim());
+}
+
+/** True when nothing but caveats survived. */
+export function isDisclaimerOnly(paragraphs: string[]): boolean {
+  return paragraphs.length > 0 && paragraphs.every(isDisclaimer);
+}
+
 export function answersQuestion(question: string, answer: string): boolean {
   if (!answer.trim()) return false;
   for (const t of TOPICS) if (t.q.test(question)) return t.a.test(answer);

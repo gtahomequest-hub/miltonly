@@ -32,6 +32,17 @@ export function roundPriceForProse(price: number): number {
   return Math.round(price / step) * step;
 }
 
+/** The rent counterpart to roundPriceForProse.
+ *
+ *  roundPriceForProse is a HOUSE-price rounder — its smallest step is $10,000, so a $2,460 rent
+ *  rounds to $0. The market card had been working around that by suppressing any rent that
+ *  rounded to zero, which is every rent, which is why 139 pages showed a rent in the hero pill
+ *  and a dash in the market card for the same metric. Rents round to $25. */
+export function roundRentForProse(rent: number): number {
+  if (!Number.isFinite(rent) || rent <= 0) return 0;
+  return Math.round(rent / 25) * 25;
+}
+
 export function daysAgo(date: Date): number {
   return Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
 }

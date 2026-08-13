@@ -12,7 +12,7 @@
 import 'server-only';
 import { getStreetPageData } from '@/lib/street-data';
 import { windowDisclosure } from '@/lib/streetEnrichment';
-import { stripNumericSentences, stripNumericParagraphs, answersQuestion } from '@/lib/prose/numericSentences';
+import { stripNumericSentences, stripNumericParagraphs, answersQuestion, isDisclaimerOnly } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import type {
   StreetPageData,
@@ -159,9 +159,11 @@ export function mapStreetV2Data(
   const leaseRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent leases');
   const sCTA = data.descriptionSidebar.sidebarCTA;
 
-  // Owner inline-CTA price: the first product type with a PUBLISHED typical (>0),
-  // null when none publish (so the inline CTA hides — same rule as the legacy page).
-  const ownerTyped = data.productTypes.find((p) => p.typicalPrice > 0);
+  // Owner inline-CTA price. It used to take the first product type with a published typical,
+  // so "Own on Miltonbrook? Typical is $884K" was quoting the SEMI-detached figure as the
+  // street's — a fourth price on a page whose headline said $995K. It is the street typical or
+  // it is nothing: same source as the hero, so it can never be a different number.
+  const ownerTyped = data.heroProps.rawTypicalPrice;
 
   return {
     slug: data.street.slug,
@@ -188,9 +190,11 @@ export function mapStreetV2Data(
     sections: generation
       ? generation.sections
           .map((s) => ({ id: s.id, heading: s.heading, paragraphs: stripNumericParagraphs(s.paragraphs, stripOpts) }))
-          .filter((s) => s.paragraphs.length > 0)
+          // A heading is a promise that something follows it. Empty fails that; so does a
+          // section whose only survivor is the compliance caveat.
+          .filter((s) => s.paragraphs.length > 0 && !isDisclaimerOnly(s.paragraphs))
       : [],
-    ownerCtaPrice: ownerTyped ? ownerTyped.typicalPrice : null,
+    ownerCtaPrice: ownerTyped && ownerTyped > 0 ? ownerTyped : null,
 
     sidebar: {
       facts: Object.entries(data.descriptionSidebar.streetFacts).map(([label, value]) => ({ label, value })),
@@ -271,7 +275,11 @@ export function mapStreetV2Data(
     // Campbellville typical. An answer with nothing qualitative left takes its question with it.
     faqs: generation
       ? generation.faq
-          .map((f) => ({ question: f.question, answer: stripNumericSentences(f.answer, stripOpts) }))
+          // standalone: an answer is read on its own, so its opening sentence has to resolve on
+          // its own. "Both provide clearer price benchmarks than Alder Gate." was surviving on
+          // 126 pages because the sentence naming the two streets was numeric and sat in a
+          // different FAQ item, so no cut was on record in this one when the opener was tested.
+          .map((f) => ({ question: f.question, answer: stripNumericSentences(f.answer, { ...stripOpts, standalone: true }) }))
           // empty AND non-responsive both go: an answer left addressing a different subject than
           // its question ("What kinds of homes…" -> "Lots tend to be generous…") is worse than none
           .filter((f) => answersQuestion(f.question, f.answer))
