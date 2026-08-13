@@ -10,18 +10,26 @@ export async function GET(request: NextRequest) {
   }
 
   if (type === "street") {
-    const results = await prisma.listing.findMany({
-      where: {
-        streetName: { contains: q, mode: "insensitive" },
-        permAdvertise: true,
-      },
-      select: { streetName: true, streetSlug: true },
-      distinct: ["streetName"],
+    // ENTITY-GATED. This used to read Listing rows directly and return whatever
+    // streetName MLS had written, with no check that the street exists — so a typo at
+    // the source became a suggestion. Searching "miltonbro" returned both
+    // "Miltonbrook Cres" and "Miltonbrock Cres", the second being a street that does
+    // not exist in Milton, carrying one expired listing and no sold history.
+    //
+    // THE GATE IS "THE ENTITY EXISTS", NOT hero-index's SURFACED_STREET_WHERE. I measured
+    // both: the surfaced gate would also have removed 23 REGISTERED streets that carry
+    // live listings but no sold history and no published page — Ashbrook Crt, Goodwin
+    // Cres, Norris Cir, Snoek Point and 19 more, all of which serve a 200. hero-index can
+    // afford that floor because it is a directory of pages worth ranking; autocomplete is
+    // a finder, and refusing to find a real street is a worse failure than the one being
+    // fixed. Entity-exists removes 72 phantom/junk names and loses nothing real.
+    const results = await prisma.residentialStreet.findMany({
+      where: { name: { contains: q, mode: "insensitive" } },
+      select: { name: true, slug: true },
+      orderBy: [{ recencyWeightedSold: "desc" }, { name: "asc" }],
       take: 8,
     });
-    return NextResponse.json(
-      results.map((r) => ({ name: r.streetName, slug: r.streetSlug }))
-    );
+    return NextResponse.json(results.map((r) => ({ name: r.name, slug: r.slug })));
   }
 
   if (type === "neighbourhood") {
