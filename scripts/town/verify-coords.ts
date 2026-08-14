@@ -174,7 +174,16 @@ async function main(): Promise<void> {
     console.log(`   coordinates in the served payload          : ${lats.length}`);
     assert("served pins that are a (0,0) sentinel", lats.filter((v) => v === 0).length, 0);
     assert("served pins outside Milton's latitude band", lats.filter((v) => v < BBOX.minLat || v > BBOX.maxLat).length, 0);
-    assert("served pin count == validated-rooftop count", lats.length, activePinnable.length);
+
+    // The page ships min(MAP_PIN_CAP, eligible). Asserting against `eligible` alone would be
+    // asserting the cap away; asserting against the cap alone would hide the day eligibility
+    // drops. So: assert the identity, and SAY OUT LOUD what the cap truncates.
+    const MAP_PIN_CAP = 400;
+    assert("served pin count == min(cap, validated rooftops)", lats.length, Math.min(MAP_PIN_CAP, activePinnable.length));
+    if (activePinnable.length > MAP_PIN_CAP) {
+      console.log(`   ⚠ CAP IS BINDING: ${activePinnable.length - MAP_PIN_CAP} pinnable listings are not on the map.`);
+      console.log(`     MAP_PIN_CAP=${MAP_PIN_CAP} was invisible while every pin was (0,0); it hides real homes now.`);
+    }
   }
 
   // ── GATE 4 · per-street distances ──────────────────────────────────────────────────────────

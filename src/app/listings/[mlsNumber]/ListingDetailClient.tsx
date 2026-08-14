@@ -16,7 +16,9 @@ interface Listing {
   mlsNumber: string; address: string; price: number; bedrooms: number; bathrooms: number;
   parking: number; propertyType: string; status: string; photos: string[]; listedAt: string;
   neighbourhood: string; description: string | null; streetSlug: string; latitude: number;
-  longitude: number; sqft: number | null; basement: boolean; lotSize: string | null;
+  longitude: number;
+  /** resolved municipal rooftop — null when the Town has no point for this address */
+  townLat: number | null; townLng: number | null; sqft: number | null; basement: boolean; lotSize: string | null;
   lotDepth: number | null; lotWidth: number | null; transactionType: string | null;
   petsAllowed: string | null; rentIncludes: string[]; laundryFeatures: string | null;
   cooling: string | null; heatType: string | null; heatSource: string | null;
@@ -344,7 +346,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             </div>
 
             {/* What's nearby */}
-            <WhatsNearby lat={l.latitude} lng={l.longitude} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />
+            <WhatsNearby lat={l.townLat ?? 0} lng={l.townLng ?? 0} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />
 
             {/* Mortgage (sales only) */}
             {!isRental && <MortgageCalc price={l.price} taxAmount={l.taxAmount} propertyType={l.propertyType} />}

@@ -206,6 +206,15 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
   return (
     <div className="mb-8">
       <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">What&apos;s nearby</h2>
+      {/* Where the derived fact is the content. With a rooftop these are real distances from
+          this house to Town-published school and park geometry; the source is named beside them,
+          not only in a footer. Absent when there is nothing derived to attribute. */}
+      {coordsValid && (
+        <p className="text-[11px] text-[#94a3b8] mb-3">
+          Distances from this property&apos;s municipal address point. Contains information
+          licensed under the Open Government Licence – Milton.
+        </p>
+      )}
       <div className="flex gap-1 mb-4 border-b border-[#e2e8f0] overflow-x-auto">
         {([
           ["commutes", "🏙️ Commutes"],

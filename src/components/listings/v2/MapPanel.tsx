@@ -160,8 +160,13 @@ export function MapPanel({ pins }: { pins: MapPin[] }) {
         </div>
       )}
 
+      {/* Two sources, both credited where the thing they produced is on screen: the basemap
+          tiles, and the pin positions. Every pin is a Town of Milton municipal address point —
+          the derived fact IS this panel, so the attribution belongs on it and not only in a
+          footer several sections away. */}
       <span className="lv-mapattr">
         © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · © CARTO
+        {' · '}Contains information licensed under the Open Government Licence – Milton.
       </span>
     </div>
   );

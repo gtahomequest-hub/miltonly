@@ -154,8 +154,12 @@ export default async function ListingDetailPage({ params }: Props) {
     numberOfBathroomsTotal: listing.bathrooms,
     floorSize: listing.sqft ? { "@type": "QuantitativeValue", value: listing.sqft, unitCode: "FTK" } : undefined,
     image: listing.photos[0] || undefined,
-    latitude: listing.latitude,
-    longitude: listing.longitude,
+    // SCHEMA IS A PUBLISHED SURFACE. This emitted the legacy feed coordinate — 0 on every row —
+    // so the structured data told Google that every home in Milton is in the Gulf of Guinea.
+    // The resolved municipal rooftop, and the property is OMITTED rather than zeroed when the
+    // Town has no point for the address: absent is a fact, (0,0) is a false one.
+    latitude: listing.townLat ?? undefined,
+    longitude: listing.townLng ?? undefined,
   };
   const offerSchema = {
     "@context": "https://schema.org",
