@@ -153,18 +153,28 @@ async function main(): Promise<void> {
   }
 
   // ── GATE 3 · the map ───────────────────────────────────────────────────────────────────────
+  //
+  // The DB side must be the SAME POPULATION the page queries, or the two numbers are about
+  // different things and their agreement means nothing. /listings defaults to
+  // status=active AND permAdvertise AND city — so does this.
   console.log("\n── GATE 3 · /listings map pins");
-  const active = lRows.filter((r) => r.status === "active");
+  const active = await prisma.listing.findMany({
+    where: { status: "active", permAdvertise: true, city: "Milton" },
+    select: { townLat: true, townLng: true },
+  });
   const activePinnable = active.filter((r) => r.townLat != null && inMilton(r.townLat, r.townLng!));
-  console.log(`   active listings          : ${active.length}`);
-  console.log(`   with a validated rooftop : ${activePinnable.length}`);
-  console.log(`   absent from the map      : ${active.length - activePinnable.length}`);
+  console.log(`   active listings (as /listings queries them) : ${active.length}`);
+  console.log(`   with a validated rooftop                    : ${activePinnable.length}`);
+  console.log(`   absent from the map, not approximated       : ${active.length - activePinnable.length}`);
   if (BASE) {
-    const html = await (await fetch(`${BASE}/listings?view=map`)).text();
-    const m = html.match(/(\d+)\s+homes? on map/);
-    const onMap = m ? Number(m[1]) : null;
-    console.log(`   the served page says     : ${onMap ?? "(not found)"}`);
-    if (onMap !== null) assert("served pin count == validated-rooftop count", onMap, activePinnable.length);
+    // Read the coordinates the page actually shipped, not a rendered count: the pin layer is a
+    // client island, so the served HTML carries the payload rather than the drawn markers.
+    const html = await (await fetch(`${BASE}/listings`)).text();
+    const lats = [...html.matchAll(/\\"latitude\\":(-?[\d.]+)/g)].map((m) => Number(m[1]));
+    console.log(`   coordinates in the served payload          : ${lats.length}`);
+    assert("served pins that are a (0,0) sentinel", lats.filter((v) => v === 0).length, 0);
+    assert("served pins outside Milton's latitude band", lats.filter((v) => v < BBOX.minLat || v > BBOX.maxLat).length, 0);
+    assert("served pin count == validated-rooftop count", lats.length, activePinnable.length);
   }
 
   // ── GATE 4 · per-street distances ──────────────────────────────────────────────────────────

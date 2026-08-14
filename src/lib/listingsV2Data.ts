@@ -218,9 +218,14 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     topStreets,
   ] = await Promise.all([
     prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
-    // map pins: ALL filtered results (page-independent), lightweight select
+    // map pins: ALL filtered results (page-independent), lightweight select.
+    //
+    // The coordinate requirement is in the WHERE, not a .filter() after the fact, because
+    // `take` is applied by the database BEFORE any JS filtering: fetching 400 rows and then
+    // dropping the uncoordinated ones cost 70 pinnable listings that were never fetched. The
+    // cap has to count pins, not candidates.
     prisma.listing.findMany({
-      where,
+      where: { ...where, townLat: { not: null }, townLng: { not: null } },
       orderBy,
       take: MAP_PIN_CAP,
       select: {
