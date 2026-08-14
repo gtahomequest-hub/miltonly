@@ -129,11 +129,51 @@ function isVacuousSentence(sentence: string): boolean {
   return VACUOUS.test(sentence);
 }
 
-export interface StripOpts { noRecord?: boolean }
+/* A sentence that says a figure CANNOT be published, on a page that publishes it.
+ *
+ * The mirror image of the suppression work: we took the numbers out of the prose, and the
+ * qualitative claims left behind now contradict the numbers that stayed. 141 of 426 pages
+ * carried "A reliable street-level price isn't available given the thin recent activity on X"
+ * directly beneath a hero publishing a price — because the prose was generated when the
+ * graduated window did not exist and those streets published nothing.
+ *
+ * SAME SHAPE AS THE noRecord GUARD ABOVE, not a second implementation: a structural flag on
+ * StripOpts, a pattern, and one line in drop(). And gated the same way — the claim is only
+ * false when the page actually publishes the figure the sentence denies.
+ *
+ * THE SUBJECT MATTERS, which is why there are two flags rather than one. A band is suppressed
+ * at k>=10 while a typical publishes at k>=5, so "the sale band is too thin to publish" can be
+ * perfectly TRUE on a page showing a price. Measured across the corpus: 475 of these sentences
+ * are about a price, 2 about a band alone, 37 about both — and exactly one page (cousens-terrace)
+ * would have been wrongly cut by a single flag. */
+const DENIES =
+  /\b(?:no|not|isn'?t|is not|cannot|can'?t|could not|couldn'?t|too few|too thin|too sparse|too shallow|too small|falls? below|sits? below|below the threshold|insufficient|unable|lacks?)\b/i;
+const PUBLISHING =
+  /\b(?:publish(?:ed|ing|able)?|available|stated?|state|support|report(?:ed)?|quote[ds]?)\b/i;
+const PRICE_NOUN = /\b(?:price|pricing|prices|typical|number|figure|benchmark|valuation)\b/i;
+const RANGE_NOUN = /\b(?:range|band)\b/i;
+
+/** True when the sentence denies a figure this page is, in fact, publishing. */
+function deniesAPublishedFigure(sentence: string, opts?: StripOpts): boolean {
+  if (!DENIES.test(sentence) || !PUBLISHING.test(sentence)) return false;
+  // A sentence naming both is gated on the price: that is the part that is false.
+  if (PRICE_NOUN.test(sentence)) return !!opts?.pricePublished;
+  if (RANGE_NOUN.test(sentence)) return !!opts?.bandPublished;
+  return false;
+}
+
+export interface StripOpts {
+  noRecord?: boolean;
+  /** the page publishes a typical price */
+  pricePublished?: boolean;
+  /** the page publishes a price band/range */
+  bandPublished?: boolean;
+}
 
 function drop(sentence: string, opts?: StripOpts): boolean {
   if (sentenceHasNumber(sentence)) return true;
   if (opts?.noRecord && PROPERTY_DETAIL.test(sentence)) return true;
+  if (deniesAPublishedFigure(sentence, opts)) return true;
   return false;
 }
 

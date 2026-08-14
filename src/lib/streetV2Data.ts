@@ -153,7 +153,15 @@ export function mapStreetV2Data(
   const activeCount = data.activeInventory.listings.length;
   // No sale on record and nothing listed => a per-property claim in the prose has no source
   // anywhere. Only there do we suppress property detail that carries no number.
-  const stripOpts = { noRecord: !data.enrichment.hasAnySale && activeCount === 0 };
+  //
+  // pricePublished/bandPublished read the RENDERED truth, not a recomputation: rawTypicalPrice
+  // is exactly what the hero tile shows, and the sidebar fact is exactly what the band shows.
+  // A stored sentence may not deny a figure the page is publishing two inches above it.
+  const stripOpts = {
+    noRecord: !data.enrichment.hasAnySale && activeCount === 0,
+    pricePublished: hp.rawTypicalPrice != null,
+    bandPublished: data.descriptionSidebar.streetFacts['Price band'] != null,
+  };
   const ma = data.marketActivity;
   const saleRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent sales');
   const leaseRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent leases');

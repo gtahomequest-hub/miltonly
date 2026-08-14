@@ -717,8 +717,16 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   // This suppresses a false claim; it never invents one. The stored copy still wants regenerating.
   // The hero summary is stored generation output: strip numeric sentences first (compliance
   // suppression), then the existing absence guard, then fall back to the neutral line.
+  // The same figure-denial gate the sections and FAQ get. No subtitle in the corpus currently
+  // trips it — I sampled 40 priced pages and found none — but the subtitle is stored generation
+  // output from the same run, so it gets the same guard rather than an exemption that would have
+  // to be noticed later.
+  const subtitleOpts = {
+    pricePublished: enrichment.saleBasis != null,
+    bandPublished: !!(soldRange && soldRange.n >= K_ANON_RANGE),
+  };
   const rawSummary = streetContent?.description
-    ? stripNumericSentences(characterSummaryFrom(streetContent.description))
+    ? stripNumericSentences(characterSummaryFrom(streetContent.description), subtitleOpts)
     : null;
   const summaryClaimsAbsence = rawSummary != null && ASSERTS_NO_SALES.test(rawSummary);
   const subtitle =
