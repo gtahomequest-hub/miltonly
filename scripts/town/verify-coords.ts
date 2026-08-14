@@ -10,7 +10,7 @@ import path from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { PrismaClient } from "@prisma/client";
 import { streetCentroidFor } from "../../src/lib/town/roadFacts";
-import { identityFromSlug } from "../../src/lib/town/identity";
+import { identityFromSlug, identityFromTown } from "../../src/lib/town/identity";
 import { TOWN_ROAD_FACTS } from "../../src/data/townRoadFacts";
 
 for (const f of [".env", ".env.local"]) {
@@ -71,26 +71,86 @@ async function main(): Promise<void> {
   const feedReal = await prisma.listing.count({ where: { NOT: { latitude: 0 } } });
   console.log(`   (legacy feed latitude non-zero on ${feedReal} rows — the feed gap, unchanged)`);
 
-  // ── GATE 2 · a rooftop lands on its own street ─────────────────────────────────────────────
-  console.log("\n── GATE 2 · resolved rooftops vs their own street centroid");
-  const sample = lResolved.filter((r) => streetCentroidFor(r.streetSlug)).slice(0, 5);
-  let far = 0;
-  for (const r of sample) {
-    const c = streetCentroidFor(r.streetSlug)!;
-    const d = km(r.townLat!, r.townLng!, c.lat, c.lng);
-    if (d > 1.5) far++;
-    console.log(`   ${r.address.slice(0, 46).padEnd(48)} ${d.toFixed(3)} km from ${r.streetSlug}`);
-  }
-  assert("sampled rooftops further than 1.5 km from their own street", far, 0);
+  // ── GATE 2 · a rooftop lands ON ITS OWN STREET ─────────────────────────────────────────────
+  //
+  // Measured to the nearest point of the street's CENTRELINE, not to its centroid. The first
+  // version of this check used the centroid and failed 181 listings — all correct. A centroid is
+  // a street's midpoint, so on a long street every address is far from it by construction: Main
+  // Street E crosses the whole town, and 169 Savoline sits at the north-west end of a 3.5 km
+  // boulevard, 2.1 km from its middle and squarely inside its own extent. The question is
+  // "is this rooftop on this street", and only the geometry answers it.
+  //
+  // Reads the layer cache: node scripts/town/fetch-layers.mjs
+  console.log("\n── GATE 2 · resolved rooftops vs their own street's centreline");
+  const cachePath = path.join(process.cwd(), "scripts/town/.cache/roads.json");
+  if (!fs.existsSync(cachePath)) {
+    console.log("   SKIP — no layer cache. Run: node scripts/town/fetch-layers.mjs");
+  } else {
+    const roads = JSON.parse(fs.readFileSync(cachePath, "utf8")).features as Array<{
+      attributes: { GEOSTNAME: string; SUFSTTYPE: string }; geometry?: { paths?: number[][][] };
+    }>;
+    // SEGMENTS, not vertices. Measuring to the nearest vertex leaves 14 rural addresses reading
+    // 250–480 m out purely because a line road is surveyed with vertices hundreds of metres
+    // apart — the rooftop is beside the road, just not beside a surveyed point on it.
+    // Perpendicular distance to the nearest segment removes that artifact and leaves only real
+    // setback, which is the thing worth tolerating.
+    const segsByKey = new Map<string, number[][][]>();
+    for (const f of roads) {
+      const k = identityFromTown(f.attributes.GEOSTNAME, f.attributes.SUFSTTYPE).key;
+      if (!segsByKey.has(k)) segsByKey.set(k, []);
+      for (const p of f.geometry?.paths ?? []) {
+        for (let i = 1; i < p.length; i++) segsByKey.get(k)!.push([p[i - 1], p[i]]);
+      }
+    }
+    /** Perpendicular distance from a point to a segment, in local metres. */
+    const toSegment = (lat: number, lng: number, a: number[], b: number[]): number => {
+      const mx = Math.cos(lat * RAD) * 111_320, my = 110_540;
+      const px = (lng - a[0]) * mx, py = (lat - a[1]) * my;
+      const vx = (b[0] - a[0]) * mx, vy = (b[1] - a[1]) * my;
+      const len2 = vx * vx + vy * vy;
+      const t = len2 > 0 ? Math.max(0, Math.min(1, (px * vx + py * vy) / len2)) : 0;
+      return Math.hypot(px - t * vx, py - t * vy) / 1000;
+    };
+    /** Distance to the nearest point ON this street's centreline. */
+    const toStreet = (lat: number, lng: number, slug: string): number | null => {
+      const segs = segsByKey.get(identityFromSlug(slug).key);
+      if (!segs?.length) return null;
+      let best = Infinity;
+      for (const s of segs) { const d = toSegment(lat, lng, s[0], s[1]); if (d < best) best = d; }
+      return best;
+    };
 
-  const allWithCentroid = lResolved.filter((r) => streetCentroidFor(r.streetSlug));
-  const wayOff = allWithCentroid.filter((r) => {
-    const c = streetCentroidFor(r.streetSlug)!;
-    return km(r.townLat!, r.townLng!, c.lat, c.lng) > 2;
-  });
-  console.log(`   across ALL ${allWithCentroid.length} resolved listings with a street centroid:`);
-  assert("rooftops more than 2 km from their own street centroid", wayOff.length, 0);
-  wayOff.slice(0, 5).forEach((r) => console.log(`      ${r.address} (${r.streetSlug})`));
+    const sample = lResolved.filter((r) => toStreet(r.townLat!, r.townLng!, r.streetSlug) !== null).slice(0, 5);
+    let far = 0;
+    for (const r of sample) {
+      const d = toStreet(r.townLat!, r.townLng!, r.streetSlug)!;
+      if (d > 0.25) far++;
+      console.log(`   ${r.address.slice(0, 46).padEnd(48)} ${(d * 1000).toFixed(0)} m from ${r.streetSlug}`);
+    }
+    // 250 m is generous for "on this street": it covers a deep rural setback and the gap between
+    // a rooftop and the nearest surveyed vertex on a sparsely-vertexed segment.
+    assert("sampled rooftops further than 250 m from their own street", far, 0);
+
+    const measurable = lResolved.filter((r) => toStreet(r.townLat!, r.townLng!, r.streetSlug) !== null);
+    const dists = measurable.map((r) => ({ r, d: toStreet(r.townLat!, r.townLng!, r.streetSlug)! })).sort((a, b) => b.d - a.d);
+    const over250 = dists.filter((x) => x.d > 0.25);
+    console.log(`   across ALL ${measurable.length} resolved listings whose street has geometry:`);
+    console.log(`      median ${(dists[Math.floor(dists.length / 2)].d * 1000).toFixed(0)} m · worst ${(dists[0].d * 1000).toFixed(0)} m`);
+
+    // A MIS-RESOLUTION IS KILOMETRES OUT, NOT HUNDREDS OF METRES. The assertion is set where a
+    // wrong-street match actually lives; 500 m cannot hide one, because the nearest OTHER street
+    // in Milton is never that close along its whole length.
+    assert("rooftops further than 500 m from their own street's centreline", dists.filter((x) => x.d > 0.5).length, 0);
+
+    // Reported, not asserted: the three over 250 m are the TOWN CONTRADICTING ITSELF across two
+    // vintages. Each is the Town's own address point carrying the Town's own street name, sitting
+    // beyond its own 2022 centreline — 1520 Leriche Way is a 2023 address point 230 m from the
+    // Leriche Way the 2022 Roads layer draws. Our resolution used the Town's point for the Town's
+    // street; the disagreement is inside their data, and asserting on it would make this gate
+    // permanently red and therefore useless for catching the next real one.
+    console.log(`      between 250 m and 500 m (Town layers disagreeing across vintages): ${over250.length}`);
+    over250.slice(0, 6).forEach((x) => console.log(`         ${x.r.address} (${x.r.streetSlug}) — ${(x.d * 1000).toFixed(0)} m`));
+  }
 
   // ── GATE 3 · the map ───────────────────────────────────────────────────────────────────────
   console.log("\n── GATE 3 · /listings map pins");

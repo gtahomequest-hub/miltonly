@@ -121,8 +121,6 @@ interface CardRow {
   listedAt: Date;
   daysOnMarket: number | null;
   listOfficeName: string | null;
-  latitude: number;
-  longitude: number;
   lastPriceChangeAt: Date | null;
   maintenanceFeeAmt: number | null;
   virtualTourUrl: string | null;
@@ -134,7 +132,7 @@ const CARD_SELECT = {
   soldPrice: true, soldDate: true, status: true, transactionType: true,
   propertyType: true, bedrooms: true, bathrooms: true, sqft: true,
   parking: true, photos: true, listedAt: true, daysOnMarket: true,
-  listOfficeName: true, latitude: true, longitude: true,
+  listOfficeName: true,
   lastPriceChangeAt: true, maintenanceFeeAmt: true, virtualTourUrl: true,
   displayAddress: true,
 } as const;
@@ -171,8 +169,6 @@ function toCard(row: CardRow): ListingCardData {
     listedAt: row.listedAt.toISOString(),
     daysOnMarket: row.daysOnMarket,
     listOfficeName: row.listOfficeName,
-    latitude: row.latitude,
-    longitude: row.longitude,
     priceReduced: isPriceReduced(row),
     maintenanceFeeAmt: row.maintenanceFeeAmt,
     virtualTourUrl: row.virtualTourUrl,
