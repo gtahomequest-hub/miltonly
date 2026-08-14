@@ -1,5 +1,7 @@
-// Proximity utilities + hardcoded Milton-area points of interest.
-// All lat/lng are public landmark coordinates; no external API calls.
+// Proximity utilities + Milton-area points of interest.
+// No external API calls: parks come from the generated Town layer, the rest are public landmark
+// coordinates.
+import { TOWN_PARKS } from "@/data/townPlaces";
 
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -50,21 +52,32 @@ export const MOSQUES: POI[] = [
   { name: "Islamic Community Centre of Milton", lat: 43.5489, lng: -79.9124, href: "/mosques/islamic-community-centre-of-milton", icon: "🕌" },
 ];
 
-export const PARKS: POI[] = [
+// THE TOWN'S 93 PARKS, area-weighted centroids of the Town's own polygons.
+//
+// This was 9 hand-entered coordinates, 5 of them labelled "approximate centroids" in this file.
+// A distance has two endpoints and is only as good as the worse one: computing from an
+// authoritative street centreline to a guessed park would publish a precise number about an
+// approximate place. The Town's polygons end that.
+//
+// (The 2026-07-19 batch-001 triage removed a "Velodrome Park" from the hand list because no Town
+// source confirmed it and its coordinates were on the wrong side of Milton. That check is now
+// structural — nothing is in this list that the Town does not publish.)
+//
+// Contains information licensed under the Open Government Licence – Milton.
+export const PARKS: POI[] = TOWN_PARKS.map((p) => ({
+  name: p.name,
+  lat: p.lat,
+  lng: p.lng,
+  // Conservation areas read as wild land, municipal parks as green space.
+  icon: /CONSERVATION|LINEAR|NATURAL/i.test(p.classification) ? "🌲" : "🌳",
+}));
+
+// Two conservation areas that sit OUTSIDE the Town's municipal parks layer (they are Conservation
+// Halton land, not Town parks) but are the two most-asked-about green spaces in Milton. Kept as
+// landmark coordinates, and kept honest by being named as what they are.
+export const CONSERVATION_AREAS: POI[] = [
   { name: "Rattlesnake Point Conservation", lat: 43.5056, lng: -79.9567, icon: "🌲" },
   { name: "Kelso Conservation Area", lat: 43.5167, lng: -79.9333, icon: "🌲" },
-  { name: "Centennial Park", lat: 43.5234, lng: -79.8834, icon: "🌳" },
-  { name: "Milton Community Park", lat: 43.5178, lng: -79.8645, icon: "🌳" },
-  // Neighbourhood parks (approximate centroids) for more granular distance signal
-  { name: "Rotary Park", lat: 43.5165, lng: -79.8830, icon: "🌳" },
-  { name: "Coates Park", lat: 43.5210, lng: -79.8980, icon: "🌳" },
-  { name: "Willmott Park", lat: 43.4980, lng: -79.9070, icon: "🌳" },
-  { name: "Ford District Park", lat: 43.4950, lng: -79.9260, icon: "🌳" },
-  { name: "Escarpment View Park", lat: 43.5300, lng: -79.8550, icon: "🌳" },
-  // "Velodrome Park" removed 2026-07-19 (batch-001 triage): no Town of Milton
-  // source confirms a park by this name, and these coords sit in northwest
-  // Milton while the actual velodrome (Mattamy National Cycling Centre) is on
-  // Pan Am Blvd in the southeast. Re-add only with a verified name + location.
 ];
 
 // Highway 401 on-ramps. Milton has two; pick whichever is nearer per street.

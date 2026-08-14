@@ -14,6 +14,7 @@
 
 import { extractStreetName, streetNameToSlug, deriveIdentity } from "@/lib/streetUtils";
 import { config } from "@/lib/config";
+import { resolveRooftop } from "@/lib/town/rooftop";
 
 // =============================================================================
 // Type: a minimal query-executor interface. Both @neondatabase/serverless's
@@ -268,6 +269,9 @@ export const SOLD_RECORD_COLUMNS: readonly string[] = [
   "days_on_market", "sold_to_ask_ratio",
   "beds", "baths", "property_type", "sqft_range",
   "lat", "lng",
+  // Resolved municipal rooftop (Town of Milton Address Points). Distinct from lat/lng, which are
+  // the FEED's coordinate and are NULL on every row — PropTx sends none. Nullable, no sentinel.
+  "town_lat", "town_lng",
   "display_address", "perm_advertise",
   "mls_status", "standard_status", "transaction_type",
   "list_office_name",
@@ -409,6 +413,8 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
       .filter(Boolean)
       .join(" ") || null;
 
+  const rooftop = resolveRooftop(address);
+
   return {
     // --- Original 001–003 fields ---
     mls_number: r.ListingKey as string,
@@ -429,6 +435,10 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
     sqft_range: r.LivingAreaRange as string | null,
     lat: toNum(r.Latitude),
     lng: toNum(r.Longitude),
+    // RESOLVED ON WRITE. Matched from `address` — street_name is abbreviated and carries no
+    // street number. Null when the Town has no point for it; nothing approximates a house.
+    town_lat: rooftop?.lat ?? null,
+    town_lng: rooftop?.lng ?? null,
     display_address: r.InternetAddressDisplayYN !== false,
     perm_advertise: r.InternetEntireListingDisplayYN !== false,
     mls_status: (r.MlsStatus as string | null) ?? "Unknown",

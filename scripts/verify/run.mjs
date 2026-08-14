@@ -15,8 +15,9 @@ import claims from './checks/claims.mjs';
 import tiles from './checks/tiles.mjs';
 import consistency from './checks/consistency.mjs';
 import composition from './checks/composition.mjs';
+import coordinates from './checks/coordinates.mjs';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

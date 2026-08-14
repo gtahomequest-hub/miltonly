@@ -17,6 +17,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { config } from '@/lib/config';
+import { hasValidCoords } from '@/lib/geo';
 import type {
   ListingCardData,
   ListingsQuery,
@@ -227,7 +228,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
       orderBy,
       take: MAP_PIN_CAP,
       select: {
-        mlsNumber: true, latitude: true, longitude: true, price: true,
+        mlsNumber: true, townLat: true, townLng: true, price: true,
         transactionType: true, status: true, propertyType: true,
         bedrooms: true, bathrooms: true, address: true, displayAddress: true,
         photos: true, lastPriceChangeAt: true,
@@ -259,21 +260,32 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const listings = rows.map(toCard);
 
-  const mapPins: MapPin[] = pinRows.map((r) => ({
-    mlsNumber: r.mlsNumber,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    price: r.price,
-    transactionType: r.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
-    status: r.status === 'sold' ? 'sold' : r.status === 'rented' ? 'rented' : 'active',
-    propertyType: r.propertyType,
-    bedrooms: r.bedrooms,
-    bathrooms: r.bathrooms,
-    address: gateAddress(r),
-    displayAddress: r.displayAddress,
-    photo: r.photos[0] ?? null,
-    priceReduced: isPriceReduced(r),
-  }));
+  // A PIN IS A CLAIM ABOUT WHERE A HOUSE IS. It renders only from a validated coordinate.
+  //
+  // This filter did not exist. hasValidCoords() has been in geo.ts since the map shipped and
+  // nothing on this path called it, so every listing was pinned at its stored (0,0) — the whole
+  // inventory stacked on one dot in the Gulf of Guinea, which is why the map read as broken. The
+  // gate was never data-driven; it was absent. Now:
+  //   · townLat/townLng — the Town's municipal rooftop, resolved on write, NULL when unknown
+  //   · a listing without one is ABSENT from the map, never approximated from its street or
+  //     neighbourhood centroid. A pin on the wrong house is worse than no pin.
+  const mapPins: MapPin[] = pinRows
+    .filter((r) => hasValidCoords(r.townLat, r.townLng))
+    .map((r) => ({
+      mlsNumber: r.mlsNumber,
+      latitude: r.townLat as number,
+      longitude: r.townLng as number,
+      price: r.price,
+      transactionType: r.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
+      status: r.status === 'sold' ? 'sold' : r.status === 'rented' ? 'rented' : 'active',
+      propertyType: r.propertyType,
+      bedrooms: r.bedrooms,
+      bathrooms: r.bathrooms,
+      address: gateAddress(r),
+      displayAddress: r.displayAddress,
+      photo: r.photos[0] ?? null,
+      priceReduced: isPriceReduced(r),
+    }));
 
   // ── dedup + title-case neighbourhood stats (ported verbatim) ──
   const hoodMap = new Map<string, { count: number; avgSum: number; avgN: number }>();
