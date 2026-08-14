@@ -114,20 +114,26 @@ export default async function StreetPage({ params }: Props) {
   ]);
   if (!data) notFound();
 
-  // ── JSON-LD (unchanged from the legacy page — streets are indexed) ──────────
-  // Schema sources from the generation-aware sections + FAQ when a succeeded
-  // StreetGeneration exists; otherwise the legacy-shape fallback. Placeholder mode
-  // (no generation) -> faqs=[] so the FAQPage node is omitted, same as before.
+  // ── Render: forest-v2 shell from the vetted data (restyle only) ─────────────
+  const v2 = mapStreetV2Data(data, generation);
+
+  // ── JSON-LD, FROM THE SAME SUPPRESSED PROSE THE PAGE RENDERS ───────────────
+  // It used to read `generation.sections` and `generation.faq` RAW, which meant the
+  // structured data bypassed every suppression pass the visible page goes through —
+  // numeric sentences, absence claims, dangling openers, disclaimer-only sections, and
+  // the figure-denial gate added in this commit. Caught by grepping the served HTML
+  // rather than the stripped text: aird-court's visible prose was clean while its
+  // FAQPage node still told Google "A reliable street-level price isn't available".
+  //
+  // Schema is a PUBLISHED SURFACE. It gets the same copy the reader gets — one
+  // suppression pass, one set of prose, no second path to the index.
   const schemaSections: StreetSection[] = generation
-    ? generation.sections
+    ? v2.sections.map((s) => ({ id: isKnownSectionId(s.id) ? s.id : "about", heading: s.heading, paragraphs: s.paragraphs }))
     : ((data.descriptionBody?.sections ?? []) as Array<{ id?: string; heading: string; paragraphs: string[] }>).map(
         (s) => ({ id: isKnownSectionId(s.id) ? s.id : "about", heading: s.heading, paragraphs: s.paragraphs }),
       );
-  const faqs: FAQItem[] = generation ? generation.faq.map((f) => ({ question: f.question, answer: f.answer })) : [];
+  const faqs: FAQItem[] = generation ? v2.faqs.map((f) => ({ question: f.question, answer: f.answer })) : [];
   const schema = buildStreetPageSchema(data, { faqs, sections: schemaSections });
-
-  // ── Render: forest-v2 shell from the vetted data (restyle only) ─────────────
-  const v2 = mapStreetV2Data(data, generation);
 
   // Live freehold-vs-condo median contrast for the CompareModule teaser. City-wide
   // (same on every street) + cached -> one DB pass shared across all street pages.
