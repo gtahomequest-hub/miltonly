@@ -400,6 +400,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     streetContent,
     typeAggs: soldTypeAggRows,
     enrichment,
+    sale12,
   });
 
   // ─── Product type sections ────────────────────────────────────────
@@ -698,6 +699,18 @@ interface HeroBuildInput {
   streetContent: { description: string } | null;
   typeAggs: RawTypeAgg[];
   enrichment: StreetEnrichment;
+  /** for the subtitle's figure guards — the same rows the glance tiles are built from */
+  sale12: RawSale12mo | null;
+}
+
+/** The sold-to-ask percentage this page PUBLISHES, or null when the tile is suppressed.
+ *  ONE implementation: the glance tile renders exactly this, and the prose guard that forbids a
+ *  stored sentence from characterising the metric the other way is gated on exactly this. A second
+ *  copy of the k-anon condition would be free to drift away from the tile it is meant to track. */
+function publishedSoldToAskPct(sale12: RawSale12mo | null): number | null {
+  const ratio = num(sale12?.sta ?? null);
+  const n = sale12?.n ?? 0;
+  return ratio !== null && n >= K_ANON_PRICE ? Math.round(ratio * 100) : null;
 }
 
 /** Any phrasing that asserts nothing has ever traded on the street. Kept beside the one gate in
@@ -707,7 +720,7 @@ const ASSERTS_NO_SALES =
   /no (home )?resales? (are |have been )?recorded|no recent turnover|yet to (trade|sell|change hands)|no homes have (sold|traded)|never (sold|traded)|until a home[^.]*trades|nothing has (traded|sold)/i;
 
 function buildHero(input: HeroBuildInput): StreetHeroProps {
-  const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs, enrichment } = input;
+  const { streetName, neighbourhoods, stats, soldRange, allListings, streetContent, typeAggs, enrichment, sale12 } = input;
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
   const eyebrow = `Street Profile · ${cleanNbhds.slice(0, 3).join(" · ") || config.CITY_NAME} · ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
   // The hero subtitle is STORED LLM prose (StreetContent.description), so it sits outside the
@@ -724,6 +737,7 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   const subtitleOpts = {
     pricePublished: enrichment.saleBasis != null,
     bandPublished: !!(soldRange && soldRange.n >= K_ANON_RANGE),
+    soldOverAskPublished: (publishedSoldToAskPct(sale12) ?? 0) > 100,
   };
   const rawSummary = streetContent?.description
     ? stripNumericSentences(characterSummaryFrom(streetContent.description), subtitleOpts)
@@ -1196,10 +1210,10 @@ function buildGlanceTiles(input: {
     detail: n >= K_ANON_PRICE ? `across ${n} sales · last 12 months` : "under publish threshold",
   });
 
-  const ratio = num(sale12?.sta ?? null);
+  const staPct = publishedSoldToAskPct(sale12);
   tiles.push({
     label: "Sold to ask",
-    value: ratio !== null && n >= K_ANON_PRICE ? `${Math.round(ratio * 100)}%` : "—",
+    value: staPct !== null ? `${staPct}%` : "—",
     detail: n >= K_ANON_PRICE ? `across ${n} sales · last 12 months` : "under publish threshold",
   });
 

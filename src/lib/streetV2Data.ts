@@ -157,10 +157,15 @@ export function mapStreetV2Data(
   // pricePublished/bandPublished read the RENDERED truth, not a recomputation: rawTypicalPrice
   // is exactly what the hero tile shows, and the sidebar fact is exactly what the band shows.
   // A stored sentence may not deny a figure the page is publishing two inches above it.
+  // soldOverAskPublished reads the SAME WAY: the glance tile as rendered. A suppressed tile is
+  // "—" and parses to null, so a page that publishes no sold-to-ask figure cannot contradict one.
+  const staTile = data.glanceTiles.find((t) => t.label === 'Sold to ask')?.value ?? null;
+  const staPct = staTile && /\d/.test(staTile) ? Number(staTile.replace(/[^\d.]/g, '')) : null;
   const stripOpts = {
     noRecord: !data.enrichment.hasAnySale && activeCount === 0,
     pricePublished: hp.rawTypicalPrice != null,
     bandPublished: data.descriptionSidebar.streetFacts['Price band'] != null,
+    soldOverAskPublished: staPct != null && staPct > 100,
   };
   const ma = data.marketActivity;
   const saleRow = hp.productTypePills.find((r: ProductPillRow) => r.label === 'Recent sales');

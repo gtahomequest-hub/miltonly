@@ -162,18 +162,45 @@ function deniesAPublishedFigure(sentence: string, opts?: StripOpts): boolean {
   return false;
 }
 
+/* CLASS (c): a metric characterised in the opposite DIRECTION to its own tile.
+ *
+ * Distinct from the denial gate above — nothing is being denied. The page publishes a
+ * sold-to-ask tile reading over 100% (homes closed ABOVE ask) while a stored sentence frames
+ * the same metric as at-or-below ask: "Sold-to-ask sits close to full ask… buyers and sellers
+ * have been meeting near the listed number, and outright concessions are the exception."
+ * (miltonbrook-crescent, tile 105%.)
+ *
+ * GATED ON DIRECTION, not on a tolerance. 100% is exactly full ask; strictly above it, an
+ * at-or-below-ask frame is contradicted by the number beside it, and there is no defensible
+ * cut-off between "a bit over" and "over". A sentence that ACKNOWLEDGES over-ask anywhere in
+ * it is describing the same market the tile describes and is left alone.
+ *
+ * Same shape as the two gates above: one flag on StripOpts, one pattern, one line in drop(). */
+const AT_ASK =
+  /\b(?:close to (?:full )?ask|at or (?:just )?below ask|near(?:ly)? full ask|meeting near the listed number|concessions? (?:are|remain) the exception|rarely (?:go|sell) over ask|seldom over ask|below asking)\b/i;
+const OVER_ASK = /\b(?:over ask|above ask|over asking|above asking|bidding war|competing offers)\b/i;
+
+/** True when the sentence frames sold-to-ask the opposite way to the tile the page publishes. */
+function contradictsTheSoldToAskTile(sentence: string, opts?: StripOpts): boolean {
+  if (!opts?.soldOverAskPublished) return false;
+  return AT_ASK.test(sentence) && !OVER_ASK.test(sentence);
+}
+
 export interface StripOpts {
   noRecord?: boolean;
   /** the page publishes a typical price */
   pricePublished?: boolean;
   /** the page publishes a price band/range */
   bandPublished?: boolean;
+  /** the page publishes a sold-to-ask tile reading strictly above 100% */
+  soldOverAskPublished?: boolean;
 }
 
 function drop(sentence: string, opts?: StripOpts): boolean {
   if (sentenceHasNumber(sentence)) return true;
   if (opts?.noRecord && PROPERTY_DETAIL.test(sentence)) return true;
   if (deniesAPublishedFigure(sentence, opts)) return true;
+  if (contradictsTheSoldToAskTile(sentence, opts)) return true;
   return false;
 }
 
