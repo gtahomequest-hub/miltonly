@@ -129,11 +129,78 @@ function isVacuousSentence(sentence: string): boolean {
   return VACUOUS.test(sentence);
 }
 
-export interface StripOpts { noRecord?: boolean }
+/* A sentence that says a figure CANNOT be published, on a page that publishes it.
+ *
+ * The mirror image of the suppression work: we took the numbers out of the prose, and the
+ * qualitative claims left behind now contradict the numbers that stayed. 141 of 426 pages
+ * carried "A reliable street-level price isn't available given the thin recent activity on X"
+ * directly beneath a hero publishing a price — because the prose was generated when the
+ * graduated window did not exist and those streets published nothing.
+ *
+ * SAME SHAPE AS THE noRecord GUARD ABOVE, not a second implementation: a structural flag on
+ * StripOpts, a pattern, and one line in drop(). And gated the same way — the claim is only
+ * false when the page actually publishes the figure the sentence denies.
+ *
+ * THE SUBJECT MATTERS, which is why there are two flags rather than one. A band is suppressed
+ * at k>=10 while a typical publishes at k>=5, so "the sale band is too thin to publish" can be
+ * perfectly TRUE on a page showing a price. Measured across the corpus: 475 of these sentences
+ * are about a price, 2 about a band alone, 37 about both — and exactly one page (cousens-terrace)
+ * would have been wrongly cut by a single flag. */
+const DENIES =
+  /\b(?:no|not|isn'?t|is not|cannot|can'?t|could not|couldn'?t|too few|too thin|too sparse|too shallow|too small|falls? below|sits? below|below the threshold|insufficient|unable|lacks?)\b/i;
+const PUBLISHING =
+  /\b(?:publish(?:ed|ing|able)?|available|stated?|state|support|report(?:ed)?|quote[ds]?)\b/i;
+const PRICE_NOUN = /\b(?:price|pricing|prices|typical|number|figure|benchmark|valuation)\b/i;
+const RANGE_NOUN = /\b(?:range|band)\b/i;
+
+/** True when the sentence denies a figure this page is, in fact, publishing. */
+function deniesAPublishedFigure(sentence: string, opts?: StripOpts): boolean {
+  if (!DENIES.test(sentence) || !PUBLISHING.test(sentence)) return false;
+  // A sentence naming both is gated on the price: that is the part that is false.
+  if (PRICE_NOUN.test(sentence)) return !!opts?.pricePublished;
+  if (RANGE_NOUN.test(sentence)) return !!opts?.bandPublished;
+  return false;
+}
+
+/* CLASS (c): a metric characterised in the opposite DIRECTION to its own tile.
+ *
+ * Distinct from the denial gate above — nothing is being denied. The page publishes a
+ * sold-to-ask tile reading over 100% (homes closed ABOVE ask) while a stored sentence frames
+ * the same metric as at-or-below ask: "Sold-to-ask sits close to full ask… buyers and sellers
+ * have been meeting near the listed number, and outright concessions are the exception."
+ * (miltonbrook-crescent, tile 105%.)
+ *
+ * GATED ON DIRECTION, not on a tolerance. 100% is exactly full ask; strictly above it, an
+ * at-or-below-ask frame is contradicted by the number beside it, and there is no defensible
+ * cut-off between "a bit over" and "over". A sentence that ACKNOWLEDGES over-ask anywhere in
+ * it is describing the same market the tile describes and is left alone.
+ *
+ * Same shape as the two gates above: one flag on StripOpts, one pattern, one line in drop(). */
+const AT_ASK =
+  /\b(?:close to (?:full )?ask|at or (?:just )?below ask|near(?:ly)? full ask|meeting near the listed number|concessions? (?:are|remain) the exception|rarely (?:go|sell) over ask|seldom over ask|below asking)\b/i;
+const OVER_ASK = /\b(?:over ask|above ask|over asking|above asking|bidding war|competing offers)\b/i;
+
+/** True when the sentence frames sold-to-ask the opposite way to the tile the page publishes. */
+function contradictsTheSoldToAskTile(sentence: string, opts?: StripOpts): boolean {
+  if (!opts?.soldOverAskPublished) return false;
+  return AT_ASK.test(sentence) && !OVER_ASK.test(sentence);
+}
+
+export interface StripOpts {
+  noRecord?: boolean;
+  /** the page publishes a typical price */
+  pricePublished?: boolean;
+  /** the page publishes a price band/range */
+  bandPublished?: boolean;
+  /** the page publishes a sold-to-ask tile reading strictly above 100% */
+  soldOverAskPublished?: boolean;
+}
 
 function drop(sentence: string, opts?: StripOpts): boolean {
   if (sentenceHasNumber(sentence)) return true;
   if (opts?.noRecord && PROPERTY_DETAIL.test(sentence)) return true;
+  if (deniesAPublishedFigure(sentence, opts)) return true;
+  if (contradictsTheSoldToAskTile(sentence, opts)) return true;
   return false;
 }
 
