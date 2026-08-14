@@ -132,18 +132,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  // Published street pages from pipeline
-  const publishedStreets = await prisma.streetContent.findMany({
-    where: { status: "published" },
-    select: { streetSlug: true, updatedAt: true },
-  });
+  // Published street pages from pipeline.
+  //
+  // PUBLISH FLOOR = ENTITY FLOOR. This list used to come from StreetContent alone, so
+  // publication was keyed off "did the generator ever write a row" — which is not a
+  // statement about whether the street exists. Five slugs with NO ResidentialStreet row
+  // were in the sitemap with generated prose, among them wood-close-n-a-milton and
+  // 15-side-road-side-road-milton, which are machine-made from an address artifact and
+  // are not streets. The typo entity miltonbrock-crescent-milton was absent only
+  // because no content row happened to be written for it: luck, not a control.
+  //
+  // A page may not be published for a street that does not exist. Content is still
+  // required — this adds the entity as a second, independent condition.
+  const [publishedStreets, streetEntities] = await Promise.all([
+    prisma.streetContent.findMany({
+      where: { status: "published" },
+      select: { streetSlug: true, updatedAt: true },
+    }),
+    prisma.residentialStreet.findMany({ select: { slug: true } }),
+  ]);
+  const entitySlugs = new Set(streetEntities.map((s) => s.slug));
 
-  const streetPages: MetadataRoute.Sitemap = publishedStreets.map((s) => ({
-    url: `${SITE_URL}/streets/${s.streetSlug}`,
-    lastModified: s.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  const streetPages: MetadataRoute.Sitemap = publishedStreets
+    .filter((s) => entitySlugs.has(s.streetSlug))
+    .map((s) => ({
+      url: `${SITE_URL}/streets/${s.streetSlug}`,
+      lastModified: s.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
 
   // Per-street sold data lives on the street pages (/streets/<slug>) via the
   // VOW sold-records island — there is no /sold/<slug> route, so we do NOT emit
