@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getHubData } from "@/lib/hubData";
+import { getHubMetaLive, getHubInputCached, hubCanonical } from "@/lib/hubLive";
 import HubPage from "@/components/hub/HubPage";
 import SchemaScript from "@/components/SchemaScript";
 import FooterSection from "@/components/sections/FooterSection";
@@ -12,7 +12,6 @@ import {
   generateLocalBusinessSchema,
   generateFAQSchema,
 } from "@/lib/schema";
-import { buildHubInput, buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import { projectHubSchema } from "@/lib/ai/hub/projectHubEntities";
 
 export const dynamic = "force-dynamic";
@@ -21,43 +20,18 @@ interface Props {
   params: { slug: string };
 }
 
+// Every hub meta reads the LIVE builder — the Timberlea patch, generalised.
+// The stored HubContent.metaDescription is no longer served to anyone: it was a
+// snapshot of a market that has since moved under it on 21 of 22 hubs, and on
+// two of them it published a price the page itself suppresses. See lib/hubLive.ts
+// for the measurements and lib/ai/hub/hubMeta.ts for the one shared formula.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const content = await prisma.hubContent.findUnique({
-    where: { neighbourhoodSlug: params.slug },
-    select: { status: true, metaTitle: true, metaDescription: true, neighbourhoodName: true },
-  });
-  if (!content || content.status !== "published") return { title: "Neighbourhood Not Found" };
-
-  // SERP override (GSC 2026-07-18 keyword report): the Timberlea hub carries
-  // 60 impressions at ~pos 19 with zero clicks across three query variants.
-  // Slug-scoped rewrite leading with the searcher's words + a live-data hook;
-  // the DB metaTitle template for every other hub is unchanged.
-  if (params.slug === "timberlea") {
-    let hook = "";
-    try {
-      const input = await buildHubInput("timberlea");
-      const p = input.aggregates.typicalPrice;
-      const n = input.aggregates.salesCount;
-      if (p != null && p > 0) {
-        const rounded = Math.round(p / 5000) * 5000;
-        hook = ` — typically $${rounded.toLocaleString("en-CA")}${n > 0 ? `, ${n} sales in the last 12 months` : ""}`;
-      }
-    } catch {
-      /* fail-soft: description reads fine without the live numbers */
-    }
-    return {
-      title: `Timberlea, ${config.CITY_NAME} — Homes, Prices & Street Guide`,
-      description:
-        `Timberlea homes for sale and what they really sell for${hook}. ` +
-        `Street-by-street guide, live listings, and a straight market read on Milton's established central pocket.`,
-      alternates: { canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}` },
-    };
-  }
-
+  const meta = await getHubMetaLive(params.slug);
+  if (!meta) return { title: "Neighbourhood Not Found" };
   return {
-    title: content.metaTitle ?? `${content.neighbourhoodName} ${config.CITY_NAME} — Neighbourhood Guide`,
-    description: content.metaDescription ?? undefined,
-    alternates: { canonical: `${config.SITE_URL}/neighbourhoods/${params.slug}` },
+    title: meta.title,
+    description: meta.description,
+    alternates: { canonical: hubCanonical(params.slug) },
   };
 }
 
@@ -69,7 +43,10 @@ export default async function NeighbourhoodPage({ params }: Props) {
   // the WS5 page carried is preserved; falls back to the neighbourhood schema if it throws.
   let hubSchema: Record<string, unknown> | null = null;
   try {
-    const input = data.profile === "urban" ? await buildHubInput(params.slug) : await buildRuralHubInput(params.slug);
+    // Same request-cached input the metadata and the body read — one computation,
+    // so the JSON-LD cannot describe a different aggregate than the rendered page.
+    const input = await getHubInputCached(params.slug);
+    if (!input) throw new Error("no hub input");
     // The hub JSON-LD ItemList mirrors exactly what the page renders: the published-only,
     // capped ladder (data.streets) plus any VIP-strip street not already in it. data.streets /
     // data.vipStreets are already published-only + capped by getHubData, so the schema declares

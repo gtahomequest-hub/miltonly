@@ -32,6 +32,21 @@ export async function publishedStreetSlugs(base) {
   return slugs;
 }
 
+/** The published HUB set, DERIVED from the same live sitemap. The `/streets` overflow pages
+ *  share the /neighbourhoods/ prefix and are excluded — they are a different template with a
+ *  different contract, and folding them in would make a hub check silently read 35 pages. */
+export async function publishedHubSlugs(base) {
+  const sm = await get(`${base}/sitemap.xml`);
+  if (sm.status !== 200) throw new Error(`sitemap at ${base} returned ${sm.status}`);
+  const slugs = [...new Set(
+    [...sm.body.matchAll(/<loc>[^<]*\/neighbourhoods\/([^<]+)<\/loc>/g)]
+      .map((m) => m[1].replace(/\/$/, ''))
+      .filter((s) => !s.includes('/')),
+  )];
+  if (!slugs.length) throw new Error(`sitemap at ${base} lists no /neighbourhoods/ hub pages`);
+  return slugs;
+}
+
 /** Fetch every slug once, hand each page to every consumer, keep no HTML afterwards. */
 export async function crawl(base, slugs, onPage, { concurrency = 8 } = {}) {
   let i = 0;

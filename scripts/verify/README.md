@@ -25,6 +25,7 @@ exists on one machine only. A missing credential fails loudly and by name — it
 | `tiles` | every published figure is floored against the sample it was computed over, and the basis line names that sample |
 | `consistency` | one metric, one number, across hero / glance / sidebar / type card / CTA / market card; no FAQ answer opens on a cut antecedent; no section is all caveat |
 | `composition` | every published page is a street in the Town registry or on the off-registry allowlist, and nothing is on neither |
+| `hub-meta` | every hub's SERP description states the live aggregate its own body states — same price, same sale count, same silence below k |
 
 ## The rules these encode
 
@@ -73,6 +74,20 @@ fingerprints, build hashes and commit SHAs all silently pass on a server-only ch
 
 **Two sides, two implementations.** These checks deliberately re-derive what the render layer
 computes rather than importing it. A guard verified against its own predicate verifies nothing.
+
+**A stored number is a number that has already drifted.** Anything computed once and written down
+— a street tile, a hub meta description — is describing the market of the day it was written, and
+every later reader gets that day. The hub descriptions were 16-of-22 wrong on price and 21-of-21
+wrong on sale count, always high, and two of them published a typical price off a 3- and a 4-sale
+pool that their own bodies correctly suppressed. So the assertion is never "the two stored strings
+agree"; it is "the published surface equals the aggregate recomputed right now", asserted
+separately on every surface that publishes it — body, meta, and JSON-LD. `hub-meta` reports the
+stored strings' drift as a `NOTE`, because the retired path is evidence, not an expectation.
+
+**A suppression that holds on one surface is not a suppression.** k-anon is a property of the
+figure, not of the template that happens to render it. Check every surface, and check that
+silence is *shared*: `hub-meta` fails a hub whose hero tile is silent while its meta states a
+price, in either direction.
 
 **Known defects are reported, not asserted.** A standing failure wired into a gate makes the gate
 permanently red, and a permanently red gate hides the next regression. Log it as a `NOTE` with the

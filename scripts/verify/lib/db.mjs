@@ -18,6 +18,62 @@ export const identityKey = (slug) => {
   return `${parts.slice(0, -1).join('-')}||${parts[parts.length - 1]}`;
 };
 
+/** The hub side of the record: the neighbourhood -> raw-TREB-string mapping and the published
+ *  hub set from DB1, and the 12-month sale aggregate per raw string from DB2.
+ *
+ *  The AGGREGATION is re-derived here rather than imported — same discipline as the street
+ *  checks, so a rounding or a k-floor that drifts in the app cannot drift in the assertion with
+ *  it. The rawStrings MAPPING is read from DB1 because it is the record, not an implementation:
+ *  there is no way to recover "1041 - NA Rural Nassagaweya" and "Nassagaweya" both belong to
+ *  `nassagaweya` by slugifying, and a clever guess would silently mis-join a pool. */
+export async function loadHubRecord() {
+  loadEnv();
+  requireEnv('SOLD_DATABASE_URL', 'DATABASE_URL');
+  const sold = neon(process.env.SOLD_DATABASE_URL);
+  const app = neon(process.env.DATABASE_URL);
+
+  const nbhds = await app`SELECT slug, name, profile, "rawStrings" FROM public."Neighbourhood"`;
+  const stored = await app`SELECT "neighbourhoodSlug" s, "metaDescription" d, "neighbourhoodName" n
+                           FROM public."HubContent" WHERE status = 'published'`;
+  if (!nbhds.length) throw new Error('DB1 returned no Neighbourhood rows — check the credential, not the data');
+  if (!stored.length) throw new Error('DB1 returned no published HubContent rows');
+
+  const agg = new Map();
+  for (const r of await sold`SELECT neighbourhood, COUNT(*)::int n, AVG(sold_price) avg
+                             FROM sold.sold_records
+                             WHERE perm_advertise=TRUE AND transaction_type='For Sale'
+                               AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
+                             GROUP BY 1`) agg.set(r.neighbourhood, r);
+
+  const bySlug = new Map(nbhds.map((n) => [n.slug, n]));
+  const storedBySlug = new Map(stored.map((r) => [r.s, r]));
+
+  return {
+    publishedSlugs: stored.map((r) => r.s),
+    /** What THIS hub's meta and hero are entitled to publish, recomputed from the record. */
+    hub(slug) {
+      const n = bySlug.get(slug);
+      if (!n) return null;
+      let count = 0, total = 0;
+      for (const raw of n.rawStrings) {
+        const r = agg.get(raw);
+        if (r) { count += Number(r.n); total += Number(r.avg) * Number(r.n); }
+      }
+      // k-gate first, THEN round — the same order the page must use. A price that
+      // exists only below the floor is null, never a rounded small-sample average.
+      const typical = count >= K_ANON_PRICE && total > 0 ? Math.round(total / count / 5000) * 5000 : null;
+      const s = storedBySlug.get(slug);
+      return {
+        profile: n.profile === 'urban_hub' ? 'urban' : 'rural',
+        name: s?.n ?? n.name,
+        salesCount: count,
+        typicalRounded: typical,
+        storedMetaDescription: s?.d ?? null,
+      };
+    },
+  };
+}
+
 export async function loadRecord() {
   loadEnv();
   requireEnv('SOLD_DATABASE_URL', 'ANALYTICS_DATABASE_URL');
