@@ -30,7 +30,16 @@ import type {
 import { formatPriceFull } from '@/lib/format';
 
 const PER_PAGE = 36;
-const MAP_PIN_CAP = 400;
+// The map shows every listing it has a validated rooftop for. The cap is a runaway guard, not a
+// product decision — it is set far above any plausible Milton active inventory (470 today) so it
+// never silently truncates.
+//
+// It was 400, from a design-handoff line reading "capped ~400": a round number chosen to stop the
+// map being limited to the 36-per-page grid, with no clustering, map library, or render
+// constraint behind it — MapPanel renders one <button> per pin over raster tiles. While every pin
+// sat at (0,0) the cap was invisible. The moment the pins became real it was hiding 70 live
+// homes, 15% of inventory, with nothing on screen to say so.
+const MAP_PIN_CAP = 1500;
 const PRICE_REDUCED_WINDOW_DAYS = 14;
 
 export const NEIGHBOURHOOD_FILTER_OPTIONS = [

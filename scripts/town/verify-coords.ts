@@ -178,7 +178,7 @@ async function main(): Promise<void> {
     // The page ships min(MAP_PIN_CAP, eligible). Asserting against `eligible` alone would be
     // asserting the cap away; asserting against the cap alone would hide the day eligibility
     // drops. So: assert the identity, and SAY OUT LOUD what the cap truncates.
-    const MAP_PIN_CAP = 400;
+    const MAP_PIN_CAP = 1500;
     assert("served pin count == min(cap, validated rooftops)", lats.length, Math.min(MAP_PIN_CAP, activePinnable.length));
     if (activePinnable.length > MAP_PIN_CAP) {
       console.log(`   ⚠ CAP IS BINDING: ${activePinnable.length - MAP_PIN_CAP} pinnable listings are not on the map.`);
