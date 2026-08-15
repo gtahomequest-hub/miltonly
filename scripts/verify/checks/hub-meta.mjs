@@ -8,11 +8,13 @@
 // off 4- and 3-sale pools — a k-anon suppression their own pages honoured and their metas did not.
 // A suppression that holds on one of two published surfaces is not a suppression.
 //
-// So this asserts VALUES, on three surfaces, per page:
+// So this asserts VALUES, on all three published surfaces, per page:
 //   · the meta price     == the live k-gated 12-month typical, rounded as the page rounds it
 //   · the meta count     == the live sale count
 //   · the hero tile      == the same figure, in the compact form the tile prints
-//   · sub-k              == silent in BOTH places, never one
+//   · the JSON-LD        == the same figure at the same precision — it was emitting the RAW
+//                          pool mean (972775 for Beaty) beside a page publishing $975K
+//   · sub-k              == silent on ALL THREE, never on some
 //
 // Both sides derived: the published side by reading the deployed pages at BASE, the record side
 // by recomputing from DB2 in lib/db.mjs. The stored HubContent.metaDescription is read too, but
@@ -55,9 +57,30 @@ const metaCount = (d) => {
   return m ? Number(m[1]) : null;
 };
 
+/** THE THIRD PUBLISHED SURFACE. JSON-LD is output, and it is where this defect class hid last
+ *  time: on the street corpus the schema was sourced from the raw generation record while the
+ *  body was built from the suppressed view, and 1,240 already-suppressed answers went on being
+ *  served to Google. Here the hub schema's aggregatePrice was emitting the RAW pool mean —
+ *  972775 for Beaty, beside a page publishing $975K. Parsed per node, never grepped from a blob.
+ *  Returns undefined only when the page emits no JSON-LD at all, which is itself a finding. */
+function schemaPrice(html) {
+  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  if (!blocks.length) return undefined;
+  let price = null;
+  for (const b of blocks) {
+    let parsed;
+    try { parsed = JSON.parse(b[1]); } catch { return undefined; }
+    for (const node of Array.isArray(parsed) ? parsed : [parsed]) {
+      const p = node?.aggregatePrice?.price;
+      if (typeof p === 'number') price = p;
+    }
+  }
+  return price; // null = no aggregatePrice node emitted (the k-anon-silent state)
+}
+
 export default {
   id: 'hub-meta',
-  title: 'Hub SERP description == the live aggregate the hub body publishes',
+  title: 'Hub meta, body and JSON-LD all publish the live aggregate',
   wholeCorpusOnly: true,
   needsHubRecord: true,
 
@@ -73,6 +96,7 @@ export default {
         status: 200,
         description: dm ? decode(dm[1]) : null,
         hero: heroStats(r.body),
+        ld: schemaPrice(r.body),
         rec: hubRecord.hub(slug),
       });
     }
@@ -82,7 +106,8 @@ export default {
     const withRec = parsed.filter((r) => r.rec);
     const tiles = withRec.filter((r) => r.hero['typical home'] && r.hero['sold · last 12 months']);
 
-    const priceMismatch = [], countMismatch = [], subKLeak = [], heroMismatch = [], heroCountMismatch = [], silentSplit = [];
+    const withLd = withRec.filter((r) => r.ld !== undefined);
+    const priceMismatch = [], countMismatch = [], subKLeak = [], heroMismatch = [], heroCountMismatch = [], silentSplit = [], ldMismatch = [], ldSubKLeak = [];
     let storedDrift = 0, storedSubKLeak = 0;
 
     for (const r of tiles) {
@@ -110,8 +135,19 @@ export default {
       }
       if (Number(soldTile.text) !== salesCount) heroCountMismatch.push(`${r.slug}: hero sold ${soldTile.text} vs live ${salesCount}`);
 
-      // 4. price-silence agrees across the two surfaces — never suppressed on one only
+      // 4. the JSON-LD publishes the SAME figure, at the SAME precision — the machine-readable
+      //    twin is never more precise, never staler, and never louder than the page
+      if (r.ld !== undefined) {
+        if (typicalRounded === null) {
+          if (r.ld !== null) ldSubKLeak.push(`${r.slug}: JSON-LD aggregatePrice ${r.ld} off ${salesCount} sales (below k=5)`);
+        } else if (r.ld !== typicalRounded) {
+          ldMismatch.push(`${r.slug}: JSON-LD ${r.ld === null ? 'absent' : r.ld} vs live ${typicalRounded}`);
+        }
+      }
+
+      // 5. price-silence agrees across ALL THREE surfaces — never suppressed on some only
       if (tile.silent !== (mp === null)) silentSplit.push(`${r.slug}: hero silent=${tile.silent}, meta price=${mp === null ? 'absent' : 'present'}`);
+      if (r.ld !== undefined && tile.silent !== (r.ld === null)) silentSplit.push(`${r.slug}: hero silent=${tile.silent}, JSON-LD price=${r.ld === null ? 'absent' : 'present'}`);
 
       // reported, not asserted: how far the retired stored path had drifted
       const sp = metaPrice(r.rec.storedMetaDescription), sc = metaCount(r.rec.storedMetaDescription);
@@ -126,24 +162,28 @@ export default {
         ['meta description parsed', parsed.length],
         ['matched to a record', withRec.length],
         ['hero stat tiles parsed', tiles.length],
+        ['JSON-LD parsed', withLd.length],
         ['sub-k hubs (price must be silent everywhere)', tiles.filter((r) => r.rec.typicalRounded === null).map((r) => r.slug).join(', ') || 'none'],
       ],
       assertions: [
         // A parser that reaches nothing must fail on its own coverage, not read as "no findings".
         ['hub pages read == sitemap hub count', ok.length, slugs.length],
         ['hero stat tiles parsed on every hub', tiles.length, slugs.length],
+        ['JSON-LD parsed on every hub', withLd.length, slugs.length],
         ['meta price != live typical', priceMismatch.length, 0],
         ['meta sale count != live sale count', countMismatch.length, 0],
         ['meta states a price off a sub-k pool', subKLeak.length, 0],
         ['hero typical != live typical as displayed', heroMismatch.length, 0],
         ['hero sold count != live sale count', heroCountMismatch.length, 0],
-        ['price suppressed on one surface only', silentSplit.length, 0],
+        ['JSON-LD price != live typical as published', ldMismatch.length, 0],
+        ['JSON-LD states a price off a sub-k pool', ldSubKLeak.length, 0],
+        ['price suppressed on some surfaces only', silentSplit.length, 0],
       ],
       notes: [
         `stored HubContent.metaDescription (no longer served) still drifts from live on ${storedDrift} of ${tiles.length} hubs`,
         `stored descriptions publishing a price off a sub-k pool: ${storedSubKLeak}`,
       ],
-      examples: [...subKLeak, ...priceMismatch, ...countMismatch, ...heroMismatch, ...heroCountMismatch, ...silentSplit],
+      examples: [...subKLeak, ...ldSubKLeak, ...priceMismatch, ...countMismatch, ...heroMismatch, ...heroCountMismatch, ...ldMismatch, ...silentSplit],
     };
   },
 };

@@ -128,6 +128,35 @@ async function main() {
   L(`    => clears it only on the ~26mo window:                  ${verdicts.filter((v) => !v.ok && v.p.typical26 !== null).length}`);
   L(`    => no typical on any window:                            ${verdicts.filter((v) => !v.ok && v.p.typical26 === null).length}`);
 
+  // ── (b2) WHOSE STREETS ARE THEY? A missing hub whose sales all sit on streets that already
+  // belong to a PUBLISHED hub is not a coverage gap — publishing it would duplicate live pages.
+  L();
+  L(`(b2) MISSING HUBS — where their sales actually sit`);
+  for (const n of missing) {
+    const rows2 = (await sold`
+      SELECT street_slug s, COUNT(*)::int n FROM sold.sold_records
+      WHERE neighbourhood = ANY(${n.rawStrings}::text[]) AND perm_advertise = TRUE AND sold_date <= NOW()
+      GROUP BY 1 ORDER BY 2 DESC`) as Array<{ s: string; n: number }>;
+    L(`    ${n.slug} — ${rows2.length} distinct street(s) in DB2:`);
+    const owners = await prisma.residentialStreet.findMany({
+      where: { slug: { in: rows2.map((r) => r.s) } },
+      select: { slug: true, neighbourhoodId: true },
+    });
+    const nbById = new Map(nbhds.map((x) => [x.id, x]));
+    for (const r of rows2) {
+      const o = owners.find((x) => x.slug === r.s);
+      const own = o?.neighbourhoodId ? nbById.get(o.neighbourhoodId) : null;
+      const state = !o ? "NO ResidentialStreet row" : own ? `${own.slug}${publishedSlugs.has(own.slug) ? " (PUBLISHED HUB)" : ""}` : "(unassigned)";
+      L(`      ${pad(r.s, 34)} n=${lpad(r.n, 3)}  -> ${state}`);
+    }
+    const covered = rows2.filter((r) => {
+      const o = owners.find((x) => x.slug === r.s);
+      const own = o?.neighbourhoodId ? nbById.get(o.neighbourhoodId) : null;
+      return own && publishedSlugs.has(own.slug);
+    });
+    L(`      => ${covered.length} of ${rows2.length} already covered by a published hub`);
+  }
+
   // ── (c) THE DECIDING NUMBER — dormant hub-less streets that gain a hub
   L();
   L(`(c) THE 157 — hub-less dormant streets, and how many gain a hub`);

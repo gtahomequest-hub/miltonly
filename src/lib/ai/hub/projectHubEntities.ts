@@ -17,6 +17,7 @@
 // set, before it can ship.
 
 import { config } from "@/lib/config";
+import { hubDisplayTypical } from "@/lib/ai/hub/hubMeta";
 import type { HubGeneratorInput, HubProjectedStreet, HubSchemaProjection } from "@/types/hub-generator";
 
 export interface ProjectedStreetListItem {
@@ -101,11 +102,18 @@ export function projectHubSchema(
       })),
     },
   };
-  if (input.aggregates.typicalPrice !== null) {
+  // Rounded through the SAME round5k the hero tile and the meta description use.
+  // The k-anon gate above was always right; the rounding was not — the schema was
+  // handing Google the raw pool mean (972775 for Beaty) while the page published
+  // $975K, so the machine-readable twin was strictly more precise than the page it
+  // is supposed to mirror. JSON-LD is a published surface: it gets the published
+  // figure, not the one behind it.
+  const schemaPrice = hubDisplayTypical(input.aggregates.typicalPrice);
+  if (schemaPrice !== null) {
     schema.aggregatePrice = {
       "@type": "PriceSpecification",
       priceCurrency: "CAD",
-      price: input.aggregates.typicalPrice,
+      price: schemaPrice,
     };
   }
   return schema;

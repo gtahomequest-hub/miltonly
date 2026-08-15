@@ -25,7 +25,7 @@ exists on one machine only. A missing credential fails loudly and by name — it
 | `tiles` | every published figure is floored against the sample it was computed over, and the basis line names that sample |
 | `consistency` | one metric, one number, across hero / glance / sidebar / type card / CTA / market card; no FAQ answer opens on a cut antecedent; no section is all caveat |
 | `composition` | every published page is a street in the Town registry or on the off-registry allowlist, and nothing is on neither |
-| `hub-meta` | every hub's SERP description states the live aggregate its own body states — same price, same sale count, same silence below k |
+| `hub-meta` | a hub's meta description, hero tile and JSON-LD all publish the live aggregate — same price, same precision, same sale count, same silence below k |
 
 ## The rules these encode
 
