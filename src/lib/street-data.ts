@@ -22,6 +22,7 @@ import { buildStreetEnrichment, windowDisclosure, type StreetEnrichment } from "
 import { stripNumericSentences } from "./prose/numericSentences";
 import { firstSentence } from "./prose/sentences";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
+import { streetCentroidFor } from "./town/roadFacts";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
 import { cleanNeighbourhoodName, roundPriceForProse, roundRentForProse } from "./format";
@@ -358,7 +359,15 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       .map((l) => cleanNeighbourhoodName(l.neighbourhood))
       .filter((n) => n.length > 0)
   );
-  let centroid = computeCentroid(allListings);
+  // THE STREET'S OWN POSITION, in preference order. The Town's centreline first: it describes
+  // the whole street rather than wherever a few homes happen to have traded, and it exists for
+  // 424 of the 426 published streets. The listing/sold means stay as fallbacks — they are what
+  // a street outside the Town's centreline coverage still has.
+  //
+  // Additive, per the rule this whole layer is governed by: a street the Town has no geometry
+  // for gets null here and behaves exactly as it did before.
+  let centroid = streetCentroidFor(slug);
+  if (!centroid) centroid = computeCentroid(allListings);
   if (!centroid) {
     const c = soldCoordsRows[0];
     const lat = c?.lat !== null && c?.lat !== undefined ? parseFloat(c.lat) : null;

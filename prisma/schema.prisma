@@ -45,8 +45,20 @@ model Listing {
   daysOnMarket       Int?
   photos             String[]
   description        String?
+  // THE FEED COORDINATE. Non-nullable Float, and PropTx sends nothing — every one of the 2,930
+  // rows carries 0/0 because the sync writes `item.Latitude || 0`. Left exactly as it is: making
+  // it nullable is a wider change (every reader assumes a number) and the feed may yet populate
+  // it. It is no longer read for position — see townLat/townLng below.
   latitude           Float
   longitude          Float
+  // THE RESOLVED ROOFTOP, from the Town of Milton Address Points layer, matched on
+  // (street number, street identity). NULLABLE ON PURPOSE: unresolved is null, never a sentinel.
+  // The (0,0) defect exists because `|| 0` turned "unknown" into a valid coordinate in the Gulf
+  // of Guinea and every downstream null check passed it. A house without a Town point has no
+  // coordinate — it is absent from the map, never approximated from its street.
+  // Contains information licensed under the Open Government Licence – Milton.
+  townLat            Float?
+  townLng            Float?
   schoolZone         String?
   goWalkMinutes      Int?
   condoBuilding      String?

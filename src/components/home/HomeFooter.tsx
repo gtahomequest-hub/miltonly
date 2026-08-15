@@ -1,6 +1,7 @@
 // src/components/home/HomeFooter.tsx
 import type { FooterData, TrustInfo } from './types';
 import { FooterSearch } from './FooterSearch';
+import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
 
 interface Props {
   footer: FooterData;
@@ -69,6 +70,10 @@ export function HomeFooter({ footer, brand }: Props) {
           RECO / TREB / VOW compliance disclosures · IDX #{brand.idx} · VOW #{brand.vow} · MLS® data
           displayed under the terms of the applicable feed agreements. Information deemed reliable
           but not guaranteed. © Miltonly.
+          {" "}
+          {/* Required by the Open Government Licence – Milton wherever its data is published.
+              Map pins, street positions, park and school locations all derive from it. */}
+          {OGL_MILTON_ATTRIBUTION}
         </div>
       </div>
     </footer>

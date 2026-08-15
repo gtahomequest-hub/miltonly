@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/components/UserProvider";
 import {
   haversineKm, walkMinutes, driveMinutes, directionsUrl, hasValidCoords,
-  GROCERIES, MOSQUES, PARKS, TRANSIT, COMMUTES, type POI,
+  GROCERIES, MOSQUES, PARKS, CONSERVATION_AREAS, TRANSIT, COMMUTES, type POI,
 } from "@/lib/geo";
 import { attributionPayload } from "@/lib/attribution";
 import { hashUserData } from "@/lib/hash";
@@ -138,6 +138,18 @@ export function SaveShareRow({ mls, address, isRental }: { mls: string; address:
 // ═══════════════════════════════════════════════════════════════
 // WHAT'S NEARBY — 4 tabs
 // ═══════════════════════════════════════════════════════════════
+/** The six parks nearest this listing, plus the two conservation areas that are regional
+ *  landmarks rather than Town parks. Without a valid coordinate there is no "nearest", so the
+ *  list falls back to the two landmarks and the largest District parks — named, undistanced. */
+function nearestParks(lat: number, lng: number, coordsValid: boolean): POI[] {
+  if (!coordsValid) return [...CONSERVATION_AREAS, ...PARKS.slice(0, 4)];
+  return [...CONSERVATION_AREAS, ...PARKS]
+    .map((p) => ({ p, km: haversineKm(lat, lng, p.lat, p.lng) }))
+    .sort((a, b) => a.km - b.km)
+    .slice(0, 6)
+    .map((x) => x.p);
+}
+
 function NearbyRow({ p, lat, lng, commute = false, coordsValid }: { p: POI; lat: number; lng: number; commute?: boolean; coordsValid: boolean }) {
   let timeStr: string;
   if (coordsValid) {
@@ -194,6 +206,15 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
   return (
     <div className="mb-8">
       <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">What&apos;s nearby</h2>
+      {/* Where the derived fact is the content. With a rooftop these are real distances from
+          this house to Town-published school and park geometry; the source is named beside them,
+          not only in a footer. Absent when there is nothing derived to attribute. */}
+      {coordsValid && (
+        <p className="text-[11px] text-[#94a3b8] mb-3">
+          Distances from this property&apos;s municipal address point. Contains information
+          licensed under the Open Government Licence – Milton.
+        </p>
+      )}
       <div className="flex gap-1 mb-4 border-b border-[#e2e8f0] overflow-x-auto">
         {([
           ["commutes", "🏙️ Commutes"],
@@ -263,7 +284,13 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
             <div>
               <h3 className="text-[12px] font-bold text-[#07111f] uppercase tracking-[0.08em] mb-2">Parks & Trails</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {PARKS.map((p) => <NearbyRow key={p.name} p={p} lat={lat} lng={lng} coordsValid />)}
+                {/* The parks list went from 9 hand-entered coordinates to the Town's 93. Rendering
+                    all of them would be a wall, and the far ones say nothing about this house —
+                    so it is the NEAREST six, which is what the section was always claiming to be
+                    back when nine happened to be the whole list. */}
+                {nearestParks(lat, lng, coordsValid).map((p) => (
+                  <NearbyRow key={p.name} p={p} lat={lat} lng={lng} coordsValid />
+                ))}
               </div>
             </div>
             <div>

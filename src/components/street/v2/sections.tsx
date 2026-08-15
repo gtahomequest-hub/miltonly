@@ -16,6 +16,7 @@ import { CommuteIcon } from './icons';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
 import { resaleClaim } from './resaleClaim';
+import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
 
 const DEFAULT_SILENT = 'sample too small to publish';
 
@@ -184,8 +185,15 @@ function Sidebar({ data }: { data: StreetV2Data }) {
               {n.distance && <span className="s-near-d">{n.distance}</span>}
             </div>
           ))}
-          {sidebar.nearby.every((n) => !n.distance) && (
+          {sidebar.nearby.every((n) => !n.distance) ? (
             <div className="s-near-note">In Milton. Travel times aren&rsquo;t street-specific yet.</div>
+          ) : (
+            // A DATA-SOURCE LINE WHERE THE DERIVED FACT IS THE CONTENT. These minutes are computed
+            // from the Town's road centreline for this street to the Town's own school and park
+            // geometry — a footer line is too far from the claim to serve as its attribution.
+            <div className="s-near-note">
+              Distances from this street&rsquo;s road centreline. {OGL_MILTON_ATTRIBUTION}
+            </div>
           )}
         </div>
       )}

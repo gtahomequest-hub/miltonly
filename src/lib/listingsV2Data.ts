@@ -17,6 +17,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { config } from '@/lib/config';
+import { hasValidCoords } from '@/lib/geo';
 import type {
   ListingCardData,
   ListingsQuery,
@@ -29,7 +30,16 @@ import type {
 import { formatPriceFull } from '@/lib/format';
 
 const PER_PAGE = 36;
-const MAP_PIN_CAP = 400;
+// The map shows every listing it has a validated rooftop for. The cap is a runaway guard, not a
+// product decision — it is set far above any plausible Milton active inventory (470 today) so it
+// never silently truncates.
+//
+// It was 400, from a design-handoff line reading "capped ~400": a round number chosen to stop the
+// map being limited to the 36-per-page grid, with no clustering, map library, or render
+// constraint behind it — MapPanel renders one <button> per pin over raster tiles. While every pin
+// sat at (0,0) the cap was invisible. The moment the pins became real it was hiding 70 live
+// homes, 15% of inventory, with nothing on screen to say so.
+const MAP_PIN_CAP = 1500;
 const PRICE_REDUCED_WINDOW_DAYS = 14;
 
 export const NEIGHBOURHOOD_FILTER_OPTIONS = [
@@ -120,8 +130,6 @@ interface CardRow {
   listedAt: Date;
   daysOnMarket: number | null;
   listOfficeName: string | null;
-  latitude: number;
-  longitude: number;
   lastPriceChangeAt: Date | null;
   maintenanceFeeAmt: number | null;
   virtualTourUrl: string | null;
@@ -133,7 +141,7 @@ const CARD_SELECT = {
   soldPrice: true, soldDate: true, status: true, transactionType: true,
   propertyType: true, bedrooms: true, bathrooms: true, sqft: true,
   parking: true, photos: true, listedAt: true, daysOnMarket: true,
-  listOfficeName: true, latitude: true, longitude: true,
+  listOfficeName: true,
   lastPriceChangeAt: true, maintenanceFeeAmt: true, virtualTourUrl: true,
   displayAddress: true,
 } as const;
@@ -170,8 +178,6 @@ function toCard(row: CardRow): ListingCardData {
     listedAt: row.listedAt.toISOString(),
     daysOnMarket: row.daysOnMarket,
     listOfficeName: row.listOfficeName,
-    latitude: row.latitude,
-    longitude: row.longitude,
     priceReduced: isPriceReduced(row),
     maintenanceFeeAmt: row.maintenanceFeeAmt,
     virtualTourUrl: row.virtualTourUrl,
@@ -221,13 +227,18 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     topStreets,
   ] = await Promise.all([
     prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
-    // map pins: ALL filtered results (page-independent), lightweight select
+    // map pins: ALL filtered results (page-independent), lightweight select.
+    //
+    // The coordinate requirement is in the WHERE, not a .filter() after the fact, because
+    // `take` is applied by the database BEFORE any JS filtering: fetching 400 rows and then
+    // dropping the uncoordinated ones cost 70 pinnable listings that were never fetched. The
+    // cap has to count pins, not candidates.
     prisma.listing.findMany({
-      where,
+      where: { ...where, townLat: { not: null }, townLng: { not: null } },
       orderBy,
       take: MAP_PIN_CAP,
       select: {
-        mlsNumber: true, latitude: true, longitude: true, price: true,
+        mlsNumber: true, townLat: true, townLng: true, price: true,
         transactionType: true, status: true, propertyType: true,
         bedrooms: true, bathrooms: true, address: true, displayAddress: true,
         photos: true, lastPriceChangeAt: true,
@@ -259,21 +270,32 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const listings = rows.map(toCard);
 
-  const mapPins: MapPin[] = pinRows.map((r) => ({
-    mlsNumber: r.mlsNumber,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    price: r.price,
-    transactionType: r.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
-    status: r.status === 'sold' ? 'sold' : r.status === 'rented' ? 'rented' : 'active',
-    propertyType: r.propertyType,
-    bedrooms: r.bedrooms,
-    bathrooms: r.bathrooms,
-    address: gateAddress(r),
-    displayAddress: r.displayAddress,
-    photo: r.photos[0] ?? null,
-    priceReduced: isPriceReduced(r),
-  }));
+  // A PIN IS A CLAIM ABOUT WHERE A HOUSE IS. It renders only from a validated coordinate.
+  //
+  // This filter did not exist. hasValidCoords() has been in geo.ts since the map shipped and
+  // nothing on this path called it, so every listing was pinned at its stored (0,0) — the whole
+  // inventory stacked on one dot in the Gulf of Guinea, which is why the map read as broken. The
+  // gate was never data-driven; it was absent. Now:
+  //   · townLat/townLng — the Town's municipal rooftop, resolved on write, NULL when unknown
+  //   · a listing without one is ABSENT from the map, never approximated from its street or
+  //     neighbourhood centroid. A pin on the wrong house is worse than no pin.
+  const mapPins: MapPin[] = pinRows
+    .filter((r) => hasValidCoords(r.townLat, r.townLng))
+    .map((r) => ({
+      mlsNumber: r.mlsNumber,
+      latitude: r.townLat as number,
+      longitude: r.townLng as number,
+      price: r.price,
+      transactionType: r.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
+      status: r.status === 'sold' ? 'sold' : r.status === 'rented' ? 'rented' : 'active',
+      propertyType: r.propertyType,
+      bedrooms: r.bedrooms,
+      bathrooms: r.bathrooms,
+      address: gateAddress(r),
+      displayAddress: r.displayAddress,
+      photo: r.photos[0] ?? null,
+      priceReduced: isPriceReduced(r),
+    }));
 
   // ── dedup + title-case neighbourhood stats (ported verbatim) ──
   const hoodMap = new Map<string, { count: number; avgSum: number; avgN: number }>();

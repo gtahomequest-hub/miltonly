@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
+import { resolveRooftop } from "@/lib/town/rooftop";
 
 const TREB_API_URL = process.env.TREB_API_URL || "https://query.ampre.ca/odata/Property";
 const TREB_TOKEN = process.env.TREB_API_TOKEN || "";
@@ -214,6 +215,10 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           item.UnitNumber ? `Unit ${item.UnitNumber}` : null,
         ].filter(Boolean).join(" ");
 
+        // Resolved from `address` — the composed UnparsedAddress above — because StreetName is
+        // abbreviated in this feed ("Hop Pl", "Caverhill Cres") and carries no street number.
+        const rooftop = resolveRooftop(address);
+
         const listingData = {
           mlsNumber: item.ListingKey,
           address,
@@ -235,8 +240,16 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           propertyTypeRaw: item.PropertyType || null,
           status: mapStatus(item.MlsStatus, item.TransactionType),
           description: item.PublicRemarks || null,
+          // The feed coordinate, preserved as-is. `|| 0` is the (0,0) defect and it stays
+          // confined to these two legacy columns — nothing reads them for position now.
           latitude: item.Latitude || 0,
           longitude: item.Longitude || 0,
+          // RESOLVED ON WRITE, not only in backfill. A backfill alone decays: every listing that
+          // arrives after it runs would land uncoordinated and the map would quietly thin out.
+          // Null when the Town has no point for this address — never a sentinel, never the
+          // street's centroid standing in for a house.
+          townLat: rooftop?.lat ?? null,
+          townLng: rooftop?.lng ?? null,
           photos: await fetchPhotos(item.ListingKey),
           transactionType: item.TransactionType || null,
           petsAllowed: Array.isArray(item.PetsAllowed) ? item.PetsAllowed.join(", ") : (item.PetsAllowed as unknown as string) || null,

@@ -56,8 +56,9 @@ export interface ListingCardData {
   listedAt: string; // ISO
   daysOnMarket: number | null;
   listOfficeName: string | null;
-  latitude: number;
-  longitude: number;
+  // NO COORDINATE ON THE CARD. It carried the legacy feed value — 0 on every row — and no
+  // component ever read it, so each page shipped 36 sentinels to the client waiting for someone
+  // to wire them to something. The map reads MapPin, which carries the resolved rooftop.
   /** loader derives from lastPriceChangeAt recency; design only shows the badge */
   priceReduced: boolean;
   /** condo fee, when present */
