@@ -9,7 +9,8 @@
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
-import { buildHubInput, buildRuralHubInput, buildMiltonWideContext } from "@/lib/ai/buildHubInput";
+import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
+import { getHubInputCached, getHubMetaLive } from "@/lib/hubLive";
 import { NEIGHBOURHOOD_CHARACTER } from "@/lib/homepageData";
 import { fullPrice, compactPrice } from "@/components/hub/format";
 import type {
@@ -19,7 +20,12 @@ import type {
 import type { HubSection, HubGeneratorInput, HubTypeBucket } from "@/types/hub-generator";
 
 import { K_ANON_PRICE } from "@/lib/kAnon";
-const round5k = (n: number) => Math.round(n / 5000) * 5000;
+// ONE rounding for every hub display price — the same function the SERP meta
+// hook passes through (lib/ai/hub/hubMeta.ts). Before this, the hero stat tile
+// compacted the RAW average while the meta rounded to 5k, so even Timberlea,
+// the one hub already reading live, published $955,000 to Google and $953K to
+// the reader. Rounding once, here, is what makes those the same number.
+import { round5k, hubDisplayTypical } from "@/lib/ai/hub/hubMeta";
 
 function firstSentence(s: string): string {
   const m = s.match(/^.*?[.!?](\s|$)/);
@@ -128,17 +134,17 @@ export async function getHubData(slug: string): Promise<HubData | null> {
   const sections: HubSection[] =
     generation && generation.status === "succeeded" ? ((generation.sectionsJson as unknown as HubSection[]) ?? []) : [];
 
-  // Hub input (stats / streets / VIP) — dispatch by profile, best-effort.
-  let input: HubGeneratorInput | null = null;
-  try {
-    input = profile === "urban" ? await buildHubInput(slug) : await buildRuralHubInput(slug);
-  } catch {
-    input = null;
-  }
+  // Hub input (stats / streets / VIP) — request-cached, so the body, the meta
+  // description and the JSON-LD all read ONE computation of ONE aggregate.
+  const input: HubGeneratorInput | null = await getHubInputCached(slug);
   const agg = input?.aggregates;
 
+  // The hub's typical, k-gated then rounded ONCE. Every surface below uses this
+  // value, never agg.typicalPrice directly — that is the whole fix.
+  const typicalDisplay = hubDisplayTypical(agg?.typicalPrice);
+
   const stats: HubStats = {
-    typicalPrice: agg?.typicalPrice ?? null,            // null = k-anon silent (sub-k pools)
+    typicalPrice: typicalDisplay,                       // null = k-anon silent (sub-k pools)
     sold12mo: agg ? agg.salesCount : null,
     onMarket: input?.activeListingsCount ?? null,
     dom: agg?.daysOnMarket ?? null,
@@ -188,15 +194,26 @@ export async function getHubData(slug: string): Promise<HubData | null> {
   };
 
   const milton = await buildMiltonWideContext().catch(() => null);
+  // Both sides rounded through round5k BEFORE display and before the delta, so
+  // the percentage a reader sees is derivable from the two figures beside it —
+  // and the neighbourhood figure here is the same one the hero tile and the meta
+  // description publish.
+  const miltonDisplay = hubDisplayTypical(milton?.aggregates.typicalPrice);
   const marketCompare: HubMarketCompare[] =
-    agg?.typicalPrice && milton?.aggregates.typicalPrice
-      ? [{ metricLabel: "Typical price", neighbourhoodValue: `$${compactPrice(agg.typicalPrice)}`, miltonValue: `$${compactPrice(milton.aggregates.typicalPrice)}`, delta: deltaPct(agg.typicalPrice, milton.aggregates.typicalPrice) }]
+    typicalDisplay && miltonDisplay
+      ? [{ metricLabel: "Typical price", neighbourhoodValue: `$${compactPrice(typicalDisplay)}`, miltonValue: `$${compactPrice(miltonDisplay)}`, delta: deltaPct(typicalDisplay, miltonDisplay) }]
       : [];
 
   const [condos, siblings] = await Promise.all([condosFor(nbhd.id), siblingsFor(slug, profile)]);
 
   const name = content.neighbourhoodName ?? nbhd.name;
-  const character = overview.length ? firstSentence(overview[0]) : content.metaDescription ?? "";
+  // Fallback character line reads the LIVE description, not the stored one. This
+  // was the last path by which a frozen figure could reach the rendered body: a
+  // hub whose generation produced no overview paragraphs would print its
+  // generation-time meta sentence — price, sale count and all — into the hero.
+  const character = overview.length
+    ? firstSentence(overview[0])
+    : firstSentence((await getHubMetaLive(slug))?.description ?? "");
 
   return {
     slug,

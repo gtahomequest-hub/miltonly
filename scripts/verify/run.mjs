@@ -7,7 +7,7 @@
 // Exits 0 when every assertion holds, 1 otherwise, so it can gate a deploy.
 // See ./README.md for the rules these checks encode.
 import { publishedStreetSlugs, crawl } from './lib/http.mjs';
-import { loadRecord } from './lib/db.mjs';
+import { loadRecord, loadHubRecord } from './lib/db.mjs';
 
 import denials from './checks/denials.mjs';
 import schemaParity from './checks/schema-parity.mjs';
@@ -16,8 +16,9 @@ import tiles from './checks/tiles.mjs';
 import consistency from './checks/consistency.mjs';
 import composition from './checks/composition.mjs';
 import coordinates from './checks/coordinates.mjs';
+import hubMeta from './checks/hub-meta.mjs';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {
@@ -43,34 +44,50 @@ console.log(`sitemap     ${slugs.length} published street pages (derived, not a 
 // ── the record, derived — only if a selected check needs it ──────────────────────────────────
 const record = checks.some((c) => c.needsRecord) ? await loadRecord() : null;
 if (record) console.log(`record      DB2 + analytics aggregates loaded`);
+// The hub side of the record — neighbourhood raw-string pools + their live 12mo aggregate.
+const hubRecord = checks.some((c) => c.needsHubRecord) ? await loadHubRecord() : null;
+if (hubRecord) console.log(`hub record  ${hubRecord.publishedSlugs.length} published hubs + DB2 pools loaded`);
 
 // ── ONE crawl, every check ───────────────────────────────────────────────────────────────────
-const ctx = { base: BASE, slugs, record };
+const ctx = { base: BASE, slugs, record, hubRecord };
 const rowsByCheck = new Map(checks.map((c) => [c.id, []]));
 const failures = [];
 
-const statuses = await crawl(BASE, slugs, (slug, html) => {
-  if (html === null) return;                       // non-200s are counted below, not parsed
-  for (const c of checks) {
-    if (c.wholeCorpusOnly) continue;
-    rowsByCheck.get(c.id).push(c.perPage(slug, html, ctx));
+// The street crawl only happens when a selected check actually reads street pages. A
+// --only=hub-meta run would otherwise fetch 426 pages nothing would look at. The full run is
+// unchanged: any per-page check present puts the crawl back.
+const needsCrawl = checks.some((c) => !c.wholeCorpusOnly);
+const statuses = needsCrawl
+  ? await crawl(BASE, slugs, (slug, html) => {
+      if (html === null) return;                   // non-200s are counted below, not parsed
+      for (const c of checks) {
+        if (c.wholeCorpusOnly) continue;
+        rowsByCheck.get(c.id).push(c.perPage(slug, html, ctx));
+      }
+    }, { concurrency: CONCURRENCY })
+  : null;
+
+if (statuses) {
+  const fetched = statuses.filter((s) => s.status === 200).length;
+  console.log(`crawled     ${statuses.length} pages · ${fetched} × 200 · ${statuses.length - fetched} other`);
+
+  // The count is asserted against the set it was derived from, never against a remembered number.
+  const iteratedOk = statuses.length === slugs.length && fetched === slugs.length;
+  console.log(`\nASSERT iterated == live sitemap count (${slugs.length}) : ${iteratedOk ? 'PASS' : 'FAIL'}`);
+  if (!iteratedOk) {
+    failures.push(['crawl', 'iterated == live sitemap count', statuses.length, slugs.length]);
+    statuses.filter((s) => s.status !== 200).slice(0, 8).forEach((s) => console.log(`   ${s.slug} -> ${s.status}`));
   }
-}, { concurrency: CONCURRENCY });
-
-const fetched = statuses.filter((s) => s.status === 200).length;
-console.log(`crawled     ${statuses.length} pages · ${fetched} × 200 · ${statuses.length - fetched} other`);
-
-// The count is asserted against the set it was derived from, never against a remembered number.
-const iteratedOk = statuses.length === slugs.length && fetched === slugs.length;
-console.log(`\nASSERT iterated == live sitemap count (${slugs.length}) : ${iteratedOk ? 'PASS' : 'FAIL'}`);
-if (!iteratedOk) {
-  failures.push(['crawl', 'iterated == live sitemap count', statuses.length, slugs.length]);
-  statuses.filter((s) => s.status !== 200).slice(0, 8).forEach((s) => console.log(`   ${s.slug} -> ${s.status}`));
+} else {
+  console.log(`crawled     0 street pages (no per-page check selected)`);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────────────────────
 for (const c of checks) {
-  const result = c.finish(rowsByCheck.get(c.id), ctx);
+  // awaited: a whole-corpus check may derive its OWN page set and fetch it (the hub checks read
+  // /neighbourhoods/, not the street crawl). await on a synchronous return is a no-op, so every
+  // existing check is unaffected.
+  const result = await c.finish(rowsByCheck.get(c.id), ctx);
   console.log(`\n── ${c.title}`);
   // COVERAGE ALONGSIDE EVERY FINDING. "Found nothing" and "read nothing" print identically
   // otherwise, and only one of them is good news.
