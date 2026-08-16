@@ -30,6 +30,15 @@ export const LAYERS = {
     geometry: true,
     recordCount: 99999,
   },
+  neighbourhoods: {
+    url: 'https://api.milton.ca/arcgis/rest/services/Datasets/Neighbourhoods/MapServer/0',
+    // 26 polygons. A POSITION ORACLE, never a naming authority — the Town's boundaries are finer
+    // than TREB's (our `old-milton` alone fans out into Fallingbrook, Mountain View, Valley View
+    // and Forest Grove here), so these names are mapped onto ours through the explicit table in
+    // src/data/townNeighbourhoodMap.ts and never adopted as neighbourhoods of our own.
+    geometry: true,
+    recordCount: 1000,
+  },
 };
 
 /** outSR=4326 asks the service to reproject from its native UTM 17N (wkid 26917) to WGS84.

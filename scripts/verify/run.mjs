@@ -17,8 +17,9 @@ import consistency from './checks/consistency.mjs';
 import composition from './checks/composition.mjs';
 import coordinates from './checks/coordinates.mjs';
 import hubMeta from './checks/hub-meta.mjs';
+import geometryControl from './checks/geometry-control.mjs';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {
