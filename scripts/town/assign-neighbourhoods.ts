@@ -69,6 +69,18 @@ async function main() {
     select: { id: true, slug: true, neighbourhoodId: true, hasPublishedPage: true, recencyWeightedSold: true },
   });
 
+  // PUBLICATION IS StreetContent, NOT THE DENORMALISED FLAG. The first run of this script trusted
+  // ResidentialStreet.hasPublishedPage — the repo's own surfacing predicate — to mean "this street
+  // does not render a page", and that column is STALE on 6 rows: geddes-landing-milton carries
+  // hasPublishedPage=false while StreetContent.status='published', so it is in the sitemap and it
+  // renders. A geometry assignment reached it and put its neighbourhood's area context
+  // ($1.09M / 106 sales) onto a live page. No aggregate moved, but "change no published street
+  // page" is its own boundary and geometry crossed it. So the published set is read from
+  // StreetContent directly and excluded here, and the flag is never trusted again.
+  const publishedContentSlugs = new Set(
+    (await prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } })).map((r) => r.streetSlug),
+  );
+
   // Sanity: every mapped target must be a real neighbourhood of ours.
   for (const [poly, ours] of Object.entries(TOWN_POLYGON_TO_NEIGHBOURHOOD)) {
     if (ours && !idBySlug.has(ours)) throw new Error(`townNeighbourhoodMap: "${poly}" -> "${ours}", which is not a Neighbourhood slug`);
@@ -90,7 +102,8 @@ async function main() {
   L(`    dominant-share floor ......................... ${pct(DOMINANT_SHARE_FLOOR)}`);
   L();
 
-  const targets = streets.filter((s) => !s.neighbourhoodId);
+  const targets = streets.filter((s) => !s.neighbourhoodId && !publishedContentSlugs.has(s.slug));
+  const excludedPublished = streets.filter((s) => !s.neighbourhoodId && publishedContentSlugs.has(s.slug));
   const assign: Array<{ id: string; slug: string; to: string; poly: string; share: number; metres: number }> = [];
   const spans: Array<{ id: string; slug: string; span: string[]; detail: string }> = [];
   const insufficient: Array<{ slug: string; detail: string }> = [];
@@ -145,7 +158,10 @@ async function main() {
     }
   }
 
-  L(`    TARGETS (neighbourhoodId = NULL) ............. ${targets.length}`);
+  L(`    EXCLUDED — unassigned but StreetContent IS published: ${excludedPublished.length}${excludedPublished.length ? `  [${excludedPublished.map((s) => s.slug).join(", ")}]` : ""}`);
+  L(`      geometry must not move a page that is already live; those wait for a declared source.`);
+  L();
+  L(`    TARGETS (unassigned AND unpublished) ......... ${targets.length}`);
   L(`      assignable at >= ${pct(DOMINANT_SHARE_FLOOR)} of length .......... ${assign.length}`);
   L(`      SPAN recorded (>=2 of ours), left unassigned ${spans.length}`);
   L(`      one of ours but below the floor ............ ${insufficient.length}`);
