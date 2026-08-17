@@ -9,8 +9,12 @@ async function main() {
   const { prisma } = await import("@/lib/prisma");
   const L = (s = "") => console.log(s);
   const streets = await prisma.residentialStreet.findMany({
-    select: { slug: true, neighbourhoodId: true, neighbourhoodSource: true, neighbourhoodSpan: true, hasPublishedPage: true, recencyWeightedSold: true },
+    select: { slug: true, neighbourhoodId: true, neighbourhoodSource: true, neighbourhoodSpan: true, recencyWeightedSold: true },
   });
+  // Publication derives from StreetContent — the hasPublishedPage column was dropped.
+  const published = new Set(
+    (await prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } })).map((r) => r.streetSlug),
+  );
   const nb = await prisma.neighbourhood.findMany();
   const byId = new Map(nb.map((n) => [n.id, n.slug]));
 
@@ -38,9 +42,9 @@ async function main() {
   L();
   L(`    GEOMETRY-ASSIGNED STREETS ARE ALL DORMANT (they cannot enter a hub ladder):`);
   const geo = streets.filter((s) => s.neighbourhoodSource === "town-geometry");
-  const geoSurfaced = geo.filter((s) => s.recencyWeightedSold > 0 || s.hasPublishedPage);
+  const geoSurfaced = geo.filter((s) => s.recencyWeightedSold > 0 || published.has(s.slug));
   L(`      town-geometry assignments ...................... ${geo.length}`);
-  L(`      of those, SURFACED (rws>0 OR hasPublishedPage) . ${geoSurfaced.length}  (expect 0)`);
+  L(`      of those, SURFACED (rws>0 OR published) . ${geoSurfaced.length}  (expect 0)`);
   for (const s of geoSurfaced) L(`        !! ${s.slug}`);
   L();
   L(`    SPANS:`);

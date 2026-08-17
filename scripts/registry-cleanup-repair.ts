@@ -37,7 +37,7 @@ async function main() {
     const raw = domNbBySlug.get(a.slug); const nbId = raw ? nbByRaw.get(raw) ?? null : null;
     console.log(`  ${a.slug.padEnd(34)} count12=${a.count12} wt=${a.weighted.toFixed(2)} nb=${raw ?? "?"} -> ${nbId ? "nbId" : "NULL"}  name="${nm}"`);
     if (COMMIT) {
-      await p.residentialStreet.create({ data: { slug: a.slug, name: nm, streetType: reg?.type ?? null, neighbourhoodId: nbId, soldCount12mo: a.count12, recencyWeightedSold: Number(a.weighted.toFixed(4)), isVip: false, hasPublishedPage: false, crossStreets: [], lastClassifiedAt: new Date() } });
+      await p.residentialStreet.create({ data: { slug: a.slug, name: nm, streetType: reg?.type ?? null, neighbourhoodId: nbId, soldCount12mo: a.count12, recencyWeightedSold: Number(a.weighted.toFixed(4)), isVip: false, crossStreets: [], lastClassifiedAt: new Date() } });
     }
   }
   if (COMMIT) { const total = await p.residentialStreet.count(); console.log(`\n[commit] entities now: ${total}`); }

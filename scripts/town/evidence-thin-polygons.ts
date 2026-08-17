@@ -16,8 +16,12 @@ async function main() {
 
   const nbhds = await prisma.neighbourhood.findMany();
   const byId = new Map(nbhds.map((n) => [n.id, n]));
+  // Publication derives from StreetContent — the hasPublishedPage column was dropped.
+  const published = new Set(
+    (await prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } })).map((r) => r.streetSlug),
+  );
   const streets = await prisma.residentialStreet.findMany({
-    select: { slug: true, neighbourhoodId: true, hasPublishedPage: true, recencyWeightedSold: true },
+    select: { slug: true, neighbourhoodId: true, recencyWeightedSold: true },
   });
 
   for (const name of THIN) {
@@ -29,7 +33,7 @@ async function main() {
       const f = (TOWN_ROAD_FACTS as Record<string, { lat: number; lng: number } | undefined>)[identityFromSlug(s.slug).key];
       if (!f) continue;
       if (polygonAt([f.lng, f.lat], TOWN_NEIGHBOURHOODS)?.name !== name) continue;
-      const surfaced = s.recencyWeightedSold > 0 || s.hasPublishedPage;
+      const surfaced = s.recencyWeightedSold > 0 || published.has(s.slug);
       if (s.neighbourhoodId) known.push(`${s.slug} -> ${byId.get(s.neighbourhoodId)!.slug}`);
       else orphan.push(`${s.slug}${surfaced ? " [SURFACED]" : ""}`);
     }

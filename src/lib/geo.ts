@@ -150,17 +150,41 @@ export const NEIGHBOURHOOD_CENTROIDS: Record<string, { lat: number; lng: number 
   "Campbellville":           { lat: 43.4700, lng: -79.9900 },
   "Moffat":                  { lat: 43.5272, lng: -80.0117 },
   "Brookville/Haltonville":  { lat: 43.5910, lng: -79.9270 },
-  // Omitted — no reliable centroid from public sources, or name is
-  // ambiguous / covers a large rural area that would give misleading
-  // nearby-distance signal:
+  // ── STILL OMITTED, AND DELIBERATELY SO ────────────────────────────────────
   //   "1030 - DG Derry Green"            (industrial corridor; no residential centre)
   //   "1039 - MI Rural Milton"           (catch-all)
   //   "1041 - NA Rural Nassagaweya"      (large rural tract)
   //   "1044 - TR Rural Trafalgar"        (large rural tract)
   //   "Rural Milton West"                (large rural tract)
-  //   "Brookville/Haltonville"           (two hamlets, ambiguous centre)
-  //   "Moffat"                           (small hamlet)
   //   "Nassagaweya"                      (entire former township)
+  //
+  // These four rural strings were throwing NoCentroidError on ~25 streets, and the obvious fix
+  // was to derive a centroid for each from the mean of its member streets' Town centrelines.
+  // scripts/town/derive-rural-centroids.ts computes exactly that, and the numbers are why they
+  // are still not here:
+  //
+  //   "1041 - NA Rural Nassagaweya" / "Nassagaweya"  43.5643, -80.0300  mean of 18, spread 19.0 km
+  //   "Rural Milton West"                            43.4844, -79.9625  mean of 28, spread 14.0 km
+  //   "1044 - TR Rural Trafalgar"                    43.5091, -79.7991  mean of  8, spread  7.3 km
+  //
+  // A centroid is used as a per-street position for nearby-distance claims. A point that every
+  // street in a 19 km-wide township resolves to would put "4 min drive to Sobeys" on a page whose
+  // street is twenty minutes away — the misleading-distance risk this list was written to avoid,
+  // reintroduced with a number attached to make it look sourced.
+  //
+  // The real fix was upstream: resolveCentroid in buildGeneratorInput.ts now uses THE STREET'S OWN
+  // Town centreline before falling back to a neighbourhood at all. That is exact rather than
+  // approximate and it clears 18 of the 27 queued streets, including kelso-road, trafalgar-road,
+  // conservation-road and crewsons-line.
+  //
+  // The 9 it does not clear are malformed slugs, not streets: 2nd-line, side-road (no base name
+  // at all), fifth-nassagaweya-line, lower-base-line-n-a and five more. None is in the Town's
+  // 944-street registry, none is published, and eight have no ResidentialStreet row. Adding a
+  // township centroid would let exactly those nine generate pages carrying distance claims off a
+  // 19 km approximation. They need slug cleanup instead.
+  //
+  //   "Brookville/Haltonville" and "Moffat" ARE present above — this list said otherwise until
+  //   2026-08-17 and was simply out of date.
 };
 
 export const TRANSIT: POI[] = [

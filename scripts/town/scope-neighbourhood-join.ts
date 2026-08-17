@@ -65,8 +65,12 @@ async function main() {
 
   const nbhds = await prisma.neighbourhood.findMany({ orderBy: { slug: "asc" } });
   const byId = new Map(nbhds.map((n) => [n.id, n]));
+  // Publication derives from StreetContent — the hasPublishedPage column was dropped.
+  const published = new Set(
+    (await prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } })).map((r) => r.streetSlug),
+  );
   const streets = await prisma.residentialStreet.findMany({
-    select: { slug: true, neighbourhoodId: true, neighbourhoodSource: true, hasPublishedPage: true, recencyWeightedSold: true },
+    select: { slug: true, neighbourhoodId: true, neighbourhoodSource: true, recencyWeightedSold: true },
   });
 
   // ── CONTROL ─────────────────────────────────────────────────────────────────────────────────
@@ -208,7 +212,7 @@ async function main() {
   const geo = streets.filter((s) => s.neighbourhoodSource === "town-geometry");
   L(`    geometry-assigned streets ............ ${geo.length}`);
   L(`      with ANY record in DB2 ............. ${geo.filter((s) => (db2.get(s.slug) ?? 0) > 0).length}`);
-  L(`      surfaced (would enter a hub ladder)  ${geo.filter((s) => s.recencyWeightedSold > 0 || s.hasPublishedPage).length}`);
+  L(`      surfaced (would enter a hub ladder)  ${geo.filter((s) => s.recencyWeightedSold > 0 || published.has(s.slug)).length}`);
   L();
   L(`    A neighbourhood does not create a sale. These streets are orphans precisely BECAUSE no`);
   L(`    record names them, so they gain hub CONTEXT and a non-orphan internal link — not numbers.`);

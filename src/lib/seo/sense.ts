@@ -265,10 +265,37 @@ export async function runSense(): Promise<SenseSummary> {
     // 5) Light coverage (positives refresh + capped inspection, resumable).
     const cov = await lightCoverage(sc, sitemapUrls);
 
-    // Whole-property 90d totals (incl. winning/branded) — digest headline
-    // numbers, so the digest never re-calls GSC.
-    const totalImpressions = classified.reduce((s, c) => s + c.impressions, 0);
-    const totalClicks = classified.reduce((s, c) => s + c.clicks, 0);
+    // Whole-property 90d totals — digest headline numbers, so the digest never re-calls GSC.
+    //
+    // THESE COME FROM A NO-DIMENSION QUERY, NOT FROM SUMMING `classified`. Summing the
+    // query-dimension rows does not give the property total: Google withholds the query for
+    // anonymised/low-volume searches, so those rows are absent entirely and their clicks and
+    // impressions vanish from any sum over them. The digest headline was under-reporting clicks
+    // by roughly 40x as a result — reporting the visible-query subset while calling it the site's
+    // clicks. The same request with no dimensions returns the true totals for the window.
+    //
+    // Fail-soft: if the extra call fails we fall back to the summed figures rather than writing
+    // nulls, and the fallback is labelled in the action log so a wrong-looking week is traceable.
+    const summedImpressions = classified.reduce((s, c) => s + c.impressions, 0);
+    const summedClicks = classified.reduce((s, c) => s + c.clicks, 0);
+    let totalImpressions = summedImpressions;
+    let totalClicks = summedClicks;
+    let totalsSource = "no-dimension";
+    try {
+      const totals = await sc.searchanalytics.query({
+        siteUrl: GSC_PROPERTY,
+        requestBody: { startDate: dayStr(92), endDate: dayStr(2), rowLimit: 1 },
+      });
+      const row = totals.data.rows?.[0];
+      if (row && typeof row.clicks === "number" && typeof row.impressions === "number") {
+        totalImpressions = row.impressions;
+        totalClicks = row.clicks;
+      } else {
+        totalsSource = "summed-fallback (no-dimension query returned no row)";
+      }
+    } catch {
+      totalsSource = "summed-fallback (no-dimension query threw)";
+    }
 
     await prisma.senseRun.update({
       where: { id: run.id },
@@ -292,6 +319,12 @@ export async function runSense(): Promise<SenseSummary> {
           byClass,
           coverageInspected: cov.inspected,
           indexedCount: cov.indexedCount,
+          totalsSource,
+          totalClicks,
+          totalImpressions,
+          // Kept beside the real totals so the gap between "queries Google shows us" and "what
+          // the property actually did" stays visible instead of being mistaken for the total.
+          summedOverVisibleQueries: { clicks: summedClicks, impressions: summedImpressions },
         },
       },
     });

@@ -25,8 +25,12 @@ async function main() {
   const inRegistry = new Set((MILTON_STREET_REGISTRY as Array<{ slug: string }>).map((r) => r.slug));
   const streets = await prisma.residentialStreet.findMany({
     where: { neighbourhoodId: null },
-    select: { slug: true, hasPublishedPage: true, recencyWeightedSold: true, soldCount12mo: true },
+    select: { slug: true, recencyWeightedSold: true, soldCount12mo: true },
   });
+  // Publication is derived from StreetContent — the hasPublishedPage column was dropped.
+  const publishedSlugs = new Set(
+    (await prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } })).map((r) => r.streetSlug),
+  );
   const listings = await prisma.listing.groupBy({ by: ["streetSlug"], _count: { _all: true }, where: { permAdvertise: true } });
   const listingBySlug = new Map(listings.map((l) => [l.streetSlug, l._count._all]));
   const db2 = new Map(((await sold`SELECT street_slug s, COUNT(*)::int n FROM sold.sold_records WHERE perm_advertise=TRUE AND sold_date <= NOW() GROUP BY 1`) as Array<{ s: string; n: number }>).map((r) => [r.s, r.n]));
@@ -40,7 +44,7 @@ async function main() {
     if (!groups.has(p.name)) groups.set(p.name, []);
     groups.get(p.name)!.push({
       slug: s.slug, reg: inRegistry.has(s.slug), db2: db2.get(s.slug) ?? 0,
-      listings: listingBySlug.get(s.slug) ?? 0, surfaced: s.recencyWeightedSold > 0 || s.hasPublishedPage,
+      listings: listingBySlug.get(s.slug) ?? 0, surfaced: s.recencyWeightedSold > 0 || publishedSlugs.has(s.slug),
     });
   }
 
