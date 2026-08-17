@@ -323,7 +323,18 @@ model ResidentialStreet {
   // predicate is `recencyWeightedSold > 0 OR hasPublishedPage`. Pageless dormant
   // entities (0 sold, 0 listings) stay in the DB, unsurfaced, until a first sale
   // or listing flips this (auto-promotion). Set true when a page is published.
+  // DEPRECATED, READ BY NOTHING. A denormalised copy of StreetContent.status that nothing kept
+  // honest: generateStreet.ts publishes a page without touching it, and three hand-run scripts
+  // set it. It had drifted on 6 rows, all of them live published pages the flag called
+  // unpublished. src/lib/streetSurface.ts now derives publication from StreetContent directly.
+  // Drop this column once the deployed build no longer selects it — see that file.
   hasPublishedPage       Boolean        @default(false)
+  // FALSE = not a residential street and must never be surfaced, whatever its activity. The 22
+  // entities inside the Town's "401 Industrial Area" polygon are industrial road stubs
+  // (industrial-drive, wheelabrator-way, market-drive, mcgeachie-drive …) with no sale, no
+  // listing and no page. Without this, one industrial unit trading would auto-promote them into
+  // hero search and a hub ladder as if they were residential streets.
+  isResidential          Boolean        @default(true)
   // PROVENANCE OF neighbourhoodId. A neighbourhood read off an MLS record is a DECLARED fact —
   // a human placed that sale in that neighbourhood. One derived from the Town's polygon layer is
   // an INFERENCE about position, and the two can disagree: kelso-road-milton is declared "Rural

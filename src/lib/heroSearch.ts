@@ -24,7 +24,7 @@
 // and excluded, so we never guess — those fall through.
 
 import { prisma } from "@/lib/prisma";
-import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
+import { surfacedStreetWhere } from "@/lib/streetSurface";
 
 const DROP = new Set(["milton", "on", "ont", "ontario", "canada", "ca"]);
 
@@ -108,7 +108,7 @@ async function getIndex(): Promise<Index> {
   const [streets, condos, neighbourhoods] = await Promise.all([
     // Surfaced entities only — dormant/pageless registry entities never resolve
     // (they would 404). See streetSurface.ts.
-    prisma.residentialStreet.findMany({ where: SURFACED_STREET_WHERE, select: { slug: true }, orderBy: { soldCount12mo: "desc" } }),
+    prisma.residentialStreet.findMany({ where: await surfacedStreetWhere(), select: { slug: true }, orderBy: { soldCount12mo: "desc" } }),
     prisma.condoBuilding.findMany({ select: { slug: true } }),
     prisma.neighbourhood.findMany({ select: { slug: true } }),
   ]);

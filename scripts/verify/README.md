@@ -22,7 +22,7 @@ exists on one machine only. A missing credential fails loudly and by name — it
 | `denials` | no sentence denies or contradicts a figure the same page publishes — price (a), band (b), sold-to-ask direction (c) — in **both** the visible prose and the JSON-LD |
 | `schema-parity` | the structured data publishes exactly what the page publishes, per page; a zero-FAQ page emits neither heading nor `FAQPage` node |
 | `claims` | the set of pages claiming absence **is** the set of streets with no sale on record, in both directions; every page has a wired CTA and a stated sample |
-| `tiles` | every published figure is floored against the sample it was computed over, and the basis line names that sample |
+| `tiles` | every published figure is floored against the sample it was computed over, and the page's basis lines agree with each other about what that sample was |
 | `consistency` | one metric, one number, across hero / glance / sidebar / type card / CTA / market card; no FAQ answer opens on a cut antecedent; no section is all caveat |
 | `composition` | every published page is a street in the Town registry or on the off-registry allowlist, and nothing is on neither |
 | `hub-meta` | a hub's meta description, hero tile and JSON-LD all publish the live aggregate — same price, same precision, same sale count, same silence below k |
@@ -92,6 +92,22 @@ price, in either direction.
 **Known defects are reported, not asserted.** A standing failure wired into a gate makes the gate
 permanently red, and a permanently red gate hides the next regression. Log it as a `NOTE` with the
 page names — see `1c` in `consistency`.
+
+**Assert what the page can be held to, not what the record says this second.** Street pages are
+prerendered. After the 11:30 UTC sold-stats cron a page correctly serving what it was built from
+says "across 9 sales" while DB2 now says 10 — and `tiles` went red for an hour a day with nothing
+to fix. The page is not wrong; a prerendered figure trailing a cron is the design working, and
+coupling revalidation to the cron would bend two systems to make a gate happy. So the gated
+assertion is INTERNAL CONSISTENCY — whatever sample the page claims, it claims the same one
+everywhere it repeats it, the hero basis is one of them, and a published price sits at or above
+the k-anon floor by the page's own account. All of that holds whenever the page was built. The
+drift against the live record is still measured, as a `NOTE`.
+
+**Same pool, or no comparison.** The first attempt at that consistency check tag-stripped the page
+and swept every "N sales" out of it — collecting the neighbourhood's sample and each per-type
+subset alongside the street's own, and reporting 214 of 426 pages as self-contradictory when none
+of them were. Figures are only comparable when they describe the same pool. Read the discrete
+containers, and exclude the labels that are subsets by design.
 
 ## Layout
 

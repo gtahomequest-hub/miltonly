@@ -15,7 +15,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { getNeighbourhoodSaleStats } from "@/lib/sold-data";
 import { getSchoolsByNeighbourhood, type School } from "@/lib/schools";
-import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
+import { surfacedStreetWhere } from "@/lib/streetSurface";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
 import { expandStreetName } from "@/lib/street-data";
 
@@ -95,7 +95,7 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
   let nearbyStreets: Array<{ slug: string; name: string }> = [];
   if (entity?.neighbourhood?.id) {
     const sibs = await prisma.residentialStreet.findMany({
-      where: { neighbourhoodId: entity.neighbourhood.id, slug: { not: slug }, ...SURFACED_STREET_WHERE },
+      where: { neighbourhoodId: entity.neighbourhood.id, slug: { not: slug }, ...(await surfacedStreetWhere()) },
       orderBy: [{ isVip: "desc" }, { soldCount12mo: "desc" }],
       take: 8,
       select: { slug: true, name: true },
