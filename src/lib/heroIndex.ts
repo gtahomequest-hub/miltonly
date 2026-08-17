@@ -12,7 +12,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { expandStreetName } from "@/lib/street-data";
-import { SURFACED_STREET_WHERE } from "@/lib/streetSurface";
+import { surfacedStreetWhere } from "@/lib/streetSurface";
 
 export interface HeroIndexEntry {
   type: "neighbourhood" | "street" | "condo";
@@ -35,14 +35,17 @@ const UNIT_LIKE = /\b(unit|apt|apartment|suite|ph|penthouse|floor|flr|upper|lowe
 export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
   if (_cache && Date.now() - _cacheAt < TTL_MS) return _cache;
   const soldDb = getSoldDb();
+  // Derived once and reused by both queries below, so the neighbourhood count and the street list
+  // can never disagree about what "surfaced" means.
+  const surfaced = await surfacedStreetWhere();
   const [nbs, streets, condos, homesRows] = await Promise.all([
     prisma.neighbourhood.findMany({
       // Count only surfaced streets so the "· N streets" line stays honest after
       // the dormant-entity backfill (pageless entities are not shown anywhere).
-      select: { slug: true, name: true, _count: { select: { residentialStreets: { where: SURFACED_STREET_WHERE } } } },
+      select: { slug: true, name: true, _count: { select: { residentialStreets: { where: surfaced } } } },
     }),
     prisma.residentialStreet.findMany({
-      where: SURFACED_STREET_WHERE, // dormant/pageless entities never appear in autocomplete
+      where: surfaced, // dormant/pageless entities never appear in autocomplete
       select: { slug: true, name: true, neighbourhood: { select: { name: true } } },
     }),
     prisma.condoBuilding.findMany({
