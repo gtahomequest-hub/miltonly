@@ -96,10 +96,20 @@ export async function collectDigestData(): Promise<DigestData> {
     const slug = detail.streetSlug ?? "?";
     let outcome = "queued, awaiting drain";
     if (slug !== "?") {
+      // THE PAGE IS THE OUTCOME, NOT THE GENERATION ROW. This used to read
+      // StreetGeneration.status alone, so a street with a LIVE PUBLISHED PAGE and a stale failed
+      // generation row from a later re-attempt was reported as a failure — laurier-avenue-milton
+      // was headlined as "generation failed closed" three times in one digest while its page was
+      // published, live and ranking at position 9.4. StreetContent is checked first because it is
+      // the thing a reader can actually load.
+      const content = await prisma.streetContent.findUnique({ where: { streetSlug: slug }, select: { status: true } });
       const gen = await prisma.streetGeneration.findUnique({ where: { streetSlug: slug }, select: { status: true } });
       const q = await prisma.streetQueue.findUnique({ where: { streetSlug: slug }, select: { status: true, lastError: true } });
-      if (gen?.status === "succeeded") outcome = "generated + published (gate passed)";
-      else if (gen?.status === "failed" || q?.status === "failed") outcome = "generation failed closed -> review queue";
+      if (content?.status === "published") {
+        outcome = gen?.status === "succeeded"
+          ? "generated + published (gate passed)"
+          : "published and live (generation row is stale)";
+      } else if (gen?.status === "failed" || q?.status === "failed") outcome = "generation failed closed -> review queue";
       else if (q?.status === "ineligible") outcome = "drain ruled ineligible (data floor)";
       else if (q?.status === "processing") outcome = "generating now";
     }

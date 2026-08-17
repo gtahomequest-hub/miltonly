@@ -36,7 +36,9 @@ async function main() {
         await p.streetContent.upsert({ where: { streetSlug: slug }, create: { streetSlug: slug, streetName: ent.name, neighbourhood: raw, description: desc, status: "published", template: "minimal", needsReview: false, aiGenerated: false, publishedAt: new Date() }, update: { neighbourhood: raw, status: "published", template: "minimal", needsReview: false, publishedAt: new Date() } });
         pubMin++;
       }
-      await p.residentialStreet.update({ where: { slug }, data: { hasPublishedPage: true } });
+      // Nothing to set on the entity: surfacing derives publication from the StreetContent row
+      // written above (src/lib/streetSurface.ts). The old hasPublishedPage flag was dropped
+      // 2026-08-17 because it was a second copy of this fact and it drifted.
     }
   }
   console.log(`\n${COMMIT ? "[commit] " : "(dry) "}standard=${pubStd} minimal=${pubMin} already=${already} noEntity=${noEnt}`);

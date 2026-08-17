@@ -66,7 +66,7 @@ async function main() {
   const nbhds = await prisma.neighbourhood.findMany();
   const idBySlug = new Map(nbhds.map((n) => [n.slug, n.id]));
   const streets = await prisma.residentialStreet.findMany({
-    select: { id: true, slug: true, neighbourhoodId: true, hasPublishedPage: true, recencyWeightedSold: true },
+    select: { id: true, slug: true, neighbourhoodId: true, recencyWeightedSold: true },
   });
 
   // PUBLICATION IS StreetContent, NOT THE DENORMALISED FLAG. The first run of this script trusted

@@ -47,7 +47,7 @@ async function main() {
   }
 
   const streets = await prisma.residentialStreet.findMany({
-    select: { id: true, slug: true, isResidential: true, recencyWeightedSold: true, soldCount12mo: true, hasPublishedPage: true },
+    select: { id: true, slug: true, isResidential: true, recencyWeightedSold: true, soldCount12mo: true },
   });
   const publishedSlugs = new Set(
     (await prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } })).map((r) => r.streetSlug),

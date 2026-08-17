@@ -59,6 +59,8 @@ import {
 import { schools } from "@/lib/schools";
 import { extractStreetName, ruralSideRoadName } from "@/lib/streetUtils";
 import { NoCentroidError } from "@/lib/ai/errors";
+import { TOWN_ROAD_FACTS } from "@/data/townRoadFacts";
+import { identityFromSlug } from "@/lib/town/identity";
 import { getNeighbourhoodComparable } from "@/lib/ai/neighbourhoodLookup";
 import type { StreetGeneratorInput } from "@/types/street-generator";
 
@@ -634,7 +636,25 @@ function resolveCentroid(
   if (lat !== null && lng !== null && hasValidCoords(lat, lng)) {
     return { lat, lng };
   }
-  // 3. Neighbourhood centroid lookup. Try the DB1/DB2 RAW neighbourhood
+  // 3. THE STREET'S OWN TOWN CENTRELINE. Length-weighted centroid of the Town of Milton's road
+  //    geometry for this street — exact to the street, not to its neighbourhood.
+  //
+  //    This step did not exist, and its absence is why ~25 rural streets sat in the generation
+  //    queue on NoCentroidError: the resolver went straight from per-listing coords (0% populated)
+  //    to a neighbourhood lookup that has no entry for "Rural Milton West" or
+  //    "1041 - NA Rural Nassagaweya". kelso-road, trafalgar-road, conservation-road and
+  //    crewsons-line all have Town geometry and were throwing anyway.
+  //
+  //    It is deliberately ABOVE the neighbourhood fallback rather than below it. A neighbourhood
+  //    centroid for a rural township is a mean over ground up to 19 km across, and every street in
+  //    it would resolve to the same point; the street's own centreline is the actual street. Where
+  //    both exist the specific one must win.
+  //
+  //    Contains information licensed under the Open Government Licence – Milton.
+  const townFacts = roadFactsForSlug(slug);
+  if (townFacts) return { lat: townFacts.lat, lng: townFacts.lng };
+
+  // 4. Neighbourhood centroid lookup. Try the DB1/DB2 RAW neighbourhood
   //    strings first (NEIGHBOURHOOD_CENTROIDS is keyed by raw TREB form), then
   //    fall back to cleaned neighbourhoods as a last resort in case a raw-form
   //    lookup misses but the cleaned value happens to match.
@@ -649,6 +669,14 @@ function resolveCentroid(
     ? `no NEIGHBOURHOOD_CENTROIDS match for "${dominantRaw}"`
     : `no listings and no DB2 sold records with a neighbourhood string`;
   throw new NoCentroidError(slug, reason);
+}
+
+/** The Town's centreline centroid for one of our slugs, or null when the Town layer has no
+ *  geometry for it (new construction the 2022 centreline has not caught up to). Absence returns
+ *  null and the caller falls through — it never withholds or invents a coordinate. */
+function roadFactsForSlug(slug: string): { lat: number; lng: number } | null {
+  const f = TOWN_ROAD_FACTS[identityFromSlug(slug).key];
+  return f ? { lat: f.lat, lng: f.lng } : null;
 }
 
 function pickDominantNeighbourhood(

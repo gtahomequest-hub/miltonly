@@ -64,7 +64,7 @@ async function main() {
 
   // ── street counts per neighbourhood, and the dormant (hub-less) population
   const streets = await prisma.residentialStreet.findMany({
-    select: { slug: true, neighbourhoodId: true, recencyWeightedSold: true, hasPublishedPage: true, soldCount12mo: true },
+    select: { slug: true, neighbourhoodId: true, recencyWeightedSold: true, soldCount12mo: true },
   });
   const streetsByNbhd = new Map<string, typeof streets>();
   for (const s of streets) {
@@ -161,7 +161,7 @@ async function main() {
   L();
   L(`(c) THE 157 — hub-less dormant streets, and how many gain a hub`);
   // Reproduce the population by predicate, not by a frozen count.
-  const dormant = streets.filter((s) => !(s.recencyWeightedSold > 0 || s.hasPublishedPage));
+  const dormant = streets.filter((s) => !(s.recencyWeightedSold > 0 || publishedStreetSlugs.has(s.slug)));
   const dormantNoNbhd = dormant.filter((s) => !s.neighbourhoodId);
   const dormantWithNbhd = dormant.filter((s) => s.neighbourhoodId);
   const dormantHubless = dormantWithNbhd.filter((s) => {
@@ -169,7 +169,7 @@ async function main() {
     return !n || !publishedSlugs.has(n.slug);
   });
   L(`    All ResidentialStreet rows .............................. ${streets.length}`);
-  L(`    Dormant (NOT (rws>0 OR hasPublishedPage)) ............... ${dormant.length}`);
+  L(`    Dormant (NOT (rws>0 OR published)) ............... ${dormant.length}`);
   L(`      of those, no neighbourhoodId at all .................. ${dormantNoNbhd.length}`);
   L(`      of those, in a neighbourhood with NO published hub .... ${dormantHubless.length}`);
   const publishableSlugs = new Set(verdicts.filter((v) => v.ok).map((v) => v.slug));

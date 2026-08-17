@@ -53,7 +53,7 @@ async function main() {
   for (const n of nbhds) for (const raw of n.rawStrings) rawToNbhd.set(raw, n);
 
   const streets = await prisma.residentialStreet.findMany({
-    select: { id: true, slug: true, neighbourhoodId: true, hasPublishedPage: true, recencyWeightedSold: true },
+    select: { id: true, slug: true, neighbourhoodId: true, recencyWeightedSold: true },
   });
   const orphans = streets.filter((s) => !s.neighbourhoodId);
 
@@ -102,7 +102,7 @@ async function main() {
       continue;
     }
     const pick = mapped[0];
-    applicable.push({ id: s.id, slug: s.slug, to: pick.nb!.slug, raw: pick.raw, n: mapped.reduce((a, x) => a + x.n, 0), published: s.hasPublishedPage, from: [...new Set(mapped.map((x) => x.from))].join("+") });
+    applicable.push({ id: s.id, slug: s.slug, to: pick.nb!.slug, raw: pick.raw, n: mapped.reduce((a, x) => a + x.n, 0), published: publishedSlugs.has(s.slug), from: [...new Set(mapped.map((x) => x.from))].join("+") });
   }
 
   L();

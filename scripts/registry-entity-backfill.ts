@@ -2,7 +2,7 @@
 // ONE-OFF (registry ingest, 2026-07). Makes every official Milton street (944) a
 // ResidentialStreet entity, then PUBLISHES the minimal-template page for the 19
 // high-value streets (14 new-construction w/ active listings + 5 low-sale). All
-// other new entities stay DORMANT (0 sold, 0 listings, hasPublishedPage=false) —
+// other new entities stay DORMANT (0 sold, 0 listings, no published StreetContent) —
 // present in the DB, unsurfaced, until a first sale/listing auto-promotes them.
 //
 // Dry-run by default; pass --commit to write. Idempotent (skip/upsert).
@@ -112,7 +112,7 @@ async function main() {
       await p.residentialStreet.create({ data: {
         slug: r.slug, name: titleCase(r.name), streetType: r.type,
         neighbourhoodId: nb?.id ?? null, soldCount12mo: 0, recencyWeightedSold: 0,
-        hasPublishedPage: false, crossStreets: [], lastClassifiedAt: new Date(),
+        crossStreets: [], lastClassifiedAt: new Date(),
       } });
     }
     created++;
@@ -146,24 +146,23 @@ async function main() {
           update: { streetName: nm, neighbourhood: raw ?? null, description: desc!, status: "published", template: "minimal", needsReview: false, publishedAt: new Date() },
         });
       }
-      await p.residentialStreet.update({ where: { slug: r.slug }, data: { hasPublishedPage: true, neighbourhoodId: nb?.id ?? undefined } });
+      await p.residentialStreet.update({ where: { slug: r.slug }, data: { neighbourhoodId: nb?.id ?? undefined } });
     }
     console.log(`    [${tmpl.padEnd(8)}] ${nm.padEnd(30)} [${r.slug}] nb=${nb?.name ?? "?"} sold=${sold} listings=${list}`);
   }
 
-  // ── PHASE 3: reconcile hasPublishedPage with published StreetContent ──
+  // ── PHASE 3: report the published set. There is nothing to reconcile any more — surfacing
+  //    derives publication from StreetContent (src/lib/streetSurface.ts) and the entity flag this
+  //    phase used to sync, hasPublishedPage, was dropped 2026-08-17 because it drifted. ──
   const pubContent = await p.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } });
   const pubSlugs = pubContent.map(c => c.streetSlug);
-  let flagged = 0;
-  if (COMMIT) { const res = await p.residentialStreet.updateMany({ where: { slug: { in: pubSlugs }, hasPublishedPage: false }, data: { hasPublishedPage: true } }); flagged = res.count; }
-  console.log(`\n  PHASE 3 — published StreetContent slugs: ${pubSlugs.length}; hasPublishedPage flipped to true: ${flagged}`);
+  console.log(`\n  PHASE 3 — published StreetContent slugs: ${pubSlugs.length} (these surface by derivation; there is no flag to set)`);
 
   // ── FINAL counts ──
   if (COMMIT) {
     const total = await p.residentialStreet.count();
-    const surfaced = await p.residentialStreet.count({ where: { OR: [{ recencyWeightedSold: { gt: 0 } }, { hasPublishedPage: true }] } });
-    const publishedFlag = await p.residentialStreet.count({ where: { hasPublishedPage: true } });
-    console.log(`\n=== FINAL: entities=${total} | surfaced=${surfaced} | dormant=${total - surfaced} | hasPublishedPage=${publishedFlag} ===`);
+    const surfaced = await p.residentialStreet.count({ where: { isResidential: true, OR: [{ recencyWeightedSold: { gt: 0 } }, { slug: { in: pubSlugs } }] } });
+    console.log(`\n=== FINAL: entities=${total} | surfaced=${surfaced} | dormant=${total - surfaced} | published pages=${pubSlugs.length} ===`);
   } else {
     console.log(`\n(dry run — no writes. Re-run with --commit to apply.)`);
   }

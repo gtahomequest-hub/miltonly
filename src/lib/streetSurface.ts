@@ -35,12 +35,24 @@
 // preview, so removing a column that the currently-deployed build still selects would break the
 // homepage and every hub for the length of a deploy. Drop it once this is live.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-import { cache } from "react";
+import * as React from "react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * React's cache() exists only under the react-server condition. Next resolves it; a Node script
+ * running this module through tsx gets `undefined` and used to die with
+ * "import_react.cache is not a function" — which broke every diagnostic that imports
+ * buildHubInput. Scripts are single-shot processes where per-request memoisation buys nothing, so
+ * they fall through to the bare function.
+ */
+const perRequest = <T>(fn: T): T => {
+  const c = (React as unknown as { cache?: (f: T) => T }).cache;
+  return typeof c === "function" ? c(fn) : fn;
+};
+
 /** Slugs with a published StreetContent row. Memoised for the request. */
-export const publishedStreetSlugs = cache(async (): Promise<string[]> => {
+export const publishedStreetSlugs = perRequest(async (): Promise<string[]> => {
   const rows = await prisma.streetContent.findMany({
     where: { status: "published" },
     select: { streetSlug: true },

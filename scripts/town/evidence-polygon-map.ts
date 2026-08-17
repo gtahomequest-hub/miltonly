@@ -20,7 +20,7 @@ async function main() {
   const nbhds = await prisma.neighbourhood.findMany();
   const byId = new Map(nbhds.map((n) => [n.id, n]));
   const streets = await prisma.residentialStreet.findMany({
-    select: { slug: true, neighbourhoodId: true, hasPublishedPage: true, recencyWeightedSold: true },
+    select: { slug: true, neighbourhoodId: true, recencyWeightedSold: true },
   });
 
   // polygon -> our-neighbourhood tally, over streets whose TREB neighbourhood we already know
