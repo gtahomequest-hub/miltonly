@@ -324,12 +324,30 @@ model ResidentialStreet {
   // entities (0 sold, 0 listings) stay in the DB, unsurfaced, until a first sale
   // or listing flips this (auto-promotion). Set true when a page is published.
   hasPublishedPage       Boolean        @default(false)
+  // PROVENANCE OF neighbourhoodId. A neighbourhood read off an MLS record is a DECLARED fact —
+  // a human placed that sale in that neighbourhood. One derived from the Town's polygon layer is
+  // an INFERENCE about position, and the two can disagree: kelso-road-milton is declared "Rural
+  // Milton West" by DB2 and computed "Nassagaweya" by geometry, and the declared one is right
+  // (the Town has no Rural Milton West polygon at all). Once both live in the same column they
+  // are indistinguishable, so the source is recorded at assignment time.
+  //   treb          — a sold record named the neighbourhood
+  //   town-geometry — dominant-length assignment against the Town Neighbourhoods layer
+  //   manual        — set by hand
+  // NULL means unassigned, or assigned before this column existed. Nothing reads it for display
+  // yet; the copy that distinguishes the two claims ships with Wave 1.
+  neighbourhoodSource    String?
+  // Recorded when NO single neighbourhood holds >= 60% of the street's centreline length. The
+  // street is left UNASSIGNED (neighbourhoodId stays null) and the polygons it crosses are kept
+  // here instead of picking one — "Main Street runs through Old Milton, Dempsey and Dorset Park"
+  // is truer than any single answer. Stored as OUR neighbourhood slugs, already mapped.
+  neighbourhoodSpan      String[]
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
 
   @@index([neighbourhoodId])
   @@index([isVip])
   @@index([hasPublishedPage])
+  @@index([neighbourhoodSource])
   @@schema("public")
 }
 
