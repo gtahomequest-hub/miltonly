@@ -10,6 +10,7 @@
 import type { ReactNode } from "react";
 import type { StreetSection, StreetFAQItem } from "./street-generator";
 import type { StreetEnrichment } from "@/lib/streetEnrichment";
+import type { StreetVideoView } from "@/lib/streetVideo";
 export type { StreetSection, StreetFAQItem, StreetSectionId, StreetGeneratorOutput, StreetGenerationMeta, StreetGeneratorInput, ValidatorViolation, ValidatorRule } from "./street-generator";
 
 // ───── Primitive building blocks ──────────────────────────────────────────
@@ -424,5 +425,8 @@ export interface StreetPageData {
   cornerWidget: CornerWidgetProps;
   /** DEC-CONDO-6 street port: area-context anchor + graduated sale/lease basis + tier. */
   enrichment: StreetEnrichment;
+  /** Street-video PoC: resolved from StreetContent's four video columns, or null when the
+   *  street carries no clip (the common case). See src/lib/streetVideo.ts. */
+  video: StreetVideoView | null;
   lastUpdated: string;
 }

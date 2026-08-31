@@ -25,6 +25,7 @@ import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCER
 import { streetCentroidFor } from "./town/roadFacts";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
+import { resolveStreetVideo } from "./streetVideo";
 import { cleanNeighbourhoodName, roundPriceForProse, roundRentForProse } from "./format";
 import { formatCAD, formatCADShort } from "./charts/theme";
 import type {
@@ -500,6 +501,17 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     finalCTAs,
     cornerWidget,
     enrichment,
+    // Street-video PoC — resolved from StreetContent's four video columns (null on every
+    // street without a clip, which renders nothing).
+    video: streetContent
+      ? resolveStreetVideo({
+          streetName,
+          videoUrl: streetContent.videoUrl,
+          videoCapturedAt: streetContent.videoCapturedAt,
+          nightVideoUrl: streetContent.nightVideoUrl,
+          nightCapturedAt: streetContent.nightCapturedAt,
+        })
+      : null,
     lastUpdated: new Date().toISOString(),
   };
 }

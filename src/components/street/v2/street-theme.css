@@ -79,6 +79,35 @@
 .street-v2 .s-sechead {
   margin-bottom: 30px;
 }
+
+/* street video (PoC) — one or two clips, side by side on wide screens. The player owns
+   its aspect ratio; the poster JPG fills it until the visitor presses play. */
+.street-v2 .s-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+}
+.street-v2 .s-video-clip {
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--s-surface);
+  box-shadow: var(--s-sh-sm);
+  border: 1px solid var(--s-border-muted);
+}
+.street-v2 .s-video-el {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  object-fit: cover;
+}
+.street-v2 .s-video-cap {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--s-text-muted);
+  font-family: var(--s-mono);
+  letter-spacing: 0.02em;
+}
 .street-v2 .s-sechead h2 {
   font-family: var(--s-serif);
   font-weight: 400;

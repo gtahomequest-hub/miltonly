@@ -11,6 +11,7 @@ import type {
   ListingCard,
   ChartPoint,
 } from './types';
+import type { StreetVideoClip } from '@/lib/streetVideo';
 import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './format';
 import { CommuteIcon } from './icons';
 import { StreetSoldRecords } from './SoldRecordsIsland';
@@ -123,6 +124,43 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
         )}
       </div>
     </header>
+  );
+}
+
+/* ───── street video (PoC) ───── */
+
+// Renders the resolved day/night clips. A null view, or a view whose clips are all null,
+// renders NOTHING — no placeholder, no "video coming soon" (that's the whole PoC rule).
+// <video> is controls + no autoplay + playsInline; the poster frame is the derived JPG.
+export function StreetVideo({ data }: { data: StreetV2Data }) {
+  const v = data.video;
+  const clips = v ? ([v.day, v.night].filter(Boolean) as StreetVideoClip[]) : [];
+  if (clips.length === 0) return null;
+  return (
+    <section className="s-block s-video">
+      <div className="s-wrap">
+        <div className="s-sechead">
+          <span className="s-eyebrow">On the ground</span>
+          <h2>{data.shortName} on video</h2>
+        </div>
+        <div className="s-video-grid">
+          {clips.map((c) => (
+            <figure className="s-video-clip" key={c.src}>
+              <video
+                className="s-video-el"
+                controls
+                playsInline
+                preload="metadata"
+                poster={c.poster ?? undefined}
+              >
+                <source src={c.src} type="video/mp4" />
+              </video>
+              {c.caption && <figcaption className="s-video-cap">{c.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

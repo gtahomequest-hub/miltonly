@@ -8,6 +8,7 @@ import './street-theme.css';
 import type { StreetV2Data } from './types';
 import {
   StreetHero,
+  StreetVideo,
   StreetGlance,
   StreetAreaContext,
   StreetBody,
@@ -42,6 +43,7 @@ export function StreetV2Page({
     <div className="street-v2">
       <SiteNav variant="page" />
       <StreetHero data={data} />
+      <StreetVideo data={data} />
       <StreetGlance data={data} />
       <StreetAreaContext data={data} />
       <StreetBody data={data} />
