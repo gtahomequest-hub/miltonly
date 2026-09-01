@@ -43,6 +43,15 @@ function pageList(current: number, total: number): (number | '…')[] {
 export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePath: string }) {
   const { query, listings, mapPins, totalCount, totalPages } = data;
   const router = useRouter();
+  // Pagination inherits the current filter (pageHref = buildHref(query) + &page=N). On a FILTERED
+  // view — which FIX 2 makes noindex — those `?<filter>&page=2..N` links are the real crawl
+  // multiplier, so nofollow them: Google won't fan the facet out into its page space. The base
+  // /listings view (no filters, indexable) keeps pagination followable so every listing stays
+  // discoverable. This caps the explosion AT THE SOURCE, not just after a crawl is spent.
+  const isFilteredView =
+    query.status !== 'active' || query.type !== 'all' || query.min != null || query.max != null ||
+    query.beds != null || query.baths != null || !!query.neighbourhood || !!query.q || query.sort !== 'newest';
+  const pagerRel = isFilteredView ? 'nofollow' : undefined;
   const { user, isListingSaved, saveListing, unsaveListing } = useUser();
   const [view, setView] = useState<'grid' | 'map'>('grid');
   const [toast, setToast] = useState('');
@@ -203,7 +212,7 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
 
         {totalPages > 1 && view === 'grid' && (
           <nav className="lv-pager" aria-label="Results pages">
-            {query.page > 1 && <Link href={pageHref(basePath, query, query.page - 1)}>← Prev</Link>}
+            {query.page > 1 && <Link href={pageHref(basePath, query, query.page - 1)} rel={pagerRel}>← Prev</Link>}
             {pageList(query.page, totalPages).map((p, i) =>
               p === '…' ? (
                 <span key={`e${i}`} className="lv-ell">
@@ -214,12 +223,12 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
                   {p}
                 </span>
               ) : (
-                <Link key={p} href={pageHref(basePath, query, p)}>
+                <Link key={p} href={pageHref(basePath, query, p)} rel={pagerRel}>
                   {p}
                 </Link>
               ),
             )}
-            {query.page < totalPages && <Link href={pageHref(basePath, query, query.page + 1)}>Next →</Link>}
+            {query.page < totalPages && <Link href={pageHref(basePath, query, query.page + 1)} rel={pagerRel}>Next →</Link>}
           </nav>
         )}
       </div>

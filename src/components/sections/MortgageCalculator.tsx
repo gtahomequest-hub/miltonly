@@ -135,7 +135,7 @@ export default function MortgageCalculator() {
             </div>
 
             {matchCount !== null && matchCount > 0 && (
-              <a href={`/listings?maxPrice=${price}`} className="block bg-[#0c1e35] border border-[#1e3a5f] rounded-lg p-4 mb-5 hover:border-[#f59e0b] transition-colors">
+              <a href={`/listings?max=${price}`} className="block bg-[#0c1e35] border border-[#1e3a5f] rounded-lg p-4 mb-5 hover:border-[#f59e0b] transition-colors">
                 <p className="text-[14px] font-bold text-[#f8f9fb]">📍 {matchCount.toLocaleString()} {config.CITY_NAME} homes fit this budget →</p>
                 <p className="text-[11px] text-[#94a3b8] mt-1">See active listings under {formatMoneyShort(price)}</p>
               </a>

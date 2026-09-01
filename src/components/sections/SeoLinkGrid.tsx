@@ -64,6 +64,17 @@ const getSeoData = unstable_cache(
   { revalidate: 86400 } // 24 hours
 );
 
+/** Price-band href that OMITS an empty bound — "under $500K" is `?max=500000` (no dangling
+ *  `min=`), "over $1M" is `?min=1000000` (no dangling `max=`). The old `?min=${min}&max=${max}`
+ *  emitted `?min=&max=500000` / `?min=1000000&max=` — empty params Google crawled as distinct URLs. */
+function priceBandHref(min: string, max: string): string {
+  const p = new URLSearchParams();
+  if (min) p.set('min', min);
+  if (max) p.set('max', max);
+  const qs = p.toString();
+  return qs ? `/listings?${qs}` : '/listings';
+}
+
 export default async function SeoLinkGrid() {
   const { streets, neighbourhoods, types, totalStreets } = await getSeoData();
 
@@ -170,7 +181,7 @@ export default async function SeoLinkGrid() {
           ].map((p) => (
             <Link
               key={p.label}
-              href={`/listings?min=${p.min}&max=${p.max}`}
+              href={priceBandHref(p.min, p.max)}
               className="text-[12px] text-[#64748b] hover:text-[#07111f] transition-colors"
             >
               {config.CITY_NAME} {p.label.toLowerCase()}

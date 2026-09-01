@@ -9,9 +9,9 @@ import { config } from "@/lib/config";
 const SEARCH_PILLS = [
   { label: "Detached homes", href: "/listings?type=detached" },
   { label: "Townhouses", href: "/listings?type=townhouse" },
-  { label: "Condos under $700K", href: "/listings?type=condo&maxPrice=700000" },
-  { label: "Under $800K", href: "/listings?maxPrice=800000" },
-  { label: "Under $1M", href: "/listings?maxPrice=1000000" },
+  { label: "Condos under $700K", href: "/listings?type=condo&max=700000" },
+  { label: "Under $800K", href: "/listings?max=800000" },
+  { label: "Under $1M", href: "/listings?max=1000000" },
   { label: "4-bed detached", href: "/listings?type=detached&beds=4" },
   { label: "Willmott homes", href: "/listings?neighbourhood=Willmott" },
   { label: "Dempsey homes", href: "/listings?neighbourhood=Dempsey" },
