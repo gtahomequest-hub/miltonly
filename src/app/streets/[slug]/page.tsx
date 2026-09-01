@@ -48,13 +48,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // as the incumbent to beat, not as evidence.
   const rawPrice = data.heroProps.rawTypicalPrice ?? null;
   const priceStr = rawPrice ? formatCAD(roundPriceForProse(rawPrice)) : "";
-  const tx = data.heroProps.rawTotalTransactions ?? 0;
 
+  // SALES AND LEASES ARE COUNTED SEPARATELY, AND NAMED SEPARATELY.
+  // This previously read rawTotalTransactions — which is sales + leases (street-data.ts:816) — and
+  // called it "recorded sales". On 296 of the 393 pages with any transactions, the number in the
+  // SERP snippet disagreed with the "Transactions tracked" tile and the sales-only pill row on the
+  // page itself: Gordon Krantz advertised 109 sales beside a tile reading 9; Whitlock 164 beside 5.
+  // On 40 pages it claimed sales where the sales count was 0. The snippet's most clickable token
+  // was false, and it broke the instant the searcher landed.
+  const sales = data.heroProps.rawSoldCount12mo ?? 0;
+  const leases = data.heroProps.rawLeasedCount12mo ?? 0;
+  const salesPhrase = `${sales} sale${sales === 1 ? "" : "s"} in the last 12 months`;
+  const leasePhrase = `${leases} lease${leases === 1 ? "" : "s"} in the last 12 months`;
+
+  // Fail-soft ladder, strongest publishable fact first. A street with leases but no sales now says
+  // so, instead of borrowing the word "sale" from a number that was never sales.
   const hook = priceStr
-    ? `homes typically ${priceStr}${tx > 0 ? ` across ${tx} recorded sales` : ""}`
-    : tx > 0
-      ? `every sale on file (${tx} transaction${tx === 1 ? "" : "s"} tracked), current listings, and the full street read`
-      : `current listings and the full street read`;
+    ? `homes typically ${priceStr}${sales > 0 ? ` across ${salesPhrase}` : ""}`
+    : sales > 0
+      ? `${salesPhrase} on record, current listings, and the full street read`
+      : leases > 0
+        ? `${leasePhrase} on record, current listings, and the full street read`
+        : `current listings and the full street read`;
 
   const baseTitle = `${data.street.name}, ${config.CITY_NAME} — Homes, Prices & Sales History`;
   const ogTitle = `${baseTitle} | ${config.SITE_NAME}`;
