@@ -325,6 +325,10 @@ export function mapStreetV2Data(
     tier: data.enrichment.tier,
     hasAnySale: data.enrichment.hasAnySale,
 
+    // Street-video PoC — already fully resolved (URLs + derived poster/caption) upstream;
+    // pass through unchanged. null (and null clips within) render nothing.
+    video: data.video,
+
     lastUpdated: data.lastUpdated,
   };
 }

@@ -235,6 +235,8 @@ export interface StreetFaq {
 
 // ───── Master page shape (the seam getStreetV2Data returns) ──────────────────
 
+import type { StreetVideoView } from '@/lib/streetVideo';
+
 export interface StreetV2Data {
   slug: string;
   name: string; // display: "Main Street East"
@@ -276,6 +278,10 @@ export interface StreetV2Data {
   /** TRUE when the street has >=1 resale in the licensed window. Gates the dormant CTA copy so
    *  "No resales recorded yet" renders ONLY where there are genuinely zero sales. */
   hasAnySale: boolean;
+
+  /** Street-video PoC: resolved day/night clips, or null when the street carries no clip.
+   *  A null value (and a null clip within it) renders nothing. See src/lib/streetVideo.ts. */
+  video: StreetVideoView | null;
 
   lastUpdated: string;
 }

@@ -483,6 +483,21 @@ model StreetContent {
   vipHubAt        DateTime? // When it became a hub
   vipDescription  String?   @db.Text // 800+ word enhanced content
   vipFaqJson      String?   @db.Text // Deeper FAQs for hub pages
+  // ── Street video (PoC, 2026-08-30) — a single-street visual/UX test on
+  //    /streets/lemieux-court-milton. NULLABLE BY DESIGN: video is a tier, not a
+  //    requirement, and a null column renders NOTHING (no placeholder, no "coming
+  //    soon"). All four columns land in one migration on purpose — night footage is a
+  //    confirmed second field (it answers different questions: overnight on-street
+  //    parking, lighting, after-hours activity) and there is no point migrating twice.
+  //    No backfill: the clip URL is written by hand once the file is uploaded to Blob.
+  //    No SEO weight yet — narration isn't transcribed, and Google crawls the
+  //    transcript, not the footage. Poster frame + duration are extracted from the clip
+  //    offline (poster resolved by blob-name convention in src/lib/streetVideo.ts), so
+  //    they are NOT stored here.
+  videoUrl        String?
+  videoCapturedAt DateTime?
+  nightVideoUrl   String?
+  nightCapturedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -8,6 +8,7 @@
 
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 import { config } from "@/lib/config";
+import type { StreetVideoClip } from "@/lib/streetVideo";
 import type {
   StreetPageData,
   TypeSectionProps,
@@ -239,6 +240,24 @@ export function buildNearbyPlacesItemListSchema(
   };
 }
 
+/**
+ * VideoObject for one resolved clip. Emitted for any page carrying video. Returns null
+ * unless Google's required trio is satisfiable — name, uploadDate, and a thumbnailUrl
+ * (the derived poster). `duration` is intentionally omitted: it has no source that is
+ * worth a schema change, and we do not fabricate one (see src/lib/streetVideo.ts).
+ */
+export function buildVideoObjectSchema(clip: StreetVideoClip): object | null {
+  if (!clip.poster || !clip.uploadDate) return null;
+  return {
+    "@type": "VideoObject",
+    name: clip.name,
+    description: clip.description,
+    thumbnailUrl: clip.poster,
+    uploadDate: clip.uploadDate,
+    contentUrl: clip.src,
+  };
+}
+
 // ────────────────────────────────────────────────────────────────────
 // Composer
 // ────────────────────────────────────────────────────────────────────
@@ -277,6 +296,15 @@ export function buildStreetPageSchema(
     data.street.name
   );
   if (nearby) graph.push(nearby);
+
+  // VideoObject per present clip — on any page carrying video (standard or minimal).
+  if (data.video) {
+    for (const clip of [data.video.day, data.video.night]) {
+      if (!clip) continue;
+      const video = buildVideoObjectSchema(clip);
+      if (video) graph.push(video);
+    }
+  }
 
   return {
     "@context": "https://schema.org",
