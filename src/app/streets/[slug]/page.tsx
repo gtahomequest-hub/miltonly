@@ -33,32 +33,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getStreetPageData(params.slug);
   if (!data) return { title: "Street Not Found" };
 
-  // SERP override (GSC 2026-07-18 keyword report): "bennett boulevard milton"
-  // sits on page 1 (pos 7.6) with zero clicks. Slug-scoped rewrite leading
-  // with the searcher's words; the shared title formula below is unchanged.
-  if (params.slug === "bennett-boulevard-milton") {
-    const tx = data.heroProps.rawTotalTransactions ?? 0;
-    const title = `${data.street.name}, Milton — Homes, Sales & Street Guide`;
-    const description =
-      `${data.street.name} in Milton's Beaty neighbourhood — ` +
-      `${tx > 0 ? `every sale on file (${tx} transactions tracked), ` : ""}` +
-      `current listings, and the full street read: home types, prices, and how the street trades.`;
-    const og = `${title} | ${config.SITE_NAME}`;
-    return {
-      title,
-      description,
-      alternates: { canonical: canonicalUrlFor(params.slug) },
-      openGraph: { title: og, description, url: canonicalUrlFor(params.slug), type: "article" },
-      twitter: { card: "summary_large_image", title: og, description },
-    };
-  }
-
   // Round prices for prose surfaces (meta description, og). Schema.org markup
   // keeps the precise DB value — see buildStreetPageSchema.
-  // Title formula proven by the Bennett SERP rewrite (GSC 2026-07-18 report):
-  // searcher-word order, no data in the title — the live-data hook moves to
-  // the DESCRIPTION (typical price where k-safe, transactions-tracked
-  // fallback where sub-k, mirroring the Bennett fail-soft).
+  // NOTE ON PROVENANCE: an earlier revision carried a hardcoded per-slug override for
+  // bennett-boulevard-milton, and the comment here claimed this formula was "proven by the
+  // Bennett SERP rewrite". That claim was false. GSC for /streets/bennett-boulevard-milton
+  // over the three months spanning the 2026-07-18 rewrite: 1 click, 38 impressions, 2.6% CTR,
+  // position 6.7 — and the single click landed 6 July, twelve days BEFORE the rewrite. Zero
+  // clicks after it; impressions flatline from early August. 38 impressions cannot validate
+  // anything at page level. The override also emitted a DIFFERENT suffix ("Homes, Sales &
+  // Street Guide") from the formula it supposedly proved ("Homes, Prices & Sales History"),
+  // so the two were never even the same test. Override removed: a per-slug exception resting
+  // on a false claim is worse than no exception. This formula is unvalidated too — treat it
+  // as the incumbent to beat, not as evidence.
   const rawPrice = data.heroProps.rawTypicalPrice ?? null;
   const priceStr = rawPrice ? formatCAD(roundPriceForProse(rawPrice)) : "";
   const tx = data.heroProps.rawTotalTransactions ?? 0;
