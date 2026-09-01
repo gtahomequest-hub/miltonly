@@ -536,7 +536,7 @@ export function StreetInventory({ data }: { data: StreetV2Data }) {
 
 export function StreetContext({ data }: { data: StreetV2Data }) {
   const c = data.context;
-  if (c.similarStreets.length + c.neighbourhoods.length + c.schools.length === 0) return null;
+  if (c.connectedStreets.length + c.similarStreets.length + c.neighbourhoods.length + c.schools.length === 0) return null;
   return (
     <section className="s-block s-alt">
       <div className="s-wrap">
@@ -545,6 +545,18 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           <h2>Around {data.shortName}</h2>
         </div>
         <div className="s-ctx">
+          {/* Physically-connected streets (shared intersection) — the "what's the street
+              behind it" links. Nothing renders when this street matched no OSM way. */}
+          {c.connectedStreets.length > 0 && (
+            <div className="s-ctx-col">
+              <h4>Connected streets</h4>
+              {c.connectedStreets.map((s) => (
+                <a className="s-ctx-item" href={`/streets/${s.slug}`} key={s.slug}>
+                  <div className="s-ctx-n">{s.name}</div>
+                </a>
+              ))}
+            </div>
+          )}
           {c.similarStreets.length > 0 && (
             <div className="s-ctx-col">
               <h4>Similar streets</h4>

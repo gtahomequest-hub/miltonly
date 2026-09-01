@@ -703,6 +703,34 @@ model StreetGenerationReview {
   @@schema("public")
 }
 
+// ───── Street adjacency (physical intersection graph) ───────────────────────
+// Lateral links between street pages that PHYSICALLY TOUCH — built from the OSM
+// road geometry (milton-roads.geojson) by scripts/build-street-adjacency.ts.
+//
+// Two streets are adjacent iff a segment of one shares a NODE (identical vertex
+// coordinate) with a segment of the other — a real intersection, never inferred
+// from proximity. OSM way names are matched to existing published street slugs
+// via deriveIdentity (same base|suffix canonicalization the render layer keys
+// on, so St/Street, N/North, Crt/Court and numbered-road variants collapse);
+// only edges where BOTH endpoints resolve to a published page are stored.
+//
+// Precomputed, not derived at render time. Directed edges (both a→b and b→a are
+// stored) so a page reads its neighbours with a single indexed lookup on
+// streetSlug. connectedName is denormalised (the display label) to keep render
+// to one query with no join. Rebuild the whole table on each run (truncate +
+// insert); it is a pure function of the geometry + the published-slug set.
+model StreetAdjacency {
+  id            String   @id @default(cuid())
+  streetSlug    String // an existing published street slug
+  connectedSlug String // the adjacent published street slug
+  connectedName String // display label for the link (denormalised)
+  createdAt     DateTime @default(now())
+
+  @@unique([streetSlug, connectedSlug])
+  @@index([streetSlug])
+  @@schema("public")
+}
+
 // ───── WS5 — neighbourhood hub-tier content persistence (A1) ────────────────
 // NEW models mirroring the StreetGeneration / StreetContent pair, keyed on
 // neighbourhoodSlug instead of streetSlug. They do NOT overload the street pair

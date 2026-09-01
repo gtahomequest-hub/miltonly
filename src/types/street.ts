@@ -343,8 +343,17 @@ export interface ContextSchoolCard {
   level: string;
 }
 
+/** A physically-connected street (shares an intersection). Link + label only —
+ *  sourced from the precomputed StreetAdjacency table. */
+export interface ContextStreetLink {
+  slug: string;
+  name: string;
+}
+
 export interface ContextCardsProps {
   similarStreets: ContextStreetCard[];
+  /** Streets that physically intersect this one (StreetAdjacency). Empty => none matched. */
+  connectedStreets: ContextStreetLink[];
   neighbourhoods: ContextNeighbourhoodCard[];
   schools: ContextSchoolCard[];
 }

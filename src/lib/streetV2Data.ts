@@ -278,6 +278,8 @@ export function mapStreetV2Data(
         avgPrice: s.avgPrice,
         count: s.count,
       })),
+      // Physically-connected streets (StreetAdjacency) — pass through; empty renders nothing.
+      connectedStreets: data.contextCards.connectedStreets.map((s) => ({ slug: s.slug, name: s.name })),
       neighbourhoods: data.contextCards.neighbourhoods.map((n) => ({ slug: n.slug, name: n.name, summary: n.summary })),
       schools: data.contextCards.schools.map((s) => ({ slug: s.slug, name: s.name, board: s.board, level: s.level })),
     },
