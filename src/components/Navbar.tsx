@@ -71,6 +71,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/signin"
+                rel="nofollow"
                 className="text-[13px] font-medium text-[#94a3b8] hover:text-[#f8f9fb] transition-colors"
               >
                 Sign in
@@ -116,7 +117,7 @@ export default function Navbar() {
                 ♡ My saved ({user.savedListings?.length || 0})
               </Link>
             ) : (
-              <Link href="/signin" onClick={() => setMobileOpen(false)} className="block text-center bg-[#f59e0b] text-[#07111f] font-bold py-3 rounded-lg">
+              <Link href="/signin" rel="nofollow" onClick={() => setMobileOpen(false)} className="block text-center bg-[#f59e0b] text-[#07111f] font-bold py-3 rounded-lg">
                 Sign in
               </Link>
             )}

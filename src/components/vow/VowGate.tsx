@@ -232,6 +232,7 @@ export default async function VowGate({
           /* a MIN/MAX that could back-calculate an individual sold price. */
           <Link
             href={signinHref}
+            rel="nofollow"
             className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 hover:bg-slate-200 transition"
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -251,6 +252,7 @@ export default async function VowGate({
         </p>
         <Link
           href={signinHref}
+          rel="nofollow"
           className="inline-block bg-slate-900 text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-slate-800 transition"
         >
           Sign in free to unlock →

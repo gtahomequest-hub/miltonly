@@ -11,16 +11,38 @@ import ListingsV2Page from '@/components/listings/v2/ListingsPage';
 import FooterSection from '@/components/sections/FooterSection';
 import SchemaScript from '@/components/SchemaScript';
 import { generateFAQSchema } from '@/lib/schema';
+import type { Metadata } from 'next';
 import { getListingsV2Data, parseListingsQuery } from '@/lib/listingsV2Data';
 import { getStreetCompareContrast } from '@/lib/comparisonData';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = genMeta({
-  title: `${config.CITY_NAME} Homes For Sale & Real Estate`,
-  description: `Browse ${config.CITY_NAME} ${config.CITY_PROVINCE} homes for sale. View listing photos, property details, and neighbourhood data. Live TREB MLS® data updated daily.`,
-  canonical: `${config.SITE_URL}/listings`,
-});
+// Filter params that turn /listings into a faceted duplicate of the base grid. Their presence
+// flips the page to `noindex, follow` while the canonical still points at the clean /listings —
+// Google crawls the variant, drops it, and follows the links out. `page` is DELIBERATELY excluded:
+// pagination stays crawlable + indexable (canonicalised to base), per the faceted-nav strategy.
+const FILTER_PARAMS = ['status', 'type', 'min', 'max', 'maxPrice', 'beds', 'baths', 'neighbourhood', 'q', 'sort'] as const;
+
+export function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}): Metadata {
+  const base = genMeta({
+    title: `${config.CITY_NAME} Homes For Sale & Real Estate`,
+    description: `Browse ${config.CITY_NAME} ${config.CITY_PROVINCE} homes for sale. View listing photos, property details, and neighbourhood data. Live TREB MLS® data updated daily.`,
+    // Every filtered/sorted variant canonicalises to the clean base — the params are a UI
+    // affordance, not a distinct page.
+    canonical: `${config.SITE_URL}/listings`,
+  });
+  const hasFilter = FILTER_PARAMS.some((k) => {
+    const v = searchParams[k];
+    return typeof v === 'string' && v.length > 0;
+  });
+  // noindex,follow (NOT nofollow) on filtered variants: Google must still follow the links to
+  // reach real content and read the canonical.
+  return hasFilter ? { ...base, robots: { index: false, follow: true } } : base;
+}
 
 interface Props {
   searchParams: Record<string, string | string[] | undefined>;

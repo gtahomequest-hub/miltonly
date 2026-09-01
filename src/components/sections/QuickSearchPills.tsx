@@ -5,12 +5,12 @@ import { config } from "@/lib/config";
 
 const pills = [
   { label: "Detached in Willmott", hot: true, href: "/listings?type=detached&neighbourhood=willmott" },
-  { label: "4-bed under $1.1M", hot: false, href: "/listings?beds=4&maxPrice=1100000" },
+  { label: "4-bed under $1.1M", hot: false, href: "/listings?beds=4&max=1100000" },
   { label: "Near Craig Kielburger", hot: false, href: "/listings?q=Craig+Kielburger" },
   { label: "Walk to GO station", hot: false, href: "/streets" },
   { label: "Open houses this weekend", hot: true, href: "/listings?openHouse=true" },
   { label: "New builds Milton", hot: false, href: "/listings?type=new-build" },
-  { label: "Condos under $700K", hot: false, href: "/listings?type=condo&maxPrice=700000" },
+  { label: "Condos under $700K", hot: false, href: "/listings?type=condo&max=700000" },
   { label: "Price reduced this week", hot: false, href: "/listings?priceReduced=true" },
 ];
 

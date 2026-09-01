@@ -2,10 +2,14 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SignInForm from "./SignInForm";
 
+// noindex — an auth wall has no place in the index, and its redirect/intent/street param
+// permutations were the single biggest crawl-budget drain (see robots.ts). Belt-and-suspenders
+// with the robots disallow + rel="nofollow" on every CTA that links here.
 export const metadata = genMeta({
   title: `Sign In — ${config.SITE_NAME}`,
   description: `Sign in to save listings and get alerts on ${config.CITY_NAME} real estate.`,
   canonical: `${config.SITE_URL}/signin`,
+  noIndex: true,
 });
 
 export default function SignInPage() {

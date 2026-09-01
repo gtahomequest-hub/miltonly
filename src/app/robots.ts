@@ -6,12 +6,21 @@ import { config } from "@/lib/config";
 // existed. Verified against the live file before changing anything (it carried the route's rules,
 // including the capitalised "User-Agent:" that Next emits, not the static file's lowercase form).
 //
-// The disallows below close ~986 crawl paths the site generates for itself, measured in GSC:
-//   /signin   670 URLs — one per VOW gate CTA, each carrying a unique redirect/intent/street triple
-//   /listings 116 URLs — the filter param space (?page, ?maxPrice, ?type&beds&page, ?neighbourhood)
-//   /sold     200 URLs — the filter chips
-// Canonical tags consolidate AFTER a crawl is spent; robots prevents the spend. The pages
-// themselves (/signin, /listings, /sold) stay crawlable — only their PARAM space is closed.
+// TWO DIFFERENT CRAWL-BUDGET STRATEGIES, one per problem shape:
+//
+//   /signin — worthless to index at ANY param (auth wall, infinite redirect/intent/street
+//     permutations). Hard-block here + rel="nofollow" on every CTA that links it (VowGate,
+//     the sold islands, the sold hub) so Google stops discovering them. Nothing of value is
+//     lost by never crawling it.
+//
+//   /listings? and /sold? — faceted browse. Their PARAM variants must NOT be blocked: a
+//     robots-blocked URL can still sit in the index as a zombie because Google can't fetch it
+//     to read the rel=canonical / noindex that would drop it. So these stay CRAWLABLE and the
+//     pages self-demote instead — every filtered variant emits rel=canonical to the clean base
+//     and robots `noindex, follow` (see generateMetadata in each page). Google crawls once,
+//     drops it from the index, follows the links out, and consolidates. Pagination stays
+//     crawlable and canonicalised. (Was: "/listings?" + "/sold?" disallowed here — removed,
+//     because the block was preventing the very canonical it was meant to let consolidate.)
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -21,8 +30,6 @@ export default function robots(): MetadataRoute.Robots {
         "/admin/",
         "/api/",     // was only ever in the dead static file
         "/signin",   // matches /signin and every /signin?... permutation
-        "/listings?", // the param space only — /listings and /listings/<mls> stay crawlable
-        "/sold?",     // ditto for /sold
         "/rentals?",
       ],
     },

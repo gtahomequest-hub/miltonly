@@ -55,8 +55,10 @@ interface PageProps {
   };
 }
 
-// No searchParams: every filtered view canonicalises to /sold, so the metadata no longer varies.
-export async function generateMetadata(): Promise<Metadata> {
+// Every filtered view canonicalises to /sold; a filtered view ALSO self-demotes to
+// `noindex, follow` so the param permutations drop out of the index while staying crawlable
+// (robots no longer blocks /sold? — the block was preventing Google reading this canonical).
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const [totals, overall] = await Promise.all([
     getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
     getMiltonSoldOverall().catch(() => null),
@@ -73,7 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
     typical != null
       ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE} — typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from TREB MLS®.`
       : `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`;
-  return genMeta({
+  const meta = genMeta({
     title,
     description,
     // Every filtered view canonicalises to /sold. The params are a UI affordance, not a page:
@@ -88,6 +90,9 @@ export async function generateMetadata(): Promise<Metadata> {
       `${config.CITY_NAME} MLS sold data`,
     ],
   });
+  // A filtered variant (nbhd / ptype / lease) is a duplicate of the base browse — noindex,follow it.
+  const hasFilter = !!(searchParams?.nbhd || searchParams?.ptype || searchParams?.type);
+  return hasFilter ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 
 export default async function SoldHubPage({ searchParams }: PageProps) {
