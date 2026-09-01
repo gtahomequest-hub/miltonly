@@ -220,8 +220,14 @@ export interface ContextSchool {
   board: string;
   level: string;
 }
+/** A street that physically intersects this one (StreetAdjacency) — link + label. */
+export interface ConnectedStreet {
+  slug: string;
+  name: string;
+}
 export interface ContextBlock {
   similarStreets: ContextStreet[];
+  connectedStreets: ConnectedStreet[];
   neighbourhoods: ContextNeighbourhood[];
   schools: ContextSchool[];
 }

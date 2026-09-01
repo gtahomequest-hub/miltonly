@@ -1600,8 +1600,19 @@ async function buildContextCards(input: {
     .slice(0, 4)
     .map((s) => ({ slug: s.slug, name: s.name, board: s.boardName, level: s.level === "secondary" ? "Secondary" : "Elementary" }));
 
+  // Physically-connected streets — precomputed in StreetAdjacency (shared OSM node), read
+  // with one indexed lookup. connectedName is the denormalised link label. Empty when this
+  // street didn't match an OSM way (renders nothing).
+  const adjacency = await prisma.streetAdjacency.findMany({
+    where: { streetSlug: slug },
+    orderBy: { connectedName: "asc" },
+    select: { connectedSlug: true, connectedName: true },
+  });
+  const connectedStreets = adjacency.map((a) => ({ slug: a.connectedSlug, name: a.connectedName }));
+
   return {
     similarStreets,
+    connectedStreets,
     neighbourhoods: neighbourhoodCards,
     schools: schoolCards.length > 0 ? schoolCards : schools.slice(0, 4).map((s) => ({ slug: s.slug, name: s.name, board: s.boardName, level: s.level === "secondary" ? "Secondary" : "Elementary" })),
   };

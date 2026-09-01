@@ -255,6 +255,10 @@ export const mockStreetRich: StreetV2Data = {
       { slug: 'mary-street-milton', name: 'Mary Street', avgPrice: 1_060_000, count: 3 },
       { slug: 'bronte-street-south-milton', name: 'Bronte Street South', avgPrice: 1_080_000, count: 5 },
     ],
+    connectedStreets: [
+      { slug: 'commercial-street-milton', name: 'Commercial Street' },
+      { slug: 'martin-street-milton', name: 'Martin Street' },
+    ],
     neighbourhoods: [{ slug: 'old-milton', name: 'Old Milton', summary: 'The historic core — mature lots, walkability, century stock.' }],
     schools: [
       { slug: 'martin-street-ps', name: 'Martin Street PS', board: 'HDSB', level: 'Elementary' },
@@ -444,6 +448,7 @@ export const mockStreetThin: StreetV2Data = {
 
   context: {
     similarStreets: [{ slug: 'coxe-boulevard-milton', name: 'Coxe Boulevard', avgPrice: 1_040_000, count: 2 }],
+    connectedStreets: [{ slug: 'coxe-boulevard-milton', name: 'Coxe Boulevard' }],
     neighbourhoods: [{ slug: 'coates', name: 'Coates', summary: 'Newer-growth Milton — family stock, schools, parks.' }],
     schools: [{ slug: 'boyne-ps', name: 'Boyne PS', board: 'HDSB', level: 'Elementary' }],
   },
