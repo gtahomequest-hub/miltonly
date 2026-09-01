@@ -141,7 +141,9 @@ export function StreetVideo({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">On the ground</span>
-          <h2>{data.shortName} on video</h2>
+          {/* full display name here (data.name = "Lemieux Court"), not shortName — shortName
+              strips the street-type suffix for in-prose use ("homes on Lemieux"). */}
+          <h2>{data.name} on video</h2>
         </div>
         <div className="s-video-grid">
           {clips.map((c) => (
