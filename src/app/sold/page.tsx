@@ -184,6 +184,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             <Link
               href={`/sold${nbhdSlug ? `?nbhd=${encodeURIComponent(nbhdSlug)}` : ""}`}
               className={`sv-chip${typeParam === "sale" ? " is-active" : ""}`}
+              rel="nofollow"
             >
               Sold
             </Link>

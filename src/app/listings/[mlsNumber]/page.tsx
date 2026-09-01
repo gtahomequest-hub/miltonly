@@ -8,6 +8,7 @@ import FooterSection from "@/components/sections/FooterSection";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
+import { resolvePublishedHubSlug } from "@/lib/hubResolve";
 
 export const dynamic = 'force-dynamic';
 
@@ -137,6 +138,11 @@ export default async function ListingDetailPage({ params }: Props) {
   // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
   const hoodName = cleanHood(listing.neighbourhood);
+  // Resolve to a PUBLISHED hub slug for the breadcrumb. null => the neighbourhood crumb is
+  // OMITTED rather than emitting /neighbourhoods/<name-slug>, which 404'd whenever the guessed
+  // slug missed the registry canonical (e.g. "Rural Nassagaweya" -> the hub is `nassagaweya`)
+  // or the hub simply isn't published. Reuses the street-page registry resolution.
+  const hubSlug = await resolvePublishedHubSlug(listing.neighbourhood);
   const addrDisplay = listing.displayAddress ? titleCase(listing.address) : `Address on request, ${config.CITY_NAME}, ${config.CITY_PROVINCE_CODE}`;
 
   const residenceSchema: Record<string, unknown> = {
@@ -175,15 +181,21 @@ export default async function ListingDetailPage({ params }: Props) {
     availability: "https://schema.org/InStock",
     seller: { "@type": "Organization", name: listing.listOfficeName || "TREB MLS" },
   };
+  const crumbs: Array<{ name: string; item: string }> = [
+    { name: config.SITE_NAME, item: config.SITE_URL },
+    { name: isRental ? "Rent" : "Buy", item: `${config.SITE_URL}/${isRental ? "rentals" : "listings"}` },
+  ];
+  // Only link the neighbourhood when it resolves to a published hub — otherwise omit the crumb
+  // (positions renumber below) so the schema never carries a 404 URL.
+  if (hubSlug) crumbs.push({ name: hoodName, item: `${config.SITE_URL}/neighbourhoods/${hubSlug}` });
+  crumbs.push({
+    name: listing.displayAddress ? titleCase(listing.address.split(",")[0]) : listing.mlsNumber,
+    item: `${config.SITE_URL}/listings/${listing.mlsNumber}`,
+  });
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: config.SITE_NAME, item: config.SITE_URL },
-      { "@type": "ListItem", position: 2, name: isRental ? "Rent" : "Buy", item: `${config.SITE_URL}/${isRental ? "rentals" : "listings"}` },
-      { "@type": "ListItem", position: 3, name: hoodName, item: `${config.SITE_URL}/neighbourhoods/${hoodName.toLowerCase().replace(/\s+/g, "-")}` },
-      { "@type": "ListItem", position: 4, name: listing.displayAddress ? titleCase(listing.address.split(",")[0]) : listing.mlsNumber, item: `${config.SITE_URL}/listings/${listing.mlsNumber}` },
-    ],
+    itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.name, item: c.item })),
   };
 
   return (
