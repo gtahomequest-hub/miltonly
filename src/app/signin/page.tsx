@@ -3,8 +3,17 @@ import { config } from "@/lib/config";
 import SignInForm from "./SignInForm";
 
 // noindex — an auth wall has no place in the index, and its redirect/intent/street param
-// permutations were the single biggest crawl-budget drain (see robots.ts). Belt-and-suspenders
-// with the robots disallow + rel="nofollow" on every CTA that links here.
+// permutations were the single biggest crawl-budget drain (see robots.ts).
+//
+// This is INERT until "/signin" comes out of the robots disallow: Google cannot fetch the page,
+// so it never reads this tag. It is NOT belt-and-suspenders with the block — the two cancel.
+// It ships now so the directive is already in place the moment the block is lifted (the
+// follow-up deploy), and as insurance if the block ever fails or is removed. What actually
+// stops discovery today is rel="nofollow" on every live CTA (see robots.ts).
+//
+// genMeta emits `noindex, nofollow` — seo.ts:64-66 hardcodes follow:false alongside
+// index:false. Correct for an auth wall; just don't expect the `noindex, follow` used for
+// the /listings and /sold facets.
 export const metadata = genMeta({
   title: `Sign In — ${config.SITE_NAME}`,
   description: `Sign in to save listings and get alerts on ${config.CITY_NAME} real estate.`,

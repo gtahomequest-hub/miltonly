@@ -464,6 +464,7 @@ export function VOWTeaser({ mls, soldCount, hoodSoldCount, hoodName }: { mls: st
     <div className="mb-8">
       <Link
         href={`/signin?redirect=/listings/${mls}`}
+        rel="nofollow"
         className="block bg-[#07111f] text-white rounded-xl p-5 border border-[#1e3a5f] hover:border-[#f59e0b] transition-colors"
       >
         <div className="flex items-center justify-between gap-4">

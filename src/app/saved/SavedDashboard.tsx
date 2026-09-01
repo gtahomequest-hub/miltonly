@@ -125,6 +125,7 @@ export default function SavedDashboard() {
           </p>
           <Link
             href="/signin"
+            rel="nofollow"
             className="inline-block bg-[#07111f] text-[#f59e0b] text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#0c1e35] transition-colors"
           >
             Sign in to get started

@@ -9,9 +9,27 @@ import { config } from "@/lib/config";
 // TWO DIFFERENT CRAWL-BUDGET STRATEGIES, one per problem shape:
 //
 //   /signin — worthless to index at ANY param (auth wall, infinite redirect/intent/street
-//     permutations). Hard-block here + rel="nofollow" on every CTA that links it (VowGate,
-//     the sold islands, the sold hub) so Google stops discovering them. Nothing of value is
-//     lost by never crawling it.
+//     permutations). rel="nofollow" now covers every LIVE CTA that links it: the sitewide
+//     Navbar (desktop + mobile), the sold hub, the listings-v2 gate, the v2 street sold
+//     island, the listing-detail VOW teaser, and the /saved empty state. (An earlier note
+//     here credited VowGate and the v1 street island — both are dead code, zero importers,
+//     so their nofollows render nothing. The two anchors that actually mint URLs were the
+//     ones this comment claimed were already covered.)
+//
+//     THE DISALLOW BELOW AND THE PAGE'S noindex ARE MUTUALLY EXCLUSIVE, NOT REDUNDANT.
+//     Google cannot read a noindex on a URL it is forbidden to fetch — the same trap this
+//     file avoids for /listings? and /sold? below. The block is kept ON PURPOSE for now:
+//     removing it while ListingExtras still minted one /signin URL per listing would have
+//     re-opened an inventory-scaled generator to crawling. Now that the anchors are fixed,
+//     dropping "/signin" from the disallow is the follow-up deploy — that is the only way
+//     the ~1,150 URLs sitting in GSC's "Alternate page with proper canonical tag" bucket
+//     can migrate to "Excluded by noindex" and drop out. Sequence it, never simultaneous.
+//
+//     Note those URLs are NOT indexed and cost no crawl budget while blocked; the canonical
+//     has been on /signin since 2026-04-10, two months before this block (2026-06-15), so
+//     that bucket is fully explained by pre-block crawls. Confirm with GSC URL Inspection ->
+//     "Last crawl" before touching the rule: a date after 2026-06-15 would mean the block
+//     is not holding and should come out immediately.
 //
 //   /listings? and /sold? — faceted browse. Their PARAM variants must NOT be blocked: a
 //     robots-blocked URL can still sit in the index as a zombie because Google can't fetch it
