@@ -27,22 +27,57 @@ import {
   type SafeStreetStats,
 } from "@/lib/ai/compliance";
 
-// UPG-4 Stage 2 Piece 2: Feature flag selects AI provider.
-// AI_PROVIDER unset OR "anthropic" → legacy 300-word Anthropic path (default).
-// AI_PROVIDER="deepseek_v2" → new 1,400-word DeepSeek 7-pass path.
-// Flag is read at runtime so flipping in Vercel env takes effect on next request,
-// no rebuild required.
+// AI PROVIDER DISPATCH - FAIL CLOSED. There is no default.
+//
+// This used to read "AI_PROVIDER unset OR anthropic -> legacy Anthropic path (default)". That
+// default was silent and expensive: a shell with AI_PROVIDER empty ran the legacy single-pass
+// Anthropic path without a word, even though production runs phase41_v2 on DeepSeek. A
+// force-regenerate of buckthorn-garden-milton did exactly that and died on an Anthropic credit
+// error, having never attempted DeepSeek - the operator had no way to see which provider was
+// chosen until the bill arrived.
+//
+// An unset flag is now an ERROR, not a default, and an UNKNOWN value is an error too, so a typo
+// ("phase41-v2", "deepseek") cannot silently fall back to the most expensive path. The legacy
+// Anthropic path is reachable only by asking for it explicitly.
+//
+// Thrown before any model call, so nothing is billed on a misconfiguration.
+//
+// Not changed here, deliberately: AI_PROVIDER_MARKET / _AHA / _EVAL / _FALLBACK are SUB-MODE
+// selectors inside an already-chosen phase41 path, and resolveSimpleMode("") at
+// compliance.ts:1468-1474 defaults them to "deepseek" - the cheap provider, not the expensive
+// one. A benign default, a different risk class from this one.
+const AI_PROVIDER_ANTHROPIC = "anthropic";
 const AI_PROVIDER_V2 = "deepseek_v2";
+const AI_PROVIDER_PHASE41 = "phase41_v2";
+const AI_PROVIDER_VALID = [AI_PROVIDER_ANTHROPIC, AI_PROVIDER_V2, AI_PROVIDER_PHASE41];
+
+export function resolveAiProvider(): string {
+  const raw = (process.env.AI_PROVIDER || "").trim();
+  if (!raw) {
+    throw new Error(
+      "AI_PROVIDER is not set. There is no default provider - an unset flag used to run the " +
+      "legacy Anthropic path silently, which bills the wrong provider without saying so. " +
+      "Set one of: " + AI_PROVIDER_VALID.join(", ") + ". Production runs phase41_v2.",
+    );
+  }
+  if (!AI_PROVIDER_VALID.includes(raw)) {
+    throw new Error(
+      "AI_PROVIDER=" + JSON.stringify(raw) + " is not a known provider. Valid values: " +
+      AI_PROVIDER_VALID.join(", ") + ". Refusing rather than falling back, so a typo cannot " +
+      "silently route generation to the legacy Anthropic path.",
+    );
+  }
+  return raw;
+}
+
 function isDeepSeekV2(): boolean {
-  return (process.env.AI_PROVIDER || "").trim() === AI_PROVIDER_V2;
+  return resolveAiProvider() === AI_PROVIDER_V2;
 }
 
 // Phase 4.1: structured 8-section + FAQ output via DeepSeek + strict validator + retry.
-// AI_PROVIDER="phase41_v2" → buildGeneratorInput + generatePhase41StreetContent path.
-// Mutually exclusive with "deepseek_v2"; checked first because it is the migration target.
-const AI_PROVIDER_PHASE41 = "phase41_v2";
+// Mutually exclusive with deepseek_v2; checked first because it is the migration target.
 function isPhase41V2(): boolean {
-  return (process.env.AI_PROVIDER || "").trim() === AI_PROVIDER_PHASE41;
+  return resolveAiProvider() === AI_PROVIDER_PHASE41;
 }
 
 const BANNED_WORDS = [
