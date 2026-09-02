@@ -16,20 +16,22 @@ import { config } from "@/lib/config";
 //     so their nofollows render nothing. The two anchors that actually mint URLs were the
 //     ones this comment claimed were already covered.)
 //
-//     THE DISALLOW BELOW AND THE PAGE'S noindex ARE MUTUALLY EXCLUSIVE, NOT REDUNDANT.
-//     Google cannot read a noindex on a URL it is forbidden to fetch — the same trap this
-//     file avoids for /listings? and /sold? below. The block is kept ON PURPOSE for now:
-//     removing it while ListingExtras still minted one /signin URL per listing would have
-//     re-opened an inventory-scaled generator to crawling. Now that the anchors are fixed,
-//     dropping "/signin" from the disallow is the follow-up deploy — that is the only way
-//     the ~1,150 URLs sitting in GSC's "Alternate page with proper canonical tag" bucket
-//     can migrate to "Excluded by noindex" and drop out. Sequence it, never simultaneous.
+//     THE DISALLOW IS NOW GONE — deliberately, and this is the second half of a two-step.
+//     Step 1 (shipped 0e1871d) nofollowed the last two anchors that minted these URLs, the
+//     worst being ListingExtras' VOW teaser, which emitted one /signin?redirect=/listings/<mls>
+//     per listing. Removing the block before that would have re-opened an inventory-scaled
+//     generator to crawling; removing it after is safe, and it is the ONLY way the page's
+//     noindex becomes readable. A blocked URL cannot be de-indexed — the same reasoning
+//     applied to /listings? and /sold? below.
 //
-//     Note those URLs are NOT indexed and cost no crawl budget while blocked; the canonical
-//     has been on /signin since 2026-04-10, two months before this block (2026-06-15), so
-//     that bucket is fully explained by pre-block crawls. Confirm with GSC URL Inspection ->
-//     "Last crawl" before touching the rule: a date after 2026-06-15 would mean the block
-//     is not holding and should come out immediately.
+//     Confirmed before doing this: GSC URL Inspection on /signin?redirect=/listings/W13448534
+//     (a listing first seen 2026-06-16, one day AFTER the block) returned "URL is unknown to
+//     Google" — never crawled, no referring page. So the block WAS holding and the ~1,150 URLs
+//     in "Alternate page with proper canonical tag" are frozen pre-block history, explained by
+//     the canonical that has been on /signin since 2026-04-10. They are not indexed and cost no
+//     crawl budget. Unblocking lets them be re-fetched once, read the noindex, and drop out.
+//     Expect a small one-time crawl of a tiny auth form, not a budget drain — the URL space no
+//     longer grows now that the anchors are nofollowed. This is report hygiene, not urgent.
 //
 //   /listings? and /sold? — faceted browse. Their PARAM variants must NOT be blocked: a
 //     robots-blocked URL can still sit in the index as a zombie because Google can't fetch it
@@ -47,7 +49,6 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/admin/",
         "/api/",     // was only ever in the dead static file
-        "/signin",   // matches /signin and every /signin?... permutation
         "/rentals?",
       ],
     },
