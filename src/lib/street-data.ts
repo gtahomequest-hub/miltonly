@@ -353,7 +353,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   // suffix-strip step in shortNameFor sees canonical tokens ("Court", "Crescent")
   // that match its STREET_SUFFIXES set, rather than raw abbreviations like "Crt"
   // that would slip through and land literally in the model's shortName input.
-  const streetName = expandStreetName(rawName);
+  const streetName = displayStreetName(expandStreetName(rawName), slug);
   const shortName = shortNameFor(streetName);
   const neighbourhoods = dedupe(
     allListings
@@ -1197,6 +1197,66 @@ function nearbyPlacesFor(centroid: { lat: number; lng: number } | null): NearbyP
 /* ─────────────────────────────────────────────────────────────────────
    AT A GLANCE
    ───────────────────────────────────────────────────────────────────── */
+
+/**
+ * The ONE repair for a street's display name. It lives here, beside expandStreetName, because
+ * `streetName` feeds BOTH the H1 (via mapStreetV2Data -> sections.tsx) and generateMetadata's
+ * <title>. Repairing it inside generateMetadata alone would have made the title disagree with the
+ * page's own heading on every affected street — the same class of defect as a snippet disagreeing
+ * with its glance tile.
+ *
+ * Every rule was measured against real computed names, not assumed:
+ *   UNIT      "Kovachik Boulevard #bsmt"     a listing's unit designator leaked into the name
+ *   HOUSENUM  "420 Hincks Drive"             a street number leaked in; the slug proves it is not
+ *                                            part of the name (hincks-drive-milton). "25 Side Rd"
+ *                                            KEEPS its 25, because its slug is 25-side-road-milton.
+ *   DOUBLED   "15 Side Road Side Road"       adjacent repeated phrase
+ *             "First Line Nassagaweya Line"  trailing type word already present earlier
+ *   CASING    "Mcdougall Crossing"           15 streets; Mc/Mac/O' need the next letter capitalised
+ *
+ * Deliberately NOT handled: appending a type word the slug carries and the name lacks (e.g.
+ * "Sycamore" <- sycamore-garden). No instance survived measurement, and inventing a suffix from a
+ * slug risks renaming a street that is genuinely named without one.
+ */
+const NAME_TYPE_WORDS =
+  "Road|Drive|Court|Line|Street|Avenue|Way|Gate|Terrace|Crescent|Boulevard|Place|Close|Circle|Trail|Gardens|Garden|Grove|Lane|Park|Path|Square|Hill|Heights|Landing|Centre|Common|Mews|Row|Bend|Point|View|Walk|Crossing";
+
+export function displayStreetName(name: string, slug: string): string {
+  let n = (name ?? "").trim();
+  if (!n) return n;
+
+  // UNIT — drop a "#unit" token and everything after it.
+  n = n.replace(/\s*#.*$/, "").trim();
+
+  // HOUSENUM — strip a leading number ONLY when the slug does not also begin with one.
+  // The slug is the arbiter: 25-side-road-milton legitimately begins with its number.
+  if (/^\d+\s+\S/.test(n) && !/^\d/.test(slug)) n = n.replace(/^\d+\s+/, "");
+
+  // DOUBLED (adjacent) — "A B A B" -> "A B", for a repeated 1-3 word phrase.
+  n = n.replace(/\b((?:\w+)(?:\s+\w+){0,2})\s+\1\b/gi, "$1");
+
+  // DOUBLED (non-adjacent) — a TRAILING type word already present earlier is redundant:
+  // "First Line Nassagaweya Line" -> "First Line Nassagaweya". Only ever drops the final token,
+  // and only when the identical type word already appears before it.
+  // Token comparison, not a built RegExp: the escaping in a string-built pattern is easy to get
+  // wrong and fails SILENTLY (a lost backslash turns \s into a literal "s", and the rule quietly
+  // never fires). Comparing words needs no escaping and cannot degrade that way.
+  const parts = n.split(/\s+/);
+  if (parts.length > 2) {
+    const last = parts[parts.length - 1].toLowerCase();
+    const isTypeWord = NAME_TYPE_WORDS.split("|").some((t) => t.toLowerCase() === last);
+    const seenEarlier = parts.slice(0, -1).some((w) => w.toLowerCase() === last);
+    if (isTypeWord && seenEarlier) n = parts.slice(0, -1).join(" ");
+  }
+
+  // CASING — "Mcdougall" -> "McDougall", "Macdonald" -> "MacDonald", "O'brien" -> "O'Brien".
+  n = n
+    .replace(/\bMc([a-z])/g, (_m, c: string) => "Mc" + c.toUpperCase())
+    .replace(/\bMac([a-z])(?=[a-z]{2,})/g, (_m, c: string) => "Mac" + c.toUpperCase())
+    .replace(/\bO'([a-z])/g, (_m, c: string) => "O'" + c.toUpperCase());
+
+  return n.replace(/\s{2,}/g, " ").trim();
+}
 
 function buildGlanceTiles(input: {
   stats: RawSoldStats | null;
