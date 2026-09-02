@@ -58,6 +58,7 @@ import {
 } from "@/lib/geo";
 import { schools } from "@/lib/schools";
 import { extractStreetName, ruralSideRoadName } from "@/lib/streetUtils";
+import { resolveStreetName } from "@/lib/streetName";
 import { NoCentroidError } from "@/lib/ai/errors";
 import { TOWN_ROAD_FACTS } from "@/data/townRoadFacts";
 import { identityFromSlug } from "@/lib/town/identity";
@@ -284,17 +285,25 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 
   // ─── Street identity ────────────────────────────────────────────────
   const sample = allListings[0];
-  // Step 13h — rural-address exception (see src/lib/streetUtils.ts).
+  // THE REGISTRY DECIDES HERE TOO (DEC-NAME-SOURCE). This is the SECOND derivation head — the one
+  // that feeds the model. It used to run its own chain
+  //     ruralSideRoadName ?? streetContent?.streetName ?? sample?.streetName ?? extractStreetName(...)
+  // which meant generation was told whatever MLS last wrote. buckthorn-garden-milton regenerated
+  // cleanly on 2026-09-02 and still produced six FAQ questions about "Buckthorn", because this
+  // read the stored name while the resolved one is not written until the upsert at the END of the
+  // same function. Within one run the model always saw the pre-fix value.
+  //
+  // The fallback argument keeps the old chain for slugs the registry does not cover; the registry
+  // wins whenever it has a row. ruralSideRoadName leads that fallback because numbered side roads
+  // depend on it and the registry carries none.
   const rawName =
     ruralSideRoadName(slug) ??
     streetContent?.streetName ??
     sample?.streetName ??
     extractStreetName(sample?.address ?? deslugify(slug));
-  // Chain order matters: expand first, then strip the suffix from the expanded
-  // form so shortNameFor's STREET_SUFFIXES set sees canonical tokens instead
-  // of abbreviated variants. Prevents "Aird Crt" slipping into input.street.shortName.
-  const streetName = expandStreetName(rawName);
-  const shortName = shortNameFor(streetName);
+  const resolvedName = resolveStreetName(slug, rawName);
+  const streetName = resolvedName.name;
+  const shortName = resolvedName.shortName;
   const type = deriveStreetType(streetName);
   // Step 13m-1 identity metadata.
   const identity = deriveIdentity(slug);

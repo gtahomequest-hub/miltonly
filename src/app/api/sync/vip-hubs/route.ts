@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       // land in the field street-data.ts reads first, and surface as an H1.
       streetName: resolveStreetName(slug, sample?.streetName ?? null).name,
       neighbourhood,
-      description: `Real estate data for ${sample?.streetName || slug} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}.`,
+      // Same fix as streetName above: this also read raw MLS and fell back to the bare SLUG.
+      description: `Real estate data for ${resolveStreetName(slug, sample?.streetName ?? null).name} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}.`,
       status: "draft",
       isVipHub: true,
       vipHubAt: new Date(),

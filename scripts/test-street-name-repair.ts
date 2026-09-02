@@ -15,8 +15,58 @@
 import { displayStreetName, resolveStreetName, titleCaseOfficial } from "../src/lib/streetName";
 import { cleanNeighbourhoodName } from "../src/lib/format";
 import { MILTON_STREET_REGISTRY } from "../src/data/miltonStreetRegistry";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 
 const failures: string[] = [];
+
+// ── UNWIRED CALL SITES ───────────────────────────────────────────────────────────────────────────
+// The guard above asserts what the RESOLVER does. It cannot see a surface that never calls it — and
+// that is exactly what went wrong: buildGeneratorInput kept its own name chain, so a clean
+// regeneration of buckthorn-garden-milton still produced six FAQ questions about "Buckthorn" while
+// the H1 said "Buckthorn Garden". Every assertion was green. Sweeping the source for the reads
+// themselves is the only thing that catches a derivation head nobody wired.
+//
+// THE INVARIANT: a file that reads a raw stored/MLS street name must also import resolveStreetName,
+// or be listed below with a reason. Not line-level — the raw read is often the FALLBACK ARGUMENT to
+// the resolver, several lines from the call.
+const RAW_NAME_READ = /(streetContent\??\.streetName|sample\??\.streetName)/;
+
+const UNWIRED_ALLOWLIST: Record<string, string> = {
+  "src/lib/streetName.ts": "the resolver itself; the only hit is a comment describing the bug it fixes",
+  "src/app/admin/review/page.tsx": "shows the STORED value to a reviewer on purpose — routing it would hide the drift the screen exists to surface",
+  "src/app/api/sync/regenerate/route.ts": "reads the stored row to decide what to regenerate; not a display surface",
+  "src/app/api/admin/publish/route.ts": "SMS confirmation of what was published, from the stored row",
+  "src/components/sections/SeoLinkGrid.tsx": "dead code — zero importers; left unwired rather than pretending it ships",
+  "src/lib/stats.ts": "dead code — zero importers",
+};
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, e.name);
+    if (e.isDirectory()) walk(full, out);
+    else if (/[.]tsx?$/.test(e.name)) out.push(full);
+  }
+  return out;
+}
+
+const unwired: string[] = [];
+let scanned = 0;
+for (const abs of walk(join(__dirname, "..", "src"))) {
+  const rel = relative(join(__dirname, ".."), abs).split(sep).join("/");
+  const src = readFileSync(abs, "utf8");
+  if (!RAW_NAME_READ.test(src)) continue;
+  scanned++;
+  if (rel in UNWIRED_ALLOWLIST) continue;
+  if (src.includes("resolveStreetName")) continue;
+  const line = src.split("\n").findIndex((l) => RAW_NAME_READ.test(l)) + 1;
+  unwired.push(
+    "  " + rel + ":" + line + " reads a raw street name but never calls resolveStreetName.\n" +
+    "      Wire it, or add it to UNWIRED_ALLOWLIST in this file with a one-line reason.",
+  );
+}
+failures.push(...unwired);
+
 
 // ── 1. Every registry slug resolves to its official name ────────────────────────────────────────
 let regChecked = 0;

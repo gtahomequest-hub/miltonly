@@ -435,7 +435,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   });
 
   // ─── Description body + sidebar ───────────────────────────────────
-  const descriptionBody = buildDescriptionBody(streetContent);
+  const descriptionBody = buildDescriptionBody(streetContent, streetName);
   const descriptionSidebar = buildSidebar({ shortName, streetName, sale12, centroid, neighbourhoods, enrichment });
 
   // ─── At a glance (12 tiles) ───────────────────────────────────────
@@ -985,7 +985,11 @@ function trendLabel(points: QuarterlyDataPoint[]): string {
    ───────────────────────────────────────────────────────────────────── */
 
 function buildDescriptionBody(
-  streetContent: { description: string; streetName: string } | null
+  streetContent: { description: string; streetName: string } | null,
+  // The RESOLVED display name. streetContent.streetName is the stored copy and can be stale — it
+  // said "Buckthorn" while the registry said BUCKTHORN GARDEN — so the heading took it from there
+  // and rendered "About Buckthorn" under an H1 reading "Buckthorn Garden".
+  displayName: string,
 ): DescriptionBodyProps {
   // Legacy fallback shape — populated when no Phase 4.1 StreetGeneration row
   // exists for this street. Maps the single-blob StreetContent.description
@@ -999,7 +1003,7 @@ function buildDescriptionBody(
     sections: [
       {
         id: "about",
-        heading: `About ${streetContent.streetName}`,
+        heading: `About ${displayName}`,
         paragraphs: streetContent.description.split(/\n\n+/).filter((p) => p.trim().length > 0),
       },
     ],
