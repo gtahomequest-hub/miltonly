@@ -18,6 +18,7 @@ import {
   type StreetMetaStats,
 } from "@/lib/streetMeta";
 import { splitSentences } from "@/lib/prose/sentences";
+import { resolveStreetName } from "@/lib/streetName";
 import {
   generateStreetDescription as aiGenerate,
   generateLongFormStreetDescription,
@@ -593,6 +594,11 @@ export async function generateStreetContent(
         attempts,
       },
       update: {
+        // DERIVED, AND NOW IN THE UPDATE BRANCH (DEC-NAME-SOURCE Build 1). streetName was written
+        // on create only, so a regeneration rewrote description/meta/faq/status and left the name
+        // frozen at row birth. That is why force-regenerate could never repair a name — it
+        // re-derived every meta and FAQ string FROM the frozen wrong one. Now it self-heals.
+        streetName: resolveStreetName(streetSlug, streetName).name,
         description,
         rawAiOutput,
         neighbourhood: stats.neighbourhood,

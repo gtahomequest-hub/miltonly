@@ -22,6 +22,7 @@ import FooterSection from "@/components/sections/FooterSection";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import "@/components/directory/directory-theme.css";
+import { resolveStreetName } from "@/lib/streetName";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,7 @@ export default async function StreetsIndexPage() {
     const sample = sampleMap.get(s.streetSlug);
     return {
       slug: s.streetSlug,
-      name: sample?.streetName || s.streetSlug,
+      name: resolveStreetName(s.streetSlug, sample?.streetName ?? null).name,
       neighbourhood: sample?.neighbourhood
         ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
         : config.CITY_NAME,

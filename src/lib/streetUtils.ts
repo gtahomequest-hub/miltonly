@@ -67,8 +67,16 @@ export function extractStreetName(fullAddress: string): string {
   }
 
   // Step 8: Remove trailing junk suffixes (run twice to catch chained junk like "Basement Apt.")
+  //
+  // GARDEN and BONUS REMOVED (DEC-NAME-SOURCE Build 1). Both are legitimate Milton street-name
+  // tokens, and this alternation DELETES the token rather than abbreviating it, so expandStreetName
+  // downstream has nothing to restore. That is why all 10 registry GARDEN streets rendered
+  // truncated ("BUCKTHORN GARDEN" -> "Buckthorn") while Heights and Trail — which Step 7 merely
+  // abbreviates — round-trip correctly. "bonus" cost MELVILLE BONUS CRESCENT the same way.
+  // This runs at INGEST too (vow-sync.ts, sync/detect), so the truncation was being written into
+  // Listing.streetName, not just rendered.
   const junkRegex =
-    /\s+(Basement|BASEMENT|Bsmt|BSMT|Basemen|Bsmnt|Lower|LOWER|Upper|UPPER|Main|MAIN|Suite|Garden|N\/A|Apt\.?|bonus|SS\d*|Parking\s*\w*)[\s.]*\w*$/i;
+    /\s+(Basement|BASEMENT|Bsmt|BSMT|Basemen|Bsmnt|Lower|LOWER|Upper|UPPER|Main|MAIN|Suite|N\/A|Apt\.?|SS\d*|Parking\s*\w*)[\s.]*\w*$/i;
   address = address.replace(junkRegex, "");
   address = address.replace(junkRegex, ""); // second pass for chained junk
 

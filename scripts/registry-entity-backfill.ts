@@ -10,6 +10,7 @@
 // NOT a replacement for ws3-backfill (still the sold-driven entity writer). This
 // only ADDS registry-missing entities + publishes the 19; it never deletes.
 import { readFileSync } from "node:fs"; import { resolve, dirname } from "node:path"; import { fileURLToPath } from "node:url";
+import { titleCaseOfficial } from "../src/lib/streetName";
 const __d = dirname(fileURLToPath(import.meta.url));
 for (const f of ["../.env", "../.env.local"]) {
   try {
@@ -42,7 +43,10 @@ function toks(name: string): string[] {
 }
 const norm = (n: string) => toks(n).join(" ");
 function baseKey(t: string[]): string { const a = [...t]; while (a.length > 1 && TYPE.has(a[a.length - 1])) a.pop(); return a.join(" "); }
-function titleCase(s: string): string { return s.toLowerCase().split(/\s+/).map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(" "); }
+// titleCase now delegates to the shared authority so it stops writing "Mcdougall Crossing"
+// into the entity table. The registry stores ALL CAPS, which destroys the capital inside
+// "McDougall"; naive title-casing cannot recover it. See src/lib/streetName.ts.
+const titleCase = (s: string): string => titleCaseOfficial(s);
 
 async function main() {
   const { PrismaClient } = await import("@prisma/client");

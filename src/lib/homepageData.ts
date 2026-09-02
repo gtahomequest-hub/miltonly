@@ -14,9 +14,9 @@ import { prisma } from "@/lib/prisma";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import { getSoldDb } from "@/lib/db";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
-import { expandStreetName } from "@/lib/street-data";
 import { mockHomepageData } from "@/components/home/mockData";
 import type { HomepageData } from "@/components/home/types";
+import { resolveStreetName } from "@/lib/streetName";
 
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
@@ -81,7 +81,6 @@ export async function getHomepageData(): Promise<HomepageData> {
   // per-neighbourhood sold aggregate, the neighbourhood-card array, the VIP-street
   // strip, and the templated commentary are no longer computed. The footer needs
   // only top-3 neighbourhoods + top-2 VIP streets + counts — all light queries.
-  const cleanName = (n: string) => expandStreetName(n).replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
   const [nbTop, totalNbhd, vipRows, streetCount, publishedHubs] = await Promise.all([
     prisma.neighbourhood.findMany({
       where: { profile: { not: "standard_no_hub" } },
@@ -101,7 +100,7 @@ export async function getHomepageData(): Promise<HomepageData> {
   const publishedSlugs = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
   const footer = {
     topNeighbourhoods: nbTop.filter((n) => publishedSlugs.has(n.slug)).slice(0, 3).map((n) => ({ name: n.name, slug: n.slug })),
-    topStreets: vipRows.map((s) => ({ name: cleanName(s.name), slug: s.slug })),
+    topStreets: vipRows.map((s) => ({ name: resolveStreetName(s.slug, s.name).name, slug: s.slug })),
     neighbourhoodCount: totalNbhd,
     streetCount,
   };

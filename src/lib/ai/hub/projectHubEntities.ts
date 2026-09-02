@@ -137,6 +137,12 @@ export function assertNoFabricatedStreets(
   for (const s of input.projectedStreets) {
     allowed.add(s.displayName.toLowerCase());
     if (s.shortName) allowed.add(s.shortName.toLowerCase());
+    // TRANSITION (DEC-NAME-SOURCE Build 1). displayName now comes from the registry, so a hub whose
+    // prose was generated against the OLD derivation would have every street in it re-classified as
+    // fabricated — "Main St E" is not "Main Street". Accept the previously stored form too until
+    // Build 2 regenerates the prose. Widening an anti-fabrication allowlist is safe in one
+    // direction only: it can admit a real street under a stale name, never invent one.
+    if (s.legacyDisplayName) allowed.add(s.legacyDisplayName.toLowerCase());
   }
   allowed.add(input.neighbourhood.name.toLowerCase());
 

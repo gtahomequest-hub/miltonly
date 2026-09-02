@@ -22,6 +22,7 @@
 //   6. Weekly cap: max 10 act_enqueued in the trailing 7 days.
 //   7. Every enqueue audit-logged (opportunity -> queue id).
 import { prisma } from "@/lib/prisma";
+import { resolveStreetName } from "@/lib/streetName";
 
 export const ACT_WEEKLY_CAP = 10;
 
@@ -100,7 +101,7 @@ export async function runAct(trigger: "sense" | "approve", opportunityIds?: stri
           data: { status: "pending", attempts: 0, lastError: null, processedAt: null },
         })
       : await prisma.streetQueue.create({
-          data: { streetSlug: slug, streetName: street.name, status: "pending" },
+          data: { streetSlug: slug, streetName: resolveStreetName(slug, street.name).name, status: "pending" },
         });
 
     await prisma.seoOpportunity.update({ where: { id: opp.id }, data: { status: "auto_queued" } });
