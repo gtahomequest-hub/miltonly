@@ -7,6 +7,7 @@ import { buildStreetPageSchema } from "@/lib/schema/street-schema";
 import { SchemaInjector } from "@/lib/schema/injector";
 import { roundPriceForProse } from "@/lib/format";
 import { formatCAD } from "@/lib/charts/theme";
+import { windowDisclosure } from "@/lib/streetEnrichment";
 import { loadStreetGeneration } from "@/lib/ai/loadStreetGeneration";
 import type { StreetSection, FAQItem } from "@/types/street";
 import StreetV2Page from "@/components/street/v2/StreetPage";
@@ -46,8 +47,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // so the two were never even the same test. Override removed: a per-slug exception resting
   // on a false claim is worse than no exception. This formula is unvalidated too — treat it
   // as the incumbent to beat, not as evidence.
-  const rawPrice = data.heroProps.rawTypicalPrice ?? null;
-  const priceStr = rawPrice ? formatCAD(roundPriceForProse(rawPrice)) : "";
+  // THE PRICE, ITS SAMPLE COUNT AND ITS WINDOW ALL COME FROM ONE BASIS.
+  // Two defects were measured in the first pass at this and are fixed here.
+  //
+  // (1) WRONG WINDOW. saleBasis is graduated: on 53% of priced streets it is window:"full"
+  //     (~2 years), not "12mo". Pairing that price with a 12-month count states a figure the
+  //     price was never derived from — bergamot-avenue's price comes from 11 sales over ~2
+  //     years while the copy claimed "across 4 sales in the last 12 months". windowDisclosure()
+  //     is the repo's mandated pairing ("must accompany EVERY published price",
+  //     streetEnrichment.ts:182) and emits count and window from the SAME basis object.
+  //
+  // (2) WRONG SOURCE. There are two 12-month sales counts. rawSoldCount12mo is
+  //     stats.sold_count_12months, the nightly DB3 aggregate (street-data.ts:781). The
+  //     "Sales tracked" tile reads sale12?.n live (street-data.ts:1206,1218). They drift:
+  //     measured 5 disagreements in an 87-street sample (~6%), including two pages emitting
+  //     "1 sale" beside a tile reading 0. enrichment.counts.sale12mo is populated from the
+  //     identical expression as the tile (street-data.ts:397), so agreement is structural.
+  const sb = data.enrichment?.saleBasis ?? null;
+  const priceStr = sb ? formatCAD(roundPriceForProse(sb.typical)) : "";
 
   // SALES AND LEASES ARE COUNTED SEPARATELY, AND NAMED SEPARATELY.
   // This previously read rawTotalTransactions — which is sales + leases (street-data.ts:816) — and
@@ -56,15 +73,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // page itself: Gordon Krantz advertised 109 sales beside a tile reading 9; Whitlock 164 beside 5.
   // On 40 pages it claimed sales where the sales count was 0. The snippet's most clickable token
   // was false, and it broke the instant the searcher landed.
-  const sales = data.heroProps.rawSoldCount12mo ?? 0;
-  const leases = data.heroProps.rawLeasedCount12mo ?? 0;
+  const sales = data.enrichment?.counts.sale12mo ?? 0;
+  const leases = data.enrichment?.counts.lease12mo ?? 0;
   const salesPhrase = `${sales} sale${sales === 1 ? "" : "s"} in the last 12 months`;
   const leasePhrase = `${leases} lease${leases === 1 ? "" : "s"} in the last 12 months`;
 
   // Fail-soft ladder, strongest publishable fact first. A street with leases but no sales now says
   // so, instead of borrowing the word "sale" from a number that was never sales.
-  const hook = priceStr
-    ? `homes typically ${priceStr}${sales > 0 ? ` across ${salesPhrase}` : ""}`
+  const hook = sb
+    ? `homes typically ${priceStr} ${windowDisclosure(sb)}`
     : sales > 0
       ? `${salesPhrase} on record, current listings, and the full street read`
       : leases > 0
