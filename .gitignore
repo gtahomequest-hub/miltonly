@@ -109,3 +109,9 @@ batch-output*.log
 # Town open-data layer cache — pulled by scripts/town/fetch-layers.mjs, not committed.
 # The GENERATED src/data/town*.ts files are the reviewable artifact.
 scripts/town/.cache/
+
+# Scratch files from diagnostic runs. Convention: anything a throwaway script writes to the repo
+# root is named tmp-*. They must live here (module resolution for @/ fails outside the root), but
+# next build type-checks whatever it finds, so an un-deleted scratch file breaks an unrelated build
+# — that happened twice. Excluded in tsconfig.json too; this keeps them out of commits as well.
+tmp-*

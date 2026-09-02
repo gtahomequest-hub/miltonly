@@ -65,8 +65,12 @@ export function cleanNeighbourhoodName(raw: string | null | undefined): string {
 
 function cleanOneNeighbourhood(s: string): string {
   if (!s) return "";
-  // Strip leading: digits + dash + 2-4 letter code + whitespace ("1032 - FO ")
-  let cleaned = s.replace(/^\s*\d+\s*-\s*[A-Za-z]{1,4}\s+/i, "");
+  // Strip leading: digits + dash, with an OPTIONAL 1-4 letter area code ("1032 - FO " or "1051 - ").
+  // The code group used to be mandatory, so "1051 - Walker" fell straight through — "Walker" is six
+  // letters, so `[A-Za-z]{1,4}\s+` could never match it. That raw string then rendered live in the
+  // hero eyebrow, the Street-facts card and the meta description. Making the group optional handles
+  // both shapes; a genuine name is unaffected because it does not open with digits and a dash.
+  let cleaned = s.replace(/^\s*\d+\s*-\s*(?:[A-Za-z]{1,4}\s+)?/i, "");
   // Strip trailing: " - XX" abbreviation
   cleaned = cleaned.replace(/\s*-\s*[A-Za-z]{1,4}\s*$/i, "");
   // If all-caps or mixed, normalize to title case.
