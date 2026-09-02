@@ -102,7 +102,13 @@ export interface ProductPillRow {
 export interface StreetHeroProps {
   eyebrow: string;         // "Street Profile · Cobban · Ford · Milton, ON"
   streetName: string;      // "Whitlock Avenue" — last word rendered italic
-  subtitle: string;        // characterSummary
+  subtitle: string;
+  /** The suppressed summary, or "" when nothing survived stripNumericSentences + the
+   *  ASSERTS_NO_SALES gate. Unlike `subtitle` this never falls back to the neutral placeholder,
+   *  so a consumer can distinguish "no sentence" from "a sentence" and use its own fallback.
+   *  street.characterSummary is set from this, which is what keeps the meta description and the
+   *  Place JSON-LD from publishing a claim the page suppresses. */
+  suppressedSummary: string;        // characterSummary
   heroStats: HeroStat[];   // up to 4 tiles
   productTypePills: ProductPillRow[]; // 0-2 rows (sold + leased)
   /** Raw numeric typical price, pre-formatting. Used by generateMetadata so the

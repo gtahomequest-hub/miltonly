@@ -485,7 +485,24 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       slug,
       shortName,
       neighbourhoods,
-      characterSummary: characterSummaryFrom(streetContent?.description),
+      // THE SUPPRESSED SUMMARY, NOT THE RAW ONE.
+      // This used to be characterSummaryFrom(streetContent?.description) — the stored LLM sentence
+      // with no guards at all — while the visible hero ran it through stripNumericSentences plus the
+      // ASSERTS_NO_SALES gate a few hundred lines below. 98 of 431 published streets therefore sent
+      // Google a sentence the page itself refuses to print: 28 opening with an absence claim ("No
+      // home resales are recorded on ...") and 16 contradicting themselves inside one snippet
+      // (a published price followed by a denial that any sale exists).
+      //
+      // It was TWO paths to the index, not one. page.tsx:94 builds the meta description from this
+      // field, and street-schema.ts:120 publishes it as the Place JSON-LD description — so the
+      // structured data carried the unsuppressed claim as well. A comment in page.tsx asserted
+      // "one suppression pass, no second path to the index"; that was not true of either.
+      //
+      // Empty string (not the neutral placeholder) when nothing survives the guards, so each
+      // consumer falls through to its own fallback: the schema to its richer "A residential street
+      // in <neighbourhoods>" line, the meta description to appending nothing. The visible hero is
+      // unaffected — it reads heroProps.subtitle, which still defaults to the neutral sentence.
+      characterSummary: heroProps.suppressedSummary,
       coordinates: centroid ?? { lat: 43.5083, lng: -79.8822 },
     },
     heroProps,
@@ -764,10 +781,13 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     ? stripNumericSentences(characterSummaryFrom(streetContent.description), subtitleOpts)
     : null;
   const summaryClaimsAbsence = rawSummary != null && ASSERTS_NO_SALES.test(rawSummary);
-  const subtitle =
-    rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale)
-      ? rawSummary
-      : `A street in ${CITY_PROVINCE_LABEL}.`;
+  // The suppressed sentence, or "" when it did not survive the guards. Kept SEPARATE from the
+  // neutral fallback below so downstream surfaces can tell "we have nothing to say about this
+  // street" apart from "here is a sentence", and fall through to their own fallback instead of
+  // publishing the placeholder. street.characterSummary is set from THIS value.
+  const suppressedSummary =
+    rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale) ? rawSummary : "";
+  const subtitle = suppressedSummary || `A street in ${CITY_PROVINCE_LABEL}.`;
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -883,6 +903,7 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     eyebrow,
     streetName,
     subtitle,
+    suppressedSummary,
     heroStats,
     productTypePills,
     // The value the v2 shell renders — ROUNDED, like every other surface. It was going out raw
