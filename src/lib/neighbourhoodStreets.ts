@@ -14,7 +14,7 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { getHubData } from "@/lib/hubData";
-import { expandStreetName } from "@/lib/street-data";
+import { resolveStreetName } from "@/lib/streetName";
 
 export interface NbStreetRow {
   slug: string;
@@ -54,7 +54,7 @@ export const getNeighbourhoodStreetIndex = cache(async (slug: string): Promise<N
 
   const streets: NbStreetRow[] = rows.map((r) => ({
     slug: r.slug,
-    name: expandStreetName(r.name),
+    name: resolveStreetName(r.slug, r.name).name,
     soldCount: r.soldCount12mo,
     isVip: r.isVip,
   }));

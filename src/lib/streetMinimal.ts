@@ -18,6 +18,7 @@ import { getSchoolsByNeighbourhood, type School } from "@/lib/schools";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
 import { expandStreetName } from "@/lib/street-data";
+import { resolveStreetName } from "@/lib/streetName";
 
 const TYPE_LABEL: Record<string, string> = {
   crescent: "crescent", court: "court", drive: "drive", terrace: "terrace", street: "street",
@@ -68,8 +69,12 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
     },
   });
 
-  const name = expandStreetName(entity?.name || content.streetName || slug).replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
-  const shortName = entity?.shortName || name;
+  // Registry-first. entity?.name and content.streetName are both drifted copies — measured, the
+  // entity table disagrees with the registry on 626 of 944 rows — so they are the fallback, not the
+  // source. Note the old chain could fall through to the bare slug.
+  const resolvedName = resolveStreetName(slug, entity?.name || content.streetName || null);
+  const name = resolvedName.name.replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
+  const shortName = resolvedName.shortName || entity?.shortName || name;
   const nbName = entity?.neighbourhood?.name ?? null;
   const nbSlug = entity?.neighbourhood?.slug ?? null;
   const rawKey = content.neighbourhood; // raw TREB key for analytics

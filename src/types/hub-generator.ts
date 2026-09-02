@@ -95,6 +95,10 @@ export interface HubQuarter {
 // `displayName` is already expandStreetName-normalized (WS3 carry-forward) so the
 // renderer never emits "Farmstead. Dr". currentRank order, VIP first.
 export interface HubProjectedStreet {
+  /** Pre-registry display form, transition only (DEC-NAME-SOURCE Build 1). Carried so
+   *  assertNoFabricatedStreets does not flag hub prose generated before the rename. Remove
+   *  once Build 2 regenerates. */
+  legacyDisplayName?: string;
   slug: string;
   displayName: string;
   shortName: string | null;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveStreetName } from "@/lib/streetName";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() || "";
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ recencyWeightedSold: "desc" }, { name: "asc" }],
       take: 8,
     });
-    return NextResponse.json(results.map((r) => ({ name: r.name, slug: r.slug })));
+    return NextResponse.json(results.map((r) => ({ name: resolveStreetName(r.slug, r.name).name, slug: r.slug })));
   }
 
   if (type === "neighbourhood") {

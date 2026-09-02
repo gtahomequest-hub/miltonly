@@ -28,6 +28,7 @@ import type {
   MapPin,
 } from '@/components/listings/v2/types';
 import { formatPriceFull } from '@/lib/format';
+import { resolveStreetName } from "@/lib/streetName";
 
 const PER_PAGE = 36;
 // The map shows every listing it has a validated rooftop for. The cap is a runaway guard, not a
@@ -324,7 +325,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const streets = topStreets.map((s) => ({
     slug: s.streetSlug,
-    name: s.streetName as string,
+    name: resolveStreetName(s.streetSlug as string, s.streetName as string).name,
     count: s._count,
   }));
 

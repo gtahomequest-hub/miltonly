@@ -11,8 +11,8 @@
 //   condo         → its address (condo `name` is address-form; units when distinct)
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
-import { expandStreetName } from "@/lib/street-data";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
+import { resolveStreetName } from "@/lib/streetName";
 
 export interface HeroIndexEntry {
   type: "neighbourhood" | "street" | "condo";
@@ -24,8 +24,6 @@ export interface HeroIndexEntry {
 let _cache: HeroIndexEntry[] | null = null;
 let _cacheAt = 0;
 const TTL_MS = 60 * 60 * 1000;
-
-const cleanName = (n: string) => expandStreetName(n).replace(/\.\s/g, " ").replace(/\s+/g, " ").trim();
 
 // Some ResidentialStreet rows are really unit-level addresses ("Main Street East
 // Unit 3", "… Ground Floor Apartment", "Solomon Court Main&up") — keep them out of
@@ -73,7 +71,7 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
     const nb = s.neighbourhood?.name ?? "Milton";
     entries.push({
       type: "street",
-      name: cleanName(s.name),
+      name: resolveStreetName(s.slug, s.name).name,
       slug: s.slug,
       secondary: homes > 0 ? `${nb} · ${homes} home${homes === 1 ? "" : "s"}` : nb,
     });

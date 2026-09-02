@@ -21,6 +21,8 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
 import { K_ANON_PRICE } from "@/lib/kAnon";
+import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
+import { titleCaseOfficial } from "@/lib/streetName";
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +76,20 @@ export async function GET(req: NextRequest) {
     // Primary join key: kebab-case(name) + "-milton" matches the analytics
     // sync's slugifier (which feeds off the streetName already in abbreviated
     // form, e.g. "Costigan Rd" → "costigan-rd-milton", "Main St E" → "main-st-e-milton").
+    // REJOINED ON SLUG (DEC-NAME-SOURCE Build 1). The comment above was wrong: analytics does NOT
+    // store the abbreviated MLS form. Measured against the live analytics DB — for the stored names
+    // "Buckthorn", "Main St E" and "Costigan Rd" the derived keys buckthorn-milton /
+    // main-st-e-milton / costigan-rd-milton each returned ZERO rows, while the canonical slugs
+    // buckthorn-garden-milton / main-street-milton / costigan-road-milton each returned one. The
+    // primary join has been dead the whole time; every request was silently paying for the
+    // Listing-equality fallback below.
+    //
+    // Registry lookup first (name -> official slug), kebab only as a last resort.
+    const registrySlug = MILTON_STREET_REGISTRY.find(
+      (r) => titleCaseOfficial(r.name).toLowerCase() === name.toLowerCase(),
+    )?.slug;
     const derivedSlug =
+      registrySlug ??
       name.toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "")

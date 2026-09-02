@@ -18,13 +18,21 @@
 // Response: { listings: ContentListing[], generatedAt: string }
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveStreetName } from "@/lib/streetName";
 
 export const dynamic = "force-dynamic";
 
 type ContentListing = {
   mlsNumber: string;
   address: string;
+  /** Canonical display name from the Town registry (DEC-NAME-SOURCE Build 1). Was the raw MLS
+   *  value, which carries abbreviations and invented directionals — "Main St E" for a street the
+   *  Town lists as MAIN STREET. Consumers keying off this field get the same string the site
+   *  renders in its H1. */
   streetName: string | null;
+  /** The canonical street slug, so a consumer can join or link without re-deriving it from the
+   *  name. /streets/{streetSlug} is the live page. */
+  streetSlug: string | null;
   neighbourhood: string;
   city: string;
   price: number;
@@ -83,6 +91,7 @@ export async function GET(req: NextRequest) {
         mlsNumber: true,
         address: true,
         streetName: true,
+        streetSlug: true,
         neighbourhood: true,
         city: true,
         price: true,
@@ -101,7 +110,8 @@ export async function GET(req: NextRequest) {
     const listings: ContentListing[] = rows.map((r) => ({
       mlsNumber: r.mlsNumber,
       address: r.address,
-      streetName: r.streetName,
+      streetName: r.streetSlug ? resolveStreetName(r.streetSlug, r.streetName).name : r.streetName,
+      streetSlug: r.streetSlug,
       neighbourhood: r.neighbourhood,
       city: r.city,
       price: r.price,

@@ -26,6 +26,11 @@ export const OFF_REGISTRY_STREETS: string[] = [
   "second-line-milton",
   "25-side-road-milton",
   "nipissing-road-milton",
+  // DEC-NAME-SOURCE Build 1. Rural Halton road, no registry row. Its junk-stripped canonical
+  // (15-side-road-milton) is ALSO off-registry and has no StreetContent row, so a 301 would point
+  // at a page that does not exist. The doubled type in the slug is fossilised; displayStreetName
+  // already renders it "15 Side Road".
+  "15-side-road-side-road-milton",
 ];
 
 export const OFF_REGISTRY_SET = new Set(OFF_REGISTRY_STREETS);

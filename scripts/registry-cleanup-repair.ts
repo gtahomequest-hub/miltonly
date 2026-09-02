@@ -5,10 +5,14 @@
 // from the reassigned sold_records so the street is surfaced with correct stats.
 // Dry-run by default; --commit writes.
 import { readFileSync } from "node:fs"; import { resolve, dirname } from "node:path"; import { fileURLToPath } from "node:url";
+import { titleCaseOfficial } from "../src/lib/streetName";
 const __d = dirname(fileURLToPath(import.meta.url));
 for (const f of ["../.env", "../.env.local"]) { try { for (const line of readFileSync(resolve(__d, f), "utf8").split(/\r?\n/)) { const t = line.trim(); if (!t || t.startsWith("#")) continue; const eq = t.indexOf("="); if (eq < 0) continue; const k = t.slice(0, eq).trim(); let v = t.slice(eq + 1).trim(); if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1); if (!(k in process.env)) process.env[k] = v; } } catch {} }
 const COMMIT = process.argv.includes("--commit");
-const titleCase = (s: string) => s.toLowerCase().split(/\s+/).map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
+// titleCase now delegates to the shared authority so it stops writing "Mcdougall Crossing"
+// into the entity table. The registry stores ALL CAPS, which destroys the capital inside
+// "McDougall"; naive title-casing cannot recover it. See src/lib/streetName.ts.
+const titleCase = (s: string): string => titleCaseOfficial(s);
 async function main() {
   const { PrismaClient } = await import("@prisma/client"); const { neon } = await import("@neondatabase/serverless");
   const { MILTON_STREET_REGISTRY: REG } = await import("../src/data/miltonStreetRegistry");

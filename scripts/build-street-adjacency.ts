@@ -24,6 +24,7 @@
 import { readFileSync } from "node:fs";
 import { prisma } from "@/lib/prisma";
 import { deriveIdentity, streetNameToSlug } from "@/lib/streetUtils";
+import { resolveStreetName } from "../src/lib/streetName";
 
 const GEOJSON = "D:/dashcam/work/milton-roads.geojson";
 
@@ -125,7 +126,7 @@ async function main() {
     // Representative: prefer the deriveIdentity canonical slug when it's a published slug,
     // else the lexicographically first — deterministic either way.
     const canonical = deriveIdentity(s.streetSlug)?.canonicalSlug;
-    const name = expandName(s.streetName || s.streetSlug);
+    const name = resolveStreetName(s.streetSlug, s.streetName ?? null).name;
     const cur = repByKey.get(key);
     if (!cur || s.streetSlug === canonical || (cur.slug !== deriveIdentity(cur.slug)?.canonicalSlug && s.streetSlug < cur.slug)) {
       repByKey.set(key, { slug: s.streetSlug, name });

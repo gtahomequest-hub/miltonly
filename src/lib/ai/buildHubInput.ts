@@ -20,7 +20,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
-import { expandStreetName, shortNameFor } from "@/lib/street-data";
+import { expandStreetName } from "@/lib/street-data";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import type {
   HubGeneratorInput,
@@ -34,6 +34,7 @@ import type {
 
 // K-anonymity thresholds — identical to buildGeneratorInput.ts / street-data.ts.
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
+import { resolveStreetName } from "@/lib/streetName";
 
 // Trend window. 30 months captures ~10 quarters of recent signal (matches the
 // depth observed for hub-scale pools like Dempsey: 141 sales / 12mo).
@@ -286,8 +287,11 @@ export async function buildHubInput(neighbourhoodSlug: string): Promise<HubGener
   const projectedStreets: HubProjectedStreet[] = streets.map((s) => ({
     slug: s.slug,
     // expandStreetName (WS3 carry-forward): clean display, never "Farmstead. Dr".
-    displayName: expandStreetName(s.name),
-    shortName: s.shortName ?? shortNameFor(expandStreetName(s.name)),
+    displayName: resolveStreetName(s.slug, s.name).name,
+    shortName: resolveStreetName(s.slug, s.name).shortName,
+    // the pre-registry form, carried only so assertNoFabricatedStreets does not flag prose that was
+    // generated before the rename. Drop after Build 2 regenerates.
+    legacyDisplayName: expandStreetName(s.name),
     isVip: s.isVip,
     currentRank: s.currentRank,
     soldCount12mo: s.soldCount12mo,
@@ -417,8 +421,11 @@ export async function buildRuralHubInput(neighbourhoodSlug: string): Promise<Hub
 
   const projectedStreets: HubProjectedStreet[] = streets.map((s) => ({
     slug: s.slug,
-    displayName: expandStreetName(s.name),
-    shortName: s.shortName ?? shortNameFor(expandStreetName(s.name)),
+    displayName: resolveStreetName(s.slug, s.name).name,
+    shortName: resolveStreetName(s.slug, s.name).shortName,
+    // the pre-registry form, carried only so assertNoFabricatedStreets does not flag prose that was
+    // generated before the rename. Drop after Build 2 regenerates.
+    legacyDisplayName: expandStreetName(s.name),
     isVip: s.isVip, // false for every rural street by construction
     currentRank: s.currentRank,
     soldCount12mo: s.soldCount12mo,

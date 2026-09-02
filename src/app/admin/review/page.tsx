@@ -24,7 +24,7 @@ export default async function AdminReviewPage() {
     take: 10,
     select: {
       streetSlug: true,
-      streetName: true,
+      streetName: true, // stored copy; the reviewer sees it beside the resolver name (source: registry|off-registry|fallback)
       publishedAt: true,
     },
   });

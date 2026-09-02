@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { NextRequest, NextResponse } from "next/server";
 import { getSoldDb } from "@/lib/db";
+import { resolveStreetName } from "@/lib/streetName";
 
 const VIP_THRESHOLD = 5; // Streets with 5+ active listings become VIP Hubs
 
@@ -70,7 +71,9 @@ export async function POST(request: NextRequest) {
   await prisma.streetContent.create({
     data: {
       streetSlug: slug,
-      streetName: sample?.streetName || slug,
+      // DERIVED, not raw MLS. This previously wrote `sample?.streetName || slug` — a bare SLUG could
+      // land in the field street-data.ts reads first, and surface as an H1.
+      streetName: resolveStreetName(slug, sample?.streetName ?? null).name,
       neighbourhood,
       description: `Real estate data for ${sample?.streetName || slug} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}.`,
       status: "draft",

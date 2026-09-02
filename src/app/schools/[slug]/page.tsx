@@ -16,6 +16,7 @@ import {
 } from "@/lib/schema";
 import PlaceDetail from "@/components/places/PlaceDetail";
 import PlaceListings from "@/components/places/PlaceListings";
+import { resolveStreetName } from "@/lib/streetName";
 
 interface Props {
   params: { slug: string };
@@ -103,7 +104,7 @@ export default async function SchoolDetailPage({ params }: Props) {
         where: { streetSlug: s.streetSlug },
         select: { streetName: true },
       });
-      return { slug: s.streetSlug, name: sample?.streetName || s.streetSlug, count: s._count, avgPrice: Math.round(s._avg.price || 0) };
+      return { slug: s.streetSlug, name: resolveStreetName(s.streetSlug, sample?.streetName ?? null).name, count: s._count, avgPrice: Math.round(s._avg.price || 0) };
     })
   );
 
