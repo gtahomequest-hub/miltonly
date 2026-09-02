@@ -2,6 +2,21 @@
 const nextConfig = {
   async redirects() {
     return [
+      // WWW -> APEX, PINNED IN CODE. This redirect already exists at the Vercel domain layer —
+      // proven by header signature (the 308 carries no X-Matched-Path) and by ordering (a www
+      // request 308s with the slug uncanonicalised, so middleware never ran). But it lives ONLY in
+      // the dashboard: vercel.json carries just crons, and nothing in this repo enforced,
+      // documented or tested it. A dashboard edit could silently remove it and no review would
+      // catch it. This makes the rule reviewable and survives that.
+      //
+      // Belt-and-suspenders, not a replacement: the platform rule still fires first and is
+      // cheaper. This is the net under it.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.miltonly.com" }],
+        destination: "https://miltonly.com/:path*",
+        permanent: true,
+      },
       { source: "/sold/:slug", destination: "/streets/:slug", permanent: true },
       // Dead marketing paths with clear intent, 404ing and discarding whatever signal they carry.
       // Nothing in src/ emits either any more — they are historic/external. /mo and /10 are NOT
