@@ -70,10 +70,25 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(config.SITE_URL),
-  title: {
-    default: `${ENCYCLOPEDIA_LABEL} — ${REAL_ESTATE_LABEL}, Homes For Sale & Street Data | ${config.SITE_NAME}`,
-    template: `%s | ${config.SITE_NAME}`,
-  },
+  // NO `template` HERE, DELIBERATELY. It used to be `%s | ${config.SITE_NAME}`, which Next appends
+  // to every page returning a plain-string title — which is every page, since seo.ts:32 returns one.
+  // It cost 11 chars / 84px on all of them and bought nothing: Google sources the site-name line
+  // from og:site_name (set below), not from the title tag.
+  //
+  // Two measured harms. (1) On /streets/[slug] it pushed 298 of 431 titles past Google's ~580px cut;
+  // without it, 12. On the long-name tail it ate the copy itself — "Nassagaweya Esquesing Townline"
+  // rendered at 768px. (2) Eight routes already embed SITE_NAME in their own title, so they rendered
+  // it TWICE: "Sign In — Miltonly | Miltonly", "Milton Rentals | Miltonly | Miltonly", and the same
+  // on /saved, /rentals, /sales/ads, /not-found, /coming-soon, /exclusive/[slug].
+  //
+  // A per-route `title: { absolute }` override was the alternative; it would have fixed the 431 street
+  // pages and left those eight still stuttering. 25 routes lose a " | Miltonly" suffix by this deletion,
+  // which is the intended trade — none of them needed it. `default` stays: it still covers any page
+  // that sets no title of its own.
+  // Plain string, not { default, template }: Next's TemplateString type requires `template` beside
+  // `default`, and the whole point here is that there is no template. A bare string behaves the same
+  // way `default` did — any page that sets no title of its own inherits this one.
+  title: `${ENCYCLOPEDIA_LABEL} — ${REAL_ESTATE_LABEL}, Homes For Sale & Street Data | ${config.SITE_NAME}`,
   description: config.seo.defaultDescription,
   keywords: [...config.seo.keywords],
   alternates: {

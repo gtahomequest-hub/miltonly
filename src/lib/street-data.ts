@@ -891,6 +891,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
     // tell whether that is one number or two.
     rawTypicalPrice: saleBasis ? roundPriceForProse(saleBasis.typical) : null,
     rawTotalTransactions: totalTransactions,
+    // Sales and leases kept SEPARATE alongside the combined figure. The meta description called
+    // totalTransactions "recorded sales" on 296 pages whose own tile disagreed — see the comment
+    // at the Transactions-tracked tile above for why the two numbers differ.
+    rawSoldCount12mo: countFor12mo,
+    rawLeasedCount12mo: leasedFor12mo,
   };
 }
 

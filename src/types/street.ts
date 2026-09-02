@@ -111,6 +111,12 @@ export interface StreetHeroProps {
   rawTypicalPrice?: number | null;
   /** Raw numeric transaction count for metadata interpolation. */
   rawTotalTransactions?: number;
+  /** Closed SALES only, last 12 months (stats.sold_count_12months). The prose surfaces must use
+   *  this, not rawTotalTransactions — that one adds leases and is not a sales figure. */
+  rawSoldCount12mo?: number;
+  /** Closed LEASES only, last 12 months. Lets prose name leases as leases instead of burying
+   *  them inside a "transactions" total the reader cannot decompose. */
+  rawLeasedCount12mo?: number;
 }
 
 // ───── Description sidebar + body ─────────────────────────────────────────
