@@ -221,6 +221,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
+  // Listing detail pages.
+  //
+  // These were missing entirely: the sitemap carried /listings but not a single /listings/<mls>,
+  // so every detail page depended on Google walking paginated browse pages to be discovered. Two
+  // of them turned up in GSC still indexed under the pre-flip www host precisely because the apex
+  // twin had never been fetched.
+  //
+  // THREE GATES, and each is load-bearing:
+  //   status = "active"      — a sold, rented or expired listing is not a live page worth
+  //                            submitting. (Milton today: 460 active, 544 sold, 1277 rented,
+  //                            948 expired — emitting all of them would quadruple the sitemap
+  //                            with pages that no longer represent anything for sale.)
+  //   permAdvertise = true   — the VOW compliance gate. listings/[mlsNumber]/page.tsx:39 returns
+  //                            robots noindex and renders a "not available" block for these, so
+  //                            submitting one would advertise a URL we deliberately refuse to
+  //                            show. Currently 0 active listings fail this, but the filter is the
+  //                            point: it must not depend on that staying true.
+  //   city                   — same scope as every other surface.
+  //
+  // NOTHING BEYOND THE MLS NUMBER IS EMITTED. The select is mlsNumber + updatedAt only; the URL
+  // already contains the MLS number publicly, and lastModified is a timestamp. No address, no
+  // price, no coordinates, no displayAddress-gated field reaches the sitemap.
+  const activeListings = await prisma.listing.findMany({
+    where: { city: config.PRISMA_CITY_VALUE, status: "active", permAdvertise: true },
+    select: { mlsNumber: true, updatedAt: true },
+  });
+  const listingPages: MetadataRoute.Sitemap = activeListings.map((l) => ({
+    url: `${SITE_URL}/listings/${l.mlsNumber}`,
+    lastModified: l.updatedAt,
+    changeFrequency: "daily" as const,
+    priority: 0.6,
+  }));
+
   // Mosque pages
   const mosquePages: MetadataRoute.Sitemap = [
     {
@@ -237,5 +270,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages];
+  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages, ...listingPages];
 }
