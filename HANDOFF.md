@@ -13,7 +13,8 @@ _Last rewritten 2026-09-03._
 | stored street names | 0 of 472 `StreetContent` rows drift from the resolver |
 | package manager | pnpm 9.15.9, pinned; no npm lockfile in the repo |
 | prebuild suite | 9 tests |
-| QUEUE | item 1 **done**; items 2 to 5 not started |
+| QUEUE | item 1 **done**; item 2 **setup complete, uploads pending**; items 3 to 5 not started |
+| R2 | bucket `miltonly-video`, ENAM, empty; public via `r2.dev`; S3 credentials live in `.env.local` and Vercel Production + Preview |
 
 ## What shipped 2026-09-02
 
@@ -38,6 +39,35 @@ _Last rewritten 2026-09-03._
 - **DEC-NAME-SOURCE Build 2** (data): 11 of 13 directional streets regenerated; `jarrett-crossing-milton` published; `StreetAdjacency` rebuilt to 1052 rows with 26 stale labels repaired.
 - **Task 1 closed.** The hub-meta failures were never a data defect: the battery had been reading CDN-cached renders from an older build.
 
+## R2 setup, done 2026-09-03 (QUEUE item 2, setup phase)
+
+Bucket and access are live and proven end to end. **No clips uploaded yet**; that is the next prompt.
+
+| | |
+|---|---|
+| account | `Gtahomequest@gmail.com's Account`, ID `1b43951a70788eea4846d43c6e0d13ec` |
+| bucket | `miltonly-video`, location **ENAM**, Standard, currently 0 objects |
+| public base | `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev` |
+| credentials | `.env.local` (gitignored) and Vercel **Production and Preview**, both Hidden/Secret |
+
+`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` are set in all three places. The token is scoped Object Read & Write on `miltonly-video` only.
+
+**R2 had to be enabled by hand first.** `wrangler r2 bucket create` and `bucket list` both failed with `code: 10042, Please enable R2 through the Cloudflare Dashboard` until the product was activated on the account. Wrangler cannot do that step.
+
+**`video.miltonly.com` is not attachable, by design of where DNS lives.** `wrangler r2 bucket domain add` requires `--zone-id`, and `miltonly.com` is not a Cloudflare zone: its authoritative nameservers are `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. Cloudflare only activates a zone once NS points at it, so the custom domain would mean moving DNS for the whole production site. The `r2.dev` URL is the fallback in place. It is rate-limited by Cloudflare and not intended for production traffic at volume, so it is a starting point rather than a resting place.
+
+**Proof, run over the S3 API with raw SigV4 (no new dependency added):**
+
+```
+object: _healthcheck/r2-proof.txt  bytes: 1024
+1) S3 PUT     -> 200 OK
+2) public GET -> 200 OK  bytes=1024
+3) S3 DELETE  -> 204 No Content
+   re-GET after delete -> 404
+```
+
+Bucket verified empty afterwards.
+
 ## Open items
 
 1. **`burnhamthorpe-road-milton` is published with no data behind it.** Not a keying defect: the slug is consistent across `Listing`, `ResidentialStreet` and the registry. One listing, status `expired`; zero DB2 rows by `street_slug` or by `address`; no DB3 row. `getStreetStats()` returning null is correct. QUEUE item 1 was closed with this exempted; the remaining question is whether the page should be unpublished, which is a decision, not a fix.
@@ -50,4 +80,4 @@ _Last rewritten 2026-09-03._
 
 ## Next expected task
 
-**QUEUE item 2, video hosting on Cloudflare R2.** Do not self-start it. It begins only on an explicit prompt, and is marked done in the same commit that rewrites this file.
+**QUEUE item 2, the upload phase**: repoint the upload script at R2 with idempotent pathnames, migrate `lemieux-court` off Vercel Blob, upload the other eight staged clips, set `videoUrl` on all nine, and delete the Blob object. Setup is done and proven; only the uploads remain. Do not self-start it.

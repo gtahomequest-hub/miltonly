@@ -2,7 +2,7 @@
 
 Five items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Items 2 to 5 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **setup phase done, uploads pending**. Items 3 to 5 **not started**.
 
 ---
 
@@ -32,6 +32,8 @@ Production `miltonly-81x82cqig` serving `973940a`; battery **PASS · 9 checks ·
 Move street video off Vercel Blob and onto R2. Repoint the upload script at R2 with idempotent pathnames so a re-run cannot create duplicates, migrate `lemieux-court` off Blob, upload the eight other staged clips, and set `videoUrl` on all nine streets.
 
 **Done when** nine street pages serve their video from the R2 host and the Vercel Blob object is deleted.
+
+**Setup phase done 2026-09-03.** Bucket `miltonly-video` (ENAM) created; public access via `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev`; `R2_*` credentials in `.env.local` and Vercel Production and Preview; S3 PUT / public GET / DELETE all proven against a 1 KB object. `video.miltonly.com` could not be attached because `miltonly.com` is not a Cloudflare zone, so the custom domain remains an open decision. **No clips uploaded.** Detail in `HANDOFF.md`.
 
 ---
 
