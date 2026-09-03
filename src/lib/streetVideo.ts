@@ -44,12 +44,21 @@ export interface StreetVideoView {
   night: StreetVideoClip | null;
 }
 
-/** Poster URL by blob-name convention: swap a trailing `.mp4` for `.webp`, preserving any
- *  `?query`/`#hash`. Returns null when the URL carries no rewritable `.mp4`. The poster
- *  must be uploaded to Blob at the video's pathname with the `.webp` extension. */
+/** Poster URL by name convention, because there is no poster column to read.
+ *
+ *  Two layouts, in order:
+ *    R2      streets/<slug>/day.mp4  ->  streets/<slug>/poster.webp
+ *    legacy  <anything>.mp4          ->  <anything>.webp        (the Vercel Blob PoC)
+ *
+ *  The legacy arm stays because it costs one regex and removing it would silently drop the poster,
+ *  and with it the VideoObject, for any row still holding a Blob URL. Returns null when the URL
+ *  carries no rewritable `.mp4`, in which case there is no poster and no VideoObject.
+ *  Preserves any `?query`/`#hash`. */
 export function deriveVideoPoster(url: string): string | null {
-  const poster = url.replace(/\.mp4(?=$|[?#])/i, ".webp");
-  return poster !== url ? poster : null;
+  const r2 = url.replace(/\/day\.mp4(?=$|[?#])/i, "/poster.webp");
+  if (r2 !== url) return r2;
+  const legacy = url.replace(/\.mp4(?=$|[?#])/i, ".webp");
+  return legacy !== url ? legacy : null;
 }
 
 /** "27 August 2026" (UTC, no leading zero) or null. Capture timestamps are dates, so
