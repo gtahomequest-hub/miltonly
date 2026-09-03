@@ -6,8 +6,21 @@ BASE=https://<preview>.vercel.app node scripts/verify/run.mjs
 BASE=http://localhost:3000 node scripts/verify/run.mjs --only=denials,schema-parity
 ```
 
-Exits `0` when every assertion holds, `1` otherwise. One entry point, one target, one crawl —
-every check consumes the same pages.
+Exits `0` when every assertion holds, `1` when one fails, `2` when the battery declined to run.
+One entry point, one target, one crawl — every check consumes the same pages.
+
+## The deployment gate
+
+Before any content check runs, the battery asks the host which build it is serving (`/api/ping`,
+Bearer `CRON_SECRET`) and asserts it equals the expected commit — `EXPECT_SHA` when set, otherwise
+the local `git rev-parse HEAD`. On a mismatch it prints `wrong deployment served: got X expected Y`
+and exits `2` without running a single content assertion.
+
+This exists because a content FAIL against the wrong build is worse than no result. On 2026-09-03
+`hub-meta` failed four consecutive runs on `old-milton` and `cobban` with stable, identical numbers;
+two mechanisms were proposed and both were wrong. The queries never disagreed — the battery was
+reading pages the CDN had cached from an older build. An unreadable identity aborts as well: a
+probe that cannot answer must not read as agreement.
 
 Credentials come from the environment. `SOLD_DATABASE_URL` and `ANALYTICS_DATABASE_URL` are read
 from the process env, falling back to the gitignored repo-root `.env` / `.env.local`; an exported
@@ -113,6 +126,7 @@ containers, and exclude the labels that are subsets by design.
 
 ```
 run.mjs              entry point: derive the page set, crawl once, run every check, summarise
+lib/build.mjs        the served commit SHA; the deployment gate's other side
 lib/env.mjs          credentials from the environment; repo-root .env fallback; fail by name
 lib/http.mjs         one target for every request; sitemap-derived page set; the shared crawl
 lib/parse.mjs        rendered-page parsers — discrete containers, parsed schema

@@ -18,6 +18,8 @@ import composition from './checks/composition.mjs';
 import coordinates from './checks/coordinates.mjs';
 import hubMeta from './checks/hub-meta.mjs';
 import geometryControl from './checks/geometry-control.mjs';
+import { servedCommit } from './lib/build.mjs';
+import { execSync } from 'node:child_process';
 
 const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl];
 
@@ -37,6 +39,36 @@ const CONCURRENCY = Number(process.env.CONC || 8);
 const t0 = Date.now();
 console.log(`\n═══ MILTONLY STREET VERIFICATION ═══`);
 console.log(`target      ${BASE}`);
+
+// ── THE DEPLOYMENT GATE ──────────────────────────────────────────────────────────────────────
+// Assert the host is serving the build we mean to verify, BEFORE a single content assertion runs.
+//
+// On 2026-09-03 hub-meta failed four consecutive runs on `old-milton` and `cobban` with stable,
+// identical numbers. Two mechanisms were proposed and both were wrong: the queries never
+// disagreed at all. The battery was reading pages the CDN had cached from a build older than the
+// one under test. A content FAIL against the wrong deployment is not a finding — it is a
+// several-hour hunt for a data bug that does not exist. So it aborts instead of reporting.
+//
+// Expected SHA: EXPECT_SHA when set, otherwise the local HEAD. Running the battery from a branch
+// is an implicit claim that the branch is what is deployed, so HEAD is the honest default rather
+// than a silent skip.
+const expectedSha = (process.env.EXPECT_SHA || execSync('git rev-parse HEAD').toString()).trim();
+let servedSha;
+try {
+  servedSha = await servedCommit(BASE);
+} catch (e) {
+  console.error(`
+cannot read the served build identifier: ${e.message}`);
+  console.error('aborting — an unverifiable deployment identity is not a passing one.');
+  process.exit(2);
+}
+if (servedSha !== expectedSha) {
+  console.error(`
+wrong deployment served: got ${servedSha} expected ${expectedSha}`);
+  console.error('aborting before any content check — those assertions would describe a build you did not ask about.');
+  process.exit(2);
+}
+console.log(`build       ${servedSha.slice(0, 7)} served == expected`);
 
 // ── the page set, derived ────────────────────────────────────────────────────────────────────
 const slugs = await publishedStreetSlugs(BASE);
