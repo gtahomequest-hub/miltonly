@@ -31,7 +31,6 @@ import { config } from "@/lib/config";
 import { getAnalyticsDb, getSoldDb } from "@/lib/db";
 import {
   expandStreetName,
-  shortNameFor,
   monthlyToQuarterly,
   resolveSiblingSlugs,
   type RawMonthly,
@@ -303,7 +302,6 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     extractStreetName(sample?.address ?? deslugify(slug));
   const resolvedName = resolveStreetName(slug, rawName);
   const streetName = resolvedName.name;
-  const shortName = resolvedName.shortName;
   const type = deriveStreetType(streetName);
   // Step 13m-1 identity metadata.
   const identity = deriveIdentity(slug);
@@ -525,7 +523,10 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     street: {
       name: streetName,
       slug,
-      shortName,
+      // shortName is NOT passed to the model (DEC-NAME-SHORT). Giving the generator an abbreviated
+      // form invites it into prose the page then renders beside the full name — the exact split
+      // that produced "About Buckthorn" under an H1 of "Buckthorn Garden". Width-limited UI can
+      // shorten at render time; the model should only ever know one name for the street.
       type,
       identityKey,
       siblingSlugs,
@@ -1272,7 +1273,10 @@ async function buildCrossStreets(
     const roundedPrice = formatCADShort(roundPriceForProse(r.price));
     const entry: StreetGeneratorInput["crossStreets"][number] = {
       slug: r.slug,
-      shortName: shortNameFor(expandStreetName(deslugify(r.slug))),
+      // DEC-NAME-SHORT: a cross street is named in prose, so it gets the full resolver name. This
+      // was the abbreviated form, which is how "Aird Crt" reached copy that sits beside pages
+      // titled "Aird Court".
+      name: resolveStreetName(r.slug, expandStreetName(deslugify(r.slug))).name,
       distinctivePattern: `${dominantType} trading around ${roundedPrice}`,
       typicalPrice: r.price,
     };

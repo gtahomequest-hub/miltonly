@@ -42,7 +42,10 @@ export interface ResaleClaimCopy {
 }
 
 export function resaleClaim(
-  shortName: string,
+  // DEC-NAME-SHORT: this is the SUBJECT of every sentence below, so it takes the full resolver
+  // name. It used to be the shortName, which produced "No resales recorded on Buckthorn yet"
+  // under an H1 reading "Buckthorn Garden".
+  streetName: string,
   hasAnySale: boolean,
   /** the minimal shell's existing, street-specific absence prose (view.noData) */
   absenceBody?: string,
@@ -51,12 +54,12 @@ export function resaleClaim(
     return {
       claimsAbsence: false,
       heading: 'Too few recent sales to publish a price',
-      body: `Homes have changed hands on ${shortName}, but not often enough recently for us to publish a typical price — the record's there, it just can't support a number yet. We'd rather show you nothing than a figure the record can't stand behind.`,
+      body: `Homes have changed hands on ${streetName}, but not often enough recently for us to publish a typical price, the record's there, it just can't support a number yet. We'd rather show you nothing than a figure the record can't stand behind.`,
       // verbatim the suppression copy the full shell has always used
-      ctaBody: `Too few recent sales on ${shortName} to publish a typical price yet — the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`,
-      areaFallbackLine: `With too few recent sales on ${shortName} to price it on its own, the area read below is the closest honest signal we can give you.`,
+      ctaBody: `Too few recent sales on ${streetName} to publish a typical price yet, the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`,
+      areaFallbackLine: `With too few recent sales on ${streetName} to price it on its own, the area read below is the closest honest signal we can give you.`,
       sellerBody: (streetName) =>
-        `Few recent sales on ${streetName} means less to compare against — which is exactly when pricing needs judgement rather than a formula. A conversation grounded in what the record does show, and in the ${shortName} homes we've tracked.`,
+        `Few recent sales on ${streetName} means less to compare against, which is exactly when pricing needs judgement rather than a formula. A conversation grounded in what the record does show, and in the ${streetName} homes we've tracked.`,
       areaEyebrow: 'Where this street sits',
       // homes HAVE sold here — the record is thin, not empty. Same register as the heading above.
       areaHeading: 'Too few recent sales to price it on its own',
@@ -65,12 +68,12 @@ export function resaleClaim(
   return {
     claimsAbsence: true,
     heading: 'No resales recorded yet',
-    body: absenceBody ?? `No resales recorded on ${shortName} yet — a real street with quiet turnover, not a page without homes.`,
+    body: absenceBody ?? `No resales recorded on ${streetName} yet, a real street with quiet turnover, not a page without homes.`,
     // verbatim the absence copy the full shell has always used
-    ctaBody: `No resales recorded on ${shortName} yet — a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`,
-    areaFallbackLine: `The area read below is the closest market signal we can offer honestly until a home on ${shortName} trades.`,
+    ctaBody: `No resales recorded on ${streetName} yet, a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`,
+    areaFallbackLine: `The area read below is the closest market signal we can offer honestly until a home on ${streetName} trades.`,
     sellerBody: (streetName) =>
-      `No resale on record for ${streetName} yet, so there is no local comparable to lean on — pricing here is a judgement call, and worth a conversation before you list.`,
+      `No resale on record for ${streetName} yet, so there is no local comparable to lean on, pricing here is a judgement call, and worth a conversation before you list.`,
     areaEyebrow: 'Where this street sits',
     // true only here: the record really is empty
     areaHeading: 'New to the record',
