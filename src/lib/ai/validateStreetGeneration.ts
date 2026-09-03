@@ -1962,10 +1962,13 @@ export function validateStreetGeneration(
     }
 
     // Superlatives
+    // Grounded proper nouns are masked first: a Town park called "Brian Best Park" is not the
+    // model reaching for "best". See maskGroundedProperNouns.
+    const superlativeText = maskGroundedProperNouns(sectionText, input);
     for (const phrase of SUPERLATIVE_PHRASES) {
       const re = wordBoundaryRegex(phrase);
-      if (re.test(sectionText)) {
-        violations.push({ rule: "superlative", sectionId: section.id, excerpt: excerptAround(sectionText, re), severity: "hard" });
+      if (re.test(superlativeText)) {
+        violations.push({ rule: "superlative", sectionId: section.id, excerpt: excerptAround(superlativeText, re), severity: "hard" });
         break;
       }
     }
@@ -2375,10 +2378,13 @@ export function validateSectionsSubset(
       });
     }
 
+    // Grounded proper nouns are masked first: a Town park called "Brian Best Park" is not the
+    // model reaching for "best". See maskGroundedProperNouns.
+    const superlativeText = maskGroundedProperNouns(sectionText, input);
     for (const phrase of SUPERLATIVE_PHRASES) {
       const re = wordBoundaryRegex(phrase);
-      if (re.test(sectionText)) {
-        violations.push({ rule: "superlative", sectionId: section.id, excerpt: excerptAround(sectionText, re), severity: "hard" });
+      if (re.test(superlativeText)) {
+        violations.push({ rule: "superlative", sectionId: section.id, excerpt: excerptAround(superlativeText, re), severity: "hard" });
         break;
       }
     }
@@ -3203,4 +3209,41 @@ function formatNumericUngrounded(violations: ValidatorViolation[]): string[] {
     `Banned patterns: any "$X premium" / "$X differential" / "X% premium" / "X-Y% premium over older stock" — the input schema has no condition/position/era price split, so these constructions are always fabricated.`,
   );
   return lines;
+}
+
+/**
+ * GROUNDED PROPER NOUNS ARE NOT SUPERLATIVES.
+ *
+ * The banned-word test is a word-boundary match, so a real place name that contains a banned word
+ * fails it. parkway-drive-milton failed 20 generation attempts across four runs, every one on
+ * "superlative", every one because the model correctly named "Brian Best Park" - a Town park whose
+ * address is 320 Parkway Drive W, which is to say it sits ON the street being described. Every
+ * faithful attempt named it and every attempt was rejected. The validator was punishing the model
+ * for using the grounded input it was handed, and no amount of retrying could resolve that.
+ *
+ * The mask covers ONLY names the generator was given: nearby places, cross streets, the street
+ * itself. A superlative the model invents is untouched, so this cannot be used to smuggle
+ * marketing language past the rule.
+ */
+function maskGroundedProperNouns(text: string, input: StreetGeneratorInput): string {
+  const names: string[] = [];
+  const n = input.nearby;
+  if (n) {
+    for (const group of [n.parks, n.schoolsPublic, n.schoolsCatholic, n.mosques, n.grocery]) {
+      for (const item of group ?? []) if (item?.name) names.push(item.name);
+    }
+    for (const one of [n.hospital, n.goStation, n.highway]) {
+      if (one?.name) names.push(one.name);
+    }
+  }
+  for (const cs of input.crossStreets ?? []) if (cs?.name) names.push(cs.name);
+  if (input.street?.name) names.push(input.street.name);
+
+  // Longest first, so "Brian Best Park" is consumed before a shorter overlapping name could
+  // split it and leave "Best" exposed.
+  let masked = text;
+  for (const name of names.filter((s) => s && s.length >= 3).sort((a, b) => b.length - a.length)) {
+    masked = masked.split(name).join("_".repeat(name.length));
+  }
+  return masked;
 }
