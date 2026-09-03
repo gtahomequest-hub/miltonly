@@ -10,6 +10,7 @@ import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
 import { deriveIdentity } from "@/lib/streetUtils";
 import { calcMarketDataHash } from "@/lib/marketDataHash";
+import { revalidatePath } from "next/cache";
 import { sendSMS } from "@/lib/smsAlert";
 import { buildGeneratorInput } from "@/lib/ai/buildGeneratorInput";
 import {
@@ -612,7 +613,12 @@ export async function generateStreetContent(
       where: { streetSlug },
       create: {
         streetSlug,
-        streetName,
+        // DERIVED ON BOTH BRANCHES (DEC-NAME-SOURCE close-out). Build 1 fixed the update branch
+        // only, so a row's FIRST write still took whatever MLS last wrote and the registry never
+        // got a say. The cron published gifford-crescent-milton on 2026-09-03 as "Gifford Cres"
+        // against a registry that says "Gifford Crescent" — the exact class of bug Build 1 was
+        // meant to close, surviving on the one path a regeneration never exercises.
+        streetName: resolveStreetName(streetSlug, streetName).name,
         neighbourhood: stats.neighbourhood,
         description,
         rawAiOutput,
@@ -649,6 +655,14 @@ export async function generateStreetContent(
         attempts,
       },
     });
+
+    // DEC-REGEN-REVALIDATE. A successful StreetContent write changes three surfaces, not one: the
+    // street page, the /streets index that lists it, and the hub that aggregates it. Until now the
+    // only revalidatePath in the codebase lived in /api/admin/publish and purged the street page
+    // alone, so a regenerated description sat behind a stale render until the CDN entry aged out on
+    // its own. That is exactly what made the 2026-09-03 Build 2 regenerations invisible for roughly
+    // forty minutes and sent the verification battery hunting a data defect that did not exist.
+    await revalidateStreetSurfaces(streetSlug, stats.neighbourhood);
   }
 
   if (!opts.skipSms) {
@@ -701,4 +715,44 @@ export async function getOrGenerateStreetContent(
       `registered users will see detailed market intelligence here shortly.`,
     needsReview: true,
   };
+}
+
+/**
+ * The three surfaces a StreetContent write invalidates, purged together.
+ *
+ * The hub is found through Neighbourhood.rawStrings because stats.neighbourhood carries the raw
+ * TREB string ("1035 - OM Old Milton"), not a slug. A non-hub neighbourhood has no page to purge.
+ *
+ * GUARDED ON PURPOSE. revalidatePath needs a request-scoped incremental cache: the cron route has
+ * one, a bulk regeneration script does not. A script must not die because it cannot purge a cache
+ * it was never able to reach, so a failure here is logged and swallowed rather than thrown.
+ */
+async function revalidateStreetSurfaces(
+  streetSlug: string,
+  rawNeighbourhood: string | null,
+): Promise<string[]> {
+  const paths = [`/streets/${streetSlug}`, "/streets"];
+  try {
+    if (rawNeighbourhood) {
+      const hub = await prisma.neighbourhood.findFirst({
+        where: { rawStrings: { has: rawNeighbourhood }, isHub: true },
+        select: { slug: true },
+      });
+      if (hub) paths.push(`/neighbourhoods/${hub.slug}`);
+    }
+  } catch {
+    // Hub lookup is best-effort; the street and index purges still matter.
+  }
+  for (const p of paths) {
+    try {
+      revalidatePath(p);
+    } catch (e) {
+      console.log(
+        `[generateStreetContent] revalidate skipped for ${p} (no request scope): ` +
+        String((e as Error).message).slice(0, 90)
+      );
+    }
+  }
+  console.log(`[generateStreetContent] revalidated: ${paths.join(", ")}`);
+  return paths;
 }

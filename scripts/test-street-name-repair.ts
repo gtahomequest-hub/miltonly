@@ -68,6 +68,53 @@ for (const abs of walk(join(__dirname, "..", "src"))) {
 failures.push(...unwired);
 
 
+// ── BOTH UPSERT BRANCHES ─────────────────────────────────────────────────────────────────────────
+// The sweep above is FILE-level: it asks whether a file calls the resolver at all. generateStreet.ts
+// always did, so the sweep stayed green while the CREATE branch of the StreetContent upsert wrote a
+// bare streetName and only the UPDATE branch wrote the resolved one. A row's first write therefore
+// took whatever MLS last wrote, and only a later regeneration repaired it. The cron published
+// gifford-crescent-milton as "Gifford Cres" through exactly that gap.
+//
+// So this assertion is BRANCH-level, and structural rather than a substring match on the file: it
+// locates the streetContent.upsert call, isolates each branch body by brace matching, and requires
+// the resolver in both. A shorthand streetName in either branch fails it.
+function braceBody(src: string, openIdx: number): string {
+  let depth = 0;
+  for (let i = openIdx; i < src.length; i++) {
+    if (src[i] === "{") depth++;
+    else if (src[i] === "}") {
+      depth--;
+      if (depth === 0) return src.slice(openIdx, i + 1);
+    }
+  }
+  return "";
+}
+
+const GEN_REL = "src/lib/generateStreet.ts";
+const genSrc = readFileSync(join(__dirname, "..", GEN_REL), "utf8");
+const upsertIdx = genSrc.indexOf("prisma.streetContent.upsert(");
+if (upsertIdx === -1) {
+  failures.push("  " + GEN_REL + ": prisma.streetContent.upsert( not found. This guard is stale, fix it.");
+} else {
+  const upsertBody = braceBody(genSrc, genSrc.indexOf("{", upsertIdx));
+  for (const branch of ["create", "update"] as const) {
+    const bIdx = upsertBody.indexOf(branch + ": {");
+    if (bIdx === -1) {
+      failures.push("  " + GEN_REL + ": streetContent.upsert has no " + branch + " branch. This guard is stale.");
+      continue;
+    }
+    const body = braceBody(upsertBody, upsertBody.indexOf("{", bIdx));
+    if (!/streetName:\s*resolveStreetName\(/.test(body)) {
+      failures.push(
+        "  " + GEN_REL + ": the " + branch.toUpperCase() + " branch of streetContent.upsert does not\n" +
+        "      derive streetName from resolveStreetName. The registry is the naming authority on BOTH\n" +
+        "      branches; a bare shorthand here lets whatever MLS last wrote reach the column.",
+      );
+    }
+  }
+}
+
+
 // ── 1. Every registry slug resolves to its official name ────────────────────────────────────────
 let regChecked = 0;
 for (const r of MILTON_STREET_REGISTRY) {

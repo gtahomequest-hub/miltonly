@@ -97,6 +97,9 @@ scripts/_migration-log.json
 # GSC coverage audit local state + artifacts (scripts/gsc-coverage-audit.ts)
 scripts/gsc-coverage-out/
 
+# The local build gate writes here (CLAUDE.md: pnpm build > build.log 2>&1)
+build.log
+
 # Throwaway regen + batch logs
 scripts/regen-*.txt
 scripts/regen-*.json
