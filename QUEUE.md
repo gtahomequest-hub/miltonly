@@ -2,7 +2,7 @@
 
 Five items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: all five **not started**.
+Status: item 1 **in progress** on `fix/naming-closeout` (green on preview, not merged). Items 2 to 5 **not started**.
 
 ---
 
@@ -11,6 +11,18 @@ Status: all five **not started**.
 Close the gap DEC-NAME-SOURCE left open and clear the debris around it. The create branch of the `StreetContent` upsert in `generateStreet.ts` writes `streetName` from `resolveStreetName` the way the update branch already does, and the prebuild guard is rewritten to assert **both** upsert branches rather than merely that the file imports the resolver. Repair `gifford-crescent-milton`'s stored name, which the cron wrote as `Gifford Cres` on 2026-09-03. Wire `revalidatePath` on every successful `StreetContent` write, covering the street page, `/streets`, and the street's hub. Run recon on `parkway-drive-milton`: report which token trips the `superlative` validator on 20 of 20 attempts, then fix it and regenerate. Resolve `burnhamthorpe-road-milton`, whose `getStreetStats()` returns null because all five activity sources are empty. Finally, pin the package manager: add `"packageManager": "pnpm@..."` to `package.json`, delete `package-lock.json`, and `corepack enable`. Pin line endings in the same pass: add a `.gitattributes` carrying `* text=auto` and `*.sql text eol=lf`, so a second machine writing here cannot churn the diff.
 
 **Done when** the battery reports 9/9 on production, `parkway-drive` and `burnhamthorpe-road` are both regenerated clean, and no npm lockfile remains in the repo.
+
+**Progress 2026-09-03** on `fix/naming-closeout` @ `a850640`, green on preview `miltonly-gy10g0owg` (battery 9/9, 428 pages), not merged:
+
+- [x] create branch derives `streetName` from `resolveStreetName`
+- [x] guard asserts **both** upsert branches; verified red on main, green on branch
+- [x] `gifford-crescent-milton` repaired to "Gifford Crescent"
+- [x] DEC-REGEN-REVALIDATE wired for page, `/streets`, and hub
+- [x] `parkway-drive` recon and fix: the validator was flagging "Brian Best Park", a Town park at 320 Parkway Drive W. Grounded proper nouns are masked before the banned-word test; regenerated clean on the first attempt
+- [x] `packageManager: pnpm@9.15.9`, `package-lock.json` deleted, `.gitattributes` and `build.log` handled
+- [ ] `burnhamthorpe-road` regenerated clean. **Blocked and not fixable as specified:** not a keying defect. One expired listing, zero DB2 rows under any key, no DB3 row, so `getStreetStats()` correctly returns null. This "Done when" condition needs amending or the page needs unpublishing; both are your call
+- [ ] battery 9/9 on **production** (requires the merge)
+- [ ] **new, unscoped:** 380 of 472 `StreetContent` rows still carry an abbreviated stored `streetName`. Same root cause, corpus-wide. Only gifford was repaired
 
 ---
 
