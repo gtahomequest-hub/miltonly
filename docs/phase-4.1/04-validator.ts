@@ -228,7 +228,7 @@ export function validateStreetGeneration(
 
     // Heading check
     const acceptable = HEADING_BANK[section.id].flatMap(tmpl => [
-      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName),
+      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName ?? input.street.name),
     ]);
     if (!acceptable.includes(section.heading)) {
       violations.push({
@@ -335,11 +335,11 @@ export function validateStreetGeneration(
 
   // Cross-street invention check
   const diffPriorities = output.sections.find(s => s.id === "differentPriorities")?.paragraphs.join(" ") ?? "";
-  const allowedShortNames = input.crossStreets.map(c => c.shortName);
+  const allowedShortNames = input.crossStreets.map(c => c.name);
   const candidatePhrases = extractCandidateStreetNames(diffPriorities);
   for (const phrase of candidatePhrases) {
     const isAllowed = allowedShortNames.some(s => phrase.includes(s))
-      || phrase.includes(input.street.shortName)
+      || (input.street.shortName ? phrase.includes(input.street.shortName) : false)
       || phrase.includes(input.street.name)
       || input.neighbourhoods.some(n => phrase.includes(n))
       || KNOWN_MILTON_ANCHORS.some(a => phrase.includes(a));

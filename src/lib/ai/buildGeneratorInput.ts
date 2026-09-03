@@ -31,7 +31,6 @@ import { config } from "@/lib/config";
 import { getAnalyticsDb, getSoldDb } from "@/lib/db";
 import {
   expandStreetName,
-  shortNameFor,
   monthlyToQuarterly,
   resolveSiblingSlugs,
   type RawMonthly,
@@ -303,7 +302,6 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     extractStreetName(sample?.address ?? deslugify(slug));
   const resolvedName = resolveStreetName(slug, rawName);
   const streetName = resolvedName.name;
-  const shortName = resolvedName.shortName;
   const type = deriveStreetType(streetName);
   // Step 13m-1 identity metadata.
   const identity = deriveIdentity(slug);
