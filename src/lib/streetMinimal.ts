@@ -123,7 +123,7 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
       : `${name} is${inArea}.`;
 
   const noData =
-    `No home resales are recorded on ${shortName} in our data window — the last ~2 years of ` +
+    `No home resales are recorded on ${name} in our data window, the last ~2 years of ` +
     `Milton sales. This is a real street with no recent turnover, not a page without a home. ` +
     `When a home sells here, this page fills in with its own price history and trends.`;
 

@@ -125,7 +125,11 @@ export interface StreetGeneratorInput {
   street: {
     name: string;
     slug: string;
-    shortName: string;
+    /** DEC-NAME-SHORT: OPTIONAL and no longer supplied by buildGeneratorInput. The model is given
+     *  exactly one name for a street - the full resolver name - so it cannot produce prose in the
+     *  abbreviated form the page then renders beside the full one. Width-limited UI shortens at
+     *  render time instead. */
+    shortName?: string;
     type: string;
     identityKey: string;
     siblingSlugs: string[];
@@ -212,7 +216,8 @@ export interface StreetGeneratorInput {
   activeListingsCount: number;
   crossStreets: Array<{
     slug: string;
-    shortName: string;
+    /** DEC-NAME-SHORT: the full resolver name. A cross street is named in prose. */
+    name: string;
     distinctivePattern: string;
     typicalPrice: number;
     // The comparator's OWN dominant DB2 neighbourhood (cleaned display form,

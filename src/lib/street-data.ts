@@ -1597,9 +1597,9 @@ function buildCornerWidget(input: {
     { id: "s5", text: `The fine details that distinguish ${shortName}.` },
     { id: "s6", text: `What has actually been closing on ${shortName}, by the numbers.` },
     { id: "s7", text: `Commute reach from ${shortName}.` },
-    { id: "s8", text: `Active inventory on ${shortName} right now.` },
-    { id: "s9", text: `How ${shortName} compares to nearby streets and schools.` },
-    { id: "s10", text: `Common questions about ${shortName}.` },
+    { id: "s8", text: `Active inventory on ${streetName} right now.` },
+    { id: "s9", text: `How ${streetName} compares to nearby streets and schools.` },
+    { id: "s10", text: `Common questions about ${streetName}.` },
   ];
 
   return {

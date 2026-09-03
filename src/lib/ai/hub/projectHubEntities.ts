@@ -24,7 +24,7 @@ export interface ProjectedStreetListItem {
   position: number;       // 1-based, currentRank order, VIP first
   slug: string;
   displayName: string;    // expandStreetName-normalized
-  shortName: string | null;
+  shortName?: string | null;
   url: string;            // /streets/[slug] (WS5 URL policy — preserved)
   isVip: boolean;
   soldCount12mo: number;

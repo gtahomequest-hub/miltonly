@@ -14,7 +14,7 @@ import { SiteNav } from '../../nav/SiteNav';
 export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: MinimalStreetView }) {
   // the shared gate — absence only where the record is genuinely empty (see resaleClaim.ts).
   // view.noData is this shell's own street-specific absence prose; it is kept for the zero case.
-  const claim = resaleClaim(view.shortName, data.hasAnySale, view.noData);
+  const claim = resaleClaim(view.name, data.hasAnySale, view.noData);
   const facts: Array<{ label: string; value: string }> = [];
   if (view.neighbourhoodName) facts.push({ label: 'Neighbourhood', value: view.neighbourhoodName });
   if (view.typeLabel) facts.push({ label: 'Street type', value: view.typeLabel.charAt(0).toUpperCase() + view.typeLabel.slice(1) });
@@ -46,7 +46,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
         <div className="s-wrap">
           <div className="s-sechead">
             <span className="s-eyebrow">The street</span>
-            <h2>About {view.shortName}</h2>
+            <h2>About {view.name}</h2>
           </div>
           <div className="s-desc-grid">
             <div className="s-prose">
@@ -86,8 +86,8 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
             </div>
             <div className="s-msum">
               <p>
-                These figures describe <b>{view.area.neighbourhoodName}</b> overall — {view.area.soldCount12mo} recorded
-                {' '}sale{view.area.soldCount12mo === 1 ? '' : 's'} over the {view.area.window} — <b>not {view.shortName} specifically</b>.
+                These figures describe <b>{view.area.neighbourhoodName}</b> overall, {view.area.soldCount12mo} recorded
+                {' '}sale{view.area.soldCount12mo === 1 ? '' : 's'} over the {view.area.window}, <b>not {view.name} specifically</b>.
                 They are the neighbourhood the street belongs to, offered as context, not a street-level estimate.
               </p>
               <div className="s-msum-stats">
@@ -152,7 +152,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
           <div className="s-wrap">
             <div className="s-sechead">
               <span className="s-eyebrow">Nearby</span>
-              <h2>Streets near {view.shortName}</h2>
+              <h2>Streets near {view.name}</h2>
             </div>
             <div className="s-ctx">
               <div className="s-ctx-col">

@@ -101,7 +101,8 @@ export interface HubProjectedStreet {
   legacyDisplayName?: string;
   slug: string;
   displayName: string;
-  shortName: string | null;
+  /** DEC-NAME-SHORT: OPTIONAL and no longer supplied. The model is given one name per street. */
+  shortName?: string | null;
   isVip: boolean;
   currentRank: number | null;
   soldCount12mo: number;

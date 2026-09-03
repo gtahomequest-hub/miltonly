@@ -1389,9 +1389,9 @@ export function findAdjacencyClaims(
   for (const sentence of sentences) {
     if (!ADJACENCY_PHRASES.test(sentence)) continue;
     for (const c of crossStreets) {
-      if (c.shortName && sentence.includes(c.shortName)) {
+      if (c.name && sentence.includes(c.name)) {
         out.push({
-          street: c.shortName,
+          street: c.name,
           excerpt: sentence.trim().slice(0, 160),
         });
       }
@@ -1475,7 +1475,7 @@ export function findComparatorNeighbourhoodClaims(
   const inputNbhdLower = new Set(inputNeighbourhoods.map((n) => n.toLowerCase()));
   const comparators = crossStreets.map((c) => ({
     ...c,
-    base: comparatorBaseName(c.shortName),
+    base: comparatorBaseName(c.name),
   }));
 
   const sentences = text.split(/(?<=[.!?])\s+/);
@@ -1489,7 +1489,7 @@ export function findComparatorNeighbourhoodClaims(
     const wordRe = (s: string) =>
       new RegExp(`\\b${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
     const mentioned = comparators.filter((c) => {
-      if (c.shortName && wordRe(c.shortName).test(sentence)) return true;
+      if (c.name && wordRe(c.name).test(sentence)) return true;
       if (c.base && wordRe(c.base).test(sentence)) return true;
       return false;
     });
@@ -1507,7 +1507,7 @@ export function findComparatorNeighbourhoodClaims(
     // grounded prose. A mention with NO preceding comparator in the sentence
     // is checked against ALL mentioned comparators (fail-closed).
     const comparatorPositions = mentioned.map((c) => {
-      const byShort = c.shortName ? sentence.search(wordRe(c.shortName)) : -1;
+      const byShort = c.name ? sentence.search(wordRe(c.name)) : -1;
       const byBase = c.base ? sentence.search(wordRe(c.base)) : -1;
       const idx = byShort >= 0 && byBase >= 0 ? Math.min(byShort, byBase) : Math.max(byShort, byBase);
       return { c, idx };
@@ -1548,7 +1548,7 @@ export function findComparatorNeighbourhoodClaims(
           const ok = !!c.neighbourhood && c.neighbourhood.toLowerCase() === name.toLowerCase();
           if (!ok) {
             out.push({
-              street: c.shortName,
+              street: c.name,
               claimed: name,
               expected: c.neighbourhood ?? null,
               excerpt: sentence.trim().slice(0, 180),
@@ -1566,7 +1566,7 @@ export function findComparatorNeighbourhoodClaims(
         const ok = !!c.neighbourhood && inputNbhdLower.has(c.neighbourhood.toLowerCase());
         if (!ok) {
           out.push({
-            street: c.shortName,
+            street: c.name,
             claimed: "same neighbourhood (generic)",
             expected: c.neighbourhood ?? null,
             excerpt: sentence.trim().slice(0, 180),
@@ -1940,7 +1940,7 @@ export function validateStreetGeneration(
 
     // Heading check
     const acceptable = HEADING_BANK[section.id].flatMap(tmpl => [
-      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName),
+      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName ?? input.street.name),
     ]);
     if (!acceptable.includes(section.heading)) {
       violations.push({
@@ -2191,7 +2191,7 @@ export function validateStreetGeneration(
 
   // Cross-street invention check
   const diffPriorities = output.sections.find(s => s.id === "differentPriorities")?.paragraphs.join(" ") ?? "";
-  const allowedShortNames = input.crossStreets.map(c => c.shortName);
+  const allowedShortNames = input.crossStreets.map(c => c.name);
   const candidatePhrases = extractCandidateStreetNames(diffPriorities);
   for (const phrase of candidatePhrases) {
     // Also tolerate a phrase that is a ≥2-token prefix/substring of the host
@@ -2201,7 +2201,7 @@ export function validateStreetGeneration(
       phrase.trim().split(/\s+/).length >= 2 &&
       input.street.name.toLowerCase().includes(phrase.toLowerCase());
     const isAllowed = allowedShortNames.some(s => phrase.includes(s))
-      || phrase.includes(input.street.shortName)
+      || (input.street.shortName ? phrase.includes(input.street.shortName) : false)
       || phrase.includes(input.street.name)
       || phraseIsHostSelfReference
       || input.neighbourhoods.some(n => phrase.includes(n))
@@ -2355,7 +2355,7 @@ export function validateSectionsSubset(
     const sectionText = section.paragraphs.join("\n\n");
 
     const acceptable = HEADING_BANK[section.id].flatMap((tmpl) => [
-      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName),
+      tmpl.replace("{name}", input.street.name).replace("{shortName}", input.street.shortName ?? input.street.name),
     ]);
     if (!acceptable.includes(section.heading)) {
       violations.push({
@@ -2557,14 +2557,14 @@ export function validateSectionsSubset(
   // Cross-street invention check (only meaningful if differentPriorities is in the subset)
   const diffPriorities = sections.find((s) => s.id === "differentPriorities")?.paragraphs.join(" ");
   if (diffPriorities) {
-    const allowedShortNames = input.crossStreets.map((c) => c.shortName);
+    const allowedShortNames = input.crossStreets.map((c) => c.name);
     const candidatePhrases = extractCandidateStreetNames(diffPriorities);
     for (const phrase of candidatePhrases) {
       const phraseIsHostSelfReference =
         phrase.trim().split(/\s+/).length >= 2 &&
         input.street.name.toLowerCase().includes(phrase.toLowerCase());
       const isAllowed = allowedShortNames.some((s) => phrase.includes(s))
-        || phrase.includes(input.street.shortName)
+        || (input.street.shortName ? phrase.includes(input.street.shortName) : false)
         || phrase.includes(input.street.name)
         || phraseIsHostSelfReference
         || input.neighbourhoods.some((n) => phrase.includes(n))
@@ -3053,7 +3053,7 @@ function formatClicheOpener(violations: ValidatorViolation[]): string[] {
 }
 
 function formatInventedCrossStreet(violations: ValidatorViolation[], input: StreetGeneratorInput): string[] {
-  const validNames = input.crossStreets.map(cs => cs.shortName).join(", ") || "(none provided)";
+  const validNames = input.crossStreets.map(cs => cs.name).join(", ") || "(none provided)";
   const lines = [
     `**invented_cross_street**: You named a street that is not in input.crossStreets[]. Specifically:`,
   ];

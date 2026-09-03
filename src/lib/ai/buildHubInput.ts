@@ -288,7 +288,7 @@ export async function buildHubInput(neighbourhoodSlug: string): Promise<HubGener
     slug: s.slug,
     // expandStreetName (WS3 carry-forward): clean display, never "Farmstead. Dr".
     displayName: resolveStreetName(s.slug, s.name).name,
-    shortName: resolveStreetName(s.slug, s.name).shortName,
+
     // the pre-registry form, carried only so assertNoFabricatedStreets does not flag prose that was
     // generated before the rename. Drop after Build 2 regenerates.
     legacyDisplayName: expandStreetName(s.name),
@@ -422,7 +422,7 @@ export async function buildRuralHubInput(neighbourhoodSlug: string): Promise<Hub
   const projectedStreets: HubProjectedStreet[] = streets.map((s) => ({
     slug: s.slug,
     displayName: resolveStreetName(s.slug, s.name).name,
-    shortName: resolveStreetName(s.slug, s.name).shortName,
+
     // the pre-registry form, carried only so assertNoFabricatedStreets does not flag prose that was
     // generated before the rename. Drop after Build 2 regenerates.
     legacyDisplayName: expandStreetName(s.name),

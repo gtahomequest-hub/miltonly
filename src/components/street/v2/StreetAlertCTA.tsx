@@ -26,7 +26,7 @@ async function postLead(payload: Record<string, unknown>): Promise<boolean> {
 
 export default function StreetAlertCTA({
   streetName,
-  shortName,
+  shortName: streetLabel,
   neighbourhood,
   headline,
   body,
@@ -52,7 +52,7 @@ export default function StreetAlertCTA({
       email,
       property_address: streetName,
       neighbourhood,
-      notes: `Street alerts requested — ${streetName}`,
+      notes: `Street alerts requested, ${streetName}`,
     });
     setStatus(ok ? "ok" : "error");
   };
@@ -62,7 +62,7 @@ export default function StreetAlertCTA({
       <h3>{headline}</h3>
       <p>{body}</p>
       {status === "ok" ? (
-        <p className="s-alert-done">Done — you&rsquo;re on the list. We&rsquo;ll email you the moment a home on {shortName} is listed or sold.</p>
+        <p className="s-alert-done">Done, you&rsquo;re on the list. We&rsquo;ll email you the moment a home on {streetLabel} is listed or sold.</p>
       ) : (
         <form className="s-alert-form" onSubmit={submit}>
           <div className="s-alert-row">
@@ -72,13 +72,13 @@ export default function StreetAlertCTA({
               placeholder="you@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              aria-label={`Email for ${shortName} alerts`}
+              aria-label={`Email for ${streetLabel} alerts`}
             />
             <button type="submit" disabled={status === "submitting"}>
               {status === "submitting" ? "…" : dormant ? "Notify me" : "Set an alert"}
             </button>
           </div>
-          {status === "error" && <div className="s-alert-err">Something went wrong — please try again.</div>}
+          {status === "error" && <div className="s-alert-err">Something went wrong. Please try again.</div>}
           <div className="s-alert-fine">Miltonly emails only. No account, unsubscribe anytime.</div>
         </form>
       )}

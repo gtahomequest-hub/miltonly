@@ -198,7 +198,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
   // The sidebar seller CTA was the last ungated copy on the page: "grounded in every sale we have
   // tracked on X" rendered on 412 of 431 pages, contradicted the tiered CTA below it on 191, and
   // was flatly false on 26 streets with no resale on record. Same predicate as everything else.
-  const claim = resaleClaim(data.shortName, data.hasAnySale);
+  const claim = resaleClaim(data.name, data.hasAnySale);
   const subK5 = data.tier === 'identity-only' || data.tier === 'area-only';
   const ctaBody = subK5 || claim.claimsAbsence ? claim.sellerBody(data.name) : sidebar.cta.body;
   return (
@@ -261,7 +261,7 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
                 <h3>Profile in preparation</h3>
                 <p>
                   We are still assembling the editorial read for {data.name}. The live market
-                  data below is current — the written profile follows shortly.
+                  data below is current, the written profile follows shortly.
                 </p>
               </div>
             ) : (
@@ -275,7 +275,7 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
                   {i === 0 && data.ownerCtaPrice !== null && (
                     <div className="s-inline-cta">
                       <div className="s-inline-h">
-                        Own on {data.shortName}? Typical is <b>{shortPrice(data.ownerCtaPrice)}</b>.
+                        Own on {data.name}? Typical is <b>{shortPrice(data.ownerCtaPrice)}</b>.
                       </div>
                       <a href="/sell">Value my home</a>
                     </div>
@@ -370,7 +370,7 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">By the home</span>
-          <h2>What trades on {data.shortName}, by type</h2>
+          <h2>What trades on {data.name}, by type</h2>
         </div>
         <div className="s-types">
           {data.productTypes.map((t) => (
@@ -411,7 +411,7 @@ export function StreetMarket({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">The market</span>
-          <h2>Recent activity on {data.shortName}</h2>
+          <h2>Recent activity on {data.name}</h2>
         </div>
         <div className="s-market-grid">
           <SummaryCard card={m.sales} />
@@ -455,7 +455,7 @@ export function StreetCommute({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">Getting around</span>
-          <h2>Commute &amp; reach from {data.shortName}</h2>
+          <h2>Commute &amp; reach from {data.name}</h2>
         </div>
         <div className="s-commute">
           {data.commute.map((c) => (
@@ -520,7 +520,7 @@ export function StreetInventory({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">On the market</span>
-          <h2>Active listings on {data.shortName}</h2>
+          <h2>Active listings on {data.name}</h2>
         </div>
         <div className="s-inv">
           {data.activeListings.map((l) => (
@@ -542,7 +542,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">In context</span>
-          <h2>Around {data.shortName}</h2>
+          <h2>Around {data.name}</h2>
         </div>
         <div className="s-ctx">
           {/* Physically-connected streets (shared intersection) — the "what's the street
@@ -609,7 +609,7 @@ export function StreetFaq({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">Common questions</span>
-          <h2>About {data.shortName}</h2>
+          <h2>About {data.name}</h2>
         </div>
         <div className="s-faq">
           {data.faqs.map((f, i) => (
@@ -635,7 +635,7 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
   const nbhd = data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton';
   const subK5 = data.tier === 'identity-only' || data.tier === 'area-only';
   // ONE gate, ONE wording — shared with the minimal shell via resaleClaim().
-  const claim = resaleClaim(data.shortName, data.hasAnySale);
+  const claim = resaleClaim(data.name, data.hasAnySale);
   // The absence claim is gated on hasAnySale ALONE, not on tier. A street can clear k>=5 on LEASES
   // and still have no resale on record (tier 'priced-lease'); those pages previously said nothing
   // at all, so the claim set and the zero-sale set disagreed in both directions.
@@ -646,7 +646,7 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-final">
           <span className="s-eyebrow" style={{ color: 'var(--s-green)' }}>
-            Your move on {data.shortName}
+            Your move on {data.name}
           </span>
           <div className="s-finalgrid" style={{ marginTop: 24 }}>
             <div className="s-fcard">
@@ -661,9 +661,9 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
             </div>
             <StreetAlertCTA
               streetName={data.name}
-              shortName={data.shortName}
+              shortName={data.name}
               neighbourhood={nbhd}
-              headline={alertFraming ? `Be first when ${data.shortName} trades` : buyer.headline}
+              headline={alertFraming ? `Be first when ${data.name} trades` : buyer.headline}
               body={ctaBody}
               dormant={alertFraming}
             />
@@ -686,13 +686,13 @@ export function StreetAreaContext({ data }: { data: StreetV2Data }) {
   const identity = data.tier === 'identity-only';
   // TIER decides which framing this block uses; hasAnySale decides what the heading may CLAIM.
   // Keyed on tier alone, "New to the record" shipped on 113 pages, 90 of which had sales.
-  const claim = resaleClaim(data.shortName, data.hasAnySale);
+  const claim = resaleClaim(data.name, data.hasAnySale);
   return (
     <section className="s-block s-areacx">
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">{identity ? claim.areaEyebrow : 'Neighbourhood context'}</span>
-          <h2>{identity ? claim.areaHeading : `The market around ${data.shortName}`}</h2>
+          <h2>{identity ? claim.areaHeading : `The market around ${data.name}`}</h2>
         </div>
         <div className="s-areacx-card">
           {ac && ac.typicalPrice != null ? (
@@ -708,18 +708,18 @@ export function StreetAreaContext({ data }: { data: StreetV2Data }) {
                 ) : (
                   ac.neighbourhoodName
                 )}{' '}
-                — the neighbourhood, not {data.shortName} specifically
+               , the neighbourhood, not {data.name} specifically
               </div>
               {ac.basis && <div className="s-basis">{ac.basis}</div>}
               <p className="s-areacx-read">
                 {identity
-                  ? `Too few recent trades on ${data.shortName} to price it on its own yet — the ${ac.neighbourhoodName} market is your best guide to what you'd pay here, and this page fills in with ${data.shortName}'s own numbers as homes trade.`
-                  : `${data.shortName} hasn't had enough recent sales to publish its own typical price, and we won't publish a price the record can't support. The ${ac.neighbourhoodName} typical above is the honest anchor until it does.`}
+                  ? `Too few recent trades on ${data.name} to price it on its own yet, the ${ac.neighbourhoodName} market is your best guide to what you'd pay here, and this page fills in with ${data.name}'s own numbers as homes trade.`
+                  : `${data.name} hasn't had enough recent sales to publish its own typical price, and we won't publish a price the record can't support. The ${ac.neighbourhoodName} typical above is the honest anchor until it does.`}
               </p>
             </>
           ) : (
             <p className="s-areacx-read">
-              Neighbourhood pricing for {ac?.neighbourhoodName ?? 'this area'} isn&rsquo;t published yet — {data.shortName} will fill in with its own price history as homes trade.
+              Neighbourhood pricing for {ac?.neighbourhoodName ?? 'this area'} isn&rsquo;t published yet, {data.name} will fill in with its own price history as homes trade.
             </p>
           )}
         </div>
