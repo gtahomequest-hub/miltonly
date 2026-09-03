@@ -45,7 +45,6 @@ Tracked in `QUEUE.md`, not started. Summarised here so nothing is lost:
 Not yet queued, raised but unassigned:
 
 - `heroSearch.ts` resolves 5 slugs to physically different streets; needs an ambiguity guard.
-- k-anonymity K5 to K10 decision for point typicals would strand 139 pages.
 - Condo H1s still render abbreviations such as `Nadalin Hts`.
 - Stored `HubContent.metaDescription` drifts from live on 21 of 22 hubs. That column is no longer served, so this is cleanup, not a defect.
 - Rent pill disagrees with the market card on `melville-bonus-crescent-milton` and `mcdougall-crossing-milton`. Known standing defect, noted but not gated by the battery.
