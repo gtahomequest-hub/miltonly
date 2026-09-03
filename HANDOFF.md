@@ -14,7 +14,7 @@ _Last rewritten 2026-09-03._
 | package manager | pnpm 9.15.9, pinned; no npm lockfile in the repo |
 | prebuild suite | 9 tests |
 | QUEUE | item 1 **done**; item 2 **setup complete, uploads pending**; items 3 to 5 not started |
-| R2 | bucket `miltonly-video`, ENAM, empty; public via `r2.dev`; S3 credentials live in `.env.local` and Vercel Production + Preview |
+| R2 | bucket `miltonly-video`, ENAM, **18 objects** (9 clips + 9 posters); public via `r2.dev` |
 
 ## What shipped 2026-09-02
 
@@ -68,6 +68,14 @@ object: _healthcheck/r2-proof.txt  bytes: 1024
 
 Bucket verified empty afterwards.
 
+**Upload phase 2026-09-03**, branch `feat/r2-video-upload` @ `fef75e0`, preview `miltonly-9k72wspkw` battery 9/9, **not merged**. Detail in `scratchpad/reports/051-r2-video-upload.md`.
+
+- **18 objects uploaded**, nine clips and nine posters, at `streets/<slug>-milton/day.mp4` and `.../poster.webp`. Content-Type set, `Cache-Control: public, max-age=31536000, immutable`, Range requests answered. `scripts/upload-street-videos-r2.ts` is idempotent on a HEAD size check, proven when a transient TLS error killed a run after five streets and the re-run skipped exactly those five.
+- **Poster is `.webp`, not the `.jpg` the brief named.** Every staged poster is a webp; a `.jpg` key would have lied about the bytes. There is no poster column, so `deriveVideoPoster` learned the layout (`day.mp4` -> `poster.webp`), keeping the legacy `.mp4` -> `.webp` arm so a Blob-era row cannot silently lose its poster and its VideoObject.
+- **A capture-date bug, found and fixed mid-run.** The filename timestamp is local and the caption renders in UTC, so parsing it as an instant pushed every evening capture a day forward: `frost-court_20260825` first wrote 2026-08-26. Seven of nine were affected. It now stores UTC midnight of the shot date.
+- **Only 5 of 9 streets have a page.** `clifford-point`, `chretien-street`, `heaven-crescent` and `tasker-court` have a `ResidentialStreet` entity but no `StreetContent` row, so the update matched nothing. Their assets are in R2 and ready; there is nowhere to show them.
+- **The Vercel Blob object is intentionally still there.** Production serves a cached render pointing at the Blob URL, the page is `revalidate = 3600`, and deleting now would break the live lemieux page for up to an hour. Safe order: merge, confirm production serves R2, then delete.
+
 ## Open items
 
 1. **`burnhamthorpe-road-milton` is published with no data behind it.** Not a keying defect: the slug is consistent across `Listing`, `ResidentialStreet` and the registry. One listing, status `expired`; zero DB2 rows by `street_slug` or by `address`; no DB3 row. `getStreetStats()` returning null is correct. QUEUE item 1 was closed with this exempted; the remaining question is whether the page should be unpublished, which is a decision, not a fix.
@@ -80,4 +88,4 @@ Bucket verified empty afterwards.
 
 ## Next expected task
 
-**QUEUE item 2, the upload phase**: repoint the upload script at R2 with idempotent pathnames, migrate `lemieux-court` off Vercel Blob, upload the other eight staged clips, set `videoUrl` on all nine, and delete the Blob object. Setup is done and proven; only the uploads remain. Do not self-start it.
+Review and merge `feat/r2-video-upload`, then delete the Vercel Blob object once production serves the R2 URL. Two decisions are open: whether to generate `StreetContent` for the four videoed streets that have no page, and whether `/api/revalidate` should be repaired or removed. Do not self-start either.

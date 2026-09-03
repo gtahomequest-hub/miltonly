@@ -2,7 +2,7 @@
 
 Five items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **setup phase done, uploads pending**. Items 3 to 5 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **uploads done, 4 of 9 streets have no page; not merged**. Items 3 to 5 **not started**.
 
 ---
 
@@ -33,7 +33,10 @@ Move street video off Vercel Blob and onto R2. Repoint the upload script at R2 w
 
 **Done when** nine street pages serve their video from the R2 host and the Vercel Blob object is deleted.
 
-**Setup phase done 2026-09-03.** Bucket `miltonly-video` (ENAM) created; public access via `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev`; `R2_*` credentials in `.env.local` and Vercel Production and Preview; S3 PUT / public GET / DELETE all proven against a 1 KB object. `video.miltonly.com` could not be attached because `miltonly.com` is not a Cloudflare zone, so the custom domain remains an open decision. **No clips uploaded.** Detail in `HANDOFF.md`.
+**Setup phase done 2026-09-03.** Bucket `miltonly-video` (ENAM) created; public access via `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev`; `R2_*` credentials in `.env.local` and Vercel Production and Preview; S3 PUT / public GET / DELETE all proven against a 1 KB object. `video.miltonly.com` could not be attached because `miltonly.com` is not a Cloudflare zone, so the custom domain remains an open decision. **Upload phase done 2026-09-03** on `feat/r2-video-upload` @ `fef75e0`, preview battery 9/9, not merged. 18 objects uploaded; `videoUrl` and `videoCapturedAt` set on the five streets that have a `StreetContent` row.
+
+- [ ] **Blocked:** `clifford-point`, `chretien-street`, `heaven-crescent` and `tasker-court` have no `StreetContent` row, so four of the nine have no page. Generating content for them is an LLM run with its own gate and was not started. **"Done when" cannot be met until they have pages.**
+- [ ] Vercel Blob object not yet deleted. Production still serves a cached render pointing at it and the page is `revalidate = 3600`; deleting now would break the live page for up to an hour. Safe order: merge, confirm production serves R2, then delete.
 
 ---
 
