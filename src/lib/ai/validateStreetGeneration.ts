@@ -363,6 +363,109 @@ export function parseDollarTokenForGrounding(tok: string): number | null {
   return Math.round(n * mul);
 }
 
+// ---------------------------------------------------------------------------
+// DEC-GROUNDING-ZERO (2026-09-04) — rule "zero_tier_price".
+//
+// WHAT WENT WRONG. numeric_ungrounded fires on the MARKET SECTION ONLY, by
+// design: that is where the audited fabrication patterns lived. tasker-court-milton
+// generated with an input payload carrying no price of any kind — typicalPrice,
+// priceRange, daysOnMarket all null, no neighbourhoodComparable, no leaseActivity,
+// kAnonLevel "zero" — and produced "$1.1M" in the neighbourhoodComparable section,
+// "low $1Ms" in homes, and "rents from $2,800 to $3,500" in the FAQ. Every one of
+// those sits outside the market section. The validator returned 0 violations and
+// the judge passed it. drew-centre-milton and pickersgill-crescent-milton had been
+// live on production in the same shape since July.
+//
+// This is NOT a k-anon leak. No street-level price was published and the k5 floor
+// was respected throughout. It is the other failure: a leak publishes a real number
+// too precisely, this publishes a number that does not exist.
+//
+// THE RULE. When the input carries no price at any grain, there is nothing in the
+// payload a currency amount could possibly be citing, anywhere in the output. So
+// every one of them is ungrounded by construction and no proximity analysis is
+// needed to prove it. Hard severity, so the retry budget applies and the fail-closed
+// path takes over when it is exhausted.
+//
+// IT ADDS NO FIRING SURFACE ANYWHERE ELSE. The gate below self-gates on an input
+// with zero price data. Any street with a typical, a range, a neighbourhood
+// comparable, or lease activity skips this entirely and is validated exactly as
+// before.
+
+/** The four price-bearing grains of a generator input. All absent means the payload
+ *  cannot ground any currency amount at all. Pure and exported so the prebuild guard
+ *  can assert the gate without a database. */
+export function inputHasNoPriceAtAnyGrain(input: StreetGeneratorInput): boolean {
+  if (input.aggregates.typicalPrice != null) return false;
+  if (input.aggregates.priceRange != null) return false;
+  // CONTENT, NOT PRESENCE. DEC-ZERO-CONTEXT attaches a neighbourhoodComparable to
+  // zero-tier inputs, and a lease block can exist carrying only counts. An object
+  // that holds no figure grounds no figure, so testing `!= null` on the container
+  // would hand the model a payload it cannot cite while switching this rule off.
+  const nc = input.neighbourhoodComparable;
+  if (nc && (nc.typicalSoldPrice != null || nc.priceRange != null)) return false;
+  const la = input.leaseActivity;
+  if (la) {
+    if (la.rangeStats != null) return false;
+    if ((la.recentRecords ?? []).length > 0) return false;
+    for (const b of Object.values(la.byBed ?? {})) if (b.typicalRent != null) return false;
+  }
+  return true;
+}
+
+/** Price vocabulary used to decide whether a bare comma-grouped number is money.
+ *  A number like "1,200" is a price in "homes trade around 1,200,000" and square
+ *  footage in "1,200 square feet"; only the former should fire. */
+const PRICE_VOCAB = /\b(price|priced|pricing|sold|sells?|sale|trade[sd]?|trading|worth|value|valued|rent|rents|rental|lease[sd]?|leasing|asking|list(?:ed|ing)?|per month|\/mo|monthly|market)\b/i;
+
+/** Bare magnitude-suffixed money with no dollar sign: "1.1M", "800K". */
+const BARE_MAGNITUDE = /\b\d+(?:\.\d+)?\s*[KM]\b/g;
+/** Bare comma-grouped number: "800,000". Money only when price vocabulary is near. */
+const BARE_GROUPED = /\b\d{1,3}(?:,\d{3})+\b/g;
+
+/**
+ * Every currency amount and price-shaped number in the prose, when the input can
+ * ground none of them. Returns [] whenever the input carries any price grain, so
+ * this is inert on every page that has data.
+ *
+ * Exported for the prebuild guard and audit scripts.
+ */
+export function findZeroTierPrices(
+  prose: string,
+  input: StreetGeneratorInput,
+): Array<{ raw: string; context: string; reason: string }> {
+  if (!inputHasNoPriceAtAnyGrain(input)) return [];
+  const out: Array<{ raw: string; context: string; reason: string }> = [];
+  const claimed: Array<[number, number]> = [];
+  const push = (raw: string, start: number, reason: string) => {
+    const end = start + raw.length;
+    if (claimed.some(([s, e]) => start < e && end > s)) return;
+    claimed.push([start, end]);
+    out.push({
+      raw,
+      context: prose.slice(Math.max(0, start - 35), Math.min(prose.length, end + 35)).replace(/\s+/g, " ").trim(),
+      reason,
+    });
+  };
+
+  // Dollar-signed amounts, via the shared extractor so the tier constructs
+  // ("low-$1M", "high-$900Ks") are recognised the same way everywhere else.
+  for (const n of extractNumerics(prose)) {
+    if (n.type !== "dollar") continue;
+    push(n.raw, n.index, "input carries no price at any grain, so no currency amount can be grounded");
+  }
+  for (const re of [BARE_MAGNITUDE, BARE_GROUPED]) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(prose))) {
+      const near = prose.slice(Math.max(0, m.index - 60), Math.min(prose.length, m.index + m[0].length + 60));
+      // The magnitude suffix is itself a money signal; a bare grouped number is not.
+      if (re === BARE_GROUPED && !PRICE_VOCAB.test(near)) continue;
+      push(m[0], m.index, "price-shaped number with no price of any grain in the input");
+    }
+  }
+  return out;
+}
+
 export function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
   for (const i of inputs) {
     if (i === 0) continue;
@@ -2091,6 +2194,19 @@ export function validateStreetGeneration(
       });
     }
 
+    // DEC-GROUNDING-ZERO (2026-09-04), ALL sections. numeric_ungrounded is
+    // market-scoped by design and therefore blind to a fabricated price in homes,
+    // neighbourhoodComparable or aha. Self-gates on an input with no price at any
+    // grain, so it is inert on every page that has data.
+    for (const z of findZeroTierPrices(sectionText, input)) {
+      violations.push({
+        rule: "zero_tier_price",
+        sectionId: section.id,
+        excerpt: `"${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+        severity: "hard",
+      });
+    }
+
     // Batch-001 remediation (2026-07-19) — combined-validator wiring, ALL sections:
     // catchment vocabulary (WS4 grounded-external-only), mixed sale/lease pool
     // claims, physical-adjacency claims about comparison streets, and builder
@@ -2260,6 +2376,17 @@ export function validateStreetGeneration(
     violations.push({
       rule: "sales_register_leak",
       excerpt: `FAQ ${faqSalesLeak.matchedPhrase}: ${faqSalesLeak.excerpt}`,
+      severity: "hard",
+    });
+  }
+
+  // DEC-GROUNDING-ZERO (2026-09-04), combined-validator wiring. Mirrors the
+  // partial validator's FAQ arm so the combined path cannot pass prose the
+  // partial path would have rejected.
+  for (const z of findZeroTierPrices(faqText, input)) {
+    violations.push({
+      rule: "zero_tier_price",
+      excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
       severity: "hard",
     });
   }
@@ -2497,6 +2624,19 @@ export function validateSectionsSubset(
       });
     }
 
+    // DEC-GROUNDING-ZERO (2026-09-04), ALL sections. numeric_ungrounded is
+    // market-scoped by design and therefore blind to a fabricated price in homes,
+    // neighbourhoodComparable or aha. Self-gates on an input with no price at any
+    // grain, so it is inert on every page that has data.
+    for (const z of findZeroTierPrices(sectionText, input)) {
+      violations.push({
+        rule: "zero_tier_price",
+        sectionId: section.id,
+        excerpt: `"${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+        severity: "hard",
+      });
+    }
+
     // Batch-001 remediation (2026-07-19) — partial-validator mirror so each
     // half retries on its own: catchment vocabulary (heading included), mixed
     // sale/lease pool claims, adjacency claims about comparison streets,
@@ -2642,6 +2782,16 @@ export function validateFaq(
     violations.push({
       rule: "subk_range_reassembly",
       excerpt: `FAQ: ${r.reason}; ctx: ${r.context}`,
+      severity: "hard",
+    });
+  }
+
+  // DEC-GROUNDING-ZERO (2026-09-04). The FAQ is where tasker's fabricated rent
+  // range landed, and the FAQ ran no whole-payload price grounding at all.
+  for (const z of findZeroTierPrices(faqText, input)) {
+    violations.push({
+      rule: "zero_tier_price",
+      excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
       severity: "hard",
     });
   }
@@ -2884,6 +3034,12 @@ function formatRuleViolations(
     case "catchment_vocabulary":
       return [
         `**catchment_vocabulary**: You used school catchment/boundary/assignment language. The input contains school NAMES and computed DISTANCES only — no catchment or boundary data exists in this pipeline, so any assignment claim is fabricated. Banned everywhere: "catchment", "boundary", "zoned for/to", "draws from", "feeds into", "assigned to", "school zone", "feeder school", and "draw(s) to" in school context. State proximity only ("X is N minutes away") and note that school assignment should be confirmed with the boards.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "zero_tier_price":
+      return [
+        `**zero_tier_price**: This street's input payload contains NO price at any grain — aggregates.typicalPrice, aggregates.priceRange, neighbourhoodComparable and leaseActivity are all absent. There is therefore no figure anywhere in the payload that a currency amount could be citing, whether you attribute it to the street, the neighbourhood, the area, or the wider market. Remove every dollar amount and every price-shaped number from the output, including rents and "low $1Ms"-style bands. Say plainly that no price can be published for this street and write about what the input does contain: location, form, schools, commute, and nearby places.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];
