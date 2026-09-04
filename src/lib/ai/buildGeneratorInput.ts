@@ -792,7 +792,12 @@ async function buildZeroTierAreaComparable(
     mostRecentSoldAt: null,
     typicalSoldPrice: agg.typicalPrice,
     priceRange: agg.priceRange,
-    daysOnMarket: agg.daysOnMarket,
+    // NULL ON PURPOSE. The hub aggregate has a neighbourhood DOM, but numeric_ungrounded
+    // grounds a days figure against aggregates.daysOnMarket alone, which on a zero-tier
+    // street is null. Passing the neighbourhood's 87 days would hand the model a real
+    // number the validator cannot recognise, and it spent a retry on exactly that before
+    // this line existed. Widening the DOM rule is a bigger change than this page needs.
+    daysOnMarket: null,
     // Neither is available from the hub sale aggregate; absent rather than fabricated.
     priceChangeYoy: null,
     soldToAsk: null,

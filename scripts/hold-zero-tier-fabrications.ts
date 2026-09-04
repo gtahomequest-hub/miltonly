@@ -22,8 +22,8 @@ function loadEnvLocal(): void {
 loadEnvLocal();
 import { prisma } from "@/lib/prisma";
 
-const SLUGS = ["drew-centre-milton", "pickersgill-crescent-milton"];
-const NOTE = "fabricated area prices under zero tier, 2026-09-04";
+const SLUGS = ["drew-centre-milton", "pickersgill-crescent-milton", "tasker-court-milton"];
+const NOTE = "ungrounded range endpoints outside validator tolerance, 2026-09-04";
 
 async function main() {
   for (const slug of SLUGS) {

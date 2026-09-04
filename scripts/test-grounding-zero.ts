@@ -22,6 +22,8 @@ import {
   findZeroTierPrices,
   inputHasNoPriceAtAnyGrain,
   findUngroundedNumerics,
+  tierBandFor,
+  correctTierFor,
 } from "../src/lib/ai/validateStreetGeneration";
 import type { StreetGeneratorInput } from "../src/types/street-generator";
 
@@ -91,7 +93,7 @@ const FABRICATED = "The typical sold price for such homes in the area sits near 
 
 // tasker's other two, verbatim. The band construct and the rent range both count.
 for (const [label, prose, want] of [
-  ["homes-section band", "Across the broader Ford area, homes typically trade in the low $1Ms, a figure that gives a sense of the market context.", "$1M"],
+  ["homes-section band", "Across the broader Ford area, homes typically trade in the low $1Ms, a figure that gives a sense of the market context.", "low$1Ms"],
   ["FAQ rent range", "In the Ford area, rents for similar homes typically range from $2,800 to $3,500 per month.", "$2,800"],
   ["bare magnitude, no dollar sign", "Comparable homes in the area trade around 1.1M today.", "1.1M"],
   ["bare grouped number near price vocabulary", "Homes on this street have sold around 800,000 in recent years.", "800,000"],
@@ -144,9 +146,101 @@ for (const prose of [
   }
 }
 
+// ── THE SECOND ARM: zero tier WITH a neighbourhood block ─────────────────────────────
+// DEC-ZERO-CONTEXT gives a zero-tier page the neighbourhood's real typical and range,
+// which correctly switches the zero-tier rule off. That immediately re-opened a
+// narrower hole: given Ford's low of $419,990 the model wrote "the high-$400s", and
+// given Timberlea's high of $1,575,000 it wrote "the mid-$1.5Ms". Real endpoints,
+// restated loosely enough to fall outside ±max($15K, 4%), in the homes section where
+// numeric_ungrounded does not look. A reader cannot tell a loose restatement from an
+// invention, so on a zero tier every dollar must round-trip.
+const ZERO_WITH_AREA: StreetGeneratorInput = (() => {
+  const i = base();
+  (i as unknown as { neighbourhoodComparable: unknown }).neighbourhoodComparable = {
+    neighbourhood: "Ford",
+    filterByPropertyType: "all",
+    filterByBedroomCount: null,
+    fallbackApplied: "whole-nbhd",
+    sampleSize: 150,
+    windowMonths: 12,
+    mostRecentSoldAt: null,
+    typicalSoldPrice: 1_025_527,
+    priceRange: { low: 419_990, high: 1_980_000 },
+    daysOnMarket: 87,
+    priceChangeYoy: null,
+    soldToAsk: null,
+    kAnonLevel: "full",
+  };
+  return i;
+})();
+
+expect("zero tier + area block: zero-tier rule stands down", inputHasNoPriceAtAnyGrain(ZERO_WITH_AREA), false);
+
+{
+  // The real defect, verbatim from the 2026-09-04 regeneration.
+  const loose = "The range across Ford spans from the high-$400s to just under $2M, reflecting a mix of stock.";
+  const hits = findUngroundedNumerics(loose, ZERO_WITH_AREA).filter((h) => h.type === "dollar");
+  if (!hits.some((h) => h.raw === "high-$400s")) {
+    failures.push(`  loose restatement "high-$400s" of a $419,990 low: not flagged (got ${hits.map((h) => h.raw).join(", ") || "nothing"})`);
+  }
+}
+{
+  // Accurate restatements of the same three input values must pass, or the rule is
+  // just a ban on prices and the neighbourhood block was pointless.
+  const accurate = "Across Ford, homes typically trade around $1.05M, within a range running from about $420,000 to roughly $1.98M.";
+  const hits = findUngroundedNumerics(accurate, ZERO_WITH_AREA).filter((h) => h.type === "dollar");
+  if (hits.length > 0) {
+    failures.push(`  accurate restatement rejected: ${hits.map((h) => h.raw).join(", ")}`);
+  }
+}
+
+// ── TIER BANDS: the model must be able to pass by telling the truth ──────────────────
+// Ford's real low is $419,990. "the low $400s" is an accurate characterisation of it and
+// must clear; "the high-$400s" names 466,667-500,000 and must not. Without this, the
+// second arm becomes a retry storm no honest output can escape, which is exactly the
+// parkway-drive "Brian Best Park" failure in a different costume.
+{
+  const accurate = "Recent trades across Ford span from the low $400s to around $2M.";
+  const hits = findUngroundedNumerics(accurate, ZERO_WITH_AREA).filter((h) => h.type === "dollar");
+  if (hits.length > 0) {
+    failures.push(`  accurate tier construct rejected: ${hits.map((h) => h.raw).join(", ")}`);
+  }
+}
+{
+  const wrong = "Recent trades across Ford span from the high-$400s to around $2M.";
+  const hits = findUngroundedNumerics(wrong, ZERO_WITH_AREA).filter((h) => h.type === "dollar");
+  if (!hits.some((h) => /high[-\s]\$400s/i.test(h.raw))) {
+    failures.push(`  wrong tier construct "high-$400s" accepted against a $419,990 low`);
+  }
+}
+{
+  const band = tierBandFor("low $400s");
+  if (!band || band.lo !== 400_000 || Math.round(band.hi) !== 433_333) {
+    failures.push(`  tierBandFor("low $400s") = ${JSON.stringify(band)}, want ~400,000-433,333`);
+  }
+  if (tierBandFor("$950,000") !== null) {
+    failures.push(`  tierBandFor on a plain figure should be null`);
+  }
+}
+
+// A rejection the model cannot act on is a retry storm, not a guard: pickersgill burned
+// its whole budget re-guessing "high-$600s". The feedback must name the band the value
+// actually sits in, rebuilt from the value rather than echoing the writer's decade.
+{
+  const cases: Array<[string, number, string]> = [
+    ["high-$600s", 637_500, "mid-$600s"],
+    ["high-$800s", 937_859, "mid-$900s"],
+    ["high-$400s", 419_990, "low-$400s"],
+  ];
+  for (const [tok, val, want] of cases) {
+    const got = correctTierFor(tok, val);
+    if (got !== want) failures.push(`  correctTierFor("${tok}", ${val}) = ${got}, want ${want}`);
+  }
+}
+
 if (failures.length > 0) {
   console.error(`test-grounding-zero: ${failures.length} failure(s)`);
   for (const f of failures) console.error(f);
   process.exit(1);
 }
-console.log("test-grounding-zero: PASS (16 assertions)");
+console.log("test-grounding-zero: PASS (26 assertions)");

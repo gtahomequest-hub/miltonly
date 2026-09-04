@@ -306,7 +306,7 @@ export interface NumericExtraction {
 //     and parseDollarTokenForGrounding can't scale 770 → 770_000.
 //     (Workstream 2 / Class A hardening 2026-05-28.)
 const NUMERIC_PATTERNS: Array<{ re: RegExp; type: NumericExtraction["type"] }> = [
-  { re: /(?:high|mid|low)-\$\d+(?:\.\d+)?[KkMm]?s?/g, type: "dollar" },
+  { re: /(?:high|mid|low)[-\s]\$\d+(?:\.\d+)?[KkMm]?s?/gi, type: "dollar" },
   { re: /\$[\d,]+(?:\.\d+)?[KkMm]?/g, type: "dollar" },
   { re: /\b\d+(?:\.\d+)?%/g, type: "percent" },
   { re: /\b\d+\s+of\s+\d+\b/gi, type: "count" },
@@ -350,7 +350,7 @@ export function extractNumerics(prose: string): NumericExtraction[] {
 
 export function parseDollarTokenForGrounding(tok: string): number | null {
   let s = tok.replace(/[$,\s]/g, "").toLowerCase();
-  const tier = s.match(/^(high|mid|low)-(.+)$/);
+  const tier = s.match(/^(high|mid|low)-?(.+)$/);
   if (tier) s = tier[2];
   if (s.endsWith("s")) s = s.slice(0, -1);
   let mul = 1;
@@ -464,6 +464,67 @@ export function findZeroTierPrices(
     }
   }
   return out;
+}
+
+/**
+ * A "low-/mid-/high-$400s" construct names a BAND, not a point, so a point tolerance is
+ * the wrong test for it. $419,990 IS the low $400s; rejecting that phrasing while the
+ * figure is exactly right produces a retry storm the model cannot escape by telling the
+ * truth — the same shape as the parkway-drive "Brian Best Park" false positive.
+ *
+ * It stays strict in the other direction, which is the point: the band for high-$400s is
+ * 466,667-500,000, so calling a $419,990 low "the high-$400s" is still a violation. The
+ * model can pass by being accurate and only by being accurate.
+ *
+ * Returns null when the token is not a tier construct.
+ */
+export function tierBandFor(token: string): { lo: number; hi: number } | null {
+  const m = token.replace(/[$,\s]/g, "").toLowerCase().match(/^(high|mid|low)-?(.+)$/);
+  if (!m) return null;
+  const point = parseDollarTokenForGrounding(token);
+  if (point === null) return null;
+  // The band's WIDTH is the place value of the last significant digit the writer gave,
+  // which is what the construct's own precision claims. "$400s" is written to the
+  // hundred-thousands, so it spans 400,000-500,000. "$1.3Ms" is written to the tenth of
+  // a million, so it spans 1,300,000-1,400,000 and NOT the whole of the $1Ms. Reading
+  // both as a flat "decade" made "mid-$1.3Ms" swallow a $1,595,000 high, which is the
+  // misstatement this function exists to catch.
+  let body = m[2];
+  if (body.endsWith("s")) body = body.slice(0, -1);
+  const suffix = /m$/.test(body) ? 1_000_000 : /k$/.test(body) ? 1_000 : null;
+  const digits = body.replace(/[km]$/, "");
+  const decimals = digits.includes(".") ? digits.split(".")[1].length : 0;
+  const trailingZeros = decimals > 0 ? 0 : (digits.match(/0+$/)?.[0].length ?? 0);
+  // No suffix means the tier bump in parseDollarTokenForGrounding read it as thousands.
+  const unit = (suffix ?? 1_000) / Math.pow(10, decimals) * Math.pow(10, trailingZeros);
+  const magnitude = Math.max(unit, 1_000);
+  const third = magnitude / 3;
+  const floor = Math.floor(point / magnitude) * magnitude;
+  const offset = m[1] === "low" ? 0 : m[1] === "mid" ? third : 2 * third;
+  return { lo: floor + offset, hi: floor + offset + third };
+}
+
+/** The tier word a value actually sits in, at the precision the writer used. Turns a
+ *  rejection into an instruction: without it the model re-guesses the same wrong band
+ *  every attempt and burns the whole retry budget, which is how parkway-drive died. */
+export function correctTierFor(token: string, value: number): string | null {
+  const band = tierBandFor(token);
+  if (!band) return null;
+  const width = band.hi - band.lo;
+  const magnitude = width * 3;
+  const floor = Math.floor(value / magnitude) * magnitude;
+  const third = Math.min(2, Math.max(0, Math.floor((value - floor) / width)));
+  const word = third === 0 ? "low" : third === 1 ? "mid" : "high";
+  // The DECADE has to be rebuilt from the value, not carried over from the writer's
+  // token. Returning "mid-$800s" for 937,859 because the writer said "$800s" is an
+  // instruction to write something still wrong, which is worse than no instruction.
+  const body = token.replace(/[$,\s]/g, "").toLowerCase().replace(/^(high|mid|low)-?/, "").replace(/s$/, "");
+  const unit = /m$/.test(body) ? 1_000_000 : /k$/.test(body) ? 1_000 : 1_000;
+  const suffix = /m$/.test(body) ? "M" : /k$/.test(body) ? "K" : "";
+  const digits = body.replace(/[km]$/, "");
+  const decimals = digits.includes(".") ? digits.split(".")[1].length : 0;
+  const scaled = (floor / unit).toFixed(decimals);
+  return `${word}-$${scaled}${suffix}s`;
 }
 
 export function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
@@ -700,6 +761,26 @@ export function findUngroundedNumerics(
       // Cross-check the other category (e.g., FAQ-area ambiguity)
       const altCandidates = isRent ? prices : rents;
       if (isPriceWithinInputTolerance(value, altCandidates)) continue;
+      // A tier construct names a band. Grounded when an input value falls inside the
+      // band it actually names, so "low-$400s" clears a $419,990 low and "high-$400s"
+      // does not. See tierBandFor.
+      const band = tierBandFor(n.raw);
+      const pool = [...candidates, ...altCandidates].filter((c) => c > 0);
+      if (band && pool.some((c) => c >= band.lo && c <= band.hi)) continue;
+      if (band && pool.length > 0) {
+        // Name the band the writer chose AND the one the nearest input actually sits in.
+        // A rejection the model cannot act on is a retry storm, not a guard.
+        const nearest = pool.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a));
+        const correct = correctTierFor(n.raw, nearest);
+        out.push({
+          raw: n.raw, type: n.type, context: n.context,
+          reason:
+            `"${n.raw}" names ${Math.round(band.lo).toLocaleString()}-${Math.round(band.hi).toLocaleString()}, ` +
+            `which contains no input value. The nearest input value is ${Math.round(nearest).toLocaleString()}` +
+            (correct ? `, which is the ${correct}` : "") + `.`,
+        });
+        continue;
+      }
 
       out.push({
         raw: n.raw, type: n.type, context: n.context,
@@ -2207,6 +2288,32 @@ export function validateStreetGeneration(
       });
     }
 
+    // DEC-GROUNDING-ZERO, second arm. DEC-ZERO-CONTEXT hands a zero-tier page the
+    // neighbourhood's real typical and range, which correctly switches the rule
+    // above off — and immediately re-opened a narrower hole one size down. Given
+    // Ford's low of $419,990 the model wrote "the high-$400s", and given Timberlea's
+    // high of $1,575,000 it wrote "the mid-$1.5Ms": real endpoints, restated loosely
+    // enough to land outside the validator's own +/- max($15K, 4%) tolerance, in the
+    // homes section where numeric_ungrounded does not look.
+    //
+    // A reader cannot tell a loose restatement from an invention, and neither can a
+    // buyer pricing against it. On a zero tier the ONLY prices in play come from the
+    // neighbourhood block, so every one of them must round-trip. Dollars only: counts,
+    // percentages and quarter labels stay market-scoped, where they were tuned.
+    // Self-gates on kAnonLevel "zero", so the ~430 pages with street-level data are
+    // untouched.
+    if (input.aggregates.kAnonLevel === "zero" && section.id !== "market") {
+      for (const f of findUngroundedNumerics(sectionText, input)) {
+        if (f.type !== "dollar") continue;
+        violations.push({
+          rule: "numeric_ungrounded",
+          sectionId: section.id,
+          excerpt: `"${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
     // Batch-001 remediation (2026-07-19) — combined-validator wiring, ALL sections:
     // catchment vocabulary (WS4 grounded-external-only), mixed sale/lease pool
     // claims, physical-adjacency claims about comparison streets, and builder
@@ -2389,6 +2496,18 @@ export function validateStreetGeneration(
       excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
       severity: "hard",
     });
+  }
+
+  // DEC-GROUNDING-ZERO second arm, FAQ. Same reasoning as the section loop.
+  if (input.aggregates.kAnonLevel === "zero") {
+    for (const f of findUngroundedNumerics(faqText, input)) {
+      if (f.type !== "dollar") continue;
+      violations.push({
+        rule: "numeric_ungrounded",
+        excerpt: `FAQ "${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+        severity: "hard",
+      });
+    }
   }
 
   // Batch-001 remediation (2026-07-19): FAQ answers carry the same catchment
@@ -2637,6 +2756,32 @@ export function validateSectionsSubset(
       });
     }
 
+    // DEC-GROUNDING-ZERO, second arm. DEC-ZERO-CONTEXT hands a zero-tier page the
+    // neighbourhood's real typical and range, which correctly switches the rule
+    // above off — and immediately re-opened a narrower hole one size down. Given
+    // Ford's low of $419,990 the model wrote "the high-$400s", and given Timberlea's
+    // high of $1,575,000 it wrote "the mid-$1.5Ms": real endpoints, restated loosely
+    // enough to land outside the validator's own +/- max($15K, 4%) tolerance, in the
+    // homes section where numeric_ungrounded does not look.
+    //
+    // A reader cannot tell a loose restatement from an invention, and neither can a
+    // buyer pricing against it. On a zero tier the ONLY prices in play come from the
+    // neighbourhood block, so every one of them must round-trip. Dollars only: counts,
+    // percentages and quarter labels stay market-scoped, where they were tuned.
+    // Self-gates on kAnonLevel "zero", so the ~430 pages with street-level data are
+    // untouched.
+    if (input.aggregates.kAnonLevel === "zero" && section.id !== "market") {
+      for (const f of findUngroundedNumerics(sectionText, input)) {
+        if (f.type !== "dollar") continue;
+        violations.push({
+          rule: "numeric_ungrounded",
+          sectionId: section.id,
+          excerpt: `"${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
     // Batch-001 remediation (2026-07-19) — partial-validator mirror so each
     // half retries on its own: catchment vocabulary (heading included), mixed
     // sale/lease pool claims, adjacency claims about comparison streets,
@@ -2794,6 +2939,18 @@ export function validateFaq(
       excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
       severity: "hard",
     });
+  }
+
+  // DEC-GROUNDING-ZERO second arm, FAQ. Same reasoning as the section loop.
+  if (input.aggregates.kAnonLevel === "zero") {
+    for (const f of findUngroundedNumerics(faqText, input)) {
+      if (f.type !== "dollar") continue;
+      violations.push({
+        rule: "numeric_ungrounded",
+        excerpt: `FAQ "${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+        severity: "hard",
+      });
+    }
   }
   // Batch-001 remediation (2026-07-19): catchment vocabulary + mixed-pool
   // claims are banned in FAQ answers exactly as in section prose.
