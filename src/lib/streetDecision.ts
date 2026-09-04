@@ -82,6 +82,86 @@ export async function makeStreetDecision(
   return "skip_current";
 }
 
+// ─── DEC-ZERO-SALES-TIER (2026-09-03) ────────────────────────────────────────
+// The activity gate below used to read five sources, all of them "is this street
+// live right now": DB1 active sale listings, DB1 sold-status flips, DB1 active
+// leases, and DB3's two 12-month counts. DB2 — the table that actually holds the
+// transaction record — was not one of them.
+//
+// The consequence was not a wrong number, it was a missing page. tasker-court-milton
+// has four DB2 records (three For Sale, one For Lease), the most recent 2025-03-01,
+// all outside the 12-month window. DB1 has no listing and DB3 has no row, so all
+// five sources read zero, getStreetStats returned null, and generateStreetContent
+// threw "No stats available" before buildGeneratorInput — which would have found
+// those four rows — ever ran. A registry street with a real transaction history
+// could not have a page purely because the history was old.
+//
+// The sixth source is EXISTENCE ONLY. It counts rows. It reads no price, applies
+// no date window, and is never rendered — it decides whether a page may be built,
+// nothing else. Every downstream k-anon gate is untouched: buildGeneratorInput
+// still derives salesCount from the live 12-month range query, so a street that
+// enters here with only pre-window history lands at kAnonLevel "zero" and renders
+// at tier 'identity-only' or 'area-only' with typicalPrice, priceRange and
+// daysOnMarket all null. Below k5 no price appears anywhere, which is the whole
+// point: the street gets a page, not a number.
+export interface StreetActivitySources {
+  /** DB1 listings with status=active and permAdvertise */
+  activeListingCount: number;
+  /** DB1 listings with status=sold (a status flip; carries no price or date) */
+  soldStatusCount: number;
+  /** DB1 active listings with leaseStatus=active */
+  activeLeaseCount: number;
+  /** DB3 analytics.street_sold_stats.sold_count_12months */
+  historicalSoldCount: number;
+  /** DB3 analytics.street_sold_stats.leased_count_12months */
+  historicalLeasedCount: number;
+  /** DB2 sold.sold_records row count at ANY date, both transaction types. Existence only. */
+  recordedTransactionCount: number;
+}
+
+/**
+ * Pure activity predicate. Six sources, OR'd. Extracted from the inline gate so
+ * the prebuild guard can assert it without a database.
+ */
+export function hasStreetActivity(s: StreetActivitySources): boolean {
+  return (
+    s.activeListingCount > 0 ||
+    s.soldStatusCount > 0 ||
+    s.activeLeaseCount > 0 ||
+    s.historicalSoldCount > 0 ||
+    s.historicalLeasedCount > 0 ||
+    s.recordedTransactionCount > 0
+  );
+}
+
+/**
+ * DB2 existence probe for the sixth gate source. Unioned across sibling slugs for
+ * the same reason every other DB2 read is: MLS ingest writes under whichever
+ * abbreviation it produced, and a street whose record sits under a sibling slug is
+ * no less real. COUNT(*) only — no sold_price, no sold_date, no window.
+ * Returns 0 if DB2 is unreachable, keeping the gate exactly as permissive as it
+ * was before this source existed.
+ */
+async function countRecordedTransactions(streetSlug: string): Promise<number> {
+  try {
+    const { getSoldDb } = await import("@/lib/db");
+    const sd = getSoldDb();
+    if (!sd) return 0;
+    const { resolveSiblingSlugs } = await import("@/lib/street-data");
+    const siblingSlugs = await resolveSiblingSlugs(streetSlug);
+    const rows = await (sd`
+      SELECT COUNT(*)::int AS n
+      FROM sold.sold_records
+      WHERE street_slug = ANY(${siblingSlugs}::text[])
+        AND perm_advertise = TRUE
+    ` as unknown as Promise<Array<{ n: number }>>);
+    return Number(rows[0]?.n) || 0;
+  } catch {
+    // DB2 unreachable — fall back to the five-source gate.
+    return 0;
+  }
+}
+
 export async function getStreetStats(streetSlug: string) {
   // Active sale listings.
   const activeListings = await prisma.listing.findMany({
@@ -124,13 +204,18 @@ export async function getStreetStats(streetSlug: string) {
   } catch {
     // DB3 read failed — fall back to DB1-only gate.
   }
+  // DB2 existence signal — the sixth source (DEC-ZERO-SALES-TIER, 2026-09-03).
+  const recordedTransactionCount = await countRecordedTransactions(streetSlug);
   // Gate: pass if ANY source has activity.
   if (
-    activeListings.length === 0 &&
-    soldCount === 0 &&
-    activeLeaseCount === 0 &&
-    historicalSoldCount === 0 &&
-    historicalLeasedCount === 0
+    !hasStreetActivity({
+      activeListingCount: activeListings.length,
+      soldStatusCount: soldCount,
+      activeLeaseCount,
+      historicalSoldCount,
+      historicalLeasedCount,
+      recordedTransactionCount,
+    })
   ) {
     return null;
   }
