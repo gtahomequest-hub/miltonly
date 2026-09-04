@@ -307,6 +307,10 @@ export interface NumericExtraction {
 //     (Workstream 2 / Class A hardening 2026-05-28.)
 const NUMERIC_PATTERNS: Array<{ re: RegExp; type: NumericExtraction["type"] }> = [
   { re: /(?:high|mid|low)[-\s]\$\d+(?:\.\d+)?[KkMm]?s?/gi, type: "dollar" },
+  // "$1.05 million" spelled out. Without this the extractor took only "$1.05" and the
+  // parser read it as one dollar and five cents: a grounded figure looked ungrounded in the
+  // market section, and outside it nothing looked at all.
+  { re: /\$\d+(?:\.\d+)?\s*(?:million|thousand)/gi, type: "dollar" },
   { re: /\$[\d,]+(?:\.\d+)?[KkMm]?/g, type: "dollar" },
   { re: /\b\d+(?:\.\d+)?%/g, type: "percent" },
   { re: /\b\d+\s+of\s+\d+\b/gi, type: "count" },
@@ -349,7 +353,7 @@ export function extractNumerics(prose: string): NumericExtraction[] {
 }
 
 export function parseDollarTokenForGrounding(tok: string): number | null {
-  let s = tok.replace(/[$,\s]/g, "").toLowerCase();
+  let s = tok.replace(/\s*million\b/i, "m").replace(/\s*thousand\b/i, "k").replace(/[$,\s]/g, "").toLowerCase();
   const tier = s.match(/^(high|mid|low)-?(.+)$/);
   if (tier) s = tier[2];
   if (s.endsWith("s")) s = s.slice(0, -1);
@@ -2302,7 +2306,7 @@ export function validateStreetGeneration(
     // percentages and quarter labels stay market-scoped, where they were tuned.
     // Self-gates on kAnonLevel "zero", so the ~430 pages with street-level data are
     // untouched.
-    if (input.aggregates.kAnonLevel === "zero" && section.id !== "market") {
+    if (input.aggregates.kAnonLevel !== "full" && section.id !== "market") {
       for (const f of findUngroundedNumerics(sectionText, input)) {
         if (f.type !== "dollar") continue;
         violations.push({
@@ -2499,7 +2503,7 @@ export function validateStreetGeneration(
   }
 
   // DEC-GROUNDING-ZERO second arm, FAQ. Same reasoning as the section loop.
-  if (input.aggregates.kAnonLevel === "zero") {
+  if (input.aggregates.kAnonLevel !== "full") {
     for (const f of findUngroundedNumerics(faqText, input)) {
       if (f.type !== "dollar") continue;
       violations.push({
@@ -2770,7 +2774,7 @@ export function validateSectionsSubset(
     // percentages and quarter labels stay market-scoped, where they were tuned.
     // Self-gates on kAnonLevel "zero", so the ~430 pages with street-level data are
     // untouched.
-    if (input.aggregates.kAnonLevel === "zero" && section.id !== "market") {
+    if (input.aggregates.kAnonLevel !== "full" && section.id !== "market") {
       for (const f of findUngroundedNumerics(sectionText, input)) {
         if (f.type !== "dollar") continue;
         violations.push({
@@ -2942,7 +2946,7 @@ export function validateFaq(
   }
 
   // DEC-GROUNDING-ZERO second arm, FAQ. Same reasoning as the section loop.
-  if (input.aggregates.kAnonLevel === "zero") {
+  if (input.aggregates.kAnonLevel !== "full") {
     for (const f of findUngroundedNumerics(faqText, input)) {
       if (f.type !== "dollar") continue;
       violations.push({

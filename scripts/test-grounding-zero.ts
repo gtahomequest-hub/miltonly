@@ -24,6 +24,7 @@ import {
   findUngroundedNumerics,
   tierBandFor,
   correctTierFor,
+  parseDollarTokenForGrounding,
 } from "../src/lib/ai/validateStreetGeneration";
 import type { StreetGeneratorInput } from "../src/types/street-generator";
 
@@ -238,9 +239,54 @@ expect("zero tier + area block: zero-tier rule stands down", inputHasNoPriceAtAn
   }
 }
 
+// ── THE THIN TIER, and the spelled magnitude ─────────────────────────────────────────
+// Two defects found together on the 2026-09-05 generation run, and they had to be fixed
+// together: extending the arm to "thin" without the parser fix would have rejected every
+// honest "$1.05 million" as ungrounded and produced a retry storm.
+//
+// miller-way-milton is the case. Its payload carries collectInputRents() === [] and its
+// FAQ said neighbourhood homes "rent in the range of $3,000 to $3,500 per month". kAnonLevel
+// was "thin", not "zero", so neither arm looked, and numeric_ungrounded is market-scoped.
+const THIN_WITH_AREA: StreetGeneratorInput = (() => {
+  const i = base();
+  i.aggregates.salesCount = 1;
+  i.aggregates.kAnonLevel = "thin";
+  (i as unknown as { neighbourhoodComparable: unknown }).neighbourhoodComparable = {
+    neighbourhood: "Clarke", filterByPropertyType: "detached", filterByBedroomCount: null,
+    fallbackApplied: "type-only", sampleSize: 49, windowMonths: 12, mostRecentSoldAt: null,
+    typicalSoldPrice: 1_101_473, priceRange: null, daysOnMarket: 85,
+    priceChangeYoy: null, soldToAsk: 0.97, kAnonLevel: "full",
+  };
+  return i;
+})();
+
+{
+  // The fabrication, verbatim. No rent of any kind is in the payload.
+  const fabricatedRent = "Homes in Clarke typically rent in the range of $3,000 to $3,500 per month.";
+  const hits = findUngroundedNumerics(fabricatedRent, THIN_WITH_AREA).filter((h) => h.type === "dollar");
+  if (!hits.some((h) => h.raw === "$3,000")) {
+    failures.push(`  thin tier + fabricated rent range: not flagged (got ${hits.map((h) => h.raw).join(", ") || "nothing"})`);
+  }
+}
+{
+  // The spelled magnitude, which IS grounded and must pass. "$1.05 million" used to be read
+  // as one dollar five cents, so a true sentence looked like a fabrication.
+  const grounded = "Detached homes in Clarke typically trade around $1.1 million.";
+  const hits = findUngroundedNumerics(grounded, THIN_WITH_AREA).filter((h) => h.type === "dollar");
+  if (hits.length > 0) {
+    failures.push(`  spelled magnitude rejected: ${hits.map((h) => h.raw).join(", ")}`);
+  }
+  if (parseDollarTokenForGrounding("$1.05 million") !== 1_050_000) {
+    failures.push(`  parseDollarTokenForGrounding("$1.05 million") = ${parseDollarTokenForGrounding("$1.05 million")}, want 1050000`);
+  }
+  if (parseDollarTokenForGrounding("$900 thousand") !== 900_000) {
+    failures.push(`  parseDollarTokenForGrounding("$900 thousand") = ${parseDollarTokenForGrounding("$900 thousand")}, want 900000`);
+  }
+}
+
 if (failures.length > 0) {
   console.error(`test-grounding-zero: ${failures.length} failure(s)`);
   for (const f of failures) console.error(f);
   process.exit(1);
 }
-console.log("test-grounding-zero: PASS (26 assertions)");
+console.log("test-grounding-zero: PASS (30 assertions)");
