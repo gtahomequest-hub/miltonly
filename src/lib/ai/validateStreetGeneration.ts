@@ -306,7 +306,7 @@ export interface NumericExtraction {
 //     and parseDollarTokenForGrounding can't scale 770 → 770_000.
 //     (Workstream 2 / Class A hardening 2026-05-28.)
 const NUMERIC_PATTERNS: Array<{ re: RegExp; type: NumericExtraction["type"] }> = [
-  { re: /(?:high|mid|low)-\$\d+(?:\.\d+)?[KkMm]?s?/g, type: "dollar" },
+  { re: /(?:high|mid|low)[-\s]\$\d+(?:\.\d+)?[KkMm]?s?/gi, type: "dollar" },
   { re: /\$[\d,]+(?:\.\d+)?[KkMm]?/g, type: "dollar" },
   { re: /\b\d+(?:\.\d+)?%/g, type: "percent" },
   { re: /\b\d+\s+of\s+\d+\b/gi, type: "count" },
@@ -350,7 +350,7 @@ export function extractNumerics(prose: string): NumericExtraction[] {
 
 export function parseDollarTokenForGrounding(tok: string): number | null {
   let s = tok.replace(/[$,\s]/g, "").toLowerCase();
-  const tier = s.match(/^(high|mid|low)-(.+)$/);
+  const tier = s.match(/^(high|mid|low)-?(.+)$/);
   if (tier) s = tier[2];
   if (s.endsWith("s")) s = s.slice(0, -1);
   let mul = 1;
@@ -361,6 +361,170 @@ export function parseDollarTokenForGrounding(tok: string): number | null {
   if (!Number.isFinite(n)) return null;
   if (mul === 1 && tier && n >= 100 && n < 1000) mul = 1_000;
   return Math.round(n * mul);
+}
+
+// ---------------------------------------------------------------------------
+// DEC-GROUNDING-ZERO (2026-09-04) — rule "zero_tier_price".
+//
+// WHAT WENT WRONG. numeric_ungrounded fires on the MARKET SECTION ONLY, by
+// design: that is where the audited fabrication patterns lived. tasker-court-milton
+// generated with an input payload carrying no price of any kind — typicalPrice,
+// priceRange, daysOnMarket all null, no neighbourhoodComparable, no leaseActivity,
+// kAnonLevel "zero" — and produced "$1.1M" in the neighbourhoodComparable section,
+// "low $1Ms" in homes, and "rents from $2,800 to $3,500" in the FAQ. Every one of
+// those sits outside the market section. The validator returned 0 violations and
+// the judge passed it. drew-centre-milton and pickersgill-crescent-milton had been
+// live on production in the same shape since July.
+//
+// This is NOT a k-anon leak. No street-level price was published and the k5 floor
+// was respected throughout. It is the other failure: a leak publishes a real number
+// too precisely, this publishes a number that does not exist.
+//
+// THE RULE. When the input carries no price at any grain, there is nothing in the
+// payload a currency amount could possibly be citing, anywhere in the output. So
+// every one of them is ungrounded by construction and no proximity analysis is
+// needed to prove it. Hard severity, so the retry budget applies and the fail-closed
+// path takes over when it is exhausted.
+//
+// IT ADDS NO FIRING SURFACE ANYWHERE ELSE. The gate below self-gates on an input
+// with zero price data. Any street with a typical, a range, a neighbourhood
+// comparable, or lease activity skips this entirely and is validated exactly as
+// before.
+
+/** The four price-bearing grains of a generator input. All absent means the payload
+ *  cannot ground any currency amount at all. Pure and exported so the prebuild guard
+ *  can assert the gate without a database. */
+export function inputHasNoPriceAtAnyGrain(input: StreetGeneratorInput): boolean {
+  if (input.aggregates.typicalPrice != null) return false;
+  if (input.aggregates.priceRange != null) return false;
+  // CONTENT, NOT PRESENCE. DEC-ZERO-CONTEXT attaches a neighbourhoodComparable to
+  // zero-tier inputs, and a lease block can exist carrying only counts. An object
+  // that holds no figure grounds no figure, so testing `!= null` on the container
+  // would hand the model a payload it cannot cite while switching this rule off.
+  const nc = input.neighbourhoodComparable;
+  if (nc && (nc.typicalSoldPrice != null || nc.priceRange != null)) return false;
+  const la = input.leaseActivity;
+  if (la) {
+    if (la.rangeStats != null) return false;
+    if ((la.recentRecords ?? []).length > 0) return false;
+    for (const b of Object.values(la.byBed ?? {})) if (b.typicalRent != null) return false;
+  }
+  return true;
+}
+
+/** Price vocabulary used to decide whether a bare comma-grouped number is money.
+ *  A number like "1,200" is a price in "homes trade around 1,200,000" and square
+ *  footage in "1,200 square feet"; only the former should fire. */
+const PRICE_VOCAB = /\b(price|priced|pricing|sold|sells?|sale|trade[sd]?|trading|worth|value|valued|rent|rents|rental|lease[sd]?|leasing|asking|list(?:ed|ing)?|per month|\/mo|monthly|market)\b/i;
+
+/** Bare magnitude-suffixed money with no dollar sign: "1.1M", "800K". */
+const BARE_MAGNITUDE = /\b\d+(?:\.\d+)?\s*[KM]\b/g;
+/** Bare comma-grouped number: "800,000". Money only when price vocabulary is near. */
+const BARE_GROUPED = /\b\d{1,3}(?:,\d{3})+\b/g;
+
+/**
+ * Every currency amount and price-shaped number in the prose, when the input can
+ * ground none of them. Returns [] whenever the input carries any price grain, so
+ * this is inert on every page that has data.
+ *
+ * Exported for the prebuild guard and audit scripts.
+ */
+export function findZeroTierPrices(
+  prose: string,
+  input: StreetGeneratorInput,
+): Array<{ raw: string; context: string; reason: string }> {
+  if (!inputHasNoPriceAtAnyGrain(input)) return [];
+  const out: Array<{ raw: string; context: string; reason: string }> = [];
+  const claimed: Array<[number, number]> = [];
+  const push = (raw: string, start: number, reason: string) => {
+    const end = start + raw.length;
+    if (claimed.some(([s, e]) => start < e && end > s)) return;
+    claimed.push([start, end]);
+    out.push({
+      raw,
+      context: prose.slice(Math.max(0, start - 35), Math.min(prose.length, end + 35)).replace(/\s+/g, " ").trim(),
+      reason,
+    });
+  };
+
+  // Dollar-signed amounts, via the shared extractor so the tier constructs
+  // ("low-$1M", "high-$900Ks") are recognised the same way everywhere else.
+  for (const n of extractNumerics(prose)) {
+    if (n.type !== "dollar") continue;
+    push(n.raw, n.index, "input carries no price at any grain, so no currency amount can be grounded");
+  }
+  for (const re of [BARE_MAGNITUDE, BARE_GROUPED]) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(prose))) {
+      const near = prose.slice(Math.max(0, m.index - 60), Math.min(prose.length, m.index + m[0].length + 60));
+      // The magnitude suffix is itself a money signal; a bare grouped number is not.
+      if (re === BARE_GROUPED && !PRICE_VOCAB.test(near)) continue;
+      push(m[0], m.index, "price-shaped number with no price of any grain in the input");
+    }
+  }
+  return out;
+}
+
+/**
+ * A "low-/mid-/high-$400s" construct names a BAND, not a point, so a point tolerance is
+ * the wrong test for it. $419,990 IS the low $400s; rejecting that phrasing while the
+ * figure is exactly right produces a retry storm the model cannot escape by telling the
+ * truth — the same shape as the parkway-drive "Brian Best Park" false positive.
+ *
+ * It stays strict in the other direction, which is the point: the band for high-$400s is
+ * 466,667-500,000, so calling a $419,990 low "the high-$400s" is still a violation. The
+ * model can pass by being accurate and only by being accurate.
+ *
+ * Returns null when the token is not a tier construct.
+ */
+export function tierBandFor(token: string): { lo: number; hi: number } | null {
+  const m = token.replace(/[$,\s]/g, "").toLowerCase().match(/^(high|mid|low)-?(.+)$/);
+  if (!m) return null;
+  const point = parseDollarTokenForGrounding(token);
+  if (point === null) return null;
+  // The band's WIDTH is the place value of the last significant digit the writer gave,
+  // which is what the construct's own precision claims. "$400s" is written to the
+  // hundred-thousands, so it spans 400,000-500,000. "$1.3Ms" is written to the tenth of
+  // a million, so it spans 1,300,000-1,400,000 and NOT the whole of the $1Ms. Reading
+  // both as a flat "decade" made "mid-$1.3Ms" swallow a $1,595,000 high, which is the
+  // misstatement this function exists to catch.
+  let body = m[2];
+  if (body.endsWith("s")) body = body.slice(0, -1);
+  const suffix = /m$/.test(body) ? 1_000_000 : /k$/.test(body) ? 1_000 : null;
+  const digits = body.replace(/[km]$/, "");
+  const decimals = digits.includes(".") ? digits.split(".")[1].length : 0;
+  const trailingZeros = decimals > 0 ? 0 : (digits.match(/0+$/)?.[0].length ?? 0);
+  // No suffix means the tier bump in parseDollarTokenForGrounding read it as thousands.
+  const unit = (suffix ?? 1_000) / Math.pow(10, decimals) * Math.pow(10, trailingZeros);
+  const magnitude = Math.max(unit, 1_000);
+  const third = magnitude / 3;
+  const floor = Math.floor(point / magnitude) * magnitude;
+  const offset = m[1] === "low" ? 0 : m[1] === "mid" ? third : 2 * third;
+  return { lo: floor + offset, hi: floor + offset + third };
+}
+
+/** The tier word a value actually sits in, at the precision the writer used. Turns a
+ *  rejection into an instruction: without it the model re-guesses the same wrong band
+ *  every attempt and burns the whole retry budget, which is how parkway-drive died. */
+export function correctTierFor(token: string, value: number): string | null {
+  const band = tierBandFor(token);
+  if (!band) return null;
+  const width = band.hi - band.lo;
+  const magnitude = width * 3;
+  const floor = Math.floor(value / magnitude) * magnitude;
+  const third = Math.min(2, Math.max(0, Math.floor((value - floor) / width)));
+  const word = third === 0 ? "low" : third === 1 ? "mid" : "high";
+  // The DECADE has to be rebuilt from the value, not carried over from the writer's
+  // token. Returning "mid-$800s" for 937,859 because the writer said "$800s" is an
+  // instruction to write something still wrong, which is worse than no instruction.
+  const body = token.replace(/[$,\s]/g, "").toLowerCase().replace(/^(high|mid|low)-?/, "").replace(/s$/, "");
+  const unit = /m$/.test(body) ? 1_000_000 : /k$/.test(body) ? 1_000 : 1_000;
+  const suffix = /m$/.test(body) ? "M" : /k$/.test(body) ? "K" : "";
+  const digits = body.replace(/[km]$/, "");
+  const decimals = digits.includes(".") ? digits.split(".")[1].length : 0;
+  const scaled = (floor / unit).toFixed(decimals);
+  return `${word}-$${scaled}${suffix}s`;
 }
 
 export function isPriceWithinInputTolerance(prose: number, inputs: number[]): boolean {
@@ -597,6 +761,26 @@ export function findUngroundedNumerics(
       // Cross-check the other category (e.g., FAQ-area ambiguity)
       const altCandidates = isRent ? prices : rents;
       if (isPriceWithinInputTolerance(value, altCandidates)) continue;
+      // A tier construct names a band. Grounded when an input value falls inside the
+      // band it actually names, so "low-$400s" clears a $419,990 low and "high-$400s"
+      // does not. See tierBandFor.
+      const band = tierBandFor(n.raw);
+      const pool = [...candidates, ...altCandidates].filter((c) => c > 0);
+      if (band && pool.some((c) => c >= band.lo && c <= band.hi)) continue;
+      if (band && pool.length > 0) {
+        // Name the band the writer chose AND the one the nearest input actually sits in.
+        // A rejection the model cannot act on is a retry storm, not a guard.
+        const nearest = pool.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a));
+        const correct = correctTierFor(n.raw, nearest);
+        out.push({
+          raw: n.raw, type: n.type, context: n.context,
+          reason:
+            `"${n.raw}" names ${Math.round(band.lo).toLocaleString()}-${Math.round(band.hi).toLocaleString()}, ` +
+            `which contains no input value. The nearest input value is ${Math.round(nearest).toLocaleString()}` +
+            (correct ? `, which is the ${correct}` : "") + `.`,
+        });
+        continue;
+      }
 
       out.push({
         raw: n.raw, type: n.type, context: n.context,
@@ -2091,6 +2275,45 @@ export function validateStreetGeneration(
       });
     }
 
+    // DEC-GROUNDING-ZERO (2026-09-04), ALL sections. numeric_ungrounded is
+    // market-scoped by design and therefore blind to a fabricated price in homes,
+    // neighbourhoodComparable or aha. Self-gates on an input with no price at any
+    // grain, so it is inert on every page that has data.
+    for (const z of findZeroTierPrices(sectionText, input)) {
+      violations.push({
+        rule: "zero_tier_price",
+        sectionId: section.id,
+        excerpt: `"${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+        severity: "hard",
+      });
+    }
+
+    // DEC-GROUNDING-ZERO, second arm. DEC-ZERO-CONTEXT hands a zero-tier page the
+    // neighbourhood's real typical and range, which correctly switches the rule
+    // above off — and immediately re-opened a narrower hole one size down. Given
+    // Ford's low of $419,990 the model wrote "the high-$400s", and given Timberlea's
+    // high of $1,575,000 it wrote "the mid-$1.5Ms": real endpoints, restated loosely
+    // enough to land outside the validator's own +/- max($15K, 4%) tolerance, in the
+    // homes section where numeric_ungrounded does not look.
+    //
+    // A reader cannot tell a loose restatement from an invention, and neither can a
+    // buyer pricing against it. On a zero tier the ONLY prices in play come from the
+    // neighbourhood block, so every one of them must round-trip. Dollars only: counts,
+    // percentages and quarter labels stay market-scoped, where they were tuned.
+    // Self-gates on kAnonLevel "zero", so the ~430 pages with street-level data are
+    // untouched.
+    if (input.aggregates.kAnonLevel === "zero" && section.id !== "market") {
+      for (const f of findUngroundedNumerics(sectionText, input)) {
+        if (f.type !== "dollar") continue;
+        violations.push({
+          rule: "numeric_ungrounded",
+          sectionId: section.id,
+          excerpt: `"${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
     // Batch-001 remediation (2026-07-19) — combined-validator wiring, ALL sections:
     // catchment vocabulary (WS4 grounded-external-only), mixed sale/lease pool
     // claims, physical-adjacency claims about comparison streets, and builder
@@ -2262,6 +2485,29 @@ export function validateStreetGeneration(
       excerpt: `FAQ ${faqSalesLeak.matchedPhrase}: ${faqSalesLeak.excerpt}`,
       severity: "hard",
     });
+  }
+
+  // DEC-GROUNDING-ZERO (2026-09-04), combined-validator wiring. Mirrors the
+  // partial validator's FAQ arm so the combined path cannot pass prose the
+  // partial path would have rejected.
+  for (const z of findZeroTierPrices(faqText, input)) {
+    violations.push({
+      rule: "zero_tier_price",
+      excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+      severity: "hard",
+    });
+  }
+
+  // DEC-GROUNDING-ZERO second arm, FAQ. Same reasoning as the section loop.
+  if (input.aggregates.kAnonLevel === "zero") {
+    for (const f of findUngroundedNumerics(faqText, input)) {
+      if (f.type !== "dollar") continue;
+      violations.push({
+        rule: "numeric_ungrounded",
+        excerpt: `FAQ "${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+        severity: "hard",
+      });
+    }
   }
 
   // Batch-001 remediation (2026-07-19): FAQ answers carry the same catchment
@@ -2497,6 +2743,45 @@ export function validateSectionsSubset(
       });
     }
 
+    // DEC-GROUNDING-ZERO (2026-09-04), ALL sections. numeric_ungrounded is
+    // market-scoped by design and therefore blind to a fabricated price in homes,
+    // neighbourhoodComparable or aha. Self-gates on an input with no price at any
+    // grain, so it is inert on every page that has data.
+    for (const z of findZeroTierPrices(sectionText, input)) {
+      violations.push({
+        rule: "zero_tier_price",
+        sectionId: section.id,
+        excerpt: `"${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+        severity: "hard",
+      });
+    }
+
+    // DEC-GROUNDING-ZERO, second arm. DEC-ZERO-CONTEXT hands a zero-tier page the
+    // neighbourhood's real typical and range, which correctly switches the rule
+    // above off — and immediately re-opened a narrower hole one size down. Given
+    // Ford's low of $419,990 the model wrote "the high-$400s", and given Timberlea's
+    // high of $1,575,000 it wrote "the mid-$1.5Ms": real endpoints, restated loosely
+    // enough to land outside the validator's own +/- max($15K, 4%) tolerance, in the
+    // homes section where numeric_ungrounded does not look.
+    //
+    // A reader cannot tell a loose restatement from an invention, and neither can a
+    // buyer pricing against it. On a zero tier the ONLY prices in play come from the
+    // neighbourhood block, so every one of them must round-trip. Dollars only: counts,
+    // percentages and quarter labels stay market-scoped, where they were tuned.
+    // Self-gates on kAnonLevel "zero", so the ~430 pages with street-level data are
+    // untouched.
+    if (input.aggregates.kAnonLevel === "zero" && section.id !== "market") {
+      for (const f of findUngroundedNumerics(sectionText, input)) {
+        if (f.type !== "dollar") continue;
+        violations.push({
+          rule: "numeric_ungrounded",
+          sectionId: section.id,
+          excerpt: `"${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+          severity: "hard",
+        });
+      }
+    }
+
     // Batch-001 remediation (2026-07-19) — partial-validator mirror so each
     // half retries on its own: catchment vocabulary (heading included), mixed
     // sale/lease pool claims, adjacency claims about comparison streets,
@@ -2644,6 +2929,28 @@ export function validateFaq(
       excerpt: `FAQ: ${r.reason}; ctx: ${r.context}`,
       severity: "hard",
     });
+  }
+
+  // DEC-GROUNDING-ZERO (2026-09-04). The FAQ is where tasker's fabricated rent
+  // range landed, and the FAQ ran no whole-payload price grounding at all.
+  for (const z of findZeroTierPrices(faqText, input)) {
+    violations.push({
+      rule: "zero_tier_price",
+      excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+      severity: "hard",
+    });
+  }
+
+  // DEC-GROUNDING-ZERO second arm, FAQ. Same reasoning as the section loop.
+  if (input.aggregates.kAnonLevel === "zero") {
+    for (const f of findUngroundedNumerics(faqText, input)) {
+      if (f.type !== "dollar") continue;
+      violations.push({
+        rule: "numeric_ungrounded",
+        excerpt: `FAQ "${f.raw}" (${f.type}) - ${f.reason}; ctx: ${f.context}`,
+        severity: "hard",
+      });
+    }
   }
   // Batch-001 remediation (2026-07-19): catchment vocabulary + mixed-pool
   // claims are banned in FAQ answers exactly as in section prose.
@@ -2884,6 +3191,12 @@ function formatRuleViolations(
     case "catchment_vocabulary":
       return [
         `**catchment_vocabulary**: You used school catchment/boundary/assignment language. The input contains school NAMES and computed DISTANCES only — no catchment or boundary data exists in this pipeline, so any assignment claim is fabricated. Banned everywhere: "catchment", "boundary", "zoned for/to", "draws from", "feeds into", "assigned to", "school zone", "feeder school", and "draw(s) to" in school context. State proximity only ("X is N minutes away") and note that school assignment should be confirmed with the boards.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "zero_tier_price":
+      return [
+        `**zero_tier_price**: This street's input payload contains NO price at any grain — aggregates.typicalPrice, aggregates.priceRange, neighbourhoodComparable and leaseActivity are all absent. There is therefore no figure anywhere in the payload that a currency amount could be citing, whether you attribute it to the street, the neighbourhood, the area, or the wider market. Remove every dollar amount and every price-shaped number from the output, including rents and "low $1Ms"-style bands. Say plainly that no price can be published for this street and write about what the input does contain: location, form, schools, commute, and nearby places.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];

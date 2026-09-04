@@ -1,110 +1,140 @@
 # Handoff
 
-_Last rewritten 2026-09-03._
+_Last rewritten 2026-09-04._
+
+## READ THIS FIRST
+
+**`fix/zero-sales-tier` is complete, gated, pushed, and deliberately NOT merged.**
+No PR is open. Three street pages are published from it against production data, so the
+DB has moved ahead of `main` while the code has not. That is intentional and safe: the
+render path reads the DB, and nothing on those pages depends on unmerged code.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | `973940a` `Merge branch 'fix/naming-closeout'` |
-| production | `miltonly-81x82cqig`, Ready, serving `973940a` (confirmed via `/api/build`) |
-| battery | `PASS · 9 checks · 428 pages`, exit 0, run twice on production (before and after the backfill) |
-| published street pages | 428 |
-| stored street names | 0 of 472 `StreetContent` rows drift from the resolver |
-| package manager | pnpm 9.15.9, pinned; no npm lockfile in the repo |
-| prebuild suite | 9 tests |
-| QUEUE | items 1 and 2 **done**; items 3 to 5 not started |
-| R2 | bucket `miltonly-video`, ENAM, 18 objects; **8 of 9 street pages serve R2 video**; Vercel Blob emptied |
-| published street pages | 431 |
+| `main` | `9021f1b` `chore: QUEUE item 2 done, R2 video live on eight street pages` |
+| open branch | `fix/zero-sales-tier` @ `45866c0`, 6 commits, pushed, **no PR, not merged** |
+| production | serving `main`; DB writes and revalidations applied this session |
+| published street pages | **434** (was 431) |
+| battery | `PASS · 9 checks · 434 pages · 57s`, exit 0, preview `miltonly-j2t9ksgbi` at `EXPECT_SHA=45866c0` |
+| local build | exit 0, 533 pages, **zero P2024**, 11/11 prebuild |
+| prebuild suite | **11** tests (was 9) |
+| QUEUE | 1, 2 done; 3 **Gate A reported, awaiting approval**; 4, 5 not started |
 
-## What shipped 2026-09-02
+Detail: `scratchpad/reports/053-zero-sales-tier.md` and `053b-incident-response.md`.
+Gate A recon: `054-address-anchors-gate-a.md`.
 
-- **`fix/signin-unblock`** (`d379e8e`): `/signin` unblocked in robots so its `noindex` can be read, plus two missing `nofollow`s.
-- **`feat/street-meta-ctr`** (`9b9ac83`): price, sample count and window from one basis (`eabef1b`); leases no longer counted as sales and the global title template removed (`8b7ea6c`); Bennett per-slug override deleted (`da5e15a`).
-- **`fix/street-name-canon`** (`39d8848`): one repaired name feeding title and H1 (`5d304ae`); the index gets only what the page prints (`2460df9`).
-- **`feat/name-source`** (`067e99c`): **DEC-NAME-SOURCE Build 1.** `src/lib/streetName.ts` as the naming authority; 4 redirected slugs retired, public listings API canonicalised (`4c05cc5`).
-- **`fix/provider-sitemap`** (`bb1afc6`): `AI_PROVIDER` fails closed (`33c60d7`); listing detail URLs in the sitemap, www pinned to apex (`f429b6a`).
-- **`fix/generator-name-wire`** (`69f3f66`): the generator derives its name from the registry (`2939710`).
-- **`fix/name-prose`** (`33bed68`): **DEC-NAME-SHORT.** Full name in prose and headings; typographic dashes removed from street copy.
+## What is on the branch
 
-## What shipped 2026-09-03
+**`c1ca7ce` — DB2 record existence as the sixth activity-gate source.** The gate read
+five sources, all "is this street live right now". DB2, the table holding the transaction
+record, was not among them, so a registry street whose history was real but old could not
+have a page. `countRecordedTransactions()` adds `COUNT(*)` across sibling slugs,
+existence only: no price column, no date filter, never rendered, returns 0 when DB2 is
+unreachable. The five-source condition became the pure predicate `hasStreetActivity()`.
 
-- **`fix/verify-build-sha`** (`de7f70b`): the battery asserts the served build before any content check, aborting with exit 2 on a mismatch. `/api/ping` proved unusable because `CRON_SECRET` is Production-only, so `src/app/api/build/route.ts` was added.
-- **`chore/session-state`** (`48957e1`): `CLAUDE.md`, `HANDOFF.md`, `QUEUE.md`, and a tracked `scratchpad/reports/`.
-- **`fix/naming-closeout`** (`973940a`): **QUEUE item 1.** Detail in `scratchpad/reports/050-naming-closeout.md`.
-  - Both branches of the `StreetContent` upsert derive `streetName` from the registry. The guard that missed the gap went from file-level to branch-level, isolating each branch by brace matching; verified red against main's file and green against the fix.
-  - **DEC-REGEN-REVALIDATE**: every successful `StreetContent` write purges `/streets/<slug>`, `/streets`, and `/neighbourhoods/<hub>`. Guarded, because `revalidatePath` needs a request scope a bulk script does not have.
-  - **The parkway-drive mystery was a validator false positive.** It failed 20 attempts across four runs on `superlative`, always because the model correctly named **"Brian Best Park"**, a Town park whose address is *320 Parkway Drive W* — on the street being described. `wordBoundaryRegex("best")` matched inside the proper noun, so every faithful attempt was rejected and no retry could ever clear it. Grounded proper nouns are now masked before the banned-word test; invented superlatives are still caught. It regenerated clean on the first attempt.
-  - Packaging pinned to `pnpm@9.15.9`, `package-lock.json` deleted, `.gitattributes` gains `* text=auto`, `build.log` gitignored.
-- **Stored-name backfill** (data): `scripts/backfill-street-names.ts` repaired **378 rows**; a rerun reports 0. Idempotent, no LLM, `streetName` only.
-- **DEC-NAME-SOURCE Build 2** (data): 11 of 13 directional streets regenerated; `jarrett-crossing-milton` published; `StreetAdjacency` rebuilt to 1052 rows with 26 stale labels repaired.
-- **Task 1 closed.** The hub-meta failures were never a data defect: the battery had been reading CDN-cached renders from an older build.
+**`b99d58e` — street name resolved at generator entry.** Builds 1 and 2 of
+DEC-NAME-SOURCE fixed the stored name only; `buildStreetMetaTitle`,
+`buildStreetMetaDescription`, `buildFaqJson`, the legacy prompt, `validateContent` and the
+SMS body all read the raw parameter. Generating a street with no prior row exposed it.
+Now resolved once at entry, making the raw parameter unusable below that line.
 
-## R2 setup, done 2026-09-03 (QUEUE item 2, setup phase)
+**`a32c0c9` — DEC-GROUNDING-ZERO and DEC-ZERO-CONTEXT.** See below.
 
-Bucket and access are live and proven end to end. **No clips uploaded yet**; that is the next prompt.
+**`45866c0` — band grounding and actionable rejections.** See below.
 
-| | |
-|---|---|
-| account | `Gtahomequest@gmail.com's Account`, ID `1b43951a70788eea4846d43c6e0d13ec` |
-| bucket | `miltonly-video`, location **ENAM**, Standard, currently 0 objects |
-| public base | `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev` |
-| credentials | `.env.local` (gitignored) and Vercel **Production and Preview**, both Hidden/Secret |
+## The incident, and what closed it
 
-`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` are set in all three places. The token is scoped Object Read & Write on `miltonly-video` only.
+**Every dollar figure in a zero-tier page's prose was ungrounded.** `numeric_ungrounded`
+fires on the **market section only**, by design. tasker generated against a payload with
+no price at any grain and produced "$1.1M", "low $1Ms" and "rents from $2,800 to $3,500"
+in `neighbourhoodComparable`, `homes` and the FAQ. Validator 0 violations, judge PASS.
+`drew-centre-milton` and `pickersgill-crescent-milton` had been live in the same shape
+since July.
 
-**R2 had to be enabled by hand first.** `wrangler r2 bucket create` and `bucket list` both failed with `code: 10042, Please enable R2 through the Cloudflare Dashboard` until the product was activated on the account. Wrangler cannot do that step.
+Not a k-anon leak: the k5 floor was respected and no street-level price was published. A
+leak publishes a real number too precisely; this published numbers that did not exist.
 
-**`video.miltonly.com` is not attachable, by design of where DNS lives.** `wrangler r2 bucket domain add` requires `--zone-id`, and `miltonly.com` is not a Cloudflare zone: its authoritative nameservers are `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. Cloudflare only activates a zone once NS points at it, so the custom domain would mean moving DNS for the whole production site. The `r2.dev` URL is the fallback in place. It is rate-limited by Cloudflare and not intended for production traffic at volume, so it is a starting point rather than a resting place.
+**DEC-GROUNDING-ZERO.** New hard rule `zero_tier_price`. When the input carries no price
+at any grain, every currency amount and price-shaped number is a violation by
+construction. `inputHasNoPriceAtAnyGrain()` tests **content, not presence**. Wired into
+all sections in both validators and both FAQ arms.
 
-**Proof, run over the S3 API with raw SigV4 (no new dependency added):**
+**DEC-ZERO-CONTEXT.** Rejecting the invention left the page with no market context, and
+the honest sentence already exists one click away. On `kAnonLevel: "zero"`,
+`neighbourhoodComparable` is populated from **`saleAggQuery` + `assembleAggregates` in
+`src/lib/ai/buildHubInput.ts`** — the hub's own pair, the same two `buildStreetEnrichment`
+calls, so street and hub cannot disagree. Those functions apply the k gates themselves.
+Attached only when it clears k5.
 
-```
-object: _healthcheck/r2-proof.txt  bytes: 1024
-1) S3 PUT     -> 200 OK
-2) public GET -> 200 OK  bytes=1024
-3) S3 DELETE  -> 204 No Content
-   re-GET after delete -> 404
-```
+**Three further defects the regeneration then exposed**, each beyond the literal brief:
 
-Bucket verified empty afterwards.
+1. A **second arm**: on the zero tier the dollar arm of `numeric_ungrounded` now runs on
+   all sections and the FAQ. Three ungrounded figures survived the first pass without it.
+2. **Bands**: the arm rejected a *true* statement, since "the low $400s" is an accurate
+   reading of $419,990 but missed point tolerance by $3,190. `tierBandFor` grounds a tier
+   construct when an input value falls inside the band it names. Band width follows the
+   token's own precision, so `$1.3Ms` spans 100K rather than the whole `$1Ms`.
+3. **Actionable feedback**: `pickersgill` burned all five attempts re-guessing
+   `high-$600s`. `correctTierFor` names the band the nearest input value actually sits in,
+   rebuilt from that value. This is the parkway-drive lesson again — a rejection the model
+   cannot act on is a retry storm, not a guard.
 
-**Upload phase 2026-09-03**, branch `feat/r2-video-upload` @ `fef75e0`, preview `miltonly-9k72wspkw` battery 9/9, **not merged**. Detail in `scratchpad/reports/051-r2-video-upload.md`.
+`neighbourhoodComparable.daysOnMarket` is null on the zero tier: the DOM rule grounds only
+against `aggregates.daysOnMarket`, so the neighbourhood's real 87 days was a number the
+validator could not recognise.
 
-- **18 objects uploaded**, nine clips and nine posters, at `streets/<slug>-milton/day.mp4` and `.../poster.webp`. Content-Type set, `Cache-Control: public, max-age=31536000, immutable`, Range requests answered. `scripts/upload-street-videos-r2.ts` is idempotent on a HEAD size check, proven when a transient TLS error killed a run after five streets and the re-run skipped exactly those five.
-- **Poster is `.webp`, not the `.jpg` the brief named.** Every staged poster is a webp; a `.jpg` key would have lied about the bytes. There is no poster column, so `deriveVideoPoster` learned the layout (`day.mp4` -> `poster.webp`), keeping the legacy `.mp4` -> `.webp` arm so a Blob-era row cannot silently lose its poster and its VideoObject.
-- **A capture-date bug, found and fixed mid-run.** The filename timestamp is local and the caption renders in UTC, so parsing it as an instant pushed every evening capture a day forward: `frost-court_20260825` first wrote 2026-08-26. Seven of nine were affected. It now stores UTC midnight of the shot date.
-- **Only 5 of 9 streets have a page.** `clifford-point`, `chretien-street`, `heaven-crescent` and `tasker-court` have a `ResidentialStreet` entity but no `StreetContent` row, so the update matched nothing. Their assets are in R2 and ready; there is nowhere to show them.
-- **The Vercel Blob object is intentionally still there.** Production serves a cached render pointing at the Blob URL, the page is `revalidate = 3600`, and deleting now would break the live lemieux page for up to an hour. Safe order: merge, confirm production serves R2, then delete.
+## Regeneration result
 
+| street | attempts | cost | judge | status |
+|---|---|---|---|---|
+| `tasker-court-milton` | 3 | $0.009 | PASS | published |
+| `drew-centre-milton` | 2 | $0.007 | PASS | published |
+| `pickersgill-crescent-milton` | 2 | $0.007 | PASS | published |
 
-## QUEUE item 2 completed 2026-09-03, merged as `7c2a448`
+**Audited: 0 ungrounded figures across all three**, every figure traced to a named input
+field. Full pairing table in `053b`. The render layer strips numeric sentences on a sub-k
+page, so the published pages show **no price at all**; the audit is of the stored
+generation, which is the layer that had to be made honest.
 
-Nine clips and nine posters live in R2; **eight of the nine street pages serve video from it**, verified on production. The Vercel Blob objects are deleted and the old URL 404s.
+`tasker-court-milton` serves its R2 video: `day.mp4`, `poster.webp` and a `VideoObject`
+all present on the live page. **All nine staged clips now have a page.**
 
-| | |
-|---|---|
-| bucket | `miltonly-video`, ENAM, 18 objects |
-| public base | `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev` |
-| key layout | `streets/<slug>/day.mp4`, `streets/<slug>/poster.webp` |
-| published street pages | 431 (was 428) |
+**Sitemap is 434, not the 432 the brief predicted.** The 431 baseline already excluded all
+three, because `drew-centre` and `pickersgill` were held first. Republishing three from
+431 gives 434.
 
-**Three pages were generated to receive video**: `clifford-point`, `chretien-street`, `heaven-crescent`, all judge PASS with names matching the resolver, $0.0223 total. `tasker-court-milton` still has none, and cannot: its four DB2 sales are all older than the 12-month window (latest 2025-03-01), DB1 has no listings and DB3 no row, so `getStreetStats()` correctly returns null. Its clip and poster sit in R2 unused. Same shape as `burnhamthorpe-road-milton`.
+## The sixth gate source admits 46 streets
 
-**`/api/revalidate` is alive again.** It had been dead code: the route compared against `REVALIDATION_SECRET`, which was set neither locally nor in any Vercel environment, so every request 401d. A 32-byte secret is now in `.env.local` and both Vercel environments. Verified on production: 200 with the secret, 401 without. It earned its keep immediately, purging the three new pages after the video columns were wired.
-
-**The battery caught the promotion race once.** The first production run after the merge failed 5 hub-meta assertions on `campbellville` ($1,890,000/15 vs a live $1,820,000/16). The hub was being served from the outgoing deployment while the DB had moved. A re-run 30 seconds later passed with `Age: 0` and `X-Vercel-Cache: MISS`, and the full battery has passed twice since. This is exactly the gap flagged when the build-SHA gate shipped: it catches the wrong deployment, not the right deployment serving a stale cached page.
+Measured 2026-09-04: **46** (47 earlier the same day; one picked up a DB1 signal in the
+overnight sync). 9 published, 1 draft, 36 with no `StreetContent` row. **None
+regenerated.** Full list in `053b`. `mae-court-milton` and `mcphail-way-milton` are also
+QUEUE item 3 GSC address queries.
 
 ## Open items
 
-1. **`burnhamthorpe-road-milton` is published with no data behind it.** Not a keying defect: the slug is consistent across `Listing`, `ResidentialStreet` and the registry. One listing, status `expired`; zero DB2 rows by `street_slug` or by `address`; no DB3 row. `getStreetStats()` returning null is correct. QUEUE item 1 was closed with this exempted; the remaining question is whether the page should be unpublished, which is a decision, not a fix.
-2. **Local `pnpm build` is non-deterministic on a 1-connection pool.** `DATABASE_URL` carries `connection_limit=1` with `pgbouncer=true`; one run failed 5 of 530 prerenders on a 10s pool timeout, the next passed with zero on identical code. Raising the local limit would make the mandated gate trustworthy.
-3. `heroSearch.ts` resolves 5 slugs to physically different streets; needs an ambiguity guard.
-4. Condo H1s still render abbreviations such as `Nadalin Hts`. QUEUE item 4 covers this.
-5. Stored `HubContent.metaDescription` drifts from live on 21 of 22 hubs. That column is no longer served, so this is cleanup.
-6. Rent pill disagrees with the market card on `melville-bonus-crescent-milton` and `mcdougall-crossing-milton`. Known standing defect, noted but not gated.
-7. Five `StreetContent` rows carry an empty description, all `status=draft`, so no published page is affected. Noted while verifying the backfill; not investigated.
+1. **`makeStreetDecision`'s minimum-data gate** (`streetDecision.ts:42`) still requires a
+   DB1 listing, so the cron returns `skip_low_data` for all 46. Manual generation works,
+   automated refresh does not. Left alone; the approved scope was one clause on
+   `getStreetStats`.
+2. **The name guard has a blind spot.** `test-street-name-repair.ts` asserts a file
+   *imports* the resolver. It cannot see a consumer inside the same file reading the raw
+   parameter, which is how `b99d58e`'s defect survived two builds.
+3. **The zero-tier grounding rules are new and narrow by design.** They self-gate on
+   `kAnonLevel: "zero"` and on an input with no price, so ~430 pages are untouched. Worth
+   an audit sweep of the thin tier, where `numeric_ungrounded` is still market-scoped.
+4. `burnhamthorpe-road-milton` is published with no data behind it. Unchanged.
+5. `heroSearch.ts` resolves 5 slugs to physically different streets; needs an ambiguity
+   guard.
+6. Condo H1s still render abbreviations such as `Nadalin Hts`. QUEUE item 4.
+7. Stored `HubContent.metaDescription` drifts from live on 21 of 22 hubs. Column no longer
+   served; cleanup.
+8. Rent pill disagrees with the market card on `melville-bonus-crescent-milton` and
+   `mcdougall-crossing-milton`. Known, not gated.
+9. `video.miltonly.com` still unattached; `r2.dev` is rate-limited and not permanent.
 
 ## Next expected task
 
-**QUEUE item 3, address anchors.** Gate A recon first, no code until the map is approved. Do not self-start it.
+**Merge `fix/zero-sales-tier`**, which needs explicit approval and has none yet, or
+**QUEUE item 3 build scope** once Gate A is approved. Do not self-start either.

@@ -448,11 +448,44 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 // ─── neighbourhoodComparable (Track 2 Pass 1 — Block C lookup) ──────
   // Sequential after byType so dominantPropertyType is derivable. One extra
   // DB3 round-trip outside the parallel batch above; ~50-100ms cost.
-  const neighbourhoodComparable = await resolveNeighbourhoodComparable(
+  let neighbourhoodComparable = await resolveNeighbourhoodComparable(
     allListings,
     soldNeighbourhoodRows,
     byType,
   );
+
+  // ─── DEC-ZERO-CONTEXT (2026-09-04) ──────────────────────────────────
+  // A zero-tier street had NOTHING to say about price, and the model filled the
+  // silence: tasker-court-milton wrote "$1.1M" for the Ford area off a payload
+  // with no figure in it at all. DEC-GROUNDING-ZERO now rejects that outright,
+  // which is correct and leaves the page with no market context whatsoever.
+  //
+  // The honest version of the same sentence exists and is already published one
+  // click away: the neighbourhood hub's own typical. So give the model the real
+  // number instead of a rule against inventing one.
+  //
+  // resolveNeighbourhoodComparable cannot supply it here. It needs a DOMINANT
+  // PROPERTY TYPE to pick a per-type column, and byType is derived from 12-month
+  // activity, which on a zero-tier street is empty by definition. The whole-
+  // neighbourhood aggregate needs no type, so it survives where the per-type
+  // lookup cannot.
+  //
+  // SOURCE: saleAggQuery + assembleAggregates from @/lib/ai/buildHubInput — the
+  // hub page's own pair, reached through the same Neighbourhood.rawStrings the
+  // hub uses. buildStreetEnrichment already calls exactly these two for the
+  // street page's area card, precisely so the street and the hub cannot disagree.
+  // assembleAggregates applies the k gates itself: typicalSoldPrice is null below
+  // K_ANON_PRICE and priceRange null below K_ANON_RANGE, so nothing here weakens
+  // k-anonymity. This is neighbourhood data, k-gated at the neighbourhood, and
+  // fallbackApplied "whole-nbhd" is what tells the prompt to label it as such.
+  //
+  // ATTACHED ONLY WHEN IT CARRIES A FIGURE. If the hub aggregate is itself sub-k5
+  // its typical is null, and attaching an empty object would switch off
+  // DEC-GROUNDING-ZERO while giving the model nothing to cite — the worst of both.
+  // In that case it stays undefined and the page remains price-free.
+  if (!neighbourhoodComparable && kAnonLevel === "zero") {
+    neighbourhoodComparable = await buildZeroTierAreaComparable(slug);
+  }
   // ─── leaseActivity.byBed (optional) ─────────────────────────────────
   const leaseActivity = buildLeaseActivity(leasesByBed, leasesCount);
 
@@ -718,6 +751,58 @@ function pickDominantPropertyType(byType: StreetGeneratorInput["byType"]): strin
     }
   }
   return dominant;
+}
+
+/**
+ * DEC-ZERO-CONTEXT. The neighbourhood's own published typical, for a street that has
+ * none of its own. Uses the hub page's exact query and assembly so the figure the
+ * model is given is the figure a reader sees one click away on the hub, and the two
+ * can never disagree.
+ *
+ * Returns undefined when the street has no neighbourhood entity, when the hub query
+ * fails, or when the hub aggregate is itself below k5 — in that last case there is no
+ * publishable neighbourhood figure either, and the page must stay price-free.
+ */
+async function buildZeroTierAreaComparable(
+  slug: string,
+): Promise<StreetGeneratorInput["neighbourhoodComparable"]> {
+  const rs = await prisma.residentialStreet
+    .findUnique({
+      where: { slug },
+      select: { neighbourhood: { select: { name: true, rawStrings: true } } },
+    })
+    .catch(() => null);
+  const nbhd = rs?.neighbourhood;
+  if (!nbhd) return undefined;
+
+  const { saleAggQuery, assembleAggregates } = await import("@/lib/ai/buildHubInput");
+  const sale = await saleAggQuery(nbhd.rawStrings).catch(() => []);
+  const agg = assembleAggregates(sale[0] ?? null, 0);
+  if (agg.typicalPrice === null) return undefined;
+
+  return {
+    neighbourhood: nbhd.name,
+    // No dominant type exists on a zero-tier street, so this is the whole-neighbourhood
+    // figure and says so. The prompt reads fallbackApplied to choose its wording.
+    filterByPropertyType: "all",
+    filterByBedroomCount: null,
+    fallbackApplied: "whole-nbhd",
+    sampleSize: agg.salesCount,
+    windowMonths: 12,
+    mostRecentSoldAt: null,
+    typicalSoldPrice: agg.typicalPrice,
+    priceRange: agg.priceRange,
+    // NULL ON PURPOSE. The hub aggregate has a neighbourhood DOM, but numeric_ungrounded
+    // grounds a days figure against aggregates.daysOnMarket alone, which on a zero-tier
+    // street is null. Passing the neighbourhood's 87 days would hand the model a real
+    // number the validator cannot recognise, and it spent a retry on exactly that before
+    // this line existed. Widening the DOM rule is a bigger change than this page needs.
+    daysOnMarket: null,
+    // Neither is available from the hub sale aggregate; absent rather than fabricated.
+    priceChangeYoy: null,
+    soldToAsk: null,
+    kAnonLevel: agg.kAnonLevel,
+  };
 }
 
 async function resolveNeighbourhoodComparable(

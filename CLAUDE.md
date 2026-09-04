@@ -39,6 +39,7 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
 ## Build and gates
 
 - **pnpm only.** Local gate is `pnpm build > build.log 2>&1`, judged by **exit code**, never a log grep. Never `npm run build`.
+- Local `DATABASE_URL` carries `connection_limit=10`. At 1 the build failed 5 to 17 prerenders on `P2024` pool timeouts and passed on identical code, so the gate could not be trusted.
 - Read schemas and files before writing code. Never guess a field name.
 - No merge to main without a Vercel preview URL and explicit approval.
 - Prod verification is `npx vercel ls --prod` plus `BASE=https://miltonly.com node scripts/verify/run.mjs` with the expected SHA.
