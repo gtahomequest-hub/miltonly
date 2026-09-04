@@ -2,7 +2,7 @@
 
 Five items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`). Item 3 **Gate A reported 2026-09-04, awaiting approval**. Items 4 and 5 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **Gate A reported 2026-09-04, awaiting approval**. Items 4 and 5 **not started**.
 
 ---
 
@@ -45,6 +45,24 @@ Eight of the nine street pages serve video from R2, verified on production; the 
 - [n/a] `tasker-court-milton` has no page and cannot have one: its four DB2 sales all predate the 12-month window, so `getStreetStats()` correctly returns null. Its clip sits in R2 unused. Same shape as `burnhamthorpe-road-milton`
   - *Amended 2026-09-04: that conclusion was wrong. `getStreetStats()` returned null because the gate never consulted DB2, not because the street had nothing. `fix/zero-sales-tier` adds DB2 record existence as a sixth source. **`tasker-court-milton` is now generated and published, and serves its R2 video, poster and `VideoObject`. All nine of the nine staged clips have a page.** The branch is not merged.*
 - [ ] `video.miltonly.com` still unattached; `r2.dev` is rate-limited and not a permanent answer. Requires moving `miltonly.com` nameservers to Cloudflare, which moves DNS for the whole site
+
+## EXTENDED 2026-09-04, merged as `243cee5`, upload run `11f877b`
+
+The corpus outgrew the nine-clip pilot. **78 objects, 213.6 MiB in R2**, up from 18 and
+35.8 MiB; **28 `StreetContent` rows carry a clip**, 25 day and 3 night. Detail in
+`scratchpad/reports/055-r2-upload-32.md`.
+
+- [x] upload script repointed at `D:/dashcam/manifest.json` + `staged/<slug>/meta.json`; candidates are `status: staged` **and** `blur_verified: true`, anything else refused and reported. Zero refusals: all 32 staged rows were signed
+- [x] 32 clips and 32 posters uploaded, immutable, Range-capable. A TLS drop killed the first run after ten streets; the HEAD-size idempotency held and the resume finished cleanly
+- [x] `lemieux-court` and `locker-place` replaced both objects and both pointers with newer captures
+- [x] day/night keys: `streets/<slug>-milton/day.mp4` or `night.mp4` per `meta.night`, one shared `poster.webp`
+- [x] three night captures re-keyed off the day key (`chretien-street`, `clifford-point`, `frost-court`): copy, repoint, delete, in that order
+- [x] `deriveVideoPoster` taught about `/night.mp4`. It had rewritten `/day.mp4` only, so a night URL produced `night.webp` and shipped a **VideoObject with a 404 thumbnail**. Verified live on production before the fix. 12th prebuild test, 11 assertions, red then green
+- [x] `staged/` emptied to `published/` (39), every `meta.json` stamped, `manifest.json` rebuilt from the directories
+- [x] 24 street paths revalidated on production, all 200
+- [ ] **11 slugs uploaded with no `StreetContent` row**, assets ready and unused: `1st-line`, `attenborough-terrace`, `bronte-street-south`, `dalhousie-gate`, `gosford-crescent`, `haxton-heights`, `louis-st-laurent-avenue`, `lower-base-line-west`, `miller-way`, `timmer-place`, `tock-close`. Generation candidates
+- [ ] **seven live clips carry `blur_verified: false`**, all from the 2026-09-03 run. Decision needed: verify or pull
+- [ ] `video.miltonly.com` still unattached, and the bucket just grew six-fold. `r2.dev` is rate-limited and not intended for production traffic at volume
 
 ---
 
