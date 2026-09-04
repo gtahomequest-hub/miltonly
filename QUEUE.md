@@ -2,7 +2,7 @@
 
 Five items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`). Items 3 to 5 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`). Item 3 **Gate A reported 2026-09-04, awaiting approval**. Items 4 and 5 **not started**.
 
 ---
 
@@ -52,6 +52,15 @@ Eight of the nine street pages serve video from R2, verified on production; the 
 Add `/streets/[slug]#[houseNumber]` sections to street pages. **Gate A recon first**, with no code until the map is approved. An anchor shows position on the street, the cross street, building form, and active listing status. It never shows a sold price for a single address, which the VOW rules forbid.
 
 **Done when** Gate A is approved. Build scope is set at that point, not before.
+
+### Gate A reported 2026-09-04, not yet approved
+
+`scratchpad/reports/054-address-anchors-gate-a.md`. No code written.
+
+- **Position needs no MLS data.** `src/data/townAddressPoints.ts` carries 40,827 OGL-licensed Town rooftop points covering every Milton address, listed or not, so the VOW question does not arise for the position half. It exposes only a point lookup today and declares itself ingest-time only, so a render surface needs a per-street projection rather than a 1.4 MB import.
+- **Of the eight GSC queries listed** (the brief says nine; one is missing from the list): `5995 Avebury Road` is **not a Milton address**; `1419 Costigan`, `8020 Derry` and `1105 Leger` are **condo towers** carrying 11, 40 and 52 DB1 rows, which is item 4's surface, not a street anchor. Four are genuine single-address house queries: `71 Mae Court`, `3165 McPhail Way`, `262 Pine Street`, `7295 Bell School Line`. Only `262 Pine` has a live active listing; `7295 Bell School Line` is a registry street with **no page**.
+- Sold price and sold date for a single address stay out at any k, per the rule above. A single address is a population of one, so no aggregate threshold can make it safe.
+- Proposed section and its `ItemList` JSON-LD shape are in the report. **Awaiting approval before any code.**
 
 ---
 
