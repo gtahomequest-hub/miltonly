@@ -317,6 +317,19 @@ export async function generateStreetContent(
     streetSlug = canonicalSlug;
   }
 
+  // NAME RESOLVED AT ENTRY, NOT AT THE UPSERT (DEC-NAME-SOURCE Build 3).
+  // Builds 1 and 2 put resolveStreetName on both upsert branches, which fixed the
+  // STORED name and nothing else. Every other consumer in this function still read
+  // the raw parameter: buildStreetMetaTitle, buildStreetMetaDescription, buildFaqJson,
+  // the legacy prompt, validateContent, and the SMS body. Generating a street with no
+  // prior StreetContent row exposed it — the driver has nothing to pass but the slug,
+  // so tasker-court-milton published with the title
+  // "tasker-court-milton Milton Real Estate | Homes, Prices & Market Data" beside a
+  // stored streetName of "Tasker Court", correctly resolved, sitting in the same row.
+  // Resolving here makes the parameter unusable in its raw form from this line down,
+  // which is the only shape of this fix that cannot be half-applied again.
+  streetName = resolveStreetName(streetSlug, streetName).name;
+
   const stats = await getStreetStats(streetSlug);
   if (!stats) throw new Error("No stats available");
 
