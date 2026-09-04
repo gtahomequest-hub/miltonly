@@ -13,8 +13,9 @@ _Last rewritten 2026-09-03._
 | stored street names | 0 of 472 `StreetContent` rows drift from the resolver |
 | package manager | pnpm 9.15.9, pinned; no npm lockfile in the repo |
 | prebuild suite | 9 tests |
-| QUEUE | item 1 **done**; item 2 **setup complete, uploads pending**; items 3 to 5 not started |
-| R2 | bucket `miltonly-video`, ENAM, **18 objects** (9 clips + 9 posters); public via `r2.dev` |
+| QUEUE | items 1 and 2 **done**; items 3 to 5 not started |
+| R2 | bucket `miltonly-video`, ENAM, 18 objects; **8 of 9 street pages serve R2 video**; Vercel Blob emptied |
+| published street pages | 431 |
 
 ## What shipped 2026-09-02
 
@@ -76,6 +77,24 @@ Bucket verified empty afterwards.
 - **Only 5 of 9 streets have a page.** `clifford-point`, `chretien-street`, `heaven-crescent` and `tasker-court` have a `ResidentialStreet` entity but no `StreetContent` row, so the update matched nothing. Their assets are in R2 and ready; there is nowhere to show them.
 - **The Vercel Blob object is intentionally still there.** Production serves a cached render pointing at the Blob URL, the page is `revalidate = 3600`, and deleting now would break the live lemieux page for up to an hour. Safe order: merge, confirm production serves R2, then delete.
 
+
+## QUEUE item 2 completed 2026-09-03, merged as `7c2a448`
+
+Nine clips and nine posters live in R2; **eight of the nine street pages serve video from it**, verified on production. The Vercel Blob objects are deleted and the old URL 404s.
+
+| | |
+|---|---|
+| bucket | `miltonly-video`, ENAM, 18 objects |
+| public base | `https://pub-7975a00b72d94caba9def0c4b5e9c388.r2.dev` |
+| key layout | `streets/<slug>/day.mp4`, `streets/<slug>/poster.webp` |
+| published street pages | 431 (was 428) |
+
+**Three pages were generated to receive video**: `clifford-point`, `chretien-street`, `heaven-crescent`, all judge PASS with names matching the resolver, $0.0223 total. `tasker-court-milton` still has none, and cannot: its four DB2 sales are all older than the 12-month window (latest 2025-03-01), DB1 has no listings and DB3 no row, so `getStreetStats()` correctly returns null. Its clip and poster sit in R2 unused. Same shape as `burnhamthorpe-road-milton`.
+
+**`/api/revalidate` is alive again.** It had been dead code: the route compared against `REVALIDATION_SECRET`, which was set neither locally nor in any Vercel environment, so every request 401d. A 32-byte secret is now in `.env.local` and both Vercel environments. Verified on production: 200 with the secret, 401 without. It earned its keep immediately, purging the three new pages after the video columns were wired.
+
+**The battery caught the promotion race once.** The first production run after the merge failed 5 hub-meta assertions on `campbellville` ($1,890,000/15 vs a live $1,820,000/16). The hub was being served from the outgoing deployment while the DB had moved. A re-run 30 seconds later passed with `Age: 0` and `X-Vercel-Cache: MISS`, and the full battery has passed twice since. This is exactly the gap flagged when the build-SHA gate shipped: it catches the wrong deployment, not the right deployment serving a stale cached page.
+
 ## Open items
 
 1. **`burnhamthorpe-road-milton` is published with no data behind it.** Not a keying defect: the slug is consistent across `Listing`, `ResidentialStreet` and the registry. One listing, status `expired`; zero DB2 rows by `street_slug` or by `address`; no DB3 row. `getStreetStats()` returning null is correct. QUEUE item 1 was closed with this exempted; the remaining question is whether the page should be unpublished, which is a decision, not a fix.
@@ -88,4 +107,4 @@ Bucket verified empty afterwards.
 
 ## Next expected task
 
-Review and merge `feat/r2-video-upload`, then delete the Vercel Blob object once production serves the R2 URL. Two decisions are open: whether to generate `StreetContent` for the four videoed streets that have no page, and whether `/api/revalidate` should be repaired or removed. Do not self-start either.
+**QUEUE item 3, address anchors.** Gate A recon first, no code until the map is approved. Do not self-start it.
