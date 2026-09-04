@@ -13,10 +13,10 @@ session's run.
 
 | | |
 |---|---|
-| `main` | `11f877b` `feat(video): upload 32 signed clips to R2, and teach the poster about night` |
+| `main` | `d032f13`; the code change is `11f877b` `feat(video): upload 32 signed clips to R2, and teach the poster about night` |
 | merge | `243cee5` `Merge branch 'fix/zero-sales-tier'`, no-ff |
-| production | Ready on `243cee5`, `11f877b` deploying at time of writing |
-| battery | `PASS · 9 checks · 434 pages · 64s`, exit 0, on **production** at `EXPECT_SHA=243cee5` |
+| production | Ready on `d032f13`, confirmed via `/api/build` |
+| battery | `PASS · 9 checks · 434 pages`, exit 0, run twice on **production**: at `EXPECT_SHA=243cee5` after the merge and at `d032f13` after the upload run |
 | local build | exit 0, 533 pages, zero `P2024`, **12/12 prebuild** |
 | published street pages | 434 |
 | R2 | **78 objects, 213.6 MiB** (was 18, 35.8 MiB) |
