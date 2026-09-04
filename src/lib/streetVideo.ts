@@ -47,15 +47,23 @@ export interface StreetVideoView {
 /** Poster URL by name convention, because there is no poster column to read.
  *
  *  Two layouts, in order:
- *    R2      streets/<slug>/day.mp4  ->  streets/<slug>/poster.webp
- *    legacy  <anything>.mp4          ->  <anything>.webp        (the Vercel Blob PoC)
+ *    R2      streets/<slug>/day.mp4    ->  streets/<slug>/poster.webp
+ *            streets/<slug>/night.mp4  ->  streets/<slug>/poster.webp
+ *    legacy  <anything>.mp4            ->  <anything>.webp      (the Vercel Blob PoC)
+ *
+ *  BOTH VARIANTS SHARE ONE POSTER. There is a single poster.webp per street, and the night arm
+ *  had to be added here before the 2026-09-04 upload run: without it "night.mp4" fell through to
+ *  the legacy arm and produced "night.webp", a key that does not exist. The poster would have
+ *  come back 404 and, because Google's required trio includes a thumbnail, the VideoObject would
+ *  have been dropped from every night-only street. Two streets in that run are night-only and
+ *  three more were re-keyed from day to night.
  *
  *  The legacy arm stays because it costs one regex and removing it would silently drop the poster,
  *  and with it the VideoObject, for any row still holding a Blob URL. Returns null when the URL
  *  carries no rewritable `.mp4`, in which case there is no poster and no VideoObject.
  *  Preserves any `?query`/`#hash`. */
 export function deriveVideoPoster(url: string): string | null {
-  const r2 = url.replace(/\/day\.mp4(?=$|[?#])/i, "/poster.webp");
+  const r2 = url.replace(/\/(?:day|night)\.mp4(?=$|[?#])/i, "/poster.webp");
   if (r2 !== url) return r2;
   const legacy = url.replace(/\.mp4(?=$|[?#])/i, ".webp");
   return legacy !== url ? legacy : null;
