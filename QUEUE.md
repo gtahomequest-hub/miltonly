@@ -43,7 +43,7 @@ Eight of the nine street pages serve video from R2, verified on production; the 
 - [x] `videoUrl` and `videoCapturedAt` set on eight streets
 - [x] three pages generated so their clips had somewhere to land (`clifford-point`, `chretien-street`, `heaven-crescent`), $0.0223
 - [n/a] `tasker-court-milton` has no page and cannot have one: its four DB2 sales all predate the 12-month window, so `getStreetStats()` correctly returns null. Its clip sits in R2 unused. Same shape as `burnhamthorpe-road-milton`
-  - *Amended 2026-09-04: the second half of that was wrong. `getStreetStats()` returned null because the gate never consulted DB2, not because the street had nothing. `fix/zero-sales-tier` adds DB2 record existence as a sixth source; tasker generates, and its R2 video and poster are wired. The page is **held as draft** pending the zero-tier grounding decision in `HANDOFF.md`, so the clip is still unserved and the count is still 8 of 9.*
+  - *Amended 2026-09-04: that conclusion was wrong. `getStreetStats()` returned null because the gate never consulted DB2, not because the street had nothing. `fix/zero-sales-tier` adds DB2 record existence as a sixth source. **`tasker-court-milton` is now generated and published, and serves its R2 video, poster and `VideoObject`. All nine of the nine staged clips have a page.** The branch is not merged.*
 - [ ] `video.miltonly.com` still unattached; `r2.dev` is rate-limited and not a permanent answer. Requires moving `miltonly.com` nameservers to Cloudflare, which moves DNS for the whole site
 
 ---
