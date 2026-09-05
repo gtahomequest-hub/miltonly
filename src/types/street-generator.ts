@@ -88,6 +88,7 @@ export type ValidatorRule =
   | "condo_lease_only_market" // WS4 patch 2 (DEC-WS4-5): sale market section emitted on a lease-only building
   | "subk_range_reassembly" // WS5: low–high price band reassembled while aggregate priceRange is k-anon suppressed
   | "zero_tier_price" // DEC-GROUNDING-ZERO: any currency amount when the input carries no price at any grain
+  | "zero_price_priorities" // DEC-ZERO-PRICE-PRIORITIES: differentPriorities present on a no-price input
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---

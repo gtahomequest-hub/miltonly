@@ -37,6 +37,9 @@ import {
   validateFaq,
   formatViolationsForRetry,
   inputHasNoPriceAtAnyGrain,
+  dropsDifferentPriorities,
+  COMPARISON_FAQ_TEMPLATE,
+  ZERO_PRICE_DROPPED_SECTION,
 } from './validateStreetGeneration';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
 import { splitSentences } from '@/lib/prose/sentences';
@@ -1011,6 +1014,13 @@ function loadPhase41EvaluativePrompt(): string {
 const ABOUT_HOMES_AMENITIES_SECTION_IDS: StreetSectionId[] = ["about", "homes", "amenities"];
 const MARKET_SECTION_IDS: StreetSectionId[] = ["market", "neighbourhoodComparable"];
 const EVALUATIVE_SECTION_IDS: StreetSectionId[] = ["gettingAround", "schools", "differentPriorities"];
+/** The eval half's sections for a given input. differentPriorities is dropped when the input
+ *  carries no price at any grain - DEC-ZERO-PRICE-PRIORITIES. */
+function evaluativeSectionIdsFor(input: StreetGeneratorInput): StreetSectionId[] {
+  return dropsDifferentPriorities(input)
+    ? EVALUATIVE_SECTION_IDS.filter((id) => id !== ZERO_PRICE_DROPPED_SECTION)
+    : EVALUATIVE_SECTION_IDS;
+}
 
 // --- Fair-housing semantic judge (batch-002 N1, Option C ruling 2026-07-20) ---
 // Runs ONCE on the final combined output after the deterministic validators
@@ -1419,7 +1429,9 @@ ${ncLine}
 
 WHAT TO WRITE INSTEAD. Say plainly that the street has no recent recorded sales and that no price can be given for it. That sentence is not a gap in the page - it is the most useful true thing the page can say about price, and a reader is better served by it than by a number nobody can stand behind. Then write everything you DO have: housing form and type mix, position and surroundings, schools, getting around, and how the street sits relative to its neighbourhood. Those sections carry the page.
 
----
+${dropsDifferentPriorities(input) ? `DO NOT WRITE A "differentPriorities" SECTION. Omit it entirely and return one section fewer. That section places this street against others by price, and the comparison streets you were given carry no price either - every one of their typicalPrice values is null. There is no priceless version of it to write: attempts to write one reach for a figure, and then for a street name to hang the figure on, and invent both. Do not fold its content into another section, and do not answer "${COMPARISON_FAQ_TEMPLATE.replace("{Street}", input.street.name)}" - that question is not in your bank for this street.
+
+` : ""}---
 
 `;
 }
@@ -1615,7 +1627,7 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, differentPriori
     runHalfWithRetry({
       halfLabel: "eval",
       systemPrompt: evalPrompt,
-      expectedSectionIds: EVALUATIVE_SECTION_IDS,
+      expectedSectionIds: evaluativeSectionIdsFor(input),
       expectsFaq: true,
       input,
       maxAttempts: 5,
@@ -1782,7 +1794,7 @@ Original draft below:`;
     const halvesToRetry: Array<{ label: "aha" | "market" | "eval"; res: HalfResult; promptText: string; sectionIds: readonly StreetSectionId[]; expectsFaq: boolean }> = [];
     if (ahaRes.violations.length > 0) halvesToRetry.push({ label: "aha", res: ahaRes, promptText: ahaPrompt, sectionIds: ABOUT_HOMES_AMENITIES_SECTION_IDS, expectsFaq: false });
     if (marketRes.violations.length > 0) halvesToRetry.push({ label: "market", res: marketRes, promptText: marketPrompt, sectionIds: MARKET_SECTION_IDS, expectsFaq: false });
-    if (evalRes.violations.length > 0) halvesToRetry.push({ label: "eval", res: evalRes, promptText: evalPrompt, sectionIds: EVALUATIVE_SECTION_IDS, expectsFaq: true });
+    if (evalRes.violations.length > 0) halvesToRetry.push({ label: "eval", res: evalRes, promptText: evalPrompt, sectionIds: evaluativeSectionIdsFor(input), expectsFaq: true });
 
     if (halvesToRetry.length > 0) {
       console.log(

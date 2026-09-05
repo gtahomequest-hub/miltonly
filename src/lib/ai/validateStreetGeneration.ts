@@ -2053,6 +2053,61 @@ const CANONICAL_ORDER_LEGACY: StreetSectionId[] = [
 const CANONICAL_ORDER_T2: StreetSectionId[] = [
   "about","homes","amenities","market","neighbourhoodComparable","gettingAround","schools","differentPriorities",
 ];
+
+// DEC-ZERO-PRICE-PRIORITIES (2026-09-05). differentPriorities is not written at all when the
+// input carries no price at any grain, and its FAQ arm goes with it.
+//
+// WHY. The section's whole job is to place this street against others - "for a lower entry
+// point, X trades around $Y". It is sourced from input.crossStreets, and a street with no
+// price at any grain has comparators with no price either: crossStreets[].typicalPrice is
+// null across the board. So the section asks the model to characterise streets it has been
+// given no figures for, and it does the only thing it can - it invents the figures, and then
+// invents the streets to hang them on.
+//
+// This is not a prompt-strength problem. jasper-street-milton was run with the explicit
+// no-price preamble AND the Opus fallback on 2026-09-05: by attempt 3 every zero_tier_price
+// was gone, and what remained was invented_cross_street ("Dorset Park") and a sales-register
+// leak. The instruction worked. The section was still impossible, because the data it needs
+// does not exist. A section that cannot be written truthfully should not be requested.
+//
+// The FAQ arm goes too, for the same reason: "If X isn't the right fit, what similar streets
+// should I look at?" cannot be answered from a comparator set with no prices, and leaving it
+// in the bank re-opens the hole one question down.
+export const ZERO_PRICE_DROPPED_SECTION: StreetSectionId = "differentPriorities";
+export const COMPARISON_FAQ_TEMPLATE =
+  "If {Street} isn't the right fit, what similar streets should I look at?";
+
+/** True when differentPriorities must be absent. Exported so the generator drops it from the
+ *  eval half's expected ids and the prebuild guard can assert the gate without a database. */
+export function dropsDifferentPriorities(input: StreetGeneratorInput): boolean {
+  return inputHasNoPriceAtAnyGrain(input);
+}
+
+/** The section order a given input must produce, with differentPriorities removed when the
+ *  input cannot support it. Single source of truth for both validator paths. */
+export function expectedOrderFor(
+  input: StreetGeneratorInput,
+  sectionCount: number,
+): StreetSectionId[] {
+  const drop = dropsDifferentPriorities(input);
+  const t2Len = drop ? 7 : 8;
+  const base = sectionCount === t2Len ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
+  return drop ? base.filter((id) => id !== ZERO_PRICE_DROPPED_SECTION) : base;
+}
+
+/** The section counts a given input may produce. */
+export function validSectionCountsFor(input: StreetGeneratorInput): [number, number] {
+  return dropsDifferentPriorities(input) ? [6, 7] : [7, 8];
+}
+
+/** The FAQ questions permitted for a given input: the bank, less the comparison question
+ *  when the comparator set carries no prices. */
+export function allowedFaqQuestionsFor(input: StreetGeneratorInput): Set<string> {
+  const templates = dropsDifferentPriorities(input)
+    ? FAQ_BANK_TEMPLATES.filter((t) => t !== COMPARISON_FAQ_TEMPLATE)
+    : FAQ_BANK_TEMPLATES;
+  return new Set(templates.map((t) => t.replace("{Street}", input.street.name)));
+}
 // Back-compat alias for any imports outside this file
 export const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
 // --- Canonical FAQ question bank ---
@@ -2105,11 +2160,35 @@ export function validateStreetGeneration(
   // Accept the 7-section layout (no neighbourhoodComparable) or the Track 2
   // 8-section layout. neighbourhoodComparable sits at index 4 (after market).
   // Counts dropped from 8/9 on 2026-07-19: bestFitFor retired (fair housing).
-  if (!output.sections || (output.sections.length !== 7 && output.sections.length !== 8)) {
-    violations.push({ rule: "invalid_json_shape", excerpt: `sections length = ${output.sections?.length}`, severity: "hard" });
+  // DEC-ZERO-PRICE-PRIORITIES: a no-price input produces one section fewer.
+  const [minCount, maxCount] = validSectionCountsFor(input);
+  if (!output.sections || (output.sections.length !== minCount && output.sections.length !== maxCount)) {
+    violations.push({
+      rule: "invalid_json_shape",
+      excerpt: `sections length = ${output.sections?.length}, expected ${minCount} or ${maxCount}` +
+        (dropsDifferentPriorities(input) ? ` (input carries no price at any grain, so differentPriorities is not written)` : ""),
+      severity: "hard",
+    });
     return violations;
   }
-  const expectedOrder = output.sections.length === 8 ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
+  // The section must be ABSENT, not merely uncounted. Checked separately from the length,
+  // because a T2 no-price page that wrongly includes it lands on 7 - a valid count - and the
+  // order check alone would report a confusing position mismatch rather than the real fault.
+  if (dropsDifferentPriorities(input)) {
+    const present = output.sections.find((sec) => sec.id === ZERO_PRICE_DROPPED_SECTION);
+    if (present) {
+      violations.push({
+        rule: "zero_price_priorities",
+        sectionId: ZERO_PRICE_DROPPED_SECTION,
+        excerpt:
+          `"${ZERO_PRICE_DROPPED_SECTION}" is present, but the input carries no price at any grain. ` +
+          `Its comparators have no typicalPrice either, so the section can only be written by ` +
+          `inventing one. Omit it entirely.`,
+        severity: "hard",
+      });
+    }
+  }
+  const expectedOrder = expectedOrderFor(input, output.sections.length);
   for (let i = 0; i < expectedOrder.length; i++) {
     if (output.sections[i].id !== expectedOrder[i]) {
       violations.push({ rule: "missing_section_id", excerpt: `position ${i} got id "${output.sections[i].id}", expected "${expectedOrder[i]}"`, severity: "hard" });
@@ -2414,7 +2493,12 @@ export function validateStreetGeneration(
   if (totalWords > TOTAL_WORD_CEILING) {
     violations.push({ rule: "total_word_ceiling", excerpt: `total ${totalWords}, ceiling ${TOTAL_WORD_CEILING}`, severity: "hard" });
   }
-  const effectiveTotalFloor = getTotalWordFloor(input.aggregates.kAnonLevel);
+  // The floor drops by differentPriorities' own minimum when the section is not written.
+  // Holding a page to a word count that includes a section it is forbidden to produce is a
+  // retry the model cannot win.
+  const effectiveTotalFloor =
+    getTotalWordFloor(input.aggregates.kAnonLevel) -
+    (dropsDifferentPriorities(input) ? (SECTION_WORD_FLOORS[ZERO_PRICE_DROPPED_SECTION] ?? 0) : 0);
   if (totalWords < effectiveTotalFloor) {
     violations.push({ rule: "total_word_floor", excerpt: `total ${totalWords}, floor ${effectiveTotalFloor} (kAnon=${input.aggregates.kAnonLevel})`, severity: "hard" });
   }
@@ -2539,10 +2623,9 @@ export function validateStreetGeneration(
     violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
-  // v3: FAQ questions must match bank verbatim (dedicated rule)
-  const allowedQuestions = new Set(
-    FAQ_BANK_TEMPLATES.map(t => t.replace("{Street}", input.street.name))
-  );
+  // v3: FAQ questions must match bank verbatim (dedicated rule). The comparison question
+  // leaves the bank on a no-price input - see DEC-ZERO-PRICE-PRIORITIES.
+  const allowedQuestions = allowedFaqQuestionsFor(input);
   for (const item of output.faq) {
     if (!allowedQuestions.has(item.question)) {
       violations.push({
@@ -2981,9 +3064,7 @@ export function validateFaq(
     violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
-  const allowedQuestions = new Set(
-    FAQ_BANK_TEMPLATES.map((t) => t.replace("{Street}", input.street.name)),
-  );
+  const allowedQuestions = allowedFaqQuestionsFor(input);
   for (const item of faq) {
     if (!allowedQuestions.has(item.question)) {
       violations.push({ rule: "faq_question_out_of_bank", excerpt: `FAQ question not in bank: "${item.question}"`, severity: "hard" });
@@ -3201,6 +3282,12 @@ function formatRuleViolations(
     case "zero_tier_price":
       return [
         `**zero_tier_price**: This street's input payload contains NO price at any grain — aggregates.typicalPrice, aggregates.priceRange, neighbourhoodComparable and leaseActivity are all absent. There is therefore no figure anywhere in the payload that a currency amount could be citing, whether you attribute it to the street, the neighbourhood, the area, or the wider market. Remove every dollar amount and every price-shaped number from the output, including rents and "low $1Ms"-style bands. Say plainly that no price can be published for this street and write about what the input does contain: location, form, schools, commute, and nearby places.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "zero_price_priorities":
+      return [
+        `**zero_price_priorities**: You wrote a "differentPriorities" section. Do not. This street's input carries no price at any grain, and neither do its comparators - every crossStreets[].typicalPrice is null - so a section that places this street against others can only be written by inventing figures and then inventing streets to attach them to. Omit the section entirely and return one fewer section. Do not replace it with a priceless version, and do not fold its content into another section.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];
