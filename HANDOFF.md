@@ -1,13 +1,17 @@
 # Handoff
 
-_Last rewritten 2026-09-05 (second pass, after the residue attempt)._
+_Last rewritten 2026-09-05 (third pass, after `fix/zero-price-priorities`)._
 
 ## READ THIS FIRST
 
-**The corpus grounding sweep is done. Its residue is two pages, and both are now understood
-rather than merely unfinished.** 479 generations audited, 154 regenerated, 152 published clean.
-`jasper-street-milton` and `wood-close-milton` stay draft — see open item 1, which says why
-neither is a retry away. Detail in `scratchpad/reports/058-corpus-audit.md`.
+**The corpus grounding sweep is done. Its residue is two pages, and both are understood.**
+479 generations audited, 154 regenerated, 152 published clean. `jasper-street-milton` and
+`wood-close-milton` stay draft. Detail in `scratchpad/reports/058-corpus-audit.md`.
+
+**`fix/zero-price-priorities` is pushed and NOT merged.** It suppresses the
+`differentPriorities` section on a no-price input and rejects one that appears anyway. It
+works — `invented_cross_street` is gone from `jasper-street` entirely — and it does not make
+the page pass. What it did was expose the next layer, and that layer is named in open item 1.
 
 **Every cost figure in every earlier handoff is wrong by 3x on the Opus portion.**
 `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate of $15/$75 per
@@ -31,7 +35,8 @@ Two decisions waiting:
 
 | | |
 |---|---|
-| `main` | `e39c26a` |
+| `main` | `402fcd2` (+ `d6b0889`) |
+| open branch | **`fix/zero-price-priorities`**, pushed, **not merged** |
 | production | serving `e39c26a`, confirmed via `/api/build` |
 | battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at the full SHA. Ran before `geddes-landing` published, so it counted 443 against today's 444 |
 | local build | exit 0, zero `P2024`, **14/14 prebuild** |
@@ -78,28 +83,52 @@ cleared it. The prompt is right and worth keeping; DeepSeek is not strong enough
 run is the useful one: it proves the preamble works and that what is left is a different
 problem. See open item 1.
 
+**`fix/zero-price-priorities` (pushed, not merged).** `differentPriorities` is not requested
+when the input carries no price at any grain, its FAQ arm leaves the bank, and a new hard rule
+`zero_price_priorities` rejects the section if it appears regardless. The presence check is
+deliberately separate from the section count: a no-price T2 page that wrongly includes the
+section lands on 7, which is a valid count, so the length check alone would report a position
+mismatch rather than the real fault. The total word floor drops by that section's own minimum,
+because holding a page to a count including a section it may not write is a retry it cannot
+win. `scripts/test-zero-price-priorities.ts` is the 15th prebuild test, 19 assertions over
+both suppression and rejection — a generator that stops asking is not a guarantee, since a
+model can still volunteer the section. Build exit 0, zero `P2024`, 15/15 prebuild, battery
+**`PASS · 9 checks · 443 pages · 73s`** on preview `miltonly-ivgrwnsvs`.
+
 **Corrections to yesterday's report.** The "474 of 474 drifted" figure was a 12-vs-64-char
 hash comparison bug; the real split is **13 identical, 461 changed**, and all 13 identical rows
 carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-corpus rate.
 
 ## Open items
 
-1. **Two pages cannot be generated, and neither is a retry away.**
+1. **Two pages cannot be generated. `jasper-street`'s remaining blocker is the FAQ bank, not
+   the sections.**
 
-   **`jasper-street-milton`** — attempted 2026-09-05 with the Opus fallback, **$0.5330,
-   failed**. It is not a price problem any more: by attempt 3 the zero-price preamble had
-   worked and every `zero_tier_price` was gone. What remained was
-   `invented_cross_street` ("Dorset Park") and `sales_register_leak`. The structural cause is
-   the `differentPriorities` section, which asks the model to compare this street against
-   others — and jasper's `crossStreets` carry **no `typicalPrice`**, because the street has no
-   price at any grain. So the model is asked to characterise comparison streets it has no
-   figures for, and it invents both the figures and the streets. **The fix is to suppress or
-   restructure `differentPriorities` on a zero-price input, not to retry.** That is a prompt-
-   architecture change and wants its own pass.
+   **`jasper-street-milton`** — regenerated on DeepSeek under `fix/zero-price-priorities`,
+   **$0.0169, failed, still draft**. The branch did its job: `aha` passed clean on attempt 1,
+   and **`invented_cross_street` is gone from the run entirely** because the section it lived
+   in is no longer requested. What remains, after both halves ran to attempt 5:
+
+   - `invalid_json_shape: sections length = 3, expected 2` — DeepSeek keeps writing
+     `differentPriorities` anyway. The validator rejects it correctly every time. This is the
+     model failing to comply, not the rule failing to fire.
+   - `faq_question_out_of_bank` on exactly *"If Jasper Street isn't the right fit, what
+     similar streets should I look at?"* — the withdrawn arm, asked anyway, caught.
+   - `zero_tier_price` and `numeric_ungrounded` in the FAQ: `$800,000`, `$700,000`,
+     `low-$700s`.
+
+   **That last group is the real next problem, and it is the same shape as this one.** The FAQ
+   bank contains questions that *demand* a price — "What is the typical price on {Street}?",
+   "What price range should I expect on {Street}?" — and a no-price street cannot answer
+   either. The model is being asked a question whose only honest answer is "no price is
+   published", and it reaches for a figure instead. **The fix is the same move applied one
+   level down: withdraw the price-demanding questions from the bank on a no-price input, the
+   way `fix/zero-price-priorities` withdraws the comparison question.** That is the next
+   branch, and it is small.
 
    **`wood-close-milton`** — `getStreetStats()` returns `No stats available` and it fails in
-   **one second**, before a prompt is ever built. No prompt or model change can reach it; the
-   stats gate is the thing to look at.
+   **one second**, before a prompt is ever built. No prompt, section or FAQ change can reach
+   it; the stats gate is the thing to look at.
 
 2. **Pre-2026-09-05 `costUsd` rows overstate Opus-assisted generations by 3x.** Not
    rewritable from what is stored. Treat historical cost claims as upper bounds.
@@ -152,4 +181,5 @@ carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-c
 
 ## Next expected task
 
-Item 1's `differentPriorities` suppression, item 7, or item 8. Do not self-start any of them.
+A decision on merging `fix/zero-price-priorities`, item 1's FAQ-bank follow-on, item 7, or
+item 8. Do not self-start any of them.
