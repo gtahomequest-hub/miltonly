@@ -1,12 +1,13 @@
 # Handoff
 
-_Last rewritten 2026-09-05._
+_Last rewritten 2026-09-05 (second pass, after the residue attempt)._
 
 ## READ THIS FIRST
 
-**The corpus grounding sweep is done and its residue is down to two pages.** 479 generations
-audited, 154 regenerated, 152 published clean. `jasper-street-milton` and `wood-close-milton`
-remain draft. Detail in `scratchpad/reports/058-corpus-audit.md`.
+**The corpus grounding sweep is done. Its residue is two pages, and both are now understood
+rather than merely unfinished.** 479 generations audited, 154 regenerated, 152 published clean.
+`jasper-street-milton` and `wood-close-milton` stay draft — see open item 1, which says why
+neither is a retry away. Detail in `scratchpad/reports/058-corpus-audit.md`.
 
 **Every cost figure in every earlier handoff is wrong by 3x on the Opus portion.**
 `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate of $15/$75 per
@@ -21,11 +22,10 @@ Do not audit a generation by rebuilding its input when the row carries a snapsho
 draws a different `crossStreets` set and reports figures as ungrounded that the page was
 given.
 
-Three decisions waiting:
+Two decisions waiting:
 
-1. **`AI_PROVIDER_FALLBACK` — I did not change it, and it needs your call.** See below.
-2. **Seven clips are live with `blur_verified: false`**, all from the 2026-09-03 run.
-3. **Two clips remain orphaned** under slugs that are not real streets.
+1. **Seven clips are live with `blur_verified: false`**, all from the 2026-09-03 run.
+2. **Two clips remain orphaned** under slugs that are not real streets.
 
 ## Where things stand
 
@@ -33,31 +33,27 @@ Three decisions waiting:
 |---|---|
 | `main` | `e39c26a` |
 | production | serving `e39c26a`, confirmed via `/api/build` |
-| battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at the full SHA |
+| battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at the full SHA. Ran before `geddes-landing` published, so it counted 443 against today's 444 |
 | local build | exit 0, zero `P2024`, **14/14 prebuild** |
-| published street pages | **443** |
-| draft / unpublished | 42 / 4 |
+| published street pages | **444** |
+| draft / unpublished | 41 / 4 |
 | generations carrying an input snapshot | 154 of 480 |
 | QUEUE | 1, 2 done; 3 Gate A awaiting approval; 4, 5, 6, 7 not started |
 
-## The fallback decision
+## The fallback model — settled
 
-Production carries `AI_PROVIDER_FALLBACK="opus"`. When a generation half exhausts its retry
-budget, that half re-runs on Claude; unset, it fails closed.
+`AI_PROVIDER_FALLBACK="opus"` in production. **Decided 2026-09-05: it stays.** When a
+generation half exhausts its retry budget, that half re-runs on Claude Opus; unset, it fails
+closed.
 
-**You asked me to switch it to Sonnet. I changed the code's Sonnet entry to `claude-sonnet-5`
-— the old `claude-sonnet-4-6` was a previous generation — but I left the production variable
-on `opus`, because the measurement contradicts the premise:**
+The code's Sonnet entry was corrected to `claude-sonnet-5` in the same pass (the old
+`claude-sonnet-4-6` was a previous generation, and Sonnet 5 is both newer and cheaper), so
+anything that selects `sonnet` now gets the current model. Nothing selects it.
 
-- **Opus fallback: 13 of 13** published residue pages cleared, plus `geddes-landing`.
-- **Sonnet 5 fallback: fired on all three halves of `geddes-landing` and failed** the page
-  Opus cleared on the same input.
-
-One trial each, so it is a signal and not a verdict. But the fallback exists precisely to
-clear pages the primary cannot, and on the only escalating page tested head-to-head, Sonnet
-did not. Switching production would quietly disable the mechanism for the pages that need it.
-Sonnet 5 is cheaper per token ($2/$10 against Opus's corrected $5/$25) — if the cost was the
-reason, note that the corrected Opus rate is already a third of what the table claimed.
+The measurement behind the decision, on `geddes-landing`, the one page that escalates
+reliably: **Opus fired on two halves and passed** ($0.4085); **Sonnet 5 fired on all three and
+failed**. One trial each. The fallback exists to clear what the primary cannot, and on the
+only head-to-head escalating page Sonnet did not.
 
 ## What happened 2026-09-05
 
@@ -78,17 +74,33 @@ failure was in the eval half. `scripts/test-zero-price-prompt.ts` is the 14th pr
 `jasper` still wrote a price into the FAQ. `geddes-landing` is live because the Opus fallback
 cleared it. The prompt is right and worth keeping; DeepSeek is not strong enough to hold it.
 
+**`jasper-street` was then attempted with the Opus fallback and still failed, $0.5330.** That
+run is the useful one: it proves the preamble works and that what is left is a different
+problem. See open item 1.
+
 **Corrections to yesterday's report.** The "474 of 474 drifted" figure was a 12-vs-64-char
 hash comparison bug; the real split is **13 identical, 461 changed**, and all 13 identical rows
 carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-corpus rate.
 
 ## Open items
 
-1. **Two pages cannot be generated.** `jasper-street-milton` (thin, no price at any grain;
-   the FAQ keeps reaching for a figure) and `wood-close-milton` (`getStreetStats()` returns
-   `No stats available` — it fails in one second, before the prompt is ever built, so no
-   prompt change can reach it). `jasper` would likely clear on the Opus fallback, as
-   `geddes-landing` did. `wood-close` needs the stats gate looked at, not the generator.
+1. **Two pages cannot be generated, and neither is a retry away.**
+
+   **`jasper-street-milton`** — attempted 2026-09-05 with the Opus fallback, **$0.5330,
+   failed**. It is not a price problem any more: by attempt 3 the zero-price preamble had
+   worked and every `zero_tier_price` was gone. What remained was
+   `invented_cross_street` ("Dorset Park") and `sales_register_leak`. The structural cause is
+   the `differentPriorities` section, which asks the model to compare this street against
+   others — and jasper's `crossStreets` carry **no `typicalPrice`**, because the street has no
+   price at any grain. So the model is asked to characterise comparison streets it has no
+   figures for, and it invents both the figures and the streets. **The fix is to suppress or
+   restructure `differentPriorities` on a zero-price input, not to retry.** That is a prompt-
+   architecture change and wants its own pass.
+
+   **`wood-close-milton`** — `getStreetStats()` returns `No stats available` and it fails in
+   **one second**, before a prompt is ever built. No prompt or model change can reach it; the
+   stats gate is the thing to look at.
+
 2. **Pre-2026-09-05 `costUsd` rows overstate Opus-assisted generations by 3x.** Not
    rewritable from what is stored. Treat historical cost claims as upper bounds.
 3. **The DOM rule cannot read the neighbourhood's DOM.** `findUngroundedNumerics` compares a
@@ -140,4 +152,4 @@ carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-c
 
 ## Next expected task
 
-The fallback decision above, item 1, item 7, or item 8. Do not self-start any of them.
+Item 1's `differentPriorities` suppression, item 7, or item 8. Do not self-start any of them.
