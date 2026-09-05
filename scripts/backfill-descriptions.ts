@@ -420,19 +420,20 @@ async function preflightSkip(
 
 // ─── Atomic claim ───────────────────────────────────────────────────────────
 
-async function claimRow(slug: string, inputHash: string): Promise<boolean> {
+async function claimRow(slug: string, inputHash: string, inputJson: string): Promise<boolean> {
   const { prisma } = await import("@/lib/prisma");
   const rows = await prisma.$queryRaw<Array<{ streetSlug: string }>>`
     INSERT INTO "StreetGeneration" (
-      "streetSlug", "sectionsJson", "faqJson", "inputHash",
+      "streetSlug", "sectionsJson", "faqJson", "inputHash", "inputJson",
       "status", "generatedAt", "attemptCount", "wordCounts", "totalWords"
     ) VALUES (
-      ${slug}, '[]'::jsonb, '[]'::jsonb, ${inputHash},
+      ${slug}, '[]'::jsonb, '[]'::jsonb, ${inputHash}, ${inputJson}::jsonb,
       'generating'::"GenerationStatus", NOW(), 0, '{}'::jsonb, 0
     )
     ON CONFLICT ("streetSlug") DO UPDATE
       SET "status"    = 'generating'::"GenerationStatus",
           "inputHash" = EXCLUDED."inputHash",
+          "inputJson" = EXCLUDED."inputJson",
           "generatedAt" = NOW()
       WHERE "StreetGeneration"."status" <> 'generating'::"GenerationStatus"
     RETURNING "streetSlug"
@@ -443,6 +444,7 @@ async function claimRow(slug: string, inputHash: string): Promise<boolean> {
 async function writeSuccess(
   slug: string,
   inputHash: string,
+  inputJson: string,
   sections: Array<{ id: string; heading: string; paragraphs: string[] }>,
   faq: Array<{ question: string; answer: string }>,
   attemptCount: number,
@@ -458,6 +460,7 @@ async function writeSuccess(
       sectionsJson: sections,
       faqJson: faq,
       inputHash,
+      inputJson: JSON.parse(inputJson),
       status: "succeeded",
       generatedAt: new Date(),
       attemptCount,
@@ -476,6 +479,7 @@ async function writeSuccess(
 async function writeFailure(
   slug: string,
   inputHash: string,
+  inputJson: string,
   violations: unknown,
   attemptCount: number,
   tokensIn: number,
@@ -492,6 +496,7 @@ async function writeFailure(
       tokensOut,
       costUsd,
       inputHash,
+      inputJson: JSON.parse(inputJson),
     },
   });
   await prisma.streetGenerationReview.upsert({
@@ -592,6 +597,9 @@ async function processOne(
     return;
   }
   const inputHash = hashInput(input);
+  // The snapshot the hash digests. Stored so a later audit can score this generation
+  // against the payload it was actually written from, rather than against a rebuild.
+  const inputJson = JSON.stringify(input);
 
   // 2. Preflight skip (idempotency, cooldown).
   const pf = await preflightSkip(slug, inputHash, !!args.slug);
@@ -607,7 +615,7 @@ async function processOne(
   }
 
   // 3. Atomic claim.
-  const owned = await claimRow(slug, inputHash);
+  const owned = await claimRow(slug, inputHash, inputJson);
   if (!owned) {
     state.runSkipped.claimed_by_other_worker++;
     log("skip", { slug, reason: "claimed_by_other_worker" });
@@ -690,7 +698,7 @@ async function processOne(
       (cacheCreate / 1_000_000) * PRICE_CACHE_WRITE_PER_MTOK +
       (cacheRead / 1_000_000) * PRICE_CACHE_READ_PER_MTOK;
 
-    await writeSuccess(slug, inputHash, output.sections, output.faq, attemptCount, tokensIn, tokensOut, cost);
+    await writeSuccess(slug, inputHash, inputJson, output.sections, output.faq, attemptCount, tokensIn, tokensOut, cost);
     slugOutcome = "succeeded";
     state.runSucceeded++;
     log("success", {
@@ -715,13 +723,14 @@ async function processOne(
 
     if (err instanceof StreetGenerationFailure) {
       attemptsUsed = 3;
-      await writeFailure(slug, inputHash, err.violations, 3, tokensIn, tokensOut, cost);
+      await writeFailure(slug, inputHash, inputJson, err.violations, 3, tokensIn, tokensOut, cost);
     } else {
       attemptsUsed = 0;
       const msg = err instanceof Error ? err.message : String(err);
       await writeFailure(
         slug,
         inputHash,
+        inputJson,
         [{ rule: "runtime_error", excerpt: msg.slice(0, 500), severity: "hard" }],
         0,
         tokensIn,

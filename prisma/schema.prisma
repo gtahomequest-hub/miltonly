@@ -673,6 +673,21 @@ model StreetGeneration {
   sectionsJson Json
   faqJson      Json
   inputHash    String
+  // The generator input the prose was actually written from, serialized whole.
+  //
+  // WHY IT EXISTS. inputHash alone cannot answer the only question that matters when a
+  // published figure is challenged: was it grounded when it was written? The 2026-09-04
+  // corpus audit had to rebuild every input from the live database, which scores four-month-old
+  // prose against today's data and cannot separate a fabricated figure from a stale one. Of
+  // 474 rows, 13 still rebuilt to an identical input, and all 13 were clean; the other 461
+  // were unjudgeable. A hash proves inequality and nothing else - it cannot say WHICH grain
+  // moved, and a shape change to StreetGeneratorInput moves every row at once.
+  //
+  // NULLABLE. Rows written before this column existed have no snapshot and never will;
+  // null means "not recorded", never "empty input". Every run from here forward writes it
+  // on the atomic claim and again on the terminal update, so a row's snapshot always matches
+  // the inputHash beside it.
+  inputJson    Json?
   status       GenerationStatus @default(succeeded)
   generatedAt  DateTime         @default(now())
   attemptCount Int

@@ -381,24 +381,26 @@ export async function generateStreetContent(
       typicalPrice: phase41Input.aggregates.typicalPrice,
       daysOnMarket: phase41Input.aggregates.daysOnMarket,
     };
-    const inputHash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(phase41Input))
-      .digest("hex");
+    // ONE serialization, used for both. The hash must be the digest of the exact bytes
+    // stored in inputJson, or the pair can disagree and the snapshot stops being evidence.
+    const inputSerialized = JSON.stringify(phase41Input);
+    const inputHash = crypto.createHash("sha256").update(inputSerialized).digest("hex");
+    const inputJson = inputSerialized;
 
     // Atomic claim: insert-or-flip-to-generating in StreetGeneration.
     // Mirrors scripts/backfill-descriptions.ts:507 pattern.
     await prisma.$queryRaw`
       INSERT INTO "StreetGeneration" (
-        "streetSlug", "sectionsJson", "faqJson", "inputHash",
+        "streetSlug", "sectionsJson", "faqJson", "inputHash", "inputJson",
         "status", "generatedAt", "attemptCount", "wordCounts", "totalWords"
       ) VALUES (
-        ${streetSlug}, '[]'::jsonb, '[]'::jsonb, ${inputHash},
+        ${streetSlug}, '[]'::jsonb, '[]'::jsonb, ${inputHash}, ${inputJson}::jsonb,
         'generating'::"GenerationStatus", NOW(), 0, '{}'::jsonb, 0
       )
       ON CONFLICT ("streetSlug") DO UPDATE
         SET "status"      = 'generating'::"GenerationStatus",
             "inputHash"   = EXCLUDED."inputHash",
+            "inputJson"   = EXCLUDED."inputJson",
             "generatedAt" = NOW()
         WHERE "StreetGeneration"."status" <> 'generating'::"GenerationStatus"
     `;
@@ -453,6 +455,7 @@ export async function generateStreetContent(
             tokensOut: tokensOutFromErr,
             costUsd: costFromErr,
             inputHash,
+            inputJson: phase41Input as unknown as object,
           },
         });
 
@@ -502,6 +505,7 @@ export async function generateStreetContent(
           sectionsJson: v2Sections as unknown as object,
           faqJson: v2Faq as unknown as object,
           inputHash,
+          inputJson: phase41Input as unknown as object,
           status: "succeeded",
           generatedAt: new Date(),
           attemptCount: attempts,
@@ -526,6 +530,7 @@ export async function generateStreetContent(
           tokensOut: phase41Result.totalOutputTokens,
           costUsd: phase41Result.totalCostUsd,
           inputHash,
+          inputJson: phase41Input as unknown as object,
         },
       });
       await prisma.streetGenerationReview.upsert({
