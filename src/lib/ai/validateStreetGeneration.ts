@@ -2077,6 +2077,35 @@ export const ZERO_PRICE_DROPPED_SECTION: StreetSectionId = "differentPriorities"
 export const COMPARISON_FAQ_TEMPLATE =
   "If {Street} isn't the right fit, what similar streets should I look at?";
 
+// DEC-ZERO-PRICE-FAQ (2026-09-05). The same reasoning one level down.
+//
+// Suppressing differentPriorities removed invented_cross_street from jasper-street entirely,
+// and the page still failed - on zero_tier_price in the FAQ: "$800,000", "$700,000",
+// "low-$700s". The bank was asking "What is the typical price on Jasper Street?" of a street
+// whose payload has no price at any grain. The only honest answer is "no price is published",
+// and a question whose honest answer is a refusal is a question that should not be asked. The
+// model reaches for a figure because it was asked for one.
+//
+// Every template here demands a price, a rent, or a price comparison - a figure that does not
+// exist on this input. The rental pair goes because inputHasNoPriceAtAnyGrain already
+// requires leaseActivity to be empty, so there is no rent to cite. The investor question goes
+// because an investor answer with neither price nor rent is not an answer, and it is a
+// standing invitation to a yield claim. The comparison question goes with the section it
+// belongs to.
+const PRICE_DEMANDING_FAQ_TEMPLATES: readonly string[] = [
+  "What is the typical price on {Street}?",
+  "Why do homes on {Street} trade differently than other Milton streets?",
+  "What price range should I expect on {Street}?",
+  "What's the rental market like on {Street}?",
+  "What do two-bedroom condos rent for on {Street}?",
+  "Is {Street} a good fit for investors?",
+  COMPARISON_FAQ_TEMPLATE,
+];
+
+/** Below this many eligible questions the FAQ is not worth publishing and is dropped whole.
+ *  A three-question FAQ on a page that already cannot discuss price is filler. */
+export const FAQ_MIN_ELIGIBLE = 4;
+
 /** True when differentPriorities must be absent. Exported so the generator drops it from the
  *  eval half's expected ids and the prebuild guard can assert the gate without a database. */
 export function dropsDifferentPriorities(input: StreetGeneratorInput): boolean {
@@ -2100,13 +2129,35 @@ export function validSectionCountsFor(input: StreetGeneratorInput): [number, num
   return dropsDifferentPriorities(input) ? [6, 7] : [7, 8];
 }
 
-/** The FAQ questions permitted for a given input: the bank, less the comparison question
- *  when the comparator set carries no prices. */
+/** The bank templates a given input may draw on. On a zero-price input every template whose
+ *  honest answer needs a figure is withdrawn. */
+export function eligibleFaqTemplatesFor(input: StreetGeneratorInput): string[] {
+  if (!dropsDifferentPriorities(input)) return [...FAQ_BANK_TEMPLATES];
+  return FAQ_BANK_TEMPLATES.filter((t) => !PRICE_DEMANDING_FAQ_TEMPLATES.includes(t));
+}
+
+/** True when too few questions survive to be worth a section. The FAQ is then omitted whole. */
+export function faqIsDropped(input: StreetGeneratorInput): boolean {
+  return eligibleFaqTemplatesFor(input).length < FAQ_MIN_ELIGIBLE;
+}
+
+/** The FAQ questions permitted for a given input, rendered with the street's name. */
 export function allowedFaqQuestionsFor(input: StreetGeneratorInput): Set<string> {
-  const templates = dropsDifferentPriorities(input)
-    ? FAQ_BANK_TEMPLATES.filter((t) => t !== COMPARISON_FAQ_TEMPLATE)
-    : FAQ_BANK_TEMPLATES;
-  return new Set(templates.map((t) => t.replace("{Street}", input.street.name)));
+  return new Set(eligibleFaqTemplatesFor(input).map((t) => t.replace("{Street}", input.street.name)));
+}
+
+/** The questions withdrawn for a given input, rendered. Empty on a priced input. */
+export function withdrawnFaqQuestionsFor(input: StreetGeneratorInput): Set<string> {
+  if (!dropsDifferentPriorities(input)) return new Set();
+  return new Set(PRICE_DEMANDING_FAQ_TEMPLATES.map((t) => t.replace("{Street}", input.street.name)));
+}
+
+/** The FAQ count bounds for a given input: [0,0] when dropped, otherwise the standard band
+ *  narrowed so the floor can never exceed what the bank can actually supply. */
+export function faqCountBoundsFor(input: StreetGeneratorInput): [number, number] {
+  if (faqIsDropped(input)) return [0, 0];
+  const eligible = eligibleFaqTemplatesFor(input).length;
+  return [Math.min(FAQ_MIN, eligible), Math.min(FAQ_MAX, eligible)];
 }
 // Back-compat alias for any imports outside this file
 export const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
@@ -2194,8 +2245,19 @@ export function validateStreetGeneration(
       violations.push({ rule: "missing_section_id", excerpt: `position ${i} got id "${output.sections[i].id}", expected "${expectedOrder[i]}"`, severity: "hard" });
     }
   }
-  if (!output.faq || output.faq.length < FAQ_MIN || output.faq.length > FAQ_MAX) {
-    violations.push({ rule: "faq_count_out_of_range", excerpt: `faq length = ${output.faq?.length}`, severity: "hard" });
+  // DEC-ZERO-PRICE-FAQ: the band narrows to what the bank can actually supply, and collapses
+  // to [0,0] when too few questions survive to be worth a section.
+  const [faqMin, faqMax] = faqCountBoundsFor(input);
+  const faqLen = output.faq?.length ?? 0;
+  if (!output.faq || faqLen < faqMin || faqLen > faqMax) {
+    violations.push({
+      rule: "faq_count_out_of_range",
+      excerpt: `faq length = ${output.faq?.length}, expected ${faqMin === faqMax ? faqMin : `${faqMin}-${faqMax}`}` +
+        (faqIsDropped(input)
+          ? ` (input carries no price at any grain and fewer than ${FAQ_MIN_ELIGIBLE} bank questions survive, so the FAQ is omitted entirely)`
+          : ""),
+      severity: "hard",
+    });
   }
 
   // Per-section prose scan
@@ -2623,17 +2685,30 @@ export function validateStreetGeneration(
     violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
-  // v3: FAQ questions must match bank verbatim (dedicated rule). The comparison question
-  // leaves the bank on a no-price input - see DEC-ZERO-PRICE-PRIORITIES.
+  // v3: FAQ questions must match bank verbatim (dedicated rule). On a zero-price input the
+  // price-demanding questions leave the bank, and get their OWN rule rather than the generic
+  // out-of-bank one - "not in bank" reads as a typo and invites the model to re-ask a
+  // reworded version of the same impossible question.
   const allowedQuestions = allowedFaqQuestionsFor(input);
-  for (const item of output.faq) {
-    if (!allowedQuestions.has(item.question)) {
+  const withdrawnQuestions = withdrawnFaqQuestionsFor(input);
+  for (const item of output.faq ?? []) {
+    if (allowedQuestions.has(item.question)) continue;
+    if (withdrawnQuestions.has(item.question)) {
       violations.push({
-        rule: "faq_question_out_of_bank",
-        excerpt: `FAQ question not in bank: "${item.question}"`,
+        rule: "zero_price_faq_question",
+        excerpt:
+          `FAQ asks "${item.question}", but the input carries no price at any grain. ` +
+          `The only honest answer is that no price is published, so the question is withdrawn ` +
+          `from the bank for this street. Do not ask it and do not reword it.`,
         severity: "hard",
       });
+      continue;
     }
+    violations.push({
+      rule: "faq_question_out_of_bank",
+      excerpt: `FAQ question not in bank: "${item.question}"`,
+      severity: "hard",
+    });
   }
 
   // v3: FAQ answer length has its own rule
@@ -3064,11 +3139,22 @@ export function validateFaq(
     violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
-  const allowedQuestions = allowedFaqQuestionsFor(input);
+  const allowedQuestionsFaq = allowedFaqQuestionsFor(input);
+  const withdrawnQuestionsFaq = withdrawnFaqQuestionsFor(input);
   for (const item of faq) {
-    if (!allowedQuestions.has(item.question)) {
-      violations.push({ rule: "faq_question_out_of_bank", excerpt: `FAQ question not in bank: "${item.question}"`, severity: "hard" });
+    if (allowedQuestionsFaq.has(item.question)) continue;
+    if (withdrawnQuestionsFaq.has(item.question)) {
+      violations.push({
+        rule: "zero_price_faq_question",
+        excerpt:
+          `FAQ asks "${item.question}", but the input carries no price at any grain. ` +
+          `The only honest answer is that no price is published, so the question is withdrawn ` +
+          `from the bank for this street. Do not ask it and do not reword it.`,
+        severity: "hard",
+      });
+      continue;
     }
+    violations.push({ rule: "faq_question_out_of_bank", excerpt: `FAQ question not in bank: "${item.question}"`, severity: "hard" });
   }
 
   for (const item of faq) {
@@ -3282,6 +3368,12 @@ function formatRuleViolations(
     case "zero_tier_price":
       return [
         `**zero_tier_price**: This street's input payload contains NO price at any grain — aggregates.typicalPrice, aggregates.priceRange, neighbourhoodComparable and leaseActivity are all absent. There is therefore no figure anywhere in the payload that a currency amount could be citing, whether you attribute it to the street, the neighbourhood, the area, or the wider market. Remove every dollar amount and every price-shaped number from the output, including rents and "low $1Ms"-style bands. Say plainly that no price can be published for this street and write about what the input does contain: location, form, schools, commute, and nearby places.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "zero_price_faq_question":
+      return [
+        `**zero_price_faq_question**: You asked a price question about a street whose input carries no price at any grain. Those questions are withdrawn from the bank for this street - typical price, price range, why homes trade differently, the two rental questions, investor fit, and the similar-streets closer. Their only honest answer is that no price is published, and a question whose answer is a refusal does not belong on the page. Drop them and choose from the questions that remain: housing stock, schools, commute, builder, construction era, and how fast homes sell. Do NOT reword a withdrawn question to sneak it back in.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];

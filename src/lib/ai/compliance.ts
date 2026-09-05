@@ -38,8 +38,10 @@ import {
   formatViolationsForRetry,
   inputHasNoPriceAtAnyGrain,
   dropsDifferentPriorities,
-  COMPARISON_FAQ_TEMPLATE,
   ZERO_PRICE_DROPPED_SECTION,
+  allowedFaqQuestionsFor,
+  withdrawnFaqQuestionsFor,
+  faqIsDropped,
 } from './validateStreetGeneration';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
 import { splitSentences } from '@/lib/prose/sentences';
@@ -1429,7 +1431,17 @@ ${ncLine}
 
 WHAT TO WRITE INSTEAD. Say plainly that the street has no recent recorded sales and that no price can be given for it. That sentence is not a gap in the page - it is the most useful true thing the page can say about price, and a reader is better served by it than by a number nobody can stand behind. Then write everything you DO have: housing form and type mix, position and surroundings, schools, getting around, and how the street sits relative to its neighbourhood. Those sections carry the page.
 
-${dropsDifferentPriorities(input) ? `DO NOT WRITE A "differentPriorities" SECTION. Omit it entirely and return one section fewer. That section places this street against others by price, and the comparison streets you were given carry no price either - every one of their typicalPrice values is null. There is no priceless version of it to write: attempts to write one reach for a figure, and then for a street name to hang the figure on, and invent both. Do not fold its content into another section, and do not answer "${COMPARISON_FAQ_TEMPLATE.replace("{Street}", input.street.name)}" - that question is not in your bank for this street.
+${dropsDifferentPriorities(input) ? `DO NOT WRITE A "differentPriorities" SECTION. Omit it entirely and return one section fewer. That section places this street against others by price, and the comparison streets you were given carry no price either - every one of their typicalPrice values is null. There is no priceless version of it to write: attempts to write one reach for a figure, and then for a street name to hang the figure on, and invent both. Do not fold its content into another section.
+
+THE FAQ BANK IS SHORTER FOR THIS STREET. Every question whose honest answer needs a figure is withdrawn, because the only honest answer is that no price is published, and a question whose answer is a refusal does not belong on the page. These are NOT available to you and must not be asked, reworded, or answered:
+
+${Array.from(withdrawnFaqQuestionsFor(input)).map((q) => `  - "${q}"`).join(String.fromCharCode(10))}
+
+${faqIsDropped(input)
+  ? `Fewer than the minimum number of questions survive, so DO NOT WRITE AN FAQ AT ALL. Return an empty faq array.`
+  : `Choose every FAQ question, verbatim, from this list and no other:
+
+${Array.from(allowedFaqQuestionsFor(input)).map((q) => `  - "${q}"`).join(String.fromCharCode(10))}`}
 
 ` : ""}---
 

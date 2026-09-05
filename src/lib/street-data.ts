@@ -604,13 +604,17 @@ function parseFaqs(
   const basis = enrichment.saleBasis;
   const n = sale12?.n ?? 0;
   const dom = num(sale12?.dom ?? null);
+  // DEC-ZERO-PRICE-FAQ. The price question is withdrawn when there is no basis to answer it
+  // from. Its no-basis branch asked "What is the typical price on X?" and answered with a
+  // referral - a question posed only to decline it, which is the same defect the generated
+  // bank was cleaned of. A question with no answer is dropped, not answered evasively.
   return [
-    {
-      question: `What is the typical price on ${streetName}?`,
-      answer: basis
-        ? `Typical sold price on ${streetName} was ${formatCADShort(roundPriceForProse(basis.typical))} ${windowDisclosure(basis)}. Range varies by product type. See the deep-link sections above for detached, townhouse, and condo breakdowns.`
-        : `Sale activity on ${streetName} has been limited recently. Contact our team for a private read.`,
-    },
+    ...(basis
+      ? [{
+          question: `What is the typical price on ${streetName}?`,
+          answer: `Typical sold price on ${streetName} was ${formatCADShort(roundPriceForProse(basis.typical))} ${windowDisclosure(basis)}. Range varies by product type. See the deep-link sections above for detached, townhouse, and condo breakdowns.`,
+        }]
+      : []),
     {
       question: `How fast do homes sell on ${streetName}?`,
       answer: dom !== null && n >= K_ANON_PRICE

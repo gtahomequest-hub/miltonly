@@ -89,6 +89,7 @@ export type ValidatorRule =
   | "subk_range_reassembly" // WS5: low–high price band reassembled while aggregate priceRange is k-anon suppressed
   | "zero_tier_price" // DEC-GROUNDING-ZERO: any currency amount when the input carries no price at any grain
   | "zero_price_priorities" // DEC-ZERO-PRICE-PRIORITIES: differentPriorities present on a no-price input
+  | "zero_price_faq_question" // DEC-ZERO-PRICE-FAQ: a price-demanding FAQ question on a no-price input
   | "invalid_json_shape";
 
 // --- Frontend contract (what DescriptionBody consumes) ---
