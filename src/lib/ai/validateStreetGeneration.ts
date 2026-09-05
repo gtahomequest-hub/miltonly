@@ -2058,11 +2058,25 @@ const CANONICAL_ORDER_T2: StreetSectionId[] = [
 // input carries no price at any grain, and its FAQ arm goes with it.
 //
 // WHY. The section's whole job is to place this street against others - "for a lower entry
-// point, X trades around $Y". It is sourced from input.crossStreets, and a street with no
-// price at any grain has comparators with no price either: crossStreets[].typicalPrice is
-// null across the board. So the section asks the model to characterise streets it has been
-// given no figures for, and it does the only thing it can - it invents the figures, and then
-// invents the streets to hang them on.
+// point, X trades around $Y" - and on a no-price input the page may not print a currency
+// amount at all. zero_tier_price bans every one of them, so the section's only real sentence
+// form is unavailable to it. What the model does instead is reach for a figure anyway, and
+// then for a street name to hang it on, and invent both.
+//
+// CORRECTED 2026-09-05, and the correction matters. An earlier version of this comment said
+// the comparators carry no price either. THEY OFTEN DO: jasper-street-milton's own snapshot
+// holds Maple Avenue at $693,000 and Wilson Drive at $718,000. The section is impossible not
+// because the data is missing but because inputHasNoPriceAtAnyGrain - which decides whether
+// zero_tier_price fires - does NOT look at crossStreets, while collectInputPrices, which
+// decides whether a figure is grounded, DOES. A page in that state is forbidden from printing
+// a comparator figure that is sitting in its own input. In the 2026-09-05 run the model wrote
+// "$700,000" against a Wilson Drive input of $718,000 - inside numeric_ungrounded's own
+// tolerance, and rejected anyway by a rule that never consults the field.
+//
+// So this suppression is the right behaviour under the rules AS THEY STAND, and the deeper
+// question - whether zero_tier_price should count crossStreets, which would make the section
+// writable again - is open and recorded in HANDOFF. Suppressing a section the rules forbid is
+// correct either way; if that inconsistency is resolved, revisit this.
 //
 // This is not a prompt-strength problem. jasper-street-milton was run with the explicit
 // no-price preamble AND the Opus fallback on 2026-09-05: by attempt 3 every zero_tier_price
