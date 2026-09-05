@@ -701,3 +701,109 @@ pages left rather than 0.**
 
 *The battery takes the full 40-character SHA. A short SHA fails the gate on a string compare and
 aborts before any content check, which is correct behaviour and worth knowing before the next run.*
+
+---
+
+# Residue pass (2026-09-05)
+
+## The 13 published residue pages, Opus fallback
+
+`REGEN_FALLBACK=opus`, cap $25, run from this shell. **13 of 13 passed and republished.**
+
+| slug | attempts | cost | judge |
+|---|---:|---:|---|
+| conway-court | 1 | $0.0040 | PASS |
+| derry-road | 5 | $0.3305 | PASS |
+| ellenton-crescent | 2 | $0.0065 | PASS |
+| goutouski-crescent | 5 | $0.5335 | PASS |
+| grey-landing | 5 | $0.0098 | PASS |
+| holbrook-court | 1 | $0.0040 | PASS |
+| leriche-way | 2 | $0.0060 | PASS |
+| pharo-point | 5 | $0.3326 | PASS |
+| robinwood-crescent | 1 | $0.0040 | PASS |
+| secord-court | 2 | $0.0050 | PASS |
+| syer-drive | 1 | $0.0040 | PASS |
+| whitlock-avenue | 4 | $0.0101 | PASS |
+| sim-place | 2 | $0.0066 | PASS |
+| **total** | | **$1.2566** | 13/13 |
+
+Only three pages actually escalated. The other ten passed on DeepSeek at 1-4 attempts, which
+is why the total is a fraction of the ~$14 a flat $1.06/page would have implied.
+
+## The pricing table was wrong
+
+`CLAUDE_MODELS` carried Opus at **$15/$75 per MTok**; the current rate is **$5/$25**. `costUsd`
+is computed from that table and persisted, so **every Opus-assisted generation this repo has
+recorded overstates its cost by 3x**, including the $4.2504 charged to the first four pages of
+step 1 and the $1.2566 above. At the corrected rate the escalated subtotal of $1.1966 is about
+**$0.40**, and the whole 154-page programme is roughly **$2.2** rather than $5.19.
+
+Rows written before the correction were **not** rewritten: restating them needs a per-model
+token split that is not stored.
+
+`sonnet` also moved from `claude-sonnet-4-6` to `claude-sonnet-5` — newer and cheaper
+($2/$10 against $3/$15). The routing logs' human-readable labels were hand-maintained copies
+of those ids and had already drifted: the log printed "Claude Sonnet 4.6" while the call went
+to `claude-sonnet-5`. They are derived from the table now, because that is exactly the line an
+operator reads as evidence during a cost investigation.
+
+## Opus against Sonnet 5
+
+Attempted on the first two residue pages and it produced nothing: on the re-run **neither page
+escalated** — DeepSeek passed `derry-road` at attempt 2 — so there was no fallback to compare.
+Whether the fallback fires at all is stochastic, which is worth knowing before designing
+another A/B.
+
+Measured instead on `geddes-landing`, which fails DeepSeek reliably:
+
+| fallback | fired on | result | cost |
+|---|---|---|---:|
+| **Opus 4.7** | market, eval | **PASS**, published | **$0.4085** |
+| **Sonnet 5** | aha, market, eval | **FAIL** | $0.0195 |
+
+One trial each. But the fallback exists to clear what the primary cannot, and on the only
+head-to-head escalating page Sonnet did not clear it. **Production left on `opus`**, flagged
+in `HANDOFF.md` for a decision.
+
+*(A first Sonnet attempt died on `TypeError: fetch failed` at attempt 5 — transport, the same
+drop that hit `sim-place` in step 1 — and was re-run. Two transport failures across ~170
+generations.)*
+
+## Zero-price prompt
+
+`isZeroPrice` + `buildZeroPricePreamble` prepended to **all three** prompts, gated on
+`kAnonLevel === "zero"` OR no price at any grain. All three because the thin-data preamble is
+market-scoped and every residue failure was in the eval half. The text states the absence as a
+fact rather than listing forbidden shapes — a list of shapes is a list the model routes around,
+"$1.1M" to "the low $1Ms" — and names the band forms explicitly. Where a neighbourhood
+comparable exists it licenses exactly that figure, once, labelled as the neighbourhood's.
+
+`scripts/test-zero-price-prompt.ts`, the 14th prebuild test, 15 assertions. Its gate covers
+`thin` as well as `zero`: `jasper-street` is thin and carries nothing, so a zero-only gate
+would have passed while leaving the page that prompted it uncovered.
+
+**The prompt fires correctly and does not clear the pages on DeepSeek.**
+
+| slug | result | cost | status |
+|---|---|---:|---|
+| geddes-landing | FAIL on DeepSeek | $0.0176 | **published** (cleared earlier by the Opus fallback) |
+| jasper-street | FAIL | $0.0197 | draft |
+| wood-close | FAIL in 1s | $0.0101 | draft |
+
+`geddes` and `jasper` still answered the FAQ's price question with a figure — `$800,000`,
+`mid-$700s` — after being told in the prompt that no price exists. `wood-close` never reaches
+the prompt at all: `getStreetStats()` returns `No stats available` and it fails in one second,
+so no prompt change can touch it.
+
+The honest reading is that the instruction is correct and DeepSeek is not strong enough to
+hold it under a templated FAQ question that asks for a price. `geddes-landing` passing under
+Opus on the same input supports that.
+
+## Final state
+
+| | |
+|---|---|
+| battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at `e39c26a` (full SHA) |
+| build | exit 0, zero `P2024`, **14/14 prebuild** |
+| published street pages | **443** |
+| residue | **2** — `jasper-street-milton`, `wood-close-milton`, both draft |
