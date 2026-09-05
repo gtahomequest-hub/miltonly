@@ -36,6 +36,7 @@ import {
   validateSectionsSubset,
   validateFaq,
   formatViolationsForRetry,
+  inputHasNoPriceAtAnyGrain,
 } from './validateStreetGeneration';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
 import { splitSentences } from '@/lib/prose/sentences';
@@ -370,13 +371,23 @@ interface CallDeepSeekOptions {
   temperature?: number;
 }
 
-// Claude 4.x pricing per million tokens. Used for hybrid model routing
-// diagnostic. Pricing as of 2026-05; verify against current Anthropic
-// rate sheet before promoting any of these to a committed product feature.
+// Pricing per million tokens. These numbers are not decoration: costUsd is computed
+// from them and written to StreetGeneration, so a stale row misreports every run that
+// touches that model.
+//
+// CORRECTED 2026-09-05. The table carried the 2026-05 Opus rate of $15/$75 long after
+// it moved to $5/$25, so every Opus-assisted generation this repo has ever recorded
+// overstates its cost by 3x. The 058 residue run is the first set re-stated at the
+// real rate. Verify against the current Anthropic rate sheet before trusting a
+// per-model cost claim; nothing enforces this table.
+//
+// sonnet moved from claude-sonnet-4-6 to claude-sonnet-5 in the same pass. Sonnet 5 is
+// both newer and cheaper than the 4-6 row it replaces ($2/$10 against $3/$15), so this
+// is not a cost-for-quality trade.
 type ClaudeModelKey = "opus" | "sonnet" | "haiku";
 const CLAUDE_MODELS: Record<ClaudeModelKey, { id: string; inPricePerM: number; outPricePerM: number }> = {
-  opus:   { id: "claude-opus-4-7",            inPricePerM: 15.00, outPricePerM: 75.00 },
-  sonnet: { id: "claude-sonnet-4-6",          inPricePerM:  3.00, outPricePerM: 15.00 },
+  opus:   { id: "claude-opus-4-7",            inPricePerM:  5.00, outPricePerM: 25.00 },
+  sonnet: { id: "claude-sonnet-5",            inPricePerM:  2.00, outPricePerM: 10.00 },
   haiku:  { id: "claude-haiku-4-5-20251001",  inPricePerM:  1.00, outPricePerM:  5.00 },
 };
 
@@ -1367,6 +1378,52 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
  *    returns validatorPassed: false with the combined violations. Caller
  *    handles via the existing `if (v2Passed)` branch in generateStreet.ts.
  */
+/**
+ * True when the payload cannot ground a currency amount anywhere: an explicit "zero"
+ * k-anon tier, or no price at any grain. Either is sufficient - a "thin" street whose
+ * every price grain is null is in exactly the same position as a "zero" one.
+ *
+ * Exported so the prebuild guard can assert the gate without a database.
+ */
+export function isZeroPrice(input: StreetGeneratorInput): boolean {
+  return input.aggregates.kAnonLevel === "zero" || inputHasNoPriceAtAnyGrain(input);
+}
+
+/**
+ * The instruction a zero-price street's prompts carry. Pure and exported so the prebuild
+ * guard can assert the exact text reaches a zero-price input, rather than asserting that
+ * the file merely mentions it - the distinction the name guard's blind spot exists to teach.
+ */
+export function buildZeroPricePreamble(input: StreetGeneratorInput): string {
+  const nc = input.neighbourhoodComparable;
+  const ncFigure = nc?.typicalSoldPrice ?? null;
+  const ncLine = ncFigure
+    ? `THE ONE FIGURE YOU MAY USE. ${nc!.neighbourhood} has a typical sold price of ` +
+      `$${ncFigure.toLocaleString("en-CA")} across the wider neighbourhood. You may state it ONCE, ` +
+      `and only labelled as the NEIGHBOURHOOD's figure - "homes across ${nc!.neighbourhood} typically ` +
+      `trade around $${ncFigure.toLocaleString("en-CA")}". You may NOT present it as this street's price, ` +
+      `round it, restate it loosely, convert it to a band or a tier, or use it as the anchor for a ` +
+      `range. Any other dollar figure is a fabrication.`
+    : `THERE IS NO FIGURE YOU MAY USE. Not even a neighbourhood comparable is available for this ` +
+      `street, so the correct number of dollar figures in your entire output is ZERO.`;
+
+  return `NO PRICE EXISTS FOR THIS STREET.
+
+This is a statement of fact about the data, not a style preference. The payload for ${input.street.name} carries no sale price at any grain: no typical price, no price range, no per-type price, no lease rent. Nothing was withheld from you and nothing is implied between the lines. The street simply has no published price.
+
+A price you write for this street would not be an approximation, a rounding, or a reasonable inference. It would be invented, and a reader pricing a home against it would be misled. THIS IS THE SINGLE MOST IMPORTANT CONSTRAINT ON THIS PAGE.
+
+So: any dollar figure attributed to this street is a FAILURE, in EVERY section and in the FAQ. That includes every form of one - "$1.1M", "$850,000", "around a million", "the low $1Ms", "the mid-$600s", "high-$900s", "1.2M", "800K", "roughly seven figures", a from-to range, an "above/below $X" comparison, or a band described in words rather than digits. Rephrasing a price is not avoiding it.
+
+${ncLine}
+
+WHAT TO WRITE INSTEAD. Say plainly that the street has no recent recorded sales and that no price can be given for it. That sentence is not a gap in the page - it is the most useful true thing the page can say about price, and a reader is better served by it than by a number nobody can stand behind. Then write everything you DO have: housing form and type mix, position and surroundings, schools, getting around, and how the street sits relative to its neighbourhood. Those sections carry the page.
+
+---
+
+`;
+}
+
 export async function generatePhase41StreetContent(
   input: StreetGeneratorInput,
   // Internal recursion flag for the fair-housing judge retry (Option C ruling,
@@ -1387,6 +1444,34 @@ export async function generatePhase41StreetContent(
     ahaPrompt += block;
     marketPrompt += block;
     evalPrompt += block;
+  }
+
+  // ZERO-PRICE BRANCH (2026-09-05). The 058 corpus audit's residue was three streets the
+  // generator could not write: geddes-landing, jasper-street and wood-close each burned the
+  // whole retry budget re-inventing a price for a payload that carries none. The validator
+  // caught every one of them - zero_tier_price is why they are draft and not live - but the
+  // PROMPT never said the street has no price, so the model had no way to know that writing
+  // one was the failure. It read a missing figure as a figure to supply.
+  //
+  // The thin-data preamble below does not cover this. It constrains the MARKET section only,
+  // and every one of those failures was in the eval half: a FAQ answering "what do homes cost
+  // here" with "$1.1M", a bestFitFor reaching for a band. So this block goes on all three
+  // prompts.
+  //
+  // It states the absence as a fact rather than listing forbidden shapes, because a list of
+  // forbidden shapes is a list the model can route around - "$1.1M" becomes "the low $1Ms"
+  // becomes "just over a million". The one figure it MAY use is the neighbourhood comparable,
+  // and only labelled as the neighbourhood's, which is the only honest answer available.
+  if (isZeroPrice(input)) {
+    const zeroPricePreamble = buildZeroPricePreamble(input);
+    ahaPrompt = zeroPricePreamble + ahaPrompt;
+    marketPrompt = zeroPricePreamble + marketPrompt;
+    evalPrompt = zeroPricePreamble + evalPrompt;
+    console.log(
+      `[Phase41] ${input.street.slug} ZERO-PRICE: kAnonLevel=${input.aggregates.kAnonLevel} ` +
+      `noPriceAtAnyGrain=${inputHasNoPriceAtAnyGrain(input)} - all three prompts prepended with ` +
+      `the no-price-exists instruction`
+    );
   }
 
   // Tier-2 thin-data branch (2026-05-09 product decision): every Milton
@@ -1454,8 +1539,8 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, differentPriori
   // Diagnostic feature flags: AI_PROVIDER_{MARKET,AHA,EVAL} select between
   // providers for each section call independently. All default to DeepSeek.
   //   "claude" or "opus"        — route to Claude Opus (hybrid)
-  //   "sonnet"                  — route to Claude Sonnet 4.6
-  //   "haiku"                   — route to Claude Haiku 4.5
+  //   "sonnet"                  — route to Claude Sonnet (CLAUDE_MODELS.sonnet)
+  //   "haiku"                   — route to Claude Haiku (CLAUDE_MODELS.haiku)
   //   "deepseek-twopass"        — DeepSeek Pass 1 + general refinement Pass 2 (market only)
   //   "deepseek-twopass-causal" — DeepSeek Pass 1 + causal-only Pass 2 (market only)
   //   else (default)            — DeepSeek single-pass
@@ -1494,11 +1579,11 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, differentPriori
 
   for (const [label, mode] of [["market", marketMode], ["aha", ahaMode], ["eval", evalMode]] as const) {
     if (mode === "claude-opus") {
-      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to Claude Opus 4.7`);
+      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to ${CLAUDE_MODELS.opus.id}`);
     } else if (mode === "claude-sonnet") {
-      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to Claude Sonnet 4.6`);
+      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to ${CLAUDE_MODELS.sonnet.id}`);
     } else if (mode === "claude-haiku") {
-      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to Claude Haiku 4.5`);
+      console.log(`[Phase41] ${input.street.slug} HYBRID: ${label} call routed to ${CLAUDE_MODELS.haiku.id}`);
     } else if (mode === "deepseek-twopass") {
       console.log(`[Phase41] ${input.street.slug} TWOPASS: ${label} call uses DeepSeek Pass 1 + general refinement Pass 2`);
     } else if (mode === "deepseek-twopass-causal") {
@@ -1685,9 +1770,13 @@ Original draft below:`;
   if (fallbackEnabled) {
     const fallbackModel = claudeModelFor(fallbackMode);
     const fallbackModelLabel =
-      fallbackMode === "claude-opus" ? "Claude Opus 4.7" :
-      fallbackMode === "claude-sonnet" ? "Claude Sonnet 4.6" :
-      fallbackMode === "claude-haiku" ? "Claude Haiku 4.5" :
+      // Derived, not restated. These labels were hand-maintained copies of the ids in
+      // CLAUDE_MODELS and had drifted: the log said "Claude Sonnet 4.6" while the call
+      // went to claude-sonnet-5, which is exactly the kind of line an operator reads as
+      // evidence during a cost investigation.
+      fallbackMode === "claude-opus" ? CLAUDE_MODELS.opus.id :
+      fallbackMode === "claude-sonnet" ? CLAUDE_MODELS.sonnet.id :
+      fallbackMode === "claude-haiku" ? CLAUDE_MODELS.haiku.id :
       "unknown";
 
     const halvesToRetry: Array<{ label: "aha" | "market" | "eval"; res: HalfResult; promptText: string; sectionIds: readonly StreetSectionId[]; expectsFaq: boolean }> = [];
