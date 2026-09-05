@@ -547,3 +547,157 @@ decision on scope, not a script.
 | `rigo-crossing-crescent-milton` | succeeded | _no row_ | 2026-06-02 | thin | 0 |  | 4 |  | 1 | yes |
 | `turner-drive-milton` | failed | draft | 2026-05-26 | thin | 3 |  | 4 | 2 |  | yes |
 | `weller-cross-milton` | succeeded | _no row_ | 2026-06-28 | thin | 1 |  |  |  | 3 | yes |
+---
+
+# Part 3
+
+## Correction to section 1 (2026-09-05)
+
+**The "474 of 474 drifted" figure in section 1 was my own bug, not a measurement.** The audit
+compared a 12-character slice of the rebuilt digest against the stored `inputHash`, and 459 of
+479 stored hashes are the full 64-character digest — the API/cron path writes 64,
+`scripts/backfill-descriptions.ts` writes a 12-char prefix. The comparison could not have
+matched.
+
+Recomputed against the correct width, per row:
+
+| | |
+|---|---|
+| rebuilds to an **identical** input | **13** |
+| input has changed | 461 |
+| unscoreable | 5 |
+
+The direction of section 3's argument is unchanged — 461 of 474 rows genuinely cannot be
+judged against the payload they were written from — and the three measurements it rests on
+(recency decay, comparator-token repetition, DOM-against-zero) never used the hash.
+
+**The 13 make the case better than the hash statistic did.** All 13 were generated 2026-09-03
+or 2026-09-04, under the current rules, and **all 13 carry zero gate-flagged findings**:
+
+```
+buckthorn-garden  court-street  croft-avenue  drew-centre  first-line  gosford-crescent
+heaven-crescent   lower-base-line  mccuaig-drive  miller-way  pickersgill-crescent
+tock-close  trafalgar-road
+```
+
+Every gate flag in the corpus sits on a row whose input has changed. That is the drift
+hypothesis stated as a partition rather than a correlation, and it is why regenerating the
+154 — rather than editing them — is the right remedy: it re-grounds each page against the
+data that exists now.
+
+**A second defect fell out of the same check.** The two write paths digest at different
+widths, so `scripts/backfill-descriptions.ts`'s idempotency test
+(`existing.inputHash === inputHash`) can never match a row the API path wrote. The bulk path
+has been silently regenerating cron-written rows. Not changed here — normalizing the width
+invalidates the 20 short-hash rows' idempotency in one go, which belongs in its own pass.
+Carried to `HANDOFF.md`.
+
+## Step 0 — `feat/gen-input-snapshot`
+
+`StreetGeneration.inputJson` (`Json`, nullable). Migration
+`20260905120000_street_generation_input_json`, applied over the pg driver and recorded in
+`_prisma_migrations`; `prisma migrate status` reports 22 migrations, schema up to date.
+
+Both write paths fill it at **all ten sites** where `inputHash` is written — the atomic
+claim, and the terminal update on success and on failure, in `src/lib/generateStreet.ts` and
+`scripts/backfill-descriptions.ts`. `generateStreet` serializes once and hashes those exact
+bytes, so the stored snapshot cannot disagree with the hash beside it.
+
+`scripts/test-input-snapshot.ts` is the 13th prebuild test. It asserts the pairing **at every
+site**, not that the file mentions the column — the distinction HANDOFF item 6 exists to
+teach. It found a genuinely unpaired site on its first run. Verified red on a removed
+pairing, green on restore.
+
+| gate | result |
+|---|---|
+| `pnpm build` | **exit 0**, zero `P2024`, 539 static pages |
+| prebuild | **13/13** |
+| preview | `miltonly-p2p4uqa8l`, Ready |
+| battery on preview | **`PASS · 9 checks · 438 pages · 66s`**, exit 0 |
+
+
+## Step 1 — the 154 regenerated, DeepSeek only
+
+**No production env change and no redeploy.** `scripts/regen-058-local.ts` runs the generator in
+this process and deletes `AI_PROVIDER_FALLBACK` from the process environment after `.env.local`
+loads, so a half that exhausts its retry budget fails closed rather than escalating to Claude. It
+asserts all four provider knobs resolve to DeepSeek before generating anything and refuses to
+start otherwise. Fail-closed is load-bearing here: `generateStreetContent` skips the
+`StreetContent` upsert entirely on failure, so a failed page keeps its existing row untouched.
+
+The first four ran through `/api/admin/force-regenerate` on production **before** that question
+was settled, and went via the Claude fallback at **$4.2504 for four pages**. That is what put
+the projection at ~$164 and prompted the ask.
+
+| | |
+|---|---|
+| pages attempted | **154** |
+| passed and republished | **138** |
+| failed, fail-closed | **16** |
+| DeepSeek cost, 150 pages | **$0.9443** |
+| Claude/production cost, first 4 | **$4.2504** |
+| **total** | **$5.1947** |
+| snapshots written | **154 of 154** |
+| published `StreetContent` rows | 438 to **443** |
+
+`sim-place-milton` first died on `TypeError: fetch failed` at attempt 3 — a transport drop, not a
+verdict — so it was dropped from the log and re-run. It failed the second time on a real
+`numeric_ungrounded`, which is what put it in the residue rather than leaving it ambiguous.
+
+### The regenerated corpus is clean
+
+Re-audited all 138. **Gate-flagged findings fell from 138 of 138 to 2**, and both of those turned
+out to be artifacts of the audit itself:
+
+- `elmwood-crescent-milton` "$1.35M" — its snapshot carries `Pringle Avenue = 1,340,000`.
+- `jelinik-terrace-milton` "$900K" — its snapshot carries `Aird Court = 905,750`.
+
+Both are inside the validator's own tolerance. The audit rebuilt each input minutes after
+generation and got a **different `crossStreets` set**, so it scored prose against comparators the
+page was never given. Scored against `inputJson` instead, **both pages carry zero ungrounded
+dollars**. This is the first use of the step 0 column and it did exactly the job it was added
+for: it turned two unresolvable flags into a definite answer in one query.
+
+`zero_tier_price` and `tier_band` are now **zero** across the regenerated set.
+
+**The 86 remaining `dom` findings are a defect in this audit, not in the pages.** They sit in the
+`neighbourhoodComparable` section citing the neighbourhood's days-on-market, and
+`findUngroundedNumerics` compares a `days` token only against `input.aggregates.daysOnMarket` —
+it never reads `neighbourhoodComparable.daysOnMarket`. The snapshots confirm it: `elmwood` carries
+`nbhdComparable.dom = 92` and `jelinik` `= 94`, and the prose cites those numbers. The shipped
+validator does not fire on them because it scopes the DOM rule to the market section, so nothing
+is live-defective. The rule needs the second field before it can be widened.
+
+### The residue — 16 pages, all fail-closed
+
+Three are draft and stay draft; thirteen are published and keep the content they had.
+
+```
+draft, cannot generate
+  geddes-landing-milton       eval half, 5 attempts, still writes a price into a no-price payload
+  jasper-street-milton        same shape, market and eval both exhausted
+  wood-close-milton           "No stats available" - getStreetStats() returns null, nothing to
+                              generate from at all
+
+published, prior content preserved
+  conway-court-milton        derry-road-milton         ellenton-crescent-milton
+  goutouski-crescent-milton  grey-landing-milton       holbrook-court-milton
+  leriche-way-milton         pharo-point-milton        robinwood-crescent-milton
+  secord-court-milton        sim-place-milton          syer-drive-milton
+  whitlock-avenue-milton
+```
+
+Fourteen of the sixteen exhausted the **eval** half specifically (`bestFitFor` /
+`differentPriorities` / FAQ), which is where comparator prices are narrated. On DeepSeek alone the
+model cannot restate a comparator inside the tolerance and keeps re-guessing. The Claude fallback
+cleared all four it was given. That is the trade this run bought: **$5.19 instead of ~$164, and 16
+pages left rather than 0.**
+
+## Step 2 — battery
+
+`EXPECT_SHA=c953b9e4450b4f0a23f8f1cae675dafa45989b04 BASE=https://miltonly.com`
+
+**`PASS · 9 checks · 442 pages · 188s`, exit 0.** SHA gate green.
+
+*The battery takes the full 40-character SHA. A short SHA fails the gate on a string compare and
+aborts before any content check, which is correct behaviour and worth knowing before the next run.*

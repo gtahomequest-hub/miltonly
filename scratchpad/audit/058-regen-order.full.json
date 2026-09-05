@@ -1,0 +1,1145 @@
+[
+ {
+  "n": 1,
+  "slug": "15-side-road-side-road-milton",
+  "rules": [
+   "zero_tier_price",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 2,
+  "slug": "coates-drive-milton",
+  "rules": [
+   "zero_tier_price",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 3,
+  "slug": "country-lane-court-milton",
+  "rules": [
+   "zero_tier_price",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 4,
+  "slug": "esquesing-line-milton",
+  "rules": [
+   "dom",
+   "zero_tier_price",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 5,
+  "slug": "geddes-landing-milton",
+  "rules": [
+   "zero_tier_price",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 6,
+  "slug": "jasper-street-milton",
+  "rules": [
+   "zero_tier_price",
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 7,
+  "slug": "wood-close-milton",
+  "rules": [
+   "zero_tier_price",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 8,
+  "slug": "alder-gate-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 9,
+  "slug": "armstrong-boulevard-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 10,
+  "slug": "aspen-terrace-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 11,
+  "slug": "barr-crescent-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 12,
+  "slug": "beaty-trail-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 13,
+  "slug": "bergamot-avenue-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 14,
+  "slug": "bessy-trail-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 15,
+  "slug": "bews-landing-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 16,
+  "slug": "blacklock-street-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 17,
+  "slug": "blinco-terrace-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 18,
+  "slug": "brassard-circle-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 19,
+  "slug": "britannia-road-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 20,
+  "slug": "broadway-avenue-milton",
+  "rules": [
+   "dom"
+  ]
+ },
+ {
+  "n": 21,
+  "slug": "buttercup-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 22,
+  "slug": "calla-point-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 23,
+  "slug": "campbell-avenue-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 24,
+  "slug": "christie-circle-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 25,
+  "slug": "clifford-point-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 26,
+  "slug": "clitherow-street-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 27,
+  "slug": "cochrane-terrace-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 28,
+  "slug": "colville-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 29,
+  "slug": "commercial-street-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 30,
+  "slug": "connors-landing-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 31,
+  "slug": "conway-court-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 32,
+  "slug": "cooke-crescent-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "tier_band"
+  ]
+ },
+ {
+  "n": 33,
+  "slug": "cookman-drive-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 34,
+  "slug": "copley-court-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 35,
+  "slug": "costigan-road-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 36,
+  "slug": "cusick-circle-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 37,
+  "slug": "dempsey-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 38,
+  "slug": "derry-road-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 39,
+  "slug": "downes-jackson-heights-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 40,
+  "slug": "duff-crescent-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 41,
+  "slug": "dymott-avenue-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 42,
+  "slug": "ellenton-crescent-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 43,
+  "slug": "elmwood-crescent-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 44,
+  "slug": "english-mill-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 45,
+  "slug": "farlow-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 46,
+  "slug": "finney-terrace-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 47,
+  "slug": "gibson-crescent-milton",
+  "rules": [
+   "tier_band"
+  ]
+ },
+ {
+  "n": 48,
+  "slug": "gillett-point-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 49,
+  "slug": "gleeson-road-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 50,
+  "slug": "glenda-jane-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 51,
+  "slug": "gollins-drive-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 52,
+  "slug": "gooding-crescent-milton",
+  "rules": [
+   "tier_band",
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 53,
+  "slug": "gordon-heights-milton",
+  "rules": [
+   "tier_band",
+   "dom"
+  ]
+ },
+ {
+  "n": 54,
+  "slug": "goutouski-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 55,
+  "slug": "gowling-terrace-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "tier_band"
+  ]
+ },
+ {
+  "n": 56,
+  "slug": "grey-landing-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 57,
+  "slug": "guelph-line-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 58,
+  "slug": "hanson-crescent-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 59,
+  "slug": "harkin-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 60,
+  "slug": "harvest-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 61,
+  "slug": "harwood-drive-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 62,
+  "slug": "hatt-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 63,
+  "slug": "hayward-crescent-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 64,
+  "slug": "herman-way-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 65,
+  "slug": "hincks-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 66,
+  "slug": "hobbs-crescent-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "tier_band"
+  ]
+ },
+ {
+  "n": 67,
+  "slug": "holbrook-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 68,
+  "slug": "holdsworth-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 69,
+  "slug": "holland-heights-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 70,
+  "slug": "jean-landing-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 71,
+  "slug": "jelinik-terrace-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 72,
+  "slug": "joyce-boulevard-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 73,
+  "slug": "kearns-drive-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 74,
+  "slug": "kovachik-boulevard-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 75,
+  "slug": "langholm-street-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 76,
+  "slug": "laughren-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 77,
+  "slug": "laundon-terrace-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 78,
+  "slug": "leatherleaf-landing-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 79,
+  "slug": "leitch-landing-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 80,
+  "slug": "leriche-way-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 81,
+  "slug": "limestone-road-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 82,
+  "slug": "lingen-crescent-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 83,
+  "slug": "little-crescent-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 84,
+  "slug": "locker-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 85,
+  "slug": "logan-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 86,
+  "slug": "luxton-drive-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "tier_band"
+  ]
+ },
+ {
+  "n": 87,
+  "slug": "mackenzie-drive-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 88,
+  "slug": "mae-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 89,
+  "slug": "marigold-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 90,
+  "slug": "mcduffe-crescent-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 91,
+  "slug": "mcgibbon-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 92,
+  "slug": "mclaren-road-milton",
+  "rules": [
+   "tier_band"
+  ]
+ },
+ {
+  "n": 93,
+  "slug": "merritt-drive-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 94,
+  "slug": "michener-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 95,
+  "slug": "minchin-way-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 96,
+  "slug": "mockridge-terrace-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 97,
+  "slug": "morley-avenue-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 98,
+  "slug": "morse-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 99,
+  "slug": "mulroney-heights-milton",
+  "rules": [
+   "dom"
+  ]
+ },
+ {
+  "n": 100,
+  "slug": "nadalin-heights-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 101,
+  "slug": "nakerville-crescent-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 102,
+  "slug": "nelson-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 103,
+  "slug": "nipissing-road-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 104,
+  "slug": "oriole-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 105,
+  "slug": "paupst-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 106,
+  "slug": "pearl-street-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 107,
+  "slug": "pears-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 108,
+  "slug": "pettit-trail-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 109,
+  "slug": "pharo-point-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 110,
+  "slug": "playfair-terrace-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 111,
+  "slug": "pozbou-crescent-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 112,
+  "slug": "pratt-heights-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 113,
+  "slug": "raftis-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 114,
+  "slug": "ramshaw-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 115,
+  "slug": "randall-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 116,
+  "slug": "robinwood-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 117,
+  "slug": "robson-crescent-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 118,
+  "slug": "roper-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 119,
+  "slug": "roseheath-drive-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 120,
+  "slug": "rutland-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 121,
+  "slug": "sanderson-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 122,
+  "slug": "secord-court-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 123,
+  "slug": "sheaffe-place-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 124,
+  "slug": "shepherd-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 125,
+  "slug": "sherwood-road-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 126,
+  "slug": "silver-court-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 127,
+  "slug": "sim-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 128,
+  "slug": "solomon-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 129,
+  "slug": "stacey-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 130,
+  "slug": "stark-circle-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 131,
+  "slug": "stearn-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 132,
+  "slug": "stokes-trail-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 133,
+  "slug": "strathcona-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 134,
+  "slug": "sweetfern-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 135,
+  "slug": "sydney-street-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 136,
+  "slug": "syer-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 137,
+  "slug": "syndenham-lane-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 138,
+  "slug": "taylor-court-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 139,
+  "slug": "teetzel-drive-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 140,
+  "slug": "tonelli-lane-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 141,
+  "slug": "tough-gate-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 142,
+  "slug": "trafalgar-court-milton",
+  "rules": [
+   "tier_band",
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 143,
+  "slug": "trudeau-drive-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 144,
+  "slug": "twinflower-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 145,
+  "slug": "vaughan-court-milton",
+  "rules": [
+   "dom",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 146,
+  "slug": "whitlock-avenue-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 147,
+  "slug": "whitney-terrace-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 148,
+  "slug": "williams-avenue-milton",
+  "rules": [
+   "tier_band",
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 149,
+  "slug": "willow-avenue-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "dom"
+  ]
+ },
+ {
+  "n": 150,
+  "slug": "winter-crescent-milton",
+  "rules": [
+   "tier_band"
+  ]
+ },
+ {
+  "n": 151,
+  "slug": "wintergreen-place-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 152,
+  "slug": "woodley-crescent-milton",
+  "rules": [
+   "numeric_ungrounded",
+   "tier_band"
+  ]
+ },
+ {
+  "n": 153,
+  "slug": "zelinsky-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ },
+ {
+  "n": 154,
+  "slug": "zuest-crescent-milton",
+  "rules": [
+   "numeric_ungrounded"
+  ]
+ }
+]

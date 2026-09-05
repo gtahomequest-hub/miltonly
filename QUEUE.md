@@ -1,8 +1,10 @@
 # Queue
 
-Five items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
+Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **Gate A reported 2026-09-04, awaiting approval**. Items 4 and 5 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **Gate A reported 2026-09-04, awaiting approval**. Items 4, 5, 6 and 7 **not started**.
+
+*Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
 ---
 
@@ -96,3 +98,71 @@ Route the street component of every `CondoBuilding` address through `resolveStre
 Populate solar exposure, surface, lanes, sidewalk, maxspeed, length, and terminus onto all published streets from the Town and OSM layers. No camera work, and nothing derived from imagery.
 
 **Done when** those fields are populated for every street with an OSM match, and rendered wherever the page design calls for them.
+
+---
+
+## 6. Video playbook adoptions
+
+Six changes the 2026-09-04 upload run left open. Each is a delta against what is live now, and
+each was confirmed absent before this item was written.
+
+**Dated object keys.** Keys are `streets/<slug>-milton/day.mp4` and `night.mp4` today, with one
+shared `poster.webp` — undated, so a newer capture can only replace an older one and the two
+cannot coexist. Move to a dated key (`streets/<slug>-milton/<YYYY-MM-DD>-day.mp4`), which also
+makes cache-busting free on an immutable object. The re-key is the same copy-repoint-delete
+order the three night captures used on 2026-09-04: copy, repoint the column, verify serving,
+only then delete.
+
+**`captured_at` with an offset, plus a backfill.** `videoCapturedAt` and `nightCapturedAt` are
+plain `DateTime`. A night clip's claim to be night is only checkable against a local wall clock,
+so the capture offset has to travel with the timestamp rather than be inferred at render. Carry
+the offset, and backfill the 42 rows already holding a clip from the `meta.json` each was
+uploaded from.
+
+**`sitemap-video.xml`.** `src/app/sitemap.ts` is the only sitemap in the app and it carries no
+video entries. A `VideoObject` in page JSON-LD is not a substitute — Google's video index reads
+the video sitemap. Emit one covering every row with a `videoUrl` or `nightVideoUrl`, with
+thumbnail, title, description and duration.
+
+**A coverage sentence.** The page shows a clip and says nothing about what it covers or when.
+State the segment filmed and the capture date in prose, next to the player. A viewer cannot tell
+a full-street pass from a fifty-metre clip, and a clip that implies more coverage than it has is
+the same defect class as a figure that implies more data than it has.
+
+**A takedown `mailto:`.** There is no route for someone who wants footage of their own property
+removed. One address, on the page carrying the clip, answered by a person. This is not optional
+once real streets and real houses are on camera.
+
+**Reject an audio stream at upload.** `scripts/upload-street-videos-r2.ts` gates candidates on
+`status: staged` and `blur_verified: true` and does not look at the streams at all. A dashcam
+clip carrying audio can carry a recorded conversation, which is a consent problem no blur pass
+addresses. Probe the file and refuse any candidate with an audio stream, reported the way the
+blur refusal is.
+
+**Done when** all six are live, the 42 clip-carrying rows are backfilled, and
+`sitemap-video.xml` validates.
+
+---
+
+## 7. `makeStreetDecision`'s minimum-data gate
+
+`DEC-ZERO-SALES-TIER` added DB2 record existence as a sixth activity source, but only inside
+`getStreetStats()`'s `hasStreetActivity` check. `makeStreetDecision` has its own earlier gate —
+`totalListings === 0 || (soldCount < 1 && activeCount < 1)` returns `skip_low_data` and marks the
+queue row `ineligible` — and it reads DB1 `Listing` only. So the sixth source is never consulted
+for exactly the streets it was added to admit. Manual generation works; the cron cannot reach
+them.
+
+Extend that clause with the same DB2 existence probe (`countRecordedTransactions`, which is
+already written, sibling-slug-unioned and `perm_advertise`-filtered) so the two gates agree.
+
+**Measure the population first — the brief's figure of 46 does not reproduce.** Counted
+2026-09-05 against DB2 and DB1: **831 slugs carry DB2 records; 419 of them are skipped as
+low-data by this gate; 103 of those already have a `StreetContent` row** (so the cron cannot
+refresh them) **and 316 have no page at all** (so they are creation candidates, which is a
+different and much larger decision). That count is unfiltered for the registry and includes
+unit-level artifacts such as `whitlock-ave-sw-712-milton`, so the real number is lower. Pinning
+it against the Town registry is step one, and the build scope follows from it — not from 46.
+
+**Done when** the two gates consult the same sources, the registry-filtered population is
+reported, and the streets that already have pages refresh on the cron without a manual run.

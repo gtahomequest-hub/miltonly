@@ -1,0 +1,82 @@
+[
+ {
+  "slug": "geddes-landing-milton",
+  "status": "draft",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 3 attempts, market=1 violations after 5 attempts, eval=2 violations after 5 attempts."
+ },
+ {
+  "slug": "jasper-street-milton",
+  "status": "draft",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 2 attempts, market=1 violations after 5 attempts, eval=5 violations after 5 attempts."
+ },
+ {
+  "slug": "wood-close-milton",
+  "status": "draft",
+  "reason": "Error: No stats available"
+ },
+ {
+  "slug": "conway-court-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 1 attempts, eval=3 violations after 5 attempts."
+ },
+ {
+  "slug": "derry-road-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 3 attempts, market=1 violations after 5 attempts, eval=0 violations after 1 attempts."
+ },
+ {
+  "slug": "ellenton-crescent-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 1 attempts, eval=2 violations after 5 attempts."
+ },
+ {
+  "slug": "goutouski-crescent-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 1 attempts, eval=2 violations after 5 attempts."
+ },
+ {
+  "slug": "grey-landing-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 1 attempts, eval=3 violations after 5 attempts."
+ },
+ {
+  "slug": "holbrook-court-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 2 attempts, eval=1 violations after 5 attempts."
+ },
+ {
+  "slug": "leriche-way-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 1 attempts, eval=2 violations after 5 attempts."
+ },
+ {
+  "slug": "pharo-point-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 3 attempts, market=0 violations after 1 attempts, eval=3 violations after 5 attempts."
+ },
+ {
+  "slug": "robinwood-crescent-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 2 attempts, market=0 violations after 2 attempts, eval=2 violations after 5 attempts."
+ },
+ {
+  "slug": "secord-court-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 1 attempts, eval=1 violations after 5 attempts."
+ },
+ {
+  "slug": "syer-drive-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 3 attempts, market=0 violations after 1 attempts, eval=1 violations after 5 attempts."
+ },
+ {
+  "slug": "whitlock-avenue-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=1 violations after 5 attempts, eval=0 violations after 2 attempts."
+ },
+ {
+  "slug": "sim-place-milton",
+  "status": "published",
+  "reason": "Phase41GenerationError: Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violations after 2 attempts, eval=1 violations after 5 attempts."
+ }
+]
