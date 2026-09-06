@@ -48,9 +48,16 @@ function base(): StreetGeneratorInput {
 }
 
 const noPrice = base();
+noPrice.crossStreets = [
+  { slug: "maple-avenue-milton", name: "Maple Avenue", distinctivePattern: "x", typicalPrice: 693_000 },
+  { slug: "wilson-drive-milton", name: "Wilson Drive", distinctivePattern: "x", typicalPrice: 718_000 },
+] as StreetGeneratorInput["crossStreets"];
+// Two priced comparators on BOTH fixtures, so this file tests the own-price gate alone. The
+// comparison question rides a different gate (the comparator set) and has its own test.
 const priced = base();
 priced.aggregates.typicalPrice = 1_100_000;
 priced.aggregates.kAnonLevel = "full";
+priced.crossStreets = noPrice.crossStreets;
 
 const q = (t: string) => t.replace("{Street}", "Jasper Street");
 
@@ -63,7 +70,6 @@ for (const t of [
   "What's the rental market like on {Street}?",
   "What do two-bedroom condos rent for on {Street}?",
   "Is {Street} a good fit for investors?",
-  "If {Street} isn't the right fit, what similar streets should I look at?",
 ]) {
   ok(withdrawn.has(q(t)), `"${q(t)}" must be withdrawn on a no-price input`);
   ok(!allowedFaqQuestionsFor(noPrice).has(q(t)), `"${q(t)}" must not be in the allowed set`);
@@ -80,6 +86,9 @@ for (const t of [
   "Who built most of the homes on {Street}?",
   "Is {Street} new construction or established?",
   "How fast do homes sell on {Street}?",
+  // Rides the comparator gate, not the own-price gate: two priced comparators exist here,
+  // so it survives even though this street has no price of its own.
+  "If {Street} isn't the right fit, what similar streets should I look at?",
 ]) {
   ok(allowedFaqQuestionsFor(noPrice).has(q(t)), `"${q(t)}" needs no figure and must survive`);
 }
@@ -103,20 +112,26 @@ ok(faqCountBoundsFor(priced)[0] === 6, "a priced input keeps the standard floor 
 // The drop path is real, not decorative: starve the bank and it must collapse to [0,0].
 // Proven through the public gate rather than by trusting the branch by eye.
 {
-  const starved = base();
-  // Every non-withdrawn question is answered from these fields; emptying them does not
-  // change the bank, so the drop path is exercised directly against the constant instead.
-  const survivors = eligibleFaqTemplatesFor(starved).length;
-  ok(survivors === eligible, "sanity: the bank is a pure function of the input's price grain");
+  // The two gates compose: an input with no own price AND no priced comparators loses the
+  // comparison question on top of the six own-price ones. Still eight survivors, still well
+  // clear of the floor - which is the point of measuring rather than assuming.
+  const bothGates = base();
+  const survivors = eligibleFaqTemplatesFor(bothGates).length;
+  ok(survivors === eligible - 1,
+     `both gates must withdraw one more than the own-price gate alone, got ${survivors} vs ${eligible}`);
+  ok(survivors >= FAQ_MIN_ELIGIBLE, "even with both gates the bank clears the floor");
+  ok(!faqIsDropped(bothGates), "so the FAQ is still written");
   ok(FAQ_MIN_ELIGIBLE === 4, "the documented floor is four questions");
 }
 
 // ── REJECTION ───────────────────────────────────────────────────────────────
+// The section list must match what these fixtures expect, or invalid_json_shape returns
+// first and the FAQ rules are never reached. Both carry two priced comparators and no
+// neighbourhood comparable, so the layout is the legacy seven.
 function out(faq: Array<{ question: string; answer: string }>): StreetGeneratorOutput {
   return {
-    sections: ["about", "homes", "amenities", "market", "gettingAround", "schools"].map((id) => ({
-      id, heading: "x", paragraphs: ["y"],
-    })),
+    sections: ["about", "homes", "amenities", "market", "gettingAround", "schools", "differentPriorities"]
+      .map((id) => ({ id, heading: "x", paragraphs: ["y"] })),
     faq,
   } as unknown as StreetGeneratorOutput;
 }

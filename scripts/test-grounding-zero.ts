@@ -70,10 +70,27 @@ expect("priced input: has a price grain", inputHasNoPriceAtAnyGrain(PRICED_INPUT
   withRange.aggregates.priceRange = { low: 900_000, high: 1_200_000 };
   expect("priceRange alone closes the gate", inputHasNoPriceAtAnyGrain(withRange), false);
 
+  // REDEFINED 2026-09-05 (DEC-ZERO-PRICE-SCOPE). A neighbourhood comparable does NOT close
+  // the gate any more. It is a real figure about a different entity, not this street's
+  // price, and counting it here meant a zero-tier street handed a comparable came out
+  // "priced" - switching the rule off on the page that needed it most. The figure stays
+  // citeable: findZeroTierPrices now fires only on amounts matching nothing in the input,
+  // and on a named entity's figure used without its name.
   const withComparable = base();
   (withComparable as unknown as { neighbourhoodComparable: unknown }).neighbourhoodComparable =
-    { typicalSoldPrice: 1_100_000 };
-  expect("neighbourhoodComparable alone closes the gate", inputHasNoPriceAtAnyGrain(withComparable), false);
+    { typicalSoldPrice: 1_100_000, neighbourhood: "Ford" };
+  expect("neighbourhoodComparable alone does NOT close the gate", inputHasNoPriceAtAnyGrain(withComparable), true);
+
+  // The street's OWN per-type and quarterly figures do close it - they are this street's price.
+  const withByType = base();
+  (withByType as unknown as { byType: Record<string, unknown> }).byType =
+    { detached: { count: 6, typicalPrice: 980_000, priceRange: null, kFlag: "ok" } };
+  expect("byType typicalPrice closes the gate", inputHasNoPriceAtAnyGrain(withByType), false);
+
+  const withQuarter = base();
+  (withQuarter as unknown as { quarterlyTrend: unknown[] }).quarterlyTrend =
+    [{ quarter: "Q1 2026", typical: 940_000, count: 4 }];
+  expect("quarterlyTrend typical closes the gate", inputHasNoPriceAtAnyGrain(withQuarter), false);
 
   const withLease = base();
   (withLease as unknown as { leaseActivity: unknown }).leaseActivity =
@@ -175,7 +192,36 @@ const ZERO_WITH_AREA: StreetGeneratorInput = (() => {
   return i;
 })();
 
-expect("zero tier + area block: zero-tier rule stands down", inputHasNoPriceAtAnyGrain(ZERO_WITH_AREA), false);
+// The gate STAYS ON here now: Ford's figures are the neighbourhood's, not this street's.
+// What changed is what the rule does with them - see the two cases immediately below.
+expect("zero tier + area block: the street still has no price of its own", inputHasNoPriceAtAnyGrain(ZERO_WITH_AREA), true);
+
+{
+  // ATTRIBUTED and accurate: the neighbourhood's own typical, named as the neighbourhood's.
+  // This must pass, or the area block is decoration the page may never use.
+  const attributed = "Across Ford, homes typically trade around $1.05M.";
+  const hits = findZeroTierPrices(attributed, ZERO_WITH_AREA);
+  if (hits.length > 0) {
+    failures.push(`  attributed neighbourhood figure rejected: ${hits.map((h) => h.raw).join(", ")}`);
+  }
+}
+{
+  // UNATTRIBUTED: the same real figure with no entity named reads as this street's price.
+  // The number is right and the attribution is invented, which is the defect.
+  const unattributed = "Homes here typically trade around $1.05M.";
+  const hits = findZeroTierPrices(unattributed, ZERO_WITH_AREA);
+  if (!hits.some((h) => /1\.05M/.test(h.raw))) {
+    failures.push(`  unattributed neighbourhood figure accepted (got ${hits.map((h) => h.raw).join(", ") || "nothing"})`);
+  }
+}
+{
+  // Matching NOTHING in the input is still a violation whatever it is attributed to.
+  const invented = "Across Ford, homes typically trade around $3.4M.";
+  const hits = findZeroTierPrices(invented, ZERO_WITH_AREA);
+  if (!hits.some((h) => /3\.4M/.test(h.raw))) {
+    failures.push(`  figure matching nothing in the input accepted (got ${hits.map((h) => h.raw).join(", ") || "nothing"})`);
+  }
+}
 
 {
   // The real defect, verbatim from the 2026-09-04 regeneration.

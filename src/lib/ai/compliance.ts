@@ -38,6 +38,7 @@ import {
   formatViolationsForRetry,
   inputHasNoPriceAtAnyGrain,
   dropsDifferentPriorities,
+  hasNeighbourhoodComparable,
   ZERO_PRICE_DROPPED_SECTION,
   allowedFaqQuestionsFor,
   withdrawnFaqQuestionsFor,
@@ -1015,6 +1016,14 @@ function loadPhase41EvaluativePrompt(): string {
 
 const ABOUT_HOMES_AMENITIES_SECTION_IDS: StreetSectionId[] = ["about", "homes", "amenities"];
 const MARKET_SECTION_IDS: StreetSectionId[] = ["market", "neighbourhoodComparable"];
+/** The market half's sections for a given input. neighbourhoodComparable is requested only
+ *  when the input carries the block - asking for a section describing a comparable that does
+ *  not exist is how jasper-street's market half invented "$825,000" on every attempt. */
+function marketSectionIdsFor(input: StreetGeneratorInput): StreetSectionId[] {
+  return hasNeighbourhoodComparable(input)
+    ? MARKET_SECTION_IDS
+    : MARKET_SECTION_IDS.filter((id) => id !== "neighbourhoodComparable");
+}
 const EVALUATIVE_SECTION_IDS: StreetSectionId[] = ["gettingAround", "schools", "differentPriorities"];
 /** The eval half's sections for a given input. differentPriorities is dropped when the input
  *  carries no price at any grain - DEC-ZERO-PRICE-PRIORITIES. */
@@ -1431,9 +1440,7 @@ ${ncLine}
 
 WHAT TO WRITE INSTEAD. Say plainly that the street has no recent recorded sales and that no price can be given for it. That sentence is not a gap in the page - it is the most useful true thing the page can say about price, and a reader is better served by it than by a number nobody can stand behind. Then write everything you DO have: housing form and type mix, position and surroundings, schools, getting around, and how the street sits relative to its neighbourhood. Those sections carry the page.
 
-${dropsDifferentPriorities(input) ? `DO NOT WRITE A "differentPriorities" SECTION. Omit it entirely and return one section fewer. That section places this street against others by price, and this page may not print a currency amount at all - so its only real sentence form is unavailable to it. There is no priceless version of it to write: attempts to write one reach for a figure, and then for a street name to hang the figure on, and invent both. Do not fold its content into another section.
-
-THE FAQ BANK IS SHORTER FOR THIS STREET. Every question whose honest answer needs a figure is withdrawn, because the only honest answer is that no price is published, and a question whose answer is a refusal does not belong on the page. These are NOT available to you and must not be asked, reworded, or answered:
+${inputHasNoPriceAtAnyGrain(input) ? `THE FAQ BANK IS SHORTER FOR THIS STREET. Every question whose honest answer needs a figure is withdrawn, because the only honest answer is that no price is published, and a question whose answer is a refusal does not belong on the page. These are NOT available to you and must not be asked, reworded, or answered:
 
 ${Array.from(withdrawnFaqQuestionsFor(input)).map((q) => `  - "${q}"`).join(String.fromCharCode(10))}
 
@@ -1444,6 +1451,45 @@ ${faqIsDropped(input)
 ${Array.from(allowedFaqQuestionsFor(input)).map((q) => `  - "${q}"`).join(String.fromCharCode(10))}`}
 
 ` : ""}---
+
+`;
+}
+
+/**
+ * The sections this input may not contain, stated to the model.
+ *
+ * SEPARATE FROM THE ZERO-PRICE PREAMBLE ON PURPOSE. Both suppressions are properties of the
+ * input, not of the street's own price: a fully priced street can still have one comparator
+ * and no neighbourhood block. expectedOrderFor enforces the layout for EVERY street, so every
+ * street must be told, or a priced street would be rejected for a shape it was never asked
+ * for - a retry storm the model cannot escape by being accurate.
+ *
+ * Returns "" when the input supports the full layout, which is the common case.
+ */
+export function buildSectionSuppressionPreamble(input: StreetGeneratorInput): string {
+  const blocks: string[] = [];
+  if (dropsDifferentPriorities(input)) {
+    blocks.push(
+      `DO NOT WRITE A "differentPriorities" SECTION. Omit it entirely and return one section fewer. ` +
+      `That section compares this street to others BY PRICE, and fewer than two of the comparison ` +
+      `streets you were given carry a price - so there is nothing to compare against. Attempts to ` +
+      `write it anyway reach for a figure, then for a street name to hang the figure on, and invent ` +
+      `both. Do not fold its content into another section.`,
+    );
+  }
+  if (!hasNeighbourhoodComparable(input)) {
+    blocks.push(
+      `DO NOT WRITE A "neighbourhoodComparable" SECTION. This input carries no neighbourhood ` +
+      `comparable, so there is no figure and no sample behind it. Writing the section means ` +
+      `inventing a neighbourhood typical, which is a fabrication about a real place.`,
+    );
+  }
+  if (blocks.length === 0) return "";
+  return `SECTIONS THIS PAGE DOES NOT HAVE.
+
+${blocks.join(String.fromCharCode(10, 10))}
+
+---
 
 `;
 }
@@ -1486,6 +1532,17 @@ export async function generatePhase41StreetContent(
   // forbidden shapes is a list the model can route around - "$1.1M" becomes "the low $1Ms"
   // becomes "just over a million". The one figure it MAY use is the neighbourhood comparable,
   // and only labelled as the neighbourhood's, which is the only honest answer available.
+  const sectionPreamble = buildSectionSuppressionPreamble(input);
+  if (sectionPreamble) {
+    ahaPrompt = sectionPreamble + ahaPrompt;
+    marketPrompt = sectionPreamble + marketPrompt;
+    evalPrompt = sectionPreamble + evalPrompt;
+    console.log(
+      `[Phase41] ${input.street.slug} SECTIONS: pricedCrossStreets=${(input.crossStreets ?? []).filter((c) => c.typicalPrice > 0).length} ` +
+      `neighbourhoodComparable=${hasNeighbourhoodComparable(input)} - suppression preamble prepended`
+    );
+  }
+
   if (isZeroPrice(input)) {
     const zeroPricePreamble = buildZeroPricePreamble(input);
     ahaPrompt = zeroPricePreamble + ahaPrompt;
@@ -1629,7 +1686,7 @@ OTHER SECTIONS (about, homes, amenities, gettingAround, schools, differentPriori
     runHalfWithRetry({
       halfLabel: "market",
       systemPrompt: marketPrompt,
-      expectedSectionIds: MARKET_SECTION_IDS,
+      expectedSectionIds: marketSectionIdsFor(input),
       expectsFaq: false,
       input,
       maxAttempts: 5,
@@ -1741,7 +1798,7 @@ Original draft below:`;
       } else {
         const rounded = roundPricesInOutput({ sections: parsed.sections, faq: [] }, input);
         pass2Sections = rounded.sections;
-        pass2Violations = validateSectionsSubset(pass2Sections, MARKET_SECTION_IDS, input);
+        pass2Violations = validateSectionsSubset(pass2Sections, marketSectionIdsFor(input), input);
         pass2Words = pass2Sections.reduce(
           (sum, s) => sum + s.paragraphs.join(" ").trim().split(/\s+/).filter(Boolean).length,
           0,
@@ -1805,7 +1862,7 @@ Original draft below:`;
 
     const halvesToRetry: Array<{ label: "aha" | "market" | "eval"; res: HalfResult; promptText: string; sectionIds: readonly StreetSectionId[]; expectsFaq: boolean }> = [];
     if (ahaRes.violations.length > 0) halvesToRetry.push({ label: "aha", res: ahaRes, promptText: ahaPrompt, sectionIds: ABOUT_HOMES_AMENITIES_SECTION_IDS, expectsFaq: false });
-    if (marketRes.violations.length > 0) halvesToRetry.push({ label: "market", res: marketRes, promptText: marketPrompt, sectionIds: MARKET_SECTION_IDS, expectsFaq: false });
+    if (marketRes.violations.length > 0) halvesToRetry.push({ label: "market", res: marketRes, promptText: marketPrompt, sectionIds: marketSectionIdsFor(input), expectsFaq: false });
     if (evalRes.violations.length > 0) halvesToRetry.push({ label: "eval", res: evalRes, promptText: evalPrompt, sectionIds: evaluativeSectionIdsFor(input), expectsFaq: true });
 
     if (halvesToRetry.length > 0) {

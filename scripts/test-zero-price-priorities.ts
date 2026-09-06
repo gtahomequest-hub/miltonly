@@ -1,31 +1,32 @@
-// DEC-ZERO-PRICE-PRIORITIES. A no-price street writes no differentPriorities section, and
-// the validator rejects one that appears anyway.
+// DEC-ZERO-PRICE-PRIORITIES. differentPriorities is written only when there is something to
+// compare against, and the validator rejects it when there is not.
 //
-// WHY THIS EXISTS. differentPriorities places this street against others by price, sourced
-// from input.crossStreets. A street with no price at any grain has comparators with no price
-// either - every crossStreets[].typicalPrice is null - so the section asks the model to
-// characterise streets it has been given no figures for. It does the only thing it can: it
-// invents the figures, then invents the streets to hang them on.
+// WHY, and WHY THE GATE MOVED. The section compares this street to others BY PRICE, sourced
+// from input.crossStreets. The first version of this rule keyed on the street being priceless,
+// on the stated grounds that its comparators would be priceless too. That was simply false:
+// jasper-street-milton's own snapshot holds Maple Avenue at $693,000 and Wilson Drive at
+// $718,000. A street with no price of its own can write this section perfectly well by citing
+// named comparators, and the first gate suppressed exactly that case.
 //
-// This is not a prompt-strength problem, and that was established by experiment rather than
-// assumed. jasper-street-milton was run on 2026-09-05 with the explicit no-price preamble AND
-// the Opus fallback: by attempt 3 every zero_tier_price was gone - the instruction worked -
-// and what remained was invented_cross_street ("Dorset Park") and a sales-register leak. The
-// section is impossible on this data, so it is not requested.
+// What actually makes the section unwritable is having fewer than two priced comparators -
+// nothing to compare against - so that is the gate now, and it is independent of what this
+// street costs. A fully priced street with one comparator is suppressed too.
 //
-// Two halves, both asserted here because either alone leaves the hole open:
-//   SUPPRESSION - the generator must not ask for the section or its FAQ arm.
-//   REJECTION   - the validator must fail a section that appears regardless.
+// Two halves, because either alone leaves the hole open:
+//   SUPPRESSION - the generator does not ask for the section, and says so in the prompt.
+//   REJECTION   - the validator fails one that appears regardless.
 // A generator that stops asking is not a guarantee; a model can still volunteer it.
 import {
   dropsDifferentPriorities,
   expectedOrderFor,
-  validSectionCountsFor,
+  expectedSectionCountFor,
   allowedFaqQuestionsFor,
   validateStreetGeneration,
+  pricedCrossStreetCount,
+  MIN_PRICED_CROSS_STREETS,
   COMPARISON_FAQ_TEMPLATE,
 } from "../src/lib/ai/validateStreetGeneration";
-import { buildZeroPricePreamble } from "../src/lib/ai/compliance";
+import { buildSectionSuppressionPreamble } from "../src/lib/ai/compliance";
 import type { StreetGeneratorInput, StreetGeneratorOutput } from "../src/types/street-generator";
 
 const failures: string[] = [];
@@ -50,75 +51,100 @@ function base(): StreetGeneratorInput {
   } as StreetGeneratorInput;
 }
 
-const noPrice = base();
-const priced = base();
-priced.aggregates.typicalPrice = 1_100_000;
-priced.aggregates.kAnonLevel = "full";
+const comparators = (n: number) =>
+  [
+    { slug: "maple-avenue-milton", name: "Maple Avenue", distinctivePattern: "x", typicalPrice: 693_000 },
+    { slug: "wilson-drive-milton", name: "Wilson Drive", distinctivePattern: "x", typicalPrice: 718_000 },
+  ].slice(0, n) as StreetGeneratorInput["crossStreets"];
+
+// No comparator carries a price: unwritable whatever this street costs.
+const noComparators = base();
+// One priced comparator is not enough to compare against.
+const oneComparator = base();
+oneComparator.crossStreets = comparators(1);
+// Two: writable, even though this street has no price of its own. The case the first gate
+// got wrong, and the reason the gate moved.
+const twoComparators = base();
+twoComparators.crossStreets = comparators(2);
+// A fully priced street with only one comparator is suppressed too - the gate is not about
+// this street's price.
+const pricedOneComparator = base();
+pricedOneComparator.aggregates.typicalPrice = 1_100_000;
+pricedOneComparator.aggregates.kAnonLevel = "full";
+pricedOneComparator.crossStreets = comparators(1);
 
 // ── The gate ────────────────────────────────────────────────────────────────
-ok(dropsDifferentPriorities(noPrice), "a no-price input must drop differentPriorities");
-ok(!dropsDifferentPriorities(priced), "a priced input must KEEP differentPriorities");
+ok(dropsDifferentPriorities(noComparators), "no priced comparators must drop the section");
+ok(dropsDifferentPriorities(oneComparator), `${MIN_PRICED_CROSS_STREETS - 1} priced comparator is not enough`);
+ok(!dropsDifferentPriorities(twoComparators),
+   "two priced comparators must KEEP the section even when this street has no price of its own");
+ok(dropsDifferentPriorities(pricedOneComparator),
+   "a fully priced street with one comparator is suppressed too - the gate is the comparator set");
+ok(pricedCrossStreetCount(twoComparators) === 2, "pricedCrossStreetCount counts comparators carrying a figure");
+ok(pricedCrossStreetCount(noComparators) === 0, "and returns 0 on an empty comparator set");
 
-// ── SUPPRESSION: the shapes the generator asks for ──────────────────────────
-const [nMin, nMax] = validSectionCountsFor(noPrice);
-ok(nMin === 6 && nMax === 7, `no-price counts must be 6 or 7, got ${nMin}/${nMax}`);
-const [pMin, pMax] = validSectionCountsFor(priced);
-ok(pMin === 7 && pMax === 8, `priced counts must be 7 or 8, got ${pMin}/${pMax}`);
+// A comparator present but carrying no figure does not count.
+const zeroPricedComparator = base();
+zeroPricedComparator.crossStreets = [
+  { slug: "a-milton", name: "A Street", distinctivePattern: "x", typicalPrice: 0 },
+  { slug: "b-milton", name: "B Street", distinctivePattern: "x", typicalPrice: 0 },
+] as StreetGeneratorInput["crossStreets"];
+ok(dropsDifferentPriorities(zeroPricedComparator),
+   "two comparators carrying no figure are not two priced comparators");
 
-const order6 = expectedOrderFor(noPrice, 6);
-ok(!order6.includes("differentPriorities"), "the 6-section order must not contain differentPriorities");
-ok(order6.length === 6 && order6[order6.length - 1] === "schools",
-   `the 6-section order must end at schools, got [${order6.join(",")}]`);
-const order7t2 = expectedOrderFor(noPrice, 7);
-ok(!order7t2.includes("differentPriorities"), "the 7-section no-price order must not contain differentPriorities");
-ok(order7t2.includes("neighbourhoodComparable"), "the 7-section no-price order is the T2 layout minus differentPriorities");
-ok(expectedOrderFor(priced, 7).includes("differentPriorities"),
-   "a priced 7-section page must still contain differentPriorities");
+// ── SUPPRESSION: the layout the generator asks for ──────────────────────────
+// Fully determined by the input now - one expected count, not a pair. It used to be inferred
+// from the OUTPUT's own length, which let a wrong shape select the order that excused it.
+ok(expectedSectionCountFor(noComparators) === 6,
+   `no comparators and no comparable -> 6, got ${expectedSectionCountFor(noComparators)}`);
+ok(expectedSectionCountFor(twoComparators) === 7,
+   `two comparators, no comparable -> 7, got ${expectedSectionCountFor(twoComparators)}`);
 
-// The FAQ arm goes with it.
-const noPriceFaq = allowedFaqQuestionsFor(noPrice);
+const suppressed = expectedOrderFor(noComparators);
+ok(!suppressed.includes("differentPriorities"), "the suppressed order must not contain the section");
+ok(suppressed[suppressed.length - 1] === "schools",
+   `the suppressed order must end at schools, got [${suppressed.join(",")}]`);
+ok(expectedOrderFor(twoComparators).includes("differentPriorities"),
+   "two priced comparators must put the section back in the order");
+
+// The comparison FAQ arm follows the section, not this street's price.
 const comparison = COMPARISON_FAQ_TEMPLATE.replace("{Street}", "Jasper Street");
-ok(!noPriceFaq.has(comparison), "the comparison FAQ question must leave the bank on a no-price input");
-ok(allowedFaqQuestionsFor(priced).has(comparison), "a priced input keeps the comparison FAQ question");
-ok(noPriceFaq.size > 0 && noPriceFaq.has("How fast do homes sell on Jasper Street?"),
-   "dropping one question must not empty or corrupt the bank");
+ok(!allowedFaqQuestionsFor(noComparators).has(comparison),
+   "the comparison question must leave the bank when the section is suppressed");
+ok(allowedFaqQuestionsFor(twoComparators).has(comparison),
+   "and must return when two priced comparators exist, even on a street with no price");
 
-// And the prompt says so, in the words the model reads.
-const preamble = buildZeroPricePreamble(noPrice);
+// The prompt says so, for EVERY input that needs it - not only zero-price ones. The validator
+// enforces the layout on every street, so a priced street with one comparator has to be told,
+// or it is rejected for a shape it was never asked for.
+const preamble = buildSectionSuppressionPreamble(noComparators);
 ok(/DO NOT WRITE A "differentPriorities" SECTION/.test(preamble),
    "the preamble must tell the model not to write the section");
 ok(/one section fewer/.test(preamble), "the preamble must say the output is one section shorter");
-ok(preamble.includes(comparison), "the preamble must name the FAQ question that is withdrawn");
-ok(!/DO NOT WRITE A "differentPriorities" SECTION/.test(buildZeroPricePreamble(priced)),
-   "a priced input's preamble must not carry the suppression text");
+ok(/DO NOT WRITE A "differentPriorities" SECTION/.test(buildSectionSuppressionPreamble(pricedOneComparator)),
+   "a fully priced street must get the instruction too, not just zero-price ones");
+ok(!/DO NOT WRITE A "differentPriorities" SECTION/.test(buildSectionSuppressionPreamble(twoComparators)),
+   "an input that supports the section must not carry the suppression text");
 
 // ── REJECTION: the validator fails one that shows up anyway ─────────────────
-function sectionsFor(ids: string[]) {
-  return ids.map((id) => ({ id, heading: "x", paragraphs: ["y"] }));
+function out(ids: string[]): StreetGeneratorOutput {
+  return {
+    sections: ids.map((id) => ({ id, heading: "x", paragraphs: ["y"] })),
+    faq: [],
+  } as unknown as StreetGeneratorOutput;
 }
-const withDp: StreetGeneratorOutput = {
-  sections: sectionsFor(["about", "homes", "amenities", "market", "gettingAround", "schools", "differentPriorities"]),
-  faq: [],
-} as unknown as StreetGeneratorOutput;
-const v = validateStreetGeneration(withDp, noPrice);
+const withDp = out(["about", "homes", "amenities", "market", "gettingAround", "schools", "differentPriorities"]);
+const v = validateStreetGeneration(withDp, noComparators);
 ok(v.some((x) => x.rule === "zero_price_priorities"),
-   `a differentPriorities section on a no-price input must raise zero_price_priorities; got [${[...new Set(v.map((x) => x.rule))].join(",")}]`);
+   `a differentPriorities section with no priced comparators must raise zero_price_priorities; got [${[...new Set(v.map((x) => x.rule))].join(",")}]`);
 ok(v.find((x) => x.rule === "zero_price_priorities")?.severity === "hard",
-   "zero_price_priorities must be hard severity so the retry budget applies");
-
-// The same output against a PRICED input must not raise it - the rule self-gates.
-const vPriced = validateStreetGeneration(withDp, priced);
-ok(!vPriced.some((x) => x.rule === "zero_price_priorities"),
-   "zero_price_priorities must not fire on a priced input");
-
-// A 7-section page is a VALID COUNT for a no-price T2 input, which is exactly why the
-// presence check is separate from the length check - the count alone would let it through.
-ok(validSectionCountsFor(noPrice).includes(7),
-   "7 is a valid no-price count, so the presence check cannot be folded into the length check");
+   "zero_price_priorities must be hard so the retry budget applies");
+ok(!validateStreetGeneration(withDp, twoComparators).some((x) => x.rule === "zero_price_priorities"),
+   "it must not fire when two priced comparators exist");
 
 if (failures.length) {
   console.error("test-zero-price-priorities: FAIL");
   for (const f of failures) console.error("  " + f);
   process.exit(1);
 }
-console.log("test-zero-price-priorities: PASS (19 assertions across suppression and rejection)");
+console.log("test-zero-price-priorities: PASS (comparator gate, layout, suppression, rejection)");
