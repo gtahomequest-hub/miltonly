@@ -399,14 +399,30 @@ export function parseDollarTokenForGrounding(tok: string): number | null {
  *  cannot ground any currency amount at all. Pure and exported so the prebuild guard
  *  can assert the gate without a database. */
 export function inputHasNoPriceAtAnyGrain(input: StreetGeneratorInput): boolean {
+  // REDEFINED 2026-09-05 (DEC-ZERO-PRICE-SCOPE). "Zero price" is a fact about THIS STREET,
+  // and only this street's own price fields decide it.
+  //
+  // It used to count neighbourhoodComparable too, which conflated two different questions.
+  // The neighbourhood's typical is not this street's price - it is a real figure about a
+  // different entity, and the page may cite it as long as it says whose it is. Counting it
+  // here meant a zero-tier street handed a comparable came out "priced", which switched
+  // zero_tier_price off on the page that needed it most.
+  //
+  // crossStreets were never counted here and still are not, but the asymmetry that created
+  // was the real defect: collectInputPrices DOES include crossStreets[].typicalPrice, so a
+  // page could be forbidden from printing a comparator figure sitting in its own input.
+  // jasper-street-milton wrote "$700,000" against a Wilson Drive input of $718,000 - inside
+  // numeric_ungrounded's own tolerance - and was rejected anyway. That is fixed at the other
+  // end now: findZeroTierPrices fires only on a figure matching NOTHING in the whole input.
+  //
+  // CONTENT, NOT PRESENCE, throughout: a lease block can exist carrying only counts, and an
+  // object that holds no figure grounds no figure.
   if (input.aggregates.typicalPrice != null) return false;
   if (input.aggregates.priceRange != null) return false;
-  // CONTENT, NOT PRESENCE. DEC-ZERO-CONTEXT attaches a neighbourhoodComparable to
-  // zero-tier inputs, and a lease block can exist carrying only counts. An object
-  // that holds no figure grounds no figure, so testing `!= null` on the container
-  // would hand the model a payload it cannot cite while switching this rule off.
-  const nc = input.neighbourhoodComparable;
-  if (nc && (nc.typicalSoldPrice != null || nc.priceRange != null)) return false;
+  for (const t of Object.values(input.byType ?? {})) {
+    if (t.typicalPrice != null || t.priceRange != null) return false;
+  }
+  for (const q of input.quarterlyTrend ?? []) if (q.typical != null) return false;
   const la = input.leaseActivity;
   if (la) {
     if (la.rangeStats != null) return false;
@@ -415,6 +431,66 @@ export function inputHasNoPriceAtAnyGrain(input: StreetGeneratorInput): boolean 
   }
   return true;
 }
+
+/** Every figure in the input that a currency amount may legitimately cite, each labelled with
+ *  the entity it belongs to. A figure attributed to a NAMED entity must name it in prose. */
+export interface GroundedFigure {
+  value: number;
+  /** The entity the figure describes, or null for this street's own figures. */
+  entity: string | null;
+  label: string;
+}
+
+export function collectGroundedFigures(input: StreetGeneratorInput): GroundedFigure[] {
+  const out: GroundedFigure[] = [];
+  const a = input.aggregates;
+  if (a.typicalPrice) out.push({ value: a.typicalPrice, entity: null, label: "aggregates.typicalPrice" });
+  if (a.priceRange) {
+    out.push({ value: a.priceRange.low, entity: null, label: "aggregates.priceRange.low" });
+    out.push({ value: a.priceRange.high, entity: null, label: "aggregates.priceRange.high" });
+  }
+  for (const [k, t] of Object.entries(input.byType ?? {})) {
+    if (t.typicalPrice) out.push({ value: t.typicalPrice, entity: null, label: `byType[${k}].typicalPrice` });
+    if (t.priceRange) {
+      out.push({ value: t.priceRange.low, entity: null, label: `byType[${k}].priceRange.low` });
+      out.push({ value: t.priceRange.high, entity: null, label: `byType[${k}].priceRange.high` });
+    }
+  }
+  for (const q of input.quarterlyTrend ?? []) {
+    if (q.typical) out.push({ value: q.typical, entity: null, label: `quarterlyTrend[${q.quarter}]` });
+  }
+  for (const b of Object.values(input.leaseActivity?.byBed ?? {})) {
+    if (b.typicalRent) out.push({ value: b.typicalRent, entity: null, label: "leaseActivity.byBed.typicalRent" });
+  }
+  for (const r of input.leaseActivity?.recentRecords ?? []) {
+    if (r.soldPrice) out.push({ value: r.soldPrice, entity: null, label: "leaseActivity.recentRecords.soldPrice" });
+    if (r.listPrice) out.push({ value: r.listPrice, entity: null, label: "leaseActivity.recentRecords.listPrice" });
+  }
+  const rs = input.leaseActivity?.rangeStats;
+  if (rs) {
+    out.push({ value: rs.min, entity: null, label: "leaseActivity.rangeStats.min" });
+    out.push({ value: rs.max, entity: null, label: "leaseActivity.rangeStats.max" });
+  }
+  // NAMED entities. These are real figures about someone else, citeable only with the name.
+  const nc = input.neighbourhoodComparable;
+  if (nc?.typicalSoldPrice) {
+    out.push({ value: nc.typicalSoldPrice, entity: nc.neighbourhood, label: "neighbourhoodComparable.typicalSoldPrice" });
+  }
+  if (nc?.priceRange) {
+    out.push({ value: nc.priceRange.low, entity: nc.neighbourhood, label: "neighbourhoodComparable.priceRange.low" });
+    out.push({ value: nc.priceRange.high, entity: nc.neighbourhood, label: "neighbourhoodComparable.priceRange.high" });
+  }
+  for (const c of input.crossStreets ?? []) {
+    if (c.typicalPrice) out.push({ value: c.typicalPrice, entity: c.name, label: `crossStreets[${c.name}].typicalPrice` });
+  }
+  return out.filter((f) => f.value > 0);
+}
+
+/** Comparators carrying a price. differentPriorities needs at least two to be writable. */
+export function pricedCrossStreetCount(input: StreetGeneratorInput): number {
+  return (input.crossStreets ?? []).filter((c) => c.typicalPrice > 0).length;
+}
+export const MIN_PRICED_CROSS_STREETS = 2;
 
 /** Price vocabulary used to decide whether a bare comma-grouped number is money.
  *  A number like "1,200" is a price in "homes trade around 1,200,000" and square
@@ -438,36 +514,91 @@ export function findZeroTierPrices(
   input: StreetGeneratorInput,
 ): Array<{ raw: string; context: string; reason: string }> {
   if (!inputHasNoPriceAtAnyGrain(input)) return [];
+  const figures = collectGroundedFigures(input);
   const out: Array<{ raw: string; context: string; reason: string }> = [];
   const claimed: Array<[number, number]> = [];
-  const push = (raw: string, start: number, reason: string) => {
-    const end = start + raw.length;
-    if (claimed.some(([s, e]) => start < e && end > s)) return;
-    claimed.push([start, end]);
-    out.push({
-      raw,
-      context: prose.slice(Math.max(0, start - 35), Math.min(prose.length, end + 35)).replace(/\s+/g, " ").trim(),
-      reason,
-    });
+
+  /** The input figure a token cites, by point tolerance or by the band a tier construct
+   *  names. Null when the token matches nothing anywhere in the payload. */
+  const cite = (raw: string): GroundedFigure | null => {
+    // A bare "1.1M" or "800,000" is not a $-token, so parseDollarTokenForGrounding declines
+    // it; fall back to the digits. Parenthesised because ?? and || cannot be mixed bare.
+    const parsed = parseDollarTokenForGrounding(raw);
+    const v = parsed ?? (Number(raw.replace(/[^0-9.]/g, "")) || null);
+    if (v === null || !Number.isFinite(v) || v === 0) return null;
+    let best: GroundedFigure | null = null;
+    let bestDelta = Infinity;
+    for (const f of figures) {
+      const tol = Math.max(15_000, f.value * 0.04);
+      const delta = Math.abs(v - f.value);
+      if (delta <= tol && delta < bestDelta) { best = f; bestDelta = delta; }
+    }
+    if (best) return best;
+    const band = tierBandFor(raw);
+    if (band) {
+      for (const f of figures) if (f.value >= band.lo && f.value <= band.hi) return f;
+    }
+    return null;
   };
 
-  // Dollar-signed amounts, via the shared extractor so the tier constructs
-  // ("low-$1M", "high-$900Ks") are recognised the same way everywhere else.
+  const push = (raw: string, start: number, end: number) => {
+    if (claimed.some(([cs, ce]) => start < ce && end > cs)) return;
+    const context = prose.slice(Math.max(0, start - 60), Math.min(prose.length, end + 60)).replace(/\s+/g, " ").trim();
+    const match = cite(raw);
+    if (!match) {
+      claimed.push([start, end]);
+      out.push({
+        raw, context,
+        reason: "this street has no price of its own, and this figure matches nothing anywhere in the input",
+      });
+      return;
+    }
+    // A figure about a NAMED entity is citeable only when the prose says whose it is.
+    // Without the name the reader reads it as this street's price, which is the defect -
+    // the number is real, the attribution is invented.
+    if (match.entity && !nameAppearsNear(prose, start, end, match.entity)) {
+      claimed.push([start, end]);
+      out.push({
+        raw, context,
+        reason:
+          `matches ${match.label} (${Math.round(match.value).toLocaleString()}) but does not name ` +
+          `"${match.entity}" nearby. This street has no price of its own, so an unattributed figure ` +
+          `reads as its price. Name the entity the figure belongs to, or drop it.`,
+      });
+    }
+  };
+
   for (const n of extractNumerics(prose)) {
     if (n.type !== "dollar") continue;
-    push(n.raw, n.index, "input carries no price at any grain, so no currency amount can be grounded");
+    push(n.raw, n.index, n.index + n.raw.length);
   }
   for (const re of [BARE_MAGNITUDE, BARE_GROUPED]) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(prose))) {
       const near = prose.slice(Math.max(0, m.index - 60), Math.min(prose.length, m.index + m[0].length + 60));
-      // The magnitude suffix is itself a money signal; a bare grouped number is not.
       if (re === BARE_GROUPED && !PRICE_VOCAB.test(near)) continue;
-      push(m[0], m.index, "price-shaped number with no price of any grain in the input");
+      push(m[0], m.index, m.index + m[0].length);
     }
   }
   return out;
+}
+
+/** Whether an entity name appears within the sentence-scale window around a figure. The
+ *  window is generous on purpose: "Wilson Drive, where homes trade around $718,000" and
+ *  "homes trade around $718,000 on Wilson Drive" are both proper attribution. */
+function nameAppearsNear(prose: string, start: number, end: number, entity: string): boolean {
+  const window = prose
+    .slice(Math.max(0, start - 220), Math.min(prose.length, end + 220))
+    .toLowerCase();
+  const name = entity.trim().toLowerCase();
+  if (name.length === 0) return false;
+  if (window.includes(name)) return true;
+  // A comparator may be referred to by its distinctive first token ("Wilson" for
+  // "Wilson Drive"). Substring, not regex: entity names carry periods and hyphens
+  // ("Louis St. Laurent Avenue"), and hand-escaping them for a regex is a bug factory.
+  const head = name.split(/\s+/)[0];
+  return head.length >= 4 && window.includes(head);
 }
 
 /**
@@ -2053,6 +2184,151 @@ const CANONICAL_ORDER_LEGACY: StreetSectionId[] = [
 const CANONICAL_ORDER_T2: StreetSectionId[] = [
   "about","homes","amenities","market","neighbourhoodComparable","gettingAround","schools","differentPriorities",
 ];
+
+// DEC-ZERO-PRICE-PRIORITIES (2026-09-05). differentPriorities is not written at all when the
+// input carries no price at any grain, and its FAQ arm goes with it.
+//
+// WHY. The section's whole job is to place this street against others - "for a lower entry
+// point, X trades around $Y" - and on a no-price input the page may not print a currency
+// amount at all. zero_tier_price bans every one of them, so the section's only real sentence
+// form is unavailable to it. What the model does instead is reach for a figure anyway, and
+// then for a street name to hang it on, and invent both.
+//
+// CORRECTED 2026-09-05, and the correction matters. An earlier version of this comment said
+// the comparators carry no price either. THEY OFTEN DO: jasper-street-milton's own snapshot
+// holds Maple Avenue at $693,000 and Wilson Drive at $718,000. The section is impossible not
+// because the data is missing but because inputHasNoPriceAtAnyGrain - which decides whether
+// zero_tier_price fires - does NOT look at crossStreets, while collectInputPrices, which
+// decides whether a figure is grounded, DOES. A page in that state is forbidden from printing
+// a comparator figure that is sitting in its own input. In the 2026-09-05 run the model wrote
+// "$700,000" against a Wilson Drive input of $718,000 - inside numeric_ungrounded's own
+// tolerance, and rejected anyway by a rule that never consults the field.
+//
+// So this suppression is the right behaviour under the rules AS THEY STAND, and the deeper
+// question - whether zero_tier_price should count crossStreets, which would make the section
+// writable again - is open and recorded in HANDOFF. Suppressing a section the rules forbid is
+// correct either way; if that inconsistency is resolved, revisit this.
+//
+// This is not a prompt-strength problem. jasper-street-milton was run with the explicit
+// no-price preamble AND the Opus fallback on 2026-09-05: by attempt 3 every zero_tier_price
+// was gone, and what remained was invented_cross_street ("Dorset Park") and a sales-register
+// leak. The instruction worked. The section was still impossible, because the data it needs
+// does not exist. A section that cannot be written truthfully should not be requested.
+//
+// The FAQ arm goes too, for the same reason: "If X isn't the right fit, what similar streets
+// should I look at?" cannot be answered from a comparator set with no prices, and leaving it
+// in the bank re-opens the hole one question down.
+export const ZERO_PRICE_DROPPED_SECTION: StreetSectionId = "differentPriorities";
+export const COMPARISON_FAQ_TEMPLATE =
+  "If {Street} isn't the right fit, what similar streets should I look at?";
+
+// DEC-ZERO-PRICE-FAQ (2026-09-05). The same reasoning one level down.
+//
+// Suppressing differentPriorities removed invented_cross_street from jasper-street entirely,
+// and the page still failed - on zero_tier_price in the FAQ: "$800,000", "$700,000",
+// "low-$700s". The bank was asking "What is the typical price on Jasper Street?" of a street
+// whose payload has no price at any grain. The only honest answer is "no price is published",
+// and a question whose honest answer is a refusal is a question that should not be asked. The
+// model reaches for a figure because it was asked for one.
+//
+// Every template here demands a price, a rent, or a price comparison - a figure that does not
+// exist on this input. The rental pair goes because inputHasNoPriceAtAnyGrain already
+// requires leaseActivity to be empty, so there is no rent to cite. The investor question goes
+// because an investor answer with neither price nor rent is not an answer, and it is a
+// standing invitation to a yield claim. The comparison question goes with the section it
+// belongs to.
+// These demand THIS STREET's own price or rent. They are withdrawn on a street that has
+// neither, and only on that basis - the comparison question below is a separate gate, because
+// it depends on the comparator set rather than on this street.
+const OWN_PRICE_FAQ_TEMPLATES: readonly string[] = [
+  "What is the typical price on {Street}?",
+  "Why do homes on {Street} trade differently than other Milton streets?",
+  "What price range should I expect on {Street}?",
+  "What's the rental market like on {Street}?",
+  "What do two-bedroom condos rent for on {Street}?",
+  "Is {Street} a good fit for investors?",
+];
+
+/** Below this many eligible questions the FAQ is not worth publishing and is dropped whole.
+ *  A three-question FAQ on a page that already cannot discuss price is filler. */
+export const FAQ_MIN_ELIGIBLE = 4;
+
+/** True when differentPriorities must be absent.
+ *
+ *  REDEFINED 2026-09-05. The gate is the comparator set, not this street's own price. The
+ *  section compares this street to others BY PRICE, so it needs at least two comparators
+ *  carrying one - with fewer there is nothing to compare and the model fills the gap by
+ *  inventing. A street with no price of its own can still write it perfectly well, citing its
+ *  comparators by name, which is the case the previous gate wrongly suppressed.
+ *
+ *  Exported so the generator drops it from the eval half's expected ids and the prebuild
+ *  guard can assert the gate without a database. */
+export function dropsDifferentPriorities(input: StreetGeneratorInput): boolean {
+  return pricedCrossStreetCount(input) < MIN_PRICED_CROSS_STREETS;
+}
+
+/** True when the market half must also write the neighbourhoodComparable section. The input
+ *  either carries the block or it does not; asking for a section describing a comparable that
+ *  does not exist is how jasper-street-milton's market half invented "$825,000" on every
+ *  attempt. Content, not presence: a block with no figure grounds nothing. */
+export function hasNeighbourhoodComparable(input: StreetGeneratorInput): boolean {
+  const nc = input.neighbourhoodComparable;
+  return !!nc && (nc.typicalSoldPrice != null || nc.priceRange != null);
+}
+
+/** The section order a given input must produce. Fully determined by the input now: the
+ *  neighbourhoodComparable section appears iff the input carries the block, and
+ *  differentPriorities iff the comparator set can support it. Previously the layout was
+ *  inferred from the output's own length, which let a wrong shape pick the order that
+ *  excused it. Single source of truth for both validator paths and the generator. */
+export function expectedOrderFor(input: StreetGeneratorInput): StreetSectionId[] {
+  const base = hasNeighbourhoodComparable(input) ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
+  return dropsDifferentPriorities(input)
+    ? base.filter((id) => id !== ZERO_PRICE_DROPPED_SECTION)
+    : [...base];
+}
+
+/** The exact number of sections a given input must produce. */
+export function expectedSectionCountFor(input: StreetGeneratorInput): number {
+  return expectedOrderFor(input).length;
+}
+
+/** The bank templates a given input may draw on. On a zero-price input every template whose
+ *  honest answer needs a figure is withdrawn. */
+export function eligibleFaqTemplatesFor(input: StreetGeneratorInput): string[] {
+  const withdrawn = new Set<string>();
+  // Own-price questions go when the street has no price of its own.
+  if (inputHasNoPriceAtAnyGrain(input)) for (const t of OWN_PRICE_FAQ_TEMPLATES) withdrawn.add(t);
+  // The comparison question goes with the section it belongs to, on its own gate.
+  if (dropsDifferentPriorities(input)) withdrawn.add(COMPARISON_FAQ_TEMPLATE);
+  return FAQ_BANK_TEMPLATES.filter((t) => !withdrawn.has(t));
+}
+
+/** True when too few questions survive to be worth a section. The FAQ is then omitted whole. */
+export function faqIsDropped(input: StreetGeneratorInput): boolean {
+  return eligibleFaqTemplatesFor(input).length < FAQ_MIN_ELIGIBLE;
+}
+
+/** The FAQ questions permitted for a given input, rendered with the street's name. */
+export function allowedFaqQuestionsFor(input: StreetGeneratorInput): Set<string> {
+  return new Set(eligibleFaqTemplatesFor(input).map((t) => t.replace("{Street}", input.street.name)));
+}
+
+/** The questions withdrawn for a given input, rendered. Empty on a priced input. */
+export function withdrawnFaqQuestionsFor(input: StreetGeneratorInput): Set<string> {
+  const eligible = new Set(eligibleFaqTemplatesFor(input));
+  return new Set(
+    FAQ_BANK_TEMPLATES.filter((t) => !eligible.has(t)).map((t) => t.replace("{Street}", input.street.name)),
+  );
+}
+
+/** The FAQ count bounds for a given input: [0,0] when dropped, otherwise the standard band
+ *  narrowed so the floor can never exceed what the bank can actually supply. */
+export function faqCountBoundsFor(input: StreetGeneratorInput): [number, number] {
+  if (faqIsDropped(input)) return [0, 0];
+  const eligible = eligibleFaqTemplatesFor(input).length;
+  return [Math.min(FAQ_MIN, eligible), Math.min(FAQ_MAX, eligible)];
+}
 // Back-compat alias for any imports outside this file
 export const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
 // --- Canonical FAQ question bank ---
@@ -2105,18 +2381,71 @@ export function validateStreetGeneration(
   // Accept the 7-section layout (no neighbourhoodComparable) or the Track 2
   // 8-section layout. neighbourhoodComparable sits at index 4 (after market).
   // Counts dropped from 8/9 on 2026-07-19: bestFitFor retired (fair housing).
-  if (!output.sections || (output.sections.length !== 7 && output.sections.length !== 8)) {
-    violations.push({ rule: "invalid_json_shape", excerpt: `sections length = ${output.sections?.length}`, severity: "hard" });
+  // The section must be ABSENT, and this runs BEFORE the length check. A wrong count is a
+  // true statement that explains nothing; "you wrote a section this street cannot support" is
+  // the actionable one, and letting invalid_json_shape return first swallowed it entirely.
+  if (output.sections && dropsDifferentPriorities(input)) {
+    const present = output.sections.find((sec) => sec.id === ZERO_PRICE_DROPPED_SECTION);
+    if (present) {
+      violations.push({
+        rule: "zero_price_priorities",
+        sectionId: ZERO_PRICE_DROPPED_SECTION,
+        excerpt:
+          `"${ZERO_PRICE_DROPPED_SECTION}" is present, but only ${pricedCrossStreetCount(input)} of ` +
+          `this street's comparators carry a price and the section needs ${MIN_PRICED_CROSS_STREETS}. ` +
+          `There is nothing to compare against, so the section can only be written by inventing a ` +
+          `figure and a street to attach it to. Omit it entirely.`,
+        severity: "hard",
+      });
+    }
+  }
+  // Same treatment for the comparable section: name the reason before the count.
+  if (output.sections && !hasNeighbourhoodComparable(input)) {
+    if (output.sections.some((sec) => sec.id === "neighbourhoodComparable")) {
+      violations.push({
+        rule: "invalid_json_shape",
+        sectionId: "neighbourhoodComparable",
+        excerpt:
+          `"neighbourhoodComparable" is present, but this input carries no neighbourhood comparable ` +
+          `- no typical sold price and no range. The section can only be written by inventing a ` +
+          `neighbourhood figure, which is a fabrication about a real place. Omit it entirely.`,
+        severity: "hard",
+      });
+    }
+  }
+  // The layout is determined by the input, not guessed from the output's length.
+  const expectedCount = expectedSectionCountFor(input);
+  if (!output.sections || output.sections.length !== expectedCount) {
+    const why: string[] = [];
+    if (!hasNeighbourhoodComparable(input)) why.push("the input carries no neighbourhoodComparable, so that section is not written");
+    if (dropsDifferentPriorities(input)) why.push(`fewer than ${MIN_PRICED_CROSS_STREETS} comparators carry a price, so differentPriorities is not written`);
+    violations.push({
+      rule: "invalid_json_shape",
+      excerpt: `sections length = ${output.sections?.length}, expected ${expectedCount}` +
+        (why.length ? ` (${why.join("; ")})` : ""),
+      severity: "hard",
+    });
     return violations;
   }
-  const expectedOrder = output.sections.length === 8 ? CANONICAL_ORDER_T2 : CANONICAL_ORDER_LEGACY;
+  const expectedOrder = expectedOrderFor(input);
   for (let i = 0; i < expectedOrder.length; i++) {
     if (output.sections[i].id !== expectedOrder[i]) {
       violations.push({ rule: "missing_section_id", excerpt: `position ${i} got id "${output.sections[i].id}", expected "${expectedOrder[i]}"`, severity: "hard" });
     }
   }
-  if (!output.faq || output.faq.length < FAQ_MIN || output.faq.length > FAQ_MAX) {
-    violations.push({ rule: "faq_count_out_of_range", excerpt: `faq length = ${output.faq?.length}`, severity: "hard" });
+  // DEC-ZERO-PRICE-FAQ: the band narrows to what the bank can actually supply, and collapses
+  // to [0,0] when too few questions survive to be worth a section.
+  const [faqMin, faqMax] = faqCountBoundsFor(input);
+  const faqLen = output.faq?.length ?? 0;
+  if (!output.faq || faqLen < faqMin || faqLen > faqMax) {
+    violations.push({
+      rule: "faq_count_out_of_range",
+      excerpt: `faq length = ${output.faq?.length}, expected ${faqMin === faqMax ? faqMin : `${faqMin}-${faqMax}`}` +
+        (faqIsDropped(input)
+          ? ` (input carries no price at any grain and fewer than ${FAQ_MIN_ELIGIBLE} bank questions survive, so the FAQ is omitted entirely)`
+          : ""),
+      severity: "hard",
+    });
   }
 
   // Per-section prose scan
@@ -2414,7 +2743,12 @@ export function validateStreetGeneration(
   if (totalWords > TOTAL_WORD_CEILING) {
     violations.push({ rule: "total_word_ceiling", excerpt: `total ${totalWords}, ceiling ${TOTAL_WORD_CEILING}`, severity: "hard" });
   }
-  const effectiveTotalFloor = getTotalWordFloor(input.aggregates.kAnonLevel);
+  // The floor drops by differentPriorities' own minimum when the section is not written.
+  // Holding a page to a word count that includes a section it is forbidden to produce is a
+  // retry the model cannot win.
+  const effectiveTotalFloor =
+    getTotalWordFloor(input.aggregates.kAnonLevel) -
+    (dropsDifferentPriorities(input) ? (SECTION_WORD_FLOORS[ZERO_PRICE_DROPPED_SECTION] ?? 0) : 0);
   if (totalWords < effectiveTotalFloor) {
     violations.push({ rule: "total_word_floor", excerpt: `total ${totalWords}, floor ${effectiveTotalFloor} (kAnon=${input.aggregates.kAnonLevel})`, severity: "hard" });
   }
@@ -2539,18 +2873,30 @@ export function validateStreetGeneration(
     violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
-  // v3: FAQ questions must match bank verbatim (dedicated rule)
-  const allowedQuestions = new Set(
-    FAQ_BANK_TEMPLATES.map(t => t.replace("{Street}", input.street.name))
-  );
-  for (const item of output.faq) {
-    if (!allowedQuestions.has(item.question)) {
+  // v3: FAQ questions must match bank verbatim (dedicated rule). On a zero-price input the
+  // price-demanding questions leave the bank, and get their OWN rule rather than the generic
+  // out-of-bank one - "not in bank" reads as a typo and invites the model to re-ask a
+  // reworded version of the same impossible question.
+  const allowedQuestions = allowedFaqQuestionsFor(input);
+  const withdrawnQuestions = withdrawnFaqQuestionsFor(input);
+  for (const item of output.faq ?? []) {
+    if (allowedQuestions.has(item.question)) continue;
+    if (withdrawnQuestions.has(item.question)) {
       violations.push({
-        rule: "faq_question_out_of_bank",
-        excerpt: `FAQ question not in bank: "${item.question}"`,
+        rule: "zero_price_faq_question",
+        excerpt:
+          `FAQ asks "${item.question}", which is withdrawn from the bank for this street: ` +
+          `it needs a figure this input does not carry - either this street's own price, or ` +
+          `enough priced comparators to answer it. Do not ask it and do not reword it.`,
         severity: "hard",
       });
+      continue;
     }
+    violations.push({
+      rule: "faq_question_out_of_bank",
+      excerpt: `FAQ question not in bank: "${item.question}"`,
+      severity: "hard",
+    });
   }
 
   // v3: FAQ answer length has its own rule
@@ -2981,13 +3327,22 @@ export function validateFaq(
     violations.push({ rule: "future_period_claim", excerpt: `FAQ "${fp.raw}": ${fp.reason}; ctx: ${fp.excerpt}`, severity: "hard" });
   }
 
-  const allowedQuestions = new Set(
-    FAQ_BANK_TEMPLATES.map((t) => t.replace("{Street}", input.street.name)),
-  );
+  const allowedQuestionsFaq = allowedFaqQuestionsFor(input);
+  const withdrawnQuestionsFaq = withdrawnFaqQuestionsFor(input);
   for (const item of faq) {
-    if (!allowedQuestions.has(item.question)) {
-      violations.push({ rule: "faq_question_out_of_bank", excerpt: `FAQ question not in bank: "${item.question}"`, severity: "hard" });
+    if (allowedQuestionsFaq.has(item.question)) continue;
+    if (withdrawnQuestionsFaq.has(item.question)) {
+      violations.push({
+        rule: "zero_price_faq_question",
+        excerpt:
+          `FAQ asks "${item.question}", which is withdrawn from the bank for this street: ` +
+          `it needs a figure this input does not carry - either this street's own price, or ` +
+          `enough priced comparators to answer it. Do not ask it and do not reword it.`,
+        severity: "hard",
+      });
+      continue;
     }
+    violations.push({ rule: "faq_question_out_of_bank", excerpt: `FAQ question not in bank: "${item.question}"`, severity: "hard" });
   }
 
   for (const item of faq) {
@@ -3201,6 +3556,18 @@ function formatRuleViolations(
     case "zero_tier_price":
       return [
         `**zero_tier_price**: This street's input payload contains NO price at any grain — aggregates.typicalPrice, aggregates.priceRange, neighbourhoodComparable and leaseActivity are all absent. There is therefore no figure anywhere in the payload that a currency amount could be citing, whether you attribute it to the street, the neighbourhood, the area, or the wider market. Remove every dollar amount and every price-shaped number from the output, including rents and "low $1Ms"-style bands. Say plainly that no price can be published for this street and write about what the input does contain: location, form, schools, commute, and nearby places.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "zero_price_faq_question":
+      return [
+        `**zero_price_faq_question**: You asked a price question about a street whose input carries no price at any grain. Those questions are withdrawn from the bank for this street - typical price, price range, why homes trade differently, the two rental questions, investor fit, and the similar-streets closer. Their only honest answer is that no price is published, and a question whose answer is a refusal does not belong on the page. Drop them and choose from the questions that remain: housing stock, schools, commute, builder, construction era, and how fast homes sell. Do NOT reword a withdrawn question to sneak it back in.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "zero_price_priorities":
+      return [
+        `**zero_price_priorities**: You wrote a "differentPriorities" section. Do not. This street's input carries no price at any grain, and neither do its comparators - every crossStreets[].typicalPrice is null - so a section that places this street against others can only be written by inventing figures and then inventing streets to attach them to. Omit the section entirely and return one fewer section. Do not replace it with a priceless version, and do not fold its content into another section.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];

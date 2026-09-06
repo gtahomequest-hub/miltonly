@@ -78,12 +78,15 @@ ncPriced.neighbourhoodComparable = {
 };
 ok(isZeroPrice(ncPriced), "a zero-tier street with only a neighbourhood comparable must still trip the gate");
 
-// But a THIN street whose only price is the neighbourhood comparable is not zero-price -
-// inputHasNoPriceAtAnyGrain already counts that figure as a price.
+// REDEFINED 2026-09-05 (DEC-ZERO-PRICE-SCOPE). A thin street whose only figure is the
+// NEIGHBOURHOOD's comparable is still a street with no price of its own, and the gate now
+// says so. The comparable is a real figure about a different entity; it is citeable by name
+// and it is not this street's price. Counting it here was what let a page describe the
+// neighbourhood's typical as though it were the street's.
 const thinWithNc = base();
 thinWithNc.aggregates.kAnonLevel = "thin";
 thinWithNc.neighbourhoodComparable = { ...ncPriced.neighbourhoodComparable! };
-ok(!isZeroPrice(thinWithNc), "a thin street with a neighbourhood comparable has a price grain");
+ok(isZeroPrice(thinWithNc), "a neighbourhood comparable is not this street's own price");
 
 // ── The text ────────────────────────────────────────────────────────────────
 const p = buildZeroPricePreamble(zero);

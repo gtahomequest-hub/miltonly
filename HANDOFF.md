@@ -1,13 +1,21 @@
 # Handoff
 
-_Last rewritten 2026-09-05 (second pass, after the residue attempt)._
+_Last rewritten 2026-09-05 (fourth pass, after the FAQ-bank commit)._
 
 ## READ THIS FIRST
 
-**The corpus grounding sweep is done. Its residue is two pages, and both are now understood
-rather than merely unfinished.** 479 generations audited, 154 regenerated, 152 published clean.
-`jasper-street-milton` and `wood-close-milton` stay draft — see open item 1, which says why
-neither is a retry away. Detail in `scratchpad/reports/058-corpus-audit.md`.
+**The corpus grounding sweep is done. Its residue is two pages, and both are understood.**
+479 generations audited, 154 regenerated, 152 published clean. `jasper-street-milton` and
+`wood-close-milton` stay draft. Detail in `scratchpad/reports/058-corpus-audit.md`.
+
+**`fix/zero-price-priorities` is pushed and NOT merged.** Two commits: it suppresses the
+`differentPriorities` section on a no-price input, and withdraws every price-demanding FAQ
+question. Both rules fire correctly. `jasper-street` still does not pass on DeepSeek, so the
+merge condition was not met.
+
+**Read open item 1 before touching any of this.** The run turned up a false premise in my own
+reasoning and a third instance of the same bug, and the second of those changes what the right
+fix probably is.
 
 **Every cost figure in every earlier handoff is wrong by 3x on the Opus portion.**
 `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate of $15/$75 per
@@ -31,7 +39,8 @@ Two decisions waiting:
 
 | | |
 |---|---|
-| `main` | `e39c26a` |
+| `main` | `402fcd2` (+ `d6b0889`) |
+| open branch | **`fix/zero-price-priorities`**, pushed, **not merged** |
 | production | serving `e39c26a`, confirmed via `/api/build` |
 | battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at the full SHA. Ran before `geddes-landing` published, so it counted 443 against today's 444 |
 | local build | exit 0, zero `P2024`, **14/14 prebuild** |
@@ -78,28 +87,68 @@ cleared it. The prompt is right and worth keeping; DeepSeek is not strong enough
 run is the useful one: it proves the preamble works and that what is left is a different
 problem. See open item 1.
 
+**`fix/zero-price-priorities` (pushed, not merged).** `differentPriorities` is not requested
+when the input carries no price at any grain, its FAQ arm leaves the bank, and a new hard rule
+`zero_price_priorities` rejects the section if it appears regardless. The presence check is
+deliberately separate from the section count: a no-price T2 page that wrongly includes the
+section lands on 7, which is a valid count, so the length check alone would report a position
+mismatch rather than the real fault. The total word floor drops by that section's own minimum,
+because holding a page to a count including a section it may not write is a retry it cannot
+win. `scripts/test-zero-price-priorities.ts` is the 15th prebuild test, 19 assertions over
+both suppression and rejection — a generator that stops asking is not a guarantee, since a
+model can still volunteer the section. Build exit 0, zero `P2024`, 15/15 prebuild, battery
+**`PASS · 9 checks · 443 pages · 73s`** on preview `miltonly-ivgrwnsvs`.
+
+**FAQ bank withdrawal (same branch).** Seven templates leave the bank on a zero-price input —
+typical price, price range, why-homes-trade-differently, both rental questions, investor fit,
+and the similar-streets closer. Nine survive, over the four-question floor below which the FAQ
+is dropped whole rather than padded. `faqCountBoundsFor` also narrows the 6-8 band to what the
+bank can supply, so the floor can never exceed the shelf. `zero_price_faq_question` is its own
+rule rather than reusing `faq_question_out_of_bank`, because "not in bank" reads as a typo and
+invites a reworded re-ask. The render fallback in `street-data.ts` had the same defect in
+miniature — its no-basis branch asked for a typical price and answered with a referral — and
+that question is now dropped when there is no basis. 16th prebuild test. Battery
+**`PASS · 9 checks · 443 pages · 65s`** on preview `miltonly-8dok4xrip`.
+
 **Corrections to yesterday's report.** The "474 of 474 drifted" figure was a 12-vs-64-char
 hash comparison bug; the real split is **13 identical, 461 changed**, and all 13 identical rows
 carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-corpus rate.
 
 ## Open items
 
-1. **Two pages cannot be generated, and neither is a retry away.**
+1. **Two pages cannot be generated, and the branch turned up two things worth more than the
+   pages.**
 
-   **`jasper-street-milton`** — attempted 2026-09-05 with the Opus fallback, **$0.5330,
-   failed**. It is not a price problem any more: by attempt 3 the zero-price preamble had
-   worked and every `zero_tier_price` was gone. What remained was
-   `invented_cross_street` ("Dorset Park") and `sales_register_leak`. The structural cause is
-   the `differentPriorities` section, which asks the model to compare this street against
-   others — and jasper's `crossStreets` carry **no `typicalPrice`**, because the street has no
-   price at any grain. So the model is asked to characterise comparison streets it has no
-   figures for, and it invents both the figures and the streets. **The fix is to suppress or
-   restructure `differentPriorities` on a zero-price input, not to retry.** That is a prompt-
-   architecture change and wants its own pass.
+   **`jasper-street-milton`** — regenerated on DeepSeek under both branch commits, **$0.0173,
+   failed, still draft**. Both new rules fire exactly as designed:
+   `invalid_json_shape (sections length = 3, expected 2)` catches the model writing
+   `differentPriorities` anyway, and `zero_price_faq_question` catches it asking the withdrawn
+   comparison question. `invented_cross_street` has not reappeared. What is left is DeepSeek
+   declining to comply, plus the two findings below.
+
+   **(a) A THIRD instance of the same bug, one level further down.** `MARKET_SECTION_IDS` is
+   unconditionally `["market", "neighbourhoodComparable"]`, but **jasper's input carries no
+   `neighbourhoodComparable` at all** (`undefined` in its snapshot). The model is asked for a
+   section describing a comparable that does not exist, and invents `$825,000` for it. That is
+   why the market half never converges. The fix is the same move a third time: request
+   `neighbourhoodComparable` only when the input carries the block.
+
+   **(b) My stated reason for suppressing `differentPriorities` was wrong, and the real reason
+   points at a different fix.** The commit and the code comment said the comparators carry no
+   price either. **They do** — jasper's snapshot holds **Maple Avenue at $693,000 and Wilson
+   Drive at $718,000**. The section is impossible not because the data is missing but because
+   **`inputHasNoPriceAtAnyGrain` does not look at `crossStreets` while `collectInputPrices`
+   does**. So a page in that state is forbidden from printing a comparator figure sitting in
+   its own input: in this run the model wrote `$700,000` against Wilson Drive's `$718,000` —
+   **inside `numeric_ungrounded`'s own tolerance** — and `zero_tier_price` rejected it under a
+   rule that never consults the field. The comments and the prompt are corrected on the
+   branch. **The open question is whether `zero_tier_price` should count `crossStreets`.** If
+   it should, `differentPriorities` becomes writable and the suppression should be revisited;
+   the suppression is correct under the rules as they stand either way.
 
    **`wood-close-milton`** — `getStreetStats()` returns `No stats available` and it fails in
-   **one second**, before a prompt is ever built. No prompt or model change can reach it; the
-   stats gate is the thing to look at.
+   **one second**, before a prompt is ever built. No prompt, section or FAQ change can reach
+   it; the stats gate is the thing to look at.
 
 2. **Pre-2026-09-05 `costUsd` rows overstate Opus-assisted generations by 3x.** Not
    rewritable from what is stored. Treat historical cost claims as upper bounds.
@@ -152,4 +201,6 @@ carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-c
 
 ## Next expected task
 
-Item 1's `differentPriorities` suppression, item 7, or item 8. Do not self-start any of them.
+A decision on item 1(b) — whether `zero_tier_price` should count `crossStreets` — since it
+decides whether the `differentPriorities` suppression stays. Then item 1(a), merging the
+branch, item 7, or item 8. Do not self-start any of them.
