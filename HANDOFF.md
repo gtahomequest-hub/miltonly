@@ -1,6 +1,6 @@
 # Handoff
 
-_Last rewritten 2026-09-05 (fourth pass, after the FAQ-bank commit)._
+_Last rewritten 2026-09-05 (fifth pass, after `fix/zero-price-priorities` merged)._
 
 ## READ THIS FIRST
 
@@ -8,14 +8,19 @@ _Last rewritten 2026-09-05 (fourth pass, after the FAQ-bank commit)._
 479 generations audited, 154 regenerated, 152 published clean. `jasper-street-milton` and
 `wood-close-milton` stay draft. Detail in `scratchpad/reports/058-corpus-audit.md`.
 
-**`fix/zero-price-priorities` is pushed and NOT merged.** Two commits: it suppresses the
-`differentPriorities` section on a no-price input, and withdraws every price-demanding FAQ
-question. Both rules fire correctly. `jasper-street` still does not pass on DeepSeek, so the
-merge condition was not met.
+**`fix/zero-price-priorities` is MERGED (`e815f28`), production confirmed.** Zero price is now
+defined on the street's own fields only; a named entity's figure is citeable when the prose
+names the entity; `differentPriorities` is gated on having two priced comparators; and
+`neighbourhoodComparable` is requested only when the input carries one. Page layout is a pure
+function of the input.
 
-**Read open item 1 before touching any of this.** The run turned up a false premise in my own
-reasoning and a third instance of the same bug, and the second of those changes what the right
-fix probably is.
+**`jasper-street-milton` is still not clean and stays draft.** The rules merged on their own
+merit, as agreed. What is left on that page is in open item 1 and is a different problem again.
+
+**82 of 154 stored snapshots now expect a different section count.** Live pages are unaffected
+— the validator does not run at render — but any future regeneration of those pages produces
+the shorter shape. That is the intended consequence of the layout rules, not a defect, and it
+is the number to have in mind before the next bulk run.
 
 **Every cost figure in every earlier handoff is wrong by 3x on the Opus portion.**
 `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate of $15/$75 per
@@ -39,8 +44,10 @@ Two decisions waiting:
 
 | | |
 |---|---|
-| `main` | `402fcd2` (+ `d6b0889`) |
-| open branch | **`fix/zero-price-priorities`**, pushed, **not merged** |
+| `main` | **`e815f28`** |
+| production | serving `e815f28`, confirmed via `/api/build` |
+| battery | **`PASS · 9 checks · 443 pages · 65s`**, exit 0, on production at the full SHA |
+| local build | exit 0, zero `P2024`, **17/17 prebuild** |
 | production | serving `e39c26a`, confirmed via `/api/build` |
 | battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at the full SHA. Ran before `geddes-landing` published, so it counted 443 against today's 444 |
 | local build | exit 0, zero `P2024`, **14/14 prebuild** |
@@ -99,6 +106,21 @@ both suppression and rejection — a generator that stops asking is not a guaran
 model can still volunteer the section. Build exit 0, zero `P2024`, 15/15 prebuild, battery
 **`PASS · 9 checks · 443 pages · 73s`** on preview `miltonly-ivgrwnsvs`.
 
+**Zero-price scope, merged as `e815f28`.** Three rule changes.
+`inputHasNoPriceAtAnyGrain` no longer counts `neighbourhoodComparable` — the neighbourhood's
+typical is a real figure about a different entity, not this street's price — and does now count
+`byType` and `quarterlyTrend`, which are this street's own and were being missed.
+`findZeroTierPrices` stopped banning all currency: it fires on a figure matching **nothing** in
+the whole input, or on a named entity's figure used **without naming the entity** — the number
+real, the attribution invented. That closes the asymmetry where `collectInputPrices` counted
+`crossStreets` and the gate did not. `differentPriorities` is gated on **two priced
+comparators**, independent of this street's price, so a fully priced street with one comparator
+is suppressed too. `neighbourhoodComparable` is requested only when the input carries one.
+Layout is a pure function of the input — it used to be inferred from the output's own length,
+which let a wrong shape pick the order that excused it — and both section-presence checks run
+**before** the count check, because a wrong count is a true statement that explains nothing.
+Three new prebuild cases; 17/17.
+
 **FAQ bank withdrawal (same branch).** Seven templates leave the bank on a zero-price input —
 typical price, price range, why-homes-trade-differently, both rental questions, investor fit,
 and the similar-streets closer. Nine survive, over the four-question floor below which the FAQ
@@ -116,35 +138,27 @@ carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-c
 
 ## Open items
 
-1. **Two pages cannot be generated, and the branch turned up two things worth more than the
-   pages.**
+1. **Two pages cannot be generated. `jasper-street`'s blocker has moved twice and is now
+   comparator attribution.**
 
-   **`jasper-street-milton`** — regenerated on DeepSeek under both branch commits, **$0.0173,
-   failed, still draft**. Both new rules fire exactly as designed:
-   `invalid_json_shape (sections length = 3, expected 2)` catches the model writing
-   `differentPriorities` anyway, and `zero_price_faq_question` catches it asking the withdrawn
-   comparison question. `invented_cross_street` has not reappeared. What is left is DeepSeek
-   declining to comply, plus the two findings below.
+   **`jasper-street-milton`** — regenerated on DeepSeek after the merge, **$0.0150, failed,
+   still draft**. The layout rules worked: **`invalid_json_shape` is gone entirely**, the
+   `aha` half went clean on attempt 5, `differentPriorities` is correctly requested again now
+   that its two priced comparators are recognised, and no `neighbourhoodComparable` section is
+   asked for. What remains:
 
-   **(a) A THIRD instance of the same bug, one level further down.** `MARKET_SECTION_IDS` is
-   unconditionally `["market", "neighbourhoodComparable"]`, but **jasper's input carries no
-   `neighbourhoodComparable` at all** (`undefined` in its snapshot). The model is asked for a
-   section describing a comparable that does not exist, and invents `$825,000` for it. That is
-   why the market half never converges. The fix is the same move a third time: request
-   `neighbourhoodComparable` only when the input carries the block.
+   - `invented_cross_street: Dorset Park` (x4) — the model attaches a **neighbourhood name** to
+     a comparator street. `crossStreets[].neighbourhood` exists in the schema and jasper's
+     comparators do not carry it, so any location claim about them is invented. This is the
+     live blocker.
+   - `zero_tier_price` + `numeric_ungrounded` on `$800,000` in `homes` and the FAQ — the model
+     invents an Old Milton typical. jasper has **no** neighbourhood comparable, so there is no
+     figure to cite and the new rule correctly calls it grounded in nothing.
+   - `zero_price_faq_question` (x2) — still asks the withdrawn typical-price question.
+   - `fair_housing_register` once.
 
-   **(b) My stated reason for suppressing `differentPriorities` was wrong, and the real reason
-   points at a different fix.** The commit and the code comment said the comparators carry no
-   price either. **They do** — jasper's snapshot holds **Maple Avenue at $693,000 and Wilson
-   Drive at $718,000**. The section is impossible not because the data is missing but because
-   **`inputHasNoPriceAtAnyGrain` does not look at `crossStreets` while `collectInputPrices`
-   does**. So a page in that state is forbidden from printing a comparator figure sitting in
-   its own input: in this run the model wrote `$700,000` against Wilson Drive's `$718,000` —
-   **inside `numeric_ungrounded`'s own tolerance** — and `zero_tier_price` rejected it under a
-   rule that never consults the field. The comments and the prompt are corrected on the
-   branch. **The open question is whether `zero_tier_price` should count `crossStreets`.** If
-   it should, `differentPriorities` becomes writable and the suppression should be revisited;
-   the suppression is correct under the rules as they stand either way.
+   None of these is a new rule misfiring; each is DeepSeek declining an instruction it was
+   given. Whether that page is worth more spend is a judgement call, not a technical one.
 
    **`wood-close-milton`** — `getStreetStats()` returns `No stats available` and it fails in
    **one second**, before a prompt is ever built. No prompt, section or FAQ change can reach
@@ -201,6 +215,5 @@ carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-c
 
 ## Next expected task
 
-A decision on item 1(b) — whether `zero_tier_price` should count `crossStreets` — since it
-decides whether the `differentPriorities` suppression stays. Then item 1(a), merging the
-branch, item 7, or item 8. Do not self-start any of them.
+A decision on whether `jasper-street` is worth more spend (item 1), item 7, or item 8. Do not
+self-start any of them.
