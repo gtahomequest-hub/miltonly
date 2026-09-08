@@ -138,7 +138,8 @@ const items = ((schema?.itemListElement as Array<Record<string, unknown>>) ?? []
 );
 ok("every item is a PostalAddress", items.length > 0 && items.every((it) => it["@type"] === "PostalAddress"));
 ok("every item carries streetAddress", items.every((it) => typeof it.streetAddress === "string" && (it.streetAddress as string).includes("Pine Street")));
-ok("every item is in Milton, ON, CA", items.every((it) => it.addressLocality === "Milton" && it.addressRegion === "ON" && it.addressCountry === "CA"));
+ok("every item is in Milton, ON", items.every((it) => it.addressLocality === "Milton" && it.addressRegion === "ON"));
+ok("no item carries addressCountry", items.every((it) => !("addressCountry" in it)));
 ok("every item url is the page anchor", items.every((it) => /^https:\/\/miltonly\.com\/streets\/pine-street-milton#\d+$/.test(String(it.url))));
 ok("the ItemList covers every mark", items.length === ladder.marks.length, `${items.length} vs ${ladder.marks.length}`);
 
@@ -153,6 +154,16 @@ const markup = stripMarkers(renderToStaticMarkup(
 ));
 
 const ids = [...markup.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]).filter((v) => v !== "addresses");
+// One element per address: the mark IS the anchor target and the label. A regression that
+// reintroduces a wrapper shows up here as a tag count, not as a byte count nobody measures.
+const markTags = [...markup.matchAll(/<(a|span)\s[^>]*class="s-m/g)].length;
+ok("one element per address", markTags === ladder.marks.length, `${markTags} mark tags vs ${ladder.marks.length} marks`);
+ok(
+  "the detail is one data attribute",
+  markup.includes('data-d="0.20 along · odd side · Commercial Street · Townhouse"'),
+  ""
+);
+ok("a live listing still renders a real link", markup.includes('class="s-lv" href="/listings/W1234567"'), "");
 ok("the section rendered its addresses", ids.length === ladder.marks.length, `${ids.length} ids vs ${ladder.marks.length} marks`);
 ok("every address id is numeric", ids.every((v) => /^[0-9]+$/.test(v)), ids.filter((v) => !/^[0-9]+$/.test(v)).join(", "));
 ok(
@@ -166,7 +177,7 @@ ok("the summary is rendered as plain text", markup.includes(ladder.summary));
 
 // ── report ──────────────────────────────────────────────────────────────────
 
-const ASSERTIONS = 30;
+const ASSERTIONS = 34;
 if (failures.length > 0) {
   console.error(`test-address-anchors FAILED (${failures.length} of ${ASSERTIONS})`);
   console.error(failures.join("\n"));

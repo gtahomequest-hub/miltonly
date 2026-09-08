@@ -269,12 +269,14 @@ export function buildAddressesItemListSchema(
     itemListElement: ladder.marks.map((m, i) => ({
       "@type": "ListItem",
       position: i + 1,
+      // Four fields and no fifth. addressCountry was dropped 2026-09-08: addressRegion "ON"
+      // already disambiguates Milton, and on the longest street the field costs 24 bytes 387
+      // times over, twice, once in the markup and once in the inlined flight payload.
       item: {
         "@type": "PostalAddress",
         streetAddress: `${m.number} ${streetName}`,
         addressLocality: config.CITY_NAME,
         addressRegion: config.CITY_PROVINCE_CODE,
-        addressCountry: config.CITY_COUNTRY_CODE,
         url: `${base}#${m.number}`,
       },
     })),

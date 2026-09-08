@@ -12,6 +12,17 @@
 // deep link, a tap and a keyboard focus all resolve through :target / :focus-within / :hover in
 // CSS. That keeps the anchor working with scripting off, which is the state Googlebot indexes in.
 //
+// ONE ELEMENT PER ADDRESS. The detail line lives in a single `data-d` attribute and is drawn by
+// CSS `content: attr(data-d)` on interaction, so an address costs one tag instead of six. That is
+// not micro-optimisation: the App Router inlines the RSC flight payload, so every element and
+// every prop is paid for TWICE in the served HTML, and the longest street in Milton carries 387
+// of them. The static words around the value ("nearest cross street") were dropped from the
+// attribute and moved into the legend, where they are written once instead of 387 times.
+//
+// A mark carrying a live listing is the exception and renders a real detail element, because a
+// link cannot live inside CSS generated content. It omits `data-d`, and the CSS draws the
+// generated popup only for marks that have one.
+//
 // WHAT IT MAY NOT SHOW is enforced upstream in src/lib/streetAddresses.ts: no sold price, no sold
 // date, no owner, no historical listing, no per-address coordinate. Signal green (--s-green) is
 // reserved here for the "listed now" mark and appears nowhere else in the section.
@@ -75,6 +86,20 @@ function tickPlacer(placed: PlacedMark[], h0: number, height: number) {
   };
 }
 
+/** The one detail line, written once per address into `data-d` (or into the element a live
+ *  listing forces). Deliberately terse: the legend above the ladder names the fields, so the
+ *  words that would otherwise repeat 387 times are written once in the legend instead. */
+function detailOf(m: AddressMark): string {
+  return [
+    `${m.fraction.toFixed(2)} along`,
+    `${m.side} side`,
+    m.crossStreet ?? '',
+    m.form ?? '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 export function StreetAddresses({ data }: { data: StreetV2Data }) {
   const ladder = data.addresses;
   if (!ladder || ladder.marks.length === 0) return null;
@@ -105,10 +130,10 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
 
         <div className="s-addr-key">
           <span className="s-addr-k">
-            <i className="s-addr-kd" /> odd numbers
+            <i className="s-addr-kd" /> odd numbers left, even right
           </span>
           <span className="s-addr-k">
-            <i className="s-addr-kd" /> even numbers
+            open a mark for position, side, nearest cross street and form
           </span>
           {ladder.crossStreets.length > 0 && (
             <span className="s-addr-k">
@@ -135,35 +160,35 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
             </div>
           ))}
 
-          {inOrder.map(({ mark, y, labelled }) => (
-            <div
-              key={mark.number}
-              id={String(mark.number)}
-              className={`s-addr-a${labelled ? '' : ' s-addr-q'}${mark.active ? ' s-addr-on' : ''}`}
-              data-side={mark.side}
-              style={{ top: Math.round(y) }}
-            >
-              <a className="s-addr-mark" href={`#${mark.number}`}>
-                <span className="s-addr-n">{mark.number}</span>
-                <i className="s-addr-dot" />
-              </a>
-              <div className="s-addr-det">
-                <span className="s-addr-det-h">
-                  {mark.number} {data.name}
-                </span>
-                <span className="s-addr-det-m">
-                  {mark.fraction.toFixed(2)} along · {mark.side} side
-                  {mark.crossStreet ? ` · nearest cross street ${mark.crossStreet}` : ''}
-                </span>
-                {mark.form && <span className="s-addr-det-f">{mark.form}</span>}
-                {mark.active && (
-                  <a className="s-addr-live" href={mark.active.href}>
-                    Listed now · {mark.active.mlsNumber}
+          {inOrder.map(({ mark, y, labelled }) => {
+            const cls = `s-m${mark.side === 'even' ? ' s-e' : ''}${labelled ? '' : ' s-q'}`;
+            const top = Math.round(y);
+            const detail = detailOf(mark);
+            // A live listing needs a real link, which CSS generated content cannot hold. Only
+            // these marks pay for a detail element; every other address is one tag.
+            return mark.active ? (
+              <span key={mark.number} id={String(mark.number)} className={`${cls} s-on`} style={{ top }}>
+                <a href={`#${mark.number}`}>{mark.number}</a>
+                <span className="s-d">
+                  {detail}
+                  <a className="s-lv" href={mark.active.href}>
+                    Listed now
                   </a>
-                )}
-              </div>
-            </div>
-          ))}
+                </span>
+              </span>
+            ) : (
+              <a
+                key={mark.number}
+                id={String(mark.number)}
+                className={cls}
+                data-d={detail}
+                style={{ top }}
+                href={`#${mark.number}`}
+              >
+                {mark.number}
+              </a>
+            );
+          })}
         </div>
 
         <p className="s-addr-src">

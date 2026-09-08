@@ -57,9 +57,9 @@ for (const s of STREETS) {
   if (!hasH2) failures += 1;
   say(hasH2 ? "ok" : "XX", `H2 "Addresses on ${s.name}"`);
 
-  const ids = [...html.matchAll(/<div[^>]*\sid="([^"]+)"[^>]*class="[^"]*s-addr-a/g)].map((m) => m[1]);
-  const idsAlt = [...html.matchAll(/class="[^"]*s-addr-a[^"]*"[^>]*\sid="([^"]+)"/g)].map((m) => m[1]);
-  const allIds = [...new Set([...ids, ...idsAlt])];
+  const marks = [...html.matchAll(/<(?:a|span)\s[^>]*id="([^"]+)"[^>]*class="s-m[^"]*"/g)].map((m) => m[1]);
+  const marksAlt = [...html.matchAll(/<(?:a|span)\s[^>]*class="s-m[^"]*"[^>]*id="([^"]+)"/g)].map((m) => m[1]);
+  const allIds = [...new Set([...marks, ...marksAlt])];
   const numeric = allIds.length > 0 && allIds.every((v) => /^[0-9]+$/.test(v));
   if (!numeric) failures += 1;
   say(numeric ? "ok" : "XX", `${allIds.length} address anchors, all numeric`);
@@ -99,6 +99,7 @@ for (const s of STREETS) {
       li.item?.["@type"] === "PostalAddress" &&
       li.item.addressLocality === "Milton" &&
       li.item.addressRegion === "ON" &&
+      !("addressCountry" in li.item) &&
       /#\d+$/.test(String(li.item.url))
   );
   if (!shapes) failures += 1;

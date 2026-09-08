@@ -1315,126 +1315,141 @@
 }
 .street-v2 .s-addr-tick-l a { text-decoration: underline; text-underline-offset: 2px; }
 
-/* one address */
-.street-v2 .s-addr-a {
+/* ONE ADDRESS, ONE ELEMENT.
+   The mark IS the anchor target and the mark IS the label. Its detail line lives in
+   `data-d` and is drawn by `content: attr(data-d)` on interaction, because the App
+   Router inlines the RSC flight payload and every element on the page is therefore
+   paid for twice in the served HTML. Class names are short for the same reason: this
+   selector set repeats up to 387 times on one page.
+
+   A mark carrying a live listing is a <span> holding two links instead, since a link
+   cannot live inside generated content. It has no `data-d`, and the generated popup is
+   gated on [data-d] so it never draws an empty box. */
+.street-v2 .s-m {
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-  z-index: 2;
-  scroll-margin-top: 120px;
-}
-.street-v2 .s-addr-mark {
-  position: absolute;
-  top: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transform: translateY(-50%);
+  display: block;
   padding: 2px 4px;
-}
-.street-v2 .s-addr-a[data-side='odd'] .s-addr-mark {
-  right: 50%;
-  margin-right: 4px;
-}
-.street-v2 .s-addr-a[data-side='even'] .s-addr-mark {
-  left: 50%;
-  margin-left: 4px;
-  flex-direction: row-reverse;
-}
-.street-v2 .s-addr-n {
+  transform: translateY(-50%);
   font-family: var(--s-serif);
   font-size: 13.5px;
   font-weight: 500;
-  color: var(--s-bg-deep);
   line-height: 1;
+  color: var(--s-bg-deep);
   white-space: nowrap;
+  scroll-margin-top: 120px;
+  right: 50%;
+  margin-right: 6px;
+  text-align: right;
 }
-.street-v2 .s-addr-dot {
+.street-v2 .s-m.s-e {
+  right: auto;
+  left: 50%;
+  margin-right: 0;
+  margin-left: 6px;
+  text-align: left;
+}
+/* the dot on the spine, drawn rather than shipped as an element */
+.street-v2 .s-m::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -9px;
   width: 6px;
   height: 6px;
+  margin-top: -3px;
   border-radius: 50%;
   background: var(--s-bg-deep);
-  flex: none;
 }
-/* a street too dense to label every mark keeps every mark and drops the labels,
-   which is the honest degradation: the address is still there and still anchored */
-.street-v2 .s-addr-q .s-addr-n { display: none; }
-.street-v2 .s-addr-on .s-addr-dot {
+.street-v2 .s-m.s-e::before {
+  right: auto;
+  left: -9px;
+}
+/* a street too dense to label every mark keeps every mark and drops the labels, which is
+   the honest degradation: the address is still there, still anchored, and its number comes
+   back on hover, focus or target */
+.street-v2 .s-m.s-q {
+  font-size: 0;
+  padding: 3px 4px;
+}
+.street-v2 .s-m.s-on::before {
   background: var(--s-green);
   box-shadow: 0 0 0 1.5px var(--s-bg-deep);
   width: 8px;
   height: 8px;
+  margin-top: -4px;
+  right: -10px;
 }
-.street-v2 .s-addr-on .s-addr-n { color: var(--s-accent-bright); font-weight: 600; }
+.street-v2 .s-m.s-e.s-on::before { right: auto; left: -10px; }
+.street-v2 .s-m.s-on > a:first-child { color: var(--s-accent-bright); font-weight: 600; }
 
-.street-v2 .s-addr-a:hover,
-.street-v2 .s-addr-a:focus-within,
-.street-v2 .s-addr-a:target {
+.street-v2 .s-m:hover,
+.street-v2 .s-m:focus-within,
+.street-v2 .s-m:focus,
+.street-v2 .s-m:target {
   z-index: 8;
-}
-.street-v2 .s-addr-a:hover .s-addr-n,
-.street-v2 .s-addr-a:focus-within .s-addr-n,
-.street-v2 .s-addr-a:target .s-addr-n {
-  display: inline;
+  font-size: 13.5px;
   color: var(--s-accent);
 }
-.street-v2 .s-addr-a:hover .s-addr-dot,
-.street-v2 .s-addr-a:focus-within .s-addr-dot,
-.street-v2 .s-addr-a:target .s-addr-dot {
+.street-v2 .s-m:hover::before,
+.street-v2 .s-m:focus-within::before,
+.street-v2 .s-m:focus::before,
+.street-v2 .s-m:target::before {
   background: var(--s-accent);
 }
 
 /* the detail, opened by hover, focus or a deep link */
-.street-v2 .s-addr-det {
+.street-v2 .s-m[data-d]::after,
+.street-v2 .s-d {
+  content: attr(data-d);
   position: absolute;
-  top: 11px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: min(420px, calc(100% - 24px));
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 11px 14px;
+  top: 15px;
+  right: -1px;
+  transform: translateX(50%);
+  width: max-content;
+  max-width: min(400px, 82vw);
+  display: block;
+  padding: 10px 13px;
   background: var(--s-surface);
   border: 1px solid var(--s-border);
   border-radius: 10px;
   box-shadow: var(--s-sh);
+  font-family: var(--s-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.55;
+  text-align: left;
+  white-space: normal;
+  color: var(--s-text-muted);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.14s ease;
 }
-.street-v2 .s-addr-a:hover .s-addr-det,
-.street-v2 .s-addr-a:focus-within .s-addr-det,
-.street-v2 .s-addr-a:target .s-addr-det {
+.street-v2 .s-m.s-e[data-d]::after,
+.street-v2 .s-m.s-e .s-d {
+  right: auto;
+  left: -1px;
+  transform: translateX(-50%);
+}
+.street-v2 .s-m:hover[data-d]::after,
+.street-v2 .s-m:focus-within[data-d]::after,
+.street-v2 .s-m:focus[data-d]::after,
+.street-v2 .s-m:target[data-d]::after,
+.street-v2 .s-m:hover .s-d,
+.street-v2 .s-m:focus-within .s-d,
+.street-v2 .s-m:target .s-d {
   opacity: 1;
   visibility: visible;
 }
-.street-v2 .s-addr-det-h {
-  font-family: var(--s-serif);
-  font-size: 16px;
-  color: var(--s-bg-deep);
-  line-height: 1.25;
-}
-.street-v2 .s-addr-det-m {
-  font-family: var(--s-mono);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--s-text-muted);
-}
-.street-v2 .s-addr-det-f {
-  font-size: 13px;
-  color: var(--s-text-body);
-}
-.street-v2 .s-addr-live {
-  margin-top: 5px;
-  align-self: flex-start;
+.street-v2 .s-lv {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--s-sans);
   font-size: 12.5px;
   font-weight: 600;
   color: var(--s-accent-bright);
   border-bottom: 2px solid var(--s-green);
   padding-bottom: 1px;
+  width: fit-content;
 }
 
 /* a deep link lands, and says so for a moment */
@@ -1443,11 +1458,11 @@
   60% { box-shadow: 0 0 0 9px rgba(1, 120, 72, 0); }
   100% { box-shadow: 0 0 0 0 rgba(1, 120, 72, 0); }
 }
-.street-v2 .s-addr-a:target .s-addr-dot {
+.street-v2 .s-m:target::before {
   animation: s-addr-flash 1.6s ease-out 2;
 }
 @media (prefers-reduced-motion: reduce) {
-  .street-v2 .s-addr-a:target .s-addr-dot { animation: none; }
+  .street-v2 .s-m:target::before { animation: none; }
 }
 
 .street-v2 .s-addr-src {
@@ -1460,10 +1475,13 @@
 
 @media (max-width: 560px) {
   .street-v2 .s-addr-sum { font-size: 15px; }
-  .street-v2 .s-addr-a[data-side='odd'] .s-addr-mark { margin-right: 2px; }
-  .street-v2 .s-addr-a[data-side='even'] .s-addr-mark { margin-left: 2px; }
-  .street-v2 .s-addr-n { font-size: 12.5px; }
-  .street-v2 .s-addr-det { width: calc(100% - 16px); padding: 10px 12px; }
-  .street-v2 .s-addr-det-h { font-size: 15px; }
+  .street-v2 .s-m { font-size: 12.5px; margin-right: 5px; }
+  .street-v2 .s-m.s-e { margin-left: 5px; margin-right: 0; }
+  .street-v2 .s-m:hover,
+  .street-v2 .s-m:focus-within,
+  .street-v2 .s-m:focus,
+  .street-v2 .s-m:target { font-size: 12.5px; }
+  .street-v2 .s-m[data-d]::after,
+  .street-v2 .s-d { padding: 9px 11px; max-width: 84vw; }
   .street-v2 .s-addr-tick-l { max-width: 70%; font-size: 10px; }
 }
