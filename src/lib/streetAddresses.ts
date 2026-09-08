@@ -115,16 +115,15 @@ function buildSummary(
 }
 
 /**
- * ROLLOUT GATE (QUEUE item 3, step 6). null => every published street. A slug set restricts the
- * section to those streets while the shape is verified on preview. This is a build-time constant,
- * not an env flag: the preview and the merge have to render the same thing.
+ * ROLLOUT GATE (QUEUE item 3, step 6). null => every street the Town has address points for.
+ * A slug set restricts the section to those streets while the shape is verified on preview; the
+ * four Gate A streets were verified on miltonly-nc9mq48wo before this opened. This is a
+ * build-time constant, not an env flag: the preview and the merge have to render the same thing.
+ *
+ * The section still gates itself twice below the flag — buildAddressLadder returns null where the
+ * Town's address layer carries nothing, and the component renders nothing on a null ladder.
  */
-export const ADDRESS_LADDER_SLUGS: ReadonlySet<string> | null = new Set([
-  "mae-court-milton",
-  "mcphail-way-milton",
-  "pine-street-milton",
-  "bell-school-line-milton",
-]);
+export const ADDRESS_LADDER_SLUGS: ReadonlySet<string> | null = null;
 
 export function addressLadderEnabledFor(slug: string): boolean {
   return ADDRESS_LADDER_SLUGS === null || ADDRESS_LADDER_SLUGS.has(slug);

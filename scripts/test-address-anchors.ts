@@ -22,6 +22,7 @@ import { StreetAddresses } from "../src/components/street/v2/AddressLadder";
 import type { StreetV2Data } from "../src/components/street/v2/types";
 
 const failures: string[] = [];
+const stripMarkers = (html: string) => html.split("<!-- -->").join("");
 const ok = (label: string, cond: boolean, detail = "") => {
   if (!cond) failures.push(`  ${label}${detail ? `: ${detail}` : ""}`);
 };
@@ -143,11 +144,13 @@ ok("the ItemList covers every mark", items.length === ladder.marks.length, `${it
 
 // ── RULE 2: every rendered address id is numeric ────────────────────────────
 
-const markup = renderToStaticMarkup(
+// React writes a <!-- --> separator between adjacent text nodes under renderToString; strip it
+// so this asserts the heading TEXT and not one renderer's spacing.
+const markup = stripMarkers(renderToStaticMarkup(
   createElement(StreetAddresses, {
     data: { name: "Pine Street", addresses: ladder } as unknown as StreetV2Data,
   })
-);
+));
 
 const ids = [...markup.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]).filter((v) => v !== "addresses");
 ok("the section rendered its addresses", ids.length === ladder.marks.length, `${ids.length} ids vs ${ladder.marks.length} marks`);
