@@ -57,9 +57,10 @@ for (const s of STREETS) {
   if (!hasH2) failures += 1;
   say(hasH2 ? "ok" : "XX", `H2 "Addresses on ${s.name}"`);
 
-  const marks = [...html.matchAll(/<(?:a|span)\s[^>]*id="([^"]+)"[^>]*class="s-m[^"]*"/g)].map((m) => m[1]);
-  const marksAlt = [...html.matchAll(/<(?:a|span)\s[^>]*class="s-m[^"]*"[^>]*id="([^"]+)"/g)].map((m) => m[1]);
-  const allIds = [...new Set([...marks, ...marksAlt])];
+  // A mark is one tag: <a id="60" class="s-m s-e" data-d="..." style="..." href="#60">60</a>.
+  // The class is matched as a whole token so it cannot collide with s-market-grid or s-msum.
+  const marks = [...html.matchAll(/<(?:a|span) id="([0-9]+)" class="s-m[ "]/g)].map((m) => m[1]);
+  const allIds = [...new Set(marks)];
   const numeric = allIds.length > 0 && allIds.every((v) => /^[0-9]+$/.test(v));
   if (!numeric) failures += 1;
   say(numeric ? "ok" : "XX", `${allIds.length} address anchors, all numeric`);

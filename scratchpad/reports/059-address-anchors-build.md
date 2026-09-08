@@ -1,14 +1,19 @@
 # 059 — QUEUE item 3, address anchors: build
 
-Branch `feat/address-anchors`. Two commits, two previews, no merge.
+Branch `feat/address-anchors`, no merge.
 
 | | |
 |---|---|
+| **preview to review** | **`miltonly-b1rancuw3`**, at `312478d` |
 | phase 1 (four Gate A streets) | `488d16e`, preview `miltonly-nc9mq48wo` |
 | phase 2 (every published street) | `b2746c4`, preview `miltonly-bz6ldhja2` |
+| markup diet + siblings recon | `312478d`, preview `miltonly-b1rancuw3` |
 | local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
-| battery on the phase 2 preview | **`PASS · 9 checks · 444 pages · 61s`**, at `b2746c4c6658b67b082fe008e63709be562ef84d` |
-| anchor verifier on both previews | `address-anchors PASS`, four streets each |
+| battery on `miltonly-b1rancuw3` | **`PASS · 9 checks · 444 pages · 71s`**, at `312478daa9a9371f5da03febc36d17d716956b3c` |
+| anchor verifier on all three previews | `address-anchors PASS`, four streets each |
+
+The addendum at the foot of this file records the markup diet and the
+directional-siblings answer, and corrects section 9's claim about Bronte Street.
 
 Gate A's map (report 054) was followed as approved. Where the build scope and the
 recon differ, the scope won and the difference is named below.
@@ -139,7 +144,7 @@ The listed cross streets stop at eight and the rest become "and N more"; the lad
 still draws them all.
 
 `ItemList` at `@id: <SITE_URL>/streets/<slug>#addresses`, `PostalAddress` items with
-`streetAddress`, `addressLocality`, `addressRegion`, `addressCountry` and a `url` that
+`streetAddress`, `addressLocality`, `addressRegion` and a `url` that
 is the in-page anchor, so the list and the DOM agree. **No `offers`, no `price`, on any
 item.** Gate A proposed wrapping each address in a `Residence`; the build scope named
 `PostalAddress` directly and that is what shipped.
@@ -148,7 +153,7 @@ item.** Gate A proposed wrapping each address in a `Residence`; the build scope 
 
 ## 5. The guard
 
-`scripts/test-address-anchors.ts`, the **18th** prebuild test, 30 assertions. It runs
+`scripts/test-address-anchors.ts`, the **18th** prebuild test, 34 assertions. It runs
 under `tsconfig.jsx-test.json`, which exists only to set `"jsx": "react-jsx"` — the
 app's tsconfig sets `preserve` because Next's bundler owns the transform, and under
 `tsx` that falls back to the classic factory and fails in a component written for the
@@ -286,3 +291,141 @@ compressed one, and 42 KB does not justify losing an anchor.
 
 - No merge. Preview gate applies and Aamir reviews `miltonly-bz6ldhja2` first.
 - `bell-school-line-milton` still has no generated prose. See section 7.
+
+---
+
+# Addendum, 2026-09-08 — the markup diet and the directional-siblings answer
+
+`312478d` on the same branch.
+
+## A. Weight
+
+**One element per address.** A mark was six elements; it is now one tag that is
+simultaneously the anchor target, the label and the popup host:
+
+```html
+<a id="71" class="s-m" data-d="0.50 along · odd side · Crawford Crescent · Detached"
+   style="top:160px" href="#71">71</a>
+```
+
+The detail line lives in a single `data-d` and CSS draws it with
+`content: attr(data-d)` on hover, focus or `:target`. The dot on the spine is a
+`::before` rather than a shipped `<i>`. Class names are short because this selector set
+repeats up to 387 times on one page, and the static words that used to repeat with it
+("nearest cross street") moved into the legend, where they are written once. A mark
+carrying a live listing is the one exception — a link cannot live inside CSS generated
+content — so it renders a real detail element and omits `data-d`; the generated popup is
+gated on `[data-d]` so it can never draw an empty box.
+
+`addressCountry` left the `ItemList`. `addressRegion` "ON" already disambiguates Milton,
+and the field cost 24 bytes 387 times over, twice.
+
+Every address keeps its numeric `id`, its `href="#<number>"` and its `ItemList` entry.
+The guard now counts mark tags against mark count, so a regression that reintroduces a
+wrapper fails the build rather than showing up as a byte count nobody measures.
+
+### Measured
+
+| street | addresses | raw before → after | compressed before → after |
+|---|---|---|---|
+| `savoline-boulevard-milton` | 387 | 745,330 → **421,542** (−43%) | 42,139 → **37,161** (−12%) |
+| `pine-street-milton` | 35 | 139,286 → **110,797** (−20%) | 17,609 → **16,984** (−4%) |
+| `mae-court-milton` | 8 | 93,027 → **86,565** (−7%) | 15,019 → **15,019** (0%) |
+
+Production, for the same three streets with no section at all: 97,965 / 77,822 / not
+measured raw, and 15,719 / 13,721 compressed.
+
+**The 250 KB target was not reached, and it cannot be reached under the constraints it
+was given.** Here is the arithmetic, measured rather than estimated, on savoline:
+
+| | bytes |
+|---|---|
+| the page without the section (production) | 97,965 |
+| the addresses `ItemList`, in the markup | 87,581 |
+| the same `ItemList` again, escaped, in the inlined RSC flight payload | ~96,869 |
+| 387 marks in the DOM, plus ticks and section chrome | 52,192 |
+| the same marks again in the flight payload | ~85,170 |
+| **total** | **419,778** |
+
+The App Router inlines the RSC flight payload into the HTML, so everything on the page
+is served twice. **The `ItemList` alone now costs 184,450 bytes, and the budget between
+the production baseline and 250,000 is 152,035.** The list is over budget before a single
+address element is drawn.
+
+Pushing further does not close it:
+
+- dropping the `ListItem` wrapper and emitting bare `PostalAddress` items saves
+  ~38,000 and lands at **~382,000**;
+- with bare items **and 387 marks costing literally nothing**, the floor is **244,251**,
+  and zero-cost marks are not a thing;
+- to fit 250,000 while keeping every address element, the `ItemList` would have to be cut
+  to about **40 of the 387 addresses**.
+
+So the choice is between the full `ItemList` and a 250 KB raw page; they do not coexist.
+**My recommendation is to keep the full list.** The compressed transfer is
+**37 KB**, which is what a browser and a crawler actually pay, and it moved only 12%
+while the raw figure moved 43% — because what was removed was highly repetitive markup
+that brotli was already collapsing to nearly nothing. 37 KB of HTML for the longest
+street in Milton is ordinary, and 347 of the 387 addresses are not worth trading for a
+raw-byte number nobody transfers.
+
+The diet was still worth doing: it is a real 43% cut in parse work and memory, and the
+markup is simpler than what it replaced.
+
+### What the diet cost
+
+The detail text is now a CSS-generated string rather than DOM text. It is still in the
+served HTML as an attribute value, and generated content is exposed by current screen
+readers, but it is no longer selectable and no longer counts as page text. The H2, the
+summary sentence and the `ItemList` carry the section's indexable weight, so this is a
+small loss and a deliberate one.
+
+## B. Directional siblings — there are none, and my earlier note was wrong
+
+`scripts/recon-directional-siblings.ts`, read-only. **No changes made.**
+
+**No pair of published pages maps to one registry street.** The claim in section 9 of
+this report and in the handoff — that Bronte Street North and South each render the whole
+of Bronte Street — was reasoning from the identity model, not from the data, and the data
+does not support it. Corrected here.
+
+Evidence, across 490 `StreetContent` rows of which 445 are published:
+
+**Exactly one identity key carries more than one row, and it is not directional.**
+
+| key | slug | status | template | stored name | resolves to | via |
+|---|---|---|---|---|---|---|
+| `jarrett\|\|crossing` | `jarrett-cross-milton` | unpublished | standard | Jarrett Cross | Jarrett Cross | fallback |
+| `jarrett\|\|crossing` | `jarrett-crossing-milton` | **published** | standard | Jarrett Crossing | **Jarrett Crossing** | **registry** |
+
+One registry street behind it, `JARRETT CROSSING`, 17 civic addresses. `jarrett-cross`
+is an abbreviated-slug duplicate, it is unpublished, and it resolves through the fallback
+chain rather than the registry, which is exactly what an unofficial slug should do. Only
+one of the two is published, so no two live pages share a ladder.
+
+**Groups where more than one row is published: 0.**
+
+**The registry carries two compass-word streets, and neither has a page:**
+
+| slug | identity key | page |
+|---|---|---|
+| `kennedy-circle-east-milton` | `kennedy-circle\|\|` | NONE |
+| `kennedy-circle-west-milton` | `kennedy-circle\|\|` | NONE |
+
+They collide with **each other**, not with the published `kennedy-circle-milton`, which
+parses to `kennedy||circle` — "circle" is consumed as the street type there and is part
+of the base in the directional forms. So the published Kennedy Circle page is unaffected,
+and its 215-address ladder is its own. `kennedy-circle||` has no Town address points at
+all, so neither directional street would get a ladder even if it were published.
+
+**Bronte:** `bronte-street-milton` is the only Bronte row in `StreetContent`. There is no
+North/South pair, published or otherwise.
+
+### What this leaves
+
+The identity model still collapses directionals by design, and a street page still unions
+its directional siblings for listings and sold records. Nothing in the corpus exercises
+that today on the ladder. The exposure is future: if `kennedy-circle-east-milton` and
+`kennedy-circle-west-milton` were ever published, they would share one ladder, and
+`jarrett-cross-milton` would share Jarrett Crossing's if it were ever published. Both are
+publish decisions, not render bugs, and the recon script above reproduces the check.

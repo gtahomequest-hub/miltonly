@@ -4,8 +4,9 @@ _Last rewritten 2026-09-08, after QUEUE item 3 was built on `feat/address-anchor
 
 ## READ THIS FIRST
 
-**QUEUE item 3 is built and pushed and is NOT merged.** Branch `feat/address-anchors`,
-head `b2746c4`. Preview `miltonly-bz6ldhja2` is the one to review. The preview gate
+**QUEUE item 3 is built and pushed and is NOT merged.** Branch `feat/address-anchors`.
+Two follow-up fixes landed 2026-09-08 after the first review pass: the per-address markup
+diet and the directional-siblings recon. The preview gate
 applies and Aamir reviews before merge. Full record in
 `scratchpad/reports/059-address-anchors-build.md`.
 
@@ -42,9 +43,9 @@ it. Do not audit a generation by rebuilding its input when the row carries a sna
 | | |
 |---|---|
 | `main` | **`3c308e6`** |
-| working branch | **`feat/address-anchors`** at **`b2746c4`**, pushed, **not merged** |
-| preview to review | **`miltonly-bz6ldhja2`** (all streets), `miltonly-nc9mq48wo` (the four) |
-| battery on that preview | **`PASS · 9 checks · 444 pages · 61s`**, exit 0, at the full SHA |
+| working branch | **`feat/address-anchors`**, pushed, **not merged** |
+| preview to review | **`miltonly-b1rancuw3`**, at `312478d` |
+| battery on that preview | **`PASS · 9 checks · 444 pages · 71s`**, exit 0, at the full SHA |
 | production | serving `e815f28` |
 | local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
 | published street pages | **445** |
@@ -84,10 +85,11 @@ A single address is a population of one. The summary sentence is generated from 
 and never written by a model. The `ItemList` is `PostalAddress` and nothing else, with
 no `offers` and no `price`.
 
-**`scripts/test-address-anchors.ts` is the 18th prebuild test, 30 assertions.** It
+**`scripts/test-address-anchors.ts` is the 18th prebuild test, 34 assertions.** It
 renders the section and reads the ids back out of the markup rather than asserting that
 a file imports something — the pattern open item 9 still wants applied to the name
-guard. It runs under `tsconfig.jsx-test.json`, which exists only to set
+guard, and it now counts mark tags against mark count so a wrapper cannot creep back in.
+It runs under `tsconfig.jsx-test.json`, which exists only to set
 `"jsx": "react-jsx"`; the app's tsconfig says `preserve` and under `tsx` that fails in a
 component written for the automatic runtime.
 
@@ -100,10 +102,19 @@ runner and skips any slug with no `StreetContent` row, which is exactly the case
 street that has never been generated. The new script copies its provider discipline
 verbatim and adds the entity floor as a refusal.
 
-**Page weight.** `savoline-boulevard-milton` (387 addresses) goes from 98 KB to 745 KB
-raw, and **15.7 KB to 42.1 KB compressed**. The raw figure is the wrong number to judge
-on: the markup is repetitive and brotli takes it back 18x. Ladder sizes are median 47,
-mean 61, 15 streets at 200 or more. No cap was added.
+**Page weight, after the diet.** An address is ONE tag whose detail lives in a single
+`data-d` attribute that CSS draws on interaction. `savoline-boulevard-milton`
+(387 addresses) went 745 KB to **421 KB** raw and 42.1 KB to **37.2 KB** compressed.
+
+**250 KB raw is not reachable and the arithmetic is in report 059.** The App Router
+inlines the RSC flight payload, so everything is served twice. The addresses `ItemList`
+alone costs 184 KB of the 421 KB, against a budget of 152 KB between the production
+baseline and 250 KB — it is over budget before a single address element is drawn. With
+bare `PostalAddress` items and 387 marks costing literally nothing, the floor is 244 KB.
+Fitting 250 KB while keeping every address element means cutting the `ItemList` to about
+40 of 387 addresses. The compressed transfer is 37 KB and moved only 12% while the raw
+figure moved 43%, because what was removed was repetitive markup brotli was already
+collapsing. **Recommendation: keep the full list.** The decision is open.
 
 ## Open items
 
@@ -117,10 +128,19 @@ mean 61, 15 streets at 200 or more. No cap was added.
    them. $0.042 spent, nothing written, fail-closed. `jasper-street-milton` and
    `wood-close-milton` are the other two, and `wood-close` is a different fault: its
    `getStreetStats()` returns `No stats available` in one second, before a prompt exists.
-2. **Directional siblings share one address ladder.** `identityFromSlug` drops the
-   direction by design and a street page already unions its siblings, so Bronte Street
-   North and South each render the whole of Bronte Street's addresses. Consistent, but it
-   should be a decision rather than a discovery.
+2. **No two published pages share an address ladder. An earlier note here said they did
+   and it was wrong.** That claim reasoned from the identity model rather than the data.
+   Measured 2026-09-08 by `scripts/recon-directional-siblings.ts`: across 490
+   `StreetContent` rows, exactly **one** identity key carries more than one row, and it is
+   not directional — `jarrett-cross-milton` (unpublished, resolves through the fallback
+   chain) and `jarrett-crossing-milton` (published, resolves through the registry) both sit
+   on `jarrett||crossing`. **Groups where more than one row is published: 0.** The registry
+   carries exactly two compass-word streets, `kennedy-circle-east-milton` and
+   `kennedy-circle-west-milton`; neither has a page, they collide with each other on
+   `kennedy-circle||` and NOT with the published `kennedy-circle-milton` (`kennedy||circle`),
+   and `kennedy-circle||` has no Town address points at all. There is no Bronte North/South
+   pair in the registry or in `StreetContent`. The exposure is future and it is a publish
+   decision, not a render bug.
 3. **Pre-2026-09-05 `costUsd` rows overstate Opus-assisted generations by 3x.** Not
    rewritable from what is stored. Treat historical cost claims as upper bounds.
 4. **The DOM rule cannot read the neighbourhood's DOM.** `findUngroundedNumerics`
