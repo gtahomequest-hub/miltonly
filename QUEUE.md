@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **Gate A reported 2026-09-04, awaiting approval**. Items 4, 5, 6 and 7 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **Gate A approved 2026-09-08 and built on `feat/address-anchors`; awaiting preview review, NOT merged**. Items 4, 5, 6 and 7 **not started**.
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
@@ -73,6 +73,38 @@ The corpus outgrew the nine-clip pilot. **78 objects, 213.6 MiB in R2**, up from
 Add `/streets/[slug]#[houseNumber]` sections to street pages. **Gate A recon first**, with no code until the map is approved. An anchor shows position on the street, the cross street, building form, and active listing status. It never shows a sold price for a single address, which the VOW rules forbid.
 
 **Done when** Gate A is approved. Build scope is set at that point, not before.
+
+## BUILT 2026-09-08 on `feat/address-anchors`, NOT MERGED
+
+Gate A approved as scoped. Two commits, two previews. Detail in
+`scratchpad/reports/059-address-anchors-build.md`.
+
+Phase 1 `488d16e`, preview `miltonly-nc9mq48wo`, the four Gate A streets.
+Phase 2 `b2746c4`, preview `miltonly-bz6ldhja2`, every published street.
+Battery **`PASS · 9 checks · 444 pages · 61s`** at the full SHA on the phase 2 preview.
+Local build exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages.
+
+- [x] `scripts/town/gen-street-addresses.ts` projects the ingest-only address table into
+      `src/data/streetAddresses.ts` at build time: 901 identities, 40,826 civic addresses,
+      3,048 placed cross streets, no coordinate per house
+- [x] per-address house number, side, position fraction, nearest cross street, building form
+      where a DB1 listing for that address carried one, and a live-listing link. No sold price,
+      no sold date, no owner, no historical listing, at any k
+- [x] `/streets/<slug>#<houseNumber>` on every address, `:target` highlight, no client JS
+- [x] the address ladder: spine, odd and even edges, cross streets ruled across it. Verified at
+      380 px. Signal green on the "listed now" mark only
+- [x] H2 + a data-generated summary sentence + a `PostalAddress` `ItemList` with no `offers`
+      and no `price` on any item
+- [x] `scripts/test-address-anchors.ts`, 18th prebuild test, 30 assertions. It renders the
+      section and reads the ids back out of the markup
+- [x] rolled out to the four Gate A streets, verified, then to all 442 published streets that
+      have Town address points (3 published streets have none and are unchanged)
+- [ ] **`bell-school-line-milton` still has no generated prose.** It passes
+      `makeStreetDecision` and `getStreetStats`; the eval half fails on DeepSeek with the jasper
+      class (`invalid_json_shape` + `zero_price_faq_question`), and the Opus fallback returned
+      `400: Your credit balance is too low to access the Anthropic API`. $0.042 spent, nothing
+      written. Its page returns 200 and its ladder renders regardless
+- [ ] **merge.** Preview gate applies; Aamir reviews `miltonly-bz6ldhja2` first
 
 ### Gate A reported 2026-09-04, not yet approved
 
