@@ -30,6 +30,7 @@ import { stripNumericSentences } from "./prose/numericSentences";
 import { firstSentence } from "./prose/sentences";
 import { haversineKm, hasValidCoords, driveMinutes, walkMinutes, MOSQUES, GROCERIES } from "./geo";
 import { streetCentroidFor } from "./town/roadFacts";
+import { buildAddressLadder, addressLadderEnabledFor } from "./streetAddresses";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
 import { resolveStreetVideo } from "./streetVideo";
@@ -477,6 +478,32 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     centroid,
   });
 
+  // ─── Address ladder ───────────────────────────────────────────────
+  // The Town's civic addresses for this street, joined to DB1 for form and live status only.
+  // Sourced from the build-time projection, NOT from MLS: house numbers exist for every address
+  // whether or not it has ever been listed, so the VOW question does not arise for the position
+  // half. Null where the Town's address layer carries nothing for this identity.
+  const addressLadder = addressLadderEnabledFor(slug)
+    ? buildAddressLadder({
+        slug,
+        streetName,
+        // A tick links only where StreetAdjacency already holds the pair, and every
+        // connectedSlug in that table is a PUBLISHED street. Everything else renders as a
+        // label. A cross street is a fact whether or not we have written its page; a link to
+        // a page that does not exist is not.
+        linkableSlugs: new Set(contextCards.connectedStreets.map((c) => c.slug)),
+        listings: allListings.map((l) => ({
+          address: l.address,
+          mlsNumber: l.mlsNumber,
+          status: l.status,
+          permAdvertise: l.permAdvertise,
+          propertySubType: l.propertySubType,
+          propertyType: l.propertyType,
+        })),
+      })
+    : null;
+
+
   // ─── FAQs ──────────────────────────────────────────────────────────
   const faqs = parseFaqs(streetContent?.faqJson, { streetName, shortName, sale12, enrichment });
 
@@ -524,6 +551,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     marketActivity,
     commuteGrid,
     activeInventory,
+    addressLadder,
     contextCards,
     faqs,
     finalCTAs,

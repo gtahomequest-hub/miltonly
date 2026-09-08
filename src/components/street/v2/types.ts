@@ -201,6 +201,13 @@ export interface ListingCard {
   href: string;
 }
 
+// ───── Address ladder (QUEUE item 3) ─────────────────────────────────────────
+// Passed through from src/lib/streetAddresses.ts unchanged. It is NOT a suppressible
+// surface: it carries no price at any grain, so there is no k-anon state to render. A
+// street the Town has no address points for arrives as null and the section is absent.
+
+export type { AddressLadder, AddressMark, AddressCrossTick } from '@/lib/streetAddresses';
+
 // ───── Context cards ─────────────────────────────────────────────────────────
 
 export interface ContextStreet {
@@ -242,6 +249,7 @@ export interface StreetFaq {
 // ───── Master page shape (the seam getStreetV2Data returns) ──────────────────
 
 import type { StreetVideoView } from '@/lib/streetVideo';
+import type { AddressLadder as AddressLadderView } from '@/lib/streetAddresses';
 
 export interface StreetV2Data {
   slug: string;
@@ -265,6 +273,8 @@ export interface StreetV2Data {
   market: MarketBlock;
   commute: CommuteCategory[];
   activeListings: ListingCard[];
+  /** The Town's civic addresses on this street, or null where it carries none. */
+  addresses: AddressLadderView | null;
   context: ContextBlock;
   faqs: StreetFaq[];
   finalCtas: { seller: StreetCta; buyer: StreetCta };

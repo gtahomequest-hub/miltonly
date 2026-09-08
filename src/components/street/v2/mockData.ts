@@ -224,6 +224,9 @@ export const mockStreetRich: StreetV2Data = {
     },
   ],
 
+  // The address ladder is sourced from the Town projection at request time, not mocked: a
+  // fabricated civic address is a fabricated municipal fact. null renders no section.
+  addresses: null,
   activeListings: [
     {
       mlsNumber: 'W5051001',
@@ -432,6 +435,9 @@ export const mockStreetThin: StreetV2Data = {
     },
   ],
 
+  // The address ladder is sourced from the Town projection at request time, not mocked: a
+  // fabricated civic address is a fabricated municipal fact. null renders no section.
+  addresses: null,
   activeListings: [
     {
       mlsNumber: 'W5052001',

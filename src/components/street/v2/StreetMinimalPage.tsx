@@ -8,6 +8,7 @@ import './street-theme.css';
 import type { StreetV2Data } from './types';
 import type { MinimalStreetView } from '@/lib/streetMinimal';
 import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
+import { StreetAddresses } from './AddressLadder';
 import { resaleClaim } from './resaleClaim';
 import { SiteNav } from '../../nav/SiteNav';
 
@@ -145,6 +146,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
 
       {/* Section 7 — live listings (the new-construction earner) */}
       <StreetInventory data={data} />
+      <StreetAddresses data={data} />
 
       {/* Section 5 — nearby streets (link graph) */}
       {view.nearbyStreets.length > 0 && (

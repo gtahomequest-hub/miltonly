@@ -20,6 +20,7 @@ import {
   StreetFaq,
   StreetFinalCtas,
 } from './sections';
+import { StreetAddresses } from './AddressLadder';
 import { SiteNav } from '../../nav/SiteNav';
 import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
 import { COMPARE_TEASER } from '@/lib/comparisonData';
@@ -52,6 +53,7 @@ export function StreetV2Page({
       <CompareModule {...COMPARE_TEASER.freehold} contrast={compareContrast} />
       <StreetCommute data={data} />
       <StreetInventory data={data} />
+      <StreetAddresses data={data} />
       <StreetContext data={data} />
       <StreetFaq data={data} />
       <StreetFinalCtas data={data} />
