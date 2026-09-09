@@ -217,6 +217,22 @@ async function main() {
     if (/[^A-Za-z0-9 .'\-]/.test(raw)) console.log(`   ${r.slug.padEnd(38)} ${JSON.stringify(raw)}`);
   }
 
+  // ── the resolver, once it exists ─────────────────────────────────────────────
+  const { resolveCondoName } = await import("../src/lib/condoName");
+  console.log(`
+── resolveCondoName over all ${rows.length} rows ──`);
+  const res = rows.map((r) => ({ r, n: resolveCondoName({ slug: r.slug, streetNumber: r.streetNumber, streetSlug: r.streetSlug, buildingAddress: r.buildingAddress }) }));
+  const bySource = new Map<string, number>();
+  for (const { n } of res) bySource.set(n.source, (bySource.get(n.source) ?? 0) + 1);
+  for (const [k, v] of [...bySource.entries()].sort()) console.log(`   source=${k.padEnd(14)} ${v}`);
+  console.log(`   carry a Town direction   ${res.filter((x) => x.n.direction).length}`);
+  console.log(`   disagreements (agrees=false) ${res.filter((x) => !x.n.agrees).length}`);
+  console.log(`   rows with issues         ${res.filter((x) => x.n.issues.length).length}`);
+  for (const { r, n } of res.filter((x) => x.n.issues.length)) console.log(`      ${r.slug.padEnd(38)} ${n.issues.join(" | ")}`);
+  console.log(`
+   raw  ->  resolved`);
+  for (const { r, n } of res) console.log(`   ${String(r.buildingAddress).padEnd(34)} ->  ${n.name}${n.direction ? "   [Town dir " + n.direction + "]" : ""}`);
+
   await prisma.$disconnect();
 }
 

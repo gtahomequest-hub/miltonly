@@ -31,6 +31,11 @@ export const OFF_REGISTRY_STREETS: string[] = [
   // at a page that does not exist. The doubled type in the slug is fossilised; displayStreetName
   // already renders it "15 Side Road".
   "15-side-road-side-road-milton",
+  // QUEUE item 4, ruling 1 (2026-09-09). Halton Regional Road 25. Its CondoBuilding row
+  // (6415-regional-road-25-milton) was the ONE building in 65 that resolved to no name at all:
+  // the registry has no row, and the stored string "6415 Regional Rd" has lost the "25", so a
+  // re-parse lands on `regional||road`, which is nothing. Report 061.
+  "regional-road-25-milton",
 ];
 
 export const OFF_REGISTRY_SET = new Set(OFF_REGISTRY_STREETS);

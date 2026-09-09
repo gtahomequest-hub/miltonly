@@ -6,6 +6,7 @@
 // sub-k rurals) -> stats.typicalPrice null -> silent state, NEVER a fabricated price.
 // profile 'rural' drives the reduced layout; empty arrays hide sections. Mirrors
 // getCondoData / getHomepageData null-tolerance.
+import { condoDisplayName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
@@ -54,7 +55,7 @@ async function condosFor(neighbourhoodId: string | null): Promise<HubCondoBuildi
   if (!neighbourhoodId) return [];
   const cbs = await prisma.condoBuilding.findMany({
     where: { neighbourhoodId },
-    select: { slug: true, displayName: true, buildingAddress: true },
+    select: { slug: true, displayName: true, buildingAddress: true, streetNumber: true, streetSlug: true },
   });
   if (!cbs.length) return [];
   const pub = new Set(
@@ -63,7 +64,11 @@ async function condosFor(neighbourhoodId: string | null): Promise<HubCondoBuildi
       select: { buildingSlug: true },
     })).map((c) => c.buildingSlug),
   );
-  return cbs.filter((c) => pub.has(c.slug)).slice(0, 6).map((c) => ({ name: c.displayName ?? c.buildingAddress ?? c.slug, slug: c.slug }));
+  // DEC-CONDO-NAME: the hub's condo list names a building the way its page does.
+  return cbs.filter((c) => pub.has(c.slug)).slice(0, 6).map((c) => ({
+    name: condoDisplayName({ slug: c.slug, streetNumber: c.streetNumber, streetSlug: c.streetSlug, buildingAddress: c.buildingAddress ?? c.displayName }),
+    slug: c.slug,
+  }));
 }
 
 async function siblingsFor(slug: string, profile: HubProfile): Promise<HubSibling[]> {

@@ -22,6 +22,7 @@
 // Server-scoped by construction (Prisma DB1 + Neon serverless HTTP for DB2).
 // Consumed by WS5 generation orchestration + the WS4 fixtures.
 
+import { resolveCondoName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import {
@@ -304,7 +305,15 @@ export async function buildCondoBuildingInput(
   return {
     building: {
       slug: b.slug,
-      displayName: b.displayName ?? b.buildingAddress ?? b.slug,
+      // DEC-CONDO-NAME (QUEUE item 4). Resolved, so a future generation writes the full name into
+      // buildingName, metaTitle and metaDescription instead of re-introducing the abbreviation
+      // the backfill just removed.
+      displayName: resolveCondoName({
+        slug: b.slug,
+        streetNumber: b.streetNumber,
+        streetSlug: b.streetSlug,
+        buildingAddress: b.buildingAddress ?? b.displayName,
+      }).address,
       buildingAddress: b.buildingAddress,
       streetNumber: b.streetNumber,
       streetName: b.streetName,

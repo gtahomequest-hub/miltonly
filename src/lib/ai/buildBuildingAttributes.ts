@@ -13,6 +13,7 @@
 // (median suppressed to null below k>=5) and computed in SQL via PERCENTILE_CONT so individual
 // sold prices never enter JS. SALE and LEASE stay separate queries (the 490-Gordon-Krantz mix
 // barrier). The returned payload holds no individual sold row and no sub-k price stat.
+import { resolveCondoName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { groupCondoClusters, type CondoClusterRow } from "@/lib/condoIdentity";
@@ -270,7 +271,16 @@ export async function buildBuildingAttributes(buildingSlug: string): Promise<Bui
   if (!b.streetNumber || !b.streetSlug) {
     throw new Error(`buildBuildingAttributes: "${buildingSlug}" missing (streetNumber, streetSlug) stats key`);
   }
-  const addressFallback = b.displayName ?? b.buildingAddress ?? b.slug;
+  // DEC-CONDO-NAME (QUEUE item 4). The address a building falls back to is RESOLVED — civic
+  // number plus the registry street name plus the Town's own direction — not the stored MLS
+  // string, which abbreviates and which contradicts the Town on the direction. foldName still
+  // prefers a real association_name over it; this only fixes what that name falls back TO.
+  const addressFallback = resolveCondoName({
+    slug: b.slug,
+    streetNumber: b.streetNumber,
+    streetSlug: b.streetSlug,
+    buildingAddress: b.buildingAddress,
+  }).address;
   const clusterKeys = (await resolveMemberKeys(buildingSlug)) ?? [`${b.streetNumber}|${b.streetSlug}`];
 
   // ONE attribute query (no price) — building facts only.
