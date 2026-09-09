@@ -1,3 +1,4 @@
+// scripts/measure-address-380.ts
 // One-off measurement for QUEUE item 3, step 6: at 380px, is every mark tappable when its label
 // is suppressed, and is no label clipped at either end of the spine?
 //
@@ -11,9 +12,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { readFileSync } from "node:fs";
-import { buildAddressLadder } from "../../src/lib/streetAddresses";
-import { StreetAddresses } from "../../src/components/street/v2/AddressLadder";
-import type { StreetV2Data } from "../../src/components/street/v2/types";
+import { buildAddressLadder } from "../src/lib/streetAddresses";
+import { StreetAddresses } from "../src/components/street/v2/AddressLadder";
+import type { StreetV2Data } from "../src/components/street/v2/types";
 
 const HIT = 14; // .s-m.s-q height at <=560px, and DOT_GAP
 const END_PAD = 34;

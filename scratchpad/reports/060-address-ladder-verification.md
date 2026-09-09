@@ -26,7 +26,7 @@ section will not find one, and that is the finding.
 
 ## The 380px measurement, corpus-wide
 
-`scratchpad/audit/measure-380.ts`. Pure — `buildAddressLadder` takes its listing rows as an
+`scripts/measure-address-380.ts`. Pure — `buildAddressLadder` takes its listing rows as an
 argument, so passing none renders what the Town's data alone produces, and DB1 does not move a
 mark. It renders every published street's section and reads the placement back out of the markup,
 the same way the prebuild guard does, rather than asserting anything about the source.
@@ -84,6 +84,34 @@ reads `?street=` as the initial value of its address field. No house number and 
 `bell-school-line-milton` is the one with no `StreetContent` row. It renders the ladder from the
 Town projection anyway, which is why it is in the verifier's set: the address section does not
 depend on a generated row.
+
+## The build this run broke, and what it exposed
+
+`19883b7` — the commit that recorded this verification — **failed its Vercel build in 45s**,
+after passing the local gate. Neither fact was a fluke and both are worth keeping.
+
+The measurement script was written to `scratchpad/audit/measure-380.ts`. `tsconfig.json`
+includes `**/*.ts` and excludes only `node_modules`, `scripts/**` and `tmp-*`, so
+**`scratchpad/**` is type-checked by the Next build** under the app's tsconfig rather than the
+test one. The script spreads `matchAll`, which the app target rejects:
+
+```
+./scratchpad/audit/measure-380.ts:40:20
+Type error: Type 'RegExpStringIterator<RegExpExecArray>' can only be iterated through when
+using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+```
+
+The local gate was green because **the build was started before the file existed** — it was
+written while the build was generating static pages. A gate cannot cover a file that is not
+there yet. Write first, then build.
+
+Fixed by moving it to `scripts/measure-address-380.ts`, which is where every other runnable
+`.ts` in this repo already lives and which the app tsconfig already excludes. The measurement
+re-run from the new path returns identical numbers. `scratchpad/audit/` keeps the slug list,
+which is data.
+
+No production or preview deployment served the broken commit: the build failed, so nothing was
+promoted. The reviewable preview is unaffected.
 
 ## Not merged
 

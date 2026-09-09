@@ -19,7 +19,7 @@ been done at HEAD because the only preview was one commit behind. Record in
 the section on this run; there is not one.**
 
 **380px tappability is now measured corpus-wide, not on one street.**
-`scratchpad/audit/measure-380.ts` renders all 442 ladders and reads placement back out of
+`scripts/measure-address-380.ts` renders all 442 ladders and reads placement back out of
 the markup: 27,130 marks, **13,816 labels suppressed**, minimum same-side gap **exactly
 14px** (the height a suppressed mark is given), **0** below it, minimum top **34px**
 (`END_PAD`), **0** clipped ends. The tightest pair in Milton is `25-side-road-milton`, not
@@ -237,10 +237,19 @@ without the parameter.
   `/streets/mcphail-way-milton#3165`, `/streets/bell-school-line-milton#7295`.
   The last has **no `StreetContent` row** and renders its ladder anyway — the address
   section reads the Town projection and does not depend on a generated row.
-- `scratchpad/audit/measure-380.ts` re-measures the 380px hit areas corpus-wide. Pure, no
+- `scripts/measure-address-380.ts` re-measures the 380px hit areas corpus-wide. Pure, no
   DB, no network at render time. Run it under `tsconfig.jsx-test.json` after any change to
-  `DOT_GAP`, `END_PAD`, `LABEL_GAP` or `.s-m.s-q`. It reads `060-slugs.txt` beside it,
-  which is the published set from the sitemap.
+  `DOT_GAP`, `END_PAD`, `LABEL_GAP` or `.s-m.s-q`. It reads
+  `scratchpad/audit/060-slugs.txt`, which is the published set from the sitemap.
+- **A `.ts` file anywhere outside `scripts/` is type-checked by the Next build.**
+  `tsconfig.json` includes `**/*.ts` and excludes only `node_modules`, `scripts/**` and
+  `tmp-*`. `scratchpad/**` is NOT excluded. A one-off script dropped there compiles under
+  the app's tsconfig, not the test one, and **`19883b7` failed its Vercel build for exactly
+  that reason** (`RegExpStringIterator` without `--downlevelIteration`). Runnable `.ts`
+  goes in `scripts/`. `scratchpad/audit/` is for data artifacts.
+- **A local build started before a file is written does not cover that file.** The gate on
+  `19883b7` was green and the deploy still failed, because the script was created while the
+  build was running. Write first, then build.
 - `scripts/recon-address-anchors.ts` reports per-street ladder shape and corpus coverage.
 - `scripts/create-street-page.ts` creates a page that does not exist; `regen-058-local.ts`
   regenerates one that does. Neither can run a Claude primary pass.
