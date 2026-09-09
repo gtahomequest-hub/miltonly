@@ -22,5 +22,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "scripts/**", "tmp-*.ts", "tmp-*.cjs", "tmp-*.js"]
+  "exclude": ["node_modules", "scripts/**", "scratchpad/**", "tmp-*.ts", "tmp-*.cjs", "tmp-*.js"]
 }
