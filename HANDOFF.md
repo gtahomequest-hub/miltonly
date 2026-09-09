@@ -25,6 +25,15 @@ the markup: 27,130 marks, **13,816 labels suppressed**, minimum same-side gap **
 (`END_PAD`), **0** clipped ends. The tightest pair in Milton is `25-side-road-milton`, not
 savoline. Half the corpus is drawn as a bare dot and every one is still a real target.
 
+**This run broke a build and fixed it, and the reason is a trap worth knowing.** `19883b7`
+passed the local gate and failed on Vercel in 45s. The measurement script had been written
+to `scratchpad/audit/`, and **`tsconfig.json` type-checks `**/*.ts` while excluding only
+`node_modules`, `scripts/**` and `tmp-*`** — so a one-off script dropped anywhere but
+`scripts/` compiles under the app's tsconfig, not the test one. The local gate was green
+because the build had been started *before* the file existed. Fixed in `4810ad5` by moving
+it to `scripts/measure-address-380.ts`; identical numbers from the new path, local build
+green with the file present. **No deployment ever served the broken commit.**
+
 **The Anthropic account has no credit.** The Opus fallback fired on
 `bell-school-line-milton` and the API returned `400 invalid_request_error: Your credit
 balance is too low to access the Anthropic API`. That is the live blocker on every page
@@ -59,10 +68,11 @@ it. Do not audit a generation by rebuilding its input when the row carries a sna
 |---|---|
 | `main` | **`3c308e6`** |
 | working branch | **`feat/address-anchors`**, pushed, **not merged** |
-| preview to review | **`miltonly-qp2pdqh32`**, at **`59d4f9e`** — HEAD, and the one to review |
-| battery on that preview | **`PASS · 9 checks · 444 pages · 56s`**, exit 0, at the full SHA |
+| preview to review | **`miltonly-jtca7e7qu`**, at **`4810ad5`** — the one to review |
+| battery on that preview | **`PASS · 9 checks · 444 pages · 65s`**, exit 0, at the full SHA |
 | anchor verifier on it | **PASS**, four streets, `scripts/verify/address-anchors.mjs` |
-| superseded preview | `miltonly-5evd895mv`, at `c01a004`, one commit behind. Ignore it |
+| superseded previews | `miltonly-qp2pdqh32` (`59d4f9e`), `miltonly-5evd895mv` (`c01a004`). Ignore both |
+| failed deploy | `miltonly-g52s7txii` at `19883b7`, build error, never served. Cause below |
 | production | serving `e815f28` |
 | local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
 | published street pages | **445** |
@@ -261,7 +271,7 @@ without the parameter.
 
 ## Next expected task
 
-Review preview **`miltonly-qp2pdqh32`** (at HEAD `59d4f9e`, battery PASS, anchor verifier
+Review preview **`miltonly-jtca7e7qu`** (at `4810ad5`, battery PASS, anchor verifier
 PASS) and decide on merging `feat/address-anchors`. Everything the brief asked of the
 section is built and measured; what is left is the review, and the merge is Aamir's call.
 Failing that: the Anthropic credit balance (open item 1), item 8, or item 9. Do not
