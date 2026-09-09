@@ -6,7 +6,7 @@ _Last rewritten 2026-09-09, after QUEUE item 4 merged and the condo bodies were 
 
 **QUEUE item 4 is MERGED and live, and the condo prose is regenerated.** Merged as `a7e3a7f`.
 Production serves it; battery **`PASS · 9 checks · 444 pages · 67s`** at the full SHA, and all
-five checked condo H1s render the full name. `bdd5b9f` on top carries the runner and one real
+five checked condo H1s render the full name. `ff70116` on top carries the runner and one real
 fix found by running it.
 
 **`src/lib/condoName.ts` is the only source of a condo building's name on any surface.** The
@@ -27,7 +27,7 @@ three of them still said "located at 100 Millside Dr S" in their own prose, beca
 resolved `displayName`. Worse than the abbreviation: the raw string carries a direction the Town
 contradicts, so `460 Gordon Krantz Ave S` was being written into a body for a street that has no
 direction at all. **Both model-facing address fields now carry resolved forms.** Fixed in
-`bdd5b9f` and the three were re-run clean. If you add a field to that input, ask what happens
+`ff70116` and the three were re-run clean. If you add a field to that input, ask what happens
 when the model quotes it.
 
 **Condo prose, final state: 3 of 59 published bodies still carry an abbreviation**, and all
@@ -65,9 +65,9 @@ none of it: DeepSeek cleared 55 of 55 attempted buildings on its own.
 
 | | |
 |---|---|
-| `main` | **`bdd5b9f`** |
-| production | serving `a7e3a7f`; `bdd5b9f` deploying |
-| battery on production | **`PASS · 9 checks · 444 pages · 67s`**, exit 0, at the full SHA |
+| `main` | **`ff70116`** |
+| production | **`miltonly-3vg6p4ufc`**, serving **`ff70116`**, confirmed on the apex |
+| battery on production | **`PASS · 9 checks · 444 pages · 72s`**, exit 0, at the full SHA `ff70116` |
 | local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
 | condo buildings | **65** (not the 108 the brief stated) |
 | published `CondoContent` | **59** |
