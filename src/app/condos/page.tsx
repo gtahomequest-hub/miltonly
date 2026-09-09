@@ -14,6 +14,7 @@
 // that, k-anon-gated, but we keep the index off sold figures and consistent with
 // /streets + /neighbourhoods). Null-degrade when a building has zero active sale
 // listings (counts only) — many condos are rental-only or unlisted right now.
+import { condoDisplayName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
@@ -42,7 +43,6 @@ export default async function CondosIndexPage() {
     where: { status: "published" },
     select: { buildingSlug: true, buildingName: true },
   });
-  const nameBySlug = new Map(publishedRows.map((c) => [c.buildingSlug, c.buildingName]));
   const slugs = publishedRows.map((c) => c.buildingSlug);
 
   const buildings = slugs.length
@@ -76,7 +76,14 @@ export default async function CondosIndexPage() {
 
   const cards = buildings
     .map((b) => {
-      const name = nameBySlug.get(b.slug) ?? b.displayName ?? b.buildingAddress ?? b.slug;
+      // DEC-CONDO-NAME: the index names a building exactly as its own page does. The stored
+      // CondoContent.buildingName is not consulted — it carries the abbreviation on 57 of 59 rows.
+      const name = condoDisplayName({
+        slug: b.slug,
+        streetNumber: b.streetNumber,
+        streetSlug: b.streetSlug,
+        buildingAddress: b.buildingAddress ?? b.displayName,
+      });
       const hood = b.neighbourhoodEntity?.name ?? (b.neighbourhood ? cleanHood(b.neighbourhood) : config.CITY_NAME);
 
       let activeCount = 0;

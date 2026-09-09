@@ -9,6 +9,7 @@
 import { prisma } from "@/lib/prisma";
 import { compactPrice } from "@/components/condo/format";
 import type { CondoData, CondoListing, CondoNearby } from "@/components/condo/types";
+import { resolveCondoName, condoDisplayName } from "@/lib/condoName";
 import type { CondoSection } from "@/types/hub-generator";
 
 function hoodSlug(name: string): string {
@@ -120,7 +121,7 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
   const siblings = building.neighbourhoodId
     ? await prisma.condoBuilding.findMany({
         where: { neighbourhoodId: building.neighbourhoodId, slug: { not: slug } },
-        select: { slug: true, displayName: true, buildingAddress: true },
+        select: { slug: true, displayName: true, buildingAddress: true, streetNumber: true, streetSlug: true },
       })
     : [];
   const sibSlugs = siblings.map((s) => s.slug);
@@ -137,10 +138,25 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
   const nearbyCondos: CondoNearby[] = siblings
     .filter((s) => publishedSet.has(s.slug))
     .slice(0, 6)
-    .map((s) => ({ name: s.displayName ?? s.buildingAddress ?? s.slug, slug: s.slug }));
+    .map((s) => ({
+      // DEC-CONDO-NAME: the nearby list names a building the same way its own page does.
+      name: condoDisplayName({ slug: s.slug, streetNumber: s.streetNumber, streetSlug: s.streetSlug, buildingAddress: s.buildingAddress }),
+      slug: s.slug,
+    }));
 
-  const name = content.buildingName;
-  const address = building.buildingAddress ?? building.displayName ?? name;
+  // DEC-CONDO-NAME (QUEUE item 4). The STORED CondoContent.buildingName is not read for display:
+  // 57 of 59 rows carry an abbreviation and some carry a direction the Town contradicts. The name
+  // is resolved from the building's own civic number and street slug, every time, on every
+  // surface. The backfill rewrites the stored column to match; this does not depend on it having
+  // run, which is what makes the two safe to land in either order.
+  const resolved = resolveCondoName({
+    slug,
+    streetNumber: building.streetNumber,
+    streetSlug: building.streetSlug,
+    buildingAddress: building.buildingAddress,
+  });
+  const name = resolved.name;
+  const address = resolved.address;
   const character = overview.length ? firstSentence(overview[0]) : content.metaDescription ?? "";
 
   return {

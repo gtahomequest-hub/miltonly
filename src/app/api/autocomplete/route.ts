@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { condoDisplayName } from "@/lib/condoName";
 import { resolveStreetName } from "@/lib/streetName";
 
 export async function GET(request: NextRequest) {
@@ -53,11 +54,16 @@ export async function GET(request: NextRequest) {
       where: {
         name: { contains: q, mode: "insensitive" },
       },
-      select: { name: true, slug: true },
+      select: { name: true, slug: true, streetNumber: true, streetSlug: true, buildingAddress: true, displayName: true },
       take: 8,
     });
+    // DEC-CONDO-NAME: a search result names a building the way its page does, or the visitor
+    // clicks "1005 Nadalin Hts" and lands on "1005 Nadalin Heights".
     return NextResponse.json(
-      results.map((r) => ({ name: r.name, slug: r.slug }))
+      results.map((r) => ({
+        name: condoDisplayName({ slug: r.slug, streetNumber: r.streetNumber, streetSlug: r.streetSlug, buildingAddress: r.buildingAddress ?? r.displayName ?? r.name }),
+        slug: r.slug,
+      }))
     );
   }
 

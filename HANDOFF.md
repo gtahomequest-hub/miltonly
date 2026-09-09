@@ -1,102 +1,104 @@
 # Handoff
 
-_Last rewritten 2026-09-09, after `feat/address-anchors` merged and production verified._
+_Last rewritten 2026-09-09, after QUEUE item 4 was built on `feat/condo-names`._
 
 ## READ THIS FIRST
 
-**QUEUE item 3 is MERGED and live.** `feat/address-anchors` merged to main as `e14bfa2`,
-with `a6229a7` on top of it. Production `miltonly-c25astehn` serves `a6229a7`, confirmed on
-the apex through `/api/build`. Battery **`PASS · 9 checks · 444 pages · 61s`**, exit 0, at
-the full SHA. The anchor verifier passes on `https://miltonly.com`. All four anchor URLs
-return 200 with their `id` present in the served markup. Approved by Aamir. Records in
-`scratchpad/reports/059-address-anchors-build.md` and
-`scratchpad/reports/060-address-ladder-verification.md`.
+**QUEUE item 4 is built and pushed and is NOT merged.** Branch `feat/condo-names`, preview
+`miltonly-4jq67bbl4` at `078d92b`. Battery **`PASS · 9 checks · 444 pages · 58s`**, exit 0,
+at the full SHA. The preview gate applies and Aamir reviews before merge. Record in
+`scratchpad/reports/061-condo-names-gate-a.md` (the Gate A recon and the three rulings).
 
-**`scratchpad/**` is now excluded from the app tsconfig** (`a6229a7`). It included
-`**/*.ts` and excluded only `node_modules`, `scripts/**` and `tmp-*`, so a throwaway script
-written to `scratchpad/` compiled under the **app's** tsconfig rather than the test one.
-That is how `19883b7` passed a local gate and failed its Vercel build in 45s. Proven both
-ways with a probe carrying the exact failing shape: `tsc --noEmit` clean with the exclusion,
-the same `TS2802` without it. **Runnable `.ts` still belongs in `scripts/`** — the exclusion
-closes the deploy hazard, it does not make `scratchpad/` a second home for code.
+**`src/lib/condoName.ts` is the only source of a condo building's name on any surface.** The
+condo counterpart of `resolveStreetName`, subject to the same rule: the registry is the
+authority and the stored string is not. `streetSlug` is the primary; a re-parse of the raw
+address is a **check**, and a row where the two disagree is reported, not silently resolved.
+Two rows report today and both are understood: `21 Crt St N` ("Crt" is outside
+`canonicalType`) and `6415 Regional Rd` (the stored string lost the "25").
 
-**A local build started before a file is written does not cover that file.** The other half
-of the same lesson, and the reason the gate was green on a commit that could not deploy.
-Write first, then build.
+**THE DIRECTION COMES FROM THE TOWN, PER CIVIC ADDRESS, OR NOT AT ALL.** This is the half
+that matters and the easiest thing to undo by accident. The MLS strings carry a direction
+that is not merely abbreviated but **wrong**: four streets carry contradictory directions
+across their own buildings, and **`"1050 Main St W"` names an address the Town records as
+MAIN STREET E**. `src/data/addressDirections.ts` is a new build-time projection of the
+Town's own `ST_DIR_SUFFIX` — 1,355 civic addresses over the **12** Milton streets that
+actually have a direction, from 1,976 directional address points, with **36 dropped for
+contradicting themselves**. A building renders a direction only where the Town gives that
+civic address one. `139 Main` is one of the 36 and renders none.
 
-**380px tappability is measured corpus-wide.** `scripts/measure-address-380.ts` renders all
-442 ladders and reads placement back out of the markup: 27,130 marks, **13,816 labels
-suppressed**, minimum same-side gap **exactly 14px** (the height a suppressed mark is
-given), **0** below it, minimum top **34px** (`END_PAD`), **0** clipped ends. The tightest
-pair in Milton is `25-side-road-milton`. Half the corpus is drawn as a bare dot and every
-one of those is still a real target.
+**There is no Main Street West condo.** All 17 Main Street buildings resolve East or to no
+direction at all. The one stored as "Main St W" is `1050`, and the Town says East. If a
+future task asks for a West example, the honest answer is that the corpus has none.
 
-**There is no VIP signup route in this codebase.** "Watch <Street>" points at
-`#street-alert`, the live street alert already on the page, which posts
-`property_address: <street name>`. `/exclusive` is a listings page with no form and `#vip`
-is a homepage strip of links. **This is a deliberate deviation from the brief, which asked
-for a VIP signup by name.** A distinct VIP list is a new surface and a new decision. The
-owner CTA prefills for real: `/sell?street=<name>#valuation`, read by `HomeValuationCard`.
+**The stored columns were backfilled and the render does not depend on them.**
+`scripts/backfill-condo-names.ts` rewrote `buildingName`, `metaTitle` and `metaDescription`
+on **57 of 59** published rows, 171 values, re-run changes **0**. Dry run is the default.
+**The prose column is untouched** — 57 rows mention the abbreviation inside generated
+sentences, and rewriting prose by substitution is how a backfill starts inventing claims.
+Those 57 are a regeneration question and they stay open. The description **variant** is
+preserved rather than recomputed, because recomputing sale-vs-rental today would restate a
+fact about a different moment.
 
-**QUEUE item 4 Gate A recon is done and awaits three rulings. No feature code written.**
-Report `scratchpad/reports/061-condo-names-gate-a.md`, evidence
-`scripts/recon-condo-names.ts` (read only). **There are 65 `CondoBuilding` rows, not the
-108 the brief states** — the same shape as item 7's "46" (open item 10). 64 of 65 resolve
-cleanly through the registry; the stored `streetSlug` is already the expanded slug and is
-unread by any naming surface. Two things the brief does not anticipate: **the direction**
-(36 of 65 raw strings end in a compass token, four streets carry contradictory ones so
-those are noise, but Main Street E/W is 17 buildings and is not, and no directional
-variant exists as an entity anywhere), and **the stored half** (title and meta description
-are read from `CondoContent` columns, and 57 of 59 published rows carry the abbreviation in
-`buildingName`, `metaTitle`, `metaDescription` and the generated prose alike, so a
-render-time resolver alone does not deliver the brief). **The three rulings: Main Street's
-direction; whether `regional-road-25-milton` joins the off-registry allowlist; and whether
-the stored backfill is in scope for item 4.**
+**`scripts/test-condo-name.ts` is the 19th prebuild test, 112 assertions.** It RENDERS both
+condo shells and reads the H1 and breadcrumb back out of the markup rather than asserting
+that a file imports the resolver — the item 3 pattern, and what open item 11 still wants
+applied to the street name guard. **Verified red against main's behaviour: 54 of 112 failed,
+including every rendered H1.** It asserts the Town's direction specifically, so a future
+change that trusts the stored string again fails the build.
 
-**The Anthropic account has no credit.** The Opus fallback fired on
-`bell-school-line-milton` and the API returned `400 invalid_request_error: Your credit
-balance is too low to access the Anthropic API`. That is the live blocker on every page
-DeepSeek cannot clear on its own, which today is `jasper-street-milton`,
-`wood-close-milton` and `bell-school-line-milton`. Nothing in the code can route around
-it. **`AI_PROVIDER_FALLBACK="opus"` is still set in production**, so a cron generation
-that escalates today fails closed rather than escalating, silently and for a reason that
-is not in the code.
+**The Anthropic account has no credit.** The Opus fallback returned `400
+invalid_request_error: Your credit balance is too low to access the Anthropic API`. That is
+the live blocker on `jasper-street-milton`, `wood-close-milton` and
+`bell-school-line-milton`. **`AI_PROVIDER_FALLBACK="opus"` is still set in production**, so a
+cron generation that escalates today fails closed rather than escalating.
 
-**A street page renders without a `StreetContent` row.** `bell-school-line-milton` has
-no row and returns HTTP 200 on production — and now serves a 48-address ladder, because
-the section reads the Town projection and does not depend on a generated row. Anything
-that reasons about "which streets have pages" from `StreetContent` alone is counting a
-different thing from what is being served.
+**Published street pages: 445.** The battery reports 444; it counts a different population
+and both numbers are right.
 
-**Published street pages: 445.** The battery still reports 444; it counts a different
-population and both numbers are right.
+**Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
+`CLAUDE_MODELS` carried the 2026-05 rate long after it moved to $5/$25. Rows written before
+the 2026-09-05 correction cannot be restated from what is stored.
 
-**Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus
-portion.** `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate
-of $15/$75 per MTok long after it moved to $5/$25. Corrected 2026-09-05; rows written
-before that still hold the inflated number and cannot be restated from what is stored.
-Nothing enforces that table. Check it against the current rate sheet before trusting a
-cost claim.
-
-**A generation stores the input it was written from.** `StreetGeneration.inputJson`. Use
-it. Do not audit a generation by rebuilding its input when the row carries a snapshot.
+**A generation stores the input it was written from.** `StreetGeneration.inputJson`. Do not
+audit a generation by rebuilding its input when the row carries a snapshot.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | **`a6229a7`**, item 3 merged |
-| production | **`miltonly-c25astehn`**, serving **`a6229a7`**, confirmed on the apex |
-| battery on production | **`PASS · 9 checks · 444 pages · 61s`**, exit 0, at the full SHA |
-| anchor verifier on production | **PASS**, four streets |
-| four anchor URLs on production | **200, `id` present in the served markup, all four** |
-| local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
-| working branch | `feat/address-anchors`, **merged**, safe to delete |
+| `main` | **`3f5442d`**, item 3 merged and live |
+| production | serving `3f5442d` |
+| working branch | **`feat/condo-names`**, pushed, **not merged** |
+| preview to review | **`miltonly-4jq67bbl4`**, at **`078d92b`** |
+| battery on that preview | **`PASS · 9 checks · 444 pages · 58s`**, exit 0, at the full SHA |
+| local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
+| condo buildings | **65** (not the 108 the brief stated) |
+| published `CondoContent` | 59; **57 backfilled**, re-run changes 0 |
+| condo names carrying a Town direction | **17** of 65 |
 | published street pages | **445** |
-| pages carrying an address ladder | **442** of 445; 27,130 civic addresses |
-| draft / unpublished | 41 / 4 |
-| generations carrying an input snapshot | 154 of 480 |
-| QUEUE | 1, 2, **3 done**; 4, 5, 6, 7 not started |
+| pages carrying an address ladder | **442**; 27,130 civic addresses |
+| QUEUE | 1, 2, 3 done; **4 built, awaiting preview review and merge**; 5, 6, 7 not started |
+
+## What happened 2026-09-09 — QUEUE item 4, condo names
+
+**The surfaces wired**, all from `condoName`: H1, title, meta description, breadcrumb,
+JSON-LD `name` and `address`, OpenGraph and Twitter on **both** condo routes, the `/condos`
+index, `/api/autocomplete`, `heroIndex` and the hub's condo list. Also
+`buildCondoBuildingInput`, so the next generation writes the resolved name instead of
+re-introducing what the backfill just removed — without that, this item undoes itself.
+
+**A real `association_name` still wins the heading.** `condoName` governs the ADDRESS, which
+is what those buildings fall back to, and it always computes the address form as well,
+because JSON-LD `address` must be an address even when the heading is a name.
+
+**`regional-road-25-milton` joined `OFF_REGISTRY_STREETS`** (ruling 1). It was the one
+building in 65 that resolved to no name at all.
+
+**Why the direction is not in `townAddressPoints.ts`.** That key is `${number}|${base}||${type}`
+and has no direction slot. Widening a 1.4 MB ingest-only table with a row-count assertion five
+things depend on, to carry a field 4% of its rows have, is the wrong trade. Re-run
+`scripts/town/gen-address-directions.ts` if the Town layer is re-pulled; it fetches its own
+filtered slice and refuses to write a partial table.
 
 ## What happened 2026-09-08 — QUEUE item 3, address anchors
 
@@ -243,7 +245,10 @@ without the parameter.
     no data behind them.
 13. `heroSearch.ts` resolves 5 slugs to physically different streets; needs an ambiguity
     guard.
-14. Condo H1s still render abbreviations such as `Nadalin Hts`. QUEUE item 4.
+14. ~~Condo H1s render abbreviations~~ **CLOSED** by QUEUE item 4 on `feat/condo-names`.
+    What remains is the **prose**: 57 of 59 published `CondoContent.description` bodies still
+    say "1005 Nadalin Hts" inside generated sentences. The backfill deliberately did not touch
+    them. A regeneration question, and it needs open item 1 resolved first.
 15. Stored `HubContent.metaDescription` drifts from live on 21 of 22 hubs.
 16. Rent pill disagrees with the market card on `melville-bonus-crescent-milton` and
     `mcdougall-crossing-milton`.
@@ -277,6 +282,12 @@ without the parameter.
 - **A local build started before a file is written does not cover that file.** The gate on
   `19883b7` was green and the deploy still failed, because the script was created while the
   build was running. Write first, then build.
+- `scripts/recon-condo-names.ts` reports condo naming state across all 65 buildings, including
+  which resolve, which report a disagreement, and which carry a Town direction. Read only.
+- `scripts/backfill-condo-names.ts` is **dry run by default**; `--write` to touch anything. It
+  reports 10 before/after samples and proves its own idempotency after a write.
+- `scripts/town/gen-address-directions.ts` regenerates `src/data/addressDirections.ts` from the
+  Town layer. Re-run it whenever the Town address layer is re-pulled.
 - `scripts/recon-address-anchors.ts` reports per-street ladder shape and corpus coverage.
 - `scripts/create-street-page.ts` creates a page that does not exist; `regen-058-local.ts`
   regenerates one that does. Neither can run a Claude primary pass.
@@ -288,10 +299,12 @@ without the parameter.
 
 ## Next expected task
 
-**QUEUE item 4, condo building names — Gate A is reported and waiting on three rulings.**
-Read report 061 before anything else; the population is **65 buildings, not 108**, and the
-item is two pieces (a resolver and a stored backfill), not one. Do not start the build
-until Main Street's direction is decided.
+Review preview **`miltonly-4jq67bbl4`** (at `078d92b`, battery PASS) and decide on merging
+`feat/condo-names`. Then **QUEUE item 5, geometry backfill**.
+
+Failing that: the Anthropic credit balance (open item 1), which blocks three pages and any
+cron escalation; open item 8, the seven clips with `blur_verified: false`; open item 9, the
+two orphaned clips. **Do not self-start any of them.**
 
 Or, ahead of it if Aamir says so: the Anthropic credit balance (open item 1), which blocks
 three pages and any cron escalation; open item 8, the seven clips with

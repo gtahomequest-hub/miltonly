@@ -17,6 +17,7 @@ import { composeCondoBrief } from "@/lib/ai/condoBrief";
 import { toCondoView } from "@/lib/ai/condoView";
 import BuildingAttributesPage from "@/components/condo/BuildingAttributesPage";
 import { isCondoPilot } from "@/lib/condoPilots";
+import { resolveCondoName } from "@/lib/condoName";
 
 export const dynamic = "force-dynamic";
 
@@ -29,24 +30,52 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (isCondoPilot(params.slug)) {
     const b = await prisma.condoBuilding.findUnique({
       where: { slug: params.slug },
-      select: { displayName: true, buildingAddress: true },
+      select: { displayName: true, buildingAddress: true, streetNumber: true, streetSlug: true },
     });
-    const nm = b?.displayName ?? b?.buildingAddress ?? params.slug;
+    // DEC-CONDO-NAME: resolved, never the stored string.
+    const nm = b
+      ? resolveCondoName({ slug: params.slug, streetNumber: b.streetNumber, streetSlug: b.streetSlug, buildingAddress: b.buildingAddress }).name
+      : params.slug;
+    const description = `Sales, leases, gross yield and amenities for ${nm} in ${config.CITY_NAME} — every figure from the building's own recorded trades.`;
+    const title = `${nm} — ${config.CITY_NAME} Condo Building`;
     return {
-      title: `${nm} — ${config.CITY_NAME} Condo Building`,
-      description: `Sales, leases, gross yield and amenities for ${nm} in ${config.CITY_NAME} — every figure from the building's own recorded trades.`,
+      title,
+      description,
       alternates: { canonical: `${config.SITE_URL}/condos/${params.slug}` },
+      openGraph: { title, description, url: `${config.SITE_URL}/condos/${params.slug}`, type: "article" },
+      twitter: { card: "summary_large_image", title, description },
     };
   }
-  const content = await prisma.condoContent.findUnique({
-    where: { buildingSlug: params.slug },
-    select: { status: true, metaTitle: true, metaDescription: true, buildingName: true },
-  });
+  const [content, b] = await Promise.all([
+    prisma.condoContent.findUnique({
+      where: { buildingSlug: params.slug },
+      select: { status: true, metaTitle: true, metaDescription: true, buildingName: true },
+    }),
+    prisma.condoBuilding.findUnique({
+      where: { slug: params.slug },
+      select: { buildingAddress: true, streetNumber: true, streetSlug: true },
+    }),
+  ]);
   if (!content || content.status !== "published") return { title: "Condo Not Found" };
+  // DEC-CONDO-NAME. The stored metaTitle and metaDescription carry the abbreviation on 57 of 59
+  // rows, so the resolved name REPLACES it inside them rather than being appended: a title that
+  // says "1005 Nadalin Hts" beside an H1 that says "1005 Nadalin Heights" is worse than either.
+  // The backfill rewrites the columns; this holds whether or not it has run.
+  const resolved = b
+    ? resolveCondoName({ slug: params.slug, streetNumber: b.streetNumber, streetSlug: b.streetSlug, buildingAddress: b.buildingAddress })
+    : null;
+  const nm = resolved?.name ?? content.buildingName;
+  const stored = content.buildingName;
+  const swap = (v: string | null): string | null =>
+    v && stored && nm !== stored ? v.split(stored).join(nm) : v;
+  const title = swap(content.metaTitle) ?? `${nm} | ${config.CITY_NAME} Condo Building Guide`;
+  const description = swap(content.metaDescription) ?? undefined;
   return {
-    title: content.metaTitle ?? `${content.buildingName} | ${config.CITY_NAME} Condo Building Guide`,
-    description: content.metaDescription ?? undefined,
+    title,
+    description,
     alternates: { canonical: `${config.SITE_URL}/condos/${params.slug}` },
+    openGraph: { title, description, url: `${config.SITE_URL}/condos/${params.slug}`, type: "article" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

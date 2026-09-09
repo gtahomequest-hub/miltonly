@@ -9,6 +9,7 @@
 //   street        → "<its neighbourhood> · N homes" (N = distinct addresses that
 //                    have sold on the street — the honest "homes we have data on")
 //   condo         → its address (condo `name` is address-form; units when distinct)
+import { condoDisplayName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
@@ -47,7 +48,7 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
       select: { slug: true, name: true, neighbourhood: { select: { name: true } } },
     }),
     prisma.condoBuilding.findMany({
-      select: { slug: true, name: true, address: true, buildingAddress: true, totalUnits: true },
+      select: { slug: true, name: true, address: true, buildingAddress: true, totalUnits: true, streetNumber: true, streetSlug: true, displayName: true },
     }),
     soldDb
       ? (soldDb`SELECT street_slug, COUNT(DISTINCT address)::int AS homes
@@ -77,7 +78,13 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
     });
   }
   for (const c of condos) {
-    const name = c.name || c.address || c.buildingAddress || c.slug;
+    // DEC-CONDO-NAME: same name here as on the building's own page.
+    const name = condoDisplayName({
+      slug: c.slug,
+      streetNumber: c.streetNumber,
+      streetSlug: c.streetSlug,
+      buildingAddress: c.buildingAddress ?? c.displayName ?? c.name ?? c.address,
+    });
     // condo `name` is address-form; show a distinct address, else unit count, else generic.
     const secondary =
       c.address && c.address !== name
