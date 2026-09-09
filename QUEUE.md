@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Items 4, 5, 6 and 7 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `bdd5b9f` on top). Items 5, 6 and 7 **not started**.
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
@@ -151,6 +151,37 @@ return **200 with their `id` present in the served markup**:
 Route the street component of every `CondoBuilding` address through `resolveStreetName`, preserving the house number, so the naming authority covers condo surfaces as it already covers streets. Applies to the H1, the title, the meta description, the JSON-LD, and the breadcrumb.
 
 **Done when** all 108 buildings render full street names and the name guard's coverage extends to condo surfaces.
+
+## DONE 2026-09-09, merged as `a7e3a7f`
+
+*The population is **65 buildings, not 108**. The brief's figure does not reproduce, the same way
+item 7's "46" does not. Gate A recon in `scratchpad/reports/061-condo-names-gate-a.md`.*
+
+Production battery **`PASS · 9 checks · 444 pages · 67s`** at the full SHA. Five condo H1s
+verified on production: `1050 Main Street East`, `1470 Main Street East`, `1005 Nadalin Heights`,
+`174 Bronte Street South`, `490 Gordon Krantz Avenue`.
+
+- [x] `src/lib/condoName.ts` is the only condo name source. `streetSlug` primary, address
+      re-parse as a check that must agree or the row is reported (2 report, both understood)
+- [x] **the direction is the Town's per civic address or absent.**
+      `src/data/addressDirections.ts`, 1,355 civic addresses over 12 streets, 36 dropped for
+      contradicting themselves. `"1050 Main St W"` is an address the Town records as MAIN
+      STREET E. **There is no Main Street West condo**
+- [x] `regional-road-25-milton` added to `OFF_REGISTRY_STREETS`
+- [x] every surface wired: H1, title, meta description, breadcrumb, JSON-LD name and address,
+      OG and Twitter on both routes, condos index, autocomplete, hero index, hub condo list,
+      and `buildCondoBuildingInput` so the next generation does not undo it
+- [x] `scripts/test-condo-name.ts`, 19th prebuild test, 112 assertions, renders and reads the
+      H1 and breadcrumb back out of the markup. **Red on main's behaviour at 54 of 112**
+- [x] backfill: 57 of 59 rows, 171 values, re-run changes 0, prose untouched
+- [x] **prose regenerated**: 52 passed, 1 failed, 2 skipped, `$0.0900`, DeepSeek only, cap $2.
+      All 59 condo pages revalidated, `/condos` revalidated
+- [x] a real fix found by running it: the model was quoting the raw `buildingAddress` it was
+      still being handed, writing a direction the Town contradicts into three bodies
+- [ ] `830-megson-terrace-milton` fail-closed on its validator and keeps its old prose. Queued
+      as `condo:830-megson-terrace-milton`. Its H1 and stored name columns are already correct
+- [ ] `158-mill-street-milton` and `174-bronte-street-milton` are zero-data and the generator
+      refuses them before any write. Same shape as `burnhamthorpe-road-milton`
 
 ---
 

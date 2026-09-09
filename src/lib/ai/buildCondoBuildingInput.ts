@@ -23,6 +23,7 @@
 // Consumed by WS5 generation orchestration + the WS4 fixtures.
 
 import { resolveCondoName } from "@/lib/condoName";
+import { resolveStreetName } from "@/lib/streetName";
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import {
@@ -314,9 +315,19 @@ export async function buildCondoBuildingInput(
         streetSlug: b.streetSlug,
         buildingAddress: b.buildingAddress ?? b.displayName,
       }).address,
-      buildingAddress: b.buildingAddress,
+      // DEC-CONDO-NAME. These two are handed to the MODEL, so they carry the RESOLVED forms.
+      // The raw ones leaked into three regenerated bodies on the first run ("located at 100
+      // Millside Dr S"), and worse than the abbreviation, the raw string carries a direction the
+      // Town contradicts ("460 Gordon Krantz Ave S" — Gordon Krantz has no direction at all).
+      // A model cannot be asked not to quote a field it has been given.
+      buildingAddress: resolveCondoName({
+        slug: b.slug,
+        streetNumber: b.streetNumber,
+        streetSlug: b.streetSlug,
+        buildingAddress: b.buildingAddress ?? b.displayName,
+      }).address,
       streetNumber: b.streetNumber,
-      streetName: b.streetName,
+      streetName: resolveStreetName(b.streetSlug ?? "", b.streetName).name,
       streetSlug: b.streetSlug,
       neighbourhoodName: b.neighbourhoodEntity?.name ?? b.neighbourhood ?? null,
       totalUnits: b.totalUnits,

@@ -1,0 +1,513 @@
+[regen-condo] CONDO_ENABLED forced true for THIS PROCESS ONLY; primaries {"AI_PROVIDER_MARKET":"","AI_PROVIDER_AHA":"","AI_PROVIDER_EVAL":""} -> all deepseek; fallback disabled
+[roundPrices] section=condoMarket '$425,000' → '$430,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$784,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$702,500' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$694,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$588,333' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$515,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$425,000' → '$430,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$487,500' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$564,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 100-millside-drive-milton attempt 1: 1 violation (invalid_json_shape) | 3122in/220out | $0.00050
+[roundPrices] section=condoMarket '$702,500' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$694,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$588,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$515,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$425,000' → '$430,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$487,500' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$564,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$425,000' → '$430,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$784,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 100-millside-drive-milton attempt 2: 0 violations (clean) | 3183in/425out | $0.00056
+[roundPrices] faq[0] '$425,000' → '$430,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$784,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 100-millside-drive-milton attempt 1: 0 violations (clean) | 3969in/972out | $0.00083
+[CondoGen] 100-millside-drive-milton combined: 530 words, editorial=1+market=2 attempts, total $0.00189, PASS
+[generateCondoBuilding] 100-millside-drive-milton: PUBLISHED — 530 words, 2 attempt(s), $0.00189.
+[  1/55] PASS 100-millside-drive-milton              att=2 $0.00190 published abbr Y->Y 9s
+[roundPrices] section=condoMarket '$492,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 1005-nadalin-heights-milton attempt 1: 0 violations (clean) | 2855in/317out | $0.00049
+[roundPrices] faq[5] '$492,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/editorial] 1005-nadalin-heights-milton attempt 1: 0 violations (clean) | 3702in/880out | $0.00076
+[CondoGen] 1005-nadalin-heights-milton combined: 358 words, editorial=1+market=1 attempts, total $0.00125, PASS
+[generateCondoBuilding] 1005-nadalin-heights-milton: PUBLISHED — 358 words, 1 attempt(s), $0.00125.
+[  2/55] PASS 1005-nadalin-heights-milton            att=1 $0.00130 published abbr Y->n 8s
+[CondoGen/market] 1045-nadalin-heights-milton attempt 1: 0 violations (clean) | 3389in/363out | $0.00058
+[roundPrices] faq[1] '$2,650' → '$2,700' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 1045-nadalin-heights-milton attempt 1: 0 violations (clean) | 4236in/798out | $0.00082
+[CondoGen] 1045-nadalin-heights-milton combined: 412 words, editorial=1+market=1 attempts, total $0.00139, PASS
+[generateCondoBuilding] 1045-nadalin-heights-milton: PUBLISHED — 412 words, 1 attempt(s), $0.00139.
+[  3/55] PASS 1045-nadalin-heights-milton            att=1 $0.00140 published abbr Y->n 7s
+[roundPrices] section=condoMarket '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$555,000' SKIPPED (within tolerance of input $574,600)
+[roundPrices] section=condoMarket '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$574,600' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$673,600' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$692,500' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$496,000' → '$500,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 1050-main-street-milton attempt 1: 1 violation (invalid_json_shape) | 3685in/237out | $0.00058
+[roundPrices] section=unitMix '$2,950' → '$3,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] section=condoMarket '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$555,000' SKIPPED (within tolerance of input $574,600)
+[roundPrices] section=condoMarket '$674,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$686,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$570,500' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$693,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1050-main-street-milton attempt 2: 0 violations (clean) | 3746in/421out | $0.00064
+[roundPrices] faq[0] '$555,000' SKIPPED (within tolerance of input $574,600)
+[roundPrices] faq[0] '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$693,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[1] '$2,950' → '$3,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] faq[1] '$2,950' → '$3,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 1050-main-street-milton attempt 1: 0 violations (clean) | 4532in/1005out | $0.00092
+[roundPrices] section=condoMarket '$555,000' SKIPPED (within tolerance of input $574,600)
+[roundPrices] faq[0] '$555,000' SKIPPED (within tolerance of input $574,600)
+[CondoGen] 1050-main-street-milton combined: 460 words, editorial=1+market=2 attempts, total $0.00214, PASS
+[generateCondoBuilding] 1050-main-street-milton: PUBLISHED — 460 words, 2 attempt(s), $0.00214.
+[  4/55] PASS 1050-main-street-milton                att=2 $0.00210 published abbr Y->n 8s
+[CondoGen/market] 1200-main-street-milton attempt 1: 0 violations (clean) | 1993in/199out | $0.00033
+[CondoGen/editorial] 1200-main-street-milton attempt 1: 0 violations (clean) | 3614in/690out | $0.00070
+[CondoGen] 1200-main-street-milton combined: 258 words, editorial=1+market=1 attempts, total $0.00103, PASS
+[generateCondoBuilding] 1200-main-street-milton: PUBLISHED — 258 words, 1 attempt(s), $0.00103.
+[  5/55] PASS 1200-main-street-milton                att=1 $0.00100 published abbr Y->n 6s
+[roundPrices] section=condoMarket '$579,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1340-main-street-milton attempt 1: 1 violation (invalid_json_shape) | 2850in/189out | $0.00045
+[CondoGen/market] 1340-main-street-milton attempt 2: 0 violations (clean) | 2911in/284out | $0.00049
+[CondoGen/editorial] 1340-main-street-milton attempt 1: 0 violations (clean) | 3697in/933out | $0.00078
+[CondoGen] 1340-main-street-milton combined: 365 words, editorial=1+market=2 attempts, total $0.00172, PASS
+[generateCondoBuilding] 1340-main-street-milton: PUBLISHED — 365 words, 2 attempt(s), $0.00172.
+[  6/55] PASS 1340-main-street-milton                att=2 $0.00170 published abbr Y->n 8s
+[CondoGen/market] 1350-main-street-milton attempt 1: 1 violation (invalid_json_shape) | 3080in/156out | $0.00047
+[roundPrices] section=condoMarket '$559,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1350-main-street-milton attempt 2: 0 violations (clean) | 3141in/239out | $0.00051
+[CondoGen/editorial] 1350-main-street-milton attempt 1: 0 violations (clean) | 3927in/903out | $0.00080
+[CondoGen] 1350-main-street-milton combined: 312 words, editorial=1+market=2 attempts, total $0.00178, PASS
+[generateCondoBuilding] 1350-main-street-milton: PUBLISHED — 312 words, 2 attempt(s), $0.00178.
+[  7/55] PASS 1350-main-street-milton                att=2 $0.00180 published abbr Y->n 8s
+[CondoGen/market] 1360-costigan-road-milton attempt 1: 1 violation (invalid_json_shape) | 3233in/152out | $0.00050
+[roundPrices] section=unitMix '$1,875' SKIPPED (within tolerance of input $2,700)
+[CondoGen/market] 1360-costigan-road-milton attempt 2: 0 violations (clean) | 3294in/334out | $0.00055
+[CondoGen/editorial] 1360-costigan-road-milton attempt 1: 0 violations (clean) | 4080in/897out | $0.00082
+[roundPrices] section=unitMix '$1,875' SKIPPED (within tolerance of input $2,700)
+[CondoGen] 1360-costigan-road-milton combined: 419 words, editorial=1+market=2 attempts, total $0.00187, PASS
+[generateCondoBuilding] 1360-costigan-road-milton: PUBLISHED — 419 words, 2 attempt(s), $0.00187.
+[  8/55] PASS 1360-costigan-road-milton              att=2 $0.00190 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$520,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1360-main-street-milton attempt 1: 0 violations (clean) | 2850in/367out | $0.00050
+[CondoGen/editorial] 1360-main-street-milton attempt 1: 0 violations (clean) | 3697in/837out | $0.00075
+[CondoGen] 1360-main-street-milton combined: 404 words, editorial=1+market=1 attempts, total $0.00125, PASS
+[generateCondoBuilding] 1360-main-street-milton: PUBLISHED — 404 words, 1 attempt(s), $0.00125.
+[  9/55] PASS 1360-main-street-milton                att=1 $0.00130 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$342,500' → '$340,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$387,500' → '$390,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 137-martin-street-milton attempt 1: 1 violation (invalid_json_shape) | 2875in/198out | $0.00046
+[roundPrices] section=condoMarket '$342,500' → '$340,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=condoMarket '$387,500' → '$390,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 137-martin-street-milton attempt 2: 0 violations (clean) | 2936in/322out | $0.00050
+[CondoGen/editorial] 137-martin-street-milton attempt 1: 0 violations (clean) | 3722in/821out | $0.00075
+[CondoGen] 137-martin-street-milton combined: 460 words, editorial=1+market=2 attempts, total $0.00171, PASS
+[generateCondoBuilding] 137-martin-street-milton: PUBLISHED — 460 words, 2 attempt(s), $0.00171.
+[ 10/55] PASS 137-martin-street-milton               att=2 $0.00170 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$597,500' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$518,300' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$502,500' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1370-costigan-road-milton attempt 1: 1 violation (invalid_json_shape) | 2926in/225out | $0.00047
+[roundPrices] section=condoMarket '$598,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$518,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$503,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1370-costigan-road-milton attempt 2: 0 violations (clean) | 2987in/307out | $0.00050
+[CondoGen/editorial] 1370-costigan-road-milton attempt 1: 0 violations (clean) | 3773in/857out | $0.00077
+[CondoGen] 1370-costigan-road-milton combined: 349 words, editorial=1+market=2 attempts, total $0.00174, PASS
+[generateCondoBuilding] 1370-costigan-road-milton: PUBLISHED — 349 words, 2 attempt(s), $0.00174.
+[ 11/55] PASS 1370-costigan-road-milton              att=2 $0.00170 published abbr Y->n 7s
+[roundPrices] section=condoMarket '$618,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$572,500' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$523,500' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$547,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1370-main-street-milton attempt 1: 0 violations (clean) | 3236in/372out | $0.00056
+[CondoGen/editorial] 1370-main-street-milton attempt 1: 0 violations (clean) | 4083in/1012out | $0.00085
+[CondoGen] 1370-main-street-milton combined: 447 words, editorial=1+market=1 attempts, total $0.00141, PASS
+[generateCondoBuilding] 1370-main-street-milton: PUBLISHED — 447 words, 1 attempt(s), $0.00141.
+[ 12/55] PASS 1370-main-street-milton                att=1 $0.00140 published abbr Y->n 9s
+[CondoGen/market] 1379-costigan-road-milton attempt 1: 0 violations (clean) | 2075in/157out | $0.00033
+[CondoGen/editorial] 1379-costigan-road-milton attempt 1: 0 violations (clean) | 3696in/751out | $0.00073
+[CondoGen] 1379-costigan-road-milton combined: 264 words, editorial=1+market=1 attempts, total $0.00106, PASS
+[generateCondoBuilding] 1379-costigan-road-milton: PUBLISHED — 264 words, 1 attempt(s), $0.00106.
+[ 13/55] PASS 1379-costigan-road-milton              att=1 $0.00110 published abbr Y->n 7s
+[roundPrices] section=condoMarket '$495,000' → '$500,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 1380-main-street-milton attempt 1: 0 violations (clean) | 2887in/408out | $0.00052
+[CondoGen/editorial] 1380-main-street-milton attempt 1: 0 violations (clean) | 3734in/957out | $0.00079
+[CondoGen] 1380-main-street-milton combined: 460 words, editorial=1+market=1 attempts, total $0.00131, PASS
+[generateCondoBuilding] 1380-main-street-milton: PUBLISHED — 460 words, 1 attempt(s), $0.00131.
+[ 14/55] PASS 1380-main-street-milton                att=1 $0.00130 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$495,000' → '$500,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 1390-main-street-milton attempt 1: 0 violations (clean) | 2850in/297out | $0.00048
+[CondoGen/editorial] 1390-main-street-milton attempt 1: 0 violations (clean) | 3697in/757out | $0.00073
+[CondoGen] 1390-main-street-milton combined: 383 words, editorial=1+market=1 attempts, total $0.00121, PASS
+[generateCondoBuilding] 1390-main-street-milton: PUBLISHED — 383 words, 1 attempt(s), $0.00121.
+[ 15/55] PASS 1390-main-street-milton                att=1 $0.00120 published abbr Y->n 7s
+[roundPrices] section=unitMix '$1,925' SKIPPED (within tolerance of input $3,200)
+[roundPrices] section=condoMarket '$602,500' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1419-costigan-road-milton attempt 1: 0 violations (clean) | 3182in/356out | $0.00055
+[CondoGen/editorial] 1419-costigan-road-milton attempt 1: 0 violations (clean) | 4029in/890out | $0.00081
+[roundPrices] section=unitMix '$1,925' SKIPPED (within tolerance of input $3,200)
+[CondoGen] 1419-costigan-road-milton combined: 405 words, editorial=1+market=1 attempts, total $0.00136, PASS
+[generateCondoBuilding] 1419-costigan-road-milton: PUBLISHED — 405 words, 1 attempt(s), $0.00136.
+[ 16/55] PASS 1419-costigan-road-milton              att=1 $0.00140 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$500,500' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1421-costigan-road-milton attempt 1: 1 violation (invalid_json_shape) | 2857in/150out | $0.00044
+[CondoGen/market] 1421-costigan-road-milton attempt 2: 0 violations (clean) | 2918in/340out | $0.00050
+[CondoGen/editorial] 1421-costigan-road-milton attempt 1: 0 violations (clean) | 3704in/903out | $0.00077
+[CondoGen] 1421-costigan-road-milton combined: 390 words, editorial=1+market=2 attempts, total $0.00172, PASS
+[generateCondoBuilding] 1421-costigan-road-milton: PUBLISHED — 390 words, 2 attempt(s), $0.00172.
+[ 17/55] PASS 1421-costigan-road-milton              att=2 $0.00170 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$540,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$618,500' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$422,500' → '$420,000' (sale, <$500K/$10K) (no input within tolerance)
+[CondoGen/market] 1440-clarriage-court-milton attempt 1: 0 violations (clean) | 3501in/423out | $0.00061
+[CondoGen/editorial] 1440-clarriage-court-milton attempt 1: 0 violations (clean) | 4348in/1032out | $0.00090
+[CondoGen] 1440-clarriage-court-milton combined: 481 words, editorial=1+market=1 attempts, total $0.00151, PASS
+[generateCondoBuilding] 1440-clarriage-court-milton: PUBLISHED — 481 words, 1 attempt(s), $0.00151.
+[ 18/55] PASS 1440-clarriage-court-milton            att=1 $0.00150 published abbr Y->n 9s
+[roundPrices] section=condoMarket '$567,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$640,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$518,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1440-main-street-milton attempt 1: 0 violations (clean) | 2930in/346out | $0.00051
+[roundPrices] faq[0] '$567,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 1440-main-street-milton attempt 1: 0 violations (clean) | 3777in/809out | $0.00076
+[CondoGen] 1440-main-street-milton combined: 410 words, editorial=1+market=1 attempts, total $0.00126, PASS
+[generateCondoBuilding] 1440-main-street-milton: PUBLISHED — 410 words, 1 attempt(s), $0.00126.
+[ 19/55] PASS 1440-main-street-milton                att=1 $0.00130 published abbr Y->n 7s
+[roundPrices] section=condoMarket '$719,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$556,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1450-main-street-milton attempt 1: 1 violation (invalid_json_shape) | 2892in/164out | $0.00045
+[CondoGen/market] 1450-main-street-milton attempt 2: 0 violations (clean) | 2953in/205out | $0.00047
+[CondoGen/editorial] 1450-main-street-milton attempt 1: 0 violations (clean) | 3739in/922out | $0.00078
+[CondoGen] 1450-main-street-milton combined: 336 words, editorial=1+market=2 attempts, total $0.00170, PASS
+[generateCondoBuilding] 1450-main-street-milton: PUBLISHED — 336 words, 2 attempt(s), $0.00170.
+[ 20/55] PASS 1450-main-street-milton                att=2 $0.00170 published abbr Y->n 7s
+[roundPrices] section=unitMix '$2,750' → '$2,800' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] section=condoMarket '$553,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$620,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$562,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$578,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1460-main-street-milton attempt 1: 0 violations (clean) | 3199in/384out | $0.00056
+[roundPrices] faq[0] '$553,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$562,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$620,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[1] '$2,750' → '$2,800' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 1460-main-street-milton attempt 1: 0 violations (clean) | 4046in/903out | $0.00082
+[CondoGen] 1460-main-street-milton combined: 420 words, editorial=1+market=1 attempts, total $0.00137, PASS
+[generateCondoBuilding] 1460-main-street-milton: PUBLISHED — 420 words, 1 attempt(s), $0.00137.
+[ 21/55] PASS 1460-main-street-milton                att=1 $0.00140 published abbr Y->n 8s
+[CondoGen/market] 1470-main-street-milton attempt 1: 0 violations (clean) | 2889in/335out | $0.00050
+[roundPrices] faq[0] '$645,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$681,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 1470-main-street-milton attempt 1: 1 violation (subk_range_reassembly) | 3736in/955out | $0.00079
+[roundPrices] faq[0] '$681,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$646,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 1470-main-street-milton attempt 2: 0 violations (clean) | 3900in/858out | $0.00079
+[CondoGen] 1470-main-street-milton combined: 397 words, editorial=2+market=1 attempts, total $0.00207, PASS
+[generateCondoBuilding] 1470-main-street-milton: PUBLISHED — 397 words, 2 attempt(s), $0.00207.
+[ 22/55] PASS 1470-main-street-milton                att=2 $0.00210 published abbr Y->n 15s
+[CondoGen/market] 1471-maple-avenue-milton attempt 1: 0 violations (clean) | 2810in/300out | $0.00048
+[CondoGen/editorial] 1471-maple-avenue-milton attempt 1: 0 violations (clean) | 3657in/802out | $0.00074
+[CondoGen] 1471-maple-avenue-milton combined: 358 words, editorial=1+market=1 attempts, total $0.00121, PASS
+[generateCondoBuilding] 1471-maple-avenue-milton: PUBLISHED — 358 words, 1 attempt(s), $0.00121.
+[ 23/55] PASS 1471-maple-avenue-milton               att=1 $0.00120 published abbr Y->n 7s
+[CondoGen/market] 1479-maple-avenue-milton attempt 1: 1 violation (invalid_json_shape) | 2816in/198out | $0.00045
+[CondoGen/market] 1479-maple-avenue-milton attempt 2: 0 violations (clean) | 2877in/242out | $0.00047
+[CondoGen/editorial] 1479-maple-avenue-milton attempt 1: 0 violations (clean) | 3663in/898out | $0.00076
+[CondoGen] 1479-maple-avenue-milton combined: 357 words, editorial=1+market=2 attempts, total $0.00168, PASS
+[generateCondoBuilding] 1479-maple-avenue-milton: PUBLISHED — 357 words, 2 attempt(s), $0.00168.
+[ 24/55] PASS 1479-maple-avenue-milton               att=2 $0.00170 published abbr Y->n 7s
+[CondoGen/editorial] 1483-maple-avenue-milton attempt 1: invalid_json_shape (missing faq array) — RETRY
+[CondoGen/market] 1483-maple-avenue-milton attempt 1: 0 violations (clean) | 2810in/354out | $0.00049
+[CondoGen/editorial] 1483-maple-avenue-milton attempt 2: 0 violations (clean) | 3715in/844out | $0.00076
+[CondoGen] 1483-maple-avenue-milton combined: 422 words, editorial=2+market=1 attempts, total $0.00181, PASS
+[generateCondoBuilding] 1483-maple-avenue-milton: PUBLISHED — 422 words, 2 attempt(s), $0.00181.
+[ 25/55] PASS 1483-maple-avenue-milton               att=2 $0.00180 published abbr Y->n 10s
+[roundPrices] section=condoMarket '$519,000' SKIPPED (within tolerance of input $502,000)
+[roundPrices] section=condoMarket '$502,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$639,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1487-maple-avenue-milton attempt 1: 1 violation (invalid_json_shape) | 2929in/181out | $0.00046
+[CondoGen/market] 1487-maple-avenue-milton attempt 2: 1 violation (invalid_json_shape) | 2990in/164out | $0.00046
+[CondoGen/editorial] 1487-maple-avenue-milton attempt 1: 0 violations (clean) | 3776in/843out | $0.00076
+[roundPrices] section=condoMarket '$519,000' SKIPPED (within tolerance of input $502,000)
+[roundPrices] section=condoMarket '$502,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$639,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1487-maple-avenue-milton attempt 3: 1 violation (invalid_json_shape) | 2990in/195out | $0.00047
+[roundPrices] section=condoMarket '$519,000' SKIPPED (within tolerance of input $502,000)
+[roundPrices] section=condoMarket '$502,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$639,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 1487-maple-avenue-milton attempt 4: 0 violations (clean) | 2990in/372out | $0.00052
+[roundPrices] section=condoMarket '$519,000' SKIPPED (within tolerance of input $502,000)
+[CondoGen] 1487-maple-avenue-milton combined: 407 words, editorial=1+market=4 attempts, total $0.00269, PASS
+[generateCondoBuilding] 1487-maple-avenue-milton: PUBLISHED — 407 words, 4 attempt(s), $0.00269.
+[ 26/55] PASS 1487-maple-avenue-milton               att=4 $0.00270 published abbr Y->n 11s
+[CondoGen/market] 1491-maple-avenue-milton attempt 1: 0 violations (clean) | 2851in/395out | $0.00051
+[CondoGen/editorial] 1491-maple-avenue-milton attempt 1: 0 violations (clean) | 3698in/840out | $0.00075
+[CondoGen] 1491-maple-avenue-milton combined: 439 words, editorial=1+market=1 attempts, total $0.00126, PASS
+[generateCondoBuilding] 1491-maple-avenue-milton: PUBLISHED — 439 words, 1 attempt(s), $0.00126.
+[ 27/55] PASS 1491-maple-avenue-milton               att=1 $0.00130 published abbr Y->n 7s
+[CondoGen/market] 153-main-street-milton attempt 1: 0 violations (clean) | 1990in/190out | $0.00033
+[CondoGen/editorial] 153-main-street-milton attempt 1: 0 violations (clean) | 3611in/720out | $0.00071
+[CondoGen] 153-main-street-milton combined: 306 words, editorial=1+market=1 attempts, total $0.00104, PASS
+[generateCondoBuilding] 153-main-street-milton: PUBLISHED — 306 words, 1 attempt(s), $0.00104.
+[ 28/55] PASS 153-main-street-milton                 att=1 $0.00100 published abbr Y->n 6s
+[generateCondoBuilding] 158-mill-street-milton: SKIPPED (zero-data — saleCount12mo=0, leaseCount12mo=0). No generation, no writes.
+[ 29/55] SKIP 158-mill-street-milton                 att=0 $0.00240 published abbr Y->Y 1s  zero_data
+[generateCondoBuilding] 174-bronte-street-milton: SKIPPED (zero-data — saleCount12mo=0, leaseCount12mo=0). No generation, no writes.
+[ 30/55] SKIP 174-bronte-street-milton               att=0 $0.00220 published abbr Y->Y 1s  zero_data
+[roundPrices] section=condoMarket '$668,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$710,000' SKIPPED (within tolerance of input $737,500)
+[roundPrices] section=condoMarket '$838,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$763,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$738,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$570,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 33-whitmer-street-milton attempt 1: 0 violations (clean) | 3323in/392out | $0.00057
+[roundPrices] faq[0] '$668,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 33-whitmer-street-milton attempt 1: 0 violations (clean) | 4170in/860out | $0.00082
+[roundPrices] section=condoMarket '$710,000' SKIPPED (within tolerance of input $737,500)
+[CondoGen] 33-whitmer-street-milton combined: 447 words, editorial=1+market=1 attempts, total $0.00140, PASS
+[generateCondoBuilding] 33-whitmer-street-milton: PUBLISHED — 447 words, 1 attempt(s), $0.00140.
+[ 31/55] PASS 33-whitmer-street-milton               att=1 $0.00140 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$579,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$551,000' SKIPPED (within tolerance of input $573,000)
+[roundPrices] section=condoMarket '$573,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$615,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 383-main-street-milton attempt 1: 0 violations (clean) | 3449in/354out | $0.00058
+[roundPrices] faq[0] '$579,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[1] '$2,850' SKIPPED (within tolerance of input $2,300)
+[CondoGen/editorial] 383-main-street-milton attempt 1: 0 violations (clean) | 4296in/985out | $0.00088
+[roundPrices] section=condoMarket '$551,000' SKIPPED (within tolerance of input $573,000)
+[roundPrices] faq[1] '$2,850' SKIPPED (within tolerance of input $2,300)
+[CondoGen] 383-main-street-milton combined: 482 words, editorial=1+market=1 attempts, total $0.00146, PASS
+[generateCondoBuilding] 383-main-street-milton: PUBLISHED — 482 words, 1 attempt(s), $0.00146.
+[ 32/55] PASS 383-main-street-milton                 att=1 $0.00150 published abbr Y->n 9s
+[CondoGen/market] 443-centennial-forest-drive-milton attempt 1: 1 violation (invalid_json_shape) | 2891in/113out | $0.00044
+[CondoGen/market] 443-centennial-forest-drive-milton attempt 2: 1 violation (invalid_json_shape) | 2952in/225out | $0.00048
+[CondoGen/editorial] 443-centennial-forest-drive-milton attempt 1: 0 violations (clean) | 3738in/870out | $0.00077
+[CondoGen/market] 443-centennial-forest-drive-milton attempt 3: 1 violation (invalid_json_shape) | 2952in/149out | $0.00046
+[CondoGen/market] 443-centennial-forest-drive-milton attempt 4: 1 violation (invalid_json_shape) | 2952in/173out | $0.00046
+[CondoGen/market] 443-centennial-forest-drive-milton attempt 5: 0 violations (clean) | 2952in/370out | $0.00052
+[CondoGen] 443-centennial-forest-drive-milton combined: 434 words, editorial=1+market=5 attempts, total $0.00311, PASS
+[generateCondoBuilding] 443-centennial-forest-drive-milton: PUBLISHED — 434 words, 5 attempt(s), $0.00311.
+[ 33/55] PASS 443-centennial-forest-drive-milton     att=5 $0.00310 published abbr Y->n 14s
+[CondoGen/market] 445-ontario-street-milton attempt 1: 0 violations (clean) | 1992in/162out | $0.00032
+[CondoGen/editorial] 445-ontario-street-milton attempt 1: 0 violations (clean) | 3613in/699out | $0.00070
+[CondoGen] 445-ontario-street-milton combined: 256 words, editorial=1+market=1 attempts, total $0.00103, PASS
+[generateCondoBuilding] 445-ontario-street-milton: PUBLISHED — 256 words, 1 attempt(s), $0.00103.
+[ 34/55] PASS 445-ontario-street-milton              att=1 $0.00100 published abbr Y->Y 6s
+[roundPrices] section=unitMix '$2,750' → '$2,800' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/market] 460-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 3476in/308out | $0.00057
+[roundPrices] faq[1] '$2,750' → '$2,800' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 460-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 4323in/866out | $0.00085
+[CondoGen] 460-gordon-krantz-avenue-milton combined: 325 words, editorial=1+market=1 attempts, total $0.00142, PASS
+[generateCondoBuilding] 460-gordon-krantz-avenue-milton: PUBLISHED — 325 words, 1 attempt(s), $0.00142.
+[ 35/55] PASS 460-gordon-krantz-avenue-milton        att=1 $0.00140 published abbr Y->Y 8s
+[roundPrices] section=unitMix '$2,750' → '$2,800' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/market] 470-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 2578in/155out | $0.00040
+[roundPrices] faq[6] '$2,750' → '$2,800' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 470-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 4199in/865out | $0.00083
+[CondoGen] 470-gordon-krantz-avenue-milton combined: 264 words, editorial=1+market=1 attempts, total $0.00123, PASS
+[generateCondoBuilding] 470-gordon-krantz-avenue-milton: PUBLISHED — 264 words, 1 attempt(s), $0.00123.
+[ 36/55] PASS 470-gordon-krantz-avenue-milton        att=1 $0.00120 published abbr Y->n 7s
+[CondoGen/editorial] 480-gordon-krantz-avenue-milton attempt 1: invalid_json_shape (missing faq array) — RETRY
+[roundPrices] section=unitMix '$2,850' SKIPPED (within tolerance of input $2,150)
+[CondoGen/market] 480-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 3392in/389out | $0.00058
+[roundPrices] faq[1] '$2,850' SKIPPED (within tolerance of input $2,150)
+[roundPrices] faq[1] '$2,850' SKIPPED (within tolerance of input $2,150)
+[CondoGen/editorial] 480-gordon-krantz-avenue-milton attempt 2: 0 violations (clean) | 4297in/952out | $0.00087
+[roundPrices] section=unitMix '$2,850' SKIPPED (within tolerance of input $2,150)
+[roundPrices] faq[1] '$2,850' SKIPPED (within tolerance of input $2,150)
+[roundPrices] faq[1] '$2,850' SKIPPED (within tolerance of input $2,150)
+[CondoGen] 480-gordon-krantz-avenue-milton combined: 472 words, editorial=2+market=1 attempts, total $0.00209, PASS
+[generateCondoBuilding] 480-gordon-krantz-avenue-milton: PUBLISHED — 472 words, 2 attempt(s), $0.00209.
+[ 37/55] PASS 480-gordon-krantz-avenue-milton        att=2 $0.00210 published abbr Y->n 10s
+[roundPrices] section=unitMix '$2,850' SKIPPED (within tolerance of input $2,200)
+[CondoGen/market] 490-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 2592in/175out | $0.00041
+[roundPrices] faq[6] '$2,850' SKIPPED (within tolerance of input $2,200)
+[CondoGen/editorial] 490-gordon-krantz-avenue-milton attempt 1: 0 violations (clean) | 4213in/861out | $0.00083
+[roundPrices] section=unitMix '$2,850' SKIPPED (within tolerance of input $2,200)
+[roundPrices] faq[6] '$2,850' SKIPPED (within tolerance of input $2,200)
+[CondoGen] 490-gordon-krantz-avenue-milton combined: 297 words, editorial=1+market=1 attempts, total $0.00124, PASS
+[generateCondoBuilding] 490-gordon-krantz-avenue-milton: PUBLISHED — 297 words, 1 attempt(s), $0.00124.
+[ 38/55] PASS 490-gordon-krantz-avenue-milton        att=1 $0.00120 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$589,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$592,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$665,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$597,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$608,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$539,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 610-farmstead-drive-milton attempt 1: 0 violations (clean) | 3564in/400out | $0.00061
+[roundPrices] faq[0] '$589,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 610-farmstead-drive-milton attempt 1: 0 violations (clean) | 4411in/903out | $0.00087
+[CondoGen] 610-farmstead-drive-milton combined: 414 words, editorial=1+market=1 attempts, total $0.00148, PASS
+[generateCondoBuilding] 610-farmstead-drive-milton: PUBLISHED — 414 words, 1 attempt(s), $0.00148.
+[ 39/55] PASS 610-farmstead-drive-milton             att=1 $0.00150 published abbr Y->n 8s
+[roundPrices] section=unitMix '$2,550' → '$2,600' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] section=condoMarket '$662,500' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$613,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 620-sauve-street-milton attempt 1: 0 violations (clean) | 3313in/423out | $0.00058
+[roundPrices] faq[0] '$613,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$662,500' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[1] '$2,550' → '$2,600' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 620-sauve-street-milton attempt 1: 0 violations (clean) | 4160in/871out | $0.00083
+[CondoGen] 620-sauve-street-milton combined: 461 words, editorial=1+market=1 attempts, total $0.00141, PASS
+[generateCondoBuilding] 620-sauve-street-milton: PUBLISHED — 461 words, 1 attempt(s), $0.00141.
+[ 40/55] PASS 620-sauve-street-milton                att=1 $0.00140 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$514,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$627,000' → '$625,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$553,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 630-sauve-street-milton attempt 1: 0 violations (clean) | 3478in/360out | $0.00059
+[roundPrices] faq[0] '$514,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 630-sauve-street-milton attempt 1: 0 violations (clean) | 4325in/894out | $0.00086
+[CondoGen] 630-sauve-street-milton combined: 454 words, editorial=1+market=1 attempts, total $0.00144, PASS
+[generateCondoBuilding] 630-sauve-street-milton: PUBLISHED — 454 words, 1 attempt(s), $0.00144.
+[ 41/55] PASS 630-sauve-street-milton                att=1 $0.00140 published abbr Y->n 8s
+[roundPrices] section=condoMarket '$683,700' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 640-sauve-street-milton attempt 1: 0 violations (clean) | 3446in/388out | $0.00059
+[CondoGen/editorial] 640-sauve-street-milton attempt 1: 0 violations (clean) | 4293in/922out | $0.00086
+[CondoGen] 640-sauve-street-milton combined: 449 words, editorial=1+market=1 attempts, total $0.00145, PASS
+[generateCondoBuilding] 640-sauve-street-milton: PUBLISHED — 449 words, 1 attempt(s), $0.00145.
+[ 42/55] PASS 640-sauve-street-milton                att=1 $0.00150 published abbr Y->n 8s
+[roundPrices] section=unitMix '$2,750' SKIPPED (within tolerance of input $2,500)
+[CondoGen/market] 6415-regional-road-25-milton attempt 1: 0 violations (clean) | 2536in/160out | $0.00040
+[CondoGen/editorial] 6415-regional-road-25-milton attempt 1: 0 violations (clean) | 4157in/801out | $0.00081
+[roundPrices] section=unitMix '$2,750' SKIPPED (within tolerance of input $2,500)
+[CondoGen] 6415-regional-road-25-milton combined: 291 words, editorial=1+market=1 attempts, total $0.00121, PASS
+[generateCondoBuilding] 6415-regional-road-25-milton: PUBLISHED — 291 words, 1 attempt(s), $0.00121.
+[ 43/55] PASS 6415-regional-road-25-milton           att=1 $0.00120 published abbr Y->n 7s
+[roundPrices] section=unitMix '$2,650' → '$2,700' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] section=condoMarket '$529,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$547,500' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$520,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 650-sauve-street-milton attempt 1: 0 violations (clean) | 3263in/358out | $0.00056
+[roundPrices] faq[0] '$529,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[1] '$2,650' → '$2,700' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[CondoGen/editorial] 650-sauve-street-milton attempt 1: 0 violations (clean) | 4110in/758out | $0.00079
+[CondoGen] 650-sauve-street-milton combined: 349 words, editorial=1+market=1 attempts, total $0.00134, PASS
+[generateCondoBuilding] 650-sauve-street-milton: PUBLISHED — 349 words, 1 attempt(s), $0.00134.
+[ 44/55] PASS 650-sauve-street-milton                att=1 $0.00130 published abbr Y->n 7s
+[roundPrices] section=unitMix '$528,300' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$528,300' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$571,500' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$599,500' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$536,750' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 716-main-street-milton attempt 1: 0 violations (clean) | 3471in/378out | $0.00059
+[roundPrices] section=condoMarket '$530,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$570,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$530,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 716-main-street-milton attempt 1: 0 violations (clean) | 4318in/1166out | $0.00093
+[CondoGen] 716-main-street-milton combined: 434 words, editorial=1+market=1 attempts, total $0.00152, PASS
+[generateCondoBuilding] 716-main-street-milton: PUBLISHED — 434 words, 1 attempt(s), $0.00152.
+[ 45/55] PASS 716-main-street-milton                 att=1 $0.00150 published abbr Y->n 10s
+[roundPrices] section=unitMix '$2,950' SKIPPED (within tolerance of input $1,950)
+[CondoGen/market] 720-whitlock-avenue-milton attempt 1: 0 violations (clean) | 2548in/153out | $0.00040
+[roundPrices] faq[5] '$2,950' SKIPPED (within tolerance of input $1,950)
+[CondoGen/editorial] 720-whitlock-avenue-milton attempt 1: 0 violations (clean) | 4169in/793out | $0.00081
+[roundPrices] section=unitMix '$2,950' SKIPPED (within tolerance of input $1,950)
+[roundPrices] faq[5] '$2,950' SKIPPED (within tolerance of input $1,950)
+[CondoGen] 720-whitlock-avenue-milton combined: 283 words, editorial=1+market=1 attempts, total $0.00121, PASS
+[generateCondoBuilding] 720-whitlock-avenue-milton: PUBLISHED — 283 words, 1 attempt(s), $0.00121.
+[ 46/55] PASS 720-whitlock-avenue-milton             att=1 $0.00120 published abbr Y->n 7s
+[roundPrices] section=unitMix '$2,650' SKIPPED (within tolerance of input $2,150)
+[CondoGen/market] 740-whitlock-avenue-milton attempt 1: 0 violations (clean) | 2544in/176out | $0.00041
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $2,150)
+[CondoGen/editorial] 740-whitlock-avenue-milton attempt 1: 0 violations (clean) | 4165in/851out | $0.00082
+[roundPrices] section=unitMix '$2,650' SKIPPED (within tolerance of input $2,150)
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $2,150)
+[CondoGen] 740-whitlock-avenue-milton combined: 318 words, editorial=1+market=1 attempts, total $0.00123, PASS
+[generateCondoBuilding] 740-whitlock-avenue-milton: PUBLISHED — 318 words, 1 attempt(s), $0.00123.
+[ 47/55] PASS 740-whitlock-avenue-milton             att=1 $0.00120 published abbr Y->n 8s
+[CondoGen/market] 750-whitlock-avenue-milton attempt 1: 0 violations (clean) | 2547in/151out | $0.00040
+[roundPrices] faq[5] '$2,850' SKIPPED (within tolerance of input $2,200)
+[CondoGen/editorial] 750-whitlock-avenue-milton attempt 1: 0 violations (clean) | 4168in/742out | $0.00079
+[roundPrices] faq[5] '$2,850' SKIPPED (within tolerance of input $2,200)
+[CondoGen] 750-whitlock-avenue-milton combined: 258 words, editorial=1+market=1 attempts, total $0.00119, PASS
+[generateCondoBuilding] 750-whitlock-avenue-milton: PUBLISHED — 258 words, 1 attempt(s), $0.00119.
+[ 48/55] PASS 750-whitlock-avenue-milton             att=1 $0.00120 published abbr Y->n 7s
+[CondoGen/market] 760-whitlock-avenue-milton attempt 1: 0 violations (clean) | 2549in/170out | $0.00040
+[CondoGen/editorial] 760-whitlock-avenue-milton attempt 1: 0 violations (clean) | 4170in/766out | $0.00080
+[CondoGen] 760-whitlock-avenue-milton combined: 256 words, editorial=1+market=1 attempts, total $0.00120, PASS
+[generateCondoBuilding] 760-whitlock-avenue-milton: PUBLISHED — 256 words, 1 attempt(s), $0.00120.
+[ 49/55] PASS 760-whitlock-avenue-milton             att=1 $0.00120 published abbr Y->n 7s
+[CondoGen/market] 770-whitlock-avenue-milton attempt 1: 0 violations (clean) | 2550in/156out | $0.00040
+[CondoGen/editorial] 770-whitlock-avenue-milton attempt 1: 0 violations (clean) | 4171in/821out | $0.00081
+[CondoGen] 770-whitlock-avenue-milton combined: 296 words, editorial=1+market=1 attempts, total $0.00121, PASS
+[generateCondoBuilding] 770-whitlock-avenue-milton: PUBLISHED — 296 words, 1 attempt(s), $0.00121.
+[ 50/55] PASS 770-whitlock-avenue-milton             att=1 $0.00120 published abbr Y->n 7s
+[CondoGen/market] 8010-derry-road-milton attempt 1: 0 violations (clean) | 3366in/321out | $0.00056
+[CondoGen/editorial] 8010-derry-road-milton attempt 1: 0 violations (clean) | 4213in/987out | $0.00087
+[CondoGen] 8010-derry-road-milton combined: 378 words, editorial=1+market=1 attempts, total $0.00143, PASS
+[generateCondoBuilding] 8010-derry-road-milton: PUBLISHED — 378 words, 1 attempt(s), $0.00143.
+[ 51/55] PASS 8010-derry-road-milton                 att=1 $0.00140 published abbr Y->n 8s
+[roundPrices] section=unitMix '$2,750' SKIPPED (within tolerance of input $2,100)
+[CondoGen/market] 8020-derry-road-milton attempt 1: 0 violations (clean) | 2559in/205out | $0.00042
+[roundPrices] faq[5] '$2,750' SKIPPED (within tolerance of input $2,100)
+[CondoGen/editorial] 8020-derry-road-milton attempt 1: 0 violations (clean) | 4180in/745out | $0.00079
+[roundPrices] section=unitMix '$2,750' SKIPPED (within tolerance of input $2,100)
+[roundPrices] faq[5] '$2,750' SKIPPED (within tolerance of input $2,100)
+[CondoGen] 8020-derry-road-milton combined: 270 words, editorial=1+market=1 attempts, total $0.00121, PASS
+[generateCondoBuilding] 8020-derry-road-milton: PUBLISHED — 270 words, 1 attempt(s), $0.00121.
+[ 52/55] PASS 8020-derry-road-milton                 att=1 $0.00120 published abbr Y->n 6s
+[roundPrices] section=condoMarket '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$588,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$578,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 81-millside-drive-milton attempt 1: 0 violations (clean) | 2929in/332out | $0.00050
+[roundPrices] faq[5] '$580,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 81-millside-drive-milton attempt 1: 0 violations (clean) | 3776in/832out | $0.00076
+[CondoGen] 81-millside-drive-milton combined: 418 words, editorial=1+market=1 attempts, total $0.00126, PASS
+[generateCondoBuilding] 81-millside-drive-milton: PUBLISHED — 418 words, 1 attempt(s), $0.00126.
+[ 53/55] PASS 81-millside-drive-milton               att=1 $0.00130 published abbr Y->n 7s
+[CondoGen/market] 82-millside-drive-milton attempt 1: 0 violations (clean) | 1986in/166out | $0.00032
+[CondoGen/editorial] 82-millside-drive-milton attempt 1: 0 violations (clean) | 3607in/732out | $0.00071
+[CondoGen] 82-millside-drive-milton combined: 283 words, editorial=1+market=1 attempts, total $0.00103, PASS
+[generateCondoBuilding] 82-millside-drive-milton: PUBLISHED — 283 words, 1 attempt(s), $0.00103.
+[ 54/55] PASS 82-millside-drive-milton               att=1 $0.00100 published abbr Y->n 7s
+[roundPrices] section=condoMarket '$815,000' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$905,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$872,450' → '$875,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$926,633' → '$925,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$799,500' → '$800,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 830-megson-terrace-milton attempt 1: 1 violation (invalid_json_shape) | 3480in/197out | $0.00054
+[roundPrices] section=unitMix '$2,950' SKIPPED (within tolerance of input $2,750)
+[roundPrices] section=unitMix '$815,200' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$815,200' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$905,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$872,450' → '$875,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$926,633' → '$925,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$799,500' → '$800,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$927,000' → '$925,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 830-megson-terrace-milton attempt 2: 1 violation (subk_range_reassembly) | 3541in/400out | $0.00061
+[roundPrices] faq[0] '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$927,000' → '$925,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/editorial] 830-megson-terrace-milton attempt 1: 0 violations (clean) | 4327in/842out | $0.00084
+[roundPrices] section=condoMarket '$815,000' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$905,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$870,000' → '$875,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$930,000' → '$925,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 830-megson-terrace-milton attempt 3: 1 violation (subk_range_reassembly) | 3630in/344out | $0.00060
+[roundPrices] section=unitMix '$815,000' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$815,000' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$926,633' → '$925,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$799,500' → '$800,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 830-megson-terrace-milton attempt 4: 1 violation (temporal_pairing) | 3628in/303out | $0.00059
+[roundPrices] section=condoMarket '$815,000' → '$825,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$905,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=condoMarket '$870,000' → '$875,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[CondoGen/market] 830-megson-terrace-milton attempt 5: 1 violation (invalid_json_shape) | 3619in/185out | $0.00056
+[routeCondoGeneration] 830-megson-terrace-milton: FAIL-CLOSED — 1 hard violation(s) queued in StreetGenerationReview (key=condo:830-megson-terrace-milton). Condo not published. StreetContent untouched.
+[generateCondoBuilding] 830-megson-terrace-milton: FAIL-CLOSED (retry exhausted) — CondoGeneration=failed, routed to review (condo:830-megson-terrace-milton). CondoContent untouched.
+[ 55/55] FAIL 830-megson-terrace-milton              att=5 $0.00370 published abbr Y->Y 15s  gen:failed
+
+[regen-condo] complete. passed 52, failed 1, skipped 2, deepseek cost $0.0855
+[regen-condo] revalidate /condos -> 401
