@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **Gate A approved 2026-09-08 and built on `feat/address-anchors`; awaiting preview review, NOT merged**. Items 4, 5, 6 and 7 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Items 4, 5, 6 and 7 **not started**.
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
@@ -114,7 +114,26 @@ Local build exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages.
 - [x] 2026-09-09: end padding, cross streets at the right edge and linked from the sentence,
       position in words, the exact footer sentence, two CTAs in the page's own card, and a
       14 px non-overlapping hit area for every mark whose label is suppressed. 52 assertions
-- [ ] **merge.** Preview gate applies; Aamir reviews `miltonly-5evd895mv` first
+- [x] **merged 2026-09-09**, approved by Aamir on preview `miltonly-jtca7e7qu` at `4810ad5`
+
+## DONE 2026-09-09, merged as `e14bfa2`
+
+Production `miltonly-c25astehn` serving `a6229a7`, confirmed on the apex through
+`/api/build`. Battery **`PASS · 9 checks · 444 pages · 61s`**, exit 0, at the full SHA.
+`scripts/verify/address-anchors.mjs` PASS on `https://miltonly.com`. All four anchor URLs
+return **200 with their `id` present in the served markup**:
+`/streets/pine-street-milton#262`, `/streets/mae-court-milton#71`,
+`/streets/mcphail-way-milton#3165`, `/streets/bell-school-line-milton#7295`.
+
+- [x] 380px tappability measured corpus-wide, not on one street: 442 ladders, 27,130 marks,
+      13,816 labels suppressed, minimum same-side gap exactly 14 px, zero below it, minimum
+      top 34 px, zero clipped ends. `scripts/measure-address-380.ts`
+- [x] `scratchpad/**` excluded from the app tsconfig (`a6229a7`), after a throwaway script
+      there failed a Vercel build. Proven both ways with a probe. Runnable `.ts` still
+      belongs in `scripts/`
+- [ ] **"Watch <Street>" points at `#street-alert`, not at a VIP signup.** There is no VIP
+      signup route in this codebase. Deliberate deviation from the brief; a distinct VIP
+      list is a new surface and a new decision
 
 ### Gate A reported 2026-09-04, not yet approved
 

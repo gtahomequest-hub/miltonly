@@ -116,3 +116,29 @@ promoted. The reviewable preview is unaffected.
 ## Not merged
 
 Unchanged from 059: the preview gate applies and Aamir reviews before merge.
+
+## Merged and verified on production, 2026-09-09
+
+Approved by Aamir on `miltonly-jtca7e7qu` at `4810ad5`. Merged as `e14bfa2`, with `a6229a7`
+on top adding `scratchpad/**` to the app tsconfig exclude, which closes the trap that failed
+`19883b7` rather than only working around it. Proven both ways with a probe carrying the exact
+failing shape: `tsc --noEmit` clean with the exclusion, the same `TS2802` without it.
+
+- **Local gate on main** exit 0, 18/18 prebuild, zero `P2024`, 546 static pages.
+- **Production** `miltonly-c25astehn`, Ready, serving `a6229a7`, confirmed on the apex.
+- **Battery on `https://miltonly.com`** `PASS · 9 checks · 444 pages · 61s`, exit 0, at the
+  full 40-character SHA.
+- **`scripts/verify/address-anchors.mjs`** PASS on production.
+- **The four anchor URLs on production**, each fetched and each searched for its own `id`
+  in the served markup:
+
+```
+/streets/pine-street-milton#262        200  id="262"   present
+/streets/mae-court-milton#71           200  id="71"    present
+/streets/mcphail-way-milton#3165       200  id="3165"  present
+/streets/bell-school-line-milton#7295  200  id="7295"  present
+```
+
+`bell-school-line-milton` still has no `StreetContent` row and still serves its 48-address
+ladder, which is the point: the section reads the Town projection and does not depend on a
+generated row.

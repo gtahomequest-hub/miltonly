@@ -1,38 +1,42 @@
 # Handoff
 
-_Last rewritten 2026-09-09, after verifying the six section changes at HEAD._
+_Last rewritten 2026-09-09, after `feat/address-anchors` merged and production verified._
 
 ## READ THIS FIRST
 
-**QUEUE item 3 is built and pushed and is NOT merged.** Branch `feat/address-anchors`.
-Three rounds landed: the build, the markup diet plus the directional-siblings recon
-(2026-09-08), and six section changes (2026-09-09). The preview gate applies and Aamir
-reviews before merge. Full record in
-`scratchpad/reports/059-address-anchors-build.md`.
+**QUEUE item 3 is MERGED and live.** `feat/address-anchors` merged to main as `e14bfa2`,
+with `a6229a7` on top of it. Production `miltonly-c25astehn` serves `a6229a7`, confirmed on
+the apex through `/api/build`. Battery **`PASS · 9 checks · 444 pages · 61s`**, exit 0, at
+the full SHA. The anchor verifier passes on `https://miltonly.com`. All four anchor URLs
+return 200 with their `id` present in the served markup. Approved by Aamir. Records in
+`scratchpad/reports/059-address-anchors-build.md` and
+`scratchpad/reports/060-address-ladder-verification.md`.
 
-**The six section changes were re-briefed on 2026-09-09 and were already built.** They
-landed in `c01a004`; `59d4f9e` after it is the handoff rewrite and carries no code. That
-run therefore changed **no component, no stylesheet and no library** — it verified each of
-the six against the code and against a deployed host, and closed step 6, which had not
-been done at HEAD because the only preview was one commit behind. Record in
-`scratchpad/reports/060-address-ladder-verification.md`. **Do not go looking for a diff of
-the section on this run; there is not one.**
+**`scratchpad/**` is now excluded from the app tsconfig** (`a6229a7`). It included
+`**/*.ts` and excluded only `node_modules`, `scripts/**` and `tmp-*`, so a throwaway script
+written to `scratchpad/` compiled under the **app's** tsconfig rather than the test one.
+That is how `19883b7` passed a local gate and failed its Vercel build in 45s. Proven both
+ways with a probe carrying the exact failing shape: `tsc --noEmit` clean with the exclusion,
+the same `TS2802` without it. **Runnable `.ts` still belongs in `scripts/`** — the exclusion
+closes the deploy hazard, it does not make `scratchpad/` a second home for code.
 
-**380px tappability is now measured corpus-wide, not on one street.**
-`scripts/measure-address-380.ts` renders all 442 ladders and reads placement back out of
-the markup: 27,130 marks, **13,816 labels suppressed**, minimum same-side gap **exactly
-14px** (the height a suppressed mark is given), **0** below it, minimum top **34px**
-(`END_PAD`), **0** clipped ends. The tightest pair in Milton is `25-side-road-milton`, not
-savoline. Half the corpus is drawn as a bare dot and every one is still a real target.
+**A local build started before a file is written does not cover that file.** The other half
+of the same lesson, and the reason the gate was green on a commit that could not deploy.
+Write first, then build.
 
-**This run broke a build and fixed it, and the reason is a trap worth knowing.** `19883b7`
-passed the local gate and failed on Vercel in 45s. The measurement script had been written
-to `scratchpad/audit/`, and **`tsconfig.json` type-checks `**/*.ts` while excluding only
-`node_modules`, `scripts/**` and `tmp-*`** — so a one-off script dropped anywhere but
-`scripts/` compiles under the app's tsconfig, not the test one. The local gate was green
-because the build had been started *before* the file existed. Fixed in `4810ad5` by moving
-it to `scripts/measure-address-380.ts`; identical numbers from the new path, local build
-green with the file present. **No deployment ever served the broken commit.**
+**380px tappability is measured corpus-wide.** `scripts/measure-address-380.ts` renders all
+442 ladders and reads placement back out of the markup: 27,130 marks, **13,816 labels
+suppressed**, minimum same-side gap **exactly 14px** (the height a suppressed mark is
+given), **0** below it, minimum top **34px** (`END_PAD`), **0** clipped ends. The tightest
+pair in Milton is `25-side-road-milton`. Half the corpus is drawn as a bare dot and every
+one of those is still a real target.
+
+**There is no VIP signup route in this codebase.** "Watch <Street>" points at
+`#street-alert`, the live street alert already on the page, which posts
+`property_address: <street name>`. `/exclusive` is a listings page with no form and `#vip`
+is a homepage strip of links. **This is a deliberate deviation from the brief, which asked
+for a VIP signup by name.** A distinct VIP list is a new surface and a new decision. The
+owner CTA prefills for real: `/sell?street=<name>#valuation`, read by `HomeValuationCard`.
 
 **The Anthropic account has no credit.** The Opus fallback fired on
 `bell-school-line-milton` and the API returned `400 invalid_request_error: Your credit
@@ -44,13 +48,13 @@ that escalates today fails closed rather than escalating, silently and for a rea
 is not in the code.
 
 **A street page renders without a `StreetContent` row.** `bell-school-line-milton` has
-no row and returns HTTP 200 on production. Gate A's phrase "a registry street with no
-page" meant no row; the route renders a profile-in-preparation page anyway. Anything
+no row and returns HTTP 200 on production — and now serves a 48-address ladder, because
+the section reads the Town projection and does not depend on a generated row. Anything
 that reasons about "which streets have pages" from `StreetContent` alone is counting a
 different thing from what is being served.
 
-**Published street pages: 445.** Every handoff before this one said 444. The battery
-still reports 444 pages; it counts a different population and both numbers are right.
+**Published street pages: 445.** The battery still reports 444; it counts a different
+population and both numbers are right.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus
 portion.** `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate
@@ -66,20 +70,18 @@ it. Do not audit a generation by rebuilding its input when the row carries a sna
 
 | | |
 |---|---|
-| `main` | **`3c308e6`** |
-| working branch | **`feat/address-anchors`**, pushed, **not merged** |
-| preview to review | **`miltonly-jtca7e7qu`**, at **`4810ad5`** — the one to review |
-| battery on that preview | **`PASS · 9 checks · 444 pages · 65s`**, exit 0, at the full SHA |
-| anchor verifier on it | **PASS**, four streets, `scripts/verify/address-anchors.mjs` |
-| superseded previews | `miltonly-qp2pdqh32` (`59d4f9e`), `miltonly-5evd895mv` (`c01a004`). Ignore both |
-| failed deploy | `miltonly-g52s7txii` at `19883b7`, build error, never served. Cause below |
-| production | serving `e815f28` |
+| `main` | **`a6229a7`**, item 3 merged |
+| production | **`miltonly-c25astehn`**, serving **`a6229a7`**, confirmed on the apex |
+| battery on production | **`PASS · 9 checks · 444 pages · 61s`**, exit 0, at the full SHA |
+| anchor verifier on production | **PASS**, four streets |
+| four anchor URLs on production | **200, `id` present in the served markup, all four** |
 | local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
+| working branch | `feat/address-anchors`, **merged**, safe to delete |
 | published street pages | **445** |
 | pages carrying an address ladder | **442** of 445; 27,130 civic addresses |
 | draft / unpublished | 41 / 4 |
 | generations carrying an input snapshot | 154 of 480 |
-| QUEUE | 1, 2 done; **3 built, awaiting preview review and merge**; 4, 5, 6, 7 not started |
+| QUEUE | 1, 2, **3 done**; 4, 5, 6, 7 not started |
 
 ## What happened 2026-09-08 — QUEUE item 3, address anchors
 
@@ -251,12 +253,12 @@ without the parameter.
   DB, no network at render time. Run it under `tsconfig.jsx-test.json` after any change to
   `DOT_GAP`, `END_PAD`, `LABEL_GAP` or `.s-m.s-q`. It reads
   `scratchpad/audit/060-slugs.txt`, which is the published set from the sitemap.
-- **A `.ts` file anywhere outside `scripts/` is type-checked by the Next build.**
-  `tsconfig.json` includes `**/*.ts` and excludes only `node_modules`, `scripts/**` and
-  `tmp-*`. `scratchpad/**` is NOT excluded. A one-off script dropped there compiles under
-  the app's tsconfig, not the test one, and **`19883b7` failed its Vercel build for exactly
-  that reason** (`RegExpStringIterator` without `--downlevelIteration`). Runnable `.ts`
-  goes in `scripts/`. `scratchpad/audit/` is for data artifacts.
+- **`tsconfig.json` type-checks `**/*.ts`**, excluding `node_modules`, `scripts/**`,
+  `scratchpad/**` and `tmp-*`. `scratchpad/**` was added in `a6229a7` after a throwaway
+  script there failed a Vercel build (`19883b7`, `TS2802`). **Runnable `.ts` still goes in
+  `scripts/`** — the exclusion closes a deploy hazard, it does not make `scratchpad/` a
+  second home for code. Anything outside those four exclusions compiles under the app's
+  tsconfig, not the test one.
 - **A local build started before a file is written does not cover that file.** The gate on
   `19883b7` was green and the deploy still failed, because the script was created while the
   build was running. Write first, then build.
@@ -271,8 +273,13 @@ without the parameter.
 
 ## Next expected task
 
-Review preview **`miltonly-jtca7e7qu`** (at `4810ad5`, battery PASS, anchor verifier
-PASS) and decide on merging `feat/address-anchors`. Everything the brief asked of the
-section is built and measured; what is left is the review, and the merge is Aamir's call.
-Failing that: the Anthropic credit balance (open item 1), item 8, or item 9. Do not
-self-start any of them.
+**QUEUE item 4, condo building names** — route the street component of every
+`CondoBuilding` address through `resolveStreetName`, keeping the house number, across the
+H1, the title, the meta description, the JSON-LD and the breadcrumb. 108 buildings. It is
+open item 14 as well: condo H1s still render abbreviations such as `Nadalin Hts`.
+
+Or, ahead of it if Aamir says so: the Anthropic credit balance (open item 1), which blocks
+three pages and any cron escalation; open item 8, the seven clips with
+`blur_verified: false`; open item 9, the two orphaned clips.
+
+**Do not self-start any of them.**
