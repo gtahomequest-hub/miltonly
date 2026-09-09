@@ -9,6 +9,7 @@
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 import { config } from "@/lib/config";
 import type { StreetVideoClip } from "@/lib/streetVideo";
+import type { AddressLadder } from "@/lib/streetAddresses";
 import type {
   StreetPageData,
   TypeSectionProps,
@@ -241,6 +242,48 @@ export function buildNearbyPlacesItemListSchema(
 }
 
 /**
+ * ItemList of the street's civic addresses — QUEUE item 3.
+ *
+ * PostalAddress and nothing else. There is deliberately NO `offers`, NO `AggregateOffer` and NO
+ * `price` on any item: an offers node on a single address is exactly the shape that would smuggle
+ * a per-address figure into structured data, and it is the one thing this list must never emit.
+ * The prebuild guard (scripts/test-address-anchors.ts) asserts that, so the rule survives an edit
+ * that forgets it.
+ *
+ * Each item's `url` is the in-page anchor the section renders, so the list and the DOM agree.
+ */
+export function buildAddressesItemListSchema(
+  ladder: AddressLadder | null,
+  streetSlug: string,
+  streetName: string
+): object | null {
+  if (!ladder || ladder.marks.length === 0) return null;
+  const base = `${SITE_URL}/streets/${streetSlug}`;
+  return {
+    "@type": "ItemList",
+    "@id": `${base}#addresses`,
+    name: `Addresses on ${streetName}`,
+    description: `Civic addresses on ${streetName} recorded by the Town of ${config.CITY_NAME}.`,
+    numberOfItems: ladder.marks.length,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: ladder.marks.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      // Four fields and no fifth. addressCountry was dropped 2026-09-08: addressRegion "ON"
+      // already disambiguates Milton, and on the longest street the field costs 24 bytes 387
+      // times over, twice, once in the markup and once in the inlined flight payload.
+      item: {
+        "@type": "PostalAddress",
+        streetAddress: `${m.number} ${streetName}`,
+        addressLocality: config.CITY_NAME,
+        addressRegion: config.CITY_PROVINCE_CODE,
+        url: `${base}#${m.number}`,
+      },
+    })),
+  };
+}
+
+/**
  * VideoObject for one resolved clip. Emitted for any page carrying video. Returns null
  * unless Google's required trio is satisfiable — name, uploadDate, and a thumbnailUrl
  * (the derived poster). `duration` is intentionally omitted: it has no source that is
@@ -296,6 +339,13 @@ export function buildStreetPageSchema(
     data.street.name
   );
   if (nearby) graph.push(nearby);
+
+  const addresses = buildAddressesItemListSchema(
+    data.addressLadder,
+    data.street.slug,
+    data.street.name
+  );
+  if (addresses) graph.push(addresses);
 
   // VideoObject per present clip — on any page carrying video (standard or minimal).
   if (data.video) {

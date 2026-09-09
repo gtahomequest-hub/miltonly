@@ -83,7 +83,12 @@ export default function HomeValuationCard({
   // Forest reuses the light-surface neutrals; only the accent colour differs.
   const onLight = isLight || isForest;
   const [submitted, setSubmitted] = useState(false);
-  const [yourHomeAddress, setYourHomeAddress] = useState("");
+  // ?street=<name> prefills the address field so a street page can hand the visitor a form
+  // that already knows which street they are on; they add their house number. Read once, as
+  // the initial value only, so typing is never fought by a later render. Nothing but the
+  // street name travels: no house number, no estimate, no figure.
+  const streetPrefill = useSearchParams().get("street") ?? "";
+  const [yourHomeAddress, setYourHomeAddress] = useState(streetPrefill);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");

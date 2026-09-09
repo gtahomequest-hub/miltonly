@@ -1,0 +1,9 @@
+// Test-scope tsconfig for the ONE prebuild guard that renders a component
+// (scripts/test-address-anchors.ts). Identical to tsconfig.test.json except for the JSX
+// runtime: the app's tsconfig sets "jsx": "preserve" because Next's bundler owns the
+// transform, and under tsx that falls back to the classic React.createElement factory,
+// which fails in a component written for the automatic runtime.
+{
+  "extends": "./tsconfig.test.json",
+  "compilerOptions": { "jsx": "react-jsx" }
+}

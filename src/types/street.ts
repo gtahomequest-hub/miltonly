@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import type { StreetSection, StreetFAQItem } from "./street-generator";
 import type { StreetEnrichment } from "@/lib/streetEnrichment";
 import type { StreetVideoView } from "@/lib/streetVideo";
+import type { AddressLadder } from "@/lib/streetAddresses";
 export type { StreetSection, StreetFAQItem, StreetSectionId, StreetGeneratorOutput, StreetGenerationMeta, StreetGeneratorInput, ValidatorViolation, ValidatorRule } from "./street-generator";
 
 // ───── Primitive building blocks ──────────────────────────────────────────
@@ -440,6 +441,9 @@ export interface StreetPageData {
   marketActivity: MarketActivityProps;
   commuteGrid: CommuteGridProps;
   activeInventory: ActiveInventoryProps;
+  /** QUEUE item 3 — the Town's civic addresses on this street, or null where the Town's address
+   *  layer carries none. Carries no price of any kind (see src/lib/streetAddresses.ts). */
+  addressLadder: AddressLadder | null;
   contextCards: ContextCardsProps;
   faqs: FAQItem[];
   finalCTAs: FinalCTAsProps;

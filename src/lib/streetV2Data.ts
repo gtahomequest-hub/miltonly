@@ -271,6 +271,10 @@ export function mapStreetV2Data(
       href: l.href,
     })),
 
+    // Pass-through, not a re-derivation. The ladder is built once in getStreetPageData from the
+    // Town projection plus the listing rows it already holds; nothing here re-reads either.
+    addresses: data.addressLadder,
+
     context: {
       similarStreets: data.contextCards.similarStreets.map((s) => ({
         slug: s.slug,

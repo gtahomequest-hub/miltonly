@@ -1,219 +1,278 @@
 # Handoff
 
-_Last rewritten 2026-09-05 (fifth pass, after `fix/zero-price-priorities` merged)._
+_Last rewritten 2026-09-09, after verifying the six section changes at HEAD._
 
 ## READ THIS FIRST
 
-**The corpus grounding sweep is done. Its residue is two pages, and both are understood.**
-479 generations audited, 154 regenerated, 152 published clean. `jasper-street-milton` and
-`wood-close-milton` stay draft. Detail in `scratchpad/reports/058-corpus-audit.md`.
+**QUEUE item 3 is built and pushed and is NOT merged.** Branch `feat/address-anchors`.
+Three rounds landed: the build, the markup diet plus the directional-siblings recon
+(2026-09-08), and six section changes (2026-09-09). The preview gate applies and Aamir
+reviews before merge. Full record in
+`scratchpad/reports/059-address-anchors-build.md`.
 
-**`fix/zero-price-priorities` is MERGED (`e815f28`), production confirmed.** Zero price is now
-defined on the street's own fields only; a named entity's figure is citeable when the prose
-names the entity; `differentPriorities` is gated on having two priced comparators; and
-`neighbourhoodComparable` is requested only when the input carries one. Page layout is a pure
-function of the input.
+**The six section changes were re-briefed on 2026-09-09 and were already built.** They
+landed in `c01a004`; `59d4f9e` after it is the handoff rewrite and carries no code. That
+run therefore changed **no component, no stylesheet and no library** — it verified each of
+the six against the code and against a deployed host, and closed step 6, which had not
+been done at HEAD because the only preview was one commit behind. Record in
+`scratchpad/reports/060-address-ladder-verification.md`. **Do not go looking for a diff of
+the section on this run; there is not one.**
 
-**`jasper-street-milton` is still not clean and stays draft.** The rules merged on their own
-merit, as agreed. What is left on that page is in open item 1 and is a different problem again.
+**380px tappability is now measured corpus-wide, not on one street.**
+`scripts/measure-address-380.ts` renders all 442 ladders and reads placement back out of
+the markup: 27,130 marks, **13,816 labels suppressed**, minimum same-side gap **exactly
+14px** (the height a suppressed mark is given), **0** below it, minimum top **34px**
+(`END_PAD`), **0** clipped ends. The tightest pair in Milton is `25-side-road-milton`, not
+savoline. Half the corpus is drawn as a bare dot and every one is still a real target.
 
-**82 of 154 stored snapshots now expect a different section count.** Live pages are unaffected
-— the validator does not run at render — but any future regeneration of those pages produces
-the shorter shape. That is the intended consequence of the layout rules, not a defect, and it
-is the number to have in mind before the next bulk run.
+**This run broke a build and fixed it, and the reason is a trap worth knowing.** `19883b7`
+passed the local gate and failed on Vercel in 45s. The measurement script had been written
+to `scratchpad/audit/`, and **`tsconfig.json` type-checks `**/*.ts` while excluding only
+`node_modules`, `scripts/**` and `tmp-*`** — so a one-off script dropped anywhere but
+`scripts/` compiles under the app's tsconfig, not the test one. The local gate was green
+because the build had been started *before* the file existed. Fixed in `4810ad5` by moving
+it to `scripts/measure-address-380.ts`; identical numbers from the new path, local build
+green with the file present. **No deployment ever served the broken commit.**
 
-**Every cost figure in every earlier handoff is wrong by 3x on the Opus portion.**
-`CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate of $15/$75 per
-MTok long after it moved to $5/$25, and `costUsd` is computed from that table and written to
-`StreetGeneration`. Corrected 2026-09-05. **Rows written before that commit still hold the
-inflated number and were not rewritten** — the per-model token split needed to restate them
-is not stored. Nothing enforces that table; check it against the current rate sheet before
-trusting a cost claim.
+**The Anthropic account has no credit.** The Opus fallback fired on
+`bell-school-line-milton` and the API returned `400 invalid_request_error: Your credit
+balance is too low to access the Anthropic API`. That is the live blocker on every page
+DeepSeek cannot clear on its own, which today is `jasper-street-milton`,
+`wood-close-milton` and `bell-school-line-milton`. Nothing in the code can route around
+it. **`AI_PROVIDER_FALLBACK="opus"` is still set in production**, so a cron generation
+that escalates today fails closed rather than escalating, silently and for a reason that
+is not in the code.
 
-**A generation stores the input it was written from.** `StreetGeneration.inputJson`. Use it.
-Do not audit a generation by rebuilding its input when the row carries a snapshot — a rebuild
-draws a different `crossStreets` set and reports figures as ungrounded that the page was
-given.
+**A street page renders without a `StreetContent` row.** `bell-school-line-milton` has
+no row and returns HTTP 200 on production. Gate A's phrase "a registry street with no
+page" meant no row; the route renders a profile-in-preparation page anyway. Anything
+that reasons about "which streets have pages" from `StreetContent` alone is counting a
+different thing from what is being served.
 
-Two decisions waiting:
+**Published street pages: 445.** Every handoff before this one said 444. The battery
+still reports 444 pages; it counts a different population and both numbers are right.
 
-1. **Seven clips are live with `blur_verified: false`**, all from the 2026-09-03 run.
-2. **Two clips remain orphaned** under slugs that are not real streets.
+**Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus
+portion.** `CLAUDE_MODELS` in `src/lib/ai/compliance.ts` carried the 2026-05 Opus rate
+of $15/$75 per MTok long after it moved to $5/$25. Corrected 2026-09-05; rows written
+before that still hold the inflated number and cannot be restated from what is stored.
+Nothing enforces that table. Check it against the current rate sheet before trusting a
+cost claim.
+
+**A generation stores the input it was written from.** `StreetGeneration.inputJson`. Use
+it. Do not audit a generation by rebuilding its input when the row carries a snapshot.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | **`e815f28`** |
-| production | serving `e815f28`, confirmed via `/api/build` |
-| battery | **`PASS · 9 checks · 443 pages · 65s`**, exit 0, on production at the full SHA |
-| local build | exit 0, zero `P2024`, **17/17 prebuild** |
-| production | serving `e39c26a`, confirmed via `/api/build` |
-| battery | **`PASS · 9 checks · 443 pages · 63s`**, exit 0, at the full SHA. Ran before `geddes-landing` published, so it counted 443 against today's 444 |
-| local build | exit 0, zero `P2024`, **14/14 prebuild** |
-| published street pages | **444** |
+| `main` | **`3c308e6`** |
+| working branch | **`feat/address-anchors`**, pushed, **not merged** |
+| preview to review | **`miltonly-jtca7e7qu`**, at **`4810ad5`** — the one to review |
+| battery on that preview | **`PASS · 9 checks · 444 pages · 65s`**, exit 0, at the full SHA |
+| anchor verifier on it | **PASS**, four streets, `scripts/verify/address-anchors.mjs` |
+| superseded previews | `miltonly-qp2pdqh32` (`59d4f9e`), `miltonly-5evd895mv` (`c01a004`). Ignore both |
+| failed deploy | `miltonly-g52s7txii` at `19883b7`, build error, never served. Cause below |
+| production | serving `e815f28` |
+| local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
+| published street pages | **445** |
+| pages carrying an address ladder | **442** of 445; 27,130 civic addresses |
 | draft / unpublished | 41 / 4 |
 | generations carrying an input snapshot | 154 of 480 |
-| QUEUE | 1, 2 done; 3 Gate A awaiting approval; 4, 5, 6, 7 not started |
+| QUEUE | 1, 2 done; **3 built, awaiting preview review and merge**; 4, 5, 6, 7 not started |
 
-## The fallback model — settled
+## What happened 2026-09-08 — QUEUE item 3, address anchors
 
-`AI_PROVIDER_FALLBACK="opus"` in production. **Decided 2026-09-05: it stays.** When a
-generation half exhausts its retry budget, that half re-runs on Claude Opus; unset, it fails
-closed.
+`/streets/<slug>#<houseNumber>` on every published street the Town has address points
+for. Read report 059 before touching any of it; the summary below is the shape, not the
+detail.
 
-The code's Sonnet entry was corrected to `claude-sonnet-5` in the same pass (the old
-`claude-sonnet-4-6` was a previous generation, and Sonnet 5 is both newer and cheaper), so
-anything that selects `sonnet` now gets the current model. Nothing selects it.
+**The sourcing is a build-time projection, not a render-time import.**
+`src/data/townAddressPoints.ts` declares itself ingest-only and is 1.4 MB.
+`scripts/town/gen-street-addresses.ts` consumes it and emits
+`src/data/streetAddresses.ts` — 901 identities, 40,826 addresses, 3,048 placed cross
+streets, 432 KB, and **no coordinate per house**. It parses the ingest module's packed
+literal as text and asserts the row count against the constant that module exports, so a
+re-pull that changes the table fails the generator instead of drifting. **Re-run the
+generator whenever `townAddressPoints.ts` is re-pulled.**
 
-The measurement behind the decision, on `geddes-landing`, the one page that escalates
-reliably: **Opus fired on two halves and passed** ($0.4085); **Sonnet 5 fired on all three and
-failed**. One trial each. The fallback exists to clear what the primary cannot, and on the
-only head-to-head escalating page Sonnet did not.
+**Position is walked per side, in house-number order.** A merged walk accumulates the
+road width on every step, because consecutive numbers alternate across the roadway; on a
+short street that inflates the total by more than the street is long. Walking by number
+rather than projecting onto a straight axis is also what makes crescents, courts and
+circles come out right.
 
-## What happened 2026-09-05
+**A cross-street tick is a nearest-pair estimate within 150 m**, not a surveyed
+intersection. It links only where `StreetAdjacency` already holds the pair, because
+every `connectedSlug` there is a published street; everything else is a label.
 
-**`StreetGeneration.inputJson` shipped** (`feat/gen-input-snapshot`, merged `c953b9e`). Both
-write paths fill it at all ten sites where `inputHash` is written.
-`scripts/test-input-snapshot.ts` asserts the pairing at every site and found a genuinely
-unpaired site on its first run.
+**What the section may carry stops at building form and live status.** Never, at any k:
+a sold price, a sold date, an owner, a historical listing, or a per-address coordinate.
+A single address is a population of one. The summary sentence is generated from the data
+and never written by a model. The `ItemList` is `PostalAddress` and nothing else, with
+no `offers` and no `price`.
 
-**154 pages regenerated.** 138 on the first pass (DeepSeek only, `$0.9443`), then the 13
-published residue with the Opus fallback (13 of 13, `$1.2566` recorded at the stale rate,
-about **$0.42** at the corrected one). Gate flags across the regenerated set went from 138 of
-138 to zero.
+**`scripts/test-address-anchors.ts` is the 18th prebuild test, 52 assertions.** It
+renders the section and reads the ids back out of the markup rather than asserting that
+a file imports something — the pattern open item 9 still wants applied to the name
+guard, and it now counts mark tags against mark count so a wrapper cannot creep back in.
+It runs under `tsconfig.jsx-test.json`, which exists only to set
+`"jsx": "react-jsx"`; the app's tsconfig says `preserve` and under `tsx` that fails in a
+component written for the automatic runtime.
 
-**A zero-price street's prompt now says so.** `isZeroPrice` + `buildZeroPricePreamble`,
-prepended to all three prompts — the thin-data preamble is market-scoped and every residue
-failure was in the eval half. `scripts/test-zero-price-prompt.ts` is the 14th prebuild test,
-15 assertions. **It did not clear the three zero-tier pages on DeepSeek alone**: `geddes` and
-`jasper` still wrote a price into the FAQ. `geddes-landing` is live because the Opus fallback
-cleared it. The prompt is right and worth keeping; DeepSeek is not strong enough to hold it.
+**`scripts/verify/address-anchors.mjs`** is the deployed-host check. It strips React's
+`<!-- -->` text separator before matching heading text, which is the one difference
+between the served page and the local render the prebuild guard reads.
 
-**`jasper-street` was then attempted with the Opus fallback and still failed, $0.5330.** That
-run is the useful one: it proves the preamble works and that what is left is a different
-problem. See open item 1.
+**`scripts/create-street-page.ts` is new.** `regen-058-local.ts` is a *re*generation
+runner and skips any slug with no `StreetContent` row, which is exactly the case for a
+street that has never been generated. The new script copies its provider discipline
+verbatim and adds the entity floor as a refusal.
 
-**`fix/zero-price-priorities` (pushed, not merged).** `differentPriorities` is not requested
-when the input carries no price at any grain, its FAQ arm leaves the bank, and a new hard rule
-`zero_price_priorities` rejects the section if it appears regardless. The presence check is
-deliberately separate from the section count: a no-price T2 page that wrongly includes the
-section lands on 7, which is a valid count, so the length check alone would report a position
-mismatch rather than the real fault. The total word floor drops by that section's own minimum,
-because holding a page to a count including a section it may not write is a retry it cannot
-win. `scripts/test-zero-price-priorities.ts` is the 15th prebuild test, 19 assertions over
-both suppression and rejection — a generator that stops asking is not a guarantee, since a
-model can still volunteer the section. Build exit 0, zero `P2024`, 15/15 prebuild, battery
-**`PASS · 9 checks · 443 pages · 73s`** on preview `miltonly-ivgrwnsvs`.
+**Page weight, after the diet.** An address is ONE tag whose detail lives in a single
+`data-d` attribute that CSS draws on interaction. `savoline-boulevard-milton`
+(387 addresses) went 745 KB to **421 KB** raw and 42.1 KB to **37.2 KB** compressed.
 
-**Zero-price scope, merged as `e815f28`.** Three rule changes.
-`inputHasNoPriceAtAnyGrain` no longer counts `neighbourhoodComparable` — the neighbourhood's
-typical is a real figure about a different entity, not this street's price — and does now count
-`byType` and `quarterlyTrend`, which are this street's own and were being missed.
-`findZeroTierPrices` stopped banning all currency: it fires on a figure matching **nothing** in
-the whole input, or on a named entity's figure used **without naming the entity** — the number
-real, the attribution invented. That closes the asymmetry where `collectInputPrices` counted
-`crossStreets` and the gate did not. `differentPriorities` is gated on **two priced
-comparators**, independent of this street's price, so a fully priced street with one comparator
-is suppressed too. `neighbourhoodComparable` is requested only when the input carries one.
-Layout is a pure function of the input — it used to be inferred from the output's own length,
-which let a wrong shape pick the order that excused it — and both section-presence checks run
-**before** the count check, because a wrong count is a true statement that explains nothing.
-Three new prebuild cases; 17/17.
+**The 250 KB raw target is WITHDRAWN and the full `ItemList` stays. Decided 2026-09-09.**
+The arithmetic is in report 059: the App Router inlines the RSC flight payload, so
+everything is served twice, and the `ItemList` alone costs 184 KB against a 152 KB budget
+— over budget before a single address element is drawn. Fitting 250 KB would have meant
+cutting the list to about 40 of 387 addresses. After the 2026-09-09 changes savoline is
+**437 KB raw and 38 KB compressed**, up 4% on the words and the CTA block. Compressed is
+what a browser and a crawler actually pay.
 
-**FAQ bank withdrawal (same branch).** Seven templates leave the bank on a zero-price input —
-typical price, price range, why-homes-trade-differently, both rental questions, investor fit,
-and the similar-streets closer. Nine survive, over the four-question floor below which the FAQ
-is dropped whole rather than padded. `faqCountBoundsFor` also narrows the 6-8 band to what the
-bank can supply, so the floor can never exceed the shelf. `zero_price_faq_question` is its own
-rule rather than reusing `faq_question_out_of_bank`, because "not in bank" reads as a typo and
-invites a reworded re-ask. The render fallback in `street-data.ts` had the same defect in
-miniature — its no-basis branch asked for a typical price and answered with a referral — and
-that question is now dropped when there is no basis. 16th prebuild test. Battery
-**`PASS · 9 checks · 443 pages · 65s`** on preview `miltonly-8dok4xrip`.
+**What landed 2026-09-09.** 34 px reserved at both ends of the spine so no end label is
+clipped. Cross-street names moved to the right edge of their rule, in mono, truncated with
+an ellipsis and carrying the full name in `title`, linked where the street has a published
+page — and the summary sentence now links the same names on the same rule, which is what
+`summaryNodes` is for. Position reads in words (`midway`, `near the Charles Street end`)
+with the fraction kept on the end of `data-d` for the guard. The footer is the exact
+sentence asked for, held verbatim by the guard and the deployed verifier. Two CTAs in the
+page's own final-CTA card, no new colour: `/sell?street=<name>#valuation` and
+`#street-alert`. **`DOT_GAP` went 7 to 14 px and is now the hit area of a quiet mark**, so
+no two targets can overlap; measured on savoline, 387 marks, 331 labels suppressed,
+minimum same-side gap exactly 14 px on both sides, zero below. Guard at 52 assertions.
 
-**Corrections to yesterday's report.** The "474 of 474 drifted" figure was a 12-vs-64-char
-hash comparison bug; the real split is **13 identical, 461 changed**, and all 13 identical rows
-carry zero gate flags. And `$0.009` per page is the DeepSeek rate, not a whole-corpus rate.
+**There is no VIP signup route in this codebase.** "Watch <Street>" points at
+`#street-alert`, the live street alert already on the page. `/exclusive` is a listings page
+with no form and `#vip` is a homepage strip of links. A distinct VIP list would be a new
+surface and a new decision. Re-checked 2026-09-09 against the brief, which asked for a VIP
+signup by name: **this is still the deviation, and it is deliberate.** The alert posts
+`source: "street-alert"` with `property_address: <street name>`, so the street travels the
+way a prefill would carry it. The owner CTA does prefill for real — `/sell?street=<name>`,
+read by `HomeValuationCard` as the initial address value.
+
+**Cross-street links verified against the published set, not just against the code.** On
+pine-street the section draws 8 ticks; the 4 published ones link, the 4 that are not
+(`maiden-lane`, `fulton-street`, `prince-street`, `bruce-street`) carry no link and are
+absent from the sitemap, all 8 carry `title`, and the summary sentence links the same 4.
+
+**`HomeValuationCard` now reads `?street=`** as the initial value of its address field. The
+component is shared with `/sell`, the sold pages and `/value`, and the change is inert
+without the parameter.
 
 ## Open items
 
-1. **Two pages cannot be generated. `jasper-street`'s blocker has moved twice and is now
-   comparator attribution.**
-
-   **`jasper-street-milton`** — regenerated on DeepSeek after the merge, **$0.0150, failed,
-   still draft**. The layout rules worked: **`invalid_json_shape` is gone entirely**, the
-   `aha` half went clean on attempt 5, `differentPriorities` is correctly requested again now
-   that its two priced comparators are recognised, and no `neighbourhoodComparable` section is
-   asked for. What remains:
-
-   - `invented_cross_street: Dorset Park` (x4) — the model attaches a **neighbourhood name** to
-     a comparator street. `crossStreets[].neighbourhood` exists in the schema and jasper's
-     comparators do not carry it, so any location claim about them is invented. This is the
-     live blocker.
-   - `zero_tier_price` + `numeric_ungrounded` on `$800,000` in `homes` and the FAQ — the model
-     invents an Old Milton typical. jasper has **no** neighbourhood comparable, so there is no
-     figure to cite and the new rule correctly calls it grounded in nothing.
-   - `zero_price_faq_question` (x2) — still asks the withdrawn typical-price question.
-   - `fair_housing_register` once.
-
-   None of these is a new rule misfiring; each is DeepSeek declining an instruction it was
-   given. Whether that page is worth more spend is a judgement call, not a technical one.
-
-   **`wood-close-milton`** — `getStreetStats()` returns `No stats available` and it fails in
-   **one second**, before a prompt is ever built. No prompt, section or FAQ change can reach
-   it; the stats gate is the thing to look at.
-
-2. **Pre-2026-09-05 `costUsd` rows overstate Opus-assisted generations by 3x.** Not
+1. **The Anthropic account has no credit, and it is the only path for three pages.**
+   `bell-school-line-milton` was the new one this task tried. It passes
+   `makeStreetDecision` and `getStreetStats`; the stale `NoCentroidError` on its queue
+   row is cleared by the Town-centreline step in `resolveCentroid`. What fails is the
+   eval half, on the jasper pattern exactly: `invalid_json_shape` plus
+   `zero_price_faq_question` on all 5 attempts. Two active listings near $4M and zero
+   sold in the window, so the zero-price rules fire correctly and DeepSeek will not hold
+   them. $0.042 spent, nothing written, fail-closed. `jasper-street-milton` and
+   `wood-close-milton` are the other two, and `wood-close` is a different fault: its
+   `getStreetStats()` returns `No stats available` in one second, before a prompt exists.
+2. **No two published pages share an address ladder. An earlier note here said they did
+   and it was wrong.** That claim reasoned from the identity model rather than the data.
+   Measured 2026-09-08 by `scripts/recon-directional-siblings.ts`: across 490
+   `StreetContent` rows, exactly **one** identity key carries more than one row, and it is
+   not directional — `jarrett-cross-milton` (unpublished, resolves through the fallback
+   chain) and `jarrett-crossing-milton` (published, resolves through the registry) both sit
+   on `jarrett||crossing`. **Groups where more than one row is published: 0.** The registry
+   carries exactly two compass-word streets, `kennedy-circle-east-milton` and
+   `kennedy-circle-west-milton`; neither has a page, they collide with each other on
+   `kennedy-circle||` and NOT with the published `kennedy-circle-milton` (`kennedy||circle`),
+   and `kennedy-circle||` has no Town address points at all. There is no Bronte North/South
+   pair in the registry or in `StreetContent`. The exposure is future and it is a publish
+   decision, not a render bug.
+3. **Pre-2026-09-05 `costUsd` rows overstate Opus-assisted generations by 3x.** Not
    rewritable from what is stored. Treat historical cost claims as upper bounds.
-3. **The DOM rule cannot read the neighbourhood's DOM.** `findUngroundedNumerics` compares a
-   `days` token only against `input.aggregates.daysOnMarket`, never
-   `neighbourhoodComparable.daysOnMarket`. 86 regenerated pages cite the neighbourhood figure
-   correctly and would fire if the rule were widened past the market section. Fix the field
-   before widening the scope.
-4. **Grounding is still enforced on zero and thin only, dollars only.** Counts, percentages,
-   days and quarter labels remain market-scoped on every tier.
-5. **The two generation paths digest `inputHash` at different widths** (64 vs 12 chars), so
-   `backfill-descriptions.ts`'s idempotency check can never match a row the cron wrote. The
-   bulk path has been silently regenerating cron-written rows.
-6. **`claude-haiku-4-5-20251001` carries a date suffix**; the current id is
-   `claude-haiku-4-5`. It still resolves, so this is hygiene, not a fault. Production's
-   `AI_PROVIDER_MARKET="haiku"` means the market half runs on it.
-7. **Seven live clips carry `blur_verified: false`** (`chretien-street`, `clifford-point`,
-   `frost-court`, `heaven-crescent`, `mulroney-heights`, `shade-lane`, `tasker-court`).
-   Decision: verify or pull.
-8. **Two orphaned clips** under slugs that are not real streets. GPS has been taken as far as
-   it goes; someone has to watch the footage.
-9. **`makeStreetDecision`'s minimum-data gate** — QUEUE item 7. Measured: 831 slugs carry DB2
-   records, 419 are skipped as low-data, 103 of those already have a page and 316 have none.
-   The brief's figure of 46 does not reproduce; the count is unfiltered for the registry.
-10. **The name guard's blind spot**: it asserts a file *imports* the resolver, not that every
-    consumer uses the resolved value. `test-input-snapshot.ts` is the pattern for fixing it.
-11. `burnhamthorpe-road-milton` and `louis-st-laurent-avenue-milton` are entity-real with no
-    data behind them.
-12. `heroSearch.ts` resolves 5 slugs to physically different streets; needs an ambiguity guard.
-13. Condo H1s still render abbreviations such as `Nadalin Hts`. QUEUE item 4.
-14. Stored `HubContent.metaDescription` drifts from live on 21 of 22 hubs.
-15. Rent pill disagrees with the market card on `melville-bonus-crescent-milton` and
+4. **The DOM rule cannot read the neighbourhood's DOM.** `findUngroundedNumerics`
+   compares a `days` token only against `input.aggregates.daysOnMarket`, never
+   `neighbourhoodComparable.daysOnMarket`. 86 regenerated pages cite the neighbourhood
+   figure correctly and would fire if the rule were widened. Fix the field before
+   widening the scope.
+5. **Grounding is still enforced on zero and thin only, dollars only.** Counts,
+   percentages, days and quarter labels remain market-scoped on every tier.
+6. **The two generation paths digest `inputHash` at different widths** (64 vs 12 chars),
+   so `backfill-descriptions.ts`'s idempotency check can never match a row the cron
+   wrote. The bulk path has been silently regenerating cron-written rows.
+7. **`claude-haiku-4-5-20251001` carries a date suffix**; the current id is
+   `claude-haiku-4-5`. Hygiene, not a fault. Production's `AI_PROVIDER_MARKET="haiku"`
+   means the market half runs on it.
+8. **Seven live clips carry `blur_verified: false`** (`chretien-street`,
+   `clifford-point`, `frost-court`, `heaven-crescent`, `mulroney-heights`, `shade-lane`,
+   `tasker-court`). Decision: verify or pull.
+9. **Two orphaned clips** under slugs that are not real streets. GPS has been taken as
+   far as it goes; someone has to watch the footage.
+10. **`makeStreetDecision`'s minimum-data gate** — QUEUE item 7. Measured: 831 slugs
+    carry DB2 records, 419 are skipped as low-data, 103 of those already have a page and
+    316 have none. The brief's figure of 46 does not reproduce.
+11. **The name guard's blind spot**: it asserts a file *imports* the resolver, not that
+    every consumer uses the resolved value. `test-input-snapshot.ts` and now
+    `test-address-anchors.ts` are the pattern for fixing it.
+12. `burnhamthorpe-road-milton` and `louis-st-laurent-avenue-milton` are entity-real with
+    no data behind them.
+13. `heroSearch.ts` resolves 5 slugs to physically different streets; needs an ambiguity
+    guard.
+14. Condo H1s still render abbreviations such as `Nadalin Hts`. QUEUE item 4.
+15. Stored `HubContent.metaDescription` drifts from live on 21 of 22 hubs.
+16. Rent pill disagrees with the market card on `melville-bonus-crescent-milton` and
     `mcdougall-crossing-milton`.
-16. `video.miltonly.com` still unattached. `r2.dev` is rate-limited and not intended for
+17. `video.miltonly.com` still unattached. `r2.dev` is rate-limited and not intended for
     production traffic at volume.
-17. Two draft rows carry a clip: `diefenbaker-street-milton`, `murlock-heights-milton`.
+18. Two draft rows carry a clip: `diefenbaker-street-milton`, `murlock-heights-milton`.
+19. **11 slugs have R2 clips uploaded and no `StreetContent` row.** Generation candidates,
+    blocked by open item 1 wherever DeepSeek cannot clear them.
 
 ## Notes for the next run
 
 - **The battery takes the full 40-character SHA.** A short SHA fails the gate on a string
-  compare and aborts before any content check.
-- `scripts/regen-058-local.ts` runs the generator in-process with the primaries forced to
-  DeepSeek. `REGEN_FALLBACK` opts into the Claude escalation, `REGEN_CAP_USD` caps the spend,
-  `REGEN_ORDER` and `REGEN_LOG` point it at a set. It refuses to start if a primary is aimed
-  at Claude.
+  compare and aborts before any content check. `EXPECT_SHA` overrides local HEAD, which
+  is what you want when running it from a branch against a preview.
+- `scripts/verify/address-anchors.mjs` takes `BASE` and checks four streets. Run it on
+  any host that should be serving the ladder. The four anchor URLs it proves:
+  `/streets/pine-street-milton#262`, `/streets/mae-court-milton#71`,
+  `/streets/mcphail-way-milton#3165`, `/streets/bell-school-line-milton#7295`.
+  The last has **no `StreetContent` row** and renders its ladder anyway — the address
+  section reads the Town projection and does not depend on a generated row.
+- `scripts/measure-address-380.ts` re-measures the 380px hit areas corpus-wide. Pure, no
+  DB, no network at render time. Run it under `tsconfig.jsx-test.json` after any change to
+  `DOT_GAP`, `END_PAD`, `LABEL_GAP` or `.s-m.s-q`. It reads
+  `scratchpad/audit/060-slugs.txt`, which is the published set from the sitemap.
+- **A `.ts` file anywhere outside `scripts/` is type-checked by the Next build.**
+  `tsconfig.json` includes `**/*.ts` and excludes only `node_modules`, `scripts/**` and
+  `tmp-*`. `scratchpad/**` is NOT excluded. A one-off script dropped there compiles under
+  the app's tsconfig, not the test one, and **`19883b7` failed its Vercel build for exactly
+  that reason** (`RegExpStringIterator` without `--downlevelIteration`). Runnable `.ts`
+  goes in `scripts/`. `scratchpad/audit/` is for data artifacts.
+- **A local build started before a file is written does not cover that file.** The gate on
+  `19883b7` was green and the deploy still failed, because the script was created while the
+  build was running. Write first, then build.
+- `scripts/recon-address-anchors.ts` reports per-street ladder shape and corpus coverage.
+- `scripts/create-street-page.ts` creates a page that does not exist; `regen-058-local.ts`
+  regenerates one that does. Neither can run a Claude primary pass.
 - `scripts/audit-corpus-grounding.ts` rebuilds inputs and reports false positives on
   comparator figures. Prefer `inputJson` on any row that has one.
-- Whether the fallback fires at all is stochastic — the same page escalated on one run and
-  passed on DeepSeek at attempt 2 on the next. A single-page A/B proves less than it looks.
+- Whether the fallback fires at all is stochastic — the same page escalated on one run
+  and passed on DeepSeek at attempt 2 on the next. A single-page A/B proves less than it
+  looks.
 
 ## Next expected task
 
-A decision on whether `jasper-street` is worth more spend (item 1), item 7, or item 8. Do not
+Review preview **`miltonly-jtca7e7qu`** (at `4810ad5`, battery PASS, anchor verifier
+PASS) and decide on merging `feat/address-anchors`. Everything the brief asked of the
+section is built and measured; what is left is the review, and the merge is Aamir's call.
+Failing that: the Anthropic credit balance (open item 1), item 8, or item 9. Do not
 self-start any of them.

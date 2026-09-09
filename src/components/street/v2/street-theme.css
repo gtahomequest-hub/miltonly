@@ -1198,3 +1198,310 @@
 .street-v2 .s-alert-fine { font-size: 11.5px; color: var(--s-text-faint); margin-top: 8px; }
 .street-v2 .s-alert-err { font-size: 12.5px; color: #ffb4a1; margin-top: 8px; }
 .street-v2 .s-alert-done { font-size: 14px; color: var(--s-green); margin-top: 10px; line-height: 1.5; }
+
+/* ─── Address ladder (QUEUE item 3) ────────────────────────────────────────
+   The street drawn end to end: a spine for the roadway, odd numbers down one
+   edge and even down the other, cross streets ruled across it. Not a table and
+   not a listing list — it renders the street's permanent structure, so it is
+   true whether or not anything is for sale.
+
+   NO CLIENT JS. Detail opens on :hover, :focus-within and :target, which is
+   what makes /streets/<slug>#<number> land on the address AND open it.
+
+   SIGNAL GREEN IS RESERVED. --s-green appears in this section on the
+   "listed now" mark and nowhere else. */
+
+.street-v2 .s-addr-sum {
+  max-width: 720px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--s-text-body);
+  margin-bottom: 20px;
+}
+.street-v2 .s-addr-sl {
+  color: var(--s-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.street-v2 .s-addr-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 18px;
+}
+.street-v2 .s-addr-k {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--s-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--s-text-muted);
+}
+.street-v2 .s-addr-kd {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--s-bg-deep);
+}
+.street-v2 .s-addr-kd.s-addr-live-dot {
+  background: var(--s-green);
+  box-shadow: 0 0 0 1.5px var(--s-bg-deep);
+}
+.street-v2 .s-addr-kt {
+  width: 16px;
+  height: 0;
+  border-top: 1px dashed var(--s-accent);
+}
+
+.street-v2 .s-addr-lad {
+  position: relative;
+  background: #f6f4ef;
+  border: 1px solid var(--s-border-muted);
+  border-radius: 14px;
+  padding: 14px 0;
+  overflow: hidden;
+}
+.street-v2 .s-addr-spine {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(7, 49, 38, 0.05),
+    rgba(7, 49, 38, 0.22) 8%,
+    rgba(7, 49, 38, 0.22) 92%,
+    rgba(7, 49, 38, 0.05)
+  );
+}
+/* the two end numbers, so the direction of travel is stated and not inferred */
+.street-v2 .s-addr-end {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--s-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--s-text-muted);
+  background: #f6f4ef;
+  padding: 0 6px;
+  z-index: 2;
+}
+.street-v2 .s-addr-end-lo { top: 2px; }
+.street-v2 .s-addr-end-hi { bottom: 2px; }
+
+/* cross street: a dashed rule across the whole street with the name on it */
+.street-v2 .s-addr-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed rgba(1, 120, 72, 0.4);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1;
+}
+/* The name sits at the RIGHT EDGE of the rule, out of the two number columns, so a long cross
+   street cannot land on top of a house number. Truncated with an ellipsis where the track is
+   narrow; the title attribute carries the full name. */
+.street-v2 .s-addr-tick-l {
+  transform: translateY(-50%);
+  margin-right: 10px;
+  background: #f6f4ef;
+  padding: 0 6px;
+  font-family: var(--s-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--s-accent);
+  white-space: nowrap;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.street-v2 .s-addr-tick-l a { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ONE ADDRESS, ONE ELEMENT.
+   The mark IS the anchor target and the mark IS the label. Its detail line lives in
+   `data-d` and is drawn by `content: attr(data-d)` on interaction, because the App
+   Router inlines the RSC flight payload and every element on the page is therefore
+   paid for twice in the served HTML. Class names are short for the same reason: this
+   selector set repeats up to 387 times on one page.
+
+   A mark carrying a live listing is a <span> holding two links instead, since a link
+   cannot live inside generated content. It has no `data-d`, and the generated popup is
+   gated on [data-d] so it never draws an empty box. */
+.street-v2 .s-m {
+  position: absolute;
+  display: block;
+  padding: 2px 4px;
+  transform: translateY(-50%);
+  font-family: var(--s-serif);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--s-bg-deep);
+  white-space: nowrap;
+  scroll-margin-top: 120px;
+  right: 50%;
+  margin-right: 6px;
+  text-align: right;
+}
+.street-v2 .s-m.s-e {
+  right: auto;
+  left: 50%;
+  margin-right: 0;
+  margin-left: 6px;
+  text-align: left;
+}
+/* the dot on the spine, drawn rather than shipped as an element */
+.street-v2 .s-m::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--s-bg-deep);
+}
+.street-v2 .s-m.s-e::before {
+  right: auto;
+  left: -9px;
+}
+/* a street too dense to label every mark keeps every mark and drops the labels, which is
+   the honest degradation: the address is still there, still anchored, and its number comes
+   back on hover, focus or target */
+/* A suppressed label must not mean a suppressed TARGET. The box is as tall as DOT_GAP, which is
+   the guaranteed minimum spacing between two marks on the same side, so every mark gets a real
+   hit area and no two of them overlap. Width reaches back from the spine, which is where a thumb
+   aims. Verified at 380px. */
+.street-v2 .s-m.s-q {
+  font-size: 0;
+  padding: 0;
+  width: 58px;
+  height: 14px;
+}
+.street-v2 .s-m.s-on::before {
+  background: var(--s-green);
+  box-shadow: 0 0 0 1.5px var(--s-bg-deep);
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  right: -10px;
+}
+.street-v2 .s-m.s-e.s-on::before { right: auto; left: -10px; }
+.street-v2 .s-m.s-on > a:first-child { color: var(--s-accent-bright); font-weight: 600; }
+
+.street-v2 .s-m:hover,
+.street-v2 .s-m:focus-within,
+.street-v2 .s-m:focus,
+.street-v2 .s-m:target {
+  z-index: 8;
+  font-size: 13.5px;
+  color: var(--s-accent);
+}
+.street-v2 .s-m:hover::before,
+.street-v2 .s-m:focus-within::before,
+.street-v2 .s-m:focus::before,
+.street-v2 .s-m:target::before {
+  background: var(--s-accent);
+}
+
+/* the detail, opened by hover, focus or a deep link */
+.street-v2 .s-m[data-d]::after,
+.street-v2 .s-d {
+  content: attr(data-d);
+  position: absolute;
+  top: 15px;
+  right: -1px;
+  transform: translateX(50%);
+  width: max-content;
+  max-width: min(400px, 82vw);
+  display: block;
+  padding: 10px 13px;
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: 10px;
+  box-shadow: var(--s-sh);
+  font-family: var(--s-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.55;
+  text-align: left;
+  white-space: normal;
+  color: var(--s-text-muted);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.14s ease;
+}
+.street-v2 .s-m.s-e[data-d]::after,
+.street-v2 .s-m.s-e .s-d {
+  right: auto;
+  left: -1px;
+  transform: translateX(-50%);
+}
+.street-v2 .s-m:hover[data-d]::after,
+.street-v2 .s-m:focus-within[data-d]::after,
+.street-v2 .s-m:focus[data-d]::after,
+.street-v2 .s-m:target[data-d]::after,
+.street-v2 .s-m:hover .s-d,
+.street-v2 .s-m:focus-within .s-d,
+.street-v2 .s-m:target .s-d {
+  opacity: 1;
+  visibility: visible;
+}
+.street-v2 .s-lv {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--s-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--s-accent-bright);
+  border-bottom: 2px solid var(--s-green);
+  padding-bottom: 1px;
+  width: fit-content;
+}
+
+/* a deep link lands, and says so for a moment */
+@keyframes s-addr-flash {
+  0% { box-shadow: 0 0 0 0 rgba(1, 120, 72, 0.55); }
+  60% { box-shadow: 0 0 0 9px rgba(1, 120, 72, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(1, 120, 72, 0); }
+}
+.street-v2 .s-m:target::before {
+  animation: s-addr-flash 1.6s ease-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .street-v2 .s-m:target::before { animation: none; }
+}
+
+.street-v2 .s-addr-cta {
+  margin-top: 26px;
+}
+.street-v2 .s-addr-src {
+  margin-top: 14px;
+  max-width: 720px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--s-text-muted);
+}
+
+@media (max-width: 560px) {
+  .street-v2 .s-addr-sum { font-size: 15px; }
+  .street-v2 .s-m { font-size: 12.5px; margin-right: 5px; }
+  .street-v2 .s-m.s-e { margin-left: 5px; margin-right: 0; }
+  .street-v2 .s-m:hover,
+  .street-v2 .s-m:focus-within,
+  .street-v2 .s-m:focus,
+  .street-v2 .s-m:target { font-size: 12.5px; }
+  .street-v2 .s-m[data-d]::after,
+  .street-v2 .s-d { padding: 9px 11px; max-width: 84vw; }
+  .street-v2 .s-addr-tick-l { max-width: 46%; font-size: 10px; margin-right: 6px; }
+  .street-v2 .s-m.s-q { width: 46px; }
+  .street-v2 .s-addr-cta { margin-top: 20px; }
+}
