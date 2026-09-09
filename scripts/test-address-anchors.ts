@@ -160,7 +160,7 @@ const markTags = [...markup.matchAll(/<(a|span)\s[^>]*class="s-m/g)].length;
 ok("one element per address", markTags === ladder.marks.length, `${markTags} mark tags vs ${ladder.marks.length} marks`);
 ok(
   "the detail is one data attribute",
-  markup.includes('data-d="0.20 along · odd side · Commercial Street · Townhouse"'),
+  markup.includes('data-d="a third along · odd side · Commercial Street · Townhouse · 0.20"'),
   ""
 );
 ok("a live listing still renders a real link", markup.includes('class="s-lv" href="/listings/W1234567"'), "");
@@ -173,11 +173,64 @@ ok(
 ok("the ids match the ItemList urls", ids.join(",") === items.map((it) => String(it.url).split("#")[1]).join(","));
 ok("no dollar sign is rendered", !markup.includes("$"));
 ok("the H2 is the scoped heading", markup.includes("<h2>Addresses on Pine Street</h2>"), "");
-ok("the summary is rendered as plain text", markup.includes(ladder.summary));
+ok("the summary sentence is rendered", markup.replace(/<[^>]+>/g, "").includes(ladder.summary));
+
+// ── the additions of 2026-09-09 ─────────────────────────────────────────────
+
+// 1. Edge collision. Nothing sits at y=0, so the first and last labels cannot be half-drawn by
+//    the track's own overflow, and neither collides with the end-number caps.
+const tops = [...markup.matchAll(/class="s-m[^"]*" (?:data-d="[^"]*" )?style="top:(\d+)px"/g)].map((m) => Number(m[1]));
+ok("every mark is padded off both ends", tops.length > 0 && Math.min(...tops) >= 30, `min top ${Math.min(...tops)}`);
+
+// 2. Cross streets link from the ladder AND from the sentence, on the same rule: a link where the
+//    street has a published page, plain text where it does not.
+ok("a tick carries its full name in a title", markup.includes('title="Ontario Street"'), "");
+ok("a published cross street links from the sentence", markup.includes('class="s-addr-sl" href="/streets/ontario-street-milton"'), "");
+ok(
+  "an unpublished cross street is not linked from the sentence",
+  !markup.includes('href="/streets/charles-street-milton"'),
+  ""
+);
+
+// 3. Position in words, with the fraction still there for this guard to check the placement
+//    against. A phrase that names an end must name a cross street that IS at that end.
+ok("the low end is named by its cross street", markup.includes("near the Charles Street end"), "");
+ok("the high end is named by its cross street", markup.includes("near the Ontario Street end"), "");
+ok("the middle is named in words", markup.includes("midway"), "");
+ok("a third and two thirds are named", markup.includes("a third along") && markup.includes("two thirds along"), "");
+ok("the fraction survives in data-d", /data-d="[^"]*[0-9][.][0-9][0-9]"/.test(markup), "");
+ok("no mark prints a bare decimal position as its label", !markup.includes(">0."), "");
+
+// 4. The footer is the exact sentence, and nothing else.
+const FOOTER =
+  "Civic addresses from the Town of Milton under the Open Government Licence. Positions " +
+  "approximate. No sale price or date is shown for any single address.";
+ok("the footer is verbatim", markup.replace(/<[^>]+>/g, "").includes(FOOTER), "");
+
+// 5. Two CTAs, both naming the street, neither carrying a figure.
+ok("the owner CTA is present", markup.includes("Own a home on Pine Street? See what it"), "");
+ok("the owner CTA prefills the street", markup.includes('href="/sell?street=Pine%20Street#valuation"'), "");
+ok("the watch CTA is present", markup.includes("Watch Pine Street"), "");
+ok("the watch CTA reaches the live street alert", markup.includes('href="#street-alert"'), "");
+ok("the CTAs reuse the page's own cards", markup.includes('class="s-final s-addr-cta"') && markup.includes('class="s-b1"'), "");
+
+// 6. A suppressed label must not mean a suppressed TARGET. Two marks on one side are never closer
+//    than the hit area they are given, so every mark on a dense street is reachable on a phone.
+const sided = [...markup.matchAll(/class="(s-m[^"]*)"[^>]*style="top:(\d+)px"/g)].map((m) => ({
+  even: m[1].includes("s-e"),
+  quiet: m[1].includes("s-q"),
+  top: Number(m[2]),
+}));
+for (const side of [true, false]) {
+  const col = sided.filter((r) => r.even === side).sort((a, b) => a.top - b.top);
+  const tight = col.filter((r, i) => i > 0 && r.top - col[i - 1].top < 14);
+  ok(`${side ? "even" : "odd"} side marks are never closer than their hit area`, tight.length === 0, `${tight.length} too close`);
+}
+ok("a dense street does suppress some labels", sided.some((r) => r.quiet), "");
 
 // ── report ──────────────────────────────────────────────────────────────────
 
-const ASSERTIONS = 34;
+const ASSERTIONS = 52;
 if (failures.length > 0) {
   console.error(`test-address-anchors FAILED (${failures.length} of ${ASSERTIONS})`);
   console.error(failures.join("\n"));

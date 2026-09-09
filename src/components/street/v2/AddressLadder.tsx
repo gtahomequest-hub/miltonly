@@ -28,12 +28,16 @@
 // reserved here for the "listed now" mark and appears nowhere else in the section.
 import type { StreetV2Data } from './types';
 import type { AddressMark, AddressCrossTick } from '@/lib/streetAddresses';
-import { STREET_ADDRESS_SOURCE_PULLED } from '@/lib/town/addresses';
 
 /** vertical room a number label needs before it touches its neighbour */
 const LABEL_GAP = 22;
-/** vertical room a bare dot needs — a dense arterial degrades to dots, not to collisions */
-const DOT_GAP = 7;
+/** Vertical room a bare dot needs. It is also the HIT AREA of a mark whose label is suppressed,
+ *  so it cannot go below what a thumb can find: a dense arterial degrades to dots, never to a
+ *  mark that is present in the DOM and unreachable on a phone. Raised from 7 on 2026-09-09. */
+const DOT_GAP = 14;
+/** Reserved at both ends of the spine so the first and last labels are never clipped by the
+ *  track's own overflow, and so neither collides with the end-number caps. */
+const END_PAD = 34;
 
 interface PlacedMark {
   mark: AddressMark;
@@ -46,13 +50,13 @@ interface PlacedMark {
  * each other the later one is pushed down by the minimum it needs, so the drawn ORDER is always
  * the true order and the drawn SPACING is the true spacing wherever there is room for it.
  */
-function placeSide(marks: AddressMark[], h0: number): PlacedMark[] {
+function placeSide(marks: AddressMark[], h0: number, pad: number): PlacedMark[] {
   const out: PlacedMark[] = [];
   let lastLabelY = -Infinity;
   let prevY = -Infinity;
   let prevLabelled = false;
   for (const mark of marks) {
-    const ideal = mark.fraction * h0;
+    const ideal = pad + mark.fraction * h0;
     const labelled = ideal - lastLabelY >= LABEL_GAP;
     if (labelled) lastLabelY = ideal;
     const gap = labelled || prevLabelled ? LABEL_GAP : DOT_GAP;
@@ -65,7 +69,7 @@ function placeSide(marks: AddressMark[], h0: number): PlacedMark[] {
 }
 
 /** Map a cross street's fraction onto the same curve the marks were pushed along. */
-function tickPlacer(placed: PlacedMark[], h0: number, height: number) {
+function tickPlacer(placed: PlacedMark[], h0: number, height: number, pad: number) {
   const sorted = [...placed].sort((a, b) => a.mark.fraction - b.mark.fraction);
   let running = 0;
   const curve = sorted.map((p) => {
@@ -73,7 +77,7 @@ function tickPlacer(placed: PlacedMark[], h0: number, height: number) {
     return { f: p.mark.fraction, y: running };
   });
   return (f: number): number => {
-    if (curve.length === 0) return f * h0;
+    if (curve.length === 0) return pad + f * h0;
     if (f <= curve[0].f) return curve[0].y;
     for (let i = 1; i < curve.length; i++) {
       if (f <= curve[i].f) {
@@ -86,16 +90,30 @@ function tickPlacer(placed: PlacedMark[], h0: number, height: number) {
   };
 }
 
+/**
+ * Where the address sits, in words. "0.42" is a number a reader has to convert; "midway" is the
+ * answer they came for, and it is also the honest precision — the footer says positions are
+ * approximate, and a phrase cannot be read as a survey the way two decimals can.
+ *
+ * The two end phrases name the cross street at that end when there is one, so "near the Charles
+ * Street end" reads as a place rather than as an axis.
+ */
+function positionPhrase(f: number, lowEnd: string | null, highEnd: string | null): string {
+  if (f < 0.15) return lowEnd ? `near the ${lowEnd} end` : 'near the low-number end';
+  if (f < 0.42) return 'a third along';
+  if (f < 0.58) return 'midway';
+  if (f < 0.85) return 'two thirds along';
+  return highEnd ? `near the ${highEnd} end` : 'near the high-number end';
+}
+
 /** The one detail line, written once per address into `data-d` (or into the element a live
- *  listing forces). Deliberately terse: the legend above the ladder names the fields, so the
- *  words that would otherwise repeat 387 times are written once in the legend instead. */
-function detailOf(m: AddressMark): string {
-  return [
-    `${m.fraction.toFixed(2)} along`,
-    `${m.side} side`,
-    m.crossStreet ?? '',
-    m.form ?? '',
-  ]
+ *  listing forces). The fraction stays on the end of it: the words are what a reader wants, and
+ *  the number is what the prebuild guard checks the placement against. The nearest cross street
+ *  is dropped when the position phrase has already named it, rather than printed twice. */
+function detailOf(m: AddressMark, lowEnd: string | null, highEnd: string | null): string {
+  const phrase = positionPhrase(m.fraction, lowEnd, highEnd);
+  const near = m.crossStreet && !phrase.includes(m.crossStreet) ? m.crossStreet : '';
+  return [phrase, `${m.side} side`, near, m.form ?? '', m.fraction.toFixed(2)]
     .filter(Boolean)
     .join(' · ');
 }
@@ -107,11 +125,19 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
   const odd = ladder.marks.filter((m) => m.side === 'odd');
   const even = ladder.marks.filter((m) => m.side === 'even');
   const h0 = Math.max(320, Math.min(900, ladder.marks.length * 14));
-  const placedOdd = placeSide(odd, h0);
-  const placedEven = placeSide(even, h0);
+  // Every y is offset by END_PAD, so fraction 0 sits END_PAD below the top of the track and
+  // fraction 1 sits END_PAD above the bottom. Nothing at either extreme can be half-drawn.
+  const placedOdd = placeSide(odd, h0, END_PAD);
+  const placedEven = placeSide(even, h0, END_PAD);
   const placed = [...placedOdd, ...placedEven];
-  const height = Math.round(Math.max(h0, ...placed.map((p) => p.y)) + 28);
-  const tickY = tickPlacer(placed, h0, height);
+  const height = Math.round(Math.max(h0 + END_PAD, ...placed.map((p) => p.y)) + END_PAD);
+  const tickY = tickPlacer(placed, h0, height, END_PAD);
+  const cross = ladder.crossStreets;
+  // The cross street a "near the … end" phrase may name has to BE near that end; a street whose
+  // only junction sits midway does not get to stand for either end.
+  const lowEnd = cross.length > 0 && cross[0].fraction <= 0.25 ? cross[0].name : null;
+  const last = cross[cross.length - 1];
+  const highEnd = cross.length > 0 && last.fraction >= 0.75 ? last.name : null;
   // Placement is per side; DOM ORDER IS BY HOUSE NUMBER, so the reading order, the screen-reader
   // order and the ItemList order are the same sequence. Position is absolute, so the two are
   // independent.
@@ -126,7 +152,21 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
           <h2>Addresses on {data.name}</h2>
         </div>
 
-        <p className="s-addr-sum">{ladder.summary}</p>
+        {/* The same cross-street names the ladder draws, linked the same way: a link where that
+            street has a published page, plain text where it does not. */}
+        <p className="s-addr-sum">
+          {ladder.summaryNodes.map((n, i) =>
+            typeof n === 'string' ? (
+              <span key={i}>{n}</span>
+            ) : n.href ? (
+              <a className="s-addr-sl" href={n.href} key={i}>
+                {n.name}
+              </a>
+            ) : (
+              <span key={i}>{n.name}</span>
+            )
+          )}
+        </p>
 
         <div className="s-addr-key">
           <span className="s-addr-k">
@@ -154,7 +194,9 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
 
           {ladder.crossStreets.map((c: AddressCrossTick) => (
             <div className="s-addr-tick" key={c.slug} style={{ top: Math.round(tickY(c.fraction)) }}>
-              <span className="s-addr-tick-l">
+              {/* Right edge, mono, truncated with an ellipsis where the track is narrow. The
+                  title carries the full name so a truncated label is never a lost one. */}
+              <span className="s-addr-tick-l" title={c.name}>
                 {c.href ? <a href={c.href}>{c.name}</a> : c.name}
               </span>
             </div>
@@ -163,7 +205,7 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
           {inOrder.map(({ mark, y, labelled }) => {
             const cls = `s-m${mark.side === 'even' ? ' s-e' : ''}${labelled ? '' : ' s-q'}`;
             const top = Math.round(y);
-            const detail = detailOf(mark);
+            const detail = detailOf(mark, lowEnd, highEnd);
             // A live listing needs a real link, which CSS generated content cannot hold. Only
             // these marks pay for a detail element; every other address is one tag.
             return mark.active ? (
@@ -192,11 +234,41 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
         </div>
 
         <p className="s-addr-src">
-          Civic addresses from the Town of Milton address layer, pulled {STREET_ADDRESS_SOURCE_PULLED},
-          under the Open Government Licence. Positions are relative to the ends of the street, not
-          survey coordinates. Building form is shown only where a listing for that address supplied
-          one. No sale price and no sale date is shown for any single address.
+          Civic addresses from the Town of Milton under the Open Government Licence. Positions
+          approximate. No sale price or date is shown for any single address.
         </p>
+
+        {/* The same card, grid and button the page's own final CTAs use — no new colours and no
+            new component. Both carry the resolved street name. NEITHER offers a figure for an
+            address: the owner card asks for the street, and the watch card is the live street
+            alert already on this page, which captures an email and nothing else. */}
+        <div className="s-final s-addr-cta">
+          <span className="s-eyebrow" style={{ color: 'var(--s-green)' }}>
+            {data.name}
+          </span>
+          <div className="s-finalgrid" style={{ marginTop: 24 }}>
+            <div className="s-fcard">
+              <h3>Own a home on {data.name}? See what it&rsquo;s worth</h3>
+              <p>
+                A written valuation prepared by hand from comparable sales, sent by email. Nothing
+                on this page estimates a single address.
+              </p>
+              <a className="s-b1" href={`/sell?street=${encodeURIComponent(data.name)}#valuation`}>
+                See what it&rsquo;s worth →
+              </a>
+            </div>
+            <div className="s-fcard">
+              <h3>Watch {data.name}</h3>
+              <p>
+                Be told when a home on {data.name} is listed or sold, before it reaches the public
+                portals.
+              </p>
+              <a className="s-b1" href="#street-alert">
+                Watch {data.name} →
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

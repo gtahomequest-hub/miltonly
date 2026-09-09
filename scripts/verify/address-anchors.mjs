@@ -69,6 +69,22 @@ for (const s of STREETS) {
   if (!anchored) failures += 1;
   say(anchored ? "ok" : "XX", `${url}#${s.anchor} resolves to a mark`);
 
+  const FOOTER =
+    "Civic addresses from the Town of Milton under the Open Government Licence. Positions " +
+    "approximate. No sale price or date is shown for any single address.";
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const footer = text.includes(FOOTER);
+  if (!footer) failures += 1;
+  say(footer ? "ok" : "XX", "the footer sentence is verbatim");
+
+  const ctas =
+    html.includes(`href="/sell?street=${encodeURIComponent(s.name)}#valuation"`) &&
+    html.includes('href="#street-alert"') &&
+    text.includes(`Own a home on ${s.name}`) &&
+    text.includes(`Watch ${s.name}`);
+  if (!ctas) failures += 1;
+  say(ctas ? "ok" : "XX", "both CTAs are present and carry the street");
+
   const blocks = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)];
   let list = null;
   for (const b of blocks) {

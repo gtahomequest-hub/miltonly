@@ -1218,6 +1218,11 @@
   color: var(--s-text-body);
   margin-bottom: 20px;
 }
+.street-v2 .s-addr-sl {
+  color: var(--s-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .street-v2 .s-addr-key {
   display: flex;
   flex-wrap: wrap;
@@ -1296,20 +1301,24 @@
   height: 0;
   border-top: 1px dashed rgba(1, 120, 72, 0.4);
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 1;
 }
+/* The name sits at the RIGHT EDGE of the rule, out of the two number columns, so a long cross
+   street cannot land on top of a house number. Truncated with an ellipsis where the track is
+   narrow; the title attribute carries the full name. */
 .street-v2 .s-addr-tick-l {
   transform: translateY(-50%);
+  margin-right: 10px;
   background: #f6f4ef;
-  padding: 0 8px;
+  padding: 0 6px;
   font-family: var(--s-mono);
   font-size: 10.5px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--s-accent);
   white-space: nowrap;
-  max-width: 62%;
+  max-width: 42%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1367,9 +1376,15 @@
 /* a street too dense to label every mark keeps every mark and drops the labels, which is
    the honest degradation: the address is still there, still anchored, and its number comes
    back on hover, focus or target */
+/* A suppressed label must not mean a suppressed TARGET. The box is as tall as DOT_GAP, which is
+   the guaranteed minimum spacing between two marks on the same side, so every mark gets a real
+   hit area and no two of them overlap. Width reaches back from the spine, which is where a thumb
+   aims. Verified at 380px. */
 .street-v2 .s-m.s-q {
   font-size: 0;
-  padding: 3px 4px;
+  padding: 0;
+  width: 58px;
+  height: 14px;
 }
 .street-v2 .s-m.s-on::before {
   background: var(--s-green);
@@ -1465,6 +1480,9 @@
   .street-v2 .s-m:target::before { animation: none; }
 }
 
+.street-v2 .s-addr-cta {
+  margin-top: 26px;
+}
 .street-v2 .s-addr-src {
   margin-top: 14px;
   max-width: 720px;
@@ -1483,5 +1501,7 @@
   .street-v2 .s-m:target { font-size: 12.5px; }
   .street-v2 .s-m[data-d]::after,
   .street-v2 .s-d { padding: 9px 11px; max-width: 84vw; }
-  .street-v2 .s-addr-tick-l { max-width: 70%; font-size: 10px; }
+  .street-v2 .s-addr-tick-l { max-width: 46%; font-size: 10px; margin-right: 6px; }
+  .street-v2 .s-m.s-q { width: 46px; }
+  .street-v2 .s-addr-cta { margin-top: 20px; }
 }

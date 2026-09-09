@@ -58,6 +58,10 @@ export interface AddressLadder {
   high: number;
   /** Plain text, generated from the data. Never written by a model. */
   summary: string;
+  /** The same sentence as renderable parts. A string is literal text; a tick is a cross-street
+   *  name that the section links when that street has a published page. Kept alongside `summary`
+   *  rather than replacing it so the plain sentence stays assertable. */
+  summaryNodes: Array<string | AddressCrossTick>;
   marks: AddressMark[];
   crossStreets: AddressCrossTick[];
   /** how many marks carry a live listing — drives the legend, which is otherwise not drawn. */
@@ -87,11 +91,6 @@ function numberRange(lo: number, hi: number): string {
   return lo === hi ? String(lo) : `${lo}–${hi}`;
 }
 
-function joinList(items: string[]): string {
-  if (items.length === 1) return items[0];
-  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
-}
-
 /** The listed cross streets in the summary sentence stop here; the ladder still draws them all. */
 const SUMMARY_CROSS_LIMIT = 8;
 
@@ -101,17 +100,27 @@ function buildSummary(
   lo: number,
   hi: number,
   crosses: AddressCrossTick[]
-): string {
+): { summary: string; summaryNodes: Array<string | AddressCrossTick> } {
   const head =
     count === 1
       ? `The Town records one civic address on ${streetName}, numbered ${lo}`
       : `The Town records ${count} civic addresses on ${streetName}, numbered ${numberRange(lo, hi)}`;
-  if (crosses.length === 0) return `${head}.`;
-  const shown = crosses.slice(0, SUMMARY_CROSS_LIMIT).map((c) => c.name);
+  if (crosses.length === 0) return { summary: `${head}.`, summaryNodes: [`${head}.`] };
+
+  const shown = crosses.slice(0, SUMMARY_CROSS_LIMIT);
   const rest = crosses.length - shown.length;
-  if (crosses.length === 1) return `${head}, with ${shown[0]} meeting it.`;
-  const tail = rest > 0 ? `${joinList(shown)} and ${rest} more` : joinList(shown);
-  return `${head}, with ${tail} meeting it in that order from the low-number end.`;
+  const nodes: Array<string | AddressCrossTick> = [`${head}, with `];
+  shown.forEach((c, i) => {
+    if (i > 0) nodes.push(i === shown.length - 1 && rest === 0 ? " and " : ", ");
+    nodes.push(c);
+  });
+  if (rest > 0) nodes.push(` and ${rest} more`);
+  nodes.push(
+    crosses.length === 1 ? " meeting it." : " meeting it in that order from the low-number end."
+  );
+
+  const summary = nodes.map((n) => (typeof n === "string" ? n : n.name)).join("");
+  return { summary, summaryNodes: nodes };
 }
 
 /**
@@ -189,11 +198,14 @@ export function buildAddressLadder(input: {
   const low = Math.min(...numbers);
   const high = Math.max(...numbers);
 
+  const { summary, summaryNodes } = buildSummary(input.streetName, marks.length, low, high, crossStreets);
+
   return {
     count: marks.length,
     low,
     high,
-    summary: buildSummary(input.streetName, marks.length, low, high, crossStreets),
+    summary,
+    summaryNodes,
     marks,
     crossStreets,
     activeCount: marks.filter((m) => m.active).length,
