@@ -1,6 +1,6 @@
 # Handoff
 
-_Last rewritten 2026-09-09, after the second round of fixes on `feat/address-anchors`._
+_Last rewritten 2026-09-09, after verifying the six section changes at HEAD._
 
 ## READ THIS FIRST
 
@@ -9,6 +9,21 @@ Three rounds landed: the build, the markup diet plus the directional-siblings re
 (2026-09-08), and six section changes (2026-09-09). The preview gate applies and Aamir
 reviews before merge. Full record in
 `scratchpad/reports/059-address-anchors-build.md`.
+
+**The six section changes were re-briefed on 2026-09-09 and were already built.** They
+landed in `c01a004`; `59d4f9e` after it is the handoff rewrite and carries no code. That
+run therefore changed **no component, no stylesheet and no library** — it verified each of
+the six against the code and against a deployed host, and closed step 6, which had not
+been done at HEAD because the only preview was one commit behind. Record in
+`scratchpad/reports/060-address-ladder-verification.md`. **Do not go looking for a diff of
+the section on this run; there is not one.**
+
+**380px tappability is now measured corpus-wide, not on one street.**
+`scratchpad/audit/measure-380.ts` renders all 442 ladders and reads placement back out of
+the markup: 27,130 marks, **13,816 labels suppressed**, minimum same-side gap **exactly
+14px** (the height a suppressed mark is given), **0** below it, minimum top **34px**
+(`END_PAD`), **0** clipped ends. The tightest pair in Milton is `25-side-road-milton`, not
+savoline. Half the corpus is drawn as a bare dot and every one is still a real target.
 
 **The Anthropic account has no credit.** The Opus fallback fired on
 `bell-school-line-milton` and the API returned `400 invalid_request_error: Your credit
@@ -44,8 +59,10 @@ it. Do not audit a generation by rebuilding its input when the row carries a sna
 |---|---|
 | `main` | **`3c308e6`** |
 | working branch | **`feat/address-anchors`**, pushed, **not merged** |
-| preview to review | **`miltonly-5evd895mv`**, at `c01a004` |
-| battery on that preview | **`PASS · 9 checks · 444 pages · 73s`**, exit 0, at the full SHA |
+| preview to review | **`miltonly-qp2pdqh32`**, at **`59d4f9e`** — HEAD, and the one to review |
+| battery on that preview | **`PASS · 9 checks · 444 pages · 56s`**, exit 0, at the full SHA |
+| anchor verifier on it | **PASS**, four streets, `scripts/verify/address-anchors.mjs` |
+| superseded preview | `miltonly-5evd895mv`, at `c01a004`, one commit behind. Ignore it |
 | production | serving `e815f28` |
 | local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
 | published street pages | **445** |
@@ -129,7 +146,16 @@ minimum same-side gap exactly 14 px on both sides, zero below. Guard at 52 asser
 **There is no VIP signup route in this codebase.** "Watch <Street>" points at
 `#street-alert`, the live street alert already on the page. `/exclusive` is a listings page
 with no form and `#vip` is a homepage strip of links. A distinct VIP list would be a new
-surface and a new decision.
+surface and a new decision. Re-checked 2026-09-09 against the brief, which asked for a VIP
+signup by name: **this is still the deviation, and it is deliberate.** The alert posts
+`source: "street-alert"` with `property_address: <street name>`, so the street travels the
+way a prefill would carry it. The owner CTA does prefill for real — `/sell?street=<name>`,
+read by `HomeValuationCard` as the initial address value.
+
+**Cross-street links verified against the published set, not just against the code.** On
+pine-street the section draws 8 ticks; the 4 published ones link, the 4 that are not
+(`maiden-lane`, `fulton-street`, `prince-street`, `bruce-street`) carry no link and are
+absent from the sitemap, all 8 carry `title`, and the summary sentence links the same 4.
 
 **`HomeValuationCard` now reads `?street=`** as the initial value of its address field. The
 component is shared with `/sell`, the sold pages and `/value`, and the change is inert
@@ -206,7 +232,15 @@ without the parameter.
   compare and aborts before any content check. `EXPECT_SHA` overrides local HEAD, which
   is what you want when running it from a branch against a preview.
 - `scripts/verify/address-anchors.mjs` takes `BASE` and checks four streets. Run it on
-  any host that should be serving the ladder.
+  any host that should be serving the ladder. The four anchor URLs it proves:
+  `/streets/pine-street-milton#262`, `/streets/mae-court-milton#71`,
+  `/streets/mcphail-way-milton#3165`, `/streets/bell-school-line-milton#7295`.
+  The last has **no `StreetContent` row** and renders its ladder anyway — the address
+  section reads the Town projection and does not depend on a generated row.
+- `scratchpad/audit/measure-380.ts` re-measures the 380px hit areas corpus-wide. Pure, no
+  DB, no network at render time. Run it under `tsconfig.jsx-test.json` after any change to
+  `DOT_GAP`, `END_PAD`, `LABEL_GAP` or `.s-m.s-q`. It reads `060-slugs.txt` beside it,
+  which is the published set from the sitemap.
 - `scripts/recon-address-anchors.ts` reports per-street ladder shape and corpus coverage.
 - `scripts/create-street-page.ts` creates a page that does not exist; `regen-058-local.ts`
   regenerates one that does. Neither can run a Claude primary pass.
@@ -218,6 +252,8 @@ without the parameter.
 
 ## Next expected task
 
-Review preview `miltonly-5evd895mv` and decide on merging `feat/address-anchors`. Failing
-that: the Anthropic credit balance (open item 1), item 8, or item 9. Do not self-start
-any of them.
+Review preview **`miltonly-qp2pdqh32`** (at HEAD `59d4f9e`, battery PASS, anchor verifier
+PASS) and decide on merging `feat/address-anchors`. Everything the brief asked of the
+section is built and measured; what is left is the review, and the merge is Aamir's call.
+Failing that: the Anthropic credit balance (open item 1), item 8, or item 9. Do not
+self-start any of them.
