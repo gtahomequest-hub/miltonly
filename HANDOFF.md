@@ -38,6 +38,21 @@ is a homepage strip of links. **This is a deliberate deviation from the brief, w
 for a VIP signup by name.** A distinct VIP list is a new surface and a new decision. The
 owner CTA prefills for real: `/sell?street=<name>#valuation`, read by `HomeValuationCard`.
 
+**QUEUE item 4 Gate A recon is done and awaits three rulings. No feature code written.**
+Report `scratchpad/reports/061-condo-names-gate-a.md`, evidence
+`scripts/recon-condo-names.ts` (read only). **There are 65 `CondoBuilding` rows, not the
+108 the brief states** — the same shape as item 7's "46" (open item 10). 64 of 65 resolve
+cleanly through the registry; the stored `streetSlug` is already the expanded slug and is
+unread by any naming surface. Two things the brief does not anticipate: **the direction**
+(36 of 65 raw strings end in a compass token, four streets carry contradictory ones so
+those are noise, but Main Street E/W is 17 buildings and is not, and no directional
+variant exists as an entity anywhere), and **the stored half** (title and meta description
+are read from `CondoContent` columns, and 57 of 59 published rows carry the abbreviation in
+`buildingName`, `metaTitle`, `metaDescription` and the generated prose alike, so a
+render-time resolver alone does not deliver the brief). **The three rulings: Main Street's
+direction; whether `regional-road-25-milton` joins the off-registry allowlist; and whether
+the stored backfill is in scope for item 4.**
+
 **The Anthropic account has no credit.** The Opus fallback fired on
 `bell-school-line-milton` and the API returned `400 invalid_request_error: Your credit
 balance is too low to access the Anthropic API`. That is the live blocker on every page
@@ -273,10 +288,10 @@ without the parameter.
 
 ## Next expected task
 
-**QUEUE item 4, condo building names** — route the street component of every
-`CondoBuilding` address through `resolveStreetName`, keeping the house number, across the
-H1, the title, the meta description, the JSON-LD and the breadcrumb. 108 buildings. It is
-open item 14 as well: condo H1s still render abbreviations such as `Nadalin Hts`.
+**QUEUE item 4, condo building names — Gate A is reported and waiting on three rulings.**
+Read report 061 before anything else; the population is **65 buildings, not 108**, and the
+item is two pieces (a resolver and a stored backfill), not one. Do not start the build
+until Main Street's direction is decided.
 
 Or, ahead of it if Aamir says so: the Anthropic credit balance (open item 1), which blocks
 three pages and any cron escalation; open item 8, the seven clips with
