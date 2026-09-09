@@ -81,8 +81,9 @@ Gate A approved as scoped. Two commits, two previews. Detail in
 
 Phase 1 `488d16e`, preview `miltonly-nc9mq48wo`, the four Gate A streets.
 Phase 2 `b2746c4`, preview `miltonly-bz6ldhja2`, every published street.
-Markup diet + directional-siblings recon `312478d`, **preview `miltonly-b1rancuw3` — the
-one to review**. Battery **`PASS · 9 checks · 444 pages · 71s`** at the full SHA on it.
+Markup diet + directional-siblings recon `312478d`, preview `miltonly-b1rancuw3`.
+Six section changes `c01a004`, **preview `miltonly-5evd895mv` — the one to review**.
+Battery **`PASS · 9 checks · 444 pages · 73s`** at the full SHA on it.
 Local build exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages.
 
 - [x] `scripts/town/gen-street-addresses.ts` projects the ingest-only address table into
@@ -96,8 +97,9 @@ Local build exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages.
       380 px. Signal green on the "listed now" mark only
 - [x] H2 + a data-generated summary sentence + a `PostalAddress` `ItemList` with no `offers`
       and no `price` on any item
-- [x] `scripts/test-address-anchors.ts`, 18th prebuild test, 34 assertions. It renders the
-      section, reads the ids back out of the markup, and counts one tag per address
+- [x] `scripts/test-address-anchors.ts`, 18th prebuild test, 52 assertions. It renders the
+      section, reads the ids and the rendered positions back out of the markup, counts one tag
+      per address, and fails on any two same-side marks closer than their hit area
 - [x] rolled out to the four Gate A streets, verified, then to all 442 published streets that
       have Town address points (3 published streets have none and are unchanged)
 - [ ] **`bell-school-line-milton` still has no generated prose.** It passes
@@ -107,9 +109,12 @@ Local build exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages.
       written. Its page returns 200 and its ladder renders regardless
 - [x] markup diet 2026-09-08: one tag per address, detail in one `data-d` drawn by CSS.
       savoline-boulevard 745 KB to 421 KB raw, 42.1 KB to 37.2 KB compressed
-- [ ] **250 KB raw is unreachable with the full ItemList** and the arithmetic is in report
-      059. Recommendation is to keep the full list; the decision is open
-- [ ] **merge.** Preview gate applies; Aamir reviews `miltonly-b1rancuw3` first
+- [x] **250 KB target withdrawn 2026-09-09, the full ItemList stays.** Arithmetic in report
+      059. savoline is 437 KB raw and 38 KB compressed
+- [x] 2026-09-09: end padding, cross streets at the right edge and linked from the sentence,
+      position in words, the exact footer sentence, two CTAs in the page's own card, and a
+      14 px non-overlapping hit area for every mark whose label is suppressed. 52 assertions
+- [ ] **merge.** Preview gate applies; Aamir reviews `miltonly-5evd895mv` first
 
 ### Gate A reported 2026-09-04, not yet approved
 

@@ -429,3 +429,129 @@ that today on the ladder. The exposure is future: if `kennedy-circle-east-milton
 `kennedy-circle-west-milton` were ever published, they would share one ladder, and
 `jarrett-cross-milton` would share Jarrett Crossing's if it were ever published. Both are
 publish decisions, not render bugs, and the recon script above reproduces the check.
+
+---
+
+# Addendum 2, 2026-09-09 — six changes before review
+
+`c01a004`, preview **`miltonly-5evd895mv`**. Battery **`PASS · 9 checks · 444 pages · 73s`**
+at `c01a004f2c331696bb507f2cab437be15c075dc3`. `address-anchors PASS` on all four streets,
+now including the footer sentence and both CTAs. Prebuild guard at **52 assertions**.
+
+**The 250 KB target is withdrawn and the full `ItemList` stays.** Decision recorded.
+
+## 1. Edge collision
+
+`END_PAD = 34` is reserved at both ends of the spine and every mark is offset into it, so
+fraction 0 sits 34 px below the top of the track and fraction 1 sits 34 px above the
+bottom. Nothing at either extreme can be half-drawn by the track's own `overflow: hidden`,
+and neither end label collides with the end-number caps. Cross-street ticks are
+interpolated onto the same offset curve. Measured on savoline: **minimum rendered `top` is
+34 px**. The guard asserts no mark sits above 30 px.
+
+## 2. Cross streets at the right edge
+
+The name moved out of the two number columns, where a long street could land on top of a
+house number, onto the right end of its own rule, in JetBrains Mono. `max-width: 42%`
+(46% at ≤560 px) with `text-overflow: ellipsis`, and `title="<full name>"` so a truncated
+label is never a lost one.
+
+It links where that street has a published page and renders as plain text where it does
+not. `StreetAdjacency` is the source, unchanged: every `connectedSlug` in that table is a
+published street.
+
+**The summary sentence links the same names on the same rule.** `buildAddressLadder` now
+returns `summaryNodes` — an array where a string is literal text and a tick is a
+cross-street name — alongside the plain `summary` string, which is kept rather than
+replaced so the sentence itself stays assertable. Pine Street renders 5 linked names in
+the sentence and 8 ticks; the 3 unlinked ones have no published page.
+
+## 3. Position in words
+
+`near the <low-end cross street> end` / `a third along` / `midway` / `two thirds along` /
+`near the <high-end cross street> end`, at 0.15 / 0.42 / 0.58 / 0.85.
+
+An end phrase names a cross street only where that street is genuinely at that end
+(≤ 0.25 or ≥ 0.75); a street whose only junction sits midway does not get to stand for
+either end, and the phrase falls back to "near the low-number end". The nearest cross
+street is dropped from the line when the phrase has already named it, rather than printed
+twice.
+
+`0.42` is a number the reader has to convert; `midway` is the answer they came for, and it
+is the more honest precision — the footer says positions are approximate, and a phrase
+cannot be read as a survey the way two decimals can. **The fraction stays on the end of
+`data-d`**, where the guard checks the placement against it:
+
+```html
+<a id="279" class="s-m" data-d="a third along · odd side · Commercial Street · Townhouse · 0.20"
+   style="top:130px" href="#279">279</a>
+```
+
+## 4. Footer
+
+Replaced with exactly:
+
+> Civic addresses from the Town of Milton under the Open Government Licence. Positions
+> approximate. No sale price or date is shown for any single address.
+
+Held verbatim by both the prebuild guard and the deployed-host verifier.
+
+## 5. Two CTAs
+
+The page's own final-CTA card, grid and button (`.s-final`, `.s-finalgrid`, `.s-fcard`,
+`.s-b1`). No new component and no new colour; the only new rule is a top margin. Both
+carry `data.name`, which is `resolveStreetName`'s output through the seam. **Neither offers
+a figure for an address, and no per-address value or estimate appears anywhere.**
+
+- **"Own a home on <Street>? See what it's worth"** → `/sell?street=<Street>#valuation`.
+  `HomeValuationCard` now reads `?street=` as the *initial* value of the address field, so
+  the visitor adds their house number to a form that already knows their street. Read once,
+  never on re-render, so typing is not fought. The component is shared with other pages and
+  the change is inert without the parameter.
+- **"Watch <Street>"** → `#street-alert`, the live street alert already on this page, which
+  captures an email and nothing else.
+
+**A substitution worth naming: there is no VIP signup route in this codebase.** Lead
+sources are enumerated in `src/components/**`, and the street-watch signup is
+`street-alert`; `/exclusive` is a listings page with no form, and `#vip` is a homepage
+strip of links. Pointing "Watch <Street>" at a VIP route would have been a dead button,
+which is the defect `StreetAlertCTA` was written to fix. If a distinct VIP list is wanted,
+it is a new surface and a new decision.
+
+## 6. Tappable when the label is suppressed
+
+A suppressed label must not mean a suppressed target. `DOT_GAP` goes from **7 to 14 px** and
+becomes the hit area of a quiet mark: `58 × 14`, reaching back from the spine, `46 × 14` at
+≤ 560 px. Because `DOT_GAP` is also the guaranteed minimum spacing between two marks on one
+side, **no two hit areas can overlap** — which is the property that makes "every mark is
+tappable" true rather than approximately true.
+
+Measured on the deployed `savoline-boulevard-milton`, the densest street in the corpus:
+
+| | |
+|---|---|
+| marks | 387 |
+| labels suppressed | 331 |
+| minimum same-side gap, odd | **14 px**, 0 below |
+| minimum same-side gap, even | **14 px**, 0 below |
+| minimum rendered `top` | 34 px |
+
+Shipped CSS confirmed in the deployed bundle: `.s-m.s-q{font-size:0;padding:0;width:58px;
+height:14px}` and, under the 560 px query, `.s-m.s-q{width:46px}`. The guard reads the
+rendered `top` values back out of the markup and fails on any same-side pair closer than
+14 px, so this cannot regress silently.
+
+14 px of height is below the 24 px WCAG 2.2 minimum and is stated here rather than glossed:
+on a street with 387 addresses the alternative is a section four screens taller. Every mark
+is reachable and distinct, which is what was asked for.
+
+## Weight, after these changes
+
+| street | raw | compressed |
+|---|---|---|
+| `savoline-boulevard-milton` (387) | 421,542 → **437,589** | 37,161 → **38,424** |
+| `pine-street-milton` (35) | 110,797 → **115,042** | 16,984 → **17,653** |
+| `mae-court-milton` (8) | 86,565 → **88,489** | 15,019 → **15,380** |
+
+Up about 4%: the word phrases are longer than `0.42 along`, and the CTA block is new markup.
+With the 250 KB target withdrawn this is the expected cost of the readable line.

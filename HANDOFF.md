@@ -1,13 +1,13 @@
 # Handoff
 
-_Last rewritten 2026-09-08, after QUEUE item 3 was built on `feat/address-anchors`._
+_Last rewritten 2026-09-09, after the second round of fixes on `feat/address-anchors`._
 
 ## READ THIS FIRST
 
 **QUEUE item 3 is built and pushed and is NOT merged.** Branch `feat/address-anchors`.
-Two follow-up fixes landed 2026-09-08 after the first review pass: the per-address markup
-diet and the directional-siblings recon. The preview gate
-applies and Aamir reviews before merge. Full record in
+Three rounds landed: the build, the markup diet plus the directional-siblings recon
+(2026-09-08), and six section changes (2026-09-09). The preview gate applies and Aamir
+reviews before merge. Full record in
 `scratchpad/reports/059-address-anchors-build.md`.
 
 **The Anthropic account has no credit.** The Opus fallback fired on
@@ -44,8 +44,8 @@ it. Do not audit a generation by rebuilding its input when the row carries a sna
 |---|---|
 | `main` | **`3c308e6`** |
 | working branch | **`feat/address-anchors`**, pushed, **not merged** |
-| preview to review | **`miltonly-b1rancuw3`**, at `312478d` |
-| battery on that preview | **`PASS · 9 checks · 444 pages · 71s`**, exit 0, at the full SHA |
+| preview to review | **`miltonly-5evd895mv`**, at `c01a004` |
+| battery on that preview | **`PASS · 9 checks · 444 pages · 73s`**, exit 0, at the full SHA |
 | production | serving `e815f28` |
 | local build | exit 0, zero `P2024`, **18/18 prebuild**, 546 static pages |
 | published street pages | **445** |
@@ -85,7 +85,7 @@ A single address is a population of one. The summary sentence is generated from 
 and never written by a model. The `ItemList` is `PostalAddress` and nothing else, with
 no `offers` and no `price`.
 
-**`scripts/test-address-anchors.ts` is the 18th prebuild test, 34 assertions.** It
+**`scripts/test-address-anchors.ts` is the 18th prebuild test, 52 assertions.** It
 renders the section and reads the ids back out of the markup rather than asserting that
 a file imports something — the pattern open item 9 still wants applied to the name
 guard, and it now counts mark tags against mark count so a wrapper cannot creep back in.
@@ -106,15 +106,34 @@ verbatim and adds the entity floor as a refusal.
 `data-d` attribute that CSS draws on interaction. `savoline-boulevard-milton`
 (387 addresses) went 745 KB to **421 KB** raw and 42.1 KB to **37.2 KB** compressed.
 
-**250 KB raw is not reachable and the arithmetic is in report 059.** The App Router
-inlines the RSC flight payload, so everything is served twice. The addresses `ItemList`
-alone costs 184 KB of the 421 KB, against a budget of 152 KB between the production
-baseline and 250 KB — it is over budget before a single address element is drawn. With
-bare `PostalAddress` items and 387 marks costing literally nothing, the floor is 244 KB.
-Fitting 250 KB while keeping every address element means cutting the `ItemList` to about
-40 of 387 addresses. The compressed transfer is 37 KB and moved only 12% while the raw
-figure moved 43%, because what was removed was repetitive markup brotli was already
-collapsing. **Recommendation: keep the full list.** The decision is open.
+**The 250 KB raw target is WITHDRAWN and the full `ItemList` stays. Decided 2026-09-09.**
+The arithmetic is in report 059: the App Router inlines the RSC flight payload, so
+everything is served twice, and the `ItemList` alone costs 184 KB against a 152 KB budget
+— over budget before a single address element is drawn. Fitting 250 KB would have meant
+cutting the list to about 40 of 387 addresses. After the 2026-09-09 changes savoline is
+**437 KB raw and 38 KB compressed**, up 4% on the words and the CTA block. Compressed is
+what a browser and a crawler actually pay.
+
+**What landed 2026-09-09.** 34 px reserved at both ends of the spine so no end label is
+clipped. Cross-street names moved to the right edge of their rule, in mono, truncated with
+an ellipsis and carrying the full name in `title`, linked where the street has a published
+page — and the summary sentence now links the same names on the same rule, which is what
+`summaryNodes` is for. Position reads in words (`midway`, `near the Charles Street end`)
+with the fraction kept on the end of `data-d` for the guard. The footer is the exact
+sentence asked for, held verbatim by the guard and the deployed verifier. Two CTAs in the
+page's own final-CTA card, no new colour: `/sell?street=<name>#valuation` and
+`#street-alert`. **`DOT_GAP` went 7 to 14 px and is now the hit area of a quiet mark**, so
+no two targets can overlap; measured on savoline, 387 marks, 331 labels suppressed,
+minimum same-side gap exactly 14 px on both sides, zero below. Guard at 52 assertions.
+
+**There is no VIP signup route in this codebase.** "Watch <Street>" points at
+`#street-alert`, the live street alert already on the page. `/exclusive` is a listings page
+with no form and `#vip` is a homepage strip of links. A distinct VIP list would be a new
+surface and a new decision.
+
+**`HomeValuationCard` now reads `?street=`** as the initial value of its address field. The
+component is shared with `/sell`, the sold pages and `/value`, and the change is inert
+without the parameter.
 
 ## Open items
 
@@ -199,6 +218,6 @@ collapsing. **Recommendation: keep the full list.** The decision is open.
 
 ## Next expected task
 
-Review preview `miltonly-bz6ldhja2` and decide on merging `feat/address-anchors`. Failing
+Review preview `miltonly-5evd895mv` and decide on merging `feat/address-anchors`. Failing
 that: the Anthropic credit balance (open item 1), item 8, or item 9. Do not self-start
 any of them.
