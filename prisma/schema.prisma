@@ -204,10 +204,18 @@ model Lead {
   internalReferrer        String?
   isQualified             Boolean        @default(false)
   leadTemperatureAtSubmit String? // Hot|Warm|Cold
+  // Which deployment produced this row: "production" | "preview" | "development".
+  // Preview and production share ONE database, so without this a preview test is
+  // indistinguishable from a real lead in every count and every alert. Defaults to
+  // "production" so the 14 pre-existing rows keep the meaning they already had.
+  env                     String         @default("production")
   // Activity log relation (MOD-58)
   activities              LeadActivity[]
 
   @@index([email])
+  // Phase 1: env gates every count; landingPage is the leads-per-page key.
+  @@index([env, createdAt(sort: Desc)])
+  @@index([landingPage])
   @@index([intent])
   @@index([score])
   @@index([gclid])
@@ -619,8 +627,21 @@ model User {
 
 model SavedSearch {
   id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  // An alert signup captures an email and nothing else — no account, no password, no
+  // verification round trip. So userId is optional and `email` carries the address when
+  // there is no User. Every pre-existing row has a userId; nothing is migrated off it.
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  // Address to send to when userId is null. Exactly one of userId / email is set.
+  email           String?
+  // The Lead row this search was created from, when it came from a lead surface.
+  leadId          String?
+  // What kind of watch this is: listing | street | hub | price-band | brief.
+  // The sender reads it to choose the query and the copy.
+  kind            String    @default("listing")
+  // Which deployment created this watch. The alert cron runs on production and matches only
+  // watches from its own environment, so a preview test cannot mail a real inbox for weeks.
+  env             String    @default("production")
   name            String // "Detached in Willmott under $1M"
   // Filter criteria
   propertyType    String? // detached|semi|townhouse|condo
@@ -641,6 +662,10 @@ model SavedSearch {
 
   @@index([userId])
   @@index([alertEnabled])
+  @@index([kind])
+  @@index([email])
+  @@index([leadId])
+  @@index([env, alertEnabled])
   @@schema("public")
 }
 

@@ -4,24 +4,14 @@
 // (low-friction email capture) and "Contact Miltonly about this building" (direct). Both POST to
 // the EXISTING lead ingress (/api/leads/create). They capture the VISITOR's own info only — no
 // building/unit data is exposed. Renders an inline card + a sticky bottom bar.
+//
+// Phase 1: the hand-rolled fetch is gone in favour of the one client helper, and both
+// intents are "buy" rather than "buyer" so the value model scores them.
 import { useState } from "react";
+import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 
 type Panel = "none" | "alert" | "contact";
 type Status = "idle" | "submitting" | "ok" | "error";
-
-async function postLead(payload: Record<string, unknown>): Promise<boolean> {
-  try {
-    const res = await fetch("/api/leads/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, event_source_url: typeof window !== "undefined" ? window.location.href : undefined }),
-    });
-    const data = await res.json().catch(() => ({}));
-    return res.ok && data?.ok !== false;
-  } catch {
-    return false;
-  }
-}
 
 export default function CondoCTAs({ buildingName, neighbourhood, thin }: { buildingName: string; neighbourhood: string; thin: boolean }) {
   const [panel, setPanel] = useState<Panel>("none");
@@ -30,6 +20,7 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [honey, setHoney] = useState("");
 
   const open = (p: Panel) => {
     setPanel(p); setStatus("idle");
@@ -40,14 +31,14 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
     e.preventDefault();
     if (!email) return;
     setStatus("submitting");
-    const ok = await postLead({ source: "condo-building-alert", intent: "buyer", email, property_address: buildingName, neighbourhood, notes: `Building alerts requested — ${buildingName}` });
+    const ok = await postLead({ source: "condo-building-alert", intent: "buy", email, property_address: buildingName, neighbourhood, notes: `Building alerts requested, ${buildingName}`, honeypot: honey });
     setStatus(ok ? "ok" : "error");
   };
   const submitContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email && !phone) return;
     setStatus("submitting");
-    const ok = await postLead({ source: "condo-building-contact", intent: "buyer", name, email, phone, property_address: buildingName, neighbourhood, notes: `${message ? message + " " : ""}[re: ${buildingName}]` });
+    const ok = await postLead({ source: "condo-building-contact", intent: "buy", name, email, phone, property_address: buildingName, neighbourhood, notes: `${message ? message + " " : ""}[re: ${buildingName}]`, honeypot: honey });
     setStatus(ok ? "ok" : "error");
   };
 
@@ -78,6 +69,13 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
                     <div className="cb-cta-formhead"><strong>{alertHead}.</strong> {alertSub}</div>
                     <div className="cb-cta-row">
                       <input type="email" required placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email for building alerts" />
+                      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+                      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+                        <label>
+                          Company website
+                          <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+                        </label>
+                      </div>
                       <button type="submit" disabled={status === "submitting"}>{status === "submitting" ? "…" : "Notify me"}</button>
                     </div>
                     {status === "error" && <div className="cb-cta-err">Something went wrong — try again, or use the contact option.</div>}
@@ -95,6 +93,13 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
                     </div>
                     <textarea placeholder={`What would you like to know about ${buildingName}?`} value={message} onChange={(e) => setMessage(e.target.value)} rows={2} aria-label="Message" />
                     <div className="cb-cta-row">
+                      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+                      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+                        <label>
+                          Company website
+                          <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+                        </label>
+                      </div>
                       <button type="submit" disabled={status === "submitting" || (!email && !phone)}>{status === "submitting" ? "Sending…" : "Send to Miltonly"}</button>
                     </div>
                     {status === "error" && <div className="cb-cta-err">Something went wrong — please try again.</div>}
