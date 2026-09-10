@@ -202,66 +202,11 @@
   }
 }
 
-/* desktop mega-menu (home variant): click-popover under each nav trigger.
-   Triggers live inside .m-navlinks, which is display:none <=820px, so the
-   whole mega layer is desktop-only automatically; mobile keeps the hamburger. */
-.home-v2 .m-navitem {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.home-v2 .m-navtrigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  font-family: var(--m-sans);
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.78);
-  transition: color 0.2s ease;
-}
-.home-v2 .m-navtrigger:hover,
-.home-v2 .m-navtrigger.m-open {
-  color: #fff;
-}
-.home-v2 .m-caret {
-  font-size: 9px;
-  opacity: 0.7;
-  transition: transform 0.2s ease;
-}
-.home-v2 .m-navtrigger.m-open .m-caret {
-  transform: rotate(180deg);
-}
-.home-v2 .m-megapanel {
-  position: fixed;
-  top: 64px;
-  z-index: 90;
-  min-width: 224px;
-  display: flex;
-  flex-direction: column;
-  /* darker than the forest hero behind it, with a crisp bright edge + strong
-     shadow so it reads as a floating surface, not a blend. */
-  background: #04160f;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  padding: 8px;
-}
-.home-v2 .m-megapanel a {
-  display: block;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 13.5px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.home-v2 .m-megapanel a:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-}
+/* desktop mega-menu: the nav-item, trigger, caret, panel and mobile accordion all
+   live in src/components/nav/site-nav.css now, under `nav .…` selectors, so ONE set
+   of rules dresses both variants. They used to be duplicated here for .home-v2 and
+   omitted entirely for .site-nav, which is why the page variant had no mega menu at
+   all. Nothing homepage-specific remains — do not re-add a .home-v2 copy. */
 
 /* scroll-reveal search in the nav */
 .home-v2 .m-navlinks {
@@ -536,28 +481,32 @@
   margin: 16px 0 14px;
   line-height: 1;
 }
-/* 2026-07-21: "Milton" is SOLID WHITE for now (gradient removed from the
-   hero entirely - the nav wordmark is the site's only gradient element).
-   Hierarchy vs the white Playfair line comes from scale alone: the script
-   at ~1.75x dominates. */
-.home-v2 .m-hero h1 .m-hl-milton {
-  display: inline-block;
-  font-family: var(--font-kaushan), cursive;
-  font-weight: 400;
-  font-size: clamp(52px, 7.4vw, 88px);
-  line-height: 1.18;
-  letter-spacing: 0;
-  padding: 0 0.18em 0.06em 0.08em;
-  color: #ffffff;
-}
-.home-v2 .m-hero h1 .m-hl-ency {
+/* H1, 2026-09-10. Two faces, two jobs: the CLAIM in Playfair at reading scale, the
+   METHOD in the script face below it. The faces swapped roles when the copy changed —
+   the script line used to be the single word "Milton" and could carry 88px; a six-word
+   sentence in Kaushan is decoration rather than a heading, so the long line took the
+   serif and the short line took the script. Both stay solid white: the site's only
+   gradient is the nav wordmark. Hierarchy comes from scale and face, never colour. */
+.home-v2 .m-hero h1 .m-hl-lead {
   display: inline-block;
   font-family: var(--font-playfair), Georgia, serif;
   font-weight: 500;
-  font-size: clamp(30px, 4.2vw, 50px);
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  margin-top: 10px;
+  font-size: clamp(30px, 4.6vw, 56px);
+  line-height: 1.12;
+  letter-spacing: -0.005em;
+  max-width: 18ch;
+  color: #ffffff;
+}
+.home-v2 .m-hero h1 .m-hl-tail {
+  display: inline-block;
+  font-family: var(--font-kaushan), cursive;
+  font-weight: 400;
+  font-size: clamp(34px, 5.4vw, 66px);
+  line-height: 1.24;
+  letter-spacing: 0;
+  /* the script face's descenders and the trailing "t" need room or they clip */
+  padding: 0 0.18em 0.06em 0.04em;
+  margin-top: 6px;
   color: #ffffff;
 }
 .home-v2 .m-hero .m-lede {

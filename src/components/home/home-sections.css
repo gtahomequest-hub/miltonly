@@ -1,0 +1,521 @@
+/* src/components/home/home-sections.css
+   The homepage's new sections (01 video, 02 newest, 03 neighbourhoods, 04 valuation,
+   05 brief). Same scoping discipline as home-theme.css: every rule is gated behind
+   .home-v2, every custom property it reads is a --m-* already declared there, and no
+   class here collides with one in that file (.mh-* rather than .m-*).
+
+   THE LAYOUT RULE. Sections do not centre. Each one opens with a monospace index number
+   in the left margin, a full-width hairline, and a heading set hard left with its
+   standfirst beside it — an encyclopedia entry, not a marketing block. The device repeats
+   exactly, which is what makes the page read as one document. Cream and forest grounds
+   alternate so the ordering is legible before a word is read.
+
+   Sized for 380px: every grid collapses to one column, the filmstrip scrolls on its own
+   axis rather than widening the page (overscroll-behavior-x: contain), and the ladder drops
+   its measure bar, which is decorative — the number beside it is not. */
+
+/* ── section shell ─────────────────────────────────────────────────────── */
+.home-v2 .mh-sec {
+  padding: 74px 0;
+  background: var(--m-bg-body);
+  color: var(--m-text-body);
+}
+.home-v2 .mh-sec.mh-hoods,
+.home-v2 .mh-sec.mh-brief {
+  background: var(--m-bg-secondary);
+}
+.home-v2 .mh-sec.mh-video {
+  background: var(--m-bg-deep);
+  color: var(--m-text);
+}
+
+/* ── the repeated head ─────────────────────────────────────────────────── */
+.home-v2 .mh-head {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: start;
+  gap: 0 20px;
+  padding-bottom: 22px;
+  margin-bottom: 34px;
+  border-bottom: 1px solid var(--m-border-muted);
+}
+.home-v2 .mh-video .mh-head {
+  border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+.home-v2 .mh-index {
+  font-family: var(--m-mono);
+  font-size: 13px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
+  color: var(--m-accent);
+}
+.home-v2 .mh-video .mh-index {
+  color: var(--m-green);
+}
+.home-v2 .mh-headmain h2 {
+  font-family: var(--m-serif);
+  font-size: clamp(26px, 3.6vw, 40px);
+  font-weight: 500;
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+}
+.home-v2 .mh-headmain p {
+  margin-top: 10px;
+  max-width: 62ch;
+  font-size: 15px;
+  color: var(--m-text-muted);
+}
+.home-v2 .mh-video .mh-headmain p {
+  color: var(--m-text-sec);
+}
+.home-v2 .mh-headaction {
+  align-self: end;
+  font-family: var(--m-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--m-accent);
+  white-space: nowrap;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}
+.home-v2 .mh-video .mh-headaction {
+  color: var(--m-green);
+}
+.home-v2 .mh-headaction:hover {
+  opacity: 0.75;
+}
+
+/* ── 01 · streets on film ──────────────────────────────────────────────── */
+.home-v2 .mh-filmstrip {
+  list-style: none;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 268px;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 12px;
+  /* the strip scrolls, the page does not */
+  overscroll-behavior-x: contain;
+}
+.home-v2 .mh-filmstrip li {
+  scroll-snap-align: start;
+}
+.home-v2 .mh-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #062018;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.home-v2 .mh-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.home-v2 .mh-filmstrip a:hover .mh-frame img {
+  transform: scale(1.04);
+}
+.home-v2 .mh-nightmark {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  font-family: var(--m-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-green);
+  background: rgba(4, 22, 15, 0.82);
+  border: 1px solid rgba(0, 255, 128, 0.35);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+.home-v2 .mh-framename {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--m-serif);
+  font-size: 18px;
+  color: var(--m-text);
+}
+.home-v2 .mh-framedate {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--m-mono);
+  font-size: 11px;
+  color: var(--m-text-faint);
+}
+
+/* ── 02 · newest on the market ─────────────────────────────────────────── */
+.home-v2 .mh-cards {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.home-v2 .mh-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--m-border-muted);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--m-surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.home-v2 .mh-card:hover {
+  border-color: var(--m-accent);
+  box-shadow: var(--m-sh-sm);
+}
+.home-v2 .mh-cardphoto {
+  display: block;
+  aspect-ratio: 3 / 2;
+  background: var(--m-bg-secondary);
+}
+.home-v2 .mh-cardphoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.home-v2 .mh-nophoto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--m-bg-secondary),
+    var(--m-bg-secondary) 10px,
+    #eeeeea 10px,
+    #eeeeea 20px
+  );
+}
+.home-v2 .mh-cardbody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 16px;
+  flex: 1;
+}
+.home-v2 .mh-cardprice {
+  font-family: var(--m-mono);
+  font-size: 19px;
+  color: var(--m-accent-bright);
+}
+.home-v2 .mh-cardaddr {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--m-text-body);
+}
+.home-v2 .mh-cardaddr:hover {
+  color: var(--m-accent);
+}
+.home-v2 .mh-cardmeta {
+  font-size: 13px;
+  color: var(--m-text-muted);
+  text-transform: capitalize;
+}
+.home-v2 .mh-cardfoot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--m-border-muted);
+  font-size: 12.5px;
+}
+.home-v2 .mh-cardfoot a {
+  color: var(--m-accent);
+  border-bottom: 1px solid transparent;
+}
+.home-v2 .mh-cardfoot a:hover {
+  border-bottom-color: currentColor;
+}
+.home-v2 .mh-carddays {
+  font-family: var(--m-mono);
+  font-size: 11px;
+  color: var(--m-text-muted);
+}
+
+/* ── 03 · the neighbourhood ladder ─────────────────────────────────────── */
+.home-v2 .mh-ladder {
+  list-style: none;
+  counter-reset: hood;
+  border-top: 1px solid var(--m-border-muted);
+}
+.home-v2 .mh-ladder li {
+  border-bottom: 1px solid var(--m-border-muted);
+}
+.home-v2 .mh-ladder a {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(90px, 1.5fr) 84px 150px 92px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 6px;
+  transition: background 0.15s ease;
+}
+.home-v2 .mh-ladder a:hover {
+  background: rgba(1, 120, 72, 0.06);
+}
+.home-v2 .mh-ladname {
+  font-family: var(--m-serif);
+  font-size: 19px;
+  color: var(--m-text-body);
+}
+.home-v2 .mh-ladder a:hover .mh-ladname {
+  color: var(--m-accent);
+}
+.home-v2 .mh-ladbar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(1, 120, 72, 0.1);
+  overflow: hidden;
+}
+.home-v2 .mh-ladbar > span {
+  display: block;
+  height: 100%;
+  background: var(--m-accent);
+  border-radius: 3px;
+}
+.home-v2 .mh-ladsales,
+.home-v2 .mh-ladactive {
+  font-family: var(--m-mono);
+  font-size: 14px;
+  color: var(--m-text-body);
+  white-space: nowrap;
+}
+.home-v2 .mh-ladsales em,
+.home-v2 .mh-ladactive em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--m-text-muted);
+}
+.home-v2 .mh-ladprice {
+  font-family: var(--m-mono);
+  font-size: 15px;
+  color: var(--m-accent-bright);
+  text-align: right;
+  white-space: nowrap;
+}
+.home-v2 .mh-ladsilent {
+  font-family: var(--m-sans);
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--m-text-muted);
+  white-space: normal;
+}
+
+/* ── 04 · valuation ────────────────────────────────────────────────────── */
+.home-v2 .mh-valuegrid {
+  display: grid;
+  grid-template-columns: 1fr minmax(380px, 470px);
+  gap: 48px;
+  align-items: start;
+}
+.home-v2 .mh-proof {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+/* THE FIGURE COLUMN IS SIZED BY ITS FIGURE, NOT BY A GUESS.
+   It was a fixed 128px. When sold-to-ask rendered as "0.980868783307145%" the figure
+   overflowed that track and sat on top of its own label. A fixed track only works while
+   every value stays inside it, which is a promise about data that no stylesheet can keep.
+   `max-content` sizes the track to whatever the figure actually is, `minmax(0, 1fr)` lets
+   the label take the rest and wrap rather than push, and the row collapses to two stacked
+   lines below 720px. A malformed value would now be ugly and legible instead of overlapping,
+   and the battery's format assertion is what stops it being malformed in the first place. */
+.home-v2 .mh-proof li {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  gap: 18px;
+  align-items: baseline;
+  padding-top: 18px;
+  border-top: 1px solid var(--m-border-muted);
+}
+.home-v2 .mh-prooffig {
+  font-family: var(--m-mono);
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1;
+  color: var(--m-accent);
+  /* the track may shrink to zero, so a long value wraps inside its own column instead of
+     widening the row or crossing into the label */
+  overflow-wrap: anywhere;
+}
+.home-v2 .mh-prooflabel {
+  font-size: 14.5px;
+  color: var(--m-text-muted);
+  line-height: 1.5;
+  min-width: 0;
+}
+
+/* ── 05 · the daily brief ──────────────────────────────────────────────── */
+.home-v2 .mh-briefform {
+  max-width: 620px;
+}
+.home-v2 .mh-brieflabel {
+  display: block;
+  font-family: var(--m-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-text-muted);
+  margin-bottom: 8px;
+}
+.home-v2 .mh-briefrow {
+  display: flex;
+  gap: 10px;
+}
+.home-v2 .mh-briefrow input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--m-sans);
+  font-size: 15px;
+  padding: 14px 16px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-surface);
+  color: var(--m-text-body);
+}
+.home-v2 .mh-briefrow input:focus {
+  outline: none;
+  border-color: var(--m-accent);
+  box-shadow: 0 0 0 3px rgba(1, 120, 72, 0.14);
+}
+.home-v2 .mh-briefrow button {
+  font-family: var(--m-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 14px 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--m-accent);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+.home-v2 .mh-briefrow button:hover:not(:disabled) {
+  background: var(--m-accent-on);
+}
+.home-v2 .mh-briefrow button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.home-v2 .mh-honey {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.home-v2 .mh-briefconsent {
+  margin-top: 12px;
+  max-width: 64ch;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--m-text-muted);
+}
+.home-v2 .mh-brieferror {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #b0202b;
+}
+.home-v2 .mh-briefdone {
+  font-family: var(--m-serif);
+  font-size: 20px;
+  color: var(--m-accent-bright);
+}
+
+/* ── footer: the hub link block ────────────────────────────────────────── */
+.home-v2 .m-fhoods {
+  padding: 26px 0 4px;
+}
+.home-v2 .m-fhoods h4 {
+  font-family: var(--m-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-green);
+  margin-bottom: 12px;
+}
+.home-v2 .m-fhoodlinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.home-v2 .m-fhoodlinks a {
+  font-size: 13.5px;
+  color: var(--m-text-sec);
+}
+.home-v2 .m-fhoodlinks a:hover {
+  color: var(--m-green);
+}
+
+/* ── narrow ────────────────────────────────────────────────────────────── */
+@media (max-width: 1040px) {
+  .home-v2 .mh-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .home-v2 .mh-valuegrid {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+  .home-v2 .mh-ladder a {
+    grid-template-columns: minmax(130px, 1fr) 74px 140px 84px;
+  }
+  .home-v2 .mh-ladbar {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .home-v2 .mh-sec {
+    padding: 52px 0;
+  }
+  .home-v2 .mh-head {
+    grid-template-columns: 34px 1fr;
+    gap: 0 12px;
+  }
+  .home-v2 .mh-headaction {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 14px;
+  }
+  .home-v2 .mh-ladder a {
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    padding: 13px 4px;
+  }
+  .home-v2 .mh-ladname {
+    grid-column: 1;
+  }
+  .home-v2 .mh-ladprice {
+    grid-column: 2;
+    text-align: right;
+  }
+  .home-v2 .mh-ladsales {
+    grid-column: 1;
+  }
+  .home-v2 .mh-ladactive {
+    grid-column: 2;
+    text-align: right;
+  }
+  .home-v2 .mh-proof li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+@media (max-width: 460px) {
+  .home-v2 .mh-cards {
+    grid-template-columns: 1fr;
+  }
+  .home-v2 .mh-filmstrip {
+    grid-auto-columns: 232px;
+  }
+  .home-v2 .mh-briefrow {
+    flex-direction: column;
+  }
+}

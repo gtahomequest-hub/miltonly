@@ -1,22 +1,34 @@
 // src/lib/homepageData.ts
-// THE SEAM (read side). getHomepageData() returns the HomepageData the streamlined
-// home-v2 layout consumes (Nav → Hero → Board → TrustBand → Footer):
-//   - stats.typicalPrice : ALL-MILTON MEDIAN (dedicated query) — matches the Board's
-//                          median kind; sold12mo/onMarket/dom from buildMiltonWideContext()
-//   - footer/counts      : light live queries (top-3 neighbourhoods, top-2 VIP streets, counts)
-//   - trust              : real business facts (user-confirmed), hardcoded
-//   - hero               : STATIC editorial carried from mockData (no live source)
-// Perf trim: the per-neighbourhood sold aggregate, the neighbourhood-card array, the
-// VIP strip, the templated commentary, and the mls config are NO LONGER computed —
-// their homepage sections were removed. NEIGHBOURHOOD_CHARACTER below is retained
-// because hubData.ts imports it.
+// THE SEAM (read side). One function assembles everything the homepage and its nav
+// render, so there is exactly one place a homepage figure can come from.
+//
+//   stats        Milton right now: on the market, new this week, sold so far this
+//                month (k-gated), and the all-Milton typical, plus the 12-month
+//                rollup the page already published
+//   neighbourhoods  the 22 published hubs, priced by THEIR OWN PAGE's aggregate
+//                (see neighbourhoodCards.ts — this is not a list-price average)
+//   videoStreets    published streets carrying a clip, poster-gated
+//   newestListings  through the listings grid's own mapper, so the RECO/IDX display
+//                gate is applied server-side exactly once
+//   inDemandStreets VIP streets by rank, surfaced only
+//   footer       the live link graph: every hub, the in-demand streets, the counts
+//   trust        real business facts (user-confirmed), hardcoded
+//   hero         STATIC editorial carried from mockData (no live source)
+//
+// NEIGHBOURHOOD_CHARACTER below is retained because hubData.ts imports it.
 import { prisma } from "@/lib/prisma";
-import { surfacedStreetWhere } from "@/lib/streetSurface";
+import { surfacedStreetWhere, publishedStreetPageCount } from "@/lib/streetSurface";
 import { getSoldDb } from "@/lib/db";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { mockHomepageData } from "@/components/home/mockData";
 import type { HomepageData } from "@/components/home/types";
+import type { MegaLive } from "@/components/nav/megaTypes";
+import type { BoardTab } from "@/lib/board/computeBoard";
 import { resolveStreetName } from "@/lib/streetName";
+import { getNeighbourhoodCards, getRawStringHubMap } from "@/lib/neighbourhoodCards";
+import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVideoCount } from "@/lib/homeSignals";
+import { getNewestListingCards } from "@/lib/listingsV2Data";
+import { getMiltonSoldOverall } from "@/lib/soldAggregates";
 
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
@@ -51,62 +63,74 @@ export const NEIGHBOURHOOD_CHARACTER: Record<string, string> = {
 };
 
 export async function getHomepageData(): Promise<HomepageData> {
-  // ── stats ──
-  // sold12mo / onMarket / dom come from the shared Milton-wide rollup (unchanged).
-  // typicalPrice is the ALL-MILTON MEDIAN (FIX 1): a dedicated median query so the
-  // hero's "typical" reads the same kind of figure as the Board (median, not the
-  // right-tail-inflated mean). All-Milton scope; no coupling to board_stats. Falls
-  // back to the rollup mean if the sold DB is unavailable.
+  // The Milton-wide rollup is memoised and shared; the all-Milton typical is a
+  // dedicated midpoint query so the hero reads the same KIND of figure the Board
+  // publishes rather than a right-tail-inflated mean.
   const mw = await buildMiltonWideContext();
   const soldDb = getSoldDb();
-  let medianAll: number | null = null;
+  let typicalAll: number | null = null;
   if (soldDb) {
     const r = (await soldDb`SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY sold_price) AS med
       FROM sold.sold_records
       WHERE transaction_type = 'For Sale' AND perm_advertise = TRUE
         AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`) as Array<{ med: unknown }>;
     const m = r[0]?.med;
-    medianAll = m != null && Number.isFinite(Number(m)) ? Number(m) : null;
+    typicalAll = m != null && Number.isFinite(Number(m)) ? Number(m) : null;
   }
-  const typicalSource = medianAll ?? mw.aggregates.typicalPrice;
-  const stats = {
-    typicalPrice: typicalSource != null ? round5k(typicalSource) : 0,
-    sold12mo: mw.aggregates.salesCount,
-    onMarket: mw.activeListingsCount,
-    dom: mw.aggregates.daysOnMarket ?? 0,
-  };
+  const typicalSource = typicalAll ?? mw.aggregates.typicalPrice;
 
-  // ── footer only (perf trim) ──
-  // The homepage now renders just the Board as its market read, so the heavy
-  // per-neighbourhood sold aggregate, the neighbourhood-card array, the VIP-street
-  // strip, and the templated commentary are no longer computed. The footer needs
-  // only top-3 neighbourhoods + top-2 VIP streets + counts — all light queries.
-  const [nbTop, totalNbhd, vipRows, streetCount, publishedHubs] = await Promise.all([
-    prisma.neighbourhood.findMany({
-      where: { profile: { not: "standard_no_hub" } },
-      orderBy: { name: "asc" },
-      select: { slug: true, name: true },
-    }),
-    prisma.neighbourhood.count(),
-    prisma.residentialStreet.findMany({
-      where: { isVip: true },
-      orderBy: { soldCount12mo: "desc" },
-      take: 2,
-      select: { name: true, slug: true },
-    }),
-    prisma.residentialStreet.count({ where: await surfacedStreetWhere() }), // surfaced only — dormant/pageless entities don't count toward the public "streets" figure
-    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
-  ]);
-  const publishedSlugs = new Set(publishedHubs.map((h) => h.neighbourhoodSlug));
-  const footer = {
-    topNeighbourhoods: nbTop.filter((n) => publishedSlugs.has(n.slug)).slice(0, 3).map((n) => ({ name: n.name, slug: n.slug })),
-    topStreets: vipRows.map((s) => ({ name: resolveStreetName(s.slug, s.name).name, slug: s.slug })),
-    neighbourhoodCount: totalNbhd,
-    streetCount,
-  };
+  const [newThisWeek, soldMtd, neighbourhoods, videoStreets, videoCount, listingRows, hubByRaw, vipRows, streetPageCount, surfacedStreetCount, totalNbhd, soldOverall] =
+    await Promise.all([
+      getNewThisWeekCount(),
+      getSoldThisMonth(),
+      getNeighbourhoodCards(),
+      getStreetsWithVideo(10),
+      getStreetVideoCount(),
+      getNewestListingCards(8),
+      getRawStringHubMap(),
+      prisma.residentialStreet.findMany({
+        where: { isVip: true, ...(await surfacedStreetWhere()) },
+        orderBy: [{ recencyWeightedSold: "desc" }],
+        take: 8,
+        select: { name: true, slug: true },
+      }),
+      // PAGES, from the set the sitemap emits. Not the surfaced-entity count: that is the
+      // set that may APPEAR in search and in a hub ladder (738 today), and it was being
+      // published as "streets with their own page", which it has never been.
+      publishedStreetPageCount(),
+      // Entities we can say something about. Kept, and labelled as what it is.
+      prisma.residentialStreet.count({ where: await surfacedStreetWhere() }),
+      prisma.neighbourhood.count(),
+      // The /sold aggregate: all-Milton, 12 months, k-gated. The sold-to-ask proof point
+      // reads THIS, not the Board's urban 13-week ratio, so the homepage and the market
+      // page publish one figure. Board.soldToAsk.value is a RATIO (0.9809) that TheBoard
+      // multiplies at render; soldToAskPct is already a percent (98.1).
+      getMiltonSoldOverall(),
+    ]);
+
+  // Resolve each listing's raw TREB neighbourhood to a PUBLISHED hub. A raw string with
+  // no published hub gets no link — /neighbourhoods refuses the same guess for the same
+  // reason: a slugified raw string is a 404 dressed as a link.
+  const newestListings = listingRows.map((l) => {
+    const hub = hubByRaw.get(l.neighbourhood) ?? null;
+    return { ...l, hubSlug: hub?.slug ?? null, hubName: hub?.name ?? null };
+  });
+
+  const inDemandStreets = vipRows.map((s) => ({
+    name: resolveStreetName(s.slug, s.name).name,
+    slug: s.slug,
+  }));
 
   return {
-    stats,
+    stats: {
+      typicalPrice: typicalSource != null ? round5k(typicalSource) : 0,
+      sold12mo: mw.aggregates.salesCount,
+      onMarket: mw.activeListingsCount,
+      dom: mw.aggregates.daysOnMarket ?? 0,
+      newThisWeek,
+      soldMonthToDate: soldMtd.count,
+      soldMonthTypical: soldMtd.typicalPrice,
+    },
     hero: mockHomepageData.hero, // STATIC copy (no live source) — FLAG
     trust: {
       rating: 5.0,
@@ -115,6 +139,61 @@ export async function getHomepageData(): Promise<HomepageData> {
       idx: "1809031",
       vow: "1848370",
     },
-    footer,
+    neighbourhoods,
+    streetPageCount,
+    soldToAskPct: soldOverall.soldToAskPct,
+    videoStreets,
+    videoCount,
+    newestListings,
+    inDemandStreets,
+    footer: {
+      // EVERY published hub, not the first three. The footer is the homepage's link
+      // graph and a truncated one was costing 19 crawlable links for no reader benefit.
+      neighbourhoods: neighbourhoods.map((n) => ({ name: n.name, slug: n.slug })),
+      topStreets: inDemandStreets,
+      neighbourhoodCount: totalNbhd,
+      streetCount: surfacedStreetCount,
+      streetPageCount,
+    },
+  };
+}
+
+/**
+ * The nav's live panels, composed from data the page has already fetched.
+ *
+ * The Board row is the SELL panel's only source, so the menu cannot state a market
+ * figure that the Board rendered below it contradicts: same row, same window label,
+ * same suppression. A null stays null and its row does not render.
+ */
+export function buildMegaLive(data: HomepageData, board: BoardTab[] | null): MegaLive {
+  const overall = board?.find((t) => t.tab === "overall") ?? null;
+  return {
+    buy: {
+      activeCount: data.stats.onMarket,
+      newThisWeek: data.stats.newThisWeek,
+      listings: data.newestListings.slice(0, 4).map((l) => ({
+        mlsNumber: l.mlsNumber,
+        address: l.address, // already through the display gate in listingsV2Data
+        price: l.price,
+      })),
+    },
+    streets: {
+      videoCount: data.videoCount,
+      videos: data.videoStreets.slice(0, 4).map((v) => ({
+        slug: v.slug,
+        name: v.name,
+        poster: v.poster,
+        variant: v.variant,
+      })),
+    },
+    sell: overall
+      ? {
+          window: overall.typical.window,
+          typical: overall.typical.value,
+          daysToSell: overall.daysToSell.value,
+          soldToAsk: overall.soldToAsk.value,
+        }
+      : undefined,
+    inDemandStreets: data.inDemandStreets,
   };
 }

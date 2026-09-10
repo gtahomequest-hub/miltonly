@@ -145,3 +145,81 @@ export async function loadRecord() {
     },
   };
 }
+
+/**
+ * THE HOMEPAGE SIDE OF THE RECORD.
+ *
+ * Written 2026-09-10 because the homepage gate passed with two wrong figures on the page.
+ * It asserted that figures were PRESENT and that neighbourhood prices matched their hubs.
+ * It never looked at the Milton-wide figures at all, so "0.980868783307145%" and a street
+ * count of 738 against 444 published pages both sailed through a check whose own title
+ * claimed the page "states its figures".
+ *
+ * A presence assertion is not a value assertion. Every figure below is recomputed here from
+ * the database the page reads, and the check compares the RENDERED TEXT to it — not the
+ * `data-value` attribute, which is the component's own opinion of itself and was correct in
+ * both defects. The bug was in the formatting, so the formatting is what gets asserted.
+ *
+ * Each query is deliberately the same shape as the app's, including where that shape is
+ * questionable: `activeListings` has no city filter and no transaction-type filter because
+ * buildMiltonWideContext has none either. This is a drift gate, not a redesign. Where a
+ * definition looks wrong it is reported in the run, never silently corrected here, or the
+ * assertion would fail on correct code.
+ */
+export async function loadHomeRecord() {
+  loadEnv();
+  requireEnv('SOLD_DATABASE_URL', 'DATABASE_URL');
+  const sold = neon(process.env.SOLD_DATABASE_URL);
+  const app = neon(process.env.DATABASE_URL);
+
+  const round5k = (n) => (n === null ? null : Math.round(n / 5000) * 5000);
+
+  const [activeRows, newWeekRows, mtdRows, twelveRows, staRows, pubRows, entRows] = await Promise.all([
+    // buildMiltonWideContext: no city, no transaction-type filter.
+    app`SELECT COUNT(*)::int n FROM public."Listing" WHERE "permAdvertise" = TRUE AND status = 'active'`,
+    // getNewThisWeekCount: sale side, Milton, last 7 days.
+    app`SELECT COUNT(*)::int n FROM public."Listing"
+        WHERE "permAdvertise" = TRUE AND status = 'active' AND city = 'Milton'
+          AND ("transactionType" IS NULL OR "transactionType" <> 'For Lease')
+          AND "listedAt" >= NOW() - INTERVAL '7 days'`,
+    // getSoldThisMonth: calendar month to date.
+    sold`SELECT COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) typical
+         FROM sold.sold_records
+         WHERE city = 'Milton' AND perm_advertise = TRUE AND transaction_type = 'For Sale'
+           AND sold_date >= date_trunc('month', NOW()) AND sold_date <= NOW()`,
+    // getHomepageData: the all-Milton typical (no city filter) + saleAggQuery(null)'s count.
+    sold`SELECT COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) typical
+         FROM sold.sold_records
+         WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
+           AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`,
+    // getMiltonSoldOverall: the /sold sold-to-ask, all-Milton, 12 months.
+    sold`SELECT COUNT(*)::int n, AVG(sold_to_ask_ratio) sta
+         FROM sold.sold_records
+         WHERE city = 'Milton' AND perm_advertise = TRUE AND transaction_type = 'For Sale'
+           AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`,
+    // publishedStreetPageSlugs: published content INTERSECT existing entity — the sitemap's set.
+    app`SELECT "streetSlug" s FROM public."StreetContent" WHERE status = 'published'`,
+    app`SELECT slug FROM public."ResidentialStreet"`,
+  ]);
+
+  const entities = new Set(entRows.map((r) => r.slug));
+  const staN = Number(staRows[0]?.n ?? 0);
+  const staRaw = num(staRows[0]?.sta ?? null);
+  const mtdN = Number(mtdRows[0]?.n ?? 0);
+  const mtdTypical = num(mtdRows[0]?.typical ?? null);
+  const twelveTypical = num(twelveRows[0]?.typical ?? null);
+
+  return {
+    onMarket: Number(activeRows[0]?.n ?? 0),
+    newThisWeek: Number(newWeekRows[0]?.n ?? 0),
+    soldMonthToDate: mtdN,
+    soldMonthTypical: mtdN >= K_ANON_PRICE ? round5k(mtdTypical) : null,
+    sold12mo: Number(twelveRows[0]?.n ?? 0),
+    typicalMilton: round5k(twelveTypical),
+    // getMiltonSoldOverall rounds to one decimal; the proof point then rounds to a whole
+    // number for display. Both are kept so the check can say which step drifted.
+    soldToAskPct: staN >= K_ANON_PRICE && staRaw !== null ? Math.round(staRaw * 1000) / 10 : null,
+    publishedStreetPages: pubRows.map((r) => r.s).filter((slug) => entities.has(slug)).length,
+    publishedContentRows: pubRows.length,
+  };
+}

@@ -3,6 +3,21 @@
 // The layout window consumes it. Every field is serializable (server -> client boundary).
 // k-anonymity contract: NeighbourhoodCard.typicalPriceRounded === null => silent card state.
 
+import type { NeighbourhoodCard as HubCard } from '@/lib/neighbourhoodCards';
+import type { StreetVideoCard } from '@/lib/homeSignals';
+import type { ListingCardData } from '@/components/listings/v2/types';
+
+export type { HubCard };
+
+/** A newest-listing card plus the ONE thing the card needs and the grid's card lacks:
+ *  the canonical published hub this listing belongs to, resolved server-side. null when
+ *  the raw TREB string maps to no published hub, in which case the card shows no
+ *  neighbourhood link rather than a slugified guess that would 404. */
+export interface HomeListingCard extends ListingCardData {
+  hubSlug: string | null;
+  hubName: string | null;
+}
+
 export type MlsTabKey = 'wealth' | 'buy' | 'sell' | 'rent';
 
 export interface MiltonStats {
@@ -12,6 +27,12 @@ export interface MiltonStats {
   onMarket: number;
   /** days on market */
   dom: number;
+  /** active sale listings first advertised in the last 7 days */
+  newThisWeek: number;
+  /** calendar month TO DATE — the label must say "so far", because it is */
+  soldMonthToDate: number;
+  /** k-gated: null below K_ANON_PRICE, never 0 */
+  soldMonthTypical: number | null;
 }
 
 export interface TrustInfo {
@@ -99,20 +120,33 @@ export interface MlsExploreConfig {
 }
 
 export interface FooterData {
-  topNeighbourhoods: { name: string; slug: string }[];
+  /** EVERY published hub. A truncated list cost 19 crawlable links and bought nothing. */
+  neighbourhoods: { name: string; slug: string }[];
   topStreets: { name: string; slug: string }[];
   neighbourhoodCount: number;
+  /** SURFACED ENTITIES — streets that may appear in search and hub ladders (738). */
   streetCount: number;
+  /** PUBLISHED PAGES — the sitemap's set (444). Different number, different noun. */
+  streetPageCount: number;
 }
 
 export interface HomepageData {
   stats: MiltonStats;
   hero: HeroContent;
   trust: TrustInfo;
+  /** the 22 published hubs, priced by their own page's k-gated aggregate */
+  neighbourhoods: HubCard[];
+  /** PAGES, the set the sitemap emits. Not the surfaced-entity count. */
+  streetPageCount: number;
+  /** all-Milton 12-month sold-to-ask as a PERCENT (98.1), k-gated. null = suppressed */
+  soldToAskPct: number | null;
+  videoStreets: StreetVideoCard[];
+  videoCount: number;
+  newestListings: HomeListingCard[];
+  inDemandStreets: { name: string; slug: string }[];
   // Optional: the Board is the homepage's market read now, so getHomepageData no
   // longer computes these (perf trim). mockData still provides them for reference.
   commentary?: MarketCommentary;
-  neighbourhoods?: NeighbourhoodCard[];
   neighbourhoodCount?: number;
   vipStreets?: VipStreet[];
   streetCount?: number;

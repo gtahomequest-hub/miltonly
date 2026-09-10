@@ -782,10 +782,6 @@
   background: var(--lv-green);
   color: var(--lv-bg-deep);
 }
-.listings-v2 .lv-badge.lv-reduced {
-  background: rgba(255, 244, 222, 0.95);
-  color: var(--lv-amber);
-}
 .listings-v2 .lv-badge.lv-soldb {
   background: var(--lv-bg-deep);
   color: #fff;

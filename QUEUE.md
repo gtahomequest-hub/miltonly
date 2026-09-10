@@ -258,3 +258,56 @@ it against the Town registry is step one, and the build scope follows from it �
 
 **Done when** the two gates consult the same sources, the registry-filtered population is
 reported, and the streets that already have pages refresh on the cron without a manual run.
+
+---
+
+## Out of queue, 2026-09-10: the homepage, the header and the footer — **DONE**
+
+Not a numbered item. Prompted directly in the `feat/homepage` worktree (`D:\miltonly-home`),
+Gate A first, built after rulings, reviewed on preview by Aamir, merged.
+
+Records: `scratchpad/reports/062-homepage-gate-a.md` (recon),
+`063-homepage-build.md` (build), `064-homepage-figure-defects.md` (title/H1 + two figure fixes).
+
+*Report numbering collided with the leads worktree, which used 062 and 063 on the same days.
+Both sets are in the repo under different slugs. Numbers are no longer unique across worktrees.*
+
+- [x] **The header emits crawlable links.** Three menus (Buy / Streets / Sell), every trigger a
+      real `<a href>`, every panel server-rendered and closed with `hidden`. The popover is
+      progressive enhancement; below 820px the same links are native `<details>` accordions.
+      **Site-wide**: the page variant had no mega menu at all before.
+- [x] **The footer is a live link graph** — every published hub, the in-demand streets, the
+      tools — instead of three hubs and two streets.
+- [x] **Five sections**: 01 streets on film, 02 newest on the market, 03 the neighbourhood
+      ladder, 04 valuation with three live proof points, 05 the daily brief. THE BOARD
+      unchanged. The TrustBand is retired.
+- [x] **24 unique internal links -> 66** on the homepage (nav 0 -> 34, hubs 3 -> 22, street
+      pages 2 -> 17); 302 visible words -> 1,146.
+- [x] **Title and H1 set on the page**, not inherited: `Milton Homes for Sale, Street by Street`
+      (39 chars, was an inherited 101) and `What Milton homes actually sell for, street by
+      street`. Canonical for `/` is declared rather than inherited.
+- [x] **A 10th battery check**, `scripts/verify/checks/homepage.mjs`. Link floor (stated, 50),
+      header links present as anchors in served HTML, every neighbourhood figure equal to its
+      DB2 record with suppression asserted both ways, every Milton-wide figure equal to its
+      source query **by value and by format**, and WebSite + Organization + SearchAction parsed
+      per node. The homepage had no automated coverage of any kind before this.
+- [x] **`publishedStreetPageSlugs()`** is the one definition of the sitemap's street-page set.
+      `sitemap.ts`, `/streets` and the homepage all read it and all say 444. Three surfaces had
+      been counting three different sets under one word (444 / 445 / 738).
+- [x] **`getNeighbourhoodCards()`** is the one source of a neighbourhood card. The homepage and
+      `/neighbourhoods` both carry the hub's own k-gated typical sold price; the list-price
+      average is gone.
+- [x] **No price-drop section, and the two claims that faked one are deleted**:
+      `listingsV2Data`'s `priceReduced` flag with its badge, and `stats.ts
+      getFeaturedListings`, whose `priceDrops` returned the cheapest actives. A drop is not
+      derivable — `lastPriceChangeAt` records that a price changed, never from what.
+- [x] **Address to anchor**: `505 Farmstead Drive` -> `/streets/farmstead-drive-milton#505`,
+      confirmed against the Town's 40,826-address projection; an unknown number degrades to
+      the street page rather than linking an id that is not there.
+- [ ] **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
+      `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
+      **Leads owns this.**
+- [ ] **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
+      `permAdvertise AND status='active'` with no city and no transaction-type filter. Exactly
+      right today (448 either way), so latent rather than wrong. Needs a decision.
+- [ ] **380px is sized for, not visually verified.**

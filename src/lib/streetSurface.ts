@@ -61,6 +61,36 @@ export const publishedStreetSlugs = perRequest(async (): Promise<string[]> => {
 });
 
 /**
+ * THE PUBLISHED STREET PAGES. Slugs that both carry a published StreetContent row AND exist as
+ * a ResidentialStreet entity, which is exactly the set src/app/sitemap.ts emits under /streets/.
+ *
+ * WHY THE SECOND CONDITION IS NOT OPTIONAL, and why this is a function rather than a count each
+ * caller writes for itself. `StreetContent.status = 'published'` alone returns 445 rows; one of
+ * them, `15-side-road-side-road-milton`, is a machine-made address artifact with no entity behind
+ * it, and the sitemap refuses it for that reason. A surface that counts 445 and a sitemap that
+ * emits 444 are describing two different things while using one word.
+ *
+ * The homepage's proof point published "738 streets with their own page" before this existed. 738
+ * was `surfacedStreetWhere()`'s count: entities with sold history OR a published page, the set
+ * that decides what may appear in search and in a hub ladder. It is a real number and it counts
+ * streets we can say something about; it has never been the number of pages. Anything claiming a
+ * page count reads THIS, and so does the sitemap, so the two cannot drift apart again.
+ */
+export const publishedStreetPageSlugs = perRequest(async (): Promise<string[]> => {
+  const [published, entities] = await Promise.all([
+    prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } }),
+    prisma.residentialStreet.findMany({ select: { slug: true } }),
+  ]);
+  const entitySlugs = new Set(entities.map((e) => e.slug));
+  return published.map((r) => r.streetSlug).filter((slug) => entitySlugs.has(slug));
+});
+
+/** How many street pages are published. The count of the set above, never a second query. */
+export async function publishedStreetPageCount(): Promise<number> {
+  return (await publishedStreetPageSlugs()).length;
+}
+
+/**
  * The surfacing predicate, derived. Use everywhere `SURFACED_STREET_WHERE` used to appear —
  * including inside a relation `_count`, where it is still just a filter object.
  *
