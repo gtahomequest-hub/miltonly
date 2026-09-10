@@ -1,22 +1,20 @@
 // src/components/home/DailyBrief.tsx
-// The daily brief signup.
+// The daily brief signup. Source "daily-brief", watch kind "brief".
 //
-// POSTS TO /api/leads, source "daily-brief". Leads owns the model (ruling, 2026-09-10):
-// there is no subscription table, no second identity for the same person, and nothing in
-// this file writes to a database. The generic lead path accepts an email-only submission,
-// which is the whole point — a brief signup that demands a phone number is not a brief
-// signup.
+// THIS WAS THE SECOND WRITER OF THE SAME SOURCE. It posted to the old monolith route with source
+// "daily-brief" while src/components/lead/DailyBriefSignup.tsx posted the same source
+// through the guarded path, so which guards ran and whether a watch was left behind
+// depended on which page the visitor happened to be on. A signup here got no honeypot
+// check, no environment tag, no source-specific confirmation and no SavedSearch of kind
+// "brief", which means the brief sender would never have found these people. One writer
+// now: the shared client helper.
 //
-// CASL: the disclosure text is shown above the field and travels with the submission as
-// `consentText` + `consentTimestamp`, the same keys the valuation card sends. The generic
-// lead path does not persist them today; the lead-magnet branch that does also requires a
-// phone number. Passing them regardless means the moment Leads wires consent capture into
-// the generic path, this surface is already sending it — and until then the disclosure the
-// visitor agreed to is at least stated on screen rather than assumed. Flagged for Leads.
+// CASL: the disclosure is shown under the field and travels with the submission as
+// `consentText` + `consentTimestamp`. The one ingest path persists both.
 'use client';
 
 import { useState } from 'react';
-import { attributionPayload } from '@/lib/attribution';
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from '@/lib/postLeadClient';
 import { SectionHead } from './SectionHead';
 
 const CONSENT_TEXT =
@@ -25,7 +23,6 @@ const CONSENT_TEXT =
   'anytime by clicking unsubscribe.';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const HONEYPOT_FIELD = 'company_website';
 
 export function DailyBrief() {
   const [email, setEmail] = useState('');
@@ -42,32 +39,22 @@ export function DailyBrief() {
       return;
     }
     setState('sending');
-    try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: trimmed,
-          source: 'daily-brief',
-          intent: 'daily-brief',
-          consent: true,
-          consentText: CONSENT_TEXT,
-          consentTimestamp: new Date().toISOString(),
-          [HONEYPOT_FIELD]: honey,
-          ...attributionPayload(),
-        }),
-      });
-      const data = (await res.json()) as { ok?: boolean; success?: boolean; error?: string };
-      if (!res.ok || data.error) {
-        setError(data.error || 'Something went wrong. Please try again.');
-        setState('idle');
-        return;
-      }
-      setState('done');
-    } catch {
-      setError('Something went wrong. Please try again.');
+    const result = await postLeadDetailed({
+      source: 'daily-brief',
+      intent: 'buy',
+      email: trimmed,
+      notes: 'Daily brief signup, homepage',
+      consent: true,
+      consentText: CONSENT_TEXT,
+      consentTimestamp: new Date().toISOString(),
+      honeypot: honey,
+    });
+    if (!result.ok) {
+      setError(result.error || 'Something went wrong. Please try again.');
       setState('idle');
+      return;
     }
+    setState('done');
   }
 
   return (
@@ -102,17 +89,13 @@ export function DailyBrief() {
                 {state === 'sending' ? 'Adding you…' : 'Send me the brief'}
               </button>
             </div>
-            {/* honeypot — never shown, never focusable */}
-            <input
-              type="text"
-              name={HONEYPOT_FIELD}
-              value={honey}
-              onChange={(e) => setHoney(e.target.value)}
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-              className="mh-honey"
-            />
+            {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+            <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+              <label>
+                Company website
+                <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+              </label>
+            </div>
             <p className="mh-briefconsent">{CONSENT_TEXT}</p>
             {error ? <p className="mh-brieferror">{error}</p> : null}
           </form>

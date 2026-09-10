@@ -1,15 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 
-const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const HONEYPOT_FIELD = "company_website";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SOURCE = "sales-ads-market-pulse-unlock";
 
@@ -45,7 +42,7 @@ function getGtag(): GtagFn | null {
   return w.gtag || null;
 }
 
-// Match the shape that /api/leads returns in `stats` for this intent.
+// Match the shape the ingest path returns in `stats` for this source.
 // Post-4j-fix: dollar amounts (avg/median/min/max) are permanently null
 // from the blessed analytics path. The fields stay on the type so the
 // client UI contract is stable; the optional range row never renders.
@@ -92,18 +89,9 @@ export default function MarketPulseUnlockCard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const searchParams = useSearchParams();
-  const tracking = useMemo(
-    () => ({
-      utm_source: searchParams.get("utm_source") || "",
-      utm_medium: searchParams.get("utm_medium") || "",
-      utm_campaign: searchParams.get("utm_campaign") || "",
-      utm_term: searchParams.get("utm_term") || "",
-      utm_content: searchParams.get("utm_content") || "",
-      gclid: searchParams.get("gclid") || "",
-    }),
-    [searchParams],
-  );
+  // THE PER-SURFACE UTM READ IS GONE. src/components/AttributionCapture.tsx runs in the root
+  // layout and persists first-touch and last-touch for the whole session; the client helper
+  // sends both. A form reading the current URL only ever saw the last landing page.
 
   // The `neighbourhood` prop is the RAW TREB string (e.g. "1032 - FO Ford")
   // because the analytics table is keyed on that exact value. The display
@@ -134,42 +122,34 @@ export default function MarketPulseUnlockCard({
 
     setSubmitting(true);
 
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: `Lead ${phoneDigits.slice(-4)}`,
-          phone: phone.trim(),
-          email: trimmedEmail,
-          source: SOURCE,
-          intent: "market-pulse-unlock",
-          consent: true,
-          consentText: CONSENT_TEXT,
-          consentTimestamp: new Date().toISOString(),
-          mlsNumber,
-          matchCriteria: {
-            propertyType,
-            neighbourhood,
-            city,
-            periodDays: PERIOD_DAYS,
-          },
-          utm_source: tracking.utm_source,
-          utm_medium: tracking.utm_medium,
-          utm_campaign: tracking.utm_campaign,
-          utm_term: tracking.utm_term,
-          utm_content: tracking.utm_content,
-          gclid: tracking.gclid,
-          ...attributionPayload(),
-          [HONEYPOT_FIELD]: honey,
-        }),
+    {
+      // The reveal comes back on the one response, the way it always has: the packet is
+      // computed inside the ingest path from this consented criteria snapshot, k-anonymity
+      // enforced in getMarketPulse, so the card unlocks without a second round trip.
+      const result = await postLeadDetailed({
+        source: SOURCE,
+        intent: "buy",
+        name: `Lead ${phoneDigits.slice(-4)}`,
+        phone: phone.trim(),
+        email: trimmedEmail,
+        consent: true,
+        consentText: CONSENT_TEXT,
+        consentTimestamp: new Date().toISOString(),
+        mlsNumber,
+        matchCriteria: {
+          propertyType,
+          neighbourhood,
+          city,
+          periodDays: PERIOD_DAYS,
+        },
+        honeypot: honey,
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; id?: string; stats?: MarketPulseStatsPayload | null };
-      if (!res.ok) {
-        setError(data?.error || `Could not unlock the report. Please call ${config.realtor.phone} directly.`);
+      if (!result.ok) {
+        setError(result.error || `Could not unlock the report. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
+      const packet = (result.stats ?? null) as MarketPulseStatsPayload | null;
 
       // GA4 conversion event — fire AFTER res.ok so failed POSTs never count
       // as conversions (audit F1.4). transaction_id = lead.id for GA4 dedup
@@ -178,20 +158,20 @@ export default function MarketPulseUnlockCard({
       const gtag = getGtag();
       if (gtag) {
         gtag("event", "generate_lead", {
-          transaction_id: typeof data?.id === "string" ? data.id : "",
+          transaction_id: result.leadId ?? "",
           value: 2500,
           currency: "CAD",
           source: SOURCE,
           intent: "market-pulse-unlock",
           listing_mls: mlsNumber,
-          match_basis: data?.stats?.match_basis ?? "unknown",
+          match_basis: packet?.match_basis ?? "unknown",
         });
       }
 
       // Reveal stats from server response. If server returned no stats
       // (helper failure, env unset), still flip to "subscribed" state with
       // a fallback message — the lead is captured, just no on-page reveal.
-      setStats(data?.stats ?? {
+      setStats(packet ?? {
         sold_count: 0,
         avg_sold_price: null,
         median_sold_price: null,
@@ -203,9 +183,6 @@ export default function MarketPulseUnlockCard({
         period_days: PERIOD_DAYS,
         match_basis: "deferred",
       });
-    } catch {
-      setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} at ${config.realtor.phone}.`);
-      setSubmitting(false);
     }
   }
 
@@ -337,10 +314,8 @@ export default function MarketPulseUnlockCard({
           <label>
             Company website
             <input
+              {...honeypotInputProps}
               type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              name={HONEYPOT_FIELD}
               value={honey}
               onChange={(e) => setHoney(e.target.value)}
             />

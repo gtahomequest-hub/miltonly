@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { monthlyPayment, ontarioLTT, cmhcPremium, stressTestRate, formatMoney, formatMoneyShort } from "@/lib/mortgage-math";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 export default function MortgageCalculator() {
@@ -166,6 +166,7 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [honey, setHoney] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -188,23 +189,23 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
     setSubmitting(true);
     try {
       const notes = `Mortgage calc: ${formatMoneyShort(context.price)} home, ${formatMoneyShort(context.downAmount)} down, ~${formatMoney(context.monthly)}/mo at ${context.rate.toFixed(2)}% over ${context.years}yr`;
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: name.trim(),
-          phone: phoneDigits,
-          email: email.trim(),
-          intent: "buyer",
-          source: "homepage-mortgage-calculator",
-          notes,
-          ...attributionPayload(),
-        }),
+      // The price the visitor modelled is a real budget signal, so it goes to the band the
+      // watch layer and the CRM both read rather than only into the note.
+      const result = await postLeadDetailed({
+        source: "homepage-mortgage-calculator",
+        intent: "buy",
+        name: name.trim(),
+        phone: phoneDigits,
+        email: email.trim() || undefined,
+        priceMax: Math.round(context.price),
+        notes,
+        honeypot: honey,
       });
-      if (!res.ok) throw new Error();
+      if (!result.ok) {
+        setError(result.error || `Something went wrong. Please call ${config.realtor.phone}.`);
+        return;
+      }
       setSuccess(true);
-    } catch {
-      setError(`Something went wrong. Please call ${config.realtor.phone}.`);
     } finally {
       setSubmitting(false);
     }
@@ -229,6 +230,13 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
             <input className={fieldCls + " mb-3"} placeholder="Your name" value={name} onChange={e => setName(e.target.value)} autoFocus />
             <input className={fieldCls + " mb-3"} type="tel" inputMode="tel" placeholder="(___) ___-____" value={phone} onChange={e => setPhone(formatPhone(e.target.value))} />
             <input className={fieldCls + " mb-4"} type="email" inputMode="email" placeholder="Email (optional)" value={email} onChange={e => setEmail(e.target.value)} />
+            {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+            <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+              <label>
+                Company website
+                <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+              </label>
+            </div>
             {error && <p className="text-[12px] text-[#ef4444] mb-3">{error}</p>}
             <button type="submit" disabled={submitting} className="w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold py-3 rounded-xl hover:bg-[#fbbf24] disabled:opacity-60">
               {submitting ? "Sending…" : "Request pre-approval call →"}

@@ -5,7 +5,7 @@
 // SchoolAlertForm).
 //
 // Phase 1 moved it onto the one submission path. Three defects went with the move: it
-// posted to /api/leads (the old monolith), it set the success state WITHOUT checking the
+// posted to the old monolith route, it set the success state WITHOUT checking the
 // response, so a 400 or a 500 rendered "You're in", and it sent intent "buyer", which the
 // value model scores at 0. The area now travels as a neighbourhood so an alert signup can
 // leave behind a watch a sender can read.

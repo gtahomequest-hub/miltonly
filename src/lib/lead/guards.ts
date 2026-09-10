@@ -1,7 +1,7 @@
 // The three guards every lead submission passes: honeypot, origin, rate limit.
 //
 // /api/leads/create had none of them, and a plain curl against a Vercel-protected preview
-// deployment wrote a row into the production table (proven 2026-09-10). /api/leads has a
+// deployment wrote a row into the production table (proven 2026-09-10). The old monolith had a
 // honeypot and an in-memory per-IP limiter; this is that, with a real store and an email
 // dimension, in one place both paths can use.
 //

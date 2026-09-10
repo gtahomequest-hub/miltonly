@@ -55,6 +55,10 @@
     {
       "path": "/api/alerts/match",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/brief/send",
+      "schedule": "15 13 * * 1-5"
     }
   ]
 }

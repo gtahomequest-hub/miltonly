@@ -2,7 +2,7 @@
 //
 // Captures gclid + utm_* params on any page load and persists them across
 // navigation in localStorage + a first-party cookie. Forms read via
-// getAttribution() and send first-touch + last-touch to /api/leads.
+// getAttribution() and send first-touch + last-touch with every lead.
 //
 // Why both layers: localStorage survives within the same origin/profile;
 // the cookie acts as a backup if storage is cleared partway through a session.
@@ -105,7 +105,7 @@ export function getAttribution(): {
 }
 
 // Helper for form submit handlers — flattens first+last into the body shape
-// /api/leads accepts (existing fields = first-touch; *_last = last-touch).
+// the ingest path accepts (existing fields = first-touch; *_last = last-touch).
 export function attributionPayload(): Record<string, string> {
   const { first, last } = getAttribution();
   const out: Record<string, string> = {};
