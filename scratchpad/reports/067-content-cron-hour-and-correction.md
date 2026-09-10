@@ -262,9 +262,11 @@ Measured directly against `DATABASE_URL`: **26 rows in `_prisma_migrations`, 0
 unfinished, 0 rolled back.** The ledger is clean.
 
 The earlier reading was taken against the wrong database. `prisma migrate
-status` cannot run in this worktree, because `schema.prisma` declares
-`directUrl = env("DIRECT_DATABASE_URL")` and that variable is absent from this
-`.env.local`; the CLI fails `P1012` before opening a connection. The only way
+status` could not run in this worktree, and the reason is sharper than "the
+variable is absent": **the Prisma CLI reads `.env`, not `.env.local`**, and
+this worktree had no `.env`. Everything else in the project reads `.env.local`
+through `loadEnvLocal()`, so the gap is invisible until a Prisma command hits
+it and fails `P1012` before opening a connection. The only way
 to make it run here is to supply a value, and the nearest-looking one is
 `NEON_DATABASE_URL_UNPOOLED`, **which is DB2**. Verified today: **DB2 has no
 `_prisma_migrations` table at all**, under either `NEON_DATABASE_URL_UNPOOLED`
@@ -279,6 +281,15 @@ schema against the migration column for column and index for index, and ran
 failed on `CREATE TABLE`. The row reads `applied_steps_count: 0`, the signature
 of a resolve. Nothing broke only because Vercel runs `prisma generate && next
 build`, not `migrate deploy`.
+
+Both are now closed. The worktree has a gitignored `.env` and
+`npx prisma migrate status` reports **"Database schema is up to date!"** from
+here; `DIRECT_DATABASE_URL` needed no fetching, being `DATABASE_URL` with
+`-pooler` dropped from the host. And Core audited the full ledger: 26 rows, 26
+directories, 0 drift, and exactly two rows at `applied_steps_count: 0`,
+`0_init` and this one, so `market_edition` was the only migration ever applied
+outside the ledger. The "treat as unverified" flag raised with Core is
+resolved.
 
 **The decision to keep the note in `sectionsJson` stands**, on the other ground
 this report gave: nothing queries, filters or sorts on it and only the renderer

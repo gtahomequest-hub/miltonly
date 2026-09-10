@@ -276,19 +276,32 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
   0 unfinished, 0 rolled back.** The ledger is clean and always was.
 
   The false reading has a mechanical cause worth knowing, because the next
-  person hits the same wall. `prisma migrate status` **cannot run in this
-  worktree at all**: `schema.prisma` declares `directUrl =
-  env("DIRECT_DATABASE_URL")`, that variable is absent from this `.env.local`,
-  and the CLI fails with `P1012` before it opens a connection. The only way to
-  make it run here is to set `DIRECT_DATABASE_URL` to something, and the
-  nearest-looking value is `NEON_DATABASE_URL_UNPOOLED` **which is DB2**.
-  Verified today: **DB2 has no `_prisma_migrations` table at all**, in either
-  `NEON_DATABASE_URL_UNPOOLED` or `SOLD_DATABASE_URL`. Point Prisma there and
-  every migration reports unapplied, correctly, about the wrong database.
+  person hits the same wall. **The Prisma CLI reads `.env`. It does NOT read
+  `.env.local`.** `schema.prisma` declares `directUrl =
+  env("DIRECT_DATABASE_URL")`, this worktree had no `.env`, and the CLI failed
+  `P1012` before opening a connection. Everything else in this project reads
+  `.env.local` through `loadEnvLocal()`, so the gap is invisible until a Prisma
+  command hits it.
 
-  **So: get `DIRECT_DATABASE_URL` (the unpooled DB1 URL) from the main worktree
-  or from Vercel before running any migration command here. Do not improvise a
-  value, and do not route around the ledger with `db execute`.**
+  The trap is what someone does next. The only way to make the command run is
+  to supply a value, and the nearest-looking one on hand is
+  `NEON_DATABASE_URL_UNPOOLED` **which is DB2**. Verified: **DB2 has no
+  `_prisma_migrations` table at all**, under either `NEON_DATABASE_URL_UNPOOLED`
+  or `SOLD_DATABASE_URL`. Point Prisma there and it reports every migration
+  unapplied, **correctly, about the wrong database.** A confident and entirely
+  wrong reading, which is how it got written down as fact.
+
+  **FIXED AT SOURCE. This worktree now has a gitignored `.env`** carrying
+  `DATABASE_URL` and `DIRECT_DATABASE_URL`, and `npx prisma migrate status`
+  runs here and reports **"Database schema is up to date!"**. No credential had
+  to be fetched from anywhere: **`DIRECT_DATABASE_URL` is `DATABASE_URL` with
+  `-pooler` removed from the host**, same Neon endpoint unpooled, with
+  `pgbouncer` and `connection_limit` dropped. Derive it, do not go looking for
+  it, and never improvise a different host. If `.env` goes missing, that is how
+  to rebuild it.
+
+  **And do not route around the ledger with `db execute`.** It writes no
+  `_prisma_migrations` row, which is the whole of how this started.
 
 - **`20260910120000_market_edition` was created by `db execute` and the ledger
   did not record it.** Core caught the drift and fixed it: they verified the
@@ -300,6 +313,15 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
   than a run. Nothing broke in the meantime only because Vercel runs
   `prisma generate && next build`, not `migrate deploy`; it would have bitten
   the first person to run migrations.
+
+  **It was the only one.** Core audited the whole ledger afterwards against
+  DB1: 26 rows, 26 directories, 0 in progress, 0 drift, 0 never-applied, and
+  exactly **two** rows carrying `applied_steps_count: 0` — `0_init`, which is
+  the expected baseline and is always resolved rather than run, and this one.
+  `20260910110000_savedsearch_env` and `20260910100000_phase1_lead_layer` were
+  both genuinely run by `migrate deploy`. So `market_edition` is the only
+  migration that ever went in outside the ledger, and there is nothing further
+  to unpick.
 - `npx prisma db execute` prints nothing for a `SELECT`. It cannot be used to
   inspect. Use a short `.mjs` against `@neondatabase/serverless` from the
   project root, and delete it after.
