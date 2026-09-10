@@ -103,14 +103,17 @@ export function TenureHero({ data, eyebrow }: { data: HubData; eyebrow: string }
 
 export function TenureGlance({ data }: { data: HubData }) {
   if (data.nullStats) return null; // null-stats (POTL): no at-a-glance stat card
-  const g = data.atAGlance;
-  const items = [
-    { ic: <IconTag />, l: "Price range", v: g.priceRange, silent: g.priceRange === null },
-    { ic: <IconHome />, l: "Home types", v: g.dominantType, silent: false },
-    { ic: <IconPeople />, l: "Best suits", v: g.suits.join(", "), silent: false },
-    { ic: <IconKey />, l: data.glanceLabels?.fee ?? "Monthly fee", v: g.commute, silent: false },
-    { ic: <IconInvest />, l: data.glanceLabels?.vs ?? "vs Condo", v: g.schools, silent: false },
-  ];
+  // Facts carry their own labels now, so the five fixed slots (and the glanceLabels
+  // relabelling hack that went with them) are gone. Icons are matched by position, which is
+  // stable because a tenure config declares its glance entries in a fixed order.
+  const ICONS = [<IconTag key="0" />, <IconHome key="1" />, <IconPeople key="2" />, <IconKey key="3" />, <IconInvest key="4" />];
+  const items = data.atAGlance.facts.map((f, i) => ({
+    ic: ICONS[i % ICONS.length],
+    l: f.label,
+    v: f.value,
+    silent: false,
+  }));
+  if (items.length === 0) return null;
   return (
     <div className="h-glance">
       <div className="h-wrap">

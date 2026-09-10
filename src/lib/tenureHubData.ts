@@ -137,7 +137,6 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
   // return an editorial-only HubData. The composer hides every stat-bearing
   // section (hero tiles, at-a-glance, market). Intentionally number-free.
   if (cfg.nullStats) {
-    const glanceVal = (label: string) => cfg.glanceStatic.find((g) => g.label === label)?.value ?? "";
     return {
       slug: cfg.slug,
       name: cfg.h1,
@@ -145,12 +144,18 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       character: cfg.character,
       intents: cfg.intents,
       stats: { typicalPrice: null, sold12mo: null, onMarket: null, dom: null },
+      // HubAtAGlance became a list of derived facts when the neighbourhood hubs dropped their
+      // static claims. A TENURE hub is a different animal: it explains what a tenure IS, so its
+      // glance entries are definitional rather than measured, and each says so in its basis.
       atAGlance: {
-        priceRange: null,
-        dominantType: glanceVal("Home types"),
-        suits: glanceVal("Best suits").split(",").map((s) => s.trim()).filter(Boolean),
-        commute: glanceVal("Monthly fee"),
-        schools: glanceVal("vs Condo"),
+        facts: cfg.glanceStatic
+          .filter((g): g is { label: string; value: string } => typeof g.value === "string" && g.value.length > 0)
+          .map((g) => ({
+            key: g.label.toLowerCase().replace(/\s+/g, "-"),
+            value: g.value,
+            label: g.label,
+            basis: "how this tenure works, not a market measurement",
+          })),
       },
       glanceLabels: cfg.glanceLabels,
       breadcrumbLabel: cfg.breadcrumbLabel ?? "Freehold",
@@ -347,11 +352,20 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
   };
 
   const glance = {
-    priceRange,
-    dominantType: cfg.glanceStatic.find((g) => g.label === "Home types")?.value ?? "Detached, semis & freehold townhomes",
-    suits: (cfg.glanceStatic.find((g) => g.label === "Best suits")?.value ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-    commute: cfg.glanceStatic.find((g) => g.label === "Monthly fee")?.value ?? "No condo fee",
-    schools: cfg.glanceStatic.find((g) => g.label === "vs Condo")?.value ?? "Full control, full upkeep",
+    facts: [
+      // The one measured entry leads, with the sample behind it.
+      ...(priceRange
+        ? [{ key: "price-range", value: priceRange, label: "Price range", basis: `across ${stats.sold12mo ?? 0} sales in the last 12 months` }]
+        : []),
+      ...cfg.glanceStatic
+        .filter((g): g is { label: string; value: string } => typeof g.value === "string" && g.value.length > 0)
+        .map((g) => ({
+          key: g.label.toLowerCase().replace(/\s+/g, "-"),
+          value: g.value,
+          label: g.label,
+          basis: "how this tenure works, not a market measurement",
+        })),
+    ],
   };
 
   return {
