@@ -1,5 +1,7 @@
 "use client";
 
+// RETIRED 2026-09-10. Not mounted by any page and not being added to street pages.
+//
 // The form posted natively to the old monolith route with method="POST", so the browser sent a
 // form-encoded body to a route whose first statement is request.json(). That threw on every
 // submission: the route answered 500 {"error":"Failed to create lead"} and the browser

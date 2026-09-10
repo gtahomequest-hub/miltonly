@@ -238,8 +238,12 @@ async function main() {
     "src/components/street/v2/StreetAlertCTA.tsx",
     "src/components/condo/CondoCTAs.tsx",
     "src/components/sold/SoldValuationCTA.tsx",
-    "src/components/street/ExitIntent.tsx",
-    "src/components/street/CornerWidget.tsx",
+    // Retired 2026-09-10 to retired/ (not mounted by any page, and not being added to street
+    // pages). Still asserted: a retired file is dead, not exempt, and if it is ever remounted
+    // it must come back already holding the ingress contract rather than the 2026 monolith
+    // fetch it originally shipped with.
+    "src/components/street/retired/ExitIntent.tsx",
+    "src/components/street/retired/CornerWidget.tsx",
     "src/components/places/PlaceAlertForm.tsx",
     "src/components/lead/DailyBriefSignup.tsx",
   ];

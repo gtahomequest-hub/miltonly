@@ -245,6 +245,47 @@ function computeDaysOnMarket(listDate: unknown, closeDate: unknown): number {
   return Math.round((c - l) / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * DEC-SOLD-DATE-NOT-FUTURE (2026-09-10). The date a sale HAPPENED, from a feed that ships
+ * the date it will COMPLETE.
+ *
+ * PropTx flips MlsStatus to 'Sold' / StandardStatus to 'Closed' when a deal goes firm, and
+ * CloseDate then carries the completion the parties agreed to, which is normally weeks or
+ * months ahead. Writing CloseDate into sold_date therefore dated firm sales in the future:
+ * 245 such rows existed when this was written, 192 For Sale and 53 For Lease, the furthest
+ * 2027-01-29, every one of them with a PurchaseContractDate already in the past.
+ *
+ * The rule, in order:
+ *   1. CloseDate is today or earlier: the sale completed, use it.
+ *   2. CloseDate is in the future: use PurchaseContractDate, the date the deal was struck.
+ *   3. No usable date either way: return null and let the caller drop the row.
+ *
+ * Nothing is invented and nothing is shifted. sold_date names a transaction that has
+ * happened, and close_date keeps CloseDate for the completion that has not.
+ *
+ * `today` is a parameter so the prebuild test can pin it.
+ */
+export function resolveSoldDate(
+  closeDate: string | null,
+  contractDate: string | null,
+  today: Date = new Date()
+): string | null {
+  const parse = (v: string | null): number | null => {
+    if (!v) return null;
+    const t = new Date(v).getTime();
+    return Number.isFinite(t) ? t : null;
+  };
+  // End of the current UTC day. A CloseDate of today is a completed sale, not a future one.
+  const cutoff = Date.UTC(
+    today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 23, 59, 59, 999
+  );
+  const close = parse(closeDate);
+  if (close !== null && close <= cutoff) return closeDate;
+  const contract = parse(contractDate);
+  if (contract !== null && contract <= cutoff) return contractDate;
+  return null;
+}
+
 function mapPropertyType(type: unknown, subType: unknown): string {
   const sub = String(subType ?? "").toLowerCase();
   if (sub.includes("detach") && !sub.includes("semi")) return "detached";
@@ -403,6 +444,19 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
     (r.OriginalEntryTimestamp as string | null) ??
     (r.CloseDate as string | null);
   const closeDate = r.CloseDate as string | null;
+  // DEC-SOLD-DATE-NOT-FUTURE (2026-09-10). sold_date used to be CloseDate verbatim, and
+  // CloseDate is not the date of the sale. It is the agreed COMPLETION date: PropTx sets
+  // MlsStatus='Sold' when the deal goes firm and carries the closing the parties agreed to,
+  // which is routinely months out. 245 rows in DB2 carried a sold_date after today when this
+  // was found, the furthest 2027-01-29, and all 245 had a PurchaseContractDate in the past.
+  //
+  // PurchaseContractDate is the date the sale actually happened, so that is what sold_date
+  // takes when the close has not occurred yet. close_date keeps CloseDate unchanged, so the
+  // completion date is not lost, only stopped from posing as the transaction date.
+  //
+  // If the contract date is missing or is itself in the future, sold_date is left NULL rather
+  // than guessed. A row with no defensible date is a row with no date.
+  const soldDate = resolveSoldDate(closeDate, r.PurchaseContractDate as string | null);
   const listPrice = toNum(r.ListPrice) ?? 0;
   const soldPrice = toNum(r.ClosePrice) ?? 0;
   const dom = computeDaysOnMarket(listDate, closeDate);
@@ -425,7 +479,7 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
     city: (r.City as string | null) || config.PRISMA_CITY_VALUE,
     list_price: listPrice,
     sold_price: soldPrice,
-    sold_date: closeDate,
+    sold_date: soldDate,
     list_date: listDate,
     days_on_market: dom,
     sold_to_ask_ratio: ratio,
@@ -1053,6 +1107,14 @@ export async function runSoldSync(opts: {
         (item.OriginalEntryTimestamp as string | null) ??
         closeDate;
       if (!closeDate || !listDate || soldPrice <= 0 || listPrice <= 0) {
+        skipped++;
+        continue;
+      }
+      // sold.sold_records.sold_date is NOT NULL, and DEC-SOLD-DATE-NOT-FUTURE will not let a
+      // future close pose as a transaction date. A firm sale with no contract date on record
+      // has no defensible sold_date, so it is dropped here and picked up on a later sync once
+      // it has actually closed.
+      if (resolveSoldDate(closeDate, item.PurchaseContractDate as string | null) === null) {
         skipped++;
         continue;
       }

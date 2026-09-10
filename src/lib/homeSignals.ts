@@ -3,12 +3,17 @@
 // READ-ONLY. Nothing in this file writes, and nothing in it invents a figure that
 // its source cannot support.
 //
-// WHAT IS DELIBERATELY ABSENT: a price-drop count. The only signal DB1 carries is
+// WHAT IS DELIBERATELY ABSENT: a price-drop count. The only signal DB1 carried was
 // `Listing.lastPriceChangeAt`, which records THAT a price changed and never what it
-// changed from. A drop cannot be told from an increase without a prior price, and
-// there is no prior price stored. Until one is, this file offers no such function,
-// so no surface can accidentally publish "dropped" over a figure that only means
-// "changed". See DEC-PRICE-CHANGE-NOT-DROP in the report.
+// changed from. A drop cannot be told from an increase without a prior price.
+//
+// A prior price is now stored (DEC-PRICE-HISTORY, 2026-09-10: `Listing.priorPrice` and
+// `priceChangedAt`, written by the DB1 sync on every observed change). The function is
+// still absent, and deliberately so: the columns start empty and fill only as listings
+// change price from that date forward, so a count taken today would read 0 across Milton
+// and publish "no reductions" as though it were a measurement. It becomes honest once the
+// corpus has observations, not once the column exists.
+// See DEC-PRICE-CHANGE-NOT-DROP in the report.
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getSoldDb } from "@/lib/db";

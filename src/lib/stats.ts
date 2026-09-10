@@ -41,8 +41,14 @@ export const getHeroStats = unstable_cache(
 // consumers, and its `priceDrops` key returned the CHEAPEST ACTIVE LISTINGS — an
 // ascending price sort, not a price change of any kind. A dead function is harmless
 // until someone wires it to a section called "price drops", which is precisely the
-// section it was named for. A price drop is not derivable from DB1: `lastPriceChangeAt`
-// records that a price changed, never what it changed from.
+// section it was named for. A price drop was not derivable from DB1 at the time:
+// `lastPriceChangeAt` records that a price changed, never what it changed from.
+//
+// Amended 2026-09-10 (DEC-PRICE-HISTORY): `Listing.priorPrice` and `priceChangedAt` now
+// store the number and the moment, so a drop IS derivable — as
+// `priorPrice IS NOT NULL AND price < priorPrice`. Only forward, though: both columns are
+// null on every row that has not changed price since 2026-09-10, and nothing was
+// backfilled. Any surface built on this must treat null as "not known", never as "no drop".
 
 export const getStreetStats = unstable_cache(
   async (streetSlug: string, propertyType?: string) => {

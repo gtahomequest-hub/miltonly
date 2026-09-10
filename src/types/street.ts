@@ -400,6 +400,10 @@ export interface FinalCTAsProps {
 }
 
 // ───── CornerWidget ───────────────────────────────────────────────────────
+// The component is retired (src/components/street/retired/CornerWidget.tsx, 2026-09-10).
+// These types are NOT retired with it: StreetPageData.cornerWidget is still assembled by
+// buildCornerWidget in src/lib/street-data.ts, so the shape is live even though nothing
+// renders it. Unpicking that is a page-composition change and is not made here.
 
 export interface SectionInsight {
   /** Section id (e.g. "s1", "type-detached") — matched against `document.getElementById`. */
@@ -417,6 +421,8 @@ export interface CornerWidgetProps {
 }
 
 // ───── ExitIntent ─────────────────────────────────────────────────────────
+// Component retired 2026-09-10 (src/components/street/retired/ExitIntent.tsx). Unlike
+// CornerWidgetProps, nothing builds this shape; it survives only as the retired file's import.
 
 export interface ExitIntentProps {
   streetName: string;
