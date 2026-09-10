@@ -106,7 +106,14 @@ export async function getActiveCondoFees(limit = 24): Promise<CondoFeeRow[]> {
       permAdvertise: true,
       displayAddress: true,
       propertyType: "condo",
-      maintenanceFee: { not: null, gt: 0 },
+      // TWO FEE COLUMNS EXIST AND ONLY ONE IS FILLED. `Listing.maintenanceFee`
+      // (Int) is 0 on all 73 active Milton condo listings; `maintenanceFeeAmt`
+      // (Float) carries the real figure on all 73. Measured 2026-09-10. The
+      // first version of this query read the Int column and the guide
+      // published "No Milton condo currently for sale states a monthly
+      // maintenance fee", which was false. A page asserting an absence has to
+      // be as sure of the absence as it would be of a figure.
+      maintenanceFeeAmt: { not: null, gt: 0 },
     },
     select: {
       mlsNumber: true,
@@ -115,10 +122,10 @@ export async function getActiveCondoFees(limit = 24): Promise<CondoFeeRow[]> {
       bedrooms: true,
       parking: true,
       locker: true,
-      maintenanceFee: true,
+      maintenanceFeeAmt: true,
       price: true,
     },
-    orderBy: { maintenanceFee: "asc" },
+    orderBy: { maintenanceFeeAmt: "asc" },
     take: limit,
   });
   return rows.map((r) => ({
@@ -128,7 +135,7 @@ export async function getActiveCondoFees(limit = 24): Promise<CondoFeeRow[]> {
     bedrooms: r.bedrooms,
     parking: r.parking,
     locker: r.locker,
-    maintenanceFee: r.maintenanceFee as number,
+    maintenanceFee: Math.round(r.maintenanceFeeAmt as number),
     price: r.price,
   }));
 }

@@ -32,14 +32,17 @@ export const BOC_POLICY_RATE = {
   sourceUrl: "https://www.bankofcanada.ca/valet/observations/V39079/json?recent=1",
 } as const;
 
-/** "2.25% as at 8 September 2026" — the only sanctioned rendering. */
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** "2.25% as at 8 September 2026" — the only sanctioned rendering.
+ *  Formatted by hand rather than through toLocaleDateString: the served page
+ *  came back "September 8, 2026" because the host's ICU data resolves en-CA
+ *  differently from the local one, and a date that renders differently on
+ *  different machines is drift. */
 export function policyRateLabel(): string {
-  const d = new Date(`${BOC_POLICY_RATE.observedOn}T00:00:00Z`);
-  const pretty = d.toLocaleDateString("en-CA", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  return `${BOC_POLICY_RATE.ratePct}% as at ${pretty}`;
+  const [y, m, d] = BOC_POLICY_RATE.observedOn.split("-").map(Number);
+  return `${BOC_POLICY_RATE.ratePct}% as at ${d} ${MONTHS[m - 1]} ${y}`;
 }
