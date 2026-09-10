@@ -419,8 +419,18 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
       from the ruling, stated on the page. Sourcing them is a separate decision
 - [ ] **"Open this weekend" is not in v1.** Open houses are read live and expire; an edition is
       immutable. The live block belongs on the index page as its own piece of work
-- [ ] **No cron is wired.** Monday 06:00 is proposed, not scheduled, so `/market-watch` serves
-      the week of 2026-08-31 until someone runs the runner
+- [x] **The cron is wired, Monday 08:00 America/Toronto**, `0 12 * * 1` and `0 13 * * 1` with
+      an hour guard of 8. **08:00 and not 06:00 because both firings must sit after the 11:00
+      UTC sold sync in both offsets**; the old 10:00/11:00 pair ran before it in EDT and level
+      with it in EST. Any change to the sold sync hour must move these two. Held on the merge:
+      Vercel only invokes crons on production, so nothing fires until Core merges `feat/content`
+- [x] **A published edition can be corrected once, and only with a note that renders on the
+      page.** `generateEdition` throws on a published row unless `correctionNote` is passed;
+      there is no `--force`. The note rides inside `sectionsJson`, no column and no migration.
+      `publishedAt` is preserved on a rewrite and `dateModified` now reads `updatedAt`
+- [ ] **The 2026-08-31 regeneration is NOT run.** Ruled to happen once, only after Core reports
+      the battery green, which it is not. The mechanism is built and green on preview
+      `miltonly-hsq7pkfiz`. The single command is in `HANDOFF-content.md` and report 067
 - [ ] **Up-links from hubs and streets back to the current edition are Core's.** This worktree
       does not make those writes, and without them the archive sits instead of compounding
 - [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.
