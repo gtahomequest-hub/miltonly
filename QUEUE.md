@@ -6,7 +6,7 @@ Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a4
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
-*Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
+*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is not started**: the nine funnel surfaces still on `/api/leads`, the three homepage forms, `OffMarketForm`, and the daily-brief sender.*
 
 ---
 
@@ -313,67 +313,3 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
       `permAdvertise AND status='active'` with no city and no transaction-type filter. Exactly
       right today (448 either way), so latent rather than wrong. Needs a decision.
 - [ ] **380px is sized for, not visually verified.**
-
----
-
-## Out of queue, 2026-09-10: the guides tier and Market Watch — **DONE**
-
-Not a numbered item. Prompted directly in the `feat/content` worktree
-(`D:\miltonly-content`), Gate A first, then ten rulings, then build.
-Records: `scratchpad/reports/062-content-gate-a.md` (recon),
-`063-content-gate-a.md` (the volume measured), `064-content-build.md` (build).
-
-Merged as **`f6bbc92`**, two parents. Production **`miltonly-kqtcnrve4`** serving it,
-confirmed on the apex. Battery **`PASS · 10 checks · 444 pages · 67s`** at the full SHA.
-Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 static pages.
-
-- [x] **The guides seam is filled.** `src/components/guides/types.ts` named
-      `getGuidesIndexData()` and `getGuideArticle(slug)` and nothing implemented them.
-      `/guides` and `/guides/[slug]` are live, in the sitemap, with breadcrumb, Article and
-      FAQ JSON-LD. Dynamic on purpose: the figures are read live and an SSG guide would
-      freeze them at build time
-- [x] **Six guides, ordered by the brief's GSC evidence**: neighbourhood costs, how to read a
-      sold price, is it a good time to sell, condo fees and parking, first home, schools.
-      Template-authored structure, live k-gated figures, at most one generated paragraph
-- [x] **`parking` is held.** The Town bylaw is not in this repo and a model would invent it.
-      A tenure guide is also held: four live indexable pages already own that axis
-- [x] **`MarketEdition` + `MarketEditionGeneration`**, migration
-      `20260910120000_market_edition`. An edition is **immutable once published**; both routes
-      render the stored row and recompute nothing
-- [x] **The first edition**, `/market-watch/2026-08-31`: 40 sales against 43 the week before,
-      typical $920,000, middle half $750,000 to $1,180,000, 76 days, 97.5% of asking, four
-      housing forms over 28 days, 12 neighbourhoods, 32 streets with a page. `$0.0003`
-- [x] **A Content-owned validator.** None of the four street rules extracts unchanged: each
-      takes `StreetGeneratorInput` and reads `.aggregates`/`.nearby`, and `SUPERLATIVE_PHRASES`
-      is module-private. `validateStreetGeneration.ts` is **not touched**.
-      `src/lib/content/validateContentProse.ts` implements five rules against a minimal
-      `GroundedFigures` interface. **20th prebuild test, 55 assertions, both directions on
-      every rule, proven red on a weakened validator**
-- [x] **The weekly window was wrong and is fixed.** `sold_date` is a calendar date stamped at
-      **UTC midnight**, so a Toronto-midnight window dropped the whole Monday: the week of
-      2026-08-31 read 18 where the day-by-day count is 40. A week now carries two named bases
-      and each query uses the one matching its column. Reads 40 and 43, matching report 063
-- [x] **A page was publishing an absence that was not real.** `Listing.maintenanceFee` (Int)
-      is 0 on all 73 active Milton condo listings while `maintenanceFeeAmt` (Float) carries
-      the figure on all 73. The guide said no condo states a fee. 24 now render, each linked
-- [x] **A raw TREB string reached prose** ("in 1032 - FO Ford").
-      `src/lib/content/neighbourhoodName.ts` is the tier's single resolver; an unmapped string
-      returns null and the clause is dropped, never a fallback to the feed
-- [x] **`src/data/policyRate.ts`**, the only rate in this codebase: 2.25% observed 2026-09-08,
-      BoC Valet V39079, rendered with its date, and the guide states a policy rate is not a
-      mortgage rate
-- [x] Verified on production: nine URLs 200, nine in the live sitemap, **zero em-dashes and
-      zero raw TREB strings** across all seven content pages
-- [ ] **Schools ship board, level and grades, NOT address or distance.** Neither exists:
-      `schools.ts` has no street address, the school page's own `PostalAddress` carries
-      locality only, and the lat/lng is a ±300 m neighbourhood centroid. Deliberate deviation
-      from the ruling, stated on the page. Sourcing them is a separate decision
-- [ ] **"Open this weekend" is not in v1.** Open houses are read live and expire; an edition is
-      immutable. The live block belongs on the index page as its own piece of work
-- [ ] **No cron is wired.** Monday 06:00 is proposed, not scheduled, so `/market-watch` serves
-      the week of 2026-08-31 until someone runs the runner
-- [ ] **Up-links from hubs and streets back to the current edition are Core's.** This worktree
-      does not make those writes, and without them the archive sits instead of compounding
-- [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.
-      A Core data bug, logged not fixed. Every Content window is bounded, so nothing in this
-      tier publishes them
