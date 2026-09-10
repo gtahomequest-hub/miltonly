@@ -2,7 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content
 
-_Last rewritten 2026-09-10, after Gate A recon for the content tier and the volume addendum._
+_Last rewritten 2026-09-10, after the guides tier and Market Watch were built
+against the ten Gate A rulings._
 
 ## READ THIS FIRST
 
@@ -10,127 +11,154 @@ _Last rewritten 2026-09-10, after Gate A recon for the content tier and the volu
 weekly edition.** Its own tables, its own routes, generation through
 `src/lib/ai/compliance.ts` under the cheap-first rule. **It never writes
 `StreetContent`, `HubContent` or `CondoContent` rows, never touches the header,
-footer or homepage.** Read the root `HANDOFF.md` for the state of those tiers; it
-is the authority on everything outside this scope.
+footer or homepage.** Read the root `HANDOFF.md` for those tiers; it is the
+authority on everything outside this scope.
 
-**Gate A is reported and NOT approved. No code has been written.** The report is
-`scratchpad/reports/062-content-gate-a.md`, and
-`scratchpad/reports/063-content-gate-a.md` is an addendum that corrects one premise
-in its section 3.2 and adds the measurement behind it. **Read 062 first. 063 does
-not replace it.** Two sessions ran this recon in parallel on this branch; 062
-landed first and its guide list, risk calls and section design stand.
-
-## State
+**BUILT AND AWAITING PREVIEW REVIEW. NOT MERGED.**
 
 | | |
 |---|---|
-| branch | `feat/content`, clean, at `794f96e` |
-| code written this worktree | **none** |
-| guides route | does not exist |
-| Market Watch | does not exist anywhere in the repo |
-| content tables | none |
+| branch | `feat/content` at **`62ab3a5f789e1468a9d02572b14a0231cdd60b20`** |
+| preview | **`https://miltonly-clft5u5jn-gtahomequest-hubs-projects.vercel.app`** |
+| battery on preview | **`PASS · 9 checks · 444 pages · 64s`**, exit 0, at the full SHA |
+| local gate | exit 0, zero `P2024`, **20/20 prebuild**, 554 static pages |
+| first edition | `/market-watch/2026-08-31`, published, real data |
 
-## What Gate A found
+Gate A is `scratchpad/reports/062-content-gate-a.md`, its volume addendum is
+`063`, and what was built is **`064-content-build.md`**. Read 064 first now.
 
-**The guides layout is finished and unwired.** `src/components/guides/` carries
-`types.ts` (which names itself "THE SEAM"), 8 sections, a 536-line theme on the
-project tokens, and mock data. The data window it asks for —
-`getGuidesIndexData()` and `getGuideArticle(slug)` — does not exist, there is no
-`/guides` or `/guides/[slug]`, and nothing is in the sitemap. Only
-`/guides-preview` and `/guide-preview`, both noindex, both on fixtures.
+## The nine URLs
 
-**`GuideCategoryKey` already carries `living`.** The everyday-life tier has its
-slot in the type.
+```
+/guides
+/guides/what-milton-neighbourhoods-cost                      milton real estate market
+/guides/how-to-read-a-milton-sold-price                      sold prices milton
+/guides/is-it-a-good-time-to-sell-in-milton                  is it a good time to sell
+/guides/milton-condo-fees-parking-and-lockers                condos in milton
+/guides/what-it-costs-to-buy-your-first-home-in-milton        first-time buyer
+/guides/milton-schools-what-the-data-shows                   schools
+/market-watch
+/market-watch/2026-08-31
+```
 
-**`mockData.ts` carries 16 em-dashes.** The voice rule bans them. Do not let the
-mock's register reach real data.
+All nine return 200 and all nine are in `sitemap.xml`, verified on the served
+host. `parking` is held: the Town bylaw is not in this repo and a model would
+invent it.
 
-**Market Watch is absent.** Zero hits across `src`, `scripts`, `prisma`, `docs`.
-A new surface end to end, layout included.
+## What a next session must not undo
 
-**Four live indexable pages already own three of the target queries.** `/sold`
-owns "sold prices milton", `/condos-guide` owns "condos in milton", `/schools`
-plus 31 school pages own "schools". A guide on any of them must answer a
-different question and link up, or not be built. The map is in section 1.4 of the
-report.
+**`validateStreetGeneration.ts` is Core's and this tier does not edit it.** The
+four required rules were checked for extraction and **none extracts unchanged**:
+each takes `input: StreetGeneratorInput` and reads `.aggregates` / `.nearby` /
+`.primaryBuilder`, and `SUPERLATIVE_PHRASES` is module-private.
+`src/lib/content/validateContentProse.ts` reimplements five rules against
+`GroundedFigures`. `scripts/test-content-validator.ts` is the 20th prebuild
+test, 55 assertions, both directions on every rule, proven red on a weakened
+validator.
 
-**The build cost is the validators, not the prose.** Every rule in
-`validateStreetGeneration.ts` is typed on `StreetGeneratorInput` and reads
-`input.aggregates`, `input.quarterlyTrend`, `input.crossStreets`. None of them can
-validate a guide or an edition until that content carries a grounding input of the
-same shape. The text-only rules — sales-register leak, fair-housing register,
-mixed-pool, spatial precision, future period, template parrot, catchment
-vocabulary, the em-dash ban — transfer unchanged.
+**A SUPPRESSED FIGURE REMOVES PROSE, IT DOES NOT DAMAGE IT.** `sentence()`
+returns null when its figure is null and `para()` discards nulls. Never render a
+dash, a zero or a sentence with a hole where a k-suppressed figure would be.
 
-**Cheap-first is already the default.** `resolveSimpleMode()` returns `deepseek`
-for anything unset. A new generator inherits it by doing nothing.
+**A WEEK HAS TWO BASES AND THEY ARE NOT INTERCHANGEABLE.**
+`sold.sold_records.sold_date` is a `timestamp with time zone` whose every value
+is **exactly UTC midnight** — a calendar date wearing a timestamp type, measured
+across all 3,961 Milton For Sale rows. A Toronto-midnight window drops the whole
+Monday: the week of 2026-08-31 read **18** where the day-by-day count is **40**.
+DB1's `Listing.listedAt` is the opposite, a real timestamp, where Toronto
+instants are correct. `WeekWindow` carries `dateStartUtc` /
+`dateEndExclusiveUtc` for DB2 and `startUtc` / `endUtc` for DB1. **Use the one
+that matches the column.** The edition now reads 40 and 43, matching report 063.
 
-**`assertPromptSafe` sits inside `callClaude` and `callDeepSeek`.** The choke is
-at the transport, so a new caller inherits it without a new call site.
+**EVERY DB2 WINDOW CARRIES `sold_date <= NOW()`** (ruling 10). Any query added
+later must too.
 
-**A week is a small sample and that is the whole Market Watch design problem.**
-The proposal publishes weekly counts always, and **no neighbourhood-weekly or
-type-weekly median at any n** — the 12-month figure sits beside the weekly count
-instead, each labelled with its window. `kAnon.ts`'s own header is the reason: the
-floor must be checked against the exact sample the figure is computed over.
+**GUIDES ARE DYNAMIC ON PURPOSE.** No `generateStaticParams` on
+`/guides/[slug]`. Their figures are read live, and the first build prerendered
+them, which would have frozen every number at build time.
 
-**The town-wide week is NOT a small sample, and report 062 said it was.** Measured
-2026-09-10 on complete Monday weeks, `perm_advertise = TRUE`, For Sale: **40, 43,
-37, 33** over the last four, and **26 to 67** over the last twelve. Not the 10 to
-15 the report estimated. `days_on_market` and `list_price` are populated on 100% of
-those rows. **So the weekly typical clears k5 and k10 in every complete week
-measured and can carry the edition rather than sit as a footnote**, with the check
-still made per edition and a thin week publishing `null`, never `0`. Detail in
-report 063.
+**THE PARAGRAPH NEVER BLOCKS A PAGE.** Validator violation, provider error,
+missing key: `interpretation` stays null, the attempt is recorded on
+`MarketEditionGeneration` with its violations, sections 1 to 6 publish
+regardless. Two attempts, DeepSeek only, no Claude escalation — the Anthropic
+account has no credit and a weekly cron that can escalate is one that can fail
+on a balance.
 
-**A trailing 28-day window is the by-form answer, and neither report had it
-before.** By form over 28 days: detached 71, townhouse 37, condo 14, semi 13. So a
-point for all four at k5 and a band for detached and townhouse at k10. The same
-28-day window by neighbourhood clears k5 on only 11 of 21 and k10 on 6, which is
-why the neighbourhood block stays on the 12-month figure.
+**AN EDITION IS IMMUTABLE ONCE PUBLISHED.** Both routes render the stored row
+and recompute nothing. Late-reported sales land in a later edition.
 
-**The lease side gets no weekly figure at all.** Weekly lease counts read 130, 6,
-4, 51, 14, 15, 127, 5, 20, 3, 23. That is ingest stamping, not a market, and it is
-the visible form of the caveat `daily-summary/route.ts` already carries: the lease
-buckets have no close date and proxy on `updatedAt`. Lease is out of v1.
+**`src/lib/content/neighbourhoodName.ts` is the only source of a neighbourhood
+name in this tier.** `Listing.neighbourhood` and `sold_records.neighbourhood`
+hold the raw TREB string ("1032 - FO Ford"). An unmapped string returns **null**
+and the caller drops the clause. It never falls back to the raw string.
 
-**DEC-SOLD-UPPER-BOUND is not theoretical. `sold.sold_records` holds 192 For Sale
-and 53 For Lease rows dated in the future**, the furthest at 2027-01-29 against a
-database `NOW()` of 2026-09-10. An unbounded 28-day neighbourhood count returns
-**327** rows where the bounded one returns **135**. A window that forgets
-`sold_date <= NOW()` does not fail, it publishes a number inflated 2.4x and
-publishes sales that have not happened. Every new window in this tier inherits the
-bound.
+**`src/data/policyRate.ts` is the only rate.** 2.25%, observed 2026-09-08, BoC
+Valet series V39079. **Render the date every time.** Re-pull the URL in the file
+and update both fields together, never one without the other. A policy rate is
+not a mortgage rate and the guide says so.
 
-**GSC is live and readable.** `src/lib/seo/gscClient.ts`, service account,
-`webmasters.readonly`, weekly `runSense()` into `SeoOpportunity` with
-week-over-week `prev*` columns. The eight guide queries can be pinned to real
-impressions and position before a line is written. **Those rows were not queried
-this pass.**
+## Deviations, stated
 
-## Decisions needed before any code
+**The schools guide ships board, level and grades. It does NOT ship address or
+distance.** Ruling 6 asked for address and distance and neither exists:
+`src/lib/schools.ts` has no street address, the school page's own
+`PostalAddress` JSON-LD carries locality, region and country only, and the
+lat/lng some rows hold is a neighbourhood centroid approximate to about 300 m by
+that file's own comment. The guide says plainly that it holds neither rather
+than approximating either. **If address and distance are required, they have to
+be sourced first.**
 
-1. `MarketEdition` plus `MarketEditionGeneration` tables, or compute at request
-   time? Recommend the table — the edition is the artifact, not metadata.
-2. Guides generated, or hand-authored structure with generated figures?
-   Recommend the latter; it avoids porting 30-plus street-typed validators for six
-   pages.
-3. The grounding-input shape for the edition's one generated paragraph.
-4. A k ruling for a per-building condo fee. `kAnon.ts` has no threshold for a
-   population of one building.
-5. A mortgage rate source. There is none in the repo, and the first-time-buyer
-   guide is arithmetic on top of one.
-6. Whether the schools guide ships under the catchment ban's framing, or not at
-   all.
-7. Up-links from hubs and streets back to the current edition. **A cross-worktree
-   request — this worktree does not make those writes.**
-8. Pull the real GSC rows for the eight queries before fixing the order.
-9. **The weekly typical becomes the edition's headline figure**, computed on the
-   week and gated on the week's own n. Report 062 assumed it would usually
-   suppress; the measurement says it does not. Confirm the swap.
-10. **A by-form block on a trailing 28-day window** — point at k5 for four forms,
-    band at k10 for detached and townhouse only. A new section, not in 062.
+**"Open this weekend" is not in v1.** Open houses are read live and expire; an
+edition is immutable. A stored weekend is a lie by the following Tuesday and a
+live block inside an archived edition breaks the immutability the table exists
+for. The live block belongs on the index page as its own piece of work.
+
+**No cron is wired.** Monday 06:00 is proposed, not scheduled. Wiring it before
+the first edition is reviewed would publish unreviewed editions weekly.
+
+## Requests to Core
+
+1. **Up-links from hubs and streets to the current edition** (ruling 7). This
+   worktree does not make those writes. Without them the archive sits instead of
+   compounding.
+2. **192 For Sale rows and 53 For Lease rows in `sold.sold_records` carry a
+   future `sold_date`**, the furthest 2027-01-29 against a database `NOW()` of
+   2026-09-10. A Core data bug, logged not fixed. An unbounded 28-day
+   neighbourhood count returns 327 where the bounded one returns 135.
+3. **`Listing.maintenanceFee` (Int) is dead** on all 73 active Milton condo
+   listings while `maintenanceFeeAmt` (Float) is populated on all 73. Two
+   columns for one fact, one empty, is a trap. It already cost one wrong page.
+4. **`SUPERLATIVE_PHRASES` is module-private** in `validateStreetGeneration.ts`,
+   so this tier keeps a second copy. Exporting it removes the duplication.
+   Core's call, Core's file.
+
+## Notes for the next run
+
+- `scripts/generate-market-edition.ts` is the edition runner. `--publish`,
+  `--skip-paragraph`, `--revalidate=<url>`, `WEEK_OF=YYYY-MM-DD` (a Monday).
+  Run it as `npx tsx --tsconfig tsconfig.test.json` — **not** with
+  `NODE_OPTIONS=--conditions=react-server`, the same trap the condo runner
+  documents. It refuses to start if any provider knob names a Claude model.
+- **`DIRECT_DATABASE_URL` is not in `.env.local`, and
+  `NEON_DATABASE_URL_UNPOOLED` is DB2, a different Neon project from
+  `DATABASE_URL`.** Substituting one for the other creates tables in the sold
+  database. It happened during this build; the two empty tables were dropped
+  from DB2 and created in DB1, verified both ways.
+- **The `_prisma_migrations` table is out of sync with the live database** —
+  every historical migration reports unapplied. `prisma migrate deploy` would
+  try to replay all of them. Apply Content migrations with
+  `npx prisma db execute --url "$DATABASE_URL" --file <migration.sql>`, the
+  raw-SQL-on-Neon pattern this project already uses.
+- `npx prisma db execute` prints nothing for a `SELECT`. It cannot be used to
+  inspect. Use a short `.mjs` against `@neondatabase/serverless` from the
+  project root, and delete it after.
+- **Read the served preview, not the local render.** Two of the four defects in
+  report 064 were invisible locally: the dead fee column and the locale-dependent
+  date, which rendered "September 8, 2026" on the host and "8 September 2026"
+  locally.
 
 ## Next expected task
 
-**Approval of Gate A**, then build scope. Nothing else. Do not self-start.
+**Preview review of `miltonly-clft5u5jn`.** After approval: the cron, the live
+open-house block on the index, and whichever of the two held guides the GSC rows
+justify. **Do not self-start any of them, and do not merge.**
