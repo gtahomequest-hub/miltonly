@@ -19,9 +19,10 @@ reading all six guides.
 
 | | |
 |---|---|
-| merged to `main` as | **`f6bbc92f2093b6fe7a3aafa27fc6f88bbd4b3a7b`**, two parents |
-| production | **`miltonly-kqtcnrve4`**, Ready, serving the merge SHA, confirmed on the apex |
-| battery on production | **`PASS · 10 checks · 444 pages · 67s`**, exit 0, at the full SHA |
+| merged to `main` as | **`f6bbc92`**, two parents |
+| `main` now | **`5ee703e`** (docs `4b55fc6`, then the restore below) |
+| production | Ready and confirmed on the apex at **`5ee703e`** |
+| battery on production | **`PASS · 10 checks · 444 pages · 62s`**, exit 0, at the full SHA |
 | local gate, merged tree | exit 0, zero `P2024`, **20/20 prebuild**, 548 static pages |
 | first edition | `/market-watch/2026-08-31`, published, real data |
 
@@ -55,6 +56,35 @@ Verified on production, not just locally: 24 condo listings state a fee,
 `2.25% as at 8 September 2026` renders, the edition shows 40 sales, $920,000 and
 97.5%, and across all seven content pages there are **zero em-dashes and zero
 raw TREB strings**.
+
+## I CLOBBERED THE LEADS MERGE AND RESTORED IT. READ THIS BEFORE USING `commit-tree`.
+
+The content merge `f6bbc92` was correct. The **documentation** commit after it
+was not. `4b55fc6` was built with `git commit-tree` using `feat/content`'s tree
+while `origin/main` had already moved to `3461e13`, the `feat/leads` merge.
+Parenting my stale tree on their commit **reverted all 30 files that merge
+brought in**: the lead layer's routes, guards, components, two migrations and
+its schema changes.
+
+Nothing was lost from the repository — `3461e13` is intact in history — but
+main's tree was wrong for one commit, and **production served that wrong tree
+briefly** before the fix deployed.
+
+`5ee703e` restores it: main's tree is now `3461e13`'s plus the only two files
+the docs commit was ever meant to change, `HANDOFF-content.md` and `QUEUE.md`,
+neither of which `feat/leads` touched. Verified both ways: the diff against
+`3461e13` is exactly those two files, and `src/lib/lead/guards.ts`,
+`/api/leads/create` and the lead migration are all present on main. `/sell`
+returns 200 on production.
+
+**THE RULE. A `commit-tree` push must re-read `origin/main` immediately before
+building the tree, and the tree must be built FROM that commit, not from a
+branch tip that predates it.** `git fetch` then `git commit-tree` with a tree
+you prepared earlier is not safe: the fetch tells you main moved and the stale
+tree silently discards the move. Merge the moved main into the branch first, or
+build the tree with `read-tree` from the new main and overlay only the files you
+actually changed. A fast-forward check (`merge-base --is-ancestor`) would have
+caught this in one line and was not run on the second push.
 
 ## What a next session must not undo
 
