@@ -418,7 +418,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         {/* ── LEFT PANEL ── */}
         <div className="hl">
           <div className="live-row">
-            <div className="live-badge"><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
+            {/* data-fig is the battery's handle: the homepage gate asserts its
+                "available to rent" tile equals the figure THIS page publishes. */}
+            <div className="live-badge" data-fig="rentals-available" data-value={totalRentals}><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
             <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#f59e0b"}}>
               📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}

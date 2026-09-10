@@ -195,7 +195,11 @@ export function HubStreets({ data }: { data: HubData }) {
   const n = data.streets.length;
   const short = n > 0 && n <= 3;
   return (
-    <section className="h-block">
+    // id="streets" is the target of the hero's "I'm buying" intent square. It was missing:
+    // every one of the 22 hubs shipped an href of "#streets" pointing at nothing, which a
+    // browser answers by silently doing nothing. Do not rename this id without changing
+    // intentsFor() in src/lib/hubData.ts and the hub-intents battery check with it.
+    <section className="h-block" id="streets">
       <div className="h-wrap">
         <div className="h-row-between">
           <div className="h-sechead" style={{ marginBottom: 0 }}>
