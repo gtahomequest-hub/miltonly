@@ -376,6 +376,17 @@ without the parameter.
   DB2, it has no `_prisma_migrations` table at all, and Prisma will confidently report every
   migration unapplied about the wrong database. That is the same DB1/DB2 substitution that once
   created two empty tables in the sold database.
+
+  **The danger is the shape of the wrongness, not the wrongness.** That misreading does not
+  produce an error or an obviously silly answer. It produces a specific, plausible, actionable
+  finding — "the ledger is out of sync, do not run migrate deploy" — which reads as diligence and
+  survives review intact. The only question that catches it is *which host answered*. On
+  2026-09-10 it did not get asked, so the finding was written into `HANDOFF-content.md` as an
+  instruction, and that instruction then licensed a whole tier to route around the ledger with
+  `prisma db execute` for weeks. **A wrong reading that is merely wrong gets corrected; one that
+  is useful-looking gets institutionalised.** Ask which database answered before writing down
+  anything a `_prisma_migrations` query told you. (Content's framing, taken verbatim in
+  substance; theirs is the sequence, not just the misreading.)
 - **Never route around the ledger with `prisma db execute`.** It runs the SQL and writes no row,
   so the migration is invisible to `migrate status` and the next `migrate deploy` tries to replay
   it against tables that already exist. `HANDOFF-content.md` recommended exactly this, on a false
