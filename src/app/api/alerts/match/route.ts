@@ -17,6 +17,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { sendDealAlertEmail } from "@/lib/email-user";
+import { resolveLeadEnv } from "@/lib/lead/env";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -41,8 +42,14 @@ async function run(request: NextRequest) {
 
   const dryRun = request.nextUrl.searchParams.get("dryRun") === "true";
 
+  // ONLY watches from this deployment's own environment. Preview and production share one
+  // database, so without this the production cron would mail every address a preview test
+  // ever used, daily, for as long as the watch existed. Tagging the Lead row excluded those
+  // submissions from the counts and left them in the sends.
+  const env = resolveLeadEnv(request.headers.get("host"));
+
   const searches = await prisma.savedSearch.findMany({
-    where: { alertEnabled: true, kind: { not: "brief" } },
+    where: { alertEnabled: true, kind: { not: "brief" }, env },
     include: { user: true },
   });
 
@@ -139,6 +146,7 @@ async function run(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
+    env,
     alertsSent: sent,
     searchesChecked: searches.length,
     skipped,

@@ -12,6 +12,7 @@
 import { prisma } from "@/lib/prisma";
 import { streetNameToSlug } from "@/lib/streetUtils";
 import { config } from "@/lib/config";
+import type { LeadEnv } from "@/lib/lead/env";
 
 export type WatchKind = "street" | "hub" | "price-band" | "brief";
 
@@ -30,6 +31,9 @@ export interface WatchInput {
   source: string;
   email: string | null;
   leadId: string;
+  // Which deployment is creating this watch. The sender matches on it, so a preview test
+  // cannot be mailed by the production cron. Tagging the Lead row alone left that open.
+  env: LeadEnv;
   /** Resolved street or building name the surface was about. */
   subject?: string | null;
   neighbourhood?: string | null;
@@ -76,7 +80,7 @@ export async function createWatchForLead(input: WatchInput): Promise<WatchResult
   }
 
   const existing = await prisma.savedSearch.findFirst({
-    where: { email, kind, streetSlug, neighbourhood },
+    where: { email, kind, streetSlug, neighbourhood, env: input.env },
     select: { id: true, alertEnabled: true },
   });
   if (existing) {
@@ -91,6 +95,7 @@ export async function createWatchForLead(input: WatchInput): Promise<WatchResult
       email,
       leadId: input.leadId,
       kind,
+      env: input.env,
       name,
       streetSlug,
       neighbourhood,

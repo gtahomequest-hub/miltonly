@@ -129,6 +129,19 @@ async function main() {
   eq(kindForSource("daily-brief"), "brief", "watch: the daily brief makes a brief watch");
   eq(kindForSource("sold-home-valuation"), null, "watch: a valuation request is not an alert surface");
 
+  // ── the env dimension reaches the watches, not just the lead rows ─────────────
+  // Lead.env alone excluded a preview submission from the COUNTS and left it in the SENDS:
+  // the alert cron runs on production and SavedSearch had no environment. A preview test
+  // would have mailed a real address daily for as long as the watch lived.
+  const watchSrc = readFileSync("src/lib/lead/savedSearch.ts", "utf-8");
+  ok(watchSrc.includes("env: input.env"), "watch: the watch row carries the creating environment");
+  ok(/findFirst\(\{[\s\S]*?env: input\.env/.test(watchSrc), "watch: the idempotency lookup is scoped to the environment");
+  const sender = readFileSync("src/app/api/alerts/match/route.ts", "utf-8");
+  ok(sender.includes("resolveLeadEnv("), "sender: resolves the environment it is running in");
+  ok(/findMany\(\{[\s\S]*?env,/.test(sender), "sender: matches only watches from its own environment");
+  const ingestSrc = readFileSync("src/lib/lead/ingest.ts", "utf-8");
+  ok(/createWatchForLead\(\{[\s\S]*?env,/.test(ingestSrc), "wiring: ingest hands the env to the watch");
+
   // ── structural: the guards are actually wired into the one path ───────────────
   const ingest = readFileSync("src/lib/lead/ingest.ts", "utf-8");
   ok(ingest.includes("checkHoneypot("), "wiring: ingest calls checkHoneypot");

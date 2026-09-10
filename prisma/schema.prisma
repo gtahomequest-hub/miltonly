@@ -639,6 +639,9 @@ model SavedSearch {
   // What kind of watch this is: listing | street | hub | price-band | brief.
   // The sender reads it to choose the query and the copy.
   kind            String    @default("listing")
+  // Which deployment created this watch. The alert cron runs on production and matches only
+  // watches from its own environment, so a preview test cannot mail a real inbox for weeks.
+  env             String    @default("production")
   name            String // "Detached in Willmott under $1M"
   // Filter criteria
   propertyType    String? // detached|semi|townhouse|condo
@@ -662,6 +665,7 @@ model SavedSearch {
   @@index([kind])
   @@index([email])
   @@index([leadId])
+  @@index([env, alertEnabled])
   @@schema("public")
 }
 

@@ -180,6 +180,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
     source,
     email: email || null,
     leadId,
+    env,
     subject,
     neighbourhood: body.neighbourhood ?? null,
   }).catch((err): WatchResult => {
