@@ -44,11 +44,46 @@ export async function POST(request: NextRequest) {
     take: 25,
   });
 
+  // ── DEC-NEW-PAGE-CAP (2026-09-10) ──
+  // QUEUE item 7's widened gate admits 249 registry-filtered streets that have no page. Left
+  // uncapped, this drain would build all of them, and it runs HOURLY - 24 chances a day. That
+  // is a corpus-sized change nobody reviewed, arriving overnight.
+  //
+  // So: at most NEW_PAGES_PER_DAY pages are CREATED per day. Regenerations are not capped and
+  // never were; refreshing a page that already exists is the thing item 7 was written to fix,
+  // and it publishes nothing new.
+  //
+  // The count is over StreetContent.createdAt, which the database defaults on insert and no
+  // code path rewrites. It carries real history from 2026-04-21, so the cap is accurate from
+  // its first run rather than starting blind. generatedAt and publishedAt are both rewritten
+  // by every regeneration and would have counted refreshes as creations.
+  const NEW_PAGES_PER_DAY = 20;
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const createdToday = await prisma.streetContent.count({
+    where: { createdAt: { gte: dayStart } },
+  });
+  let newPageBudget = Math.max(0, NEW_PAGES_PER_DAY - createdToday);
+  console.log(`[generate] new-page cap: ${createdToday}/${NEW_PAGES_PER_DAY} created today, budget ${newPageBudget}`);
+
   const toBuild: { streetSlug: string; streetName: string }[] = [];
+  let deferred = 0;
 
   for (const item of pending) {
     const decision = await makeStreetDecision(item.streetSlug, item.streetName);
     if (decision === "build" || decision === "regenerate") {
+      // "build" means makeStreetDecision found no StreetContent row, so it is a new page and
+      // spends budget. "regenerate" touches a page that already exists and does not.
+      if (decision === "build") {
+        if (newPageBudget <= 0) {
+          // LEFT PENDING, deliberately. Not marked done, not marked ineligible - the street is
+          // eligible, it is merely waiting its turn. The next run picks it up with a fresh
+          // budget, and the queue's createdAt ordering means it keeps its place.
+          deferred++;
+          continue;
+        }
+        newPageBudget--;
+      }
       toBuild.push(item);
     } else {
       skipped.push(`${item.streetName} (${decision})`);
@@ -116,6 +151,10 @@ export async function POST(request: NextRequest) {
     built,
     skipped,
     failed,
+    // DEC-NEW-PAGE-CAP: reported, never silent. A run that defers is a run that hit the cap,
+    // and the difference between "nothing to build" and "not allowed to build yet" has to be
+    // readable from the response or the cap looks like a stalled queue.
+    newPageCap: { limit: NEW_PAGES_PER_DAY, createdToday, remaining: newPageBudget, deferred },
     durationMs: Date.now() - start,
   });
 }
