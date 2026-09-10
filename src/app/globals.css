@@ -638,6 +638,8 @@
   .final-cta-btn.secondary:hover { background: rgba(255,255,255,0.08); }
 
   /* ── CornerWidget ────────────────────────────────────────────── */
+  /* Component retired 2026-09-10 to src/components/street/retired/. Rules kept: they are
+     scoped to classnames nothing else uses, and they belong with the component if it returns. */
   .corner-widget {
     position: fixed; bottom: 24px; right: 24px; width: 380px; max-width: calc(100vw - 32px);
     background: var(--navy); color: var(--paper);
@@ -677,6 +679,7 @@
   .widget-submit-btn:hover { background: #DBB968; }
 
   /* ── ExitIntent ─────────────────────────────────────────────── */
+  /* Component retired 2026-09-10 to src/components/street/retired/. See the note above. */
   .popup-overlay { position: fixed; inset: 0; background: rgba(6, 18, 38, 0.72); backdrop-filter: blur(6px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.25s var(--ease-out); }
   .popup-overlay.is-open { display: flex; }
   .popup-card { background: var(--navy); color: var(--paper); width: 100%; max-width: 480px; animation: rise 0.35s var(--ease-out); box-shadow: 0 24px 64px rgba(0,0,0,0.45); border: 1px solid rgba(201, 162, 78, 0.2); }
