@@ -10,9 +10,9 @@
    exactly, which is what makes the page read as one document. Cream and forest grounds
    alternate so the ordering is legible before a word is read.
 
-   Verified at 380px: every grid collapses to one column, the filmstrip scrolls on its own
-   axis rather than widening the page, and the ladder drops its measure bar (it is
-   decorative; the number beside it is not). */
+   Sized for 380px: every grid collapses to one column, the filmstrip scrolls on its own
+   axis rather than widening the page (overscroll-behavior-x: contain), and the ladder drops
+   its measure bar, which is decorative — the number beside it is not. */
 
 /* ── section shell ─────────────────────────────────────────────────────── */
 .home-v2 .mh-sec {

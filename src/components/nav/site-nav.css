@@ -439,7 +439,7 @@ nav .m-mega-strip .m-mega-striplabel {
   padding: 0;
 }
 
-/* ── MOBILE ACCORDION (<=820px, verified at 380px) ────────────────────────
+/* ── MOBILE ACCORDION (<=820px, sized for 380px) ──────────────────────────
    Native <details>. It opens with no JavaScript, so the menu survives a failed
    hydration, and every link inside it is in the document either way. */
 nav .sn-acc {
