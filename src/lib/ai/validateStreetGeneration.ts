@@ -40,7 +40,7 @@ import { NEIGHBOURHOOD_CENTROIDS } from "@/lib/geo";
 
 const EM_DASH_CHARS = /[\u2014\u2013]/;  // em-dash, en-dash. Hyphen-minus is allowed.
 
-const SUPERLATIVE_PHRASES = [
+export const SUPERLATIVE_PHRASES = [
   "best", "unbeatable", "nothing comes close", "premier",
   "second to none", "finest", "most desirable", "top-tier",
   "world-class", "unparalleled", "unmatched",
