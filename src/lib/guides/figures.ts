@@ -21,6 +21,7 @@ import { config } from "@/lib/config";
 import { getMiltonSoldAggregates, type SoldAggregatesData } from "@/lib/soldAggregates";
 import { schools, type School } from "@/lib/schools";
 import { BOC_POLICY_RATE } from "@/data/policyRate";
+import { neighbourhoodDisplayName } from "@/lib/content/neighbourhoodName";
 import type { GroundedFigure, GroundedFigures } from "@/lib/content/groundedFigures";
 
 const TWELVE = "trailing 12 months";
@@ -89,7 +90,8 @@ export async function getSoldFigures(): Promise<SoldFigures> {
 
 export interface CondoFeeRow {
   mlsNumber: string;
-  neighbourhood: string;
+  /** The REGISTRY name, or null. Never the raw TREB string. */
+  neighbourhood: string | null;
   propertyType: string;
   bedrooms: number;
   parking: number;
@@ -130,7 +132,7 @@ export async function getActiveCondoFees(limit = 24): Promise<CondoFeeRow[]> {
   });
   return rows.map((r) => ({
     mlsNumber: r.mlsNumber,
-    neighbourhood: r.neighbourhood,
+    neighbourhood: neighbourhoodDisplayName(r.neighbourhood),
     propertyType: r.propertyType,
     bedrooms: r.bedrooms,
     parking: r.parking,

@@ -148,7 +148,7 @@ async function linksFor(slug: string): Promise<Record<number, GuideLink[]>> {
       const rows = await getActiveCondoFees();
       return {
         1: rows.slice(0, 16).map((r) => ({
-          label: `${r.bedrooms} bed, ${r.neighbourhood}`,
+          label: r.neighbourhood ? `${r.bedrooms} bed, ${r.neighbourhood}` : `${r.bedrooms} bed condo`,
           href: `/listings/${r.mlsNumber}`,
         })),
         3: [

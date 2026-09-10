@@ -509,7 +509,11 @@ async function buildGoodTimeToSell(def: GuideDef): Promise<BuiltGuide> {
 function feeRowSentence(r: CondoFeeRow): string {
   const bits = [`${r.bedrooms} bed`, `${r.parking} parking`];
   if (r.locker && r.locker.toLowerCase() !== "none") bits.push(`${r.locker.toLowerCase()} locker`);
-  return `${formatMoney(r.maintenanceFee)} a month, ${bits.join(", ")}, in ${r.neighbourhood}.`;
+  // The neighbourhood clause is dropped when the registry does not own the
+  // raw string, rather than falling back to it. The fallback is what printed
+  // "in 1032 - FO Ford" on the first preview.
+  const where = r.neighbourhood ? `, in ${r.neighbourhood}` : "";
+  return `${formatMoney(r.maintenanceFee)} a month, ${bits.join(", ")}${where}.`;
 }
 
 async function buildCondoFees(def: GuideDef): Promise<BuiltGuide> {
@@ -523,7 +527,7 @@ async function buildCondoFees(def: GuideDef): Promise<BuiltGuide> {
         fig(`condo.${r.mlsNumber}.fee`, r.maintenanceFee, `monthly fee on listing ${r.mlsNumber}`, "dollar", "getActiveCondoFees"),
       ),
     ],
-    entities: [CITY, ...Array.from(new Set(rows.map((r) => r.neighbourhood)))],
+    entities: [CITY, ...Array.from(new Set(rows.map((r) => r.neighbourhood).filter((n): n is string => Boolean(n))))],
   };
 
   const sections: GuideSection[] = [
