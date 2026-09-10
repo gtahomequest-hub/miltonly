@@ -2,74 +2,85 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-10, after the feat/homepage merge was reverted and feat/leads merged clean._
+_Last rewritten 2026-09-10, after three merges landed green and the migration ledger was cleaned._
 
 ## READ THIS FIRST
 
-**PRODUCTION IS GREEN. `PASS · 10 checks · 449 pages · 70s`, exit 0, at `543ef99`,
-`served == expected`.** `feat/leads` is merged. The `feat/homepage` merge is **reverted**.
-Record: `scratchpad/reports/066-rulings-and-merges.md` and `067-revert-and-leads.md`.
+**PRODUCTION IS GREEN AT `8db80da`. `PASS · 11 checks · 449 pages · 97s`, exit 0,
+`served == expected`.** All three merges landed, each by SHA, each with the full gate.
+`prisma migrate status`: **"Database schema is up to date!"** Record:
+`scratchpad/reports/068-three-merges.md`.
 
-**I MERGED A BRANCH WHEN I HAD BEEN GIVEN A SHA, AND UNVERIFIED MARKUP SHIPPED.** The approved
-commit was `5448b96`. I ran `git merge --no-ff origin/feat/homepage`, and the branch tip had moved
-past it, so **five** commits went to main instead of one:
+**`fix/core-batch` IS MERGED.** Everything it carried is live: DEC-PRICE-HISTORY,
+DEC-SOLD-DATE-NOT-FUTURE, DEC-GATE-PARITY (QUEUE item 7), DEC-NEW-PAGE-CAP, the retired
+components, and a TTL on `buildMiltonWideContext`.
 
-    b0979d7  docs(home)
-    5448b96  fix(home,hub)                       <- the approved one
-    c02fc10  chore(handoff)
-    c98f40e  wip(hub): ... the rebuilt template  <- NOT approved, and it is 1,532 insertions
-    2051ab7  docs(home): mega menu audit
+**REVERTING A MERGE DOES NOT MAKE ITS COMMITS RE-MERGEABLE.** `git merge --no-ff 5448b96`
+answered **"Already up to date"**: the commit was still an ancestor of main through `cec6906`,
+because a revert undoes content and not ancestry. A merge therefore reintroduces nothing at all,
+silently. **Cherry-pick is what reapplies it** (`1cf5342`), and it brought `5448b96` back alone,
+without `c98f40e`'s unapproved hub rebuild. If you ever need to restore part of a reverted merge,
+reach for cherry-pick and check the merge output for "Already up to date" before believing it
+worked.
 
-`c98f40e` rebuilt the hub template: `sections.tsx` rewritten, 650 new lines of
-`hub-sections.css`, and the hero markup moved from an `h-` prefix to `hh-`.
+**THE CHECK AND THE MARKUP WERE A MATCHED PAIR.** `hub-intents.mjs` shipped inside `5448b96`
+alongside the `h-` markup it reads. It passes now. It failed before only because `c98f40e`
+rewrote that markup to `hh-` without touching the check. The battery is 11 checks again.
 
-**AND I MISREPORTED IT.** I told you `[hub-meta]` and `[hub-intents]` were stale battery parsers
-and the pages were fine. The parsers were stale only against markup that had no business being on
-main. **The battery was right to go red and I argued the wrong side of it.** Reverted as `2e3cc50`
-(`git revert -m 1 cec6906`), the whole merge including `5448b96`, so main returns to a verified
-state in one move rather than being surgically unpicked. The battery went green on the same
-commit, which is the proof: 10 checks, 0 failures. `hub-intents.mjs` reverted out with it, which
-is why the count is 10 and not 11.
+**`buildMiltonWideContext` NOW HAS A 5-MINUTE TTL** (`259a365`). It had none, and nothing in the
+serving path ever called `resetMiltonWideContextCache()`. That was fine while it was a
+generation-time helper computed once per run across 14 hubs; it stopped being fine when the
+homepage began calling it per render. The homepage published `proof-sales-12mo` as 1,531 against
+a live 1,728 and no purge could shift it, because neither `revalidatePath` nor an Upstash flush
+reaches a module-level variable. Five minutes keeps the once-per-generation-run benefit and lets
+a stale figure correct itself without a deploy. A rejected promise is dropped rather than cached,
+so one database blip cannot poison every homepage render for the length of the TTL.
 
-**`feat/homepage` IS UNTOUCHED** and still carries all five commits for Home to finish and
-re-merge properly.
+**TWO CONFLICTS, BOTH RESOLVED BY KEEPING BOTH SIDES.**
 
-**MERGE BY SHA, NOT BY BRANCH NAME.** `feat/leads` was merged as `git merge --no-ff 26381f9`.
-Its tip happened to equal `26381f9`, and it was merged by SHA anyway. A branch name resolves at
-the moment you type it; a SHA is what was reviewed.
+- `vercel.json`: main carried `/api/brief/send` from feat/leads and `0a2499b` added two
+  `/api/content/market-watch` entries. Both sides appended to the end of the same array, so git
+  could not tell they were different paths. **All three kept, 17 crons, JSON verified by parse.**
+  The two market-watch entries are deliberate: Vercel cron expressions are UTC, Toronto is UTC-4
+  in EDT and UTC-5 in EST, so no single expression is 08:00 Toronto all year. The route guards on
+  the Toronto local hour and exactly one firing proceeds. **Dropping either loses the edition for
+  half the year.** Content confirmed the resolution reads their intent.
+- `package.json` prebuild: **the union, 23 tests.** Main had gained three lead/content guards
+  while the branch had added `test-sold-date-not-future.ts`.
 
-**REVALIDATION AFTER A BACKFILL IS A THREE-LAYER JOB AND THERE IS A FOURTH THAT CANNOT BE
-REVALIDATED AT ALL.** `scripts/revalidate-figure-pages.ts` sweeps every figure-publishing page —
-**487 paths, all 200**: homepage, `/sold`, `/rentals`, `/streets`, `/neighbourhoods`, `/listings`,
-`/market-watch`, `/guides` plus its 6, the published edition, all 22 hubs, all 450 published
-streets. But run `scripts/purge-sold-caches.ts` FIRST: Upstash sits in front of those figures with
-a 1h TTL and `revalidatePath` does not touch it, so a page-only sweep re-renders the stale number
-it already had. Stored prose is the fourth consumer and is not a cache at all: only a regeneration
-moves a street page's figures.
+**THE GATE CAUGHT A REAL CROSS-BRANCH BREAK.** feat/leads' `test-lead-guards.ts` and
+`test-lead-forms.ts` name `ExitIntent.tsx` and `CornerWidget.tsx` by path; fix/core-batch moved
+them to `retired/`. Prebuild died on ENOENT before a single assertion ran. **Repointed, not
+dropped from the lists** — a retired file is dead, not exempt, and if either is remounted it must
+come back already holding the ingress contract rather than the monolith fetch it shipped with.
 
-**AFTER THE FULL SWEEP, FIGURE DRIFT WAS ZERO.** Every figure assertion passed: Milton-wide
-figures within source and tolerance 0, neighbourhood figure vs hub record 0, meta price vs live 0,
-hero typical vs live 0, JSON-LD price vs live 0, homepage rentals == `/rentals` true, and the
-ISR-lag NOTE reported **0** pages stating a differing sample. The backfill's figures are correct
-on production.
+**THE MIGRATION LEDGER IS CLEAN, AND IT WAS NOT.** Two rows were wrong:
 
-**`SUPERLATIVE_PHRASES` IS EXPORTED** from `src/lib/ai/validateStreetGeneration.ts` (`114420a`).
-One line. Content can check copy against the same eleven words the validator rejects instead of
-keeping a second list that drifts.
+- `20260910180000_street_content_created_at`, mine, failed with 42701 (the column already
+  existed), marked rolled back, directory deleted. A ledger row for a migration that applied
+  **zero** steps and no longer exists on disk reads as drift. Deleted by
+  `scripts/fix-migration-ledger.ts`, which refuses to touch a row with any applied step or
+  without `rolled_back_at`.
+- `20260910120000_market_edition`, Content's, present locally and **unapplied** in the ledger
+  while both its tables already existed. Verified column-for-column and index-for-index against
+  the migration first, then marked applied. Running it would have failed on an existing table.
 
-**THE BACKFILL HOLDS: 0 future-dated rows** in `sold.sold_records`, 8,578 total.
+**Vercel builds run `prisma generate && next build`, not `migrate deploy`**, which is why neither
+row broke anything. It would still have bitten the first person to run migrations.
 
-**`fix/core-batch` IS STILL NOT MERGED**, at `2e8dfc0`, three commits ahead of main. It was held
-back on the red battery. **The battery is green now and the blocker is gone** — it needs a fresh
-preview and gate against current main before it goes in, because main has moved twice under it.
+**THE 249-PAGE PROGRAMME IS STILL PAUSED** at a 22% pass rate on the `differentPriorities`
+prompt/validator disagreement. 5 pages built, 226 unattempted. The cap is live at 20/day but the
+programme should not resume until the prompt is fixed.
 
-**`buildMiltonWideContext` memoizes with no TTL** and nothing in the serving path resets it.
-`proof-sales-12mo` read 1,531 against a live 1,728 and corrected to 1,728 on a redeploy with no
-code change. `/api/sync/sold` runs daily, so it goes stale daily and every deploy hides it.
-Unfixed. Not reverted with the hub work — this one predates it.
+**THE 17 STREETS THAT CROSSED k5 AND 9 THAT CROSSED k10** still publish the suppressed figure.
+Those numbers live in stored `StreetContent` prose and only a regeneration moves them. Content
+flagged this back as Core's, and it is.
 
-**Published street pages: 450.** The battery reports 449; the difference is one row published for
-a slug with no `ResidentialStreet` entity, which the sitemap refuses.
+**`/rentals` is 1,116 and the homepage agrees. `on-market` is 457, not 462** — a live count that
+moves; the battery passes it against its own source.
+
+**Published street pages: 450.** The battery reports 449; one row is published for a slug with no
+`ResidentialStreet` entity, which the sitemap refuses.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -77,18 +88,40 @@ a slug with no `ResidentialStreet` entity, which the sitemap refuses.
 
 | | |
 |---|---|
-| `main` | **`543ef99`**, production serving it, `served == expected` |
-| battery on production | **`PASS · 10 checks · 449 pages · 70s`**, exit 0 |
-| `feat/homepage` merge | **REVERTED** as `2e3cc50`; branch intact, unmerged |
-| `feat/leads` | **merged** as `543ef99`, by SHA `26381f9` |
-| `fix/core-batch` | **`2e8dfc0`**, unmerged, needs a fresh gate against current main |
-| revalidation sweep | **487 paths, 487 × 200** |
-| figure drift after sweep | **0** |
+| `main` | **`8db80da`**, production serving it, `served == expected` |
+| battery on production | **`PASS · 11 checks · 449 pages · 97s`**, exit 0 |
+| `prisma migrate status` | **clean**, 26 migrations, "up to date" |
+## What happened 2026-09-10 (final) — three merges
+
+Record in `scratchpad/reports/068-three-merges.md`.
+
+**1. `5448b96`, the approved rent tile and hub anchors.** Cherry-picked as `1cf5342`, because a
+merge reported "Already up to date". Battery `PASS · 11 checks · 449 pages · 109s`. `/rentals`
+1,116 and the homepage agrees; `on-market` 457.
+
+**2. `0a2499b`, feat/content.** Merged as `31a9ab0` after a `vercel.json` conflict resolved to
+keep all three crons. Battery `PASS · 11 checks · 449 pages · 99s`. Content ran the held
+2026-08-31 regeneration and reported back: every headline figure moved with the backfill, and new
+listings held at 56 because they come from DB1's `listedAt`, which the backfill never touched.
+That is the clean confirmation of the `CloseDate` diagnosis.
+
+**3. `fix/core-batch`, head `dce1b70`.** `origin/main` merged in, four conflicts resolved, the TTL
+added as its own commit rather than buried in the merge, two lead guards repointed. Preview
+`miltonly-j6va7trjl` green, then merged as `8db80da`. Battery
+`PASS · 11 checks · 449 pages · 97s`.
+
+**Then the ledger.** Two wrong rows in `_prisma_migrations`, both fixed, status clean.
+
+| `5448b96` | **cherry-picked** as `1cf5342` (a merge was a no-op) |
+| `feat/content` `0a2499b` | **merged** as `31a9ab0`; Content notified, correction is live |
+| `fix/core-batch` `dce1b70` | **merged** as `8db80da`; preview `miltonly-j6va7trjl` was green |
+| `feat/homepage` | **unmerged**, intact, awaiting Home's hub work |
+| crons | **17**, both market-watch entries kept |
+| prebuild | **23 tests** |
 | future-dated DB2 rows | **0** of 8,578 |
-| `SUPERLATIVE_PHRASES` | **exported** |
-| local build | exit 0, zero `P2024`, 549 static pages |
+| creation programme | **paused**, 5 built, 226 unattempted, cap live at 20/day |
 | published street pages | **450** |
-| QUEUE | 1, 2, 3, 4 done; **7 built and ruled, unmerged**; 5, 6 not started |
+| QUEUE | 1, 2, 3, 4 done; **7 DONE and merged**; 5, 6 not started |
 
 
 ## What happened 2026-09-10 (latest) — the revert, the sweep, and feat/leads
@@ -303,18 +336,24 @@ without the parameter.
 19. **11 slugs have R2 clips uploaded and no `StreetContent` row.** Generation candidates,
     blocked by open item 1 wherever DeepSeek cannot clear them.
 20. **CLOSED.** The 255 future-dated DB2 rows are repaired; a re-run reports 0.
-24. **CLOSED by revert.** The two hub checks failed against markup from an unapproved WIP
+24. **`feat/homepage` still needs Home to finish the hub work.** `5448b96` is back on main by
+    cherry-pick and its check passes against the `h-` markup. When the `hh-` rebuild returns, the
+    two checks must land WITH it: `hub-intents.mjs`'s selector, `hub-meta.mjs`'s `heroStats()`,
+    and `hub-meta`'s sub-k `silent` model rewritten around the degrade-to-a-count tile (moffat
+    prints `3` / "sales in 12 months" where a k-clearing hub prints `$955K` / "typical sale
+    price"). That last one is a k-anonymity change and needs its own review.
+29. **CLOSED by revert (historical).** The two hub checks failed against markup from an unapproved WIP
     commit (`c98f40e`), not against a stale contract. `git revert -m 1 cec6906` restored green.
     When Home re-merges `feat/homepage`, `hub-intents.mjs` and `hub-meta`'s `heroStats()` must
     land WITH the `hh-` markup, and `hub-meta`'s sub-k `silent` model has to be rewritten around
     the degrade-to-a-count tile (moffat prints `3` / "sales in 12 months" where a k-clearing hub
     prints `$955K` / "typical sale price"). That rewrite is a k-anonymity change and needs its
     own review.
-25. **`buildMiltonWideContext` memoizes with no TTL** and nothing in the serving path resets it.
+25. **CLOSED.** `buildMiltonWideContext` now carries a 5-minute TTL (`259a365`). Previously: and nothing in the serving path resets it.
     Three homepage figures go stale daily and are corrected only by a deploy.
 26. **The creation programme is paused at 22%.** `differentPriorities` is offered by the prompt
     on inputs the validator refuses it on. 226 of 249 candidates unattempted.
-27. **`fix/core-batch` needs a fresh preview and gate.** Main has moved twice under it (a
+27. **CLOSED. `fix/core-batch` is merged** as `8db80da`. Previously: Main has moved twice under it (a
     revert and a merge). Nothing is wrong with the branch; its baseline is simply stale.
 28. **17 streets cleared k5 and 9 cleared k10** in the backfill and still publish the suppressed
     figure, because the numbers are in stored prose. A regeneration is the only way through.
@@ -323,6 +362,12 @@ without the parameter.
 
 ## Notes for the next run
 
+- **A reverted merge's commits are still ancestors, so re-merging them is a silent no-op.**
+  `git merge --no-ff 5448b96` printed "Already up to date" and did nothing. Cherry-pick reapplies
+  them. Read the merge output before believing a merge happened.
+- **`prisma migrate status` is worth running after any merge that carries migrations.** Two rows
+  were wrong on 2026-09-10 and neither broke a build, because Vercel runs `prisma generate`, not
+  `migrate deploy`. `scripts/fix-migration-ledger.ts` clears a zero-step rolled-back row safely.
 - **`git merge --no-ff <branch>` resolves the branch at the moment you type it.** If you were
   given a SHA, merge the SHA. `cec6906` shipped an unapproved 1,532-line hub rebuild because the
   tip had moved past the commit that was approved, and nothing in the merge output says so.
@@ -383,21 +428,9 @@ without the parameter.
 
 ## Next expected task
 
-**Re-gate and merge `fix/core-batch`.** Fresh preview against current main, battery, then merge.
-The battery blocker that held it back is gone.
+**QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed, length
+and terminus onto all published streets from the Town and OSM layers. No camera work and nothing
+derived from imagery.
 
-Then: **QUEUE item 5, geometry backfill**
-
-Then: **QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
-length and terminus onto all published streets from the Town and OSM layers. No camera work and
-nothing derived from imagery.
-
-Failing that: the Anthropic credit balance (open item 1), which blocks three pages and any
-cron escalation; open item 8, the seven clips with `blur_verified: false`; open item 9, the
-two orphaned clips. **Do not self-start any of them.**
-
-Or, ahead of it if Aamir says so: the Anthropic credit balance (open item 1), which blocks
-three pages and any cron escalation; open item 8, the seven clips with
-`blur_verified: false`; open item 9, the two orphaned clips.
-
-**Do not self-start any of them.**
+Ahead of it if Aamir says so: the `differentPriorities` prompt fix, which unblocks the 226
+remaining creation candidates; and regenerating the 26 streets that crossed k5 or k10.

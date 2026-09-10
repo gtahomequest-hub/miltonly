@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built and ruled 2026-09-10 on `fix/core-batch`, NOT merged** — the battery blocker cleared 2026-09-10 when the feat/homepage merge was reverted; the branch now needs a fresh gate against current main. Items 5 and 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Items 5 and 6 **not started**.
 
 **The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
 registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
@@ -271,7 +271,7 @@ it against the Town registry is step one, and the build scope follows from it �
 **Done when** the two gates consult the same sources, the registry-filtered population is
 reported, and the streets that already have pages refresh on the cron without a manual run.
 
-## BUILT AND RULED 2026-09-10 on `fix/core-batch`, NOT MERGED
+## DONE 2026-09-10, merged as `8db80da`
 
 Pulled forward into a directly prompted CORE batch ahead of item 5, not self-started. Record in
 `scratchpad/reports/065-core-batch.md` and `scratchpad/reports/066-rulings-and-merges.md`.
@@ -301,7 +301,8 @@ The work is finished; the criterion is not met yet.
       guard, $0.2624 of a $3 cap, DeepSeek only.
       `scripts/create-street-pages-local.ts` — `regen-058-local.ts` could not have done it, it
       skips any slug with no `StreetContent` row, which is all 249
-- [ ] **the merge.** Blocked on the battery, not on this item
+- [x] **merged** as `8db80da` (branch head `dce1b70`, by SHA). Preview `miltonly-j6va7trjl`
+      green, production battery `PASS · 11 checks · 449 pages · 97s`, `prisma migrate status` clean
 - [ ] **THE PROGRAMME IS PAUSED.** The 18 failures are one systemic fault, not 18 bad streets:
       the prompt offers `differentPriorities` on inputs where `dropsDifferentPriorities(input)`
       is true, so the validator expects 2 sections and gets 3, through all 5 attempts with the
