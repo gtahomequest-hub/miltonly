@@ -5,6 +5,7 @@ import SiteNav from "@/components/nav/SiteNav";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import AgentContactSection from "@/components/AgentContactSection";
 import FooterSection from "@/components/sections/FooterSection";
+import DailyBriefSignup from "@/components/lead/DailyBriefSignup";
 import "./sell-theme.css";
 
 export const metadata = genMeta({
@@ -137,6 +138,19 @@ export default function SellPage() {
               <div className="s-proof-label">Licensed TREB VOW data feed</div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* The daily brief. Not everyone reading a valuation page is ready to ask for one, and
+          the brief is the honest smaller ask: it costs them an email and it tells them what the
+          market did. Its sender is a later step and the copy says so. */}
+      <section className="s-block">
+        <div className="s-wrap">
+          <div className="s-sechead">
+            <span className="s-eyebrow">Not ready yet</span>
+            <h2>Watch the market before you decide</h2>
+          </div>
+          <DailyBriefSignup />
         </div>
       </section>
 

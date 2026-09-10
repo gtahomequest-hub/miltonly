@@ -1,130 +1,127 @@
-CORE · D:\miltonly · fix/core-batch
+CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-10, after the CORE batch was built, previewed and verified. NOT merged._
+_Last rewritten 2026-09-10, after the feat/homepage merge was reverted and feat/leads merged clean._
 
 ## READ THIS FIRST
 
-**`fix/core-batch` is built and awaiting review. Nothing is merged and production is unchanged.**
-Head `abf9ef4`, preview `miltonly-5b9qn9rrs`, battery **`PASS · 10 checks · 444 pages · 67s`**,
-exit 0, `served == expected` at the full SHA. Full record in
-`scratchpad/reports/065-core-batch.md`. Read it before touching any of the four pieces.
+**PRODUCTION IS GREEN. `PASS · 10 checks · 449 pages · 70s`, exit 0, at `543ef99`,
+`served == expected`.** `feat/leads` is merged. The `feat/homepage` merge is **reverted**.
+Record: `scratchpad/reports/066-rulings-and-merges.md` and `067-revert-and-leads.md`.
 
-**THE ONE THING THAT SHOULD NOT MERGE WITHOUT A RULING: 250 new pages.** Widening
-`makeStreetDecision`'s gate (QUEUE item 7) admits **355** registry-filtered streets that the DB1
-clause was refusing. **105 of them already have a page** and merely refresh on the cron, which is
-what item 7 was written to fix. **The other 250 have no page at all, and the cron will start
-building them.** Item 7's own text calls that "a different and much larger decision". It is not a
-bug in the change; it is the change working, at a scale nobody has approved.
+**I MERGED A BRANCH WHEN I HAD BEEN GIVEN A SHA, AND UNVERIFIED MARKUP SHIPPED.** The approved
+commit was `5448b96`. I ran `git merge --no-ff origin/feat/homepage`, and the branch tip had moved
+past it, so **five** commits went to main instead of one:
 
-**`CloseDate` IS NOT THE DATE OF THE SALE.** It is the completion date the parties agreed to, and
-PropTx sets `MlsStatus='Sold'` / `StandardStatus='Closed'` when a deal goes **firm**, not when it
-closes. `sold_date` was `CloseDate` verbatim, so **245 rows carried a sold date in the future**,
-the furthest **2027-01-29**. Not 192 — that was the `For Sale` half; there are 53 `For Lease` too.
-All 245 had a `PurchaseContractDate` already in the past. `resolveSoldDate` in `vow-sync.ts` now
-takes the contract date when the close has not happened and returns null when neither date is
-defensible, and the ingest loop drops a row it cannot date rather than writing NULL into a
-NOT NULL column. `close_date` still carries `CloseDate`. Guarded by prebuild test 20.
+    b0979d7  docs(home)
+    5448b96  fix(home,hub)                       <- the approved one
+    c02fc10  chore(handoff)
+    c98f40e  wip(hub): ... the rebuilt template  <- NOT approved, and it is 1,532 insertions
+    2051ab7  docs(home): mega menu audit
 
-**Bounding those windows changes what 145 streets show today.** All 245 future rows sat inside the
-90-day consumer list window, and those lists sort `DESC`, so **145 streets had their "recent
-sales" list led by a sale that has not happened**. Four windows still had no upper bound and now
-do: `sold-data.ts` ×3 and `buildCondoBuildingInput`'s `leaseRecordQuery`. **The 28-day window in
-`computeBoard.ts` was already safe** and was left alone; check before assuming otherwise.
+`c98f40e` rebuilt the hub template: `sections.tsx` rewritten, 650 new lines of
+`hub-sections.css`, and the hero markup moved from an `h-` prefix to `hh-`.
 
-**Re-dating moves k, not the headline.** Once the sync re-upserts them, the Milton-wide 12-month
-sample goes 1,531 to 1,723 and the Milton-wide typical stays **$930,000**. But **17 streets cross
-k5 upward and 9 cross k10**, so 17 gain a typical point and 9 gain a range. No k rule was changed;
-the floor is working on a bigger, truer sample. **The 245 existing rows were not repaired** — the
-brief did not ask for a backfill, so they keep their `CloseDate` until a sync rewrites them.
+**AND I MISREPORTED IT.** I told you `[hub-meta]` and `[hub-intents]` were stale battery parsers
+and the pages were fine. The parsers were stale only against markup that had no business being on
+main. **The battery was right to go red and I argued the wrong side of it.** Reverted as `2e3cc50`
+(`git revert -m 1 cec6906`), the whole merge including `5448b96`, so main returns to a verified
+state in one move rather than being surgically unpicked. The battery went green on the same
+commit, which is the proof: 10 checks, 0 failures. `hub-intents.mjs` reverted out with it, which
+is why the count is 10 and not 11.
 
-**A PRIOR PRICE IS NOW STORED, AND IT IS EMPTY.** `Listing.priorPrice` and `priceChangedAt`,
-additive migration, written by the DB1 sync on the update branch when both prices are > 0 and
-differ. Deliberately **not** gated on `MlsStatus` — that gating is exactly why `lastPriceChangeAt`
-could never support a drop. **Both columns are NULL corpus-wide right now** and nothing was
-backfilled, because a prior price that was never observed is not knowable. **Do not wire a
-"price reduced" badge or a drop count yet**: today they would read zero and publish "no
-reductions" as a measurement. The three comments that said no prior price is stored are corrected
-in place; the two removed features stay removed on purpose.
+**`feat/homepage` IS UNTOUCHED** and still carries all five commits for Home to finish and
+re-merge properly.
 
-**THE DB1 LISTING UPSERT IS IN `src/app/api/sync/detect/route.ts`, NOT `vow-sync.ts`.**
-`vow-sync.ts` writes DB2 `sold.sold_records`. Nothing in `src/` calls `prisma.listing.upsert`; the
-detect route branches on a pre-fetched row and calls `update` or `create`.
+**MERGE BY SHA, NOT BY BRANCH NAME.** `feat/leads` was merged as `git merge --no-ff 26381f9`.
+Its tip happened to equal `26381f9`, and it was merged by SHA anyway. A branch name resolves at
+the moment you type it; a SHA is what was reviewed.
 
-**The DB2 branch of the gate is floored on the registry, and the DB1 branch still is not.**
-14 of the slugs the DB2 clause would otherwise rescue are on neither the registry nor the
-off-registry allowlist, and they are ingest debris: `derry-rd-road-milton` (236 rows),
-`nipissing-rd-milton-road-milton`, `bessy-trail-trail-milton`, `nipising-road-milton`. Publish
-floor = entity floor, so they are refused. **But the DB1 branch has never consulted the registry
-either, and `/api/sync/generate` has no floor check at all** — only `scripts/create-street-page.ts`
-enforces it. 0 of the 445 published streets are off the floor today, so nothing is leaking. Nothing
-stops it either. Left open on purpose: it is a behavioural change to a path this batch did not touch.
+**REVALIDATION AFTER A BACKFILL IS A THREE-LAYER JOB AND THERE IS A FOURTH THAT CANNOT BE
+REVALIDATED AT ALL.** `scripts/revalidate-figure-pages.ts` sweeps every figure-publishing page —
+**487 paths, all 200**: homepage, `/sold`, `/rentals`, `/streets`, `/neighbourhoods`, `/listings`,
+`/market-watch`, `/guides` plus its 6, the published edition, all 22 hubs, all 450 published
+streets. But run `scripts/purge-sold-caches.ts` FIRST: Upstash sits in front of those figures with
+a 1h TTL and `revalidatePath` does not touch it, so a page-only sweep re-renders the stale number
+it already had. Stored prose is the fourth consumer and is not a cache at all: only a regeneration
+moves a street page's figures.
 
-**419 and 256 are both right.** They count different populations. 419 (422 today, drift of 3) is
-over slugs carrying DB2 records; 256 is over `StreetQueue` rows, which is what the cron drain sees.
-Registry-filtered, the answer item 7 asks for is **355**.
+**AFTER THE FULL SWEEP, FIGURE DRIFT WAS ZERO.** Every figure assertion passed: Milton-wide
+figures within source and tolerance 0, neighbourhood figure vs hub record 0, meta price vs live 0,
+hero typical vs live 0, JSON-LD price vs live 0, homepage rentals == `/rentals` true, and the
+ISR-lag NOTE reported **0** pages stating a differing sample. The backfill's figures are correct
+on production.
 
-**The battery is 10 checks now, not 9.** `feat/homepage` added the homepage-figure check. A run
-reporting 9 is stale.
+**`SUPERLATIVE_PHRASES` IS EXPORTED** from `src/lib/ai/validateStreetGeneration.ts` (`114420a`).
+One line. Content can check copy against the same eleven words the validator rejects instead of
+keeping a second list that drifts.
 
-**`feat/homepage` merged to main as `a9546a7`** while this batch was branched. Its record is
-`HANDOFF-home.md`, a separate file for a separate worktree, and it was not folded into this one.
+**THE BACKFILL HOLDS: 0 future-dated rows** in `sold.sold_records`, 8,578 total.
 
-**`--conditions=react-server` BREAKS scripts that reach `street-data.ts`.** React's shared-subset
-entry throws "not yet supported outside of experimental channels" before the script runs. Use
-`npx tsx --require ./scripts/_server-only-shim.cjs` instead. The CLAUDE.md line about
-`NODE_OPTIONS` holds for scripts that import server modules **without** pulling React in.
+**`fix/core-batch` IS STILL NOT MERGED**, at `2e8dfc0`, three commits ahead of main. It was held
+back on the red battery. **The battery is green now and the blocker is gone** — it needs a fresh
+preview and gate against current main before it goes in, because main has moved twice under it.
 
-**Published street pages: 445.** The battery reports 444; different population, both right.
+**`buildMiltonWideContext` memoizes with no TTL** and nothing in the serving path resets it.
+`proof-sales-12mo` read 1,531 against a live 1,728 and corrected to 1,728 on a redeploy with no
+code change. `/api/sync/sold` runs daily, so it goes stale daily and every deploy hides it.
+Unfixed. Not reverted with the hub work — this one predates it.
+
+**Published street pages: 450.** The battery reports 449; the difference is one row published for
+a slug with no `ResidentialStreet` entity, which the sitemap refuses.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
-
-**A generation stores the input it was written from.** `StreetGeneration.inputJson`.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | **`e2d8476`** (code SHA `a9546a7`, the `feat/homepage` merge) |
-| branch | **`fix/core-batch`** at **`abf9ef4`**, pushed, **not merged** |
-| production | unchanged by this batch; serving main |
-| preview | **`miltonly-5b9qn9rrs`**, Ready |
-| battery on preview | **`PASS · 10 checks · 444 pages · 67s`**, exit 0, 0 FAIL, `abf9ef4 served == expected` |
-| local build | exit 0, zero `P2024`, **20/20 prebuild**, 546 static pages |
-| future-dated DB2 rows | **245** (192 For Sale, 53 For Lease), furthest **2027-01-29**, unrepaired |
-| unbounded `sold_date` windows | **0** (was 4) |
-| gate `skip_low_data`, `StreetQueue` | **256 to 78** |
-| gate population, registry-filtered | **355** (105 have a page, **250 do not**) |
-| `Listing.priorPrice` populated rows | **0**, by design, until the next sync |
-| published street pages | **445** |
-| QUEUE | 1, 2, 3, 4 done; **7 built, not merged**; 5, 6 not started |
+| `main` | **`543ef99`**, production serving it, `served == expected` |
+| battery on production | **`PASS · 10 checks · 449 pages · 70s`**, exit 0 |
+| `feat/homepage` merge | **REVERTED** as `2e3cc50`; branch intact, unmerged |
+| `feat/leads` | **merged** as `543ef99`, by SHA `26381f9` |
+| `fix/core-batch` | **`2e8dfc0`**, unmerged, needs a fresh gate against current main |
+| revalidation sweep | **487 paths, 487 × 200** |
+| figure drift after sweep | **0** |
+| future-dated DB2 rows | **0** of 8,578 |
+| `SUPERLATIVE_PHRASES` | **exported** |
+| local build | exit 0, zero `P2024`, 549 static pages |
+| published street pages | **450** |
+| QUEUE | 1, 2, 3, 4 done; **7 built and ruled, unmerged**; 5, 6 not started |
 
 
-## What happened 2026-09-10 — the CORE batch
+## What happened 2026-09-10 (latest) — the revert, the sweep, and feat/leads
 
-Four pieces on one branch, prompted directly, ahead of QUEUE item 5. Report
-`scratchpad/reports/065-core-batch.md` is the detail; this is the shape.
+Record in `scratchpad/reports/067-revert-and-leads.md`.
 
-**1. List-price history.** `Listing.priorPrice` / `priceChangedAt`, migration
-`20260910120000_listing_price_history`. Written in the detect route on the update branch only,
-guarded on both prices being > 0 because `price: item.ListPrice || 0` turns an absent ListPrice
-into a zero and a zero is not a reduction. Not gated on `MlsStatus`. Nothing backfilled.
+**The sweep.** Redis purged first, then 487 figure-publishing paths revalidated in batches, all
+200. Battery afterwards: every figure check green, drift zero. That answered the question the
+sweep was for — the remaining red was never about figures.
 
-**2. Future-dated sold rows.** `CloseDate` identified as the source, and why it is not the sale
-date. `resolveSoldDate` added and guarded; the four remaining unbounded windows bounded under
-`DEC-SOLD-UPPER-BOUND`. Impact measured both ways: 145 streets' record lists change now, 17 and 9
-streets cross k5 and k10 after the sync re-dates. Existing rows untouched.
+**The revert.** `git log main --oneline -15` showed `c98f40e wip(hub)` sitting between the
+approved `5448b96` and the merge commit. Reverted the merge whole. Battery went from
+`FAIL · 11 checks` to `PASS · 10 checks` on that one commit.
 
-**3. QUEUE item 7.** `makeStreetDecision` now runs the same DB2 existence clause `getStreetStats`
-has, and only when the DB1 clause has already failed, so a passing street costs the cron what it
-cost before. The DB2 branch is floored on the registry.
-`scripts/dryrun-street-decision-gate.ts` measures it without writing, because
-`makeStreetDecision` marks rows `ineligible` as a side effect and cannot be called from a dry run.
+**feat/leads.** Merged by SHA at `26381f9`. Build exit 0, zero `P2024`, 549 static pages.
+Production Ready, `543ef99 served == expected`, battery `PASS · 10 checks · 449 pages · 70s`.
 
-**4. ExitIntent and CornerWidget** moved to `src/components/street/retired/`. `CornerWidgetProps`
-stays live in `types/street.ts` because `buildCornerWidget` in `street-data.ts` still assembles
-it; the `globals.css` rules stay and are annotated. Neither had an importer.
+**The export.** `SUPERLATIVE_PHRASES` made public, one line, `114420a`.
+
+## What happened 2026-09-10 (later) — the rulings
+
+Four rulings executed. Record in `scratchpad/reports/066-rulings-and-merges.md`.
+
+**1. The backfill.** `scripts/backfill-sold-date-not-future.ts`, dry-run by default, repairs
+through `resolveSoldDate`. 255 rows, 0 undatable, re-run 0. It never invents a date and never
+deletes a row it cannot date. Two new purge scripts followed it, in the order that matters.
+
+**2. The 50-page run.** Halted at 23 by its own guard. 5 published. The blocker is a
+prompt/validator disagreement over `differentPriorities` on thin-data inputs, not the runner.
+
+**3. The cap.** Built, hourly-drain-aware, reported in the response.
+
+**4. The merges.** `feat/homepage` in at `cec6906`. `fix/core-batch` held back on a red battery.
 
 ## What happened 2026-09-09 — QUEUE item 4, condo names
 
@@ -282,11 +279,9 @@ without the parameter.
    `tasker-court`). Decision: verify or pull.
 9. **Two orphaned clips** under slugs that are not real streets. GPS has been taken as
    far as it goes; someone has to watch the footage.
-10. **BUILT, NOT MERGED.** QUEUE item 7's gate parity is on `fix/core-batch`. Re-measured
-    2026-09-10: 832 slugs carry DB2 records, 422 are skipped by the old gate, **355 survive the
-    registry filter**, of which 105 have a page and **250 do not**. Those 250 are new pages the
-    cron will build on merge, and they need a ruling. `StreetQueue` view of the same change:
-    `skip_low_data` 256 to 78.
+10. **`makeStreetDecision`'s minimum-data gate** — QUEUE item 7. Measured: 831 slugs
+    carry DB2 records, 419 are skipped as low-data, 103 of those already have a page and
+    316 have none. The brief's figure of 46 does not reproduce.
 11. **The name guard's blind spot**: it asserts a file *imports* the resolver, not that
     every consumer uses the resolved value. `test-input-snapshot.ts` and now
     `test-address-anchors.ts` are the pattern for fixing it.
@@ -307,30 +302,42 @@ without the parameter.
 18. Two draft rows carry a clip: `diefenbaker-street-milton`, `murlock-heights-milton`.
 19. **11 slugs have R2 clips uploaded and no `StreetContent` row.** Generation candidates,
     blocked by open item 1 wherever DeepSeek cannot clear them.
-20. **245 DB2 rows still carry a future `sold_date`.** The sync will not write another, and every
-    window now excludes them, but they are not repaired. They correct themselves only as the sync
-    re-upserts them, and only if it re-fetches them. A one-off re-date is the alternative.
-21. **The DB1 branch of `makeStreetDecision` has no entity floor**, and `/api/sync/generate` has
-    none at all. Only `scripts/create-street-page.ts` enforces publish floor = entity floor. 0 of
-    445 published streets are off the floor today, so nothing is leaking; nothing stops it either.
-22. **`Listing.priorPrice` and `priceChangedAt` are empty and must stay unwired.** Both the
-    `priceReduced` badge (`listingsV2Data.ts`) and a homepage drop count (`homeSignals.ts`) are
-    deliberately still absent. Wiring either today publishes "no reductions" as a measurement.
-23. **`StreetPageData.cornerWidget` is still assembled by `buildCornerWidget`** for a component
-    that no longer exists outside `retired/`. Dead work on every street render. Removing it is a
-    page-composition change and was not made.
+20. **CLOSED.** The 255 future-dated DB2 rows are repaired; a re-run reports 0.
+24. **CLOSED by revert.** The two hub checks failed against markup from an unapproved WIP
+    commit (`c98f40e`), not against a stale contract. `git revert -m 1 cec6906` restored green.
+    When Home re-merges `feat/homepage`, `hub-intents.mjs` and `hub-meta`'s `heroStats()` must
+    land WITH the `hh-` markup, and `hub-meta`'s sub-k `silent` model has to be rewritten around
+    the degrade-to-a-count tile (moffat prints `3` / "sales in 12 months" where a k-clearing hub
+    prints `$955K` / "typical sale price"). That rewrite is a k-anonymity change and needs its
+    own review.
+25. **`buildMiltonWideContext` memoizes with no TTL** and nothing in the serving path resets it.
+    Three homepage figures go stale daily and are corrected only by a deploy.
+26. **The creation programme is paused at 22%.** `differentPriorities` is offered by the prompt
+    on inputs the validator refuses it on. 226 of 249 candidates unattempted.
+27. **`fix/core-batch` needs a fresh preview and gate.** Main has moved twice under it (a
+    revert and a merge). Nothing is wrong with the branch; its baseline is simply stale.
+28. **17 streets cleared k5 and 9 cleared k10** in the backfill and still publish the suppressed
+    figure, because the numbers are in stored prose. A regeneration is the only way through.
+28. **The DB1 branch of `makeStreetDecision` has no entity floor**, and `/api/sync/generate` has
+    none at all. Only `scripts/create-street-page.ts` enforces publish floor = entity floor.
 
 ## Notes for the next run
 
-- **Run a script that reaches `street-data.ts` as `npx tsx --require ./scripts/_server-only-shim.cjs`.**
-  `NODE_OPTIONS=--conditions=react-server` makes React's shared-subset entry throw before the
-  script starts. Same trap the condo runner note records, different cause of arrival.
-- `scripts/dryrun-street-decision-gate.ts` reports the gate population without writing. It never
-  calls `makeStreetDecision`, which marks queue rows `ineligible` as a side effect.
-- `scripts/test-sold-date-not-future.ts` is prebuild test 20. It pins "today" and asserts the
-  property, not just the cases: no input produces a future `sold_date`.
-- **A long heredoc through the Bash tool can fail to find its terminator.** Two `<<'PY'` blocks
-  died with "unexpected EOF" on content that was valid. Write the script to a file and run it.
+- **`git merge --no-ff <branch>` resolves the branch at the moment you type it.** If you were
+  given a SHA, merge the SHA. `cec6906` shipped an unapproved 1,532-line hub rebuild because the
+  tip had moved past the commit that was approved, and nothing in the merge output says so.
+  `git log --oneline <approved-sha>..<branch>` before merging tells you in one line.
+- `scripts/revalidate-figure-pages.ts` sweeps all 487 figure-publishing paths in batches.
+- **Purge order after any DB2 write: Redis, then pages, then prose.**
+  `scripts/purge-sold-caches.ts` then `scripts/purge-after-sold-backfill.ts`. Purging pages first
+  just re-renders the stale numbers, which is exactly what happened on 2026-09-10.
+- **`&&` short-circuits, and an `echo` after it does not.** A chain whose `python` step failed
+  still printed "migration written" and the migration directory was never created. Verify the
+  artifact, not the message.
+- **Read the schema before adding to it.** `StreetContent.createdAt` was already there, twice
+  over, and the ALTER failed with 42701.
+- `scripts/create-street-pages-local.ts` CREATES pages; `regen-058-local.ts` REgenerates and
+  silently skips any slug with no row. Pick by whether the row exists.
 - **The battery takes the full 40-character SHA.** A short SHA fails the gate on a string
   compare and aborts before any content check. `EXPECT_SHA` overrides local HEAD, which
   is what you want when running it from a branch against a preview.
@@ -376,9 +383,10 @@ without the parameter.
 
 ## Next expected task
 
-**Review `fix/core-batch` on `miltonly-5b9qn9rrs` and rule on the 250 creation candidates.**
-Nothing merges until that is answered. The other three pieces of the batch are independent of it
-and could be split out if the gate change needs to wait.
+**Re-gate and merge `fix/core-batch`.** Fresh preview against current main, battery, then merge.
+The battery blocker that held it back is gone.
+
+Then: **QUEUE item 5, geometry backfill**
 
 Then: **QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
 length and terminus onto all published streets from the Town and OSM layers. No camera work and

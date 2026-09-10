@@ -2,19 +2,18 @@
 
 // Unlock modal — triggered from any locked listing card in the 3+9 grid.
 // Shared form across all 9 locked cards (one modal, not nine inline forms).
-// POSTs to the same /api/leads endpoint as the hero form but tags the lead
+// Reaches the same one ingress as the hero form but tags the lead
 // with `source: "ads-rentals-lp-modal"` so analytics can split conversions
 // by which form drove them.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { attributionPayload } from "@/lib/attribution";
+import { useRouter } from "next/navigation";
+import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
-const HONEYPOT_FIELD = "company_website";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const BUDGET_OPTIONS = [
@@ -39,7 +38,6 @@ interface Props {
 
 export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -48,19 +46,11 @@ export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const [tracking, setTracking] = useState({
-    utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "", gclid: "",
-  });
-  useEffect(() => {
-    setTracking({
-      utm_source: searchParams.get("utm_source") || "",
-      utm_medium: searchParams.get("utm_medium") || "",
-      utm_campaign: searchParams.get("utm_campaign") || "",
-      utm_term: searchParams.get("utm_term") || "",
-      utm_content: searchParams.get("utm_content") || "",
-      gclid: searchParams.get("gclid") || "",
-    });
-  }, [searchParams]);
+  // THE PER-SURFACE UTM READ IS GONE. Every one of these forms kept its own copy of
+  // "read the six params off the URL", and each copy only saw the URL the visitor happened to
+  // land on last. src/components/AttributionCapture.tsx runs in the root layout and persists
+  // first-touch and last-touch across the whole session, and the client helper sends both, so
+  // the surface no longer has an attribution job.
 
   // Close on ESC, lock body scroll while open.
   useEffect(() => {
@@ -106,44 +96,25 @@ export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
       if (w.gtag) w.gtag("event", "form_submit", { source: "rentals/ads", form: "unlock-modal" });
     }
 
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: `Lead ${phoneDigits.slice(-4)}`,
-          phone: phone.trim(),
-          email: trimmedEmail,
-          // Distinct source tag so DB analytics can split modal vs hero
-          // form conversions. /api/leads ads-path treats both as renter
-          // leads with the same flow.
-          source: "ads-rentals-lp-modal",
-          intent: "renter",
-          budget,
-          homeType: initialType || "any",
-          utm_source: tracking.utm_source,
-          utm_medium: tracking.utm_medium,
-          utm_campaign: tracking.utm_campaign,
-          utm_term: tracking.utm_term,
-          utm_content: tracking.utm_content,
-          gclid: tracking.gclid,
-          ...attributionPayload(),
-          [HONEYPOT_FIELD]: honey,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data?.error || `Couldn't submit — please try again or call ${config.realtor.phone}.`);
-        setSubmitting(false);
-        return;
-      }
-      const redirect = data?.redirect || `/rentals/thank-you?lid=${data?.id || ""}`;
-      router.push(redirect);
-    } catch {
-      setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} directly at ${config.realtor.phone}.`);
+    // Distinct source tag so DB analytics can split modal from hero-form conversions. The
+    // thank-you path is built here rather than returned by the route: the surface knows which
+    // funnel it is, and the route no longer has a per-branch redirect to hand back.
+    const result = await postLeadDetailed({
+      source: "ads-rentals-lp-modal",
+      intent: "rent",
+      name: `Lead ${phoneDigits.slice(-4)}`,
+      phone: phone.trim(),
+      email: trimmedEmail,
+      budget,
+      homeType: initialType || "any",
+      honeypot: honey,
+    });
+    if (!result.ok) {
+      setError(result.error || `Couldn't submit. Please try again or call ${config.realtor.phone}.`);
       setSubmitting(false);
+      return;
     }
+    router.push(`/rentals/thank-you?lid=${result.leadId ?? ""}`);
   }
 
   return (
@@ -167,7 +138,7 @@ export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
           ×
         </button>
 
-        <form onSubmit={handleSubmit} className="p-5 sm:p-7 pt-12 sm:pt-8" noValidate method="post" action="/api/leads">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-7 pt-12 sm:pt-8" noValidate>
           <h2 id="unlock-modal-title" className="text-[22px] sm:text-[24px] font-extrabold leading-tight mb-1.5">
             {REALTOR_FIRST_NAME}&apos;s matching you right now.
           </h2>
@@ -235,10 +206,8 @@ export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
             <label>
               Company website
               <input
+                {...honeypotInputProps}
                 type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                name={HONEYPOT_FIELD}
                 value={honey}
                 onChange={(e) => setHoney(e.target.value)}
               />

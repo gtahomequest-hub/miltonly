@@ -1,5 +1,23 @@
 "use client";
+
+// The off-market list. Source "homepage-exclusive".
+//
+// WHAT A PHONE-ONLY LEAD IS PROMISED, decided here because this is the only surface on the
+// site that captures no address: a text or a call from Aamir, and nothing by email. That is
+// what the card says above the fields and what the confirmation panel repeats. The
+// consequences follow from it and are deliberate, not omissions:
+//
+//   - no confirmation email, because there is no address to send one to
+//   - no watch, because a SavedSearch is an email channel and cannot reach a phone
+//   - the desk alert and the Twilio message to Aamir ARE the delivery
+//
+// It kept its own route until now. That route wrote `email: ""` rather than null, had no
+// honeypot, no rate limit and no origin check, and scored on budget substrings that no
+// other surface used. The band it captured is now parsed by the one field mapper, so a
+// "$1.5M+" answer reaches Lead.priceRangeMin as a number instead of a scoring side effect.
+
 import { useState } from "react";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 export default function OffMarketForm() {
@@ -7,6 +25,7 @@ export default function OffMarketForm() {
   const [budget, setBudget] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [phone, setPhone] = useState("");
+  const [honey, setHoney] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -35,19 +54,23 @@ export default function OffMarketForm() {
       return;
     }
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/off-market-leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ propertyType, budget, bedrooms, phone: phoneDigits, source: "homepage-exclusive" }),
-      });
-      if (!res.ok) throw new Error("Request failed");
-      setSuccess(true);
-    } catch {
-      setError(`Something went wrong. Please call ${config.realtor.phone}.`);
-    } finally {
-      setSubmitting(false);
+    const result = await postLeadDetailed({
+      source: "homepage-exclusive",
+      intent: "buy",
+      phone: phoneDigits,
+      name: "Off-Market Subscriber",
+      propertyType,
+      bedrooms,
+      budget,
+      notes: `Off-market list signup. Budget: ${budget}`,
+      honeypot: honey,
+    });
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error || `Something went wrong. Please call ${config.realtor.phone}.`);
+      return;
     }
+    setSuccess(true);
   }
 
   if (success) {
@@ -121,6 +144,14 @@ export default function OffMarketForm() {
           className={fieldCls}
           autoComplete="tel"
         />
+      </div>
+
+      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+        <label>
+          Company website
+          <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+        </label>
       </div>
 
       {error && <p className="text-[12px] text-[#ef4444] mb-3">{error}</p>}

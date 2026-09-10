@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 type Persona = {
@@ -10,6 +10,10 @@ type Persona = {
   desc: string;
   bullets: string[];
   source: string;
+  // The economic bucket, in the vocabulary estimateLeadValue understands. A move-up family
+  // is a listing as well as a purchase, and it had been shipping the same value as a
+  // first-time buyer because every persona sent no intent at all.
+  intent: "buy" | "sell" | "rent";
 };
 
 const PERSONAS: Persona[] = [
@@ -23,6 +27,7 @@ const PERSONAS: Persona[] = [
       "Townhouses under $700K shortlist",
     ],
     source: "homepage-persona-first-time-buyer",
+    intent: "buy",
   },
   {
     emoji: "🍁",
@@ -34,6 +39,7 @@ const PERSONAS: Persona[] = [
       "Rental → ownership 2-yr plan",
     ],
     source: "homepage-persona-newcomer",
+    intent: "buy",
   },
   {
     emoji: "🏘️",
@@ -45,11 +51,13 @@ const PERSONAS: Persona[] = [
       "Detached homes by school zone",
     ],
     source: "homepage-persona-move-up",
+    intent: "sell",
   },
 ];
 
 function PersonaCard({ persona }: { persona: Persona }) {
   const [phone, setPhone] = useState("");
+  const [honey, setHoney] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -70,27 +78,23 @@ function PersonaCard({ persona }: { persona: Persona }) {
       return;
     }
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: "Persona Lead",
-          lastName: "",
-          email: "",
-          phone: digits,
-          source: persona.source,
-          notes: `Persona: ${persona.name}`,
-          ...attributionPayload(),
-        }),
-      });
-      if (!res.ok) throw new Error();
-      setSuccess(true);
-    } catch {
-      setError(`Couldn't send — please try ${config.realtor.phone} directly`);
-    } finally {
-      setSubmitting(false);
+    // A persona card captures a phone and no address, so this lead is promised a call and
+    // nothing by email. That is what the confirmation panel below says, and why the ingest
+    // path leaves no watch for it: a watch has no way to reach a phone.
+    const result = await postLeadDetailed({
+      source: persona.source,
+      intent: persona.intent,
+      phone: digits,
+      name: "Persona Lead",
+      notes: `Persona: ${persona.name}`,
+      honeypot: honey,
+    });
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error || `Couldn't send. Please try ${config.realtor.phone} directly`);
+      return;
     }
+    setSuccess(true);
   }
 
   if (success) {
@@ -136,6 +140,13 @@ function PersonaCard({ persona }: { persona: Persona }) {
           className="w-full bg-[#07111f] border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none mb-3"
           autoComplete="tel"
         />
+        {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+        <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+          <label>
+            Company website
+            <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+          </label>
+        </div>
         {error && <p className="text-xs text-red-400 mb-2">{error}</p>}
         <button
           type="submit"

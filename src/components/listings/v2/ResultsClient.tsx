@@ -1,15 +1,15 @@
 'use client';
 // src/components/listings/v2/ResultsClient.tsx
 // The interactive results island: filter rail + grid/map toggle + save hearts
-// (UserProvider, same as the live grid) + booking modal (identical /api/leads
-// payload + source string, so analytics continuity is preserved) + save-search
+// (UserProvider, same as the live grid) + booking modal (the shared lead client
+// helper and the same source string, so analytics continuity is preserved) + save-search
 // (identical /api/auth/saved-searches payload) + pagination.
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/components/UserProvider';
-import { attributionPayload } from '@/lib/attribution';
+import { postLeadDetailed } from '@/lib/postLeadClient';
 import { config } from '@/lib/config';
 import type { ListingCardData, ListingsQuery, ListingsV2Data } from './types';
 import { ListingCard } from './ListingCard';
@@ -87,25 +87,21 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
       showToast('Please enter your name and phone');
       return;
     }
-    try {
-      await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: name,
-          phone,
-          source: 'listing-card-book',
-          intent: 'buyer',
-          street: booking.address,
-          mlsNumber: booking.mlsNumber,
-          ...attributionPayload(),
-        }),
-      });
-      showToast(`Showing requested — ${config.realtor.name.split(' ')[0]} will call within the hour`);
-      setBooking(null);
-    } catch {
-      showToast('Could not submit — please try again');
+    // The toast is earned, not assumed: before this it fired on a 429 as readily as on a 200.
+    const result = await postLeadDetailed({
+      source: 'listing-card-book',
+      intent: 'buy',
+      name,
+      phone,
+      property_address: booking.address,
+      mlsNumber: booking.mlsNumber,
+    });
+    if (!result.ok) {
+      showToast(result.error || 'Could not submit. Please try again');
+      return;
     }
+    showToast(`Showing requested. ${config.realtor.name.split(' ')[0]} will call within the hour`);
+    setBooking(null);
   };
 
   const saveSearch = async () => {

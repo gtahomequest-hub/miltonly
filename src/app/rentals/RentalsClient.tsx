@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import AgentContactSection from "@/components/AgentContactSection";
 import { useUser } from "@/components/UserProvider";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, type PostLeadPayload } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 import "./rentals.css";
 
@@ -144,6 +144,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   const [filters, setFilters] = useState<Record<string, string>>({
     type: "All", beds: "Any", baths: "Any", avail: "Now", pets: "Any", util: "Any", basement: "Any", lease: "Any", park: "Any",
   });
+  // The contact the rental quiz captured, kept so the alert button on its success screen can
+  // write a reachable row. Empty until the quiz is submitted, and the button only renders
+  // after that.
+  const [quizContact, setQuizContact] = useState<{ email: string; phone: string }>({ email: "", phone: "" });
   const [priceMin, setPriceMin] = useState(1500);
   const [priceMax, setPriceMax] = useState(5000);
   const [sortBy, setSortBy] = useState("newest");
@@ -177,11 +181,16 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
     setTimeout(() => setToast(""), 4000);
   }, []);
 
-  const submitLead = async (data: Record<string, string>) => {
-    try {
-      await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...data, ...attributionPayload() }) });
-      return true;
-    } catch { return false; }
+  // IT USED TO RETURN TRUE FOR A 429 AND A 500. Only a thrown network error reached the
+  // catch, so every one of the five call sites below showed its confirmation toast over a
+  // refused submission. The helper resolves false unless the row was written.
+  const submitLead = async (data: PostLeadPayload): Promise<boolean> => {
+    // This file reads every field off the DOM by id, so the honeypot does too rather than
+    // introducing a second pattern beside it. A missing node reads as empty, which passes.
+    const honeypot = (document.getElementById("rc-honey") as HTMLInputElement | null)?.value ?? "";
+    const result = await postLeadDetailed({ ...data, honeypot });
+    if (!result.ok) showToast(result.error || "Could not submit. Please try again.");
+    return result.ok;
   };
 
   const tglFilter = useCallback((key: string, val: string) => {
@@ -293,11 +302,12 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
     if (!name) { showToast("Please enter your name."); return; }
     if (!phone) { showToast("Please enter your phone number."); return; }
     const ok = await submitLead({
-      firstName: name,
-      phone,
       source: bookingModal.type === "1hr" ? "listing-card-1hr" : "listing-card-book",
-      intent: "renter",
-      street: bookingModal.listing.address,
+      intent: "rent",
+      name,
+      phone,
+      property_address: bookingModal.listing.address,
+      mlsNumber: bookingModal.listing.mlsNumber,
     });
     if (ok) {
       setBookingMls(bookingModal.listing.mlsNumber);
@@ -418,7 +428,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         {/* ── LEFT PANEL ── */}
         <div className="hl">
           <div className="live-row">
-            <div className="live-badge"><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
+            {/* data-fig is the battery's handle: the homepage gate asserts its
+                "available to rent" tile equals the figure THIS page publishes. */}
+            <div className="live-badge" data-fig="rentals-available" data-value={totalRentals}><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
             <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#f59e0b"}}>
               📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}
@@ -625,11 +637,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                       else if (wizData.budget === "$3K+") { setPriceMin(3000); setPriceMax(5000); }
                       // Post quiz to leads API
                       const ok = await submitLead({
-                        firstName: userName, phone, email, source: "rental-quiz", intent: "renter",
-                        propertyType: wizData.type,
+                        source: "rental-quiz", intent: "rent",
+                        name: userName, phone, email,
+                        homeType: wizData.type,
                         budget: wizData.budget,
                       });
                       if (ok) {
+                        // Kept so the alert button on the success screen below can reach the
+                        // same person. It used to send no contact field at all.
+                        setQuizContact({ email, phone });
                         setWizSuccess(true);
                         showToast("✓ Matches sent!");
                         setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 800);
@@ -649,8 +665,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 <div className="ss-title">Thanks, {userName}!</div>
                 <div className="ss-sub">We&apos;ll send you matches within the hour. {REALTOR_FIRST_NAME} will follow up personally.</div>
                 <button className="ss-alert" onClick={async () => {
-                  await submitLead({ firstName: userName, source: "new-match-alert", intent: "renter" });
-                  showToast("🔔 Alert set! You'll hear from us first.");
+                  // It sent a name and no contact field at all, so the row it wrote was
+                  // unreachable by every channel. The quiz already captured both, and the
+                  // price band the quiz set is the criterion this watch is for.
+                  const ok = await submitLead({
+                    source: "new-match-alert", intent: "rent",
+                    name: userName, email: quizContact.email, phone: quizContact.phone,
+                    priceMin, priceMax,
+                  });
+                  if (ok) showToast("🔔 Alert set. You'll hear from us first.");
                 }}>🔔 Alert me when new matches list</button>
               </div>
             )}
@@ -676,7 +699,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 const mls = (document.getElementById("bc-mls") as HTMLInputElement).value;
                 if (!name) { showToast("Please enter your name."); (document.getElementById("bc-name") as HTMLInputElement).focus(); return; }
                 if (!phone) { showToast("Please enter your phone number."); (document.getElementById("bc-phone") as HTMLInputElement).focus(); return; }
-                const ok = await submitLead({ firstName: name, phone, source: "1hr-booking", intent: "renter", street: mls || `Any ${config.CITY_NAME} rental` });
+                const ok = await submitLead({ source: "1hr-booking", intent: "rent", name, phone, property_address: mls || `Any ${config.CITY_NAME} rental` });
                 if (ok) {
                   showToast(`⏱ Booking confirmed! We'll call ${phone} within 15 minutes.`);
                   (document.getElementById("bc-name") as HTMLInputElement).value = "";
@@ -957,6 +980,14 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       </section>
 
       {/* ═══ ALERT STRIP ═══ */}
+      {/* Honeypot, shared by every widget on this island. A person never sees it. */}
+      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+        <label>
+          Company website
+          <input {...honeypotInputProps} id="rc-honey" type="text" defaultValue="" />
+        </label>
+      </div>
+
       <div className="alert-strip">
         <div className="as-left">
           <h3>🔔 Get alerted before it lists publicly</h3>
@@ -967,8 +998,15 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <button className="as-btn" onClick={async () => {
             const email = (document.getElementById("alert-email") as HTMLInputElement).value;
             if (!email || !email.includes("@")) { showToast("Please enter a valid email."); return; }
-            await submitLead({ email, source: "alert", intent: "renter", firstName: "Alert Subscriber" });
-            showToast("🔔 Alert saved! You'll hear from us first.");
+            // "Your current filters saved" is the promise on this strip, so the band the
+            // visitor is looking at travels with the lead and becomes the watch criterion.
+            const ok = await submitLead({
+              source: "alert", intent: "rent", email, name: "Alert Subscriber",
+              priceMin, priceMax,
+              homeType: typeFilter !== "All" ? typeFilter : undefined,
+            });
+            if (!ok) return;
+            showToast("🔔 Alert saved. You'll hear from us first.");
             (document.getElementById("alert-email") as HTMLInputElement).value = "";
           }}>Save this search →</button>
         </div>

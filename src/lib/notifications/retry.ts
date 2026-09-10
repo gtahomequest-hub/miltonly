@@ -1,5 +1,5 @@
 // Retry-with-exponential-backoff wrapper for outbound notification calls
-// (Resend + Twilio at /api/leads). Tonight (2026-05-12 ~23:08 ET) every
+// (Resend + Twilio on the lead path). Tonight (2026-05-12 ~23:08 ET) every
 // outbound call from a single lead submission failed simultaneously with
 // network errors — third such incident in 72 hours from intermittent
 // Vercel iad1 → external-HTTPS outbound degradation. Wrapping each

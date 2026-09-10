@@ -1,145 +1,180 @@
 # Handoff — leads worktree
 
-LEADS · D:\miltonly-leads · fix/lead-hotfix
+LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-10, after Phase 0 merged to main and production was verified on it._
+_Last rewritten 2026-09-10, after Phase 2 was built, proven on preview, and pushed for the gate._
 
 ## READ THIS FIRST
 
-**Phase 0 is MERGED and live.** `main` fast-forwarded to the code SHA **`c4a162b`** and then to this
-handoff, **`103e520`**. Production serves `103e520` on the apex and the battery is
-**`PASS · 9 checks · 444 pages · 60s`** at that full SHA, run after the deploy landed. Phase 1 has not started and
-begins only on an explicit prompt.
+**Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The tip of `feat/leads` sits on
+**`00caa57`**, a real `git merge` of `origin/main` (`73e94ea`) into the Phase 2 commits `e46ae49`,
+`39bcfe1` and `0a1d08b`, with docs and one test fix on top. The tip is **`f9b7ea5`**, preview
+**`miltonly-psc39y5bl`**. Core merges. **Main moved three times while this was building** — check
+`git merge-base --is-ancestor origin/main HEAD` again before you touch it.
 
-**`ALERT_EMAIL_TO` is now `gtahomequest@gmail.com` in Production and Preview, and it works.** Three
-ops alerts landed during the Phase 0 proof, the first messages with subject `New ads lead` in the
-account's entire history. Before this, that variable existed in both environments as a **Secret**
-whose value could not be read back, and the evidence said it was not delivering: on 2026-07-31
-`/api/leads/create` ran twice and its lead-facing confirmation ("I got your message — talking soon",
-a subject that exists at `route.ts:127` and nowhere else) arrived both times while no ops alert
-did. The old value is unrecoverable, which is recorded because overwriting an unreadable value is a
-one-way action.
+**THE BATTERY FAILS ON THE FINAL PREVIEW, AND IT FAILS IDENTICALLY ON PRODUCTION.** Two
+assertions, both from the hub tier that landed on main between the merges, and the battery is 11
+checks now because that tier added `hub-intents.mjs`:
 
-**`ads.leads` holds exactly ONE row and always has.** A Phase-3 smoke test, `test@test.com`,
-2026-05-23, submitted from a preview URL. **No real person has ever submitted through
-`/api/leads/create` in production** — not the street alert CTA, not either condo CTA, not the sold
-valuation CTA. Report 062 called the notification gap "the largest current loss"; the realized loss
-is **zero** and 063 supersedes that sentence. The gap was entirely prospective.
+```
+[hub-meta]    hero stat tiles parsed on every hub: 0,  expected 22
+[hub-intents] hubs rendering no intent squares:   22,  expected 0
+```
 
-**Preview writes to the production database.** `DATABASE_URL` is one value for Production and
-Preview and resolves to the same Neon host, verified field by field. The one historical row proves
-it: it came from a preview deployment. Every test row created during Phase 0 was deleted with
-`scripts/delete-ads-lead.ts`; the table is back to that single row. **Any lead test on preview
-lands in production data — delete what you create.**
+`EXPECT_SHA=73e94ea… BASE=https://miltonly.com` gives `FAIL · 11 checks · 449 pages · 94s`, the
+same two with the same numbers. Main's own `HANDOFF.md` calls them "two stale parsers". **Nothing
+in this branch touches a hub page, a hub parser or a stat tile.** Isolated and pre-existing; the
+run continued on that basis. At `39bcfe1`, before that tier merged in, this branch's preview was
+**`PASS · 10 checks · 449 pages · 67s`**.
 
-**`/api/leads/create` accepts unauthenticated writes with no honeypot and no rate limit.** A plain
-`curl` against a Vercel-protected preview deployment wrote a row into the production table. That is
-the shape of the route as it stands, and it is a Phase 1 item, not a Phase 0 regression.
+**THE ONE INGRESS IS REAL NOW.** `/api/leads` (1,201 lines, four branches),
+`/api/off-market-leads` and `/api/exclusive-inquiry` are **deleted**. Every one of the twenty
+submission points in `src/` reaches `/api/leads/create` through `src/lib/postLeadClient.ts`, and
+`scripts/test-lead-forms.ts` walks the whole tree at prebuild and fails the build on a lead
+ingress named anywhere else. **22 prebuild tests run now.**
 
-**Neither form fixed in Phase 0 is rendered by any page.** `ExitIntent` and `CornerWidget` are
-referenced only by `globals.css` and their own files; `street-data.ts` builds `cornerWidget` props
-that no `.tsx` consumes. So the two broken forms were never reachable by a visitor, and the fix is
-correctness for whenever they are mounted, not a live bleed that was stopped. **Mounting them is a
-street-page composition decision and was deliberately not made here.** The proof below is therefore
-at the route, with the components' own payloads, which is everything except rendering.
+**THE FOUR LIVE DEFECTS THE MIGRATION FOUND**, all fixed, all in
+`scratchpad/reports/067-leads-phase2.md` with the evidence:
+
+1. **`LeadCaptureForm` wrote TWO `Lead` rows per submission.** Its `PH3-DUALWRITE` block posted
+   the same visitor to `/api/leads/create` a second time — harmless while that route wrote
+   `ads.leads`, a duplicate the moment **Phase 1** repointed it at `public.Lead`. Two rows, two
+   confirmations, two desk alerts, two CAPI events, one person. **Some of the 15 production rows
+   are these pairs.**
+2. **The Phase 1 ingest path dropped all six last-touch UTM fields and `firstVisitAt`**, which
+   the client helper had always sent. Every lead it wrote credited the first ad click.
+3. **Phase 1 dropped the Twilio SMS to Aamir** that all four monolith branches sent. Back now,
+   gated on `isCountable(env)` like the ops alert.
+4. **Eight surfaces rendered a confirmation over a refused submission.** `RentalsClient`'s
+   `submitLead` returned `true` for a 429 and a 500.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | **`103e520`** (fast-forwarded twice, no merge commit) |
-| code SHA | **`c4a162b`** — the fix. `103e520` on top is this handoff |
-| production | serving **`103e520`**, confirmed on the apex through `/api/build` |
-| battery on production | **`PASS · 9 checks · 444 pages · 60s`** at `103e520`, and `PASS · 56s` at `c4a162b033eaab81f4a68ea767eb441b47e8a0c1` before it |
-| battery on preview | **`PASS · 9 checks · 444 pages · 62s`**, `miltonly-pqyzb9jz1`, served == expected |
-| local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
-| `ads.leads` rows | **1** (the 2026-05-23 smoke test; every test row created here was deleted) |
-| Phase 0 | **done** |
-| Phase 1 | not started |
+| branch | `feat/leads`, on the merge **`00caa57`** of `origin/main` `73e94ea`, rebuilt, pushed |
+| preview | **`miltonly-1lw66pqlc`** at `39bcfe1`, alias `miltonly-git-feat-leads` |
+| battery on preview | **`PASS · 10 checks · 449 pages · 67s`** |
+| local build after the merge | exit 0, zero `P2024`, **22/22 prebuild**, 549 static pages |
+| prebuild, lead layer | `[lead-guards] 171 assertions` · `[lead-forms] 105 assertions` |
+| `public.Lead` | **15 production rows** (untouched), 25 preview |
+| `SavedSearch` | 9 rows, all `env=preview`. **Production watches: 0** |
+| ingress routes | **one** |
+| Phase 0, 1, 2 | 0 and 1 merged. **2 built and proven, awaiting merge** |
 
-## What happened 2026-09-10 — Phase 0
+## The new shape
 
-**Ruling 1.** `ALERT_EMAIL_TO` was present in Preview and Production but unreadable. Removed and
-re-added as `gtahomequest@gmail.com` in both via stdin. Also confirmed absent from production:
-**`KVCORE_LEAD_PARSE_EMAIL`** — the BoldTrail handoff is written, wired into three of
-`/api/leads`'s four branches, and dormant.
+```
+a form  →  postLeadDetailed()  →  POST /api/leads/create  →  ingestLead()
+           src/lib/postLeadClient.ts                          src/lib/lead/ingest.ts
+                                                                ├─ guards.ts    honeypot, origin, rate limit
+                                                                ├─ fields.ts    NEW: every form→column mapping
+                                                                ├─ score.ts     NEW: the one scoring rule
+                                                                ├─ intent.ts    the value vocabulary
+                                                                ├─ notify.ts    confirmation + ops alert
+                                                                ├─ sms.ts       Twilio, countable env only
+                                                                └─ savedSearch.ts  street | hub | price-band | brief
 
-**Ruling 2.** `scripts/read-ads-leads.ts` censused production: 1 row, `ads-rentals-lp`, status
-`new`, un-notified. `ads.leads` has no notification column and `/api/leads/create` writes none, so
-notification state had to be reconstructed from the mailbox — zero `New ads lead` messages had ever
-arrived. Rows listed in `scratchpad/reports/063-unnotified-leads.md` with only the four fields the
-ruling names. One summary email sent through the existing Resend path,
-`scripts/mail-unnotified-leads.ts --send`, Resend id `dd5983dd-604a-43b1-a419-43529cf7c293`.
+a brief watch  →  /api/brief/send (cron 15 13 * * 1-5)  →  src/lib/brief/
+                                                             ├─ window.ts     the local-day period
+                                                             ├─ compose.ts    the reads and the copy
+                                                             └─ unsubscribe.ts  HMAC, fails closed
+                  /api/brief/unsubscribe  ← the signed one-click link
+```
 
-**Ruling 3.** Both forms repointed at `/api/leads/create`, the ingress that exists, rather than
-creating `/api/alerts/subscribe` — a fifth ingress route that Phase 1 would immediately delete.
+## The rulings Phase 2 made
 
-- `ExitIntent` posted natively to `/api/alerts/subscribe`, which has never existed, so every
-  submission navigated the visitor to a 404. It now posts JSON, holds the dialog open through the
-  submit so the outcome is visible, and stamps the seven-day cooldown **only on a confirmed write**
-  so a failure does not burn the visitor's one showing.
-- `CornerWidget` posted a form-encoded body to `/api/leads`, whose first statement is
-  `request.json()`; every submission returned 500 and the browser rendered that JSON in place of the
-  page. It now posts JSON.
-- `src/lib/postLeadClient.ts` is one shape in one place. The same twelve-line fetch was already
-  copied into `StreetAlertCTA`, `CondoCTAs` and `SoldValuationCTA`; these two would have made five.
-  It resolves true **only** when the route confirmed the write, so no caller can render a
-  confirmation it did not earn.
-- Both components said `streetShort` in prose ("Before you leave …", "Private access to …"). Both
-  now carry `streetName`, in the copy and in the captured field. `streetShort` survives only as a
-  localStorage key.
-
-**Proof, one submission per component shape.** On preview `miltonly-pqyzb9jz1`, then once more on
-production, each returning `200 {"ok":true,"lead_id":…}`, each writing its row, each producing an
-ops alert:
-
-| Source | Row | Alert | Value |
-|---|---|---|---|
-| `street-exit-intent` (preview) | `dcd16171-cd48-498d-8936-4de905dff0c3` | 08:20:02Z | CAD 200 |
-| `street-corner-widget` (preview) | `7d476b73-2518-4b22-b7e8-ea855afeb03e` | 08:20:02Z | CAD 500 |
-| `street-exit-intent` (production) | `79e33cc0-55b4-4dc9-afa6-70c6a1d76909` | 08:26:30Z | CAD 200 |
-
-All four test rows (including one flag probe) deleted; `REMAINING 1`.
-
-**The values are the reason for the intent vocabulary.** `estimateLeadValue` understands only
-`rent | buy | sell`. `buy` scored CAD 200 and `sell` CAD 500 above **because the new code sends
-those tokens**. The older surfaces send `"buyer"`, which falls through to **0** and ships a
-meaningless signal to Meta's optimizer. `postLeadClient` types the field so a new caller cannot
-repeat it. Fixing the three existing callers is a Phase 1 item.
+- **A phone-only lead is promised a call and nothing by email.** `OffMarketForm` captures no
+  address, so: no confirmation, no watch, and the desk alert plus the SMS to Aamir ARE the
+  delivery. Stated on the card.
+- **`homepage-newsletter` leaves no watch.** `PreFooterCTA` promises a brief "Sundays at 8am"
+  and the sender is Monday to Friday. Mapping it to a `brief` watch would mail five times a
+  week. **See the open item below.**
+- **`alert` and `new-match-alert` make `price-band` watches**, the first this codebase has ever
+  produced. The band is the only criterion those surfaces capture.
+- **A `brief` watch keys on the address alone**, not on its street, so a subscriber who signs up
+  from two pages gets one brief. The street is still stored, because it personalises the edition.
+- **Monday's brief covers the weekend.** Sending Mon–Fri and reporting a literal "yesterday"
+  would mean Saturday was reported to nobody, ever.
 
 ## Traps
 
-- **Preview writes to production data.** See above. Delete what you create.
-- **The `name-prose` prebuild guard reads string literals, not just page copy.** It failed the
-  first build on an em-dash inside a `notes:` template string. Comments are tolerated; anything that
-  can reach a row or a page is not.
-- **Two tables, no join key.** `public.Lead` (85 columns, consent, scoring, `LeadActivity`) and
-  `ads.leads` (21 columns, no consent). `LeadCaptureForm` deliberately writes both.
-- **`/api/leads` has a honeypot and a rate limit; `/api/leads/create` has neither.** Every surface
-  moved onto the newer route lost both protections.
-- **The confirmation email is wrong for an alert signup.** Someone who ticked a street-alert box
-  receives "I'll personally review your request and reply within the hour". Proven again during the
-  Phase 0 test. G6, Phase 1.
-- **`vercel env pull` writes `.env.local` by default.** It would overwrite this worktree's file.
-  Always pass an explicit path outside the repo, and delete the pulled file afterwards.
-- **`StreetAlertCTA` takes a `shortName` prop.** `sections.tsx:663` passes `data.name` into it, so
-  nothing leaks today. The prop name is the trap.
+- **`git commit-tree` DOES NOT MERGE — it snapshots.** Two of the merges in this project were
+  built with it and one clobbered another worktree's docs. Re-check
+  `git merge-base --is-ancestor origin/main HEAD` after the last fetch and **STOP if it fails**;
+  merge main into the branch first, then build from that tree. This handoff's `00caa57` IS a
+  real `git merge`, so a fast-forward or an ordinary merge is all Core needs.
+- **THE PREBUILD RATE-LIMIT TEST WAS FLAKY ON VERCEL AND IS FIXED HERE.** It asserted the
+  in-memory fallback's exact "5 per window" on the belief that no Redis is configured under
+  `tsx`. **The Upstash variables ARE set on a Vercel build**, so it ran against the real shared
+  store, with a 10-minute sliding window and a key drawn at random from 200 addresses. Two builds
+  inside ten minutes collided on one and a preview failed with `expected 5, got 3` on code that
+  passed locally. This was Phase 1's assertion and it has been on `main` since. The key now
+  carries per-run entropy and the assertion states what holds of both stores.
+- **The rate limit is real on preview and a REFUSED call still spends a token.** 5 per IP per 10
+  minutes, sliding. A twenty-surface proof took four runs and collected eleven `429`s. Wait a
+  clear ten minutes with **zero** requests between batches, not five.
+- **Preview writes to production data.** Rows and watches are tagged and excluded from every
+  count and every send, but they are real rows in the real table.
+- **`prisma migrate deploy` IS STILL BLOCKED FOR EVERYONE, AND IT IS NOT THIS BRANCH'S TO FIX.**
+  `20260910120000_market_edition` is in the repo and has never been in `_prisma_migrations`,
+  while the `MarketEdition` table exists — a folder renamed after it was applied. Whoever renamed
+  it runs `prisma migrate resolve`. **This branch needs no migration.**
+- **`DIRECT_DATABASE_URL` is `DATABASE_URL` with `-pooler` removed**
+  (`ep-patient-paper-aebh7f93.c-2.us-east-2.aws.neon.tech`). Every `NEON_*` variable points at
+  the sold/analytics project instead, so the obvious guess runs migrations against the wrong
+  database. Run `npx prisma migrate status` and read the host it prints, every time.
+- **Vercel env vars bind at deploy time.** A new variable needs a redeploy, and `vercel redeploy`
+  gives a new URL.
+- **`LEAD_ALERTS_ON_PREVIEW=true`** (Preview only) makes preview leads raise a prefixed ops
+  alert. It cannot make a row countable.
+- **`CRON_SECRET` is in Preview**, which is what let the brief be triggered there by hand. Vercel
+  only schedules crons on production.
+- **`scripts/migrate-*.ts` is gitignored** (`.gitignore:84`) — the place to put a throwaway
+  script that needs `@prisma/client`. A script outside the repo cannot resolve it.
+- **The `name-prose` prebuild guard reads string literals**, not just page copy.
+- **Report numbers 062, 063 and 064 exist three times over** across the worktrees. 065 and 066
+  are the hub worktree's. This one is **067**. Pick 068+ next.
 
-## Scope of this worktree
+## The daily brief, in one screen
 
-Lead capture site-wide: the `/sell` valuation flow, street alerts, daily-brief signup, thank-you
-states, the emails they trigger, and the CRM handoff. It **never** touches street pages,
-generation, the homepage, or the header and footer. Shared lib functions may be read by new routes;
-they are not modified here. Phase 0 changed two components that live under `src/components/street/`
-because they are lead forms and the ruling named them; it changed nothing that any street page
-renders.
+Cron `15 13 * * 1-5` (9:15am ET), after `/api/sync/sold` and `compute-sold-stats` so "yesterday"
+is not half-filled. Env-scoped, one email per address, `lastAlertAt` stamped so a retry cannot
+repeat an edition. The real preview edition:
 
-## Next
+```
+Milton yesterday · 2026-09-09
 
-**Phase 1 begins only on an explicit prompt**: one `Lead` model, the single submission path, the
-three confirmation emails, `SavedSearch` and its missing cron entry, leads-per-page readable by the
-Brain, the CRM handoff on every path, and the daily brief. The gap list it works from is G1 to G11
-in `scratchpad/reports/062-leads-gate-a.md`, as corrected by `063`.
+- 19 homes came to market, asking a typical $1,040,000.
+- 1 home sold. Too few to publish a typical price.
+- 6 listings changed price.
 
-Open questions that belong to someone else: whether `ExitIntent` and `CornerWidget` should be
-mounted at all, and whether `KVCORE_LEAD_PARSE_EMAIL` gets set.
+On Zuest Crescent: a home sold.  <street page link>
+```
+
+**The second line is the discipline.** One sale is below `K_ANON_PRICE`, so the count is
+published, the price is not, and the clause says which. **"Changed price", never "dropped"** —
+`lastPriceChangeAt` cannot tell a cut from a rise (DEC-PRICE-CHANGE-NOT-DROP), and the prebuild
+gate fails on the word. **An edition with nothing in it is not sent**, because the signup
+promised only what changed.
+
+Proof: Resend `a9fd6b36…` / Gmail `1a08b28224921c22`, and `639e5fee…` / `1a08b3193141894c`. A
+second trigger answered `sent=0 skipped=1 "already sent this edition"`. A forged unsubscribe
+token got 400; the signed one got 200 and flipped `alertEnabled` to false. **All test
+subscribers were deleted, including Phase 1's leftover. Brief watches: 0.**
+
+## What is open
+
+1. **The Sunday brief `PreFooterCTA` promises has no sender.** Either its copy becomes the daily
+   brief and its source becomes `daily-brief` (homepage worktree owns the copy), or a weekly
+   sender gets built. Today those subscribers get a confirmation and nothing after it.
+2. **`BRIEF_UNSUBSCRIBE_SECRET` is not set anywhere.** The link falls back to `CRON_SECRET`,
+   which is set in Production and Preview, so the brief works as shipped. Set the dedicated
+   variable if the two should not share a key. **Nothing is needed before merge.**
+3. **The brief cron will fire on the first production deploy after merge.** Production brief
+   watches are **0**, so its first run sends nothing. The first real subscriber makes it live.
+4. **Eight questionable `homepage-newsletter` rows** predate that surface having a honeypot.
+   Still in the table, untouched.
+5. **Nine preview watches** remain, matching Phase 1's posture. Tagged, so no cron reads them.
+6. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
+   MOD-58 lead admin columns with no UI.

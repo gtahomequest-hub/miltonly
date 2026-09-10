@@ -2,9 +2,21 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built 2026-09-10 on `fix/core-batch`, NOT merged** — it was pulled forward into a directly prompted CORE batch ahead of item 5, not self-started. Items 5 and 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built and ruled 2026-09-10 on `fix/core-batch`, NOT merged** — the battery blocker cleared 2026-09-10 when the feat/homepage merge was reverted; the branch now needs a fresh gate against current main. Items 5 and 6 **not started**.
+
+**The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
+registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
+cron (`NEW_PAGES_PER_DAY`, `/api/sync/generate`), counted over `StreetContent.createdAt`, so the
+corpus grows at a reviewable rate rather than overnight. The drain runs hourly, so a
+per-invocation limit would have allowed 480 a day. Regenerations are not capped and never were.
+**The programme is paused after 5 pages** on a prompt/validator fault, not on the cap. Record in
+`scratchpad/reports/066-rulings-and-merges.md`.
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
+
+*Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
+
+*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is BUILT AND PROVEN ON PREVIEW, awaiting Core's merge** at `00caa57`: all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
 ---
 
@@ -259,35 +271,44 @@ it against the Town registry is step one, and the build scope follows from it �
 **Done when** the two gates consult the same sources, the registry-filtered population is
 reported, and the streets that already have pages refresh on the cron without a manual run.
 
-## BUILT 2026-09-10 on `fix/core-batch`, NOT MERGED
+## BUILT AND RULED 2026-09-10 on `fix/core-batch`, NOT MERGED
 
-Prompted directly as part of a four-piece CORE batch, not self-started. Head `abf9ef4`, preview
-`miltonly-5b9qn9rrs`, battery `PASS · 10 checks · 444 pages · 67s`. Record in
-`scratchpad/reports/065-core-batch.md`.
+Pulled forward into a directly prompted CORE batch ahead of item 5, not self-started. Record in
+`scratchpad/reports/065-core-batch.md` and `scratchpad/reports/066-rulings-and-merges.md`.
+
+**NOT marked done, and the reason matters.** This item's own "Done when" requires that the
+streets which already have pages refresh on the cron. That needs the merge, and the merge is
+blocked: production's battery is red on two stale hub checks that came in with `feat/homepage`.
+The work is finished; the criterion is not met yet.
 
 - [x] the two gates consult the same sources. `makeStreetDecision` calls the same
       `countRecordedTransactions`, and only when the DB1 clause has already failed, so a street
       that already passes costs the cron exactly what it cost before
-- [x] **the registry-filtered population is reported: 355.** Re-measured 2026-09-10: 832 slugs
-      carry DB2 records (was 831), 422 are skipped by the old gate (was 419; the drift of 3 is
-      five days of feed), **355 survive the entity floor**, 67 do not
-- [x] the streets that already have pages refresh on the cron. **105 of the 355 have a
-      `StreetContent` row**, 84 of them published. This is the part the item was written to fix
+- [x] **the registry-filtered population reported: 355.** 832 slugs carry DB2 records, 422 are
+      skipped by the old gate, 355 survive the entity floor, 67 do not
 - [x] `StreetQueue` view of the same change: `skip_low_data` **256 to 78**, 178 rescued
-- [x] the DB2 branch is floored on the registry. 14 of the slugs it would otherwise rescue are on
-      neither the registry nor the allowlist and are ingest debris (`derry-rd-road-milton` at 236
-      rows, `nipissing-rd-milton-road-milton`, `bessy-trail-trail-milton`, `nipising-road-milton`).
-      Publish floor = entity floor. Verified safe first: 0 of the 445 published streets are off
-      the floor, so the check cannot strand an existing page
-- [x] `scripts/dryrun-street-decision-gate.ts` measures without writing. It never calls
-      `makeStreetDecision`, which marks queue rows `ineligible` as a side effect
-- [ ] **250 creation candidates need a ruling before merge.** The 355 minus the 105 that already
-      have a page. The cron will start building them on merge, and this item's own text calls that
-      "a different and much larger decision". Nothing about the change is wrong; the scale has
-      simply never been approved
-- [ ] **the DB1 branch still has no entity floor**, and `/api/sync/generate` has no floor check at
-      all — only `scripts/create-street-page.ts` enforces it. Not closed here because it is a
-      behavioural change to a path this batch did not touch
+- [x] the DB2 branch is floored on the registry. 14 of the slugs it would otherwise rescue are
+      ingest debris (`derry-rd-road-milton` at 236 rows, `nipissing-rd-milton-road-milton`,
+      `bessy-trail-trail-milton`, `nipising-road-milton`). Verified safe first: 0 of the then-445
+      published streets were off the floor
+- [x] `scripts/dryrun-street-decision-gate.ts` measures without writing
+- [x] **RULED: the programme ships with a daily cap of 20 new pages on the cron.**
+      `NEW_PAGES_PER_DAY = 20`, counted over `StreetContent.createdAt` — `generatedAt` and
+      `publishedAt` are both rewritten by every regeneration and would have counted refreshes as
+      creations. A street over budget stays **pending**, not ineligible, and the cap is reported
+      in the route's JSON so it cannot be mistaken for a stalled queue
+- [x] first batch: **5 of 23 published**, halted by the runner's own five-consecutive-failure
+      guard, $0.2624 of a $3 cap, DeepSeek only.
+      `scripts/create-street-pages-local.ts` — `regen-058-local.ts` could not have done it, it
+      skips any slug with no `StreetContent` row, which is all 249
+- [ ] **the merge.** Blocked on the battery, not on this item
+- [ ] **THE PROGRAMME IS PAUSED.** The 18 failures are one systemic fault, not 18 bad streets:
+      the prompt offers `differentPriorities` on inputs where `dropsDifferentPriorities(input)`
+      is true, so the validator expects 2 sections and gets 3, through all 5 attempts with the
+      retry feedback in front of it. Every one of the 249 candidates is this same thin-data
+      shape, which is why the pass rate is 22%. **226 unattempted.** Fix the prompt first
+- [ ] **the DB1 branch still has no entity floor**, and `/api/sync/generate` has no floor check
+      at all — only `scripts/create-street-page.ts` enforces it
 
 ---
 
@@ -334,10 +355,85 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
 - [x] **Address to anchor**: `505 Farmstead Drive` -> `/streets/farmstead-drive-milton#505`,
       confirmed against the Town's 40,826-address projection; an unknown number degrades to
       the street page rather than linking an id that is not there.
-- [ ] **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
-      `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
-      **Leads owns this.**
+- [x] **Daily-brief consent is sent but not persisted.** Closed by leads Phase 2. There is no
+      generic path any more: `/api/leads` is deleted and the one ingest path persists
+      `consentText` / `consentTimestamp` for every source, phone or no phone. Proven on preview,
+      row `cmtvgsx5b0000dp8f0j217cxp`. Record in `scratchpad/reports/067-leads-phase2.md`.
 - [ ] **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
       `permAdvertise AND status='active'` with no city and no transaction-type filter. Exactly
       right today (448 either way), so latent rather than wrong. Needs a decision.
 - [ ] **380px is sized for, not visually verified.**
+
+---
+
+## Out of queue, 2026-09-10: the guides tier and Market Watch — **DONE**
+
+Not a numbered item. Prompted directly in the `feat/content` worktree
+(`D:\miltonly-content`), Gate A first, then ten rulings, then build.
+Records: `scratchpad/reports/062-content-gate-a.md` (recon),
+`063-content-gate-a.md` (the volume measured), `064-content-build.md` (build).
+
+Merged as **`f6bbc92`**, two parents. Production **`miltonly-kqtcnrve4`** serving it,
+confirmed on the apex. Battery **`PASS · 10 checks · 444 pages · 67s`** at the full SHA.
+Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 static pages.
+
+- [x] **The guides seam is filled.** `src/components/guides/types.ts` named
+      `getGuidesIndexData()` and `getGuideArticle(slug)` and nothing implemented them.
+      `/guides` and `/guides/[slug]` are live, in the sitemap, with breadcrumb, Article and
+      FAQ JSON-LD. Dynamic on purpose: the figures are read live and an SSG guide would
+      freeze them at build time
+- [x] **Six guides, ordered by the brief's GSC evidence**: neighbourhood costs, how to read a
+      sold price, is it a good time to sell, condo fees and parking, first home, schools.
+      Template-authored structure, live k-gated figures, at most one generated paragraph
+- [x] **`parking` is held.** The Town bylaw is not in this repo and a model would invent it.
+      A tenure guide is also held: four live indexable pages already own that axis
+- [x] **`MarketEdition` + `MarketEditionGeneration`**, migration
+      `20260910120000_market_edition`. An edition is **immutable once published**; both routes
+      render the stored row and recompute nothing
+- [x] **The first edition**, `/market-watch/2026-08-31`: 40 sales against 43 the week before,
+      typical $920,000, middle half $750,000 to $1,180,000, 76 days, 97.5% of asking, four
+      housing forms over 28 days, 12 neighbourhoods, 32 streets with a page. `$0.0003`
+- [x] **A Content-owned validator.** None of the four street rules extracts unchanged: each
+      takes `StreetGeneratorInput` and reads `.aggregates`/`.nearby`, and `SUPERLATIVE_PHRASES`
+      is module-private. `validateStreetGeneration.ts` is **not touched**.
+      `src/lib/content/validateContentProse.ts` implements five rules against a minimal
+      `GroundedFigures` interface. **20th prebuild test, 55 assertions, both directions on
+      every rule, proven red on a weakened validator**
+- [x] **The weekly window was wrong and is fixed.** `sold_date` is a calendar date stamped at
+      **UTC midnight**, so a Toronto-midnight window dropped the whole Monday: the week of
+      2026-08-31 read 18 where the day-by-day count is 40. A week now carries two named bases
+      and each query uses the one matching its column. Reads 40 and 43, matching report 063
+- [x] **A page was publishing an absence that was not real.** `Listing.maintenanceFee` (Int)
+      is 0 on all 73 active Milton condo listings while `maintenanceFeeAmt` (Float) carries
+      the figure on all 73. The guide said no condo states a fee. 24 now render, each linked
+- [x] **A raw TREB string reached prose** ("in 1032 - FO Ford").
+      `src/lib/content/neighbourhoodName.ts` is the tier's single resolver; an unmapped string
+      returns null and the clause is dropped, never a fallback to the feed
+- [x] **`src/data/policyRate.ts`**, the only rate in this codebase: 2.25% observed 2026-09-08,
+      BoC Valet V39079, rendered with its date, and the guide states a policy rate is not a
+      mortgage rate
+- [x] Verified on production: nine URLs 200, nine in the live sitemap, **zero em-dashes and
+      zero raw TREB strings** across all seven content pages
+- [ ] **Schools ship board, level and grades, NOT address or distance.** Neither exists:
+      `schools.ts` has no street address, the school page's own `PostalAddress` carries
+      locality only, and the lat/lng is a ±300 m neighbourhood centroid. Deliberate deviation
+      from the ruling, stated on the page. Sourcing them is a separate decision
+- [ ] **"Open this weekend" is not in v1.** Open houses are read live and expire; an edition is
+      immutable. The live block belongs on the index page as its own piece of work
+- [x] **The cron is wired, Monday 08:00 America/Toronto**, `0 12 * * 1` and `0 13 * * 1` with
+      an hour guard of 8. **08:00 and not 06:00 because both firings must sit after the 11:00
+      UTC sold sync in both offsets**; the old 10:00/11:00 pair ran before it in EDT and level
+      with it in EST. Any change to the sold sync hour must move these two. Held on the merge:
+      Vercel only invokes crons on production, so nothing fires until Core merges `feat/content`
+- [x] **A published edition can be corrected once, and only with a note that renders on the
+      page.** `generateEdition` throws on a published row unless `correctionNote` is passed;
+      there is no `--force`. The note rides inside `sectionsJson`, no column and no migration.
+      `publishedAt` is preserved on a rewrite and `dateModified` now reads `updatedAt`
+- [ ] **The 2026-08-31 regeneration is NOT run.** Ruled to happen once, only after Core reports
+      the battery green, which it is not. The mechanism is built and green on preview
+      `miltonly-hsq7pkfiz`. The single command is in `HANDOFF-content.md` and report 067
+- [ ] **Up-links from hubs and streets back to the current edition are Core's.** This worktree
+      does not make those writes, and without them the archive sits instead of compounding
+- [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.
+      A Core data bug, logged not fixed. Every Content window is bounded, so nothing in this
+      tier publishes them

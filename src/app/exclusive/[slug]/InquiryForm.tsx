@@ -1,6 +1,15 @@
 "use client";
 
+// The off-market listing inquiry. Source "exclusive-listing".
+//
+// It had its own route, which wrote `email: ""` rather than null, hand-rolled a Resend email
+// to the desk, sent Aamir an SMS, and sent the visitor nothing at all. A person who typed
+// their email into this form got no acknowledgement of any kind. On the one path they now
+// get the source-specific confirmation, and the row carries the environment tag, the
+// honeypot verdict and the origin check the old route had none of.
+
 import { useState } from "react";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 
 interface Props {
   address: string;
@@ -11,6 +20,7 @@ export default function InquiryForm({ address, slug }: Props) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [honey, setHoney] = useState("");
   const [message, setMessage] = useState(`I am interested in ${address}`);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -24,21 +34,23 @@ export default function InquiryForm({ address, slug }: Props) {
     }
     setErr("");
     setSending(true);
-    try {
-      const res = await fetch("/api/exclusive-inquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email, message, address, slug }),
-      });
-      if (res.ok) {
-        setSent(true);
-      } else {
-        setErr("Something went wrong. Please call us directly.");
-      }
-    } catch {
-      setErr("Network error. Please call us directly.");
-    }
+    const result = await postLeadDetailed({
+      source: "exclusive-listing",
+      intent: "buy",
+      name,
+      phone,
+      email: email || undefined,
+      property_address: address,
+      message,
+      notes: `Off-market listing page: ${slug}`,
+      honeypot: honey,
+    });
     setSending(false);
+    if (!result.ok) {
+      setErr(result.error || "Something went wrong. Please call us directly.");
+      return;
+    }
+    setSent(true);
   };
 
   if (sent) {
@@ -96,6 +108,13 @@ export default function InquiryForm({ address, slug }: Props) {
             className="w-full px-3 py-2.5 text-[13px] border border-[#e2e8f0] rounded-lg text-[#07111f] outline-none focus:border-[#f59e0b] resize-none"
           />
         </div>
+      </div>
+      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+        <label>
+          Company website
+          <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+        </label>
       </div>
       {err && <p className="text-[12px] text-red-600 mt-3">{err}</p>}
       <button

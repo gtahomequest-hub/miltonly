@@ -451,7 +451,7 @@ function AdsClientInner({
       <StickyMobileBar />
 
       {/* Unlock modal — shared form across all 9 locked listing cards.
-          Posts to /api/leads with source: "ads-rentals-lp-modal" so DB
+          Posts through the one lead helper with source "ads-rentals-lp-modal" so DB
           analytics can split modal vs hero-form conversions. */}
       <UnlockModal
         isOpen={unlockOpen}
