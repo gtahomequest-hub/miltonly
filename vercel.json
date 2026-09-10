@@ -55,6 +55,14 @@
     {
       "path": "/api/alerts/match",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/content/market-watch?secret=miltonly-cron-2026",
+      "schedule": "0 10 * * 1"
+    },
+    {
+      "path": "/api/content/market-watch?secret=miltonly-cron-2026",
+      "schedule": "0 11 * * 1"
     }
   ]
 }
