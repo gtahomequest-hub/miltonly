@@ -1,59 +1,80 @@
+CORE · D:\miltonly · fix/core-batch
+
 # Handoff
 
-_Last rewritten 2026-09-09, after QUEUE item 4 merged and the condo bodies were regenerated._
+_Last rewritten 2026-09-10, after the CORE batch was built, previewed and verified. NOT merged._
 
 ## READ THIS FIRST
 
-**QUEUE item 4 is MERGED and live, and the condo prose is regenerated.** Merged as `a7e3a7f`.
-Production serves it; battery **`PASS · 9 checks · 444 pages · 67s`** at the full SHA, and all
-five checked condo H1s render the full name. `ff70116` on top carries the runner and one real
-fix found by running it.
+**`fix/core-batch` is built and awaiting review. Nothing is merged and production is unchanged.**
+Head `abf9ef4`, preview `miltonly-5b9qn9rrs`, battery **`PASS · 10 checks · 444 pages · 67s`**,
+exit 0, `served == expected` at the full SHA. Full record in
+`scratchpad/reports/065-core-batch.md`. Read it before touching any of the four pieces.
 
-**`src/lib/condoName.ts` is the only source of a condo building's name on any surface.** The
-condo counterpart of `resolveStreetName`, same rule: the registry is the authority and the
-stored string is not. `streetSlug` is primary; a re-parse of the raw address is a **check**, and
-a disagreement is reported rather than silently resolved. Two report today and both are
-understood: `21 Crt St N` and `6415 Regional Rd`.
+**THE ONE THING THAT SHOULD NOT MERGE WITHOUT A RULING: 250 new pages.** Widening
+`makeStreetDecision`'s gate (QUEUE item 7) admits **355** registry-filtered streets that the DB1
+clause was refusing. **105 of them already have a page** and merely refresh on the cron, which is
+what item 7 was written to fix. **The other 250 have no page at all, and the cron will start
+building them.** Item 7's own text calls that "a different and much larger decision". It is not a
+bug in the change; it is the change working, at a scale nobody has approved.
 
-**THE DIRECTION IS THE TOWN'S, PER CIVIC ADDRESS, OR ABSENT.** `src/data/addressDirections.ts`
-carries the Town's `ST_DIR_SUFFIX` for 1,355 civic addresses over the **12** Milton streets that
-have one, from 1,976 points, **36 dropped for contradicting themselves**. The MLS strings were
-not merely abbreviated but wrong: `"1050 Main St W"` names an address the Town records as MAIN
-STREET **E**. **There is no Main Street West condo** — all 17 resolve East or to no direction.
+**`CloseDate` IS NOT THE DATE OF THE SALE.** It is the completion date the parties agreed to, and
+PropTx sets `MlsStatus='Sold'` / `StandardStatus='Closed'` when a deal goes **firm**, not when it
+closes. `sold_date` was `CloseDate` verbatim, so **245 rows carried a sold date in the future**,
+the furthest **2027-01-29**. Not 192 — that was the `For Sale` half; there are 53 `For Lease` too.
+All 245 had a `PurchaseContractDate` already in the past. `resolveSoldDate` in `vow-sync.ts` now
+takes the contract date when the close has not happened and returns null when neither date is
+defensible, and the ingest loop drops a row it cannot date rather than writing NULL into a
+NOT NULL column. `close_date` still carries `CloseDate`. Guarded by prebuild test 20.
 
-**A MODEL QUOTES ANY FIELD YOU GIVE IT.** The first regeneration run passed 52 buildings and
-three of them still said "located at 100 Millside Dr S" in their own prose, because
-`buildCondoBuildingInput` was still handing the model the raw `buildingAddress` alongside the
-resolved `displayName`. Worse than the abbreviation: the raw string carries a direction the Town
-contradicts, so `460 Gordon Krantz Ave S` was being written into a body for a street that has no
-direction at all. **Both model-facing address fields now carry resolved forms.** Fixed in
-`ff70116` and the three were re-run clean. If you add a field to that input, ask what happens
-when the model quotes it.
+**Bounding those windows changes what 145 streets show today.** All 245 future rows sat inside the
+90-day consumer list window, and those lists sort `DESC`, so **145 streets had their "recent
+sales" list led by a sale that has not happened**. Four windows still had no upper bound and now
+do: `sold-data.ts` ×3 and `buildCondoBuildingInput`'s `leaseRecordQuery`. **The 28-day window in
+`computeBoard.ts` was already safe** and was left alone; check before assuming otherwise.
 
-**Condo prose, final state: 3 of 59 published bodies still carry an abbreviation**, and all
-three are understood and none is a naming bug:
-`830-megson-terrace-milton` failed its validator and is **fail-closed** — the old row is
-preserved, the page is untouched, the H1 is already correct;
-`158-mill-street-milton` and `174-bronte-street-milton` are **zero-data** and the generator
-refuses them before any write. `buildingName` and `metaTitle` carry **0** abbreviations across
-all 59.
+**Re-dating moves k, not the headline.** Once the sync re-upserts them, the Milton-wide 12-month
+sample goes 1,531 to 1,723 and the Milton-wide typical stays **$930,000**. But **17 streets cross
+k5 upward and 9 cross k10**, so 17 gain a typical point and 9 gain a range. No k rule was changed;
+the floor is working on a bigger, truer sample. **The 245 existing rows were not repaired** — the
+brief did not ask for a backfill, so they keep their `CloseDate` until a sync rewrites them.
 
-**There was no standing bulk runner for condos.** `regen-058-local.ts` calls
-`generateStreetContent` and reads `StreetContent`; it cannot touch a building.
-`scripts/regen-condo-local.ts` is the counterpart and mirrors its discipline verbatim — the same
-primary-provider assertions, explicit order file, pre-page cost ceiling, consecutive-signature
-halt, per-page revalidate. **It sets `CONDO_ENABLED=true` in the process environment only**, the
-way the street runner forces `AI_PROVIDER`: no prod env change, no redeploy, announced on every
-run. `CONDO_ENABLED` remains dormant in production.
+**A PRIOR PRICE IS NOW STORED, AND IT IS EMPTY.** `Listing.priorPrice` and `priceChangedAt`,
+additive migration, written by the DB1 sync on the update branch when both prices are > 0 and
+differ. Deliberately **not** gated on `MlsStatus` — that gating is exactly why `lastPriceChangeAt`
+could never support a drop. **Both columns are NULL corpus-wide right now** and nothing was
+backfilled, because a prior price that was never observed is not knowable. **Do not wire a
+"price reduced" badge or a drop count yet**: today they would read zero and publish "no
+reductions" as a measurement. The three comments that said no prior price is stored are corrected
+in place; the two removed features stay removed on purpose.
 
-**`/api/revalidate` reads `REVALIDATION_SECRET`.** Not `CRON_SECRET`, not `REVALIDATE_SECRET`.
-The first run's 52 revalidations all returned **401** on that guess and were re-run to 200 after.
-A revalidate that 401s does not fail the generation, so it is silent unless you read the status.
+**THE DB1 LISTING UPSERT IS IN `src/app/api/sync/detect/route.ts`, NOT `vow-sync.ts`.**
+`vow-sync.ts` writes DB2 `sold.sold_records`. Nothing in `src/` calls `prisma.listing.upsert`; the
+detect route branches on a pre-fetched row and calls `update` or `create`.
 
-**The Anthropic account has no credit.** `AI_PROVIDER_FALLBACK="opus"` is still set in
-production, so a cron generation that escalates fails closed. Blocks
-`jasper-street-milton`, `wood-close-milton`, `bell-school-line-milton`. The condo run needed
-none of it: DeepSeek cleared 55 of 55 attempted buildings on its own.
+**The DB2 branch of the gate is floored on the registry, and the DB1 branch still is not.**
+14 of the slugs the DB2 clause would otherwise rescue are on neither the registry nor the
+off-registry allowlist, and they are ingest debris: `derry-rd-road-milton` (236 rows),
+`nipissing-rd-milton-road-milton`, `bessy-trail-trail-milton`, `nipising-road-milton`. Publish
+floor = entity floor, so they are refused. **But the DB1 branch has never consulted the registry
+either, and `/api/sync/generate` has no floor check at all** — only `scripts/create-street-page.ts`
+enforces it. 0 of the 445 published streets are off the floor today, so nothing is leaking. Nothing
+stops it either. Left open on purpose: it is a behavioural change to a path this batch did not touch.
+
+**419 and 256 are both right.** They count different populations. 419 (422 today, drift of 3) is
+over slugs carrying DB2 records; 256 is over `StreetQueue` rows, which is what the cron drain sees.
+Registry-filtered, the answer item 7 asks for is **355**.
+
+**The battery is 10 checks now, not 9.** `feat/homepage` added the homepage-figure check. A run
+reporting 9 is stale.
+
+**`feat/homepage` merged to main as `a9546a7`** while this batch was branched. Its record is
+`HANDOFF-home.md`, a separate file for a separate worktree, and it was not folded into this one.
+
+**`--conditions=react-server` BREAKS scripts that reach `street-data.ts`.** React's shared-subset
+entry throws "not yet supported outside of experimental channels" before the script runs. Use
+`npx tsx --require ./scripts/_server-only-shim.cjs` instead. The CLAUDE.md line about
+`NODE_OPTIONS` holds for scripts that import server modules **without** pulling React in.
 
 **Published street pages: 445.** The battery reports 444; different population, both right.
 
@@ -65,17 +86,45 @@ none of it: DeepSeek cleared 55 of 55 attempted buildings on its own.
 
 | | |
 |---|---|
-| `main` | **`ff70116`** |
-| production | **`miltonly-3vg6p4ufc`**, serving **`ff70116`**, confirmed on the apex |
-| battery on production | **`PASS · 9 checks · 444 pages · 72s`**, exit 0, at the full SHA `ff70116` |
-| local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
-| condo buildings | **65** (not the 108 the brief stated) |
-| published `CondoContent` | **59** |
-| condo bodies regenerated | **52 passed, 1 failed, 2 skipped**, `$0.0900` total |
-| condo bodies still abbreviated | **3 of 59**, all understood, none a naming bug |
-| condo `buildingName` / `metaTitle` abbreviated | **0 / 0** |
+| `main` | **`e2d8476`** (code SHA `a9546a7`, the `feat/homepage` merge) |
+| branch | **`fix/core-batch`** at **`abf9ef4`**, pushed, **not merged** |
+| production | unchanged by this batch; serving main |
+| preview | **`miltonly-5b9qn9rrs`**, Ready |
+| battery on preview | **`PASS · 10 checks · 444 pages · 67s`**, exit 0, 0 FAIL, `abf9ef4 served == expected` |
+| local build | exit 0, zero `P2024`, **20/20 prebuild**, 546 static pages |
+| future-dated DB2 rows | **245** (192 For Sale, 53 For Lease), furthest **2027-01-29**, unrepaired |
+| unbounded `sold_date` windows | **0** (was 4) |
+| gate `skip_low_data`, `StreetQueue` | **256 to 78** |
+| gate population, registry-filtered | **355** (105 have a page, **250 do not**) |
+| `Listing.priorPrice` populated rows | **0**, by design, until the next sync |
 | published street pages | **445** |
-| QUEUE | 1, 2, 3, **4 done**; 5, 6, 7 not started |
+| QUEUE | 1, 2, 3, 4 done; **7 built, not merged**; 5, 6 not started |
+
+
+## What happened 2026-09-10 — the CORE batch
+
+Four pieces on one branch, prompted directly, ahead of QUEUE item 5. Report
+`scratchpad/reports/065-core-batch.md` is the detail; this is the shape.
+
+**1. List-price history.** `Listing.priorPrice` / `priceChangedAt`, migration
+`20260910120000_listing_price_history`. Written in the detect route on the update branch only,
+guarded on both prices being > 0 because `price: item.ListPrice || 0` turns an absent ListPrice
+into a zero and a zero is not a reduction. Not gated on `MlsStatus`. Nothing backfilled.
+
+**2. Future-dated sold rows.** `CloseDate` identified as the source, and why it is not the sale
+date. `resolveSoldDate` added and guarded; the four remaining unbounded windows bounded under
+`DEC-SOLD-UPPER-BOUND`. Impact measured both ways: 145 streets' record lists change now, 17 and 9
+streets cross k5 and k10 after the sync re-dates. Existing rows untouched.
+
+**3. QUEUE item 7.** `makeStreetDecision` now runs the same DB2 existence clause `getStreetStats`
+has, and only when the DB1 clause has already failed, so a passing street costs the cron what it
+cost before. The DB2 branch is floored on the registry.
+`scripts/dryrun-street-decision-gate.ts` measures it without writing, because
+`makeStreetDecision` marks rows `ineligible` as a side effect and cannot be called from a dry run.
+
+**4. ExitIntent and CornerWidget** moved to `src/components/street/retired/`. `CornerWidgetProps`
+stays live in `types/street.ts` because `buildCornerWidget` in `street-data.ts` still assembles
+it; the `globals.css` rules stay and are annotated. Neither had an importer.
 
 ## What happened 2026-09-09 — QUEUE item 4, condo names
 
@@ -233,9 +282,11 @@ without the parameter.
    `tasker-court`). Decision: verify or pull.
 9. **Two orphaned clips** under slugs that are not real streets. GPS has been taken as
    far as it goes; someone has to watch the footage.
-10. **`makeStreetDecision`'s minimum-data gate** — QUEUE item 7. Measured: 831 slugs
-    carry DB2 records, 419 are skipped as low-data, 103 of those already have a page and
-    316 have none. The brief's figure of 46 does not reproduce.
+10. **BUILT, NOT MERGED.** QUEUE item 7's gate parity is on `fix/core-batch`. Re-measured
+    2026-09-10: 832 slugs carry DB2 records, 422 are skipped by the old gate, **355 survive the
+    registry filter**, of which 105 have a page and **250 do not**. Those 250 are new pages the
+    cron will build on merge, and they need a ruling. `StreetQueue` view of the same change:
+    `skip_low_data` 256 to 78.
 11. **The name guard's blind spot**: it asserts a file *imports* the resolver, not that
     every consumer uses the resolved value. `test-input-snapshot.ts` and now
     `test-address-anchors.ts` are the pattern for fixing it.
@@ -256,9 +307,30 @@ without the parameter.
 18. Two draft rows carry a clip: `diefenbaker-street-milton`, `murlock-heights-milton`.
 19. **11 slugs have R2 clips uploaded and no `StreetContent` row.** Generation candidates,
     blocked by open item 1 wherever DeepSeek cannot clear them.
+20. **245 DB2 rows still carry a future `sold_date`.** The sync will not write another, and every
+    window now excludes them, but they are not repaired. They correct themselves only as the sync
+    re-upserts them, and only if it re-fetches them. A one-off re-date is the alternative.
+21. **The DB1 branch of `makeStreetDecision` has no entity floor**, and `/api/sync/generate` has
+    none at all. Only `scripts/create-street-page.ts` enforces publish floor = entity floor. 0 of
+    445 published streets are off the floor today, so nothing is leaking; nothing stops it either.
+22. **`Listing.priorPrice` and `priceChangedAt` are empty and must stay unwired.** Both the
+    `priceReduced` badge (`listingsV2Data.ts`) and a homepage drop count (`homeSignals.ts`) are
+    deliberately still absent. Wiring either today publishes "no reductions" as a measurement.
+23. **`StreetPageData.cornerWidget` is still assembled by `buildCornerWidget`** for a component
+    that no longer exists outside `retired/`. Dead work on every street render. Removing it is a
+    page-composition change and was not made.
 
 ## Notes for the next run
 
+- **Run a script that reaches `street-data.ts` as `npx tsx --require ./scripts/_server-only-shim.cjs`.**
+  `NODE_OPTIONS=--conditions=react-server` makes React's shared-subset entry throw before the
+  script starts. Same trap the condo runner note records, different cause of arrival.
+- `scripts/dryrun-street-decision-gate.ts` reports the gate population without writing. It never
+  calls `makeStreetDecision`, which marks queue rows `ineligible` as a side effect.
+- `scripts/test-sold-date-not-future.ts` is prebuild test 20. It pins "today" and asserts the
+  property, not just the cases: no input produces a future `sold_date`.
+- **A long heredoc through the Bash tool can fail to find its terminator.** Two `<<'PY'` blocks
+  died with "unexpected EOF" on content that was valid. Write the script to a file and run it.
 - **The battery takes the full 40-character SHA.** A short SHA fails the gate on a string
   compare and aborts before any content check. `EXPECT_SHA` overrides local HEAD, which
   is what you want when running it from a branch against a preview.
@@ -304,7 +376,11 @@ without the parameter.
 
 ## Next expected task
 
-**QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
+**Review `fix/core-batch` on `miltonly-5b9qn9rrs` and rule on the 250 creation candidates.**
+Nothing merges until that is answered. The other three pieces of the batch are independent of it
+and could be split out if the gate change needs to wait.
+
+Then: **QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
 length and terminus onto all published streets from the Town and OSM layers. No camera work and
 nothing derived from imagery.
 

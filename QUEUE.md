@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Items 5, 6 and 7 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built 2026-09-10 on `fix/core-batch`, NOT merged** — it was pulled forward into a directly prompted CORE batch ahead of item 5, not self-started. Items 5 and 6 **not started**.
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
@@ -258,6 +258,36 @@ it against the Town registry is step one, and the build scope follows from it �
 
 **Done when** the two gates consult the same sources, the registry-filtered population is
 reported, and the streets that already have pages refresh on the cron without a manual run.
+
+## BUILT 2026-09-10 on `fix/core-batch`, NOT MERGED
+
+Prompted directly as part of a four-piece CORE batch, not self-started. Head `abf9ef4`, preview
+`miltonly-5b9qn9rrs`, battery `PASS · 10 checks · 444 pages · 67s`. Record in
+`scratchpad/reports/065-core-batch.md`.
+
+- [x] the two gates consult the same sources. `makeStreetDecision` calls the same
+      `countRecordedTransactions`, and only when the DB1 clause has already failed, so a street
+      that already passes costs the cron exactly what it cost before
+- [x] **the registry-filtered population is reported: 355.** Re-measured 2026-09-10: 832 slugs
+      carry DB2 records (was 831), 422 are skipped by the old gate (was 419; the drift of 3 is
+      five days of feed), **355 survive the entity floor**, 67 do not
+- [x] the streets that already have pages refresh on the cron. **105 of the 355 have a
+      `StreetContent` row**, 84 of them published. This is the part the item was written to fix
+- [x] `StreetQueue` view of the same change: `skip_low_data` **256 to 78**, 178 rescued
+- [x] the DB2 branch is floored on the registry. 14 of the slugs it would otherwise rescue are on
+      neither the registry nor the allowlist and are ingest debris (`derry-rd-road-milton` at 236
+      rows, `nipissing-rd-milton-road-milton`, `bessy-trail-trail-milton`, `nipising-road-milton`).
+      Publish floor = entity floor. Verified safe first: 0 of the 445 published streets are off
+      the floor, so the check cannot strand an existing page
+- [x] `scripts/dryrun-street-decision-gate.ts` measures without writing. It never calls
+      `makeStreetDecision`, which marks queue rows `ineligible` as a side effect
+- [ ] **250 creation candidates need a ruling before merge.** The 355 minus the 105 that already
+      have a page. The cron will start building them on merge, and this item's own text calls that
+      "a different and much larger decision". Nothing about the change is wrong; the scale has
+      simply never been approved
+- [ ] **the DB1 branch still has no entity floor**, and `/api/sync/generate` has no floor check at
+      all — only `scripts/create-street-page.ts` enforces it. Not closed here because it is a
+      behavioural change to a path this batch did not touch
 
 ---
 
