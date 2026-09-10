@@ -1,17 +1,14 @@
-// Estimated lead value for Meta's optimizer.
+// Lead persistence + estimated-value calculator for ads.leads.
 //
-// PHASE 1 RETIRED createLead. ads.leads is no longer written by anything: public.Lead is
-// canonical and src/lib/lead/ingest.ts is the only write path. The existing ads.leads rows
-// were copied across by scripts/migrate-ads-leads.ts with an "adsleads:" source tag, and the
-// table keeps its history so the migration can be re-checked.
-//
-// estimateLeadValue stays, and is now reached through src/lib/lead/intent.ts, which
-// normalizes the fourteen intent spellings the surfaces send into the three tokens this
-// function understands. Every one of those surfaces was previously scoring 0.
-//
-// These are proxy values for Meta's bidding, NOT real commissions. They are intentionally
-// small and constant so Meta can compare lead quality across campaigns without us shipping
-// actual transaction economics to a third-party ad network.
+// Two concerns live here:
+//   1. createLead — single Prisma write into ads.leads. Returns the new row's
+//      id plus the estimated dollar value used as Meta's optimizer signal.
+//   2. estimateLeadValue — proxy values for Meta's bidding (NOT real
+//      commissions). These are intentionally small and constant so Meta
+//      can compare lead quality across campaigns without us shipping
+//      actual transaction economics to a third-party ad network.
+
+import { prisma } from "@/lib/prisma";
 
 // Intent buckets that map to a proxy dollar value. Anything outside this
 // set returns 0 so unrecognized leads don't ship a misleading signal.
@@ -31,4 +28,69 @@ export function estimateLeadValue(intent: LeadIntent | string | undefined): numb
   if (!intent) return 0;
   if (intent in INTENT_VALUE) return INTENT_VALUE[intent as LeadIntent];
   return 0;
+}
+
+// Source-of-truth shape for whoever calls createLead. camelCase to match
+// the Prisma model (Prisma handles the @map to snake_case columns).
+export interface CreateLeadInput {
+  source: string;
+  campaign?: string;
+  intent?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  timeline?: string;
+  budget?: string;
+  bedrooms?: string;
+  neighbourhood?: string;
+  propertyAddress?: string;
+  notes?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  fbclid?: string;
+  // Extra context that doesn't earn its own column. Persisted as JSONB.
+  // Typical contents: fbp, fbc, event_id, event_source_url, user_agent,
+  // ip_address, referrer.
+  meta?: Record<string, unknown>;
+}
+
+export interface CreateLeadResult {
+  leadId: string;
+  estimatedValue: number;
+}
+
+// Single point of insertion for ads.leads. Throws on DB error so the
+// caller can decide whether to 500 (route handler does exactly that
+// before firing any side effects).
+export async function createLead(input: CreateLeadInput): Promise<CreateLeadResult> {
+  const lead = await prisma.adsLead.create({
+    data: {
+      source: input.source,
+      campaign: input.campaign ?? null,
+      intent: input.intent ?? null,
+      name: input.name ?? null,
+      email: input.email ?? null,
+      phone: input.phone ?? null,
+      timeline: input.timeline ?? null,
+      budget: input.budget ?? null,
+      bedrooms: input.bedrooms ?? null,
+      neighbourhood: input.neighbourhood ?? null,
+      propertyAddress: input.propertyAddress ?? null,
+      notes: input.notes ?? null,
+      utmSource: input.utmSource ?? null,
+      utmMedium: input.utmMedium ?? null,
+      utmCampaign: input.utmCampaign ?? null,
+      utmContent: input.utmContent ?? null,
+      fbclid: input.fbclid ?? null,
+      meta: (input.meta ?? {}) as object,
+    },
+    select: { id: true },
+  });
+
+  return {
+    leadId: lead.id,
+    estimatedValue: estimateLeadValue(input.intent),
+  };
 }

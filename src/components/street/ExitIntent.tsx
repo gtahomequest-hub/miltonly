@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from "react";
 import type { ExitIntentProps } from "@/types/street";
-import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
+import { postLead } from "@/lib/postLeadClient";
 
 const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -30,7 +30,6 @@ export function ExitIntent({
   const [armed, setArmed] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [email, setEmail] = useState("");
-  const [honey, setHoney] = useState("");
 
   const key = storageKey ?? `miltonly:exit:${streetShort.toLowerCase()}`;
 
@@ -93,7 +92,6 @@ export function ExitIntent({
       email,
       property_address: streetName,
       notes: `Street alerts requested from the exit prompt, ${streetName}`,
-      honeypot: honey,
     });
     setStatus(ok ? "ok" : "error");
     if (ok) {
@@ -137,13 +135,6 @@ export function ExitIntent({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-                {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
-                <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
-                  <label>
-                    Company website
-                    <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
-                  </label>
-                </div>
                 <button type="submit" className="popup-submit-btn" disabled={status === "submitting"}>
                   {status === "submitting" ? "…" : "Yes, alert me"}
                 </button>
