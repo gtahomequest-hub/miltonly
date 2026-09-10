@@ -33,9 +33,11 @@ and `PreFooterCTA.tsx`, which are the **other** pages' footer.
 
 | | |
 |---|---|
-| branch | `feat/homepage`, HEAD **`3a1aced`** (code `b9f0341`) |
-| preview | **https://miltonly-715cxyyzc-gtahomequest-hubs-projects.vercel.app** |
-| battery on the preview | **`PASS · 10 checks · 444 pages · 68s`**, exit 0, at the full SHA |
+| branch | `feat/homepage` |
+| code SHA | **`b9f0341`** — the last commit that changed anything under `src/` or `scripts/` |
+| reviewed SHA | **`3a1aced`** — code plus report 063. Commits after it are documentation only |
+| preview | **https://miltonly-715cxyyzc-gtahomequest-hubs-projects.vercel.app** (`3a1aced`) |
+| battery on that preview | **`PASS · 10 checks · 444 pages · 68s`**, exit 0, served SHA == expected |
 | local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
 | state | **Built. Awaiting Aamir's preview review. NOT MERGED.** |
 | reports | `scratchpad/reports/062-homepage-gate-a.md` (recon), `063-homepage-build.md` (this build) |
