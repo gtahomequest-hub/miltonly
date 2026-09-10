@@ -68,7 +68,7 @@
   font-family: var(--hh-mono);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.62);
   margin-bottom: 22px;
 }
 .hub-v3 .hh-crumb a:hover {
@@ -115,7 +115,7 @@
 }
 .hub-v3 .hh-intent-s {
   font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(255, 255, 255, 0.66);
 }
 
 /* ── the derived-fact panel ────────────────────────────────────────────── */
@@ -166,12 +166,15 @@
   font-size: 13px;
   color: rgba(255, 255, 255, 0.8);
 }
-/* THE BASIS. Quiet, permanent, never behind an interaction. */
+/* THE BASIS. Quiet, permanent, never behind an interaction — and READABLE. At 11px it is
+   small text under WCAG, so it needs 4.5:1, and rgba(255,255,255,0.42) on #04160f measured
+   4.07:1. 0.52 gives 5.24:1 with headroom. The point of this line is that a reader can check
+   a figure's sample without hunting; a line they have to squint at fails that on its own. */
 .hub-v3 .hh-fact-b {
   margin-top: 5px;
   font-size: 11px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.52);
 }
 
 /* ── section shell + the repeated head ─────────────────────────────────── */
@@ -300,7 +303,7 @@
   margin-top: 2px;
   font-family: var(--hh-mono);
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 /* ── 02 · the ladder ───────────────────────────────────────────────────── */
