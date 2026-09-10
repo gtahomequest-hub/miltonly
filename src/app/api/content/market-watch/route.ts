@@ -2,25 +2,34 @@
 //
 // The Market Watch weekly cron. Writes at most one edition per ISO week.
 //
-// ── THE SCHEDULE, AND WHAT HAPPENS IN EST ────────────────────────────────
+// ── THE SCHEDULE, AND WHY IT IS 08:00 AND NOT 06:00 ──────────────────────
 //
-// The target is Monday 06:00 America/Toronto. **Vercel cron schedules are UTC
+// The target is Monday 08:00 America/Toronto. **Vercel cron schedules are UTC
 // and carry no timezone**, and Toronto is UTC-4 in EDT and UTC-5 in EST, so no
-// single UTC expression is 06:00 Toronto all year. A cron pinned to 10:00 UTC
-// fires at 06:00 in summer and 05:00 in winter; one pinned to 11:00 UTC fires
-// at 07:00 in summer and 06:00 in winter.
+// single UTC expression is 08:00 Toronto all year. A cron pinned to 12:00 UTC
+// fires at 08:00 in summer and 07:00 in winter; one pinned to 13:00 UTC fires
+// at 09:00 in summer and 08:00 in winter.
 //
-// So vercel.json registers BOTH, `0 10 * * 1` and `0 11 * * 1`, and this route
+// So vercel.json registers BOTH, `0 12 * * 1` and `0 13 * * 1`, and this route
 // carries the timezone logic: it proceeds only when the Toronto local hour is
-// 6. Exactly one of the two firings satisfies that on any given Monday.
+// 8. Exactly one of the two firings satisfies that on any given Monday.
 //
-//   EDT (Mar-Nov):  10:00 UTC = 06:00 Toronto  -> RUNS
-//                   11:00 UTC = 07:00 Toronto  -> skipped on the hour guard
-//   EST (Nov-Mar):  10:00 UTC = 05:00 Toronto  -> skipped on the hour guard
-//                   11:00 UTC = 06:00 Toronto  -> RUNS
+//   EDT (Mar-Nov):  12:00 UTC = 08:00 Toronto  -> RUNS
+//                   13:00 UTC = 09:00 Toronto  -> skipped on the hour guard
+//   EST (Nov-Mar):  12:00 UTC = 07:00 Toronto  -> skipped on the hour guard
+//                   13:00 UTC = 08:00 Toronto  -> RUNS
+//
+// **BOTH UTC ENTRIES SIT AFTER THE 11:00 UTC SOLD SYNC, IN BOTH OFFSETS.**
+// That is the whole reason the hour moved. `/api/sync/sold` runs `0 11 * * *`
+// and `/api/jobs/compute-sold-stats` at `30 11 * * *`; the previous pair,
+// 10:00 and 11:00 UTC, put the EDT firing an hour BEFORE the sync and the EST
+// firing level with it, so an edition could be built from a DB2 that had not
+// yet taken Monday's delivery. 12:00 and 13:00 UTC are both clear of it, and
+// clear of the 12:00 UTC `compute-board` job only in the sense that neither
+// reads its output. Any change to the sold sync hour must move these two.
 //
 // The changeover weekends need no special case: the guard reads the actual
-// Toronto hour at request time, so whichever firing lands on 06:00 wins and the
+// Toronto hour at request time, so whichever firing lands on 08:00 wins and the
 // other is refused. And even if both somehow passed, the ISO-week idempotency
 // below makes the second a no-op.
 //
@@ -61,7 +70,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const ZONE = "America/Toronto";
-const TARGET_HOUR = 6;
+const TARGET_HOUR = 8;
 
 function authorised(request: NextRequest): boolean {
   const secret =
@@ -221,7 +230,7 @@ async function handle(request: NextRequest) {
     return NextResponse.json({
       skipped: true,
       reason: "wrong_hour",
-      detail: `Toronto local hour is ${now.hour} (${now.offsetNameShort}); this route runs at ${TARGET_HOUR}. Two UTC crons are registered so that exactly one lands on 06:00 in both EST and EDT.`,
+      detail: `Toronto local hour is ${now.hour} (${now.offsetNameShort}); this route runs at ${TARGET_HOUR}. Two UTC crons are registered, 12:00 and 13:00, so that exactly one lands on 08:00 in both EST and EDT, and both sit after the 11:00 UTC sold sync.`,
       timezone,
     });
   }

@@ -58,11 +58,11 @@
     },
     {
       "path": "/api/content/market-watch",
-      "schedule": "0 10 * * 1"
+      "schedule": "0 12 * * 1"
     },
     {
       "path": "/api/content/market-watch",
-      "schedule": "0 11 * * 1"
+      "schedule": "0 13 * * 1"
     }
   ]
 }

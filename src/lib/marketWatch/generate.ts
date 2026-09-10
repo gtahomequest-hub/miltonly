@@ -61,6 +61,10 @@ export interface GenerateResult {
   attempts: number;
   costUsd: number;
   note: string;
+  /** The correction note written onto the page, when this was a rewrite. */
+  correctionNote: string | null;
+  /** True when a published row for this week already existed and was rewritten. */
+  rewroteAPublishedEdition: boolean;
 }
 
 /**
@@ -124,17 +128,54 @@ export interface GenerateOptions {
   skipParagraph?: boolean;
   /** Write as published rather than draft. */
   publish?: boolean;
+  /**
+   * One line saying why a PUBLISHED edition is being rewritten. Supplying it is
+   * the only way to rewrite one, and it is rendered on the page.
+   *
+   * AN EDITION IS IMMUTABLE ONCE PUBLISHED. That rule lives here rather than
+   * only in the cron route, because the cron is not the only caller: the runner
+   * script writes through this function too, and a rule enforced in one caller
+   * is a rule that holds until someone adds a second. Rewriting a published
+   * edition without a note now throws.
+   */
+  correctionNote?: string;
 }
 
 export async function generateEdition(opts: GenerateOptions = {}): Promise<GenerateResult | null> {
   const built = await buildEdition(opts.weekOf);
   if (!built) return null;
 
+  const note = opts.correctionNote?.trim() || undefined;
+
+  // ── the immutability gate ───────────────────────────────────────────────
+  // Read the existing row before writing. A published edition may be rewritten
+  // only with a correction note, and the note goes on the page, so a reader who
+  // saw the old figures is told the page changed under them.
+  const prior = await prisma.marketEdition.findUnique({
+    where: { weekOf: built.weekOf },
+    select: { status: true, publishedAt: true },
+  });
+  if (prior?.status === "published" && !note) {
+    throw new Error(
+      `Refusing to rewrite the published edition for ${built.weekOf}. An edition is immutable once published. ` +
+        `Pass correctionNote to override, and the note will render on the page.`,
+    );
+  }
+
   const gen = opts.skipParagraph
     ? { text: null, violations: [] as ContentViolation[], attempts: 0, costUsd: 0, raw: null, note: "paragraph skipped by request" }
     : await generateInterpretation(built);
 
   const status = opts.publish ? "published" : "draft";
+
+  // The note rides inside sectionsJson. `buildEdition` does not know about it,
+  // so it is attached here and only here.
+  const sections = note ? { ...built.sections, correctionNote: note } : built.sections;
+
+  // A correction does not republish. `publishedAt` is when the reader first
+  // could have read this week, and a rewrite does not change that; `updatedAt`
+  // carries the rewrite, and the page's Article schema reads it as dateModified.
+  const publishedAt = opts.publish ? (prior?.publishedAt ?? new Date()) : null;
 
   await prisma.marketEdition.upsert({
     where: { weekOf: built.weekOf },
@@ -143,8 +184,8 @@ export async function generateEdition(opts: GenerateOptions = {}): Promise<Gener
       windowStart: built.window.startUtc,
       windowEnd: built.window.endUtc,
       status,
-      publishedAt: opts.publish ? new Date() : null,
-      sectionsJson: built.sections as unknown as object,
+      publishedAt,
+      sectionsJson: sections as unknown as object,
       summarySentence: built.summarySentence,
       interpretation: gen.text,
       metaTitle: built.metaTitle,
@@ -154,8 +195,8 @@ export async function generateEdition(opts: GenerateOptions = {}): Promise<Gener
       windowStart: built.window.startUtc,
       windowEnd: built.window.endUtc,
       status,
-      publishedAt: opts.publish ? new Date() : null,
-      sectionsJson: built.sections as unknown as object,
+      publishedAt,
+      sectionsJson: sections as unknown as object,
       summarySentence: built.summarySentence,
       interpretation: gen.text,
       metaTitle: built.metaTitle,
@@ -185,6 +226,8 @@ export async function generateEdition(opts: GenerateOptions = {}): Promise<Gener
     attempts: gen.attempts,
     costUsd: gen.costUsd,
     note: gen.note,
+    correctionNote: note ?? null,
+    rewroteAPublishedEdition: prior?.status === "published",
   };
 }
 
