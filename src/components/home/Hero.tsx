@@ -38,21 +38,35 @@ export function Hero({ hero, stats, trust }: HeroProps) {
           </h1>
           <p className="m-lede">{hero.lede}</p>
 
+          {/* MILTON RIGHT NOW. Four figures, each with a live source and a stated
+              window. `data-fig` is the battery's handle: the homepage check reads these
+              rather than regexing prose, so a figure cannot be renamed out of coverage.
+              A suppressed figure renders its own absence — never a zero. */}
           <div className="m-herostats">
             <div className="m-hs">
-              <div className="m-n">
+              <div className="m-n" data-fig="on-market" data-value={stats.onMarket}>
+                {stats.onMarket}
+              </div>
+              <div className="m-l">on the market today</div>
+            </div>
+            <div className="m-hs">
+              <div className="m-n" data-fig="new-week" data-value={stats.newThisWeek}>
+                {stats.newThisWeek}
+              </div>
+              <div className="m-l">new in the last 7 days</div>
+            </div>
+            <div className="m-hs">
+              <div className="m-n" data-fig="sold-mtd" data-value={stats.soldMonthToDate}>
+                {stats.soldMonthToDate}
+              </div>
+              <div className="m-l">sold so far this month</div>
+            </div>
+            <div className="m-hs">
+              <div className="m-n" data-fig="typical-milton" data-value={stats.typicalPrice}>
                 <b>$</b>
                 {compactPrice(stats.typicalPrice)}
               </div>
               <div className="m-l">typical Milton home</div>
-            </div>
-            <div className="m-hs">
-              <div className="m-n">{stats.sold12mo}</div>
-              <div className="m-l">sold · last 12 months</div>
-            </div>
-            <div className="m-hs">
-              <div className="m-n">{stats.onMarket}</div>
-              <div className="m-l">on the market today</div>
             </div>
           </div>
 

@@ -11,7 +11,6 @@
 // WIRING NOTES (quirks the loader should fix while wiring, see handoff):
 //   - beds should become gte (live query is exact-match despite the "N+" label)
 //   - q gains a real input (the live page supports ?q= but had no search box)
-//   - priceReduced derives from lastPriceChangeAt (e.g. changed within 14 days)
 //   - mapPins should be ALL filtered results (capped ~400, page-independent) so
 //     the map isn't limited to the current page of 36.
 
@@ -59,8 +58,6 @@ export interface ListingCardData {
   // NO COORDINATE ON THE CARD. It carried the legacy feed value — 0 on every row — and no
   // component ever read it, so each page shipped 36 sentinels to the client waiting for someone
   // to wire them to something. The map reads MapPin, which carries the resolved rooftop.
-  /** loader derives from lastPriceChangeAt recency; design only shows the badge */
-  priceReduced: boolean;
   /** condo fee, when present */
   maintenanceFeeAmt: number | null;
   virtualTourUrl: string | null;
@@ -82,7 +79,6 @@ export interface MapPin {
   address: string;
   displayAddress: boolean;
   photo: string | null;
-  priceReduced: boolean;
 }
 
 export interface ListingsStats {

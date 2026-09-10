@@ -1,13 +1,14 @@
 import SchemaScript from "@/components/SchemaScript";
 import {
   generateLocalBusinessSchema,
+  generateOrganizationSchema,
   generateWebSiteSchema,
   generateFAQSchema,
   generateBreadcrumbSchema,
 } from "@/lib/schema";
 import { homepageFAQs } from "@/lib/faqs";
 import { config } from "@/lib/config";
-import { getHomepageData } from "@/lib/homepageData";
+import { getHomepageData, buildMegaLive } from "@/lib/homepageData";
 import { getBoardData } from "@/lib/board/boardData";
 import HomePage from "@/components/home/HomePage";
 
@@ -17,8 +18,12 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const [data, board] = await Promise.all([getHomepageData(), getBoardData()]);
+  // The nav's live panels are composed from data the page already has — no second
+  // query, and the sell panel reads the SAME Board row the Board renders below it.
+  const mega = buildMegaLive(data, board);
 
   const schemas = [
+    generateOrganizationSchema(),
     generateLocalBusinessSchema(),
     generateWebSiteSchema(),
     generateFAQSchema(homepageFAQs),
@@ -28,7 +33,7 @@ export default async function Page() {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <HomePage data={data} board={board} />
+      <HomePage data={data} board={board} mega={mega} />
     </>
   );
 }

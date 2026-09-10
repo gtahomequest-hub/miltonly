@@ -1,4 +1,3 @@
-// src/components/nav/SiteNav.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -6,96 +5,220 @@ import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
 import { resolveHeroHref } from '@/lib/heroSearchClient';
+import type { MegaLive } from './megaTypes';
 
 type Variant = 'home' | 'page';
 
-// Homepage links. Desktop renders these as mega-menu triggers (see MEGA_PANELS);
-// the `href` is the mobile-panel destination and the desktop fallback. "Explore
-// MLS" now points at /listings (the old #mls anchor died with the MLS section).
-const HOME_LINKS = [
-  { href: '/neighbourhoods', label: 'Neighbourhoods' },
-  { href: '/streets', label: 'Explore streets' },
-  { href: '/listings', label: 'Explore MLS' },
-  { href: '/sold', label: 'Market' },
+// ─────────────────────────────────────────────────────────────────────────────
+// THREE MENUS, AND WHY THE MARKUP IS SHAPED THE WAY IT IS
+//
+// The nav this replaces emitted ZERO crawlable links. Its four items were <button>
+// elements and their panels were mounted behind `{open && …}`, so the served HTML
+// carried no href for any of them. Measured on production 2026-09-10: the homepage
+// shipped 24 unique internal links, all of them from the footer, the four hero pills
+// and one Board CTA. The nav — the one element on every page of the site — contributed
+// nothing to the link graph at all.
+//
+// So two rules govern this file now:
+//
+//   1. EVERY MENU LINK IS AN <a href> AND IS ALWAYS IN THE DOM. Panels are rendered on
+//      the server, closed with the `hidden` attribute rather than by not existing. A
+//      closed panel is invisible to a reader and fully present to a crawler.
+//   2. THE PANEL IS PROGRESSIVE ENHANCEMENT. Each trigger is itself an anchor pointing
+//      at that menu's index page. With JavaScript, a desktop click opens the panel
+//      instead of navigating. Without it, or on a narrow screen, the click navigates to
+//      a real page. Nothing here is reachable only through an event handler.
+//
+// Below 820px the inline links hide and the hamburger panel renders the same three
+// menus as native <details> accordions, which need no JavaScript to open and behave
+// correctly at 380px.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface MenuDef {
+  key: 'buy' | 'streets' | 'sell';
+  label: string;
+  /** where the trigger goes when the panel is not opened: a real index page */
+  href: string;
+  /** the intents rail */
+  rail: { href: string; label: string }[];
+}
+
+const MENUS: MenuDef[] = [
+  {
+    key: 'buy',
+    label: 'Buy',
+    href: '/listings',
+    rail: [
+      { href: '/listings', label: 'Homes for sale' },
+      { href: '/rentals', label: 'For rent' },
+      { href: '/sold', label: 'Recently sold' },
+      { href: '/condos', label: 'Condo buildings' },
+      { href: '/freehold', label: 'Freehold homes' },
+      { href: '/potl', label: 'POTL and freehold condos' },
+      { href: '/compare', label: 'Compare' },
+      { href: '/exclusive', label: 'Exclusive listings' },
+    ],
+  },
+  {
+    key: 'streets',
+    label: 'Streets',
+    href: '/streets',
+    rail: [
+      { href: '/streets', label: 'All streets' },
+      { href: '/neighbourhoods', label: 'Neighbourhoods' },
+      { href: '/map', label: 'Street map' },
+      { href: '/schools', label: 'Schools' },
+      { href: '/mosques', label: 'Mosques' },
+      { href: '/condos-guide', label: 'Condo buying guide' },
+    ],
+  },
+  {
+    key: 'sell',
+    label: 'Sell',
+    href: '/sell',
+    rail: [
+      { href: '/sell', label: 'What is my home worth' },
+      { href: '/sold', label: 'Sold data and trends' },
+      { href: '/freehold', label: 'Freehold market' },
+      { href: '/condos', label: 'Condo market' },
+      { href: '/about', label: 'About Aamir' },
+      { href: '/book', label: 'Book a call' },
+    ],
+  },
 ];
 
-// Cross-page links for every other forest page — real routes only.
-const PAGE_LINKS = [
-  { href: '/neighbourhoods', label: 'Neighbourhoods' },
-  { href: '/streets', label: 'Explore streets' },
-  { href: '/listings', label: 'Explore MLS' },
-  { href: '/sold', label: 'Market' },
-];
+const money = (n: number) => `$${n.toLocaleString('en-CA')}`;
 
-// Desktop mega-menu panels, keyed by nav label (real routes only). Modelled on
-// the FiltersBar click-popover pattern (click to open, outside-click / Esc to
-// close). V1: home variant only — page-variant rollout is a later pass.
-const MEGA_PANELS: Record<string, { href: string; label: string }[]> = {
-  Neighbourhoods: [
-    { href: '/neighbourhoods', label: 'All neighbourhoods' },
-    { href: '/condos', label: 'Condo buildings' },
-    { href: '/schools', label: 'Schools' },
-    { href: '/mosques', label: 'Mosques' },
-    { href: '/map', label: 'Map view' },
-  ],
-  'Explore streets': [
-    { href: '/streets', label: 'All streets' },
-    { href: '/map', label: 'Street map' },
-    { href: '/sold', label: 'Recent sales' },
-  ],
-  'Explore MLS': [
-    { href: '/listings', label: 'Homes for sale' },
-    { href: '/rentals', label: 'For rent' },
-    { href: '/sold', label: 'Recently sold' },
-    { href: '/compare', label: 'Compare' },
-    { href: '/exclusive', label: 'Exclusive listings' },
-  ],
-  Market: [
-    { href: '/sold', label: 'Sold data & trends' },
-    { href: '/freehold', label: 'Freehold market' },
-    { href: '/condos', label: 'Condo market' },
-  ],
-};
+/** The live right panel. Absent data renders nothing: a panel is never padded with a
+ *  placeholder, because an empty state that looks like content is worse than a rail. */
+function MegaLivePanel({ menu, live }: { menu: MenuDef; live?: MegaLive }) {
+  if (!live) return null;
 
-/**
- * The shared forest nav bar.
- *
- * variant="home": renders class="m-nav" with the homepage's hash anchors, the
- *   #dual CTA, and the scroll-reveal search tied to #m-searchband. It is styled
- *   ENTIRELY by the untouched `.home-v2 .m-nav*` block in home-theme.css — this
- *   file's CSS targets `.site-nav` only and never touches `.m-nav`, so the live
- *   homepage cascade is unchanged.
- * variant="page": renders class="site-nav" (styled by site-nav.css, self-contained
- *   forest palette) with cross-page links and NO scroll-reveal — the search
- *   anchors don't exist off the homepage.
- *
- * Mobile (<=820px): both variants hide the inline links and render the sn-*
- * hamburger + full-screen panel (self-contained classes in site-nav.css, shared
- * by both variants; the existing .m-nav / .site-nav cascades are untouched).
- */
-export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
+  if (menu.key === 'buy' && live.buy) {
+    const b = live.buy;
+    return (
+      <div className="m-mega-live">
+        <p className="m-mega-lead">
+          <b>{b.activeCount}</b> on the market today
+          {b.newThisWeek > 0 ? <> · <b>{b.newThisWeek}</b> new this week</> : null}
+        </p>
+        <ul className="m-mega-cards">
+          {b.listings.map((l) => (
+            <li key={l.mlsNumber}>
+              <a href={`/listings/${l.mlsNumber}`}>
+                <span className="m-mega-price">{money(l.price)}</span>
+                <span className="m-mega-sub">{l.address}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a className="m-mega-more" href="/listings">
+          All listings
+        </a>
+      </div>
+    );
+  }
+
+  if (menu.key === 'streets' && live.streets) {
+    const s = live.streets;
+    return (
+      <div className="m-mega-live">
+        <p className="m-mega-lead">
+          <b>{s.videoCount}</b> streets filmed end to end
+        </p>
+        <ul className="m-mega-frames">
+          {s.videos.map((v) => (
+            <li key={v.slug}>
+              <a href={`/streets/${v.slug}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={v.poster} alt="" loading="lazy" width={160} height={90} />
+                <span className="m-mega-sub">
+                  {v.name}
+                  {v.variant === 'night' ? ' · overnight' : ''}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a className="m-mega-more" href="/streets">
+          All streets
+        </a>
+      </div>
+    );
+  }
+
+  if (menu.key === 'sell' && live.sell) {
+    const s = live.sell;
+    return (
+      <div className="m-mega-live">
+        <p className="m-mega-lead">Milton, {s.window}</p>
+        <dl className="m-mega-figs">
+          {s.typical !== null && (
+            <div>
+              <dt>Typical price</dt>
+              <dd>{money(s.typical)}</dd>
+            </div>
+          )}
+          {s.daysToSell !== null && (
+            <div>
+              <dt>Days to sell</dt>
+              <dd>{s.daysToSell}</dd>
+            </div>
+          )}
+          {s.soldToAsk !== null && (
+            <div>
+              <dt>Sold to ask</dt>
+              <dd>{s.soldToAsk}%</dd>
+            </div>
+          )}
+        </dl>
+        <a className="m-mega-more" href="/sell">
+          Get a grounded valuation
+        </a>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/** In-demand streets, shared by all three menus. Reads VIP + rank, surfaced only. */
+function InDemandStrip({ live }: { live?: MegaLive }) {
+  if (!live?.inDemandStreets?.length) return null;
+  return (
+    <div className="m-mega-strip">
+      <span className="m-mega-striplabel">In demand</span>
+      {live.inDemandStreets.map((s) => (
+        <a key={s.slug} href={`/streets/${s.slug}`}>
+          {s.name}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: MegaLive }) {
   const isHome = variant === 'home';
   const router = useRouter();
   const [searchVisible, setSearchVisible] = useState(false);
   const [navQuery, setNavQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState<string | null>(null);
-  const [megaLeft, setMegaLeft] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const burgerRef = useRef<HTMLButtonElement>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
 
-  const toggleMega = (label: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (megaOpen === label) {
-      setMegaOpen(null);
-      return;
-    }
-    setMegaLeft(e.currentTarget.getBoundingClientRect().left);
-    setMegaOpen(label);
+  // The desktop-only intercept. Below the breakpoint the trigger stays a plain link,
+  // which is the whole point: the panel is an enhancement, not the only route in.
+  const onTriggerClick = (key: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 820) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    setMegaOpen((cur) => (cur === key ? null : key));
   };
 
-  // Mega-menu dismissal: outside-click, Esc, and scroll/resize (fixed panels
-  // would otherwise drift from their trigger).
+  // Dismissal: outside click, Esc, scroll and resize (a fixed nav's panel would
+  // otherwise hang over a scrolled page).
   useEffect(() => {
     if (!megaOpen) return;
     const close = () => setMegaOpen(null);
@@ -126,8 +249,6 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
   useEffect(() => {
     if (!isHome) return; // page variant has no scroll-reveal dependency
     const onScroll = () => {
-      // reveal nav search only after the page's main search band has scrolled
-      // up past the fixed nav (fallback to the hero ask bar if band absent)
       const anchor =
         document.getElementById('m-searchband') ||
         document.getElementById('m-hero-askbar');
@@ -143,7 +264,7 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
     };
   }, [isHome]);
 
-  // Mobile panel: body scroll lock + ESC close + focus trap while open.
+  // Mobile panel: body scroll lock + Esc close + focus trap while open.
   useEffect(() => {
     if (!menuOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -151,7 +272,7 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
     const panel = panelRef.current;
     const focusables = () =>
       Array.from(
-        panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [],
+        panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), summary') ?? [],
       );
     focusables()[0]?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -180,9 +301,6 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
     };
   }, [menuOpen]);
 
-  const links = isHome ? HOME_LINKS : PAGE_LINKS;
-  // DualCTA (id="dual") was removed from the homepage; the CTA points at /sell in
-  // both variants now (no dead #dual anchor).
   const ctaHref = '/sell';
 
   return (
@@ -196,51 +314,44 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
           ref={navLinksRef}
           className={`m-navlinks${isHome && searchVisible ? ' m-hidden' : ''}`}
         >
-          {links.map((l) => {
-            const panel = isHome ? MEGA_PANELS[l.label] : undefined;
-            if (!panel) {
-              return (
-                <a key={l.label} href={l.href}>
-                  {l.label}
-                </a>
-              );
-            }
-            const open = megaOpen === l.label;
+          {MENUS.map((m) => {
+            const open = megaOpen === m.key;
             return (
-              <div key={l.label} className="m-navitem">
-                <button
-                  type="button"
+              <div key={m.key} className="m-navitem">
+                <a
                   className={`m-navtrigger${open ? ' m-open' : ''}`}
+                  href={m.href}
                   aria-haspopup="true"
                   aria-expanded={open}
-                  onClick={(e) => toggleMega(l.label, e)}
+                  aria-controls={`m-mega-${m.key}`}
+                  onClick={onTriggerClick(m.key)}
                 >
-                  {l.label}
+                  {m.label}
                   <span className="m-caret" aria-hidden="true">
                     ▾
                   </span>
-                </button>
-                {open && (
-                  <div className="m-megapanel" style={{ left: megaLeft }} role="menu">
-                    {panel.map((p) => (
-                      <a
-                        key={p.href + p.label}
-                        href={p.href}
-                        role="menuitem"
-                        onClick={() => setMegaOpen(null)}
-                      >
-                        {p.label}
-                      </a>
-                    ))}
+                </a>
+                {/* Always rendered. `hidden` closes it; it is never absent. */}
+                <div className="m-mega" id={`m-mega-${m.key}`} hidden={!open}>
+                  <div className="m-mega-body">
+                    <div className="m-mega-rail">
+                      <span className="m-mega-raillabel">{m.label}</span>
+                      {m.rail.map((r) => (
+                        <a key={r.href + r.label} href={r.href}>
+                          {r.label}
+                        </a>
+                      ))}
+                    </div>
+                    <MegaLivePanel menu={m} live={live} />
                   </div>
-                )}
+                  <InDemandStrip live={live} />
+                </div>
               </div>
             );
           })}
         </div>
 
         {isHome && (
-          /* mirrors the hero ask bar: white pill, green lead circle, green go */
           <form
             className={`m-navsearch${searchVisible ? ' m-show' : ''}`}
             aria-hidden={!searchVisible}
@@ -252,7 +363,7 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
             <input
               value={navQuery}
               onChange={(e) => setNavQuery(e.target.value)}
-              placeholder="Search a street or home…"
+              placeholder="Street, address, or neighbourhood…"
               tabIndex={searchVisible ? 0 : -1}
             />
             <button
@@ -300,12 +411,33 @@ export function SiteNav({ variant = 'page' }: { variant?: Variant }) {
               ×
             </button>
           </div>
-          <div className="sn-panel-links">
-            {links.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)}>
-                {l.label}
-              </a>
+          {/* Native <details>: an accordion that opens with no JavaScript and stays
+              usable at 380px, where a popover cannot be. */}
+          <div className="sn-acc">
+            {MENUS.map((m) => (
+              <details key={m.key} className="sn-acc-item">
+                <summary>{m.label}</summary>
+                <div className="sn-acc-body">
+                  {m.rail.map((r) => (
+                    <a key={r.href + r.label} href={r.href} onClick={() => setMenuOpen(false)}>
+                      {r.label}
+                    </a>
+                  ))}
+                </div>
+              </details>
             ))}
+            {live?.inDemandStreets?.length ? (
+              <details className="sn-acc-item">
+                <summary>In-demand streets</summary>
+                <div className="sn-acc-body">
+                  {live.inDemandStreets.map((s) => (
+                    <a key={s.slug} href={`/streets/${s.slug}`} onClick={() => setMenuOpen(false)}>
+                      {s.name}
+                    </a>
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </div>
           <a className="sn-panel-cta" href={ctaHref} onClick={() => setMenuOpen(false)}>
             What&apos;s my home worth?

@@ -1,9 +1,16 @@
 // src/components/home/mockData.ts
-// Mirrors the real HomepageData shape so the homepage renders with zero backend.
-// The data window replaces this with getHomepageData(): Promise<HomepageData>.
-import type { HomepageData } from './types';
+// The homepage's STATIC editorial, and the reference fixture the retired sections were
+// built against.
+//
+// It is no longer annotated `HomepageData`. That type now carries live-only fields — the
+// 22 priced hub cards, the video strip, the newest listings, the in-demand streets — and a
+// fixture cannot honestly hold any of them: a hardcoded k-gated price is a fabricated
+// figure wearing a real figure's name. getHomepageData() reads exactly one key from this
+// file, `hero`, which is the only part of the homepage with no live source. That key is
+// still typed; the rest is reference copy.
+import type { HeroContent } from './types';
 
-export const mockHomepageData: HomepageData = {
+export const mockHomepageData: { hero: HeroContent } & Record<string, unknown> = {
   stats: { typicalPrice: 1_090_000, sold12mo: 412, onMarket: 87, dom: 24 },
 
   hero: {

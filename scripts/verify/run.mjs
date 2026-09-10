@@ -18,10 +18,11 @@ import composition from './checks/composition.mjs';
 import coordinates from './checks/coordinates.mjs';
 import hubMeta from './checks/hub-meta.mjs';
 import geometryControl from './checks/geometry-control.mjs';
+import homepage from './checks/homepage.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

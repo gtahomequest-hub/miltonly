@@ -202,66 +202,11 @@
   }
 }
 
-/* desktop mega-menu (home variant): click-popover under each nav trigger.
-   Triggers live inside .m-navlinks, which is display:none <=820px, so the
-   whole mega layer is desktop-only automatically; mobile keeps the hamburger. */
-.home-v2 .m-navitem {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.home-v2 .m-navtrigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  font-family: var(--m-sans);
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.78);
-  transition: color 0.2s ease;
-}
-.home-v2 .m-navtrigger:hover,
-.home-v2 .m-navtrigger.m-open {
-  color: #fff;
-}
-.home-v2 .m-caret {
-  font-size: 9px;
-  opacity: 0.7;
-  transition: transform 0.2s ease;
-}
-.home-v2 .m-navtrigger.m-open .m-caret {
-  transform: rotate(180deg);
-}
-.home-v2 .m-megapanel {
-  position: fixed;
-  top: 64px;
-  z-index: 90;
-  min-width: 224px;
-  display: flex;
-  flex-direction: column;
-  /* darker than the forest hero behind it, with a crisp bright edge + strong
-     shadow so it reads as a floating surface, not a blend. */
-  background: #04160f;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  padding: 8px;
-}
-.home-v2 .m-megapanel a {
-  display: block;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 13.5px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.home-v2 .m-megapanel a:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-}
+/* desktop mega-menu: the nav-item, trigger, caret, panel and mobile accordion all
+   live in src/components/nav/site-nav.css now, under `nav .…` selectors, so ONE set
+   of rules dresses both variants. They used to be duplicated here for .home-v2 and
+   omitted entirely for .site-nav, which is why the page variant had no mega menu at
+   all. Nothing homepage-specific remains — do not re-add a .home-v2 copy. */
 
 /* scroll-reveal search in the nav */
 .home-v2 .m-navlinks {
