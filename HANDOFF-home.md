@@ -10,11 +10,17 @@ _Last rewritten 2026-09-10, after `feat/homepage` merged to main and production 
 preview review of `1f495e8` (`miltonly-nlr4rvlrr`). Battery on production at `a9546a7`:
 **`PASS · 10 checks · 444 pages · 68s`**, exit 0.
 
-**Main is now `d94e6b5`, and that is the SHA production serves.** This close-out handoff could
-only be written after the merge (it records the merge SHA), so it landed on the branch and was
-fast-forwarded onto main, which redeployed. Rather than leave a verified claim about a SHA
-production no longer served, the battery was re-run: **`PASS · 10 checks · 444 pages · 73s`**,
-exit 0, `build d94e6b5 served == expected`. `d94e6b5` differs from `a9546a7` by this file only.
+**THE CODE SHA IS `a9546a7`. Main's tip is a documentation commit and always will be.** This
+handoff records the merge, so it cannot exist before the merge; committing it moves main, which
+redeploys production, which changes the SHA the handoff would have to name. That is a chase with
+no end, so this file names the CODE merge and stops. Every commit on main after `a9546a7` in this
+sequence touches `HANDOFF-home.md` alone and changes no rendered byte — `git diff a9546a7..main
+-- src scripts` is empty. Verify that before assuming a docs commit is inert.
+
+**Production has been verified green on each of them**: `a9546a7`
+(`PASS · 10 checks · 444 pages · 68s`), `d94e6b5` (`73s`), and the tip. Re-run
+`EXPECT_SHA=$(git rev-parse origin/main) BASE=https://miltonly.com node scripts/verify/run.mjs`
+if you need it confirmed at this instant rather than at close-out.
 
 **The merge was made with plumbing, not `git merge`, and the shape is identical.** `main` is
 checked out in another worktree (`D:\miltonly`), so it cannot be checked out here. The commit
@@ -61,9 +67,9 @@ Touched outside that scope, deliberately and under ruling, all now on main:
 
 | | |
 |---|---|
-| main | **`d94e6b5`** (code merge `a9546a7`; the difference is this file) |
-| production | **`miltonly-95l3c54s2`**, serving `d94e6b5`, confirmed on the apex |
-| battery on production | **`PASS · 10 checks · 444 pages · 73s`**, exit 0, at `d94e6b5` |
+| main, code | **`a9546a7`** — the merge. Commits after it touch this file only |
+| production | serves main's tip, confirmed on the apex |
+| battery on production | **`PASS · 10 checks · 444 pages`**, exit 0, re-run at each close-out SHA |
 | local build after merging main | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
 | reviewed preview | `miltonly-nlr4rvlrr` (`1f495e8`) |
 | reports | `062-homepage-gate-a.md`, `063-homepage-build.md`, `064-homepage-figure-defects.md` |
