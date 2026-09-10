@@ -7,7 +7,10 @@
 //   1. beds is now GTE (the live page matched bedrooms exactly despite the
 //      "N+" label in its own UI),
 //   2. the dead openHouse param is dropped (it was read but never filtered),
-//   3. priceReduced derives from lastPriceChangeAt (changed within 14 days).
+//   3. no priceReduced flag. It was derived from lastPriceChangeAt, which records
+//      THAT a price changed and never what it changed from — so it could not tell a
+//      reduction from an increase and the badge it fed said "Price reduced" over both.
+//      Removed 2026-09-10 (ruling): no such claim until a prior price is stored.
 // Everything else is identical: the URL param contract (incl. the legacy
 // maxPrice alias), the permAdvertise=true + city=Milton base where, the rent/
 // sold status semantics, sort, 36-per-page, the activeBase stat aggregates,
@@ -41,7 +44,6 @@ const PER_PAGE = 36;
 // sat at (0,0) the cap was invisible. The moment the pins became real it was hiding 70 live
 // homes, 15% of inventory, with nothing on screen to say so.
 const MAP_PIN_CAP = 1500;
-const PRICE_REDUCED_WINDOW_DAYS = 14;
 
 export const NEIGHBOURHOOD_FILTER_OPTIONS = [
   'Dempsey', 'Beaty', 'Willmott', 'Hawthorne Village', 'Timberlea', 'Old Milton',
@@ -131,7 +133,6 @@ interface CardRow {
   listedAt: Date;
   daysOnMarket: number | null;
   listOfficeName: string | null;
-  lastPriceChangeAt: Date | null;
   maintenanceFeeAmt: number | null;
   virtualTourUrl: string | null;
   displayAddress: boolean;
@@ -142,15 +143,9 @@ const CARD_SELECT = {
   soldPrice: true, soldDate: true, status: true, transactionType: true,
   propertyType: true, bedrooms: true, bathrooms: true, sqft: true,
   parking: true, photos: true, listedAt: true, daysOnMarket: true,
-  listOfficeName: true,
-  lastPriceChangeAt: true, maintenanceFeeAmt: true, virtualTourUrl: true,
+  listOfficeName: true, maintenanceFeeAmt: true, virtualTourUrl: true,
   displayAddress: true,
 } as const;
-
-function isPriceReduced(row: { status: string; lastPriceChangeAt: Date | null }): boolean {
-  if (row.status !== 'active' || !row.lastPriceChangeAt) return false;
-  return Date.now() - row.lastPriceChangeAt.getTime() < PRICE_REDUCED_WINDOW_DAYS * 86_400_000;
-}
 
 /** RECO/IDX address redaction, applied server-side so a withheld address
  *  never reaches the client (mirrors redactAddress in listings/display-gate). */
@@ -179,7 +174,6 @@ function toCard(row: CardRow): ListingCardData {
     listedAt: row.listedAt.toISOString(),
     daysOnMarket: row.daysOnMarket,
     listOfficeName: row.listOfficeName,
-    priceReduced: isPriceReduced(row),
     maintenanceFeeAmt: row.maintenanceFeeAmt,
     virtualTourUrl: row.virtualTourUrl,
     displayAddress: row.displayAddress,
@@ -242,7 +236,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
         mlsNumber: true, townLat: true, townLng: true, price: true,
         transactionType: true, status: true, propertyType: true,
         bedrooms: true, bathrooms: true, address: true, displayAddress: true,
-        photos: true, lastPriceChangeAt: true,
+        photos: true,
       },
     }),
     prisma.listing.aggregate({ where: activeBase, _avg: { price: true } }),
@@ -295,7 +289,6 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
       address: gateAddress(r),
       displayAddress: r.displayAddress,
       photo: r.photos[0] ?? null,
-      priceReduced: isPriceReduced(r),
     }));
 
   // ── dedup + title-case neighbourhood stats (ported verbatim) ──
@@ -367,4 +360,30 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     schools: FEATURED_SCHOOLS,
     faqs,
   };
+}
+
+/**
+ * The newest active sale listings, as cards.
+ *
+ * WHY THIS LIVES HERE AND NOT ON THE HOMEPAGE. `toCard` runs `gateAddress`, the RECO/IDX
+ * display gate, so a listing whose seller withheld the address never has that address
+ * serialised to the client at all. A second listing query written next to the section
+ * that renders it would be a second chance to forget that, and forgetting it is not a
+ * layout bug — it is a compliance one. One query shape, one mapper, one gate.
+ *
+ * Sale side only, `permAdvertise` only, ordered the way the grid's default sort orders.
+ */
+export async function getNewestListingCards(take = 8): Promise<ListingCardData[]> {
+  const rows = await prisma.listing.findMany({
+    where: {
+      status: 'active',
+      permAdvertise: true,
+      city: config.PRISMA_CITY_VALUE,
+      transactionType: { not: 'For Lease' },
+    },
+    orderBy: { listedAt: 'desc' },
+    take,
+    select: CARD_SELECT,
+  });
+  return rows.map(toCard);
 }

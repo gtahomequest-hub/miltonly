@@ -7,7 +7,7 @@
 // Exits 0 when every assertion holds, 1 otherwise, so it can gate a deploy.
 // See ./README.md for the rules these checks encode.
 import { publishedStreetSlugs, crawl } from './lib/http.mjs';
-import { loadRecord, loadHubRecord } from './lib/db.mjs';
+import { loadRecord, loadHubRecord, loadHomeRecord } from './lib/db.mjs';
 
 import denials from './checks/denials.mjs';
 import schemaParity from './checks/schema-parity.mjs';
@@ -18,10 +18,11 @@ import composition from './checks/composition.mjs';
 import coordinates from './checks/coordinates.mjs';
 import hubMeta from './checks/hub-meta.mjs';
 import geometryControl from './checks/geometry-control.mjs';
+import homepage from './checks/homepage.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {
@@ -81,8 +82,12 @@ if (record) console.log(`record      DB2 + analytics aggregates loaded`);
 const hubRecord = checks.some((c) => c.needsHubRecord) ? await loadHubRecord() : null;
 if (hubRecord) console.log(`hub record  ${hubRecord.publishedSlugs.length} published hubs + DB2 pools loaded`);
 
+// The homepage side of the record: the Milton-wide figures the homepage states, recomputed.
+const homeRecord = checks.some((c) => c.needsHomeRecord) ? await loadHomeRecord() : null;
+if (homeRecord) console.log(`home record ${homeRecord.publishedStreetPages} published street pages + Milton-wide figures loaded`);
+
 // ── ONE crawl, every check ───────────────────────────────────────────────────────────────────
-const ctx = { base: BASE, slugs, record, hubRecord };
+const ctx = { base: BASE, slugs, record, hubRecord, homeRecord };
 const rowsByCheck = new Map(checks.map((c) => [c.id, []]));
 const failures = [];
 

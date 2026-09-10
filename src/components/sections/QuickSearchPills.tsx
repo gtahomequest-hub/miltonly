@@ -11,7 +11,6 @@ const pills = [
   { label: "Open houses this weekend", hot: true, href: "/listings?openHouse=true" },
   { label: "New builds Milton", hot: false, href: "/listings?type=new-build" },
   { label: "Condos under $700K", hot: false, href: "/listings?type=condo&max=700000" },
-  { label: "Price reduced this week", hot: false, href: "/listings?priceReduced=true" },
 ];
 
 export default function QuickSearchPills() {

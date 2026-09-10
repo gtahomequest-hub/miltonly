@@ -1,4 +1,11 @@
 // src/components/home/HomeFooter.tsx
+// The homepage's link graph, and the reason it is a section rather than a postscript.
+//
+// The page it sits under shipped 24 unique internal links, and 20 of them came from
+// here — the nav emitted none, and this footer listed three of twenty-two hubs and two
+// of the streets. A footer that truncates a list of twenty-two links to three is not
+// tidier; it is a crawl budget spent on an ellipsis. Every published hub is named here
+// now, and so is every in-demand street, because each one is a page we want found.
 import type { FooterData, TrustInfo } from './types';
 import { FooterSearch } from './FooterSearch';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
@@ -8,13 +15,7 @@ interface Props {
   brand: TrustInfo;
 }
 
-// V1 deep-forest homepage footer: brand + a street-first search well over a
-// 4-column link graph (Neighbourhoods / Condo buildings / Streets / Styles &
-// tools). The two dead #mls anchors are gone. Rolling this treatment site-wide
-// (FooterSection on other pages) is a separate later pass — not touched here.
 export function HomeFooter({ footer, brand }: Props) {
-  const moreNbhd = footer.neighbourhoodCount - footer.topNeighbourhoods.length;
-  const moreStreets = footer.streetCount - footer.topStreets.length;
   return (
     <footer className="m-footer">
       <div className="m-wrap">
@@ -26,43 +27,58 @@ export function HomeFooter({ footer, brand }: Props) {
           <FooterSearch />
         </div>
 
-        <div className="m-fgrid">
-          <div className="m-fcol">
-            <h4>Neighbourhoods</h4>
-            {footer.topNeighbourhoods.map((n) => (
+        {/* Every published hub, in the order the grid above ranks them. */}
+        <div className="m-fhoods">
+          <h4>All {footer.neighbourhoods.length} neighbourhoods</h4>
+          <div className="m-fhoodlinks">
+            {footer.neighbourhoods.map((n) => (
               <a href={`/neighbourhoods/${n.slug}`} key={n.slug}>
                 {n.name}
               </a>
             ))}
-            <a href="/neighbourhoods">All {footer.neighbourhoodCount} neighbourhoods{moreNbhd > 0 ? ` →` : ''}</a>
           </div>
+        </div>
 
+        <div className="m-fgrid">
           <div className="m-fcol">
-            <h4>Condo buildings</h4>
-            <a href="/condos">Browse condo buildings</a>
-            <a href="/condos-guide">Condo buying guide</a>
-            <a href="/potl">POTL &amp; freehold condos</a>
-          </div>
-
-          <div className="m-fcol">
-            <h4>Streets</h4>
+            <h4>In-demand streets</h4>
             {footer.topStreets.map((s) => (
               <a href={`/streets/${s.slug}`} key={s.slug}>
                 {s.name}
               </a>
             ))}
-            <a href="/streets">All {footer.streetCount} streets{moreStreets > 0 ? ` →` : ''}</a>
+            {/* PAGES, not surfaced entities. The label said "All 738 streets" while 444
+                street pages existed; 738 is the set allowed to appear in search and in a
+                hub ladder. /streets is the index for both, and it states both itself. */}
+            <a href="/streets">All {footer.streetPageCount} street pages</a>
             <a href="/map">Street map</a>
           </div>
 
           <div className="m-fcol">
-            <h4>Styles &amp; tools</h4>
-            <a href="/freehold">Freehold homes</a>
-            <a href="/sold">Sold data &amp; trends</a>
+            <h4>Buy</h4>
+            <a href="/listings">Homes for sale</a>
+            <a href="/rentals">For rent</a>
+            <a href="/sold">Recently sold</a>
+            <a href="/exclusive">Exclusive listings</a>
             <a href="/compare">Compare</a>
+          </div>
+
+          <div className="m-fcol">
+            <h4>Condos &amp; tenure</h4>
+            <a href="/condos">Browse condo buildings</a>
+            <a href="/condos-guide">Condo buying guide</a>
+            <a href="/potl">POTL &amp; freehold condos</a>
+            <a href="/freehold">Freehold homes</a>
+          </div>
+
+          <div className="m-fcol">
+            <h4>Sell &amp; tools</h4>
             <a href="/sell">Home valuation</a>
+            <a href="/sold">Sold data &amp; trends</a>
             <a href="/schools">Schools</a>
             <a href="/mosques">Mosques</a>
+            <a href="/about">About Aamir</a>
+            <a href="/book">Book a call</a>
           </div>
         </div>
 

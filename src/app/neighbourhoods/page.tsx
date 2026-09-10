@@ -3,10 +3,13 @@
 // the shared .dir-v2 DirectoryGrid primitive (same one /streets ships). RESTYLE
 // + the carry-forward nothing-fake price fix + the page-2 link-graph fix:
 //
-//  - PRICE (same bug as /streets): the legacy card avg was a lease-blended,
-//    all-status _avg:{price}. Recomputed to active SALE-only list price
-//    (status=active AND transactionType != "For Lease" AND permAdvertise),
-//    label "Avg sale price", null-degrade when zero active sale listings.
+//  - PRICE, 2026-09-10 (ruling): the card now carries THE HUB'S OWN k-gated 12-month
+//    typical SOLD price, from the shared getNeighbourhoodCards() that the homepage
+//    ladder also reads. It previously carried an active SALE-only LIST-price average —
+//    a different statistic, over a different population (what is asking today, not what
+//    traded), with no k-anon floor at all. Two figures under one word is the defect
+//    hub-meta.mjs exists to catch on the SERP side, and the card grid was committing it
+//    on the browse side. A hood whose hub suppresses its price now shows none here too.
 //
 //  - LINK GRAPH (sharper here — an unpublished hub 404s, and 3 legacy slugs
 //    301-redirect): cards are built CANONICAL-FIRST from published HubContent.
@@ -26,6 +29,7 @@ import FooterSection from "@/components/sections/FooterSection";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import { formatPriceFull } from "@/lib/format";
+import { getNeighbourhoodCards } from "@/lib/neighbourhoodCards";
 import "@/components/directory/directory-theme.css";
 
 export const dynamic = "force-dynamic";
@@ -64,53 +68,26 @@ export default async function NeighbourhoodsPage() {
   // All raw strings that belong to a published hood — scope the active queries.
   const publishedRaws = neighbourhoods.flatMap((n) => n.rawStrings);
 
-  // Active count per raw (status=active, any transaction type — preserves the
-  // legacy "N active" meaning, which counted all active inventory).
-  const activeRows = publishedRaws.length
-    ? await prisma.listing.groupBy({
-        by: ["neighbourhood"],
-        _count: true,
-        where: { neighbourhood: { in: publishedRaws }, status: "active", permAdvertise: true },
-      })
-    : [];
-  const activeByRaw = new Map(activeRows.map((r) => [r.neighbourhood, r._count]));
-
-  // Active FOR-SALE list price per raw — list price (public), excludes lease +
-  // stale. _avg + _count so multi-raw hoods combine as a true weighted average.
-  const saleRows = publishedRaws.length
-    ? await prisma.listing.groupBy({
-        by: ["neighbourhood"],
-        _count: true,
-        _avg: { price: true },
-        where: {
-          neighbourhood: { in: publishedRaws },
-          status: "active",
-          transactionType: { not: "For Lease" },
-          permAdvertise: true,
-        },
-      })
-    : [];
-  const saleByRaw = new Map(saleRows.map((r) => [r.neighbourhood, { n: r._count, avg: r._avg.price ?? 0 }]));
+  // THE SHARED CARD DATA. Active count + the hub's own k-gated typical sold price, from
+  // the one function the homepage ladder reads. Nothing about the price is recomputed here.
+  const sharedCards = await getNeighbourhoodCards();
+  const sharedBySlug = new Map(sharedCards.map((c) => [c.slug, c]));
 
   // Aggregate per canonical neighbourhood across its rawStrings.
   const cards = neighbourhoods
     .map((n) => {
       let totalListings = 0;
-      let activeCount = 0;
-      let saleSum = 0;
-      let saleN = 0;
-      for (const raw of n.rawStrings) {
-        totalListings += totalByRaw.get(raw) ?? 0;
-        activeCount += activeByRaw.get(raw) ?? 0;
-        const s = saleByRaw.get(raw);
-        if (s) {
-          saleSum += s.avg * s.n;
-          saleN += s.n;
-        }
-      }
-      const avgSalePrice = saleN > 0 && saleSum > 0 ? Math.round(saleSum / saleN) : null;
+      for (const raw of n.rawStrings) totalListings += totalByRaw.get(raw) ?? 0;
+      const shared = sharedBySlug.get(n.slug);
       const isRural = n.profile === "rural_hub";
-      return { slug: n.slug, name: n.name, profile: isRural ? "Rural" : "Urban", totalListings, activeCount, avgSalePrice };
+      return {
+        slug: n.slug,
+        name: n.name,
+        profile: isRural ? "Rural" : "Urban",
+        totalListings,
+        activeCount: shared?.activeCount ?? 0,
+        typicalSoldPrice: shared?.typicalSoldPrice ?? null,
+      };
     })
     // keep the legacy visibility threshold (now on the canonical total)
     .filter((c) => c.totalListings >= MIN_LISTINGS)
@@ -142,8 +119,10 @@ export default async function NeighbourhoodsPage() {
       searchExtra: c.profile,
       group: c.profile, // chip filter: Urban / Rural (no neighbourhood sub-chip — it IS the hood)
       subtitle: `${c.profile} neighbourhood`,
-      stat: c.avgSalePrice != null ? formatPriceFull(c.avgSalePrice) : undefined,
-      statLabel: c.avgSalePrice != null ? "Avg sale price" : undefined,
+      // "Typical sold" names the statistic it is: the hub's own 12-month figure, k-gated.
+      // Suppressed hoods carry no stat at all rather than a zero or a softer label.
+      stat: c.typicalSoldPrice != null ? formatPriceFull(c.typicalSoldPrice) : undefined,
+      statLabel: c.typicalSoldPrice != null ? "Typical sold · 12mo" : undefined,
       meta,
     };
   });

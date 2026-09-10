@@ -46,7 +46,6 @@ export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardPr
 
         <div className="lv-badges">
           {isNew && <span className="lv-badge lv-new">{days === 0 ? 'New today' : 'New'}</span>}
-          {!isSold && l.priceReduced && <span className="lv-badge lv-reduced">Price reduced</span>}
           {isSold && <span className="lv-badge lv-soldb">{l.status === 'rented' ? 'Leased' : 'Sold'}</span>}
           {!isSold && l.virtualTourUrl && (
             <span className="lv-badge lv-tour">
