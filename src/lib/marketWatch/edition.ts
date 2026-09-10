@@ -74,6 +74,24 @@ export interface EditionSections {
   neighbourhoods: EditionNeighbourhoodRow[];
   streets: EditionStreetRow[];
   context12mo: { count: number; typicalPrice: number | null; avgDom: number | null };
+
+  // ── the correction note ─────────────────────────────────────────────────
+  //
+  // One line, written by a person, saying why THIS edition was rewritten after
+  // it was published. Present only on a corrected edition; absent on every
+  // other, including every edition written before this field existed, which is
+  // why it is optional rather than nullable-and-required.
+  //
+  // It rides inside sectionsJson rather than taking a column of its own. The
+  // note is per-edition prose that only the renderer reads, no query filters or
+  // sorts on it, and this project's `_prisma_migrations` table is out of step
+  // with the live database, so a column here buys a raw-SQL migration and buys
+  // nothing else.
+  //
+  // `buildEdition` never sets it. It is threaded in at the write, by
+  // `generateEdition`, because only the person ordering the rewrite knows what
+  // was wrong.
+  correctionNote?: string;
 }
 
 export interface BuiltEdition {

@@ -84,7 +84,10 @@ export default async function MarketWatchIndex() {
       description: e.metaDescription ?? undefined,
       url: `${config.SITE_URL}/market-watch/${e.weekOf}`,
       datePublished: (e.publishedAt ?? e.createdAt).toISOString(),
-      dateModified: (e.publishedAt ?? e.updatedAt).toISOString(),
+      // updatedAt, not publishedAt. A corrected edition keeps its original
+      // publication date and carries the rewrite in dateModified; reading
+      // publishedAt here would have hidden the correction from crawlers.
+      dateModified: e.updatedAt.toISOString(),
       isAccessibleForFree: true,
       publisher: { "@type": "Organization", name: config.SITE_NAME, url: config.SITE_URL },
       about: { "@type": "Place", name: `${config.CITY_NAME}, ${config.CITY_PROVINCE}` },

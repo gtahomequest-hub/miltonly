@@ -59,6 +59,14 @@
     {
       "path": "/api/brief/send",
       "schedule": "15 13 * * 1-5"
+    },
+    {
+      "path": "/api/content/market-watch",
+      "schedule": "0 12 * * 1"
+    },
+    {
+      "path": "/api/content/market-watch",
+      "schedule": "0 13 * * 1"
     }
   ]
 }

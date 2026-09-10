@@ -69,6 +69,15 @@ export default function MarketWatchPage({
             Window {s.windowStartIso.slice(0, 10)} to {s.windowEndIso.slice(0, 10)}, Monday to Sunday, America/Toronto.
             Completed sales only, bounded at the day this edition was written.
           </div>
+          {/* A corrected edition says so, at the top, before any figure. The
+              note is present only on an edition that was rewritten after
+              publication; every other edition renders nothing here. */}
+          {s.correctionNote ? (
+            <div className="mw-correction">
+              <span className="mw-correction-tag">Correction</span>
+              <span className="mw-correction-text">{s.correctionNote}</span>
+            </div>
+          ) : null}
         </div>
       </header>
 
