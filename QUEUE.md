@@ -16,7 +16,7 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 
 *Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
 
-*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is not started**: the nine funnel surfaces still on `/api/leads`, the three homepage forms, `OffMarketForm`, and the daily-brief sender.*
+*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is BUILT AND PROVEN ON PREVIEW, awaiting Core's merge** at `78ce480`: all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
 ---
 
@@ -355,9 +355,10 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
 - [x] **Address to anchor**: `505 Farmstead Drive` -> `/streets/farmstead-drive-milton#505`,
       confirmed against the Town's 40,826-address projection; an unknown number degrades to
       the street page rather than linking an id that is not there.
-- [ ] **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
-      `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
-      **Leads owns this.**
+- [x] **Daily-brief consent is sent but not persisted.** Closed by leads Phase 2. There is no
+      generic path any more: `/api/leads` is deleted and the one ingest path persists
+      `consentText` / `consentTimestamp` for every source, phone or no phone. Proven on preview,
+      row `cmtvgsx5b0000dp8f0j217cxp`. Record in `scratchpad/reports/067-leads-phase2.md`.
 - [ ] **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
       `permAdvertise AND status='active'` with no city and no transaction-type filter. Exactly
       right today (448 either way), so latent rather than wrong. Needs a decision.
