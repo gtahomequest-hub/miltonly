@@ -15,7 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CornerWidgetProps } from "@/types/street";
-import { postLead, type LeadClientIntent } from "@/lib/postLeadClient";
+import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, type LeadClientIntent } from "@/lib/postLeadClient";
 
 const COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -46,6 +46,7 @@ export function CornerWidget({
   const [status, setStatus] = useState<Status>("idle");
   const [email, setEmail] = useState("");
   const [choice, setChoice] = useState(INTENT_OPTIONS[0].value);
+  const [honey, setHoney] = useState("");
 
   // On mount: check cooldown state, then set up reveal + observers
   useEffect(() => {
@@ -126,6 +127,7 @@ export function CornerWidget({
       email,
       property_address: streetName,
       notes: `${picked.label}: ${streetName}`,
+      honeypot: honey,
     });
     setStatus(ok ? "ok" : "error");
   };
@@ -192,6 +194,13 @@ export function CornerWidget({
           {status === "error" && (
             <div className="widget-form-sub">Something went wrong. Please try again.</div>
           )}
+          {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+          <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+            <label>
+              Company website
+              <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+            </label>
+          </div>
           <button type="submit" className="widget-submit-btn" disabled={status === "submitting"}>
             {status === "submitting" ? "…" : "Request a response →"}
           </button>

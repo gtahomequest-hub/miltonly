@@ -3,7 +3,11 @@
 // reading sold prices is often weighing a sale). Wires the EXISTING lead pipeline
 // (/api/leads/create, the same ingress the condo + ads forms use) — no new path.
 // Captures the visitor's OWN info only; exposes no sold record or price.
+//
+// Phase 1: the hand-rolled fetch is gone in favour of the one client helper, which carries
+// the honeypot and the attribution payload.
 import { useState } from "react";
+import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -12,29 +16,21 @@ export default function SoldValuationCTA() {
   const [status, setStatus] = useState<Status>("idle");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [honey, setHoney] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setStatus("submitting");
-    try {
-      const res = await fetch("/api/leads/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source: "sold-home-valuation",
-          intent: "sell",
-          email,
-          property_address: address || undefined,
-          notes: `Home-value request from /sold${address ? ` — ${address}` : ""}`,
-          event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      setStatus(res.ok && data?.ok !== false ? "ok" : "error");
-    } catch {
-      setStatus("error");
-    }
+    const ok = await postLead({
+      source: "sold-home-valuation",
+      intent: "sell",
+      email,
+      property_address: address || undefined,
+      notes: `Home-value request from /sold${address ? `, ${address}` : ""}`,
+      honeypot: honey,
+    });
+    setStatus(ok ? "ok" : "error");
   };
 
   return (
@@ -76,6 +72,13 @@ export default function SoldValuationCTA() {
                   onChange={(e) => setEmail(e.target.value)}
                   aria-label="Email"
                 />
+                {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+                <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+                  <label>
+                    Company website
+                    <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+                  </label>
+                </div>
                 <button type="submit" disabled={status === "submitting"}>
                   {status === "submitting" ? "Sending…" : "Send"}
                 </button>
