@@ -42,12 +42,25 @@ function deltaPct(nbhd: number, milton: number): string {
   const pct = Math.round(((nbhd - milton) / milton) * 100);
   return pct === 0 ? "in line with Milton" : `${pct > 0 ? "+" : ""}${pct}% vs Milton`;
 }
+// THE FOUR INTENT SQUARES, AND THE TWO THAT LED NOWHERE.
+//
+// Measured live on all 22 hubs, 2026-09-10:
+//   · "I'm investing" pointed at `/#mls`. That anchor died with the homepage's MLS-explore
+//     section, so it landed on the homepage and scrolled nowhere. It now points at /listings,
+//     the page that actually serves the intent.
+//   · "I'm buying" pointed at `#streets` and NO SECTION CARRIED THAT ID. The href was right
+//     about where it wanted to go; the target simply did not exist. HubStreets now carries
+//     `id="streets"`, so the square lands on the hub's own street ladder.
+//
+// A fragment that resolves to nothing is worse than a broken link: the browser reports no
+// error and the reader concludes the site is inert. `hub-intents.mjs` now asserts that every
+// href here resolves to a real route or a real id on the page that emits it.
 function intentsFor(slug: string): HubIntentSquare[] {
   return [
     { key: "buy", label: "I'm buying", sub: "Streets & listings here", href: `/neighbourhoods/${slug}#streets` },
     { key: "sell", label: "I'm selling", sub: "What my home is worth", href: "/sell" },
     { key: "rent", label: "I'm renting", sub: "Lease in this area", href: "/rentals" },
-    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/#mls" },
+    { key: "invest", label: "I'm investing", sub: "Listings & yield", href: "/listings" },
   ];
 }
 

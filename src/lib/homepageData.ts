@@ -29,6 +29,7 @@ import { getNeighbourhoodCards, getRawStringHubMap } from "@/lib/neighbourhoodCa
 import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVideoCount } from "@/lib/homeSignals";
 import { getNewestListingCards } from "@/lib/listingsV2Data";
 import { getMiltonSoldOverall } from "@/lib/soldAggregates";
+import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
@@ -79,7 +80,7 @@ export async function getHomepageData(): Promise<HomepageData> {
   }
   const typicalSource = typicalAll ?? mw.aggregates.typicalPrice;
 
-  const [newThisWeek, soldMtd, neighbourhoods, videoStreets, videoCount, listingRows, hubByRaw, vipRows, streetPageCount, surfacedStreetCount, totalNbhd, soldOverall] =
+  const [newThisWeek, soldMtd, neighbourhoods, videoStreets, videoCount, listingRows, hubByRaw, vipRows, streetPageCount, surfacedStreetCount, totalNbhd, soldOverall, rentalsAvailable] =
     await Promise.all([
       getNewThisWeekCount(),
       getSoldThisMonth(),
@@ -106,6 +107,9 @@ export async function getHomepageData(): Promise<HomepageData> {
       // page publish one figure. Board.soldToAsk.value is a RATIO (0.9809) that TheBoard
       // multiplies at render; soldToAskPct is already a percent (98.1).
       getMiltonSoldOverall(),
+      // The rent side. The hero's other four figures are sale-side; this one is not, and
+      // its label says so rather than being folded into "on the market".
+      getRentalsAvailableCount(),
     ]);
 
   // Resolve each listing's raw TREB neighbourhood to a PUBLISHED hub. A raw string with
@@ -130,6 +134,7 @@ export async function getHomepageData(): Promise<HomepageData> {
       newThisWeek,
       soldMonthToDate: soldMtd.count,
       soldMonthTypical: soldMtd.typicalPrice,
+      rentalsAvailable,
     },
     hero: mockHomepageData.hero, // STATIC copy (no live source) — FLAG
     trust: {
