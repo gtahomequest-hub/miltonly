@@ -37,36 +37,12 @@ export const getHeroStats = unstable_cache(
   { revalidate: CACHE_TTL }
 );
 
-export const getFeaturedListings = unstable_cache(
-  async () => {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
-
-    const newThisWeek = await prisma.listing.findMany({
-      where: { status: "active", listedAt: { gte: sevenDaysAgo }, permAdvertise: true },
-      orderBy: { listedAt: "desc" },
-      take: 6,
-    });
-
-    // For "price drops" - show active listings sorted by price ascending (best deals)
-    const priceDrops = await prisma.listing.findMany({
-      where: { status: "active", permAdvertise: true },
-      orderBy: { price: "asc" },
-      take: 6,
-    });
-
-    // For "open houses" - show newest active listings
-    const openHouses = await prisma.listing.findMany({
-      where: { status: "active", permAdvertise: true },
-      orderBy: { listedAt: "desc" },
-      take: 6,
-    });
-
-    return { newThisWeek, priceDrops, openHouses };
-  },
-  ["featured-listings-v2"],
-  { revalidate: CACHE_TTL }
-);
+// getFeaturedListings was REMOVED 2026-09-10 (ruling). It was dead code with zero
+// consumers, and its `priceDrops` key returned the CHEAPEST ACTIVE LISTINGS — an
+// ascending price sort, not a price change of any kind. A dead function is harmless
+// until someone wires it to a section called "price drops", which is precisely the
+// section it was named for. A price drop is not derivable from DB1: `lastPriceChangeAt`
+// records that a price changed, never what it changed from.
 
 export const getStreetStats = unstable_cache(
   async (streetSlug: string, propertyType?: string) => {

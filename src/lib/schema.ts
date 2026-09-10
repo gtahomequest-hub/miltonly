@@ -54,12 +54,43 @@ export function generateLocalBusinessSchema() {
   };
 }
 
+/**
+ * The publisher node.
+ *
+ * RealEstateAgent above is a LocalBusiness, and a LocalBusiness IS an Organization by
+ * inheritance — but inheritance is not what a validator reads, and the homepage gate
+ * asserts an explicit `Organization` node is present. It is also the node the WebSite
+ * should name as its publisher, which the RealEstateAgent node cannot do without
+ * conflating "the brokerage agent" with "the site that publishes this data". Same
+ * identity, stated in the vocabulary each consumer expects.
+ */
+export function generateOrganizationSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
+    name: config.SITE_NAME,
+    url: SITE_URL,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    },
+    description: `${CITY_PROVINCE_LABEL} real estate data, street by street.`,
+    areaServed: {
+      "@type": "City",
+      name: config.CITY_NAME,
+    },
+  };
+}
+
 export function generateWebSiteSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
     name: config.SITE_NAME,
     url: SITE_URL,
+    publisher: { "@id": `${SITE_URL}/#organization` },
     description: `${CITY_PROVINCE_LABEL} real estate platform — homes for sale, street intelligence, neighbourhood comparisons and home valuations`,
     potentialAction: {
       "@type": "SearchAction",

@@ -25,6 +25,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
+import { townAddressesForSlug } from "@/lib/town/addresses";
 
 const DROP = new Set(["milton", "on", "ont", "ontario", "canada", "ca"]);
 
@@ -121,10 +122,73 @@ async function getIndex(): Promise<Index> {
   return _cache;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CIVIC ADDRESS -> ADDRESS ANCHOR
+//
+// "410 Farmstead Drive" used to resolve to nothing. tokens() keeps digits, so the
+// key built was `410farmsteaddrive`, which matches no street slug, no condo and no
+// neighbourhood, and the query fell all the way through to /listings?q=. A typed
+// street address is the single most specific thing a visitor can ask for and it was
+// the one thing the resolver could not answer.
+//
+// The destination has existed since QUEUE item 3: every published street renders a
+// per-address anchor at /streets/<slug>#<houseNumber>. So this splits a leading house
+// number off, resolves the REMAINDER through the same two-tier entity match as before,
+// and then CONFIRMS the number against the Town's address projection before pointing at
+// an anchor that may not exist.
+//
+// THE CONFIRMATION IS THE POINT. An unverified "#410" would be a link to an id that is
+// not on the page, which browsers answer by silently doing nothing — a dead link that
+// looks alive. When the Town carries no such number on that street (or carries no
+// address data for the street at all), this degrades to the street page itself, which is
+// still the right page and still a better answer than a keyword search.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A leading civic number, e.g. "410 Farmstead Drive" -> { number: 410, rest: "Farmstead Drive" }.
+ *  Unit prefixes ("12-410 Main St E") take the STREET number, which is the second one. */
+function splitHouseNumber(q: string): { number: number; rest: string } | null {
+  const m = q.match(/^\s*(?:[A-Za-z0-9]+\s*-\s*)?(\d{1,6})\s*[A-Za-z]?\s+(.+)$/);
+  if (!m) return null;
+  const number = Number(m[1]);
+  if (!Number.isFinite(number) || number <= 0) return null;
+  const rest = m[2].trim();
+  return rest ? { number, rest } : null;
+}
+
+/** Street slug for the non-numeric remainder, exact key first, then loose. Streets only:
+ *  a house number in front of a neighbourhood name is not an address. */
+function streetSlugFor(rest: string, idx: Index): string | null {
+  const fk = fullKey(rest);
+  const lk = looseKey(rest);
+  return (fk && idx.streets.full.get(fk)) || (lk && idx.streets.loose.get(lk)) || null;
+}
+
+/**
+ * Resolve a typed civic address to its anchor, or null when this is not an address.
+ * Exported so the API route and any future autocomplete can share one behaviour.
+ */
+export async function resolveAddressAnchor(raw: string): Promise<string | null> {
+  const parsed = splitHouseNumber(raw.trim());
+  if (!parsed) return null;
+  const idx = await getIndex();
+  const slug = streetSlugFor(parsed.rest, idx);
+  if (!slug) return null;
+
+  const town = townAddressesForSlug(slug);
+  const known = town?.addresses.some((a) => a.n === parsed.number) ?? false;
+  return known ? `/streets/${slug}#${parsed.number}` : `/streets/${slug}`;
+}
+
 /** Resolve typed text to a destination href. */
 export async function resolveHeroSearch(raw: string): Promise<string> {
   const q = raw.trim();
   if (!q) return "/listings";
+
+  // Address first: it is the most specific reading of the input, and it only fires when
+  // a leading number is present AND the remainder is a real street, so it cannot capture
+  // an entity query. "Bronte Street South" has no leading number and never reaches here.
+  const anchor = await resolveAddressAnchor(q);
+  if (anchor) return anchor;
 
   const fk = fullKey(q);
   const lk = looseKey(q);

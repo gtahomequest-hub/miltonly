@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
+import { HUB_STREET_LADDER_CAP, publishedStreetPageSlugs } from "@/lib/streetSurface";
 import { schools } from "@/lib/schools";
 import { mosques } from "@/lib/mosques";
 
@@ -144,14 +144,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   //
   // A page may not be published for a street that does not exist. Content is still
   // required — this adds the entity as a second, independent condition.
-  const [publishedStreets, streetEntities] = await Promise.all([
+  //
+  // THE SET ITSELF now lives in publishedStreetPageSlugs() (src/lib/streetSurface.ts), because
+  // the homepage states a page count and stated "738" while this emitted 444 — two surfaces
+  // describing different sets with one word. The intersection is unchanged; only its home moved.
+  // lastModified still needs the row, so the timestamps are read here and filtered by that set.
+  const [publishedStreets, pageSlugs] = await Promise.all([
     prisma.streetContent.findMany({
       where: { status: "published" },
       select: { streetSlug: true, updatedAt: true },
     }),
-    prisma.residentialStreet.findMany({ select: { slug: true } }),
+    publishedStreetPageSlugs(),
   ]);
-  const entitySlugs = new Set(streetEntities.map((s) => s.slug));
+  const entitySlugs = new Set(pageSlugs);
 
   const streetPages: MetadataRoute.Sitemap = publishedStreets
     .filter((s) => entitySlugs.has(s.streetSlug))

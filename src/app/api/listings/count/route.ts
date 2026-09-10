@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     if (!maxPrice || maxPrice <= 0) {
       return NextResponse.json({ count: 0 });
     }
-    // Match the rest of the site (FeaturedListings, hero stats, etc.) — only
+    // Match the rest of the site (hero stats, the listings grid) — only
     // count listings that are publicly displayable on the destination /listings page.
     const count = await prisma.listing.count({
       where: { status: "active", permAdvertise: true, price: { lte: maxPrice } },
