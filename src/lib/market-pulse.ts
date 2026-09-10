@@ -1,4 +1,4 @@
-// "Milton market pulse" helper. Used by the /api/leads
+// "Milton market pulse" helper. Used by the lead ingest
 // `market-pulse-unlock` branch (Commit 4j lead magnet) to compute a small
 // stats packet for an anonymous visitor who has just submitted CASL consent.
 //

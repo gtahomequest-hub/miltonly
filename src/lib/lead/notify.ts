@@ -58,6 +58,33 @@ export function confirmationLineFor(ctx: NotifyContext): string {
       return `Your inquiry is in. ${FIRST_NAME} will reach out about the listing during business hours.`;
     case "sales-ads-market-pulse-unlock":
       return `Your market report is unlocked. ${FIRST_NAME} follows up with the fuller read by phone.`;
+    // ── Phase 2: the funnel surfaces, each in the words its own page used ──────────
+    case "homepage-sold-on-my-street":
+      return `Your sold report for ${where} is being prepared by hand, with a valuation of your own home alongside it. It arrives by email within one business day.`;
+    case "homepage-mortgage-calculator":
+      return `Your pre-approval request is in. ${FIRST_NAME}'s broker calls within one business day with a real approval, not an estimate.`;
+    case "landlord-listing-page":
+      return `${FIRST_NAME} prepares every rental valuation by hand from comparable leases. Your figure arrives by email within 24 business hours.`;
+    case "seller-listing-page":
+      return `${FIRST_NAME} prepares every valuation by hand from comparable sales. Your written report arrives by email within 24 business hours.`;
+    case "alert":
+    case "new-match-alert":
+      return `Your search is saved. We will email you when a ${config.CITY_NAME} rental comes up inside your price range, and nothing else.`;
+    case "rental-quiz":
+      return `Your rental brief is in. ${FIRST_NAME} sends hand-picked matches during business hours.`;
+    case "ads-rentals-lp":
+    case "ads-rentals-lp-modal":
+      return `Your rental brief is in. ${FIRST_NAME} texts hand-picked ${config.CITY_NAME} matches during business hours.`;
+    case "sales-ads-trust-card-message":
+      return `Your question reached ${FIRST_NAME} directly. He answers personally, during business hours.`;
+    case "listing-card-book":
+    case "listing-card-1hr":
+    case "1hr-booking":
+    case "rental-booking":
+      return `Your showing request for ${where} is in. ${FIRST_NAME} confirms a time by phone during business hours.`;
+    case "sale-detail":
+    case "rental-question":
+      return `Your question about ${where} is in. ${FIRST_NAME} replies personally, during business hours.`;
     default:
       return `Your request is in. ${FIRST_NAME} replies personally, during business hours.`;
   }
@@ -78,6 +105,25 @@ function confirmationSubject(ctx: NotifyContext): string {
       return "Your valuation is being prepared";
     case "daily-brief":
       return `Your ${config.CITY_NAME} daily brief starts tomorrow`;
+    case "homepage-sold-on-my-street":
+      return ctx.subject ? `Your sold report for ${ctx.subject}` : "Your sold report is being prepared";
+    case "landlord-listing-page":
+    case "seller-listing-page":
+      return "Your valuation is being prepared";
+    case "alert":
+    case "new-match-alert":
+      return "Your search is saved";
+    case "listing-card-book":
+    case "listing-card-1hr":
+    case "1hr-booking":
+    case "rental-booking":
+      return ctx.subject ? `Your showing request for ${ctx.subject}` : "Your showing request is in";
+    case "ads-rentals-lp":
+    case "ads-rentals-lp-modal":
+    case "rental-quiz":
+      return `Your ${config.CITY_NAME} rental matches are coming`;
+    case "homepage-mortgage-calculator":
+      return "Your pre-approval request is in";
     default:
       return "I got your message";
   }

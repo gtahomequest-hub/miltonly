@@ -8,6 +8,10 @@
 // is no longer written by anything. The response shape is unchanged — { ok, lead_id } —
 // so every existing caller keeps working.
 //
+// PHASE 2 MADE IT THE ONLY INGRESS. /api/leads, /api/off-market-leads and
+// /api/exclusive-inquiry are gone; every form in src/ reaches this route through
+// src/lib/postLeadClient.ts, and scripts/test-lead-forms.ts fails the build if one does not.
+//
 // LEADS_API_ENABLED still gates the whole thing, and still answers { ok: true, no_op: true }
 // so the route shape can be deployed without going live.
 
@@ -44,6 +48,9 @@ export async function POST(req: NextRequest) {
     ok: true,
     lead_id: result.leadId,
     env: result.env,
+    // The market-pulse reveal, when the surface asked for one. Unlike `diagnostics` this is
+    // returned in production too: it is the thing the visitor unlocked, not a proof.
+    ...(result.stats !== undefined ? { stats: result.stats } : {}),
     ...(result.diagnostics ? { diagnostics: result.diagnostics } : {}),
   });
 }

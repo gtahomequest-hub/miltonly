@@ -1,14 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const HONEYPOT_FIELD = "company_website";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_SOURCE = "sales-ads-home-valuation";
 
@@ -42,7 +41,7 @@ export interface HomeValuationCardProps {
   /** MLS number of the originating listing — included in the lead row for
    *  attribution (visitor was viewing this listing when they submitted). */
   mlsNumber: string;
-  /** Source tag sent to /api/leads + emitted as the GA4 generate_lead source.
+  /** Source tag carried onto the Lead row and emitted as the GA4 generate_lead source.
    *  Defaults to "sales-ads-home-valuation" (the original sales-page surface).
    *  Pass a lease-tagged source from the rentals page. */
   source?: string;
@@ -97,18 +96,9 @@ export default function HomeValuationCard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const searchParams = useSearchParams();
-  const tracking = useMemo(
-    () => ({
-      utm_source: searchParams.get("utm_source") || "",
-      utm_medium: searchParams.get("utm_medium") || "",
-      utm_campaign: searchParams.get("utm_campaign") || "",
-      utm_term: searchParams.get("utm_term") || "",
-      utm_content: searchParams.get("utm_content") || "",
-      gclid: searchParams.get("gclid") || "",
-    }),
-    [searchParams],
-  );
+  // THE PER-SURFACE UTM READ IS GONE. src/components/AttributionCapture.tsx runs in the root
+  // layout and persists first-touch and last-touch for the whole session; the client helper
+  // sends both. A form reading the current URL only ever saw the last landing page.
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -137,35 +127,25 @@ export default function HomeValuationCard({
 
     setSubmitting(true);
 
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: `Lead ${phoneDigits.slice(-4)}`,
-          phone: phone.trim(),
-          email: trimmedEmail,
-          source,
-          intent: "home-valuation",
-          consent: true,
-          consentText: CONSENT_TEXT,
-          consentTimestamp: new Date().toISOString(),
-          yourHomeAddress: trimmedAddr,
-          notes: notes.trim() || undefined,
-          mlsNumber,
-          utm_source: tracking.utm_source,
-          utm_medium: tracking.utm_medium,
-          utm_campaign: tracking.utm_campaign,
-          utm_term: tracking.utm_term,
-          utm_content: tracking.utm_content,
-          gclid: tracking.gclid,
-          ...attributionPayload(),
-          [HONEYPOT_FIELD]: honey,
-        }),
+    {
+      // "sell" is the vocabulary the value model understands; the old token
+      // "home-valuation" shipped a lead value of 0 to Meta on every submission.
+      const result = await postLeadDetailed({
+        source,
+        intent: "sell",
+        name: `Lead ${phoneDigits.slice(-4)}`,
+        phone: phone.trim(),
+        email: trimmedEmail,
+        consent: true,
+        consentText: CONSENT_TEXT,
+        consentTimestamp: new Date().toISOString(),
+        yourHomeAddress: trimmedAddr,
+        notes: notes.trim() || undefined,
+        mlsNumber,
+        honeypot: honey,
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; id?: string };
-      if (!res.ok) {
-        setError(data?.error || `Could not submit. Please call ${config.realtor.phone} directly.`);
+      if (!result.ok) {
+        setError(result.error || `Could not submit. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
@@ -176,19 +156,18 @@ export default function HomeValuationCard({
       const gtag = getGtag();
       if (gtag) {
         gtag("event", "generate_lead", {
-          transaction_id: typeof data?.id === "string" ? data.id : "",
+          transaction_id: result.leadId ?? "",
           value: leadValue,
           currency: "CAD",
           source,
+          // The GA4 param keeps the analytics token this surface has always reported,
+          // independent of the economic bucket the row and the Pixel now carry.
           intent: "home-valuation",
           listing_mls: mlsNumber,
         });
       }
 
       setSubmitted(true);
-    } catch {
-      setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} at ${config.realtor.phone}.`);
-      setSubmitting(false);
     }
   }
 
@@ -331,10 +310,8 @@ export default function HomeValuationCard({
           <label>
             Company website
             <input
+              {...honeypotInputProps}
               type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              name={HONEYPOT_FIELD}
               value={honey}
               onChange={(e) => setHoney(e.target.value)}
             />

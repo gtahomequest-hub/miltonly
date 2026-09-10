@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 type Stats =
@@ -61,6 +61,7 @@ export default function SoldOnMyStreet() {
   // Lead capture
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [honey, setHoney] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [leadError, setLeadError] = useState("");
@@ -141,23 +142,24 @@ export default function SoldOnMyStreet() {
       } else if (stats && stats.found && stats.sparse) {
         notes += ` Sparse-data fallback (count90=${stats.count90}, count12=${stats.count12}).`;
       }
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: "Sold Report Subscriber",
-          phone: phoneDigits,
-          email,
-          intent: "seller",
-          source: "homepage-sold-on-my-street",
-          notes,
-          ...attributionPayload(),
-        }),
+      // The street name is the resolved name the autocomplete returned, which is what
+      // `property_address` is for: it reaches the confirmation copy and the ops alert as the
+      // subject, so the email names the street the visitor actually picked.
+      const result = await postLeadDetailed({
+        source: "homepage-sold-on-my-street",
+        intent: "sell",
+        email,
+        phone: phoneDigits,
+        name: "Sold Report Subscriber",
+        property_address: selectedName ?? streetInput,
+        notes,
+        honeypot: honey,
       });
-      if (!res.ok) throw new Error();
+      if (!result.ok) {
+        setLeadError(result.error || `Something went wrong. Please call ${config.realtor.phone}.`);
+        return;
+      }
       setSuccess(true);
-    } catch {
-      setLeadError(`Something went wrong. Please call ${config.realtor.phone}.`);
     } finally {
       setSubmitting(false);
     }
@@ -346,6 +348,13 @@ export default function SoldOnMyStreet() {
                   <input type="tel" inputMode="tel" required placeholder="(___) ___-____" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} className="flex-1 bg-[#0c1e35] border border-[#1e3a5f] text-[#f8f9fb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#f59e0b] focus:outline-none" />
                 </div>
 
+                {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+                <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+                  <label>
+                    Company website
+                    <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+                  </label>
+                </div>
                 {leadError && <p className="text-[12px] text-[#ef4444] mb-3">{leadError}</p>}
 
                 <button type="submit" disabled={submitting} className="w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold py-3 rounded-xl hover:bg-[#fbbf24] transition-colors disabled:opacity-60">

@@ -25,7 +25,7 @@
 //
 // The form itself is HomeValuationCard, the only component in this repo with a proven
 // conversion record: CASL consent text snapshotted at submit, honeypot, phone formatting,
-// GA4 generate_lead, and /api/leads behind it. It is reused whole, in its forest theme,
+// GA4 generate_lead, and the one ingest path behind it. It is reused whole, in its forest theme,
 // with a homepage source tag.
 import HomeValuationCard from '@/components/landing/HomeValuationCard';
 import { SectionHead } from './SectionHead';

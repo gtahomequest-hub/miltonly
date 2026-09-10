@@ -41,7 +41,7 @@ export interface LeadData {
 
 // Defensive HTML-escape for free-text fields that get inlined into the
 // realtor notification email. The visitor's message is sanitized server-side
-// at /api/leads (null-byte strip + naive HTML tag strip), but escaping here
+// in src/lib/lead/fields.ts (null-byte strip + naive HTML tag strip), but escaping here
 // is the second layer that protects against table-row injection.
 function escapeHtml(input: string): string {
   return input
@@ -251,8 +251,8 @@ export async function notifyNewLead(data: LeadData, leadId?: string) {
       const msg = result.error.message || JSON.stringify(result.error);
       console.error("[email send failed]", { leadId, source: data.source, error: msg });
       // Re-throw so withRetry at the call site can retry transient failures.
-      // The existing .catch() chain at /api/leads still fires after retries
-      // are exhausted; other callers' .catch() chains (off-market-leads etc.)
+      // The ingest path's .catch() chain still fires after retries
+      // are exhausted; other callers' .catch() chains
       // already exist to absorb thrown errors.
       throw new Error(msg);
     }

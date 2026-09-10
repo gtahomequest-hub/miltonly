@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { formatPriceFull, daysAgo } from "@/lib/format";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, type PostLeadPayload } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 import AgentContactSection from "@/components/AgentContactSection";
@@ -100,17 +100,15 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 4000); };
 
-  const submitLead = async (data: Record<string, string>) => {
+  // GA4 fires only on a confirmed write. The helper resolves false for a 429, a 500 and a
+  // network failure alike, which is the difference between a conversion and an attempt.
+  const submitLead = async (data: PostLeadPayload): Promise<boolean> => {
+    const result = await postLeadDetailed(data);
+    if (!result.ok) return false;
     try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, ...attributionPayload() }),
-      });
-      const json = await res.json().catch(() => ({} as { id?: string }));
-      if (!res.ok || typeof window === "undefined") return;
+      if (typeof window === "undefined") return true;
       const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-      const transactionId = json?.id || `no-lid-${Date.now()}`;
+      const transactionId = result.leadId || `no-lid-${Date.now()}`;
       const userData = await hashUserData(data.email, data.phone);
       const hasUserData = userData.sha256_email_address || userData.sha256_phone_number;
       let fired = false;
@@ -125,7 +123,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             transaction_id: transactionId,
             value: 1.0,
             currency: "CAD",
-            lead_id: json?.id || transactionId,
+            lead_id: result.leadId || transactionId,
           });
           fired = true;
           return;
@@ -135,6 +133,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
       };
       tryFire();
     } catch {}
+    return true;
   };
 
   const scrollToCTA = () => {
@@ -392,7 +391,8 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                       const name = fd.get("name") as string;
                       const phone = fd.get("phone") as string;
                       if (!name || !phone) { showToast("Please enter name and phone."); return; }
-                      await submitLead({ firstName: name, phone, email: fd.get("email") as string || "", source: "sale-detail", intent: "buyer", street: displayAddr, mlsNumber: l.mlsNumber });
+                      const ok = await submitLead({ source: "sale-detail", intent: "buy", name, phone, email: (fd.get("email") as string) || undefined, property_address: displayAddr, mlsNumber: l.mlsNumber });
+                      if (!ok) { showToast("Could not submit. Please try again."); return; }
                       setSaleFormSent(true);
                     }}>
                       <input name="name" required placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />

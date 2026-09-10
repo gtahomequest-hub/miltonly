@@ -1,6 +1,6 @@
 "use client";
 
-// The form posted natively to /api/leads with method="POST", so the browser sent a
+// The form posted natively to the old monolith route with method="POST", so the browser sent a
 // form-encoded body to a route whose first statement is request.json(). That threw on every
 // submission: the route answered 500 {"error":"Failed to create lead"} and the browser
 // rendered that JSON in place of the page. It now posts JSON to /api/leads/create — the same

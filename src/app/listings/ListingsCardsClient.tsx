@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/components/UserProvider";
 import { formatPriceFull, daysAgo } from "@/lib/format";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 export interface CardListing {
@@ -99,25 +99,22 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
     const phone = (document.getElementById("lc-bk-phone") as HTMLInputElement)?.value;
     if (!name) { showToast("Enter your name"); return; }
     if (!phone) { showToast("Enter your phone number"); return; }
-    try {
-      await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: name,
-          phone,
-          source: "listing-card-book",
-          intent: "buyer",
-          street: bookingModal.address,
-          mlsNumber: bookingModal.mlsNumber,
-          ...attributionPayload(),
-        }),
-      });
-      showToast(`Showing requested — ${config.realtor.name.split(" ")[0]} will call you within the hour`);
-      setBookingModal(null);
-    } catch {
-      showToast("Could not submit — please try again");
+    // The toast used to fire whether or not the row was written: only a thrown network error
+    // reached the catch, so a 429 or a 500 still told the visitor a showing was requested.
+    const result = await postLeadDetailed({
+      source: "listing-card-book",
+      intent: bookingModal.transactionType === "For Lease" ? "rent" : "buy",
+      name,
+      phone,
+      property_address: bookingModal.address,
+      mlsNumber: bookingModal.mlsNumber,
+    });
+    if (!result.ok) {
+      showToast(result.error || "Could not submit. Please try again");
+      return;
     }
+    showToast(`Showing requested. ${config.realtor.name.split(" ")[0]} will call you within the hour`);
+    setBookingModal(null);
   };
 
   return (

@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const HONEYPOT_FIELD = "company_website";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MESSAGE_SOURCE = "sales-rentals-featured-message";
 
@@ -208,7 +206,6 @@ function MessageCaptureModal({
   source,
   onSuccess,
 }: MessageCaptureModalProps) {
-  const searchParams = useSearchParams();
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [honey, setHoney] = useState("");
@@ -216,18 +213,9 @@ function MessageCaptureModal({
   const [error, setError] = useState("");
   const phoneInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Capture tracking on mount + Esc-to-close.
-  const tracking = useMemo(
-    () => ({
-      utm_source: searchParams.get("utm_source") || "",
-      utm_medium: searchParams.get("utm_medium") || "",
-      utm_campaign: searchParams.get("utm_campaign") || "",
-      utm_term: searchParams.get("utm_term") || "",
-      utm_content: searchParams.get("utm_content") || "",
-      gclid: searchParams.get("gclid") || "",
-    }),
-    [searchParams],
-  );
+  // THE PER-SURFACE UTM READ IS GONE. src/components/AttributionCapture.tsx runs in the root
+  // layout and persists first-touch and last-touch for the whole session; the client helper
+  // sends both. A modal reading the current URL only ever saw the last landing page.
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -263,37 +251,24 @@ function MessageCaptureModal({
     const gtag = getGtag();
     if (gtag) gtag('event', 'message_modal_submitted', { listing_mls: mlsNumber });
 
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: `Lead ${phoneDigits.slice(-4)}`,
-          phone: phone.trim(),
-          email: trimmedEmail,
-          source,
-          intent: "buyer",
-          // Message-path leads are mid-browse — they haven't told us
-          // pre-approval status or hard timeline. Default to the least
-          // committal values so the buyer branch validators accept the
-          // payload without inflating the score.
-          timeline: "browsing",
-          preApproved: "no",
-          mlsNumber,
-          message: messagePreview,
-          utm_source: tracking.utm_source,
-          utm_medium: tracking.utm_medium,
-          utm_campaign: tracking.utm_campaign,
-          utm_term: tracking.utm_term,
-          utm_content: tracking.utm_content,
-          gclid: tracking.gclid,
-          ...attributionPayload(),
-          [HONEYPOT_FIELD]: honey,
-        }),
+    {
+      // Message-path leads are mid-browse: they have not told us a pre-approval status or a
+      // hard timeline, so the least committal values are sent and the one scoring rule reads
+      // them as warm on the strength of the phone number rather than hot.
+      const result = await postLeadDetailed({
+        source,
+        intent: "buy",
+        name: `Lead ${phoneDigits.slice(-4)}`,
+        phone: phone.trim(),
+        email: trimmedEmail,
+        timeline: "browsing",
+        preApproved: "no",
+        mlsNumber,
+        message: messagePreview,
+        honeypot: honey,
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; id?: string };
-      if (!res.ok) {
-        setError(`Could not send. Please call ${config.realtor.phone} directly.`);
+      if (!result.ok) {
+        setError(result.error || `Could not send. Please call ${config.realtor.phone} directly.`);
         setSubmitting(false);
         return;
       }
@@ -308,7 +283,7 @@ function MessageCaptureModal({
       const gtag = getGtag();
       if (gtag) {
         gtag('event', 'generate_lead', {
-          transaction_id: typeof data?.id === "string" ? data.id : "",
+          transaction_id: result.leadId ?? "",
           value: 3000,
           currency: "CAD",
           source: "sales-ads-trust-card-message",
@@ -321,9 +296,6 @@ function MessageCaptureModal({
       // /sales/thank-you redirect for message-path leads (intentional;
       // they're mid-browse and the inline banner is the better UX).
       onSuccess();
-    } catch {
-      setError(`Could not send. Please call ${config.realtor.phone} directly.`);
-      setSubmitting(false);
     }
   }
 
@@ -390,10 +362,8 @@ function MessageCaptureModal({
             <label>
               Company website
               <input
+                {...honeypotInputProps}
                 type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                name={HONEYPOT_FIELD}
                 value={honey}
                 onChange={(e) => setHoney(e.target.value)}
               />
