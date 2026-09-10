@@ -960,3 +960,92 @@ model SeoCoverageState {
 
   @@schema("public")
 }
+
+// ───── Content tier — Market Watch weekly edition ──────────────────────────
+// Owned by the content worktree. Nothing here writes or reads StreetContent,
+// HubContent or CondoContent; the edition LINKS to those pages and never
+// touches their rows.
+//
+// The edition IS the artifact, not metadata about one (ruling 1, 2026-09-10),
+// so it is stored rather than recomputed at request time. Two reasons that
+// matter more than caching: an edition is IMMUTABLE once published (a weekly
+// figure that moves retroactively is worse than a suppressed one, and DB2
+// keeps taking late-reported sales after the window closes), and the archive
+// is the compounding SEO asset — /market-watch/<date> has to render the same
+// numbers in a year that it rendered on the Monday it was written.
+
+model MarketEdition {
+  id String @id @default(cuid())
+
+  // The Monday the covered week commences, America/Toronto, as YYYY-MM-DD.
+  // This is the URL segment and the natural key: /market-watch/<weekOf>.
+  weekOf String @unique
+
+  // Inclusive window actually queried, stored so a reader can check the
+  // arithmetic and a later run cannot silently redefine "this week".
+  windowStart DateTime
+  windowEnd   DateTime
+
+  status      String    @default("draft") // draft | published
+  publishedAt DateTime?
+
+  // The rendered edition: every section's figures, already k-gated, with each
+  // figure carrying its own window label. Suppression is stored as null in
+  // here exactly as it renders — never 0, never a placeholder string.
+  sectionsJson Json
+
+  // The one deterministic sentence at the top, generated from the data by
+  // code, never by a model.
+  summarySentence String @db.Text
+
+  // The single optional LLM paragraph (section 7). NULL is a normal outcome:
+  // the paragraph is fail-closed and non-blocking, so a validator failure
+  // drops it and the edition still publishes.
+  interpretation String? @db.Text
+
+  metaTitle       String?
+  metaDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([weekOf])
+  @@schema("public")
+}
+
+// Audit row for each attempt at an edition's optional paragraph. Mirrors
+// StreetGeneration/CondoGeneration: it stores the input the paragraph was
+// written from (DEC-PH41-INPUTJSON precedent), so a later reader can check a
+// figure against what the model was actually handed rather than re-deriving it.
+model MarketEditionGeneration {
+  id     String @id @default(cuid())
+  weekOf String
+
+  // Plain String, not the GenerationStatus enum. That enum is Core's and is not
+  // resolvable from this schema against the live database; a Content-owned
+  // table taking a hard dependency on it would couple this tier's migrations to
+  // Core's. Values: succeeded | failed | skipped.
+  status       String @default("succeeded")
+  attemptCount Int    @default(0)
+
+  // The GroundedFigures bundle handed to the model, verbatim.
+  inputJson Json
+
+  rawOutput String? @db.Text
+
+  // Violations from the Content-owned validator. Empty array on success.
+  violationsJson Json @default("[]")
+
+  provider String? // "deepseek" — cheap-first; escalation is not wired here
+  model    String?
+  tokensIn  Int?
+  tokensOut Int?
+  costUsd   Decimal? @db.Decimal(10, 4)
+
+  generatedAt DateTime @default(now())
+
+  @@index([weekOf])
+  @@index([status])
+  @@schema("public")
+}

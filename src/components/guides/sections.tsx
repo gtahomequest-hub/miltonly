@@ -150,6 +150,15 @@ export function GuideBody({ data }: { data: GuideArticleData }) {
                 </div>
               </div>
             )}
+            {s.links && s.links.length > 0 && (
+              <div className="g-links">
+                {s.links.map((l) => (
+                  <a className="g-link" href={l.href} key={l.href}>
+                    {l.label}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

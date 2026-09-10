@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
 import { schools } from "@/lib/schools";
+import { GUIDE_SLUGS } from "@/lib/guides/guides";
 import { mosques } from "@/lib/mosques";
 
 export const dynamic = "force-dynamic";
@@ -111,7 +112,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    // Content tier. /guides is the index; the six guide pages are emitted from
+    // GUIDE_DEFS below so the sitemap and the route's generateStaticParams can
+    // never disagree about which guides exist.
+    {
+      url: `${SITE_URL}/guides`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/market-watch`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
   ];
+
+  // Guide pages — one per registry entry.
+  const guidePages: MetadataRoute.Sitemap = GUIDE_SLUGS.map((slug) => ({
+    url: `${SITE_URL}/guides/${slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  // Market Watch editions — published only. An edition is immutable once
+  // published, so lastModified is its publish time and never "now".
+  const editions = await prisma.marketEdition.findMany({
+    where: { status: "published" },
+    select: { weekOf: true, publishedAt: true, updatedAt: true },
+    orderBy: { weekOf: "desc" },
+    take: 104,
+  });
+  const editionPages: MetadataRoute.Sitemap = editions.map((e) => ({
+    url: `${SITE_URL}/market-watch/${e.weekOf}`,
+    lastModified: e.publishedAt ?? e.updatedAt,
+    changeFrequency: "yearly" as const,
+    priority: 0.6,
+  }));
 
   // Neighbourhood hub pages — canonical slugs from the published HubContent set,
   // the SAME source getHubData() resolves. Previously these were derived by
@@ -270,5 +309,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  return [...staticPages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages, ...listingPages];
+  return [...staticPages, ...guidePages, ...editionPages, ...neighbourhoodPages, ...streetPages, ...streetOverflowPages, ...condoPages, ...schoolPages, ...mosquePages, ...listingPages];
 }
