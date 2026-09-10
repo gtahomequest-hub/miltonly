@@ -2,8 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content
 
-_Last rewritten 2026-09-10, after the two edition rulings: the cron hour moved
-to Monday 08:00 Toronto, and a published edition became correctable once._
+_Last rewritten 2026-09-10, after the two edition rulings landed on main and
+the 2026-08-31 edition was corrected on production._
 
 ## READ THIS FIRST
 
@@ -19,39 +19,38 @@ reading all six guides.
 
 ## WHERE THIS BRANCH STANDS RIGHT NOW
 
-`feat/content` is at **`69b11e1`**, pushed, **NOT merged**. It sits on
-`9132434`, a clean merge of `origin/main` at `73e94ea`, and
-`git merge-base --is-ancestor origin/main HEAD` passes. Core merges.
-
-Preview **https://miltonly-hsq7pkfiz-gtahomequest-hubs-projects.vercel.app**,
-Ready. `/market-watch`, `/market-watch/2026-08-31` and `/guides` all 200, the
-edition still reads 40 sales, $920,000 and 97.5%. Local gate exit 0, zero
-`P2024`, 20/20 prebuild, 552 static pages. Record:
-`scratchpad/reports/067-content-cron-hour-and-correction.md`.
-
-**THE 2026-08-31 REGENERATION IS NOT RUN, AND THAT IS DELIBERATE.** The ruling
-was to regenerate it only after Core reports the battery green. Core's battery
-is **RED**, two stale hub parsers from `feat/homepage`'s `h-` to `hh-` rename,
-and `fix/core-batch` is held at `2e8dfc0` behind them. The mechanism is built
-and green; the one command to run when Core reports green is in report 067 and
-repeated under "Next expected task" below. **Do not run it before then, and do
-not run it twice.**
+**MERGED AND LIVE.** Core merged `feat/content` `0a2499b` as **`31a9ab0`** and
+reported the production battery **PASS, 11 checks, 449 pages, 99 s, exit 0** at
+the served SHA. This branch is fast-forwarded to `31a9ab0`; nothing is pending.
+Record: `scratchpad/reports/067-content-cron-hour-and-correction.md`, including
+its addendum, which is the part written after the merge.
 
 | | |
 |---|---|
-| merged to `main` as | **`f6bbc92`**, two parents |
-| `main` now | **`5ee703e`** (docs `4b55fc6`, then the restore below) |
-| production | Ready and confirmed on the apex at **`5ee703e`** |
-| battery on production | **`PASS · 10 checks · 444 pages · 62s`**, exit 0, at the full SHA |
-| local gate, merged tree | exit 0, zero `P2024`, **20/20 prebuild**, 548 static pages |
-| first edition | `/market-watch/2026-08-31`, published, real data |
+| cron | Monday **08:00 America/Toronto**, `0 12 * * 1` and `0 13 * * 1`, hour guard 8 |
+| `vercel.json` | **17 crons.** Core resolved a conflict with `/api/brief/send` by keeping all three; both market-watch entries verified present by parse |
+| 2026-08-31 edition | **CORRECTED on production.** 40 sales became 62, $920,000 became $975,000 |
+| the correction stamp | renders above every figure, once, on the edition and on the index |
+| `datePublished` / `dateModified` | `08:21:38.061Z` (original, unmoved) / `18:01:25.631Z` (the correction) |
 
-The battery is 10 checks now, not 9: Home's merge added the homepage check in
-the same window.
+**THE CORRECTION IS SPENT. DO NOT RUN IT AGAIN.** `generateEdition` will refuse
+a second rewrite without a fresh note, and there is no second correction to
+make. The week of 2026-08-31 is immutable again.
 
-Gate A is `scratchpad/reports/062-content-gate-a.md`, its volume addendum `063`,
-and the build record **`064-content-build.md`**. Read 064 before touching any of
-this.
+**WHY THE FIGURES MOVED.** `CloseDate` is the agreed completion date, not the
+sale date. 255 DB2 rows carried a future `sold_date` and were re-dated to their
+contract date by Core. Every DB2 window in this tier carries `sold_date <=
+NOW()`, so those rows were excluded and sales belonging to the week had been
+dated forward out of it. New listings held at 56 across the correction, which
+is the proof: that figure comes from DB1's `listedAt`, which the backfill never
+touched. Open item 3 below, the future-dated rows, is **CLOSED**.
+
+**PURGE BEFORE YOU GENERATE, NOT AFTER.** `scripts/purge-sold-caches.ts` ran
+first and deleted 15 keys that had repopulated under the 1 h TTL since Core's
+own purge. The edition's 12-month context reads `getMiltonSoldOverall`, which
+is one of those cached keys, so generating first would have baked the stale
+1,531 into a page corrected for exactly that number. Order is: purge Upstash,
+generate, then revalidate.
 
 ## What is live
 
@@ -208,19 +207,21 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
 
 ## Open items
 
-1. **Only one edition exists, and the cron has not fired yet.** `/market-watch`
-   keeps serving the week of 2026-08-31 until the first Monday after this
-   merges. The cron is wired (Monday 08:00 Toronto) but it only runs on the
-   production deployment, so nothing fires until Core merges this branch.
-   Watch the first firing: it is the first time the ISO-week idempotency and
-   the hour guard run against a real Monday rather than a dry run.
+1. **Only one edition exists, and the cron has not fired yet.** It is merged
+   and on production now, so the next Monday fires it. **Watch that firing.**
+   It is the first time the hour guard and the ISO-week idempotency run against
+   a real Monday rather than a dry run, and the week it writes will be the
+   first edition whose figures were never wrong.
 2. **Up-links from hubs and streets to the current edition are Core's**
    (ruling 7). This worktree does not make those writes. Without them the
    archive sits instead of compounding.
-3. **192 For Sale rows and 53 For Lease rows in `sold.sold_records` carry a
-   future `sold_date`**, the furthest 2027-01-29 against a database `NOW()` of
-   2026-09-10. A Core data bug, logged not fixed. An unbounded 28-day
-   neighbourhood count returns 327 where the bounded one returns 135.
+3. ~~**192 For Sale rows and 53 For Lease rows carry a future `sold_date`.**~~
+   **CLOSED 2026-09-10.** Core backfilled it: 255 rows re-dated from their
+   `CloseDate` to their contract date, 0 future-dated rows remain of 8,578, and
+   the Milton-wide 12-month sample moved 1,531 to 1,728 with the typical
+   unchanged at $930K. This is what forced the 2026-08-31 correction. **The
+   `sold_date <= NOW()` bound on every DB2 window stays** (ruling 10): it was
+   never a workaround for this bug, and a future-dated row can arrive again.
 4. **`Listing.maintenanceFee` (Int) is dead** on all 73 active Milton condo
    listings while `maintenanceFeeAmt` (Float) is populated on all 73. Two
    columns for one fact, one empty. It already cost one wrong page, which
@@ -269,24 +270,15 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
 
 ## Next expected task
 
-**One, and it is gated.** Run the 2026-08-31 correction **once**, and only
-after Core reports the battery green. From `D:\miltonly-content`:
+**None. Do not self-start.**
 
-```powershell
-$env:CORRECTION_NOTE = "This edition was regenerated on <date>. Its original figures were built from a sold-date bug, since fixed; the figures below are the corrected ones."
-$env:WEEK_OF = "2026-08-31"
-npx tsx --tsconfig tsconfig.test.json scripts/generate-market-edition.ts --publish --revalidate=https://miltonly.com
-```
+Both rulings are executed, merged, and verified on production. The correction
+is spent. The remaining candidates, unchanged and still nobody's current
+assignment, are the live open-house block on the index page and whichever of
+the two held guides the real GSC rows justify.
 
-Not `NODE_OPTIONS=--conditions=react-server`. Two calls to make at that moment,
-because both depend on what Core's fix turns out to be: the note should name
-the fix in one clause rather than say "a sold-date bug", and `--skip-paragraph`
-decides whether the stored `interpretation`, which was written against the
-wrong figures and cannot stand, is replaced or simply dropped to null. Dropping
-it to null is a normal outcome the page already handles. `--revalidate` needs
-`REVALIDATION_SECRET` in `.env.local` or it logs `skipped` and the page serves
-the old figures from cache.
-
-**Nothing else. Do not self-start.** The remaining candidates are the live
-open-house block on the index and whichever of the two held guides the real GSC
-rows justify.
+**One thing to hand Core rather than do.** The backfill moved **17 streets
+across k5 and 9 across k10**, so some streets can now publish a typical price
+they were suppressing. Those figures live in stored `StreetContent` prose and
+only a regeneration changes them. `StreetContent` is Core's and this worktree
+does not write it. Flagged, not actioned.
