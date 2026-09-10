@@ -6,8 +6,8 @@ _Last rewritten 2026-09-10, after Phase 2 was built, proven on preview, and push
 
 ## READ THIS FIRST
 
-**Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The branch is at **`78ce480`**, which
-is `origin/main` (`e54d6be`) merged into the two Phase 2 commits `e46ae49` and `39bcfe1`. Preview
+**Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The branch is at **`00caa57`**, which
+is `origin/main` (`73e94ea`) merged into the Phase 2 commits `e46ae49`, `39bcfe1` and `0a1d08b`. Preview
 `miltonly-1lw66pqlc`, aliased `miltonly-git-feat-leads`, battery
 **`PASS · 10 checks · 449 pages · 67s`**. Core merges. **Main had already moved twice while this
 was building** — check `git merge-base --is-ancestor origin/main HEAD` again before you touch it.
@@ -37,7 +37,7 @@ ingress named anywhere else. **22 prebuild tests run now.**
 
 | | |
 |---|---|
-| branch | **`78ce480`** — `origin/main` `e54d6be` merged in, rebuilt, pushed |
+| branch | **`00caa57`** — `origin/main` `73e94ea` merged in, rebuilt, pushed |
 | preview | **`miltonly-1lw66pqlc`** at `39bcfe1`, alias `miltonly-git-feat-leads` |
 | battery on preview | **`PASS · 10 checks · 449 pages · 67s`** |
 | local build after the merge | exit 0, zero `P2024`, **22/22 prebuild**, 549 static pages |
@@ -87,7 +87,7 @@ a brief watch  →  /api/brief/send (cron 15 13 * * 1-5)  →  src/lib/brief/
 - **`git commit-tree` DOES NOT MERGE — it snapshots.** Two of the merges in this project were
   built with it and one clobbered another worktree's docs. Re-check
   `git merge-base --is-ancestor origin/main HEAD` after the last fetch and **STOP if it fails**;
-  merge main into the branch first, then build from that tree. This handoff's `78ce480` IS a
+  merge main into the branch first, then build from that tree. This handoff's `00caa57` IS a
   real `git merge`, so a fast-forward or an ordinary merge is all Core needs.
 - **The rate limit is real on preview and a REFUSED call still spends a token.** 5 per IP per 10
   minutes, sliding. A twenty-surface proof took four runs and collected eleven `429`s. Wait a

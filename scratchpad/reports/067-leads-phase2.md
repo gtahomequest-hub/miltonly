@@ -2,8 +2,8 @@
 
 **Worktree:** `D:\miltonly-leads` · **Branch:** `feat/leads`
 
-_2026-09-10. Pushed for the preview gate at `78ce480`, a merge of `origin/main` (`e54d6be`) into
-the two Phase 2 commits `e46ae49` and `39bcfe1`. Not merged to main; Core merges._
+_2026-09-10. Pushed for the preview gate at `00caa57`, a merge of `origin/main` (`73e94ea`) into
+the Phase 2 commits `e46ae49`, `39bcfe1` and `0a1d08b`. Not merged to main; Core merges._
 
 ## What was asked, and what it turned into
 
@@ -167,7 +167,7 @@ email with a broken unsubscribe is the thing CASL prohibits.
 | local build | **exit 0**, zero `P2024`, **22/22 prebuild**, 549 static pages |
 | prebuild, lead layer | `[lead-guards] PASS — 170 assertions` · `[lead-forms] PASS — 105 assertions` |
 | battery on preview | **`PASS · 10 checks · 449 pages · 67s`** |
-| `origin/main` merged in | `e54d6be`, clean, rebuilt after |
+| `origin/main` merged in | `73e94ea`, clean (twice; the second gained only `HANDOFF.md`) |
 
 `scripts/test-lead-forms.ts` walks every file under `src/`, strips comments, and reads every
 string literal handed to `fetch(`, every form `action=`, and any axios/XHR-shaped POST. A lead
