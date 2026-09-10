@@ -34,15 +34,39 @@ const decode = (s) =>
  *  positional parser reads the wrong tile the moment a tile is added or suppressed. */
 function heroStats(html) {
   const out = {};
-  // Split on the container and read each tile's own two fields. A single regex spanning the
-  // whole tile cannot work: the non-greedy body stops at the first "</div></div>", which eats
-  // the label's closing tag and silently yields zero tiles — which is exactly what the first
-  // version of this parser did, and every value assertion below "passed" over nothing.
+  // Legacy tiles (.h-hs), kept so this parser still reads any surface that has not been
+  // rebuilt. Split on the container and read each tile's own two fields: a single regex
+  // spanning the whole tile cannot work, because the non-greedy body stops at the first
+  // "</div></div>", eats the label's closing tag and silently yields zero tiles.
   for (const chunk of html.split('<div class="h-hs">').slice(1)) {
     const v = chunk.match(/^<div class="h-n([^"]*)">([\s\S]*?)<\/div>/);
     const l = chunk.match(/<div class="h-l">([\s\S]*?)<\/div>/);
     if (!v || !l) continue;
     out[strip(l[1])] = { silent: v[1].includes('h-silent'), text: strip(v[2]) };
+  }
+  if (Object.keys(out).length) return out;
+
+  // ── THE REBUILT HUB (.hh-fact) ──────────────────────────────────────────────────────────
+  // The 2026-09-10 rebuild replaced the three hero tiles with a derived-fact panel, and this
+  // parser was not moved with it: it returned {} for all 22 hubs, so every value assertion
+  // below "passed" over nothing for as long as that shipped. The coverage assertion caught it.
+  //
+  // The typical now lives in the fact whose data-fig is `hub-fact-typical`, and its SAMPLE
+  // lives in the basis line beneath it ("across 94 sales in the last 12 months") rather than
+  // in a tile of its own. On a sub-k hub that same fact carries the SALE COUNT instead of a
+  // price, which is the suppression state — detected here by the value not being a price.
+  const typical = html.match(
+    /data-fig="hub-fact-typical"[^>]*>([\s\S]*?)<\/span>\s*<span class="hh-fact-l">([\s\S]*?)<\/span>\s*<span class="hh-fact-b">([\s\S]*?)<\/span>/,
+  );
+  if (typical) {
+    const value = strip(typical[1]);
+    const basis = strip(typical[3]);
+    const isPrice = /^\$/.test(value);
+    const m = basis.match(/across (\d+) sales? in the last 12 months/);
+    out['typical home'] = { silent: !isPrice, text: isPrice ? value : '' };
+    // Sub-k hubs state the count as the fact's value; priced hubs state it in the basis.
+    const count = m ? Number(m[1]) : isPrice ? null : Number(value.replace(/[^\d]/g, ''));
+    out['sold · last 12 months'] = { silent: count === null, text: count === null ? '' : String(count) };
   }
   return out;
 }

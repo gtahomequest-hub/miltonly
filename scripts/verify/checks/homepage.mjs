@@ -110,6 +110,9 @@ function figures(html) {
       fig: m[2],
       slug: slug ? slug[1] : null,
       value: raw === '' ? null : Number(raw),
+      // the attribute verbatim — figures whose canonical form is a STRING ("28 days",
+      // "98.1%", "$933,000") cannot survive Number()
+      rawValue: raw === '' ? null : raw,
       // React splits adjacent text nodes with <!-- -->; strip comments before tags.
       text: inner.replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
     });
@@ -272,7 +275,10 @@ export default {
     //   · NOTHING carrying data-fig anywhere on this page may render a raw float. That one
     //     regex would have caught all three defects on the day they shipped, and it catches
     //     the next one without anybody predicting which figure it will be.
-    const val = (k) => figs.find((f) => f.fig === k)?.text ?? null;
+    // Compared on data-value, not rendered text: the Board's tile prints "28" and captions
+    // it "days" in a sibling element, while the menu prints "28 days" in one. Both declare
+    // the same canonical string in data-value, which is what the attribute is for.
+    const val = (k) => { const f = figs.find((x) => x.fig === k); return f ? (f.value === null ? f.text : String(f.rawValue ?? f.text)) : null; };
     const menuPairs = [
       ['menu-sell-days', 'board-days'],
       ['menu-sell-sta', 'board-sta'],
@@ -316,8 +322,11 @@ export default {
     const emDashes = chunks.filter((c) => c.includes('—') && isProse(c)).map((c) => c.slice(0, 90));
     // An en-dash is allowed only as a NUMERIC RANGE: a digit or currency symbol on both
     // sides. "$785,000-$1,107,000" is a range; "Licence - Milton" is not.
+    // The prose guard applies here too. React splits `{a}–{b}` into three text nodes, so
+    // the Board's price band arrives as a lone dash with its numbers in the neighbouring
+    // nodes. A chunk with no letters in it is not prose and cannot be a voice violation.
     const enDashes = chunks
-      .filter((c) => c.includes('–'))
+      .filter((c) => c.includes('–') && isProse(c))
       .filter((c) => !/[\d$][\s]?–[\s]?[$\d]/.test(c))
       .map((c) => c.slice(0, 90));
 
