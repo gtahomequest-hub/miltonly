@@ -65,6 +65,13 @@ async function run(request: NextRequest) {
   const env = resolveLeadEnv(request.headers.get("host"));
   const win = briefWindow();
 
+  // A PRODUCTION EDITION LINKS TO THE CANONICAL SITE; A PREVIEW EDITION LINKS TO ITSELF.
+  // The first proof send pointed its street links and its unsubscribe link at miltonly.com,
+  // which happens to work because both deployments share one database and one signing secret,
+  // and which means a preview test of the unsubscribe would have been exercising production.
+  const host = request.headers.get("host");
+  const linkOrigin = env === "production" || !host ? undefined : `https://${host}`;
+
   if (!isSendingDay() && !force) {
     return NextResponse.json({ success: true, env, skipped: "not a sending day", window: win.date, sent: 0 });
   }
@@ -143,7 +150,8 @@ async function run(request: NextRequest) {
         win,
         brief,
         published,
-        unsubscribeUrl: unsubscribeUrl(watch.id),
+        unsubscribeUrl: unsubscribeUrl(watch.id, linkOrigin),
+        siteOrigin: linkOrigin,
       });
     } catch (err) {
       skipped++;
@@ -166,7 +174,7 @@ async function run(request: NextRequest) {
         subject: env === "production" ? edition.subject : `[${env}] ${edition.subject}`,
         html: edition.html,
         text: edition.text,
-        headers: { "List-Unsubscribe": `<${unsubscribeUrl(watch.id)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+        headers: { "List-Unsubscribe": `<${unsubscribeUrl(watch.id, linkOrigin)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       });
       if (result.error) throw new Error(result.error.message);
       await prisma.savedSearch.update({

@@ -180,8 +180,8 @@ export interface Edition {
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-function linkFor(slug: string, published: Set<string>): string | null {
-  return published.has(slug) ? `${config.SITE_URL}/streets/${slug}` : null;
+function linkFor(slug: string, published: Set<string>, origin: string): string | null {
+  return published.has(slug) ? `${origin}/streets/${slug}` : null;
 }
 
 /**
@@ -198,13 +198,14 @@ function personalLine(
   sub: Subscriber,
   data: BriefData,
   published: Set<string>,
+  origin: string,
 ): { html: string; text: string; namedStreet: string | null } {
   const verb = (k: StreetEvent["kind"]) =>
     k === "sold" ? "sold" : k === "listed" ? "came to market" : "changed price";
 
   const onStreet = sub.streetSlug ? data.events.find((e) => e.slug === sub.streetSlug) : undefined;
   if (onStreet) {
-    return render(onStreet, `On ${onStreet.name}: a home ${verb(onStreet.kind)}.`, published);
+    return render(onStreet, `On ${onStreet.name}: a home ${verb(onStreet.kind)}.`, published, origin);
   }
 
   if (sub.streetSlug) {
@@ -213,9 +214,9 @@ function personalLine(
       ? data.events.find((e) => e.neighbourhood && e.neighbourhood === sub.neighbourhood)
       : undefined;
     if (inHood) {
-      return render(inHood, `Nothing on ${name}. Nearby, a home on ${inHood.name} ${verb(inHood.kind)}.`, published);
+      return render(inHood, `Nothing on ${name}. Nearby, a home on ${inHood.name} ${verb(inHood.kind)}.`, published, origin);
     }
-    const link = linkFor(sub.streetSlug, published);
+    const link = linkFor(sub.streetSlug, published, origin);
     const sentence = `Nothing changed on ${name}.`;
     return {
       html: link ? `${esc(sentence)} <a href="${link}">See its page</a>.` : esc(sentence),
@@ -228,22 +229,23 @@ function personalLine(
     ? data.events.find((e) => e.neighbourhood && e.neighbourhood === sub.neighbourhood)
     : undefined;
   if (inHood) {
-    return render(inHood, `In ${sub.neighbourhood}: a home on ${inHood.name} ${verb(inHood.kind)}.`, published);
+    return render(inHood, `In ${sub.neighbourhood}: a home on ${inHood.name} ${verb(inHood.kind)}.`, published, origin);
   }
 
   // The Milton-wide floor. Prefer a street with a page, so the line the reader can act on is
   // the line they get; fall back to the most notable event either way.
   const best = data.events.find((e) => published.has(e.slug)) ?? data.events[0];
   if (!best) return { html: "", text: "", namedStreet: null };
-  return render(best, `Closest to home: a house on ${best.name} ${verb(best.kind)}.`, published);
+  return render(best, `Closest to home: a house on ${best.name} ${verb(best.kind)}.`, published, origin);
 }
 
 function render(
   event: StreetEvent,
   sentence: string,
   published: Set<string>,
+  origin: string,
 ): { html: string; text: string; namedStreet: string } {
-  const link = linkFor(event.slug, published);
+  const link = linkFor(event.slug, published, origin);
   if (!link) return { html: esc(sentence), text: sentence, namedStreet: event.name };
   // The street's own name is the anchor, so the link says where it goes.
   const html = esc(sentence).replace(esc(event.name), `<a href="${link}">${esc(event.name)}</a>`);
@@ -284,7 +286,10 @@ export async function composeEdition(
   data: BriefWindowedData,
 ): Promise<Edition> {
   const { win, brief, published, unsubscribeUrl } = data;
-  const personal = personalLine(sub, brief, published);
+  // A preview edition links to the preview deployment, so a preview test of any link in it is
+  // exercising the preview and not production. Both share one database.
+  const origin = data.siteOrigin ?? config.SITE_URL;
+  const personal = personalLine(sub, brief, published, origin);
   const figures = figureLines(brief);
 
   const subject = `${config.CITY_NAME} brief: ${briefSubjectTail(brief)}`;
@@ -299,7 +304,7 @@ export async function composeEdition(
       </ul>
       ${personal.html ? `<p style="font-size:15px;line-height:1.55;margin:0 0 18px;">${personal.html}</p>` : ""}
       <p style="font-size:13px;line-height:1.5;color:#4b5563;margin:0 0 18px;">
-        Every figure is the same one <a href="${config.SITE_URL}" style="color:#017848;">${esc(config.SITE_NAME)}</a> publishes.
+        Every figure is the same one <a href="${origin}" style="color:#017848;">${esc(config.SITE_NAME)}</a> publishes.
         Prices are suppressed when too few homes sold to publish one.
       </p>
       <p style="font-size:11px;color:#6b7280;margin:0;border-top:1px solid #e5e7eb;padding-top:12px;">
@@ -310,13 +315,13 @@ export async function composeEdition(
   `.trim();
 
   const text = [
-    `${config.CITY_NAME} ${win.label} — ${win.date}`,
+    `${config.CITY_NAME} ${win.label} · ${win.date}`,
     "",
     ...figures.map((f) => `- ${f}`),
     "",
     personal.text,
     "",
-    `Every figure is the same one ${config.SITE_NAME} publishes: ${config.SITE_URL}`,
+    `Every figure is the same one ${config.SITE_NAME} publishes: ${origin}`,
     `Unsubscribe: ${unsubscribeUrl}`,
   ]
     .filter((l) => l !== undefined)
@@ -331,6 +336,8 @@ export interface BriefWindowedData {
   /** Slugs with a published page, so a link is never a 404. */
   published: Set<string>;
   unsubscribeUrl: string;
+  /** Where every link in the edition points. The canonical site in production. */
+  siteOrigin?: string;
 }
 
 /** The subject names the largest real number in the edition, so a reader can triage it from
