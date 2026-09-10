@@ -119,7 +119,14 @@
 }
 
 /* ── the derived-fact panel ────────────────────────────────────────────── */
-.hub-v3 .hh-glance {
+/* SPECIFICITY, NOT ORDER. This was `.hub-v3 .hh-glance`, which ties with
+   `.hub-v3 .hh-sec` further down the file — and the later rule won, so the panel took the
+   CREAM body background while its text stayed white. White on #fffdfa measures 1.02:1 at
+   every width, on all 22 hubs: the entire derived-fact panel was invisible in production.
+   `.hh-sec.hh-glance` outranks `.hh-sec` regardless of where either sits in the file, which
+   is what a section-variant selector should have been in the first place. The other variants
+   below (.hh-hoods, .hh-video) already use this form. */
+.hub-v3 .hh-sec.hh-glance {
   background: var(--hh-deep);
   padding: 0;
 }

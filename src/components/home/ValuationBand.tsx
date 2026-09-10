@@ -94,7 +94,7 @@ export function ValuationBand({ streetPageCount, sold12mo, soldToAskPct, videoCo
               mlsNumber=""
               source="homepage-valuation"
               theme="forest"
-              kicker="Free valuation — no obligation"
+              kicker="Free valuation, no obligation"
               title="What's your Milton home worth?"
               ctaLabel="Get my home's value"
             />
