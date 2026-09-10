@@ -123,6 +123,13 @@ the git history of this file at `fbbb7d9`.
 - **Report numbers 062, 063 and 064 exist three times over** — leads, homepage and content each
   numbered independently. The filenames differ so nothing collided. Renaming committed reports would
   break the references that already point at them; pick 065+ next.
+- **`git commit-tree` DOES NOT MERGE — it snapshots.** Both the two-parent merges in this
+  session were built with it, and the second one clobbered the content worktree's docs
+  (`4b55fc6`), restored in `02793f1`. The content worktree had done the same to this branch an
+  hour earlier (`5ee703e`). The rule: **re-check `git merge-base --is-ancestor origin/main HEAD`
+  after the last fetch, and STOP if it fails.** I printed "MAIN MOVED" and pushed anyway; the
+  two-parent shape made the result look merged while the tree had dropped their work. If main has
+  moved, merge it into the branch first, then build the commit from that tree.
 - **The `name-prose` prebuild guard reads string literals**, not just page copy. It failed a build
   on an em-dash inside a `notes:` template string.
 
