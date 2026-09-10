@@ -481,28 +481,32 @@
   margin: 16px 0 14px;
   line-height: 1;
 }
-/* 2026-07-21: "Milton" is SOLID WHITE for now (gradient removed from the
-   hero entirely - the nav wordmark is the site's only gradient element).
-   Hierarchy vs the white Playfair line comes from scale alone: the script
-   at ~1.75x dominates. */
-.home-v2 .m-hero h1 .m-hl-milton {
-  display: inline-block;
-  font-family: var(--font-kaushan), cursive;
-  font-weight: 400;
-  font-size: clamp(52px, 7.4vw, 88px);
-  line-height: 1.18;
-  letter-spacing: 0;
-  padding: 0 0.18em 0.06em 0.08em;
-  color: #ffffff;
-}
-.home-v2 .m-hero h1 .m-hl-ency {
+/* H1, 2026-09-10. Two faces, two jobs: the CLAIM in Playfair at reading scale, the
+   METHOD in the script face below it. The faces swapped roles when the copy changed —
+   the script line used to be the single word "Milton" and could carry 88px; a six-word
+   sentence in Kaushan is decoration rather than a heading, so the long line took the
+   serif and the short line took the script. Both stay solid white: the site's only
+   gradient is the nav wordmark. Hierarchy comes from scale and face, never colour. */
+.home-v2 .m-hero h1 .m-hl-lead {
   display: inline-block;
   font-family: var(--font-playfair), Georgia, serif;
   font-weight: 500;
-  font-size: clamp(30px, 4.2vw, 50px);
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  margin-top: 10px;
+  font-size: clamp(30px, 4.6vw, 56px);
+  line-height: 1.12;
+  letter-spacing: -0.005em;
+  max-width: 18ch;
+  color: #ffffff;
+}
+.home-v2 .m-hero h1 .m-hl-tail {
+  display: inline-block;
+  font-family: var(--font-kaushan), cursive;
+  font-weight: 400;
+  font-size: clamp(34px, 5.4vw, 66px);
+  line-height: 1.24;
+  letter-spacing: 0;
+  /* the script face's descenders and the trailing "t" need room or they clip */
+  padding: 0 0.18em 0.06em 0.04em;
+  margin-top: 6px;
   color: #ffffff;
 }
 .home-v2 .m-hero .m-lede {

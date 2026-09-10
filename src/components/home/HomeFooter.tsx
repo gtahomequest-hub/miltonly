@@ -47,7 +47,10 @@ export function HomeFooter({ footer, brand }: Props) {
                 {s.name}
               </a>
             ))}
-            <a href="/streets">All {footer.streetCount} streets</a>
+            {/* PAGES, not surfaced entities. The label said "All 738 streets" while 444
+                street pages existed; 738 is the set allowed to appear in search and in a
+                hub ladder. /streets is the index for both, and it states both itself. */}
+            <a href="/streets">All {footer.streetPageCount} street pages</a>
             <a href="/map">Street map</a>
           </div>
 

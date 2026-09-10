@@ -32,9 +32,9 @@ export function Hero({ hero, stats, trust }: HeroProps) {
               the ask card; the four intent chips sit INSIDE the card below
               the input; trust line closes below the card. */}
           <h1>
-            <span className="m-hl-milton">{hero.headline}</span>
+            <span className="m-hl-lead">{hero.headline}</span>
             <br />
-            <span className="m-hl-ency">{hero.headlineAccent}</span>
+            <span className="m-hl-tail">{hero.headlineAccent}</span>
           </h1>
           <p className="m-lede">{hero.lede}</p>
 

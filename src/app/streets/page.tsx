@@ -23,6 +23,7 @@ import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import "@/components/directory/directory-theme.css";
 import { resolveStreetName } from "@/lib/streetName";
+import { publishedStreetPageCount } from "@/lib/streetSurface";
 
 export const dynamic = "force-dynamic";
 
@@ -124,7 +125,11 @@ export default async function StreetsIndexPage() {
     .filter((n) => n && n !== config.CITY_NAME)
     .sort();
 
-  const publishedCount = await prisma.streetContent.count({ where: { status: "published" } });
+  // The SITEMAP'S set, not a raw StreetContent count. Those differ by one:
+  // `15-side-road-side-road-milton` is a published row with no ResidentialStreet entity, a
+  // machine-made address artifact the sitemap refuses. This page said 445 while the sitemap
+  // emitted 444 and the homepage said 738; one function now answers all three.
+  const publishedCount = await publishedStreetPageCount();
 
   // Map to the shared directory contract (presentation only).
   const items: DirectoryItem[] = streetData.map((s) => {

@@ -17,7 +17,7 @@
 //
 // NEIGHBOURHOOD_CHARACTER below is retained because hubData.ts imports it.
 import { prisma } from "@/lib/prisma";
-import { surfacedStreetWhere } from "@/lib/streetSurface";
+import { surfacedStreetWhere, publishedStreetPageCount } from "@/lib/streetSurface";
 import { getSoldDb } from "@/lib/db";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { mockHomepageData } from "@/components/home/mockData";
@@ -28,6 +28,7 @@ import { resolveStreetName } from "@/lib/streetName";
 import { getNeighbourhoodCards, getRawStringHubMap } from "@/lib/neighbourhoodCards";
 import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVideoCount } from "@/lib/homeSignals";
 import { getNewestListingCards } from "@/lib/listingsV2Data";
+import { getMiltonSoldOverall } from "@/lib/soldAggregates";
 
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
@@ -78,7 +79,7 @@ export async function getHomepageData(): Promise<HomepageData> {
   }
   const typicalSource = typicalAll ?? mw.aggregates.typicalPrice;
 
-  const [newThisWeek, soldMtd, neighbourhoods, videoStreets, videoCount, listingRows, hubByRaw, vipRows, streetCount, totalNbhd] =
+  const [newThisWeek, soldMtd, neighbourhoods, videoStreets, videoCount, listingRows, hubByRaw, vipRows, streetPageCount, surfacedStreetCount, totalNbhd, soldOverall] =
     await Promise.all([
       getNewThisWeekCount(),
       getSoldThisMonth(),
@@ -93,9 +94,18 @@ export async function getHomepageData(): Promise<HomepageData> {
         take: 8,
         select: { name: true, slug: true },
       }),
-      // surfaced only — dormant/pageless entities don't count toward the public figure
+      // PAGES, from the set the sitemap emits. Not the surfaced-entity count: that is the
+      // set that may APPEAR in search and in a hub ladder (738 today), and it was being
+      // published as "streets with their own page", which it has never been.
+      publishedStreetPageCount(),
+      // Entities we can say something about. Kept, and labelled as what it is.
       prisma.residentialStreet.count({ where: await surfacedStreetWhere() }),
       prisma.neighbourhood.count(),
+      // The /sold aggregate: all-Milton, 12 months, k-gated. The sold-to-ask proof point
+      // reads THIS, not the Board's urban 13-week ratio, so the homepage and the market
+      // page publish one figure. Board.soldToAsk.value is a RATIO (0.9809) that TheBoard
+      // multiplies at render; soldToAskPct is already a percent (98.1).
+      getMiltonSoldOverall(),
     ]);
 
   // Resolve each listing's raw TREB neighbourhood to a PUBLISHED hub. A raw string with
@@ -130,6 +140,8 @@ export async function getHomepageData(): Promise<HomepageData> {
       vow: "1848370",
     },
     neighbourhoods,
+    streetPageCount,
+    soldToAskPct: soldOverall.soldToAskPct,
     videoStreets,
     videoCount,
     newestListings,
@@ -140,7 +152,8 @@ export async function getHomepageData(): Promise<HomepageData> {
       neighbourhoods: neighbourhoods.map((n) => ({ name: n.name, slug: n.slug })),
       topStreets: inDemandStreets,
       neighbourhoodCount: totalNbhd,
-      streetCount,
+      streetCount: surfacedStreetCount,
+      streetPageCount,
     },
   };
 }

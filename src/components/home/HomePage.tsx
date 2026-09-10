@@ -41,7 +41,6 @@ export function HomePage({
   board: BoardTab[] | null;
   mega: MegaLive;
 }) {
-  const overall = board?.find((t) => t.tab === 'overall') ?? null;
   return (
     <div className="home-v2">
       <SiteNav variant="home" live={mega} />
@@ -51,9 +50,9 @@ export function HomePage({
       <NeighbourhoodLadder neighbourhoods={data.neighbourhoods} />
       {board && board.length > 0 && <TheBoard board={board} />}
       <ValuationBand
-        streetCount={data.footer.streetCount}
+        streetPageCount={data.streetPageCount}
         sold12mo={data.stats.sold12mo}
-        soldToAsk={overall?.soldToAsk.value ?? null}
+        soldToAskPct={data.soldToAskPct}
         videoCount={data.videoCount}
       />
       <DailyBrief />

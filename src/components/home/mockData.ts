@@ -14,8 +14,12 @@ export const mockHomepageData: { hero: HeroContent } & Record<string, unknown> =
   stats: { typicalPrice: 1_090_000, sold12mo: 412, onMarket: 87, dom: 24 },
 
   hero: {
-    headline: 'Milton',
-    headlineAccent: 'Real Estate Encyclopedia',
+    // H1, Brain's pick 2026-09-10. Two lines: the claim in Playfair, the method in the
+    // script face. It replaces "Milton / Real Estate Encyclopedia", a brand phrase that
+    // matched nothing anybody types. The script face moved to the SHORT line — a six-word
+    // sentence set in Kaushan is decoration, not a heading.
+    headline: 'What Milton homes actually sell for,',
+    headlineAccent: 'street by street',
     lede: 'Every street. Every sale. Every answer.',
     // Street-first placeholder (V1). AskBar shows this as the resting placeholder;
     // askExamples animate over it as street/condo/neighbourhood prompts.

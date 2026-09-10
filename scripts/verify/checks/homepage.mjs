@@ -30,6 +30,19 @@
 //      template. Suppression is asserted in both directions: a sub-k hood must print no
 //      price here, and a hood with a price must not be silent.
 //
+//   3b. EVERY MILTON-WIDE FIGURE, BY VALUE AND BY FORMAT. Added 2026-09-10, because the
+//      first version of this check passed while two figures on the page were wrong, under a
+//      title claiming the page "states its figures". It asserted PRESENCE — that a
+//      `data-fig` existed and parsed as a number — and presence is not value. The page
+//      shipped "0.980868783307145%" for sold-to-ask (a ratio printed with a percent sign
+//      welded on, overlapping its own caption) and "738 Milton streets with their own page"
+//      against 444 published pages. Both satisfied every assertion here.
+//
+//      So each figure now declares its SOURCE QUERY and its DISPLAY FORMAT, and the check
+//      reads the RENDERED TEXT rather than the `data-value` attribute. That distinction is
+//      the fix: `data-value` was correct in both defects. The defect lived between the value
+//      and the reader, which is the one span an attribute cannot cover.
+//
 //   4. THE THREE STRUCTURED-DATA NODES. WebSite, Organization, and a SearchAction on the
 //      WebSite. Parsed per node, never grepped: a string match on "Organization" would be
 //      satisfied by the word appearing anywhere in 50KB of markup.
@@ -76,24 +89,73 @@ function navMarkup(html) {
   return close === -1 ? '' : html.slice(open, close + 6);
 }
 
-/** Every `data-fig` figure on the page: { fig, slug, value, silent }. */
+/** Every `data-fig` figure on the page: { fig, slug, value, text }.
+ *
+ *  `text` is what the READER sees, read to the element's own closing tag rather than to the
+ *  first `</` anywhere after it. The first version stopped at the first `</`, so the hero's
+ *  typical price — `<b>$</b>930K` — yielded the text "$", and any value assertion built on
+ *  it would have been comparing against nothing. */
 function figures(html) {
   const out = [];
-  for (const m of html.matchAll(/<[a-z]+\b[^>]*\bdata-fig="([^"]+)"[^>]*>/g)) {
+  for (const m of html.matchAll(/<([a-z]+)\b[^>]*\bdata-fig="([^"]+)"[^>]*>/g)) {
     const tag = m[0];
+    const tagName = m[1];
     const slug = tag.match(/\bdata-slug="([^"]*)"/);
     const value = tag.match(/\bdata-value="([^"]*)"/);
     const raw = value ? value[1] : '';
+    const from = m.index + tag.length;
+    const close = html.indexOf(`</${tagName}>`, from);
+    const inner = close === -1 ? '' : html.slice(from, close);
     out.push({
-      fig: m[1],
+      fig: m[2],
       slug: slug ? slug[1] : null,
       value: raw === '' ? null : Number(raw),
-      // the element's rendered text, for the suppression assertion
-      text: html.slice(m.index + tag.length, html.indexOf('</', m.index + tag.length)).replace(/<[^>]+>/g, '').trim(),
+      // React splits adjacent text nodes with <!-- -->; strip comments before tags.
+      text: inner.replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
     });
   }
   return out;
 }
+
+/** The compact money form the hero prints. Re-derived from compactPrice, never imported. */
+const compact = (n) =>
+  n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(/\.?0+$/, '')}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : `${n}`;
+
+const int = (n) => Number(n).toLocaleString('en-CA');
+
+/**
+ * THE MILTON-WIDE FIGURES: each one's source query, its expected rendering, and how far the
+ * rendering may sit from the source.
+ *
+ * `tol` is display granularity, not a fudge factor. A figure printed as "$930K" cannot carry
+ * more precision than the nearest thousand, so 500 is the most it can honestly differ by. A
+ * whole-number percent gets 0.5. Counts get 0: a count off by one is simply wrong.
+ *
+ * `pattern` is the half that was missing. "0.980868783307145%" is a number followed by a
+ * percent sign, and it satisfied every assertion this check used to make.
+ */
+const FIG_SPECS = [
+  { fig: 'on-market', source: 'onMarket', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
+  { fig: 'new-week', source: 'newThisWeek', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
+  { fig: 'sold-mtd', source: 'soldMonthToDate', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
+  {
+    fig: 'typical-milton', source: 'typicalMilton',
+    expect: (v) => `$${compact(v)}`,
+    parse: (t) => {
+      const m = t.match(/^\$\s*([\d.]+)(K|M)$/);
+      return m ? Number(m[1]) * (m[2] === 'M' ? 1e6 : 1e3) : NaN;
+    },
+    tol: 500, pattern: /^\$\s*[\d.]+(K|M)$/,
+  },
+  { fig: 'proof-street-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  { fig: 'proof-sales-12mo', source: 'sold12mo', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  {
+    fig: 'proof-sold-to-ask', source: 'soldToAskPct',
+    expect: (v) => `${Math.round(v)}%`,
+    parse: (t) => Number(t.replace('%', '')),
+    tol: 0.5, pattern: /^\d{1,3}%$/,
+  },
+];
 
 /** JSON-LD nodes, parsed. Returns [] when the page emits none, which is itself a finding. */
 function ldNodes(html) {
@@ -111,8 +173,9 @@ export default {
   title: 'The homepage links, states its figures, and declares itself',
   wholeCorpusOnly: true,
   needsHubRecord: true,
+  needsHomeRecord: true,
 
-  async finish(_rows, { base, hubRecord }) {
+  async finish(_rows, { base, hubRecord, homeRecord }) {
     const r = await get(base + '/');
     if (r.status !== 200) {
       return {
@@ -150,10 +213,37 @@ export default {
       }
     }
 
-    // Milton-wide figures must be present and numeric. A missing figure is a section that
-    // silently stopped rendering, which no visual check catches on a page this long.
-    const REQUIRED_FIGS = ['on-market', 'new-week', 'sold-mtd', 'typical-milton'];
-    const missingFigs = REQUIRED_FIGS.filter((k) => !figs.some((f) => f.fig === k && f.value !== null));
+    // ── 3b. every Milton-wide figure, by value and by format ─────────────
+    // A missing figure is a section that silently stopped rendering, which no visual check
+    // catches on a page this long. A malformed one is what shipped.
+    const absent = [], malformed = [], offSource = [];
+    const figReport = [];
+    for (const spec of FIG_SPECS) {
+      const f = figs.find((x) => x.fig === spec.fig);
+      const source = homeRecord[spec.source];
+      if (!f) { absent.push(`${spec.fig}: no element carries this data-fig`); continue; }
+      if (source === null || source === undefined) {
+        // The source is k-suppressed. The figure must then not be on the page at all.
+        malformed.push(`${spec.fig}: rendered "${f.text}" while its source is suppressed`);
+        continue;
+      }
+      const wanted = spec.expect(source);
+      figReport.push(`${spec.fig}: "${f.text}" (source ${source}, expected "${wanted}")`);
+      if (!spec.pattern.test(f.text)) {
+        malformed.push(`${spec.fig}: rendered "${f.text}", which is not a ${spec.pattern}`);
+        continue; // an unparseable string cannot also be value-checked
+      }
+      const shown = spec.parse(f.text);
+      if (!Number.isFinite(shown) || Math.abs(shown - source) > spec.tol) {
+        offSource.push(`${spec.fig}: page shows "${f.text}" (${shown}) vs source ${source}, tolerance ${spec.tol}`);
+      }
+    }
+
+    // The streets figure gets its own named assertion, because "which set does this count"
+    // is the question it got wrong, not "is it formatted".
+    const pagesFig = figs.find((f) => f.fig === 'proof-street-pages');
+    const pagesShown = pagesFig ? Number(pagesFig.text.replace(/[,\s]/g, '')) : null;
+    const pagesMatch = pagesShown === homeRecord.publishedStreetPages;
 
     // ── 4. structured data ───────────────────────────────────────────────
     const website = nodes.find((n) => n['@type'] === 'WebSite');
@@ -167,6 +257,10 @@ export default {
         ['of which are in the <nav>', navLinks.size],
         ['stated link floor', LINK_FLOOR],
         ['data-fig figures parsed', figs.length],
+        ['Milton-wide figures checked by value + format', `${FIG_SPECS.length} specs`],
+        ['as rendered', figReport.join(' · ') || 'none read'],
+        ['published street pages (record)', homeRecord.publishedStreetPages],
+        ['published StreetContent rows (record)', homeRecord.publishedContentRows],
         ['neighbourhood price figures', hoodFigs.length],
         ['sub-k hoods (price must be silent)', hoodFigs.filter((f) => hubRecord.hub(f.slug) && hubRecord.hub(f.slug).typicalRounded === null).map((f) => f.slug).join(', ') || 'none'],
         ['JSON-LD nodes parsed', nodes.length],
@@ -179,7 +273,10 @@ export default {
         ['menu triggers rendered as anchors', nonAnchorTriggers.length, 0],
         ['menu trigger hrefs in served nav markup', missingTriggers.length, 0],
         ['rail links in served nav markup', missingRail.length, 0],
-        ['Milton-wide figures present', missingFigs.length, 0],
+        ['Milton-wide figures absent from the page', absent.length, 0],
+        ['Milton-wide figures rendered in the wrong format', malformed.length, 0],
+        ['Milton-wide figures outside their source + tolerance', offSource.length, 0],
+        ['street-page figure == the published page count', pagesMatch, true],
         ['neighbourhood figure != its hub record', priceMismatch.length, 0],
         ['neighbourhood figure off a sub-k pool', subKLeak.length, 0],
         ['sub-k hood prints a price instead of its suppression', silentSplit.length, 0],
@@ -189,13 +286,15 @@ export default {
       ],
       notes: [
         `neighbourhood figures with no DB2 record (not asserted): ${noRecord.join(', ') || 'none'}`,
+        `published pages ${homeRecord.publishedStreetPages} vs published content rows ${homeRecord.publishedContentRows}: the difference is content published for a slug with no ResidentialStreet entity, which the sitemap refuses`,
         'homepage == record and hub page == record (hub-meta) together assert homepage == hub page',
       ],
       examples: [
         ...priceMismatch, ...subKLeak, ...silentSplit,
         ...missingTriggers.map((h) => `menu trigger missing from nav markup: ${h}`),
         ...missingRail.map((h) => `rail link missing from nav markup: ${h}`),
-        ...missingFigs.map((k) => `Milton-wide figure absent or non-numeric: ${k}`),
+        ...absent, ...malformed, ...offSource,
+        ...(pagesMatch ? [] : [`street-page figure shows ${pagesShown} vs ${homeRecord.publishedStreetPages} published pages`]),
       ],
     };
   },

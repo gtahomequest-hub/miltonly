@@ -124,7 +124,10 @@ export interface FooterData {
   neighbourhoods: { name: string; slug: string }[];
   topStreets: { name: string; slug: string }[];
   neighbourhoodCount: number;
+  /** SURFACED ENTITIES — streets that may appear in search and hub ladders (738). */
   streetCount: number;
+  /** PUBLISHED PAGES — the sitemap's set (444). Different number, different noun. */
+  streetPageCount: number;
 }
 
 export interface HomepageData {
@@ -133,6 +136,10 @@ export interface HomepageData {
   trust: TrustInfo;
   /** the 22 published hubs, priced by their own page's k-gated aggregate */
   neighbourhoods: HubCard[];
+  /** PAGES, the set the sitemap emits. Not the surfaced-entity count. */
+  streetPageCount: number;
+  /** all-Milton 12-month sold-to-ask as a PERCENT (98.1), k-gated. null = suppressed */
+  soldToAskPct: number | null;
   videoStreets: StreetVideoCard[];
   videoCount: number;
   newestListings: HomeListingCard[];
