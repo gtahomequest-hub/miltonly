@@ -6,8 +6,9 @@ _Last rewritten 2026-09-10, after Phase 0 merged to main and production was veri
 
 ## READ THIS FIRST
 
-**Phase 0 is MERGED and live.** `main` fast-forwarded to **`c4a162b`**, production serves it on the
-apex, battery **`PASS · 9 checks · 444 pages · 56s`** at the full SHA. Phase 1 has not started and
+**Phase 0 is MERGED and live.** `main` fast-forwarded to the code SHA **`c4a162b`** and then to this
+handoff, **`103e520`**. Production serves `103e520` on the apex and the battery is
+**`PASS · 9 checks · 444 pages · 60s`** at that full SHA, run after the deploy landed. Phase 1 has not started and
 begins only on an explicit prompt.
 
 **`ALERT_EMAIL_TO` is now `gtahomequest@gmail.com` in Production and Preview, and it works.** Three
@@ -46,9 +47,10 @@ at the route, with the components' own payloads, which is everything except rend
 
 | | |
 |---|---|
-| `main` | **`c4a162b`** (fast-forwarded, no merge commit) |
-| production | **`miltonly-gyv7dgpcl`**, serving `c4a162b`, confirmed on the apex through `/api/build` |
-| battery on production | **`PASS · 9 checks · 444 pages · 56s`**, at the full SHA `c4a162b033eaab81f4a68ea767eb441b47e8a0c1` |
+| `main` | **`103e520`** (fast-forwarded twice, no merge commit) |
+| code SHA | **`c4a162b`** — the fix. `103e520` on top is this handoff |
+| production | serving **`103e520`**, confirmed on the apex through `/api/build` |
+| battery on production | **`PASS · 9 checks · 444 pages · 60s`** at `103e520`, and `PASS · 56s` at `c4a162b033eaab81f4a68ea767eb441b47e8a0c1` before it |
 | battery on preview | **`PASS · 9 checks · 444 pages · 62s`**, `miltonly-pqyzb9jz1`, served == expected |
 | local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
 | `ads.leads` rows | **1** (the 2026-05-23 smoke test; every test row created here was deleted) |
