@@ -535,3 +535,29 @@
   padding: 12px 24px;
   border-radius: 7px;
 }
+/* Link row under a body section — the guides tier's link-down surface.
+   Added 2026-09-10 with GuideSection.links. Uses the existing token set;
+   no new colour is introduced. */
+.guides-v2 .g-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.guides-v2 .g-link {
+  display: inline-block;
+  padding: 7px 13px;
+  border: 1px solid var(--g-border-muted);
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--g-accent);
+  text-decoration: none;
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.guides-v2 .g-link:hover,
+.guides-v2 .g-link:focus-visible {
+  background: rgba(1, 120, 72, 0.08);
+  border-color: var(--g-accent);
+}

@@ -1,0 +1,286 @@
+/* src/components/marketwatch/market-watch.css
+   Scoped Market Watch theme. Vars --mw-*; classes .mw-*; everything gated
+   behind .market-watch so it cannot bleed into :root, the guides theme, the
+   hub pages or the street pages.
+
+   THE LAYOUT IS A LEDGER, NOT A DASHBOARD. Every market page on the internet
+   is a grid of stat tiles. This is a single vertical column of ruled rows:
+   label left in mono, figure right in Fraunces, a hairline between. A
+   suppressed figure takes a FULL ROW and says why, so an absence reads as a
+   deliberate entry in the ledger rather than a tile that failed to load. */
+
+.market-watch {
+  --mw-deep: #073126;
+  --mw-cream: #f6f4ef;
+  --mw-accent: #017848;
+  --mw-cta: #00ff80;
+  --mw-ink: #16211d;
+  --mw-muted: #5d6b64;
+  --mw-rule: #d8d5cc;
+  --mw-rule-strong: #b3aea1;
+  --mw-serif: 'Fraunces', Georgia, serif;
+  --mw-sans: 'Inter', system-ui, sans-serif;
+  --mw-mono: 'JetBrains Mono', ui-monospace, monospace;
+  background: var(--mw-cream);
+  color: var(--mw-ink);
+  font-family: var(--mw-sans);
+}
+
+.market-watch .mw-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding-inline: 20px;
+}
+
+/* ── masthead ─────────────────────────────────────────────────────────── */
+
+.market-watch .mw-mast {
+  background: var(--mw-deep);
+  color: var(--mw-cream);
+  padding-block: 92px 56px;
+}
+.market-watch .mw-crumb {
+  font-family: var(--mw-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(246, 244, 239, 0.55);
+  margin-bottom: 28px;
+}
+.market-watch .mw-crumb a {
+  color: rgba(246, 244, 239, 0.75);
+  text-decoration: none;
+}
+.market-watch .mw-crumb a:hover { color: var(--mw-cta); }
+.market-watch .mw-crumb span { margin-inline: 8px; }
+
+.market-watch .mw-kicker {
+  font-family: var(--mw-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mw-cta);
+}
+.market-watch .mw-mast h1 {
+  font-family: var(--mw-serif);
+  font-weight: 400;
+  font-size: clamp(30px, 5.2vw, 50px);
+  line-height: 1.1;
+  margin: 14px 0 0;
+  letter-spacing: -0.015em;
+}
+.market-watch .mw-lede {
+  font-family: var(--mw-serif);
+  font-size: clamp(17px, 2.3vw, 21px);
+  line-height: 1.5;
+  color: rgba(246, 244, 239, 0.86);
+  margin: 26px 0 0;
+  max-width: 60ch;
+}
+.market-watch .mw-window {
+  font-family: var(--mw-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(246, 244, 239, 0.5);
+  margin-top: 22px;
+}
+
+/* ── the ledger ───────────────────────────────────────────────────────── */
+
+.market-watch .mw-block { padding-block: 54px; }
+.market-watch .mw-block + .mw-block { border-top: 1px solid var(--mw-rule); }
+
+.market-watch .mw-h2 {
+  font-family: var(--mw-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mw-accent);
+  margin: 0 0 6px;
+  font-weight: 500;
+}
+.market-watch .mw-sub {
+  font-family: var(--mw-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--mw-muted);
+  margin: 0 0 26px;
+}
+
+.market-watch .mw-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding-block: 15px;
+  border-bottom: 1px solid var(--mw-rule);
+}
+.market-watch .mw-row:first-of-type { border-top: 1px solid var(--mw-rule-strong); }
+
+.market-watch .mw-label {
+  font-family: var(--mw-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--mw-muted);
+  text-transform: uppercase;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.market-watch .mw-val {
+  font-family: var(--mw-serif);
+  font-size: clamp(21px, 3.4vw, 29px);
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.market-watch .mw-val-sm {
+  font-family: var(--mw-mono);
+  font-size: 13px;
+  color: var(--mw-muted);
+  white-space: nowrap;
+}
+
+/* A suppressed figure is a ROW, not a gap. It states why, in prose, across the
+   full width, so nobody reads a blank as a zero. */
+.market-watch .mw-suppressed {
+  padding-block: 15px;
+  border-bottom: 1px solid var(--mw-rule);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--mw-muted);
+  font-style: italic;
+}
+
+.market-watch .mw-note {
+  margin-top: 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--mw-muted);
+  max-width: 62ch;
+}
+.market-watch .mw-note strong { color: var(--mw-ink); font-weight: 600; }
+
+/* ── by-form bars ─────────────────────────────────────────────────────── */
+
+.market-watch .mw-form { padding-block: 16px; border-bottom: 1px solid var(--mw-rule); }
+.market-watch .mw-form:first-of-type { border-top: 1px solid var(--mw-rule-strong); }
+.market-watch .mw-form-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.market-watch .mw-form-name {
+  font-family: var(--mw-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.market-watch .mw-bar {
+  height: 3px;
+  background: var(--mw-accent);
+  margin-top: 11px;
+  min-width: 2px;
+}
+.market-watch .mw-form-meta {
+  font-family: var(--mw-mono);
+  font-size: 11px;
+  color: var(--mw-muted);
+  margin-top: 8px;
+}
+
+/* ── ranked lists ─────────────────────────────────────────────────────── */
+
+.market-watch .mw-list { margin: 0; padding: 0; list-style: none; }
+.market-watch .mw-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--mw-rule);
+}
+.market-watch .mw-item:first-child { border-top: 1px solid var(--mw-rule-strong); }
+.market-watch .mw-item a { color: var(--mw-ink); text-decoration: none; border-bottom: 1px solid var(--mw-accent); }
+.market-watch .mw-item a:hover { color: var(--mw-accent); }
+.market-watch .mw-item-name { font-size: 15px; }
+.market-watch .mw-item-meta {
+  font-family: var(--mw-mono);
+  font-size: 11.5px;
+  color: var(--mw-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+.market-watch .mw-count {
+  font-family: var(--mw-mono);
+  font-size: 13px;
+  color: var(--mw-ink);
+}
+
+/* ── interpretation ───────────────────────────────────────────────────── */
+
+.market-watch .mw-interp {
+  border-left: 2px solid var(--mw-accent);
+  padding: 4px 0 4px 20px;
+  font-family: var(--mw-serif);
+  font-size: 17px;
+  line-height: 1.62;
+  max-width: 62ch;
+}
+
+/* ── CTA ──────────────────────────────────────────────────────────────── */
+
+.market-watch .mw-cta {
+  background: var(--mw-deep);
+  color: var(--mw-cream);
+  padding-block: 52px;
+}
+.market-watch .mw-cta h2 {
+  font-family: var(--mw-serif);
+  font-weight: 400;
+  font-size: clamp(23px, 3.4vw, 31px);
+  margin: 12px 0 10px;
+}
+.market-watch .mw-cta p {
+  color: rgba(246, 244, 239, 0.78);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 26px;
+  max-width: 54ch;
+}
+.market-watch .mw-btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.market-watch .mw-b1 {
+  background: var(--mw-cta);
+  color: var(--mw-deep);
+  padding: 13px 22px;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.market-watch .mw-b2 {
+  border: 1px solid rgba(246, 244, 239, 0.35);
+  color: var(--mw-cream);
+  padding: 13px 22px;
+  border-radius: 2px;
+  font-size: 14px;
+  text-decoration: none;
+}
+.market-watch .mw-b2:hover { border-color: var(--mw-cta); color: var(--mw-cta); }
+
+/* ── archive ──────────────────────────────────────────────────────────── */
+
+.market-watch .mw-archive { padding-block: 44px; }
+.market-watch .mw-archive a {
+  font-family: var(--mw-mono);
+  font-size: 12px;
+  color: var(--mw-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--mw-rule-strong);
+}
+
+@media (max-width: 520px) {
+  .market-watch .mw-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .market-watch .mw-mast { padding-block: 78px 44px; }
+}

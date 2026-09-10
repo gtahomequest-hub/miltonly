@@ -45,11 +45,25 @@ export interface GuidesIndexData {
   ctaSeller: GuideCta;
 }
 
+/** a link out of a body section: the guides tier's link-down surface */
+export interface GuideLink {
+  label: string;
+  href: string;
+}
+
 /** one body section of an article; tip renders as a callout when present */
 export interface GuideSection {
   heading: string;
   paragraphs: string[];
   tip: string | null;
+  /**
+   * Optional link row rendered under the paragraphs. Added 2026-09-10 because
+   * `paragraphs: string[]` is plain text and cannot carry an anchor, which
+   * left a guide unable to link down to the hub, street, listing or school
+   * page its own figures were drawn from. Optional and additive: the preview
+   * fixtures omit it and render exactly as before.
+   */
+  links?: GuideLink[];
 }
 
 export interface GuideFaq {
