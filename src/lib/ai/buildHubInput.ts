@@ -326,15 +326,43 @@ export async function buildHubInput(neighbourhoodSlug: string): Promise<HubGener
 // ---------------------------------------------------------------------------
 
 let _miltonWideCache: Promise<MiltonWideContext> | null = null;
+let _miltonWideCachedAt = 0;
+
+// DEC-MILTONWIDE-TTL (2026-09-10). The memo above had no expiry, and nothing in the serving
+// path ever called resetMiltonWideContextCache() - only a script does. That was correct while
+// this was a generation-time helper computed once per run across 14 hubs. It stopped being
+// correct when the homepage began calling it on every render.
+//
+// The consequence, measured: the homepage published proof-sales-12mo as 1,531 against a live
+// 1,728 after a DB2 backfill, and no purge could shift it. Neither revalidatePath nor an
+// Upstash flush reaches a module-level variable. It corrected only when a deployment replaced
+// the lambda, with no code change, which is what proved the diagnosis. `/api/sync/sold` runs
+// daily at 11:00, so this figure went stale every single day and every deploy hid it.
+//
+// Five minutes. Long enough that a 14-hub generation run still computes this once, which is the
+// whole reason the memo exists; short enough that a stale published figure corrects itself
+// without waiting for a deploy. force=true still bypasses it, and
+// resetMiltonWideContextCache() still clears it outright for fixtures.
+const MILTON_WIDE_TTL_MS = 5 * 60 * 1000;
 
 export function resetMiltonWideContextCache(): void {
   _miltonWideCache = null;
+  _miltonWideCachedAt = 0;
 }
 
 export function buildMiltonWideContext(force = false): Promise<MiltonWideContext> {
-  if (!force && _miltonWideCache) return _miltonWideCache;
+  const fresh = Date.now() - _miltonWideCachedAt < MILTON_WIDE_TTL_MS;
+  if (!force && _miltonWideCache && fresh) return _miltonWideCache;
   const p = computeMiltonWideContext();
-  if (!force) _miltonWideCache = p;
+  if (!force) {
+    _miltonWideCache = p;
+    _miltonWideCachedAt = Date.now();
+    // A rejected promise must not be cached, or one transient database blip poisons every
+    // homepage render for the whole TTL. Drop it and let the next caller recompute.
+    p.catch(() => {
+      if (_miltonWideCache === p) resetMiltonWideContextCache();
+    });
+  }
   return p;
 }
 
