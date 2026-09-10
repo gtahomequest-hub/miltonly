@@ -80,7 +80,7 @@ export function DailyBrief() {
         />
         {state === 'done' ? (
           <p className="mh-briefdone">
-            You are on the list. The next brief arrives tomorrow morning.
+            You are on the list. Your first brief lands the next weekday morning.
           </p>
         ) : (
           <form className="mh-briefform" onSubmit={submit}>
