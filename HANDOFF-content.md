@@ -2,7 +2,7 @@
 
 CONTENT · D:\miltonly-content · feat/content
 
-_Last rewritten 2026-09-10, after Gate A recon for the content tier._
+_Last rewritten 2026-09-10, after Gate A recon for the content tier and the volume addendum._
 
 ## READ THIS FIRST
 
@@ -14,7 +14,11 @@ footer or homepage.** Read the root `HANDOFF.md` for the state of those tiers; i
 is the authority on everything outside this scope.
 
 **Gate A is reported and NOT approved. No code has been written.** The report is
-`scratchpad/reports/062-content-gate-a.md`.
+`scratchpad/reports/062-content-gate-a.md`, and
+`scratchpad/reports/063-content-gate-a.md` is an addendum that corrects one premise
+in its section 3.2 and adds the measurement behind it. **Read 062 first. 063 does
+not replace it.** Two sessions ran this recon in parallel on this branch; 062
+landed first and its guide list, risk calls and section design stand.
 
 ## State
 
@@ -65,13 +69,38 @@ for anything unset. A new generator inherits it by doing nothing.
 at the transport, so a new caller inherits it without a new call site.
 
 **A week is a small sample and that is the whole Market Watch design problem.**
-Milton runs roughly 10 to 15 sales a week town-wide, so most neighbourhoods and
-most property types are sub-k every single week. The proposal publishes weekly
-counts always, a weekly median only at n>=5, a weekly band only at n>=10, and
-**no neighbourhood-weekly or type-weekly median at any n** — the 12-month figure
-sits beside the weekly count instead, each labelled with its window. `kAnon.ts`'s
-own header is the reason: the floor must be checked against the exact sample the
-figure is computed over.
+The proposal publishes weekly counts always, and **no neighbourhood-weekly or
+type-weekly median at any n** — the 12-month figure sits beside the weekly count
+instead, each labelled with its window. `kAnon.ts`'s own header is the reason: the
+floor must be checked against the exact sample the figure is computed over.
+
+**The town-wide week is NOT a small sample, and report 062 said it was.** Measured
+2026-09-10 on complete Monday weeks, `perm_advertise = TRUE`, For Sale: **40, 43,
+37, 33** over the last four, and **26 to 67** over the last twelve. Not the 10 to
+15 the report estimated. `days_on_market` and `list_price` are populated on 100% of
+those rows. **So the weekly typical clears k5 and k10 in every complete week
+measured and can carry the edition rather than sit as a footnote**, with the check
+still made per edition and a thin week publishing `null`, never `0`. Detail in
+report 063.
+
+**A trailing 28-day window is the by-form answer, and neither report had it
+before.** By form over 28 days: detached 71, townhouse 37, condo 14, semi 13. So a
+point for all four at k5 and a band for detached and townhouse at k10. The same
+28-day window by neighbourhood clears k5 on only 11 of 21 and k10 on 6, which is
+why the neighbourhood block stays on the 12-month figure.
+
+**The lease side gets no weekly figure at all.** Weekly lease counts read 130, 6,
+4, 51, 14, 15, 127, 5, 20, 3, 23. That is ingest stamping, not a market, and it is
+the visible form of the caveat `daily-summary/route.ts` already carries: the lease
+buckets have no close date and proxy on `updatedAt`. Lease is out of v1.
+
+**DEC-SOLD-UPPER-BOUND is not theoretical. `sold.sold_records` holds 192 For Sale
+and 53 For Lease rows dated in the future**, the furthest at 2027-01-29 against a
+database `NOW()` of 2026-09-10. An unbounded 28-day neighbourhood count returns
+**327** rows where the bounded one returns **135**. A window that forgets
+`sold_date <= NOW()` does not fail, it publishes a number inflated 2.4x and
+publishes sales that have not happened. Every new window in this tier inherits the
+bound.
 
 **GSC is live and readable.** `src/lib/seo/gscClient.ts`, service account,
 `webmasters.readonly`, weekly `runSense()` into `SeoOpportunity` with
@@ -96,6 +125,11 @@ this pass.**
 7. Up-links from hubs and streets back to the current edition. **A cross-worktree
    request — this worktree does not make those writes.**
 8. Pull the real GSC rows for the eight queries before fixing the order.
+9. **The weekly typical becomes the edition's headline figure**, computed on the
+   week and gated on the week's own n. Report 062 assumed it would usually
+   suppress; the measurement says it does not. Confirm the swap.
+10. **A by-form block on a trailing 28-day window** — point at k5 for four forms,
+    band at k10 for detached and townhouse only. A new section, not in 062.
 
 ## Next expected task
 
