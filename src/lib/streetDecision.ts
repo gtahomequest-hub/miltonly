@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { calcMarketDataHash } from "@/lib/marketDataHash";
+import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
+import { OFF_REGISTRY_SET } from "@/data/offRegistryStreets";
+
+/** The Town registry as a slug set. Module-level: built once, not per decision. */
+const MILTON_STREET_REGISTRY_SLUGS = new Set(MILTON_STREET_REGISTRY.map((r) => r.slug));
 
 // Post Phase 2.6 (2026-04-17): this module's stats pipeline was restructured
 // to stop reading DB1 sold-derived fields. DB1 no longer stores soldPrice or
@@ -38,13 +43,49 @@ export async function makeStreetDecision(
     where: { streetSlug },
   });
 
-  // Need at least 1 listing of any kind to build a page
-  if (totalListings === 0 || (soldCount < 1 && activeCount < 1)) {
+  // QUEUE item 7 (2026-09-10, DEC-GATE-PARITY). The two gates disagreed.
+  //
+  // getStreetStats reads six sources and has since DEC-ZERO-SALES-TIER gave it the sixth:
+  // DB2 row existence at any date. This gate read three, all of them DB1, and a street with
+  // no DB1 listing was declared "ineligible" and struck off the queue before getStreetStats
+  // was ever consulted. So a street whose entire transaction history sits in DB2 — the table
+  // that actually holds the record — could not be built or refreshed by the cron, no matter
+  // how much history it had. tasker-court-milton was the case that exposed it, and it needed
+  // a manual force-regenerate to get a page at all.
+  //
+  // The same clause, from the same helper, now runs here. It counts rows and reads nothing:
+  // no sold_price, no sold_date, no window. It cannot move a published number, only decide
+  // that a street is allowed through to a generator whose own k-anon gates are untouched.
+  //
+  // Order matters for cost. The DB2 probe runs ONLY when the DB1 clause would have failed,
+  // so a street that already passes costs the cron exactly what it cost before.
+  //
+  // THE ENTITY FLOOR APPLIES TO WHAT THIS CLAUSE ADMITS. Of the 192 streets the DB2 clause
+  // rescues, 14 are on neither the Town registry nor the off-registry allowlist, and they are
+  // the usual debris: derry-rd-road-milton, nipissing-rd-milton-road-milton,
+  // bessy-trail-trail-milton, nipising-road-milton. DB2 rows exist under those slugs because
+  // MLS ingest wrote whatever abbreviation it produced; that is not evidence of a street.
+  // Publish floor = entity floor, so a rescue is only a rescue for a slug the Town recognises.
+  //
+  // Note this guards the DB2 branch only. The DB1 branch has never consulted the registry and
+  // is left exactly as it was; every one of the 445 published streets is on the floor today,
+  // so nothing is currently leaking through it, but nothing stops it either. Recorded in
+  // HANDOFF.md rather than closed here.
+  const failsDb1Gate = totalListings === 0 || (soldCount < 1 && activeCount < 1);
+  const onEntityFloor =
+    MILTON_STREET_REGISTRY_SLUGS.has(streetSlug) || OFF_REGISTRY_SET.has(streetSlug);
+  const recordedTransactionCount =
+    failsDb1Gate && onEntityFloor ? await countRecordedTransactions(streetSlug) : 0;
+
+  if (failsDb1Gate && recordedTransactionCount === 0) {
     await prisma.streetQueue.updateMany({
       where: { streetSlug },
       data: { status: "ineligible" },
     });
-    console.log(`Ineligible: ${streetName} — ${soldCount} sold-status, ${activeCount} active`);
+    console.log(
+      `Ineligible: ${streetName} — ${soldCount} sold-status, ${activeCount} active, ` +
+      `${onEntityFloor ? "0 DB2 records" : "off the entity floor, DB2 not consulted"}`
+    );
     return "skip_low_data";
   }
 
@@ -142,7 +183,7 @@ export function hasStreetActivity(s: StreetActivitySources): boolean {
  * Returns 0 if DB2 is unreachable, keeping the gate exactly as permissive as it
  * was before this source existed.
  */
-async function countRecordedTransactions(streetSlug: string): Promise<number> {
+export async function countRecordedTransactions(streetSlug: string): Promise<number> {
   try {
     const { getSoldDb } = await import("@/lib/db");
     const sd = getSoldDb();

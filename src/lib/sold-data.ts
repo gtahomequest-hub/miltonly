@@ -267,6 +267,7 @@ export async function getStreetSoldList(
         AND perm_advertise = TRUE
         AND transaction_type = ${txn}
         AND sold_date >= NOW() - (${safeDays} || ' days')::interval
+        AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
       ORDER BY sold_date DESC
       LIMIT ${safeLimit}
     `) as Array<SoldRecord>;
@@ -292,6 +293,7 @@ export async function getNeighbourhoodSoldList(
         AND perm_advertise = TRUE
         AND transaction_type = ${txn}
         AND sold_date >= NOW() - (${safeDays} || ' days')::interval
+        AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
       ORDER BY sold_date DESC
       LIMIT ${safeLimit}
     `) as Array<SoldRecord>;
@@ -322,6 +324,7 @@ export async function getRecentSoldList(
           AND perm_advertise = TRUE
           AND transaction_type = ${txn}
           AND sold_date >= NOW() - (${safeDays} || ' days')::interval
+          AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND
           AND (${nbhd}::text IS NULL OR neighbourhood = ${nbhd})
           AND (${ptype}::text IS NULL OR property_type = ${ptype})
         ORDER BY sold_date DESC

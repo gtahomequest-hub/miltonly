@@ -39,8 +39,10 @@ const SURFACES = [
   "src/components/street/v2/StreetAlertCTA.tsx",
   "src/components/condo/CondoCTAs.tsx",
   "src/components/sold/SoldValuationCTA.tsx",
-  "src/components/street/ExitIntent.tsx",
-  "src/components/street/CornerWidget.tsx",
+  // Retired 2026-09-10 to retired/. Kept on the list, not dropped from it: a retired file is
+  // dead, not exempt, and it must not be remountable with a stale ingress.
+  "src/components/street/retired/ExitIntent.tsx",
+  "src/components/street/retired/CornerWidget.tsx",
   "src/components/places/PlaceAlertForm.tsx",
   "src/components/lead/DailyBriefSignup.tsx",
   // Phase 2

@@ -40,6 +40,22 @@ model Listing {
   // price-change event timestamp for market-signal tracking. NULL for listings
   // that haven't had a tracked price change.
   lastPriceChangeAt  DateTime?
+  // DEC-PRICE-HISTORY (2026-09-10). The list price this row carried immediately before the
+  // most recent change, and when that change was observed. Written by the DB1 sync
+  // (src/app/api/sync/detect/route.ts) on the update branch only, and only when both the
+  // stored and the incoming price are > 0 — `price: item.ListPrice || 0` turns an absent
+  // ListPrice into a zero, and a zero is not a reduction.
+  //
+  // These are NOT lastPriceChangeAt's replacement, they are what it never held. That column
+  // is gated on MlsStatus = 'Price Change' and records only THAT a price moved; these two
+  // record what it moved FROM and are set on any observed change of the number, whatever the
+  // status string says. A drop is `priorPrice IS NOT NULL AND price < priorPrice`.
+  //
+  // Null on every pre-existing row and on every newly created one: nothing was backfilled,
+  // because a prior price that was never observed cannot be invented. A listing becomes
+  // derivable from its first price change after 2026-09-10, not before.
+  priorPrice         Int?
+  priceChangedAt     DateTime?
   soldPrice          Int?
   soldDate           DateTime?
   daysOnMarket       Int?

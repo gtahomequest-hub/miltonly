@@ -264,6 +264,26 @@ export async function POST(request: NextRequest) {
         const priceActuallyChanged = !existing || existing.price !== incomingPrice;
         const shouldStampPriceChange = isPriceChangeStatus && priceActuallyChanged;
 
+        // ── DEC-PRICE-HISTORY (2026-09-10) ──
+        // lastPriceChangeAt above says a price moved. It has never said what it moved from,
+        // so "reduced" was not derivable from DB1 at all — see the note in src/lib/stats.ts.
+        // priorPrice carries the number this row held before the change and priceChangedAt
+        // carries when the change was seen.
+        //
+        // Three conditions, all required:
+        //   - the row already exists (a create has no prior price, and inventing one from
+        //     the incoming price would manufacture a change that did not happen),
+        //   - the stored and incoming prices differ,
+        //   - BOTH are > 0. `price: item.ListPrice || 0` writes a zero when the feed omits
+        //     ListPrice, and a zero on either side is an absent number, not a reduction.
+        // Deliberately NOT gated on MlsStatus: the status string is the board's label for
+        // the event, the two numbers are the event.
+        const recordPriceHistory =
+          !!existing && existing.price !== incomingPrice && existing.price > 0 && incomingPrice > 0;
+        const priceHistoryFields = recordPriceHistory
+          ? { priorPrice: existing!.price, priceChangedAt: new Date() }
+          : {};
+
         const listingData = {
           mlsNumber: item.ListingKey,
           address,
@@ -289,6 +309,9 @@ export async function POST(request: NextRequest) {
           status: states.status,
           leaseStatus: states.leaseStatus,
           ...(shouldStampPriceChange ? { lastPriceChangeAt: new Date() } : {}),
+          // Empty on a create and on an unchanged price; Prisma omits absent keys from the
+          // SET clause, so a pass that records nothing preserves what is already stored.
+          ...priceHistoryFields,
           description: item.PublicRemarks || null,
           latitude: item.Latitude || 0,
           longitude: item.Longitude || 0,

@@ -1,5 +1,7 @@
 "use client";
 
+// RETIRED 2026-09-10. Not mounted by any page and not being added to street pages.
+//
 // The form posted natively to /api/alerts/subscribe, a route that has never existed in this
 // codebase, so every submission navigated the visitor to a 404 and captured nothing. It now
 // posts JSON to /api/leads/create — the same live ingress StreetAlertCTA and CondoCTAs use —

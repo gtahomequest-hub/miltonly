@@ -156,6 +156,8 @@ function leaseRecordQuery(keys: string[]) {
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Lease'
          AND sold_date >= NOW() - INTERVAL '12 months'
+         AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND: and this one sorts DESC, so a
+                                -- future row would have led the list the model reads
        ORDER BY sold_date DESC
        LIMIT ${LEASE_RECORD_CAP}`,
   );
