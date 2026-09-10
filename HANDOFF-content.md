@@ -21,9 +21,15 @@ reading all six guides.
 
 **MERGED AND LIVE.** Core merged `feat/content` `0a2499b` as **`31a9ab0`** and
 reported the production battery **PASS, 11 checks, 449 pages, 99 s, exit 0** at
-the served SHA. This branch is fast-forwarded to `31a9ab0`; nothing is pending.
-Record: `scratchpad/reports/067-content-cron-hour-and-correction.md`, including
-its addendum, which is the part written after the merge.
+the served SHA. Main has since moved to **`5773f60`**, carrying `fix/core-batch`
+as `8db80da`, green on production; this branch is merged up to it. Record:
+`scratchpad/reports/067-content-cron-hour-and-correction.md`, including its two
+addenda, which are the parts written after the merge.
+
+**The three deleted `src/lib/hub*.ts` files were not `fix/core-batch`.** I
+flagged them; Core traced them. They arrived with `c98f40e`, Home's WIP hub
+rebuild, and left with Core's revert `2e3cc50`. Absent from main and from this
+branch alike, zero importers, battery green. Closed, no action.
 
 | | |
 |---|---|
@@ -156,11 +162,16 @@ so overriding the rule and telling the reader are the same act. A draft is
 still freely rewritable.
 
 The note rides **inside `sectionsJson`**, as an optional `correctionNote` on
-`EditionSections`. Not a column: nothing queries or sorts on it, only the
-renderer reads it, and `_prisma_migrations` here is out of step with the live
-database, so a column buys a raw-SQL migration and nothing else. Editions
-written before the field existed lack the key and render nothing. `buildEdition`
-never sets it; it is attached at the write.
+`EditionSections`. Not a column: nothing queries, filters or sorts on it and
+only the renderer reads it, so a column buys a migration and nothing else.
+Editions written before the field existed lack the key and render nothing.
+`buildEdition` never sets it; it is attached at the write.
+
+The decision was argued at the time on a second ground as well, that
+`_prisma_migrations` was out of step with the live database. **That ground was
+false and is withdrawn** (see the ledger note under "Notes for the next run").
+The decision stands on the first ground, which was always the stronger one, and
+it is the one to reuse: a field only the renderer reads does not earn a column.
 
 **A CORRECTION DOES NOT REPUBLISH.** `publishedAt` is preserved on a rewrite,
 and `dateModified` on both pages now reads `updatedAt`. It read
@@ -253,11 +264,42 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
   `DATABASE_URL`.** Substituting one for the other creates tables in the sold
   database. It happened during this build; the two empty tables were dropped
   from DB2 and created in DB1, verified both ways.
-- **The `_prisma_migrations` table is out of sync with the live database** —
-  every historical migration reports unapplied. `prisma migrate deploy` would
-  try to replay all of them. Apply Content migrations with
-  `npx prisma db execute --url "$DATABASE_URL" --file <migration.sql>`, the
-  raw-SQL-on-Neon pattern this project already uses.
+
+- **CORRECTED 2026-09-10. THE MIGRATION LEDGER WAS NEVER OUT OF SYNC. THE
+  EARLIER READING WAS TAKEN AGAINST THE WRONG DATABASE.** This file previously
+  said "`_prisma_migrations` is out of sync, every historical migration reports
+  unapplied", and told the next session to apply Content migrations with
+  `prisma db execute` instead. **That instruction is withdrawn. Following it is
+  what caused the drift Core had to repair.**
+
+  Measured directly against `DATABASE_URL`: **26 rows in `_prisma_migrations`,
+  0 unfinished, 0 rolled back.** The ledger is clean and always was.
+
+  The false reading has a mechanical cause worth knowing, because the next
+  person hits the same wall. `prisma migrate status` **cannot run in this
+  worktree at all**: `schema.prisma` declares `directUrl =
+  env("DIRECT_DATABASE_URL")`, that variable is absent from this `.env.local`,
+  and the CLI fails with `P1012` before it opens a connection. The only way to
+  make it run here is to set `DIRECT_DATABASE_URL` to something, and the
+  nearest-looking value is `NEON_DATABASE_URL_UNPOOLED` **which is DB2**.
+  Verified today: **DB2 has no `_prisma_migrations` table at all**, in either
+  `NEON_DATABASE_URL_UNPOOLED` or `SOLD_DATABASE_URL`. Point Prisma there and
+  every migration reports unapplied, correctly, about the wrong database.
+
+  **So: get `DIRECT_DATABASE_URL` (the unpooled DB1 URL) from the main worktree
+  or from Vercel before running any migration command here. Do not improvise a
+  value, and do not route around the ledger with `db execute`.**
+
+- **`20260910120000_market_edition` was created by `db execute` and the ledger
+  did not record it.** Core caught the drift and fixed it: they verified the
+  live schema against the migration column for column and index for index
+  (`MarketEdition` 13 columns 4 indexes, `MarketEditionGeneration` 13 columns 3
+  indexes, all matching), then ran `prisma migrate resolve --applied` rather
+  than the migration, which would have failed on `CREATE TABLE`. The row now
+  reads `applied_steps_count: 0`, which is the signature of a resolve rather
+  than a run. Nothing broke in the meantime only because Vercel runs
+  `prisma generate && next build`, not `migrate deploy`; it would have bitten
+  the first person to run migrations.
 - `npx prisma db execute` prints nothing for a `SELECT`. It cannot be used to
   inspect. Use a short `.mjs` against `@neondatabase/serverless` from the
   project root, and delete it after.
