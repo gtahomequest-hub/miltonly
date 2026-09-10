@@ -47,7 +47,7 @@ export function Hero({ hero, stats, trust }: HeroProps) {
               <div className="m-n" data-fig="on-market" data-value={stats.onMarket}>
                 {stats.onMarket}
               </div>
-              <div className="m-l">homes for sale today</div>
+              <div className="m-l">on the market today</div>
             </div>
             <div className="m-hs">
               <div className="m-n" data-fig="new-week" data-value={stats.newThisWeek}>
@@ -67,17 +67,6 @@ export function Hero({ hero, stats, trust }: HeroProps) {
                 {compactPrice(stats.typicalPrice)}
               </div>
               <div className="m-l">typical Milton home</div>
-            </div>
-            {/* THE RENT SIDE, NAMED. The four figures above are sale-side; this one is not.
-                It was not "on the market today" and never could be: a lease never carries
-                status='active', so folding it into that tile was impossible and calling the
-                sale count "on the market" quietly hid 1,116 available homes. Same figure
-                /rentals publishes, from one shared function. */}
-            <div className="m-hs">
-              <div className="m-n" data-fig="rentals-available" data-value={stats.rentalsAvailable}>
-                {stats.rentalsAvailable.toLocaleString('en-CA')}
-              </div>
-              <div className="m-l">available to rent</div>
             </div>
           </div>
 

@@ -2,7 +2,6 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import RentalsClient from "./RentalsClient";
-import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 
 export const dynamic = 'force-dynamic';
 
@@ -33,12 +32,9 @@ export default async function RentalsPage() {
     take: 48,
   });
 
-  // AVAILABLE, not "ever advertised". This counted every For Lease row regardless of
-  // leaseStatus and the page printed the result as "N active rentals" five times over. On
-  // 2026-09-10 that was 1,340, of which 224 were already leased: 1,116 were available. One
-  // shared function now answers this for /rentals and for the homepage's "available to rent"
-  // tile, so the two surfaces cannot disagree about the same word.
-  const totalRentals = await getRentalsAvailableCount();
+  const totalRentals = await prisma.listing.count({
+    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true },
+  });
 
   const avgRent = await prisma.listing.aggregate({
     where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true },

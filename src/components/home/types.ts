@@ -33,8 +33,6 @@ export interface MiltonStats {
   soldMonthToDate: number;
   /** k-gated: null below K_ANON_PRICE, never 0 */
   soldMonthTypical: number | null;
-  /** Milton rentals available today — the SAME figure /rentals publishes. Not sale-side. */
-  rentalsAvailable: number;
 }
 
 export interface TrustInfo {

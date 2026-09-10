@@ -174,7 +174,7 @@ export async function loadHomeRecord() {
 
   const round5k = (n) => (n === null ? null : Math.round(n / 5000) * 5000);
 
-  const [activeRows, newWeekRows, mtdRows, twelveRows, staRows, pubRows, entRows, rentRows] = await Promise.all([
+  const [activeRows, newWeekRows, mtdRows, twelveRows, staRows, pubRows, entRows] = await Promise.all([
     // buildMiltonWideContext: no city, no transaction-type filter.
     app`SELECT COUNT(*)::int n FROM public."Listing" WHERE "permAdvertise" = TRUE AND status = 'active'`,
     // getNewThisWeekCount: sale side, Milton, last 7 days.
@@ -200,13 +200,6 @@ export async function loadHomeRecord() {
     // publishedStreetPageSlugs: published content INTERSECT existing entity — the sitemap's set.
     app`SELECT "streetSlug" s FROM public."StreetContent" WHERE status = 'published'`,
     app`SELECT slug FROM public."ResidentialStreet"`,
-    // getRentalsAvailableCount: the lease side does NOT use status='active' — a lease row is
-    // status='rented' for life and leaseStatus carries the lifecycle. Filtering on transaction
-    // type alone counted 1,340 where 1,116 were available, and /rentals printed the difference
-    // as "active rentals".
-    app`SELECT COUNT(*)::int n FROM public."Listing"
-        WHERE "transactionType" = 'For Lease' AND city = 'Milton'
-          AND "permAdvertise" = TRUE AND "leaseStatus" = 'active'`,
   ]);
 
   const entities = new Set(entRows.map((r) => r.slug));
@@ -228,6 +221,5 @@ export async function loadHomeRecord() {
     soldToAskPct: staN >= K_ANON_PRICE && staRaw !== null ? Math.round(staRaw * 1000) / 10 : null,
     publishedStreetPages: pubRows.map((r) => r.s).filter((slug) => entities.has(slug)).length,
     publishedContentRows: pubRows.length,
-    rentalsAvailable: Number(rentRows[0]?.n ?? 0),
   };
 }
