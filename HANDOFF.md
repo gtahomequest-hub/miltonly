@@ -365,6 +365,25 @@ without the parameter.
 - **A reverted merge's commits are still ancestors, so re-merging them is a silent no-op.**
   `git merge --no-ff 5448b96` printed "Already up to date" and did nothing. Cherry-pick reapplies
   them. Read the merge output before believing a merge happened.
+- **The Prisma CLI reads `.env`, NOT `.env.local`.** This worktree has a gitignored `.env`
+  carrying `DATABASE_URL` and `DIRECT_DATABASE_URL`, which is the only reason `migrate status`
+  runs here. A worktree without one fails **P1012** before it opens a connection, because
+  `schema.prisma` declares `directUrl = env("DIRECT_DATABASE_URL")`. Content's worktree hit
+  exactly that and was pushed toward improvising a value.
+- **`DIRECT_DATABASE_URL` is `DATABASE_URL` with `-pooler` removed from the host.** Same Neon
+  endpoint, unpooled. It does not need to be fetched from Vercel and no credential needs to be
+  passed around to reconstruct it. **Do not substitute `NEON_DATABASE_URL_UNPOOLED`** — that is
+  DB2, it has no `_prisma_migrations` table at all, and Prisma will confidently report every
+  migration unapplied about the wrong database. That is the same DB1/DB2 substitution that once
+  created two empty tables in the sold database.
+- **Never route around the ledger with `prisma db execute`.** It runs the SQL and writes no row,
+  so the migration is invisible to `migrate status` and the next `migrate deploy` tries to replay
+  it against tables that already exist. `HANDOFF-content.md` recommended exactly this, on a false
+  premise; withdrawn by Content at `6608b59`. Audited afterwards with
+  `scripts/diag-migration-ledger-audit.ts`: 26 rows, 26 directories, 0 in progress, 0 drift,
+  0 never-applied, and only **2** rows with zero applied steps — `0_init`, which is the expected
+  baseline, and `20260910120000_market_edition`. **`savedsearch_env` and `phase1_lead_layer` were
+  genuinely run.** Content's worry that other migrations went the same way does not materialise.
 - **`prisma migrate status` is worth running after any merge that carries migrations.** Two rows
   were wrong on 2026-09-10 and neither broke a build, because Vercel runs `prisma generate`, not
   `migrate deploy`. `scripts/fix-migration-ledger.ts` clears a zero-step rolled-back row safely.
