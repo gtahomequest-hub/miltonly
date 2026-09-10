@@ -2,7 +2,7 @@ HOME · D:\miltonly-home · feat/homepage
 
 # Handoff — homepage worktree
 
-_Last rewritten 2026-09-10, after the header, footer and homepage sections were built._
+_Last rewritten 2026-09-10, after the title and H1 shipped and two figure defects were fixed._
 
 ## Scope of this worktree
 
@@ -34,13 +34,16 @@ and `PreFooterCTA.tsx`, which are the **other** pages' footer.
 | | |
 |---|---|
 | branch | `feat/homepage` |
-| code SHA | **`b9f0341`** — the last commit that changed anything under `src/` or `scripts/` |
-| reviewed SHA | **`3a1aced`** — code plus report 063. Commits after it are documentation only |
-| preview | **https://miltonly-715cxyyzc-gtahomequest-hubs-projects.vercel.app** (`3a1aced`) |
-| battery on that preview | **`PASS · 10 checks · 444 pages · 68s`**, exit 0, served SHA == expected |
+| code SHA | **`1f495e8`** — the last commit that changed anything under `src/` or `scripts/` |
+| preview | **https://miltonly-nlr4rvlrr-gtahomequest-hubs-projects.vercel.app** (`1f495e8`) |
+| battery on that preview | **`PASS · 10 checks · 444 pages · 64s`**, exit 0, served SHA == expected |
 | local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
-| state | **Built. Awaiting Aamir's preview review. NOT MERGED.** |
-| reports | `scratchpad/reports/062-homepage-gate-a.md` (recon), `063-homepage-build.md` (this build) |
+| state | **Built and corrected. Awaiting Aamir's preview review. NOT MERGED.** |
+| reports | `062-homepage-gate-a.md` (recon), `063-homepage-build.md` (build), `064-homepage-figure-defects.md` (title/H1 + figure fixes) |
+
+**Title and H1 are shipped** (Brain's pick): title `Milton Homes for Sale, Street by Street`
+(39 chars), H1 `What Milton homes actually sell for, / street by street`. Both are now set on
+the page with a declared canonical, not inherited from the root layout.
 
 Measured on the built page: **24 unique internal links -> 66**, **0 nav links -> 34**,
 **302 visible words -> 1,146**, 3 hubs linked -> **22**, 2 street pages linked -> **17**.
@@ -56,7 +59,8 @@ Measured on the built page: **24 unique internal links -> 66**, **0 nav links ->
 - **Five sections**: 01 streets on film, 02 newest on the market, 03 the neighbourhood
   ladder, THE BOARD (unchanged), 04 valuation with three live proof points, 05 the daily
   brief. The TrustBand is retired.
-- **A 10th battery check**, `scripts/verify/checks/homepage.mjs`.
+- **A 10th battery check**, `scripts/verify/checks/homepage.mjs`, extended 2026-09-10 to
+  assert every Milton-wide figure by VALUE and by FORMAT against `loadHomeRecord()`.
 
 ## Traps, and decisions that must not be re-litigated
 
@@ -77,13 +81,35 @@ Measured on the built page: **24 unique internal links -> 66**, **0 nav links ->
 - **The link floor in the battery does not guard the header.** 65 of the 66 links come from
   the body. The anchor assertions guard the header. The constant's own comment says this;
   do not raise the floor to "catch the nav".
+- **A figure crossing a component boundary must carry its unit in its name.**
+  `BoardTab.soldToAsk.value` is a RATIO that `TheBoard` multiplies at render; reading it
+  elsewhere printed `0.980868783307145%`. The homepage reads `soldToAskPct` from
+  `getMiltonSoldOverall()`, the same aggregate `/sold` publishes. Note the Board (urban, 13
+  weeks, 98.1%) and `/sold` (all Milton, 12 months, 98.3%) are different aggregates and are
+  not expected to agree.
+- **Three counts, three sets, and only one of them is "pages".**
+  `publishedStreetPageSlugs()` in `streetSurface.ts` is the sitemap's set (444) and is read
+  by `sitemap.ts`, `/streets` and the homepage. `surfacedStreetWhere()`'s count (738) is the
+  set allowed to appear in search and hub ladders; it was being published as a page count.
+  A raw `StreetContent` count (445) includes `15-side-road-side-road-milton`, an address
+  artifact with no entity, which the sitemap refuses. Never state a page count from anything
+  but `publishedStreetPageCount()`.
+- **A presence assertion is not a value assertion.** The homepage gate passed with both
+  figure defects on the page because it checked that a `data-fig` existed and parsed as a
+  number. `data-value` was correct in both defects; the fault was in the rendering. The
+  check reads rendered TEXT now. Do not "simplify" it back to reading the attribute.
+- **A fixed-width figure column is a promise about data that CSS cannot keep.** The proof
+  row was `128px` and the long value sat on its label. It is `minmax(0, max-content)` now.
 - **`mockData.ts` is no longer typed `HomepageData`.** It holds static hero editorial only.
   A hardcoded k-gated price would be a fabricated figure wearing a real figure's name.
 
 ## Open, and owned elsewhere
 
-- **Title and H1 unchanged.** Three options each are in report 063 §4. Brain picks; nothing
-  ships until then. The homepage still inherits the root layout's 101-character title.
+- **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
+  `permAdvertise AND status='active'` with no city and no transaction-type filter, so "on
+  the market today" would include leases and non-Milton rows. It is exactly right today
+  (448 either way), so this is latent, not a live wrong figure. The gate asserts the query
+  the app actually runs, on purpose. Needs a decision, not a silent change.
 - **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path does not
   store `consentText` / `consentTimestamp`, and the branch that does requires a phone
   number. Leads owns the model and this is flagged to them.
