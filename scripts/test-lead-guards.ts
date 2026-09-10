@@ -10,8 +10,9 @@
 // The behavioural half runs the real functions. The structural half reads the source, so a
 // future edit that removes a guard from the ingest path fails here rather than in the data.
 //
-// Zero I/O: no Redis is configured under tsx, so checkRateLimit exercises its in-memory
-// fallback, which is exactly the path a misconfigured deployment would take.
+// The rate-limit block runs against whatever store is configured: the in-memory fallback
+// locally, the real Upstash one on a Vercel build. Its keys carry per-run entropy for that
+// reason, and it asserts only what holds of both. See the comment on that block.
 
 import { readFileSync } from "node:fs";
 import { checkHoneypot, checkOrigin, checkRateLimit, hostAllowed, HONEYPOT_FIELD } from "@/lib/lead/guards";
@@ -62,32 +63,44 @@ async function main() {
   if (!foreign.ok) eq(foreign.status, 403, "origin: refusal is a 403");
 
   // ── rate limit ────────────────────────────────────────────────────────────────
-  // The in-memory fallback allows 5 per minute per key. Six calls from one IP must not all
-  // pass, or the limiter is not wired at all.
-  const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
-  let allowed = 0;
-  for (let i = 0; i < 6; i++) {
+  //
+  // THE STORE IS NOT THE SAME IN BOTH PLACES THIS TEST RUNS, and the original version of this
+  // block assumed it was. Locally no Upstash variables are set, so checkRateLimit falls through
+  // to the in-memory limiter and allows exactly 5 per key per minute. ON VERCEL THE UPSTASH
+  // VARIABLES ARE SET, so the build runs against the real shared store with a 10-minute sliding
+  // window and keys that outlive the process. The key was a random address out of 200, so two
+  // builds inside ten minutes could collide on it: a preview failed with
+  // "expected 5, got 3" on code that passes locally, which is a gate that cannot be trusted.
+  //
+  // Two changes. The key now carries enough entropy that no two runs can share one, and the
+  // assertion states what is true of BOTH stores: the first call passes, the sixth does not,
+  // and a refusal is a 429. The exact token count belongs to one implementation, not to the
+  // behaviour being guarded.
+  const runId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+  const ip = `203.0.113.${runId}`;
+  eq((await checkRateLimit({ ip })).ok, true, "rate limit: the first submission from a fresh key passes");
+  let allowed = 1;
+  for (let i = 0; i < 5; i++) {
     const v = await checkRateLimit({ ip });
     if (v.ok) allowed++;
   }
-  ok(allowed < 6, "rate limit: six submissions from one IP are not all allowed");
-  eq(allowed, 5, "rate limit: the fallback allows exactly five per window");
+  ok(allowed < 6, `rate limit: six submissions from one key are not all allowed (allowed ${allowed})`);
+  ok(allowed >= 5, `rate limit: the window is not narrower than the five it advertises (allowed ${allowed})`);
   const over = await checkRateLimit({ ip });
   eq(over.ok, false, "rate limit: the next call is still refused");
   if (!over.ok) eq(over.status, 429, "rate limit: refusal is a 429");
 
-  // A different IP is unaffected — the limit is per key, not global.
-  const freshIp = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
-  eq((await checkRateLimit({ ip: freshIp })).ok, true, "rate limit: a different IP is not affected");
+  // A different key is unaffected — the limit is per key, not global.
+  eq((await checkRateLimit({ ip: `198.51.100.${runId}` })).ok, true, "rate limit: a different IP is not affected");
 
   // The email dimension exists and is independent of the IP one.
-  const addr = `guardtest${Date.now()}@example.com`;
+  const addr = `guardtest${runId}@example.com`;
   let emailAllowed = 0;
   for (let i = 0; i < 6; i++) {
-    const v = await checkRateLimit({ ip: `192.0.2.${i + 1}`, email: addr });
+    const v = await checkRateLimit({ ip: `192.0.2.${i}.${runId}`, email: addr });
     if (v.ok) emailAllowed++;
   }
-  ok(emailAllowed < 6, "rate limit: one address submitted from six IPs is not allowed six times");
+  ok(emailAllowed < 6, `rate limit: one address submitted from six IPs is not allowed six times (allowed ${emailAllowed})`);
 
   // ── env tag ───────────────────────────────────────────────────────────────────
   const savedEnv = process.env.VERCEL_ENV;

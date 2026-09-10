@@ -6,8 +6,9 @@ _Last rewritten 2026-09-10, after Phase 2 was built, proven on preview, and push
 
 ## READ THIS FIRST
 
-**Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The branch is at **`00caa57`**, which
-is `origin/main` (`73e94ea`) merged into the Phase 2 commits `e46ae49`, `39bcfe1` and `0a1d08b`. Preview
+**Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The tip of `feat/leads` sits on
+**`00caa57`**, a real `git merge` of `origin/main` (`73e94ea`) into the Phase 2 commits `e46ae49`,
+`39bcfe1` and `0a1d08b`, with docs and one test fix on top. Preview
 `miltonly-1lw66pqlc`, aliased `miltonly-git-feat-leads`, battery
 **`PASS · 10 checks · 449 pages · 67s`**. Core merges. **Main had already moved twice while this
 was building** — check `git merge-base --is-ancestor origin/main HEAD` again before you touch it.
@@ -37,11 +38,11 @@ ingress named anywhere else. **22 prebuild tests run now.**
 
 | | |
 |---|---|
-| branch | **`00caa57`** — `origin/main` `73e94ea` merged in, rebuilt, pushed |
+| branch | `feat/leads`, on the merge **`00caa57`** of `origin/main` `73e94ea`, rebuilt, pushed |
 | preview | **`miltonly-1lw66pqlc`** at `39bcfe1`, alias `miltonly-git-feat-leads` |
 | battery on preview | **`PASS · 10 checks · 449 pages · 67s`** |
 | local build after the merge | exit 0, zero `P2024`, **22/22 prebuild**, 549 static pages |
-| prebuild, lead layer | `[lead-guards] 170 assertions` · `[lead-forms] 105 assertions` |
+| prebuild, lead layer | `[lead-guards] 171 assertions` · `[lead-forms] 105 assertions` |
 | `public.Lead` | **15 production rows** (untouched), 25 preview |
 | `SavedSearch` | 9 rows, all `env=preview`. **Production watches: 0** |
 | ingress routes | **one** |
@@ -89,6 +90,13 @@ a brief watch  →  /api/brief/send (cron 15 13 * * 1-5)  →  src/lib/brief/
   `git merge-base --is-ancestor origin/main HEAD` after the last fetch and **STOP if it fails**;
   merge main into the branch first, then build from that tree. This handoff's `00caa57` IS a
   real `git merge`, so a fast-forward or an ordinary merge is all Core needs.
+- **THE PREBUILD RATE-LIMIT TEST WAS FLAKY ON VERCEL AND IS FIXED HERE.** It asserted the
+  in-memory fallback's exact "5 per window" on the belief that no Redis is configured under
+  `tsx`. **The Upstash variables ARE set on a Vercel build**, so it ran against the real shared
+  store, with a 10-minute sliding window and a key drawn at random from 200 addresses. Two builds
+  inside ten minutes collided on one and a preview failed with `expected 5, got 3` on code that
+  passed locally. This was Phase 1's assertion and it has been on `main` since. The key now
+  carries per-run entropy and the assertion states what holds of both stores.
 - **The rate limit is real on preview and a REFUSED call still spends a token.** 5 per IP per 10
   minutes, sliding. A twenty-surface proof took four runs and collected eleven `429`s. Wait a
   clear ten minutes with **zero** requests between batches, not five.
