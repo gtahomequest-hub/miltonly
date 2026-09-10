@@ -8,10 +8,24 @@ _Last rewritten 2026-09-10, after Phase 2 was built, proven on preview, and push
 
 **Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The tip of `feat/leads` sits on
 **`00caa57`**, a real `git merge` of `origin/main` (`73e94ea`) into the Phase 2 commits `e46ae49`,
-`39bcfe1` and `0a1d08b`, with docs and one test fix on top. Preview
-`miltonly-1lw66pqlc`, aliased `miltonly-git-feat-leads`, battery
-**`PASS · 10 checks · 449 pages · 67s`**. Core merges. **Main had already moved twice while this
-was building** — check `git merge-base --is-ancestor origin/main HEAD` again before you touch it.
+`39bcfe1` and `0a1d08b`, with docs and one test fix on top. The tip is **`f9b7ea5`**, preview
+**`miltonly-psc39y5bl`**. Core merges. **Main moved three times while this was building** — check
+`git merge-base --is-ancestor origin/main HEAD` again before you touch it.
+
+**THE BATTERY FAILS ON THE FINAL PREVIEW, AND IT FAILS IDENTICALLY ON PRODUCTION.** Two
+assertions, both from the hub tier that landed on main between the merges, and the battery is 11
+checks now because that tier added `hub-intents.mjs`:
+
+```
+[hub-meta]    hero stat tiles parsed on every hub: 0,  expected 22
+[hub-intents] hubs rendering no intent squares:   22,  expected 0
+```
+
+`EXPECT_SHA=73e94ea… BASE=https://miltonly.com` gives `FAIL · 11 checks · 449 pages · 94s`, the
+same two with the same numbers. Main's own `HANDOFF.md` calls them "two stale parsers". **Nothing
+in this branch touches a hub page, a hub parser or a stat tile.** Isolated and pre-existing; the
+run continued on that basis. At `39bcfe1`, before that tier merged in, this branch's preview was
+**`PASS · 10 checks · 449 pages · 67s`**.
 
 **THE ONE INGRESS IS REAL NOW.** `/api/leads` (1,201 lines, four branches),
 `/api/off-market-leads` and `/api/exclusive-inquiry` are **deleted**. Every one of the twenty

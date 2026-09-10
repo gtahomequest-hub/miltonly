@@ -2,8 +2,9 @@
 
 **Worktree:** `D:\miltonly-leads` · **Branch:** `feat/leads`
 
-_2026-09-10. Pushed for the preview gate at `00caa57`, a merge of `origin/main` (`73e94ea`) into
-the Phase 2 commits `e46ae49`, `39bcfe1` and `0a1d08b`. Not merged to main; Core merges._
+_2026-09-10. Pushed for the preview gate at **`f9b7ea5`**, which sits on the merge `00caa57` of
+`origin/main` (`73e94ea`) into the Phase 2 commits `e46ae49`, `39bcfe1` and `0a1d08b`. Not merged
+to main; Core merges._
 
 ## What was asked, and what it turned into
 
@@ -165,9 +166,43 @@ email with a broken unsubscribe is the thing CASL prohibits.
 | | |
 |---|---|
 | local build | **exit 0**, zero `P2024`, **22/22 prebuild**, 549 static pages |
-| prebuild, lead layer | `[lead-guards] PASS — 170 assertions` · `[lead-forms] PASS — 105 assertions` |
-| battery on preview | **`PASS · 10 checks · 449 pages · 67s`** |
+| prebuild, lead layer | `[lead-guards] PASS — 171 assertions` · `[lead-forms] PASS — 105 assertions` |
+| battery on preview at `39bcfe1` | **`PASS · 10 checks · 449 pages · 67s`** |
+| battery on preview at `f9b7ea5` | **`FAIL · 11 checks · 449 pages · 123s`** — see below |
 | `origin/main` merged in | `73e94ea`, clean (twice; the second gained only `HANDOFF.md`) |
+
+### The battery failure is pre-existing on main and is not the lead layer
+
+The final preview fails **two assertions, both from the hub tier that landed on `main` between
+the two merges**, and the battery is 11 checks now rather than 10 because that tier added
+`scripts/verify/checks/hub-intents.mjs`:
+
+```
+[hub-meta]    hero stat tiles parsed on every hub: 0,  expected 22
+[hub-intents] hubs rendering no intent squares:   22,  expected 0
+```
+
+**Production fails the identical two.** Run against `https://miltonly.com` with
+`EXPECT_SHA=73e94ea…`, which is what main serves:
+`FAIL · 11 checks · 449 pages · 94s`, same two assertions, same numbers. Main's own
+`HANDOFF.md` records it as "the battery is down to two stale parsers". **Isolated,
+pre-existing, and nothing in this branch touches a hub page, a hub parser or the stat tiles.**
+Stated explicitly per the stop-on-failure rule, and the run continued.
+
+### The lead layer re-confirmed on the final SHA
+
+The two merges after the surface proof brought hub and homepage source changes, so one
+end-to-end submission was run again against `miltonly-psc39y5bl` at `f9b7ea5`:
+
+```
+200  {"ok":true,"lead_id":"cmtvj5xtm0000bp8n9lgv0yrj","env":"preview",
+      "diagnostics":{"confirmationEmailId":"0e6b5a87…","opsAlertId":"7651f84e…",
+                     "watch":{"created":true,"id":"cmtvj5xxr…","kind":"brief"},"value":200}}
+```
+
+The brief then found that subscriber and composed its edition (`subscribers=1`, subject
+`Milton brief: 1 sold, 19 new`, named street `Zuest Crescent`). **The watch was deleted. Brief
+watches: 0.**
 
 `scripts/test-lead-forms.ts` walks every file under `src/`, strips comments, and reads every
 string literal handed to `fetch(`, every form `action=`, and any axios/XHR-shaped POST. A lead
