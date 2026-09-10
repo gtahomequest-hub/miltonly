@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built and ruled 2026-09-10 on `fix/core-batch`, NOT merged** — the merge is blocked on a red battery, not on item 7. Items 5 and 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built and ruled 2026-09-10 on `fix/core-batch`, NOT merged** — the battery blocker cleared 2026-09-10 when the feat/homepage merge was reverted; the branch now needs a fresh gate against current main. Items 5 and 6 **not started**.
 
 **The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
 registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
