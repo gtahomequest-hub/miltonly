@@ -1,81 +1,125 @@
+CORE · D:\miltonly · main
+
 # Handoff
 
-_Last rewritten 2026-09-09, after QUEUE item 4 merged and the condo bodies were regenerated._
+_Last rewritten 2026-09-10, after the rulings were executed and the merge sequence halted._
 
 ## READ THIS FIRST
 
-**QUEUE item 4 is MERGED and live, and the condo prose is regenerated.** Merged as `a7e3a7f`.
-Production serves it; battery **`PASS · 9 checks · 444 pages · 67s`** at the full SHA, and all
-five checked condo H1s render the full name. `ff70116` on top carries the runner and one real
-fix found by running it.
+**THE MERGE SEQUENCE IS HALTED. `fix/core-batch` IS NOT MERGED.** `feat/homepage` merged to main
+as **`cec6906`** and production serves it, but **the battery on production is RED** and the cause
+came in with that merge, not with this batch. Stop-on-failure says continue only if a failure is
+isolated AND pre-existing. These are isolated but new. `fix/core-batch` sits at **`2e8dfc0`**,
+built and green on its own preview, waiting. Full record: `scratchpad/reports/066-rulings-and-merges.md`.
 
-**`src/lib/condoName.ts` is the only source of a condo building's name on any surface.** The
-condo counterpart of `resolveStreetName`, same rule: the registry is the authority and the
-stored string is not. `streetSlug` is primary; a re-parse of the raw address is a **check**, and
-a disagreement is reported rather than silently resolved. Two report today and both are
-understood: `21 Crt St N` and `6415 Regional Rd`.
+    FAIL · 11 checks · 449 pages   (at e54d6be, after the redeploy)
+      [hub-meta]    hero stat tiles parsed on every hub: 0, expected 22
+      [hub-intents] hubs rendering no intent squares: 22, expected 0
 
-**THE DIRECTION IS THE TOWN'S, PER CIVIC ADDRESS, OR ABSENT.** `src/data/addressDirections.ts`
-carries the Town's `ST_DIR_SUFFIX` for 1,355 civic addresses over the **12** Milton streets that
-have one, from 1,976 points, **36 dropped for contradicting themselves**. The MLS strings were
-not merely abbreviated but wrong: `"1050 Main St W"` names an address the Town records as MAIN
-STREET **E**. **There is no Main Street West condo** — all 17 resolve East or to no direction.
+**Both remaining failures are stale parsers. Every figure assertion now passes.** The homepage
+failure is GONE: the redeploy that carried this handoff cleared the memo and `proof-sales-12mo`
+corrected from 1,531 to **1,728** on its own, which is the proof of the diagnosis below.
 
-**A MODEL QUOTES ANY FIELD YOU GIVE IT.** The first regeneration run passed 52 buildings and
-three of them still said "located at 100 Millside Dr S" in their own prose, because
-`buildCondoBuildingInput` was still handing the model the raw `buildingAddress` alongside the
-resolved `displayName`. Worse than the abbreviation: the raw string carries a direction the Town
-contradicts, so `460 Gordon Krantz Ave S` was being written into a body for a street that has no
-direction at all. **Both model-facing address fields now carry resolved forms.** Fixed in
-`ff70116` and the three were re-run clean. If you add a field to that input, ask what happens
-when the model quotes it.
+**TWO OF THE THREE ARE STALE PARSERS, NOT BROKEN PAGES.** `feat/homepage` rewrote the hub hero
+markup from an `h-` prefix to `hh-` and did not update the two checks that read it.
+`hub-intents.mjs` matches `class="h-intent"` and the page renders `class="hh-intent"`;
+`hub-meta.mjs`'s `heroStats()` splits on `<div class="h-hs">` and reads `h-n`/`h-l` while the page
+renders `hh-fact` / `hh-fact-v` / `hh-fact-l` with `data-fig` and `data-value` attributes. **The
+squares and tiles are on the page.** Confirmed by hand against bronte-meadows and moffat.
 
-**Condo prose, final state: 3 of 59 published bodies still carry an abbreviation**, and all
-three are understood and none is a naming bug:
-`830-megson-terrace-milton` failed its validator and is **fail-closed** — the old row is
-preserved, the page is untouched, the H1 is already correct;
-`158-mill-street-milton` and `174-bronte-street-milton` are **zero-data** and the generator
-refuses them before any write. `buildingName` and `metaTitle` carry **0** abbreviations across
-all 59.
+**AND THE SUB-K CONTRACT CHANGED WITH IT.** On a k-clearing hub `hub-fact-typical` prints `$955K`
+labelled "typical sale price"; on moffat, which is sub-k, the same tile degrades to `3` labelled
+"sales in 12 months". That is a better suppression than the old silent tile, but `hub-meta`'s
+`silent` model no longer maps to it and its assertions need rewriting around the new contract.
+**Not done here on purpose: rewriting another branch's k-anonymity verification inside a merge
+window is how a real suppression bug gets waved through.**
 
-**There was no standing bulk runner for condos.** `regen-058-local.ts` calls
-`generateStreetContent` and reads `StreetContent`; it cannot touch a building.
-`scripts/regen-condo-local.ts` is the counterpart and mirrors its discipline verbatim — the same
-primary-provider assertions, explicit order file, pre-page cost ceiling, consecutive-signature
-halt, per-page revalidate. **It sets `CONDO_ENABLED=true` in the process environment only**, the
-way the street runner forces `AI_PROVIDER`: no prod env change, no redeploy, announced on every
-run. `CONDO_ENABLED` remains dormant in production.
+**THE HOMEPAGE PUBLISHES A FIGURE FROM A CACHE NOTHING CAN INVALIDATE.** `proof-sales-12mo` reads
+**1,531** against a live source of **1,728**. `buildMiltonWideContext()` in
+`src/lib/ai/buildHubInput.ts` memoizes into a module-level `_miltonWideCache` with **no TTL**, and
+`resetMiltonWideContextCache()` is called by one script and **nothing in the serving path**. The
+memo was written for "once per generation run" across 14 hubs; the homepage calls it on every
+render. It fills on the first render after a deploy and never refreshes for that lambda's life.
+`on-market` and `dom` come from the same memo. **`/api/sync/sold` runs daily at 11:00, so this
+goes stale every day and is silently corrected by the next deploy** — which is why it was never
+caught. The backfill did not cause it, it only made it visible.
 
-**`/api/revalidate` reads `REVALIDATION_SECRET`.** Not `CRON_SECRET`, not `REVALIDATE_SECRET`.
-The first run's 52 revalidations all returned **401** on that guess and were re-run to 200 after.
-A revalidate that 401s does not fail the generation, so it is silent unless you read the status.
+**A DB2 WRITE HAS THREE CONSUMERS TO INVALIDATE AND DEC-REGEN-REVALIDATE COVERS ONE.** The
+sold-date backfill moved figures corpus-wide and purged nothing, because it writes no
+`StreetContent` row. Purging the pages did not fix it either: the figures come from `cached()` in
+`src/lib/cache.ts`, an Upstash layer with a 1h TTL that a Next.js path revalidation does not
+touch. The homepage was a cache MISS and still printed the old numbers. **The order is Redis
+first, pages second, prose third:** `scripts/purge-sold-caches.ts` (17 keys, 10 prefixes), then
+`scripts/purge-after-sold-backfill.ts` (26 paths), then a regeneration, which is separate. That
+fixed `sold-mtd` and all 18 hub-figure mismatches.
 
-**The Anthropic account has no credit.** `AI_PROVIDER_FALLBACK="opus"` is still set in
-production, so a cron generation that escalates fails closed. Blocks
-`jasper-street-milton`, `wood-close-milton`, `bell-school-line-milton`. The condo run needed
-none of it: DeepSeek cleared 55 of 55 attempted buildings on its own.
+**THE BACKFILL IS DONE AND IT WAS 255, NOT 245.** The feed added 10 overnight. All 255 repairable,
+0 undatable, 255 written, 0 failed, **re-run reports 0**. Repaired through `resolveSoldDate`, the
+same function the sync calls, so a backfilled row is what the next sync would have written.
+`close_date` untouched throughout. **150 streets changed their 12-month sample; 17 crossed k5 and
+9 crossed k10, exactly as predicted.** They publish nothing new until they are regenerated,
+because those figures live in stored prose.
 
-**Published street pages: 445.** The battery reports 444; different population, both right.
+**THE CREATION PROGRAMME IS BLOCKED AT A 22% PASS RATE.** The 50-page run **halted at 23** on the
+five-consecutive-failure guard: 5 passed and published, 18 failed, $0.2624 of a $3 cap. The
+dominant signature is `invalid_json_shape: sections length = 3, expected 2` — the model keeps
+emitting **`differentPriorities`** and its FAQ on inputs where `dropsDifferentPriorities(input)`
+is true, through all 5 attempts with the retry feedback in front of it. **All 249 candidates are
+this same thin-data population**, so this is not a per-page problem. Fix the prompt before running
+more. Failures are fail-closed and wrote no row, so there is nothing to unpublish.
+
+**THE RUNNER IN THE RULING COULD NOT HAVE DONE IT.** `regen-058-local.ts` reads the
+`StreetContent` row first and logs `SKIP - no StreetContent row`, which is every street in this
+programme. It would have reported a clean run having created nothing.
+**`scripts/create-street-pages-local.ts`** is its creation counterpart, with the same controls.
+
+**A COLUMN WAS NEARLY ADDED FOR NOTHING.** `StreetContent.createdAt` already exists, in the
+database and in `schema.prisma` both, defaulting on insert, carrying real history to 2026-04-21.
+An `ALTER TABLE` to add it failed with **42701**. Nothing was added, the failed migration is
+marked rolled back, and **`prisma migrate status` is clean**. Read the schema before adding to it.
+
+**THE CRON DRAIN RUNS HOURLY**, so a per-invocation limit is not a daily one — 24 invocations
+would have allowed 480 pages a day. `NEW_PAGES_PER_DAY = 20`, counted over
+`StreetContent.createdAt`; only `build` spends budget, `regenerate` never did; a street over
+budget is left **pending**, not ineligible, and the cap is reported in the route's JSON.
+
+**`/rentals` is 1,116 and the homepage agrees. `on-market` is 457, not 462** — it is live and it
+moves, and the battery passes it against its own source.
+
+**Published street pages: 450**, up from 445: the five new ones. Total `StreetContent` 495.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
-
-**A generation stores the input it was written from.** `StreetGeneration.inputJson`.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | **`ff70116`** |
-| production | **`miltonly-3vg6p4ufc`**, serving **`ff70116`**, confirmed on the apex |
-| battery on production | **`PASS · 9 checks · 444 pages · 72s`**, exit 0, at the full SHA `ff70116` |
-| local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
-| condo buildings | **65** (not the 108 the brief stated) |
-| published `CondoContent` | **59** |
-| condo bodies regenerated | **52 passed, 1 failed, 2 skipped**, `$0.0900` total |
-| condo bodies still abbreviated | **3 of 59**, all understood, none a naming bug |
-| condo `buildingName` / `metaTitle` abbreviated | **0 / 0** |
-| published street pages | **445** |
-| QUEUE | 1, 2, 3, **4 done**; 5, 6, 7 not started |
+| `main` | **`cec6906`** plus this docs commit; production serves it |
+| battery on production | **`FAIL · 11 checks · 449 pages`**, 3 assertions, all diagnosed above |
+| `fix/core-batch` | **`2e8dfc0`**, pushed, **NOT merged**, green on its own preview |
+| `prisma migrate status` | **clean** |
+| future-dated DB2 rows | **0** (255 repaired, re-run 0) |
+| streets crossing k5 / k10 | **17 / 9**, unpublished until regenerated |
+| creation candidates | **249**; 5 built, 18 failed, **226 not attempted** |
+| creation pass rate | **22%**, systemic, programme paused |
+| published street pages | **450** |
+| QUEUE | 1, 2, 3, 4 done; **7 built and ruled, merge blocked**; 5, 6 not started |
+
+
+## What happened 2026-09-10 (later) — the rulings
+
+Four rulings executed. Record in `scratchpad/reports/066-rulings-and-merges.md`.
+
+**1. The backfill.** `scripts/backfill-sold-date-not-future.ts`, dry-run by default, repairs
+through `resolveSoldDate`. 255 rows, 0 undatable, re-run 0. It never invents a date and never
+deletes a row it cannot date. Two new purge scripts followed it, in the order that matters.
+
+**2. The 50-page run.** Halted at 23 by its own guard. 5 published. The blocker is a
+prompt/validator disagreement over `differentPriorities` on thin-data inputs, not the runner.
+
+**3. The cap.** Built, hourly-drain-aware, reported in the response.
+
+**4. The merges.** `feat/homepage` in at `cec6906`. `fix/core-batch` held back on a red battery.
 
 ## What happened 2026-09-09 — QUEUE item 4, condo names
 
@@ -256,9 +300,31 @@ without the parameter.
 18. Two draft rows carry a clip: `diefenbaker-street-milton`, `murlock-heights-milton`.
 19. **11 slugs have R2 clips uploaded and no `StreetContent` row.** Generation candidates,
     blocked by open item 1 wherever DeepSeek cannot clear them.
+20. **CLOSED.** The 255 future-dated DB2 rows are repaired; a re-run reports 0.
+24. **The hub battery cannot pass.** Two checks parse markup that no longer exists, and
+    `hub-meta`'s sub-k `silent` model does not map to the new degrade-to-a-count tile. Blocks
+    every merge until rewritten. See READ THIS FIRST.
+25. **`buildMiltonWideContext` memoizes with no TTL** and nothing in the serving path resets it.
+    Three homepage figures go stale daily and are corrected only by a deploy.
+26. **The creation programme is paused at 22%.** `differentPriorities` is offered by the prompt
+    on inputs the validator refuses it on. 226 of 249 candidates unattempted.
+27. **17 streets cleared k5 and 9 cleared k10** in the backfill and still publish the suppressed
+    figure, because the numbers are in stored prose. A regeneration is the only way through.
+28. **The DB1 branch of `makeStreetDecision` has no entity floor**, and `/api/sync/generate` has
+    none at all. Only `scripts/create-street-page.ts` enforces publish floor = entity floor.
 
 ## Notes for the next run
 
+- **Purge order after any DB2 write: Redis, then pages, then prose.**
+  `scripts/purge-sold-caches.ts` then `scripts/purge-after-sold-backfill.ts`. Purging pages first
+  just re-renders the stale numbers, which is exactly what happened on 2026-09-10.
+- **`&&` short-circuits, and an `echo` after it does not.** A chain whose `python` step failed
+  still printed "migration written" and the migration directory was never created. Verify the
+  artifact, not the message.
+- **Read the schema before adding to it.** `StreetContent.createdAt` was already there, twice
+  over, and the ALTER failed with 42701.
+- `scripts/create-street-pages-local.ts` CREATES pages; `regen-058-local.ts` REgenerates and
+  silently skips any slug with no row. Pick by whether the row exists.
 - **The battery takes the full 40-character SHA.** A short SHA fails the gate on a string
   compare and aborts before any content check. `EXPECT_SHA` overrides local HEAD, which
   is what you want when running it from a branch against a preview.
@@ -304,7 +370,11 @@ without the parameter.
 
 ## Next expected task
 
-**QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
+**Make the battery honest again, then merge `fix/core-batch`.** Two stale hub checks and the
+sub-k tile contract, open items 24 and 25. Nothing merges until the battery can pass, and it is
+failing on parsers rather than on pages, so the pages are not the work.
+
+Then: **QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
 length and terminus onto all published streets from the Town and OSM layers. No camera work and
 nothing derived from imagery.
 

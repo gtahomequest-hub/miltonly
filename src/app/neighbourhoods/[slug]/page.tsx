@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getHubData } from "@/lib/hubData";
+import { getHubFooter, HUB_BRAND } from "@/lib/hubFooter";
 import { getHubMetaLive, getHubInputCached, hubCanonical } from "@/lib/hubLive";
 import HubPage from "@/components/hub/HubPage";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
 import {
   generateNeighbourhoodSchema,
   generateBreadcrumbSchema,
@@ -38,6 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function NeighbourhoodPage({ params }: Props) {
   const data = await getHubData(params.slug);
   if (!data) notFound();
+  // The homepage's live link graph, on the hub too. FooterSection (the legacy navy footer)
+  // linked three neighbourhoods and two streets; this links every published hub.
+  const footer = await getHubFooter();
 
   // Projected hub Place/ItemList schema (DEC-WS4-2) — rebuilt best-effort so the SEO
   // the WS5 page carried is preserved; falls back to the neighbourhood schema if it throws.
@@ -81,8 +84,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <HubPage data={data} />
-      <FooterSection />
+      <HubPage data={data} footer={footer} brand={HUB_BRAND} />
     </>
   );
 }

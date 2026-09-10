@@ -147,6 +147,10 @@ const FIG_SPECS = [
     },
     tol: 500, pattern: /^\$\s*[\d.]+(K|M)$/,
   },
+  // NOT sale-side, and asserted against BOTH the record and the page it is copied from.
+  // See the /rentals cross-check below: equality with the record is not enough, because the
+  // point of this figure is that two surfaces state one number.
+  { fig: 'rentals-available', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'proof-street-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'proof-sales-12mo', source: 'sold12mo', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   {
@@ -245,6 +249,17 @@ export default {
     const pagesShown = pagesFig ? Number(pagesFig.text.replace(/[,\s]/g, '')) : null;
     const pagesMatch = pagesShown === homeRecord.publishedStreetPages;
 
+    // ── 3c. the rentals figure equals the figure /rentals itself publishes ───
+    // The homepage tile is a COPY of another page's number. Asserting it against the record
+    // proves it is right; asserting it against /rentals proves the two pages say one thing,
+    // which is the property that was asked for and the one that breaks first.
+    const rentalsPage = await get(base + '/rentals');
+    const rentalsFig = rentalsPage.status === 200 ? figures(rentalsPage.body).find((f) => f.fig === 'rentals-available') : null;
+    const rentalsShown = rentalsFig ? Number(String(rentalsFig.value)) : null;
+    const homeRentals = figs.find((f) => f.fig === 'rentals-available');
+    const homeRentalsShown = homeRentals ? Number(homeRentals.text.replace(/[,\s]/g, '')) : null;
+    const rentalsAgree = rentalsShown !== null && homeRentalsShown !== null && rentalsShown === homeRentalsShown;
+
     // ── 4. structured data ───────────────────────────────────────────────
     const website = nodes.find((n) => n['@type'] === 'WebSite');
     const org = nodes.find((n) => n['@type'] === 'Organization');
@@ -260,6 +275,7 @@ export default {
         ['Milton-wide figures checked by value + format', `${FIG_SPECS.length} specs`],
         ['as rendered', figReport.join(' · ') || 'none read'],
         ['published street pages (record)', homeRecord.publishedStreetPages],
+        ['rentals available: homepage / /rentals / record', `${homeRentalsShown ?? '—'} / ${rentalsShown ?? '—'} / ${homeRecord.rentalsAvailable}`],
         ['published StreetContent rows (record)', homeRecord.publishedContentRows],
         ['neighbourhood price figures', hoodFigs.length],
         ['sub-k hoods (price must be silent)', hoodFigs.filter((f) => hubRecord.hub(f.slug) && hubRecord.hub(f.slug).typicalRounded === null).map((f) => f.slug).join(', ') || 'none'],
@@ -277,6 +293,8 @@ export default {
         ['Milton-wide figures rendered in the wrong format', malformed.length, 0],
         ['Milton-wide figures outside their source + tolerance', offSource.length, 0],
         ['street-page figure == the published page count', pagesMatch, true],
+        ['/rentals returns 200', rentalsPage.status, 200],
+        ['homepage rentals figure == the figure /rentals publishes', rentalsAgree, true],
         ['neighbourhood figure != its hub record', priceMismatch.length, 0],
         ['neighbourhood figure off a sub-k pool', subKLeak.length, 0],
         ['sub-k hood prints a price instead of its suppression', silentSplit.length, 0],
@@ -295,6 +313,7 @@ export default {
         ...missingRail.map((h) => `rail link missing from nav markup: ${h}`),
         ...absent, ...malformed, ...offSource,
         ...(pagesMatch ? [] : [`street-page figure shows ${pagesShown} vs ${homeRecord.publishedStreetPages} published pages`]),
+        ...(rentalsAgree ? [] : [`rentals: homepage ${homeRentalsShown ?? 'absent'} vs /rentals ${rentalsShown ?? 'absent'}`]),
       ],
     };
   },

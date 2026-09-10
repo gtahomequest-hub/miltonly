@@ -823,9 +823,17 @@
 
 /* dim inline hero stats — 2026-07-21: moved ABOVE the ask card (Better
    pattern: credibility primes before the ask). */
+/* FIVE tiles since 2026-09-10, not four: "available to rent" joined the row when
+   "on the market today" was corrected to "homes for sale today". Four sale-side figures
+   and one rent-side one, each naming its own market.
+
+   The gap and the numeral size scale with the viewport because five tiles at a fixed 48px
+   gap and 56px numerals overflow 1180px and wrap 4+1, which reads as one orphaned figure
+   rather than a set. Below 720px the row becomes a 2-column grid so it wraps evenly
+   instead of raggedly. */
 .home-v2 .m-herostats {
   display: flex;
-  gap: 48px;
+  gap: clamp(20px, 3.2vw, 42px);
   justify-content: center;
   margin: 2px 0 34px;
   flex-wrap: wrap;
@@ -833,7 +841,7 @@
 .home-v2 .m-herostats .m-hs .m-n {
   font-family: var(--m-serif);
   font-weight: 400;
-  font-size: clamp(38px, 5vw, 56px);
+  font-size: clamp(32px, 4.2vw, 50px);
   /* 0.42 -> 0.8 (2026-07-22): numbers must instantly out-rank the map
      labels behind them; captions below stay quiet */
   color: rgba(246, 241, 232, 0.8);
@@ -849,6 +857,14 @@
   letter-spacing: 0.04em;
   color: var(--m-text-faint);
   margin-top: 8px;
+}
+@media (max-width: 720px) {
+  .home-v2 .m-herostats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 16px;
+    text-align: center;
+  }
 }
 .home-v2 .m-trustlogos {
   margin-top: 34px;

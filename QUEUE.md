@@ -2,7 +2,15 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Items 5, 6 and 7 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built and ruled 2026-09-10 on `fix/core-batch`, NOT merged** — the merge is blocked on a red battery, not on item 7. Items 5 and 6 **not started**.
+
+**The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
+registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
+cron (`NEW_PAGES_PER_DAY`, `/api/sync/generate`), counted over `StreetContent.createdAt`, so the
+corpus grows at a reviewable rate rather than overnight. The drain runs hourly, so a
+per-invocation limit would have allowed 480 a day. Regenerations are not capped and never were.
+**The programme is paused after 5 pages** on a prompt/validator fault, not on the cap. Record in
+`scratchpad/reports/066-rulings-and-merges.md`.
 
 *Out-of-queue work 2026-09-05: the corpus grounding audit and its remediation, merged as `c953b9e`. Not a queue item — it was prompted directly. Record in `scratchpad/reports/058-corpus-audit.md`.*
 
@@ -262,6 +270,45 @@ it against the Town registry is step one, and the build scope follows from it �
 
 **Done when** the two gates consult the same sources, the registry-filtered population is
 reported, and the streets that already have pages refresh on the cron without a manual run.
+
+## BUILT AND RULED 2026-09-10 on `fix/core-batch`, NOT MERGED
+
+Pulled forward into a directly prompted CORE batch ahead of item 5, not self-started. Record in
+`scratchpad/reports/065-core-batch.md` and `scratchpad/reports/066-rulings-and-merges.md`.
+
+**NOT marked done, and the reason matters.** This item's own "Done when" requires that the
+streets which already have pages refresh on the cron. That needs the merge, and the merge is
+blocked: production's battery is red on two stale hub checks that came in with `feat/homepage`.
+The work is finished; the criterion is not met yet.
+
+- [x] the two gates consult the same sources. `makeStreetDecision` calls the same
+      `countRecordedTransactions`, and only when the DB1 clause has already failed, so a street
+      that already passes costs the cron exactly what it cost before
+- [x] **the registry-filtered population reported: 355.** 832 slugs carry DB2 records, 422 are
+      skipped by the old gate, 355 survive the entity floor, 67 do not
+- [x] `StreetQueue` view of the same change: `skip_low_data` **256 to 78**, 178 rescued
+- [x] the DB2 branch is floored on the registry. 14 of the slugs it would otherwise rescue are
+      ingest debris (`derry-rd-road-milton` at 236 rows, `nipissing-rd-milton-road-milton`,
+      `bessy-trail-trail-milton`, `nipising-road-milton`). Verified safe first: 0 of the then-445
+      published streets were off the floor
+- [x] `scripts/dryrun-street-decision-gate.ts` measures without writing
+- [x] **RULED: the programme ships with a daily cap of 20 new pages on the cron.**
+      `NEW_PAGES_PER_DAY = 20`, counted over `StreetContent.createdAt` — `generatedAt` and
+      `publishedAt` are both rewritten by every regeneration and would have counted refreshes as
+      creations. A street over budget stays **pending**, not ineligible, and the cap is reported
+      in the route's JSON so it cannot be mistaken for a stalled queue
+- [x] first batch: **5 of 23 published**, halted by the runner's own five-consecutive-failure
+      guard, $0.2624 of a $3 cap, DeepSeek only.
+      `scripts/create-street-pages-local.ts` — `regen-058-local.ts` could not have done it, it
+      skips any slug with no `StreetContent` row, which is all 249
+- [ ] **the merge.** Blocked on the battery, not on this item
+- [ ] **THE PROGRAMME IS PAUSED.** The 18 failures are one systemic fault, not 18 bad streets:
+      the prompt offers `differentPriorities` on inputs where `dropsDifferentPriorities(input)`
+      is true, so the validator expects 2 sections and gets 3, through all 5 attempts with the
+      retry feedback in front of it. Every one of the 249 candidates is this same thin-data
+      shape, which is why the pass rate is 22%. **226 unattempted.** Fix the prompt first
+- [ ] **the DB1 branch still has no entity floor**, and `/api/sync/generate` has no floor check
+      at all — only `scripts/create-street-page.ts` enforces it
 
 ---
 
