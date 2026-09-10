@@ -8,6 +8,8 @@ Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a4
 
 *Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
 
+*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is not started**: the nine funnel surfaces still on `/api/leads`, the three homepage forms, `OffMarketForm`, and the daily-brief sender.*
+
 ---
 
 ## 1. Naming close-out and hygiene
