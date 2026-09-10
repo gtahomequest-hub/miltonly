@@ -2,9 +2,15 @@ HOME · D:\miltonly-home · feat/homepage
 
 # 063 — Homepage, header and footer: the build
 
-Built on `feat/homepage`, commit **`b9f0341`**. Not merged.
-Preview: **https://miltonly-cofmzwdqr-gtahomequest-hubs-projects.vercel.app**
-Battery on that preview at the full SHA: **`PASS · 10 checks · 444 pages · 73s`**, exit 0.
+Built on `feat/homepage`, HEAD **`3a1aced`** (code `b9f0341`, plus this report and two
+comment corrections). Not merged.
+
+**Preview to review: https://miltonly-715cxyyzc-gtahomequest-hubs-projects.vercel.app**
+
+Battery on that preview at the full SHA: **`PASS · 10 checks · 444 pages · 68s`**, exit 0,
+`build 3a1aced served == expected`. It also passed at `b9f0341` on its own preview
+(`PASS · 10 checks · 444 pages · 73s`), which is where the check output quoted below was
+captured; the two commits differ only in comments and documentation.
 Local: `pnpm build` exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages.
 
 ---

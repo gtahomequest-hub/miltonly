@@ -33,9 +33,9 @@ and `PreFooterCTA.tsx`, which are the **other** pages' footer.
 
 | | |
 |---|---|
-| branch | `feat/homepage`, HEAD **`b9f0341`** |
-| preview | **https://miltonly-cofmzwdqr-gtahomequest-hubs-projects.vercel.app** |
-| battery on the preview | **`PASS · 10 checks · 444 pages · 73s`**, exit 0, at the full SHA |
+| branch | `feat/homepage`, HEAD **`3a1aced`** (code `b9f0341`) |
+| preview | **https://miltonly-715cxyyzc-gtahomequest-hubs-projects.vercel.app** |
+| battery on the preview | **`PASS · 10 checks · 444 pages · 68s`**, exit 0, at the full SHA |
 | local build | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
 | state | **Built. Awaiting Aamir's preview review. NOT MERGED.** |
 | reports | `scratchpad/reports/062-homepage-gate-a.md` (recon), `063-homepage-build.md` (this build) |
