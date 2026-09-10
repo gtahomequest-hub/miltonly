@@ -12,10 +12,13 @@ came in with that merge, not with this batch. Stop-on-failure says continue only
 isolated AND pre-existing. These are isolated but new. `fix/core-batch` sits at **`2e8dfc0`**,
 built and green on its own preview, waiting. Full record: `scratchpad/reports/066-rulings-and-merges.md`.
 
-    FAIL · 11 checks · 449 pages
+    FAIL · 11 checks · 449 pages   (at e54d6be, after the redeploy)
       [hub-meta]    hero stat tiles parsed on every hub: 0, expected 22
-      [homepage]    Milton-wide figures outside their source + tolerance: 1, expected 0
       [hub-intents] hubs rendering no intent squares: 22, expected 0
+
+**Both remaining failures are stale parsers. Every figure assertion now passes.** The homepage
+failure is GONE: the redeploy that carried this handoff cleared the memo and `proof-sales-12mo`
+corrected from 1,531 to **1,728** on its own, which is the proof of the diagnosis below.
 
 **TWO OF THE THREE ARE STALE PARSERS, NOT BROKEN PAGES.** `feat/homepage` rewrote the hub hero
 markup from an `h-` prefix to `hh-` and did not update the two checks that read it.
