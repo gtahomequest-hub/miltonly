@@ -2,8 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content
 
-_Last rewritten 2026-09-10, after the guides tier and Market Watch were built
-against the ten Gate A rulings._
+_Last rewritten 2026-09-10, after the guides tier and Market Watch merged to
+main and production was confirmed on the merge SHA._
 
 ## READ THIS FIRST
 
@@ -14,36 +14,47 @@ weekly edition.** Its own tables, its own routes, generation through
 footer or homepage.** Read the root `HANDOFF.md` for those tiers; it is the
 authority on everything outside this scope.
 
-**BUILT AND AWAITING PREVIEW REVIEW. NOT MERGED.**
+**MERGED AND LIVE.** Approved by Aamir on preview `miltonly-clft5u5jn` after
+reading all six guides.
 
 | | |
 |---|---|
-| branch | `feat/content` at **`62ab3a5f789e1468a9d02572b14a0231cdd60b20`** |
-| preview | **`https://miltonly-clft5u5jn-gtahomequest-hubs-projects.vercel.app`** |
-| battery on preview | **`PASS · 9 checks · 444 pages · 64s`**, exit 0, at the full SHA |
-| local gate | exit 0, zero `P2024`, **20/20 prebuild**, 554 static pages |
+| merged to `main` as | **`f6bbc92f2093b6fe7a3aafa27fc6f88bbd4b3a7b`**, two parents |
+| production | **`miltonly-kqtcnrve4`**, Ready, serving the merge SHA, confirmed on the apex |
+| battery on production | **`PASS · 10 checks · 444 pages · 67s`**, exit 0, at the full SHA |
+| local gate, merged tree | exit 0, zero `P2024`, **20/20 prebuild**, 548 static pages |
 | first edition | `/market-watch/2026-08-31`, published, real data |
 
-Gate A is `scratchpad/reports/062-content-gate-a.md`, its volume addendum is
-`063`, and what was built is **`064-content-build.md`**. Read 064 first now.
+The battery is 10 checks now, not 9: Home's merge added the homepage check in
+the same window.
 
-## The nine URLs
+Gate A is `scratchpad/reports/062-content-gate-a.md`, its volume addendum `063`,
+and the build record **`064-content-build.md`**. Read 064 before touching any of
+this.
+
+## What is live
 
 ```
 /guides
-/guides/what-milton-neighbourhoods-cost                      milton real estate market
-/guides/how-to-read-a-milton-sold-price                      sold prices milton
-/guides/is-it-a-good-time-to-sell-in-milton                  is it a good time to sell
-/guides/milton-condo-fees-parking-and-lockers                condos in milton
-/guides/what-it-costs-to-buy-your-first-home-in-milton        first-time buyer
-/guides/milton-schools-what-the-data-shows                   schools
+/guides/what-milton-neighbourhoods-cost                 milton real estate market
+/guides/how-to-read-a-milton-sold-price                 sold prices milton
+/guides/is-it-a-good-time-to-sell-in-milton             is it a good time to sell
+/guides/milton-condo-fees-parking-and-lockers           condos in milton
+/guides/what-it-costs-to-buy-your-first-home-in-milton  first-time buyer
+/guides/milton-schools-what-the-data-shows              schools
 /market-watch
 /market-watch/2026-08-31
 ```
 
-All nine return 200 and all nine are in `sitemap.xml`, verified on the served
-host. `parking` is held: the Town bylaw is not in this repo and a model would
-invent it.
+All nine return **200 on `https://miltonly.com`** and all nine are in the
+**live sitemap**, checked on the apex after the merge. Order is the brief's GSC
+evidence order. `parking` is held: the Town bylaw is not in this repo and a
+model would invent it.
+
+Verified on production, not just locally: 24 condo listings state a fee,
+`2.25% as at 8 September 2026` renders, the edition shows 40 sales, $920,000 and
+97.5%, and across all seven content pages there are **zero em-dashes and zero
+raw TREB strings**.
 
 ## What a next session must not undo
 
@@ -68,7 +79,7 @@ Monday: the week of 2026-08-31 read **18** where the day-by-day count is **40**.
 DB1's `Listing.listedAt` is the opposite, a real timestamp, where Toronto
 instants are correct. `WeekWindow` carries `dateStartUtc` /
 `dateEndExclusiveUtc` for DB2 and `startUtc` / `endUtc` for DB1. **Use the one
-that matches the column.** The edition now reads 40 and 43, matching report 063.
+that matches the column.**
 
 **EVERY DB2 WINDOW CARRIES `sold_date <= NOW()`** (ruling 10). Any query added
 later must too.
@@ -97,7 +108,7 @@ Valet series V39079. **Render the date every time.** Re-pull the URL in the file
 and update both fields together, never one without the other. A policy rate is
 not a mortgage rate and the guide says so.
 
-## Deviations, stated
+## Deviations, stated and still standing
 
 **The schools guide ships board, level and grades. It does NOT ship address or
 distance.** Ruling 6 asked for address and distance and neither exists:
@@ -105,32 +116,43 @@ distance.** Ruling 6 asked for address and distance and neither exists:
 `PostalAddress` JSON-LD carries locality, region and country only, and the
 lat/lng some rows hold is a neighbourhood centroid approximate to about 300 m by
 that file's own comment. The guide says plainly that it holds neither rather
-than approximating either. **If address and distance are required, they have to
-be sourced first.**
+than approximating either. **If address and distance are wanted, they have to be
+sourced first.**
 
 **"Open this weekend" is not in v1.** Open houses are read live and expire; an
 edition is immutable. A stored weekend is a lie by the following Tuesday and a
 live block inside an archived edition breaks the immutability the table exists
 for. The live block belongs on the index page as its own piece of work.
 
-**No cron is wired.** Monday 06:00 is proposed, not scheduled. Wiring it before
-the first edition is reviewed would publish unreviewed editions weekly.
+**No cron is wired.** Monday 06:00 is proposed, not scheduled. Nothing publishes
+a second edition until someone runs the runner or wires the cron.
 
-## Requests to Core
+## Open items
 
-1. **Up-links from hubs and streets to the current edition** (ruling 7). This
-   worktree does not make those writes. Without them the archive sits instead of
-   compounding.
-2. **192 For Sale rows and 53 For Lease rows in `sold.sold_records` carry a
+1. **Only one edition exists.** `/market-watch` will keep serving the week of
+   2026-08-31 until the next run. Either wire the Monday 06:00 cron or run the
+   runner weekly by hand, and decide which before a reader notices the date.
+2. **Up-links from hubs and streets to the current edition are Core's**
+   (ruling 7). This worktree does not make those writes. Without them the
+   archive sits instead of compounding.
+3. **192 For Sale rows and 53 For Lease rows in `sold.sold_records` carry a
    future `sold_date`**, the furthest 2027-01-29 against a database `NOW()` of
    2026-09-10. A Core data bug, logged not fixed. An unbounded 28-day
    neighbourhood count returns 327 where the bounded one returns 135.
-3. **`Listing.maintenanceFee` (Int) is dead** on all 73 active Milton condo
+4. **`Listing.maintenanceFee` (Int) is dead** on all 73 active Milton condo
    listings while `maintenanceFeeAmt` (Float) is populated on all 73. Two
-   columns for one fact, one empty, is a trap. It already cost one wrong page.
-4. **`SUPERLATIVE_PHRASES` is module-private** in `validateStreetGeneration.ts`,
-   so this tier keeps a second copy. Exporting it removes the duplication.
-   Core's call, Core's file.
+   columns for one fact, one empty. It already cost one wrong page, which
+   published "No Milton condo currently for sale states a monthly maintenance
+   fee" while 73 did.
+5. **`SUPERLATIVE_PHRASES` is module-private** in `validateStreetGeneration.ts`,
+   so this tier keeps a second copy that has to be kept in step by hand.
+   Exporting it removes the duplication. Core's call, Core's file.
+6. **The invented-entity rule has one asserted blind spot**: a one-word invented
+   place opening a sentence is not caught. Closing it needs a dictionary. The
+   test asserts the gap so it cannot change silently.
+7. **The guides index builds all six articles to get their read times.** Six
+   builds against cached aggregates per index request. Fine at six; revisit
+   before the tier grows.
 
 ## Notes for the next run
 
@@ -152,13 +174,15 @@ the first edition is reviewed would publish unreviewed editions weekly.
 - `npx prisma db execute` prints nothing for a `SELECT`. It cannot be used to
   inspect. Use a short `.mjs` against `@neondatabase/serverless` from the
   project root, and delete it after.
-- **Read the served preview, not the local render.** Two of the four defects in
-  report 064 were invisible locally: the dead fee column and the locale-dependent
-  date, which rendered "September 8, 2026" on the host and "8 September 2026"
-  locally.
+- **Read the served host, not the local render.** Two of the four defects in
+  report 064 were invisible locally: the dead fee column and a
+  locale-dependent date that rendered "September 8, 2026" on Vercel and
+  "8 September 2026" here.
+- The battery is **10 checks** as of Home's merge. Take the full 40-character
+  SHA; a short SHA aborts the gate before any content check.
 
 ## Next expected task
 
-**Preview review of `miltonly-clft5u5jn`.** After approval: the cron, the live
-open-house block on the index, and whichever of the two held guides the GSC rows
-justify. **Do not self-start any of them, and do not merge.**
+**None. Do not self-start.** The obvious candidates are the Monday cron (open
+item 1), the live open-house block on the index, and whichever of the two held
+guides the real GSC rows justify.
