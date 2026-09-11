@@ -146,14 +146,23 @@ export async function POST(request: NextRequest) {
     for (let j = 0; j < results.length; j++) {
       const result = results[j];
       const item = batch[j];
-      if (result.status === "fulfilled") {
+      if (result.status === "fulfilled" && result.value.passed) {
         built.push(item.streetName);
         await prisma.streetQueue.updateMany({
           where: { streetSlug: item.streetSlug },
           data: { status: "done", processedAt: new Date() },
         });
       } else {
-        const errMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        // TWO WAYS TO FAIL, ONE QUEUE STATE (MC-005, 2026-09-11). generateStreetContent THROWS
+        // when the retry budget is exhausted, and RESOLVES with passed=false when the halves
+        // passed individually but the combined validation or the fair-housing judge refused
+        // the page (fail-closed: no StreetContent row is written). The second path used to
+        // land here as "fulfilled" and the row was marked done with no page behind it, never
+        // to be looked at again: five streets on the 20:00Z pass alone. A refusal is a failed
+        // attempt, and it is counted as one.
+        const errMsg = result.status === "rejected"
+          ? (result.reason instanceof Error ? result.reason.message : String(result.reason))
+          : "fail-closed: combined validation or the fair-housing judge refused the page; no StreetContent written";
         failed.push(`${item.streetName}: ${errMsg}`);
         await prisma.streetQueue.updateMany({
           where: { streetSlug: item.streetSlug },
@@ -163,7 +172,7 @@ export async function POST(request: NextRequest) {
             attempts: { increment: 1 },
           },
         });
-        console.error(`Failed to generate ${item.streetName}:`, result.reason);
+        console.error(`Failed to generate ${item.streetName}:`, result.status === "rejected" ? result.reason : errMsg);
       }
     }
 
