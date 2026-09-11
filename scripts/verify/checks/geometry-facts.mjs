@@ -75,7 +75,9 @@ export default {
       for (const f of card[2].matchAll(/<div class="s-fact s-geo-fact" data-key="([^"]+)"><span class="s-fact-l">([^<]*)<\/span><span class="s-fact-v">([^<]*)<\/span><\/div>/g)) {
         facts[f[1]] = decode(f[3]);
       }
-      const note = card[2].match(/<div class="s-near-note">([^<]*)<\/div>/);
+      // The card capture stops before the note's own closing tag (it is the first of the pair
+      // that ends the card), so the note is read to the next tag, not to </div>.
+      const note = card[2].match(/<div class="s-near-note">([^<]*)/);
       attribution = note ? decode(note[1]) : '';
     }
     // Unit figures outside the road-facts card: hero stats, glance tiles, market cards.
