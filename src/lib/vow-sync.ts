@@ -1220,7 +1220,7 @@ export async function runSoldSync(opts: {
   if (inserted + updated > 0) {
     purge = await purgeSoldDerivedCaches({ streetSlugs: touchedSlugs, neighbourhoods: touchedNeighbourhoods });
     console.log(
-      `[sync/sold] cache purge: ${purge.skipped ? "skipped (no redis)" : `${purge.deleted} keys deleted (${purge.exact} exact + ${purge.patterns} patterns over ${touchedSlugs.size} streets, ${touchedNeighbourhoods.size} neighbourhoods)`}` +
+      `[sync/sold] cache purge: ${purge.skipped ? "skipped (no redis)" : `${purge.deleted} keys deleted (${purge.exact} exact + ${purge.patterns} patterns over ${touchedSlugs.size} streets, ${touchedNeighbourhoods.size} neighbourhoods), ${purge.settled} written back by in-flight renders and deleted again on the settle pass`}` +
         (purge.error ? ` ERROR ${purge.error}` : ""),
     );
   }

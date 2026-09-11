@@ -68,25 +68,44 @@ async function keysMatching(pattern: string): Promise<string[]> {
 export interface SoldPurgeResult {
   exact: number;
   patterns: number;
-  matched: number;
+  /** keys deleted on the first pass (the exact keys plus every pattern match) */
   deleted: number;
+  /** pattern matches deleted again on the settle pass: keys an in-flight render wrote back */
+  settled: number;
   skipped: boolean;
   error?: string;
 }
 
-export async function purgeSoldDerivedCaches(input: { streetSlugs: Set<string> | string[]; neighbourhoods: Set<string> | string[] }): Promise<SoldPurgeResult> {
-  if (!redis) return { exact: 0, patterns: 0, matched: 0, deleted: 0, skipped: true };
+/** A render that began before the sync's last write can finish after the purge and put the
+ *  pre-sync figure back. Observed on the first proof run: the homepage re-cached 59 against a
+ *  table of 60 inside a second of the purge. So the purge runs twice, the second pass after the
+ *  longest render a page takes, and any key an in-flight render wrote back in between goes too. */
+export const SOLD_PURGE_SETTLE_MS = 10_000;
+
+export async function purgeSoldDerivedCaches(
+  input: { streetSlugs: Set<string> | string[]; neighbourhoods: Set<string> | string[] },
+  opts: { settleMs?: number } = {},
+): Promise<SoldPurgeResult> {
+  if (!redis) return { exact: 0, patterns: 0, deleted: 0, settled: 0, skipped: true };
   const patterns = soldPurgePatterns(input);
+  const settleMs = opts.settleMs ?? SOLD_PURGE_SETTLE_MS;
   try {
-    const matched = new Set<string>(SOLD_WIDE_KEYS);
-    for (const p of patterns) for (const k of await keysMatching(p)) matched.add(k);
-    const keys = Array.from(matched);
-    // DEL in slices: Upstash accepts many keys per call, but a per-street list can be long.
-    for (let i = 0; i < keys.length; i += 100) await invalidateMany(keys.slice(i, i + 100));
-    return { exact: SOLD_WIDE_KEYS.length, patterns: patterns.length, matched: keys.length, deleted: keys.length, skipped: false };
+    const pass = async (): Promise<{ total: number; fromPatterns: number }> => {
+      const matched = new Set<string>(SOLD_WIDE_KEYS);
+      let fromPatterns = 0;
+      for (const p of patterns) for (const k of await keysMatching(p)) { if (!matched.has(k)) fromPatterns++; matched.add(k); }
+      const keys = Array.from(matched);
+      // DEL in slices: Upstash accepts many keys per call, but a per-street list can be long.
+      for (let i = 0; i < keys.length; i += 100) await invalidateMany(keys.slice(i, i + 100));
+      return { total: keys.length, fromPatterns };
+    };
+    const first = await pass();
+    if (settleMs > 0) await new Promise((r) => setTimeout(r, settleMs));
+    const second = settleMs > 0 ? await pass() : { total: 0, fromPatterns: 0 };
+    return { exact: SOLD_WIDE_KEYS.length, patterns: patterns.length, deleted: first.total, settled: second.fromPatterns, skipped: false };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn(`[sold-cache-purge] failed: ${message}`);
-    return { exact: SOLD_WIDE_KEYS.length, patterns: patterns.length, matched: 0, deleted: 0, skipped: false, error: message };
+    return { exact: SOLD_WIDE_KEYS.length, patterns: patterns.length, deleted: 0, settled: 0, skipped: false, error: message };
   }
 }

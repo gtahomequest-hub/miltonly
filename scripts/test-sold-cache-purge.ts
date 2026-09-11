@@ -55,6 +55,14 @@ ok(/purgeSoldDerivedCaches\(/.test(sync), "vow-sync.ts calls purgeSoldDerivedCac
 ok(/if \(inserted \+ updated > 0\) \{\s*purge = await purgeSoldDerivedCaches/.test(sync), "vow-sync.ts purges only when a row was inserted or updated");
 ok(/touchedSlugs\.add\(mSlug\)/.test(sync) && /touchedNeighbourhoods\.add\(/.test(sync), "vow-sync.ts collects the streets and neighbourhoods it wrote");
 
+// ── the second cache: Next's Data Cache over the Neon fetch, tagged and dropped on a write ──
+const dbSrc = stripComments(readFileSync(join(process.cwd(), "src/lib/db.ts"), "utf8"));
+ok(/SOLD_DATABASE_URL: "db2"/.test(dbSrc) && /tags: \[tag\]/.test(dbSrc), "db.ts tags the DB2 client's fetches with db2");
+const route = stripComments(readFileSync(join(process.cwd(), "src/app/api/sync/sold/route.ts"), "utf8"));
+ok(/if \(result\.purge\) \{\s*revalidateTag\(DB_CACHE_TAG\.SOLD_DATABASE_URL\)/.test(route), "the sold sync route drops the db2 tag after a run that wrote");
+const reval = stripComments(readFileSync(join(process.cwd(), "src/app/api/revalidate/route.ts"), "utf8"));
+ok(/revalidateTag\(tag\)/.test(reval) && /known\.includes\(tag\)/.test(reval), "/api/revalidate accepts a database tag, allowlisted");
+
 // ── the pattern set itself ───────────────────────────────────────────────────────────────────
 ok(sample.includes("home:sold-mtd:*"), "the homepage month-to-date key is purged whole (every date suffix)");
 ok(sample.includes("street-sale-stats:pine-street-milton*"), "a written street's sale stats are purged");
