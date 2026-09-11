@@ -67,6 +67,14 @@
     {
       "path": "/api/content/market-watch",
       "schedule": "0 13 * * 1"
+    },
+    {
+      "path": "/api/digest/leads",
+      "schedule": "0 11 * * 1"
+    },
+    {
+      "path": "/api/digest/leads",
+      "schedule": "0 12 * * 1"
     }
   ]
 }
