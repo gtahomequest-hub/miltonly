@@ -43,12 +43,12 @@ for (const file of files) {
 }
 
 if (files.length < 50) {
-  console.error(`[fee-column] FAIL — walked only ${files.length} files under src/, which is not the tree`);
+  console.error(`[fee-column] FAIL: walked only ${files.length} files under src/, which is not the tree`);
   process.exit(1);
 }
 if (hits.length > 0) {
-  console.error(`[fee-column] FAIL — the dead column identifier \`maintenanceFee\` is read in ${hits.length} place(s); only \`maintenanceFeeAmt\` may be read:`);
+  console.error(`[fee-column] FAIL: the dead column identifier \`maintenanceFee\` is read in ${hits.length} place(s); only \`maintenanceFeeAmt\` may be read:`);
   for (const h of hits) console.error(`  ${h}`);
   process.exit(1);
 }
-console.log(`[fee-column] PASS — ${files.length} files under src/ carry no read of the dead \`maintenanceFee\` column.`);
+console.log(`[fee-column] PASS: ${files.length} files under src/ carry no read of the dead \`maintenanceFee\` column.`);
