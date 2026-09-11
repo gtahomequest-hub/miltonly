@@ -368,6 +368,50 @@ export function parseDollarTokenForGrounding(tok: string): number | null {
 }
 
 // ---------------------------------------------------------------------------
+// QUEUE item 5 (2026-09-11) — rule "unit_figure".
+//
+// The street's physical facts (centreline length, lanes, posted limit, surface, sidewalk,
+// terminus, orientation) are published on the page from the Town and OSM layers, and they are
+// NEVER offered to the model: StreetGeneratorInput carries no such field and src/lib/ai imports
+// none of that data (scripts/test-geometry-boundary.ts asserts both). It follows that a unit-
+// bearing figure in generated prose cannot be citing anything. "A quiet 400-metre crescent" on
+// a 620 m street, "a 40 km/h street" under a 50 limit, "two lanes" on a four-lane collector:
+// each is a restatement of a fact the model never saw, and numeric_ungrounded, being market-
+// scoped and money-shaped, would pass all three. So the rule is by construction, not by
+// proximity: any distance, speed or lane count with a unit is ungrounded, hard severity, in
+// every section and the FAQ. Measured 2026-09-11 across the 252 published pages with a
+// generation row: zero matches, so the rule costs the corpus nothing today.
+//
+// Minutes are deliberately not a unit here: commute minutes ARE an input (nearby.*.minutes)
+// and are grounded elsewhere. Storeys, bedrooms and years are not distances.
+export const UNIT_FIGURE_RE =
+  /(?<![\w$.,])(\d+(?:[.,]\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)[\s-]*(km\/h|kph|kmh|mph|kilometres?|kilometers?|km|metres?|meters?|lanes?|m)(?![\w/])/gi;
+
+export interface UnitFigureFinding {
+  raw: string;
+  unit: string;
+  context: string;
+}
+
+/** Every unit-bearing distance, speed or lane count in `text`. Grounded proper nouns are masked
+ *  first when an input is given, so a Town park or cross street named "Sixth Line" or "Five
+ *  Sideroad" is not read as a figure. */
+export function findUnitFigures(text: string, input?: StreetGeneratorInput): UnitFigureFinding[] {
+  const scan = input ? maskGroundedProperNouns(text, input) : text;
+  const out: UnitFigureFinding[] = [];
+  for (const m of Array.from(scan.matchAll(UNIT_FIGURE_RE))) {
+    // A bare "m" only counts after digits with a space: "4 m" is a length, "I'm" and "3m" (a
+    // money shorthand) are not.
+    const unit = m[2].toLowerCase();
+    if (unit === "m" && !/^\d/.test(m[1])) continue;
+    if (unit === "m" && !/\d\s+m$/.test(m[0])) continue;
+    const at = m.index ?? 0;
+    out.push({ raw: m[0], unit, context: scan.slice(Math.max(0, at - 40), at + m[0].length + 40).replace(/\s+/g, " ") });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // DEC-GROUNDING-ZERO (2026-09-04) — rule "zero_tier_price".
 //
 // WHAT WENT WRONG. numeric_ungrounded fires on the MARKET SECTION ONLY, by
@@ -2240,7 +2284,7 @@ export const COMPARISON_FAQ_TEMPLATE =
 // These demand THIS STREET's own price or rent. They are withdrawn on a street that has
 // neither, and only on that basis - the comparison question below is a separate gate, because
 // it depends on the comparator set rather than on this street.
-const OWN_PRICE_FAQ_TEMPLATES: readonly string[] = [
+export const OWN_PRICE_FAQ_TEMPLATES: readonly string[] = [
   "What is the typical price on {Street}?",
   "Why do homes on {Street} trade differently than other Milton streets?",
   "What price range should I expect on {Street}?",
@@ -2621,6 +2665,16 @@ export function validateStreetGeneration(
       });
     }
 
+    // QUEUE item 5: a distance, speed or lane count with a unit is ungrounded by construction.
+    for (const u of findUnitFigures(sectionText, input)) {
+      violations.push({
+        rule: "unit_figure",
+        sectionId: section.id,
+        excerpt: `"${u.raw}" (${u.unit}); ctx: ${u.context}`,
+        severity: "hard",
+      });
+    }
+
     // DEC-GROUNDING-ZERO, second arm. DEC-ZERO-CONTEXT hands a zero-tier page the
     // neighbourhood's real typical and range, which correctly switches the rule
     // above off — and immediately re-opened a narrower hole one size down. Given
@@ -2832,6 +2886,13 @@ export function validateStreetGeneration(
     violations.push({
       rule: "zero_tier_price",
       excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+      severity: "hard",
+    });
+  }
+  for (const u of findUnitFigures(faqText, input)) {
+    violations.push({
+      rule: "unit_figure",
+      excerpt: `FAQ "${u.raw}" (${u.unit}); ctx: ${u.context}`,
       severity: "hard",
     });
   }
@@ -3106,6 +3167,16 @@ export function validateSectionsSubset(
       });
     }
 
+    // QUEUE item 5: a distance, speed or lane count with a unit is ungrounded by construction.
+    for (const u of findUnitFigures(sectionText, input)) {
+      violations.push({
+        rule: "unit_figure",
+        sectionId: section.id,
+        excerpt: `"${u.raw}" (${u.unit}); ctx: ${u.context}`,
+        severity: "hard",
+      });
+    }
+
     // DEC-GROUNDING-ZERO, second arm. DEC-ZERO-CONTEXT hands a zero-tier page the
     // neighbourhood's real typical and range, which correctly switches the rule
     // above off — and immediately re-opened a narrower hole one size down. Given
@@ -3287,6 +3358,13 @@ export function validateFaq(
     violations.push({
       rule: "zero_tier_price",
       excerpt: `FAQ "${z.raw}" - ${z.reason}; ctx: ${z.context}`,
+      severity: "hard",
+    });
+  }
+  for (const u of findUnitFigures(faqText, input)) {
+    violations.push({
+      rule: "unit_figure",
+      excerpt: `FAQ "${u.raw}" (${u.unit}); ctx: ${u.context}`,
       severity: "hard",
     });
   }
@@ -3550,6 +3628,12 @@ function formatRuleViolations(
     case "catchment_vocabulary":
       return [
         `**catchment_vocabulary**: You used school catchment/boundary/assignment language. The input contains school NAMES and computed DISTANCES only — no catchment or boundary data exists in this pipeline, so any assignment claim is fabricated. Banned everywhere: "catchment", "boundary", "zoned for/to", "draws from", "feeds into", "assigned to", "school zone", "feeder school", and "draw(s) to" in school context. State proximity only ("X is N minutes away") and note that school assignment should be confirmed with the boards.`,
+        ``,
+        ...violations.map(v => `  - ${v.excerpt}`),
+      ];
+    case "unit_figure":
+      return [
+        `**unit_figure**: You wrote a distance, speed or lane count with a unit (metres, kilometres, km/h, lanes). The input carries no such figure: the street's length, posted limit, lane count, surface and sidewalk are published on the page from the Town's own layer and are never given to you, so any figure of that kind in your prose is invented. Remove every one. Describe the street without measuring it.`,
         ``,
         ...violations.map(v => `  - ${v.excerpt}`),
       ];

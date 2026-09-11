@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 
-  const pending = await prisma.streetQueue.findMany({
+  const QUEUE_TAKE = 25;
+  const live = await prisma.streetQueue.findMany({
     where: {
       OR: [
         { status: "pending" },
@@ -41,8 +42,33 @@ export async function POST(request: NextRequest) {
       ],
     },
     orderBy: { createdAt: "asc" },
-    take: 25,
+    take: QUEUE_TAKE,
   });
+
+  // ── DEC-QUEUE-REEVAL (2026-09-11, MC-004) ──
+  // "ineligible" was a one-way door. makeStreetDecision writes it when the activity gate fails,
+  // and this route never looked at the row again, so the verdict outlived the gate that gave it.
+  // DEC-GATE-PARITY widened that gate on 2026-09-10 to admit streets whose whole history sits in
+  // DB2; 71 of the 249 creation candidates had already been struck "ineligible" by the old
+  // three-source gate between May and August, and the widening could not reach them. A street
+  // that later acquires its first DB2 record is in the same position. So a verdict older than
+  // REEVAL_AFTER_DAYS is re-examined, in the spare capacity of a run, oldest verdict first. The
+  // gate decides again; a street that is still ineligible is stamped with a fresh processedAt
+  // (below) and waits another period. Live pending and retryable rows always go first, so this
+  // can never crowd out a street that is waiting its turn.
+  const REEVAL_AFTER_DAYS = 30;
+  const reevalBefore = new Date(Date.now() - REEVAL_AFTER_DAYS * 24 * 60 * 60 * 1000);
+  const stale = live.length < QUEUE_TAKE
+    ? await prisma.streetQueue.findMany({
+        where: {
+          status: "ineligible",
+          OR: [{ processedAt: null }, { processedAt: { lt: reevalBefore } }],
+        },
+        orderBy: [{ processedAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
+        take: QUEUE_TAKE - live.length,
+      })
+    : [];
+  const pending = [...live, ...stale];
 
   // ── DEC-NEW-PAGE-CAP (2026-09-10) ──
   // QUEUE item 7's widened gate admits 249 registry-filtered streets that have no page. Left
@@ -155,6 +181,8 @@ export async function POST(request: NextRequest) {
     // and the difference between "nothing to build" and "not allowed to build yet" has to be
     // readable from the response or the cap looks like a stalled queue.
     newPageCap: { limit: NEW_PAGES_PER_DAY, createdToday, remaining: newPageBudget, deferred },
+    // DEC-QUEUE-REEVAL: how many stale "ineligible" verdicts this run re-examined.
+    reevaluated: stale.length,
     durationMs: Date.now() - start,
   });
 }
