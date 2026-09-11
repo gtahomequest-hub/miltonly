@@ -1,8 +1,12 @@
+// Mobile menu at 380px: open the burger on / and /streets and report the panel's rendered
+// box against the viewport, plus every ancestor that would trap position:fixed.
+// Usage: node scripts/probe-mobile-menu.mjs [BASE]   (BASE defaults to production)
 import puppeteer from 'puppeteer';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const BASE = (process.argv[2] || 'https://miltonly.com').replace(/\/$/, '');
 const b = await puppeteer.launch({ headless: 'new', executablePath: CHROME, args: ['--no-sandbox'] });
 
-for (const [url, tag] of [['https://miltonly.com/', 'home'], ['https://miltonly.com/streets', 'streets']]) {
+for (const [url, tag] of [[`${BASE}/`, 'home'], [`${BASE}/streets`, 'streets']]) {
   const pg = await b.newPage();
   await pg.setViewport({ width: 380, height: 780 });
   await pg.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
