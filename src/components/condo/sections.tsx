@@ -75,10 +75,10 @@ export function CondoCost({ data }: { data: CondoData }) {
               <IconWallet />
             </div>
             <div className="c-cost-l">Maintenance fee</div>
-            <div className={`c-cost-v${o.maintenanceFee === null ? ' c-silent' : ''}`}>
-              {o.maintenanceFee ?? 'not stated'}
+            <div className={`c-cost-v${o.monthlyFee === null ? ' c-silent' : ''}`}>
+              {o.monthlyFee ?? 'not stated'}
             </div>
-            {o.maintenanceFee === null && o.feeNote && (
+            {o.monthlyFee === null && o.feeNote && (
               <div className="c-cost-sub">{o.feeNote}</div>
             )}
           </div>

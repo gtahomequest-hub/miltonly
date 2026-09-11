@@ -14,8 +14,13 @@ import {
   HubDualCta,
 } from './sections';
 import { SiteNav } from '../nav/SiteNav';
+import { GuideUplinks } from '../guides/GuideUplinks';
+import { guidesForHub } from '@/lib/guides/uplinks';
 
 export function HubPage({ data }: { data: HubData }) {
+  // MC-003 guide up-links. Condo-heavy means the hub lists condo buildings (the h-condos
+  // section renders), which is the marker the battery's guide-links check reads.
+  const guides = guidesForHub({ condoHeavy: data.condos.length > 0 || data.compareFacts?.hasFee === true });
   return (
     <div className="hub-v2">
       <SiteNav variant="page" />
@@ -27,6 +32,7 @@ export function HubPage({ data }: { data: HubData }) {
       <HubVip data={data} />
       <HubCondos data={data} />
       <HubFaqs data={data} />
+      <GuideUplinks guides={guides} context={data.name} variant="hub" />
       <HubSiblings data={data} />
       <HubDualCta data={data} />
     </div>

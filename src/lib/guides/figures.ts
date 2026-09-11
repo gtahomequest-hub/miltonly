@@ -96,7 +96,7 @@ export interface CondoFeeRow {
   bedrooms: number;
   parking: number;
   locker: string | null;
-  maintenanceFee: number;
+  monthlyFee: number;
   price: number;
 }
 
@@ -108,13 +108,16 @@ export async function getActiveCondoFees(limit = 24): Promise<CondoFeeRow[]> {
       permAdvertise: true,
       displayAddress: true,
       propertyType: "condo",
-      // TWO FEE COLUMNS EXIST AND ONLY ONE IS FILLED. `Listing.maintenanceFee`
-      // (Int) is 0 on all 73 active Milton condo listings; `maintenanceFeeAmt`
-      // (Float) carries the real figure on all 73. Measured 2026-09-10. The
-      // first version of this query read the Int column and the guide
-      // published "No Milton condo currently for sale states a monthly
-      // maintenance fee", which was false. A page asserting an absence has to
-      // be as sure of the absence as it would be of a figure.
+      // ONE FEE COLUMN IS READ, ANYWHERE: `maintenanceFeeAmt` (Float), which the
+      // sync writes from the feed's AssociationFee. The Int column beside it in
+      // the schema was declared in the same commit and never written by anything:
+      // NULL on all 3,394 Listing rows (re-measured 2026-09-11; an earlier note here
+      // called it 0, which was the falsy null being read as a number). The first
+      // version of this query read that column and the guide published "No Milton
+      // condo currently for sale states a monthly maintenance fee", which was
+      // false. A page asserting an absence has to be as sure of the absence as it
+      // would be of a figure. scripts/test-fee-column.ts keeps the dead identifier
+      // out of src/ so the same read cannot come back.
       maintenanceFeeAmt: { not: null, gt: 0 },
     },
     select: {
@@ -137,7 +140,7 @@ export async function getActiveCondoFees(limit = 24): Promise<CondoFeeRow[]> {
     bedrooms: r.bedrooms,
     parking: r.parking,
     locker: r.locker,
-    maintenanceFee: Math.round(r.maintenanceFeeAmt as number),
+    monthlyFee: Math.round(r.maintenanceFeeAmt as number),
     price: r.price,
   }));
 }

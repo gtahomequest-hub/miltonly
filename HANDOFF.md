@@ -2,115 +2,60 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-11 (MC-002), verifying the three merges that landed 2026-09-10 and re-running the battery._
+_Last rewritten 2026-09-11 (MC-004): MC-003 merged and verified on production, the creation programme re-queued, QUEUE item 5 built on `feat/geometry` and proven on preview, not merged._
 
 ## READ THIS FIRST
 
-**MC-002 WAS ALREADY DONE. All three merges landed in the previous session; nothing was re-run.**
-Verified 2026-09-11, not assumed:
+**MC-003 IS ON MAIN AS `8ebb937` (merge of `5ebe87a` by SHA) AND PRODUCTION IS GREEN AT IT.**
+`pnpm build` exit 0, pushed, `/api/build` on miltonly.com answers the full SHA, battery
+**`PASS · 12 checks · 449 pages · 109s`**, `served == expected`. Docs on top (`90c457c` and
+this one). Record: `scratchpad/reports/MC-004-merge-queue-geometry.md`.
 
-| asked | state |
-|---|---|
-| merge `5448b96` | **cherry-picked as `1cf5342`.** A merge is a NO-OP here, see below |
-| merge `0a2499b` | **merged as `31a9ab0`**, 17 crons intact |
-| merge `fix/core-batch` | **merged as `8db80da`**, head `dce1b70`; TTL present in `buildHubInput.ts` |
-| note Content may regenerate | **already stronger than asked**: Content ran it, reported back, the 2026-08-31 correction is live and spent |
+**THE MC-003 REPORT WAS WRONG ABOUT THE QUEUE, AND MC-004 CORRECTS IT.** It said the 09-11
+15:00Z cron marked the 249 candidates `ineligible`. It did not: one row was marked that day
+(`whitelock-avenue-milton`, an MLS misspelling of Whitlock, off the entity floor, correctly
+refused). The 249 candidates were never the cron's: of the 244 without a page, **167 were not
+in `StreetQueue` at all** (nothing enqueues a registry street whose only history is DB2), **68
+were `ineligible` from May to August** under the three-source gate DEC-GATE-PARITY replaced on
+09-10, and the cron never re-read that status, and **9 were `failed` at attempts=3** and never
+retried. The five pages that exist were built locally by `create-street-pages-local.ts`.
 
-Battery re-run on production at `4765cbd`: **`PASS · 11 checks · 449 pages · 94s`**, exit 0,
-`served == expected`. Working tree clean, `main` level with `origin/main`.
+**THE CREATION PROGRAMME IS RE-QUEUED: 244 ROWS `pending` IN PROGRAMME ORDER.**
+`scripts/requeue-creation-programme.ts --write`, 2026-09-11 17:12Z, entity floor enforced, 0
+refused. The cap of 20 new pages a day is unchanged. **The 18:00Z cron picked up exactly 20**
+(pending 244 to 224) **and all 20 failed in ten seconds on the Anthropic credit-balance 400**,
+attemptCount 0: production runs `AI_PROVIDER_MARKET="haiku"` with `AI_PROVIDER_FALLBACK="opus"`,
+so the cron's first call is to Claude and the account has no credit (Open item 1 since August).
+The local runner forced DeepSeek, which is why five pages exist at all. Until credit is added or
+production's market half is pointed at DeepSeek, every hourly pass burns one attempt on 20 to 25
+rows and each row is terminal `failed` after three; the whole 244 would be exhausted in about a
+day and a half. `requeue-creation-programme.ts --write` resets them once the provider is fixed.
+The `differentPriorities` prompt/validator fault (22 % pass rate) is also still open.
 
-**RE-RUNNING THOSE MERGES WOULD HAVE BEEN THEATRE, AND ONE OF THEM DANGEROUSLY SO.**
-`git merge --no-ff 5448b96` returns **"Already up to date"** with a success exit code, because the
-commit is still an ancestor of main through the reverted `cec6906` — a revert undoes content, not
-ancestry. A gate that reads exit codes would have passed a merge that did nothing. `0a2499b` is
-likewise an ancestor. `fix/core-batch` is merged, and merging `origin/main` into it again plus
-"adding" a TTL that already exists would produce an empty commit or a duplicate. **Verification
-was the work; the merges were not re-runnable.**
+**`ineligible` IS NO LONGER A ONE-WAY DOOR, ON `fix/queue-reeval` (`4a65f30`, preview
+`miltonly-flgprxmsq`), NOT MERGED.** DEC-QUEUE-REEVAL: the generate cron re-examines an
+`ineligible` verdict older than 30 days in its spare capacity, oldest first, behind every
+pending and retryable row, and reports `reevaluated` in its JSON. Merge is Aamir's call.
 
-**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** Asked to confirm `/rentals` 1,116 and homepage
-462 / 1,116. Today they read **1,127** and **461**; yesterday 1,116 and 457. These are live counts
-of active listings and available rentals, and the feed syncs daily. **The battery asserts each
-against its own live source and passes** — `on-market: "461" (source 461)`,
-`rentals-available: "1,127" (source 1127)` — and agreement with the source is the correctness
-test. Agreement with a number written down on a previous day is not, and a figure that never moved
-would be the defect.
+**QUEUE ITEM 5 IS BUILT ON `feat/geometry` (`b0d424b`, preview `miltonly-ra87zyzmu`), NOT
+MERGED.** Battery on the preview **`PASS · 13 checks · 449 pages · 123s`**. Every street page
+with a Town centreline (447 of 449) carries a "Road facts" card in the sidebar: length, road
+class, lanes, posted limit, surface, sidewalk, terminus, orientation, each present only where
+the layer gives one value, with the OGL attribution and the OSM line where surface or sidewalk
+is shown. 2,646 facts on preview, every one equal to the layer row, none where the row is null,
+none in a hero, glance or market tile. Geometry never enters `StreetGeneratorInput`
+(`scripts/test-geometry-boundary.ts`, prebuild) and the validator's new `unit_figure` rule
+refuses any metre, kilometre, km/h or lane figure in generated prose (zero matches on the
+corpus today). Data: `src/data/streetGeometry.ts`, generated by
+`scripts/town/gen-street-geometry.ts` from the Town cache and the OSM export at
+`D:/dashcam/work/milton-roads.geojson`.
 
+**`sold_date` IS A CALENDAR DATE WEARING A TIMESTAMPTZ. READ IT AS A DATE.** Unchanged since
+MC-003; Leads' brief window still reads it the wrong way (`src/lib/brief/compose.ts:140`).
 
-**PRODUCTION IS GREEN AT `8db80da`. `PASS · 11 checks · 449 pages · 97s`, exit 0,
-`served == expected`.** All three merges landed, each by SHA, each with the full gate.
-`prisma migrate status`: **"Database schema is up to date!"** Record:
-`scratchpad/reports/068-three-merges.md`.
+**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
 
-**`fix/core-batch` IS MERGED.** Everything it carried is live: DEC-PRICE-HISTORY,
-DEC-SOLD-DATE-NOT-FUTURE, DEC-GATE-PARITY (QUEUE item 7), DEC-NEW-PAGE-CAP, the retired
-components, and a TTL on `buildMiltonWideContext`.
-
-**REVERTING A MERGE DOES NOT MAKE ITS COMMITS RE-MERGEABLE.** `git merge --no-ff 5448b96`
-answered **"Already up to date"**: the commit was still an ancestor of main through `cec6906`,
-because a revert undoes content and not ancestry. A merge therefore reintroduces nothing at all,
-silently. **Cherry-pick is what reapplies it** (`1cf5342`), and it brought `5448b96` back alone,
-without `c98f40e`'s unapproved hub rebuild. If you ever need to restore part of a reverted merge,
-reach for cherry-pick and check the merge output for "Already up to date" before believing it
-worked.
-
-**THE CHECK AND THE MARKUP WERE A MATCHED PAIR.** `hub-intents.mjs` shipped inside `5448b96`
-alongside the `h-` markup it reads. It passes now. It failed before only because `c98f40e`
-rewrote that markup to `hh-` without touching the check. The battery is 11 checks again.
-
-**`buildMiltonWideContext` NOW HAS A 5-MINUTE TTL** (`259a365`). It had none, and nothing in the
-serving path ever called `resetMiltonWideContextCache()`. That was fine while it was a
-generation-time helper computed once per run across 14 hubs; it stopped being fine when the
-homepage began calling it per render. The homepage published `proof-sales-12mo` as 1,531 against
-a live 1,728 and no purge could shift it, because neither `revalidatePath` nor an Upstash flush
-reaches a module-level variable. Five minutes keeps the once-per-generation-run benefit and lets
-a stale figure correct itself without a deploy. A rejected promise is dropped rather than cached,
-so one database blip cannot poison every homepage render for the length of the TTL.
-
-**TWO CONFLICTS, BOTH RESOLVED BY KEEPING BOTH SIDES.**
-
-- `vercel.json`: main carried `/api/brief/send` from feat/leads and `0a2499b` added two
-  `/api/content/market-watch` entries. Both sides appended to the end of the same array, so git
-  could not tell they were different paths. **All three kept, 17 crons, JSON verified by parse.**
-  The two market-watch entries are deliberate: Vercel cron expressions are UTC, Toronto is UTC-4
-  in EDT and UTC-5 in EST, so no single expression is 08:00 Toronto all year. The route guards on
-  the Toronto local hour and exactly one firing proceeds. **Dropping either loses the edition for
-  half the year.** Content confirmed the resolution reads their intent.
-- `package.json` prebuild: **the union, 23 tests.** Main had gained three lead/content guards
-  while the branch had added `test-sold-date-not-future.ts`.
-
-**THE GATE CAUGHT A REAL CROSS-BRANCH BREAK.** feat/leads' `test-lead-guards.ts` and
-`test-lead-forms.ts` name `ExitIntent.tsx` and `CornerWidget.tsx` by path; fix/core-batch moved
-them to `retired/`. Prebuild died on ENOENT before a single assertion ran. **Repointed, not
-dropped from the lists** — a retired file is dead, not exempt, and if either is remounted it must
-come back already holding the ingress contract rather than the monolith fetch it shipped with.
-
-**THE MIGRATION LEDGER IS CLEAN, AND IT WAS NOT.** Two rows were wrong:
-
-- `20260910180000_street_content_created_at`, mine, failed with 42701 (the column already
-  existed), marked rolled back, directory deleted. A ledger row for a migration that applied
-  **zero** steps and no longer exists on disk reads as drift. Deleted by
-  `scripts/fix-migration-ledger.ts`, which refuses to touch a row with any applied step or
-  without `rolled_back_at`.
-- `20260910120000_market_edition`, Content's, present locally and **unapplied** in the ledger
-  while both its tables already existed. Verified column-for-column and index-for-index against
-  the migration first, then marked applied. Running it would have failed on an existing table.
-
-**Vercel builds run `prisma generate && next build`, not `migrate deploy`**, which is why neither
-row broke anything. It would still have bitten the first person to run migrations.
-
-**THE 249-PAGE PROGRAMME IS STILL PAUSED** at a 22% pass rate on the `differentPriorities`
-prompt/validator disagreement. 5 pages built, 226 unattempted. The cap is live at 20/day but the
-programme should not resume until the prompt is fixed.
-
-**THE 17 STREETS THAT CROSSED k5 AND 9 THAT CROSSED k10** still publish the suppressed figure.
-Those numbers live in stored `StreetContent` prose and only a regeneration moves them. Content
-flagged this back as Core's, and it is.
-
-**`/rentals` is 1,116 and the homepage agrees. `on-market` is 457, not 462** — a live count that
-moves; the battery passes it against its own source.
-
-**Published street pages: 450.** The battery reports 449; one row is published for a slug with no
-`ResidentialStreet` entity, which the sitemap refuses.
+**THE MIGRATION LEDGER IS CLEAN.** No migration in MC-003 or MC-004.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -118,9 +63,14 @@ moves; the battery passes it against its own source.
 
 | | |
 |---|---|
-| `main` | **`4765cbd`** (code SHA `8db80da`; `bb32044`, `217e9ef` and `4765cbd` are docs) |
-| battery on production | **`PASS · 11 checks · 449 pages · 94s`**, exit 0, re-run 2026-09-11 at `4765cbd` |
-| `prisma migrate status` | **clean**, 26 migrations, "up to date" |
+| `main` | code SHA **`8ebb937`**, docs on top |
+| battery on production | **`PASS · 12 checks · 449 pages · 109s`** at `8ebb937`, 2026-09-11 |
+| `fix/queue-reeval` | **`4a65f30`**, preview `miltonly-flgprxmsq`, build exit 0, awaiting merge approval |
+| `feat/geometry` | **`b0d424b`**, preview `miltonly-ra87zyzmu`, battery 13/13, awaiting merge approval |
+| `prisma migrate status` | **clean**, 26 migrations |
+| creation programme | **re-queued**, 244 `pending`, 5 built, cap 20/day, prompt fault open |
+| Leads Phase 2 | **on main**, `543ef99` |
+
 ## What happened 2026-09-10 (final) — three merges
 
 Record in `scratchpad/reports/068-three-merges.md`.
@@ -149,7 +99,7 @@ added as its own commit rather than buried in the merge, two lead guards repoint
 | crons | **17**, both market-watch entries kept |
 | prebuild | **23 tests** |
 | future-dated DB2 rows | **0** of 8,578 |
-| creation programme | **paused**, 5 built, 226 unattempted, cap live at 20/day |
+| creation programme | **paused**, 5 built, 249 rows `ineligible`, cap live at 20/day |
 | published street pages | **450** |
 | QUEUE | 1, 2, 3, 4 done; **7 DONE and merged**; 5, 6 not started |
 
@@ -488,9 +438,8 @@ without the parameter.
 
 ## Next expected task
 
-**QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed, length
-and terminus onto all published streets from the Town and OSM layers. No camera work and nothing
-derived from imagery.
-
-Ahead of it if Aamir says so: the `differentPriorities` prompt fix, which unblocks the 226
-remaining creation candidates; and regenerating the 26 streets that crossed k5 or k10.
+**Aamir's call on three merges, each by SHA:** `fix/queue-reeval` `4a65f30`, `feat/geometry`
+`b0d424b`, and nothing else pending. Then, in whatever order he says: credit or a DeepSeek market
+half for the cron so the re-queued programme can build; the `differentPriorities` prompt fix;
+the brief's sold window (Leads' file, date basis); regenerating the 26 streets that crossed k5
+or k10.

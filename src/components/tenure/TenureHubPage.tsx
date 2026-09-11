@@ -13,6 +13,8 @@
 import "../hub/hub-theme.css";
 import type { HubData } from "../hub/types";
 import { SiteNav } from "../nav/SiteNav";
+import { GuideUplinks } from "../guides/GuideUplinks";
+import { guidesForHub } from "@/lib/guides/uplinks";
 import { CompareModule, type CompareModuleProps } from "../compare/CompareModule";
 import {
   TenureHero,
@@ -36,6 +38,8 @@ export function TenureHubPage({
   eyebrow: string;
   compareLink?: CompareModuleProps;
 }) {
+  // MC-003 guide up-links. A tenure hub is condo-heavy when its tenure carries a fee.
+  const guides = guidesForHub({ condoHeavy: data.compareFacts?.hasFee === true });
   return (
     <div className="hub-v2">
       <SiteNav variant="page" />
@@ -45,6 +49,7 @@ export function TenureHubPage({
       <TenureMarket data={data} />
       {compareLink && <CompareModule {...compareLink} />}
       <TenureFaqs data={data} />
+      <GuideUplinks guides={guides} context={data.name} variant="hub" />
       <TenureDualCta data={data} />
     </div>
   );

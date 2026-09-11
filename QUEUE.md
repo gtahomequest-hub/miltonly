@@ -16,7 +16,7 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 
 *Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
 
-*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is BUILT AND PROVEN ON PREVIEW, awaiting Core's merge** at `00caa57`: all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
+*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 done**, merged as `543ef99` (built and proven on preview at `00caa57`): all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
 ---
 
@@ -202,6 +202,14 @@ verified on production: `1050 Main Street East`, `1470 Main Street East`, `1005 
 Populate solar exposure, surface, lanes, sidewalk, maxspeed, length, and terminus onto all published streets from the Town and OSM layers. No camera work, and nothing derived from imagery.
 
 **Done when** those fields are populated for every street with an OSM match, and rendered wherever the page design calls for them.
+
+*Gate A done 2026-09-11 (MC-003), no code: coverage over the 449 published streets per layer, where each field renders, and the validator rule that keeps geometry out of the prompt. Record in `scratchpad/reports/MC-003-core-batch-2.md`. Build awaits rulings.*
+
+*Built 2026-09-11 (MC-004) on `feat/geometry` at `b0d424b`, preview `miltonly-ra87zyzmu`, battery `PASS · 13 checks · 449 pages`. Not merged. 447 of 449 published streets render a Road facts card; 2,646 facts, every one equal to the layer row. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
+
+*MC-004, 2026-09-11: MC-003 merged as `8ebb937`, production battery 12/12. The creation programme's 244 unbuilt candidates re-queued as `pending` (they were never the cron's: 167 absent, 68 `ineligible` under the old gate, 9 `failed` at attempts=3); the 18:00Z cron picked up 20 and all 20 failed on the Anthropic credit balance, so the programme needs credit or a DeepSeek market half on production before it moves. DEC-QUEUE-REEVAL on `fix/queue-reeval` at `4a65f30`, not merged. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
+
+*Out-of-queue work 2026-09-11, MC-003 on `fix/core-batch-2` at `5ebe87a`: guide up-links on every street page and hub with a 12th battery check, the dead `maintenanceFee` column retired from every read with a prebuild guard, the `sold_date` stamping reported and stopped, and the first five programme pages recorded with their judge results. Preview green, not merged. Record in `scratchpad/reports/MC-003-core-batch-2.md`.*
 
 ---
 
