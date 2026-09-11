@@ -2284,7 +2284,7 @@ export const COMPARISON_FAQ_TEMPLATE =
 // These demand THIS STREET's own price or rent. They are withdrawn on a street that has
 // neither, and only on that basis - the comparison question below is a separate gate, because
 // it depends on the comparator set rather than on this street.
-const OWN_PRICE_FAQ_TEMPLATES: readonly string[] = [
+export const OWN_PRICE_FAQ_TEMPLATES: readonly string[] = [
   "What is the typical price on {Street}?",
   "Why do homes on {Street} trade differently than other Milton streets?",
   "What price range should I expect on {Street}?",
