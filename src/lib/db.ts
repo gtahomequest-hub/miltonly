@@ -31,6 +31,20 @@ export { prisma as operationalDb };
 
 type Sql = NeonQueryFunction<false, false>;
 
+// THE SECOND CACHE, AND ITS TAG (MC-010, 2026-09-11). The Neon HTTP driver runs every query as
+// a fetch, and Next caches a fetch that carries `next.revalidate` in its Data Cache, keyed by
+// the request body, which for a SQL query is the SQL text and its parameters. So every DB2 and
+// DB3 read made from a page was served from a one-hour cache that no Upstash purge could reach.
+// Measured 2026-09-11: with the Upstash key deleted and the table at 60, production rendered
+// the homepage's month-to-date figure as 59 four times in twenty seconds; the same code and the
+// same query from a plain process read 60. The hour is deliberate (it is what keeps a burst of
+// renders off the database), so it stays, tagged: the sold sync and /api/revalidate can drop
+// the whole tag the moment the rows change. `db2` is the sold schema, `db3` the analytics one.
+export const DB_CACHE_TAG: Record<string, string> = {
+  SOLD_DATABASE_URL: "db2",
+  ANALYTICS_DATABASE_URL: "db3",
+};
+
 function makeClient(envKey: string): Sql | null {
   const url = process.env[envKey];
   if (!url) {
@@ -39,7 +53,8 @@ function makeClient(envKey: string): Sql | null {
     }
     return null;
   }
-  return neon(url, { fetchOptions: { next: { revalidate: 3600 } } });
+  const tag = DB_CACHE_TAG[envKey];
+  return neon(url, { fetchOptions: { next: { revalidate: 3600, ...(tag ? { tags: [tag] } : {}) } } });
 }
 
 // `undefined` = not yet attempted, `null` = attempted and env var was missing.
