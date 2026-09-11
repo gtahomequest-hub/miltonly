@@ -9,7 +9,7 @@ import {
 import { homepageFAQs } from "@/lib/faqs";
 import { config } from "@/lib/config";
 import { getHomepageData } from "@/lib/homepageData";
-import { buildMegaLive, getMegaStrips } from "@/lib/megaLive";
+import { buildMegaLive, getMegaExtras } from "@/lib/megaLive";
 import { getBoardData } from "@/lib/board/boardData";
 import HomePage from "@/components/home/HomePage";
 
@@ -31,10 +31,10 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const [data, board, strips] = await Promise.all([getHomepageData(), getBoardData(), getMegaStrips()]);
-  // The nav's live panels are composed from data the page already has, plus the three
-  // strip queries, and the sell panel reads the SAME Board row the Board renders below it.
-  const mega = buildMegaLive(data, board, strips);
+  const [data, board, extras] = await Promise.all([getHomepageData(), getBoardData(), getMegaExtras()]);
+  // The nav's live panels are composed from data the page already has, plus the rail
+  // items' own queries, and the sell panel reads the SAME Board row the Board renders below it.
+  const mega = buildMegaLive(data, board, extras);
 
   const schemas = [
     generateOrganizationSchema(),

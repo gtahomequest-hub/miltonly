@@ -354,19 +354,57 @@ nav .m-mega-label {
   color: rgba(0, 255, 128, 0.8);
   margin: 0 0 8px;
 }
-nav .m-mega-rail a {
+/* THE RAIL IS A TABLIST. Each item is a <button role="tab"> that selects its panel on
+   hover-with-intent, on focus and on click. The selected one carries the accent bar. */
+nav .m-mega-tab {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
   color: rgba(255, 255, 255, 0.84);
-  text-decoration: none;
+  font: inherit;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
-  padding: 7px 8px;
-  margin-left: -8px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  margin-left: -12px;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-nav .m-mega-rail a:hover,
-nav .m-mega-rail a:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
+nav .m-mega-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
+}
+nav .m-mega-tab.m-sel {
+  background: rgba(0, 255, 128, 0.1);
+  border-left-color: #00ff80;
+  color: #fff;
+}
+nav .m-mega-tab:focus-visible {
+  outline: 2px solid #00ff80;
+  outline-offset: -2px;
+}
+nav .m-item[hidden] {
+  display: none;
+}
+nav .m-item {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+nav .m-item > * {
+  width: 100%;
+}
+nav .m-item .m-mega-lead,
+nav .m-item .m-mega-note,
+nav .m-item .m-mega-search {
+  margin: 0;
+}
+nav .m-item .m-mega-cta {
+  width: auto;
 }
 nav .m-mega-main {
   min-width: 0;
@@ -453,6 +491,8 @@ nav .m-mega-cards {
 }
 nav .m-mega-cards a {
   display: block;
+  height: 100%;
+  box-sizing: border-box;
   text-decoration: none;
   border-radius: 10px;
   padding: 0 0 10px;
@@ -511,11 +551,6 @@ nav .m-mega-hub {
 }
 
 /* STREETS: every hub with its live count, and the film posters beside them */
-nav .m-mega-streets {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 250px;
-  gap: 24px;
-}
 nav .m-mega-hubs ul {
   list-style: none;
   margin: 0;
@@ -549,7 +584,7 @@ nav .m-mega-frames {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   align-content: start;
 }
@@ -603,21 +638,126 @@ nav .m-mega-figs dd.m-mega-figwin {
 
 nav .m-mega-note {
   margin: 18px 0 0;
-  max-width: 560px;
+  max-width: 640px;
   font-size: 15px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.66);
 }
+nav .m-mega-ok {
+  color: #00ff80;
+}
+nav .m-mega-fine {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+}
+nav .m-mega-prior {
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+}
+nav .m-mega-change {
+  display: block;
+  padding: 2px 10px 0;
+  font-size: 14px;
+  color: #00ff80;
+}
 
-/* the foot: the strip and the CTA, one row */
+/* A to Z: one tile per letter with its page count; a letter with none is not a link */
+nav .m-mega-az {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 6px;
+}
+nav .m-mega-az a,
+nav .m-mega-az-off {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  color: #fff;
+  min-height: 44px;
+}
+nav .m-mega-az a:hover,
+nav .m-mega-az a:focus-visible {
+  background: rgba(0, 255, 128, 0.14);
+}
+nav .m-mega-az-off {
+  color: rgba(255, 255, 255, 0.35);
+}
+nav .m-mega-az b {
+  font-size: 16px;
+  font-weight: 600;
+}
+nav .m-mega-az span {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  color: rgba(0, 255, 128, 0.8);
+}
+nav .m-mega-az-off span {
+  color: inherit;
+}
+
+/* the latest Market Watch edition */
+nav .m-mega-edition {
+  max-width: 640px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+nav .m-mega-edition p {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.86);
+}
+nav .m-mega-edition a {
+  color: #00ff80;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+nav .m-mega-edition a:hover {
+  text-decoration: underline;
+}
+
+/* the foot: the destinations the rail no longer names, kept so the link graph keeps them */
 nav .m-mega-foot {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
+  align-items: baseline;
+  gap: 16px;
   margin-top: 18px;
-  padding-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+nav .m-mega-foot .m-mega-label {
+  margin: 0;
+}
+nav .m-mega-more {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+nav .m-mega-more a {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  text-decoration: none;
+}
+nav .m-mega-more a:hover,
+nav .m-mega-more a:focus-visible {
+  color: #00ff80;
 }
 nav .m-mega-strip {
   min-width: 0;
@@ -684,11 +824,8 @@ nav .m-mega-cta:focus-visible {
   nav .m-mega-photo {
     max-height: 110px;
   }
-  nav .m-mega-streets {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  nav .m-mega-frames {
-    display: none;
+  nav .m-mega-frames img {
+    height: 60px;
   }
 }
 @media (max-width: 820px) {
@@ -748,23 +885,56 @@ nav .sn-acc-body .m-mega-lead {
   font-size: 19px;
   margin: 0;
 }
-nav .sn-acc-rail {
-  display: flex;
-  flex-direction: column;
+/* one <details> per rail item, the first open; a tap opens that item's content inline */
+nav .sn-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
-nav .sn-acc-rail a {
-  color: rgba(255, 255, 255, 0.84);
-  text-decoration: none;
-  font-size: 16px;
-  min-height: 44px;
+nav .sn-item > summary {
+  list-style: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 8px 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 10px 4px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 16px;
+  font-weight: 500;
 }
-nav .sn-acc-rail a:active,
-nav .sn-acc-rail a:focus-visible {
+nav .sn-item > summary::-webkit-details-marker {
+  display: none;
+}
+nav .sn-item > summary::after {
+  content: '+';
   color: #00ff80;
+  font-size: 18px;
+  line-height: 1;
+}
+nav .sn-item[open] > summary {
+  color: #fff;
+}
+nav .sn-item[open] > summary::after {
+  content: '−';
+}
+nav .sn-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 4px 16px;
+}
+nav .sn-item-body .m-mega-lead,
+nav .sn-item-body .m-mega-note,
+nav .sn-item-body .m-mega-search {
+  margin: 0;
+}
+nav .sn-acc-body .m-mega-more {
+  padding: 8px 4px 0;
+}
+nav .sn-acc-body .m-mega-more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 15px;
 }
 /* cards stack two across at 380 */
 nav .sn-acc-body .m-mega-cards {
@@ -774,14 +944,11 @@ nav .sn-acc-body .m-mega-cards {
 nav .sn-acc-body .m-mega-cards a {
   min-height: 44px;
 }
-nav .sn-acc-body .m-mega-streets {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
 nav .sn-acc-body .m-mega-frames {
-  display: grid;
   grid-template-columns: 1fr 1fr;
+}
+nav .sn-acc-body .m-mega-az {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 nav .sn-acc-body .m-mega-hubs ul {
   grid-template-columns: 1fr;

@@ -24,6 +24,12 @@
 //   viewport and its accordions carry the same live content and the same links as the
 //   desktop band.
 //
+//   THE RAIL, at every width. Each menu's rail item must change the right-hand panel: on
+//   hover with intent and on focus at 1024 and 1440, on a tap at 380. Every item's panel must
+//   carry at least one live block (a figure, cards, hubs, posters, letters, an edition, a
+//   strip, a form) and its CTA. No rail item may lead to an empty panel, and the first item
+//   must be the one selected before anybody touches anything.
+//
 // A parser that reaches nothing must fail on its own coverage. Every count below is asserted
 // against the number of pages or widths it was supposed to read.
 import { get } from '../lib/http.mjs';
@@ -35,6 +41,14 @@ const WIDTHS = [
 ];
 const MENUS = ['buy', 'streets', 'sell'];
 const MENU_INDEX = { buy: '/listings', streets: '/streets', sell: '/sell' };
+/** The rail, as the brief states it. Open houses are absent on purpose: see megaLive.ts. */
+const ITEMS = {
+  buy: ['new', 'changes', 'condos', 'freehold', 'rentals', 'alerts'],
+  streets: ['hoods', 'video', 'az', 'search'],
+  sell: ['worth', 'soldmtd', 'watch'],
+};
+/** What counts as live content inside an item's panel. A CTA alone does not. */
+const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-edition, .m-mega-strip a, .m-mega-figs dd, form.m-mega-search';
 const TYPE_FLOOR_PX = 14;
 
 /** The <nav> element's own markup. */
@@ -77,15 +91,32 @@ function figures(html) {
 }
 
 const INT = /^[\d,]{1,7}$/;
+const MONEY = /^(\$\d{1,3}(,\d{3})+|—)$/;
+const DAYS = /^(\d{1,3} days?|—)$/;
+const PCT = /^(\d{2,3}\.\d%|—)$/;
+/** Every menu figure's stated format. A `menu-` figure with no entry here is a finding: a
+ *  figure nobody declared a format for is a figure nobody is checking. */
 const FIG_FORMAT = {
   'menu-buy-active': INT,
   'menu-buy-new': INT,
+  'menu-buy-new24': INT,
+  'menu-buy-changes': INT,
+  'menu-buy-condos': INT,
+  'menu-buy-freehold': INT,
+  'menu-buy-rentals': INT,
   'menu-streets-pages': INT,
   'menu-streets-filmed': INT,
+  'menu-streets-hubs': INT,
   'menu-hub-active': INT,
-  'menu-sell-typical': /^(\$\d{1,3}(,\d{3})+|—)$/,
-  'menu-sell-days': /^(\d{1,3} days?|—)$/,
-  'menu-sell-sta': /^(\d{2,3}\.\d%|—)$/,
+  'menu-sell-typical': MONEY,
+  'menu-sell-days': DAYS,
+  'menu-sell-sta': PCT,
+  'menu-sell-days-lead': DAYS,
+  'menu-sell-sta-lead': PCT,
+  'menu-sold-mtd': INT,
+  'menu-sold-mtd-typical': MONEY,
+  'menu-mw-sales': INT,
+  'menu-mw-new': INT,
 };
 
 // ── the browser half ─────────────────────────────────────────────────────────────────────
@@ -181,6 +212,19 @@ async function driveDesktop(page, url, w, h, findings) {
   s = await state(page, 'buy');
   if (s.shown) findings.push(`${tag}: leaving the nav did not close Buy`);
 
+  // the rail, on every menu
+  for (const key of MENUS) {
+    await page.click(trigger(key));
+    await sleep(250);
+    s = await state(page, key);
+    if (!s.shown) { findings.push(`${tag}: click did not open ${key} for the rail check`); continue; }
+    await driveRail(page, tag, key, findings);
+    await page.keyboard.press('Escape');
+    await sleep(200);
+    await page.mouse.move(w / 2, h - 40);
+    await sleep(300);
+  }
+
   // click toggles; a second click closes
   await page.click(trigger('streets'));
   await sleep(250);
@@ -237,6 +281,68 @@ async function driveDesktop(page, url, w, h, findings) {
   await sleep(200);
 }
 
+/** The rail: every item selects its own panel on hover with intent and on focus, and no
+ *  item's panel is empty. Runs with the menu already open. */
+async function driveRail(page, tag, key, findings) {
+  const items = ITEMS[key];
+  const read = (item) =>
+    page.evaluate(
+      (k, it, all, liveSel) => {
+        const tab = document.getElementById(`m-tab-${k}-${it}`);
+        const panel = document.getElementById(`m-item-${k}-${it}`);
+        const band = document.querySelector('.m-band');
+        const r = panel ? panel.getBoundingClientRect() : null;
+        return {
+          selected: tab ? tab.getAttribute('aria-selected') : null,
+          shown: !!(panel && !panel.hidden),
+          othersShown: all.filter((o) => o !== it && !document.getElementById(`m-item-${k}-${o}`)?.hidden),
+          live: panel ? panel.querySelectorAll(liveSel).length : 0,
+          cta: !!panel?.querySelector('.m-mega-cta'),
+          bottom: r ? Math.round(r.bottom) : 0,
+          right: r ? Math.round(r.right) : 0,
+          vw: innerWidth,
+          vh: innerHeight,
+          bandScroll: band.scrollHeight,
+          bandClient: band.clientHeight,
+        };
+      },
+      key,
+      item,
+      items,
+      LIVE_BLOCK,
+    );
+  // the first item is selected before anything is touched
+  let s = await read(items[0]);
+  if (s.selected !== 'true' || !s.shown) findings.push(`${tag}: ${key} opened on "${items[0]}" selected=${s.selected} shown=${s.shown}, expected the first item`);
+  // hover with intent selects each in turn
+  for (const item of items) {
+    const tab = await page.$(`#m-tab-${key}-${item}`);
+    if (!tab) { findings.push(`${tag}: ${key} has no rail item "${item}"`); continue; }
+    const box = await tab.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await sleep(320);
+    s = await read(item);
+    if (s.selected !== 'true' || !s.shown) findings.push(`${tag}: hovering ${key}/${item} did not select it (aria-selected=${s.selected}, shown=${s.shown})`);
+    if (s.othersShown.length) findings.push(`${tag}: ${key}/${item} selected but ${s.othersShown.join(',')} still shown`);
+    if (s.live === 0) findings.push(`${tag}: ${key}/${item} panel has no live content`);
+    if (!s.cta) findings.push(`${tag}: ${key}/${item} panel has no CTA`);
+    if (s.bottom > s.vh || s.right > s.vw) findings.push(`${tag}: ${key}/${item} panel runs to ${s.right}x${s.bottom} in a ${s.vw}x${s.vh} viewport`);
+    if (s.bandScroll > s.bandClient + 1) findings.push(`${tag}: ${key}/${item} needs an internal scroll (${s.bandScroll} > ${s.bandClient})`);
+  }
+  // focus selects: ArrowDown from the last item wraps to the first, then walks
+  await page.focus(`#m-tab-${key}-${items[items.length - 1]}`);
+  await page.keyboard.press('ArrowDown');
+  await sleep(150);
+  s = await read(items[0]);
+  if (s.selected !== 'true' || !s.shown) findings.push(`${tag}: ArrowDown on ${key}'s last item did not focus-select the first`);
+  if (items.length > 1) {
+    await page.keyboard.press('ArrowDown');
+    await sleep(150);
+    s = await read(items[1]);
+    if (s.selected !== 'true' || !s.shown) findings.push(`${tag}: ArrowDown did not focus-select ${key}/${items[1]}`);
+  }
+}
+
 async function driveMobile(page, url, w, h, findings) {
   const tag = `${w} ${url}`;
   await page.setViewport({ width: w, height: h });
@@ -283,6 +389,35 @@ async function driveMobile(page, url, w, h, findings) {
     return out;
   }, TYPE_FLOOR_PX);
   if (acc.items !== 3) findings.push(`${tag}: ${acc.items} accordion items, expected 3`);
+
+  // the rail on a phone: one <details> per item, the first open by default, a tap opens the
+  // rest, and none is empty
+  for (const key of MENUS) {
+    const mk = MENUS.indexOf(key);
+    for (const [k, item] of ITEMS[key].entries()) {
+      const before = await page.evaluate((mi, idx) => {
+        const menu = document.querySelectorAll('.sn-acc-item')[mi];
+        const d = menu ? menu.querySelectorAll('.sn-item')[idx] : null;
+        return d ? { open: d.open, label: d.querySelector('summary')?.textContent.trim() } : null;
+      }, mk, k);
+      if (!before) { findings.push(`${tag}: phone ${key} has no item #${k} (${item})`); continue; }
+      if (k === 0 && !before.open) findings.push(`${tag}: phone ${key}'s first item "${before.label}" is not open by default`);
+      if (k > 0 && before.open) findings.push(`${tag}: phone ${key}/${before.label} is open before being tapped`);
+      if (k > 0) {
+        const handle = await page.evaluateHandle((mi, idx) => document.querySelectorAll('.sn-acc-item')[mi].querySelectorAll('.sn-item')[idx].querySelector('summary'), mk, k);
+        await handle.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await handle.click();
+        await sleep(250);
+      }
+      const after = await page.evaluate((mi, idx, liveSel) => {
+        const d = document.querySelectorAll('.sn-acc-item')[mi].querySelectorAll('.sn-item')[idx];
+        return { open: d.open, live: d.querySelectorAll(liveSel).length, cta: !!d.querySelector('.m-mega-cta') };
+      }, mk, k, LIVE_BLOCK);
+      if (!after.open) findings.push(`${tag}: tapping phone ${key}/${item} did not open it`);
+      if (after.live === 0) findings.push(`${tag}: phone ${key}/${item} has no live content`);
+      if (!after.cta) findings.push(`${tag}: phone ${key}/${item} has no CTA`);
+    }
+  }
   if (acc.leads < 2) findings.push(`${tag}: phone accordions carry ${acc.leads} lead sentences`);
   if (acc.cards === 0) findings.push(`${tag}: phone Buy accordion has no listing cards`);
   if (acc.cardImgs === 0) findings.push(`${tag}: phone Buy accordion has no photographs`);
@@ -312,7 +447,7 @@ export default {
     // ── STATIC ─────────────────────────────────────────────────────────────────────
     const read = [];
     const nonButton = [], badAria = [], missingPanel = [], notHidden = [], noCta = [], noStrip = [], sameStrip = [];
-    const badFig = [], hubMiss = [], redirectLinks = [], deadLinks = [];
+    const badFig = [], hubMiss = [], redirectLinks = [], deadLinks = [], railBad = [], emptyItems = [];
     const allHrefs = new Set();
     for (const path of pages) {
       const r = await get(base + path);
@@ -330,8 +465,27 @@ export default {
         const p = panelMarkup(nav, key);
         if (!p) { missingPanel.push(`${path}: ${key}`); continue; }
         if (!/\bhidden\b/.test(p.tag)) notHidden.push(`${path}: ${key}`);
-        const cta = p.body.match(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/) || p.body.match(/<a\b[^>]*href="([^"]+)"[^>]*class="[^"]*m-mega-cta[^"]*"/);
-        if (!cta || cta[1] !== MENU_INDEX[key]) noCta.push(`${path}: ${key} CTA ${cta ? cta[1] : 'absent'}`);
+        // the rail: one <button role="tab"> per item, exactly one selected, and one tabpanel
+        // per item with all but one hidden and none empty
+        const tabs = [...p.body.matchAll(/<button\b[^>]*role="tab"[^>]*>/g)].map((m) => m[0]);
+        const selectedTabs = tabs.filter((tb) => /aria-selected="true"/.test(tb)).length;
+        if (tabs.length !== ITEMS[key].length || selectedTabs !== 1) railBad.push(`${path}: ${key} has ${tabs.length} tabs (${selectedTabs} selected), expected ${ITEMS[key].length} with 1`);
+        let shownPanels = 0;
+        for (const item of ITEMS[key]) {
+          const m = p.body.match(new RegExp(`<div\\b[^>]*id="m-item-${key}-${item}"[^>]*>`));
+          if (!m) { railBad.push(`${path}: ${key}/${item} has no panel in the served HTML`); continue; }
+          if (!/\bhidden\b/.test(m[0])) shownPanels++;
+          const from = m.index;
+          const to = p.body.indexOf('m-mega-cta', from);
+          const body = to === -1 ? '' : p.body.slice(from, to);
+          const live = /data-fig=|m-mega-cards|m-mega-hubs|m-mega-frames|m-mega-az"|m-mega-edition|m-mega-strip|m-mega-figs|m-mega-search/.test(body);
+          if (!live) emptyItems.push(`${path}: ${key}/${item}`);
+          if (to === -1) emptyItems.push(`${path}: ${key}/${item} has no CTA`);
+        }
+        if (shownPanels !== 1) railBad.push(`${path}: ${key} serves ${shownPanels} visible item panels, expected 1`);
+        // every item carries its own CTA; at least one of them is the menu's index page
+        const ctas = [...p.body.matchAll(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+        if (!ctas.includes(MENU_INDEX[key])) noCta.push(`${path}: ${key} CTAs ${ctas.join(' ') || 'absent'}, none is ${MENU_INDEX[key]}`);
         const stripAt = p.body.indexOf('m-mega-strip');
         const strip = stripAt === -1 ? '' : p.body.slice(stripAt);
         const stripLinks = hrefsIn(strip).filter((h) => h.startsWith('/streets/'));
@@ -343,8 +497,9 @@ export default {
         sameStrip.push(path);
       const figs = figures(nav);
       for (const f of figs) {
+        if (!f.fig.startsWith('menu-')) continue;
         const fmt = FIG_FORMAT[f.fig];
-        if (!fmt) continue;
+        if (!fmt) { badFig.push(`${path}: ${f.fig} has no stated format`); continue; }
         if (!fmt.test(f.text)) badFig.push(`${path}: ${f.fig} "${f.text}"`);
         if (f.value !== null && f.value !== f.text) badFig.push(`${path}: ${f.fig} text "${f.text}" != data-value "${f.value}"`);
       }
@@ -399,6 +554,8 @@ export default {
         ['menu triggers rendered as <button> with aria', nonButton.length + badAria.length, 0],
         ['panels present in served HTML and closed with hidden', missingPanel.length + notHidden.length, 0],
         ['every panel carries its index CTA', noCta.length, 0],
+        ['rail tabs and item panels served as stated (one selected, one visible)', railBad.length, 0],
+        ['rail items whose served panel is empty', emptyItems.length, 0],
         ['every panel carries a strip', noStrip.length, 0],
         ['pages whose three strips are not all different', sameStrip.length, 0],
         ['menu figures in the wrong format', badFig.length, 0],
@@ -406,12 +563,12 @@ export default {
         ['panel hrefs that redirect', redirectLinks.length, 0],
         ['panel hrefs that fail', deadLinks.length, 0],
         ['browser runs completed', runs, expectedRuns],
-        ['interaction findings (hover, click, keyboard, geometry, type, photos, phone)', findings.length, 0],
+        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone)', findings.length, 0],
       ],
       examples: [
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,
         ...sameStrip.map((p) => `identical strips on ${p}`),
-        ...badFig, ...hubMiss, ...redirectLinks, ...deadLinks, ...findings,
+        ...railBad, ...emptyItems, ...badFig, ...hubMiss, ...redirectLinks, ...deadLinks, ...findings,
       ],
     };
   },
