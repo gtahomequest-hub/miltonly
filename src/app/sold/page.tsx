@@ -25,7 +25,7 @@ import {
   getRecentSoldList,
 } from "@/lib/sold-data";
 import { getMiltonSoldAggregates, getMiltonSoldOverall } from "@/lib/soldAggregates";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import SoldTableForest from "@/components/sold/SoldTableForest";
 import SoldAggregates from "@/components/sold/SoldAggregates";
@@ -137,7 +137,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
 
   return (
     <div className="sold-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
 
       {/* hero — real totals + (anon) sign-in CTA */}
       <section className="sv-hero">

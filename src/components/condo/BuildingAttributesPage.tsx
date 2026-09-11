@@ -9,6 +9,7 @@ import "./condo-theme.css";
 import "./condo-b.css";
 import type { CondoView } from "@/lib/ai/condoView";
 import { SiteNav } from "../nav/SiteNav";
+import type { MegaLive } from "../nav/megaTypes";
 import CondoCTAs from "./CondoCTAs";
 import { config } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
@@ -26,7 +27,7 @@ function positioning(v: CondoView): string {
   return "A Milton condo building, told entirely through its own recorded sales and leases.";
 }
 
-export default function BuildingAttributesPage({ view }: { view: CondoView }) {
+export default function BuildingAttributesPage({ view, live }: { view: CondoView; live?: MegaLive }) {
   const [lens, setLens] = useState<Lens>("buyer");
   const v = view;
   const buyer = lens === "buyer";
@@ -35,7 +36,7 @@ export default function BuildingAttributesPage({ view }: { view: CondoView }) {
 
   return (
     <div className="condo-v2">
-      <SiteNav variant="page" />
+      <SiteNav variant="page" live={live} />
       <div className="cb">
         {/* ---------------- HERO: lead with the RELATIONSHIP ---------------- */}
         <header className="cb-hero">

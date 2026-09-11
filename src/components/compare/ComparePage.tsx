@@ -13,7 +13,7 @@
 import "../hub/hub-theme.css";
 import "./compare-theme.css";
 import React from "react";
-import { SiteNav } from "../nav/SiteNav";
+import SiteNavLive from "../nav/SiteNavLive";
 import CompareDecisionTool from "./CompareDecisionTool";
 import { fullPrice, compactPrice } from "../hub/format";
 import type { TenureCompareFacts } from "../hub/types";
@@ -152,7 +152,7 @@ export function ComparePage({ data, source }: { data: ComparisonData; source: st
 
   return (
     <div className="hub-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
 
       {/* hero */}
       <header className="h-hero">

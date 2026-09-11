@@ -13,7 +13,7 @@ import {
   HubSiblings,
   HubDualCta,
 } from './sections';
-import { SiteNav } from '../nav/SiteNav';
+import SiteNavLive from '../nav/SiteNavLive';
 import { GuideUplinks } from '../guides/GuideUplinks';
 import { guidesForHub } from '@/lib/guides/uplinks';
 
@@ -23,7 +23,7 @@ export function HubPage({ data }: { data: HubData }) {
   const guides = guidesForHub({ condoHeavy: data.condos.length > 0 || data.compareFacts?.hasFee === true });
   return (
     <div className="hub-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <HubHero data={data} />
       <HubGlance data={data} />
       <HubOverview data={data} />

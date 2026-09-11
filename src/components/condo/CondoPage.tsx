@@ -13,12 +13,12 @@ import {
   CondoNearbySection,
   CondoDualCta,
 } from './sections';
-import { SiteNav } from '../nav/SiteNav';
+import SiteNavLive from '../nav/SiteNavLive';
 
 export function CondoPage({ data }: { data: CondoData }) {
   return (
     <div className="condo-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <CondoHero data={data} />
       <CondoCost data={data} />
       <CondoBedrooms data={data} />
