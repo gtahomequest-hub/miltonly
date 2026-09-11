@@ -1,0 +1,119 @@
+published street pages (sitemap): 449
+Town road segments: 3293; non-empty per attribute: {
+  ROADCLASS: 3072,
+  PLOWCLASS: 3249,
+  LANES: 3059,
+  OWNERSHIP: 3284,
+  CATEGORY: 3293,
+  WINTER_MTN: 3139,
+  SPEED_LIMIT: 3291,
+  ONEWAY: 2
+}
+Town CATEGORY values: {
+  LOCAL: 1648,
+  'MAJOR ARTERIAL': 223,
+  'MINOR ARTERIAL': 174,
+  COLLECTOR: 1066,
+  PRIVATE: 15,
+  HIGHWAY: 86,
+  'HIGHWAY RAMP': 79,
+  'TRUCK INSPECTION': 2
+}
+Town SPEED_LIMIT values: {
+  '0': 2,
+  '20': 12,
+  '30': 17,
+  '40': 30,
+  '50': 2654,
+  '60': 264,
+  '70': 183,
+  '80': 39,
+  '100': 92
+}
+Town LANES values: {
+  '0': 189,
+  '1': 4,
+  '2': 2762,
+  '3': 39,
+  '4': 171,
+  '5': 55,
+  '6': 28,
+  null: 45
+}
+OSM surface values (segments): {
+  asphalt: 2581,
+  null: 302,
+  gravel: 7,
+  unpaved: 9,
+  dirt: 50,
+  concrete: 5,
+  paved: 4,
+  woodchips: 2,
+  fine_gravel: 2,
+  ground: 1
+}
+OSM sidewalk values (segments): {
+  null: 1166,
+  no: 408,
+  'l/r:no/separate': 234,
+  right: 392,
+  left: 295,
+  separate: 63,
+  both: 245,
+  'both:separate': 100,
+  'l/r:separate/no': 60
+}
+OSM maxspeed values (segments): {
+  '25': 1,
+  '40': 4,
+  '50': 408,
+  '60': 438,
+  '70': 226,
+  '80': 92,
+  '100': 76,
+  null: 1716,
+  '70 mph': 1,
+  '75 mph': 1
+}
+
+PER PUBLISHED STREET: {
+ "townMatch": 447,
+ "townLanes": 440,
+ "townSpeed": 447,
+ "townCategory": 447,
+ "townLength": 447,
+ "townDeadEnd": 53,
+ "townOrientation": {
+  "diagonal": 258,
+  "curved": 178,
+  "E-W": 7,
+  "N-S": 4
+ },
+ "osmMatch": 414,
+ "osmSurface": 391,
+ "osmLanes": 379,
+ "osmSidewalk": 307,
+ "osmMaxspeed": 64,
+ "osmLit": 129,
+ "osmLength": 414,
+ "osmDeadEnd": 65,
+ "osmOrientation": {
+  "diagonal": 233,
+  "curved": 172,
+  "E-W": 6,
+  "N-S": 3
+ },
+ "neither": 2,
+ "either": 447,
+ "both": 414,
+ "lengthDisagree20pct": 19,
+ "lanesDisagree": 11,
+ "speedDisagree": 13,
+ "osmSurfaceMixed": 1,
+ "osmSidewalkMixed": 85,
+ "osmMaxspeedMixed": 14,
+ "townSpeedMixed": 28,
+ "townLanesMixed": 13
+}
+unmatched by both layers: 2 second-line-milton, pears-court-milton
+Town dead-end sample: banting-court-milton, mcfarland-court-milton, mae-court-milton, glenda-jane-drive-milton, rose-way-milton, whitlock-avenue-milton, guelph-line-milton, secord-court-milton, nelson-court-milton, trudeau-drive-milton, ferguson-drive-milton, lower-base-line-milton

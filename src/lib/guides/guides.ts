@@ -513,7 +513,7 @@ function feeRowSentence(r: CondoFeeRow): string {
   // raw string, rather than falling back to it. The fallback is what printed
   // "in 1032 - FO Ford" on the first preview.
   const where = r.neighbourhood ? `, in ${r.neighbourhood}` : "";
-  return `${formatMoney(r.maintenanceFee)} a month, ${bits.join(", ")}${where}.`;
+  return `${formatMoney(r.monthlyFee)} a month, ${bits.join(", ")}${where}.`;
 }
 
 async function buildCondoFees(def: GuideDef): Promise<BuiltGuide> {
@@ -524,7 +524,7 @@ async function buildCondoFees(def: GuideDef): Promise<BuiltGuide> {
     figures: [
       fig("condo.activeWithFee", rows.length, "condos for sale stating a monthly fee", "count", "getActiveCondoFees"),
       ...rows.map((r) =>
-        fig(`condo.${r.mlsNumber}.fee`, r.maintenanceFee, `monthly fee on listing ${r.mlsNumber}`, "dollar", "getActiveCondoFees"),
+        fig(`condo.${r.mlsNumber}.fee`, r.monthlyFee, `monthly fee on listing ${r.mlsNumber}`, "dollar", "getActiveCondoFees"),
       ),
     ],
     entities: [CITY, ...Array.from(new Set(rows.map((r) => r.neighbourhood).filter((n): n is string => Boolean(n))))],

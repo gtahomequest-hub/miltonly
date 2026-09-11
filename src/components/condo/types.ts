@@ -23,9 +23,9 @@ export interface CondoFacts {
 export interface CondoOwnership {
   typicalPrice: number | null; // null => k-anon silent
   priceRange: string | null; // "$520K – $740K"
-  maintenanceFee: string | null; // "~$0.62 / sq ft" or "~$640 / month"
+  monthlyFee: string | null; // "~$0.62 / sq ft" or "~$640 / month"
   feeIncludes: string[]; // ["Heat", "Water", "1 parking"] — empty if unknown
-  feeNote?: string; // shown when maintenanceFee is null
+  feeNote?: string; // shown when monthlyFee is null
 }
 
 export interface CondoBedRow {

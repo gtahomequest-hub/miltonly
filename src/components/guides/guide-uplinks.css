@@ -1,0 +1,107 @@
+/* src/components/guides/guide-uplinks.css
+   The guides ledger. Self-contained: it renders inside .street-v2 and .hub-v2 alike,
+   so every token is declared here rather than borrowed from either shell. */
+.g-up {
+  --g-base: #073126;
+  --g-accent: #017848;
+  --g-cream: #f6f4ef;
+  --g-ink: #1b1f1d;
+  --g-muted: #6b6f6a;
+  --g-rule: #dfe0dc;
+  --g-serif: var(--font-fraunces), 'Fraunces', Georgia, serif;
+  --g-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --g-mono: 'JetBrains Mono', ui-monospace, monospace;
+  background: var(--g-cream);
+  padding-block: 44px;
+  padding-inline: 20px;
+  font-family: var(--g-sans);
+  color: var(--g-ink);
+}
+.g-up-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.g-up-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 20px;
+  margin-bottom: 18px;
+}
+.g-up-eyebrow {
+  font-family: var(--g-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--g-accent);
+}
+.g-up-head h2 {
+  font-family: var(--g-serif);
+  font-weight: 400;
+  font-size: clamp(20px, 2.2vw, 26px);
+  line-height: 1.15;
+  margin: 0;
+  color: var(--g-base);
+}
+.g-up-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--g-rule);
+}
+.g-up-row {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: start;
+  border-bottom: 1px solid var(--g-rule);
+}
+.g-up-n {
+  font-family: var(--g-mono);
+  font-size: 12px;
+  color: var(--g-muted);
+  padding-top: 18px;
+}
+.g-up-link {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  grid-template-areas: 'cat title' 'cat dek';
+  column-gap: 16px;
+  padding: 16px 0;
+  text-decoration: none;
+  color: inherit;
+}
+.g-up-link:hover .g-up-t,
+.g-up-link:focus-visible .g-up-t {
+  color: var(--g-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.g-up-cat {
+  grid-area: cat;
+  font-family: var(--g-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--g-muted);
+  padding-top: 4px;
+}
+.g-up-t {
+  grid-area: title;
+  font-family: var(--g-serif);
+  font-size: 18px;
+  line-height: 1.25;
+  color: var(--g-base);
+}
+.g-up-d {
+  grid-area: dek;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--g-muted);
+  margin-top: 4px;
+  max-width: 62ch;
+}
+@media (max-width: 640px) {
+  .g-up-row { grid-template-columns: 28px 1fr; }
+  .g-up-link { grid-template-columns: 1fr; grid-template-areas: 'cat' 'title' 'dek'; }
+  .g-up-cat { padding-top: 0; margin-bottom: 4px; }
+}

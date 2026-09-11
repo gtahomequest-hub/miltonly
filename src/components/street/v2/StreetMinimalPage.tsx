@@ -11,6 +11,8 @@ import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
 import { StreetAddresses } from './AddressLadder';
 import { resaleClaim } from './resaleClaim';
 import { SiteNav } from '../../nav/SiteNav';
+import { GuideUplinks } from '../../guides/GuideUplinks';
+import { guidesForStreet } from '@/lib/guides/uplinks';
 
 export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: MinimalStreetView }) {
   // the shared gate — absence only where the record is genuinely empty (see resaleClaim.ts).
@@ -168,6 +170,14 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
           </div>
         </section>
       )}
+
+      {/* MC-003 guide up-links. A minimal street has no condo sale pill by construction, so
+          the condo guide never joins this set; the three every street carries do. */}
+      <GuideUplinks
+        guides={guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo') })}
+        context={data.name}
+        variant="street"
+      />
 
       <StreetFinalCtas data={data} />
     </div>
