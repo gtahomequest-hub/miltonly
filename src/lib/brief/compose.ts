@@ -130,6 +130,10 @@ interface SoldRead {
   streets: Array<{ slug: string; rawName: string | null; neighbourhood: string | null }>;
 }
 
+// sold_date is a calendar date stamped 00:00 UTC, not an instant, so it is read on the window's
+// DATE basis. The Toronto instants (win.start, win.end) select the wrong day here: see
+// src/lib/brief/window.ts and marketWatch/windows.ts, "TWO BASES FOR ONE WEEK". The NOW() bound
+// is Market Watch's Ruling 10: the table carries rows dated into 2027.
 async function soldInWindow(win: BriefWindow): Promise<SoldRead> {
   const db = getSoldDb();
   if (!db) return { count: 0, typicalPrice: null, streets: [] };
@@ -137,7 +141,8 @@ async function soldInWindow(win: BriefWindow): Promise<SoldRead> {
     SELECT street_slug, neighbourhood, sold_price
     FROM sold.sold_records
     WHERE city = ${CITY} AND perm_advertise = TRUE AND transaction_type = 'For Sale'
-      AND sold_date >= ${win.start.toISOString()} AND sold_date < ${win.end.toISOString()}
+      AND sold_date >= ${win.dateStartUtc.toISOString()} AND sold_date < ${win.dateEndExclusiveUtc.toISOString()}
+      AND sold_date <= NOW()
   `) as Array<{ street_slug: string | null; neighbourhood: string | null; sold_price: unknown }>;
 
   const prices = rows
