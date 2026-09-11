@@ -1,0 +1,55 @@
+SOURCE: Town of Milton, Licence Plate Recognition (LPR)
+URL: https://www.milton.ca/en/living-in-milton/licence-plate-recognition-lpr.aspx
+PAGE TITLE: Licence Plate Recognition (LPR) - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: 60e482f85ecb884acd86fa74eef78ae7609ee2ad7ea57b088300559ceda5610b
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+New: Monthly parking permits available in select parksThe Town of Milton is piloting overnight parking in select municipal parks to help ease on-street parking in residential areas.Limited spaces available – $60 per month.Apply now [https://milton.gtechna.net/permit-portal/]
+
+## Licence Plate Recognition
+
+The Town of Milton is introducing Licence Plate Recognition (LPR) software to enhance parking enforcement and compliance. This new technology uses cameras mounted on by-law enforcement vehicles to capture images of parked or stopped vehicles in violation of Town by-laws.
+
+### How the Licence Plate Recognition system works
+
+The LPR system automatically scans and records licence plates of vehicles in violation of parking regulations. When a violation occurs, a parking ticket is issued and mailed to the vehicle’s registered owner.
+
+Each ticket includes:
+
+-
+Details of the parking violation
+
+-
+An image of the vehicle and licence plate
+
+-
+Payment and dispute options
+
+In addition to the ticket fine, a $10-standard-mail-service fee applies, as approved in Staff Report CORS-011-24 and User Fee By-law 62-2024.
+
+LPR enforcement will prioritize:
+
+-
+School and community safety zones
+
+-
+Overnight, on-street parking compliance
+
+To protect privacy, personal details, including people and unrelated vehicles, will be blurred where possible. The recorded data will be used exclusively by the Town of Milton for enforcement purposes.
+
+### Paying or disputing a parking ticket
+
+If you receive a parking ticket or penalty notice in the mail from the Town of Milton, you have the following options:
+
+Payment options
+
+-
+Online [/en/town-hall/parking-tickets-and-penalty-notices.aspx#Online]: Pay through the Town of Milton’s website
+
+-
+In Person [/en/town-hall/parking-tickets-and-penalty-notices.aspx#In-person]: Visit Town Hall during business hours
+
+Dispute a parking ticket:
+
+To dispute a parking ticket or penalty notice [/en/town-hall/parking-tickets-and-penalty-notices.aspx], you must submit a review request within 30 days of when the ticket or notice was issued. If you do not respond to the parking ticket or penalty notice by the due date — either by paying the penalty or scheduling an initial screening meeting — you automatically waive your right to a review and will need to pay an administrative fee.

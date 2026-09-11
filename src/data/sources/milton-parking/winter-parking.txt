@@ -1,0 +1,72 @@
+SOURCE: Town of Milton, Winter Parking
+URL: https://www.milton.ca/en/living-in-milton/winter-parking.aspx
+PAGE TITLE: Winter Parking - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: 8ffb031892a584b9dfaef43edf56d3bd85b06bd2be59ecd9ad43904da071b8ea
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+Winter storms can affect your parking. A winter storm happens when the weather makes snow clearing and parking difficult; usually heavy snowfall, freezing temperatures, or strong winds that cause drifting snow.
+
+When a winter storm occurs:
+
+-
+Street parking exception permits are suspended.
+
+-
+No cars can be parked on Milton roads.
+
+This helps snowplows and salt crews' clear roads quickly and safely.
+
+Important: Vehicles left on the road during suspension may be ticketed or towed at the owner’s expense.
+
+Please do not shovel snow onto the road or sidewalk from your property. Placing snow on the roadway is a violation of Milton’s Road Fouling By-law No. 115-2005. [/en/town-hall/resources/Accessible_Bylaws/115-2005-Road-Fouling-Consolidated.pdf]
+
+## Alternative parking
+
+The Town maintains designated parking lots during winter for residents who normally rely on street parking permits. These lots are available when permits are suspended for snow removal.
+
+Parking in the following lots is allowed for a 48-hour period:
+
+| Ward 1
+
+|
+
+- Brian Best Park - north and south [https://maps.app.goo.gl/srRPmJr6gek398yR9]
+
+- Scott Neighbourhood Park- east lot [https://maps.app.goo.gl/FzwCTzBJmoy5qXaYA]
+
+- Bronte Meadows Park [https://maps.app.goo.gl/TTf62rE7cpcFwXks8]
+
+- Sherwood District Park [https://maps.app.goo.gl/fSPZnbPNKqmkFCTEA]
+
+| Ward 2
+
+|
+
+- Clark Neighbourhood Park- north and south [https://maps.app.goo.gl/GeiPnwqbyk2JWw7u6]
+
+- Laurier Park [https://maps.app.goo.gl/utCrQe5vFNcVT4cQ8]
+
+- Lions Park- East lot (Ellis Cres) [https://maps.app.goo.gl/JQGyWQe2p44GdxWt5]
+
+| Ward 3
+
+|
+
+- Beaty Neighbourhood Park –south lot [https://maps.app.goo.gl/NALtF5DxXETnxqKg6]
+
+- Coates Neighbourhood Park -north and south [https://maps.app.goo.gl/ohEpbk6Ev45kdb8c6]
+
+| Ward 4
+
+|
+
+- Ford Neighbourhood Park [https://maps.app.goo.gl/X5Ju4bXoWCozFyqw7]
+
+- Willmott Neighbourhood Park [https://maps.app.goo.gl/n59dbNrFyM92v4qY8]
+
+- Optimist Neighbourhood Park [https://maps.app.goo.gl/JY2vimpZd1ZWp7HN9]
+
+### Need ongoing overnight parking?
+
+Milton's overnight parking pilot offers monthly overnight parking in designated municipal parks. Learn more about the overnight parking pilot on our Parking exceptions and permits page [/en/living-in-milton/parking-exceptions.aspx].

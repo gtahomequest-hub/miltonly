@@ -1,0 +1,321 @@
+SOURCE: Town of Milton, Parking Exceptions
+URL: https://www.milton.ca/en/living-in-milton/parking-exceptions.aspx
+PAGE TITLE: Parking exceptions and permits - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: ce478accea5633531c68fbbc6466872ba37d62b775a06edd2ef881af3ff9fe35
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+## What's on this page
+
+↓Monthly overnight parking in parks↓Street parking 5+ hours, up to 25 times per vehicle↓Street parking 5+ hours, beyond 25 times per vehicle↓Permanent 15-hour Parking↓Street parking for large vehicles ↓Parking terms and conditions ↓Place a storage bin on the street [/en/living-in-milton/roadway-permits.aspx?_mid_=80317]
+
+New: Monthly parking permits available in select parksThe Town of Milton is piloting overnight parking in select municipal parks to help ease on-street parking in residential areas.Limited spaces available – $60 per month.Apply now [https://milton.gtechna.net/permit-portal/]
+
+In Milton, street parking is limited to five hours. If you need to park longer, you can request a parking exception.
+
+Parking exceptions have limits on how long and how often they can be used per vehicle. You can also buy monthly permits for overnight parking at select municipal parks – this is a pilot program.
+
+## Monthly overnight parking in parks
+
+To help ease on-street parking pressures, the Town of Milton launched a one-year pilot program. This offers overnight parking permits in designated lots at municipal parks.
+
+There are 400 parking spaces available across all four wards. This pilot provides residents with a temporary parking option as our community continues to grow.
+
+Permits cost $60 per month, are available on a first-come, first-served basis, and allow overnight parking for the full month in the lot of a designated park. To qualify, you must not have any outstanding parking violations.
+
+A full review of the program will be presented to Council in 2027. At that time, Council will consider recommendations regarding the continuation, modification or discontinuation of the program. The pilot program will continue until then. Community feedback will help inform future parking decisions and strategies.
+
+### Participating parks
+
+Park only in areas marked by signs. Follow all parking rules.
+
+| Ward 1
+
+|
+
+- Brian Best Park (North and South)
+
+- Bronte Meadows Park
+
+- Scott Neighbourhood Park (East Lot)
+
+- Sherwood District Park
+
+| Ward 2
+
+|
+
+- Clark Neighbourhood Park (North and South)
+
+- Laurier Park
+
+- Lions Park (East Lot)
+
+| Ward 3
+
+|
+
+- Beaty Neighbourhood Park (South Lot)
+
+- Coates Neighbourhood Park (North and South)
+
+- Cobban Neighbourhood Park
+
+| Ward 4
+
+|
+
+- Ford Neighbourhood Park
+
+- Milton Community Park
+
+- Optimist Neighbourhood Park
+
+- Sunny Mount Park
+
+- Willmott Neighbourhood Park
+
+Apply for a monthly overnight permit [https://milton.gtechna.net/permit-portal/]
+
+## Street parking longer than five hours, up to 25 times per vehicle
+
+You can request a short-term parking exception to park on the street for:
+
+- More than five hours
+
+- Between 2 – 6 a.m.
+
+Each license plate is allowed up to 25 exceptions per year.
+
+Apply for a short-term parking exception [https://exceptions.milton.ca/userportal/visitorpass/]
+
+## Street parking longer than five hours, more than 25 times per vehicle
+
+From April 15 to Nov. 14, you can request extended parking exceptions beyond the regular 25 per vehicle.
+
+To qualify, you must:
+
+-
+Use or book all 25 regular exceptions for all vehicles registered to your home
+
+-
+Park at least one vehicle in your garage
+
+-
+Apply five business days before the start date
+
+Important: The Town may suspend parking exceptions during winter storms. Vehicles that  interfere with snow-clearing [/en/living-in-milton/parking-exceptions.aspx#Snow] may be ticketed or towed at the owner's expense. 
+
+Apply for an extended parking exception [https://forms.milton.ca/ePay/Permits/Extended-On-Street-Parking-Application]
+
+### Permanent 15-hour Parking
+
+Please send us an email [https://forms.milton.ca/ContactUs/Engineering] to apply for permanent 15-hour parking. The request should include the reason for requesting parking on your street. Once we receive your request, we will conduct a site inspection to see if your street can support permanent 15-hour parking.
+
+Please be advised that permanent 15-hour parking can only be requested by the homeowner. Non-homeowners must ask homeowners to submit a request. The process to look at permanent 15-hour parking takes anywhere between 2-3 months.
+
+|
+
+### Step-by-step process
+
+|
+
+#### Considerations before applying
+
+- Are you the registered homeowner?
+
+- Have you already used your 25 parking exceptions per vehicle for the year?
+
+- Do you have a garage? If yes, are you utilizing it to park a vehicle?
+
+#### Send an email to apply
+
+To apply for permanent 15-hour parking, please send an email to Engineering [https://forms.milton.ca/ContactUs/Engineering] for consideration.
+
+If you would like to submit your request in writing, please address the request to:
+
+Development Services
+
+150 Mary St.
+
+Milton, ON L9T 6Z5
+
+#### Gather signatures
+
+If we feel your street can support permanent 15-hour parking, we will give you an information package and petition form. You must gather signatures from 51 per cent of the homeowners on your street indicating that they support permanent 15-hour parking.
+
+#### Fill out the parking questionnaire
+
+If you are able to get 51 per cent or more support, we will issue an official parking questionnaire to confirm support. Each individual homeowner on the street must complete the questionnaire and return it to the Town of Milton before the specified date.
+
+#### Parking by-law amendment request
+
+If 51 per cent or more of homeowners support permanent 15-hour parking on the questionnaire, we will ask Council for an amendment to the parking by-law on your street. Once this is approved, new parking signs will be installed on your street.
+
+Permanent 15-hour parking will not take effect until all appropriate signs have been installed.
+
+|
+
+### Impact of permanent 15-hour parking
+
+|
+It is important to note that permanent 15-hour parking on one side of your street will result in no parking on the other side of the street at all times. Permanent 15-hour street parking may:
+
+- Complicate parking enforcement, snow removal, road maintenance and waste collection efforts
+
+- Result in residents from nearby streets parking on your street
+
+|
+
+### Completed parking survey results
+
+|
+Parking survey results
+
+| Location
+| Date
+| Parking prohibition/duration of on-street parking being requested
+| Percentage of homeowners supporting request
+| Result
+
+| Bennett Boulevard Lee's Gate to Cooper Avenue
+| Oct. 25, 2021
+| 15-hour parking anytime
+| 13%
+| Unsuccessful
+
+| Lemieux Court
+| Aug. 25, 2021
+| 15-hour parking anytime
+| 4%
+| Unsuccessful
+
+| 651 Farmstead Drive
+| June 28, 2021
+| 15-hour parking Anytime
+| 40%
+| Unsuccessful
+
+| John Street
+| March 15, 2021
+| South side - No parking anytime
+| 18%
+| Unsuccessful
+
+| Izumi Gate
+| Feb. 1, 2021
+| 15-hour parking anytime
+| 3%
+| Unsuccessful
+
+| Tasker Court
+| Dec. 14, 2020
+| 15-hour parking anytime
+| 67%
+|
+Successful
+
+| Anne Boulevard, Meadowbrook Drive and Vanier Drive
+| Nov. 9, 2022
+| Parking prohibition
+| 20%
+|
+Unsuccessful
+
+| Meadowbrook Drive
+| Nov. 9, 2022
+| Parking prohibition
+| 18%
+|
+Unsuccessful
+
+| Robert Street
+| Dec. 6, 2022
+| Parking prohibition
+| 4%
+|
+Unsuccessful
+
+| Ashbrook Court
+| Dec. 6, 2022
+| Parking prohibition
+| 43%
+| Unsuccessful
+
+| Bessborough Drive from house #540 to #566
+| Sept. 8, 2023
+| Reversal parking regulation
+| 75%
+| Successful
+
+| Mowat Lane
+| Oct. 13, 2023
+| 15 hour parking anytime
+| 22%
+| Unsuccessful
+
+| Severn Drive
+| Dec. 6, 2023
+| 15 hour parking anytime
+| 43%
+| Unsuccessful
+
+### Parking for large vehicles
+
+You can request a special parking exception for large vehicles that are:
+
+-
+Longer than 6.7 metres
+
+-
+Taller than 2.6 metres
+
+Examples include:
+
+-
+School buses
+
+-
+Commercial buses or coaches
+
+-
+Moving trucks
+
+Requests are accepted from April 15 to Nov. 14. These can be combined with your 25 regular exceptions.
+
+Apply for a special vehicle parking exception [https://forms.milton.ca/ePay/Permits/Special-Parking-Exceptions]
+
+## Parking exception terms and conditions
+
+|
+Ineligible vehicles
+
+|
+Parking exceptions will not be granted for:
+
+- Commercial vehicles over 6.7 metres long or 2.6 metres high
+
+- School buses or commercial coaches
+
+- Derelict or unlicensed vehicles
+
+- Vehicles with expired stickers
+
+- Immobile trailers
+
+|
+Snow clearing
+
+| During snow clearing operations, [/en/living-in-milton/snow-removal.aspx]the Town of Milton has the right to suspend street parking exceptions. Parking exceptions obtained online are null and void during snow clearing operations. Your vehicle is never permitted to obstruct snow removal. Visit the Town's Twitter [https://twitter.com/TownOfMiltonON] and Facebook [https://www.facebook.com/townofmiltonon] pages for regular updates.
+
+|
+Paying or disputing a parking ticket
+
+|
+You can pay your ticket:
+
+- Online [https://portal.gtechna.com/userportal/milton/ticketSearch.xhtml]
+
+- In person at Town Hall, Monday to Friday, 8:30 a.m. to 4:30 p.m.
+
+If you receive a parking ticket after obtaining a street parking exception, please contact us [https://forms.milton.ca/ContactUs/Town-Clerks-Office] within 24 hours. Failure to contact us within 24 hours may result in your ticket not being reviewed.
