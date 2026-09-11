@@ -1,61 +1,61 @@
-CORE · D:\miltonly · fix/core-batch-2 (main is `00e0eb1`)
+CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-11 (MC-003), batch built on `fix/core-batch-2`, proven on preview, not merged._
+_Last rewritten 2026-09-11 (MC-004): MC-003 merged and verified on production, the creation programme re-queued, QUEUE item 5 built on `feat/geometry` and proven on preview, not merged._
 
 ## READ THIS FIRST
 
-**MC-003 IS BUILT AND ON PREVIEW AT `5ebe87a08402585cdb6d0a028ec7500ed2956f29`, NOT MERGED.**
-Preview `miltonly-ghmke31mh`, `/api/build` answers the full SHA. `pnpm build` exit 0. Battery on
-the preview: **`PASS · 12 checks · 449 pages · 116s`**, `served == expected`. The merge is
-Aamir's call and is done by SHA. Record: `scratchpad/reports/MC-003-core-batch-2.md`.
+**MC-003 IS ON MAIN AS `8ebb937` (merge of `5ebe87a` by SHA) AND PRODUCTION IS GREEN AT IT.**
+`pnpm build` exit 0, pushed, `/api/build` on miltonly.com answers the full SHA, battery
+**`PASS · 12 checks · 449 pages · 109s`**, `served == expected`. Docs on top (`90c457c` and
+this one). Record: `scratchpad/reports/MC-004-merge-queue-geometry.md`.
 
-**CORRECTION: LEADS PHASE 2 IS ON MAIN AS `543ef99`.** Earlier handoffs said it was awaiting
-Core's merge at `00caa57`. It is not; nothing is pending from `feat/leads`.
+**THE MC-003 REPORT WAS WRONG ABOUT THE QUEUE, AND MC-004 CORRECTS IT.** It said the 09-11
+15:00Z cron marked the 249 candidates `ineligible`. It did not: one row was marked that day
+(`whitelock-avenue-milton`, an MLS misspelling of Whitlock, off the entity floor, correctly
+refused). The 249 candidates were never the cron's: of the 244 without a page, **167 were not
+in `StreetQueue` at all** (nothing enqueues a registry street whose only history is DB2), **68
+were `ineligible` from May to August** under the three-source gate DEC-GATE-PARITY replaced on
+09-10, and the cron never re-read that status, and **9 were `failed` at attempts=3** and never
+retried. The five pages that exist were built locally by `create-street-pages-local.ts`.
 
-**EVERY STREET PAGE AND EVERY HUB NOW LINKS UP TO ITS GUIDES**, in the served HTML, selected
-from `GUIDE_DEFS` in `src/lib/guides/uplinks.ts`. Three guides on every street (sold-price,
-first home, schools), two on every hub (neighbourhood costs, schools), the condo-fees guide only
-where the page is condo-heavy, which is decided from what the page itself renders: a condo sale
-pill on a street, the condo-buildings section or a fee on a hub. The battery's 12th check,
-`guide-links`, reads the anchors back and derives that population from the HTML in both
-directions. On preview: 1,360 anchors on 449 streets (449 × 3 + 13), 55 on 22 hubs (22 × 2 + 11).
+**THE CREATION PROGRAMME IS RE-QUEUED: 244 ROWS `pending` IN PROGRAMME ORDER.**
+`scripts/requeue-creation-programme.ts --write`, 2026-09-11 17:12Z, entity floor enforced, 0
+refused. The cap of 20 new pages a day is unchanged. **The 18:00Z cron picked up exactly 20**
+(pending 244 to 224) **and all 20 failed in ten seconds on the Anthropic credit-balance 400**,
+attemptCount 0: production runs `AI_PROVIDER_MARKET="haiku"` with `AI_PROVIDER_FALLBACK="opus"`,
+so the cron's first call is to Claude and the account has no credit (Open item 1 since August).
+The local runner forced DeepSeek, which is why five pages exist at all. Until credit is added or
+production's market half is pointed at DeepSeek, every hourly pass burns one attempt on 20 to 25
+rows and each row is terminal `failed` after three; the whole 244 would be exhausted in about a
+day and a half. `requeue-creation-programme.ts --write` resets them once the provider is fixed.
+The `differentPriorities` prompt/validator fault (22 % pass rate) is also still open.
 
-**`Listing.maintenanceFee` (Int) IS DEAD AND NOTHING EVER WROTE IT.** NULL on all 3,394 rows.
-It was declared in `c0a694e` beside `maintenanceFeeAmt`, which is the column the sync writes and
-the only fee column anything reads. The identifier now appears nowhere under `src/` (presentational
-fields renamed `monthlyFee`) and `scripts/test-fee-column.ts` in prebuild keeps it out. The
-figures.ts note that called it "0 on all 73" was wrong: null, not zero.
+**`ineligible` IS NO LONGER A ONE-WAY DOOR, ON `fix/queue-reeval` (`4a65f30`, preview
+`miltonly-flgprxmsq`), NOT MERGED.** DEC-QUEUE-REEVAL: the generate cron re-examines an
+`ineligible` verdict older than 30 days in its spare capacity, oldest first, behind every
+pending and retryable row, and reports `reevaluated` in its JSON. Merge is Aamir's call.
 
-**`sold_date` IS A CALENDAR DATE WEARING A TIMESTAMPTZ. READ IT AS A DATE, NEVER AS AN INSTANT.**
-`vow-sync.ts:482` binds the feed's date string into the column through a GMT session, so all
-8,596 rows sit at 00:00:00 UTC, and a Toronto-zone read is one day early on every row. The feed
-date is the true Toronto date. The write was NOT changed: one line would put two bases into one
-column and invert Market Watch's explicit UTC-midnight basis. **Leads' brief reads it the wrong
-way** (`src/lib/brief/compose.ts:140`, Toronto instants): for 2026-09-09 it returns 3 sales where
-8 are dated that day. Flagged, not touched.
+**QUEUE ITEM 5 IS BUILT ON `feat/geometry` (`b0d424b`, preview `miltonly-ra87zyzmu`), NOT
+MERGED.** Battery on the preview **`PASS · 13 checks · 449 pages · 123s`**. Every street page
+with a Town centreline (447 of 449) carries a "Road facts" card in the sidebar: length, road
+class, lanes, posted limit, surface, sidewalk, terminus, orientation, each present only where
+the layer gives one value, with the OGL attribution and the OSM line where surface or sidewalk
+is shown. 2,646 facts on preview, every one equal to the layer row, none where the row is null,
+none in a hero, glance or market tile. Geometry never enters `StreetGeneratorInput`
+(`scripts/test-geometry-boundary.ts`, prebuild) and the validator's new `unit_figure` rule
+refuses any metre, kilometre, km/h or lane figure in generated prose (zero matches on the
+corpus today). Data: `src/data/streetGeometry.ts`, generated by
+`scripts/town/gen-street-geometry.ts` from the Town cache and the OSM export at
+`D:/dashcam/work/milton-roads.geojson`.
 
-**THE 249-PAGE PROGRAMME IS PAUSED AND ITS ROWS ARE `ineligible`, NOT `pending`.** The five
-pages built on 2026-09-10 are live and recorded with their judge results in the MC-003 report.
-Nothing has been created since. The 09-11 15:00Z cron pass marked all 249 candidates
-`ineligible`, so the `differentPriorities` prompt fix alone will not resume it: the rows need
-re-queueing after the fix.
+**`sold_date` IS A CALENDAR DATE WEARING A TIMESTAMPTZ. READ IT AS A DATE.** Unchanged since
+MC-003; Leads' brief window still reads it the wrong way (`src/lib/brief/compose.ts:140`).
 
-**GATE A FOR QUEUE ITEM 5 IS IN THE MC-003 REPORT.** 447 of 449 published streets match the Town
-centreline, 414 match OSM, 2 match neither. Town supplies lanes (440), speed (447), length and
-category (447); OSM supplies surface (391) and sidewalk (307, 85 of them mixed along the street);
-terminus is derivable but needs a boundary guard (`guelph-line` reads as a dead end because it
-leaves the Town). Solar exposure is a bearing, and 178 streets have no dominant axis. The ruling
-asked for: geometry never enters the generator input, renders deterministically in the sidebar
-facts, and the validator gains a hard rule on any unit-bearing figure in prose.
+**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
 
-**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** `/rentals`, `on-market` and the homepage
-counts are live and the battery asserts each against its own source. Agreement with yesterday's
-number is not the test.
-
-**THE MIGRATION LEDGER IS CLEAN.** `prisma migrate status` reported "up to date" at `8db80da`;
-MC-003 adds no migration (the dead column is annotated, not dropped).
+**THE MIGRATION LEDGER IS CLEAN.** No migration in MC-003 or MC-004.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -63,12 +63,13 @@ MC-003 adds no migration (the dead column is annotated, not dropped).
 
 | | |
 |---|---|
-| `main` | **`00e0eb1`** (code SHA `8db80da`; docs on top) |
-| `fix/core-batch-2` | **`5ebe87a`**, pushed, preview `miltonly-ghmke31mh`, battery 12/12, awaiting merge approval |
-| battery on production | **`PASS · 11 checks · 449 pages · 94s`** at `4765cbd` (2026-09-11); becomes 12 checks once `5ebe87a` lands |
+| `main` | code SHA **`8ebb937`**, docs on top |
+| battery on production | **`PASS · 12 checks · 449 pages · 109s`** at `8ebb937`, 2026-09-11 |
+| `fix/queue-reeval` | **`4a65f30`**, preview `miltonly-flgprxmsq`, build exit 0, awaiting merge approval |
+| `feat/geometry` | **`b0d424b`**, preview `miltonly-ra87zyzmu`, battery 13/13, awaiting merge approval |
 | `prisma migrate status` | **clean**, 26 migrations |
+| creation programme | **re-queued**, 244 `pending`, 5 built, cap 20/day, prompt fault open |
 | Leads Phase 2 | **on main**, `543ef99` |
-| creation programme | **paused**, 5 built, 249 rows `ineligible`, cap live at 20/day |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -437,7 +438,8 @@ without the parameter.
 
 ## Next expected task
 
-**The merge of `5ebe87a` (MC-003), by SHA, on Aamir's approval.** Then, in whatever order he
-says: the brief's sold window (Leads' file, date basis), the `differentPriorities` prompt fix
-plus a re-queue of the 249 `ineligible` rows, regenerating the 26 streets that crossed k5 or
-k10, and QUEUE item 5 built on the Gate A rulings in the MC-003 report.
+**Aamir's call on three merges, each by SHA:** `fix/queue-reeval` `4a65f30`, `feat/geometry`
+`b0d424b`, and nothing else pending. Then, in whatever order he says: credit or a DeepSeek market
+half for the cron so the re-queued programme can build; the `differentPriorities` prompt fix;
+the brief's sold window (Leads' file, date basis); regenerating the 26 streets that crossed k5
+or k10.

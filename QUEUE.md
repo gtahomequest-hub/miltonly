@@ -205,6 +205,10 @@ Populate solar exposure, surface, lanes, sidewalk, maxspeed, length, and terminu
 
 *Gate A done 2026-09-11 (MC-003), no code: coverage over the 449 published streets per layer, where each field renders, and the validator rule that keeps geometry out of the prompt. Record in `scratchpad/reports/MC-003-core-batch-2.md`. Build awaits rulings.*
 
+*Built 2026-09-11 (MC-004) on `feat/geometry` at `b0d424b`, preview `miltonly-ra87zyzmu`, battery `PASS · 13 checks · 449 pages`. Not merged. 447 of 449 published streets render a Road facts card; 2,646 facts, every one equal to the layer row. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
+
+*MC-004, 2026-09-11: MC-003 merged as `8ebb937`, production battery 12/12. The creation programme's 244 unbuilt candidates re-queued as `pending` (they were never the cron's: 167 absent, 68 `ineligible` under the old gate, 9 `failed` at attempts=3); the 18:00Z cron picked up 20 and all 20 failed on the Anthropic credit balance, so the programme needs credit or a DeepSeek market half on production before it moves. DEC-QUEUE-REEVAL on `fix/queue-reeval` at `4a65f30`, not merged. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
+
 *Out-of-queue work 2026-09-11, MC-003 on `fix/core-batch-2` at `5ebe87a`: guide up-links on every street page and hub with a 12th battery check, the dead `maintenanceFee` column retired from every read with a prebuild guard, the `sold_date` stamping reported and stopped, and the first five programme pages recorded with their judge results. Preview green, not merged. Record in `scratchpad/reports/MC-003-core-batch-2.md`.*
 
 ---
