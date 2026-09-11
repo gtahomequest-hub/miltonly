@@ -96,8 +96,11 @@ async function main() {
 
     const full = slug + SLUG_SUFFIX;
     const clipName = meta.night === true ? "night.mp4" : "day.mp4";
-    const clipKey = `streets/${full}/${clipName}`;
-    const posterKey = `streets/${full}/poster.webp`;
+    // The upload script writes the keys the bytes landed under (a superseding clip is re-keyed
+    // under a capture-date segment); those are verified. Only a clip uploaded before that was
+    // recorded falls back to the canonical layout.
+    const clipKey = typeof meta.r2_key === "string" && meta.r2_key.startsWith(`streets/${full}/`) ? meta.r2_key : `streets/${full}/${clipName}`;
+    const posterKey = typeof meta.poster_r2_key === "string" && meta.poster_r2_key.startsWith(`streets/${full}/`) ? meta.poster_r2_key : `streets/${full}/poster.webp`;
     const localClip = path.join(dir, clipName);
     const localPoster = path.join(dir, "poster.webp");
     if (!existsSync(localClip) || !existsSync(localPoster)) { held.push(`${slug}: local files missing`); continue; }
