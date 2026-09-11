@@ -69,7 +69,8 @@ for (const t of [
   "Why do homes on {Street} trade differently than other Milton streets?",
   "What's the rental market like on {Street}?",
   "What do two-bedroom condos rent for on {Street}?",
-  "Is {Street} a good fit for investors?",
+  // the lease-count question (MC-011) is withdrawn on its own gate: no leaseActivity here
+  "How many homes on {Street} were leased in the last year?",
 ]) {
   ok(withdrawn.has(q(t)), `"${q(t)}" must be withdrawn on a no-price input`);
   ok(!allowedFaqQuestionsFor(noPrice).has(q(t)), `"${q(t)}" must not be in the allowed set`);
@@ -93,8 +94,11 @@ for (const t of [
   ok(allowedFaqQuestionsFor(noPrice).has(q(t)), `"${q(t)}" needs no figure and must survive`);
 }
 
-// A priced street loses nothing.
-ok(withdrawnFaqQuestionsFor(priced).size === 0, "a priced input withdraws nothing");
+// A priced street loses nothing on the price gate. The lease-count question (MC-011) rides its
+// own gate and is withdrawn here only because this fixture carries no leaseActivity.
+const pricedWithdrawn = withdrawnFaqQuestionsFor(priced);
+ok(pricedWithdrawn.size === 1 && pricedWithdrawn.has(q("How many homes on {Street} were leased in the last year?")),
+   "a priced input withdraws nothing but the lease-count question it has no leases for");
 ok(allowedFaqQuestionsFor(priced).has(q("What is the typical price on {Street}?")),
    "a priced input keeps the typical-price question");
 
