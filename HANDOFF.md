@@ -2,64 +2,50 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-11 (MC-005, with MC-006 and MC-008 folded in): five merges on main, production green at `854ffd3`, the cron on DeepSeek, the evaluative prompt shaped to the input, the creation programme running under the 20-a-day cap._
+_Last rewritten 2026-09-11 (MC-009, with MC-010 folded in): the fail-closed merge on main, four branches built and proven and waiting on merges, the seven clips up, the sold-sync purge proven on preview._
 
 ## READ THIS FIRST
 
-**MAIN IS `854ffd3` AND PRODUCTION SERVES IT.** Five merges today, each by SHA with the full gate:
-`cbea785` (fix/queue-reeval `4a65f30`), `142b9a9` (feat/geometry `b0d424b`, QUEUE item 5),
-`1f0915e` (fix/menu-hotfix `339293d`, MC-006), `bfb78f3` (feat/leads `3c51e90`, MC-008, one
-docs conflict in QUEUE.md resolved to Leads' wording), `854ffd3` (fix/eval-prompt-shape
-`c297e63`). Production battery at `bfb78f3`: **`PASS · 13 checks · 449 pages · 126s`**. Preview
-battery at `c297e63`: **`PASS · 13 checks · 456 pages`**, the seven pages the cron built at
-19:00Z included. Record: `scratchpad/reports/MC-005-merges-provider-prompt-programme.md`.
+**MAIN IS `f347001` (merge of `e12b1b6`) AND PRODUCTION SERVES IT.** A page the judge refuses is
+now a failed attempt in the queue. Record: `scratchpad/reports/MC-009-judge-video-regen.md`.
 
-**THE CRON GOES TO DEEPSEEK FIRST.** `AI_PROVIDER_MARKET=deepseek` in Production and Preview
-(stdin, 2026-09-11 ~18:40Z; Vercel stores it as sensitive, so `env pull` prints `[SENSITIVE]`,
-the runtime reads it). `AI_PROVIDER_FALLBACK=opus` stays and still has no credit, so a half
-that exhausts DeepSeek fails closed. Confirmed by the 19:00Z pass: 20 attempted, 7 built, 13
-failed on validation, $0.2168, not one credit-balance error.
+**FOUR BRANCHES WAIT ON MERGES, EACH BUILT EXIT 0, NONE MERGED:**
+- `feat/judge-verdict` `25b59a6`: `StreetGeneration.judgeVerdict` `{ result, round, rounds[] }`
+  written on every run by cron and local runners alike. **The migration is applied** (27, clean).
+- `fix/comparator-park-mask` `db3be15`: a grounded park name ("Bronte Meadows Park") no longer
+  reads as a comparator placement claim; a real one still does.
+- `feat/video-rekey` `dde23bd`: a superseding clip goes under `streets/<slug>/<YYYYMMDD>/`, the
+  old objects are deleted after production serves the new URL, orphans retire.
+- `fix/sold-sync-purge` `67fcf7f`: MC-010, below.
+`package.json`'s prebuild line will conflict trivially between the first two and the fourth: union.
+`3ec8b51` (menu v2) is also waiting, on Aamir's word.
 
-**THE `differentPriorities` FAULT IS FIXED AT THE PROMPT, `src/lib/ai/evalPromptShape.ts`.** The
-preamble said "do not write it" and the prompt underneath said "exactly THREE sections" eleven
-times, schema and self-check included; DeepSeek followed the schema. The prompt is now rewritten
-to the input before any preamble: one notice in place of the section, every count and the
-schema say two, word targets reduced, the comparison question and its routing rule out of the
-FAQ bank; on a street with no price at any grain the price, rental and investor questions leave
-the bank too. A full-data street gets the doc back byte for byte.
-`scripts/test-eval-prompt-shape.ts` (prebuild, 26 assertions) reads the real doc.
+**THERE ARE TWO CACHES BEHIND EVERY SOLD FIGURE, AND THE SECOND WAS INVISIBLE.** Upstash under
+`cached()` for an hour, and Next's Data Cache over the Neon HTTP client for an hour
+(`src/lib/db.ts`, `next: { revalidate: 3600 }`), keyed by the SQL text. Measured: Upstash key
+deleted, table at 60, production rendered 59 four times in twenty seconds. On the branch the
+sold sync purges Upstash (exact keys plus per-street and per-neighbourhood prefixes for what it
+wrote, with a settle pass) and the sold route drops the `db2` tag; `/api/revalidate` takes
+`{ tag: "db2" | "db3" }`. Proven on preview `miltonly-4rwyyu3vn`: stale 59 against 60, one sync,
+60 with no wait. **DB3 (analytics) reads sit in the same hour** under `db3`; nothing drops that
+tag yet.
 
-**THE CREATION PROGRAMME IS RUNNING ON THE CRON.** 244 candidates re-queued 17:12Z; the 18:00Z
-pass (Claude, no credit) failed all 20 in ten seconds; the 19:00Z pass (DeepSeek, unfixed
-prompt) built 7 of 20 ($0.2168); attempts reset 19:14Z, 237 pending; the 20:00Z pass (fixed
-prompt) built 7 of 13 ($0.1102), zero section-count failures, the judge now the limiting gate.
-14 pages today, $0.3270, all 200 on production. **DEC-NEW-PAGE-CAP counts
-`StreetContent.createdAt` per UTC day**, so a pass after 7 creations has a budget of 13, not 20,
-until 00:00Z.
+**THE JUDGE IS THE PROGRAMME'S LIMITING GATE, AND ITS VERDICTS ARE NOW READABLE.** 23 crossed
+streets regenerated: 8 republished, 13 refused by the judge, among them two FAQ-bank questions
+("Is Derry Road a good fit for investors?") and "most residents" commute sentences tagged as
+tenure characterization, plus one truncated judge reply counted as a refusal. Rulings needed:
+the investor question in the bank, the commute sentences, a retry on an unparseable reply.
 
-**A SECOND QUEUE-STATE BUG, ON `fix/queue-failclosed` (`e12b1b6`), NOT MERGED.** A page the
-judge refuses resolves `passed: false` without throwing, and the cron marked the row `done`
-with no page: five streets on the 20:00Z pass. The branch records it as `failed`, attempts +1.
-Until it lands, `requeue-creation-programme.ts --write` recovers such rows.
+**THE SEVEN CLIPS ARE LIVE.** anne-boulevard, bronte-street, commercial-street, heslop-road,
+locker-place (re-keyed), martin-street, nipissing-road (re-keyed). Manifest 173 rows, 49
+published; `bronte-street-south` retired. anne-boulevard and martin-street pages built on
+DeepSeek ($0.0150 and $0.0094; $0.0528 more spent on three failed anne runs, two on the park
+false positive and one on my own mistimed tooling).
 
-**`ineligible` IS NO LONGER A ONE-WAY DOOR (DEC-QUEUE-REEVAL, on main).** A verdict older than
-30 days is re-examined in a run's spare capacity, oldest first, behind every pending row.
-
-**QUEUE ITEM 5 IS DONE.** 447 of 449 published streets carry the Road facts card from the Town
-centreline and OSM, 2,646 facts each equal to the layer row, never in a tile, never in a prompt
-(`scripts/test-geometry-boundary.ts`, `unit_figure` rule, `geometry-facts` battery check).
-
-**MC-006 CONFIRMED ON PRODUCTION AT 380.** Menu panel on `/` is `position: fixed`, 380 × 780 at
-top 0 with the viewport at 780, accordion visible; `walker` hub: 3 hero stats and 5 glance
-tiles all at or above 4.5:1 at 380 and 1440 (`scripts/probe-hub-contrast.mjs`, which prints
-only failures, printed none); the footer carries 0 em-dashes.
-
-**`sold_date` IS A CALENDAR DATE WEARING A TIMESTAMPTZ.** Leads' brief now reads it on the date
-basis (`3c51e90`, merged). Read it as a date everywhere.
+**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11 (cap 20 per UTC day, holding),
+217 pending, DeepSeek first, hourly.
 
 **THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
-
-**THE MIGRATION LEDGER IS CLEAN.** No migration today.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -67,12 +53,12 @@ basis (`3c51e90`, merged). Read it as a date everywhere.
 
 | | |
 |---|---|
-| `main` | code SHA **`854ffd3`**, docs on top |
-| battery on production | **`PASS · 13 checks · 449 pages · 126s`** at `bfb78f3`; `854ffd3` changes the generator only |
-| `prisma migrate status` | **clean**, 26 migrations |
-| creation programme | **running**, cron hourly, DeepSeek first, cap 20 new pages per UTC day |
+| `main` | code SHA **`f347001`**, docs on top |
+| battery on production | **`PASS · 13 checks · 449 pages · 126s`** at `bfb78f3` (2026-09-11); `854ffd3` and `f347001` change the generator and the cron only |
+| `prisma migrate status` | **clean**, 27 migrations (`judgeVerdict` applied 2026-09-11) |
+| waiting on merges | `25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`; `3ec8b51` on approval |
+| creation programme | **running**, 19 created today, 217 pending, cap 20/UTC day |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
-| Leads Phase 2 | **on main**, `543ef99`; brief date basis `3c51e90` merged |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -441,6 +427,5 @@ without the parameter.
 
 ## Next expected task
 
-**Aamir's call on `fix/queue-failclosed` `e12b1b6` (by SHA).** Then, in whatever order he says:
-a persisted judge verdict on `StreetGeneration`; regenerating the 26 streets that crossed k5 or
-k10; QUEUE item 6. The programme needs nothing: hourly, DeepSeek first, 20 a day.
+**Aamir's call on the four merges by SHA** (`25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`) and on
+`3ec8b51`. Then the judge rulings, the `db3` tag drop for the analytics sync, and QUEUE item 6.
