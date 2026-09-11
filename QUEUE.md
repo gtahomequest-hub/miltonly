@@ -404,6 +404,11 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
       **UTC midnight**, so a Toronto-midnight window dropped the whole Monday: the week of
       2026-08-31 read 18 where the day-by-day count is 40. A week now carries two named bases
       and each query uses the one matching its column. Reads 40 and 43, matching report 063
+- [x] **The daily brief had the same defect (ML-002).** `src/lib/brief/compose.ts` bounded
+      `sold_date` with the Toronto instants, so the 2026-09-09 edition read 3 sales where the
+      day holds 8, and the 3 were the 10th's. `BriefWindow` now carries `dateStartUtc` and
+      `dateEndExclusiveUtc` on the Market Watch pattern, the sold read uses them plus the
+      `NOW()` bound, and a fixture-day prebuild case pins it. Dry run reads 8
 - [x] **A page was publishing an absence that was not real.** `Listing.maintenanceFee` (Int)
       is 0 on all 73 active Milton condo listings while `maintenanceFeeAmt` (Float) carries
       the figure on all 73. The guide said no condo states a fee. 24 now render, each linked

@@ -9,6 +9,15 @@
 //      UTC instants bounding whole America/Toronto calendar days, so the SQL stays a plain
 //      range scan on an indexed timestamp and no query has to know about timezones.
 //
+//      THAT IS THE BASIS FOR A REAL TIMESTAMP ONLY. `sold.sold_records.sold_date` is a
+//      calendar date wearing a timestamptz type: every value is exactly 00:00 UTC (see
+//      src/lib/marketWatch/windows.ts, "TWO BASES FOR ONE WEEK"). Toronto midnight is 04:00
+//      UTC, so the Toronto instants for the 9th select nothing stamped on the 9th and
+//      everything stamped on the 10th. The 2026-09-09 edition read 3 sales where the day
+//      holds 8, and the 3 were the next day's. A window therefore carries both bases, each
+//      named for the column it fits, the same way a Market Watch week does. Neither is a
+//      default; the query picks the one that matches its column.
+//
 //   2. The brief sends Monday to Friday. A literal "yesterday" would mean Saturday's activity
 //      was never reported to anyone, ever: Sunday's edition does not exist and Monday's would
 //      cover Sunday. Monday's edition therefore covers the whole weekend and says so. Nothing
@@ -17,10 +26,14 @@
 const ZONE = "America/Toronto";
 
 export interface BriefWindow {
-  /** Inclusive UTC instant of local midnight starting the period. */
+  /** REAL TIMESTAMPS (DB1 listedAt, lastPriceChangeAt). Inclusive UTC instant of local midnight starting the period. */
   start: Date;
-  /** Exclusive UTC instant of local midnight ending it. */
+  /** REAL TIMESTAMPS. Exclusive UTC instant of local midnight ending it. */
   end: Date;
+  /** DATE-STAMPED COLUMNS (DB2 sold_date, 00:00 UTC). Inclusive, UTC midnight of the first local date. */
+  dateStartUtc: Date;
+  /** DATE-STAMPED COLUMNS. EXCLUSIVE, UTC midnight of the local date after the last one. */
+  dateEndExclusiveUtc: Date;
   /** The last local calendar date inside the period, ISO. The edition's identity. */
   date: string;
   /** What the copy calls the period: "yesterday", or "over the weekend" on a Monday. */
@@ -95,7 +108,19 @@ export function briefWindow(now: Date = new Date()): BriefWindow {
   const last = new Date(Date.UTC(y, m - 1, d) - 86_400_000);
   const date = `${last.getUTCFullYear()}-${String(last.getUTCMonth() + 1).padStart(2, "0")}-${String(last.getUTCDate()).padStart(2, "0")}`;
 
-  return { start, end, date, label: days === 2 ? "over the weekend" : "yesterday", days };
+  // The date basis: the same local calendar dates, as the 00:00 UTC stamps sold_date carries.
+  const dateStartUtc = new Date(Date.UTC(sy, sm - 1, sd));
+  const dateEndExclusiveUtc = new Date(Date.UTC(y, m - 1, d));
+
+  return {
+    start,
+    end,
+    dateStartUtc,
+    dateEndExclusiveUtc,
+    date,
+    label: days === 2 ? "over the weekend" : "yesterday",
+    days,
+  };
 }
 
 /** Whether today, locally, is a sending day. The brief runs Monday to Friday. */
