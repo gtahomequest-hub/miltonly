@@ -43,6 +43,7 @@ exists on one machine only. A missing credential fails loudly and by name — it
 | `consistency` | one metric, one number, across hero / glance / sidebar / type card / CTA / market card; no FAQ answer opens on a cut antecedent; no section is all caveat |
 | `composition` | every published page is a street in the Town registry or on the off-registry allowlist, and nothing is on neither |
 | `hub-meta` | a hub's meta description, hero tile and JSON-LD all publish the live aggregate — same price, same precision, same sale count, same silence below k |
+| `guide-links` | every street page and every hub carries its guides ledger in the served HTML: the required guides per surface, the condo guide exactly on the condo-heavy population (derived from the page itself), and every destination answering 200 |
 
 ## The rules these encode
 

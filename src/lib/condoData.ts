@@ -78,11 +78,11 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
   } catch {
     /* statsJson absent -> silent */
   }
-  const maintenanceFee = building.avgMaintenanceFee
+  const monthlyFee = building.avgMaintenanceFee
     ? `~$${building.avgMaintenanceFee.toLocaleString("en-CA")} / month`
     : null;
-  const ownership: CondoData["ownership"] = { typicalPrice, priceRange, maintenanceFee, feeIncludes: [] };
-  if (!maintenanceFee) ownership.feeNote = "Varies by suite — confirm with the listing or management.";
+  const ownership: CondoData["ownership"] = { typicalPrice, priceRange, monthlyFee, feeIncludes: [] };
+  if (!monthlyFee) ownership.feeNote = "Varies by suite — confirm with the listing or management.";
 
   // Parent hub link.
   const nbName =

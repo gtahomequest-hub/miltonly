@@ -22,7 +22,7 @@ export const mockCondoRich: CondoData = {
   ownership: {
     typicalPrice: 640_000,
     priceRange: '$520K – $740K',
-    maintenanceFee: '~$0.64 / sq ft',
+    monthlyFee: '~$0.64 / sq ft',
     feeIncludes: ['Heat', 'Water', 'Building insurance', '1 parking'],
   },
   bedrooms: [
@@ -71,7 +71,7 @@ export const mockCondoThin: CondoData = {
   ownership: {
     typicalPrice: null,
     priceRange: null,
-    maintenanceFee: null,
+    monthlyFee: null,
     feeIncludes: [],
     feeNote: 'Too few resales to state — confirm with the listing or management.',
   },
