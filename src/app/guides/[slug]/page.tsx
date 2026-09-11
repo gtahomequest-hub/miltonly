@@ -9,7 +9,7 @@ import GuideArticlePage from "@/components/guides/GuideArticlePage";
 import { getGuideArticleFull } from "@/lib/guides";
 import { GUIDE_DEFS, GUIDES_UPDATED } from "@/lib/guides/guides";
 import SchemaScript from "@/components/SchemaScript";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 
@@ -67,7 +67,7 @@ export default async function GuidePage({ params }: { params: { slug: string } }
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <GuideArticlePage data={data} />
       <FooterSection />
     </>

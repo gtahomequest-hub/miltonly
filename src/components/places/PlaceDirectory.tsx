@@ -4,7 +4,7 @@
 // hood links -> FAQ -> lead-alert CTA -> Footer. Both routes feed it their own
 // data + labels; the alert form is passed in as a slot (client island).
 import Link from "next/link";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import PlaceGrid from "./PlaceGrid";
 import type { PlaceDirectoryProps } from "./types";
@@ -18,7 +18,7 @@ export default function PlaceDirectory(props: PlaceDirectoryProps) {
 
   return (
     <div className="places-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
 
       <div className="pl-crumb">
         <div className="pl-wrap">

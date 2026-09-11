@@ -21,10 +21,11 @@ import geometryControl from './checks/geometry-control.mjs';
 import homepage from './checks/homepage.mjs';
 import hubIntents from './checks/hub-intents.mjs';
 import guideLinks from './checks/guide-links.mjs';
+import nav from './checks/nav.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, nav];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

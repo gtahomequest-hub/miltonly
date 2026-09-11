@@ -22,8 +22,6 @@ import { getSoldDb } from "@/lib/db";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { mockHomepageData } from "@/components/home/mockData";
 import type { HomepageData } from "@/components/home/types";
-import type { MegaLive } from "@/components/nav/megaTypes";
-import type { BoardTab } from "@/lib/board/computeBoard";
 import { resolveStreetName } from "@/lib/streetName";
 import { getNeighbourhoodCards, getRawStringHubMap } from "@/lib/neighbourhoodCards";
 import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVideoCount } from "@/lib/homeSignals";
@@ -160,68 +158,5 @@ export async function getHomepageData(): Promise<HomepageData> {
       streetCount: surfacedStreetCount,
       streetPageCount,
     },
-  };
-}
-
-/**
- * The nav's live panels, composed from data the page has already fetched.
- *
- * The Board row is the SELL panel's only source, so the menu cannot state a market
- * figure that the Board rendered below it contradicts: same row, same window label,
- * same suppression. A null stays null and its row does not render.
- */
-export function buildMegaLive(data: HomepageData, board: BoardTab[] | null): MegaLive {
-  const overall = board?.find((t) => t.tab === "overall") ?? null;
-  return {
-    buy: {
-      activeCount: data.stats.onMarket,
-      newThisWeek: data.stats.newThisWeek,
-      listings: data.newestListings.slice(0, 4).map((l) => ({
-        mlsNumber: l.mlsNumber,
-        address: l.address, // already through the display gate in listingsV2Data
-        price: l.price,
-      })),
-    },
-    streets: {
-      videoCount: data.videoCount,
-      videos: data.videoStreets.slice(0, 4).map((v) => ({
-        slug: v.slug,
-        name: v.name,
-        poster: v.poster,
-        variant: v.variant,
-      })),
-    },
-    // FORMATTED HERE, by the SAME helpers TheBoard uses on the same page, so the menu and
-    // the section below it cannot render one figure two ways. money1k and pct1 are re-derived
-    // rather than imported because TheBoard is a client component; the battery asserts the two
-    // surfaces agree, which is the property that matters and the one that broke.
-    sell: overall
-      ? {
-          figures: [
-            {
-              key: "typical",
-              label: "Typical price",
-              value: overall.typical.value === null ? "—" : `$${(Math.round(overall.typical.value / 1000) * 1000).toLocaleString("en-CA")}`,
-              window: overall.typical.window,
-            },
-            {
-              key: "days",
-              label: "Days to sell",
-              value: overall.daysToSell.value === null ? "—" : `${Math.round(overall.daysToSell.value)} days`,
-              window: overall.daysToSell.window,
-            },
-            {
-              key: "sta",
-              label: "Sold to ask",
-              // A RATIO, not a percent. This is the field that shipped as
-              // "0.980868783307145%" — the unit lives in the name of the renderer, never in
-              // the value, so the value is converted exactly where TheBoard converts it.
-              value: overall.soldToAsk.value === null ? "—" : `${(overall.soldToAsk.value * 100).toFixed(1)}%`,
-              window: overall.soldToAsk.window,
-            },
-          ],
-        }
-      : undefined,
-    inDemandStreets: data.inDemandStreets,
   };
 }

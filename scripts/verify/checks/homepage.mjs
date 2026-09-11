@@ -65,11 +65,12 @@ import { get } from '../lib/http.mjs';
  *  50 is a little over twice the pre-build baseline and roughly 15 below today's count. */
 const LINK_FLOOR = 50;
 
-/** Menu triggers and the rail links each panel must carry in the served HTML. */
+/** Each menu's index page (its panel's CTA) and the rail links each panel must carry in
+ *  the served HTML. `/map` and `/book` left the rails on 2026-09-11: both were redirects. */
 const MENU_TRIGGERS = ['/listings', '/streets', '/sell'];
 const RAIL_SAMPLE = [
   '/rentals', '/sold', '/condos', '/freehold', '/potl', '/compare', '/exclusive',
-  '/neighbourhoods', '/map', '/schools', '/mosques', '/condos-guide', '/about', '/book',
+  '/neighbourhoods', '/guides', '/schools', '/mosques', '/condos-guide', '/about', '/market-watch',
 ];
 
 /** Unique internal hrefs, excluding build assets — the same rule used to measure the
@@ -155,6 +156,11 @@ const FIG_SPECS = [
   // point of this figure is that two surfaces state one number.
   { fig: 'rentals-available', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'proof-street-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  // THE MENU'S LEAD SENTENCES state three of the same figures. Same source, same record, so
+  // the menu cannot open with a number the page below it contradicts.
+  { fig: 'menu-buy-active', source: 'onMarket', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  { fig: 'menu-buy-new', source: 'newThisWeek', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  { fig: 'menu-streets-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'proof-sales-12mo', source: 'sold12mo', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   {
     fig: 'proof-sold-to-ask', source: 'soldToAskPct',
@@ -198,10 +204,15 @@ export default {
     const nodes = ldNodes(html);
 
     // ── 2. header anchors ────────────────────────────────────────────────
-    // A trigger rendered as <button> is the exact regression this replaces, so the
-    // trigger's own class is checked on the tag that carries it.
+    // THE TRIGGER IS A <button> NOW (2026-09-11) and the panel's index page is the panel's
+    // own CTA. The first version of the menu had <button> triggers whose panels mounted on
+    // click, which is what cost the nav every link; the second made the trigger an <a>, so
+    // a click that missed navigated away. The property that matters is not the trigger's
+    // tag but that every destination is an <a href> in the served HTML, which the two
+    // assertions after this one check. The tag is asserted so a trigger cannot quietly
+    // become a link again.
     const triggerTags = [...nav.matchAll(/<([a-z]+)\b[^>]*class="[^"]*m-navtrigger[^"]*"/g)].map((m) => m[1]);
-    const nonAnchorTriggers = triggerTags.filter((t) => t !== 'a');
+    const nonAnchorTriggers = triggerTags.filter((t) => t !== 'button');
     const missingTriggers = MENU_TRIGGERS.filter((h) => !navLinks.has(h));
     const missingRail = RAIL_SAMPLE.filter((h) => !navLinks.has(h));
 
@@ -357,7 +368,7 @@ export default {
         [`unique internal links >= ${LINK_FLOOR}`, links.size >= LINK_FLOOR, true],
         // A parser that reaches nothing must fail on its own coverage.
         ['neighbourhood price figures found', hoodFigs.length > 0, true],
-        ['menu triggers rendered as anchors', nonAnchorTriggers.length, 0],
+        ['menu triggers rendered as buttons', nonAnchorTriggers.length, 0],
         ['menu trigger hrefs in served nav markup', missingTriggers.length, 0],
         ['rail links in served nav markup', missingRail.length, 0],
         ['Milton-wide figures absent from the page', absent.length, 0],

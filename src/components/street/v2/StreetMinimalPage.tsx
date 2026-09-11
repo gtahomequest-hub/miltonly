@@ -10,7 +10,7 @@ import type { MinimalStreetView } from '@/lib/streetMinimal';
 import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
 import { StreetAddresses } from './AddressLadder';
 import { resaleClaim } from './resaleClaim';
-import { SiteNav } from '../../nav/SiteNav';
+import SiteNavLive from '../../nav/SiteNavLive';
 import { GuideUplinks } from '../../guides/GuideUplinks';
 import { guidesForStreet } from '@/lib/guides/uplinks';
 
@@ -25,7 +25,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
 
   return (
     <div className="street-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <StreetHero data={data} />
 
       {/* Section 6 — the trust anchor. Plain, prominent, no hedging.

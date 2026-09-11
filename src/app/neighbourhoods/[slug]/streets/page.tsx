@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
 import { getNeighbourhoodStreetIndex } from "@/lib/neighbourhoodStreets";
 import { generateBreadcrumbSchema } from "@/lib/schema";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import SchemaScript from "@/components/SchemaScript";
 import NeighbourhoodStreets from "@/components/neighbourhood/NeighbourhoodStreets";
@@ -82,7 +82,7 @@ export default async function NeighbourhoodStreetsPage({ params }: Props) {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <NeighbourhoodStreets data={data} />
       <FooterSection />
     </>
