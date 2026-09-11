@@ -49,12 +49,23 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
 
 - Read with grep, head, and line ranges. Never whole files.
 - Build logs go to a file. Return the exit code and grep hits only.
-- Full report to `scratchpad/reports/NNN-slug.md`. The terminal gets 10 lines or fewer.
+- Full report to `scratchpad/reports/`, named and opened per **Reporting** below. The terminal gets 10 lines or fewer.
 - End every task by rewriting `HANDOFF.md`, marking `QUEUE.md`, committing, and pushing.
+
+## Reporting
+
+- **Every task prompt begins with a task ID.** `MC-` core, `MH-` home, `MCT-` content, `ML-` leads.
+- At the end of every task, write the final summary **verbatim** to
+  `scratchpad/reports/<TASK-ID>-<slug>.md`. Verbatim means the file and the reply say the same
+  thing: write the file first, then paste it into the reply, so the two cannot drift.
+- The file is **tracked in git**. It is committed with the task's work, not left untracked.
+- Its first line is `# <TASK-ID>` and nothing else on that line.
+- Then run `code <that path>` so it opens in the editor.
+- The **last line of the reply** is `Report: <path>`.
+- **No clipboard writes from any session.**
 
 ## Windows and PowerShell
 
 - Heredocs use `@'...'@`.
 - Scripts need `loadEnvLocal()` and a dynamic import of `@prisma/client`.
 - `NODE_OPTIONS="--conditions=react-server"` for scripts that import server modules.
-- Final response copied with `Set-Clipboard`.

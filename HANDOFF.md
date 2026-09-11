@@ -2,91 +2,115 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-10, after the rulings were executed and the merge sequence halted._
+_Last rewritten 2026-09-11 (MC-002), verifying the three merges that landed 2026-09-10 and re-running the battery._
 
 ## READ THIS FIRST
 
-**THE MERGE SEQUENCE IS HALTED. `fix/core-batch` IS NOT MERGED.** `feat/homepage` merged to main
-as **`cec6906`** and production serves it, but **the battery on production is RED** and the cause
-came in with that merge, not with this batch. Stop-on-failure says continue only if a failure is
-isolated AND pre-existing. These are isolated but new. `fix/core-batch` sits at **`2e8dfc0`**,
-built and green on its own preview, waiting. Full record: `scratchpad/reports/066-rulings-and-merges.md`.
+**MC-002 WAS ALREADY DONE. All three merges landed in the previous session; nothing was re-run.**
+Verified 2026-09-11, not assumed:
 
-    FAIL · 11 checks · 449 pages   (at e54d6be, after the redeploy)
-      [hub-meta]    hero stat tiles parsed on every hub: 0, expected 22
-      [hub-intents] hubs rendering no intent squares: 22, expected 0
+| asked | state |
+|---|---|
+| merge `5448b96` | **cherry-picked as `1cf5342`.** A merge is a NO-OP here, see below |
+| merge `0a2499b` | **merged as `31a9ab0`**, 17 crons intact |
+| merge `fix/core-batch` | **merged as `8db80da`**, head `dce1b70`; TTL present in `buildHubInput.ts` |
+| note Content may regenerate | **already stronger than asked**: Content ran it, reported back, the 2026-08-31 correction is live and spent |
 
-**Both remaining failures are stale parsers. Every figure assertion now passes.** The homepage
-failure is GONE: the redeploy that carried this handoff cleared the memo and `proof-sales-12mo`
-corrected from 1,531 to **1,728** on its own, which is the proof of the diagnosis below.
+Battery re-run on production at `4765cbd`: **`PASS · 11 checks · 449 pages · 94s`**, exit 0,
+`served == expected`. Working tree clean, `main` level with `origin/main`.
 
-**TWO OF THE THREE ARE STALE PARSERS, NOT BROKEN PAGES.** `feat/homepage` rewrote the hub hero
-markup from an `h-` prefix to `hh-` and did not update the two checks that read it.
-`hub-intents.mjs` matches `class="h-intent"` and the page renders `class="hh-intent"`;
-`hub-meta.mjs`'s `heroStats()` splits on `<div class="h-hs">` and reads `h-n`/`h-l` while the page
-renders `hh-fact` / `hh-fact-v` / `hh-fact-l` with `data-fig` and `data-value` attributes. **The
-squares and tiles are on the page.** Confirmed by hand against bronte-meadows and moffat.
+**RE-RUNNING THOSE MERGES WOULD HAVE BEEN THEATRE, AND ONE OF THEM DANGEROUSLY SO.**
+`git merge --no-ff 5448b96` returns **"Already up to date"** with a success exit code, because the
+commit is still an ancestor of main through the reverted `cec6906` — a revert undoes content, not
+ancestry. A gate that reads exit codes would have passed a merge that did nothing. `0a2499b` is
+likewise an ancestor. `fix/core-batch` is merged, and merging `origin/main` into it again plus
+"adding" a TTL that already exists would produce an empty commit or a duplicate. **Verification
+was the work; the merges were not re-runnable.**
 
-**AND THE SUB-K CONTRACT CHANGED WITH IT.** On a k-clearing hub `hub-fact-typical` prints `$955K`
-labelled "typical sale price"; on moffat, which is sub-k, the same tile degrades to `3` labelled
-"sales in 12 months". That is a better suppression than the old silent tile, but `hub-meta`'s
-`silent` model no longer maps to it and its assertions need rewriting around the new contract.
-**Not done here on purpose: rewriting another branch's k-anonymity verification inside a merge
-window is how a real suppression bug gets waved through.**
+**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** Asked to confirm `/rentals` 1,116 and homepage
+462 / 1,116. Today they read **1,127** and **461**; yesterday 1,116 and 457. These are live counts
+of active listings and available rentals, and the feed syncs daily. **The battery asserts each
+against its own live source and passes** — `on-market: "461" (source 461)`,
+`rentals-available: "1,127" (source 1127)` — and agreement with the source is the correctness
+test. Agreement with a number written down on a previous day is not, and a figure that never moved
+would be the defect.
 
-**THE HOMEPAGE PUBLISHES A FIGURE FROM A CACHE NOTHING CAN INVALIDATE.** `proof-sales-12mo` reads
-**1,531** against a live source of **1,728**. `buildMiltonWideContext()` in
-`src/lib/ai/buildHubInput.ts` memoizes into a module-level `_miltonWideCache` with **no TTL**, and
-`resetMiltonWideContextCache()` is called by one script and **nothing in the serving path**. The
-memo was written for "once per generation run" across 14 hubs; the homepage calls it on every
-render. It fills on the first render after a deploy and never refreshes for that lambda's life.
-`on-market` and `dom` come from the same memo. **`/api/sync/sold` runs daily at 11:00, so this
-goes stale every day and is silently corrected by the next deploy** — which is why it was never
-caught. The backfill did not cause it, it only made it visible.
 
-**A DB2 WRITE HAS THREE CONSUMERS TO INVALIDATE AND DEC-REGEN-REVALIDATE COVERS ONE.** The
-sold-date backfill moved figures corpus-wide and purged nothing, because it writes no
-`StreetContent` row. Purging the pages did not fix it either: the figures come from `cached()` in
-`src/lib/cache.ts`, an Upstash layer with a 1h TTL that a Next.js path revalidation does not
-touch. The homepage was a cache MISS and still printed the old numbers. **The order is Redis
-first, pages second, prose third:** `scripts/purge-sold-caches.ts` (17 keys, 10 prefixes), then
-`scripts/purge-after-sold-backfill.ts` (26 paths), then a regeneration, which is separate. That
-fixed `sold-mtd` and all 18 hub-figure mismatches.
+**PRODUCTION IS GREEN AT `8db80da`. `PASS · 11 checks · 449 pages · 97s`, exit 0,
+`served == expected`.** All three merges landed, each by SHA, each with the full gate.
+`prisma migrate status`: **"Database schema is up to date!"** Record:
+`scratchpad/reports/068-three-merges.md`.
 
-**THE BACKFILL IS DONE AND IT WAS 255, NOT 245.** The feed added 10 overnight. All 255 repairable,
-0 undatable, 255 written, 0 failed, **re-run reports 0**. Repaired through `resolveSoldDate`, the
-same function the sync calls, so a backfilled row is what the next sync would have written.
-`close_date` untouched throughout. **150 streets changed their 12-month sample; 17 crossed k5 and
-9 crossed k10, exactly as predicted.** They publish nothing new until they are regenerated,
-because those figures live in stored prose.
+**`fix/core-batch` IS MERGED.** Everything it carried is live: DEC-PRICE-HISTORY,
+DEC-SOLD-DATE-NOT-FUTURE, DEC-GATE-PARITY (QUEUE item 7), DEC-NEW-PAGE-CAP, the retired
+components, and a TTL on `buildMiltonWideContext`.
 
-**THE CREATION PROGRAMME IS BLOCKED AT A 22% PASS RATE.** The 50-page run **halted at 23** on the
-five-consecutive-failure guard: 5 passed and published, 18 failed, $0.2624 of a $3 cap. The
-dominant signature is `invalid_json_shape: sections length = 3, expected 2` — the model keeps
-emitting **`differentPriorities`** and its FAQ on inputs where `dropsDifferentPriorities(input)`
-is true, through all 5 attempts with the retry feedback in front of it. **All 249 candidates are
-this same thin-data population**, so this is not a per-page problem. Fix the prompt before running
-more. Failures are fail-closed and wrote no row, so there is nothing to unpublish.
+**REVERTING A MERGE DOES NOT MAKE ITS COMMITS RE-MERGEABLE.** `git merge --no-ff 5448b96`
+answered **"Already up to date"**: the commit was still an ancestor of main through `cec6906`,
+because a revert undoes content and not ancestry. A merge therefore reintroduces nothing at all,
+silently. **Cherry-pick is what reapplies it** (`1cf5342`), and it brought `5448b96` back alone,
+without `c98f40e`'s unapproved hub rebuild. If you ever need to restore part of a reverted merge,
+reach for cherry-pick and check the merge output for "Already up to date" before believing it
+worked.
 
-**THE RUNNER IN THE RULING COULD NOT HAVE DONE IT.** `regen-058-local.ts` reads the
-`StreetContent` row first and logs `SKIP - no StreetContent row`, which is every street in this
-programme. It would have reported a clean run having created nothing.
-**`scripts/create-street-pages-local.ts`** is its creation counterpart, with the same controls.
+**THE CHECK AND THE MARKUP WERE A MATCHED PAIR.** `hub-intents.mjs` shipped inside `5448b96`
+alongside the `h-` markup it reads. It passes now. It failed before only because `c98f40e`
+rewrote that markup to `hh-` without touching the check. The battery is 11 checks again.
 
-**A COLUMN WAS NEARLY ADDED FOR NOTHING.** `StreetContent.createdAt` already exists, in the
-database and in `schema.prisma` both, defaulting on insert, carrying real history to 2026-04-21.
-An `ALTER TABLE` to add it failed with **42701**. Nothing was added, the failed migration is
-marked rolled back, and **`prisma migrate status` is clean**. Read the schema before adding to it.
+**`buildMiltonWideContext` NOW HAS A 5-MINUTE TTL** (`259a365`). It had none, and nothing in the
+serving path ever called `resetMiltonWideContextCache()`. That was fine while it was a
+generation-time helper computed once per run across 14 hubs; it stopped being fine when the
+homepage began calling it per render. The homepage published `proof-sales-12mo` as 1,531 against
+a live 1,728 and no purge could shift it, because neither `revalidatePath` nor an Upstash flush
+reaches a module-level variable. Five minutes keeps the once-per-generation-run benefit and lets
+a stale figure correct itself without a deploy. A rejected promise is dropped rather than cached,
+so one database blip cannot poison every homepage render for the length of the TTL.
 
-**THE CRON DRAIN RUNS HOURLY**, so a per-invocation limit is not a daily one — 24 invocations
-would have allowed 480 pages a day. `NEW_PAGES_PER_DAY = 20`, counted over
-`StreetContent.createdAt`; only `build` spends budget, `regenerate` never did; a street over
-budget is left **pending**, not ineligible, and the cap is reported in the route's JSON.
+**TWO CONFLICTS, BOTH RESOLVED BY KEEPING BOTH SIDES.**
 
-**`/rentals` is 1,116 and the homepage agrees. `on-market` is 457, not 462** — it is live and it
-moves, and the battery passes it against its own source.
+- `vercel.json`: main carried `/api/brief/send` from feat/leads and `0a2499b` added two
+  `/api/content/market-watch` entries. Both sides appended to the end of the same array, so git
+  could not tell they were different paths. **All three kept, 17 crons, JSON verified by parse.**
+  The two market-watch entries are deliberate: Vercel cron expressions are UTC, Toronto is UTC-4
+  in EDT and UTC-5 in EST, so no single expression is 08:00 Toronto all year. The route guards on
+  the Toronto local hour and exactly one firing proceeds. **Dropping either loses the edition for
+  half the year.** Content confirmed the resolution reads their intent.
+- `package.json` prebuild: **the union, 23 tests.** Main had gained three lead/content guards
+  while the branch had added `test-sold-date-not-future.ts`.
 
-**Published street pages: 450**, up from 445: the five new ones. Total `StreetContent` 495.
+**THE GATE CAUGHT A REAL CROSS-BRANCH BREAK.** feat/leads' `test-lead-guards.ts` and
+`test-lead-forms.ts` name `ExitIntent.tsx` and `CornerWidget.tsx` by path; fix/core-batch moved
+them to `retired/`. Prebuild died on ENOENT before a single assertion ran. **Repointed, not
+dropped from the lists** — a retired file is dead, not exempt, and if either is remounted it must
+come back already holding the ingress contract rather than the monolith fetch it shipped with.
+
+**THE MIGRATION LEDGER IS CLEAN, AND IT WAS NOT.** Two rows were wrong:
+
+- `20260910180000_street_content_created_at`, mine, failed with 42701 (the column already
+  existed), marked rolled back, directory deleted. A ledger row for a migration that applied
+  **zero** steps and no longer exists on disk reads as drift. Deleted by
+  `scripts/fix-migration-ledger.ts`, which refuses to touch a row with any applied step or
+  without `rolled_back_at`.
+- `20260910120000_market_edition`, Content's, present locally and **unapplied** in the ledger
+  while both its tables already existed. Verified column-for-column and index-for-index against
+  the migration first, then marked applied. Running it would have failed on an existing table.
+
+**Vercel builds run `prisma generate && next build`, not `migrate deploy`**, which is why neither
+row broke anything. It would still have bitten the first person to run migrations.
+
+**THE 249-PAGE PROGRAMME IS STILL PAUSED** at a 22% pass rate on the `differentPriorities`
+prompt/validator disagreement. 5 pages built, 226 unattempted. The cap is live at 20/day but the
+programme should not resume until the prompt is fixed.
+
+**THE 17 STREETS THAT CROSSED k5 AND 9 THAT CROSSED k10** still publish the suppressed figure.
+Those numbers live in stored `StreetContent` prose and only a regeneration moves them. Content
+flagged this back as Core's, and it is.
+
+**`/rentals` is 1,116 and the homepage agrees. `on-market` is 457, not 462** — a live count that
+moves; the battery passes it against its own source.
+
+**Published street pages: 450.** The battery reports 449; one row is published for a slug with no
+`ResidentialStreet` entity, which the sitemap refuses.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -94,17 +118,58 @@ moves, and the battery passes it against its own source.
 
 | | |
 |---|---|
-| `main` | **`cec6906`** plus this docs commit; production serves it |
-| battery on production | **`FAIL · 11 checks · 449 pages`**, 3 assertions, all diagnosed above |
-| `fix/core-batch` | **`2e8dfc0`**, pushed, **NOT merged**, green on its own preview |
-| `prisma migrate status` | **clean** |
-| future-dated DB2 rows | **0** (255 repaired, re-run 0) |
-| streets crossing k5 / k10 | **17 / 9**, unpublished until regenerated |
-| creation candidates | **249**; 5 built, 18 failed, **226 not attempted** |
-| creation pass rate | **22%**, systemic, programme paused |
-| published street pages | **450** |
-| QUEUE | 1, 2, 3, 4 done; **7 built and ruled, merge blocked**; 5, 6 not started |
+| `main` | **`4765cbd`** (code SHA `8db80da`; `bb32044`, `217e9ef` and `4765cbd` are docs) |
+| battery on production | **`PASS · 11 checks · 449 pages · 94s`**, exit 0, re-run 2026-09-11 at `4765cbd` |
+| `prisma migrate status` | **clean**, 26 migrations, "up to date" |
+## What happened 2026-09-10 (final) — three merges
 
+Record in `scratchpad/reports/068-three-merges.md`.
+
+**1. `5448b96`, the approved rent tile and hub anchors.** Cherry-picked as `1cf5342`, because a
+merge reported "Already up to date". Battery `PASS · 11 checks · 449 pages · 109s`. `/rentals`
+1,116 and the homepage agrees; `on-market` 457.
+
+**2. `0a2499b`, feat/content.** Merged as `31a9ab0` after a `vercel.json` conflict resolved to
+keep all three crons. Battery `PASS · 11 checks · 449 pages · 99s`. Content ran the held
+2026-08-31 regeneration and reported back: every headline figure moved with the backfill, and new
+listings held at 56 because they come from DB1's `listedAt`, which the backfill never touched.
+That is the clean confirmation of the `CloseDate` diagnosis.
+
+**3. `fix/core-batch`, head `dce1b70`.** `origin/main` merged in, four conflicts resolved, the TTL
+added as its own commit rather than buried in the merge, two lead guards repointed. Preview
+`miltonly-j6va7trjl` green, then merged as `8db80da`. Battery
+`PASS · 11 checks · 449 pages · 97s`.
+
+**Then the ledger.** Two wrong rows in `_prisma_migrations`, both fixed, status clean.
+
+| `5448b96` | **cherry-picked** as `1cf5342` (a merge was a no-op) |
+| `feat/content` `0a2499b` | **merged** as `31a9ab0`; Content notified, correction is live |
+| `fix/core-batch` `dce1b70` | **merged** as `8db80da`; preview `miltonly-j6va7trjl` was green |
+| `feat/homepage` | **unmerged**, intact, awaiting Home's hub work |
+| crons | **17**, both market-watch entries kept |
+| prebuild | **23 tests** |
+| future-dated DB2 rows | **0** of 8,578 |
+| creation programme | **paused**, 5 built, 226 unattempted, cap live at 20/day |
+| published street pages | **450** |
+| QUEUE | 1, 2, 3, 4 done; **7 DONE and merged**; 5, 6 not started |
+
+
+## What happened 2026-09-10 (latest) — the revert, the sweep, and feat/leads
+
+Record in `scratchpad/reports/067-revert-and-leads.md`.
+
+**The sweep.** Redis purged first, then 487 figure-publishing paths revalidated in batches, all
+200. Battery afterwards: every figure check green, drift zero. That answered the question the
+sweep was for — the remaining red was never about figures.
+
+**The revert.** `git log main --oneline -15` showed `c98f40e wip(hub)` sitting between the
+approved `5448b96` and the merge commit. Reverted the merge whole. Battery went from
+`FAIL · 11 checks` to `PASS · 10 checks` on that one commit.
+
+**feat/leads.** Merged by SHA at `26381f9`. Build exit 0, zero `P2024`, 549 static pages.
+Production Ready, `543ef99 served == expected`, battery `PASS · 10 checks · 449 pages · 70s`.
+
+**The export.** `SUPERLATIVE_PHRASES` made public, one line, `114420a`.
 
 ## What happened 2026-09-10 (later) — the rulings
 
@@ -301,20 +366,73 @@ without the parameter.
 19. **11 slugs have R2 clips uploaded and no `StreetContent` row.** Generation candidates,
     blocked by open item 1 wherever DeepSeek cannot clear them.
 20. **CLOSED.** The 255 future-dated DB2 rows are repaired; a re-run reports 0.
-24. **The hub battery cannot pass.** Two checks parse markup that no longer exists, and
-    `hub-meta`'s sub-k `silent` model does not map to the new degrade-to-a-count tile. Blocks
-    every merge until rewritten. See READ THIS FIRST.
-25. **`buildMiltonWideContext` memoizes with no TTL** and nothing in the serving path resets it.
+24. **`feat/homepage` still needs Home to finish the hub work.** `5448b96` is back on main by
+    cherry-pick and its check passes against the `h-` markup. When the `hh-` rebuild returns, the
+    two checks must land WITH it: `hub-intents.mjs`'s selector, `hub-meta.mjs`'s `heroStats()`,
+    and `hub-meta`'s sub-k `silent` model rewritten around the degrade-to-a-count tile (moffat
+    prints `3` / "sales in 12 months" where a k-clearing hub prints `$955K` / "typical sale
+    price"). That last one is a k-anonymity change and needs its own review.
+29. **CLOSED by revert (historical).** The two hub checks failed against markup from an unapproved WIP
+    commit (`c98f40e`), not against a stale contract. `git revert -m 1 cec6906` restored green.
+    When Home re-merges `feat/homepage`, `hub-intents.mjs` and `hub-meta`'s `heroStats()` must
+    land WITH the `hh-` markup, and `hub-meta`'s sub-k `silent` model has to be rewritten around
+    the degrade-to-a-count tile (moffat prints `3` / "sales in 12 months" where a k-clearing hub
+    prints `$955K` / "typical sale price"). That rewrite is a k-anonymity change and needs its
+    own review.
+25. **CLOSED.** `buildMiltonWideContext` now carries a 5-minute TTL (`259a365`). Previously: and nothing in the serving path resets it.
     Three homepage figures go stale daily and are corrected only by a deploy.
 26. **The creation programme is paused at 22%.** `differentPriorities` is offered by the prompt
     on inputs the validator refuses it on. 226 of 249 candidates unattempted.
-27. **17 streets cleared k5 and 9 cleared k10** in the backfill and still publish the suppressed
+27. **CLOSED. `fix/core-batch` is merged** as `8db80da`. Previously: Main has moved twice under it (a
+    revert and a merge). Nothing is wrong with the branch; its baseline is simply stale.
+28. **17 streets cleared k5 and 9 cleared k10** in the backfill and still publish the suppressed
     figure, because the numbers are in stored prose. A regeneration is the only way through.
 28. **The DB1 branch of `makeStreetDecision` has no entity floor**, and `/api/sync/generate` has
     none at all. Only `scripts/create-street-page.ts` enforces publish floor = entity floor.
 
 ## Notes for the next run
 
+- **A reverted merge's commits are still ancestors, so re-merging them is a silent no-op.**
+  `git merge --no-ff 5448b96` printed "Already up to date" and did nothing. Cherry-pick reapplies
+  them. Read the merge output before believing a merge happened.
+- **The Prisma CLI reads `.env`, NOT `.env.local`.** This worktree has a gitignored `.env`
+  carrying `DATABASE_URL` and `DIRECT_DATABASE_URL`, which is the only reason `migrate status`
+  runs here. A worktree without one fails **P1012** before it opens a connection, because
+  `schema.prisma` declares `directUrl = env("DIRECT_DATABASE_URL")`. Content's worktree hit
+  exactly that and was pushed toward improvising a value.
+- **`DIRECT_DATABASE_URL` is `DATABASE_URL` with `-pooler` removed from the host.** Same Neon
+  endpoint, unpooled. It does not need to be fetched from Vercel and no credential needs to be
+  passed around to reconstruct it. **Do not substitute `NEON_DATABASE_URL_UNPOOLED`** — that is
+  DB2, it has no `_prisma_migrations` table at all, and Prisma will confidently report every
+  migration unapplied about the wrong database. That is the same DB1/DB2 substitution that once
+  created two empty tables in the sold database.
+
+  **The danger is the shape of the wrongness, not the wrongness.** That misreading does not
+  produce an error or an obviously silly answer. It produces a specific, plausible, actionable
+  finding — "the ledger is out of sync, do not run migrate deploy" — which reads as diligence and
+  survives review intact. The only question that catches it is *which host answered*. On
+  2026-09-10 it did not get asked, so the finding was written into `HANDOFF-content.md` as an
+  instruction, and that instruction then licensed a whole tier to route around the ledger with
+  `prisma db execute` for weeks. **A wrong reading that is merely wrong gets corrected; one that
+  is useful-looking gets institutionalised.** Ask which database answered before writing down
+  anything a `_prisma_migrations` query told you. (Content's framing, taken verbatim in
+  substance; theirs is the sequence, not just the misreading.)
+- **Never route around the ledger with `prisma db execute`.** It runs the SQL and writes no row,
+  so the migration is invisible to `migrate status` and the next `migrate deploy` tries to replay
+  it against tables that already exist. `HANDOFF-content.md` recommended exactly this, on a false
+  premise; withdrawn by Content at `6608b59`. Audited afterwards with
+  `scripts/diag-migration-ledger-audit.ts`: 26 rows, 26 directories, 0 in progress, 0 drift,
+  0 never-applied, and only **2** rows with zero applied steps — `0_init`, which is the expected
+  baseline, and `20260910120000_market_edition`. **`savedsearch_env` and `phase1_lead_layer` were
+  genuinely run.** Content's worry that other migrations went the same way does not materialise.
+- **`prisma migrate status` is worth running after any merge that carries migrations.** Two rows
+  were wrong on 2026-09-10 and neither broke a build, because Vercel runs `prisma generate`, not
+  `migrate deploy`. `scripts/fix-migration-ledger.ts` clears a zero-step rolled-back row safely.
+- **`git merge --no-ff <branch>` resolves the branch at the moment you type it.** If you were
+  given a SHA, merge the SHA. `cec6906` shipped an unapproved 1,532-line hub rebuild because the
+  tip had moved past the commit that was approved, and nothing in the merge output says so.
+  `git log --oneline <approved-sha>..<branch>` before merging tells you in one line.
+- `scripts/revalidate-figure-pages.ts` sweeps all 487 figure-publishing paths in batches.
 - **Purge order after any DB2 write: Redis, then pages, then prose.**
   `scripts/purge-sold-caches.ts` then `scripts/purge-after-sold-backfill.ts`. Purging pages first
   just re-renders the stale numbers, which is exactly what happened on 2026-09-10.
@@ -370,20 +488,9 @@ without the parameter.
 
 ## Next expected task
 
-**Make the battery honest again, then merge `fix/core-batch`.** Two stale hub checks and the
-sub-k tile contract, open items 24 and 25. Nothing merges until the battery can pass, and it is
-failing on parsers rather than on pages, so the pages are not the work.
+**QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed, length
+and terminus onto all published streets from the Town and OSM layers. No camera work and nothing
+derived from imagery.
 
-Then: **QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed,
-length and terminus onto all published streets from the Town and OSM layers. No camera work and
-nothing derived from imagery.
-
-Failing that: the Anthropic credit balance (open item 1), which blocks three pages and any
-cron escalation; open item 8, the seven clips with `blur_verified: false`; open item 9, the
-two orphaned clips. **Do not self-start any of them.**
-
-Or, ahead of it if Aamir says so: the Anthropic credit balance (open item 1), which blocks
-three pages and any cron escalation; open item 8, the seven clips with
-`blur_verified: false`; open item 9, the two orphaned clips.
-
-**Do not self-start any of them.**
+Ahead of it if Aamir says so: the `differentPriorities` prompt fix, which unblocks the 226
+remaining creation candidates; and regenerating the 26 streets that crossed k5 or k10.

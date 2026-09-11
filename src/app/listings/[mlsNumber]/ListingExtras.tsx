@@ -8,7 +8,7 @@ import {
   haversineKm, walkMinutes, driveMinutes, directionsUrl, hasValidCoords,
   GROCERIES, MOSQUES, PARKS, CONSERVATION_AREAS, TRANSIT, COMMUTES, type POI,
 } from "@/lib/geo";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 
@@ -486,29 +486,32 @@ export function VOWTeaser({ mls, soldCount, hoodSoldCount, hoodName }: { mls: st
 // ═══════════════════════════════════════════════════════════════
 export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean }) {
   const [email, setEmail] = useState("");
+  const [honey, setHoney] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   const submit = async () => {
     if (!email.includes("@")) return;
     setBusy(true);
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          firstName: "Valuation request",
-          source: isRental ? "landlord-listing-page" : "seller-listing-page",
-          intent: isRental ? "list-rental" : "seller",
-          mlsNumber: mls,
-          ...attributionPayload(),
-        }),
-      });
-      const data = await res.json().catch(() => ({} as { id?: string }));
-      if (res.ok) fireGenerateLead(data?.id, email, null);
-      setSent(true);
-    } catch {/* ignore */} finally { setBusy(false); }
+    setErr("");
+    // Both variants are a listing intent, which is what "sell" means to the value model.
+    // "list-rental" and "seller" both normalized to a 0 lead value before Phase 1.
+    const result = await postLeadDetailed({
+      source: isRental ? "landlord-listing-page" : "seller-listing-page",
+      intent: "sell",
+      email,
+      name: "Valuation request",
+      mlsNumber: mls,
+      honeypot: honey,
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setErr(result.error || "Could not submit. Please try again.");
+      return;
+    }
+    fireGenerateLead(result.leadId, email, null);
+    setSent(true);
   };
 
   return (
@@ -543,8 +546,16 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
             >
               {busy ? "Sending…" : isRental ? "Get my rental estimate →" : "Get my valuation →"}
             </button>
+            {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+            <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+              <label>
+                Company website
+                <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+              </label>
+            </div>
           </div>
         )}
+        {err && !sent && <p className="text-[12px] text-[#fca5a5] mt-2">{err}</p>}
       </div>
     </div>
   );
@@ -579,6 +590,7 @@ export function UrgencyBanner({ viewsToday, domDays, isRental }: { viewsToday: n
 // ═══════════════════════════════════════════════════════════════
 export function RentalBookingCard({ mls, address, price }: { mls: string; address: string; price: number }) {
   const [mode, setMode] = useState<"none" | "book" | "ask">("none");
+  const [honey, setHoney] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -589,30 +601,29 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
 
-  const submit = async (source: string, payload: Record<string, string>) => {
+  const submit = async (source: string, payload: { name: string; email: string; phone: string; notes?: string }) => {
     setErr("");
-    if (!payload.firstName || !payload.email || !payload.phone) {
+    if (!payload.name || !payload.email || !payload.phone) {
       setErr("Name, email and phone are all required.");
       return;
     }
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...payload,
-          source,
-          intent: "renter",
-          mlsNumber: mls,
-          street: address,
-          transactionType: "Lease",
-          ...attributionPayload(),
-        }),
-      });
-      const data = await res.json().catch(() => ({} as { id?: string }));
-      if (res.ok) fireGenerateLead(data?.id, payload.email, payload.phone);
-      setSent(true);
-    } catch { setErr("Could not submit — try again."); }
+    const result = await postLeadDetailed({
+      source,
+      intent: "rent",
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      notes: payload.notes,
+      property_address: address,
+      mlsNumber: mls,
+      honeypot: honey,
+    });
+    if (!result.ok) {
+      setErr(result.error || "Could not submit. Please try again.");
+      return;
+    }
+    fireGenerateLead(result.leadId, payload.email, payload.phone);
+    setSent(true);
   };
 
   if (sent) {
@@ -657,9 +668,16 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
             </div>
           </div>
           <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Message (optional)" rows={2} className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b] resize-none" />
+          {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+          <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+            <label>
+              Company website
+              <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+            </label>
+          </div>
           {err && <p className="text-[11px] text-[#fca5a5]">{err}</p>}
           <button
-            onClick={() => submit("rental-detail-book", { firstName: name, email, phone, moveIn, pets, notes: msg })}
+            onClick={() => submit("rental-detail-book", { name, email, phone, notes: [msg, moveIn ? `Move-in: ${moveIn}` : "", pets ? `Pets: ${pets}` : ""].filter(Boolean).join(". ") })}
             className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors mt-1"
           >
             Submit booking request →
@@ -674,9 +692,16 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
           <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="Phone" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
           <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What would you like to know?" rows={3} className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b] resize-none" />
+          {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+          <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+            <label>
+              Company website
+              <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+            </label>
+          </div>
           {err && <p className="text-[11px] text-[#fca5a5]">{err}</p>}
           <button
-            onClick={() => submit("rental-detail-question", { firstName: name, email, phone, notes: question })}
+            onClick={() => submit("rental-detail-question", { name, email, phone, notes: question })}
             className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors"
           >
             Send my question →

@@ -11,6 +11,10 @@
 //      THAT a price changed and never what it changed from — so it could not tell a
 //      reduction from an increase and the badge it fed said "Price reduced" over both.
 //      Removed 2026-09-10 (ruling): no such claim until a prior price is stored.
+//      A prior price is stored as of the same day (DEC-PRICE-HISTORY, `Listing.priorPrice`),
+//      but the flag stays out until the columns have accumulated real observations —
+//      today they are null corpus-wide, so the badge would be absent from every card and
+//      the page would silently claim no listing has ever been reduced.
 // Everything else is identical: the URL param contract (incl. the legacy
 // maxPrice alias), the permAdvertise=true + city=Milton base where, the rent/
 // sold status semantics, sort, 36-per-page, the activeBase stat aggregates,

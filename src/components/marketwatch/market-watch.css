@@ -85,6 +85,37 @@
   margin-top: 22px;
 }
 
+/* ── the correction stamp ─────────────────────────────────────────────────
+   Only a rewritten edition renders this. It sits in the masthead, above every
+   figure, because a reader who saw the old numbers has to meet the correction
+   before they meet the new ones. A rule down the left rather than a tinted
+   panel: the masthead is one flat colour and a box would read as a callout,
+   which is a thing to skim past. */
+
+.market-watch .mw-correction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 22px;
+  padding-left: 14px;
+  border-left: 2px solid rgba(246, 244, 239, 0.4);
+  max-width: 62ch;
+}
+.market-watch .mw-correction-tag {
+  font-family: var(--mw-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mw-cream);
+  white-space: nowrap;
+}
+.market-watch .mw-correction-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(246, 244, 239, 0.78);
+}
+
 /* ── the ledger ───────────────────────────────────────────────────────── */
 
 .market-watch .mw-block { padding-block: 54px; }

@@ -1,11 +1,25 @@
 "use client";
 
+// The pre-footer newsletter signup. Source "homepage-newsletter".
+//
+// IT HAD NO HONEYPOT, and it is the surface that produced the eight questionable
+// homepage-newsletter rows. It also checked only `res.ok`, on a route that answered 200 with
+// { success: true } for a spam submission, so a bot got the same green tick a person did.
+// Through the shared helper it now carries the honeypot, the environment tag and the origin
+// check, and it renders the confirmation only when the row was actually written.
+//
+// THE PROMISE ON THIS CARD IS A SUNDAY BRIEF, and no sender sends one. The daily-brief cron
+// is Monday to Friday, so mapping this source onto a "brief" watch would have mailed these
+// subscribers five times a week having promised them once. It deliberately leaves no watch;
+// the unkept Sunday promise is recorded in HANDOFF-leads.md rather than papered over.
+
 import { useState } from "react";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
 export default function PreFooterCTA() {
   const [email, setEmail] = useState("");
+  const [honey, setHoney] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -18,27 +32,20 @@ export default function PreFooterCTA() {
       return;
     }
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: "Newsletter Subscriber",
-          lastName: "",
-          email,
-          phone: "",
-          source: "homepage-newsletter",
-          notes: "Pre-footer newsletter signup",
-          ...attributionPayload(),
-        }),
-      });
-      if (!res.ok) throw new Error();
-      setSuccess(true);
-    } catch {
-      setError(`Couldn't subscribe — please try again or text Aamir at ${config.realtor.phone}`);
-    } finally {
-      setSubmitting(false);
+    const result = await postLeadDetailed({
+      source: "homepage-newsletter",
+      intent: "buy",
+      email,
+      name: "Newsletter Subscriber",
+      notes: "Pre-footer newsletter signup",
+      honeypot: honey,
+    });
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error || `Couldn't subscribe. Please try again or text Aamir at ${config.realtor.phone}`);
+      return;
     }
+    setSuccess(true);
   }
 
   return (
@@ -85,6 +92,13 @@ export default function PreFooterCTA() {
             >
               {submitting ? "Subscribing…" : "Subscribe →"}
             </button>
+            {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+            <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+              <label>
+                Company website
+                <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
+              </label>
+            </div>
           </form>
         )}
 

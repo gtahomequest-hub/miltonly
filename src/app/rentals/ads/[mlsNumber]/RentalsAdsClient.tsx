@@ -346,7 +346,7 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
           Right-column aside holds TWO white lead cards stacked: tenant
           intent on top, landlord intent below, plus the AamirTrustCard.
           Tenant card uses LeadCaptureForm variant="rental" → intent="renter"
-          path on /api/leads, source="rentals-ads-tenant-top", value 2000.
+          path, source="rentals-ads-tenant-top", value 2000.
           Landlord card uses HomeValuationCard with a lease-tagged source
           string + landlord-facing copy. */}
       <section className="bg-[#07111f]">
@@ -355,7 +355,7 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
             {/* TENANT CARD — top of right column. White surface, branded
                 amber kicker, "Send me details" CTA. Uses LeadCaptureForm
                 rental variant; renter intent goes through the existing
-                ads-rentals-lp path on /api/leads with this surface's
+                ads-rentals-lp source tag with this surface's
                 source tag for attribution. */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="mb-4 pb-3 border-b border-[#f1f5f9]">
@@ -532,7 +532,7 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
 
       {/* ── ONE REPORT BAND ── single-card rental valuation surface.
           Lease market-pulse hidden for v1 (analytics path exists but the
-          /api/leads + MarketPulseUnlockCard plumbing is sale-coupled —
+          lead + MarketPulseUnlockCard plumbing is sale-coupled,
           tracked as Week 1 follow-up). Heading reads as a singular
           report-prepared-by-Aamir promise. */}
       <section className="bg-[#07111f] border-t border-[#1e3a5f] py-12 sm:py-16">

@@ -135,22 +135,17 @@ proof-sold-to-ask  -> 98%        LINKS : 66 unique internal
   RECO/IDX display gate server-side.
 - **A raw TREB neighbourhood string is not a slug.** Resolve it through `getRawStringHubMap()`.
 - **`mockData.ts` is no longer typed `HomepageData`.** It holds static hero editorial only.
-- **A LEASE NEVER CARRIES `status='active'`.** The lease side is `status='rented'` for life and
-  `leaseStatus` carries the lifecycle. Any rental count filtered on transaction type alone
-  counts closed inventory: `/rentals` did exactly that and printed 1,340 as "active rentals"
-  when 1,116 were available. `getRentalsAvailableCount()` is the one source, read by `/rentals`
-  AND the homepage tile, and the gate asserts the two agree.
-- **A dead fragment is the quietest defect a page can carry.** Well-formed href, 200 response,
-  no console error, and the browser answers by doing nothing. Two of four hub intent squares
-  were dead on all 22 hubs for as long as they existed. `hub-intents.mjs` resolves the route
-  half and the fragment half of every intent href. Renaming `id="streets"` on `HubStreets`
-  breaks it — change `intentsFor()` in the same commit.
 
 ## Open, and owned elsewhere
 
 - **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
   `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
   **Leads owns this.**
+- **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
+  `permAdvertise AND status='active'` with no city and no transaction-type filter, so "on the
+  market today" would include leases and non-Milton rows. Exactly right today (448 either way),
+  so latent rather than wrong. The gate asserts the query the app actually runs, on purpose.
+  Needs a decision, not a silent change.
 - **380px is sized for, not visually verified.**
 
 ## Next action

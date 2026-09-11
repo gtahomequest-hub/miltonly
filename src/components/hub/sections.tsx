@@ -1,396 +1,303 @@
 // src/components/hub/sections.tsx
-// THE REBUILT NEIGHBOURHOOD HUB, in the homepage's design language.
-//
-// The device is the same encyclopedia entry the homepage uses: a monospace index number in the
-// left margin, a full-width hairline, the heading hard left with its standfirst beside it.
-// Repeated exactly, section after section, so a reader moving from the homepage to a hub is
-// reading one document rather than two products.
-//
-// THE TWO RULES THIS TEMPLATE IS BUILT AROUND
-//
-//   1. EVERY NUMBER SHOWS ITS BASIS WITHOUT BEING HUNTED FOR. Not in a tooltip, not in a
-//      footnote, not on hover: under the figure, in the same block, always. A price with a
-//      hidden sample is the defect this repo spends most of its guards catching, and the
-//      layout is now the first guard rather than the last.
-//   2. NOTHING STATIC SURVIVES. Every fact in the glance panel is derived and carries its
-//      own basis; a fact whose source is empty is dropped, not softened into a sentence
-//      that was true of all of Milton.
-//
-// STREETS LINK DOWN IN THREE RUNGS, video first: the filmed strip (01), the ladder that marks
-// which streets are filmed (02), and the overflow index for hubs above the cap.
-import type { HubData, HubStreetCard, HubSibling, HubFact } from './types';
-import { compactPrice } from './format';
-import { IconTag, IconHome, IconPeople, IconKey, IconInvest } from './icons';
+import type {
+  HubData,
+  HubStreetCard,
+  HubSibling,
+} from './types';
+import { fullPrice, compactPrice } from './format';
+import {
+  IconHome,
+  IconPeople,
+  IconTrain,
+  IconSchool,
+  IconTag,
+  IntentIcon,
+} from './icons';
 
-/* ── the repeated device ───────────────────────────────────────────────── */
-
-function SectionHead({
-  index,
-  title,
-  standfirst,
-  action,
-}: {
-  index: string;
-  title: string;
-  standfirst?: string;
-  action?: { href: string; label: string };
-}) {
+export function HubBreadcrumb({ name }: { name: string }) {
   return (
-    <div className="hh-head">
-      <span className="hh-index" aria-hidden="true">{index}</span>
-      <div className="hh-headmain">
-        <h2>{title}</h2>
-        {standfirst ? <p>{standfirst}</p> : null}
+    <div className="h-hero">
+      <div className="h-wrap">
+        <div className="h-crumb">
+          <a href="/">Miltonly</a>
+          <span>/</span>
+          <a href="/neighbourhoods">Neighbourhoods</a>
+          <span>/</span>
+          {name}
+        </div>
       </div>
-      {action ? <a className="hh-headaction" href={action.href}>{action.label}</a> : null}
     </div>
   );
 }
 
-export function HubBreadcrumb({ name }: { name: string }) {
+function Stat({
+  value,
+  label,
+  accentDollar,
+}: {
+  value: number | null;
+  label: string;
+  accentDollar?: boolean;
+}) {
+  if (value === null) {
+    return (
+      <div className="h-hs">
+        <div className="h-n h-silent">not stated</div>
+        <div className="h-l">{label}</div>
+      </div>
+    );
+  }
   return (
-    <nav className="hh-crumb" aria-label="Breadcrumb">
-      <a href="/">Milton</a>
-      <span aria-hidden="true">/</span>
-      <a href="/neighbourhoods">Neighbourhoods</a>
-      <span aria-hidden="true">/</span>
-      <span aria-current="page">{name}</span>
-    </nav>
-  );
-}
-
-/* ── hero ──────────────────────────────────────────────────────────────── */
-
-const FACT_ICONS: Record<string, React.ReactNode> = {
-  typical: <IconTag />,
-  pages: <IconHome />,
-  video: <IconInvest />,
-  schools: <IconPeople />,
-  active: <IconKey />,
-  stock: <IconHome />,
-};
-
-/** A figure, its label, and the sample it was computed over. The basis is not optional. */
-function Fact({ f }: { f: HubFact }) {
-  const body = (
-    <>
-      <span className="hh-fact-ic" aria-hidden="true">{FACT_ICONS[f.key] ?? <IconTag />}</span>
-      <span className="hh-fact-v" data-fig={`hub-fact-${f.key}`} data-value={f.value}>{f.value}</span>
-      <span className="hh-fact-l">{f.label}</span>
-      <span className="hh-fact-b">{f.basis}</span>
-    </>
-  );
-  return f.href ? (
-    <a className="hh-fact" href={f.href}>{body}</a>
-  ) : (
-    <div className="hh-fact">{body}</div>
+    <div className="h-hs">
+      <div className="h-n">
+        {accentDollar && <b>$</b>}
+        {accentDollar ? compactPrice(value) : value}
+      </div>
+      <div className="h-l">{label}</div>
+    </div>
   );
 }
 
 export function HubHero({ data }: { data: HubData }) {
+  const { stats } = data;
   return (
-    <header className="hh-hero">
-      <div className="hh-wrap">
-        <HubBreadcrumb name={data.name} />
-        <h1>{data.name}</h1>
-        {data.character ? <p className="hh-lede">{data.character}</p> : null}
-
-        {/* THE INTENT SQUARES. Both dead destinations were fixed on 2026-09-10: "/#mls"
-            pointed at a homepage section that no longer exists, and "#streets" had no
-            target id. hub-intents.mjs now resolves the route half and the fragment half
-            of every one of these. */}
-        <div className="hh-intents">
-          {data.intents.map((it) => (
-            <a className="hh-intent" href={it.href} key={it.key}>
-              <span className="hh-intent-l">{it.label}</span>
-              <span className="hh-intent-s">{it.sub}</span>
-            </a>
-          ))}
+    <header className="h-hero">
+      <div className="h-wrap">
+        <div className="h-hero-grid">
+          <div className="h-hero-left">
+            <span className="h-eyebrow">
+              {data.profile === 'rural' ? 'Rural Milton' : 'Milton neighbourhood'}
+            </span>
+            <h1>{data.name}</h1>
+            <p className="h-character">{data.character}</p>
+            <div className="h-herostats">
+              <Stat value={stats.typicalPrice} label="typical home" accentDollar />
+              <Stat value={stats.sold12mo} label="sold · last 12 months" />
+              <Stat value={stats.onMarket} label="on the market" />
+            </div>
+          </div>
+          <div className="h-intents">
+            {data.intents.map((it) => (
+              <a className="h-intent" href={it.href} key={it.key}>
+                <span className="h-intent-ic">
+                  <IntentIcon k={it.key} />
+                </span>
+                <span className="h-intent-l">{it.label}</span>
+                <span className="h-intent-s">{it.sub}</span>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </header>
   );
 }
 
-/* ── the derived-fact panel ────────────────────────────────────────────── */
-
 export function HubGlance({ data }: { data: HubData }) {
-  const facts = data.atAGlance.facts;
-  if (facts.length === 0) return null; // nothing derived, nothing shown
+  const g = data.atAGlance;
+  const items = [
+    { ic: <IconTag />, l: 'Price range', v: g.priceRange, silent: g.priceRange === null },
+    { ic: <IconHome />, l: 'Home types', v: g.dominantType },
+    { ic: <IconPeople />, l: 'Best suits', v: g.suits.join(', ') },
+    { ic: <IconTrain />, l: 'Commute', v: g.commute },
+    { ic: <IconSchool />, l: 'Schools', v: g.schools },
+  ];
   return (
-    <section className="hh-sec hh-glance">
-      <div className="hh-wrap">
-        <div className="hh-facts">
-          {facts.map((f) => <Fact f={f} key={f.key} />)}
+    <div className="h-glance">
+      <div className="h-wrap">
+        <div className="h-card">
+          {items.map((it) => (
+            <div className="h-gi" key={it.l}>
+              <div className="h-gi-ic">{it.ic}</div>
+              <div className="h-gi-l">{it.l}</div>
+              <div className={`h-gi-v${it.silent ? ' h-silent' : ''}`}>
+                {it.v ?? 'not stated — thin activity in the last 12 months'}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function HubOverview({ data }: { data: HubData }) {
+  return (
+    <section className="h-block">
+      <div className="h-wrap">
+        <div className="h-sechead">
+          <span className="h-eyebrow">The read</span>
+          <h2>Inside {data.name}</h2>
+        </div>
+        <div className="h-overview">
+          {data.overview.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-/* ── 01 · streets on film (rung one) ───────────────────────────────────── */
-
-export function HubVideoStreets({ data }: { data: HubData }) {
-  const v = data.videoStreets ?? [];
-  if (v.length === 0) return null; // 14 of 22 hubs — the section simply is not there
+export function HubMarket({ data }: { data: HubData }) {
   return (
-    <section className="hh-sec hh-video" id="film">
-      <div className="hh-wrap">
-        <SectionHead
-          index="01"
-          title={`${data.name} on film`}
-          standfirst={`${v.length === 1 ? 'One street' : `${v.length} streets`} here driven end to end. Watch the street before you book the showing: the parking, the setbacks, the tree cover, the light.`}
-        />
-        <ul className="hh-filmstrip">
-          {v.map((s) => (
-            <li key={s.slug}>
-              <a href={`/streets/${s.slug}`}>
-                <span className="hh-frame">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={s.poster} alt={`${s.name}, Milton`} loading="lazy" width={320} height={180} />
-                  {s.variant === 'night' ? <span className="hh-nightmark">Overnight</span> : null}
-                </span>
-                <span className="hh-framename">{s.name}</span>
-                {s.capturedAt ? <span className="hh-framedate">Captured {s.capturedAt}</span> : null}
-              </a>
-            </li>
+    <section className="h-block h-alt">
+      <div className="h-wrap">
+        <div className="h-sechead">
+          <span className="h-eyebrow">The market</span>
+          <h2>How {data.name} trades</h2>
+        </div>
+        {data.marketCompare.length > 0 && (
+          <div className="h-compare">
+            {data.marketCompare.map((c) => (
+              <div className="h-cmp" key={c.metricLabel}>
+                <div className="h-cmp-l">{c.metricLabel}</div>
+                <div className="h-cmp-v">{c.neighbourhoodValue}</div>
+                <div className="h-cmp-vs">Milton: {c.miltonValue}</div>
+                {c.delta && <div className="h-cmp-d">{c.delta}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="h-commentary">
+          {data.commentary.paragraphs.map((p, i) => (
+            <p key={i}>{p}</p>
           ))}
-        </ul>
+          <div className="h-src">{data.commentary.source}</div>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ── 02 · the street ladder (rung two) ─────────────────────────────────── */
-
-function LadderRow({ s, max }: { s: HubStreetCard; max: number }) {
-  const n = s.soldCount ?? 0;
+function StreetCard({ s }: { s: HubStreetCard }) {
+  const silent = s.typicalPriceRounded === null;
+  const meta =
+    s.soldCount !== null && !silent
+      ? `${s.soldCount} sold · typically ${fullPrice(s.typicalPriceRounded as number)}`
+      : s.soldCount !== null
+        ? `${s.soldCount} sold`
+        : 'thin activity in the last 12 months — see street guide';
   return (
-    <li>
-      <a href={`/streets/${s.slug}`}>
-        <span className="hh-ladname">
-          {s.name}
-          {s.hasVideo ? <span className="hh-ladfilm" title="filmed end to end">film</span> : null}
-        </span>
-        <span className="hh-ladbar" aria-hidden="true">
-          <span style={{ width: `${Math.max(2, Math.round((n / max) * 100))}%` }} />
-        </span>
-        <span className="hh-ladsales">{n} <em>sold</em></span>
-        <span className="hh-ladprice" data-fig="hub-street-typical" data-slug={s.slug} data-value={s.typicalPriceRounded ?? ''}>
-          {s.typicalPriceRounded !== null
-            ? `$${compactPrice(s.typicalPriceRounded)}`
-            : <em className="hh-ladsilent">sample too small</em>}
-        </span>
-        {/* THE BASIS, ON THE ROW. Every price on this page states the sample and window it
-            was computed over, in the same block as the figure. */}
-        <span className="hh-ladbasis">{s.basis ?? 'fewer than five recorded sales'}</span>
-      </a>
-    </li>
+    <a className="h-st" href={`/streets/${s.slug}`}>
+      {s.signal && <span className="h-st-sig">{s.signal}</span>}
+      <div className="h-st-n">{s.name}</div>
+      <div className={`h-st-m${silent && s.soldCount === null ? ' h-silent' : ''}`}>{meta}</div>
+    </a>
   );
 }
 
 export function HubStreets({ data }: { data: HubData }) {
+  // The ladder is PUBLISHED-ONLY, so it shrinks where a neighbourhood has few published guides.
+  // A short ladder must read as deliberate, not broken (THE THREE RULES · layout). Two guarded
+  // states: 0 published streets → a note, no empty grid; 1–3 → a framing line + fixed-width cards
+  // (left-aligned) so a lone card is obviously "few guides so far", not a rendering failure.
   const n = data.streets.length;
-  const max = Math.max(...data.streets.map((s) => s.soldCount ?? 0), 1);
+  const short = n > 0 && n <= 3;
   return (
-    <section className="hh-sec hh-streets" id="streets">
-      <div className="hh-wrap">
-        <SectionHead
-          index="02"
-          title={`Every street in ${data.name}`}
-          standfirst={
-            n === 0
-              ? `No street guide is published in ${data.name} yet. The neighbourhood figures above still hold; the street-level read is what is missing.`
-              : `${data.streetCount === 1 ? 'One street' : `${data.streetCount} streets`} with a published guide, ranked by how much each one trades. Each price is the same figure that street's own page publishes, over the same sample.`
-          }
-          action={data.hasStreetOverflow ? { href: `/neighbourhoods/${data.slug}/streets`, label: `All ${data.streetCount} streets` } : undefined}
-        />
-        {n === 0 ? null : (
-          <ol className="hh-ladder">
-            {data.streets.map((s) => <LadderRow s={s} max={max} key={s.slug} />)}
-          </ol>
+    // id="streets" is the target of the hero's "I'm buying" intent square. It was missing:
+    // every one of the 22 hubs shipped an href of "#streets" pointing at nothing, which a
+    // browser answers by silently doing nothing. Do not rename this id without changing
+    // intentsFor() in src/lib/hubData.ts and the hub-intents battery check with it.
+    <section className="h-block" id="streets">
+      <div className="h-wrap">
+        <div className="h-row-between">
+          <div className="h-sechead" style={{ marginBottom: 0 }}>
+            <span className="h-eyebrow">Street by street</span>
+            <h2>Streets in {data.name}</h2>
+          </div>
+          {data.hasStreetOverflow && (
+            <a className="h-more" href={`/neighbourhoods/${data.slug}/streets`}>
+              View all streets →
+            </a>
+          )}
+        </div>
+        {n === 0 ? (
+          <p className="h-streets-note" style={{ marginTop: 20 }}>
+            Street-by-street guides for {data.name} publish as each road builds a full sold record — the
+            market read above covers the neighbourhood in the meantime.
+          </p>
+        ) : (
+          <>
+            {short && (
+              <p className="h-streets-note" style={{ marginTop: 18 }}>
+                {data.name} has {n} street {n === 1 ? 'guide' : 'guides'} published so far; more appear
+                here as each road builds a full record.
+              </p>
+            )}
+            <div className={`h-streets${short ? ' h-streets-short' : ''}`} style={{ marginTop: short ? 16 : 28 }}>
+              {data.streets.map((s) => (
+                <StreetCard key={s.slug} s={s} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>
   );
 }
 
-/* ── 03 · what it is like ──────────────────────────────────────────────── */
-
-export function HubOverview({ data }: { data: HubData }) {
-  if (data.overview.length === 0) return null;
+export function HubVip({ data }: { data: HubData }) {
+  if (data.profile === 'rural' || data.vipStreets.length === 0) return null;
   return (
-    <section className="hh-sec hh-overview" id="about">
-      <div className="hh-wrap">
-        <SectionHead index="03" title={`What ${data.name} is like`} />
-        <div className="hh-prose">
-          {data.overview.map((p, i) => <p key={i}>{p}</p>)}
+    <section className="h-block h-alt">
+      <div className="h-wrap">
+        <div className="h-sechead">
+          <span className="h-eyebrow">Most active</span>
+          <h2>Standout streets in {data.name}</h2>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── 04 · the market ───────────────────────────────────────────────────── */
-
-export function HubMarket({ data }: { data: HubData }) {
-  const hasCompare = data.marketCompare.length > 0;
-  return (
-    <section className="hh-sec hh-market" id="market">
-      <div className="hh-wrap">
-        <SectionHead
-          index="04"
-          title={`How ${data.name} trades`}
-          standfirst={data.typicalBasis ?? undefined}
-        />
-        {hasCompare ? (
-          <div className="hh-compare">
-            {data.marketCompare.map((r) => (
-              <div className="hh-comparerow" key={r.metricLabel}>
-                <span className="hh-comparel">{r.metricLabel}</span>
-                <span className="hh-comparev">{r.neighbourhoodValue}</span>
-                <span className="hh-comparem">Milton {r.miltonValue}</span>
-                <span className="hh-compared">{r.delta}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        <div className="hh-prose">
-          {data.commentary.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-        </div>
-        <p className="hh-source">{data.commentary.source}</p>
-      </div>
-    </section>
-  );
-}
-
-/* ── 05 · schools ──────────────────────────────────────────────────────── */
-
-export function HubSchools({ data }: { data: HubData }) {
-  const s = data.schools ?? [];
-  if (s.length === 0) return null;
-  return (
-    <section className="hh-sec hh-schools" id="schools">
-      <div className="hh-wrap">
-        <SectionHead
-          index="05"
-          title="Schools inside the boundary"
-          standfirst="Schools whose position falls inside the Town of Milton's boundary for this neighbourhood. That is where the school stands, not which homes it takes: a catchment is the school board's fact, and we do not publish one."
-          action={{ href: '/schools', label: 'All schools' }}
-        />
-        <ul className="hh-schoollist">
-          {s.map((sc) => (
-            <li key={sc.slug}>
-              <a href={`/schools/${sc.slug}`}>
-                <span className="hh-schoolname">{sc.name}</span>
-                <span className="hh-schoolmeta">
-                  {sc.board === 'public' ? 'Public' : 'Catholic'} · {sc.level === 'secondary' ? 'Secondary' : 'Elementary'}
-                  {sc.fraserScore ? ` · Fraser ${sc.fraserScore}` : ''}
-                </span>
-              </a>
-            </li>
+        <div className="h-vipgrid">
+          {data.vipStreets.map((v) => (
+            <a className="h-vip" href={`/streets/${v.slug}`} key={v.slug}>
+              <div className="h-vip-n">{v.name}</div>
+              <div className="h-vip-m">{v.soldCount} sold · full street guide</div>
+            </a>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );
 }
-
-/* ── 06 · condo buildings ──────────────────────────────────────────────── */
 
 export function HubCondos({ data }: { data: HubData }) {
   if (data.condos.length === 0) return null;
   return (
-    <section className="hh-sec hh-condos" id="condos">
-      <div className="hh-wrap">
-        <SectionHead
-          index="06"
-          title={`Condo buildings in ${data.name}`}
-          standfirst={`${data.condos.length} ${data.condos.length === 1 ? 'building' : 'buildings'} with a page of its own.`}
-          action={{ href: '/condos', label: 'All buildings' }}
-        />
-        <ul className="hh-condolist">
+    <section className="h-block">
+      <div className="h-wrap">
+        <div className="h-sechead">
+          <span className="h-eyebrow">Condos &amp; towers</span>
+          <h2>Condo buildings in {data.name}</h2>
+        </div>
+        <div className="h-condos">
           {data.condos.map((c) => (
-            <li key={c.slug}>
-              <a href={`/condos/${c.slug}`}>
-                <span className="hh-condoname">{c.name}</span>
-                {c.meta ? <span className="hh-condoaddr">{c.meta}</span> : null}
-              </a>
-            </li>
+            <a className="h-condo" href={`/condos/${c.slug}`} key={c.slug}>
+              <IconHome />
+              <div>
+                <div className="h-condo-n">{c.name}</div>
+                {c.meta && <div className="h-condo-m">{c.meta}</div>}
+              </div>
+            </a>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );
 }
-
-/* ── 07 · questions ────────────────────────────────────────────────────── */
 
 export function HubFaqs({ data }: { data: HubData }) {
   if (data.faqs.length === 0) return null;
   return (
-    <section className="hh-sec hh-faqs" id="questions">
-      <div className="hh-wrap">
-        <SectionHead index="07" title={`${data.name} questions`} />
-        <div className="hh-faqlist">
-          {data.faqs.map((f) => (
-            <details key={f.question}>
-              <summary>{f.question}</summary>
-              <p>{f.answer}</p>
-            </details>
-          ))}
+    <section className="h-block h-alt">
+      <div className="h-wrap">
+        <div className="h-sechead">
+          <span className="h-eyebrow">Common questions</span>
+          <h2>About living in {data.name}</h2>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── 08 · nearby ───────────────────────────────────────────────────────── */
-
-function Sibling({ s }: { s: HubSibling }) {
-  return (
-    <a className="hh-sib" href={`/neighbourhoods/${s.slug}`}>
-      <span className="hh-sibname">{s.name}</span>
-      <span className="hh-sibchar">{s.character}</span>
-      <span className="hh-sibprice">
-        {s.typicalPriceRounded !== null ? `$${compactPrice(s.typicalPriceRounded)} typical` : 'price not published'}
-      </span>
-    </a>
-  );
-}
-
-export function HubSiblings({ data }: { data: HubData }) {
-  if (data.siblings.length === 0) return null;
-  return (
-    <section className="hh-sec hh-siblings" id="nearby">
-      <div className="hh-wrap">
-        <SectionHead
-          index="08"
-          title="Nearby neighbourhoods"
-          standfirst="Each price is that neighbourhood's own published typical, suppressed where its pool is below five sales."
-          action={{ href: '/neighbourhoods', label: 'All neighbourhoods' }}
-        />
-        <div className="hh-sibgrid">
-          {data.siblings.map((s) => <Sibling s={s} key={s.slug} />)}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── 09 · the two CTAs ─────────────────────────────────────────────────── */
-
-export function HubDualCta({ data }: { data: HubData }) {
-  return (
-    <section className="hh-sec hh-cta" id="talk">
-      <div className="hh-wrap">
-        <SectionHead index="09" title={`Buying or selling in ${data.name}`} />
-        <div className="hh-ctagrid">
-          {[data.ctaBuyer, data.ctaSeller].map((c) => (
-            <div className="hh-ctacard" key={c.heading}>
-              <h3>{c.heading}</h3>
-              <p>{c.body}</p>
-              <a href={c.href}>{c.buttonLabel}</a>
+        <div className="h-faq">
+          {data.faqs.map((f, i) => (
+            <div className="h-faq-item" key={i}>
+              <div className="h-faq-q">{f.question}</div>
+              <div className="h-faq-a">{f.answer}</div>
             </div>
           ))}
         </div>
@@ -399,5 +306,64 @@ export function HubDualCta({ data }: { data: HubData }) {
   );
 }
 
-/* Retired with the 2026-09-10 rebuild: HubVip (the VIP strip duplicated the ladder's top rows
-   with less information, and the ladder now marks VIP streets inline). */
+function Sibling({ s }: { s: HubSibling }) {
+  const silent = s.typicalPriceRounded === null;
+  return (
+    <a className="h-sib" href={`/neighbourhoods/${s.slug}`}>
+      <div className="h-sib-n">{s.name}</div>
+      <div className="h-sib-c">{s.character}</div>
+      <div className={`h-sib-p${silent ? ' h-silent' : ''}`}>
+        {silent ? 'price not stated' : `typically ${fullPrice(s.typicalPriceRounded as number)}`}
+      </div>
+    </a>
+  );
+}
+
+export function HubSiblings({ data }: { data: HubData }) {
+  if (data.siblings.length === 0) return null;
+  return (
+    <section className="h-block">
+      <div className="h-wrap">
+        <div className="h-sechead">
+          <span className="h-eyebrow">Nearby</span>
+          <h2>Explore other Milton neighbourhoods</h2>
+        </div>
+        <div className="h-sibgrid">
+          {data.siblings.map((s) => (
+            <Sibling key={s.slug} s={s} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function HubDualCta({ data }: { data: HubData }) {
+  return (
+    <section className="h-block">
+      <div className="h-wrap">
+        <div className="h-dual">
+          <span className="h-eyebrow" style={{ color: 'var(--h-green)' }}>
+            Your move in {data.name}
+          </span>
+          <div className="h-dualgrid" style={{ marginTop: 24 }}>
+            <div className="h-dcard">
+              <h3>{data.ctaBuyer.heading}</h3>
+              <p>{data.ctaBuyer.body}</p>
+              <a className="h-b2" href={data.ctaBuyer.href}>
+                {data.ctaBuyer.buttonLabel} →
+              </a>
+            </div>
+            <div className="h-dcard">
+              <h3>{data.ctaSeller.heading}</h3>
+              <p>{data.ctaSeller.body}</p>
+              <a className="h-b1" href={data.ctaSeller.href}>
+                {data.ctaSeller.buttonLabel} →
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

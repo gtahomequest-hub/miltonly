@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **built and ruled 2026-09-10 on `fix/core-batch`, NOT merged** — the merge is blocked on a red battery, not on item 7. Items 5 and 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Items 5 and 6 **not started**.
 
 **The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
 registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
@@ -16,7 +16,7 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 
 *Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
 
-*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is not started**: the nine funnel surfaces still on `/api/leads`, the three homepage forms, `OffMarketForm`, and the daily-brief sender.*
+*Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 is BUILT AND PROVEN ON PREVIEW, awaiting Core's merge** at `00caa57`: all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
 ---
 
@@ -271,7 +271,7 @@ it against the Town registry is step one, and the build scope follows from it �
 **Done when** the two gates consult the same sources, the registry-filtered population is
 reported, and the streets that already have pages refresh on the cron without a manual run.
 
-## BUILT AND RULED 2026-09-10 on `fix/core-batch`, NOT MERGED
+## DONE 2026-09-10, merged as `8db80da`
 
 Pulled forward into a directly prompted CORE batch ahead of item 5, not self-started. Record in
 `scratchpad/reports/065-core-batch.md` and `scratchpad/reports/066-rulings-and-merges.md`.
@@ -301,7 +301,8 @@ The work is finished; the criterion is not met yet.
       guard, $0.2624 of a $3 cap, DeepSeek only.
       `scripts/create-street-pages-local.ts` — `regen-058-local.ts` could not have done it, it
       skips any slug with no `StreetContent` row, which is all 249
-- [ ] **the merge.** Blocked on the battery, not on this item
+- [x] **merged** as `8db80da` (branch head `dce1b70`, by SHA). Preview `miltonly-j6va7trjl`
+      green, production battery `PASS · 11 checks · 449 pages · 97s`, `prisma migrate status` clean
 - [ ] **THE PROGRAMME IS PAUSED.** The 18 failures are one systemic fault, not 18 bad streets:
       the prompt offers `differentPriorities` on inputs where `dropsDifferentPriorities(input)`
       is true, so the validator expects 2 sections and gets 3, through all 5 attempts with the
@@ -355,9 +356,10 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
 - [x] **Address to anchor**: `505 Farmstead Drive` -> `/streets/farmstead-drive-milton#505`,
       confirmed against the Town's 40,826-address projection; an unknown number degrades to
       the street page rather than linking an id that is not there.
-- [ ] **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
-      `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
-      **Leads owns this.**
+- [x] **Daily-brief consent is sent but not persisted.** Closed by leads Phase 2. There is no
+      generic path any more: `/api/leads` is deleted and the one ingest path persists
+      `consentText` / `consentTimestamp` for every source, phone or no phone. Proven on preview,
+      row `cmtvgsx5b0000dp8f0j217cxp`. Record in `scratchpad/reports/067-leads-phase2.md`.
 - [ ] **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
       `permAdvertise AND status='active'` with no city and no transaction-type filter. Exactly
       right today (448 either way), so latent rather than wrong. Needs a decision.
@@ -419,8 +421,18 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
       from the ruling, stated on the page. Sourcing them is a separate decision
 - [ ] **"Open this weekend" is not in v1.** Open houses are read live and expire; an edition is
       immutable. The live block belongs on the index page as its own piece of work
-- [ ] **No cron is wired.** Monday 06:00 is proposed, not scheduled, so `/market-watch` serves
-      the week of 2026-08-31 until someone runs the runner
+- [x] **The cron is wired, Monday 08:00 America/Toronto**, `0 12 * * 1` and `0 13 * * 1` with
+      an hour guard of 8. **08:00 and not 06:00 because both firings must sit after the 11:00
+      UTC sold sync in both offsets**; the old 10:00/11:00 pair ran before it in EDT and level
+      with it in EST. Any change to the sold sync hour must move these two. Held on the merge:
+      Vercel only invokes crons on production, so nothing fires until Core merges `feat/content`
+- [x] **A published edition can be corrected once, and only with a note that renders on the
+      page.** `generateEdition` throws on a published row unless `correctionNote` is passed;
+      there is no `--force`. The note rides inside `sectionsJson`, no column and no migration.
+      `publishedAt` is preserved on a rewrite and `dateModified` now reads `updatedAt`
+- [ ] **The 2026-08-31 regeneration is NOT run.** Ruled to happen once, only after Core reports
+      the battery green, which it is not. The mechanism is built and green on preview
+      `miltonly-hsq7pkfiz`. The single command is in `HANDOFF-content.md` and report 067
 - [ ] **Up-links from hubs and streets back to the current edition are Core's.** This worktree
       does not make those writes, and without them the archive sits instead of compounding
 - [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.

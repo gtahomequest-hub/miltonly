@@ -2,8 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content
 
-_Last rewritten 2026-09-10, after the guides tier and Market Watch merged to
-main and production was confirmed on the merge SHA._
+_Last rewritten 2026-09-10, after the two edition rulings: the cron hour moved
+to Monday 08:00 Toronto, and a published edition became correctable once._
 
 ## READ THIS FIRST
 
@@ -16,6 +16,26 @@ authority on everything outside this scope.
 
 **MERGED AND LIVE.** Approved by Aamir on preview `miltonly-clft5u5jn` after
 reading all six guides.
+
+## WHERE THIS BRANCH STANDS RIGHT NOW
+
+`feat/content` is at **`69b11e1`**, pushed, **NOT merged**. It sits on
+`9132434`, a clean merge of `origin/main` at `73e94ea`, and
+`git merge-base --is-ancestor origin/main HEAD` passes. Core merges.
+
+Preview **https://miltonly-hsq7pkfiz-gtahomequest-hubs-projects.vercel.app**,
+Ready. `/market-watch`, `/market-watch/2026-08-31` and `/guides` all 200, the
+edition still reads 40 sales, $920,000 and 97.5%. Local gate exit 0, zero
+`P2024`, 20/20 prebuild, 552 static pages. Record:
+`scratchpad/reports/067-content-cron-hour-and-correction.md`.
+
+**THE 2026-08-31 REGENERATION IS NOT RUN, AND THAT IS DELIBERATE.** The ruling
+was to regenerate it only after Core reports the battery green. Core's battery
+is **RED**, two stale hub parsers from `feat/homepage`'s `h-` to `hh-` rename,
+and `fix/core-batch` is held at `2e8dfc0` behind them. The mechanism is built
+and green; the one command to run when Core reports green is in report 067 and
+repeated under "Next expected task" below. **Do not run it before then, and do
+not run it twice.**
 
 | | |
 |---|---|
@@ -125,8 +145,29 @@ regardless. Two attempts, DeepSeek only, no Claude escalation — the Anthropic
 account has no credit and a weekly cron that can escalate is one that can fail
 on a balance.
 
-**AN EDITION IS IMMUTABLE ONCE PUBLISHED.** Both routes render the stored row
-and recompute nothing. Late-reported sales land in a later edition.
+**AN EDITION IS IMMUTABLE ONCE PUBLISHED, WITH ONE NAMED EXCEPTION.** Both
+routes render the stored row and recompute nothing. Late-reported sales land in
+a later edition.
+
+The exception is a **correction**, and the rule now lives in `generateEdition`
+rather than only in the cron route: it reads the existing row and **throws** on
+a published one unless `correctionNote` is passed. There is no `--force`. The
+only way past the gate is the sentence the page will carry, above every figure,
+so overriding the rule and telling the reader are the same act. A draft is
+still freely rewritable.
+
+The note rides **inside `sectionsJson`**, as an optional `correctionNote` on
+`EditionSections`. Not a column: nothing queries or sorts on it, only the
+renderer reads it, and `_prisma_migrations` here is out of step with the live
+database, so a column buys a raw-SQL migration and nothing else. Editions
+written before the field existed lack the key and render nothing. `buildEdition`
+never sets it; it is attached at the write.
+
+**A CORRECTION DOES NOT REPUBLISH.** `publishedAt` is preserved on a rewrite,
+and `dateModified` on both pages now reads `updatedAt`. It read
+`publishedAt ?? updatedAt`, which on a published row always returned
+`publishedAt`, so `updatedAt` was unreachable and a correction would have been
+invisible to a crawler.
 
 **`src/lib/content/neighbourhoodName.ts` is the only source of a neighbourhood
 name in this tier.** `Listing.neighbourhood` and `sold_records.neighbourhood`
@@ -154,14 +195,25 @@ edition is immutable. A stored weekend is a lie by the following Tuesday and a
 live block inside an archived edition breaks the immutability the table exists
 for. The live block belongs on the index page as its own piece of work.
 
-**No cron is wired.** Monday 06:00 is proposed, not scheduled. Nothing publishes
-a second edition until someone runs the runner or wires the cron.
+**The cron is wired, at Monday 08:00 America/Toronto, and the hour is load
+bearing.** `vercel.json` carries `0 12 * * 1` and `0 13 * * 1`; `TARGET_HOUR`
+in the route is `8`; exactly one firing lands on 08:00 in each offset and the
+other is refused on the hour guard.
+
+**It is 08:00 and not 06:00 because both firings must sit AFTER the 11:00 UTC
+sold sync in both offsets.** The old pair, 10:00 and 11:00 UTC, put the EDT
+firing an hour before `/api/sync/sold` and the EST firing level with it, so an
+edition could be built from a DB2 that had not yet taken Monday's delivery.
+**Any change to the sold sync hour must move these two entries.**
 
 ## Open items
 
-1. **Only one edition exists.** `/market-watch` will keep serving the week of
-   2026-08-31 until the next run. Either wire the Monday 06:00 cron or run the
-   runner weekly by hand, and decide which before a reader notices the date.
+1. **Only one edition exists, and the cron has not fired yet.** `/market-watch`
+   keeps serving the week of 2026-08-31 until the first Monday after this
+   merges. The cron is wired (Monday 08:00 Toronto) but it only runs on the
+   production deployment, so nothing fires until Core merges this branch.
+   Watch the first firing: it is the first time the ISO-week idempotency and
+   the hour guard run against a real Monday rather than a dry run.
 2. **Up-links from hubs and streets to the current edition are Core's**
    (ruling 7). This worktree does not make those writes. Without them the
    archive sits instead of compounding.
@@ -187,7 +239,11 @@ a second edition until someone runs the runner or wires the cron.
 ## Notes for the next run
 
 - `scripts/generate-market-edition.ts` is the edition runner. `--publish`,
-  `--skip-paragraph`, `--revalidate=<url>`, `WEEK_OF=YYYY-MM-DD` (a Monday).
+  `--skip-paragraph`, `--revalidate=<url>`, `WEEK_OF=YYYY-MM-DD` (a Monday),
+  and `CORRECTION_NOTE=<one line>` (or `--correction=`; the env var wins and is
+  the one to use on Windows). The runner refuses a note without `--publish`,
+  refuses an em-dash in it, and caps it at 240 characters. **A note is the only
+  way to rewrite a published edition, and it renders on the page.**
   Run it as `npx tsx --tsconfig tsconfig.test.json` — **not** with
   `NODE_OPTIONS=--conditions=react-server`, the same trap the condo runner
   documents. It refuses to start if any provider knob names a Claude model.
@@ -213,6 +269,24 @@ a second edition until someone runs the runner or wires the cron.
 
 ## Next expected task
 
-**None. Do not self-start.** The obvious candidates are the Monday cron (open
-item 1), the live open-house block on the index, and whichever of the two held
-guides the real GSC rows justify.
+**One, and it is gated.** Run the 2026-08-31 correction **once**, and only
+after Core reports the battery green. From `D:\miltonly-content`:
+
+```powershell
+$env:CORRECTION_NOTE = "This edition was regenerated on <date>. Its original figures were built from a sold-date bug, since fixed; the figures below are the corrected ones."
+$env:WEEK_OF = "2026-08-31"
+npx tsx --tsconfig tsconfig.test.json scripts/generate-market-edition.ts --publish --revalidate=https://miltonly.com
+```
+
+Not `NODE_OPTIONS=--conditions=react-server`. Two calls to make at that moment,
+because both depend on what Core's fix turns out to be: the note should name
+the fix in one clause rather than say "a sold-date bug", and `--skip-paragraph`
+decides whether the stored `interpretation`, which was written against the
+wrong figures and cannot stand, is replaced or simply dropped to null. Dropping
+it to null is a normal outcome the page already handles. `--revalidate` needs
+`REVALIDATION_SECRET` in `.env.local` or it logs `skipped` and the page serves
+the old figures from cache.
+
+**Nothing else. Do not self-start.** The remaining candidates are the live
+open-house block on the index and whichever of the two held guides the real GSC
+rows justify.

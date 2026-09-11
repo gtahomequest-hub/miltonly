@@ -3,12 +3,17 @@
 // READ-ONLY. Nothing in this file writes, and nothing in it invents a figure that
 // its source cannot support.
 //
-// WHAT IS DELIBERATELY ABSENT: a price-drop count. The only signal DB1 carries is
+// WHAT IS DELIBERATELY ABSENT: a price-drop count. The only signal DB1 carried was
 // `Listing.lastPriceChangeAt`, which records THAT a price changed and never what it
-// changed from. A drop cannot be told from an increase without a prior price, and
-// there is no prior price stored. Until one is, this file offers no such function,
-// so no surface can accidentally publish "dropped" over a figure that only means
-// "changed". See DEC-PRICE-CHANGE-NOT-DROP in the report.
+// changed from. A drop cannot be told from an increase without a prior price.
+//
+// A prior price is now stored (DEC-PRICE-HISTORY, 2026-09-10: `Listing.priorPrice` and
+// `priceChangedAt`, written by the DB1 sync on every observed change). The function is
+// still absent, and deliberately so: the columns start empty and fill only as listings
+// change price from that date forward, so a count taken today would read 0 across Milton
+// and publish "no reductions" as though it were a measurement. It becomes honest once the
+// corpus has observations, not once the column exists.
+// See DEC-PRICE-CHANGE-NOT-DROP in the report.
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getSoldDb } from "@/lib/db";
@@ -160,62 +165,4 @@ export async function getStreetVideoCount(): Promise<number> {
       OR: [{ videoUrl: { not: null } }, { nightVideoUrl: { not: null } }],
     },
   });
-}
-
-/**
- * Which published streets carry a clip, as a set of slugs.
- *
- * The hub ladder needs to MARK filmed streets, not render them, so it needs membership rather
- * than the card. One query, one set, no poster derivation for streets nobody is showing.
- */
-export async function getVideoStreetSlugs(): Promise<Set<string>> {
-  const rows = await prisma.streetContent.findMany({
-    where: {
-      status: "published",
-      OR: [{ videoUrl: { not: null } }, { nightVideoUrl: { not: null } }],
-    },
-    select: { streetSlug: true },
-  });
-  return new Set(rows.map((r) => r.streetSlug));
-}
-
-/**
- * The filmed streets belonging to one neighbourhood, as cards.
- *
- * Same poster gate as the corpus-wide version: a row whose poster URL cannot be derived is
- * dropped rather than rendered as a grey box.
- */
-export async function getStreetsWithVideoForSlugs(slugs: string[], limit = 8): Promise<StreetVideoCard[]> {
-  if (slugs.length === 0) return [];
-  const rows = await prisma.streetContent.findMany({
-    where: {
-      status: "published",
-      streetSlug: { in: slugs },
-      OR: [{ videoUrl: { not: null } }, { nightVideoUrl: { not: null } }],
-    },
-    select: {
-      streetSlug: true, streetName: true,
-      videoUrl: true, videoCapturedAt: true,
-      nightVideoUrl: true, nightCapturedAt: true,
-    },
-  });
-
-  const cards: StreetVideoCard[] = [];
-  for (const r of rows) {
-    const useDay = r.videoUrl !== null;
-    const url = useDay ? r.videoUrl : r.nightVideoUrl;
-    if (!url) continue;
-    const poster = deriveVideoPoster(url);
-    if (!poster) continue;
-    const capturedAt = useDay ? r.videoCapturedAt : r.nightCapturedAt;
-    cards.push({
-      slug: r.streetSlug,
-      name: resolveStreetName(r.streetSlug, r.streetName).name,
-      poster,
-      variant: useDay ? "day" : "night",
-      capturedAt: capturedAt ? capturedAt.toISOString().slice(0, 10) : null,
-    });
-  }
-  cards.sort((a, b) => (b.capturedAt ?? "").localeCompare(a.capturedAt ?? ""));
-  return cards.slice(0, limit);
 }

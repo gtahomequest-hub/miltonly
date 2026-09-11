@@ -1,20 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+// THIS FORM WROTE TWO LEAD ROWS PER SUBMISSION.
+//
+// The PH3-DUALWRITE block below posted the same visitor to the create route a second time,
+// which was harmless while that route wrote ads.leads. Phase 1 repointed it at public.Lead
+// and the duplicate became a real one: two rows, two confirmation emails, two desk alerts,
+// two CAPI events with different event_ids, for one person filling in one form. It is one
+// write now. The Pixel still fires from here with an event_id the server echoes, which is
+// what the dual write was actually for.
+
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { attributionPayload } from "@/lib/attribution";
+import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 import { generateEventId, readFbCookies, firePixelLead } from "@/lib/pixel-client";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
-// Honeypot field name — must match HONEYPOT_FIELD env on /api/leads.
-const HONEYPOT_FIELD = "company_website";
-
-// Budget brackets (rental variant). Numeric `val` matches /api/leads
-// budgetToInt() parsing → priceRangeMax. $4,500+ uses 6000 as the upper-cap
-// proxy so Aamir's qualification has a meaningful number, not "any".
+// Budget brackets (rental variant). The numeric `val` is read by
+// src/lib/lead/fields.ts budgetToBand() into priceRangeMax. $4,500+ uses 6000 as the
+// upper-cap proxy so Aamir's qualification has a meaningful number, not "any".
 const BUDGET_OPTIONS = [
   { val: "2500", label: "Under $2,500" },
   { val: "3500", label: "$2,500 – $3,500" },
@@ -22,8 +28,8 @@ const BUDGET_OPTIONS = [
   { val: "6000", label: "$4,500+" },
 ];
 
-// Buying timeline (sales variant). String `val` is sent verbatim to /api/leads
-// once the API gains buyer-intent handling in a follow-up commit.
+// Buying timeline (sales variant). The `val` reaches Lead.timeline verbatim and is one of
+// the two inputs the one scoring rule reads.
 const TIMELINE_OPTIONS = [
   { val: "asap", label: "ASAP" },
   { val: "1-3months", label: "Next 1–3 months" },
@@ -37,8 +43,8 @@ const PRE_APPROVED_OPTIONS = [
   { val: "no", label: "Not yet" },
 ];
 
-// Email regex — same shape as /api/leads server-side check. Belt-and-suspenders
-// validation: client catches typos, server still validates on POST.
+// Email regex, the same shape as the server-side check. Belt and suspenders: the client
+// catches typos, the ingest path still validates on POST.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Format-as-you-type North American 10-digit phone mask. Matches OffMarketForm.
@@ -52,9 +58,9 @@ function formatPhone(v: string): string {
 export interface LeadCaptureFormProps {
   /** Form variant. Defaults to "rental" (preserves current behavior). */
   variant?: "rental" | "sales";
-  /** The `source` field sent to /api/leads. Required. Lets parent pages tag the lead provenance. */
+  /** The `source` carried onto the Lead row. Required. Lets parent pages tag the provenance. */
   source: string;
-  /** Rental-variant only. The `homeType` field sent to /api/leads. Defaults to "any". */
+  /** Rental-variant only. The `homeType` token, mapped to Lead.propertyType. Defaults to "any". */
   homeType?: string;
   /** Optional callback fired after successful submission, BEFORE the router.push to thank-you. */
   onSuccess?: (data: { id?: string; redirect?: string }) => void;
@@ -67,7 +73,7 @@ export interface LeadCaptureFormProps {
   /** Optional CTA button label. Defaults differ by variant. */
   ctaLabel?: string;
   /** Sales-variant passthrough. The MLS number of the listing the lead was viewing
-   *  when they submitted. Forwarded as `mlsNumber` in the /api/leads POST body so
+   *  when they submitted. Forwarded as `mlsNumber` on the submission so
    *  the realtor email / SMS can reference the listing. No visual effect. */
   mlsNumber?: string;
   /** When true, the form's internal headline + subheadline are suppressed so
@@ -120,10 +126,8 @@ export default function LeadCaptureForm({
   const isSales = variant === "sales";
 
   // Shared form state across both variants.
-  // firstName is auto-filled per submit as `Lead ${phoneLast4}` so the
-  // existing /api/leads ads-path validation (>=2 chars) passes AND each row
-  // in the DB is identifiable when scrolling through recent leads without
-  // exposing a name field in the form.
+  // The name is auto-filled per submit as `Lead ${phoneLast4}` so each row is identifiable
+  // when scrolling through recent leads without the form asking for a name.
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [honey, setHoney] = useState(""); // honeypot — must stay empty
@@ -136,20 +140,9 @@ export default function LeadCaptureForm({
   const [timeline, setTimeline] = useState<string>("");        // sales only
   const [preApproved, setPreApproved] = useState<string>("");  // sales only
 
-  // Tracking state — captured from URL + persistent attributionPayload().
-  const [tracking, setTracking] = useState({
-    utm_source: "", utm_medium: "", utm_campaign: "", utm_term: "", utm_content: "", gclid: "",
-  });
-  useEffect(() => {
-    setTracking({
-      utm_source: searchParams.get("utm_source") || "",
-      utm_medium: searchParams.get("utm_medium") || "",
-      utm_campaign: searchParams.get("utm_campaign") || "",
-      utm_term: searchParams.get("utm_term") || "",
-      utm_content: searchParams.get("utm_content") || "",
-      gclid: searchParams.get("gclid") || "",
-    });
-  }, [searchParams]);
+  // THE PER-SURFACE UTM READ IS GONE. src/components/AttributionCapture.tsx runs in the root
+  // layout and persists first-touch and last-touch for the whole session; the client helper
+  // sends both. A form reading the current URL only ever saw the last landing page.
 
   const resolvedHeadline =
     headline ?? (isSales ? "Get info on this listing" : "Get matched in 60 seconds");
@@ -194,138 +187,67 @@ export default function LeadCaptureForm({
 
     setSubmitting(true);
 
-    // Renter-variant GA: F1.1/F1.4 fix — fire-after-success moved to the
-    // post-res.ok block below. Hardcoded `source: "rentals/ads"` replaced
-    // with the dynamic `source` prop so the surface-level attribution is
-    // preserved per surface (was lumping every rental form into one
-    // bucket on the audit before this commit).
-
-    // Variant-specific body fields. The rental shape (renter intent +
-    // budget + homeType) is unchanged from Commit 3 to preserve identical
-    // /rentals/ads behavior.
-    const variantBody = isSales
-      ? { intent: "buyer", timeline, preApproved }
-      : { intent: "renter", budget, homeType };
-
+    // The Pixel fires from the browser and the CAPI event fires from the server, both with
+    // this event_id, so Meta de-duplicates the pair into one Lead. That pairing is the whole
+    // reason the old dual write existed; it survives, the second row does not.
+    const eventId = generateEventId();
+    const { fbc, fbp } = readFbCookies();
+    const resolvedValue = leadValue ?? (isSales ? 5000 : 2000);
     try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // Placeholder firstName — `Lead 0199` shape makes leads scannable
-          // in the DB. Real name comes from Aamir's follow-up call.
-          firstName: `Lead ${phoneDigits.slice(-4)}`,
-          phone: phone.trim(),
-          email: trimmedEmail,
-          source,
-          ...variantBody,
-          // Sales-variant only: the listing the lead was viewing. Rental
-          // form passes undefined which JSON.stringify omits — server-side
-          // handler reads mlsNumber from buyer branch only.
-          ...(mlsNumber ? { mlsNumber } : {}),
-          utm_source: tracking.utm_source,
-          utm_medium: tracking.utm_medium,
-          utm_campaign: tracking.utm_campaign,
-          utm_term: tracking.utm_term,
-          utm_content: tracking.utm_content,
-          gclid: tracking.gclid,
-          ...attributionPayload(),
-          [HONEYPOT_FIELD]: honey,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data?.error || `Couldn't submit — please try again or call ${config.realtor.phone}.`);
-        setSubmitting(false);
-        return;
-      }
-
-      // GA4 conversion event — fires AFTER res.ok so failed POSTs never
-      // count as conversions (audit F1.4 fix). Both variants now fire it;
-      // value defaults differ (5000 sale, 2000 rental). The /sales|/rentals
-      // thank-you page fires the same event with the same transaction_id
-      // (lead.id) — GA4 dedupes the pair so only one billable conversion
-      // lands per lead, but the source + intent attribution is captured at
-      // the moment of submit.
-      if (typeof window !== "undefined") {
-        const w = window as unknown as { gtag?: (...a: unknown[]) => void };
-        if (w.gtag) {
-          // Also fire form_submit AFTER success for the rental variant so
-          // existing dashboards keep working without the pre-success fire.
-          if (!isSales) {
-            w.gtag("event", "form_submit", { source, form: "3-field" });
-          }
-          const resolvedValue = leadValue ?? (isSales ? 5000 : 2000);
-          w.gtag("event", "generate_lead", {
-            transaction_id: typeof data?.id === "string" ? data.id : "",
-            source,
-            intent: variantBody.intent,
-            value: resolvedValue,
-            currency: "CAD",
-            listing_mls: mlsNumber || "",
-          });
-        }
-      }
-
-      // PH3-DUALWRITE: This block writes to the new ads.leads pipeline in addition to
-      // the existing flow. The old path remains the source of truth until DEC-PH3-DUALWRITE
-      // is closed out (target: 2026-06-01). After cleanup, remove old flow entirely.
-      // See userMemories for context.
-      try {
-        const eventId = generateEventId();
-        const { fbc, fbp } = readFbCookies();
-        const resolvedValue = leadValue ?? (isSales ? 5000 : 2000);
-        firePixelLead({ eventId, value: resolvedValue, currency: "CAD" });
-
-        const controller = new AbortController();
-        const abortTimer = setTimeout(() => controller.abort(), 2000);
-        try {
-          const dwRes = await fetch("/api/leads/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              source,
-              intent: isSales ? "buy" : "rent",
-              email: trimmedEmail,
-              phone: phone.trim(),
-              ...(isSales ? { timeline } : { budget }),
-              utm_source: tracking.utm_source || undefined,
-              utm_medium: tracking.utm_medium || undefined,
-              utm_campaign: tracking.utm_campaign || undefined,
-              utm_content: tracking.utm_content || undefined,
-              fbclid: searchParams.get("fbclid") || undefined,
-              fbc,
-              fbp,
-              event_id: eventId,
-              event_source_url: typeof window !== "undefined" ? window.location.href : undefined,
-              ...(mlsNumber ? { mlsNumber } : {}),
-            }),
-            signal: controller.signal,
-          });
-          if (!dwRes.ok) {
-            console.warn("[ph3-dualwrite] non-2xx response:", dwRes.status);
-          }
-        } catch (err) {
-          console.warn("[ph3-dualwrite] new pipeline failed or timed out:", err);
-        } finally {
-          clearTimeout(abortTimer);
-        }
-      } catch (err) {
-        // Catch-all so a Pixel / event_id generation failure doesn't break the old flow.
-        console.warn("[ph3-dualwrite] block threw before fetch:", err);
-      }
-
-      const fallback = isSales
-        ? `/sales/thank-you?lid=${data?.id || ""}`
-        : `/rentals/thank-you?lid=${data?.id || ""}`;
-      const redirect = data?.redirect || fallback;
-      if (onSuccess) onSuccess({ id: data?.id, redirect });
-      router.push(redirect);
-    } catch {
-      setError(`Something went wrong. Please call ${REALTOR_FIRST_NAME} directly at ${config.realtor.phone}.`);
-      setSubmitting(false);
+      firePixelLead({ eventId, value: resolvedValue, currency: "CAD" });
+    } catch (err) {
+      // A Pixel failure must not cost the lead.
+      console.warn("[lead-capture] pixel lead failed", err);
     }
+
+    const result = await postLeadDetailed({
+      source,
+      // The vocabulary the value model understands. "buyer" and "renter" both scored 0.
+      intent: isSales ? "buy" : "rent",
+      // A placeholder name, so the row is scannable in the admin list.
+      name: `Lead ${phoneDigits.slice(-4)}`,
+      phone: phone.trim(),
+      email: trimmedEmail,
+      ...(isSales ? { timeline, preApproved } : { budget, homeType }),
+      ...(mlsNumber ? { mlsNumber } : {}),
+      event_id: eventId,
+      fbc,
+      fbp,
+      fbclid: searchParams.get("fbclid") || undefined,
+      honeypot: honey,
+    });
+
+    if (!result.ok) {
+      setError(result.error || `Couldn't submit. Please try again or call ${config.realtor.phone}.`);
+      setSubmitting(false);
+      return;
+    }
+
+    // GA4 conversion event, fired AFTER the write is confirmed so a refused POST never
+    // counts as a conversion. Both variants fire it; the value defaults differ (5000 sale,
+    // 2000 rental). The thank-you page fires the same event with the same transaction_id, and
+    // GA4 de-duplicates the pair, so only one billable conversion lands per lead while the
+    // source and intent attribution is still captured at the moment of submit.
+    if (typeof window !== "undefined") {
+      const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+      if (w.gtag) {
+        if (!isSales) w.gtag("event", "form_submit", { source, form: "3-field" });
+        w.gtag("event", "generate_lead", {
+          transaction_id: result.leadId ?? "",
+          source,
+          intent: isSales ? "buyer" : "renter",
+          value: resolvedValue,
+          currency: "CAD",
+          listing_mls: mlsNumber || "",
+        });
+      }
+    }
+
+    const redirect = isSales
+      ? `/sales/thank-you?lid=${result.leadId ?? ""}`
+      : `/rentals/thank-you?lid=${result.leadId ?? ""}`;
+    if (onSuccess) onSuccess({ id: result.leadId, redirect });
+    router.push(redirect);
   }
 
   // The default white-card chrome includes its own bg + shadow + rounded
@@ -342,8 +264,6 @@ export default function LeadCaptureForm({
     <div id={wrapperId} className={className}>
       <form
         onSubmit={handleSubmit}
-        method="post"
-        action="/api/leads"
         className={formChrome}
         noValidate
       >
@@ -472,10 +392,8 @@ export default function LeadCaptureForm({
           <label>
             Company website
             <input
+              {...honeypotInputProps}
               type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              name={HONEYPOT_FIELD}
               value={honey}
               onChange={(e) => setHoney(e.target.value)}
             />

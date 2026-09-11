@@ -119,66 +119,6 @@ async function siblingsFor(slug: string, profile: HubProfile): Promise<HubSiblin
   });
 }
 
-// ── the derived-fact glance, the real ladder, and the video rung ─────────────────────────────
-import { buildLadder } from "@/lib/hubStreetLadder";
-import { schoolsInHub } from "@/lib/hubSchools";
-import { getVideoStreetSlugs, getStreetsWithVideoForSlugs } from "@/lib/homeSignals";
-import type { HubFact } from "@/components/hub/types";
-
-/** The mandatory window+sample disclosure for the hub's own typical. */
-function hubTypicalBasis(count: number | null): string | null {
-  if (count === null || count <= 0) return null;
-  return `across ${count} ${count === 1 ? "sale" : "sales"} in the last 12 months`;
-}
-
-/**
- * THE GLANCE PANEL, DERIVED.
- *
- * Every entry is computed from data and carries the basis it was computed over. A fact whose
- * source is empty is DROPPED, never softened into a sentence: a hub with no school inside its
- * boundary says nothing about schools rather than saying "options nearby", which was true of
- * all of Milton and therefore told a reader nothing about anywhere.
- */
-function buildFacts(input: {
-  typical: number | null;
-  typicalBasis: string | null;
-  salesCount: number | null;
-  publishedStreets: number;
-  filmedStreets: number;
-  schoolCount: number;
-  dominantType: string | null;
-  activeCount: number | null;
-}): HubFact[] {
-  const f: HubFact[] = [];
-  if (input.typical !== null && input.typicalBasis) {
-    f.push({ key: "typical", value: `$${compactPrice(input.typical)}`, label: "typical sale price", basis: input.typicalBasis });
-  } else if (input.salesCount !== null) {
-    // Suppression is itself a fact about the market, and a more interesting one than a price.
-    f.push({
-      key: "typical",
-      value: String(input.salesCount),
-      label: input.salesCount === 1 ? "sale in 12 months" : "sales in 12 months",
-      basis: "below the publication floor of five, so no price is stated",
-    });
-  }
-  if (input.publishedStreets > 0) {
-    f.push({ key: "pages", value: String(input.publishedStreets), label: input.publishedStreets === 1 ? "street with a page" : "streets with a page", basis: "published street guides in this neighbourhood", href: "/streets" });
-  }
-  if (input.filmedStreets > 0) {
-    f.push({ key: "video", value: String(input.filmedStreets), label: input.filmedStreets === 1 ? "street filmed" : "streets filmed", basis: "driven end to end, day or overnight" });
-  }
-  if (input.schoolCount > 0) {
-    f.push({ key: "schools", value: String(input.schoolCount), label: input.schoolCount === 1 ? "school inside the boundary" : "schools inside the boundary", basis: "position against the Town of Milton neighbourhood boundary", href: "/schools" });
-  }
-  if (input.activeCount !== null && input.activeCount > 0) {
-    f.push({ key: "active", value: String(input.activeCount), label: "on the market today", basis: "advertised active listings in this neighbourhood", href: "/listings" });
-  }
-  if (input.dominantType) {
-    f.push({ key: "stock", value: input.dominantType, label: "dominant housing stock", basis: "by share of sales over the last 12 months" });
-  }
-  return f;
-}
-
 export async function getHubData(slug: string): Promise<HubData | null> {
   const content = await prisma.hubContent.findUnique({ where: { neighbourhoodSlug: slug } });
   if (!content || content.status !== "published") return null;
@@ -252,52 +192,23 @@ export async function getHubData(slug: string): Promise<HubData | null> {
   // no top-up with surfaced-unpublished — ladders SHRINK where published inventory < 12 slots. That
   // is the honest null-not-zero outcome; short states are framed deliberately in the HubStreets view.
   const ps = (input?.projectedStreets ?? []).filter((s) => publishedStreetSlugs.has(s.slug));
-  const ladderSource = [...ps]
+  const streets: HubStreetCard[] = [...ps]
     .sort((a, b) => (b.isVip ? 1 : 0) - (a.isVip ? 1 : 0) || b.soldCount12mo - a.soldCount12mo)
-    .slice(0, HUB_STREET_LADDER_CAP);
-
-  // RUNG ONE and RUNG TWO share one video read. The strip shows the hood's filmed streets;
-  // the ladder marks them, so the two sections cannot disagree about which streets are filmed.
-  const videoSlugs = await getVideoStreetSlugs();
-  const hoodFilmed = Array.from(publishedStreetSlugs).filter((sl) => videoSlugs.has(sl));
-  const videoStreets = await getStreetsWithVideoForSlugs(hoodFilmed, 8);
-
-  // THE LADDER CARRIES THE STREET PAGE'S OWN NUMBERS (ruling, 2026-09-10). It used to publish
-  // a sold count and a hardcoded null price, so the hub and the street page could not disagree
-  // only because one of them said nothing.
-  const ladder = await buildLadder(
-    ladderSource.map((s) => ({ slug: s.slug, name: s.displayName, soldCount12mo: s.soldCount12mo, isVip: s.isVip })),
-    videoSlugs,
-  );
-  const streets: HubStreetCard[] = ladder.map((l) => ({
-    name: l.name,
-    slug: l.slug,
-    soldCount: l.soldCount12mo,
-    typicalPriceRounded: l.typical,
-    basis: l.basis,
-    hasVideo: l.hasVideo,
-    signal: l.isVip ? "VIP street" : undefined,
-  }));
+    .slice(0, HUB_STREET_LADDER_CAP)
+    .map((s) => ({ name: s.displayName, slug: s.slug, soldCount: s.soldCount12mo, typicalPriceRounded: null, signal: s.isVip ? "VIP street" : undefined }));
   const vipStreets: HubVipStreet[] =
     profile === "urban"
       ? ps.filter((s) => s.isVip).sort((a, b) => b.soldCount12mo - a.soldCount12mo).slice(0, 6).map((s) => ({ name: s.displayName, slug: s.slug, soldCount: s.soldCount12mo }))
       : [];
 
-  // NOTHING STATIC (ruling). `suits`, `commute` and `schools` were per-profile constants
-  // dressed as neighbourhood facts; every one is now derived or absent.
-  const hubSchools = schoolsInHub(slug);
-  const typicalBasis = hubTypicalBasis(stats.typicalPrice !== null ? stats.sold12mo : null);
+  const priceRange = agg?.priceRange ? `$${compactPrice(agg.priceRange.low)} – $${compactPrice(agg.priceRange.high)}` : null;
   const atAGlance: HubAtAGlance = {
-    facts: buildFacts({
-      typical: stats.typicalPrice,
-      typicalBasis,
-      salesCount: stats.sold12mo,
-      publishedStreets: publishedStreetCount,
-      filmedStreets: hoodFilmed.length,
-      schoolCount: hubSchools.length,
-      dominantType: input ? dominantTypeFrom(input.byType) : null,
-      activeCount: stats.onMarket,
-    }),
+    priceRange,
+    dominantType: input ? dominantTypeFrom(input.byType) : profile === "rural" ? "Detached & rural" : "Detached & townhomes",
+    // STATIC descriptive copy (no live source) — honest, Milton-wide, not fabricated figures.
+    suits: profile === "rural" ? ["Acreage & privacy seekers", "Move-up buyers"] : ["Families", "Move-up buyers", "First-time buyers"],
+    commute: "Milton GO + Highway 401 access",
+    schools: "Public & Catholic options nearby — see school pages",
   };
 
   const milton = await buildMiltonWideContext().catch(() => null);
@@ -334,9 +245,6 @@ export async function getHubData(slug: string): Promise<HubData | null> {
     marketCompare,
     commentary,
     streets,
-    videoStreets,
-    schools: hubSchools,
-    typicalBasis,
     streetCount: publishedStreetCount, // published guides in this hub (ladder is published-only)
     hasStreetOverflow,
     vipStreets,

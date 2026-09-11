@@ -2,154 +2,179 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-10, after Phase 1 merged to main and production was verified on it._
+_Last rewritten 2026-09-10, after Phase 2 was built, proven on preview, and pushed for the gate._
 
 ## READ THIS FIRST
 
-**Phase 1 is MERGED and live.** Merged as **`3461e13`**, a two-parent merge
-(`f6bbc92` + `5f5f782`) built with `commit-tree`. Production serves it on the apex and the battery
-is **`PASS · 10 checks · 444 pages · 63s`** at the full SHA
-`3461e1392b8197df4c7ded75cad8a9f13b4114b0`. The battery is 10 checks now, not 9 — the homepage
-worktree added `scripts/verify/checks/homepage.mjs`.
+**Phase 2 is BUILT, PROVEN AND PUSHED. IT IS NOT MERGED.** The tip of `feat/leads` sits on
+**`00caa57`**, a real `git merge` of `origin/main` (`73e94ea`) into the Phase 2 commits `e46ae49`,
+`39bcfe1` and `0a1d08b`, with docs and one test fix on top. The tip is **`f9b7ea5`**, preview
+**`miltonly-psc39y5bl`**. Core merges. **Main moved three times while this was building** — check
+`git merge-base --is-ancestor origin/main HEAD` again before you touch it.
 
-**Two merges were needed, not one.** `origin/main` moved twice while this branch was building:
-first the homepage tier (`e2d8476`), then the guides and Market Watch tier (`f6bbc92`). The second
-merge conflicted on exactly one thing, `package.json`'s prebuild chain, and **the resolution was a
-union, not "keep theirs"**: content had added `test-content-validator`, this branch had added
-`test-lead-guards`, and 19 were common. Taking either side whole would have silently dropped a
-gate. **21 prebuild tests run now.** Header, footer and the guides came across untouched.
-
-**`prisma migrate deploy` IS BLOCKED FOR EVERYONE, AND IT IS NOT THIS BRANCH'S TO FIX.** The
-database has `20260910120000_listing_price_history` in `_prisma_migrations`; main carries
-`20260910120000_market_edition`, which the ledger has never heard of. **The `MarketEdition` table
-EXISTS**, so this is a migration folder renamed after it was applied, not a missing table. Whoever
-renamed it needs to reconcile the ledger (`prisma migrate resolve`). Until then `migrate deploy`
-will try to apply `market_edition` onto a table that already exists and fail. This branch needs no
-further migration, which is why the merge went ahead.
-
-**`DIRECT_DATABASE_URL` is now set in Vercel Production and Preview**, pointing at
-`ep-patient-paper-aebh7f93.c-2.us-east-2.aws.neon.tech` — DB1's unpooled host, which is
-`DATABASE_URL` with `-pooler` removed. It had never existed anywhere, and **every `NEON_*` variable
-points at the sold/analytics project instead**, so the obvious guess would run migrations against
-the wrong database. Locally, derive it the same way:
+**THE BATTERY FAILS ON THE FINAL PREVIEW, AND IT FAILS IDENTICALLY ON PRODUCTION.** Two
+assertions, both from the hub tier that landed on main between the merges, and the battery is 11
+checks now because that tier added `hub-intents.mjs`:
 
 ```
-export DATABASE_URL="$(grep -E '^DATABASE_URL=' .env.local | sed -E 's/^[^=]+=//; s/^"//; s/"$//')"
-export DIRECT_DATABASE_URL="$(printf '%s' "$DATABASE_URL" | sed 's/-pooler//')"
-npx prisma migrate status   # read the host it prints, every time, before deploying anything
+[hub-meta]    hero stat tiles parsed on every hub: 0,  expected 22
+[hub-intents] hubs rendering no intent squares:   22,  expected 0
 ```
 
-**THE HOMEPAGE SHIPPED A SECOND DAILY-BRIEF FORM ON A DIFFERENT PATH.**
-`src/components/home/DailyBrief.tsx` posts to **`/api/leads`** with source **`daily-brief`** — the
-same source tag `DailyBriefSignup` on `/sell` uses, through the old monolith. Its comment says
-"Leads owns the model (ruling, 2026-09-10)", so this was deliberate and left for this worktree. The
-consequence today: **two code paths write the same source, and only one of them leaves a watch**.
-A homepage brief signup gets no honeypot, no `env` tag, no source-specific confirmation and **no
-`SavedSearch` of kind `brief`**, so the brief sender will not find those people. **This is the first
-item of Phase 2.**
+`EXPECT_SHA=73e94ea… BASE=https://miltonly.com` gives `FAIL · 11 checks · 449 pages · 94s`, the
+same two with the same numbers. Main's own `HANDOFF.md` calls them "two stale parsers". **Nothing
+in this branch touches a hub page, a hub parser or a stat tile.** Isolated and pre-existing; the
+run continued on that basis. At `39bcfe1`, before that tier merged in, this branch's preview was
+**`PASS · 10 checks · 449 pages · 67s`**.
+
+**THE ONE INGRESS IS REAL NOW.** `/api/leads` (1,201 lines, four branches),
+`/api/off-market-leads` and `/api/exclusive-inquiry` are **deleted**. Every one of the twenty
+submission points in `src/` reaches `/api/leads/create` through `src/lib/postLeadClient.ts`, and
+`scripts/test-lead-forms.ts` walks the whole tree at prebuild and fails the build on a lead
+ingress named anywhere else. **22 prebuild tests run now.**
+
+**THE FOUR LIVE DEFECTS THE MIGRATION FOUND**, all fixed, all in
+`scratchpad/reports/067-leads-phase2.md` with the evidence:
+
+1. **`LeadCaptureForm` wrote TWO `Lead` rows per submission.** Its `PH3-DUALWRITE` block posted
+   the same visitor to `/api/leads/create` a second time — harmless while that route wrote
+   `ads.leads`, a duplicate the moment **Phase 1** repointed it at `public.Lead`. Two rows, two
+   confirmations, two desk alerts, two CAPI events, one person. **Some of the 15 production rows
+   are these pairs.**
+2. **The Phase 1 ingest path dropped all six last-touch UTM fields and `firstVisitAt`**, which
+   the client helper had always sent. Every lead it wrote credited the first ad click.
+3. **Phase 1 dropped the Twilio SMS to Aamir** that all four monolith branches sent. Back now,
+   gated on `isCountable(env)` like the ops alert.
+4. **Eight surfaces rendered a confirmation over a refused submission.** `RentalsClient`'s
+   `submitLead` returned `true` for a 429 and a 500.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `main` | **`3461e13`** — two parents, `f6bbc92` (main) and `5f5f782` (feat/leads) |
-| production | **`miltonly-3bxdbhb55`**, serving `3461e13`, confirmed on the apex |
-| battery on production | **`PASS · 10 checks · 444 pages · 63s`** at the full SHA |
-| battery on preview | **`PASS · 10 checks · 444 pages · 59s`**, `miltonly-822kndpq3` at `5f5f782` |
-| local build | exit 0, zero `P2024`, **21/21 prebuild**, 547 static pages |
-| `public.Lead` | **15 production rows**, 9 preview rows from the proof |
+| branch | `feat/leads`, on the merge **`00caa57`** of `origin/main` `73e94ea`, rebuilt, pushed |
+| preview | **`miltonly-1lw66pqlc`** at `39bcfe1`, alias `miltonly-git-feat-leads` |
+| battery on preview | **`PASS · 10 checks · 449 pages · 67s`** |
+| local build after the merge | exit 0, zero `P2024`, **22/22 prebuild**, 549 static pages |
+| prebuild, lead layer | `[lead-guards] 171 assertions` · `[lead-forms] 105 assertions` |
+| `public.Lead` | **15 production rows** (untouched), 25 preview |
 | `SavedSearch` | 9 rows, all `env=preview`. **Production watches: 0** |
-| `ads.leads` | 1 row, not written by anything, kept as history |
-| Phase 0, Phase 1 | **done**. Phase 2 not started |
+| ingress routes | **one** |
+| Phase 0, 1, 2 | 0 and 1 merged. **2 built and proven, awaiting merge** |
 
-## The production proof, and what it cost
+## The new shape
 
-One real-shaped submission through the `/sell` daily-brief form, at
-`https://miltonly.com/sell`. The honeypot field renders on the live page (`company_website` is in
-the served markup), which is how you can tell the form on production is the new one.
+```
+a form  →  postLeadDetailed()  →  POST /api/leads/create  →  ingestLead()
+           src/lib/postLeadClient.ts                          src/lib/lead/ingest.ts
+                                                                ├─ guards.ts    honeypot, origin, rate limit
+                                                                ├─ fields.ts    NEW: every form→column mapping
+                                                                ├─ score.ts     NEW: the one scoring rule
+                                                                ├─ intent.ts    the value vocabulary
+                                                                ├─ notify.ts    confirmation + ops alert
+                                                                ├─ sms.ts       Twilio, countable env only
+                                                                └─ savedSearch.ts  street | hub | price-band | brief
 
-| | |
-|---|---|
-| response | `200 {"ok":true,"lead_id":"cmtvehhuo0000mmbtri67f37p","env":"production"}` |
-| row | `source=daily-brief`, `intent=buy`, `env=production`, **`landingPage=/sell`**, `score=cold` |
-| watch | `cmtvehhyl0001mmbt83wiqc8q`, `kind=brief`, `env=production` |
-| confirmation | "Your Milton daily brief starts tomorrow", Gmail id **`1a08aeb735a5831c`**, 10:44:40Z |
-| ops alert | "New lead — daily-brief", **no `[preview]` prefix**, `env: production`, CAD 200, Gmail id **`1a08aeb7425f8738`** |
+a brief watch  →  /api/brief/send (cron 15 13 * * 1-5)  →  src/lib/brief/
+                                                             ├─ window.ts     the local-day period
+                                                             ├─ compose.ts    the reads and the copy
+                                                             └─ unsubscribe.ts  HMAC, fails closed
+                  /api/brief/unsubscribe  ← the signed one-click link
+```
 
-**The Resend ids are deliberately not available for a production lead.** The route returns
-`diagnostics` — which is where the confirmation and ops-alert ids come from — **only for
-non-production rows**, so a real lead never carries email ids in an HTTP response. The Gmail message
-ids above are the production-side evidence. If Resend ids are wanted for production leads, that is a
-logging change, not a response change.
+## The rulings Phase 2 made
 
-**Both the row and the watch were deleted.** Deleting the lead and leaving the watch would have made
-a test address the only production brief subscriber, and the brief sender is a later step that would
-have found it sitting there. `production Lead rows: 15`, `production watches: 0`.
-
-## What Phase 1 shipped
-
-One model: `public.Lead`, with the single `ads.leads` row copied across as
-`adsleads:ads-rentals-lp` and `createLead` deleted. One path: `/api/leads/create` →
-`src/lib/lead/ingest.ts`, with a honeypot that answers **200** rather than 400, per-IP (5/10 min)
-and per-email (3/1 h) rate limits that **fail open**, and an origin check that refuses suffix
-spoofing. Every guard runs before the write and the prebuild test asserts that by source position.
-Nine surfaces on one client helper. `normalizeIntent` maps the fourteen spellings the surfaces send
-onto the three tokens `estimateLeadValue` understands — **every lead this site ever produced had
-been shipping a value of 0 to Meta**. Source-specific confirmation copy. A `SavedSearch` for every
-alert surface, created only when there is a criterion to watch. `/api/alerts/match` fixed on all
-three counts that had kept it silent (no cron entry, POST-only against GET crons, a verified-user
-gate that excluded every lead-created row). `public.lead_daily_by_page` and
-`scripts/leads-report.ts` for leads per page — a count, not a rate. And `Lead.env` plus
-`SavedSearch.env`, because preview and production share one database and tagging the lead without
-tagging the watch it creates is half a guard.
-
-Full detail, including the nine-surface proof table with every confirmation and ops-alert id, is in
-the git history of this file at `fbbb7d9`.
+- **A phone-only lead is promised a call and nothing by email.** `OffMarketForm` captures no
+  address, so: no confirmation, no watch, and the desk alert plus the SMS to Aamir ARE the
+  delivery. Stated on the card.
+- **`homepage-newsletter` leaves no watch.** `PreFooterCTA` promises a brief "Sundays at 8am"
+  and the sender is Monday to Friday. Mapping it to a `brief` watch would mail five times a
+  week. **See the open item below.**
+- **`alert` and `new-match-alert` make `price-band` watches**, the first this codebase has ever
+  produced. The band is the only criterion those surfaces capture.
+- **A `brief` watch keys on the address alone**, not on its street, so a subscriber who signs up
+  from two pages gets one brief. The street is still stored, because it personalises the edition.
+- **Monday's brief covers the weekend.** Sending Mon–Fri and reporting a literal "yesterday"
+  would mean Saturday was reported to nobody, ever.
 
 ## Traps
 
-- **`prisma migrate status` before every migration, and read the host.** See above.
-- **Preview writes to production data.** Rows and watches are tagged, so they are excluded from
-  counts and from sends, but they are real rows in the real table.
-- **Vercel env vars bind at deploy time.** A newly added variable needs a redeploy, and
-  `vercel redeploy` gives a new URL.
-- **`LEAD_ALERTS_ON_PREVIEW=true`** (Preview only) makes preview leads raise a prefixed ops alert so
-  the path can be proven. It cannot make a row countable.
-- **`CRON_SECRET` is in Preview** so the alert job can be triggered there manually. Vercel only
-  schedules crons on production.
-- **The rate limit is real on preview**: six submissions from one IP inside ten minutes refuses the
-  sixth, which makes a nine-surface proof a two-batch job.
-- **`scripts/migrate-*.ts` is gitignored** (`.gitignore:84`).
-- **Report numbers 062, 063 and 064 exist three times over** — leads, homepage and content each
-  numbered independently. The filenames differ so nothing collided. Renaming committed reports would
-  break the references that already point at them; pick 065+ next.
-- **`git commit-tree` DOES NOT MERGE — it snapshots.** Both the two-parent merges in this
-  session were built with it, and the second one clobbered the content worktree's docs
-  (`4b55fc6`), restored in `02793f1`. The content worktree had done the same to this branch an
-  hour earlier (`5ee703e`). The rule: **re-check `git merge-base --is-ancestor origin/main HEAD`
-  after the last fetch, and STOP if it fails.** I printed "MAIN MOVED" and pushed anyway; the
-  two-parent shape made the result look merged while the tree had dropped their work. If main has
-  moved, merge it into the branch first, then build the commit from that tree.
-- **The `name-prose` prebuild guard reads string literals**, not just page copy. It failed a build
-  on an em-dash inside a `notes:` template string.
+- **`git commit-tree` DOES NOT MERGE — it snapshots.** Two of the merges in this project were
+  built with it and one clobbered another worktree's docs. Re-check
+  `git merge-base --is-ancestor origin/main HEAD` after the last fetch and **STOP if it fails**;
+  merge main into the branch first, then build from that tree. This handoff's `00caa57` IS a
+  real `git merge`, so a fast-forward or an ordinary merge is all Core needs.
+- **THE PREBUILD RATE-LIMIT TEST WAS FLAKY ON VERCEL AND IS FIXED HERE.** It asserted the
+  in-memory fallback's exact "5 per window" on the belief that no Redis is configured under
+  `tsx`. **The Upstash variables ARE set on a Vercel build**, so it ran against the real shared
+  store, with a 10-minute sliding window and a key drawn at random from 200 addresses. Two builds
+  inside ten minutes collided on one and a preview failed with `expected 5, got 3` on code that
+  passed locally. This was Phase 1's assertion and it has been on `main` since. The key now
+  carries per-run entropy and the assertion states what holds of both stores.
+- **The rate limit is real on preview and a REFUSED call still spends a token.** 5 per IP per 10
+  minutes, sliding. A twenty-surface proof took four runs and collected eleven `429`s. Wait a
+  clear ten minutes with **zero** requests between batches, not five.
+- **Preview writes to production data.** Rows and watches are tagged and excluded from every
+  count and every send, but they are real rows in the real table.
+- **`prisma migrate deploy` IS STILL BLOCKED FOR EVERYONE, AND IT IS NOT THIS BRANCH'S TO FIX.**
+  `20260910120000_market_edition` is in the repo and has never been in `_prisma_migrations`,
+  while the `MarketEdition` table exists — a folder renamed after it was applied. Whoever renamed
+  it runs `prisma migrate resolve`. **This branch needs no migration.**
+- **`DIRECT_DATABASE_URL` is `DATABASE_URL` with `-pooler` removed**
+  (`ep-patient-paper-aebh7f93.c-2.us-east-2.aws.neon.tech`). Every `NEON_*` variable points at
+  the sold/analytics project instead, so the obvious guess runs migrations against the wrong
+  database. Run `npx prisma migrate status` and read the host it prints, every time.
+- **Vercel env vars bind at deploy time.** A new variable needs a redeploy, and `vercel redeploy`
+  gives a new URL.
+- **`LEAD_ALERTS_ON_PREVIEW=true`** (Preview only) makes preview leads raise a prefixed ops
+  alert. It cannot make a row countable.
+- **`CRON_SECRET` is in Preview**, which is what let the brief be triggered there by hand. Vercel
+  only schedules crons on production.
+- **`scripts/migrate-*.ts` is gitignored** (`.gitignore:84`) — the place to put a throwaway
+  script that needs `@prisma/client`. A script outside the repo cannot resolve it.
+- **The `name-prose` prebuild guard reads string literals**, not just page copy.
+- **Report numbers 062, 063 and 064 exist three times over** across the worktrees. 065 and 066
+  are the hub worktree's. This one is **067**. Pick 068+ next.
 
-## Phase 2, on the next prompt
+## The daily brief, in one screen
 
-1. **`src/components/home/DailyBrief.tsx`** — the second daily-brief path, described above. Same
-   source tag, no watch, no env tag. Fix this first or the brief sender ships with a hole.
-2. **The nine funnel surfaces still on `/api/leads`**: `LeadCaptureForm`, `UnlockModal`,
-   `HomeValuationCard`, `MarketPulseUnlockCard`, `AamirTrustCard`, `ListingDetailClient`,
-   `ListingExtras`, `ListingsCardsClient`, `RentalsClient`. They carry thank-you redirects, CASL
-   consent snapshots, the market-pulse stats packet and GA4 contracts, which is why they were not
-   moved in Phase 1.
-3. **The three homepage forms** — `PreFooterCTA`, `PersonaRouter`, `SoldOnMyStreet`. Their
-   submission is this worktree's now. `PreFooterCTA` is the surface that produced the eight
-   questionable `homepage-newsletter` rows and it still has no honeypot.
-4. **`OffMarketForm`** and `/api/off-market-leads`. It captures a phone and no email, so folding it
-   in means deciding what a phone-only lead is promised.
-5. **The daily-brief sender.** `kind: "brief"` is deliberately excluded from `/api/alerts/match` —
-   a digest of what changed is a different query from a match notification — and the signup copy
-   promises only that the brief starts tomorrow.
+Cron `15 13 * * 1-5` (9:15am ET), after `/api/sync/sold` and `compute-sold-stats` so "yesterday"
+is not half-filled. Env-scoped, one email per address, `lastAlertAt` stamped so a retry cannot
+repeat an edition. The real preview edition:
 
-Still open from report 062 and untouched by Phase 1: **G10, the street-grain valuation figure on
-`/sell`**, and the fact that the MOD-58 lead admin columns still have no UI.
+```
+Milton yesterday · 2026-09-09
+
+- 19 homes came to market, asking a typical $1,040,000.
+- 1 home sold. Too few to publish a typical price.
+- 6 listings changed price.
+
+On Zuest Crescent: a home sold.  <street page link>
+```
+
+**The second line is the discipline.** One sale is below `K_ANON_PRICE`, so the count is
+published, the price is not, and the clause says which. **"Changed price", never "dropped"** —
+`lastPriceChangeAt` cannot tell a cut from a rise (DEC-PRICE-CHANGE-NOT-DROP), and the prebuild
+gate fails on the word. **An edition with nothing in it is not sent**, because the signup
+promised only what changed.
+
+Proof: Resend `a9fd6b36…` / Gmail `1a08b28224921c22`, and `639e5fee…` / `1a08b3193141894c`. A
+second trigger answered `sent=0 skipped=1 "already sent this edition"`. A forged unsubscribe
+token got 400; the signed one got 200 and flipped `alertEnabled` to false. **All test
+subscribers were deleted, including Phase 1's leftover. Brief watches: 0.**
+
+## What is open
+
+1. **The Sunday brief `PreFooterCTA` promises has no sender.** Either its copy becomes the daily
+   brief and its source becomes `daily-brief` (homepage worktree owns the copy), or a weekly
+   sender gets built. Today those subscribers get a confirmation and nothing after it.
+2. **`BRIEF_UNSUBSCRIBE_SECRET` is not set anywhere.** The link falls back to `CRON_SECRET`,
+   which is set in Production and Preview, so the brief works as shipped. Set the dedicated
+   variable if the two should not share a key. **Nothing is needed before merge.**
+3. **The brief cron will fire on the first production deploy after merge.** Production brief
+   watches are **0**, so its first run sends nothing. The first real subscriber makes it live.
+4. **Eight questionable `homepage-newsletter` rows** predate that surface having a honeypot.
+   Still in the table, untouched.
+5. **Nine preview watches** remain, matching Phase 1's posture. Tagged, so no cron reads them.
+6. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
+   MOD-58 lead admin columns with no UI.
