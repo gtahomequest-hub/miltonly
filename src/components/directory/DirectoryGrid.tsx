@@ -8,7 +8,7 @@
 // unavailable letters disabled, single-select chip with toggle-off, live
 // result count) — only the styling changed.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { DirectoryGridProps, DirectoryItem } from "./types";
 
@@ -63,6 +63,14 @@ export default function DirectoryGrid({
   const [query, setQuery] = useState("");
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+
+  // `?letter=B` pre-selects a letter. The mega menu's A to Z panel links here per letter;
+  // read once on mount from the location rather than useSearchParams, which would put a
+  // Suspense boundary between this grid and its server-rendered items for no gain.
+  useEffect(() => {
+    const l = new URLSearchParams(window.location.search).get("letter")?.toUpperCase();
+    if (l && /^[A-Z]$/.test(l)) setActiveLetter(l);
+  }, []);
 
   const availableLetters = useMemo(
     () => new Set(items.map((s) => s.name.charAt(0).toUpperCase())),

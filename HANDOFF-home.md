@@ -1,153 +1,164 @@
-HOME · D:\miltonly-home · feat/homepage
+HOME · D:\miltonly-home · feat/menu-v2
 
-# Handoff — homepage worktree
+# Handoff, homepage worktree
 
-_Last rewritten 2026-09-10, after `feat/homepage` merged to main and production was verified._
+_Last rewritten 2026-09-11, MH-002: the mega menu rebuilt on `feat/menu-v2`, previewed, battery green at 14 checks, NOT merged._
 
 ## READ THIS FIRST
 
-**MERGED AND LIVE.** `feat/homepage` merged to main as **`a9546a7`**, approved by Aamir after
-preview review of `1f495e8` (`miltonly-nlr4rvlrr`). Battery on production at `a9546a7`:
-**`PASS · 10 checks · 444 pages · 68s`**, exit 0.
+**`feat/menu-v2` IS PREVIEWED AND GREEN, AND IS NOT MERGED.** Head `266f0f4`, which is the
+menu commit `10536c6` plus a merge of `origin/main` at `854ffd3` (MC-006 landed there as
+`339293d`). Preview alias `https://miltonly-git-feat-menu-v2-gtahomequest-hubs-projects.vercel.app`.
+Battery on that deployment (`miltonly-p3vklhhp6`, serving `266f0f4`): **`PASS · 14 checks · 456 pages · 187s`**, exit 0.
+The brief was "stop; no merge". Core merges the SHA, never the branch name.
 
-**THE CODE SHA IS `a9546a7`. Main's tip is a documentation commit and always will be.** This
-handoff records the merge, so it cannot exist before the merge; committing it moves main, which
-redeploys production, which changes the SHA the handoff would have to name. That is a chase with
-no end, so this file names the CODE merge and stops. Every commit on main after `a9546a7` in this
-sequence touches `HANDOFF-home.md` alone and changes no rendered byte — `git diff a9546a7..main
--- src scripts` is empty. Verify that before assuming a docs commit is inert.
+**THE MENU IS ALIVE ON EVERY PAGE NOW.** It used to be alive on the homepage only. Twenty-one
+server pages render `<SiteNavLive>` (`src/components/nav/SiteNavLive.tsx`), which awaits
+`getMegaLive()` and hands the result to `<SiteNav>`; three client pages (`HomePage`,
+`ValueLanding`, `BuildingAttributesPage`) are handed `live` by their server parents. A page that
+renders `<SiteNav>` with no `live` gets the rails and the search, which is still a complete,
+crawlable menu. `getMegaLive()` is memoised five minutes per instance, the same TTL and the same
+dropped-rejection shape as `buildMiltonWideContext`.
 
-**Production has been verified green on each of them**: `a9546a7`
-(`PASS · 10 checks · 444 pages · 68s`), `d94e6b5` (`73s`), and the tip. Re-run
-`EXPECT_SHA=$(git rev-parse origin/main) BASE=https://miltonly.com node scripts/verify/run.mjs`
-if you need it confirmed at this instant rather than at close-out.
-
-**The merge was made with plumbing, not `git merge`, and the shape is identical.** `main` is
-checked out in another worktree (`D:\miltonly`), so it cannot be checked out here. The commit
-was created as `git commit-tree feat/homepage^{tree} -p origin/main -p feat/homepage` and
-pushed to `main`: a two-parent merge commit whose tree is byte-identical to the reviewed branch
-(`git diff --stat a9546a7 feat/homepage` is empty). `origin/main` was merged INTO the branch
-and the build gate run BEFORE that, so nothing untested reached main. **`D:\miltonly`'s local
-`main` is now stale and needs a `git pull` before anyone works there.**
-
-**Report numbering now collides across worktrees.** The leads worktree used `062` and `063` on
-the same days this one did. Both sets are in the repo under different slugs
-(`062-homepage-gate-a.md` / `062-leads-gate-a.md`). Quote the full filename, never the number.
+**MH-001 (`fix/menu-hotfix` at `339293d`) is on main.** Its report and handoff state are in
+`scratchpad/reports/MH-001-menu-hotfix-merge-main.md` and this file's git history.
 
 ## Scope of this worktree
 
-`D:\miltonly-home` on `feat/homepage` owns **the homepage, the header with its mega menu, and
-the footer**. It never touches street pages, generation, or the database.
+`D:\miltonly-home` owns **the homepage, the header with its mega menu, and the footer**. It
+never touches street pages, generation, or the database.
 
 Owned files:
 
 - `src/app/page.tsx`, `src/app/layout.tsx` (header/footer wiring only)
 - `src/components/home/*` including `home-theme.css`, `home-sections.css`, `mockData.ts`
-- `src/components/nav/*` — `SiteNav.tsx`, `megaTypes.ts`, `site-nav.css`
-- `src/lib/homepageData.ts`, `src/lib/neighbourhoodCards.ts`, `src/lib/homeSignals.ts`
+- `src/components/nav/*`: `SiteNav.tsx`, `SiteNavLive.tsx`, `megaTypes.ts`, `site-nav.css`
+- `src/lib/homepageData.ts`, `src/lib/megaLive.ts`, `src/lib/figureFormat.ts`,
+  `src/lib/neighbourhoodCards.ts`, `src/lib/homeSignals.ts`
 - `src/components/ChromeGate.tsx` (only the `/` line)
+- `scripts/verify/checks/homepage.mjs`, `scripts/verify/checks/nav.mjs`
+- `scripts/probe-mobile-menu.mjs`, `scripts/probe-hub-contrast.mjs`
 
-Touched outside that scope, deliberately and under ruling, all now on main:
-`src/lib/streetSurface.ts` (`publishedStreetPageSlugs`), `src/app/sitemap.ts` and
-`src/app/streets/page.tsx` (both read it), `src/app/neighbourhoods/page.tsx` (reads
-`getNeighbourhoodCards`), `src/lib/listingsV2Data.ts` + `src/lib/stats.ts` +
-`src/components/listings/v2/*` (the `priceReduced` removal), `src/lib/schema.ts`
-(`generateOrganizationSchema`), `src/lib/heroSearch.ts` (address anchors), and
-`scripts/verify/*` (the 10th check).
+Touched outside that scope on `feat/menu-v2`, one line each, to swap `<SiteNav>` for
+`<SiteNavLive>`: every server page and page component that renders the nav (21 files), plus
+`src/app/condos/[slug]/page.tsx` and `src/app/value/[neighbourhood]/page.tsx` which read
+`getMegaLive()` and pass it down. `TheBoard.tsx` imports the shared formatters instead of its
+module-local copies.
 
 ## Standing rules for this worktree
 
-- **The first line of every report is the worktree folder and branch**, e.g.
-  `HOME · D:\miltonly-home · feat/homepage`.
+- **Every task prompt begins with `MH-`.** The report is `scratchpad/reports/MH-NNN-slug.md`,
+  first line `# MH-NNN`, second line the worktree and branch, committed with the work.
 - Keep this file updated instead of `HANDOFF.md`. Do not rewrite `HANDOFF.md` from here.
 - Everything in the root `CLAUDE.md` still applies: pnpm only, exit-code gate, no em-dashes,
-  "typical" not "median", reports to `scratchpad/reports/`, terminal gets 10 lines or fewer.
+  "typical" not "median", terminal gets 10 lines or fewer, no clipboard writes.
+- **Stop the local `next start` before `pnpm build`.** A running server holds the Prisma query
+  engine DLL and the build fails on `EPERM ... query_engine-windows.dll.node`. Kill the
+  listener on 3000 first (`Get-NetTCPConnection -LocalPort 3000`).
+- **The Bash tool collapses `\\` to `\` inside heredocs.** A Python heredoc that writes a regex
+  with `\\b` lands a BACKSPACE byte in the file; it happened once in `megaLive.ts` and only
+  `od -c` showed it. Write files with backslashes through the Write or Edit tool.
 
 ## Where things stand
 
 | | |
 |---|---|
-| main, code | **`a9546a7`** — the merge. Commits after it touch this file only |
-| production | serves main's tip, confirmed on the apex |
-| battery on production | **`PASS · 10 checks · 444 pages`**, exit 0, re-run at each close-out SHA |
-| local build after merging main | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
-| reviewed preview | `miltonly-nlr4rvlrr` (`1f495e8`) |
-| reports | `062-homepage-gate-a.md`, `063-homepage-build.md`, `064-homepage-figure-defects.md` |
-| QUEUE | marked done, out of queue, at the end of the file |
+| branch head | **`266f0f4`**, merge of `origin/main@854ffd3` into the menu commit `10536c6` |
+| preview | `https://miltonly-p3vklhhp6-gtahomequest-hubs-projects.vercel.app` at `266f0f4`, alias `miltonly-git-feat-menu-v2` |
+| battery on preview | **`PASS · 14 checks · 456 pages · 187s`**, exit 0, at `266f0f4` |
+| local build | exit 0 at `10536c6` and at `266f0f4`, zero `P2024`, 24/24 prebuild, 556 static |
+| local battery | `--only=nav,homepage` against the built app: PASS, twice |
+| main | does NOT have this branch |
+| production | main's tip; the old menu |
 
-Served on `https://miltonly.com` and verified after the merge:
+## What `feat/menu-v2` carries
 
-```
-TITLE : Milton Homes for Sale, Street by Street
-CANON : https://miltonly.com
-H1    : What Milton homes actually sell for, street by street
-proof-street-pages -> 444        FOOTER: All 444 street pages
-proof-sold-to-ask  -> 98%        LINKS : 66 unique internal
-```
-
-## What shipped
-
-- **The header is three menus** (Buy / Streets / Sell). Every trigger is an `<a href>`, every
-  panel is server-rendered and closed with `hidden`, and below 820px the same links are native
-  `<details>` accordions. **Site-wide**: the page variant had no mega menu at all before.
-- **The footer is a live link graph** — every published hub, the in-demand streets, the tools.
-- **Five sections**: 01 streets on film, 02 newest on the market, 03 the neighbourhood ladder,
-  04 valuation with three live proof points, 05 the daily brief. THE BOARD unchanged, TrustBand
-  retired.
-- **24 unique internal links -> 66**, 302 visible words -> 1,146, hubs 3 -> 22, street pages
-  2 -> 17.
-- **Title and H1 set on the page** with a declared canonical, not inherited.
-- **A 10th battery check**, `scripts/verify/checks/homepage.mjs`, plus `loadHomeRecord()` in
-  `scripts/verify/lib/db.mjs`.
+- **The trigger is a `<button>`** with `aria-expanded` and `aria-controls`; the panel's index
+  page (`/listings`, `/streets`, `/sell`) is the panel's CTA. All three panels are in the
+  served HTML on every page, closed with `hidden`.
+- **One full-bleed band** (`.m-band`) under the bar, anchored to the fixed nav, capped at
+  `calc(100vh - 66px)`. Measured at 1024x768 and 1440x900: inside the viewport, no internal
+  scroll, on all three panels.
+- **Interaction.** Hover opens after 120ms of intent (mouse only, `pointerType` checked) and
+  leaving the nav closes after 220ms; click toggles; Enter, Space and ArrowDown open AND move
+  focus into the panel; ArrowLeft/Right walk the triggers; Escape closes AND returns focus to
+  the trigger; Tab out of the panel closes; outside mousedown, scroll and resize close.
+- **One true thing per panel**, in Fraunces at 22px, built server-side from live figures:
+  Buy `461 homes for sale in Milton, 56 new this week.`; Streets `449 Milton streets with
+  their own page, 40 filmed end to end.`; Sell `Over the last 13 weeks, urban Milton homes
+  sold for 98.1% of asking, in 28 days.` (absent when either figure is suppressed).
+- **Buy**: four newest listings through `getNewestListingCards` (display gate applied in
+  `toCard`), with photograph, price, beds, baths, days on market and the PUBLISHED hub name.
+  Addresses lose their `, Milton, Ontario` suffix in the composer.
+- **Streets**: a street search (the hero's `resolveHeroHref`), every published hub with its
+  live listing count (alphabetical), four film posters.
+- **Sell**: the Board's `overall` row, three figures with window AND sample each, and one
+  line of existing site copy about grounded valuations.
+- **Three strips, three queries** (`getMegaStrips()`): Buy = most active listings by
+  `streetSlug`; Streets = GSC impressions per `/streets/` page from `SeoOpportunity` when six
+  or more streets rank, else 12-month sales with the label saying so; Sell = `soldCount12mo`.
+  All intersected with `publishedStreetPageSlugs()`.
+- **`/map` and `/book` removed** from the rails (both redirect). `/guides` and
+  `/market-watch` added. The FOOTER still links `/book`; not this task's scope, and it is
+  a 307.
+- **Type floor 14px** in the menu, including the mono labels and the caret glyph; the bar's
+  own links and CTA moved from 13px to 14px.
+- **Mobile**: the same `Lead`, `Rail`, `Live`, `Strip` and CTA components inside native
+  `<details>`, plus the street search at the top. Mounted on open, so the served HTML carries
+  one copy of every link (the desktop band's).
+- **`scripts/verify/checks/nav.mjs`**: static over five page types, then Chrome at 380, 1024
+  and 1440 on `/` and `/streets`. Chrome comes from puppeteer's own download or `CHROME_PATH`.
+- **`homepage.mjs`**: triggers asserted as `<button>`; `menu-buy-active`, `menu-buy-new`
+  and `menu-streets-pages` join `FIG_SPECS` by value and format.
 
 ## Traps, and decisions that must not be re-litigated
 
-- **A price *drop* is not derivable and there is no function for one.**
-  `Listing.lastPriceChangeAt` marks that a price changed; no prior price is stored. The
-  `priceReduced` flag, its "Price reduced" badge, and `stats.ts getFeaturedListings` (whose
-  `priceDrops` returned the cheapest actives) are all deleted. Do not re-add any of them. A
-  price-drop section returns when Core stores a prior price, not before.
-- **Three counts, three sets, and only one of them is "pages".**
-  `publishedStreetPageSlugs()` in `streetSurface.ts` is the sitemap's set (**444**) and is read
-  by `sitemap.ts`, `/streets` and the homepage. `surfacedStreetWhere()`'s count (**738**) is the
-  set allowed to appear in search and hub ladders; it was being published as a page count. A raw
-  `StreetContent` count (**445**) includes `15-side-road-side-road-milton`, an address artifact
-  with no entity, which the sitemap refuses. Never state a page count from anything but
-  `publishedStreetPageCount()`.
-- **One neighbourhood price, from `getNeighbourhoodCards()`.** It is the hub page's own k-gated
-  12-month typical sold price. `/neighbourhoods` reads the same function. Do not reintroduce an
-  active list-price average: two statistics under one word is the defect `hub-meta.mjs` exists
-  to catch.
-- **A figure crossing a component boundary must carry its unit in its name.**
-  `BoardTab.soldToAsk.value` is a RATIO that `TheBoard` multiplies at render; reading it
-  elsewhere printed `0.980868783307145%`. The homepage reads `soldToAskPct` from
-  `getMiltonSoldOverall()`. The Board (urban, 13 weeks, 98.1%) and `/sold` (all Milton, 12
-  months, 98.3%) are different aggregates and are not expected to agree.
-- **A presence assertion is not a value assertion.** The homepage gate passed with both figure
-  defects on the page because it checked that a `data-fig` existed and parsed as a number.
-  `data-value` was correct in both defects; the fault was in the rendering. The check reads
-  rendered TEXT now. Do not "simplify" it back to reading the attribute.
-- **A fixed-width figure column is a promise about data that CSS cannot keep.** The proof row
-  was `128px` and the long value sat on its label. It is `minmax(0, max-content)` now.
-- **The link floor in the battery does not guard the header.** 65 of the 66 links come from the
-  body. The anchor assertions guard the header. Do not raise the floor to "catch the nav".
-- **Never hand-roll a listing query.** `getNewestListingCards` runs `toCard`, which applies the
-  RECO/IDX display gate server-side.
-- **A raw TREB neighbourhood string is not a slug.** Resolve it through `getRawStringHubMap()`.
-- **`mockData.ts` is no longer typed `HomepageData`.** It holds static hero editorial only.
+- **`composeMegaLive()` is the only place a menu string is built.** Two callers (the
+  homepage's `buildMegaLive`, everything else's `getMegaLive`), one formatter. Do not format
+  in `SiteNav.tsx`. `MegaLive` carries display strings, not numbers.
+- **`src/lib/figureFormat.ts` is the formatter.** `formatMoney1k`, `formatPct1`,
+  `formatDays`, `formatCount`, `formatMoneyWhole`. The Board imports them. A new figure on
+  any surface goes through here; the battery asserts the menu equals the Board on
+  `data-value`, which is the same string because it is the same function.
+- **The hover open is mouse-only.** `pointerType !== 'mouse'` returns early, so a finger on
+  a tablet never opens a panel it did not tap. Do not "simplify" to `mouseenter`.
+- **Hover does not steal focus; the keyboard does.** `focusIntoPanel` is set only by
+  Enter/Space/ArrowDown. A hover-opened panel leaves focus where the user is typing.
+- **The strips are three different questions.** The battery asserts the three link sets on a
+  page are not identical. A shared "in demand" list will fail it.
+- **The Streets strip's source is named in its label.** "Most searched on Google" only when
+  `SeoOpportunity` ranks six or more published streets; the rows are the sense run's
+  opportunity classes, not the whole GSC stream, so the counts are a floor. Otherwise
+  "Busiest streets, last 12 months". Never label one as the other.
+- **Every strip link is a published page.** Candidate slugs are intersected with
+  `publishedStreetPageSlugs()`, the sitemap's own set; the nav check resolves every href and
+  fails on a redirect or a non-200.
+- **The nav is one `<nav>` element and the band is inside it.** `homepage.mjs` and `nav.mjs`
+  read the first `<nav>...</nav>`; a second nav or a band rendered outside it blinds both.
+- **The mobile panel mounts on open.** Rendering it always would double every menu link in
+  the served HTML. The desktop band is the crawlable copy; the phone panel is the same
+  components again, client-side.
+- **A moving count can fail the battery once and pass the next minute** (MH-001's `scott`).
+  Re-run before diagnosing a one-hub, off-by-one count mismatch as a code defect.
+- **`--h-text-faint` is the floor for small text on the hub hero** (0.56, 5.46:1). Lowering
+  it takes every label on 22 hubs back under 4.5:1.
+- **A price *drop* is not derivable.** Do not re-add `priceReduced`.
+- **Three counts, three sets, one of them "pages".** `publishedStreetPageSlugs()` only.
+- **One neighbourhood price, from `getNeighbourhoodCards()`.** No active list-price average.
+- **A LEASE NEVER CARRIES `status='active'`.** `getRentalsAvailableCount()` is the one source.
+- **A dead fragment is the quietest defect.** `hub-intents.mjs` resolves route and fragment.
+- **Never hand-roll a listing query.** `getNewestListingCards` applies the display gate.
 
 ## Open, and owned elsewhere
 
-- **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
-  `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
-  **Leads owns this.**
-- **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
-  `permAdvertise AND status='active'` with no city and no transaction-type filter, so "on the
-  market today" would include leases and non-Milton rows. Exactly right today (448 either way),
-  so latent rather than wrong. The gate asserts the query the app actually runs, on purpose.
-  Needs a decision, not a silent change.
-- **380px is sized for, not visually verified.**
+- **The hub rebuild** (`c98f40e` on `feat/homepage`) is unmerged. HANDOFF.md item 24.
+- **The footer's `/book`** is a 307 to `/about`. Fix or remove when the footer is next touched.
+- **Every page now pays `getMegaLive()` once per instance per five minutes.** At build that is
+  once per prerender worker. The build passed at `connection_limit=10` with zero `P2024`
+  twice; if pool timeouts return, this is the first suspect.
+- **The design was reviewed from screenshots at 1440, 1024 and 380** (`scratchpad/menu-v2/`,
+  untracked). Nobody has used it by hand.
 
 ## Next action
 
-None outstanding in this worktree. The branch is merged and production is verified on it.
+Aamir reviews the preview. Core merges `266f0f4` on approval. Hubs resume after.

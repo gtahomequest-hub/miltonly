@@ -12,7 +12,7 @@
 // editorial-only page through this same composer).
 import "../hub/hub-theme.css";
 import type { HubData } from "../hub/types";
-import { SiteNav } from "../nav/SiteNav";
+import SiteNavLive from "../nav/SiteNavLive";
 import { GuideUplinks } from "../guides/GuideUplinks";
 import { guidesForHub } from "@/lib/guides/uplinks";
 import { CompareModule, type CompareModuleProps } from "../compare/CompareModule";
@@ -42,7 +42,7 @@ export function TenureHubPage({
   const guides = guidesForHub({ condoHeavy: data.compareFacts?.hasFee === true });
   return (
     <div className="hub-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <TenureHero data={data} eyebrow={eyebrow} />
       <TenureGlance data={data} />
       <TenureOverview data={data} />

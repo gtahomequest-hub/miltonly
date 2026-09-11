@@ -338,6 +338,7 @@ Records: `scratchpad/reports/062-homepage-gate-a.md` (recon),
 *Report numbering collided with the leads worktree, which used 062 and 063 on the same days.
 Both sets are in the repo under different slugs. Numbers are no longer unique across worktrees.*
 
+- [x] **THE MEGA MENU, DONE 2026-09-11 (MH-002, merged as `d01787f`, branch head `3ec8b51`, approved by Aamir).** The left rail is a tablist driving one live panel per item (Buy / Streets / Sell), every panel server-rendered from `src/lib/megaLive.ts`, gated in a browser at three widths; on a phone each item is a nested `<details>`. Record in `scratchpad/reports/MH-002-menu-v2.md`.
 - [x] **The header emits crawlable links.** Three menus (Buy / Streets / Sell), every trigger a
       real `<a href>`, every panel server-rendered and closed with `hidden`. The popover is
       progressive enhancement; below 820px the same links are native `<details>` accordions.

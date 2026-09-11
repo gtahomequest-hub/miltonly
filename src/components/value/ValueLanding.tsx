@@ -15,6 +15,7 @@
 
 import { Suspense } from "react";
 import SiteNav from "@/components/nav/SiteNav";
+import type { MegaLive } from "@/components/nav/megaTypes";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import FooterSection from "@/components/sections/FooterSection";
 import { fullPrice } from "@/components/hub/format";
@@ -31,12 +32,14 @@ export interface ValueLandingProps {
   locationName: string;
   /** Grounded live-data packet, or null for the sub-k/no-hub variant. */
   data: ValueData | null;
+  /** the menu's live content, read by the server page; absent renders the rails */
+  live?: MegaLive;
 }
 
 const FIRST_NAME = config.realtor.name.split(" ")[0];
 const WHATSAPP_URL = `https://wa.me/${config.realtor.phoneE164.replace("+", "")}`;
 
-export default function ValueLanding({ locationName, data }: ValueLandingProps) {
+export default function ValueLanding({ locationName, data, live }: ValueLandingProps) {
   // Live-data sentence (grounded) vs number-free editorial (sub-k/no-hub).
   // Built as JS strings (not JSX text) so apostrophes need no escaping.
   const domFragment = data && data.dom != null ? ` — median days on market ${data.dom}` : "";
@@ -49,7 +52,7 @@ export default function ValueLanding({ locationName, data }: ValueLandingProps) 
 
   return (
     <div className="sell-v2">
-      <SiteNav variant="page" />
+      <SiteNav variant="page" live={live} />
 
       <section className="s-hero">
         {/* Mobile-first single column (not the /sell two-col hero grid). */}

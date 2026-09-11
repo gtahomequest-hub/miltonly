@@ -7,7 +7,7 @@
 // this is deliberately NOT a forest directory build (there is nothing to render).
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 
 export const metadata = {
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 export default function BlogPage() {
   return (
     <div style={{ background: "#fffdfa", minHeight: "100vh", color: "#292b29" }}>
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <section
         style={{
           paddingTop: 66,

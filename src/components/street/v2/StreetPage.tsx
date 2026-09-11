@@ -21,7 +21,7 @@ import {
   StreetFinalCtas,
 } from './sections';
 import { StreetAddresses } from './AddressLadder';
-import { SiteNav } from '../../nav/SiteNav';
+import SiteNavLive from '../../nav/SiteNavLive';
 import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
 import { COMPARE_TEASER } from '@/lib/comparisonData';
 import { GuideUplinks } from '../../guides/GuideUplinks';
@@ -47,7 +47,7 @@ export function StreetV2Page({
   const guides = guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo') });
   return (
     <div className="street-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <StreetHero data={data} />
       <StreetVideo data={data} />
       <StreetGlance data={data} />
