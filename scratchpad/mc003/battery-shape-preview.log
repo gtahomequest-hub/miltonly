@@ -1,0 +1,231 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      https://miltonly-jf1gmho7o-gtahomequest-hubs-projects.vercel.app
+build       c297e63 served == expected
+sitemap     456 published street pages (derived, not a literal)
+record      DB2 + analytics aggregates loaded
+hub record  22 published hubs + DB2 pools loaded
+home record 456 published street pages + Milton-wide figures loaded
+crawled     456 pages · 456 × 200 · 0 other
+
+ASSERT iterated == live sitemap count (456) : PASS
+
+── No sentence denies or contradicts a figure the page publishes
+   · prose blocks read: 3920
+   · schema strings read: 40040
+   · pages publishing a price: 220
+   · pages publishing a band: 25
+   · pages publishing sold-to-ask > 100%: 12
+   PASS  pages with NO prose block (parser reached nothing): 0
+   PASS  pages with NO schema string: 0
+   PASS  (a) denies a published price — visible: 0
+   PASS  (a) denies a published price — JSON-LD: 0
+   PASS  (b) denies a published band — visible: 0
+   PASS  (b) denies a published band — JSON-LD: 0
+   PASS  (c) contradicts its sold-to-ask tile — visible: 0
+   PASS  (c) contradicts its sold-to-ask tile — JSON-LD: 0
+   PASS  either surface, any class: 0
+
+── Structured data publishes exactly what the page publishes
+   · visible FAQ items: 1212
+   · schema Question nodes: 1212
+   · pages with no FAQ at all: 55
+   PASS  pages where schema != visible: 0
+   PASS  zero-FAQ pages still rendering the heading: 0
+   PASS  zero-FAQ pages still emitting a FAQPage node: 0
+
+── Absence claims match the record, and every page has a working CTA
+   · pages claiming absence: 23
+   · zero-sale set (derived from DB2, scoped to these pages): 23
+   · pages with a sale on record: 433
+   · of those, carrying suppression phrasing: 179
+   · tiers: {"priced-sale":220,"identity-only":116,"area-only":84,"priced-lease":36}
+   · CTAs wired: 456
+   PASS  claimers == zero-sale set: 0
+   PASS  false claimers (claims absence, has sales): 0
+   PASS  silent zero-sale pages (has no sales, does not say so): 0
+   PASS  dead "/listings" CTAs: 0
+   PASS  pages with no wired alert CTA: 0
+   PASS  priced-sale pages missing a sample disclosure: 0
+   PASS  priced-lease pages missing window + n: 0
+   PASS  countless "across sales" disclosures: 0
+   PASS  pages with >= 9 suppressed cells: 0
+
+── Every published figure is floored against its own sample
+   · pages rendering a hero price: 224
+   · pages entitled to a price at all: 224
+   · pages with a 90-day sample below threshold: 293
+   · pages stating a street-level sample: 224
+   · distinct sample windows seen: 12 months, ~2 years
+   PASS  prices rendered with NO entitled basis: 0
+   PASS  prices that are the sub-k 90-day figure: 0
+   PASS  sidebar DOM published with n12 < 5: 0
+   PASS  glance DOM published with n12 < 5: 0
+   PASS  glance sold-to-ask published with n12 < 5: 0
+   PASS  glance Trend published (YoY, no countable sample): 0
+   PASS  glance Market state with a sub-k 90-day sample: 0
+   PASS  hero basis line malformed: 0
+   PASS  page states two different samples for one window: 0
+   PASS  hero basis names a sample the page states nowhere else: 0
+   PASS  hero price sits on a sub-k sample by the page's own account: 0
+   NOTE  0 page(s) state a sample that differs from the record right now — ISR lag, not a defect: street pages are prerendered and the sold-stats cron moves the record under them. Reported so a genuine drift is still visible; not gated, because the page is correctly serving what it was built from.
+
+── One metric, one number — and prose that still reads after suppression
+   · FAQ items rendered: 1212
+   · prose sections rendered: 2252
+   PASS  1a street typical at more than one value: 0
+   PASS  1b per-type typical: hero pill != type card: 0
+   PASS  1d inline CTA price != hero typical: 0
+   PASS  1e market card typical != hero typical: 0
+   PASS  2 FAQ answers opening on an unresolved reference: 0
+   PASS  3 sections whose whole content is a disclaimer: 0
+   NOTE  1c rent pill vs market card disagree: 3 pages (melville-bonus-crescent-milton, lloyd-landing-milton, mcdougall-crossing-milton) — known standing defect, not gated
+
+── Every published page is a street that exists
+   · registry entries read: 944
+   · off-registry allowlist entries read: 20
+   · published street pages: 456
+   · in the Town registry: 453
+   · on the off-registry allowlist: 3 (second-line-milton, 25-side-road-milton, nipissing-road-milton)
+   PASS  published off BOTH lists: 0
+   PASS  parts do not sum to the published set: 0
+
+── Every published coordinate is real, and every distance has two real endpoints
+   · pages publishing at least one nearby distance: 430
+   · pages still showing the suppression note: 2
+   · pages carrying the OGL attribution: 454
+   PASS  pages both publishing a distance AND claiming none: 0
+   PASS  pages publishing a distance without attribution: 0
+
+── Hub meta, body and JSON-LD all publish the live aggregate
+   · hub pages in the live sitemap: 22
+   · fetched 200: 22
+   · meta description parsed: 22
+   · matched to a record: 22
+   · hero stat tiles parsed: 22
+   · JSON-LD parsed: 22
+   · sub-k hubs (price must be silent everywhere): moffat
+   PASS  hub pages read == sitemap hub count: 22
+   PASS  hero stat tiles parsed on every hub: 22
+   PASS  JSON-LD parsed on every hub: 22
+   PASS  meta price != live typical: 0
+   PASS  meta sale count != live sale count: 0
+   PASS  meta states a price off a sub-k pool: 0
+   PASS  hero typical != live typical as displayed: 0
+   PASS  hero sold count != live sale count: 0
+   PASS  JSON-LD price != live typical as published: 0
+   PASS  JSON-LD states a price off a sub-k pool: 0
+   PASS  price suppressed on some surfaces only: 0
+   NOTE  stored HubContent.metaDescription (no longer served) still drifts from live on 22 of 22 hubs
+   NOTE  stored descriptions publishing a price off a sub-k pool: 0
+
+── Town polygons still reproduce the TREB assignments they were licensed against
+   · polygons read: 26
+   · map entries read: 26
+   · road centroids read: 970
+   · treb-sourced assignments in DB1: 779
+   · resolved to a centroid: 773
+   · comparable (landed in a mapped polygon): 713
+   · agreement: 695/713 = 97.5%
+   · landed in a deliberately unmapped polygon: 54
+   · centroid outside every polygon: 6
+   · absent from the Town road layer: 6
+   PASS  centroid resolution below 90% of the population: 0
+   PASS  comparable sample is empty: 0
+   PASS  TREB/geometry agreement below 95%: 0
+   PASS  polygons with no entry in the map: 0
+   PASS  map entries with no matching polygon: 0
+   NOTE  agreement 97.5% over 713 streets (floor 95%)
+
+── The homepage links, states its figures, and declares itself
+   · unique internal links served: 66
+   · of which are in the <nav>: 34
+   · stated link floor: 50
+   · data-fig figures parsed: 57
+   · Milton-wide figures checked by value + format: 8 specs
+   · as rendered: on-market: "461" (source 461, expected "461") · new-week: "56" (source 56, expected "56") · sold-mtd: "59" (source 59, expected "59") · typical-milton: "$930K" (source 930000, expected "$930K") · rentals-available: "1,127" (source 1127, expected "1,127") · proof-street-pages: "456" (source 456, expected "456") · proof-sales-12mo: "1,735" (source 1735, expected "1,735") · proof-sold-to-ask: "98%" (source 98.2, expected "98%")
+   · published street pages (record): 456
+   · rentals available: homepage / /rentals / record: 1127 / 1127 / 1127
+   · menu sell figures: menu-sell-typical="$924,000" · menu-sell-days="28 days" · menu-sell-sta="98.1%"
+   · published StreetContent rows (record): 457
+   · neighbourhood price figures: 22
+   · sub-k hoods (price must be silent): moffat
+   · JSON-LD nodes parsed: 5
+   PASS  homepage returns 200: 200
+   PASS  unique internal links >= 50: true
+   PASS  neighbourhood price figures found: true
+   PASS  menu triggers rendered as anchors: 0
+   PASS  menu trigger hrefs in served nav markup: 0
+   PASS  rail links in served nav markup: 0
+   PASS  Milton-wide figures absent from the page: 0
+   PASS  Milton-wide figures rendered in the wrong format: 0
+   PASS  Milton-wide figures outside their source + tolerance: 0
+   PASS  street-page figure == the published page count: true
+   PASS  /rentals returns 200: 200
+   PASS  homepage rentals figure == the figure /rentals publishes: true
+   PASS  menu figure != the Board figure on the same page: 0
+   PASS  any data-fig rendering a raw float: 0
+   PASS  em-dashes in rendered copy: 0
+   PASS  en-dashes outside a numeric range: 0
+   PASS  neighbourhood figure != its hub record: 0
+   PASS  neighbourhood figure off a sub-k pool: 0
+   PASS  sub-k hood prints a price instead of its suppression: 0
+   PASS  WebSite node present: true
+   PASS  Organization node present: true
+   PASS  SearchAction on the WebSite node: true
+   NOTE  neighbourhood figures with no DB2 record (not asserted): none
+   NOTE  published pages 456 vs published content rows 457: the difference is content published for a slug with no ResidentialStreet entity, which the sitemap refuses
+   NOTE  homepage == record and hub page == record (hub-meta) together assert homepage == hub page
+
+── Every hub intent square resolves to a real route and a real id
+   · hub pages read: 22 of 22
+   · intent squares found: 88
+   · unique destinations resolved: 25
+   · destinations: /neighbourhoods/<slug>#streets · /sell · /rentals · /listings
+   PASS  hub pages read == published hub count: 22
+   PASS  hubs rendering no intent squares: 0
+   PASS  intent hrefs whose route does not return 200: 0
+   PASS  intent hrefs whose fragment matches no id: 0
+
+── Every street page and every hub links up to its guides, in the served HTML
+   · street pages read: 456 of 456
+   · hub pages read: 22 of 22
+   · guide anchors on street pages: 1381
+   · guide anchors on hubs: 55
+   · condo-heavy street pages (condo sale pill): 13
+   · condo-heavy hubs (condo section): 11
+   · unique guide destinations resolved: 5
+   PASS  street pages read == live sitemap count: 456
+   PASS  hub pages read == published hub count: 22
+   PASS  street pages rendering no guides ledger: 0
+   PASS  street pages missing a required guide: 0
+   PASS  condo-heavy street pages without the condo guide: 0
+   PASS  street pages carrying the condo guide with no condo sale pill: 0
+   PASS  hubs rendering no guides ledger: 0
+   PASS  hubs missing a required guide: 0
+   PASS  condo-heavy hubs without the condo guide: 0
+   PASS  hubs carrying the condo guide with no condo section: 0
+   PASS  guide anchors not shaped /guides/<slug>: 0
+   PASS  guide destinations not returning 200: 0
+
+── Every rendered road fact equals the layer value, and nothing renders where the layer is silent
+   · street pages read: 456 of 456
+   · pages rendering a road-facts card: 454
+   · cards matched to a layer row: 454
+   · facts compared to the layer: 2689
+   · layer rows in the data file: 972
+   · card-less pages whose identity was reconstructed and checked: 0
+   · hero, glance and market tiles scanned for unit figures: 7011
+   PASS  street pages read == live sitemap count: 456
+   PASS  pages rendering a road-facts card > 0: true
+   PASS  facts whose rendered value differs from the layer: 0
+   PASS  facts rendered where the layer row is null: 0
+   PASS  layer facts the page failed to render: 0
+   PASS  cards naming an identity with no layer row: 0
+   PASS  cards naming an identity that is not the street's own: 0
+   PASS  cards with no facts, or layer facts with no card: 0
+   PASS  pages with more than one road-facts card: 0
+   PASS  cards with a wrong or missing attribution: 0
+   PASS  pages with a unit figure in a hero, glance or market tile: 0
+
+═══ PASS · 13 checks · 456 pages · 138s ═══
