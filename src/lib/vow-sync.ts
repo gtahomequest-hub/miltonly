@@ -15,6 +15,7 @@
 import { extractStreetName, streetNameToSlug, deriveIdentity } from "@/lib/streetUtils";
 import { config } from "@/lib/config";
 import { resolveRooftop } from "@/lib/town/rooftop";
+import { purgeSoldDerivedCaches, type SoldPurgeResult } from "@/lib/soldCachePurge";
 
 // =============================================================================
 // Type: a minimal query-executor interface. Both @neondatabase/serverless's
@@ -1020,6 +1021,8 @@ export interface SoldSyncResult {
   mediaWritten: number;
   roomsWritten: number;
   durationMs: number;
+  /** MC-010: what the write purged from Upstash; null when the run wrote nothing */
+  purge: SoldPurgeResult | null;
 }
 
 export async function runSoldSync(opts: {
@@ -1066,6 +1069,10 @@ export async function runSoldSync(opts: {
   let totalProcessed = 0;
   // Step 5 — distinct minted street_slugs, validated against the registry after the run.
   const mintedSlugs = new Map<string, string>(); // slug -> a sample street_name
+  // MC-010 — every street and neighbourhood a row was written for, so the purge at the end can
+  // take exactly the per-street and per-neighbourhood figures that may have moved.
+  const touchedSlugs = new Set<string>();
+  const touchedNeighbourhoods = new Set<string>();
 
   while (true) {
     let filter: string;
@@ -1129,6 +1136,8 @@ export async function runSoldSync(opts: {
         if (res[0]?.inserted) inserted++;
         else updated++;
         writtenKeys.push(listingKey);
+        if (mSlug) touchedSlugs.add(mSlug);
+        if (typeof mapped.neighbourhood === "string" && mapped.neighbourhood) touchedNeighbourhoods.add(mapped.neighbourhood);
         totalProcessed++;
       } catch (err) {
         skipped++;
@@ -1204,6 +1213,18 @@ export async function runSoldSync(opts: {
     console.error(`[sync/sold] street-slug review failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  // MC-010 — THE WRITE PURGES THE FIGURES IT MOVED. Every sold-derived figure is cached for an
+  // hour; until this, a page could serve the previous sync's number for that long after the
+  // rows changed. A run that wrote nothing purges nothing: the figures did not move.
+  let purge: SoldPurgeResult | null = null;
+  if (inserted + updated > 0) {
+    purge = await purgeSoldDerivedCaches({ streetSlugs: touchedSlugs, neighbourhoods: touchedNeighbourhoods });
+    console.log(
+      `[sync/sold] cache purge: ${purge.skipped ? "skipped (no redis)" : `${purge.deleted} keys deleted (${purge.exact} exact + ${purge.patterns} patterns over ${touchedSlugs.size} streets, ${touchedNeighbourhoods.size} neighbourhoods)`}` +
+        (purge.error ? ` ERROR ${purge.error}` : ""),
+    );
+  }
+
   const durationMs = Date.now() - started;
   console.log(
     `[sync/sold] mode=${isBackfill ? "backfill" : "incremental"} ` +
@@ -1223,6 +1244,7 @@ export async function runSoldSync(opts: {
     mediaWritten,
     roomsWritten,
     durationMs,
+    purge,
   };
 }
 
