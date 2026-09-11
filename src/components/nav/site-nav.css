@@ -12,8 +12,14 @@
   right: 0;
   z-index: 80;
   background: linear-gradient(180deg, #051f15 0%, #073126 100%);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  /* NO backdrop-filter. It was `blur(14px)`, and it did nothing visible: the background
+     above is a FULLY OPAQUE gradient, so there is never anything behind this bar to blur.
+     What it did do was create a CONTAINING BLOCK for position:fixed descendants — which is
+     the mobile menu. `.sn-panel { position: fixed; inset: 0 }` resolved against this 67px
+     bar instead of the viewport, so on every page of the site the phone menu was a 66px box
+     whose links painted over live page content with no background behind them. Measured
+     2026-09-10 on / and /streets. Do not reintroduce it; if a blur is ever wanted here, put
+     it on a pseudo-element so the nav itself never forms a containing block. */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 .site-nav .m-wrap {
@@ -407,6 +413,14 @@ nav .m-mega-figs dd {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 17px;
   color: #fff;
+}
+/* Each figure's own window, under the figure. The three metrics are measured over
+   different windows and one shared caption above them was stating two of them wrongly. */
+nav .m-mega-figs dd.m-mega-figwin {
+  margin-top: 3px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
 }
 nav .m-mega-more {
   display: inline-block;

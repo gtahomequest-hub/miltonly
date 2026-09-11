@@ -24,13 +24,21 @@ export interface MegaLive {
     videoCount: number;
     videos: { slug: string; name: string; poster: string; variant: 'day' | 'night' }[];
   };
+  /**
+   * THE SELL PANEL'S FIGURES, PRE-FORMATTED ON THE SERVER.
+   *
+   * They used to be raw numbers that the component formatted at render, and it got them
+   * wrong in every possible way at once: `$937,465.504` for a price, `27.829694323144103`
+   * for a day count, and the sold-to-ask RATIO with a percent sign welded on. All three
+   * shipped to production and stayed there.
+   *
+   * The fix is structural rather than a better `money()`. A display string is produced ONCE,
+   * by the same helpers the page body uses, on the side of the boundary that has the units —
+   * so the component cannot format, and therefore cannot misformat. Each figure carries the
+   * window it was measured over, because the three do not share one.
+   */
   sell?: {
-    /** the window the Board states for its own figure, e.g. "12 months" */
-    window: string;
-    /** k-gated; null renders no row */
-    typical: number | null;
-    daysToSell: number | null;
-    soldToAsk: number | null;
+    figures: { key: string; label: string; value: string; window: string }[];
   };
   inDemandStreets?: { slug: string; name: string }[];
 }
