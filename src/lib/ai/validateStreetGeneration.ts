@@ -2716,7 +2716,7 @@ export function validateStreetGeneration(
     for (const adj of findAdjacencyClaims(sectionText, input.crossStreets)) {
       violations.push({ rule: "adjacency_claim", sectionId: section.id, excerpt: `"${adj.street}" placed physically: ${adj.excerpt}`, severity: "hard" });
     }
-    for (const cn of findComparatorNeighbourhoodClaims(sectionText, input.crossStreets, input.neighbourhoods)) {
+    for (const cn of findComparatorNeighbourhoodClaims(maskNearbyPlaceNames(sectionText, input), input.crossStreets, input.neighbourhoods)) {
       violations.push({ rule: "comparator_neighbourhood_claim", sectionId: section.id, excerpt: `"${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
     }
     for (const fp of findFuturePeriodClaims(sectionText)) {
@@ -2927,7 +2927,7 @@ export function validateStreetGeneration(
   }  for (const s of findSpatialPrecisionClaims(faqText)) {
     violations.push({ rule: "spatial_precision_claim", excerpt: `FAQ "${s.matched}": ${s.excerpt}`, severity: "hard" });
   }
-  for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
+  for (const cn of findComparatorNeighbourhoodClaims(maskNearbyPlaceNames(faqText, input), input.crossStreets, input.neighbourhoods)) {
     violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
   }
   for (const fp of findFuturePeriodClaims(faqText)) {
@@ -3217,7 +3217,7 @@ export function validateSectionsSubset(
     for (const adj of findAdjacencyClaims(sectionText, input.crossStreets)) {
       violations.push({ rule: "adjacency_claim", sectionId: section.id, excerpt: `"${adj.street}" placed physically: ${adj.excerpt}`, severity: "hard" });
     }
-    for (const cn of findComparatorNeighbourhoodClaims(sectionText, input.crossStreets, input.neighbourhoods)) {
+    for (const cn of findComparatorNeighbourhoodClaims(maskNearbyPlaceNames(sectionText, input), input.crossStreets, input.neighbourhoods)) {
       violations.push({ rule: "comparator_neighbourhood_claim", sectionId: section.id, excerpt: `"${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
     }
     for (const fp of findFuturePeriodClaims(sectionText)) {
@@ -3398,7 +3398,7 @@ export function validateFaq(
   }  for (const s of findSpatialPrecisionClaims(faqText)) {
     violations.push({ rule: "spatial_precision_claim", excerpt: `FAQ "${s.matched}": ${s.excerpt}`, severity: "hard" });
   }
-  for (const cn of findComparatorNeighbourhoodClaims(faqText, input.crossStreets, input.neighbourhoods)) {
+  for (const cn of findComparatorNeighbourhoodClaims(maskNearbyPlaceNames(faqText, input), input.crossStreets, input.neighbourhoods)) {
     violations.push({ rule: "comparator_neighbourhood_claim", excerpt: `FAQ: "${cn.street}" placed in "${cn.claimed}" but input.crossStreets neighbourhood is ${cn.expected ? `"${cn.expected}"` : "ABSENT (no location claim permitted)"}; ctx: ${cn.excerpt}`, severity: "hard" });
   }
   for (const fp of findFuturePeriodClaims(faqText)) {
@@ -3993,6 +3993,30 @@ function formatNumericUngrounded(violations: ValidatorViolation[]): string[] {
  * itself. A superlative the model invents is untouched, so this cannot be used to smuggle
  * marketing language past the rule.
  */
+/** Mask ONLY the grounded place names (parks, schools, mosques, grocery, the hospital, the GO
+ *  station, the highway), leaving cross streets and neighbourhoods readable. For a rule that
+ *  reads cross-street and neighbourhood names, maskGroundedProperNouns would blind it; this
+ *  keeps its eyes and takes away the one thing that fooled it. "Bronte Meadows Park" is a Town
+ *  park in the input; the comparator rule read it as placing Bronte Street in the Bronte Meadows
+ *  neighbourhood and refused anne-boulevard-milton ten attempts running (MC-009, 2026-09-11). */
+export function maskNearbyPlaceNames(text: string, input: StreetGeneratorInput): string {
+  const names: string[] = [];
+  const n = input.nearby;
+  if (n) {
+    for (const group of [n.parks, n.schoolsPublic, n.schoolsCatholic, n.mosques, n.grocery]) {
+      for (const item of group ?? []) if (item?.name) names.push(item.name);
+    }
+    for (const one of [n.hospital, n.goStation, n.highway]) {
+      if (one?.name) names.push(one.name);
+    }
+  }
+  let masked = text;
+  for (const name of names.filter((s) => s && s.length >= 3).sort((a, b) => b.length - a.length)) {
+    masked = masked.split(name).join("_".repeat(name.length));
+  }
+  return masked;
+}
+
 function maskGroundedProperNouns(text: string, input: StreetGeneratorInput): string {
   const names: string[] = [];
   const n = input.nearby;
