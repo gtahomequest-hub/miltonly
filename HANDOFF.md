@@ -2,85 +2,50 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-10, after three merges landed green and the migration ledger was cleaned._
+_Last rewritten 2026-09-11 (MC-009, with MC-010 folded in): the fail-closed merge on main, four branches built and proven and waiting on merges, the seven clips up, the sold-sync purge proven on preview._
 
 ## READ THIS FIRST
 
-**PRODUCTION IS GREEN AT `8db80da`. `PASS · 11 checks · 449 pages · 97s`, exit 0,
-`served == expected`.** All three merges landed, each by SHA, each with the full gate.
-`prisma migrate status`: **"Database schema is up to date!"** Record:
-`scratchpad/reports/068-three-merges.md`.
+**MAIN IS `f347001` (merge of `e12b1b6`) AND PRODUCTION SERVES IT.** A page the judge refuses is
+now a failed attempt in the queue. Record: `scratchpad/reports/MC-009-judge-video-regen.md`.
 
-**`fix/core-batch` IS MERGED.** Everything it carried is live: DEC-PRICE-HISTORY,
-DEC-SOLD-DATE-NOT-FUTURE, DEC-GATE-PARITY (QUEUE item 7), DEC-NEW-PAGE-CAP, the retired
-components, and a TTL on `buildMiltonWideContext`.
+**FOUR BRANCHES WAIT ON MERGES, EACH BUILT EXIT 0, NONE MERGED:**
+- `feat/judge-verdict` `25b59a6`: `StreetGeneration.judgeVerdict` `{ result, round, rounds[] }`
+  written on every run by cron and local runners alike. **The migration is applied** (27, clean).
+- `fix/comparator-park-mask` `db3be15`: a grounded park name ("Bronte Meadows Park") no longer
+  reads as a comparator placement claim; a real one still does.
+- `feat/video-rekey` `dde23bd`: a superseding clip goes under `streets/<slug>/<YYYYMMDD>/`, the
+  old objects are deleted after production serves the new URL, orphans retire.
+- `fix/sold-sync-purge` `67fcf7f`: MC-010, below.
+`package.json`'s prebuild line will conflict trivially between the first two and the fourth: union.
+`3ec8b51` (menu v2) is also waiting, on Aamir's word.
 
-**REVERTING A MERGE DOES NOT MAKE ITS COMMITS RE-MERGEABLE.** `git merge --no-ff 5448b96`
-answered **"Already up to date"**: the commit was still an ancestor of main through `cec6906`,
-because a revert undoes content and not ancestry. A merge therefore reintroduces nothing at all,
-silently. **Cherry-pick is what reapplies it** (`1cf5342`), and it brought `5448b96` back alone,
-without `c98f40e`'s unapproved hub rebuild. If you ever need to restore part of a reverted merge,
-reach for cherry-pick and check the merge output for "Already up to date" before believing it
-worked.
+**THERE ARE TWO CACHES BEHIND EVERY SOLD FIGURE, AND THE SECOND WAS INVISIBLE.** Upstash under
+`cached()` for an hour, and Next's Data Cache over the Neon HTTP client for an hour
+(`src/lib/db.ts`, `next: { revalidate: 3600 }`), keyed by the SQL text. Measured: Upstash key
+deleted, table at 60, production rendered 59 four times in twenty seconds. On the branch the
+sold sync purges Upstash (exact keys plus per-street and per-neighbourhood prefixes for what it
+wrote, with a settle pass) and the sold route drops the `db2` tag; `/api/revalidate` takes
+`{ tag: "db2" | "db3" }`. Proven on preview `miltonly-4rwyyu3vn`: stale 59 against 60, one sync,
+60 with no wait. **DB3 (analytics) reads sit in the same hour** under `db3`; nothing drops that
+tag yet.
 
-**THE CHECK AND THE MARKUP WERE A MATCHED PAIR.** `hub-intents.mjs` shipped inside `5448b96`
-alongside the `h-` markup it reads. It passes now. It failed before only because `c98f40e`
-rewrote that markup to `hh-` without touching the check. The battery is 11 checks again.
+**THE JUDGE IS THE PROGRAMME'S LIMITING GATE, AND ITS VERDICTS ARE NOW READABLE.** 23 crossed
+streets regenerated: 8 republished, 13 refused by the judge, among them two FAQ-bank questions
+("Is Derry Road a good fit for investors?") and "most residents" commute sentences tagged as
+tenure characterization, plus one truncated judge reply counted as a refusal. Rulings needed:
+the investor question in the bank, the commute sentences, a retry on an unparseable reply.
 
-**`buildMiltonWideContext` NOW HAS A 5-MINUTE TTL** (`259a365`). It had none, and nothing in the
-serving path ever called `resetMiltonWideContextCache()`. That was fine while it was a
-generation-time helper computed once per run across 14 hubs; it stopped being fine when the
-homepage began calling it per render. The homepage published `proof-sales-12mo` as 1,531 against
-a live 1,728 and no purge could shift it, because neither `revalidatePath` nor an Upstash flush
-reaches a module-level variable. Five minutes keeps the once-per-generation-run benefit and lets
-a stale figure correct itself without a deploy. A rejected promise is dropped rather than cached,
-so one database blip cannot poison every homepage render for the length of the TTL.
+**THE SEVEN CLIPS ARE LIVE.** anne-boulevard, bronte-street, commercial-street, heslop-road,
+locker-place (re-keyed), martin-street, nipissing-road (re-keyed). Manifest 173 rows, 49
+published; `bronte-street-south` retired. anne-boulevard and martin-street pages built on
+DeepSeek ($0.0150 and $0.0094; $0.0528 more spent on three failed anne runs, two on the park
+false positive and one on my own mistimed tooling).
 
-**TWO CONFLICTS, BOTH RESOLVED BY KEEPING BOTH SIDES.**
+**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11 (cap 20 per UTC day, holding),
+217 pending, DeepSeek first, hourly.
 
-- `vercel.json`: main carried `/api/brief/send` from feat/leads and `0a2499b` added two
-  `/api/content/market-watch` entries. Both sides appended to the end of the same array, so git
-  could not tell they were different paths. **All three kept, 17 crons, JSON verified by parse.**
-  The two market-watch entries are deliberate: Vercel cron expressions are UTC, Toronto is UTC-4
-  in EDT and UTC-5 in EST, so no single expression is 08:00 Toronto all year. The route guards on
-  the Toronto local hour and exactly one firing proceeds. **Dropping either loses the edition for
-  half the year.** Content confirmed the resolution reads their intent.
-- `package.json` prebuild: **the union, 23 tests.** Main had gained three lead/content guards
-  while the branch had added `test-sold-date-not-future.ts`.
-
-**THE GATE CAUGHT A REAL CROSS-BRANCH BREAK.** feat/leads' `test-lead-guards.ts` and
-`test-lead-forms.ts` name `ExitIntent.tsx` and `CornerWidget.tsx` by path; fix/core-batch moved
-them to `retired/`. Prebuild died on ENOENT before a single assertion ran. **Repointed, not
-dropped from the lists** — a retired file is dead, not exempt, and if either is remounted it must
-come back already holding the ingress contract rather than the monolith fetch it shipped with.
-
-**THE MIGRATION LEDGER IS CLEAN, AND IT WAS NOT.** Two rows were wrong:
-
-- `20260910180000_street_content_created_at`, mine, failed with 42701 (the column already
-  existed), marked rolled back, directory deleted. A ledger row for a migration that applied
-  **zero** steps and no longer exists on disk reads as drift. Deleted by
-  `scripts/fix-migration-ledger.ts`, which refuses to touch a row with any applied step or
-  without `rolled_back_at`.
-- `20260910120000_market_edition`, Content's, present locally and **unapplied** in the ledger
-  while both its tables already existed. Verified column-for-column and index-for-index against
-  the migration first, then marked applied. Running it would have failed on an existing table.
-
-**Vercel builds run `prisma generate && next build`, not `migrate deploy`**, which is why neither
-row broke anything. It would still have bitten the first person to run migrations.
-
-**THE 249-PAGE PROGRAMME IS STILL PAUSED** at a 22% pass rate on the `differentPriorities`
-prompt/validator disagreement. 5 pages built, 226 unattempted. The cap is live at 20/day but the
-programme should not resume until the prompt is fixed.
-
-**THE 17 STREETS THAT CROSSED k5 AND 9 THAT CROSSED k10** still publish the suppressed figure.
-Those numbers live in stored `StreetContent` prose and only a regeneration moves them. Content
-flagged this back as Core's, and it is.
-
-**`/rentals` is 1,116 and the homepage agrees. `on-market` is 457, not 462** — a live count that
-moves; the battery passes it against its own source.
-
-**Published street pages: 450.** The battery reports 449; one row is published for a slug with no
-`ResidentialStreet` entity, which the sitemap refuses.
+**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -88,9 +53,13 @@ moves; the battery passes it against its own source.
 
 | | |
 |---|---|
-| `main` | **`8db80da`**, production serving it, `served == expected` |
-| battery on production | **`PASS · 11 checks · 449 pages · 97s`**, exit 0 |
-| `prisma migrate status` | **clean**, 26 migrations, "up to date" |
+| `main` | code SHA **`f347001`**, docs on top |
+| battery on production | **`PASS · 13 checks · 449 pages · 126s`** at `bfb78f3` (2026-09-11); `854ffd3` and `f347001` change the generator and the cron only |
+| `prisma migrate status` | **clean**, 27 migrations (`judgeVerdict` applied 2026-09-11) |
+| waiting on merges | `25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`; `3ec8b51` on approval |
+| creation programme | **running**, 19 created today, 217 pending, cap 20/UTC day |
+| `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
+
 ## What happened 2026-09-10 (final) — three merges
 
 Record in `scratchpad/reports/068-three-merges.md`.
@@ -119,7 +88,7 @@ added as its own commit rather than buried in the merge, two lead guards repoint
 | crons | **17**, both market-watch entries kept |
 | prebuild | **23 tests** |
 | future-dated DB2 rows | **0** of 8,578 |
-| creation programme | **paused**, 5 built, 226 unattempted, cap live at 20/day |
+| creation programme | **paused**, 5 built, 249 rows `ineligible`, cap live at 20/day |
 | published street pages | **450** |
 | QUEUE | 1, 2, 3, 4 done; **7 DONE and merged**; 5, 6 not started |
 
@@ -458,9 +427,5 @@ without the parameter.
 
 ## Next expected task
 
-**QUEUE item 5, geometry backfill** — solar exposure, surface, lanes, sidewalk, maxspeed, length
-and terminus onto all published streets from the Town and OSM layers. No camera work and nothing
-derived from imagery.
-
-Ahead of it if Aamir says so: the `differentPriorities` prompt fix, which unblocks the 226
-remaining creation candidates; and regenerating the 26 streets that crossed k5 or k10.
+**Aamir's call on the four merges by SHA** (`25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`) and on
+`3ec8b51`. Then the judge rulings, the `db3` tag drop for the analytics sync, and QUEUE item 6.

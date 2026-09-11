@@ -91,6 +91,15 @@ export const mockStreetRich: StreetV2Data = {
       { category: 'School', name: 'Martin Street PS', distance: '8 min walk', icon: '🏫' },
       { category: 'Mosque', name: 'Milton Islamic Centre', distance: '7 min drive', icon: '🕌' },
     ],
+    geometry: {
+      identity: 'main||street',
+      facts: [
+        { key: 'length', label: 'Length', value: '1.2 km' },
+        { key: 'category', label: 'Road class', value: 'Collector road' },
+        { key: 'speed', label: 'Posted limit', value: '50 km/h' },
+      ],
+      attribution: 'Contains information licensed under the Open Government Licence – Milton.',
+    },
     cta: {
       eyebrow: 'For Main St E owners',
       headline: 'What is yours worth today?',
@@ -359,6 +368,7 @@ export const mockStreetThin: StreetV2Data = {
       { category: 'GO Station', name: 'Milton GO', distance: '9 min drive', icon: '🚆' },
       { category: 'School', name: 'Boyne PS', distance: '6 min walk', icon: '🏫' },
     ],
+    geometry: null,
     cta: {
       eyebrow: 'For Marigold owners',
       headline: 'What is yours worth today?',

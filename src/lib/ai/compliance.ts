@@ -44,6 +44,7 @@ import {
   withdrawnFaqQuestionsFor,
   faqIsDropped,
 } from './validateStreetGeneration';
+import { shapeEvaluativePrompt } from './evalPromptShape';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
 import { splitSentences } from '@/lib/prose/sentences';
 import { roundPricesInOutput } from './roundPricesInOutput';
@@ -1057,6 +1058,35 @@ interface JudgeVerdict {
   judgeError?: string;
 }
 
+// --- The persisted judge verdict (MC-009, 2026-09-11) ---
+// The judge's per-round findings used to live only in .judge-log.jsonl in the process's working
+// directory, which on Vercel is the function's ephemeral filesystem: for every page the cron
+// built, the round-1 findings were gone the moment the function returned, and "the judge passed"
+// could only be inferred from the page existing. Every run now carries its rounds out through the
+// result (or the error payload) and generateStreet.ts writes them to StreetGeneration.judgeVerdict
+// on every terminal update: the cron and the local runner share that path.
+export interface JudgeRound {
+  round: number;
+  pass: boolean;
+  spans: Array<{ span: string; class: string }>;
+  judgeError?: string;
+  at: string;
+}
+export interface PersistedJudgeVerdict {
+  /** "pass": the final round passed. "fail": the final round refused or the judge errored.
+   *  "not_run": the deterministic validators failed first, so the judge was never called. */
+  result: "pass" | "fail" | "not_run";
+  /** the final round's number, or null when not run */
+  round: number | null;
+  rounds: JudgeRound[];
+}
+/** Pure, so the prebuild case can assert it without a model. */
+export function buildJudgeVerdict(rounds: JudgeRound[]): PersistedJudgeVerdict {
+  if (rounds.length === 0) return { result: "not_run", round: null, rounds: [] };
+  const last = rounds[rounds.length - 1];
+  return { result: last.pass && !last.judgeError ? "pass" : "fail", round: last.round, rounds };
+}
+
 async function judgeFairHousing(
   output: StreetGeneratorOutput,
   slug: string,
@@ -1124,6 +1154,8 @@ export interface Phase41GenerationResult {
   totalOutputTokens: number;
   totalCostUsd: number;
   attempts: Phase41Attempt[];
+  /** every fair-housing judge round this run made, in order; empty when the judge never ran */
+  judgeRounds: JudgeRound[];
 }
 
 export interface Phase41GenerationErrorPayload {
@@ -1133,6 +1165,8 @@ export interface Phase41GenerationErrorPayload {
   totalOutputTokens: number;
   totalCostUsd: number;
   attempts: Phase41Attempt[];
+  /** judge rounds made before the retry budget ran out (a round-1 refusal whose retry then exhausted) */
+  judgeRounds: JudgeRound[];
 }
 
 export class Phase41GenerationError extends Error {
@@ -1503,7 +1537,10 @@ export async function generatePhase41StreetContent(
 ): Promise<Phase41GenerationResult> {
   let ahaPrompt = loadPhase41AboutHomesAmenitiesPrompt();
   let marketPrompt = loadPhase41MarketPrompt();
-  let evalPrompt = loadPhase41EvaluativePrompt();
+  // MC-005: the evaluative prompt is shaped to the input BEFORE any preamble is prepended, so the
+  // section count, the schema, the specification and the FAQ bank say the same thing the
+  // suppression preamble says. See src/lib/ai/evalPromptShape.ts for what the disagreement cost.
+  let evalPrompt = shapeEvaluativePrompt(loadPhase41EvaluativePrompt(), input);
   if (__judgeRetryFeedback) {
     const block =
       `\n\n---\nFAIR-HOUSING JUDGE RETRY (previous output failed the semantic gate):\n` +
@@ -1949,6 +1986,7 @@ Original draft below:`;
         totalOutputTokens,
         totalCostUsd,
         attempts,
+        judgeRounds: [],
       },
     );
   }
@@ -1990,22 +2028,40 @@ Original draft below:`;
   // output, only when the deterministic validators passed. One retry round
   // with the findings appended to all three prompts; a second failure (or a
   // judge error at any round) fail-closes into the review queue.
+  const judgeRounds: JudgeRound[] = [];
   if (finalViolations.length === 0) {
     const round = __judgeRetryFeedback ? 2 : 1;
     const verdict = await judgeFairHousing(finalOutput, input.street.slug, round);
+    judgeRounds.push({
+      round,
+      pass: verdict.pass,
+      spans: verdict.findings.map((f) => ({ span: f.span, class: f.class })),
+      ...(verdict.judgeError ? { judgeError: verdict.judgeError } : {}),
+      at: new Date().toISOString(),
+    });
     if (!verdict.pass) {
       const findingText = verdict.judgeError
         ? `judge unavailable (${verdict.judgeError}) — fail-closed per ruling`
         : verdict.findings.map((f) => `"${f.span}" [${f.class}]`).join("; ");
       if (round === 1 && !verdict.judgeError) {
         console.log(`[Phase41/judge] ${input.street.slug} retrying full generation with judge feedback`);
-        const retry = await generatePhase41StreetContent(input, findingText);
+        let retry: Phase41GenerationResult;
+        try {
+          retry = await generatePhase41StreetContent(input, findingText);
+        } catch (err) {
+          // The retry's halves ran out of budget: round 1 still happened and is kept on the error.
+          if (err instanceof Phase41GenerationError) {
+            err.payload.judgeRounds = [...judgeRounds, ...(err.payload.judgeRounds ?? [])];
+          }
+          throw err;
+        }
         return {
           ...retry,
           totalInputTokens: totalInputTokens + retry.totalInputTokens,
           totalOutputTokens: totalOutputTokens + retry.totalOutputTokens,
           totalCostUsd: totalCostUsd + retry.totalCostUsd,
           attempts: [...attempts, ...retry.attempts],
+          judgeRounds: [...judgeRounds, ...retry.judgeRounds],
         };
       }
       return {
@@ -2021,6 +2077,7 @@ Original draft below:`;
         totalOutputTokens,
         totalCostUsd,
         attempts,
+        judgeRounds,
       };
     }
   }
@@ -2034,5 +2091,6 @@ Original draft below:`;
     totalOutputTokens,
     totalCostUsd,
     attempts,
+    judgeRounds,
   };
 }

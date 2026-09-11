@@ -1,0 +1,24 @@
+2026-09-11T18:06:22.970Z queue: [{"status":"done","n":239},{"status":"failed","n":232},{"status":"ineligible","n":181},{"status":"pending","n":224}]
+rows touched by the cron: 20
+  balsam-court-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  willingdon-crescent-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  urell-way-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  cumming-boulevard-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  chuchmach-close-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  cactus-point-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  bond-head-court-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  gazley-circle-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  dice-way-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  riddell-crescent-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  hamilton-crescent-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  fir-court-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  ambroise-crescent-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  evans-terrace-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  cherry-court-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  wellwood-terrace-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  moonseed-place-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  cedric-terrace-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  bussel-crescent-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  leblanc-court-milton failed attempts=1  400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+StreetContent rows created in the last 2h: 0 
+StreetGeneration rows in the last 2h: 20 leblanc-court-milton:failed/0@18:00:59, bussel-crescent-milton:failed/0@18:00:59, evans-terrace-milton:failed/0@18:00:59, cedric-terrace-milton:failed/0@18:00:59, ambroise-crescent-milton:failed/0@18:00:59, moonseed-place-milton:failed/0@18:00:59, fir-court-milton:failed/0@18:00:59, wellwood-terrace-milton:failed/0@18:00:59, hamilton-crescent-milton:failed/0@18:01:00, cherry-court-milton:failed/0@18:01:00, riddell-crescent-milton:failed/0@18:01:08, bond-head-court-milton:failed/0@18:01:08, gazley-circle-milton:failed/0@18:01:08, dice-way-milton:failed/0@18:01:08, cactus-point-milton:failed/0@18:01:08, chuchmach-close-milton:failed/0@18:01:08, willingdon-crescent-milton:failed/0@18:01:08, cumming-boulevard-milton:failed/0@18:01:08, balsam-court-milton:failed/0@18:01:09, urell-way-milton:failed/0@18:01:09

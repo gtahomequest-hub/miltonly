@@ -63,11 +63,11 @@ export function DailyBrief() {
         <SectionHead
           index="05"
           title="The Milton daily brief"
-          standfirst="What came to market, what sold, and what it means — one short email, written from the same data this page is built on."
+          standfirst="What came to market, what sold, and what it means. One short email, written from the same data this page is built on."
         />
         {state === 'done' ? (
           <p className="mh-briefdone">
-            You are on the list. The next brief arrives tomorrow morning.
+            You are on the list. Your first brief lands the next weekday morning.
           </p>
         ) : (
           <form className="mh-briefform" onSubmit={submit}>

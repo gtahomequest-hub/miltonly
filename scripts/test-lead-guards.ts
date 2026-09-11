@@ -284,6 +284,26 @@ async function main() {
   eq(dst.start.toISOString(), "2026-10-31T04:00:00.000Z", "brief: a window crossing the clock change starts at the correct local midnight");
   eq(dst.end.toISOString(), "2026-11-02T05:00:00.000Z", "brief: and ends at the correct one on the other side");
 
+  // THE TWO BASES. sold_date is a calendar date stamped 00:00 UTC (marketWatch/windows.ts,
+  // "TWO BASES FOR ONE WEEK"), so the Toronto instants select the wrong day from it. The fixture
+  // day is the one that caught it: 2026-09-09 held 8 sales, the Thursday edition read 3, and the
+  // 3 were the 10th's. A row stamped as sold_date stamps it must fall inside the DATE bounds and,
+  // as the proof of why they exist, outside the instant bounds.
+  const thu = briefWindow(new Date("2026-09-10T13:15:00Z"));
+  eq(thu.date, "2026-09-09", "brief: the fixture edition reports 2026-09-09");
+  eq(thu.dateStartUtc.toISOString(), "2026-09-09T00:00:00.000Z", "brief: the date basis starts at UTC midnight of the first local date");
+  eq(thu.dateEndExclusiveUtc.toISOString(), "2026-09-10T00:00:00.000Z", "brief: and ends, exclusive, at UTC midnight of the day after");
+  const stampedNinth = new Date("2026-09-09T00:00:00.000Z");
+  const stampedTenth = new Date("2026-09-10T00:00:00.000Z");
+  const inDate = (t: Date) => t >= thu.dateStartUtc && t < thu.dateEndExclusiveUtc;
+  const inInstant = (t: Date) => t >= thu.start && t < thu.end;
+  ok(inDate(stampedNinth), "brief: a sale stamped on the 9th is inside the date basis for the 9th");
+  ok(!inDate(stampedTenth), "brief: a sale stamped on the 10th is not");
+  ok(!inInstant(stampedNinth) && inInstant(stampedTenth), "brief: the instant basis gets both wrong on that column, which is why the date basis exists");
+  eq(mon.dateStartUtc.toISOString(), "2026-09-12T00:00:00.000Z", "brief: a Monday edition's date basis reaches back to Saturday");
+  eq(mon.dateEndExclusiveUtc.toISOString(), "2026-09-14T00:00:00.000Z", "brief: and ends at UTC midnight Monday");
+  eq(dst.dateStartUtc.toISOString(), "2026-10-31T00:00:00.000Z", "brief: the date basis does not move on the clock change");
+
   eq(isSendingDay(new Date("2026-09-14T13:15:00Z")), true, "brief: Monday is a sending day");
   eq(isSendingDay(new Date("2026-09-18T13:15:00Z")), true, "brief: Friday is a sending day");
   eq(isSendingDay(new Date("2026-09-19T13:15:00Z")), false, "brief: Saturday is not");
@@ -294,6 +314,10 @@ async function main() {
   // ── the brief's copy rules, read off the source ────────────────────────────────
   const compose = readFileSync("src/lib/brief/compose.ts", "utf-8");
   ok(compose.includes("K_ANON_PRICE"), "brief: the typical price is gated by the shared k floor, not a restated number");
+  const soldQuery = compose.slice(compose.indexOf("FROM sold.sold_records"), compose.indexOf("`) as Array", compose.indexOf("FROM sold.sold_records")));
+  ok(/sold_date >= \$\{win\.dateStartUtc/.test(soldQuery) && /sold_date < \$\{win\.dateEndExclusiveUtc/.test(soldQuery), "brief: sold_date is read on the date basis");
+  ok(!/win\.(start|end)/.test(soldQuery), "brief: and never on the Toronto instants, which select the next day from that column");
+  ok(/sold_date <= NOW\(\)/.test(soldQuery), "brief: the sold read carries the future-dated bound, Market Watch ruling 10");
   ok(/K_ANON_PRICE\s*\?[\s\S]{0,80}:\s*null/.test(compose), "brief: suppression is null, never 0");
   ok(compose.includes("changed price"), "brief: a price movement is reported as changed");
   ok(!/dropped/i.test(compose), "brief: never says dropped — lastPriceChangeAt cannot tell a cut from a rise");

@@ -98,6 +98,10 @@ export interface StreetSidebar {
   facts: StreetFact[];
   nearby: NearbyPlace[];
   cta: StreetCta;
+  /** QUEUE item 5. The street's physical facts from the Town centreline (and OSM for surface
+   *  and sidewalk), pre-formatted, with the attribution the card must carry. null => no card.
+   *  Not a suppressible surface: nothing here is a price or a count of people. */
+  geometry: { identity: string; facts: Array<{ key: string; label: string; value: string }>; attribution: string } | null;
 }
 
 // ───── Per-housing-type sections ─────────────────────────────────────────────
