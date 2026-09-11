@@ -2,60 +2,50 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-11 (MC-004): MC-003 merged and verified on production, the creation programme re-queued, QUEUE item 5 built on `feat/geometry` and proven on preview, not merged._
+_Last rewritten 2026-09-11 (MC-009, with MC-010 folded in): the fail-closed merge on main, four branches built and proven and waiting on merges, the seven clips up, the sold-sync purge proven on preview._
 
 ## READ THIS FIRST
 
-**MC-003 IS ON MAIN AS `8ebb937` (merge of `5ebe87a` by SHA) AND PRODUCTION IS GREEN AT IT.**
-`pnpm build` exit 0, pushed, `/api/build` on miltonly.com answers the full SHA, battery
-**`PASS · 12 checks · 449 pages · 109s`**, `served == expected`. Docs on top (`90c457c` and
-this one). Record: `scratchpad/reports/MC-004-merge-queue-geometry.md`.
+**MAIN IS `f347001` (merge of `e12b1b6`) AND PRODUCTION SERVES IT.** A page the judge refuses is
+now a failed attempt in the queue. Record: `scratchpad/reports/MC-009-judge-video-regen.md`.
 
-**THE MC-003 REPORT WAS WRONG ABOUT THE QUEUE, AND MC-004 CORRECTS IT.** It said the 09-11
-15:00Z cron marked the 249 candidates `ineligible`. It did not: one row was marked that day
-(`whitelock-avenue-milton`, an MLS misspelling of Whitlock, off the entity floor, correctly
-refused). The 249 candidates were never the cron's: of the 244 without a page, **167 were not
-in `StreetQueue` at all** (nothing enqueues a registry street whose only history is DB2), **68
-were `ineligible` from May to August** under the three-source gate DEC-GATE-PARITY replaced on
-09-10, and the cron never re-read that status, and **9 were `failed` at attempts=3** and never
-retried. The five pages that exist were built locally by `create-street-pages-local.ts`.
+**FOUR BRANCHES WAIT ON MERGES, EACH BUILT EXIT 0, NONE MERGED:**
+- `feat/judge-verdict` `25b59a6`: `StreetGeneration.judgeVerdict` `{ result, round, rounds[] }`
+  written on every run by cron and local runners alike. **The migration is applied** (27, clean).
+- `fix/comparator-park-mask` `db3be15`: a grounded park name ("Bronte Meadows Park") no longer
+  reads as a comparator placement claim; a real one still does.
+- `feat/video-rekey` `dde23bd`: a superseding clip goes under `streets/<slug>/<YYYYMMDD>/`, the
+  old objects are deleted after production serves the new URL, orphans retire.
+- `fix/sold-sync-purge` `67fcf7f`: MC-010, below.
+`package.json`'s prebuild line will conflict trivially between the first two and the fourth: union.
+`3ec8b51` (menu v2) is also waiting, on Aamir's word.
 
-**THE CREATION PROGRAMME IS RE-QUEUED: 244 ROWS `pending` IN PROGRAMME ORDER.**
-`scripts/requeue-creation-programme.ts --write`, 2026-09-11 17:12Z, entity floor enforced, 0
-refused. The cap of 20 new pages a day is unchanged. **The 18:00Z cron picked up exactly 20**
-(pending 244 to 224) **and all 20 failed in ten seconds on the Anthropic credit-balance 400**,
-attemptCount 0: production runs `AI_PROVIDER_MARKET="haiku"` with `AI_PROVIDER_FALLBACK="opus"`,
-so the cron's first call is to Claude and the account has no credit (Open item 1 since August).
-The local runner forced DeepSeek, which is why five pages exist at all. Until credit is added or
-production's market half is pointed at DeepSeek, every hourly pass burns one attempt on 20 to 25
-rows and each row is terminal `failed` after three; the whole 244 would be exhausted in about a
-day and a half. `requeue-creation-programme.ts --write` resets them once the provider is fixed.
-The `differentPriorities` prompt/validator fault (22 % pass rate) is also still open.
+**THERE ARE TWO CACHES BEHIND EVERY SOLD FIGURE, AND THE SECOND WAS INVISIBLE.** Upstash under
+`cached()` for an hour, and Next's Data Cache over the Neon HTTP client for an hour
+(`src/lib/db.ts`, `next: { revalidate: 3600 }`), keyed by the SQL text. Measured: Upstash key
+deleted, table at 60, production rendered 59 four times in twenty seconds. On the branch the
+sold sync purges Upstash (exact keys plus per-street and per-neighbourhood prefixes for what it
+wrote, with a settle pass) and the sold route drops the `db2` tag; `/api/revalidate` takes
+`{ tag: "db2" | "db3" }`. Proven on preview `miltonly-4rwyyu3vn`: stale 59 against 60, one sync,
+60 with no wait. **DB3 (analytics) reads sit in the same hour** under `db3`; nothing drops that
+tag yet.
 
-**`ineligible` IS NO LONGER A ONE-WAY DOOR, ON `fix/queue-reeval` (`4a65f30`, preview
-`miltonly-flgprxmsq`), NOT MERGED.** DEC-QUEUE-REEVAL: the generate cron re-examines an
-`ineligible` verdict older than 30 days in its spare capacity, oldest first, behind every
-pending and retryable row, and reports `reevaluated` in its JSON. Merge is Aamir's call.
+**THE JUDGE IS THE PROGRAMME'S LIMITING GATE, AND ITS VERDICTS ARE NOW READABLE.** 23 crossed
+streets regenerated: 8 republished, 13 refused by the judge, among them two FAQ-bank questions
+("Is Derry Road a good fit for investors?") and "most residents" commute sentences tagged as
+tenure characterization, plus one truncated judge reply counted as a refusal. Rulings needed:
+the investor question in the bank, the commute sentences, a retry on an unparseable reply.
 
-**QUEUE ITEM 5 IS BUILT ON `feat/geometry` (`b0d424b`, preview `miltonly-ra87zyzmu`), NOT
-MERGED.** Battery on the preview **`PASS · 13 checks · 449 pages · 123s`**. Every street page
-with a Town centreline (447 of 449) carries a "Road facts" card in the sidebar: length, road
-class, lanes, posted limit, surface, sidewalk, terminus, orientation, each present only where
-the layer gives one value, with the OGL attribution and the OSM line where surface or sidewalk
-is shown. 2,646 facts on preview, every one equal to the layer row, none where the row is null,
-none in a hero, glance or market tile. Geometry never enters `StreetGeneratorInput`
-(`scripts/test-geometry-boundary.ts`, prebuild) and the validator's new `unit_figure` rule
-refuses any metre, kilometre, km/h or lane figure in generated prose (zero matches on the
-corpus today). Data: `src/data/streetGeometry.ts`, generated by
-`scripts/town/gen-street-geometry.ts` from the Town cache and the OSM export at
-`D:/dashcam/work/milton-roads.geojson`.
+**THE SEVEN CLIPS ARE LIVE.** anne-boulevard, bronte-street, commercial-street, heslop-road,
+locker-place (re-keyed), martin-street, nipissing-road (re-keyed). Manifest 173 rows, 49
+published; `bronte-street-south` retired. anne-boulevard and martin-street pages built on
+DeepSeek ($0.0150 and $0.0094; $0.0528 more spent on three failed anne runs, two on the park
+false positive and one on my own mistimed tooling).
 
-**`sold_date` IS A CALENDAR DATE WEARING A TIMESTAMPTZ. READ IT AS A DATE.** Unchanged since
-MC-003; Leads' brief window still reads it the wrong way (`src/lib/brief/compose.ts:140`).
+**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11 (cap 20 per UTC day, holding),
+217 pending, DeepSeek first, hourly.
 
 **THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
-
-**THE MIGRATION LEDGER IS CLEAN.** No migration in MC-003 or MC-004.
 
 **Every cost figure in every handoff before 2026-09-05 is wrong by 3x on the Opus portion.**
 
@@ -63,13 +53,12 @@ MC-003; Leads' brief window still reads it the wrong way (`src/lib/brief/compose
 
 | | |
 |---|---|
-| `main` | code SHA **`8ebb937`**, docs on top |
-| battery on production | **`PASS · 12 checks · 449 pages · 109s`** at `8ebb937`, 2026-09-11 |
-| `fix/queue-reeval` | **`4a65f30`**, preview `miltonly-flgprxmsq`, build exit 0, awaiting merge approval |
-| `feat/geometry` | **`b0d424b`**, preview `miltonly-ra87zyzmu`, battery 13/13, awaiting merge approval |
-| `prisma migrate status` | **clean**, 26 migrations |
-| creation programme | **re-queued**, 244 `pending`, 5 built, cap 20/day, prompt fault open |
-| Leads Phase 2 | **on main**, `543ef99` |
+| `main` | code SHA **`f347001`**, docs on top |
+| battery on production | **`PASS · 13 checks · 449 pages · 126s`** at `bfb78f3` (2026-09-11); `854ffd3` and `f347001` change the generator and the cron only |
+| `prisma migrate status` | **clean**, 27 migrations (`judgeVerdict` applied 2026-09-11) |
+| waiting on merges | `25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`; `3ec8b51` on approval |
+| creation programme | **running**, 19 created today, 217 pending, cap 20/UTC day |
+| `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -438,8 +427,5 @@ without the parameter.
 
 ## Next expected task
 
-**Aamir's call on three merges, each by SHA:** `fix/queue-reeval` `4a65f30`, `feat/geometry`
-`b0d424b`, and nothing else pending. Then, in whatever order he says: credit or a DeepSeek market
-half for the cron so the re-queued programme can build; the `differentPriorities` prompt fix;
-the brief's sold window (Leads' file, date basis); regenerating the 26 streets that crossed k5
-or k10.
+**Aamir's call on the four merges by SHA** (`25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`) and on
+`3ec8b51`. Then the judge rulings, the `db3` tag drop for the analytics sync, and QUEUE item 6.

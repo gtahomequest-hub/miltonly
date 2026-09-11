@@ -1,0 +1,46 @@
+review rows since 2026-09-11 19:55 : 6
+  cherry-court-milton: fair_housing_register
+  fir-court-milton: fair_housing_register
+  leblanc-court-milton: fair_housing_register
+  gazley-circle-milton: fair_housing_register
+  evans-terrace-milton: invalid_json_shape
+  cactus-point-milton: fair_housing_register
+by rule: { fair_housing_register: 5, invalid_json_shape: 1 } shape 3-vs-2: 0
+generations: 13, succeeded 7, cost $0.1102
+  cherry-court-milton failed attempts=1 words=0 $0.0074
+  evans-terrace-milton failed attempts=5 words=0 $0.0099
+  fir-court-milton failed attempts=1 words=0 $0.0097
+  gazley-circle-milton failed attempts=2 words=0 $0.0150
+  leblanc-court-milton failed attempts=2 words=0 $0.0123
+  dice-way-milton succeeded attempts=1 words=935 $0.0036
+  wellwood-terrace-milton succeeded attempts=1 words=1046 $0.0038
+  bond-head-court-milton succeeded attempts=3 words=1051 $0.0091
+  cedric-terrace-milton succeeded attempts=2 words=1088 $0.0100
+  riddell-crescent-milton succeeded attempts=5 words=1066 $0.0101
+  cactus-point-milton failed attempts=1 words=0 $0.0075
+  chuchmach-close-milton succeeded attempts=1 words=1007 $0.0037
+  balsam-court-milton succeeded attempts=1 words=959 $0.0081
+2026-09-11T20:12:31.069Z queue: [{"status":"done","n":258},{"status":"failed","n":213},{"status":"ineligible","n":181},{"status":"pending","n":224}]
+rows touched by the cron: 20
+  balsam-court-milton done attempts=0 20:01:46 
+  chuchmach-close-milton done attempts=0 20:01:46 
+  cactus-point-milton done attempts=0 20:01:46 
+  bond-head-court-milton done attempts=0 20:01:30 
+  gazley-circle-milton done attempts=0 20:01:30 
+  dice-way-milton done attempts=0 20:01:30 
+  riddell-crescent-milton done attempts=0 20:01:30 
+  fir-court-milton done attempts=0 20:01:30 
+  evans-terrace-milton failed attempts=1  Phase41 three-call generation failed: aha=0 violations after 1 attempts, market=0 violatio
+  cherry-court-milton done attempts=0 20:01:30 
+  wellwood-terrace-milton done attempts=0 20:01:30 
+  cedric-terrace-milton done attempts=0 20:01:30 
+  leblanc-court-milton done attempts=0 20:01:29 
+  willingdon-crescent-milton done attempts=1 19:02:39 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  urell-way-milton done attempts=1 19:02:39 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  cumming-boulevard-milton done attempts=1 19:02:39 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  hamilton-crescent-milton done attempts=1 19:01:36 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  ambroise-crescent-milton done attempts=1 19:01:36 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  moonseed-place-milton done attempts=1 19:01:35 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+  bussel-crescent-milton done attempts=1 19:01:35 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance
+StreetContent rows created in the last 2h: 14 hamilton-crescent-milton@19:01:10, bussel-crescent-milton@19:01:14, ambroise-crescent-milton@19:01:14, moonseed-place-milton@19:01:35, urell-way-milton@19:01:58, willingdon-crescent-milton@19:02:07, cumming-boulevard-milton@19:02:09, dice-way-milton@20:01:01, wellwood-terrace-milton@20:01:02, bond-head-court-milton@20:01:11, cedric-terrace-milton@20:01:15, riddell-crescent-milton@20:01:24, chuchmach-close-milton@20:01:39, balsam-court-milton@20:01:46
+StreetGeneration rows in the last 2h: 20 hamilton-crescent-milton:succeeded/2@19:01:10, bussel-crescent-milton:succeeded/2@19:01:14, ambroise-crescent-milton:succeeded/2@19:01:14, moonseed-place-milton:succeeded/2@19:01:35, urell-way-milton:succeeded/2@19:01:58, willingdon-crescent-milton:succeeded/2@19:02:07, cumming-boulevard-milton:succeeded/4@19:02:09, cherry-court-milton:failed/1@20:00:55, evans-terrace-milton:failed/5@20:00:56, fir-court-milton:failed/1@20:00:56, gazley-circle-milton:failed/2@20:00:56, leblanc-court-milton:failed/2@20:00:56, dice-way-milton:succeeded/1@20:01:01, wellwood-terrace-milton:succeeded/1@20:01:02, bond-head-court-milton:succeeded/3@20:01:11, cedric-terrace-milton:succeeded/2@20:01:15, riddell-crescent-milton:succeeded/5@20:01:24, cactus-point-milton:failed/1@20:01:33, chuchmach-close-milton:succeeded/1@20:01:39, balsam-court-milton:succeeded/1@20:01:46
