@@ -214,6 +214,22 @@ function Sidebar({ data }: { data: StreetV2Data }) {
           ))}
         </div>
       )}
+      {/* QUEUE item 5. The street's physical facts, from the Town centreline and OSM, each one
+          the layer's value formatted and nothing else. A card of its own so a road fact never
+          sits among the market facts above, and the attribution is on the card that makes the
+          claim. The battery's geometry-facts check reads these rows by data-key. */}
+      {sidebar.geometry && (
+        <div className="s-side-card s-geo" data-identity={sidebar.geometry.identity}>
+          <h4>Road facts</h4>
+          {sidebar.geometry.facts.map((f) => (
+            <div className="s-fact s-geo-fact" data-key={f.key} key={f.key}>
+              <span className="s-fact-l">{f.label}</span>
+              <span className="s-fact-v">{f.value}</span>
+            </div>
+          ))}
+          <div className="s-near-note">{sidebar.geometry.attribution}</div>
+        </div>
+      )}
       {sidebar.nearby.length > 0 && (
         <div className="s-side-card">
           <h4>Nearby</h4>

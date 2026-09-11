@@ -44,6 +44,7 @@ exists on one machine only. A missing credential fails loudly and by name — it
 | `composition` | every published page is a street in the Town registry or on the off-registry allowlist, and nothing is on neither |
 | `hub-meta` | a hub's meta description, hero tile and JSON-LD all publish the live aggregate — same price, same precision, same sale count, same silence below k |
 | `guide-links` | every street page and every hub carries its guides ledger in the served HTML: the required guides per surface, the condo guide exactly on the condo-heavy population (derived from the page itself), and every destination answering 200 |
+| `geometry-facts` | every road fact a street page renders equals the layer value in `src/data/streetGeometry.ts` for that street's identity, nothing renders where the layer is null, the card carries its attribution, and no unit figure appears in a hero, glance or market tile |
 
 ## The rules these encode
 

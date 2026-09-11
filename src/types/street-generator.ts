@@ -53,6 +53,7 @@ export interface ValidatorViolation {
 }
 
 export type ValidatorRule =
+  | "unit_figure"           // QUEUE item 5 (2026-09-11): a metre / kilometre / km/h / lane figure in prose; no input carries one, so every one is ungrounded
   | "mixed_pool_claim"      // batch-001: sale + lease pools combined in one claim (ratio/yield/blended total)
   | "catchment_vocabulary"  // WS4 locked: catchment/boundary/assignment language (grounded-external only)
   | "adjacency_claim"       // batch-001: physical-adjacency claim about a comparison street
