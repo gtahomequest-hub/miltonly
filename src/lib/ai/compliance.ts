@@ -44,6 +44,7 @@ import {
   withdrawnFaqQuestionsFor,
   faqIsDropped,
 } from './validateStreetGeneration';
+import { shapeEvaluativePrompt } from './evalPromptShape';
 import { trimFaqAnswersToSentenceCap } from './trimFaqAnswers';
 import { splitSentences } from '@/lib/prose/sentences';
 import { roundPricesInOutput } from './roundPricesInOutput';
@@ -1503,7 +1504,10 @@ export async function generatePhase41StreetContent(
 ): Promise<Phase41GenerationResult> {
   let ahaPrompt = loadPhase41AboutHomesAmenitiesPrompt();
   let marketPrompt = loadPhase41MarketPrompt();
-  let evalPrompt = loadPhase41EvaluativePrompt();
+  // MC-005: the evaluative prompt is shaped to the input BEFORE any preamble is prepended, so the
+  // section count, the schema, the specification and the FAQ bank say the same thing the
+  // suppression preamble says. See src/lib/ai/evalPromptShape.ts for what the disagreement cost.
+  let evalPrompt = shapeEvaluativePrompt(loadPhase41EvaluativePrompt(), input);
   if (__judgeRetryFeedback) {
     const block =
       `\n\n---\nFAIR-HOUSING JUDGE RETRY (previous output failed the semantic gate):\n` +
