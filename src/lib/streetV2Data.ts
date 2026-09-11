@@ -14,6 +14,7 @@ import { getStreetPageData } from '@/lib/street-data';
 import { windowDisclosure } from '@/lib/streetEnrichment';
 import { stripNumericSentences, stripNumericParagraphs, answersQuestion, isDisclaimerOnly } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
+import { geometryFactsFor } from '@/lib/town/geometry';
 import type {
   StreetPageData,
   StreetHeroProps,
@@ -211,6 +212,9 @@ export function mapStreetV2Data(
 
     sidebar: {
       facts: Object.entries(data.descriptionSidebar.streetFacts).map(([label, value]) => ({ label, value })),
+      // QUEUE item 5: the Town's physical facts for this street, or null. Looked up by slug
+      // here, at the seam, so the data window and the shell never compute it twice.
+      geometry: geometryFactsFor(data.street.slug),
       nearby: data.descriptionSidebar.nearbyPlaces.map((n) => ({
         category: n.category,
         name: n.name,

@@ -20,10 +20,12 @@ import hubMeta from './checks/hub-meta.mjs';
 import geometryControl from './checks/geometry-control.mjs';
 import homepage from './checks/homepage.mjs';
 import hubIntents from './checks/hub-intents.mjs';
+import guideLinks from './checks/guide-links.mjs';
+import geometryFacts from './checks/geometry-facts.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

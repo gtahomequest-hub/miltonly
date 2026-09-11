@@ -22,7 +22,7 @@ export function HomeFooter({ footer, brand }: Props) {
         <div className="m-ftop">
           <div className="m-fbrand">
             <div className="m-logo">Miltonly</div>
-            <p>Milton Real Estate Encyclopedia — neighbourhood by neighbourhood, street by street.</p>
+            <p>Milton real estate, neighbourhood by neighbourhood, street by street.</p>
           </div>
           <FooterSearch />
         </div>

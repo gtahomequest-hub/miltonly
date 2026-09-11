@@ -16,7 +16,7 @@ export function ThinSegmentCard({ label, count, window, href = '/sell' }: Props)
     <div className="brd-thin">
       <div className="brd-thin-head">{label}</div>
       <p className="brd-thin-body">
-        {count === 0 ? 'No sales' : count === 1 ? '1 sale' : `${count} sales`} in {window} — too thin
+        {count === 0 ? 'No sales' : count === 1 ? '1 sale' : `${count} sales`} in {window}, too thin
         for a reliable typical price. Valuing one of these means picking comparables by hand.
       </p>
       <a className="brd-thin-cta" href={href}>

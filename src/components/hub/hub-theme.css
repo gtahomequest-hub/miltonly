@@ -18,7 +18,11 @@
 
   --h-text: #ffffff;
   --h-text-sec: rgba(255, 255, 255, 0.8);
-  --h-text-faint: rgba(255, 255, 255, 0.45);
+  /* READABLE, NOT DECORATIVE. This token colours the hero's small text: the stat tile
+     labels (12px), the intent subtitles (12.5px), the crumb, and the silent tile value.
+     At 0.45 on #073126 every one of them measured 4.05:1 on all 22 hubs, under the 4.5:1
+     that small text needs. 0.56 measures 5.46:1 with headroom and still reads as secondary. */
+  --h-text-faint: rgba(255, 255, 255, 0.56);
   --h-text-body: #292b29;
   --h-text-muted: #6b6f6a;
 

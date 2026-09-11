@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 
-  const pending = await prisma.streetQueue.findMany({
+  const QUEUE_TAKE = 25;
+  const live = await prisma.streetQueue.findMany({
     where: {
       OR: [
         { status: "pending" },
@@ -41,8 +42,33 @@ export async function POST(request: NextRequest) {
       ],
     },
     orderBy: { createdAt: "asc" },
-    take: 25,
+    take: QUEUE_TAKE,
   });
+
+  // ── DEC-QUEUE-REEVAL (2026-09-11, MC-004) ──
+  // "ineligible" was a one-way door. makeStreetDecision writes it when the activity gate fails,
+  // and this route never looked at the row again, so the verdict outlived the gate that gave it.
+  // DEC-GATE-PARITY widened that gate on 2026-09-10 to admit streets whose whole history sits in
+  // DB2; 71 of the 249 creation candidates had already been struck "ineligible" by the old
+  // three-source gate between May and August, and the widening could not reach them. A street
+  // that later acquires its first DB2 record is in the same position. So a verdict older than
+  // REEVAL_AFTER_DAYS is re-examined, in the spare capacity of a run, oldest verdict first. The
+  // gate decides again; a street that is still ineligible is stamped with a fresh processedAt
+  // (below) and waits another period. Live pending and retryable rows always go first, so this
+  // can never crowd out a street that is waiting its turn.
+  const REEVAL_AFTER_DAYS = 30;
+  const reevalBefore = new Date(Date.now() - REEVAL_AFTER_DAYS * 24 * 60 * 60 * 1000);
+  const stale = live.length < QUEUE_TAKE
+    ? await prisma.streetQueue.findMany({
+        where: {
+          status: "ineligible",
+          OR: [{ processedAt: null }, { processedAt: { lt: reevalBefore } }],
+        },
+        orderBy: [{ processedAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
+        take: QUEUE_TAKE - live.length,
+      })
+    : [];
+  const pending = [...live, ...stale];
 
   // ── DEC-NEW-PAGE-CAP (2026-09-10) ──
   // QUEUE item 7's widened gate admits 249 registry-filtered streets that have no page. Left
@@ -120,14 +146,23 @@ export async function POST(request: NextRequest) {
     for (let j = 0; j < results.length; j++) {
       const result = results[j];
       const item = batch[j];
-      if (result.status === "fulfilled") {
+      if (result.status === "fulfilled" && result.value.passed) {
         built.push(item.streetName);
         await prisma.streetQueue.updateMany({
           where: { streetSlug: item.streetSlug },
           data: { status: "done", processedAt: new Date() },
         });
       } else {
-        const errMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        // TWO WAYS TO FAIL, ONE QUEUE STATE (MC-005, 2026-09-11). generateStreetContent THROWS
+        // when the retry budget is exhausted, and RESOLVES with passed=false when the halves
+        // passed individually but the combined validation or the fair-housing judge refused
+        // the page (fail-closed: no StreetContent row is written). The second path used to
+        // land here as "fulfilled" and the row was marked done with no page behind it, never
+        // to be looked at again: five streets on the 20:00Z pass alone. A refusal is a failed
+        // attempt, and it is counted as one.
+        const errMsg = result.status === "rejected"
+          ? (result.reason instanceof Error ? result.reason.message : String(result.reason))
+          : "fail-closed: combined validation or the fair-housing judge refused the page; no StreetContent written";
         failed.push(`${item.streetName}: ${errMsg}`);
         await prisma.streetQueue.updateMany({
           where: { streetSlug: item.streetSlug },
@@ -137,7 +172,7 @@ export async function POST(request: NextRequest) {
             attempts: { increment: 1 },
           },
         });
-        console.error(`Failed to generate ${item.streetName}:`, result.reason);
+        console.error(`Failed to generate ${item.streetName}:`, result.status === "rejected" ? result.reason : errMsg);
       }
     }
 
@@ -155,6 +190,8 @@ export async function POST(request: NextRequest) {
     // and the difference between "nothing to build" and "not allowed to build yet" has to be
     // readable from the response or the cap looks like a stalled queue.
     newPageCap: { limit: NEW_PAGES_PER_DAY, createdToday, remaining: newPageBudget, deferred },
+    // DEC-QUEUE-REEVAL: how many stale "ineligible" verdicts this run re-examined.
+    reevaluated: stale.length,
     durationMs: Date.now() - start,
   });
 }

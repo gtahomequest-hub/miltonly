@@ -28,10 +28,22 @@ function idsIn(html) {
   return new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
 }
 
-/** The hero's intent squares, in document order. */
+/** The hero's intent squares.
+ *
+ *  MATCHED ON BOTH CLASS NAMES. The hub rebuild renamed `.h-intent` to `.hh-intent` and this
+ *  parser kept looking for the old one, so it found zero squares on all 22 hubs and its
+ *  fragment assertion then passed over nothing. The coverage assertion below is what caught
+ *  it, which is exactly why a check has to fail on reading nothing rather than report "no
+ *  findings". Both names are accepted so a rename alone cannot blind it again. */
 function intentHrefs(html) {
-  return [...html.matchAll(/<a\b[^>]*class="h-intent"[^>]*href="([^"]+)"/g)].map((m) => m[1])
-    .concat([...html.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*class="h-intent"/g)].map((m) => m[1]));
+  const out = [];
+  for (const re of [
+    /<a\b[^>]*class="[^"]*\bhh?-intent\b[^"]*"[^>]*href="([^"]+)"/g,
+    /<a\b[^>]*href="([^"]+)"[^>]*class="[^"]*\bhh?-intent\b[^"]*"/g,
+  ]) {
+    for (const m of html.matchAll(re)) out.push(m[1]);
+  }
+  return [...new Set(out)];
 }
 
 export default {

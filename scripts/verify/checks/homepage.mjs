@@ -110,6 +110,9 @@ function figures(html) {
       fig: m[2],
       slug: slug ? slug[1] : null,
       value: raw === '' ? null : Number(raw),
+      // the attribute verbatim — figures whose canonical form is a STRING ("28 days",
+      // "98.1%", "$933,000") cannot survive Number()
+      rawValue: raw === '' ? null : raw,
       // React splits adjacent text nodes with <!-- -->; strip comments before tags.
       text: inner.replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
     });
@@ -260,6 +263,73 @@ export default {
     const homeRentalsShown = homeRentals ? Number(homeRentals.text.replace(/[,\s]/g, '')) : null;
     const rentalsAgree = rentalsShown !== null && homeRentalsShown !== null && rentalsShown === homeRentalsShown;
 
+    // ── 3d. THE MENU IS A SURFACE TOO ────────────────────────────────────
+    // The mega menu printed "$937,465.504", "27.829694323144103" and a ratio wearing a
+    // percent sign, on production, for as long as the panel existed. Every gate written to
+    // that point read the page BODY, and none of them opened a menu — so a surface that
+    // publishes site figures had no coverage at all.
+    //
+    // Two rules, both cheap:
+    //   · the menu's three market figures must equal what THE BOARD renders on the same
+    //     page. One page, two surfaces, one number — no new record needed.
+    //   · NOTHING carrying data-fig anywhere on this page may render a raw float. That one
+    //     regex would have caught all three defects on the day they shipped, and it catches
+    //     the next one without anybody predicting which figure it will be.
+    // Compared on data-value, not rendered text: the Board's tile prints "28" and captions
+    // it "days" in a sibling element, while the menu prints "28 days" in one. Both declare
+    // the same canonical string in data-value, which is what the attribute is for.
+    const val = (k) => { const f = figs.find((x) => x.fig === k); return f ? (f.value === null ? f.text : String(f.rawValue ?? f.text)) : null; };
+    const menuPairs = [
+      ['menu-sell-days', 'board-days'],
+      ['menu-sell-sta', 'board-sta'],
+    ];
+    const menuMismatch = [];
+    for (const [menuKey, boardKey] of menuPairs) {
+      const m = val(menuKey), b = val(boardKey);
+      if (m === null || b === null) { menuMismatch.push(`${menuKey}/${boardKey}: ${m ?? 'absent'} vs ${b ?? 'absent'}`); continue; }
+      if (m.replace(/\s/g, '') !== b.replace(/\s/g, '')) menuMismatch.push(`${menuKey} "${m}" != ${boardKey} "${b}"`);
+    }
+
+    // A raw float is a formatting failure whatever the figure is: 3+ decimal places, or any
+    // decimal at all in a value that also carries a currency or percent sign.
+    const RAW_FLOAT = /\d\.\d{3,}/;
+    const rawFloats = figs.filter((f) => RAW_FLOAT.test(f.text)).map((f) => `${f.fig}: "${f.text}"`);
+
+    // ── 3e. VOICE: no em-dash, en-dash only between numerals ─────────────
+    // CLAUDE.md's rule, gated on the RENDERED page rather than on source, so a dash reaching
+    // the reader through a data field or a generated string is caught too. The Open
+    // Government Licence attribution is exempt by name: "Open Government Licence – Milton"
+    // is verbatim licence text and may not be altered.
+    // Tested PER TEXT NODE, not over the whole document. A document-wide regex reads across
+    // element boundaries and reports "Volume - Days" as prose; and it cannot tell the Board's
+    // standalone null marker from a dash inside a sentence. Splitting on tags gives each
+    // chunk in isolation, so a chunk that is only a dash is what it is: a marker for "no
+    // value", not prose.
+    //
+    // TWO DELIBERATE EXEMPTIONS, both stated rather than silent:
+    //   · the Open Government Licence attribution, which is verbatim licence text
+    //   · a chunk consisting solely of a dash, the Board's "no value published" glyph
+    const chunks = html
+      .replace(/<script[\s\S]*?<\/script>/g, '<>')
+      .replace(/<style[\s\S]*?<\/style>/g, '<>')
+      .replace(/<!--[\s\S]*?-->/g, '<>')
+      .split(/<[^>]*>/)
+      .map((c) => c.replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .filter((c) => !/Open Government Licence – Milton/.test(c));
+
+    const isProse = (c) => /[A-Za-z]/.test(c.replace(/[–—]/g, ''));
+    const emDashes = chunks.filter((c) => c.includes('—') && isProse(c)).map((c) => c.slice(0, 90));
+    // An en-dash is allowed only as a NUMERIC RANGE: a digit or currency symbol on both
+    // sides. "$785,000-$1,107,000" is a range; "Licence - Milton" is not.
+    // The prose guard applies here too. React splits `{a}–{b}` into three text nodes, so
+    // the Board's price band arrives as a lone dash with its numbers in the neighbouring
+    // nodes. A chunk with no letters in it is not prose and cannot be a voice violation.
+    const enDashes = chunks
+      .filter((c) => c.includes('–') && isProse(c))
+      .filter((c) => !/[\d$][\s]?–[\s]?[$\d]/.test(c))
+      .map((c) => c.slice(0, 90));
+
     // ── 4. structured data ───────────────────────────────────────────────
     const website = nodes.find((n) => n['@type'] === 'WebSite');
     const org = nodes.find((n) => n['@type'] === 'Organization');
@@ -275,7 +345,8 @@ export default {
         ['Milton-wide figures checked by value + format', `${FIG_SPECS.length} specs`],
         ['as rendered', figReport.join(' · ') || 'none read'],
         ['published street pages (record)', homeRecord.publishedStreetPages],
-        ['rentals available: homepage / /rentals / record', `${homeRentalsShown ?? '—'} / ${rentalsShown ?? '—'} / ${homeRecord.rentalsAvailable}`],
+        ['rentals available: homepage / /rentals / record', `${homeRentalsShown ?? '-'} / ${rentalsShown ?? '-'} / ${homeRecord.rentalsAvailable}`],
+        ['menu sell figures', figs.filter((f) => f.fig.startsWith('menu-sell-')).map((f) => `${f.fig}="${f.text}"`).join(' · ') || 'none'],
         ['published StreetContent rows (record)', homeRecord.publishedContentRows],
         ['neighbourhood price figures', hoodFigs.length],
         ['sub-k hoods (price must be silent)', hoodFigs.filter((f) => hubRecord.hub(f.slug) && hubRecord.hub(f.slug).typicalRounded === null).map((f) => f.slug).join(', ') || 'none'],
@@ -295,6 +366,10 @@ export default {
         ['street-page figure == the published page count', pagesMatch, true],
         ['/rentals returns 200', rentalsPage.status, 200],
         ['homepage rentals figure == the figure /rentals publishes', rentalsAgree, true],
+        ['menu figure != the Board figure on the same page', menuMismatch.length, 0],
+        ['any data-fig rendering a raw float', rawFloats.length, 0],
+        ['em-dashes in rendered copy', emDashes.length, 0],
+        ['en-dashes outside a numeric range', enDashes.length, 0],
         ['neighbourhood figure != its hub record', priceMismatch.length, 0],
         ['neighbourhood figure off a sub-k pool', subKLeak.length, 0],
         ['sub-k hood prints a price instead of its suppression', silentSplit.length, 0],
@@ -314,6 +389,9 @@ export default {
         ...absent, ...malformed, ...offSource,
         ...(pagesMatch ? [] : [`street-page figure shows ${pagesShown} vs ${homeRecord.publishedStreetPages} published pages`]),
         ...(rentalsAgree ? [] : [`rentals: homepage ${homeRentalsShown ?? 'absent'} vs /rentals ${rentalsShown ?? 'absent'}`]),
+        ...menuMismatch, ...rawFloats,
+        ...emDashes.map((c) => `em-dash: ...${c}...`),
+        ...enDashes.map((c) => `en-dash outside a numeric range: ...${c}...`),
       ],
     };
   },

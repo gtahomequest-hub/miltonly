@@ -24,6 +24,8 @@ import { StreetAddresses } from './AddressLadder';
 import { SiteNav } from '../../nav/SiteNav';
 import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
 import { COMPARE_TEASER } from '@/lib/comparisonData';
+import { GuideUplinks } from '../../guides/GuideUplinks';
+import { guidesForStreet } from '@/lib/guides/uplinks';
 
 // FIRST off-hub placement of the standalone CompareModule. A street buyer is
 // implicitly choosing freehold vs condo, so the existing freehold-vs-condo teaser
@@ -40,6 +42,9 @@ export function StreetV2Page({
   data: StreetV2Data;
   compareContrast?: CompareContrast | null;
 }) {
+  // MC-003 guide up-links. Condo-heavy means a condo sale pill renders in the hero, which is
+  // the same marker the battery's guide-links check reads off the served page.
+  const guides = guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo') });
   return (
     <div className="street-v2">
       <SiteNav variant="page" />
@@ -55,6 +60,7 @@ export function StreetV2Page({
       <StreetInventory data={data} />
       <StreetAddresses data={data} />
       <StreetContext data={data} />
+      <GuideUplinks guides={guides} context={data.name} variant="street" />
       <StreetFaq data={data} />
       <StreetFinalCtas data={data} />
     </div>

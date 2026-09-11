@@ -78,6 +78,9 @@ model Listing {
   schoolZone         String?
   goWalkMinutes      Int?
   condoBuilding      String?
+  // DEAD. Declared 2026-04-09 beside maintenanceFeeAmt and never written by any sync: NULL on
+  // every row. Nothing may read it; scripts/test-fee-column.ts enforces that. maintenanceFeeAmt
+  // is the fee column.
   maintenanceFee     Int?
   // Detail fields
   lotSize            String?
@@ -729,6 +732,12 @@ model StreetGeneration {
   // on the atomic claim and again on the terminal update, so a row's snapshot always matches
   // the inputHash beside it.
   inputJson    Json?
+  // The fair-housing judge's verdict for this run: { result, round, rounds[] } with every
+  // round's spans. Written on every terminal update by the one path the cron and the local
+  // runner share. NULL on rows written before 2026-09-11; "not_run" when the validators failed
+  // first. The .judge-log.jsonl file was the only record before this, and on Vercel it is gone
+  // the moment the function returns.
+  judgeVerdict Json?
   status       GenerationStatus @default(succeeded)
   generatedAt  DateTime         @default(now())
   attemptCount Int

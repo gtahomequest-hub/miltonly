@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Items 5 and 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **not started**.
 
 **The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
 registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
@@ -199,9 +199,23 @@ verified on production: `1050 Main Street East`, `1470 Main Street East`, `1005 
 
 ## 5. Geometry backfill
 
+**DONE 2026-09-11 (MC-005), merged as `142b9a9`** (branch head `b0d424b`, by SHA, full gate). Production battery at `bfb78f3`: **`PASS · 13 checks · 449 pages · 126s`**, the `geometry-facts` check among them. 447 of 449 published streets carry the Road facts card; 2,646 facts, each equal to the layer row.
+
 Populate solar exposure, surface, lanes, sidewalk, maxspeed, length, and terminus onto all published streets from the Town and OSM layers. No camera work, and nothing derived from imagery.
 
 **Done when** those fields are populated for every street with an OSM match, and rendered wherever the page design calls for them.
+
+*Gate A done 2026-09-11 (MC-003), no code: coverage over the 449 published streets per layer, where each field renders, and the validator rule that keeps geometry out of the prompt. Record in `scratchpad/reports/MC-003-core-batch-2.md`. Build awaits rulings.*
+
+*Built 2026-09-11 (MC-004) on `feat/geometry` at `b0d424b`, preview `miltonly-ra87zyzmu`, battery `PASS · 13 checks · 449 pages`. Merged 2026-09-11 (MC-005) as `142b9a9`. 447 of 449 published streets render a Road facts card; 2,646 facts, every one equal to the layer row. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
+
+*MC-009 and MC-010, 2026-09-11: `e12b1b6` merged as `f347001`; the judge verdict persisted (`feat/judge-verdict`, migration applied), the seven clips uploaded with two re-keyed and the orphan retired (`feat/video-rekey`), 8 of the 23 k-crossed streets republished on DeepSeek ($0.2770), a validator false positive fixed (`fix/comparator-park-mask`), and the sold sync's two-cache purge proven on preview (`fix/sold-sync-purge`); four branches wait on merges. Record in `scratchpad/reports/MC-009-judge-video-regen.md`.*
+
+*MC-005, 2026-09-11: five merges by SHA (`cbea785`, `142b9a9`, `1f0915e`, `bfb78f3`, `854ffd3`), production green at `bfb78f3` with 13 checks, `AI_PROVIDER_MARKET=deepseek` on Production and Preview, the evaluative prompt shaped to the input (`src/lib/ai/evalPromptShape.ts`), the programme re-queued and building on the cron: 14 pages today for $0.3270, 20 a day, DeepSeek first. Record in `scratchpad/reports/MC-005-merges-provider-prompt-programme.md`.*
+
+*MC-004, 2026-09-11: MC-003 merged as `8ebb937`, production battery 12/12. The creation programme's 244 unbuilt candidates re-queued as `pending` (they were never the cron's: 167 absent, 68 `ineligible` under the old gate, 9 `failed` at attempts=3); the 18:00Z cron picked up 20 and all 20 failed on the Anthropic credit balance, so the programme needs credit or a DeepSeek market half on production before it moves. DEC-QUEUE-REEVAL on `fix/queue-reeval` at `4a65f30`, not merged. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
+
+*Out-of-queue work 2026-09-11, MC-003 on `fix/core-batch-2` at `5ebe87a`: guide up-links on every street page and hub with a 12th battery check, the dead `maintenanceFee` column retired from every read with a prebuild guard, the `sold_date` stamping reported and stopped, and the first five programme pages recorded with their judge results. Preview green, not merged. Record in `scratchpad/reports/MC-003-core-batch-2.md`.*
 
 ---
 

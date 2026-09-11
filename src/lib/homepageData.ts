@@ -191,12 +191,35 @@ export function buildMegaLive(data: HomepageData, board: BoardTab[] | null): Meg
         variant: v.variant,
       })),
     },
+    // FORMATTED HERE, by the SAME helpers TheBoard uses on the same page, so the menu and
+    // the section below it cannot render one figure two ways. money1k and pct1 are re-derived
+    // rather than imported because TheBoard is a client component; the battery asserts the two
+    // surfaces agree, which is the property that matters and the one that broke.
     sell: overall
       ? {
-          window: overall.typical.window,
-          typical: overall.typical.value,
-          daysToSell: overall.daysToSell.value,
-          soldToAsk: overall.soldToAsk.value,
+          figures: [
+            {
+              key: "typical",
+              label: "Typical price",
+              value: overall.typical.value === null ? "—" : `$${(Math.round(overall.typical.value / 1000) * 1000).toLocaleString("en-CA")}`,
+              window: overall.typical.window,
+            },
+            {
+              key: "days",
+              label: "Days to sell",
+              value: overall.daysToSell.value === null ? "—" : `${Math.round(overall.daysToSell.value)} days`,
+              window: overall.daysToSell.window,
+            },
+            {
+              key: "sta",
+              label: "Sold to ask",
+              // A RATIO, not a percent. This is the field that shipped as
+              // "0.980868783307145%" — the unit lives in the name of the renderer, never in
+              // the value, so the value is converted exactly where TheBoard converts it.
+              value: overall.soldToAsk.value === null ? "—" : `${(overall.soldToAsk.value * 100).toFixed(1)}%`,
+              window: overall.soldToAsk.window,
+            },
+          ],
         }
       : undefined,
     inDemandStreets: data.inDemandStreets,

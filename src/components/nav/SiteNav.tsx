@@ -87,6 +87,9 @@ const MENUS: MenuDef[] = [
   },
 ];
 
+// Listing prices are whole dollars from DB1, so a plain locale format is correct for them
+// and ONLY for them. Anything derived — an average, a ratio, a day count — is formatted on
+// the server and arrives here as a string. See megaTypes.ts.
 const money = (n: number) => `$${n.toLocaleString('en-CA')}`;
 
 /** The live right panel. Absent data renders nothing: a panel is never padded with a
@@ -148,29 +151,23 @@ function MegaLivePanel({ menu, live }: { menu: MenuDef; live?: MegaLive }) {
   }
 
   if (menu.key === 'sell' && live.sell) {
-    const s = live.sell;
+    // NO FORMATTING HERE, DELIBERATELY. Every value arrives as a display string built by
+    // buildMegaLive with the same helpers TheBoard uses. This component previously did its
+    // own formatting and shipped "$937,465.504", "27.829694323144103" and a ratio wearing a
+    // percent sign. A renderer that cannot format cannot misformat.
     return (
       <div className="m-mega-live">
-        <p className="m-mega-lead">Milton, {s.window}</p>
+        <p className="m-mega-lead">Milton market, right now</p>
         <dl className="m-mega-figs">
-          {s.typical !== null && (
-            <div>
-              <dt>Typical price</dt>
-              <dd>{money(s.typical)}</dd>
+          {live.sell.figures.map((f) => (
+            <div key={f.key}>
+              <dt>{f.label}</dt>
+              <dd data-fig={`menu-sell-${f.key}`} data-value={f.value}>{f.value}</dd>
+              {/* Each figure states its OWN window. The three do not share one, and a single
+                  "Milton, 12 months" line over all three was stating two of them wrongly. */}
+              <dd className="m-mega-figwin">{f.window}</dd>
             </div>
-          )}
-          {s.daysToSell !== null && (
-            <div>
-              <dt>Days to sell</dt>
-              <dd>{s.daysToSell}</dd>
-            </div>
-          )}
-          {s.soldToAsk !== null && (
-            <div>
-              <dt>Sold to ask</dt>
-              <dd>{s.soldToAsk}%</dd>
-            </div>
-          )}
+          ))}
         </dl>
         <a className="m-mega-more" href="/sell">
           Get a grounded valuation

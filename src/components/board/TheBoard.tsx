@@ -52,7 +52,7 @@ function PriceBandBar({ band, typical }: { band: BoardTab['priceBand']; typical:
         <span className="brd-band-mid">middle half {money1k(band.p25)}–{money1k(band.p75)}</span>
         <span>{money1k(band.p95)}</span>
       </div>
-      <p className="brd-band-note">Milton is not one market — the middle half spans a wide range, and it moves by neighbourhood.</p>
+      <p className="brd-band-note">Milton is not one market. The middle half spans a wide range, and it moves by neighbourhood.</p>
     </div>
   );
 }
@@ -180,11 +180,11 @@ export function TheBoard({ board }: { board: BoardTab[] }) {
             <div className="brd-tile-l">Sales volume<span>trailing 12mo</span></div>
           </div>
           <div className="brd-tile">
-            <div className="brd-tile-v">{tab.daysToSell.value === null ? '—' : Math.round(tab.daysToSell.value)}</div>
+            <div className="brd-tile-v" data-fig="board-days" data-value={tab.daysToSell.value === null ? '—' : `${Math.round(tab.daysToSell.value)} days`}>{tab.daysToSell.value === null ? '—' : Math.round(tab.daysToSell.value)}</div>
             <div className="brd-tile-l">Days to sell<span>{tab.daysToSell.window}</span></div>
           </div>
           <div className="brd-tile">
-            <div className="brd-tile-v">{pct1(tab.soldToAsk.value)}</div>
+            <div className="brd-tile-v" data-fig="board-sta" data-value={pct1(tab.soldToAsk.value)}>{pct1(tab.soldToAsk.value)}</div>
             <div className="brd-tile-l">Sold to ask<span>{tab.soldToAsk.window}</span></div>
           </div>
           <div className="brd-tile">
