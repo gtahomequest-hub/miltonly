@@ -2,9 +2,39 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-10, after three merges landed green and the migration ledger was cleaned._
+_Last rewritten 2026-09-11 (MC-002), verifying the three merges that landed 2026-09-10 and re-running the battery._
 
 ## READ THIS FIRST
+
+**MC-002 WAS ALREADY DONE. All three merges landed in the previous session; nothing was re-run.**
+Verified 2026-09-11, not assumed:
+
+| asked | state |
+|---|---|
+| merge `5448b96` | **cherry-picked as `1cf5342`.** A merge is a NO-OP here, see below |
+| merge `0a2499b` | **merged as `31a9ab0`**, 17 crons intact |
+| merge `fix/core-batch` | **merged as `8db80da`**, head `dce1b70`; TTL present in `buildHubInput.ts` |
+| note Content may regenerate | **already stronger than asked**: Content ran it, reported back, the 2026-08-31 correction is live and spent |
+
+Battery re-run on production at `4765cbd`: **`PASS · 11 checks · 449 pages · 94s`**, exit 0,
+`served == expected`. Working tree clean, `main` level with `origin/main`.
+
+**RE-RUNNING THOSE MERGES WOULD HAVE BEEN THEATRE, AND ONE OF THEM DANGEROUSLY SO.**
+`git merge --no-ff 5448b96` returns **"Already up to date"** with a success exit code, because the
+commit is still an ancestor of main through the reverted `cec6906` — a revert undoes content, not
+ancestry. A gate that reads exit codes would have passed a merge that did nothing. `0a2499b` is
+likewise an ancestor. `fix/core-batch` is merged, and merging `origin/main` into it again plus
+"adding" a TTL that already exists would produce an empty commit or a duplicate. **Verification
+was the work; the merges were not re-runnable.**
+
+**THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** Asked to confirm `/rentals` 1,116 and homepage
+462 / 1,116. Today they read **1,127** and **461**; yesterday 1,116 and 457. These are live counts
+of active listings and available rentals, and the feed syncs daily. **The battery asserts each
+against its own live source and passes** — `on-market: "461" (source 461)`,
+`rentals-available: "1,127" (source 1127)` — and agreement with the source is the correctness
+test. Agreement with a number written down on a previous day is not, and a figure that never moved
+would be the defect.
+
 
 **PRODUCTION IS GREEN AT `8db80da`. `PASS · 11 checks · 449 pages · 97s`, exit 0,
 `served == expected`.** All three merges landed, each by SHA, each with the full gate.
@@ -88,8 +118,8 @@ moves; the battery passes it against its own source.
 
 | | |
 |---|---|
-| `main` | **`8db80da`**, production serving it, `served == expected` |
-| battery on production | **`PASS · 11 checks · 449 pages · 97s`**, exit 0 |
+| `main` | **`4765cbd`** (code SHA `8db80da`; `bb32044`, `217e9ef` and `4765cbd` are docs) |
+| battery on production | **`PASS · 11 checks · 449 pages · 94s`**, exit 0, re-run 2026-09-11 at `4765cbd` |
 | `prisma migrate status` | **clean**, 26 migrations, "up to date" |
 ## What happened 2026-09-10 (final) — three merges
 
