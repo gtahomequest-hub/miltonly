@@ -2,15 +2,27 @@ HOME · D:\miltonly-home · feat/menu-v2
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-11, MH-002: the mega menu rebuilt on `feat/menu-v2`, previewed, battery green at 14 checks, NOT merged._
+_Last rewritten 2026-09-11, MH-003: the rail drives the panel on `feat/menu-v2`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**`feat/menu-v2` IS PREVIEWED AND GREEN, AND IS NOT MERGED.** Head `266f0f4`, which is the
-menu commit `10536c6` plus a merge of `origin/main` at `854ffd3` (MC-006 landed there as
-`339293d`). Preview alias `https://miltonly-git-feat-menu-v2-gtahomequest-hubs-projects.vercel.app`.
-Battery on that deployment (`miltonly-p3vklhhp6`, serving `266f0f4`): **`PASS · 14 checks · 456 pages · 187s`**, exit 0.
+**`feat/menu-v2` IS PREVIEWED AND IS NOT MERGED.** Head `3ec8b51` (MH-003) on top of
+`266f0f4` (MH-002, which carries `origin/main@854ffd3`, MC-006 included). Preview alias
+`https://miltonly-git-feat-menu-v2-gtahomequest-hubs-projects.vercel.app`; the SHA-stamped
+deployment and the battery line are in `scratchpad/reports/MH-003-rail-drives-panel.md`.
 The brief was "stop; no merge". Core merges the SHA, never the branch name.
+
+**THE LEFT RAIL DRIVES THE RIGHT PANEL (MH-003).** Each menu's rail is a `role="tablist"` of
+`<button role="tab">` items; each selects its own panel on hover with the same 120ms intent,
+on focus and on click, and the first is selected by default. Buy: new today, price changes,
+condos, freehold, rentals, alerts. Streets: by neighbourhood, with video, A to Z, address
+search. Sell: what's it worth, sold this month, market watch. Every item's panel is in the
+served HTML on every page, one visible, each with at least one live block and its CTA. On a
+phone each item is a nested `<details>`, the first open; a tap opens the rest inline.
+
+**OPEN HOUSES WERE IN THE BRIEF AND ARE NOT BUILT.** The feed carries no open-house field on
+any Listing row (checked the schema and the rows), so a panel of them could only be invented.
+It returns when the feed carries one. Recorded in `src/lib/megaLive.ts` too.
 
 **THE MENU IS ALIVE ON EVERY PAGE NOW.** It used to be alive on the homepage only. Twenty-one
 server pages render `<SiteNavLive>` (`src/components/nav/SiteNavLive.tsx`), which awaits
@@ -63,15 +75,50 @@ module-local copies.
 
 | | |
 |---|---|
-| branch head | **`266f0f4`**, merge of `origin/main@854ffd3` into the menu commit `10536c6` |
-| preview | `https://miltonly-p3vklhhp6-gtahomequest-hubs-projects.vercel.app` at `266f0f4`, alias `miltonly-git-feat-menu-v2` |
-| battery on preview | **`PASS · 14 checks · 456 pages · 187s`**, exit 0, at `266f0f4` |
-| local build | exit 0 at `10536c6` and at `266f0f4`, zero `P2024`, 24/24 prebuild, 556 static |
-| local battery | `--only=nav,homepage` against the built app: PASS, twice |
+| branch head | **`3ec8b51`** (MH-003), on `266f0f4` (MH-002 + `origin/main@854ffd3`) |
+| preview | `https://miltonly-p5moxdfdn-gtahomequest-hubs-projects.vercel.app` at `3ec8b51`, alias `miltonly-git-feat-menu-v2` |
+| battery on preview | `FAIL · 14 checks · 463 pages · 260s`: 2 assertions, both the pre-existing `sold-mtd` cache lag (51 vs 59, production prints 51 too); every nav assertion and the other 13 checks PASS |
+| local build | exit 0 at `3ec8b51`, zero `P2024`, 24/24 prebuild, 556 static |
+| local battery | `--only=nav` PASS at `3ec8b51`; `homepage` failed only on the page's own cached `sold-mtd` (see traps) |
 | main | does NOT have this branch |
 | production | main's tip; the old menu |
 
 ## What `feat/menu-v2` carries
+
+MH-003 (`3ec8b51`), on top of everything MH-002 listed below:
+
+- **The rail is a tablist.** `m-tab-<menu>-<item>` buttons with `aria-selected`, roving
+  `tabindex`, `aria-controls`; `m-item-<menu>-<item>` tabpanels, all served, one visible.
+  Hover with intent (mouse only, 120ms), focus and click all call one `select()`.
+  ArrowUp/Down, Home/End walk the rail; focusing selects.
+- **One block per item, from `composeMegaLive`** (`src/lib/megaLive.ts`, `getMegaExtras()`
+  for everything the homepage does not already fetch): new today (24h, week, active; the
+  newest four cards), price changes (`lastPriceChangeAt` in 7 days, widened to 30 when the
+  week has none and the lead says which; prior price and direction only where
+  DEC-PRICE-HISTORY observed the change), condos and freehold (the tenure hubs' own
+  `propertySubType` sets, matched with and without PropTx's trailing space), rentals
+  (`leaseStatus='active'`, "/mo"), alerts (this week's counts + the daily-brief signup through
+  `postLead`, source `daily-brief`), by neighbourhood (22 hubs, counts), with video (eight
+  posters), A to Z (published page count per letter, `/streets?letter=X`; `DirectoryGrid`
+  reads the letter from the URL on mount), address search (the hero's resolver + the
+  most-searched strip), what's it worth (the Board's row, window and sample per figure),
+  sold this month (`getSoldThisMonth`, k-gated typical, "so far"), market watch (the latest
+  published `MarketEdition`: its counts and its own summary sentence, linking the edition).
+- **`getListingCards({ where, orderBy, take })`** in `listingsV2Data.ts` is the ONE exported
+  way to run a custom slice of the feed through `toCard` and its address gate;
+  `permAdvertise` and the city are ANDed in unconditionally.
+- **"Also" row** in every panel's foot keeps the destinations the rail no longer names
+  (recently sold, POTL, compare, exclusive; guides, schools, mosques, condo guide; freehold
+  market, condo market, about), so the link graph loses nothing.
+- **Gate.** `nav.mjs` declares a format for every `menu-` figure and fails on an unknown one;
+  statically asserts per menu one selected tab, one visible item panel, none empty; in
+  Chrome at 1024 and 1440 hovers every rail item and asserts selection, exclusivity, live
+  content, CTA, viewport fit, no internal scroll, then ArrowDown focus-selection; at 380
+  asserts the first item open by default and a tap opening each of the rest, none empty.
+  `homepage.mjs` adds `menu-buy-rentals` (== the record, and so == /rentals) and
+  `menu-sold-mtd`.
+
+MH-002 (`10536c6`, `266f0f4`):
 
 - **The trigger is a `<button>`** with `aria-expanded` and `aria-controls`; the panel's index
   page (`/listings`, `/streets`, `/sell`) is the panel's CTA. All three panels are in the
@@ -112,6 +159,18 @@ module-local copies.
   and `menu-streets-pages` join `FIG_SPECS` by value and format.
 
 ## Traps, and decisions that must not be re-litigated
+
+- **`getSoldThisMonth` is cached an hour in the shared Upstash, and the record is live.** On
+  2026-09-11 the homepage's own `sold-mtd` printed 51 (cache, 31 minutes left) against 59
+  live; the menu's `menu-sold-mtd` reads the same function and printed the same 51. The
+  gate is right to fail; the fix is not in the menu. The two surfaces agreeing is the
+  property that matters. Re-run after the cache turns over before diagnosing.
+- **An item's panel is never empty.** `nav.mjs` counts live blocks (`LIVE_BLOCK`) per item
+  in the HTML and in the browser. A quiet day is handled in the composer (the newest four
+  when fewer than four listed today; a 30-day window when the week has no price change),
+  never by hiding the item.
+- **Every `menu-` figure needs a row in `FIG_FORMAT`.** A figure with no stated format is a
+  finding, not a pass.
 
 - **`composeMegaLive()` is the only place a menu string is built.** Two callers (the
   homepage's `buildMegaLive`, everything else's `getMegaLive`), one formatter. Do not format
