@@ -60,7 +60,7 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
   thing: write the file first, then paste it into the reply, so the two cannot drift.
 - The file is **tracked in git**. It is committed with the task's work, not left untracked.
 - Its first line is `# <TASK-ID>` and nothing else on that line.
-- Then run `code <that path>` so it opens in the editor.
+- Then run `code D:\miltonly <that path>` so it opens in the editor, in this repo's window. A worktree uses its own root: `D:\miltonly-home`, `D:\miltonly-leads`, `D:\miltonly-content`.
 - The **last line of the reply** is `Report: <path>`.
 - **No clipboard writes from any session.**
 
