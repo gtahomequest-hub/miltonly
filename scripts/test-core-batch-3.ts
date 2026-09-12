@@ -51,6 +51,8 @@ async function main() {
     ok(!v.includes("—"), `hubMeta ${k} carries no em-dash: ${v}`);
   }
   ok(meta.metaDescription.includes("typically $940,000"), "hubMeta: the hook still carries the rounded typical");
+  const hubLive = stripComments(read("src/lib/hubLive.ts"));
+  ok(/title: metaTitle,/.test(hubLive) && !/content\.metaTitle \?\? metaTitle/.test(hubLive), "hubLive: the title is the live formula, not the stored snapshot");
   const hubMetaCheck = stripComments(read("scripts/verify/checks/hub-meta.mjs"));
   ok(/carrying an em-dash/.test(hubMetaCheck) && /<title>/.test(hubMetaCheck), "hub-meta check: asserts no em-dash on title and description");
 
