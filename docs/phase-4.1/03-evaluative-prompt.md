@@ -97,6 +97,8 @@ For single-direction streets (most streets; `directionalStats` absent or only on
 
 **This section is editorial narrative, not enumeration.** Weave the most-relevant commute relationships into observation about the street's position and the rhythms of getting around. A list of destinations with drive times reads as a directory.
 
+**Describe the option, never the resident.** A commute sentence states what the street reaches and how long it takes: "the GO station is a nine-minute drive", "the 401 is reached without crossing town". It never states what residents do, use, prefer, rely on or build their day around: not "most residents take the GO", not "the train is the mode most households here would use", not "the commute most households plan around". The same holds for schools, parks, shops and every amenity: the option and its distance, never the people who use it. The fair-housing judge refused twelve pages on 2026-09-11 for sentences of the second kind.
+
   Bad pattern (do NOT write this): "Toronto is 45 minutes away. Mississauga is 22 minutes. Pearson is 32 minutes. Oakville is 24 minutes. Burlington is 20 minutes."
 
   Good pattern (STRUCTURE ONLY — substitute this street's own facts from the input; copying any phrase from this example verbatim is a validator failure): "{Street} sits in {neighbourhood from input}, a position that makes {most relevant commute mode from input} the realistic Toronto commute; {second commute relationship from input, woven into an observation about the street's position}."
@@ -184,7 +186,7 @@ Selection rules:
 - COMMUTE cluster: always include one.
 - BUILDER cluster: include only if the input contains a `primaryBuilder` object AND its `confidence` field equals "high". When `primaryBuilder` is absent from the input (the normal case — no builder pipeline exists yet), never name any builder anywhere on the page, and never mention "confidence" in prose: it is an internal field name, not a fact about the builder. "The builder is X, whose confidence is high" is a schema leak and a fabrication.
 - RENTAL cluster: include one if `leaseActivity !== undefined`.
-- INVESTOR cluster: include one if lease-heavy (`leasesCount > salesCount`) or condo-dominated (condo count > 50% of byType total).
+- LEASE COUNT cluster: include one if `leaseActivity` is present (it is present only when the lease count meets the publish floor).
 - ROUTING cluster: always include one as the closer.
 
 **PRICE cluster:**
@@ -223,10 +225,12 @@ When `input.aggregates.priceRange` is NON-null (full-data street), answer the pr
 - "What's the rental market like on {Street}?"
 - "What do two-bedroom condos rent for on {Street}?"
 
-**INVESTOR cluster:**
-- "Is {Street} a good fit for investors?"
+**LEASE COUNT cluster:**
+- "How many homes on {Street} were leased in the last year?"
 
-(The cap-rate question is retired: answering it requires combining the sale and lease pools, which the mixed-pool rule forbids. An investor-fit answer may describe the lease pool OR the sale pool, never a yield, cap rate, or rent-to-price figure.)
+Answer with the lease count from `aggregates.leasesCount`, as a count of leases. Never a share, a percentage, a ratio against sales, or a "split between" sales and leases: that combines the two pools, which the mixed-pool rule forbids. Never a rent figure here unless `leaseActivity.byBed` carries it and the rounding table is applied.
+
+(The investor-fit question is retired 2026-09-11: it asks who the street suits, and the fair-housing judge refuses the answer. The cap-rate question is retired: answering it requires combining the sale and lease pools, which the mixed-pool rule forbids.)
 
 **ROUTING cluster:**
 - "If {Street} isn't the right fit, what similar streets should I look at?"

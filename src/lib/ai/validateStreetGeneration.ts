@@ -31,6 +31,7 @@ import type {
   ValidatorRule,
 } from "@/types/street-generator";
 import { config } from "@/lib/config";
+import { K_ANON_PRICE } from "@/lib/kAnon";
 import { countSentences } from "./trimFaqAnswers";
 import { findCatchmentVocabulary } from "./catchmentVocabulary";
 import { cleanNeighbourhoodName } from "@/lib/format";
@@ -2290,8 +2291,19 @@ export const OWN_PRICE_FAQ_TEMPLATES: readonly string[] = [
   "What price range should I expect on {Street}?",
   "What's the rental market like on {Street}?",
   "What do two-bedroom condos rent for on {Street}?",
-  "Is {Street} a good fit for investors?",
 ];
+
+// THE LEASE-COUNT QUESTION (MC-011 ruling, 2026-09-11). It replaces "Is {Street} a good fit for
+// investors?", which the fair-housing judge refused on derry-road and rose-way as buyer-class
+// suitability: a question the prompt offered and the gate forbade. The replacement is factual
+// and K-gated: it is offered only when the street's 12-month lease count meets K_ANON_PRICE,
+// which is the same floor that lets leaseActivity into the input at all. The answer states the
+// lease count, a figure the input carries, and never a share: leases as a fraction of activity
+// is a blended sale-and-lease figure, which mixed_pool_claim forbids.
+export const LEASE_COUNT_FAQ_TEMPLATE = "How many homes on {Street} were leased in the last year?";
+export function offersLeaseCountFaq(input: StreetGeneratorInput): boolean {
+  return input.leaseActivity !== undefined && (input.aggregates?.leasesCount ?? 0) >= K_ANON_PRICE;
+}
 
 /** Below this many eligible questions the FAQ is not worth publishing and is dropped whole.
  *  A three-question FAQ on a page that already cannot discuss price is filler. */
@@ -2345,6 +2357,8 @@ export function eligibleFaqTemplatesFor(input: StreetGeneratorInput): string[] {
   if (inputHasNoPriceAtAnyGrain(input)) for (const t of OWN_PRICE_FAQ_TEMPLATES) withdrawn.add(t);
   // The comparison question goes with the section it belongs to, on its own gate.
   if (dropsDifferentPriorities(input)) withdrawn.add(COMPARISON_FAQ_TEMPLATE);
+  // The lease-count question needs a lease count at or above the floor.
+  if (!offersLeaseCountFaq(input)) withdrawn.add(LEASE_COUNT_FAQ_TEMPLATE);
   return FAQ_BANK_TEMPLATES.filter((t) => !withdrawn.has(t));
 }
 
@@ -2376,7 +2390,7 @@ export function faqCountBoundsFor(input: StreetGeneratorInput): [number, number]
 // Back-compat alias for any imports outside this file
 export const CANONICAL_ORDER = CANONICAL_ORDER_LEGACY;
 // --- Canonical FAQ question bank ---
-const FAQ_BANK_TEMPLATES: string[] = [
+export const FAQ_BANK_TEMPLATES: string[] = [
   "What is the typical price on {Street}?",
   "Why do homes on {Street} trade differently than other Milton streets?",
   "What price range should I expect on {Street}?",
@@ -2395,7 +2409,9 @@ const FAQ_BANK_TEMPLATES: string[] = [
   "Is {Street} new construction or established?",
   "What's the rental market like on {Street}?",
   "What do two-bedroom condos rent for on {Street}?",
-  "Is {Street} a good fit for investors?",
+  // "Is {Street} a good fit for investors?" retired 2026-09-11 (MC-011): the judge refused it as
+  // buyer-class suitability. Replaced by the factual lease-count question, K-gated at its site.
+  LEASE_COUNT_FAQ_TEMPLATE,
   // Cap-rate question retired 2026-07-19 (answering requires mixing sale +
   // lease pools). "Who is {Street} a good fit for?" retired (fair housing).
   "If {Street} isn't the right fit, what similar streets should I look at?",

@@ -101,6 +101,8 @@ Housing stock. Dominant types, approximate sizes, unit mix across detached/semi/
 **`amenities`** (2 paragraphs, 6–10 sentences total)
 What is within walking or driving distance. Parks, grocery, places of worship, hospital if close, notable institutional anchors. Use walking language for anything under ten minutes walkable, driving language for the rest. Do not list every nearby place; select the three to five that most shape daily rhythm. Heading: "What's nearby" or "Around the corner."
 
+**Describe the option, never the resident.** An amenity sentence states what is there and how far: "Rotary Park is a six-minute walk". It never states what residents do, use, prefer or rely on: not "most residents walk to the park", not "the grocery run most households make", not "the one people here rely on". The fair-housing judge refuses sentences of the second kind as characterizations of who lives on the street (MC-011 ruling, 2026-09-11).
+
 **`market`** (2 paragraphs if full data, 1 paragraph if thin or zero, 8–12 sentences total when full)
 Trade patterns. Typical price expressed per the rounding tables above. Range if `priceRange !== null`, with both endpoints rounded. Buyer-seller context inferred from `daysOnMarket` and `activeListingsCount` where sensible. If quarterly trend data is present and reveals a direction, note it without statistical language ("prices have firmed through the year," "the range has compressed"). If `kAnonLevel === "thin"`, collapse to one paragraph that acknowledges the street trades rarely enough that we prefer private conversations over published numbers, and point the reader to the suitability sections below. If `kAnonLevel === "zero"`, collapse to one paragraph noting that as new construction the street has no resale history yet, and reframe what we can offer. Heading: "The market right now" or "Trade patterns."
 
@@ -202,9 +204,8 @@ Selection rules:
 - "What's the rental market like on {Street}?"
 - "What do two-bedroom condos rent for on {Street}?"
 
-**INVESTOR cluster:**
-- "Is {Street} a good fit for investors?"
-- "What's the typical cap rate pattern on {Street}?"
+**LEASE COUNT cluster:**
+- "How many homes on {Street} were leased in the last year?"
 
 **ROUTING cluster:**
 - "Who is {Street} a good fit for?"

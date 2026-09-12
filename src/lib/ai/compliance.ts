@@ -1052,7 +1052,7 @@ Calibration examples, all real published violations: "the street's family-orient
 
 Return ONLY a JSON object: {"pass": boolean, "findings": [{"span": "<verbatim offending text, <=140 chars>", "class": "<banned class>"}]}. Empty findings array when pass is true. No commentary.`;
 
-interface JudgeVerdict {
+export interface JudgeVerdict {
   pass: boolean;
   findings: Array<{ span: string; class: string }>;
   judgeError?: string;
@@ -1087,38 +1087,66 @@ export function buildJudgeVerdict(rounds: JudgeRound[]): PersistedJudgeVerdict {
   return { result: last.pass && !last.judgeError ? "pass" : "fail", round: last.round, rounds };
 }
 
+/** The judge's reply, read. Throws on a reply that carries no complete JSON object, which is
+ *  what a truncated reply looks like ({"pass": true, "findings). Pure, exported for the case. */
+export function parseJudgeReply(text: string): JudgeVerdict {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error(`no JSON in judge response: ${text.slice(0, 120)}`);
+  const parsed = JSON.parse(jsonMatch[0]) as { pass?: unknown; findings?: unknown };
+  return {
+    pass: parsed.pass === true,
+    findings: Array.isArray(parsed.findings)
+      ? (parsed.findings as Array<{ span?: unknown; class?: unknown }>)
+          .filter((f) => typeof f?.span === "string")
+          .map((f) => ({ span: String(f.span).slice(0, 140), class: String(f.class ?? "unspecified") }))
+      : [],
+  };
+}
+
+/** ONE RETRY ON AN UNPARSEABLE REPLY (MC-011 ruling, 2026-09-11). nadalin-heights-milton lost a
+ *  page on 09-11 to a reply that read `{"pass": true, "findings` and stopped: the judge had
+ *  passed it and the parser could not say so, and fail-closed counted the truncation as a
+ *  refusal. A reply with no complete JSON object is now asked for once more; a second such
+ *  reply, or any other error, still fails closed. A parsed refusal is never retried. The
+ *  caller is injectable so the case can exercise both paths without a model. */
+export async function judgeWithOneRetry(
+  call: () => Promise<string>,
+): Promise<JudgeVerdict & { retried: boolean }> {
+  let retried = false;
+  try {
+    try {
+      return { ...parseJudgeReply(await call()), retried };
+    } catch (first) {
+      const msg = first instanceof Error ? first.message : String(first);
+      if (!/^no JSON in judge response|Unexpected|JSON/.test(msg)) throw first;
+      retried = true;
+      return { ...parseJudgeReply(await call()), retried };
+    }
+  } catch (e) {
+    // Fail-closed per ruling: a judge error is a FAIL, never a silent pass.
+    return { pass: false, findings: [], judgeError: (e as Error).message.slice(0, 200), retried };
+  }
+}
+
 async function judgeFairHousing(
   output: StreetGeneratorOutput,
   slug: string,
   round: number,
 ): Promise<JudgeVerdict> {
-  let verdict: JudgeVerdict;
-  try {
-    const body = [
-      ...output.sections.map((s) => `## ${s.heading}\n${s.paragraphs.join("\n")}`),
-      ...output.faq.map((q) => `Q: ${q.question}\nA: ${q.answer}`),
-    ].join("\n\n");
+  const body = [
+    ...output.sections.map((s) => `## ${s.heading}\n${s.paragraphs.join("\n")}`),
+    ...output.faq.map((q) => `Q: ${q.question}\nA: ${q.answer}`),
+  ].join("\n\n");
+  const { retried, ...verdict } = await judgeWithOneRetry(async () => {
     const res = await callDeepSeek({
       systemPrompt: FAIR_HOUSING_JUDGE_PROMPT,
       userPrompt: body,
       maxTokens: 800,
       temperature: 0,
     });
-    const jsonMatch = res.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error(`no JSON in judge response: ${res.text.slice(0, 120)}`);
-    const parsed = JSON.parse(jsonMatch[0]) as { pass?: unknown; findings?: unknown };
-    verdict = {
-      pass: parsed.pass === true,
-      findings: Array.isArray(parsed.findings)
-        ? (parsed.findings as Array<{ span?: unknown; class?: unknown }>)
-            .filter((f) => typeof f?.span === "string")
-            .map((f) => ({ span: String(f.span).slice(0, 140), class: String(f.class ?? "unspecified") }))
-        : [],
-    };
-  } catch (e) {
-    // Fail-closed per ruling: a judge error is a FAIL, never a silent pass.
-    verdict = { pass: false, findings: [], judgeError: (e as Error).message.slice(0, 200) };
-  }
+    return res.text;
+  });
+  if (retried) console.log(`[Phase41/judge] ${slug} round=${round} first reply was unparseable; asked once more`);
   const logRow = {
     slug,
     ts: new Date().toISOString(),
