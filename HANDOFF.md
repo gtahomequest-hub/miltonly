@@ -2,17 +2,29 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-12 (MC-011): five merges on main, the mega menu done, the three judge rulings on `fix/judge-rulings`, 21 of the 23 crossed streets republished._
+_Last rewritten 2026-09-12 (MC-012): three merges on main, core batch 3 built on `fix/core-batch-3` and green on preview, not merged._
 
 ## READ THIS FIRST
 
-**MAIN IS `2a89120` (code `d01787f`) AND PRODUCTION SERVES IT.** Five merges by SHA on 2026-09-11
+**MAIN IS `94ddc49` AND PRODUCTION SERVES IT.** Three merges by SHA on 2026-09-12: `3d905a6`
+(judge rulings), `798f610` (leads digest), `94ddc49` (parking and GO guides). Record:
+`scratchpad/reports/MC-012-merges-core-batch-3.md`.
+
+**`fix/core-batch-3` `bf4f8b3` WAITS ON A MERGE, BUILT EXIT 0, PREVIEW `PASS · 15 checks · 489
+pages`.** The board never the family; the judge cannot refuse on a finding it labels not a
+violation; hub titles and descriptions lose their em-dashes and the LIVE title serves (the stored
+one carried the old dash); `/rentals?neighbourhood=<hub>`; the per-hub street overflow page 301s
+to the hub's `#streets` and leaves the sitemap; parking and GO up-links from the guides' own hub
+rules, held by the battery against the guides' down-links; `sources-fresh`, which will fire on
+2026-11-28 (GTFS) and 2026-12-11 (parking pages) by design.
+
+**MAIN WAS `2a89120` (code `d01787f`) BEFORE THAT.** Five merges by SHA on 2026-09-11
 evening: `9ba0811` (judge verdict), `9c8b520` (park mask), `e71a7f6` (video re-key), `625e000`
 (sold-sync purge, both caches), `d01787f` (menu v2, approved). Production battery at `2a89120`,
 23:05Z: **`PASS · 14 checks · 469 pages · 256s`**. Record:
 `scratchpad/reports/MC-011-merges-judge-rulings.md`.
 
-**`fix/judge-rulings` `1b4ab5d` WAITS ON A MERGE, BUILT EXIT 0.** The investor FAQ question is
+**`fix/judge-rulings` `1b4ab5d` IS MERGED (`3d905a6`).** The investor FAQ question is
 out and a K-gated lease-count question is in; both prompts say "describe the option, never the
 resident"; the judge retries once on an unparseable reply. `scripts/test-judge-rulings.ts`
 holds all three. Preview battery **`PASS · 14 checks · 485 pages`**. On it, 13 of the 15 streets
@@ -55,11 +67,11 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | code SHA **`d01787f`**, docs on top (`2a89120`, this) |
-| battery on production | **`PASS · 14 checks · 469 pages · 256s`** at `2a89120`, 2026-09-11 23:05Z |
+| `main` | code SHA **`94ddc49`**, docs on top |
+| battery on production | **`PASS · 14 checks · 469 pages · 256s`** at `2a89120` (2026-09-11 23:05Z); the three merges since add guides, a digest and the judge rulings |
 | `prisma migrate status` | **clean**, 27 migrations |
-| waiting on merge | `fix/judge-rulings` `1b4ab5d` |
-| creation programme | **running**, cap 20 per UTC day, 215 pending, DeepSeek first |
+| waiting on merge | `fix/core-batch-3` `bf4f8b3` (preview 15/15) |
+| creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 
 ## What happened 2026-09-10 (final) — three merges
@@ -429,6 +441,5 @@ without the parameter.
 
 ## Next expected task
 
-**Aamir's call on `fix/judge-rulings` `1b4ab5d` (by SHA).** Then the Catholic-board phrasing
-ruling ("name the board, never the family"), a `db3` tag drop for the analytics sync, and QUEUE
-item 6.
+**Aamir's call on `fix/core-batch-3` `bf4f8b3` (by SHA).** Then a `db3` tag drop for the
+analytics sync, `barclay-circle` and `gordon-krantz-avenue` on a later pass, and QUEUE item 6.
