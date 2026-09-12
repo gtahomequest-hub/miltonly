@@ -40,3 +40,14 @@ Each pushed in turn; production serves `94ddc49`.
 
 ### Next
 Stopped. `bf4f8b3` by SHA, your call.
+
+---
+
+## MC-012, re-issued 2026-09-12: already done, verified rather than re-run
+
+The same task text arrived a second time. Nothing was re-run, because the three merges are no-ops now and one of them would read as a success: `git merge` of a commit already in main's ancestry prints "Already up to date" with exit 0 (the MC-002 trap). Verified instead:
+
+- `1b4ab5d`, `e205757`, `5e7a3e3` are each ancestors of `main` (`git merge-base --is-ancestor`), merged as `3d905a6`, `798f610`, `94ddc49`. Production serves `c60640b` (main, docs on top of `94ddc49`).
+- `fix/core-batch-3` head is **`bf4f8b3d3f3014bbf6d98ad564ca25757a37d381`** on origin; preview `miltonly-7ww1qj1xh` serves it; its battery record reads `PASS · 15 checks · 489 pages · 282s`.
+
+Not merged; stopped, as before.
