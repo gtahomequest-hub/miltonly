@@ -115,10 +115,12 @@ export default {
       const r = await get(`${base}/neighbourhoods/${slug}`);
       if (r.status !== 200) { rows.push({ slug, status: r.status }); continue; }
       const dm = r.body.match(/<meta name="description" content="([^"]*)"/);
+      const tm = r.body.match(/<title>([^<]*)<\/title>/);
       rows.push({
         slug,
         status: 200,
         description: dm ? decode(dm[1]) : null,
+        title: tm ? decode(tm[1]) : null,
         hero: heroStats(r.body),
         ld: schemaPrice(r.body),
         rec: hubRecord.hub(slug),
@@ -126,6 +128,9 @@ export default {
     }
 
     const ok = rows.filter((r) => r.status === 200);
+    // MC-012: the voice rule reaches the SERP. hubMeta.ts lost its em-dashes; a title or a
+    // description carrying one is a template that was edited without this line moving.
+    const dashed = ok.filter((r) => (r.title && r.title.includes('—')) || (r.description && r.description.includes('—'))).map((r) => `${r.slug}: ${r.title && r.title.includes('—') ? 'title' : 'description'}`);
     const parsed = ok.filter((r) => r.description !== null);
     const withRec = parsed.filter((r) => r.rec);
     const tiles = withRec.filter((r) => r.hero['typical home'] && r.hero['sold · last 12 months']);
@@ -194,6 +199,7 @@ export default {
         ['hub pages read == sitemap hub count', ok.length, slugs.length],
         ['hero stat tiles parsed on every hub', tiles.length, slugs.length],
         ['JSON-LD parsed on every hub', withLd.length, slugs.length],
+        ['hub titles or descriptions carrying an em-dash', dashed.length, 0],
         ['meta price != live typical', priceMismatch.length, 0],
         ['meta sale count != live sale count', countMismatch.length, 0],
         ['meta states a price off a sub-k pool', subKLeak.length, 0],
@@ -207,7 +213,7 @@ export default {
         `stored HubContent.metaDescription (no longer served) still drifts from live on ${storedDrift} of ${tiles.length} hubs`,
         `stored descriptions publishing a price off a sub-k pool: ${storedSubKLeak}`,
       ],
-      examples: [...subKLeak, ...ldSubKLeak, ...priceMismatch, ...countMismatch, ...heroMismatch, ...heroCountMismatch, ...ldMismatch, ...silentSplit],
+      examples: [...dashed, ...subKLeak, ...ldSubKLeak, ...priceMismatch, ...countMismatch, ...heroMismatch, ...heroCountMismatch, ...ldMismatch, ...silentSplit],
     };
   },
 };

@@ -48,7 +48,7 @@ export function buildHubMeta(
 ): { metaTitle: string; metaDescription: string } {
   const surface = profile === "urban" ? "Street" : "Road";
   const walk = profile === "urban" ? "Street-by-street" : "Road-by-road";
-  const metaTitle = `${name}, ${config.CITY_NAME} — Homes, Prices & ${surface} Guide`;
+  const metaTitle = `${name}, ${config.CITY_NAME}: Homes, Prices and ${surface} Guide`;
 
   const rounded = hubDisplayTypical(aggregates.typicalPrice);
   const n = aggregates.salesCount;
@@ -62,8 +62,8 @@ export function buildHubMeta(
         : null;
 
   const metaDescription = hook
-    ? `${name} homes for sale and what they really sell for — ${hook}. ${walk} guide, live listings, and ${closer}.`
-    : `${name}, ${config.CITY_NAME} — live listings and the ${walk.toLowerCase()} read.`;
+    ? `${name} homes for sale and what they really sell for: ${hook}. ${walk} guide, live listings, and ${closer}.`
+    : `${name}, ${config.CITY_NAME}: live listings and the ${walk.toLowerCase()} read.`;
 
   return { metaTitle, metaDescription };
 }

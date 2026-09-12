@@ -57,7 +57,7 @@ export function HubPage({
 }) {
   // MC-003 guide up-links. Condo-heavy means the hub lists condo buildings (the h-condos
   // section renders), which is the marker the battery's guide-links check reads.
-  const guides = guidesForHub({ condoHeavy: data.condos.length > 0 || data.compareFacts?.hasFee === true });
+  const guides = guidesForHub({ condoHeavy: data.condos.length > 0 || data.compareFacts?.hasFee === true, hubSlug: data.slug });
   return (
     <div className="hub-v2 hub-v3">
       <SiteNavLive variant="page" />
