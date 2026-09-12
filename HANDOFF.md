@@ -2,48 +2,50 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-11 (MC-009, with MC-010 folded in): the fail-closed merge on main, four branches built and proven and waiting on merges, the seven clips up, the sold-sync purge proven on preview._
+_Last rewritten 2026-09-12 (MC-011): five merges on main, the mega menu done, the three judge rulings on `fix/judge-rulings`, 21 of the 23 crossed streets republished._
 
 ## READ THIS FIRST
 
-**MAIN IS `f347001` (merge of `e12b1b6`) AND PRODUCTION SERVES IT.** A page the judge refuses is
-now a failed attempt in the queue. Record: `scratchpad/reports/MC-009-judge-video-regen.md`.
+**MAIN IS `2a89120` (code `d01787f`) AND PRODUCTION SERVES IT.** Five merges by SHA on 2026-09-11
+evening: `9ba0811` (judge verdict), `9c8b520` (park mask), `e71a7f6` (video re-key), `625e000`
+(sold-sync purge, both caches), `d01787f` (menu v2, approved). Production battery at `2a89120`,
+23:05Z: **`PASS · 14 checks · 469 pages · 256s`**. Record:
+`scratchpad/reports/MC-011-merges-judge-rulings.md`.
 
-**FOUR BRANCHES WAIT ON MERGES, EACH BUILT EXIT 0, NONE MERGED:**
-- `feat/judge-verdict` `25b59a6`: `StreetGeneration.judgeVerdict` `{ result, round, rounds[] }`
-  written on every run by cron and local runners alike. **The migration is applied** (27, clean).
-- `fix/comparator-park-mask` `db3be15`: a grounded park name ("Bronte Meadows Park") no longer
-  reads as a comparator placement claim; a real one still does.
-- `feat/video-rekey` `dde23bd`: a superseding clip goes under `streets/<slug>/<YYYYMMDD>/`, the
-  old objects are deleted after production serves the new URL, orphans retire.
-- `fix/sold-sync-purge` `67fcf7f`: MC-010, below.
-`package.json`'s prebuild line will conflict trivially between the first two and the fourth: union.
-`3ec8b51` (menu v2) is also waiting, on Aamir's word.
+**`fix/judge-rulings` `1b4ab5d` WAITS ON A MERGE, BUILT EXIT 0.** The investor FAQ question is
+out and a K-gated lease-count question is in; both prompts say "describe the option, never the
+resident"; the judge retries once on an unparseable reply. `scripts/test-judge-rulings.ts`
+holds all three. Preview battery **`PASS · 14 checks · 485 pages`**. On it, 13 of the 15 streets
+the judge had refused republished ($0.1549); `barclay-circle` and `gordon-krantz-avenue` remain.
 
-**THERE ARE TWO CACHES BEHIND EVERY SOLD FIGURE, AND THE SECOND WAS INVISIBLE.** Upstash under
-`cached()` for an hour, and Next's Data Cache over the Neon HTTP client for an hour
-(`src/lib/db.ts`, `next: { revalidate: 3600 }`), keyed by the SQL text. Measured: Upstash key
-deleted, table at 60, production rendered 59 four times in twenty seconds. On the branch the
-sold sync purges Upstash (exact keys plus per-street and per-neighbourhood prefixes for what it
-wrote, with a settle pass) and the sold route drops the `db2` tag; `/api/revalidate` takes
-`{ tag: "db2" | "db3" }`. Proven on preview `miltonly-4rwyyu3vn`: stale 59 against 60, one sync,
-60 with no wait. **DB3 (analytics) reads sit in the same hour** under `db3`; nothing drops that
-tag yet.
+**THE BATTERY LIES FOR AN HOUR AT A WINDOW EDGE, AND IT LIED ON PRODUCTION TONIGHT.** At 00:00Z
+the 12-month window's trailing edge passed nine rows and `chretien-street` fell from five
+sales to four while its page held the k5 figures; the homepage's neighbourhood typicals were
+served from an entry a pre-tag build had computed from an untagged Data Cache reply. Production
+and the rulings preview failed the same assertions at the same minute on code that had passed
+an hour earlier, and the tagged Data Cache serves one stale reply past its expiry
+(stale-while-revalidate), so "wait an hour" is not enough either. Read a FAIL after a window
+edge or a sold-sync write against production first; if production fails the same lines, it is
+the caches. `scratchpad/mc003/purge-street.ts <slug> <base…>` clears one street on both
+caches and the path; after that the rulings preview passed 14/14.
 
-**THE JUDGE IS THE PROGRAMME'S LIMITING GATE, AND ITS VERDICTS ARE NOW READABLE.** 23 crossed
-streets regenerated: 8 republished, 13 refused by the judge, among them two FAQ-bank questions
-("Is Derry Road a good fit for investors?") and "most residents" commute sentences tagged as
-tenure characterization, plus one truncated judge reply counted as a refusal. Rulings needed:
-the investor question in the bank, the commute sentences, a retry on an unparseable reply.
+**THE SOLD SYNC NOW PURGES BOTH CACHES ON MAIN.** Upstash (exact keys, per-street and
+per-neighbourhood prefixes for what it wrote, a settle pass) and the `db2` Data Cache tag,
+dropped by the sold route after a writing run. `/api/revalidate` takes `{ tag: "db2" | "db3" }`.
+**Nothing drops `db3`** (analytics) yet.
 
-**THE SEVEN CLIPS ARE LIVE.** anne-boulevard, bronte-street, commercial-street, heslop-road,
-locker-place (re-keyed), martin-street, nipissing-road (re-keyed). Manifest 173 rows, 49
-published; `bronte-street-south` retired. anne-boulevard and martin-street pages built on
-DeepSeek ($0.0150 and $0.0094; $0.0528 more spent on three failed anne runs, two on the park
-false positive and one on my own mistimed tooling).
+**THE JUDGE, NOW READABLE ON EVERY ROW (`StreetGeneration.judgeVerdict`).** Two things its
+verdicts show for a ruling: "For Catholic families …" is how the model names the Catholic
+board's schools and the judge reads it as `religion` (three round-1 refusals tonight, all
+passed on round 2); and on `barclay-circle` it refused with a finding it labelled "amenity
+fact, not a violation". `barclay-circle` and `gordon-krantz-avenue` are the two crossed
+streets still on the suppressed sample.
 
-**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11 (cap 20 per UTC day, holding),
-217 pending, DeepSeek first, hourly.
+**THE SEVEN CLIPS ARE LIVE, THE MANIFEST IS 173 ROWS / 49 PUBLISHED**, `bronte-street-south`
+retired. Re-keyed clips live under `streets/<slug>/<YYYYMMDD>/`.
+
+**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11, the cap held; the 00:00Z
+pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 **THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
 
@@ -53,11 +55,11 @@ false positive and one on my own mistimed tooling).
 
 | | |
 |---|---|
-| `main` | code SHA **`f347001`**, docs on top |
-| battery on production | **`PASS · 13 checks · 449 pages · 126s`** at `bfb78f3` (2026-09-11); `854ffd3` and `f347001` change the generator and the cron only |
-| `prisma migrate status` | **clean**, 27 migrations (`judgeVerdict` applied 2026-09-11) |
-| waiting on merges | `25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`; `3ec8b51` on approval |
-| creation programme | **running**, 19 created today, 217 pending, cap 20/UTC day |
+| `main` | code SHA **`d01787f`**, docs on top (`2a89120`, this) |
+| battery on production | **`PASS · 14 checks · 469 pages · 256s`** at `2a89120`, 2026-09-11 23:05Z |
+| `prisma migrate status` | **clean**, 27 migrations |
+| waiting on merge | `fix/judge-rulings` `1b4ab5d` |
+| creation programme | **running**, cap 20 per UTC day, 215 pending, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 
 ## What happened 2026-09-10 (final) — three merges
@@ -427,5 +429,6 @@ without the parameter.
 
 ## Next expected task
 
-**Aamir's call on the four merges by SHA** (`25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`) and on
-`3ec8b51`. Then the judge rulings, the `db3` tag drop for the analytics sync, and QUEUE item 6.
+**Aamir's call on `fix/judge-rulings` `1b4ab5d` (by SHA).** Then the Catholic-board phrasing
+ruling ("name the board, never the family"), a `db3` tag drop for the analytics sync, and QUEUE
+item 6.
