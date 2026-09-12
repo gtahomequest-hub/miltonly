@@ -506,3 +506,5 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
 - [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.
       A Core data bug, logged not fixed. Every Content window is bounded, so nothing in this
       tier publishes them
+
+*Out-of-queue work 2026-09-12, MA-001, the street-page AUDIT in the `D:\miltonly-audit` worktree on `feat/audit`. Read-only against production: ten streets, two widths, Puppeteer and Lighthouse, a cache sweep of all 490 pages, and a benchmark against Rightmove, Zoopla, HouseSigma, Zolo, Realtor.ca and Zillow. Thirty defects ranked and ten changes in priority order for core to take; nothing built. Not a queue item, prompted directly. Record in `scratchpad/reports/MA-001-street-page-audit.md`, state in `HANDOFF-audit.md`.*
