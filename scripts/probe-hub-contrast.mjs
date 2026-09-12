@@ -30,7 +30,7 @@ for (const w of [380, 1440]) {
         }
         return getComputedStyle(document.body).backgroundColor;
       };
-      const sel = ['.h-hs .h-n', '.h-hs .h-l', '.h-gi-v', '.h-gi-l', '.hh-fact-v', '.hh-fact-l', '.hh-fact-b'];
+      const sel = ['.h-hs .h-n', '.h-hs .h-l', '.h-gi-v', '.h-gi-l', '.hh-fact-v', '.hh-fact-l', '.hh-fact-b', '.hh-crumb a', '.hh-intent-s', '.hh-framedate', '.hh-ladbasis', '.hh-ladsales em', '.hh-ladrank', '.hh-compareb', '.hh-sibbasis', '.hh-source'];
       const out = [];
       for (const s of sel) {
         for (const el of document.querySelectorAll(s)) {

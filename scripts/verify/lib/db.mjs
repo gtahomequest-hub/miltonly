@@ -45,11 +45,79 @@ export async function loadHubRecord() {
                                AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
                              GROUP BY 1`) agg.set(r.neighbourhood, r);
 
+  // ── THE HUB PAGE'S OTHER FIGURES (hub-page.mjs), each re-derived from the record ──────────
+  // Per raw string: 12-month sales by property type (the "share of sales" fact) and active
+  // listings (the "for sale today" fact). Per neighbourhood id: published street pages and
+  // filmed street pages (the "streets with a page" / "streets filmed" facts and the ladder).
+  const byType = new Map(); // raw -> [{ property_type, n }]
+  for (const r of await sold`SELECT neighbourhood, property_type, COUNT(*)::int n
+                             FROM sold.sold_records
+                             WHERE perm_advertise=TRUE AND transaction_type='For Sale'
+                               AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
+                             GROUP BY 1, 2`) {
+    if (!byType.has(r.neighbourhood)) byType.set(r.neighbourhood, []);
+    byType.get(r.neighbourhood).push(r);
+  }
+  const activeByRaw = new Map();
+  for (const r of await app`SELECT neighbourhood, COUNT(*)::int n FROM public."Listing"
+                            WHERE "permAdvertise" = TRUE AND status = 'active' GROUP BY 1`) activeByRaw.set(r.neighbourhood, Number(r.n));
+  const pagesByNbhd = new Map(), filmedByNbhd = new Map(), pageSlugsByNbhd = new Map();
+  for (const r of await app`SELECT rs."neighbourhoodId" nid, rs.slug,
+                                   (sc."videoUrl" IS NOT NULL OR sc."nightVideoUrl" IS NOT NULL) filmed
+                            FROM public."ResidentialStreet" rs
+                            JOIN public."StreetContent" sc ON sc."streetSlug" = rs.slug AND sc.status = 'published'
+                            WHERE rs."neighbourhoodId" IS NOT NULL`) {
+    pagesByNbhd.set(r.nid, (pagesByNbhd.get(r.nid) ?? 0) + 1);
+    if (r.filmed) filmedByNbhd.set(r.nid, (filmedByNbhd.get(r.nid) ?? 0) + 1);
+    if (!pageSlugsByNbhd.has(r.nid)) pageSlugsByNbhd.set(r.nid, new Set());
+    pageSlugsByNbhd.get(r.nid).add(r.slug);
+  }
+  // The Milton-wide typical the market section compares against: buildMiltonWideContext's
+  // saleAggQuery(null), no city filter, k-gated then round5k, the same as every hub figure.
+  const miltonRows = await sold`SELECT COUNT(*)::int n, AVG(sold_price) avg FROM sold.sold_records
+                                WHERE perm_advertise=TRUE AND transaction_type='For Sale'
+                                  AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`;
+  const miltonN = Number(miltonRows[0]?.n ?? 0);
+  const miltonAvg = num(miltonRows[0]?.avg ?? null);
+  const miltonTypicalRounded = miltonN >= K_ANON_PRICE && miltonAvg !== null ? Math.round(miltonAvg / 5000) * 5000 : null;
+
   const bySlug = new Map(nbhds.map((n) => [n.slug, n]));
   const storedBySlug = new Map(stored.map((r) => [r.s, r]));
+  const idBySlug = new Map((await app`SELECT id, slug FROM public."Neighbourhood"`).map((r) => [r.slug, r.id]));
+
+  // The same label table hubData.ts uses. A type outside it is not a housing form a reader
+  // can picture, and the fact is dropped on the page; it is dropped here too.
+  const STOCK_LABEL = { detached: 'detached', semi: 'semis', townhouse: 'townhomes', condo: 'condos' };
 
   return {
     publishedSlugs: stored.map((r) => r.s),
+    miltonTypicalRounded,
+    miltonSales: miltonN,
+    /** The hub page's derived facts, recomputed from the record. */
+    hubPage(slug) {
+      const n = bySlug.get(slug);
+      if (!n) return null;
+      const nid = idBySlug.get(slug);
+      const types = new Map();
+      let active = 0;
+      for (const raw of n.rawStrings) {
+        for (const r of byType.get(raw) ?? []) types.set(r.property_type, (types.get(r.property_type) ?? 0) + Number(r.n));
+        active += activeByRaw.get(raw) ?? 0;
+      }
+      const ranked = [...types.entries()].filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+      const total = ranked.reduce((t, [, c]) => t + c, 0);
+      const top = ranked[0];
+      const stockShare = top && total >= K_ANON_PRICE && STOCK_LABEL[top[0]]
+        ? { label: STOCK_LABEL[top[0]], pct: Math.round((top[1] / total) * 100), sales: total }
+        : null;
+      return {
+        publishedStreets: pagesByNbhd.get(nid) ?? 0,
+        publishedStreetSlugs: pageSlugsByNbhd.get(nid) ?? new Set(),
+        filmedStreets: filmedByNbhd.get(nid) ?? 0,
+        activeListings: active,
+        stockShare,
+      };
+    },
     /** What THIS hub's meta and hero are entitled to publish, recomputed from the record. */
     hub(slug) {
       const n = bySlug.get(slug);
