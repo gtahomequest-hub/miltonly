@@ -1,14 +1,20 @@
 // src/lib/guides/guides.ts
 //
-// THE SIX GUIDES. Template-authored structure, live grounded figures (ruling 2,
-// 2026-09-10). No model writes any sentence in this file. The only generated
-// prose a guide may carry is one optional paragraph, and that is validated by
+// THE GUIDES REGISTRY, AND THE SIX FIGURE-GROUNDED BUILDERS. Template-authored
+// structure, live grounded figures (ruling 2, 2026-09-10). No model writes any
+// sentence in this file. The only generated prose a guide may carry is one
+// optional paragraph, and that is validated by
 // src/lib/content/validateContentProse.ts and dropped on any violation.
 //
 // ORDER IS THE GSC EVIDENCE'S ORDER (ruling 8): milton real estate market,
 // sold prices milton, is it a good time to sell, condos in milton, first-time
-// buyer, schools. "parking" is held — the Town parking bylaw is not in this
-// repo and a model would invent it (report 062, G7).
+// buyer, schools. Then the two source-grounded guides (MCT-001, 2026-09-11):
+// parking, which was held while the Town's bylaw pages were not in this repo
+// (report 062, G7) and is built from their fetched text now that they are
+// (src/data/sources/milton-parking/), and the GO train guide, computed from a
+// stored GTFS feed (src/data/sources/goGtfsMilton.ts). Their builders live in
+// ./parking.ts and ./goTransit.ts; the registry row is here so the index, the
+// sitemap and the uplinks all read one list.
 //
 // THE ONE DISCIPLINE THAT MATTERS HERE. A sentence that needs a suppressed
 // figure is DROPPED WHOLE. It is never rendered with a gap, a dash, a zero or
@@ -17,13 +23,7 @@
 
 import "server-only";
 import { config } from "@/lib/config";
-import type {
-  GuideArticleData,
-  GuideCategoryKey,
-  GuideFaq,
-  GuideSection,
-  GuideTeaser,
-} from "@/components/guides/types";
+import type { GuideFaq, GuideSection, GuideTeaser } from "@/components/guides/types";
 import type { GroundedFigures } from "@/lib/content/groundedFigures";
 import {
   getSoldFigures,
@@ -45,8 +45,13 @@ import {
   formatMoney,
 } from "@/lib/mortgage-math";
 
+import { GUIDES_UPDATED, CTA_BUYER, CTA_SELLER, readMinutes, type GuideDef, type BuiltGuide } from "./shared";
+import { buildParking } from "./parking";
+import { buildGoTrain } from "./goTransit";
+
 const CITY = config.CITY_NAME;
-export const GUIDES_UPDATED = "September 2026";
+export { GUIDES_UPDATED };
+export type { GuideDef, BuiltGuide };
 
 // ── prose plumbing ────────────────────────────────────────────────────────
 
@@ -61,26 +66,8 @@ function para(...sentences: Array<string | null>): string | null {
 function paras(...ps: Array<string | null>): string[] {
   return ps.filter(Boolean) as string[];
 }
-function readMinutes(sections: GuideSection[], faqs: GuideFaq[]): number {
-  const words =
-    sections.reduce((n, s) => n + s.paragraphs.join(" ").split(/\s+/).length + (s.tip ? s.tip.split(/\s+/).length : 0), 0) +
-    faqs.reduce((n, f) => n + f.question.split(/\s+/).length + f.answer.split(/\s+/).length, 0);
-  return Math.max(2, Math.round(words / 200));
-}
 
 // ── the registry ──────────────────────────────────────────────────────────
-
-export interface GuideDef {
-  slug: string;
-  title: string;
-  dek: string;
-  category: GuideCategoryKey;
-  categoryLabel: string;
-  /** The GSC query this page answers. Order of this array is the evidence order. */
-  gscQuery: string;
-  metaTitle: string;
-  metaDescription: string;
-}
 
 export const GUIDE_DEFS: GuideDef[] = [
   {
@@ -143,31 +130,31 @@ export const GUIDE_DEFS: GuideDef[] = [
     metaTitle: `${CITY} Schools by Board and Grade`,
     metaDescription: `${CITY} schools listed with board, level and grades. Placement is set by the school boards, and this page says plainly what it cannot tell you.`,
   },
+  {
+    slug: "parking-in-milton",
+    title: `Parking in ${CITY}: the rules, the permits and the tickets`,
+    dek: `On-street limits, the overnight ban, winter suspensions, exceptions and permits, and where to check a ticket, each sentence read from the Town's own pages and dated.`,
+    category: "living",
+    categoryLabel: "Everyday life",
+    gscQuery: "parking",
+    metaTitle: `Parking in ${CITY}: Rules, Overnight, Winter, Permits and Tickets`,
+    metaDescription: `${CITY}'s five-hour street limit, the 2 to 6 a.m. rule, winter storm suspensions, parking exceptions and park permits, and where to pay or dispute a ticket, cited to the Town's pages with the date they were read.`,
+  },
+  {
+    slug: "milton-go-train-to-toronto",
+    title: `Getting to Toronto from ${CITY} GO`,
+    dek: `Every weekday train to Union and back, the first and last, how long it takes, what runs at the weekend, and the buses that fill the gaps, computed from GO Transit's published timetable feed.`,
+    category: "living",
+    categoryLabel: "Everyday life",
+    gscQuery: "milton go train",
+    metaTitle: `${CITY} GO to Union Station: Trains, Times and Buses`,
+    metaDescription: `Weekday and weekend departures from ${CITY} GO to Union Station, first and last train, journey time, the 21 bus and the other routes, from the GO Transit GTFS feed with its version and validity dates.`,
+  },
 ];
 
 export const GUIDE_SLUGS = GUIDE_DEFS.map((g) => g.slug);
 
-// ── CTAs, shared ──────────────────────────────────────────────────────────
-
-const CTA_BUYER = {
-  heading: `See what is for sale in ${CITY}`,
-  body: `Every active listing on the board, with the street and neighbourhood pages behind each one.`,
-  buttonLabel: "Browse listings",
-  href: "/listings",
-};
-const CTA_SELLER = {
-  heading: "Find out what your home is worth",
-  body: `A valuation built from ${CITY} sold data, not a national average.`,
-  buttonLabel: "Get a valuation",
-  href: "/sell#valuation",
-};
-
 // ── builders ──────────────────────────────────────────────────────────────
-
-export interface BuiltGuide {
-  data: GuideArticleData;
-  figures: GroundedFigures;
-}
 
 function teaserFor(def: GuideDef, minutes: number): GuideTeaser {
   return {
@@ -893,6 +880,8 @@ const BUILDERS: Record<string, (def: GuideDef) => Promise<BuiltGuide>> = {
   "milton-condo-fees-parking-and-lockers": buildCondoFees,
   "what-it-costs-to-buy-your-first-home-in-milton": buildFirstHome,
   "milton-schools-what-the-data-shows": buildSchools,
+  "parking-in-milton": buildParking,
+  "milton-go-train-to-toronto": buildGoTrain,
 };
 
 export async function buildGuide(slug: string): Promise<BuiltGuide | null> {

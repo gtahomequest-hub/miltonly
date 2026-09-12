@@ -452,9 +452,17 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
       page.** `generateEdition` throws on a published row unless `correctionNote` is passed;
       there is no `--force`. The note rides inside `sectionsJson`, no column and no migration.
       `publishedAt` is preserved on a rewrite and `dateModified` now reads `updatedAt`
-- [ ] **The 2026-08-31 regeneration is NOT run.** Ruled to happen once, only after Core reports
-      the battery green, which it is not. The mechanism is built and green on preview
-      `miltonly-hsq7pkfiz`. The single command is in `HANDOFF-content.md` and report 067
+- [x] **The 2026-08-31 edition is CORRECTED on production.** Run once, after Core reported the
+      battery green at `31a9ab0`. 40 sales became 62, $920,000 became $975,000, 97.5% became
+      97.3%, 76 days became 85; new listings held at 56, which is the proof the cause was DB2
+      and not DB1. The stamp renders above every figure, `datePublished` is unmoved and
+      `dateModified` carries the rewrite. **The correction is spent; do not run it again**
+- [x] **192 For Sale and 53 For Lease rows with a future `sold_date`: CLOSED.** Core backfilled
+      255 rows from `CloseDate` to the contract date, 0 future-dated of 8,578 remain. The
+      `sold_date <= NOW()` bound on every DB2 window stays; it was never a workaround for this
+- [ ] **17 streets crossed k5 and 9 crossed k10 in the backfill.** They can now publish a
+      typical price they were suppressing, but only after regeneration, since those figures
+      live in stored `StreetContent` prose. **Core's tier, Core's call.** Flagged, not actioned
 - [ ] **Up-links from hubs and streets back to the current edition are Core's.** This worktree
       does not make those writes, and without them the archive sits instead of compounding
 - [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.

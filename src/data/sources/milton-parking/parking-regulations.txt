@@ -1,0 +1,50 @@
+SOURCE: Town of Milton, Parking Regulations
+URL: https://www.milton.ca/en/living-in-milton/parking-regulations.aspx
+PAGE TITLE: Parking Regulations - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: b805f4787697d2f4e5cf46e2ab3f46f46a780dc141f498f9499abe8dbe4b3e91
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+New: Monthly parking permits available in select parksThe Town of Milton is piloting overnight parking in select municipal parks to help ease on-street parking in residential areas.Limited spaces available – $60 per month.Apply now [https://milton.gtechna.net/permit-portal/]
+
+### Parking regulations in Milton
+
+There is a maximum five-hour street parking limit in Milton. In addition, there is no parking:
+
+- From 2-6 a.m.
+
+- On streets during snowstorms and snow removal operations
+
+- In any area where a “No Parking Anytime” sign is displayed
+
+- On a grass boulevard
+
+- On a boulevard within 50 metres of an intersection and within 3 metres of the curb line
+
+- Within 3 metres of a fire hydrant
+
+- Within 1 metre of a driveway
+
+- Facing the wrong direction on the road
+
+- On or overhanging a sidewalk
+
+- In a manner that obstructs traffic, road repair or snow removal
+
+- On any highway for the purpose of displaying the vehicle for sale
+
+- In a space designated for persons with disabilities without displaying a valid disabled person’s permit
+
+## Lawn parking
+
+- Parking is not permitted on grass boulevards, front or side yards, according to Parking By-law No. 105-2019 [/en/living-in-milton/resources/105-2019-Unauthorized-parking-on-residential-landscaping.pdf]
+
+- A vehicle can park on the paved section of the driveway, facing the direction of traffic
+
+- Vehicles parking on the landscaped section of the boulevard or hanging over sidewalks curbs may be ticketed
+
+- Vehicles parked on the landscaped section of the lawn, side yard or hanging over sidewalks or curbs may be ticketed
+
+## Parking do's and don'ts
+
+Watch our Parking Do’s and Don’ts video for more information about Milton's parking regulations.

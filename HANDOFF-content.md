@@ -2,8 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content
 
-_Last rewritten 2026-09-10, after the two edition rulings: the cron hour moved
-to Monday 08:00 Toronto, and a published edition became correctable once._
+_Last rewritten 2026-09-10, after the two edition rulings landed on main and
+the 2026-08-31 edition was corrected on production._
 
 ## READ THIS FIRST
 
@@ -19,39 +19,44 @@ reading all six guides.
 
 ## WHERE THIS BRANCH STANDS RIGHT NOW
 
-`feat/content` is at **`69b11e1`**, pushed, **NOT merged**. It sits on
-`9132434`, a clean merge of `origin/main` at `73e94ea`, and
-`git merge-base --is-ancestor origin/main HEAD` passes. Core merges.
+**MERGED AND LIVE.** Core merged `feat/content` `0a2499b` as **`31a9ab0`** and
+reported the production battery **PASS, 11 checks, 449 pages, 99 s, exit 0** at
+the served SHA. Main has since moved to **`5773f60`**, carrying `fix/core-batch`
+as `8db80da`, green on production; this branch is merged up to it. Record:
+`scratchpad/reports/067-content-cron-hour-and-correction.md`, including its two
+addenda, which are the parts written after the merge.
 
-Preview **https://miltonly-hsq7pkfiz-gtahomequest-hubs-projects.vercel.app**,
-Ready. `/market-watch`, `/market-watch/2026-08-31` and `/guides` all 200, the
-edition still reads 40 sales, $920,000 and 97.5%. Local gate exit 0, zero
-`P2024`, 20/20 prebuild, 552 static pages. Record:
-`scratchpad/reports/067-content-cron-hour-and-correction.md`.
-
-**THE 2026-08-31 REGENERATION IS NOT RUN, AND THAT IS DELIBERATE.** The ruling
-was to regenerate it only after Core reports the battery green. Core's battery
-is **RED**, two stale hub parsers from `feat/homepage`'s `h-` to `hh-` rename,
-and `fix/core-batch` is held at `2e8dfc0` behind them. The mechanism is built
-and green; the one command to run when Core reports green is in report 067 and
-repeated under "Next expected task" below. **Do not run it before then, and do
-not run it twice.**
+**The three deleted `src/lib/hub*.ts` files were not `fix/core-batch`.** I
+flagged them; Core traced them. They arrived with `c98f40e`, Home's WIP hub
+rebuild, and left with Core's revert `2e3cc50`. Absent from main and from this
+branch alike, zero importers, battery green. Closed, no action.
 
 | | |
 |---|---|
-| merged to `main` as | **`f6bbc92`**, two parents |
-| `main` now | **`5ee703e`** (docs `4b55fc6`, then the restore below) |
-| production | Ready and confirmed on the apex at **`5ee703e`** |
-| battery on production | **`PASS · 10 checks · 444 pages · 62s`**, exit 0, at the full SHA |
-| local gate, merged tree | exit 0, zero `P2024`, **20/20 prebuild**, 548 static pages |
-| first edition | `/market-watch/2026-08-31`, published, real data |
+| cron | Monday **08:00 America/Toronto**, `0 12 * * 1` and `0 13 * * 1`, hour guard 8 |
+| `vercel.json` | **17 crons.** Core resolved a conflict with `/api/brief/send` by keeping all three; both market-watch entries verified present by parse |
+| 2026-08-31 edition | **CORRECTED on production.** 40 sales became 62, $920,000 became $975,000 |
+| the correction stamp | renders above every figure, once, on the edition and on the index |
+| `datePublished` / `dateModified` | `08:21:38.061Z` (original, unmoved) / `18:01:25.631Z` (the correction) |
 
-The battery is 10 checks now, not 9: Home's merge added the homepage check in
-the same window.
+**THE CORRECTION IS SPENT. DO NOT RUN IT AGAIN.** `generateEdition` will refuse
+a second rewrite without a fresh note, and there is no second correction to
+make. The week of 2026-08-31 is immutable again.
 
-Gate A is `scratchpad/reports/062-content-gate-a.md`, its volume addendum `063`,
-and the build record **`064-content-build.md`**. Read 064 before touching any of
-this.
+**WHY THE FIGURES MOVED.** `CloseDate` is the agreed completion date, not the
+sale date. 255 DB2 rows carried a future `sold_date` and were re-dated to their
+contract date by Core. Every DB2 window in this tier carries `sold_date <=
+NOW()`, so those rows were excluded and sales belonging to the week had been
+dated forward out of it. New listings held at 56 across the correction, which
+is the proof: that figure comes from DB1's `listedAt`, which the backfill never
+touched. Open item 3 below, the future-dated rows, is **CLOSED**.
+
+**PURGE BEFORE YOU GENERATE, NOT AFTER.** `scripts/purge-sold-caches.ts` ran
+first and deleted 15 keys that had repopulated under the 1 h TTL since Core's
+own purge. The edition's 12-month context reads `getMiltonSoldOverall`, which
+is one of those cached keys, so generating first would have baked the stale
+1,531 into a page corrected for exactly that number. Order is: purge Upstash,
+generate, then revalidate.
 
 ## What is live
 
@@ -157,11 +162,16 @@ so overriding the rule and telling the reader are the same act. A draft is
 still freely rewritable.
 
 The note rides **inside `sectionsJson`**, as an optional `correctionNote` on
-`EditionSections`. Not a column: nothing queries or sorts on it, only the
-renderer reads it, and `_prisma_migrations` here is out of step with the live
-database, so a column buys a raw-SQL migration and nothing else. Editions
-written before the field existed lack the key and render nothing. `buildEdition`
-never sets it; it is attached at the write.
+`EditionSections`. Not a column: nothing queries, filters or sorts on it and
+only the renderer reads it, so a column buys a migration and nothing else.
+Editions written before the field existed lack the key and render nothing.
+`buildEdition` never sets it; it is attached at the write.
+
+The decision was argued at the time on a second ground as well, that
+`_prisma_migrations` was out of step with the live database. **That ground was
+false and is withdrawn** (see the ledger note under "Notes for the next run").
+The decision stands on the first ground, which was always the stronger one, and
+it is the one to reuse: a field only the renderer reads does not earn a column.
 
 **A CORRECTION DOES NOT REPUBLISH.** `publishedAt` is preserved on a rewrite,
 and `dateModified` on both pages now reads `updatedAt`. It read
@@ -208,19 +218,21 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
 
 ## Open items
 
-1. **Only one edition exists, and the cron has not fired yet.** `/market-watch`
-   keeps serving the week of 2026-08-31 until the first Monday after this
-   merges. The cron is wired (Monday 08:00 Toronto) but it only runs on the
-   production deployment, so nothing fires until Core merges this branch.
-   Watch the first firing: it is the first time the ISO-week idempotency and
-   the hour guard run against a real Monday rather than a dry run.
+1. **Only one edition exists, and the cron has not fired yet.** It is merged
+   and on production now, so the next Monday fires it. **Watch that firing.**
+   It is the first time the hour guard and the ISO-week idempotency run against
+   a real Monday rather than a dry run, and the week it writes will be the
+   first edition whose figures were never wrong.
 2. **Up-links from hubs and streets to the current edition are Core's**
    (ruling 7). This worktree does not make those writes. Without them the
    archive sits instead of compounding.
-3. **192 For Sale rows and 53 For Lease rows in `sold.sold_records` carry a
-   future `sold_date`**, the furthest 2027-01-29 against a database `NOW()` of
-   2026-09-10. A Core data bug, logged not fixed. An unbounded 28-day
-   neighbourhood count returns 327 where the bounded one returns 135.
+3. ~~**192 For Sale rows and 53 For Lease rows carry a future `sold_date`.**~~
+   **CLOSED 2026-09-10.** Core backfilled it: 255 rows re-dated from their
+   `CloseDate` to their contract date, 0 future-dated rows remain of 8,578, and
+   the Milton-wide 12-month sample moved 1,531 to 1,728 with the typical
+   unchanged at $930K. This is what forced the 2026-08-31 correction. **The
+   `sold_date <= NOW()` bound on every DB2 window stays** (ruling 10): it was
+   never a workaround for this bug, and a future-dated row can arrive again.
 4. **`Listing.maintenanceFee` (Int) is dead** on all 73 active Milton condo
    listings while `maintenanceFeeAmt` (Float) is populated on all 73. Two
    columns for one fact, one empty. It already cost one wrong page, which
@@ -252,11 +264,64 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
   `DATABASE_URL`.** Substituting one for the other creates tables in the sold
   database. It happened during this build; the two empty tables were dropped
   from DB2 and created in DB1, verified both ways.
-- **The `_prisma_migrations` table is out of sync with the live database** —
-  every historical migration reports unapplied. `prisma migrate deploy` would
-  try to replay all of them. Apply Content migrations with
-  `npx prisma db execute --url "$DATABASE_URL" --file <migration.sql>`, the
-  raw-SQL-on-Neon pattern this project already uses.
+
+- **CORRECTED 2026-09-10. THE MIGRATION LEDGER WAS NEVER OUT OF SYNC. THE
+  EARLIER READING WAS TAKEN AGAINST THE WRONG DATABASE.** This file previously
+  said "`_prisma_migrations` is out of sync, every historical migration reports
+  unapplied", and told the next session to apply Content migrations with
+  `prisma db execute` instead. **That instruction is withdrawn. Following it is
+  what caused the drift Core had to repair.**
+
+  Measured directly against `DATABASE_URL`: **26 rows in `_prisma_migrations`,
+  0 unfinished, 0 rolled back.** The ledger is clean and always was.
+
+  The false reading has a mechanical cause worth knowing, because the next
+  person hits the same wall. **The Prisma CLI reads `.env`. It does NOT read
+  `.env.local`.** `schema.prisma` declares `directUrl =
+  env("DIRECT_DATABASE_URL")`, this worktree had no `.env`, and the CLI failed
+  `P1012` before opening a connection. Everything else in this project reads
+  `.env.local` through `loadEnvLocal()`, so the gap is invisible until a Prisma
+  command hits it.
+
+  The trap is what someone does next. The only way to make the command run is
+  to supply a value, and the nearest-looking one on hand is
+  `NEON_DATABASE_URL_UNPOOLED` **which is DB2**. Verified: **DB2 has no
+  `_prisma_migrations` table at all**, under either `NEON_DATABASE_URL_UNPOOLED`
+  or `SOLD_DATABASE_URL`. Point Prisma there and it reports every migration
+  unapplied, **correctly, about the wrong database.** A confident and entirely
+  wrong reading, which is how it got written down as fact.
+
+  **FIXED AT SOURCE. This worktree now has a gitignored `.env`** carrying
+  `DATABASE_URL` and `DIRECT_DATABASE_URL`, and `npx prisma migrate status`
+  runs here and reports **"Database schema is up to date!"**. No credential had
+  to be fetched from anywhere: **`DIRECT_DATABASE_URL` is `DATABASE_URL` with
+  `-pooler` removed from the host**, same Neon endpoint unpooled, with
+  `pgbouncer` and `connection_limit` dropped. Derive it, do not go looking for
+  it, and never improvise a different host. If `.env` goes missing, that is how
+  to rebuild it.
+
+  **And do not route around the ledger with `db execute`.** It writes no
+  `_prisma_migrations` row, which is the whole of how this started.
+
+- **`20260910120000_market_edition` was created by `db execute` and the ledger
+  did not record it.** Core caught the drift and fixed it: they verified the
+  live schema against the migration column for column and index for index
+  (`MarketEdition` 13 columns 4 indexes, `MarketEditionGeneration` 13 columns 3
+  indexes, all matching), then ran `prisma migrate resolve --applied` rather
+  than the migration, which would have failed on `CREATE TABLE`. The row now
+  reads `applied_steps_count: 0`, which is the signature of a resolve rather
+  than a run. Nothing broke in the meantime only because Vercel runs
+  `prisma generate && next build`, not `migrate deploy`; it would have bitten
+  the first person to run migrations.
+
+  **It was the only one.** Core audited the whole ledger afterwards against
+  DB1: 26 rows, 26 directories, 0 in progress, 0 drift, 0 never-applied, and
+  exactly **two** rows carrying `applied_steps_count: 0` — `0_init`, which is
+  the expected baseline and is always resolved rather than run, and this one.
+  `20260910110000_savedsearch_env` and `20260910100000_phase1_lead_layer` were
+  both genuinely run by `migrate deploy`. So `market_edition` is the only
+  migration that ever went in outside the ledger, and there is nothing further
+  to unpick.
 - `npx prisma db execute` prints nothing for a `SELECT`. It cannot be used to
   inspect. Use a short `.mjs` against `@neondatabase/serverless` from the
   project root, and delete it after.
@@ -269,24 +334,15 @@ edition could be built from a DB2 that had not yet taken Monday's delivery.
 
 ## Next expected task
 
-**One, and it is gated.** Run the 2026-08-31 correction **once**, and only
-after Core reports the battery green. From `D:\miltonly-content`:
+**None. Do not self-start.**
 
-```powershell
-$env:CORRECTION_NOTE = "This edition was regenerated on <date>. Its original figures were built from a sold-date bug, since fixed; the figures below are the corrected ones."
-$env:WEEK_OF = "2026-08-31"
-npx tsx --tsconfig tsconfig.test.json scripts/generate-market-edition.ts --publish --revalidate=https://miltonly.com
-```
+Both rulings are executed, merged, and verified on production. The correction
+is spent. The remaining candidates, unchanged and still nobody's current
+assignment, are the live open-house block on the index page and whichever of
+the two held guides the real GSC rows justify.
 
-Not `NODE_OPTIONS=--conditions=react-server`. Two calls to make at that moment,
-because both depend on what Core's fix turns out to be: the note should name
-the fix in one clause rather than say "a sold-date bug", and `--skip-paragraph`
-decides whether the stored `interpretation`, which was written against the
-wrong figures and cannot stand, is replaced or simply dropped to null. Dropping
-it to null is a normal outcome the page already handles. `--revalidate` needs
-`REVALIDATION_SECRET` in `.env.local` or it logs `skipped` and the page serves
-the old figures from cache.
-
-**Nothing else. Do not self-start.** The remaining candidates are the live
-open-house block on the index and whichever of the two held guides the real GSC
-rows justify.
+**One thing to hand Core rather than do.** The backfill moved **17 streets
+across k5 and 9 across k10**, so some streets can now publish a typical price
+they were suppressing. Those figures live in stored `StreetContent` prose and
+only a regeneration changes them. `StreetContent` is Core's and this worktree
+does not write it. Flagged, not actioned.

@@ -1,0 +1,177 @@
+SOURCE: Town of Milton, Pay or dispute a Parking Ticket
+URL: https://www.milton.ca/en/town-hall/parking-tickets-and-penalty-notices.aspx
+PAGE TITLE: Parking Tickets and Penalty Notices - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: 73f3cda8cda6a7242279e594dc01978be05c72afe431277789cd918d01eb661c
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+New: Monthly parking permits available in select parksThe Town of Milton is piloting overnight parking in select municipal parks to help ease on-street parking in residential areas.Limited spaces available – $60 per month.Apply now [https://milton.gtechna.net/permit-portal/]
+
+On Feb. 1, 2022, the Town launched the Administrative Penalties System (APS) process to help residents with parking ticket disputes.
+
+This program moves disputes from the Provincial Offences Court to the Town’s APS system, which uses screening and hearing officers to settle issues.
+
+APS is a quicker and more flexible way to pay, dispute, and collect penalties. It covers Penalty Notices for things like parking and now includes some by-law violations.
+
+|
+
+### By-law violations that are part of the APS program
+
+|
+
+- Adult Entrainment By-law No. 54-2003
+
+- Adult Videotape Licensing By-law No. 53-2003
+
+- Animal Control By-law No. 90-2004
+
+- Anti-chasing and Tow Truck Licensing By-law No. 34-2006
+
+- Body Rub Parlor Licensing By-law No. 37-2003
+
+- Business Licensing By-law No. 024-2018
+
+- House Numbering By-law No. 26-2010
+
+- Community Standards By-law No. 042-2020
+
+- Election Sign By-law No. 011-2018
+
+- Firearms By-law No. 062-2016
+
+- Fireworks By-law of By-law No. 071-2021
+
+- Noise By-law No. 133-2012
+
+- Parks By-law No. 072-2006
+
+- Portable Sign By- law No 87-2009
+
+- Property Standards By-law No. 131-2012
+
+- Road Occupancy, Fouling, and Entrance Permit Bylaw 035-2020
+
+- Short Term Rental By-law No. 062-2022
+
+- Signage By-law No. 120-2017
+
+- Site Alteration By-Law No. 094-2022
+
+- Stormwater Infrastructure By-law No. 095-2022
+
+- Snow Removal By-law No. 106-2019
+
+- Swimming Pool Fences By-law No. 77-2010
+
+- Farm Animals By-Law No. 42-87
+
+- Vehicle For Hire By-Law No. 050-2023 [file:///C:/Users/mackenzie.blake/Downloads/Parking%20%20By-law%20Webpage%20Revisions%20(UPDATED).docx#_msocom_1]
+
+## How to pay for a parking ticket or penalty notice
+
+If you have received a parking ticket or penalty notice in Milton, there are two options available for you to pay the fine.
+
+|
+
+### Online
+
+| If you receive a parking ticket or a penalty notice for violating a Town by-law you can pay online.
+Pay Your Parking Ticket or Penalty Notice Online [https://portal.gtechna.com/userportal/milton/ticketSearch1.xhtml]
+
+You will be charged a $2.45 convenience fee for paying online.
+
+|
+
+### In-person
+
+|
+Sign the voluntary payment option and pay the penalty notice at Town Hall located at 150 Mary St., Milton, ON.
+
+Acceptable payment methods include cash or debit.
+
+## How to dispute a parking ticket or penalty notice
+
+If you receive a parking ticket or penalty notice, you must either pay or choose to dispute the penalty notice within 30 days from the date that it was issued to avoid late payment or other administrative fees.
+
+There are two options available to dispute a parking ticket or penalty notice. Please read through both options carefully before making a selection.
+
+|
+
+### Screening
+
+|
+When someone disputes a ticket, a screening officer first looks at the case. This service helps you dispute parking tickets and penalty notices without needing to book a hearing. The screening officer can:
+
+- Lower the penalty amount
+
+- Give more time to pay
+
+- Cancel the penalty
+
+If you disagree with the screening officer’s decision, you can ask for a hearing with a hearing officer chosen by the Town.
+
+Proceed with Screening [https://portal.gtechna.com/userportal/milton/ticketSearch1.xhtml]
+
+Please use Chrome to access the scheduler.
+
+A Request for Disclosure must be received by the Town at least 10 business days prior to your scheduled Screening or Hearing Review appointment. It is your responsibility to follow-up on the status of your request.
+
+Request for Disclosure [https://forms.milton.ca/ContactUs/Request-for-Disclosure]
+
+|
+
+### Hearing
+
+|
+If you wish to challenge the evidence of the screening officer who issued your parking ticket or penalty notice you can then request a hearing. A hearing can only be requested once you have gone through the screening process.
+
+The Hearing Officer will review the case and make a final decision about the penalty notice. The hearing officer’s decision is final and must be followed.
+
+Fill out the form below, and a representative will contact you within five business days.
+
+Proceed with Hearing [https://portal.gtechna.com/userportal/milton/ticketSearch1.xhtml]
+
+A Request for Disclosure must be received by the Town at least 10 business days prior to your scheduled Screening or Hearing Review appointment. It is your responsibility to follow-up on the status of your request.
+
+Request for Disclosure [https://forms.milton.ca/ContactUs/Request-for-Disclosure]
+
+If you do not attend your scheduled appointment, the penalty notice will be confirmed and the vehicle’s registered owner will be required to pay a fee for failing to attend the appointment.
+
+## Failure to respond to a parking ticket or penalty notice
+
+If you do not respond to the parking ticket or penalty notice by the due date — either by paying the penalty or scheduling an initial screening review — you automatically waive your right to a review, and the administrative penalty is deemed upheld and not subject to review.
+
+|
+
+### Administrative processing fees
+
+|
+Administrative fees for processing penalties are as follows:
+
+- After 30 days, a $12 Ministry of Transportation (MTO) search fee
+
+- After 60 days, a $36 late payment fee
+
+- After 75 days, a $31 fee for plate denial registration
+
+- $60 screening no-show fee for failing to appear at a scheduled initial screening
+
+- $118 hearing no-show fee for failing to appear at a scheduled hearing
+
+- $118 adjournment fee when requested by a person during a hearing review
+
+- $23 service fee for the cost of a document sent by registered mail
+
+- $10 service fee for the cost of a document by regular (Canada Post) mail
+
+- $153 fee is applied when a Corporate Search is used to identify a business name
+
+- $143 fee is used when a Parcel Search is conducted to prove ownership of a property
+
+Additionally, if the penalty notice and administrative fees remain unpaid, a notice of default will be sent to the Ministry of Transportation which will result in your Ontario Vehicle Permit renewal being denied.
+
+## Do you have a question about your parking ticket or penalty notice?
+
+Please email us [https://forms.milton.ca/ContactUs/Town-Clerks-Office] or call 905-878-7252 ext. 2530 [tel://9058787252,2530] if you have questions about your parking ticket or penalty notice.
+
+If you require accommodation, please notify us [https://forms.milton.ca/ContactUs/Town-Clerks-Office] at least 24 hours prior to your scheduled appointment.

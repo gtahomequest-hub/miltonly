@@ -112,7 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
-    // Content tier. /guides is the index; the six guide pages are emitted from
+    // Content tier. /guides is the index; the guide pages are emitted from
     // GUIDE_DEFS below so the sitemap and the route's generateStaticParams can
     // never disagree about which guides exist.
     {

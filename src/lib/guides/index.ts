@@ -26,6 +26,12 @@ import { getSchoolRows, getActiveCondoFees } from "./figures";
 
 const CITY = config.CITY_NAME;
 
+/** "Eight" rather than "8" at the top of a page of prose. Falls back to digits past twelve. */
+function countWord(n: number): string {
+  const words = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+  return words[n] ?? String(n);
+}
+
 const CATEGORY_META: Record<GuideCategoryKey, { label: string; blurb: string }> = {
   buying: { label: "Buying", blurb: "Before you make an offer" },
   selling: { label: "Selling", blurb: "Before you list" },
@@ -34,7 +40,7 @@ const CATEGORY_META: Record<GuideCategoryKey, { label: string; blurb: string }> 
 };
 
 /** A teaser needs the article's own read time, so the index builds every
- *  article. Six guides against cached aggregates; the alternative is a stored
+ *  article. Eight guides against cached aggregates and two static sources; the alternative is a stored
  *  read time that drifts the moment a figure suppresses and a sentence drops. */
 async function allTeasers(): Promise<Array<{ def: GuideDef; teaser: GuideTeaser }>> {
   const out: Array<{ def: GuideDef; teaser: GuideTeaser }> = [];
@@ -82,7 +88,7 @@ export async function getGuidesIndexData(): Promise<GuidesIndexData> {
 
   return {
     heading: `${CITY}, explained`,
-    sub: `Six guides built on this site's own ${CITY} data. Every figure carries the window it was measured over and the number of sales behind it, and a figure with too few sales behind it is left out rather than estimated.`,
+    sub: `${countWord(teasers.length)} guides built on this site's own ${CITY} data, the Town's published rules and GO Transit's timetable feed. Every figure carries the window it was measured over or the date its source was read, and a figure with too few sales behind it is left out rather than estimated.`,
     stats: [
       { n: String(teasers.length), l: "guides" },
       { n: String(agg.overall.count), l: "sales behind the figures" },
@@ -178,6 +184,9 @@ async function linksFor(slug: string): Promise<Record<number, GuideLink[]>> {
           .map((r) => ({ label: r.name, href: `/schools/${r.slug}` })),
       };
     }
+    // "parking-in-milton" and "milton-go-train-to-toronto" build their own link rows inside
+    // their builders (parking.ts, goTransit.ts): the hubs they link to are derived from the
+    // same source rows the sections cite, and a links row here would have to recompute them.
     default:
       return {};
   }
