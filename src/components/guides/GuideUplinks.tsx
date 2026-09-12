@@ -13,15 +13,19 @@ export function GuideUplinks({
   guides,
   context,
   variant,
+  hubs,
 }: {
   guides: GuideUplink[];
   /** The page these guides are read alongside: "Main Street East" or "Old Milton". */
   context: string;
   variant: 'street' | 'hub';
+  /** MC-012: the hub slugs this page's parking and GO up-links were decided from, declared on
+   *  the ledger so the battery can hold the decision against the guides' own down-links. */
+  hubs?: readonly string[];
 }) {
   if (guides.length === 0) return null;
   return (
-    <section className={`g-up g-up-${variant}`} aria-labelledby="g-up-h">
+    <section className={`g-up g-up-${variant}`} aria-labelledby="g-up-h" data-hubs={hubs && hubs.length ? hubs.join(',') : undefined}>
       <div className="g-up-wrap">
         <div className="g-up-head">
           <span className="g-up-eyebrow">Guides</span>

@@ -206,9 +206,11 @@ export function HubStreets({ data }: { data: HubData }) {
             <span className="h-eyebrow">Street by street</span>
             <h2>Streets in {data.name}</h2>
           </div>
+          {/* The per-hub overflow page 301s to this section since MC-012; the whole corpus is at
+              /streets, which is where "all streets" now goes. */}
           {data.hasStreetOverflow && (
-            <a className="h-more" href={`/neighbourhoods/${data.slug}/streets`}>
-              View all streets →
+            <a className="h-more" href="/streets">
+              All Milton streets →
             </a>
           )}
         </div>

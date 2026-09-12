@@ -23,10 +23,11 @@ import hubIntents from './checks/hub-intents.mjs';
 import guideLinks from './checks/guide-links.mjs';
 import nav from './checks/nav.mjs';
 import geometryFacts from './checks/geometry-facts.mjs';
+import sourcesFresh from './checks/sources-fresh.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, sourcesFresh];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

@@ -5,7 +5,7 @@
 // presentation over NeighbourhoodStreetIndex; no client JS, deterministic.
 import Link from "next/link";
 import { config } from "@/lib/config";
-import type { NeighbourhoodStreetIndex } from "@/lib/neighbourhoodStreets";
+import type { NeighbourhoodStreetIndex } from "@/lib/retired/neighbourhoodStreets";
 
 const money = (n: number) => "$" + Math.round(n).toLocaleString("en-CA");
 const CITY = config.CITY_NAME;

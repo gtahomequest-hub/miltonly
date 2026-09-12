@@ -59,7 +59,9 @@ function intentsFor(slug: string): HubIntentSquare[] {
   return [
     { key: "buy", label: "I'm buying", sub: "Streets & listings here", href: `/neighbourhoods/${slug}#streets` },
     { key: "sell", label: "I'm selling", sub: "What my home is worth", href: "/sell" },
-    { key: "rent", label: "I'm renting", sub: "Lease in this area", href: "/rentals" },
+    // MC-012: scoped to this hub. /rentals reads ?neighbourhood=<hub slug> and filters every
+    // figure and listing to the hub's own TREB strings, so "in this area" is true.
+    { key: "rent", label: "I'm renting", sub: "Lease in this area", href: `/rentals?neighbourhood=${slug}` },
     { key: "invest", label: "I'm investing", sub: "Listings & yield", href: "/listings" },
   ];
 }

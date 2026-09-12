@@ -141,7 +141,21 @@ function neighbourhoodRedirect(req: NextRequest): NextResponse | null {
   return NextResponse.redirect(url, 301);
 }
 
+// MC-012 (2026-09-12): the per-hub street overflow page is retired. /neighbourhoods/<slug>/streets
+// answers 301 to the hub's own street section, and the sitemap no longer declares it.
+function overflowRedirect(req: NextRequest): NextResponse | null {
+  const m = req.nextUrl.pathname.match(/^\/neighbourhoods\/([^/]+)\/streets\/?$/);
+  if (!m) return null;
+  const url = req.nextUrl.clone();
+  url.pathname = `/neighbourhoods/${m[1]}`;
+  url.search = "";
+  url.hash = "streets";
+  return NextResponse.redirect(url, 301);
+}
+
 export function middleware(req: NextRequest) {
+  const overflow = overflowRedirect(req);
+  if (overflow) return overflow;
   // Sibling → canonical 301 redirect runs FIRST. Applies regardless of the
   // maintenance gate because SEO / crawler consistency needs it whether
   // we're pre-launch or live.
