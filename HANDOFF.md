@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-12 (MC-014): hubs v2 and core batch 3 on main, production 16/16, nothing waiting on a merge._
+_Last rewritten 2026-09-12 (MC-016): Neon egress recon done, no code; MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
 
 ## READ THIS FIRST
 
@@ -15,6 +15,27 @@ to `/streets` for every hub because the per-hub overflow page now 301s to the la
 `scratchpad/reports/MC-014-hubs-and-batch-3-on-main.md`.
 
 **NOTHING WAITS ON A MERGE.** Every branch opened this week is on main.
+
+**NEON EGRESS (MC-016, recon only, `scratchpad/reports/MC-016-neon-egress-recon.md`).** Neon's
+per-day consumption endpoint is Scale-plan only (403); the month-to-date counters say DB1 46.4 GB,
+DB2/DB3 1.8 GB, and they lag by hours, so the "101 GiB yesterday" console figure could not be
+reconciled from the API. Measured instead with `pg_stat_statements`, **now enabled on DB1 and
+DB2** (statistics only; `DROP EXTENSION pg_stat_statements` removes it): one full battery costs
+≈ 0.15 GB, its own loaders 0.29 MB; the rows leave through the renders it triggers. The four
+heavy readers, in order: `/streets` (`force-dynamic`, in-memory `distinct` pulls every Milton
+listing, 3,414 rows a render, 57 renders in the window), `publishedStreetPageSlugs()` and the
+`ResidentialStreet` floor (490 + 963 rows on nearly every render, 18 call sites), `/rentals`
+(66,712 rows scanned a render, uncached), and the `Neighbourhood`/`HubContent` sets fetched 2,600
+times a window. Proposals and a 16 GB/month ceiling are in the report. **No code was changed.**
+
+**NEXT, IN ORDER: MC-017 then MC-015.** MC-017 on `fix/build-cost`: `vercel.json` `ignoreCommand`
+skipping docs-only diffs, automatic Git deploys off for every branch but main, street/hub/condo/
+guide pages on on-demand ISR (top 50 by traffic prerendered, `dynamicParams: true`), build minutes
+before and after. MC-015 on `feat/video-playbook` (branch exists, empty): dated keys for all 49
+published clips, captured-at backfill, `sitemap-video.xml`, the coverage sentence, the takedown
+mailto, ffprobe and blur guards in the upload script, the `db3` tag drop after an analytics run,
+and a `video` battery check. Survey facts: only the 7 recent clips have registry start/end in
+`D:/dashcam/work/stage3-match.json`; the other 42 need `clip-coverage.js` with the GPS cache.
 
 **WHAT LANDED WITH CORE BATCH 3.** The board never the family; the judge cannot refuse on a
 finding it labels not a violation; hub titles and descriptions have no em-dash and the LIVE
@@ -70,6 +91,8 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 | waiting on merge | nothing |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
+| Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
+| open tasks | MC-017 (`fix/build-cost`), then MC-015 (`feat/video-playbook`) |
 
 ## What happened 2026-09-10 (final) — three merges
 

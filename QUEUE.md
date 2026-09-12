@@ -18,6 +18,8 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 
 *Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 done**, merged as `543ef99` (merges `26381f9`; ML-001 fast-forwarded `feat/leads` to `00e0eb1` and set `BRIEF_UNSUBSCRIBE_SECRET`): all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
+*Out-of-queue work 2026-09-12: MC-016, the Neon egress recon. Recon only, no code. Neon's per-day consumption endpoint is Scale-plan only; measured with `pg_stat_statements` (now on DB1 and DB2) instead: ≈ 0.15 GB per battery run, `/streets`, the published-slug sets, `/rentals` and the `Neighbourhood`/`HubContent` sets are the heavy readers; ceiling proposed 16 GB/month. Record in `scratchpad/reports/MC-016-neon-egress-recon.md`. MC-017 (Vercel build cost, `fix/build-cost`) and item 6 (MC-015, `feat/video-playbook`) are next, in that order.*
+
 ---
 
 ## 1. Naming close-out and hygiene
