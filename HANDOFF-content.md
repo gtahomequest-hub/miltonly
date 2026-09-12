@@ -1,9 +1,9 @@
 # Handoff — content worktree
 
-CONTENT · D:\miltonly-content · feat/content
+CONTENT · D:\miltonly-content · feat/content-2
 
-_Last rewritten 2026-09-10, after the two edition rulings landed on main and
-the 2026-08-31 edition was corrected on production._
+_Last rewritten 2026-09-11, after MCT-001 built the two source-grounded guides on
+`feat/content-2` and proved them on a Vercel preview. Not merged._
 
 ## READ THIS FIRST
 
@@ -14,335 +14,216 @@ weekly edition.** Its own tables, its own routes, generation through
 footer or homepage.** Read the root `HANDOFF.md` for those tiers; it is the
 authority on everything outside this scope.
 
-**MERGED AND LIVE.** Approved by Aamir on preview `miltonly-clft5u5jn` after
-reading all six guides.
-
 ## WHERE THIS BRANCH STANDS RIGHT NOW
 
-**MERGED AND LIVE.** Core merged `feat/content` `0a2499b` as **`31a9ab0`** and
-reported the production battery **PASS, 11 checks, 449 pages, 99 s, exit 0** at
-the served SHA. Main has since moved to **`5773f60`**, carrying `fix/core-batch`
-as `8db80da`, green on production; this branch is merged up to it. Record:
-`scratchpad/reports/067-content-cron-hour-and-correction.md`, including its two
-addenda, which are the parts written after the merge.
+**`feat/content-2` is BUILT AND PROVEN ON PREVIEW, awaiting Core's merge.** It
+branches from `fc897e8`, which is `feat/content` merged up to `origin/main` at
+`e71a7f6`, so it carries nothing of `feat/content` that main does not already
+have. Preview `https://miltonly-jqoy3smu4-gtahomequest-hubs-projects.vercel.app` serves the code commit `5e7a3e3`; the head is the docs commit on top of it, and the battery ran with `5e7a3e3`'s full SHA: 12 of 13 checks pass over 481 pages, the `tiles` failure (chretien-street-milton, sub-k) reproduces on production at `2a89120` and is the street tier's. Record:
+`scratchpad/reports/MCT-001-parking-and-go-guides.md`.
 
-**The three deleted `src/lib/hub*.ts` files were not `fix/core-batch`.** I
-flagged them; Core traced them. They arrived with `c98f40e`, Home's WIP hub
-rebuild, and left with Core's revert `2e3cc50`. Absent from main and from this
-branch alike, zero importers, battery green. Closed, no action.
-
-| | |
-|---|---|
-| cron | Monday **08:00 America/Toronto**, `0 12 * * 1` and `0 13 * * 1`, hour guard 8 |
-| `vercel.json` | **17 crons.** Core resolved a conflict with `/api/brief/send` by keeping all three; both market-watch entries verified present by parse |
-| 2026-08-31 edition | **CORRECTED on production.** 40 sales became 62, $920,000 became $975,000 |
-| the correction stamp | renders above every figure, once, on the edition and on the index |
-| `datePublished` / `dateModified` | `08:21:38.061Z` (original, unmoved) / `18:01:25.631Z` (the correction) |
-
-**THE CORRECTION IS SPENT. DO NOT RUN IT AGAIN.** `generateEdition` will refuse
-a second rewrite without a fresh note, and there is no second correction to
-make. The week of 2026-08-31 is immutable again.
-
-**WHY THE FIGURES MOVED.** `CloseDate` is the agreed completion date, not the
-sale date. 255 DB2 rows carried a future `sold_date` and were re-dated to their
-contract date by Core. Every DB2 window in this tier carries `sold_date <=
-NOW()`, so those rows were excluded and sales belonging to the week had been
-dated forward out of it. New listings held at 56 across the correction, which
-is the proof: that figure comes from DB1's `listedAt`, which the backfill never
-touched. Open item 3 below, the future-dated rows, is **CLOSED**.
-
-**PURGE BEFORE YOU GENERATE, NOT AFTER.** `scripts/purge-sold-caches.ts` ran
-first and deleted 15 keys that had repopulated under the 1 h TTL since Core's
-own purge. The edition's 12-month context reads `getMiltonSoldOverall`, which
-is one of those cached keys, so generating first would have baked the stale
-1,531 into a page corrected for exactly that number. Order is: purge Upstash,
-generate, then revalidate.
-
-## What is live
+Two guides were added. Both are in `GUIDE_DEFS`, so the index, the sitemap and
+the CollectionPage schema list them without a second edit:
 
 ```
-/guides
-/guides/what-milton-neighbourhoods-cost                 milton real estate market
-/guides/how-to-read-a-milton-sold-price                 sold prices milton
-/guides/is-it-a-good-time-to-sell-in-milton             is it a good time to sell
-/guides/milton-condo-fees-parking-and-lockers           condos in milton
-/guides/what-it-costs-to-buy-your-first-home-in-milton  first-time buyer
-/guides/milton-schools-what-the-data-shows              schools
-/market-watch
-/market-watch/2026-08-31
+/guides/parking-in-milton               parking
+/guides/milton-go-train-to-toronto      milton go train
 ```
 
-All nine return **200 on `https://miltonly.com`** and all nine are in the
-**live sitemap**, checked on the apex after the merge. Order is the brief's GSC
-evidence order. `parking` is held: the Town bylaw is not in this repo and a
-model would invent it.
+**`feat/content` itself is merged and live** (`31a9ab0`, then `5773f60`), the
+2026-08-31 edition is corrected on production and the correction is spent.
+Nothing below about the edition changed in this task.
 
-Verified on production, not just locally: 24 condo listings state a fee,
-`2.25% as at 8 September 2026` renders, the edition shows 40 sales, $920,000 and
-97.5%, and across all seven content pages there are **zero em-dashes and zero
-raw TREB strings**.
+## THE TWO SOURCE-GROUNDED GUIDES, AND THE RULE THEY RUN ON
 
-## I CLOBBERED THE LEADS MERGE AND RESTORED IT. READ THIS BEFORE USING `commit-tree`.
+The six original guides ground every number in a live figure the site already
+renders. These two ground in a **stored source** instead, and the source is in
+the repo:
 
-The content merge `f6bbc92` was correct. The **documentation** commit after it
-was not. `4b55fc6` was built with `git commit-tree` using `feat/content`'s tree
-while `origin/main` had already moved to `3461e13`, the `feat/leads` merge.
-Parenting my stale tree on their commit **reverted all 30 files that merge
-brought in**: the lead layer's routes, guards, components, two migrations and
-its schema changes.
+- **Parking.** `src/data/sources/milton-parking/*.txt` is the text of seven
+  milton.ca pages as read on **2026-09-11**, each file headed with its URL, the
+  fetch date and the SHA-256 of the HTML it was extracted from.
+  `src/data/sources/miltonParking.ts` is the typed index: the seven sources, the
+  portal URLs, `PARKING_FACTS` (every number the guide may state, with the page
+  it is on), the 15 pilot parks by ward, and the 13 survey rows. The guide is
+  `src/lib/guides/parking.ts`.
+- **GO.** `scripts/gtfs/milton-go.mjs` reads a Metrolinx GTFS extract
+  (`GTFS_DIR`, default `D:/dashcam/work/gtfs/go`) and writes
+  `src/data/sources/goGtfsMilton.ts`: feed version `20260910145058`, valid
+  `20260910` to `20261127`, 79 dated services, every Milton to Union leg by
+  weekday and weekend pattern, the 21 bus both ways, the 22 and 27, the fare,
+  and the one exception date. The guide is `src/lib/guides/goTransit.ts`.
+  **Re-run the script when the feed changes; do not hand-edit the output.**
 
-Nothing was lost from the repository — `3461e13` is intact in history — but
-main's tree was wrong for one commit, and **production served that wrong tree
-briefly** before the fix deployed.
+**EVERY RULE SENTENCE CITES, ON THE PAGE.** `GuideSection.cited` is a list of
+`{ text, source: { label, url, fetchedOn } }` rendered as a ledger with the URL
+and read date beside each sentence. `GuideSection.table` and `GuideFaq.source`
+carry the same `GuideSource`. All three are optional and additive; the six
+original guides and the preview fixtures render exactly as before. Takeaways
+are plain strings in the seam, so the parking takeaways carry the milton.ca
+path and the read date inside the sentence. The Article JSON-LD gains a
+`citation` array of the unique source URLs when a guide has any.
 
-`5ee703e` restores it: main's tree is now `3461e13`'s plus the only two files
-the docs commit was ever meant to change, `HANDOFF-content.md` and `QUEUE.md`,
-neither of which `feat/leads` touched. Verified both ways: the diff against
-`3461e13` is exactly those two files, and `src/lib/lead/guards.ts`,
-`/api/leads/create` and the lead migration are all present on main. `/sell`
-returns 200 on production.
+**NO INFERENCE BEYOND THE TEXT (parking).** Framing paragraphs state no rule.
+Where the Town's pages are silent, the guide says so: no visitor permit, no list
+of streets with posted exceptions, no fine amounts. A tip that started to
+paraphrase a rule was moved into `cited` during the build; keep it that way.
 
-**THE RULE. A `commit-tree` push must re-read `origin/main` immediately before
-building the tree, and the tree must be built FROM that commit, not from a
-branch tip that predates it.** `git fetch` then `git commit-tree` with a tree
-you prepared earlier is not safe: the fetch tells you main moved and the stale
-tree silently discards the move. Merge the moved main into the branch first, or
-build the tree with `read-tree` from the new main and overlay only the files you
-actually changed. A fast-forward check (`merge-base --is-ancestor`) would have
-caught this in one line and was not run on the second push.
+**THE VALIDATOR RUNS OVER BOTH GUIDES AT BUILD TIME.**
+`scripts/test-content-guides.ts` is prebuild test 21 (after
+`test-content-validator`). It builds both guides without a database (the
+builders take `deps.hubs`), walks every visible string (title, dek, takeaways,
+paragraphs, tips, cited sentences, table captions, heads and cells, FAQs) and
+runs `validateContentProse` against the guide's own bundle: 429 surfaces,
+1,313 assertions. It also asserts the provenance contract and proves the gate
+can fail (a weakened bundle, a planted place, a superlative, a fabricated
+count). **The figures bundle is the fact list, not the prose.** Licensing a
+number by putting the sentence itself into a text figure would make the test
+pass on anything; the parking numbers come from `PARKING_FACTS`, the GO numbers
+from the feed summary, and the departure times from text figures that are the
+timetable, not the sentence.
+
+**Sentence openers are entities.** The validator reads "The Town" or "Leaves
+Milton GO" as one capitalised run and `SENTENCE_SAFE` only covers single words,
+so "The", "From", "Leaves", "Arrives" and the like are in each guide's entity
+list, with a comment saying why. Not a validator change; the validator is not
+edited.
+
+**Dates render as written.** `PARKING_FETCHED_ON` is "11 September 2026" and
+`longDate()` in goTransit.ts builds the same shape from `YYYYMMDD`. No
+`toLocaleDateString` anywhere in either guide (report 064).
+
+**GTFS times past 24:00 are the next day and say so.** `clock("24:25")` renders
+"12:25 a.m. (after midnight)". The 21's last departures are after midnight in
+both directions; wrapping them silently would put a 12:25 a.m. bus before the
+3:45 a.m. one.
+
+## Link-down
+
+`src/lib/guides/hubLookup.ts`: `hubSlugAt(lng, lat)` and `hubSlugsNear(lng,
+lat, metres)` go through `TOWN_POLYGON_TO_NEIGHBOURHOOD`, the only place a Town
+polygon may become one of our slugs, and `publishedHubs()` filters to
+`HubContent.status = "published"`, so neither guide can link a hub that 404s.
+
+- Parking links each pilot park's hub from the park's Town-published centroid
+  (`TOWN_PARKS`), 12 hubs on preview. The pairing of the Town's park names to the
+  parks layer ("Clark" to "Clarke", "Lions Park" to "Lions Sports Park") is in
+  `PILOT_PARKS`, once, with a comment.
+- GO links the hubs whose polygon edge is within 1.6 km of Milton GO, nearest
+  first: Timberlea (the station sits in it), Dorset Park, Clarke, Dempsey, Old
+  Milton, Beaty, Coates. The prose names the station's hub.
+
+**Up-links from streets and hubs to these two guides are NOT added.** MC-003 set
+the uplink rules and the battery's `guide-links` check encodes them; adding
+guides to `guidesForStreet` / `guidesForHub` is Core's call. Flagged in the
+report.
+
+## What was refactored, and what was not
+
+- `src/lib/guides/shared.ts` now holds `GuideDef`, `BuiltGuide`, `GUIDES_UPDATED`,
+  the two CTAs and `readMinutes` (which now counts cited sentences and table
+  cells). `guides.ts` re-exports the first three, so `index.ts`, the page and the
+  sitemap did not change their imports. This exists so a builder file and the
+  registry do not import each other in a cycle.
+- `sections.tsx` renders `cited`, then `table`, then `tip`, then `links`. The
+  tip moved from before the ledger to after it; on the six original guides
+  (no ledger) the order is unchanged.
+- Not edited: `validateContentProse.ts`, `validateStreetGeneration.ts`,
+  `uplinks.ts`, anything under `src/lib/marketWatch`, any Core file.
 
 ## What a next session must not undo
 
-**`validateStreetGeneration.ts` is Core's and this tier does not edit it.** The
-four required rules were checked for extraction and **none extracts unchanged**:
-each takes `input: StreetGeneratorInput` and reads `.aggregates` / `.nearby` /
-`.primaryBuilder`, and `SUPERLATIVE_PHRASES` is module-private.
-`src/lib/content/validateContentProse.ts` reimplements five rules against
-`GroundedFigures`. `scripts/test-content-validator.ts` is the 20th prebuild
-test, 55 assertions, both directions on every rule, proven red on a weakened
-validator.
+Everything in this section from the 2026-09-10 handoff still stands and is
+repeated here so this file remains the authority:
 
-**A SUPPRESSED FIGURE REMOVES PROSE, IT DOES NOT DAMAGE IT.** `sentence()`
-returns null when its figure is null and `para()` discards nulls. Never render a
-dash, a zero or a sentence with a hole where a k-suppressed figure would be.
-
-**A WEEK HAS TWO BASES AND THEY ARE NOT INTERCHANGEABLE.**
-`sold.sold_records.sold_date` is a `timestamp with time zone` whose every value
-is **exactly UTC midnight** — a calendar date wearing a timestamp type, measured
-across all 3,961 Milton For Sale rows. A Toronto-midnight window drops the whole
-Monday: the week of 2026-08-31 read **18** where the day-by-day count is **40**.
-DB1's `Listing.listedAt` is the opposite, a real timestamp, where Toronto
-instants are correct. `WeekWindow` carries `dateStartUtc` /
-`dateEndExclusiveUtc` for DB2 and `startUtc` / `endUtc` for DB1. **Use the one
-that matches the column.**
-
-**EVERY DB2 WINDOW CARRIES `sold_date <= NOW()`** (ruling 10). Any query added
-later must too.
-
-**GUIDES ARE DYNAMIC ON PURPOSE.** No `generateStaticParams` on
-`/guides/[slug]`. Their figures are read live, and the first build prerendered
-them, which would have frozen every number at build time.
-
-**THE PARAGRAPH NEVER BLOCKS A PAGE.** Validator violation, provider error,
-missing key: `interpretation` stays null, the attempt is recorded on
-`MarketEditionGeneration` with its violations, sections 1 to 6 publish
-regardless. Two attempts, DeepSeek only, no Claude escalation — the Anthropic
-account has no credit and a weekly cron that can escalate is one that can fail
-on a balance.
-
-**AN EDITION IS IMMUTABLE ONCE PUBLISHED, WITH ONE NAMED EXCEPTION.** Both
-routes render the stored row and recompute nothing. Late-reported sales land in
-a later edition.
-
-The exception is a **correction**, and the rule now lives in `generateEdition`
-rather than only in the cron route: it reads the existing row and **throws** on
-a published one unless `correctionNote` is passed. There is no `--force`. The
-only way past the gate is the sentence the page will carry, above every figure,
-so overriding the rule and telling the reader are the same act. A draft is
-still freely rewritable.
-
-The note rides **inside `sectionsJson`**, as an optional `correctionNote` on
-`EditionSections`. Not a column: nothing queries, filters or sorts on it and
-only the renderer reads it, so a column buys a migration and nothing else.
-Editions written before the field existed lack the key and render nothing.
-`buildEdition` never sets it; it is attached at the write.
-
-The decision was argued at the time on a second ground as well, that
-`_prisma_migrations` was out of step with the live database. **That ground was
-false and is withdrawn** (see the ledger note under "Notes for the next run").
-The decision stands on the first ground, which was always the stronger one, and
-it is the one to reuse: a field only the renderer reads does not earn a column.
-
-**A CORRECTION DOES NOT REPUBLISH.** `publishedAt` is preserved on a rewrite,
-and `dateModified` on both pages now reads `updatedAt`. It read
-`publishedAt ?? updatedAt`, which on a published row always returned
-`publishedAt`, so `updatedAt` was unreachable and a correction would have been
-invisible to a crawler.
-
-**`src/lib/content/neighbourhoodName.ts` is the only source of a neighbourhood
-name in this tier.** `Listing.neighbourhood` and `sold_records.neighbourhood`
-hold the raw TREB string ("1032 - FO Ford"). An unmapped string returns **null**
-and the caller drops the clause. It never falls back to the raw string.
-
-**`src/data/policyRate.ts` is the only rate.** 2.25%, observed 2026-09-08, BoC
-Valet series V39079. **Render the date every time.** Re-pull the URL in the file
-and update both fields together, never one without the other. A policy rate is
-not a mortgage rate and the guide says so.
+- **A SUPPRESSED FIGURE REMOVES PROSE, IT DOES NOT DAMAGE IT.** `sentence()`
+  returns null when its figure is null and `para()` discards nulls.
+- **A WEEK HAS TWO BASES.** `sold_date` is a calendar date at UTC midnight;
+  `listedAt` is a real timestamp. `WeekWindow` carries both; use the one that
+  matches the column. **Every DB2 window carries `sold_date <= NOW()`.**
+- **GUIDES ARE DYNAMIC ON PURPOSE.** No `generateStaticParams` on
+  `/guides/[slug]`. The two new guides read static sources but ride the same
+  route, so they are dynamic too; that is fine and costs nothing.
+- **THE PARAGRAPH NEVER BLOCKS A PAGE.** Two attempts, DeepSeek only, no Claude
+  escalation.
+- **AN EDITION IS IMMUTABLE ONCE PUBLISHED, WITH ONE NAMED EXCEPTION.** The
+  correction note rides inside `sectionsJson`; `generateEdition` throws on a
+  published row without one. **The 2026-08-31 correction is spent.**
+- **A CORRECTION DOES NOT REPUBLISH.** `dateModified` reads `updatedAt`.
+- **`neighbourhoodName.ts` is the only source of a neighbourhood name in this
+  tier.** Unmapped returns null and the clause drops.
+- **`policyRate.ts` is the only rate.** Render the date every time.
+- **`validateStreetGeneration.ts` is Core's.** The Content validator
+  reimplements five rules and `test-content-validator.ts` proves both
+  directions.
+- **PURGE BEFORE YOU GENERATE, NOT AFTER.** `scripts/purge-sold-caches.ts`, then
+  generate, then revalidate.
+- **The cron is Monday 08:00 America/Toronto** (`0 12 * * 1` and `0 13 * * 1`,
+  hour guard 8), after the 11:00 UTC sold sync in both offsets.
 
 ## Deviations, stated and still standing
 
-**The schools guide ships board, level and grades. It does NOT ship address or
-distance.** Ruling 6 asked for address and distance and neither exists:
-`src/lib/schools.ts` has no street address, the school page's own
-`PostalAddress` JSON-LD carries locality, region and country only, and the
-lat/lng some rows hold is a neighbourhood centroid approximate to about 300 m by
-that file's own comment. The guide says plainly that it holds neither rather
-than approximating either. **If address and distance are wanted, they have to be
-sourced first.**
-
-**"Open this weekend" is not in v1.** Open houses are read live and expire; an
-edition is immutable. A stored weekend is a lie by the following Tuesday and a
-live block inside an archived edition breaks the immutability the table exists
-for. The live block belongs on the index page as its own piece of work.
-
-**The cron is wired, at Monday 08:00 America/Toronto, and the hour is load
-bearing.** `vercel.json` carries `0 12 * * 1` and `0 13 * * 1`; `TARGET_HOUR`
-in the route is `8`; exactly one firing lands on 08:00 in each offset and the
-other is refused on the hour guard.
-
-**It is 08:00 and not 06:00 because both firings must sit AFTER the 11:00 UTC
-sold sync in both offsets.** The old pair, 10:00 and 11:00 UTC, put the EDT
-firing an hour before `/api/sync/sold` and the EST firing level with it, so an
-edition could be built from a DB2 that had not yet taken Monday's delivery.
-**Any change to the sold sync hour must move these two entries.**
+- **The schools guide ships board, level and grades, not address or distance.**
+- **"Open this weekend" is not in v1.**
+- **The GO guide does not compute the 22-to-Lakeshore-West connection.** The 22
+  ends at Oakville GO; a connection time depends on a transfer the feed does not
+  guarantee, so the guide names the option and stops.
+- **The GO feed shows Thanksgiving Monday, 12 October 2026, with the weekday
+  train timetable and the weekend bus timetable.** The guide states that as what
+  the feed carries and tells the reader to check GO's site before a holiday. It
+  is the only date in 79 that matches neither pattern.
+- **The parking guide holds no fine amounts.** None of the seven fetched pages
+  states one.
 
 ## Open items
 
-1. **Only one edition exists, and the cron has not fired yet.** It is merged
-   and on production now, so the next Monday fires it. **Watch that firing.**
-   It is the first time the hour guard and the ISO-week idempotency run against
-   a real Monday rather than a dry run, and the week it writes will be the
-   first edition whose figures were never wrong.
-2. **Up-links from hubs and streets to the current edition are Core's**
-   (ruling 7). This worktree does not make those writes. Without them the
-   archive sits instead of compounding.
-3. ~~**192 For Sale rows and 53 For Lease rows carry a future `sold_date`.**~~
-   **CLOSED 2026-09-10.** Core backfilled it: 255 rows re-dated from their
-   `CloseDate` to their contract date, 0 future-dated rows remain of 8,578, and
-   the Milton-wide 12-month sample moved 1,531 to 1,728 with the typical
-   unchanged at $930K. This is what forced the 2026-08-31 correction. **The
-   `sold_date <= NOW()` bound on every DB2 window stays** (ruling 10): it was
-   never a workaround for this bug, and a future-dated row can arrive again.
-4. **`Listing.maintenanceFee` (Int) is dead** on all 73 active Milton condo
-   listings while `maintenanceFeeAmt` (Float) is populated on all 73. Two
-   columns for one fact, one empty. It already cost one wrong page, which
-   published "No Milton condo currently for sale states a monthly maintenance
-   fee" while 73 did.
-5. **`SUPERLATIVE_PHRASES` is module-private** in `validateStreetGeneration.ts`,
-   so this tier keeps a second copy that has to be kept in step by hand.
-   Exporting it removes the duplication. Core's call, Core's file.
-6. **The invented-entity rule has one asserted blind spot**: a one-word invented
-   place opening a sentence is not caught. Closing it needs a dictionary. The
-   test asserts the gap so it cannot change silently.
-7. **The guides index builds all six articles to get their read times.** Six
-   builds against cached aggregates per index request. Fine at six; revisit
-   before the tier grows.
+1. **Only one edition exists, and the cron has not fired yet.** Watch the first
+   Monday firing.
+2. **Up-links from hubs and streets to the current edition, and to the two new
+   guides, are Core's.**
+3. **The two static sources age.** The GO feed's `feed_end_date` is 2026-11-27;
+   after that the guide is wrong until the script is re-run on a new extract.
+   The Town's parking pages carry a pilot that "will be presented to Council in
+   2027". A quarterly re-fetch of both is the obvious cadence; nothing schedules
+   it.
+4. **`Listing.maintenanceFee` (Int) is dead**, `maintenanceFeeAmt` (Float) is
+   live. Unchanged.
+5. **`SUPERLATIVE_PHRASES` is module-private** in Core's validator; this tier
+   keeps a copy. Unchanged.
+6. **The invented-entity rule's one-word sentence-opener blind spot** is
+   asserted, not closed. Unchanged.
+7. **The guides index builds all eight articles for read times.** Two of them
+   are static and cost nothing, but the pattern is the same one flagged at six.
+8. **The parking ledger is long.** 59 cited sentences on one page. It is what
+   "every rule sentence cites" produces from seven Town pages; if it reads as
+   heavy, the fix is a collapsed ledger per section, not fewer citations.
 
 ## Notes for the next run
 
-- `scripts/generate-market-edition.ts` is the edition runner. `--publish`,
-  `--skip-paragraph`, `--revalidate=<url>`, `WEEK_OF=YYYY-MM-DD` (a Monday),
-  and `CORRECTION_NOTE=<one line>` (or `--correction=`; the env var wins and is
-  the one to use on Windows). The runner refuses a note without `--publish`,
-  refuses an em-dash in it, and caps it at 240 characters. **A note is the only
-  way to rewrite a published edition, and it renders on the page.**
-  Run it as `npx tsx --tsconfig tsconfig.test.json` — **not** with
-  `NODE_OPTIONS=--conditions=react-server`, the same trap the condo runner
-  documents. It refuses to start if any provider knob names a Claude model.
-- **`DIRECT_DATABASE_URL` is not in `.env.local`, and
-  `NEON_DATABASE_URL_UNPOOLED` is DB2, a different Neon project from
-  `DATABASE_URL`.** Substituting one for the other creates tables in the sold
-  database. It happened during this build; the two empty tables were dropped
-  from DB2 and created in DB1, verified both ways.
-
-- **CORRECTED 2026-09-10. THE MIGRATION LEDGER WAS NEVER OUT OF SYNC. THE
-  EARLIER READING WAS TAKEN AGAINST THE WRONG DATABASE.** This file previously
-  said "`_prisma_migrations` is out of sync, every historical migration reports
-  unapplied", and told the next session to apply Content migrations with
-  `prisma db execute` instead. **That instruction is withdrawn. Following it is
-  what caused the drift Core had to repair.**
-
-  Measured directly against `DATABASE_URL`: **26 rows in `_prisma_migrations`,
-  0 unfinished, 0 rolled back.** The ledger is clean and always was.
-
-  The false reading has a mechanical cause worth knowing, because the next
-  person hits the same wall. **The Prisma CLI reads `.env`. It does NOT read
-  `.env.local`.** `schema.prisma` declares `directUrl =
-  env("DIRECT_DATABASE_URL")`, this worktree had no `.env`, and the CLI failed
-  `P1012` before opening a connection. Everything else in this project reads
-  `.env.local` through `loadEnvLocal()`, so the gap is invisible until a Prisma
-  command hits it.
-
-  The trap is what someone does next. The only way to make the command run is
-  to supply a value, and the nearest-looking one on hand is
-  `NEON_DATABASE_URL_UNPOOLED` **which is DB2**. Verified: **DB2 has no
-  `_prisma_migrations` table at all**, under either `NEON_DATABASE_URL_UNPOOLED`
-  or `SOLD_DATABASE_URL`. Point Prisma there and it reports every migration
-  unapplied, **correctly, about the wrong database.** A confident and entirely
-  wrong reading, which is how it got written down as fact.
-
-  **FIXED AT SOURCE. This worktree now has a gitignored `.env`** carrying
-  `DATABASE_URL` and `DIRECT_DATABASE_URL`, and `npx prisma migrate status`
-  runs here and reports **"Database schema is up to date!"**. No credential had
-  to be fetched from anywhere: **`DIRECT_DATABASE_URL` is `DATABASE_URL` with
-  `-pooler` removed from the host**, same Neon endpoint unpooled, with
-  `pgbouncer` and `connection_limit` dropped. Derive it, do not go looking for
-  it, and never improvise a different host. If `.env` goes missing, that is how
-  to rebuild it.
-
-  **And do not route around the ledger with `db execute`.** It writes no
-  `_prisma_migrations` row, which is the whole of how this started.
-
-- **`20260910120000_market_edition` was created by `db execute` and the ledger
-  did not record it.** Core caught the drift and fixed it: they verified the
-  live schema against the migration column for column and index for index
-  (`MarketEdition` 13 columns 4 indexes, `MarketEditionGeneration` 13 columns 3
-  indexes, all matching), then ran `prisma migrate resolve --applied` rather
-  than the migration, which would have failed on `CREATE TABLE`. The row now
-  reads `applied_steps_count: 0`, which is the signature of a resolve rather
-  than a run. Nothing broke in the meantime only because Vercel runs
-  `prisma generate && next build`, not `migrate deploy`; it would have bitten
-  the first person to run migrations.
-
-  **It was the only one.** Core audited the whole ledger afterwards against
-  DB1: 26 rows, 26 directories, 0 in progress, 0 drift, 0 never-applied, and
-  exactly **two** rows carrying `applied_steps_count: 0` — `0_init`, which is
-  the expected baseline and is always resolved rather than run, and this one.
-  `20260910110000_savedsearch_env` and `20260910100000_phase1_lead_layer` were
-  both genuinely run by `migrate deploy`. So `market_edition` is the only
-  migration that ever went in outside the ledger, and there is nothing further
-  to unpick.
-- `npx prisma db execute` prints nothing for a `SELECT`. It cannot be used to
-  inspect. Use a short `.mjs` against `@neondatabase/serverless` from the
-  project root, and delete it after.
-- **Read the served host, not the local render.** Two of the four defects in
-  report 064 were invisible locally: the dead fee column and a
-  locale-dependent date that rendered "September 8, 2026" on Vercel and
-  "8 September 2026" here.
-- The battery is **10 checks** as of Home's merge. Take the full 40-character
-  SHA; a short SHA aborts the gate before any content check.
+- `scripts/generate-market-edition.ts` is the edition runner; see the 2026-09-10
+  notes in git history for its flags. Run it as
+  `npx tsx --tsconfig tsconfig.test.json`.
+- **The Prisma CLI reads `.env`, not `.env.local`.** This worktree has a
+  gitignored `.env` with `DATABASE_URL` and `DIRECT_DATABASE_URL`;
+  `DIRECT_DATABASE_URL` is `DATABASE_URL` with `-pooler` removed and the pool
+  params dropped. `NEON_DATABASE_URL_UNPOOLED` is DB2, never a substitute.
+- **Do not route around the migration ledger with `db execute`.** The ledger is
+  clean: 26 rows, 0 drift.
+- To re-fetch the parking sources: `curl -sL -A "Mozilla/5.0"` each URL in
+  `PARKING_SOURCES`, extract `div#mainContent` up to the share/contact block as
+  the `.txt` headers describe, diff against the stored text, then update
+  `PARKING_FETCHED_ON` and `PARKING_FETCHED_ON_ISO` together and re-check
+  `PARKING_FACTS` against the new text. `test-content-guides` will fail on any
+  number the prose uses that the fact list no longer carries.
+- To refresh the GO guide: drop a new GTFS extract in a folder, run
+  `GTFS_DIR=<folder> node scripts/gtfs/milton-go.mjs`, commit the regenerated
+  `goGtfsMilton.ts`. The guide, the test and the page follow.
+- A dev server on a spare port (`pnpm next dev -p 3111`) renders both guides in
+  about a minute cold; kill it before `pnpm build`, which shares `.next`.
 
 ## Next expected task
 
-**None. Do not self-start.**
-
-Both rulings are executed, merged, and verified on production. The correction
-is spent. The remaining candidates, unchanged and still nobody's current
-assignment, are the live open-house block on the index page and whichever of
-the two held guides the real GSC rows justify.
-
-**One thing to hand Core rather than do.** The backfill moved **17 streets
-across k5 and 9 across k10**, so some streets can now publish a typical price
-they were suppressing. Those figures live in stored `StreetContent` prose and
-only a regeneration changes them. `StreetContent` is Core's and this worktree
-does not write it. Flagged, not actioned.
+**None. Do not self-start.** Core merges `feat/content-2` or does not. The
+remaining candidates, unchanged and nobody's current assignment, are the live
+open-house block on the Market Watch index and a re-fetch cadence for the two
+static sources.
