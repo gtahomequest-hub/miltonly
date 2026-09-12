@@ -386,7 +386,9 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
 
 ---
 
-## Out of queue, 2026-09-11: the neighbourhood hub rebuild (MH-004), BUILT, NOT MERGED
+## Out of queue, 2026-09-11: the neighbourhood hub rebuild (MH-004), DONE
+
+**Merged 2026-09-12 (MC-014) as `05bc914`, branch head `26af26b`, approved by Aamir, full gate exit 0.**
 
 Not a numbered item. Prompted directly in the home worktree (`D:\miltonly-home`) on
 `feat/hubs-v2`, per the rulings on report 065. Record in
