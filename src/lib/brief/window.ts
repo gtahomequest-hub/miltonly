@@ -69,7 +69,7 @@ function zoneOffsetMinutes(at: Date): number {
 }
 
 /** The UTC instant of local midnight starting the given local calendar date. */
-function localMidnightUtc(year: number, month: number, day: number): Date {
+export function localMidnightUtc(year: number, month: number, day: number): Date {
   // Guess with the offset that applies at local noon, then correct once. One correction is
   // enough: an offset shift is an hour, and the corrected instant lands on the same side of
   // any transition.
@@ -82,14 +82,14 @@ function localMidnightUtc(year: number, month: number, day: number): Date {
 }
 
 /** The local calendar date containing `at`, as [year, month, day]. */
-function localDate(at: Date): [number, number, number] {
+export function localDate(at: Date): [number, number, number] {
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
   const [y, m, d] = fmt.format(at).split("-").map(Number);
   return [y, m, d];
 }
 
 /** Day of week for a local calendar date. 0 is Sunday. */
-function dayOfWeek(y: number, m: number, d: number): number {
+export function dayOfWeek(y: number, m: number, d: number): number {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
