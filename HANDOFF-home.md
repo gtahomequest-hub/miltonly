@@ -89,9 +89,10 @@ footer through `getHubFooter()`.
 
 | | |
 |---|---|
-| branch head | see `scratchpad/reports/MH-004-hub-rebuild.md` (head SHA, preview URL, battery line) |
+| branch head | **`26af26b`** (MH-004), on `c393c4b` (`feat/menu-v2@ef8d70b` + `origin/main@15835ed`) |
+| preview | `https://miltonly-46hylje3o-gtahomequest-hubs-projects.vercel.app` at `26af26b` |
+| battery on preview | **`PASS · 15 checks · 481 pages · 547s`** at `26af26b` |
 | local build | exit 0, zero `P2024`, 24/24 prebuild, 581 static |
-| local battery | `--only=hub-page,hub-meta,hub-intents,homepage,nav,guide-links`, see the report |
 | `feat/menu-v2` | `3ec8b51`, previewed, not merged, unchanged |
 | main | has neither branch |
 | production | main's tip; the old menu and the old hub |
