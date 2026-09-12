@@ -1,49 +1,72 @@
-HOME · D:\miltonly-home · feat/menu-v2
+HOME · D:\miltonly-home · feat/hubs-v2
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-11, MH-002: the mega menu rebuilt on `feat/menu-v2`, previewed, battery green at 14 checks, NOT merged._
+_Last rewritten 2026-09-11, MH-004: the hub rebuild on `feat/hubs-v2`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**`feat/menu-v2` IS PREVIEWED AND GREEN, AND IS NOT MERGED.** Head `266f0f4`, which is the
-menu commit `10536c6` plus a merge of `origin/main` at `854ffd3` (MC-006 landed there as
-`339293d`). Preview alias `https://miltonly-git-feat-menu-v2-gtahomequest-hubs-projects.vercel.app`.
-Battery on that deployment (`miltonly-p3vklhhp6`, serving `266f0f4`): **`PASS · 14 checks · 456 pages · 187s`**, exit 0.
-The brief was "stop; no merge". Core merges the SHA, never the branch name.
+**TWO BRANCHES FROM THIS WORKTREE ARE PREVIEWED AND NOT MERGED, AND ONE STACKS ON THE OTHER.**
 
-**THE MENU IS ALIVE ON EVERY PAGE NOW.** It used to be alive on the homepage only. Twenty-one
-server pages render `<SiteNavLive>` (`src/components/nav/SiteNavLive.tsx`), which awaits
-`getMegaLive()` and hands the result to `<SiteNav>`; three client pages (`HomePage`,
-`ValueLanding`, `BuildingAttributesPage`) are handed `live` by their server parents. A page that
-renders `<SiteNav>` with no `live` gets the rails and the search, which is still a complete,
-crawlable menu. `getMegaLive()` is memoised five minutes per instance, the same TTL and the same
-dropped-rejection shape as `buildMiltonWideContext`.
+- `feat/menu-v2` at `3ec8b51` (MH-003, the menu). Handoff state for it is in this file's git
+  history and `scratchpad/reports/MH-003-rail-drives-panel.md`. Unchanged by MH-004.
+- `feat/hubs-v2` (MH-004, the hubs) was branched FROM `feat/menu-v2` (`ef8d70b`), then
+  `origin/main@15835ed` merged in as `c393c4b`, then the hub work. So merging `feat/hubs-v2`
+  by SHA brings the menu with it. Merge order that keeps every preview honest: `3ec8b51`
+  first, then the hubs SHA. Merging the hubs SHA alone also works, it just lands both.
+  The preview URL, the SHA and the battery line are in
+  `scratchpad/reports/MH-004-hub-rebuild.md`. The brief was "stop; no merge".
 
-**MH-001 (`fix/menu-hotfix` at `339293d`) is on main.** Its report and handoff state are in
-`scratchpad/reports/MH-001-menu-hotfix-merge-main.md` and this file's git history.
+**THE HUB IS REBUILT ON DERIVED FACTS (MH-004).** `src/components/hub/sections.tsx` and
+`hub-sections.css` (`.hub-v3`), data from `src/lib/hubData.ts`. Nothing static survives on the
+page: the glance is `HubFact[]` (value, label, basis, href), the sibling cards lost their
+hand-written character line, the intent squares land on hub-scoped destinations. Every figure
+prints its basis in the same block. The ladder is EVERY published street in the hub, each row
+carrying the street page's own k-gated typical, its disclosure line, and "sample too small to
+publish" below k; the sold count is always printed. Film strip first (all filmed streets in the
+hub, horizontally scrolling), ladder second, the A-to-Z index third.
+
+**THE HUB GATE IS `scripts/verify/checks/hub-page.mjs`** (15th check). Every `data-fig` outside
+the site nav must have a row in its `FIG_SPECS` (source, pattern, tolerance) or it is a
+finding; the ladder must equal the hub's published street set; each ladder row's typical AND
+basis must equal the street page's hero tile as rendered in the same crawl; every internal
+href must be 200 (no redirect) and every fragment must match an id; JSON-LD must parse and its
+ItemList must count the ladder. `loadHubRecord()` in `scripts/verify/lib/db.mjs` grew
+`hubPage(slug)` (published/filmed street counts, active listings, the dominant-type share) and
+`miltonTypicalRounded`. It is a per-page check, so it puts the street crawl back into any
+`--only=` run that includes it.
+
+**c98f40e IS ABSORBED.** The WIP hub commit on `feat/homepage` was applied three-way onto this
+branch and finished. `feat/homepage` itself is now historical: everything approved from it is
+on main, everything unapproved is superseded here.
 
 ## Scope of this worktree
 
-`D:\miltonly-home` owns **the homepage, the header with its mega menu, and the footer**. It
-never touches street pages, generation, or the database.
+`D:\miltonly-home` owns **the homepage, the header with its mega menu, the footer, and the
+neighbourhood hub template**. It never touches street pages, generation, or the database.
 
-Owned files:
+Owned files (added by MH-004 in bold):
 
 - `src/app/page.tsx`, `src/app/layout.tsx` (header/footer wiring only)
 - `src/components/home/*` including `home-theme.css`, `home-sections.css`, `mockData.ts`
-- `src/components/nav/*`: `SiteNav.tsx`, `SiteNavLive.tsx`, `megaTypes.ts`, `site-nav.css`
+- `src/components/nav/*`
+- **`src/components/hub/*`** (`HubPage.tsx`, `sections.tsx`, `hub-sections.css`, `types.ts`,
+  `mockData.ts`; `hub-theme.css` and `icons.tsx` are shared with the tenure hubs)
 - `src/lib/homepageData.ts`, `src/lib/megaLive.ts`, `src/lib/figureFormat.ts`,
   `src/lib/neighbourhoodCards.ts`, `src/lib/homeSignals.ts`
+- **`src/lib/hubData.ts`, `src/lib/hubStreetLadder.ts`, `src/lib/hubSchools.ts`,
+  `src/lib/hubNearby.ts`, `src/lib/hubFooter.ts`**
 - `src/components/ChromeGate.tsx` (only the `/` line)
-- `scripts/verify/checks/homepage.mjs`, `scripts/verify/checks/nav.mjs`
+- `scripts/verify/checks/homepage.mjs`, `scripts/verify/checks/nav.mjs`,
+  **`scripts/verify/checks/hub-page.mjs`**, and the hub rows of `scripts/verify/lib/db.mjs`
 - `scripts/probe-mobile-menu.mjs`, `scripts/probe-hub-contrast.mjs`
 
-Touched outside that scope on `feat/menu-v2`, one line each, to swap `<SiteNav>` for
-`<SiteNavLive>`: every server page and page component that renders the nav (21 files), plus
-`src/app/condos/[slug]/page.tsx` and `src/app/value/[neighbourhood]/page.tsx` which read
-`getMegaLive()` and pass it down. `TheBoard.tsx` imports the shared formatters instead of its
-module-local copies.
+Touched outside that scope on `feat/hubs-v2`: `src/lib/tenureHubData.ts` and
+`src/components/tenure/tenure-sections.tsx`, because the tenure hubs share `HubData` and
+`HubAtAGlance` became a fact list (their entries are definitional and say so in their basis;
+the asking-price range now states it is an asking range over N active listings, which it
+always was). `src/app/neighbourhoods/[slug]/page.tsx` swaps `FooterSection` for the homepage
+footer through `getHubFooter()`.
 
 ## Standing rules for this worktree
 
@@ -55,110 +78,96 @@ module-local copies.
 - **Stop the local `next start` before `pnpm build`.** A running server holds the Prisma query
   engine DLL and the build fails on `EPERM ... query_engine-windows.dll.node`. Kill the
   listener on 3000 first (`Get-NetTCPConnection -LocalPort 3000`).
-- **The Bash tool collapses `\\` to `\` inside heredocs.** A Python heredoc that writes a regex
-  with `\\b` lands a BACKSPACE byte in the file; it happened once in `megaLive.ts` and only
-  `od -c` showed it. Write files with backslashes through the Write or Edit tool.
+- **Local battery needs `VERCEL_GIT_COMMIT_SHA=local pnpm start` and `EXPECT_SHA=local`.**
+  `/api/build` reports `unknown` otherwise and the deployment gate aborts.
+- **The Bash tool collapses `\\` to `\` inside heredocs, and long heredocs can fail to parse
+  at all.** Write patch scripts with the Write tool into `scratchpad/hubs-v2/` and run them.
+  `/tmp` in Git Bash is not `/tmp` in Python on this machine; keep scratch files in the repo
+  scratchpad or the session scratchpad, never `/tmp`.
 
 ## Where things stand
 
 | | |
 |---|---|
-| branch head | **`266f0f4`**, merge of `origin/main@854ffd3` into the menu commit `10536c6` |
-| preview | `https://miltonly-p3vklhhp6-gtahomequest-hubs-projects.vercel.app` at `266f0f4`, alias `miltonly-git-feat-menu-v2` |
-| battery on preview | **`PASS · 14 checks · 456 pages · 187s`**, exit 0, at `266f0f4` |
-| local build | exit 0 at `10536c6` and at `266f0f4`, zero `P2024`, 24/24 prebuild, 556 static |
-| local battery | `--only=nav,homepage` against the built app: PASS, twice |
-| main | does NOT have this branch |
-| production | main's tip; the old menu |
+| branch head | see `scratchpad/reports/MH-004-hub-rebuild.md` (head SHA, preview URL, battery line) |
+| local build | exit 0, zero `P2024`, 24/24 prebuild, 581 static |
+| local battery | `--only=hub-page,hub-meta,hub-intents,homepage,nav,guide-links`, see the report |
+| `feat/menu-v2` | `3ec8b51`, previewed, not merged, unchanged |
+| main | has neither branch |
+| production | main's tip; the old menu and the old hub |
 
-## What `feat/menu-v2` carries
+## What `feat/hubs-v2` carries
 
-- **The trigger is a `<button>`** with `aria-expanded` and `aria-controls`; the panel's index
-  page (`/listings`, `/streets`, `/sell`) is the panel's CTA. All three panels are in the
-  served HTML on every page, closed with `hidden`.
-- **One full-bleed band** (`.m-band`) under the bar, anchored to the fixed nav, capped at
-  `calc(100vh - 66px)`. Measured at 1024x768 and 1440x900: inside the viewport, no internal
-  scroll, on all three panels.
-- **Interaction.** Hover opens after 120ms of intent (mouse only, `pointerType` checked) and
-  leaving the nav closes after 220ms; click toggles; Enter, Space and ArrowDown open AND move
-  focus into the panel; ArrowLeft/Right walk the triggers; Escape closes AND returns focus to
-  the trigger; Tab out of the panel closes; outside mousedown, scroll and resize close.
-- **One true thing per panel**, in Fraunces at 22px, built server-side from live figures:
-  Buy `461 homes for sale in Milton, 56 new this week.`; Streets `449 Milton streets with
-  their own page, 40 filmed end to end.`; Sell `Over the last 13 weeks, urban Milton homes
-  sold for 98.1% of asking, in 28 days.` (absent when either figure is suppressed).
-- **Buy**: four newest listings through `getNewestListingCards` (display gate applied in
-  `toCard`), with photograph, price, beds, baths, days on market and the PUBLISHED hub name.
-  Addresses lose their `, Milton, Ontario` suffix in the composer.
-- **Streets**: a street search (the hero's `resolveHeroHref`), every published hub with its
-  live listing count (alphabetical), four film posters.
-- **Sell**: the Board's `overall` row, three figures with window AND sample each, and one
-  line of existing site copy about grounded valuations.
-- **Three strips, three queries** (`getMegaStrips()`): Buy = most active listings by
-  `streetSlug`; Streets = GSC impressions per `/streets/` page from `SeoOpportunity` when six
-  or more streets rank, else 12-month sales with the label saying so; Sell = `soldCount12mo`.
-  All intersected with `publishedStreetPageSlugs()`.
-- **`/map` and `/book` removed** from the rails (both redirect). `/guides` and
-  `/market-watch` added. The FOOTER still links `/book`; not this task's scope, and it is
-  a 307.
-- **Type floor 14px** in the menu, including the mono labels and the caret glyph; the bar's
-  own links and CTA moved from 13px to 14px.
-- **Mobile**: the same `Lead`, `Rail`, `Live`, `Strip` and CTA components inside native
-  `<details>`, plus the street search at the top. Mounted on open, so the served HTML carries
-  one copy of every link (the desktop band's).
-- **`scripts/verify/checks/nav.mjs`**: static over five page types, then Chrome at 380, 1024
-  and 1440 on `/` and `/streets`. Chrome comes from puppeteer's own download or `CHROME_PATH`.
-- **`homepage.mjs`**: triggers asserted as `<button>`; `menu-buy-active`, `menu-buy-new`
-  and `menu-streets-pages` join `FIG_SPECS` by value and format.
+- **The glance, derived.** `buildFacts()` in `hubData.ts`: typical sale price with `across N
+  sales in the last 12 months` (or, sub-k, the sale count with "below the publication floor of
+  five"); streets with a page (`#streets`); streets filmed (`#film`); schools inside the
+  boundary (`#schools`, by position against the Town polygons, `hubSchools.ts`); homes for
+  sale today (`/listings?neighbourhood=<token>`); the dominant housing form as a share of
+  12-month sales, suppressed under k5. A fact with an empty source is not rendered.
+- **The ladder is the street page.** `hubStreetLadder.ts` takes two grouped DB2 queries
+  (12-month and full record, `COUNT(*)`, `COUNT(sold_price)`, `SUM`), pools by
+  `deriveIdentity(slug).identityKey` (the same identity `resolveSiblingSlugs` keys on),
+  graduates 12mo-then-full at k5, rounds through `roundPriceForProse`. No cap: 48 rows on
+  Beaty, 1 on Moffat. Ranked by the pooled 12-month count the row prints.
+- **Intent squares.** buying -> `/listings?neighbourhood=<token>` with the live active count;
+  selling -> `/value/<slug>`; renting -> `/rentals` (it takes no hood filter); investing ->
+  `/sold?nbhd=<slug>` with the 12-month sale count. `listingsFilterToken()` strips the TREB
+  prefix (`1037 - TM Timberlea` -> `Timberlea`, `1051 - Walker` -> `Walker`) and picks the
+  shortest token every raw string of the hub contains.
+- **Nearest neighbourhoods by position.** `hubNearby.ts`: boundary centre per hub from the
+  Town polygons; the four nearest published hubs of either tier, distance printed to 0.1 km.
+  The four rural hubs with no polygon (nassagaweya, campbellville, brookville-haltonville,
+  moffat) get "Other rural neighbourhoods" and no distance. Cards print typical, sample and
+  street-page count; `data-fig="hub-sibling-typical"` is asserted per slug.
+- **Market section.** The compare row carries both bases (hub sample, Milton sample) and
+  `data-fig="hub-compare-typical"` / `hub-compare-milton`; Milton's is
+  `buildMiltonWideContext` k-gated and round5k'd, the same as every hub figure.
+- **Section numbers are computed** (`idx()` in `sections.tsx`) so a hub with no film, no
+  schools or no condos never shows 01 then 03.
+- **The footer** is `HomeFooter` inside a `.home-v2` wrapper (its rules are scoped there). Its
+  two redirecting links are gone: `/map` -> `/market-watch`, `/book` -> `/guides`. This
+  changes the homepage footer too.
+- **Contrast.** Small text on the forest and deep grounds sits at 0.62 white or above; the
+  `.hh-glance` ground needed `.hh-sec.hh-glance` specificity or the generic `.hh-sec` cream
+  won by source order and painted white figures on cream. `probe-hub-contrast.mjs` reads the
+  `.hh-*` small-text classes now and returns nothing under 4.5:1.
 
 ## Traps, and decisions that must not be re-litigated
 
-- **`composeMegaLive()` is the only place a menu string is built.** Two callers (the
-  homepage's `buildMegaLive`, everything else's `getMegaLive`), one formatter. Do not format
-  in `SiteNav.tsx`. `MegaLive` carries display strings, not numbers.
-- **`src/lib/figureFormat.ts` is the formatter.** `formatMoney1k`, `formatPct1`,
-  `formatDays`, `formatCount`, `formatMoneyWhole`. The Board imports them. A new figure on
-  any surface goes through here; the battery asserts the menu equals the Board on
-  `data-value`, which is the same string because it is the same function.
-- **The hover open is mouse-only.** `pointerType !== 'mouse'` returns early, so a finger on
-  a tablet never opens a panel it did not tap. Do not "simplify" to `mouseenter`.
-- **Hover does not steal focus; the keyboard does.** `focusIntoPanel` is set only by
-  Enter/Space/ArrowDown. A hover-opened panel leaves focus where the user is typing.
-- **The strips are three different questions.** The battery asserts the three link sets on a
-  page are not identical. A shared "in demand" list will fail it.
-- **The Streets strip's source is named in its label.** "Most searched on Google" only when
-  `SeoOpportunity` ranks six or more published streets; the rows are the sense run's
-  opportunity classes, not the whole GSC stream, so the counts are a floor. Otherwise
-  "Busiest streets, last 12 months". Never label one as the other.
-- **Every strip link is a published page.** Candidate slugs are intersected with
-  `publishedStreetPageSlugs()`, the sitemap's own set; the nav check resolves every href and
-  fails on a redirect or a non-200.
-- **The nav is one `<nav>` element and the band is inside it.** `homepage.mjs` and `nav.mjs`
-  read the first `<nav>...</nav>`; a second nav or a band rendered outside it blinds both.
-- **The mobile panel mounts on open.** Rendering it always would double every menu link in
-  the served HTML. The desktop band is the crawlable copy; the phone panel is the same
-  components again, client-side.
-- **A moving count can fail the battery once and pass the next minute** (MH-001's `scott`).
-  Re-run before diagnosing a one-hub, off-by-one count mismatch as a code defect.
-- **`--h-text-faint` is the floor for small text on the hub hero** (0.56, 5.46:1). Lowering
-  it takes every label on 22 hubs back under 4.5:1.
-- **A price *drop* is not derivable.** Do not re-add `priceReduced`.
-- **Three counts, three sets, one of them "pages".** `publishedStreetPageSlugs()` only.
-- **One neighbourhood price, from `getNeighbourhoodCards()`.** No active list-price average.
-- **A LEASE NEVER CARRIES `status='active'`.** `getRentalsAvailableCount()` is the one source.
-- **A dead fragment is the quietest defect.** `hub-intents.mjs` resolves route and fragment.
-- **Never hand-roll a listing query.** `getNewestListingCards` applies the display gate.
+- **The ladder's count column is the 12-month pooled count; the basis line may name a
+  different sample.** "4 sales / across 6 sales in the last ~2 years" is the street page's own
+  graduated state, reproduced exactly. Do not "fix" the row to make the two numbers agree.
+- **Money tolerance in `hub-page.mjs` is "the exact rendering passes, else 500".** `$2.12M`
+  is 2,115,000 printed to two decimals; a numeric tolerance alone fails it.
+- **`hub-fact-schools` has no page-independent source in the record.** It is asserted against
+  the schools list on the same page, and every school link is resolved. The polygon test is
+  the app's; the record does not re-run it.
+- **A moving count can fail once and pass the next minute** (active listings, sales). Re-run
+  before diagnosing a one-hub, off-by-one mismatch as a code defect.
+- **The film strip shows every filmed street in the hub** (Ford: 19), not eight. A poster that
+  cannot be derived drops the card but not the count; the gate would then report a dead
+  `#film` fragment on a hub whose only filmed streets lack posters. None do today.
+- **`hub-meta.mjs` already parses the `.hh-fact` markup** and passed on all 22. Its sub-k
+  model reads the sale count out of the typical slot, which is the rebuilt page's contract.
+- **The overflow page `/neighbourhoods/<slug>/streets` is Core's and is untouched.** It is
+  rung three (A to Z) above the 12-street cap; below the cap the hub links `/streets`. With
+  the ladder uncapped, the overflow page is now a sorted duplicate of the hub's list. Whether
+  it stays is Core's call, noted in the report.
+- **The hub `<title>` and meta description carry em-dashes.** They come from
+  `src/lib/ai/hub/hubMeta.ts`, the one shared formula that `hub-meta.mjs` parses. Not touched
+  here; Core's.
+- Everything in MH-002/003's trap list still holds for the menu.
 
 ## Open, and owned elsewhere
 
-- **The hub rebuild** (`c98f40e` on `feat/homepage`) is unmerged. HANDOFF.md item 24.
-- **The footer's `/book`** is a 307 to `/about`. Fix or remove when the footer is next touched.
-- **Every page now pays `getMegaLive()` once per instance per five minutes.** At build that is
-  once per prerender worker. The build passed at `connection_limit=10` with zero `P2024`
-  twice; if pool timeouts return, this is the first suspect.
-- **The design was reviewed from screenshots at 1440, 1024 and 380** (`scratchpad/menu-v2/`,
-  untracked). Nobody has used it by hand.
+- **Merge order.** `3ec8b51` (menu) then the hubs SHA; or the hubs SHA alone, which lands
+  both. Core's call on approval.
+- **The overflow page's purpose** now that the hub lists every street (above).
+- **`/rentals` takes no neighbourhood filter**, so "I'm renting" is Milton-wide. A hood filter
+  on `/rentals` (Core's page) would let the square scope like the other three.
+- **School positions are approximate for centroid-placed schools** (`src/lib/schools.ts`).
+  The basis line says "position", the standfirst says it is not a catchment.
 
 ## Next action
 
-Aamir reviews the preview. Core merges `266f0f4` on approval. Hubs resume after.
+Aamir reviews the hub preview (three URLs in the report). Core merges by SHA on approval.

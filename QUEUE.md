@@ -386,6 +386,38 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
 
 ---
 
+## Out of queue, 2026-09-11: the neighbourhood hub rebuild (MH-004), BUILT, NOT MERGED
+
+Not a numbered item. Prompted directly in the home worktree (`D:\miltonly-home`) on
+`feat/hubs-v2`, per the rulings on report 065. Record in
+`scratchpad/reports/MH-004-hub-rebuild.md` (preview URL, three hub URLs, head SHA, battery).
+The branch stacks on `feat/menu-v2@3ec8b51`; merging its SHA lands the menu too.
+
+- [x] **Static glance claims replaced with derived facts or dropped.** Typical with basis and
+      count, streets with a page, streets filmed, schools inside the Town polygon, homes for
+      sale today, dominant housing form as a share of sales. Each carries its basis under the
+      figure and links to the rows behind it. `suits`, `commute`, `schools` prose is gone.
+- [x] **The ladder is every published street** at the street page's own k-gated typical,
+      "sample too small to publish" below k, sold count always. Pooled on `deriveIdentity`,
+      graduated 12mo then full record, rounded the same way; the gate asserts the rendered
+      strings equal the street page's, row by row (468 rows, 0 differ).
+- [x] **Intent squares with real destinations**: the filtered feed, `/value/<slug>`,
+      `/rentals`, `/sold?nbhd=<slug>`, two of them carrying live counts.
+- [x] **Three rungs, video first**: the film strip (every filmed street in the hub), the
+      ladder (marks filmed streets), the A-to-Z index.
+- [x] **Guides linked up** (MC-003's block, kept).
+- [x] **Nearest neighbourhoods by position**, distance printed, from the Town polygons.
+- [x] **The hub gate**: `scripts/verify/checks/hub-page.mjs`, 18 assertions. Every figure
+      declares source/format/tolerance, every link resolves (699 targets), ladder == published
+      set, JSON-LD present and mirroring the ladder.
+- [x] **The homepage footer's two redirecting links are replaced** (`/map`, `/book`).
+- [ ] **Merge**, on Aamir's approval of the preview. Core merges the SHA.
+- [ ] **The overflow page** `/neighbourhoods/<slug>/streets` is now a sorted duplicate of the
+      hub's own ladder above the cap. Keep as the A-to-Z rung, or retire: Core's call.
+- [ ] **`/rentals` takes no neighbourhood filter**, so "I'm renting" is Milton-wide.
+
+---
+
 ## Out of queue, 2026-09-10: the guides tier and Market Watch — **DONE**
 
 Not a numbered item. Prompted directly in the `feat/content` worktree

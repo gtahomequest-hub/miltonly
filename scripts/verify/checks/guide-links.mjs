@@ -10,7 +10,7 @@
 // The population for the condo guide is DERIVED FROM THE PAGE, not from a list:
 //   · a street is condo-heavy when its hero renders a condo SALE pill (the lease pill is also
 //     typed condo in the seam, so the match is on the pill's label, not its anchor alone)
-//   · a hub is condo-heavy when it renders the condo-buildings section (h-condos)
+//   · a hub is condo-heavy when it renders the condo-buildings section (h-condos / hh-condos)
 // and the assertion runs in both directions: condo-heavy without the condo guide, and the
 // condo guide without a condo-heavy page, are each a defect.
 //
@@ -37,7 +37,9 @@ function guideHrefs(raw) {
 }
 const streetIsCondoHeavy = (raw) =>
   /<a class="s-pill" href="#type-condo"><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
-const hubIsCondoHeavy = (raw) => /class="h-condos"/.test(stripScripts(raw));
+// Both the legacy hub markup (h-condos) and the 2026-09-11 rebuild (hh-sec hh-condos), so a
+// template rename cannot blind this the way it blinded hub-intents.mjs.
+const hubIsCondoHeavy = (raw) => /class="(h-condos|hh-sec hh-condos)"/.test(stripScripts(raw));
 
 function audit(hrefs, required, condoHeavy) {
   const set = new Set(hrefs);
