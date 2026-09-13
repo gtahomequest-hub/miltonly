@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-13 (MA-003): the nightly checks tightened; the rerun is the state Core merges with MC-020._
+_Last rewritten 2026-09-13 (MA-004): the header, mega menu and footer audited on production; the nightly (MA-002, MA-003) is unchanged and still waits on Core._
 
 ## What this worktree is
 
@@ -14,6 +14,23 @@ exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratc
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-004 IS DONE: THE HEADER, MEGA MENU AND FOOTER ON PRODUCTION, FIVE PAGE TYPES, THREE WIDTHS.**
+Record: `scratchpad/reports/MA-004-nav-footer-audit.md`, 22 defects ranked and ten changes. The four
+S1s are the ones to read first: on the homepage at 390 the scrolled-in nav search pushes the seller
+CTA and the burger off-screen (`home-theme.css:247-255`); the 509 street pages render no footer at
+all; `.street-v2 a { color: inherit }` turns every panel CTA white on `#00ff80` on street pages;
+and the 461 listing pages still ship the navy `Navbar` and `FooterSection` (no menu, no search,
+`/map` 307, "Sign in" CTA). Guides render both headers because `ChromeGate` has no `/guides` rule.
+The forest menu itself passed every behavioural check (hover intent, keyboard path, Escape, outside
+click, scroll, focus trap, CLS 0, fit at 1024) and no blurb fell back on any run. The brief form's
+POST was intercepted and aborted: it posts email plus `event_source_url` only, so a street-page
+signup is a Milton-wide watch. Tooling: `nav-footer.mjs` (Puppeteer, three widths, every panel and
+the accordion), `nav-links.mjs` (every chrome href checked, footer coverage against the sitemap),
+`nav-lighthouse.mjs`, `nav-bench.mjs` (Homesly, Rightmove, Zoopla, Airbnb captures). Raw output in
+`scratchpad/audit/MA-004/`, untracked. Nothing outside `scripts/audit/`, the report, this file and
+`QUEUE.md` was touched.
+
 
 **THE NIGHTLY AUDIT IS ON `feat/audit`, MA-002 AT `4a1e349` AND MA-003 ON TOP; CORE MERGES THE HEAD WITH
 MC-020.** Records: `scratchpad/reports/MA-002-nightly-audit.md` and `MA-003-checks-tightened.md`. The
@@ -73,6 +90,11 @@ left (32 of 308 tonight). The report's Summary and Budget sections say exactly w
 | `bytes.mjs` | MA-001: bytes on the wire per resource type via CDP at 390 px; `--throttle` for slow 4G |
 | `cache-sweep.mjs` | one GET per published street: `x-vercel-cache`, `x-matched-path`, TTFB |
 | `crops.mjs` | per-section screenshots at 390 px for visual review |
+| `nav-pages.json` | MA-004: the five page types (home, street, hub, listing, guide) |
+| `nav-footer.mjs` | MA-004: Puppeteer at 1440, 1024 and 390: bar, every panel and rail item, keyboard and hover paths, the 390 accordion, footer fonts, contrast and targets, the brief form intercepted. `--only=key --widths=1440,390` |
+| `nav-links.mjs` | MA-004: every header and footer href checked once (redirects not followed), footer and nav coverage of hubs, guides, schools, mosques, condos against the sitemap |
+| `nav-lighthouse.mjs` | MA-004: Lighthouse mobile + desktop over `nav-pages.json`, keeping the chrome-relevant audits |
+| `nav-bench.mjs` | MA-004: Homesly, Rightmove, Zoopla and Airbnb header and footer captures at 1440 and 390 |
 
 Dependencies: locally the repo's `puppeteer` devDependency and Chrome at
 `C:/Program Files/Google/Chrome/Application/chrome.exe` (`CHROME_PATH` overrides). Lighthouse is not
@@ -112,8 +134,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, MA-002 nightly at `4a1e349`, MA-003 tightened checks on top, state committed |
-| production audited | `f01a96a` on 2026-09-12 (MA-001); the nightly baseline 2026-09-13 |
+| `feat/audit` | MA-001 tooling, MA-002 nightly at `4a1e349`, MA-003 tightened checks, MA-004 nav and footer audit on top |
+| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); the nightly baseline 2026-09-13 |
 | pages edited | none |
 | waiting on Core | MC-020: merge the `feat/audit` head; add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` as Actions secrets; run the workflow once by hand; label the remarks block with `data-remarks` and the visible label. `D:miltonly` main holds an unpushed local merge `8326b2a` of `4a1e349` from the interrupted MC-019 (`pnpm build` exit 0); supersede or keep it |
-| next | whatever the next `MA-` prompt asks; the ten MA-001 changes and the baseline's S1 and S2 belong to core |
+| next | whatever the next `MA-` prompt asks; the ten MA-001 changes, the ten MA-004 changes and the baseline's S1 and S2 belong to core (the MA-004 S1s are one-line CSS fixes, a footer on the street page, and the listing-page chrome cutover) |

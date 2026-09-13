@@ -1,0 +1,7 @@
+[
+  { "key": "home",    "path": "/",                                          "type": "homepage" },
+  { "key": "street",  "path": "/streets/woodward-avenue-milton",            "type": "street" },
+  { "key": "hub",     "path": "/neighbourhoods/timberlea",                  "type": "hub" },
+  { "key": "listing", "path": "/listings/W13117744",                        "type": "listing" },
+  { "key": "guide",   "path": "/guides/what-milton-neighbourhoods-cost",    "type": "guide" }
+]
