@@ -1,0 +1,75 @@
+# MA-002. The nightly audit of production: scripts/audit/nightly/run.mjs on a GitHub runner, so it
+# spends no Vercel build minutes and opens no database connection. It reads pages, writes
+# scratchpad/audit/nightly/<date>.md and state.json back to the branch it ran on, and sends one
+# email through Resend with what changed or broke.
+#
+# Secrets: RESEND_API_KEY, RESEND_FROM_EMAIL (repository settings, Actions secrets).
+# The report commit is excluded from Vercel builds by the ignoreCommand in vercel.json.
+name: Nightly audit
+
+on:
+  schedule:
+    # 03:00 America/Toronto is 07:00 UTC in summer and 08:00 UTC in winter. Both fire; the gate
+    # keeps the one that is 03:00 local.
+    - cron: '0 7 * * *'
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-audit
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.clock.outputs.run }}
+    steps:
+      - id: clock
+        run: |
+          H=$(TZ=America/Toronto date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$H" = "03" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "Toronto hour is $H, not 03: skipping"
+          fi
+
+  audit:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # A lean install: puppeteer-core and lighthouse only, not the app. Chrome is the runner's.
+      - name: Audit dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/audit-deps" && cd "$RUNNER_TEMP/audit-deps"
+          echo '{"name":"audit-deps","private":true}' > package.json
+          npm install --no-audit --no-fund --no-package-lock puppeteer-core@24 lighthouse@12
+
+      - name: Audit production
+        env:
+          BASE: https://miltonly.com
+          AUDIT_DEPS: ${{ runner.temp }}/audit-deps
+          CHROME_PATH: /usr/bin/google-chrome
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+        run: node scripts/audit/nightly/run.mjs
+
+      - name: Commit the report
+        if: always()
+        run: |
+          git config user.name "miltonly-audit"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scratchpad/audit/nightly
+          git commit -m "audit(nightly): $(TZ=America/Toronto date +%F)" || { echo "nothing to commit"; exit 0; }
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
