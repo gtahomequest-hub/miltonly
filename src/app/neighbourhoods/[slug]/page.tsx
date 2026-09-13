@@ -14,7 +14,13 @@ import {
 } from "@/lib/schema";
 import { projectHubSchema } from "@/lib/ai/hub/projectHubEntities";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
+// once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
+// the db3 tag (src/lib/db.ts), dropped by the sold sync and the analytics jobs; the DB1 rows are
+// dropped by path from the write paths (src/lib/revalidateSurfaces.ts). No generateStaticParams:
+// nothing here is prerendered at build, every page renders on its first visit.
+export const revalidate = 86400;
+export const dynamicParams = true;
 
 interface Props {
   params: { slug: string };
