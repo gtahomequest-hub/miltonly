@@ -223,7 +223,7 @@ nav .sn-panel-links a:active,
 nav .sn-panel-links a:focus-visible {
   color: #00ff80;
 }
-nav .sn-panel-cta {
+nav a.sn-panel-cta {
   margin-top: 28px;
   background: #017848;
   color: #ffffff;
@@ -792,7 +792,12 @@ nav .m-mega-stripnote {
   font-size: 14px;
   color: rgba(0, 255, 128, 0.8);
 }
-nav .m-mega-cta {
+/* Tag-qualified on purpose (MH-006, MA-004 defect 3): (0,1,2) beats every page theme's
+   `.x-v2 a { color: inherit }` (0,1,1) whatever the stylesheet order, so the CTA is dark on
+   green on every page type. `nav .m-mega-cta` tied with `.street-v2 a` and lost on order:
+   white on #00ff80 at 1.34:1 on 509 pages. */
+nav a.m-mega-cta,
+nav button.m-mega-cta {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -806,8 +811,10 @@ nav .m-mega-cta {
   border-radius: 8px;
   min-height: 44px;
 }
-nav .m-mega-cta:hover,
-nav .m-mega-cta:focus-visible {
+nav a.m-mega-cta:hover,
+nav a.m-mega-cta:focus-visible,
+nav button.m-mega-cta:hover,
+nav button.m-mega-cta:focus-visible {
   background: #5cffa8;
 }
 

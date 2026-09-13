@@ -415,6 +415,55 @@ async function driveHomeScroll(page, url, w, h, findings) {
   }
 }
 
+/** EVERY CTA, ON EVERY PAGE TYPE, AT 4.5:1 (MH-006, MA-004 defect 3). The panel CTA is one
+ *  element with one rule, and on the street page it rendered white on bright green at 1.34:1
+ *  because a page theme's `a { color: inherit }` tied with the nav's rule and won on order.
+ *  Computed in the browser from the element's own colour and its own opaque background, on
+ *  the bar CTA, every open panel's CTA at 1440, and every accordion CTA and the panel CTA at
+ *  380. A rule that only one stylesheet order satisfies is a rule the next page breaks. */
+const CTA_FLOOR = 4.5;
+const CONTRAST_WIDTHS = [
+  { w: 380, h: 780 },
+  { w: 1440, h: 900 },
+];
+const CONTRAST_JS = `
+  const lum = (r, g, b) => {
+    const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  const rgb = (s) => { const m = s.match(/rgba?\\(([^)]+)\\)/); if (!m) return null; const p = m[1].split(',').map(Number); return p.length === 4 && p[3] === 0 ? null : p; };
+  const ratio = (fg, bg) => { const a = lum(...fg) + 0.05, b = lum(...bg) + 0.05; return a > b ? a / b : b / a; };
+  const bgOf = (el) => { for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c) return c; } return [255, 255, 255]; };
+  const check = (el) => { const cs = getComputedStyle(el); const fg = rgb(cs.color) || [0, 0, 0]; return { text: el.textContent.trim().slice(0, 40), ratio: Math.round(ratio(fg, bgOf(el)) * 100) / 100, cls: el.className }; };
+`;
+async function driveContrast(page, url, w, h, findings) {
+  const tag = `${w} ${url} contrast`;
+  await page.setViewport({ width: w, height: h });
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
+  const mobile = w < 820;
+  if (mobile) {
+    await page.click('.sn-burger');
+    await sleep(400);
+    await page.evaluate(() => { for (const d of document.querySelectorAll('.sn-panel details')) d.open = true; });
+  } else {
+    await page.click('.m-navtrigger[aria-controls="m-mega-buy"]');
+    await sleep(250);
+  }
+  const rows = await page.evaluate(
+    (js, isMobile) => {
+      // eslint-disable-next-line no-new-func
+      const check = new Function(`${js}; return check;`)();
+      const sel = isMobile ? '.sn-panel .m-mega-cta, .sn-panel .sn-panel-cta, nav .m-navcta' : 'nav .m-navcta, .m-band .m-mega-cta';
+      return [...document.querySelectorAll(sel)].map(check);
+    },
+    CONTRAST_JS,
+    mobile,
+  );
+  if (rows.length < 3) findings.push(`${tag}: only ${rows.length} CTAs measured`);
+  for (const r of rows) if (r.ratio < CTA_FLOOR) findings.push(`${tag}: "${r.text}" (${r.cls}) at ${r.ratio}:1`);
+  if (mobile) await page.keyboard.press('Escape');
+}
+
 async function driveMobile(page, url, w, h, findings) {
   const tag = `${w} ${url}`;
   await page.setViewport({ width: w, height: h });
@@ -610,13 +659,19 @@ export default {
           await driveHomeScroll(page, base + '/', v.w, v.h, findings);
           runs++;
         }
+        for (const path of pages) {
+          for (const v of CONTRAST_WIDTHS) {
+            await driveContrast(page, base + path, v.w, v.h, findings);
+            runs++;
+          }
+        }
       } finally {
         await browser.close();
       }
     } catch (e) {
       browserError = e.message;
     }
-    const expectedRuns = 2 * WIDTHS.length + SCROLL_WIDTHS.length;
+    const expectedRuns = 2 * WIDTHS.length + SCROLL_WIDTHS.length + pages.length * CONTRAST_WIDTHS.length;
 
     return {
       coverage: [
@@ -639,7 +694,7 @@ export default {
         ['panel hrefs that redirect', redirectLinks.length, 0],
         ['panel hrefs that fail', deadLinks.length, 0],
         ['browser runs completed', runs, expectedRuns],
-        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar)', findings.length, 0],
+        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, CTA contrast)', findings.length, 0],
       ],
       examples: [
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,
