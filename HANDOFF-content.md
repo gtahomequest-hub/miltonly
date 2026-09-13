@@ -2,8 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content-2
 
-_Last rewritten 2026-09-11, after MCT-001 built the two source-grounded guides on
-`feat/content-2` and proved them on a Vercel preview. Not merged._
+_Last rewritten 2026-09-13, after MCT-001 was re-issued: the two guides were already on
+main, so the branch was merged up to main and re-proven on a preview rather than rebuilt._
 
 ## READ THIS FIRST
 
@@ -16,11 +16,25 @@ authority on everything outside this scope.
 
 ## WHERE THIS BRANCH STANDS RIGHT NOW
 
-**`feat/content-2` is BUILT AND PROVEN ON PREVIEW, awaiting Core's merge.** It
-branches from `fc897e8`, which is `feat/content` merged up to `origin/main` at
-`e71a7f6`, so it carries nothing of `feat/content` that main does not already
-have. Preview `https://miltonly-jqoy3smu4-gtahomequest-hubs-projects.vercel.app` serves the code commit `5e7a3e3`; the head is the docs commit on top of it, and the battery ran with `5e7a3e3`'s full SHA: 12 of 13 checks pass over 481 pages, the `tiles` failure (chretien-street-milton, sub-k) reproduces on production at `2a89120` and is the street tier's. Record:
+**MCT-001 IS ON MAIN AND ON PRODUCTION.** Core merged `5e7a3e3` as `94ddc49`; the up-links
+from every street page and hub to both guides, and the battery's `sources-fresh` check, came
+with core batch 3 (`f01a96a`). Production serves both guide URLs with 200.
+
+**The same task text arrived a second time on 2026-09-13.** Nothing was rebuilt, because
+the guide code on this branch was already byte-identical to main's (`git diff origin/main
+-- src scripts` was empty). Instead the branch was merged up to `origin/main` (`98718b5`,
+then the two docs commits to `e68e526`), `pnpm build` exited 0 with `content-guides: 429
+surfaces validated (162 parking, 267 go), 1313 assertions, PASS` as the last prebuild test,
+and the preview `https://miltonly-5y3m3eeaf-gtahomequest-hubs-projects.vercel.app` serving
+`98718b5dae054f67de85ca47534b9d4687a0cfda` ran the battery with that full SHA:
+**`PASS · 16 checks · 509 pages · 622s`**, `served == expected`, `guide-links` and
+`sources-fresh` included. The head is docs on top of `98718b5`; `git diff 98718b5 HEAD --
+src scripts package.json` is empty. Record:
+`scratchpad/mct001/battery-preview-98718b5.log` and the re-issue section of
 `scratchpad/reports/MCT-001-parking-and-go-guides.md`.
+
+**There is nothing on `feat/content-2` for Core to merge.** The branch is main plus this
+worktree's own handoff, queue lines and reports.
 
 Two guides were added. Both are in `GUIDE_DEFS`, so the index, the sitemap and
 the CollectionPage schema list them without a second edit:
@@ -179,8 +193,8 @@ repeated here so this file remains the authority:
 
 1. **Only one edition exists, and the cron has not fired yet.** Watch the first
    Monday firing.
-2. **Up-links from hubs and streets to the current edition, and to the two new
-   guides, are Core's.**
+2. **Up-links from hubs and streets to the two new guides are done** (core batch 3,
+   `uplinks.ts`, on main). Up-links to the current Market Watch edition are still Core's.
 3. **The two static sources age.** The GO feed's `feed_end_date` is 2026-11-27;
    after that the guide is wrong until the script is re-run on a new extract.
    The Town's parking pages carry a pilot that "will be presented to Council in
@@ -223,7 +237,8 @@ repeated here so this file remains the authority:
 
 ## Next expected task
 
-**None. Do not self-start.** Core merges `feat/content-2` or does not. The
-remaining candidates, unchanged and nobody's current assignment, are the live
-open-house block on the Market Watch index and a re-fetch cadence for the two
-static sources.
+**None. Do not self-start.** MCT-001 is merged and re-verified; a third arrival of the
+same task text is answered by this section, not by another build. The remaining
+candidates, unchanged and nobody's current assignment, are the live open-house block on
+the Market Watch index and a re-fetch cadence for the two static sources (the GO feed
+closes 2026-11-27 and `sources-fresh` fails on purpose from 2026-11-28).

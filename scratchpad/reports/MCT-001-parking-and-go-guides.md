@@ -11,3 +11,20 @@ CONTENT · D:\miltonly-content · feat/content-2
 7. `HANDOFF-content.md` rewritten and `QUEUE.md` marked in `ed32051`, on top of the proven `5e7a3e3`; this report is the one commit after it, so **head is `ed32051` plus this file**, docs only, the tree under `src/` and `scripts/` unchanged from `5e7a3e3`. Pushed. **Stopped; no merge.**
 
 Report: scratchpad/reports/MCT-001-parking-and-go-guides.md
+
+---
+
+## MCT-001, re-issued 2026-09-13: already merged, verified rather than rebuilt
+
+CONTENT · D:\miltonly-content · feat/content-2
+
+The same task text arrived a second time. The guides were not rebuilt: `5e7a3e3` is an ancestor of `main`, merged by Core as `94ddc49`, and the up-links from every street page and hub plus the battery's `sources-fresh` check came with core batch 3 (`f01a96a`). Before merging, `git diff origin/main -- src scripts` on this branch was empty; only this worktree's docs differed. Verified on a fresh preview instead:
+
+1. **`git merge origin/main`** brought 38 commits in cleanly (`98718b5`), then the two docs-only commits on top (`e68e526`); `git diff 98718b5 HEAD -- src scripts package.json` is empty.
+2. **`pnpm build` exit 0.** The last prebuild test reads `content-guides: 429 surfaces validated (162 parking, 267 go), 1313 assertions` then `PASS`.
+3. **Preview `https://miltonly-5y3m3eeaf-gtahomequest-hubs-projects.vercel.app`** serves `98718b5dae054f67de85ca47534b9d4687a0cfda`. `/guides`, `/guides/parking-in-milton`, `/guides/milton-go-train-to-toronto` and `/sitemap.xml` return 200; the sitemap lists eight guides; the parking page carries 34 distinct milton.ca citation strings; the GO page carries feed version `20260910145058`.
+4. **Battery with that full SHA: `PASS · 16 checks · 509 pages · 622s`**, `served == expected`, exit 0. The `tiles` failure from the first run is gone and `guide-links` passes now that the up-links exist. Record: `scratchpad/mct001/battery-preview-98718b5.log`.
+5. **Production** (`e68e526`) serves both guide URLs with 200.
+6. `HANDOFF-content.md` rewritten and `QUEUE.md` marked; head is docs on top of the previewed commit. Pushed. **Stopped; no merge, and nothing on this branch left for Core to merge.**
+
+Report: scratchpad/reports/MCT-001-parking-and-go-guides.md
