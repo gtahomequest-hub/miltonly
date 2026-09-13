@@ -12,13 +12,18 @@ export const SUPERLATIVES = [
   'best', 'unbeatable', 'nothing comes close', 'premier', 'second to none', 'finest',
   'most desirable', 'top-tier', 'world-class', 'unparalleled', 'unmatched',
 ];
-const SCHOOL_CONTEXT = /\b(school|schools|elementary|secondary|catholic|public board|students?|kindergarten)\b/i;
-// The two bare nouns are S2 and need school context: hubs say "Town of Milton boundary", and the
-// hand-written pages use them to say the site does not carry the data.
+// MA-003. Every catchment word needs school, board, zone or catchment context within twelve words.
+// The two bare nouns are S2 and are never a finding in a sentence about the Town polygon or a
+// distance ("Schools whose position falls inside the Town of Milton's boundary", "measured
+// boundary centre to boundary centre"). The hub's disclaimer sentence is exempt outright.
 // Every assignment form (zoned for, feeds into, feeder school) is S1, the locked WS4 rule.
+const CATCHMENT_CONTEXT = /\b(schools?|boards?|zones?|catchments?)\b/i;
+const POLYGON_OR_DISTANCE_RE = /\b(Town of Milton|Town'?s|Town polygon|polygon|inside the boundary|within the boundary|neighbourhood'?s? boundary|kilometres?|km|metres?|distance|measured|centre to|closest|nearest|within \d)\b/i;
+const DISCLAIMER_RE = /a catchment is the school board.s fact/i;
+const LABEL_RE = /listing agent.s remarks/i;
 export const CATCHMENT = [
-  { re: /\bcatchments?\b/gi, sev: 2, schoolContextOnly: true },
-  { re: /\bboundar(?:y|ies)\b/gi, sev: 2, schoolContextOnly: true },
+  { re: /\bcatchments?\b/gi, sev: 2, bareNoun: true },
+  { re: /\bboundar(?:y|ies)\b/gi, sev: 2, bareNoun: true },
   { re: /\bzoned?\s+(?:for|to)\b/gi },
   { re: /\bdraws?\s+from\b/gi },
   { re: /\bdrawing\s+from\b/gi },
@@ -27,10 +32,18 @@ export const CATCHMENT = [
   { re: /\bassigned\s+to\b/gi },
   { re: /\bschool\s+zones?\b/gi },
   { re: /\bfeeder\s+schools?\b/gi },
-  { re: /\bdraws?\s+to\b/gi, schoolContextOnly: true },
-  { re: /\bdrawing\s+to\b/gi, schoolContextOnly: true },
-  { re: /\bserv(?:es?|ing)\s+the\s+(?:area|street|neighbourhood)\b/gi, schoolContextOnly: true },
+  { re: /\bdraws?\s+to\b/gi },
+  { re: /\bdrawing\s+to\b/gi },
+  { re: /\bserv(?:es?|ing)\s+the\s+(?:area|street|neighbourhood)\b/gi },
 ];
+// The sentence around an index: from the previous full stop, question mark, exclamation mark,
+// colon or line break to the next one.
+function sentenceAt(text, idx) {
+  const a = Math.max(text.lastIndexOf('.', idx), text.lastIndexOf('!', idx), text.lastIndexOf('?', idx), text.lastIndexOf('\n', idx), text.lastIndexOf(':', idx));
+  const ends = ['.', '!', '?', '\n'].map((c) => text.indexOf(c, idx)).filter((i) => i >= 0);
+  const b = ends.length ? Math.min(...ends) : text.length;
+  return text.slice(a + 1, b);
+}
 // Feed enumerations as the TRREB feed spells them. Any of these in rendered text means a raw
 // field reached the page without passing through a label map. Board attribution ("TRREB", the
 // MLS mark) is required by the IDX rules and is not on this list.
@@ -78,7 +91,28 @@ export function excerpt(text, idx, len = 90) {
 export function parse(html) {
   const bodyAt = html.search(/<body\b/i);
   const head = html.slice(0, bodyAt > 0 ? bodyAt : html.length);
-  const body = bodyAt > 0 ? html.slice(bodyAt) : html;
+  let body = bodyAt > 0 ? html.slice(bodyAt) : html;
+  // MA-003: blocks Core labels as the listing agent's remarks (a data-remarks attribute) are the
+  // seller's words. They leave the body before the vocabulary checks; each one must carry the
+  // visible label "Listing agent's remarks", inside it or just before it.
+  const remarks = [];
+  const openRe = /<([a-z][a-z0-9-]*)\b[^>]*\sdata-remarks(?:=|\s|>|\/)[^>]*>/gi;
+  let o;
+  while ((o = openRe.exec(body))) {
+    const tag = o[1].toLowerCase();
+    const pair = new RegExp(`<(/?)${tag}\\b[^>]*>`, 'gi');
+    pair.lastIndex = o.index + o[0].length;
+    let depth = 1; let end = -1; let p;
+    while ((p = pair.exec(body))) { depth += p[1] ? -1 : 1; if (depth === 0) { end = p.index + p[0].length; break; } }
+    if (end < 0) end = Math.min(body.length, o.index + o[0].length + 20000);
+    const block = body.slice(o.index, end);
+    const around = body.slice(Math.max(0, o.index - 300), o.index);
+    const lastLine = visibleText(around).split('\n').filter((l) => l.trim()).pop() || '';
+    const labelled = LABEL_RE.test(visibleText(block)) || LABEL_RE.test(lastLine);
+    remarks.push({ index: remarks.length, labelled, text: visibleText(block).slice(0, 80) });
+    body = body.slice(0, o.index) + ' '.repeat(end - o.index) + body.slice(end);
+    openRe.lastIndex = end;
+  }
   const title = (head.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
   const metas = [...head.matchAll(/<meta\b[^>]*>/gi)].map((m) => m[0]);
   const metaByName = (n) => { const t = metas.find((m) => (attr(m, 'name') || '').toLowerCase() === n || (attr(m, 'property') || '').toLowerCase() === n); return t ? attr(t, 'content') : null; };
@@ -89,7 +123,7 @@ export function parse(html) {
   const anchors = [...html.matchAll(/<a\b[^>]*>/gi)].map((m) => attr(m[0], 'href')).filter((h) => h != null);
   const imgs = [...html.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
   const ids = new Set([...html.matchAll(/\sid\s*=\s*"([^"]+)"/g)].map((m) => m[1]).concat([...html.matchAll(/\sname\s*=\s*"([^"]+)"/g)].map((m) => m[1])));
-  return { title: title == null ? null : decode(title).replace(/\s+/g, ' ').trim(), description: metaByName('description'), ogUrl: metaByName('og:url'), robots: metaByName('robots'), canonical: canonicalTag ? attr(canonicalTag, 'href') : null, h1s, jsonld, anchors, imgs, ids, text: visibleText(body) };
+  return { title: title == null ? null : decode(title).replace(/\s+/g, ' ').trim(), description: metaByName('description'), ogUrl: metaByName('og:url'), robots: metaByName('robots'), canonical: canonicalTag ? attr(canonicalTag, 'href') : null, h1s, jsonld, anchors, imgs, ids, remarks, text: visibleText(body) };
 }
 
 function proper(text, idx, len) {
@@ -116,11 +150,20 @@ export function vocabularyFindings(text, { voice = true, where = 'text' } = {}) 
       let m; while ((m = re.exec(text))) { if (!proper(text, m.index, m[0].length)) { out.push({ code: 'superlative', sev: 3, key: `${where}:${w}`, detail: `"${m[0]}" in ${where}: ${excerpt(text, m.index)}` }); break; } }
     }
   }
-  for (const { re, schoolContextOnly, sev = 1 } of CATCHMENT) {
+  for (const { re, bareNoun, sev = 1 } of CATCHMENT) {
     re.lastIndex = 0; let m;
     while ((m = re.exec(text))) {
-      const win = text.slice(Math.max(0, m.index - 120), m.index + 120);
-      if ((schoolContextOnly || !voice) && !SCHOOL_CONTEXT.test(win)) continue;
+      // MA-003: a catchment word counts only within twelve words of school, board, zone or
+      // catchment context, never inside the hub's own disclaimer, and the bare nouns never in a
+      // sentence about the Town polygon or a distance.
+      // The match itself supplies context when it names a school or a zone ("school zone", "feeder
+      // school"); otherwise the twelve words on either side must.
+      const before = text.slice(Math.max(0, m.index - 400), m.index).split(/\s+/).slice(-12).join(' ');
+      const after = text.slice(m.index + m[0].length, m.index + m[0].length + 400).split(/\s+/).slice(0, 13).join(' ');
+      if (!CATCHMENT_CONTEXT.test(m[0]) && !CATCHMENT_CONTEXT.test(`${before} ${after}`)) continue;
+      const sentence = sentenceAt(text, m.index);
+      if (DISCLAIMER_RE.test(sentence)) continue;
+      if (bareNoun && POLYGON_OR_DISTANCE_RE.test(sentence)) continue;
       out.push({ code: 'catchment', sev, key: `${where}:${m[0].toLowerCase()}`, detail: `"${m[0]}" in ${where}: ${excerpt(text, m.index)}` }); break;
     }
   }
@@ -135,9 +178,15 @@ export function vocabularyFindings(text, { voice = true, where = 'text' } = {}) 
 }
 
 // All raw-HTML findings for one page. `finalPath` is the path the document was served from.
-export function pageFindings({ html, path: finalPath, base, voice }) {
+// `listing` marks a listing page: until Core labels the remarks block, its body is the seller's
+// words and the voice checks stand down; once a data-remarks block exists, the block leaves the
+// body and everything left is our own copy, checked in full.
+export function pageFindings({ html, path: finalPath, base, listing = false }) {
   const d = parse(html);
   const f = [];
+  const voice = !listing || d.remarks.length > 0;
+  for (const r of d.remarks) if (!r.labelled) f.push({ code: 'remarks-unlabelled', sev: 2, key: String(r.index), detail: `data-remarks block ${r.index + 1} has no "Listing agent's remarks" label: "${r.text}"` });
+  if (listing && !d.remarks.length) f.push({ code: 'remarks-unmarked', sev: 3, key: '', detail: 'no data-remarks block, so the remarks cannot be told from our copy; voice checks stood down on the body' });
   const host = new URL(base).host;
 
   if (d.title == null || !d.title) f.push({ code: 'title-missing', sev: 2, key: '', detail: 'no <title>' });
