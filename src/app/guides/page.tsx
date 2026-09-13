@@ -8,7 +8,7 @@ import GuidesIndexPage from "@/components/guides/GuidesIndexPage";
 import { getGuidesIndexData } from "@/lib/guides";
 import SchemaScript from "@/components/SchemaScript";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
 import { GUIDE_DEFS } from "@/lib/guides/guides";
 
@@ -47,7 +47,7 @@ export default async function GuidesPage() {
       <SchemaScript schemas={schemas} />
       <SiteNavLive variant="page" />
       <GuidesIndexPage data={data} />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

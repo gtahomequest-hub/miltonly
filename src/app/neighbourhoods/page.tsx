@@ -25,7 +25,7 @@ import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import { formatPriceFull } from "@/lib/format";
@@ -154,7 +154,7 @@ export default async function NeighbourhoodsPage() {
         enableAZ={false}
       />
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

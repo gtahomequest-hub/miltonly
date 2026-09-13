@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function NeighbourhoodPage({ params }: Props) {
   const data = await getHubData(params.slug);
   if (!data) notFound();
-  // The homepage's live link graph, on the hub too. FooterSection (the legacy navy footer)
+  // The site footer, on the hub too. The legacy navy footer it replaced (2026-09-11)
   // linked three neighbourhoods and two streets; this links every published hub.
   const footer = await getHubFooter();
 

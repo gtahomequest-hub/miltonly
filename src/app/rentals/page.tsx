@@ -4,6 +4,7 @@ import { config } from "@/lib/config";
 import RentalsClient from "./RentalsClient";
 import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 import { resolveRentalScope } from "@/lib/rentalScope";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,7 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
   const serialized = JSON.parse(JSON.stringify(listings));
 
   return (
+    <SiteChrome>
     <RentalsClient
       listings={serialized}
       totalRentals={totalRentals}
@@ -84,5 +86,6 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}
       scope={scope ? { slug: scope.slug, name: scope.name } : null}
     />
+    </SiteChrome>
   );
 }

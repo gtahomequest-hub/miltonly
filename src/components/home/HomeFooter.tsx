@@ -8,6 +8,7 @@
 // now, and so is every in-demand street, because each one is a page we want found.
 import type { FooterData, TrustInfo } from './types';
 import { FooterSearch } from './FooterSearch';
+import './footer.css';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
 
 interface Props {

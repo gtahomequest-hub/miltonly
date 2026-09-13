@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export default async function ExclusivePage() {
   });
 
   return (
+    <SiteChrome>
     <div className="bg-[#f8f9fb]">
       {/* Hero */}
       <section className="bg-[#07111f] text-center px-5 py-16">
@@ -143,5 +145,6 @@ export default async function ExclusivePage() {
         </div>
       </section>
     </div>
+    </SiteChrome>
   );
 }

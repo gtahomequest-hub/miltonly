@@ -5,7 +5,7 @@ import { config } from "@/lib/config";
 import { getCondoData } from "@/lib/condoData";
 import CondoPage from "@/components/condo/CondoPage";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import {
   generateCondoSchema,
   generateBreadcrumbSchema,
@@ -103,7 +103,7 @@ export default async function CondoBuildingPage({ params }: Props) {
       <>
         <SchemaScript schemas={schemas} />
         <BuildingAttributesPage view={view} live={await getMegaLive().catch(() => undefined)} />
-        <FooterSection />
+        <SiteFooter />
       </>
     );
   }
@@ -140,7 +140,7 @@ export default async function CondoBuildingPage({ params }: Props) {
     <>
       <SchemaScript schemas={schemas} />
       <CondoPage data={data} />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

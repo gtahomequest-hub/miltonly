@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const metadata = genMeta({
   title: "Terms of Use",
@@ -10,6 +11,7 @@ export const metadata = genMeta({
 
 export default function TermsPage() {
   return (
+    <SiteChrome>
     <main className="bg-white text-[#07111f] min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
         <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to {config.SITE_NAME}</Link>
@@ -72,5 +74,6 @@ export default function TermsPage() {
         </div>
       </div>
     </main>
+    </SiteChrome>
   );
 }

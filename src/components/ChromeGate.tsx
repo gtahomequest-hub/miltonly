@@ -3,8 +3,13 @@
 import { usePathname } from "next/navigation";
 
 /**
- * Hides site chrome (nav, agent strip, consent banner) on the
- * pre-launch coming-soon page so it renders completely clean.
+ * Gates the root layout's chrome (the chat widget and the consent banner) off the routes that
+ * own their own chrome.
+ *
+ * Until MH-006 this also gated the legacy navy <Navbar>, which the root layout rendered on
+ * every route not listed here; the forest SiteNav is rendered by each page (or by SiteChrome
+ * for the pages with no theme of their own), so no header is global any more and a route
+ * missing from this list can no longer ship two headers. The guides did (MA-004 defect 5).
  */
 export default function ChromeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,7 +31,11 @@ export default function ChromeGate({ children }: { children: React.ReactNode }) 
   if (pathname?.startsWith("/streets/")) return null; // street-v2 live page (trailing slash = detail pages)
   if (pathname?.startsWith("/streets-v2-preview")) return null; // street-v2 design preview
   if (pathname?.startsWith("/listings-v2-preview")) return null; // listings-v2 design preview
-  if (pathname === "/listings") return null; // listings-v2 live page renders its own SiteNav (exact match — /listings/<mls> detail keeps the navy nav until its own v2 cutover)
+  if (pathname === "/listings") return null; // listings-v2 live page renders its own SiteNav (exact match)
+  // /listings/<mls>, /guides and /market-watch are NOT listed, on purpose. MA-004 asked for a
+  // /guides rule to stop the second header; with Navbar deleted there is no second header to
+  // stop, and a rule here would only take the chat widget and the consent banner off those
+  // pages, which nobody asked for. This list is about chat and consent now, nothing else.
   if (pathname === "/sell") return null; // sell-v2 page renders its own SiteNav (exact match)
   if (pathname?.startsWith("/value")) return null; // door-hanger valuation landing (focused conversion, mirrors /sales/ads — SiteNav owns chrome)
   if (pathname === "/mosques") return null; // mosques-v2 directory renders its own SiteNav (exact match)

@@ -1,6 +1,7 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SignInForm from "./SignInForm";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 // noindex — an auth wall has no place in the index, and its redirect/intent/street param
 // permutations were the single biggest crawl-budget drain (see robots.ts).
@@ -24,6 +25,7 @@ export const metadata = genMeta({
 
 export default function SignInPage() {
   return (
+    <SiteChrome>
     <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5">
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
@@ -33,5 +35,6 @@ export default function SignInPage() {
         <SignInForm />
       </div>
     </div>
+    </SiteChrome>
   );
 }

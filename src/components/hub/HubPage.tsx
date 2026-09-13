@@ -1,10 +1,8 @@
 // src/components/hub/HubPage.tsx
 import './hub-theme.css';
 import './hub-sections.css';
-// The footer is the homepage's, and its rules are scoped under .home-v2 in home-theme.css;
-// the wrapper below puts only the footer inside that scope.
-import '../home/home-theme.css';
-import '../home/home-sections.css';
+// The footer is the site's (HomeFooter, self-styled by footer.css since MH-006); it needs no
+// homepage theme and no wrapper.
 import type { HubData } from './types';
 import {
   HubHero,
@@ -73,9 +71,7 @@ export function HubPage({
       <GuideUplinks guides={guides} context={data.name} variant="hub" />
       <HubSiblings data={data} />
       <HubDualCta data={data} />
-      <div className="home-v2">
-        <HomeFooter footer={footer} brand={brand} />
-      </div>
+      <HomeFooter footer={footer} brand={brand} />
     </div>
   );
 }

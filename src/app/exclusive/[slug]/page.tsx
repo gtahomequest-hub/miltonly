@@ -6,6 +6,7 @@ import { config } from "@/lib/config";
 import type { Metadata } from "next";
 import Gallery from "./Gallery";
 import AgentSidebar from "./AgentSidebar";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
   ];
 
   return (
+    <SiteChrome>
     <div className="bg-white min-h-screen">
       {/* Gallery â€” full width */}
       <Gallery photos={listing.photos} title={listing.title} />
@@ -262,6 +264,7 @@ export default async function ExclusiveDetailPage({ params }: Props) {
         </div>
       </section>
     </div>
+    </SiteChrome>
   );
 }
 

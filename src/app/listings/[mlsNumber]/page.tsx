@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import ListingDetailClient from "./ListingDetailClient";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteChrome from "@/components/nav/SiteChrome";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
@@ -199,6 +199,7 @@ export default async function ListingDetailPage({ params }: Props) {
   };
 
   return (
+    <SiteChrome>
     <div className="min-h-screen bg-[#f8f9fb]">
       <SchemaScript schemas={[residenceSchema, offerSchema, breadcrumbSchema]} />
 
@@ -230,7 +231,7 @@ export default async function ListingDetailPage({ params }: Props) {
           domDays,
         }}
       />
-      <FooterSection />
     </div>
+    </SiteChrome>
   );
 }

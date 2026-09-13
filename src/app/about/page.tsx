@@ -1,6 +1,7 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import AgentContactSection from "@/components/AgentContactSection";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const metadata = genMeta({
   title: `About ${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent`,
@@ -10,6 +11,7 @@ export const metadata = genMeta({
 
 export default function AboutPage() {
   return (
+    <SiteChrome>
     <div className="bg-[#f8f9fb]">
       {/* Hero */}
       <section className="bg-[#07111f] text-center px-5 sm:px-11 py-20">
@@ -54,5 +56,6 @@ export default function AboutPage() {
 
       <AgentContactSection />
     </div>
+    </SiteChrome>
   );
 }

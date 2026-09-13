@@ -9,7 +9,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { getComparisonData, FREEHOLD_VS_CONDO_CONFIG } from "@/lib/comparisonData";
 import ComparePage from "@/components/compare/ComparePage";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema, generateFAQSchema } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,7 @@ export default async function FreeholdVsCondoPage() {
     <>
       <SchemaScript schemas={schemas} />
       <ComparePage data={data} source={source} />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

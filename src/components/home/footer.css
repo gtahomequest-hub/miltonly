@@ -1,0 +1,180 @@
+/* src/components/home/footer.css
+   THE SITE FOOTER, self-contained. These rules lived under `.home-v2` in home-theme.css and
+   home-sections.css, so a page that wanted the footer had to import 1,600 lines of homepage
+   theme and wrap the footer in a `.home-v2` div for its tokens (the hub did exactly that). The
+   footer renders on every page of the site now (MH-006), so it carries its own values, the
+   way site-nav.css does: forest tokens resolved to literals, scoped to `.m-footer` only, and
+   no dependency on any page theme's reset or anchor colour. */
+
+.m-footer {
+  background: #021f18;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 58px 0 30px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.m-footer *,
+.m-footer *::before,
+.m-footer *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.m-footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.m-footer .m-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+@media (max-width: 480px) {
+  .m-footer .m-wrap {
+    padding: 0 16px;
+  }
+}
+
+/* brand + search-well row */
+.m-footer .m-ftop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding-bottom: 40px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.m-footer .m-fbrand {
+  max-width: 360px;
+}
+.m-footer .m-fbrand p {
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.m-footer .m-fbrand .m-logo {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 25px;
+  color: #fff;
+  margin-bottom: 12px;
+}
+/* lighter well over the deep forest */
+.m-footer .m-fsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 340px;
+  max-width: 460px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 6px 6px 6px 16px;
+  transition: 0.2s;
+}
+.m-footer .m-fsearch:focus-within {
+  border-color: #0a8f57;
+  background: rgba(255, 255, 255, 0.1);
+}
+.m-footer .m-fsearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+}
+.m-footer .m-fsearch input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.m-footer .m-fsearch button {
+  background: #017848;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.2s;
+}
+.m-footer .m-fsearch button:hover {
+  background: #0a8f57;
+}
+
+/* the hub link block: every published neighbourhood */
+.m-footer .m-fhoods {
+  padding: 26px 0 4px;
+  /* the link columns below get the same breath the hood list gets above it */
+  margin-bottom: 26px;
+}
+.m-footer .m-fhoods h4 {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #00ff80;
+  margin-bottom: 12px;
+}
+.m-footer .m-fhoodlinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.m-footer .m-fhoodlinks a {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.m-footer .m-fhoodlinks a:hover {
+  color: #00ff80;
+}
+
+.m-footer .m-fgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+}
+@media (max-width: 780px) {
+  .m-footer .m-fgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .m-footer .m-ftop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .m-footer .m-fsearch {
+    max-width: none;
+  }
+}
+.m-footer .m-fcol h4 {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.m-footer .m-fcol a {
+  display: block;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 5px 0;
+}
+.m-footer .m-fcol a:hover {
+  color: #00ff80;
+}
+.m-footer .m-compliance {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 38px;
+  padding-top: 22px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.8;
+}

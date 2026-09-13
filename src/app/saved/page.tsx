@@ -1,6 +1,7 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SavedDashboard from "./SavedDashboard";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const metadata = genMeta({
   title: `Saved Listings & Alerts — ${config.SITE_NAME}`,
@@ -9,5 +10,9 @@ export const metadata = genMeta({
 });
 
 export default function SavedPage() {
-  return <SavedDashboard />;
+  return (
+    <SiteChrome>
+      <SavedDashboard />
+    </SiteChrome>
+  );
 }

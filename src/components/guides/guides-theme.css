@@ -81,6 +81,7 @@
 /* hero (shared by index + article) */
 .guides-v2 .g-hero {
   position: relative;
+  padding-top: 66px; /* fixed 66px SiteNav clearance; the navy bar that used to sit in flow above it is gone (MH-006) */
   background: var(--g-bg-deep);
   color: var(--g-text);
   overflow: hidden;
