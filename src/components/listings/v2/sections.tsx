@@ -165,8 +165,8 @@ export function SchoolsStrip({ data }: { data: ListingsV2Data }) {
     <section className="lv-block lv-alt">
       <div className="lv-wrap">
         <div className="lv-sechead">
-          <span className="lv-eyebrow">School zones</span>
-          <h2>Find homes near top-rated schools</h2>
+          <span className="lv-eyebrow">Schools</span>
+          <h2>Homes near schools</h2>
         </div>
         <div className="lv-schoolgrid">
           {data.schools.map((s) => (

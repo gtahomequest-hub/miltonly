@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { formatArchitecturalStyle } from "@/lib/listingStyle";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { postLeadDetailed, type PostLeadPayload } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
@@ -44,7 +45,6 @@ interface Extras {
   hoodName: string;
   hoodAvgRent: number | null;
   schools: SchoolLite[];
-  viewsToday: number;
   domDays: number;
 }
 
@@ -151,7 +151,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
       { key: "Cooling", value: l.cooling },
     ]},
     { label: "Building", items: [
-      { key: "Style", value: l.architecturalStyle },
+      { key: "Style", value: formatArchitecturalStyle(l.architecturalStyle) },
       { key: "Construction", value: l.construction },
       { key: "Roof", value: l.roof },
       { key: "Foundation", value: l.foundation },
@@ -244,7 +244,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
               </div>
             </div>
 
-            <UrgencyBanner viewsToday={extras.viewsToday} domDays={extras.domDays} isRental={isRental} />
+            <UrgencyBanner domDays={extras.domDays} isRental={isRental} />
 
             {/* Virtual tour prominent CTA */}
             {l.virtualTourUrl && (
@@ -256,7 +256,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             {/* Specs bar */}
             <div className="flex flex-wrap gap-4 py-4 my-4 border-y border-[#e2e8f0]">
               {[
-                { icon: "🏠", label: titleCase(l.propertyType), sub: l.architecturalStyle || "Residential" },
+                { icon: "🏠", label: titleCase(l.propertyType), sub: formatArchitecturalStyle(l.architecturalStyle) ?? "Residential" },
                 l.totalRooms ? { icon: "🚪", label: `${l.totalRooms} rooms`, sub: `${l.kitchens || 1} kitchen` } : null,
                 { icon: "🚗", label: `${l.parking} parking`, sub: l.garageType || "—" },
                 l.taxAmount ? { icon: "📋", label: `$${Math.round(l.taxAmount).toLocaleString()}/yr`, sub: `Tax (${l.taxYear || "—"})` } : null,
@@ -288,10 +288,13 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
               {l.crossStreet && ` · Near ${l.crossStreet}`}
             </p>
 
-            {/* About */}
+            {/* The public remarks, the listing brokerage's words verbatim. data-remarks marks the
+                block so the nightly audit reads it as third-party text and holds the rest of the
+                page to the site's own voice (MA-003); the label is the reader's notice. */}
             {l.description && (
-              <div className="mb-8">
-                <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">About this home</h2>
+              <div className="mb-8" data-remarks>
+                <h2 className="text-[18px] font-extrabold text-[#07111f] mb-1">Listing agent&apos;s remarks</h2>
+                <p className="text-[11px] text-[#94a3b8] mb-3">As written by the listing brokerage, unedited.</p>
                 <div className={`text-[13px] text-[#475569] leading-[1.8] ${showFullDesc ? "" : "line-clamp-4"}`}>
                   {l.description}
                 </div>

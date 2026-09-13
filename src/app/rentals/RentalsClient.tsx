@@ -566,7 +566,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         {/* ── MIDDLE — WIZARD ── */}
         <div className="hm">
           <div className="wiz-topbar">
-            <h1 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,color:"var(--pearl)",lineHeight:1.09,marginBottom:3}}>Answer 3 questions. Get matched.</h1>
+            {/* MC-020: the page has one H1, the hero's; the wizard heading is an H2. */}
+            <h2 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,color:"var(--pearl)",lineHeight:1.09,marginBottom:3,marginTop:0}}>Answer 3 questions. Get matched.</h2>
             <div className="wiz-sub">3 quick questions · 30 seconds · no commitment</div>
             <div className="prog-track"><div className="prog-bar" style={{ width: `${progWidth}%` }} /></div>
           </div>

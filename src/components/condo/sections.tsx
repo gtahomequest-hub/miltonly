@@ -167,7 +167,8 @@ function Listing({ l }: { l: CondoListing }) {
 
 export function CondoListings({ data }: { data: CondoData }) {
   return (
-    <section className="c-block">
+    // id="listings" is the target of the buy and rent intent squares above (MC-020: it was missing).
+    <section className="c-block" id="listings">
       <div className="c-wrap">
         <div className="c-sechead">
           <span className="c-eyebrow">Available now</span>

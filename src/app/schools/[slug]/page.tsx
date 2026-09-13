@@ -28,12 +28,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const school = getSchoolBySlug(params.slug);
   if (!school) return { title: "School Not Found" };
   return {
-    title: `Homes Near ${school.name} ${config.CITY_NAME} — Prices, Listings & School Zone Data`,
-    description: `Find homes for sale near ${school.name} in ${school.neighbourhood}, ${config.CITY_NAME} ${config.CITY_PROVINCE}. Live TREB listings, average prices, and neighbourhood data for families. ${school.grades} · ${school.boardName}.`,
+    // MC-020: the title and description say what the page holds, homes and prices near the
+    // school, and nothing about which homes the school admits. The site publishes no catchment.
+    title: `${school.name}, ${config.CITY_NAME}: Homes and Prices Nearby`,
+    description: `Homes for sale near ${school.name} in ${school.neighbourhood}, ${config.CITY_NAME} ${config.CITY_PROVINCE}: live TREB listings, typical asking prices and nearby streets. ${school.grades} · ${school.boardName}.`,
     alternates: { canonical: `${config.SITE_URL}/schools/${params.slug}` },
     keywords: [
       `homes near ${school.name}`,
-      `${school.name} school zone`,
+      `homes for sale near ${school.name}`,
       `${school.name} ${config.CITY_NAME}`,
       `houses for sale near ${school.name}`,
       `${school.neighbourhood} ${config.CITY_NAME} homes`,
@@ -41,8 +43,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       `${school.boardName} ${config.CITY_NAME}`,
     ],
     openGraph: {
-      title: `Homes Near ${school.name} — ${school.neighbourhood}, ${config.CITY_NAME}`,
-      description: `Find homes for sale in the ${school.name} school zone. ${school.grades} · ${school.boardName}. Live listings updated daily.`,
+      title: `${school.name}, ${config.CITY_NAME}: Homes and Prices Nearby`,
+      description: `Homes for sale near ${school.name} in ${school.neighbourhood}. ${school.grades} · ${school.boardName}. Live listings updated daily.`,
     },
   };
 }

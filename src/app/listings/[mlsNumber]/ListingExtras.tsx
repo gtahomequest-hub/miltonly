@@ -564,13 +564,13 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
 // ═══════════════════════════════════════════════════════════════
 // URGENCY BANNER
 // ═══════════════════════════════════════════════════════════════
-export function UrgencyBanner({ viewsToday, domDays, isRental }: { viewsToday: number; domDays: number; isRental: boolean }) {
+// "N people viewed today" was removed 2026-09-13 (MC-020): the figure was a hash of the MLS
+// number and the day, not a counter. Nothing on this page states a number it did not measure.
+export function UrgencyBanner({ domDays, isRental }: { domDays: number; isRental: boolean }) {
   const isNew = domDays <= 7;
+  if (!isNew) return null;
   return (
     <div className="flex flex-wrap gap-2 mb-4">
-      <span className="inline-flex items-center gap-1.5 bg-[#fef3c7] text-[#92400e] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#fde68a]">
-        👁 {viewsToday} people viewed today
-      </span>
       {isNew && isRental && (
         <span className="inline-flex items-center gap-1.5 bg-[#fee2e2] text-[#991b1b] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#fecaca]">
           🔥 New listing — rentals like this typically go within 2 weeks
@@ -747,6 +747,6 @@ export function MobileBottomBar({ price, isRental, onBook }: { price: number; is
 // Components are consumed individually via named exports by ListingDetailClient.
 
 // Exported separately so it can be placed at the very top of the left column
-export function UrgencySection({ viewsToday, domDays, isRental }: { viewsToday: number; domDays: number; isRental: boolean }) {
-  return <UrgencyBanner viewsToday={viewsToday} domDays={domDays} isRental={isRental} />;
+export function UrgencySection({ domDays, isRental }: { domDays: number; isRental: boolean }) {
+  return <UrgencyBanner domDays={domDays} isRental={isRental} />;
 }

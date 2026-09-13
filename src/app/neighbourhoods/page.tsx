@@ -36,7 +36,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Neighbourhoods — Prices, Schools & Market Data`,
-  description: `Explore every ${config.CITY_NAME} ${config.CITY_PROVINCE} neighbourhood. Compare average home prices, active listings, top streets, school zones and GO train access. Live TREB data.`,
+  description: `Explore every ${config.CITY_NAME} ${config.CITY_PROVINCE} neighbourhood. Compare average home prices, active listings, top streets, schools nearby and GO train access. Live TREB data.`,
   canonical: `${config.SITE_URL}/neighbourhoods`,
 });
 
