@@ -343,6 +343,78 @@ async function driveRail(page, tag, key, findings) {
   }
 }
 
+/** THE SCROLLED HOMEPAGE (MH-006, MA-004 defects 1 and 11). Once the hero's search band passes
+ *  under the bar, the nav search slides in. Measured on production at 390 it took the row and
+ *  pushed the CTA and the burger off-screen; at 1440 it replaced the triggers with three
+ *  invisible buttons still in the Tab order. So, after a scroll: below 820 the search must not
+ *  be in the bar and the CTA and burger must sit inside the viewport; between 820 and 1023 the
+ *  search takes the triggers' place and the triggers must be `visibility: hidden`, so a Tab
+ *  from the logo lands on something visible; at 1024 and up the triggers and the search must
+ *  BOTH be visible, and the row must not overflow. */
+const SCROLL_WIDTHS = [
+  { w: 380, h: 780 },
+  { w: 900, h: 800 },
+  { w: 1024, h: 768 },
+  { w: 1440, h: 900 },
+];
+async function driveHomeScroll(page, url, w, h, findings) {
+  const tag = `${w} ${url} scrolled`;
+  await page.setViewport({ width: w, height: h });
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
+  await page.evaluate(() => window.scrollTo(0, 1400));
+  await sleep(500);
+  const r = await page.evaluate(() => {
+    const vis = (el) => {
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.5 && b.width > 0 && b.height > 0;
+    };
+    const inView = (el) => {
+      if (!el) return false;
+      const b = el.getBoundingClientRect();
+      return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight;
+    };
+    const wrap = document.querySelector('nav .m-wrap');
+    const triggers = [...document.querySelectorAll('nav .m-navtrigger')];
+    const search = document.querySelector('nav .m-navsearch');
+    const cta = document.querySelector('nav .m-navcta');
+    const burger = document.querySelector('nav .sn-burger');
+    // an invisible trigger must not be focusable: focus it and see whether focus took
+    const invisibleFocusable = triggers.filter((t) => {
+      if (vis(t)) return false;
+      t.focus();
+      const took = document.activeElement === t;
+      t.blur();
+      return took;
+    }).length;
+    return {
+      overflow: wrap ? wrap.scrollWidth > wrap.clientWidth + 1 : null,
+      triggersVisible: triggers.filter(vis).length,
+      searchVisible: vis(search),
+      ctaInView: vis(cta) && inView(cta),
+      burgerVisible: vis(burger),
+      burgerInView: vis(burger) && inView(burger),
+      invisibleFocusable,
+      searchInput: search ? search.querySelector('input')?.getAttribute('aria-label') || search.querySelector('label')?.textContent || '' : '',
+    };
+  });
+  if (r.overflow) findings.push(`${tag}: the bar row overflows its wrap`);
+  if (r.invisibleFocusable) findings.push(`${tag}: ${r.invisibleFocusable} invisible trigger(s) still take focus`);
+  if (!r.ctaInView) findings.push(`${tag}: the bar CTA is not inside the viewport`);
+  if (w < 820) {
+    if (r.searchVisible) findings.push(`${tag}: the scrolled-in search is in the bar below 820`);
+    if (!r.burgerInView) findings.push(`${tag}: the burger is not inside the viewport`);
+  } else if (w < 1024) {
+    if (!r.searchVisible) findings.push(`${tag}: the search did not slide in`);
+    if (r.triggersVisible) findings.push(`${tag}: ${r.triggersVisible} trigger(s) visible beside the search between 820 and 1023`);
+  } else {
+    if (!r.searchVisible) findings.push(`${tag}: the search did not slide in`);
+    if (r.triggersVisible !== 3) findings.push(`${tag}: ${r.triggersVisible} of 3 triggers visible beside the search`);
+    if (!r.searchInput) findings.push(`${tag}: the bar search input has no accessible name`);
+  }
+}
+
 async function driveMobile(page, url, w, h, findings) {
   const tag = `${w} ${url}`;
   await page.setViewport({ width: w, height: h });
@@ -534,13 +606,17 @@ export default {
             runs++;
           }
         }
+        for (const v of SCROLL_WIDTHS) {
+          await driveHomeScroll(page, base + '/', v.w, v.h, findings);
+          runs++;
+        }
       } finally {
         await browser.close();
       }
     } catch (e) {
       browserError = e.message;
     }
-    const expectedRuns = 2 * WIDTHS.length;
+    const expectedRuns = 2 * WIDTHS.length + SCROLL_WIDTHS.length;
 
     return {
       coverage: [
@@ -563,7 +639,7 @@ export default {
         ['panel hrefs that redirect', redirectLinks.length, 0],
         ['panel hrefs that fail', deadLinks.length, 0],
         ['browser runs completed', runs, expectedRuns],
-        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone)', findings.length, 0],
+        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar)', findings.length, 0],
       ],
       examples: [
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,

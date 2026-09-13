@@ -680,6 +680,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
               value={navQuery}
               onChange={(e) => setNavQuery(e.target.value)}
               placeholder="Street, address, or neighbourhood…"
+              aria-label="Find a street, address or neighbourhood"
               tabIndex={searchVisible ? 0 : -1}
             />
             <button type="submit" className="m-navsearch-go" aria-label="Search" tabIndex={searchVisible ? 0 : -1}>
