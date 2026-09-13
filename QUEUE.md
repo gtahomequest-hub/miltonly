@@ -4,6 +4,8 @@ Seven items, in order. **The builder never reorders this list and never self-sta
 
 Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **not started**.
 
+**Ownership.** Core (`D:\miltonly`, `main`) owns the app, the schema, the crons and this queue. Home (`D:\miltonly-home`), Content (`D:\miltonly-content`) and Leads (`D:\miltonly-leads`) own their tiers. Audit (`D:\miltonly-audit`, `feat/audit`, `MA-`) owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`; it reads production and never edits a page. The nightly audit commits its report to `main` at 03:00 Toronto as `audit(nightly): <date>`, and `vercel.json` `ignoreCommand` keeps that commit, and only that commit, out of Vercel builds. Findings the audit raises are Core's to take, never Audit's to fix.
+
 **The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
 registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
 cron (`NEW_PAGES_PER_DAY`, `/api/sync/generate`), counted over `StreetContent.createdAt`, so the
@@ -512,3 +514,5 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
       tier publishes them
 
 *Out-of-queue work 2026-09-12, MA-001, the street-page AUDIT in the `D:\miltonly-audit` worktree on `feat/audit`. Read-only against production: ten streets, two widths, Puppeteer and Lighthouse, a cache sweep of all 490 pages, and a benchmark against Rightmove, Zoopla, HouseSigma, Zolo, Realtor.ca and Zillow. Thirty defects ranked and ten changes in priority order for core to take; nothing built. Not a queue item, prompted directly. Record in `scratchpad/reports/MA-001-street-page-audit.md`, state in `HANDOFF-audit.md`.*
+
+*Out-of-queue work 2026-09-13: MC-019, `feat/audit @ 4a1e349` merged by SHA as `8326b2a` with the full gate (local build exit 0, preview battery 16/16, production battery `PASS · 16 checks · 509 pages · 672s`). The nightly audit ran once by hand (run `34769017742`, email `f97ac935-4da6-443b-b155-7b6606f7428c`) and committed `bbb792f` to main, which Vercel cancelled in 2 s under the `ignoreCommand`. Ownership above and in `CLAUDE.md`. Record in `scratchpad/reports/MC-019-audit-merge-and-nightly.md`.*

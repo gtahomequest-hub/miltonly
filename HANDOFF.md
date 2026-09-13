@@ -2,17 +2,30 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-12 (MC-016): Neon egress recon done, no code; MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
+_Last rewritten 2026-09-13 (MC-019): feat/audit merged, the nightly audit ran by hand, ignoreCommand proven on Vercel; MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
 
 ## READ THIS FIRST
 
-**MAIN IS `f01a96a` AND PRODUCTION SERVES IT, `PASS · 16 checks · 489 pages · 596s`.** Two
-merges by SHA on 2026-09-12: `05bc914` (hubs v2 `26af26b`, approved; marked done in QUEUE.md)
-and `f01a96a` (core batch 3 `bf4f8b3`). Three conflicts between them, all resolved by keeping
-both intents: the runner carries both new checks (`hub-page`, `sources-fresh`); the rebuilt
-hub's renting square is scoped to `/rentals?neighbourhood=<slug>`; the ladder's third rung goes
-to `/streets` for every hub because the per-hub overflow page now 301s to the ladder. Record:
-`scratchpad/reports/MC-014-hubs-and-batch-3-on-main.md`.
+**MAIN IS `bbb792f` AND PRODUCTION SERVES `8326b2a`, `PASS · 16 checks · 509 pages · 672s`.**
+`8326b2a` merges `feat/audit @ 4a1e349` by SHA (MC-019, 2026-09-13): `scripts/audit/`, the
+nightly GitHub Action, the `vercel.json` `ignoreCommand`, the `.gitignore` carve-out for
+`scratchpad/audit/nightly/`. No app file changed. `bbb792f` on top is the first nightly commit
+(`audit(nightly): 2026-09-13`), written to main by the runner from the hand-triggered run;
+Vercel cancelled its deployment in 2 s, so production stayed on `8326b2a`. That is the rule
+working: **a commit touching only `scratchpad/audit/nightly/` never builds; anything else, docs
+included, builds.** `c857cbc` on `feat/audit` (docs only) is not merged. Record:
+`scratchpad/reports/MC-019-audit-merge-and-nightly.md`.
+
+**THE NIGHTLY AUDIT IS LIVE.** Run `34769017742` (workflow_dispatch) took 3 m 3 s of runner
+time, no Vercel minutes, no database connection; email `f97ac935-4da6-443b-b155-7b6606f7428c`
+to gtahomequest@gmail.com. Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository
+Actions secrets. Its first email says "1769 broke": 4 S2 `treb-string` on four new listings
+(`Bungalow-Raised`, `Backsplit`) and the rest S3 `dead-anchor` (`#type-*` anchors on street
+pages) on streets swept for the first time under the three-night rotation. Those are Core's to
+read, not Audit's to fix. `gh` is not installed system-wide (winget's MSI was blocked by another
+installer); a portable copy ran from the session scratchpad with the token git already holds
+(`git credential fill`, scopes `repo, workflow`). **Pull before you branch or push**: the runner
+commits to main at 03:00 Toronto without a human.
 
 **NOTHING WAITS ON A MERGE.** Every branch opened this week is on main.
 
@@ -85,13 +98,14 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | code SHA **`f01a96a`**, docs on top |
-| battery on production | **`PASS · 16 checks · 489 pages · 596s`** at `f01a96a`, 2026-09-12 |
+| `main` | code SHA **`8326b2a`**, nightly commit `bbb792f` and docs on top |
+| battery on production | **`PASS · 16 checks · 509 pages · 672s`** at `8326b2a`, 2026-09-13 |
 | `prisma migrate status` | **clean**, 27 migrations |
 | waiting on merge | nothing |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
+| nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
 | open tasks | MC-017 (`fix/build-cost`), then MC-015 (`feat/video-playbook`) |
 
 ## What happened 2026-09-10 (final) — three merges
