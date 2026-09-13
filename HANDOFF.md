@@ -2,34 +2,60 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last touched 2026-09-13 (MC-021): the `code <root> <path>` step is gone from CLAUDE.md Reporting; a task ends with the report file and `Report: <path>`, nothing opens the editor. On `docs/MC-021-reporting` off local main. MC-020 (`fix/audit-night-1 @ 4a31b1d`) is still mid-flight: preview battery clean, no report, no HANDOFF rewrite, not merged._
-
-_Last rewritten 2026-09-13 (MC-019): feat/audit merged, the nightly audit ran by hand, ignoreCommand proven on Vercel; MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
+_Last rewritten 2026-09-13 (MC-020, after the crash): main pushed and on production, the first night's audit findings finished on `fix/audit-night-1`, previewed and battery-clean, waiting on approval to merge; MC-021 (Reporting, no editor) merged. MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
 
 ## READ THIS FIRST
 
-**MAIN IS `bbb792f` AND PRODUCTION SERVES `8326b2a`, `PASS · 16 checks · 509 pages · 672s`.**
-`8326b2a` merges `feat/audit @ 4a1e349` by SHA (MC-019, 2026-09-13): `scripts/audit/`, the
-nightly GitHub Action, the `vercel.json` `ignoreCommand`, the `.gitignore` carve-out for
-`scratchpad/audit/nightly/`. No app file changed. `bbb792f` on top is the first nightly commit
-(`audit(nightly): 2026-09-13`), written to main by the runner from the hand-triggered run;
-Vercel cancelled its deployment in 2 s, so production stayed on `8326b2a`. That is the rule
-working: **a commit touching only `scratchpad/audit/nightly/` never builds; anything else, docs
-included, builds.** `c857cbc` on `feat/audit` (docs only) is not merged. Record:
-`scratchpad/reports/MC-019-audit-merge-and-nightly.md`.
+**MAIN IS `1ad86d8` AND PRODUCTION SERVES `1ad86d8`.** Main carries the MA-003 merge (`20aa2d7`,
+`feat/audit @ e3261a7`, local `pnpm build` exit 0, 609/609, no `P2024`) and the MC-021 docs merge
+(`1ad86d8`, `docs/MC-021-reporting @ 1ecc166`). Production `miltonly-55r4p6xwv` serves `1ad86d8`.
+The battery against it, run from the fix branch's working tree so it carried the branch's new
+17th check: **16 of 17 pass; the 17th, `catchment`, fails on 520 pages** because the site-wide
+`og:description` in `src/app/layout.tsx` still says "school zones" on main. That is the finding
+`fix/audit-night-1` removes; it is not a regression. Main's own 16 checks are clean. Logs:
+`scratchpad/mc003/build-mc020-main.log`, `battery-mc020-prod-1ad86d8.log`.
 
-**THE NIGHTLY AUDIT IS LIVE.** Run `34769017742` (workflow_dispatch) took 3 m 3 s of runner
-time, no Vercel minutes, no database connection; email `f97ac935-4da6-443b-b155-7b6606f7428c`
-to gtahomequest@gmail.com. Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository
-Actions secrets. Its first email says "1769 broke": 4 S2 `treb-string` on four new listings
-(`Bungalow-Raised`, `Backsplit`) and the rest S3 `dead-anchor` (`#type-*` anchors on street
-pages) on streets swept for the first time under the three-night rotation. Those are Core's to
-read, not Audit's to fix. `gh` is not installed system-wide (winget's MSI was blocked by another
-installer); a portable copy ran from the session scratchpad with the token git already holds
-(`git credential fill`, scopes `repo, workflow`). **Pull before you branch or push**: the runner
-commits to main at 03:00 Toronto without a human.
+**`fix/audit-night-1` IS FINISHED AND WAITS ON APPROVAL TO MERGE.** Head is the docs commit on top of
+`d2bbee3` (main merged in); app code is `31f3d98`'s, plus the docs (this file, QUEUE, the reports, CLAUDE.md from MC-021). What it takes from
+the first night (record `scratchpad/reports/MC-020-audit-night-1.md`): (a) the battery's
+`catchment` check carries the render guard's pattern list verbatim and is registered in
+`run.mjs`; the school page titles, `/schools` copy, the `/listings` schools block and the site
+OG description lose "school zone" and "top-rated"; (b) `formatArchitecturalStyle` in
+`src/lib/listingStyle.ts` labels every feed style ("Bungalow-Raised" is "Raised bungalow",
+"Backsplit 4" is "Four-level backsplit") and the listing page renders style only through it;
+(c) the listing page's remarks block carries `data-remarks` and the visible label "Listing
+agent's remarks", and the hashed "people viewed today" counter is gone; (d) `/rentals` renders
+one H1; (e) the condo intent squares resolve (`#listings` exists, `/#mls` is gone); (f) the
+schools guide says "placement maps", not "boundary data", beside "school boards" (the two S2
+`catchment` findings left after MA-003). `scripts/test-audit-night-1.ts` (57 assertions) is in
+the prebuild. Local build exit 0, 609/609, no `P2024`. Preview `miltonly-q1zdch6qs` serving
+`31f3d98`: **`PASS · 17 checks · 509 pages · 799s`**. To merge: `git merge --no-ff <head of fix/audit-night-1>` on
+main, push, `npx vercel ls --prod`, battery with the merge SHA; the 17th check then passes on
+production and the next nightly's `remarks-unmarked` 107, `treb-string` 4, `h1-multiple` 1 and
+the S1 `catchment` 34 clear.
 
-**NOTHING WAITS ON A MERGE.** Every branch opened this week is on main.
+**NOT TAKEN, NAMED FOR CORE.** The 196 S3 `dead-anchor` findings on street pages are one
+defect: a hero pill links to `#type-<type>` for any type with n >= 1 (`src/lib/street-data.ts`
+`anchor`), and the lease pill to `#type-condo`, but a `TypeCard` renders (`id="type-<type>"`,
+`src/components/street/v2/sections.tsx`) only for a type that clears k5 on sold price
+(`buildProductTypeSections`). `src/components/street/TypeSection.tsx` is rendered nowhere.
+The fix is a pill with no href below k, or an anchor at a section that exists; it touches the
+street page and was not in MC-020's scope. Also open: one carried listing with a catchment
+word in its own copy, which clears on its next sweep.
+
+**THE NIGHTLY AUDIT IS LIVE** at 03:00 Toronto; it commits `audit(nightly): <date>` to main
+without a human, and Vercel cancels that build under `ignoreCommand`. **Pull before you branch or
+push.** Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is
+not installed system-wide. **Two Vercel gotchas from tonight:** `vercel ls` reports a preview
+`● Ready` while the URL still serves a "Deployment is building" HTML page for a minute or so;
+`/api/build` returning HTML is that, not a broken deployment, so re-probe before the battery.
+And `vercel ls` output shifts by a line between calls; match rows on `vercel.app`, never on a
+line number. A battery run through the Bash tool dies at the 10-minute tool cap; run it under
+`nohup sh scratchpad/mc003/run-prod-battery.sh &` (or `run-preview-battery.sh`) and poll the
+log for `^EXIT`.
+
+**CLAUDE.md REPORTING (MC-021).** A task ends with `scratchpad/reports/<TASK-ID>-<slug>.md` and a
+reply whose last line is `Report: <path>`; nothing opens the editor.
 
 **NEON EGRESS (MC-016, recon only, `scratchpad/reports/MC-016-neon-egress-recon.md`).** Neon's
 per-day consumption endpoint is Scale-plan only (403); the month-to-date counters say DB1 46.4 GB,

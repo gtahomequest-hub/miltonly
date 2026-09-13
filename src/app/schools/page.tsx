@@ -21,14 +21,16 @@ import type { PlaceCard, PlaceLink } from "@/components/places/types";
 export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Schools — Homes Near Top Schools`,
-  description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s ${schools.length} public and Catholic schools. Live TREB listings by school zone, Fraser scores, and neighbourhood data.`,
+  // MC-020: no zone or catchment language anywhere on this page. Distance to a school is a fact
+  // the site can measure; which homes a school admits is the board's, and the site does not say.
+  title: `${config.CITY_NAME} Schools: Homes and Prices Nearby`,
+  description: `Homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s ${schools.length} public and Catholic schools. Live TREB listings by school, Fraser scores and neighbourhood data.`,
   canonical: `${config.SITE_URL}/schools`,
   keywords: [
     `${config.CITY_NAME} ${config.CITY_PROVINCE} schools real estate`,
     `homes near ${config.CITY_NAME} schools`,
-    `${config.CITY_NAME} school zones`,
-    `best school zone ${config.CITY_NAME}`,
+    `${config.CITY_NAME} schools nearby homes`,
+    `homes near schools ${config.CITY_NAME}`,
     `homes near Bishop Reding ${config.CITY_NAME}`,
     `${config.CITY_NAME} District High School homes`,
     `${config.CITY_NAME} Catholic schools real estate`,
@@ -75,8 +77,8 @@ export default async function SchoolsPage() {
       answer: `Bishop P.F. Reding Catholic Secondary School is located in ${config.CITY_NAME}'s core. There are currently ${countMap[config.CITY_NAME] || "multiple"} active listings in the surrounding area. You can browse all nearby homes, filter by price and property type, and set up alerts on the Bishop P.F. Reding school page on ${config.SITE_NAME}.`,
     },
     {
-      question: `What is the best school zone in ${config.CITY_NAME} for families?`,
-      answer: `It depends on what matters most to your family. For Fraser scores, Bishop P.F. Reding (8.0–8.2) and ${config.CITY_NAME} District High School (7.7) lead the secondary schools. For newer builds near good elementary schools, Hawthorne Village (Anne J. MacArthur PS) and Dempsey (Chris Hadfield PS) offer the best combination of modern housing and well-rated schools. Timberlea has three schools within walking distance and is one of ${config.CITY_NAME}'s most established family neighbourhoods.`,
+      question: `Where in ${config.CITY_NAME} should a family looking to live near a school start?`,
+      answer: `It depends on what matters most to your family. For Fraser scores, Bishop P.F. Reding (8.0–8.2) and ${config.CITY_NAME} District High School (7.7) lead the secondary schools. For newer builds close to well-rated elementary schools, look at Hawthorne Village (Anne J. MacArthur PS) and Dempsey (Chris Hadfield PS). Timberlea has three schools within walking distance and is one of ${config.CITY_NAME}'s established family neighbourhoods. Which school a home is admitted to is the board's decision; confirm it with the board before you buy.`,
     },
     {
       question: `Are there French Immersion schools in ${config.CITY_NAME}?`,
@@ -122,7 +124,7 @@ export default async function SchoolsPage() {
       <SchemaScript schemas={schemas} />
       <PlaceDirectory
         breadcrumbLabel="Schools"
-        eyebrow="School zone intelligence"
+        eyebrow="Schools and the homes near them"
         title={`${config.CITY_NAME} schools`}
         titleEm="& real estate"
         subtitle={`Find homes for sale near ${config.CITY_NAME}'s ${schools.length} public and Catholic schools.${totalActive > 0 ? ` ${totalActive} active listings across ${neighbourhoods.length} school neighbourhoods, updated daily from TREB.` : ""}`}
@@ -154,19 +156,19 @@ export default async function SchoolsPage() {
         searchPlaceholder="Search schools by name or neighbourhood…"
         itemNoun="school"
         prose={{
-          heading: `Why school zones matter when buying in ${config.CITY_NAME}`,
+          heading: `Why schools matter when buying in ${config.CITY_NAME}`,
           paragraphs: [
-            `${config.CITY_NAME} has grown faster than almost any municipality in Canada over the past two decades, and that growth has been driven overwhelmingly by young families. The town's population skews younger than the national average, and parents moving here consistently rank school quality as one of their top three decision factors alongside commute time and home price. That makes school zones one of the most reliable indicators of neighbourhood demand and long-term property value.`,
+            `${config.CITY_NAME} has grown faster than almost any municipality in Canada over the past two decades, and that growth has been driven overwhelmingly by young families. The town's population skews younger than the national average, and parents moving here consistently rank school quality as one of their top three decision factors alongside commute time and home price. That makes distance to a school one of the more reliable indicators of neighbourhood demand and long-term property value.`,
             `Two school boards serve ${config.CITY_NAME}: the Halton District School Board on the public side, and the Halton Catholic District School Board. Between them, they operate ${schools.length} schools ranging from JK through grade 12. The Halton public system is widely regarded as one of ${config.CITY_PROVINCE}'s strongest, and ${config.CITY_NAME}'s Catholic schools consistently outperform provincial averages. Bishop P.F. Reding Catholic Secondary holds a Fraser Institute score of 8.0–8.2 out of 10, one of the highest-rated high schools in the region.`,
             `From a real estate perspective, the connection between school quality and home values is well documented. Homes within walking distance of highly rated schools tend to hold their value more consistently during corrections and see stronger appreciation during growth periods. In ${config.CITY_NAME}, neighbourhoods like Timberlea, Dempsey, and Hawthorne Village benefit from having multiple schools clustered together, which makes them particularly attractive to families with children at different grade levels.`,
-            `For buyers relocating to ${config.CITY_NAME}, understanding school zones narrows the neighbourhood search significantly. If Catholic education is a priority, the density of Catholic elementary schools across ${config.CITY_NAME}'s core gives families plenty of options. If French Immersion is the goal, W.I. Dick Middle School in Timberlea is the main pathway. And for families planning ahead for high school, proximity to ${config.CITY_NAME} District High School or one of the Catholic secondary schools often factors into which side of town makes the most sense.`,
+            `For buyers relocating to ${config.CITY_NAME}, knowing where the schools sit narrows the neighbourhood search significantly. If Catholic education is a priority, the density of Catholic elementary schools across ${config.CITY_NAME}'s core gives families plenty of options. If French Immersion is the goal, W.I. Dick Middle School in Timberlea is the main pathway. And for families planning ahead for high school, proximity to ${config.CITY_NAME} District High School or one of the Catholic secondary schools often factors into which side of town makes the most sense.`,
           ],
         }}
         hoodLinks={{ heading: `Explore ${config.CITY_NAME} neighbourhoods with schools`, links: hoodLinks }}
         faqs={faqs}
         alert={{
           heading: "Get alerts for homes near your preferred school",
-          body: "Tell us which school zone matters to you and we'll send you new listings the moment they hit the market.",
+          body: "Tell us which school matters to you and we'll send you new listings near it the moment they hit the market.",
           form: <PlaceAlertForm source="school-alert" areaPlaceholder="School or area (optional)" />,
         }}
       />

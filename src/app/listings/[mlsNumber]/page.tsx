@@ -25,14 +25,6 @@ function titleCase(s: string | null | undefined): string {
 }
 const cleanHood = (h: string) => titleCase(h.replace(/^\d+\s*-\s*\w+\s+/, "").trim());
 
-// Deterministic "views today" based on mlsNumber + date — stable within a day
-function viewsToday(mls: string): number {
-  let h = 0;
-  for (let i = 0; i < mls.length; i++) h = (h * 31 + mls.charCodeAt(i)) & 0xfffff;
-  const day = Math.floor(Date.now() / 86400000);
-  return 12 + ((h + day) & 0xff) % 9;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!l) return { title: "Listing Not Found" };
@@ -133,7 +125,6 @@ export default async function ListingDetailPage({ params }: Props) {
   }));
 
   const domDays = Math.floor((Date.now() - new Date(listing.listedAt).getTime()) / 86400000);
-  const views = viewsToday(listing.mlsNumber);
 
   // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
@@ -226,7 +217,6 @@ export default async function ListingDetailPage({ params }: Props) {
           hoodName,
           hoodAvgRent,
           schools: schoolsLite,
-          viewsToday: views,
           domDays,
         }}
       />
