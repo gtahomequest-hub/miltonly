@@ -100,15 +100,101 @@
   }
 }
 
+/* THE BAR SEARCH, ON EVERY PAGE (MH-006, MA-004 change 5). The homepage's copy of this
+   form slides in on scroll under .home-v2 rules (home-theme.css); the page variant shows it
+   from the first paint at 1024 and up, beside the triggers, capped so the CTA keeps its
+   room. Below 1024 it is not in the bar: the burger's panel opens with the same search as
+   its first control, and the 820 to 1023 bar has no room for four things. Literals, not
+   --m-* vars, like everything else in this file. */
+.site-nav .m-navsearch {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 260px;
+  max-width: 380px;
+  margin: 0 20px;
+  background: #0b3d2e;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 5px 5px 5px 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+@media (min-width: 1024px) {
+  .site-nav .m-navsearch.m-show {
+    display: flex;
+  }
+}
+.site-nav .m-navsearch:focus-within {
+  border-color: #017848;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(0, 255, 128, 0.15);
+}
+.site-nav .m-navsearch-lead {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #017848;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.site-nav .m-navsearch-lead svg {
+  width: 14px;
+  height: 14px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2;
+}
+.site-nav .m-navsearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+}
+.site-nav .m-navsearch input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+.site-nav .m-navsearch-go {
+  background: #017848;
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+.site-nav .m-navsearch-go:hover {
+  background: #0a8f57;
+}
+
 /* ── Mobile hamburger + panel (sn-*) ──────────────────────────────────
    Self-contained classes shared by BOTH nav variants (.m-nav on the
    homepage, .site-nav everywhere else). Nothing here touches the
-   existing .m-nav / .site-nav cascades; above 820px the burger is
-   display:none and the panel is never rendered, so desktop output is
-   byte-identical. Forest tokens resolved to literals like the rest of
-   this file. */
-nav .sn-burger {
+   existing .m-nav / .site-nav cascades; above 820px the whole <details>
+   is display:none, so desktop output is byte-identical. Forest tokens
+   resolved to literals like the rest of this file.
+
+   THE PHONE MENU IS A <details> (MH-006, MA-004 defect 6). The burger is
+   its <summary>, so the panel opens with no JavaScript, from the first
+   byte of HTML. The panel is fixed UNDER the 66px bar rather than over
+   it, so the burger stays on screen as the close control whether or not
+   React is running yet. */
+nav .sn-mobile {
   display: none;
+}
+nav .sn-burger {
+  display: flex;
+  list-style: none;
   background: transparent;
   border: 0;
   padding: 10px;
@@ -121,19 +207,39 @@ nav .sn-burger {
   height: 44px;
   border-radius: 8px;
 }
+nav .sn-burger::-webkit-details-marker,
+nav .sn-burger::marker {
+  display: none;
+  content: '';
+}
 nav .sn-burger span {
   display: block;
   width: 22px;
   height: 2px;
   border-radius: 2px;
   background: #ffffff;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 nav .sn-burger:active {
   background: rgba(0, 255, 128, 0.12);
 }
+nav .sn-burger:focus-visible {
+  outline: 2px solid #00ff80;
+  outline-offset: 2px;
+}
+/* open: the three bars become a cross, so the same control reads as "close" */
+nav .sn-mobile[open] .sn-burger span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+nav .sn-mobile[open] .sn-burger span:nth-child(2) {
+  opacity: 0;
+}
+nav .sn-mobile[open] .sn-burger span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
 @media (max-width: 820px) {
-  nav .sn-burger {
-    display: flex;
+  nav .sn-mobile {
+    display: block;
   }
 }
 @media (max-width: 480px) {
@@ -150,83 +256,50 @@ nav .sn-burger:active {
 }
 nav .sn-panel {
   position: fixed;
-  inset: 0;
+  top: 66px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 120;
   background: #073126;
   color: #ffffff;
   display: flex;
   flex-direction: column;
-  padding: 0 24px 32px;
+  padding: 12px 24px 32px;
   overflow-y: auto;
   font-family: 'Inter', system-ui, sans-serif;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
-nav .sn-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 66px;
-  flex-shrink: 0;
+nav .sn-panel:focus {
+  outline: 0;
 }
-/* Panel-header wordmark instance: identical hero treatment (see the nav-bar
-   rule above). */
-nav .sn-panel-head .m-logo {
-  font-family: var(--font-kaushan), cursive;
-  /* 24px (2026-07-21 refinement): understated nav-brand scale, tuned to the
-     old 23px serif wordmark's visual height; Kaushan reads large per px. */
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1.4;
-  display: inline-block;
-  padding: 2px 0.16em 3px 0.06em;
-  color: #ffc400;
-  text-decoration: none;
-}
-nav .sn-panel-head .m-logo b {
-  color: inherit;
-  font-weight: inherit;
-}
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  nav .sn-panel-head .m-logo {
-    background: linear-gradient(90deg, #ffc400 0%, #ff3d3d 50%, #ffc400 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-}
-nav .sn-close {
-  background: transparent;
-  border: 0;
-  color: #ffffff;
-  font-size: 34px;
-  line-height: 1;
-  width: 44px;
-  height: 44px;
-  cursor: pointer;
-  border-radius: 8px;
-}
-nav .sn-close:active {
-  color: #00ff80;
-  background: rgba(0, 255, 128, 0.12);
-}
-nav .sn-panel-links {
+/* THE COMPACT MENU: what the HTML carries before hydration. The search, then every
+   destination once per menu, then the CTA. Each link is a 44px row. */
+nav .sn-compact {
   display: flex;
   flex-direction: column;
-  margin-top: 18px;
 }
-nav .sn-panel-links a {
-  color: rgba(255, 255, 255, 0.88);
-  text-decoration: none;
-  font-size: 19px;
-  font-weight: 500;
-  padding: 16px 4px;
-  min-height: 44px;
+nav .sn-compact-group {
+  padding: 14px 0 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+nav .sn-compact-group:first-of-type {
+  margin-top: 8px;
+}
+nav .sn-compact .m-mega-more {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 0 0;
+}
+nav .sn-compact .m-mega-more a {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-nav .sn-panel-links a:active,
-nav .sn-panel-links a:focus-visible {
-  color: #00ff80;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: 17px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
 }
 nav a.sn-panel-cta {
   margin-top: 28px;
@@ -852,9 +925,6 @@ nav button.m-mega-cta:focus-visible {
    carries the same live content as its desktop panel, laid out in one column. */
 nav .sn-panel .m-mega-search {
   margin: 4px 0 6px;
-}
-nav .sn-panel .m-mega-search-compact .m-mega-label {
-  margin-bottom: 6px;
 }
 nav .sn-acc {
   margin-top: 8px;

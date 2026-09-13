@@ -36,9 +36,10 @@ type Variant = 'home' | 'page';
 //      panel; so does focusing it (Tab, ArrowUp/Down, Home/End) and so does a click. The
 //      first item is selected by default, so a panel never opens onto nothing.
 //
-// Below 820px the triggers and the band are hidden and the burger opens a full-viewport
-// panel: one <details> per menu, and inside it one <details> per rail item, the first open,
-// each carrying the SAME live content as its desktop panel.
+// Below 820px the triggers and the band are hidden and the burger, a <summary>, opens a
+// panel under the bar: one <details> per menu, and inside it one <details> per rail item, the
+// first open, each carrying the SAME live content as its desktop panel. Before hydration the
+// same <details> opens a compact menu of every destination and the search.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ItemDef {
@@ -92,11 +93,13 @@ const MENUS: MenuDef[] = [
     key: 'streets',
     label: 'Streets',
     href: '/streets',
+    // THE SEARCH IS FIRST (MH-006). It is the panel's stated purpose and the fastest way to
+    // any street; it was the last rail item on desktop while the phone panel put it first.
     items: [
+      { key: 'search', label: 'Address search', href: '/streets', cta: 'Browse every street page', blurb: 'Type a street, an address or a neighbourhood and land on its page.', search: true },
       { key: 'hoods', label: 'By neighbourhood', href: '/neighbourhoods', cta: 'Every neighbourhood', blurb: 'Every published neighbourhood, with the homes listed in it now.' },
       { key: 'video', label: 'With video', href: '/streets', cta: 'Browse every street page', blurb: 'Streets filmed end to end, by day and overnight.' },
       { key: 'az', label: 'A to Z', href: '/streets', cta: 'Browse every street page', blurb: 'Every street page, alphabetically.' },
-      { key: 'search', label: 'Address search', href: '/streets', cta: 'Browse every street page', blurb: 'Type a street, an address or a neighbourhood and land on its page.', search: true },
     ],
     more: [
       { href: '/guides', label: 'Guides' },
@@ -129,7 +132,13 @@ const MOBILE_MAX = 820;
 // ── shared pieces ─────────────────────────────────────────────────────────────
 
 /** The street search: the fastest way to any Milton street, from any page. Same
- *  entity-first resolver as the hero, so one search behaviour sitewide. */
+ *  entity-first resolver as the hero, so one search behaviour sitewide.
+ *
+ *  A REAL FORM. `action="/search" method="get"` is the same resolver server-side, answering
+ *  with a redirect, so the search works from the first byte of HTML; once hydrated the submit
+ *  handler resolves in place and pushes the route without a full load. Same destination
+ *  either way. */
+const SEARCH_ACTION = '/search';
 function StreetSearch({ id }: { id: string }) {
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -139,7 +148,7 @@ function StreetSearch({ id }: { id: string }) {
     router.push(await resolveHeroHref(q));
   };
   return (
-    <form className="m-mega-search" onSubmit={submit} role="search">
+    <form className="m-mega-search" action={SEARCH_ACTION} method="get" onSubmit={submit} role="search">
       <label htmlFor={id} className="m-mega-label">
         Find your street
       </label>
@@ -147,7 +156,7 @@ function StreetSearch({ id }: { id: string }) {
         <span className="m-mega-searchlead" aria-hidden="true">
           <IconSearch />
         </span>
-        <input id={id} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Street, address or neighbourhood" autoComplete="off" />
+        <input id={id} name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Street, address or neighbourhood" autoComplete="off" />
         <button type="submit" className="m-mega-searchgo">
           Go
         </button>
@@ -397,7 +406,10 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
   const navRef = useRef<HTMLElement>(null);
   const bandRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const burgerRef = useRef<HTMLButtonElement>(null);
+  // The burger is a <summary> and the phone panel lives inside its <details>, so the menu
+  // opens before hydration; React takes the `open` attribute over once it is running.
+  const burgerRef = useRef<HTMLElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const triggerRefs = useRef<Record<MenuKey, HTMLButtonElement | null>>({ buy: null, streets: null, sell: null });
   const openTimer = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
@@ -569,6 +581,10 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     // Same entity-first resolver as the hero: one search behaviour sitewide.
     router.push(await resolveHeroHref(navQuery));
   };
+  // THE BAR SEARCH IS ON EVERY PAGE (MH-006). The page variant shows it at 1024 and up from the
+  // first paint (site-nav.css hides it below); the homepage, whose hero is a search, reveals it
+  // once the hero's band has scrolled under the bar.
+  const showSearch = isHome ? searchVisible : true;
 
   useEffect(() => {
     if (!isHome) return; // page variant has no scroll-reveal dependency
@@ -586,6 +602,12 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     };
   }, [isHome]);
 
+  // A panel opened natively before hydration is still open when React arrives with
+  // `menuOpen=false`; adopt it, so the full accordion and the scroll lock take over at once.
+  useEffect(() => {
+    if (detailsRef.current?.open) setMenuOpen(true);
+  }, []);
+
   // Mobile panel: body scroll lock + Esc close + focus trap while open.
   useEffect(() => {
     if (!menuOpen) return;
@@ -594,7 +616,9 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     const panel = panelRef.current;
     const focusables = () =>
       Array.from(panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), summary, input') ?? []);
-    focusables()[0]?.focus();
+    // Focus the panel itself, not its first control: the first control is the search input,
+    // and focusing it on open would raise the phone's keyboard over the menu.
+    panel?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setMenuOpen(false);
@@ -671,39 +695,121 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
           })}
         </div>
 
-        {isHome && (
-          <form className={`m-navsearch${searchVisible ? ' m-show' : ''}`} aria-hidden={!searchVisible} onSubmit={submitNavSearch}>
-            <span className="m-navsearch-lead">
-              <IconSearch />
-            </span>
-            <input
-              value={navQuery}
-              onChange={(e) => setNavQuery(e.target.value)}
-              placeholder="Street, address, or neighbourhood…"
-              aria-label="Find a street, address or neighbourhood"
-              tabIndex={searchVisible ? 0 : -1}
-            />
-            <button type="submit" className="m-navsearch-go" aria-label="Search" tabIndex={searchVisible ? 0 : -1}>
-              →
-            </button>
-          </form>
-        )}
+        <form
+          className={`m-navsearch${showSearch ? ' m-show' : ''}`}
+          aria-hidden={!showSearch}
+          action={SEARCH_ACTION}
+          method="get"
+          role="search"
+          onSubmit={submitNavSearch}
+        >
+          <span className="m-navsearch-lead">
+            <IconSearch />
+          </span>
+          <input
+            name="q"
+            value={navQuery}
+            onChange={(e) => setNavQuery(e.target.value)}
+            placeholder="Street, address, or neighbourhood…"
+            aria-label="Find a street, address or neighbourhood"
+            tabIndex={showSearch ? 0 : -1}
+          />
+          <button type="submit" className="m-navsearch-go" aria-label="Search" tabIndex={showSearch ? 0 : -1}>
+            →
+          </button>
+        </form>
 
         <a className="m-navcta" href={ctaHref}>
           What&apos;s my home worth?
         </a>
 
-        <button
-          ref={burgerRef}
-          className="sn-burger"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((o) => !o)}
+        {/* THE PHONE MENU IS A <details> (MH-006, MA-004 defect 6). The burger is its <summary>,
+            so a tap opens the panel with no JavaScript, from the first byte of HTML; once
+            hydrated the `open` attribute is React's, and Escape, the focus trap, the scroll
+            lock and the resize close all run on the same state. Closed, the panel is not
+            rendered by the browser; open before hydration it carries the compact menu below
+            (the search, every destination, the CTA); open after, the full accordion. The
+            panel sits UNDER the bar rather than over it, so the burger stays reachable as the
+            close control either way. */}
+        <details
+          ref={detailsRef}
+          className="sn-mobile"
+          open={menuOpen}
+          onToggle={(e) => setMenuOpen((e.currentTarget as HTMLDetailsElement).open)}
         >
-          <span />
-          <span />
-          <span />
-        </button>
+          <summary ref={burgerRef} className="sn-burger" aria-label={menuOpen ? 'Close menu' : 'Open menu'}>
+            <span />
+            <span />
+            <span />
+          </summary>
+          <div className="sn-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Site menu" tabIndex={-1}>
+            {menuOpen ? (
+              <>
+                <StreetSearch id="sn-street-search" />
+                {/* Native <details>: an accordion that opens with no JavaScript and stays usable
+                    at 380px, where a popover cannot be. One per menu; inside it one per rail
+                    item, the first open, each carrying the SAME live content as its desktop
+                    panel. A tap on an item opens that item's content inline. */}
+                <div className="sn-acc">
+                  {MENUS.map((m) => (
+                    <details key={m.key} className="sn-acc-item">
+                      <summary>{m.label}</summary>
+                      <div className="sn-acc-body">
+                        {m.items.map((it, k) => (
+                          <details key={it.key} className="sn-item" open={k === 0}>
+                            <summary>{it.label}</summary>
+                            <div className="sn-item-body">
+                              <ItemBody menu={m} item={it} content={contentOf(m, it)} idPrefix="sn" onNavigate={closeMobile} />
+                            </div>
+                          </details>
+                        ))}
+                        <ul className="m-mega-more">
+                          {m.more.map((r) => (
+                            <li key={r.href}>
+                              <a href={r.href} onClick={closeMobile}>
+                                {r.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+                <a className="sn-panel-cta" href={ctaHref} onClick={closeMobile}>
+                  What&apos;s my home worth?
+                </a>
+              </>
+            ) : (
+              // THE COMPACT MENU, served in the HTML. Every destination once, no live blocks:
+              // the desktop band is the crawlable copy and rendering the accordion here too
+              // would double every menu link on every page. This is what a finger reaches in
+              // the seconds before hydration, and it is a complete menu.
+              <div className="sn-compact">
+                <StreetSearch id="sn-street-search" />
+                {MENUS.map((m) => {
+                  const seen = new Set<string>();
+                  const links = [...m.items.map((it) => ({ href: it.href, label: it.label })), ...m.more].filter((l) => !seen.has(l.href) && seen.add(l.href));
+                  return (
+                    <div key={m.key} className="sn-compact-group">
+                      <span className="m-mega-label">{m.label}</span>
+                      <ul className="m-mega-more">
+                        {links.map((l) => (
+                          <li key={l.href}>
+                            <a href={l.href}>{l.label}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+                <a className="sn-panel-cta" href={ctaHref}>
+                  What&apos;s my home worth?
+                </a>
+              </div>
+            )}
+          </div>
+        </details>
       </div>
 
       {/* THE BAND. One full-bleed strip under the bar; every menu panel is always inside it
@@ -769,59 +875,6 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
         ))}
       </div>
 
-      {menuOpen && (
-        <div className="sn-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Site menu">
-          <div className="sn-panel-head">
-            <a className="m-logo" href="/" aria-label="Miltonly home" onClick={closeMobile}>
-              Milton<b>ly</b>
-            </a>
-            <button
-              className="sn-close"
-              aria-label="Close menu"
-              onClick={() => {
-                setMenuOpen(false);
-                burgerRef.current?.focus();
-              }}
-            >
-              ×
-            </button>
-          </div>
-          <StreetSearch id="sn-street-search" />
-          {/* Native <details>: an accordion that opens with no JavaScript and stays usable at
-              380px, where a popover cannot be. One per menu; inside it one per rail item, the
-              first open, each carrying the SAME live content as its desktop panel. A tap on
-              an item opens that item's content inline. */}
-          <div className="sn-acc">
-            {MENUS.map((m) => (
-              <details key={m.key} className="sn-acc-item">
-                <summary>{m.label}</summary>
-                <div className="sn-acc-body">
-                  {m.items.map((it, k) => (
-                    <details key={it.key} className="sn-item" open={k === 0}>
-                      <summary>{it.label}</summary>
-                      <div className="sn-item-body">
-                        <ItemBody menu={m} item={it} content={contentOf(m, it)} idPrefix="sn" onNavigate={closeMobile} />
-                      </div>
-                    </details>
-                  ))}
-                  <ul className="m-mega-more">
-                    {m.more.map((r) => (
-                      <li key={r.href}>
-                        <a href={r.href} onClick={closeMobile}>
-                          {r.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </details>
-            ))}
-          </div>
-          <a className="sn-panel-cta" href={ctaHref} onClick={closeMobile}>
-            What&apos;s my home worth?
-          </a>
-        </div>
-      )}
     </nav>
   );
 }
