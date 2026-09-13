@@ -2,6 +2,8 @@ CORE · D:\miltonly · main
 
 # Handoff
 
+_Last touched 2026-09-13 (MC-021): the `code <root> <path>` step is gone from CLAUDE.md Reporting; a task ends with the report file and `Report: <path>`, nothing opens the editor. On `docs/MC-021-reporting` off local main. MC-020 (`fix/audit-night-1 @ 4a31b1d`) is still mid-flight: preview battery clean, no report, no HANDOFF rewrite, not merged._
+
 _Last rewritten 2026-09-13 (MC-019): feat/audit merged, the nightly audit ran by hand, ignoreCommand proven on Vercel; MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
 
 ## READ THIS FIRST
