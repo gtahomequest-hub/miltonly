@@ -2,7 +2,7 @@
 HOME · D:\miltonly-home · feat/nav-v3
 
 **Preview:** https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app
-**Head:** `287f8adcc174896cb97a8bd514454bd397f41921` · **Battery on the preview:** `PASS · 17 checks · 509 pages · 666s` · **Local build:** exit 0, zero `P2024`, prebuild all green, 609/609 static
+**Head:** `287f8adcc174896cb97a8bd514454bd397f41921` (the app; one docs-only commit sits on top of it with this report, the handoff and the queue line) · **Battery on the preview:** `PASS · 17 checks · 509 pages · 666s` · **Local build:** exit 0, zero `P2024`, prebuild all green, 609/609 static
 **Five audit pages on the preview:** https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app/ · https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app/streets/woodward-avenue-milton · https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app/neighbourhoods/timberlea · https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app/listings/W13117744 · https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app/guides/what-milton-neighbourhoods-cost
 **Stopped. Core merges by SHA on approval.**
 

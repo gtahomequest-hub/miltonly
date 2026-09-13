@@ -88,7 +88,7 @@ about, saved, signin, privacy, terms).
 
 | | |
 |---|---|
-| branch head | **`287f8adcc174896cb97a8bd514454bd397f41921`** |
+| branch head | **`287f8adcc174896cb97a8bd514454bd397f41921`** (app), plus the docs-only commit carrying this handoff and the MH-006 report |
 | preview | `https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app` |
 | battery on preview | **`PASS · 17 checks · 509 pages · 666s`** |
 | local build | exit 0, zero `P2024`, prebuild all green, 609/609 static |
