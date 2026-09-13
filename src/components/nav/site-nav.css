@@ -296,6 +296,11 @@ nav .sn-panel {
 nav .sn-panel:focus {
   outline: 0;
 }
+/* A closed <details> keeps its content out of the render tree, but a position:fixed child
+   of the closed slot still reported a box in Chrome; say it plainly. */
+nav .sn-mobile:not([open]) .sn-panel {
+  display: none;
+}
 /* THE COMPACT MENU: what the HTML carries before hydration. The search, then every
    destination once per menu, then the CTA. Each link is a 44px row. */
 nav .sn-compact {
