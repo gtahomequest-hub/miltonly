@@ -22,10 +22,33 @@
      it on a pseudo-element so the nav itself never forms a containing block. */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-/* A page with no theme of its own (SiteChrome) clears the fixed bar here, the way every
-   forest theme's hero does with its own padding-top. */
-.site-chrome-body {
-  padding-top: 66px;
+/* THE SKIP LINK (MA-004 defect 20). Off-screen until focused, then a pill at the top left of
+   the bar; its target is the sentinel span at the end of the nav. */
+nav .sn-skip {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 130;
+  background: #00ff80;
+  color: #04160f;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+nav .sn-skip:focus-visible {
+  top: 12px;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+nav .sn-skip-target {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 .site-nav .m-wrap {
   max-width: 1180px;
@@ -451,6 +474,23 @@ nav .m-mega-tab {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
+/* THE SUB-LABEL (MA-004 change 10): one live fact under the item's name, 14px, so the rail
+   reads at a glance. The tab becomes two lines and stays a single button. */
+nav .m-mega-tab {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+nav .m-mega-tabsub {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.58);
+  white-space: nowrap;
+}
+nav .m-mega-tab.m-sel .m-mega-tabsub {
+  color: rgba(255, 255, 255, 0.72);
+}
 nav .m-mega-tab:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
@@ -713,6 +753,14 @@ nav .m-mega-figs dd.m-mega-figwin {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.55);
 }
+/* the sentence that says how the figures above were measured, and why they differ */
+nav .m-mega-figbasis {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+  max-width: 62ch;
+}
 
 nav .m-mega-note {
   margin: 18px 0 0;
@@ -829,9 +877,23 @@ nav .m-mega-more {
   gap: 6px 18px;
 }
 nav .m-mega-more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 14px;
   text-decoration: none;
+}
+/* a finger gets 44px on the strip pills and the "Also" links (MA-004 defect 14) */
+@media (pointer: coarse) {
+  nav .m-mega-more a,
+  nav .m-mega-strip a,
+  nav .m-mega-edition a {
+    min-height: 44px;
+  }
+  nav .m-mega-strip a {
+    align-items: center;
+  }
 }
 nav .m-mega-more a:hover,
 nav .m-mega-more a:focus-visible {
@@ -883,11 +945,23 @@ nav button.m-mega-cta {
   background: #00ff80;
   color: #04160f;
   text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 700;
   padding: 11px 18px;
   border-radius: 8px;
   min-height: 44px;
+}
+nav button.m-mega-cta[disabled] {
+  opacity: 0.7;
+  cursor: default;
+}
+/* the brief form ends in the panel CTA, so its email row has no button of its own */
+nav .m-mega-brief .m-mega-cta {
+  margin-top: 12px;
+  align-self: flex-start;
 }
 nav a.m-mega-cta:hover,
 nav a.m-mega-cta:focus-visible,
@@ -982,6 +1056,16 @@ nav .sn-item > summary {
   color: rgba(255, 255, 255, 0.86);
   font-size: 16px;
   font-weight: 500;
+}
+nav .sn-item > summary {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+nav .sn-item > summary .m-mega-tabsub {
+  flex-basis: 100%;
+  order: 3;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
 }
 nav .sn-item > summary::-webkit-details-marker {
   display: none;

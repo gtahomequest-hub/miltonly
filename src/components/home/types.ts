@@ -121,7 +121,18 @@ export interface MlsExploreConfig {
   lenses: MlsLens[]; // array order = display order
 }
 
-export interface FooterData {
+/** THE MAP'S FIXED DESTINATIONS (MH-006, MA-004 change 9): the guides, the school and mosque
+ *  counts and the current Market Watch edition, read once by getFooterMap() and carried by
+ *  every FooterData so the footer on every page reaches every entity kind in one click. */
+export interface FooterMap {
+  guides: { slug: string; title: string }[];
+  schoolCount: number;
+  mosqueCount: number;
+  /** the latest published edition, or null before the first */
+  edition: { weekOf: string; label: string } | null;
+}
+
+export interface FooterData extends FooterMap {
   /** EVERY published hub. A truncated list cost 19 crawlable links and bought nothing. */
   neighbourhoods: { name: string; slug: string }[];
   topStreets: { name: string; slug: string }[];

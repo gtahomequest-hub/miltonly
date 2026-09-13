@@ -12,12 +12,12 @@ export const metadata = genMeta({
 export default function TermsPage() {
   return (
     <SiteChrome>
-    <main className="bg-white text-[#07111f] min-h-screen py-12 sm:py-16">
+    <main className="bg-white text-[#073126] min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
-        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to {config.SITE_NAME}</Link>
+        <Link href="/" className="text-[13px] text-[#6b6f6a] hover:text-[#073126]">← Back to {config.SITE_NAME}</Link>
 
         <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Terms of Use</h1>
-        <p className="text-[13px] text-[#64748b] mb-8">Last updated: April 23, 2026</p>
+        <p className="text-[13px] text-[#6b6f6a] mb-8">Last updated: April 23, 2026</p>
 
         <div className="space-y-6 text-[15px] leading-relaxed">
           <p>
@@ -61,15 +61,15 @@ export default function TermsPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Privacy</h2>
           <p>
-            Your personal information is handled under our <Link href="/privacy" className="text-[#f59e0b] underline">Privacy Policy</Link>.
+            Your personal information is handled under our <Link href="/privacy" className="text-[#017848] underline">Privacy Policy</Link>.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Contact</h2>
           <p>
             <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
             {config.brokerage.name}<br />
-            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
-            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
+            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#017848] underline">gtahomequest@gmail.com</a><br />
+            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#017848] underline">{config.realtor.phone}</a>
           </p>
         </div>
       </div>

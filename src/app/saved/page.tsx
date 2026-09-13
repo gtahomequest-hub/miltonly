@@ -7,6 +7,9 @@ export const metadata = genMeta({
   title: `Saved Listings & Alerts — ${config.SITE_NAME}`,
   description: `View your saved ${config.CITY_NAME} real estate listings, manage search alerts, and track new matches.`,
   canonical: `${config.SITE_URL}/saved`,
+  // A sign-in wall for anyone without a session (MA-004 defect 9): nothing to index, and the
+  // nav no longer links it.
+  noIndex: true,
 });
 
 export default function SavedPage() {

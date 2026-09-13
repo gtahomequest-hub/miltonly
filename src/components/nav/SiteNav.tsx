@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
 import { resolveHeroHref } from '@/lib/heroSearchClient';
-import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from '@/lib/postLeadClient';
-import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey } from './megaTypes';
+import { BriefSignup } from './BriefSignup';
+import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey, NavContext } from './megaTypes';
 
 type Variant = 'home' | 'page';
 
@@ -80,7 +80,10 @@ const MENUS: MenuDef[] = [
       { key: 'condos', label: 'Condos', href: '/condos', cta: 'Every condo building', blurb: 'Condo apartments and condo townhouses, building by building.' },
       { key: 'freehold', label: 'Freehold', href: '/freehold', cta: 'The freehold market', blurb: 'Detached, semi-detached and freehold townhomes: no condo corporation, no fee.' },
       { key: 'rentals', label: 'Rentals', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes for rent in Milton, available now.' },
-      { key: 'alerts', label: 'Alerts', href: '/saved', cta: 'Saved listings and alerts', blurb: 'What listed, what sold and what moved on price, each weekday morning.', brief: true },
+      // THE CTA IS THE FORM (MH-006, MA-004 defect 9). It went to /saved, which renders a sign-in
+      // wall under "No account". The brief form's submit is this panel's CTA; href is the
+      // Buy index for the crawler's copy of the rail and is never rendered for this item.
+      { key: 'alerts', label: 'Alerts', href: '/listings', cta: 'Send me the brief', blurb: 'What listed, what sold and what moved on price, each weekday morning.', brief: true },
     ],
     more: [
       { href: '/sold', label: 'Recently sold' },
@@ -165,46 +168,6 @@ function StreetSearch({ id }: { id: string }) {
   );
 }
 
-/** The daily-brief signup, through the one lead helper every form on the site uses. Source
- *  "daily-brief", the same as the homepage's and /sell's forms, so one list, one sender. */
-function BriefSignup({ id }: { id: string }) {
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
-  const [email, setEmail] = useState('');
-  const [honey, setHoney] = useState('');
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || status === 'submitting') return;
-    setStatus('submitting');
-    const ok = await postLead({ source: 'daily-brief', intent: 'buy', email, notes: 'Daily brief signup (menu)', honeypot: honey });
-    setStatus(ok ? 'ok' : 'error');
-  };
-  if (status === 'ok') {
-    return <p className="m-mega-note m-mega-ok">You are on the list. Your first brief lands the next weekday morning.</p>;
-  }
-  return (
-    <form className="m-mega-search" onSubmit={submit}>
-      <label htmlFor={id} className="m-mega-label">
-        The Milton daily brief
-      </label>
-      <div className="m-mega-searchrow">
-        <input id={id} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" autoComplete="email" />
-        <button type="submit" className="m-mega-searchgo" disabled={status === 'submitting'}>
-          {status === 'submitting' ? '…' : 'Send me the brief'}
-        </button>
-      </div>
-      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
-      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
-        <label>
-          Company website
-          <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
-        </label>
-      </div>
-      {status === 'error' ? <p className="m-mega-note">Something went wrong. Please try again.</p> : null}
-      <p className="m-mega-fine">Miltonly emails only. No account, unsubscribe anytime.</p>
-    </form>
-  );
-}
-
 /** One strip: a labelled row of street links, each with the count that ranked it. */
 function Strip({ strip, onNavigate }: { strip?: MegaStrip; onNavigate?: () => void }) {
   if (!strip?.items.length) return null;
@@ -252,19 +215,20 @@ function ItemBody({
   content,
   idPrefix,
   onNavigate,
+  context,
 }: {
   menu: MenuDef;
   item: ItemDef;
   content?: MegaItemContent;
   idPrefix: string;
   onNavigate?: () => void;
+  context?: NavContext;
 }) {
   const c = content;
   return (
     <>
       <Lead segments={c?.lead} blurb={item.blurb} />
       {item.search ? <StreetSearch id={`${idPrefix}-search-${menu.key}-${item.key}`} /> : null}
-      {item.brief ? <BriefSignup id={`${idPrefix}-brief-${menu.key}-${item.key}`} /> : null}
 
       {c?.figures?.length ? (
         // NO FORMATTING HERE, DELIBERATELY. Every value arrives as a display string built by
@@ -284,6 +248,7 @@ function ItemBody({
           ))}
         </dl>
       ) : null}
+      {c?.figures?.length && c.basis ? <p className="m-mega-figbasis">{c.basis}</p> : null}
 
       {c?.cards?.length ? (
         <ul className="m-mega-cards">
@@ -381,10 +346,14 @@ function ItemBody({
 
       <Strip strip={c?.strip} onNavigate={onNavigate} />
       {c?.note ? <p className="m-mega-note">{c.note}</p> : null}
-      <a className="m-mega-cta" href={item.href} onClick={onNavigate}>
-        {item.cta}
-        <span aria-hidden="true"> →</span>
-      </a>
+      {item.brief ? (
+        <BriefSignup id={`${idPrefix}-brief-${menu.key}-${item.key}`} context={context} cta={c?.cta ?? item.cta} />
+      ) : (
+        <a className="m-mega-cta" href={item.href} onClick={onNavigate}>
+          {c?.cta ?? item.cta}
+          <span aria-hidden="true"> →</span>
+        </a>
+      )}
     </>
   );
 }
@@ -393,7 +362,7 @@ function ItemBody({
 
 const firstItems = (): Record<MenuKey, string> => ({ buy: MENUS[0].items[0].key, streets: MENUS[1].items[0].key, sell: MENUS[2].items[0].key });
 
-export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: MegaLive }) {
+export function SiteNav({ variant = 'page', live, context }: { variant?: Variant; live?: MegaLive; context?: NavContext }) {
   const isHome = variant === 'home';
   const router = useRouter();
   const [searchVisible, setSearchVisible] = useState(false);
@@ -650,19 +619,33 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     };
   }, [menuOpen]);
 
-  const ctaHref = '/sell';
+  // THE CTA CARRIES THE PAGE (MH-006, MA-004 change 6). On a street page the valuation opens
+  // with the street prefilled (HomeValuationCard reads ?street=); on a hub it is the hub's own
+  // /value page. The bar, the Sell panel's "What's it worth" and the phone panel all use it.
+  const ctaHref = context?.street
+    ? `/sell?street=${encodeURIComponent(context.street.name)}#valuation`
+    : context?.hub
+      ? `/value/${context.hub.slug}`
+      : '/sell';
   const closeMobile = () => setMenuOpen(false);
   const contentOf = (m: MenuDef, item: ItemDef): MegaItemContent | undefined => live?.[m.key]?.[item.key];
+  const itemOf = (m: MenuDef, item: ItemDef): ItemDef => (m.key === 'sell' && item.key === 'worth' ? { ...item, href: ctaHref } : item);
 
   return (
     <nav
       ref={navRef}
       className={isHome ? 'm-nav' : 'site-nav'}
+      aria-label="Site"
       onPointerOver={onNavPointerOver}
       onPointerLeave={onNavPointerLeave}
       onKeyDown={onNavKeyDown}
       onBlur={onNavBlur}
     >
+      {/* The skip link (MA-004 defect 20). Its target is the sentinel at the end of this nav,
+          so the next Tab lands on the page's first control, past the bar and every panel. */}
+      <a className="sn-skip" href="#after-nav">
+        Skip to content
+      </a>
       <div className="m-wrap">
         <a className="m-logo" href="/" aria-label="Miltonly home">
           Milton<b>ly</b>
@@ -757,9 +740,12 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
                       <div className="sn-acc-body">
                         {m.items.map((it, k) => (
                           <details key={it.key} className="sn-item" open={k === 0}>
-                            <summary>{it.label}</summary>
+                            <summary>
+                              {it.label}
+                              {contentOf(m, it)?.sub ? <span className="m-mega-tabsub">{contentOf(m, it)!.sub}</span> : null}
+                            </summary>
                             <div className="sn-item-body">
-                              <ItemBody menu={m} item={it} content={contentOf(m, it)} idPrefix="sn" onNavigate={closeMobile} />
+                              <ItemBody menu={m} item={itemOf(m, it)} content={contentOf(m, it)} idPrefix="sn" onNavigate={closeMobile} context={context} />
                             </div>
                           </details>
                         ))}
@@ -789,7 +775,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
                 <StreetSearch id="sn-street-search" />
                 {MENUS.map((m) => {
                   const seen = new Set<string>();
-                  const links = [...m.items.map((it) => ({ href: it.href, label: it.label })), ...m.more].filter((l) => !seen.has(l.href) && seen.add(l.href));
+                  const links = [...m.items.filter((it) => !it.brief).map((it) => ({ href: itemOf(m, it).href, label: it.label })), ...m.more].filter((l) => !seen.has(l.href) && seen.add(l.href));
                   return (
                     <div key={m.key} className="sn-compact-group">
                       <span className="m-mega-label">{m.label}</span>
@@ -841,6 +827,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
                         onKeyDown={onRailKeyDown(m, k)}
                       >
                         {it.label}
+                        {contentOf(m, it)?.sub ? <span className="m-mega-tabsub">{contentOf(m, it)!.sub}</span> : null}
                       </button>
                     );
                   })}
@@ -855,7 +842,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
                       className="m-item"
                       hidden={selected[m.key] !== it.key}
                     >
-                      <ItemBody menu={m} item={it} content={contentOf(m, it)} idPrefix="m" />
+                      <ItemBody menu={m} item={itemOf(m, it)} content={contentOf(m, it)} idPrefix="m" context={context} />
                     </div>
                   ))}
                 </div>
@@ -874,7 +861,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
           </section>
         ))}
       </div>
-
+      <span id="after-nav" className="sn-skip-target" tabIndex={-1} />
     </nav>
   );
 }

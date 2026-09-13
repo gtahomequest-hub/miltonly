@@ -10,15 +10,17 @@
 // A failed read degrades to the rails. The menu's live panels are an enhancement of a page
 // that has its own reason to exist; a database blip must not turn a street page into a 500.
 import { getMegaLive } from "@/lib/megaLive";
-import type { MegaLive } from "./megaTypes";
+import type { MegaLive, NavContext } from "./megaTypes";
 import SiteNav from "./SiteNav";
 
-export default async function SiteNavLive({ variant = "page" }: { variant?: "home" | "page" }) {
+/** `context` is the page's subject (a street, a hub): the CTA, the brief form and the strips
+ *  follow it. See NavContext in megaTypes.ts. */
+export default async function SiteNavLive({ variant = "page", context }: { variant?: "home" | "page"; context?: NavContext }) {
   let live: MegaLive | undefined;
   try {
-    live = await getMegaLive();
+    live = await getMegaLive(context);
   } catch (e) {
     console.error("[nav] live menu content unavailable, rendering rails only:", e instanceof Error ? e.message : e);
   }
-  return <SiteNav variant={variant} live={live} />;
+  return <SiteNav variant={variant} live={live} context={context} />;
 }

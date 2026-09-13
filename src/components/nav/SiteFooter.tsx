@@ -14,16 +14,18 @@
 // hub list short, which is the right outcome for a served page with a broken footer.
 import { getHubFooter, HUB_BRAND } from "@/lib/hubFooter";
 import type { FooterData } from "@/components/home/types";
+import type { NavContext } from "./megaTypes";
 import { HomeFooter } from "../home/HomeFooter";
 
-const EMPTY: FooterData = { neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0 };
+const EMPTY: FooterData = { neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0, guides: [], schoolCount: 0, mosqueCount: 0, edition: null };
 
-export default async function SiteFooter() {
+/** `context` is the page's subject; the footer's brief form records it. See NavContext. */
+export default async function SiteFooter({ context }: { context?: NavContext } = {}) {
   let footer: FooterData = EMPTY;
   try {
     footer = await getHubFooter();
   } catch (e) {
     console.error("[footer] link graph unavailable, rendering fixed columns only:", e instanceof Error ? e.message : e);
   }
-  return <HomeFooter footer={footer} brand={HUB_BRAND} />;
+  return <HomeFooter footer={footer} brand={HUB_BRAND} context={context} />;
 }

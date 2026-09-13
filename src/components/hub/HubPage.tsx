@@ -58,7 +58,7 @@ export function HubPage({
   const guides = guidesForHub({ condoHeavy: data.condos.length > 0 || data.compareFacts?.hasFee === true, hubSlug: data.slug });
   return (
     <div className="hub-v2 hub-v3">
-      <SiteNavLive variant="page" />
+      <SiteNavLive variant="page" context={{ hub: { slug: data.slug, name: data.name } }} />
       <HubHero data={data} />
       <HubGlance data={data} />
       <HubVideoStreets data={data} />
@@ -71,7 +71,7 @@ export function HubPage({
       <GuideUplinks guides={guides} context={data.name} variant="hub" />
       <HubSiblings data={data} />
       <HubDualCta data={data} />
-      <HomeFooter footer={footer} brand={brand} />
+      <HomeFooter footer={footer} brand={brand} context={{ hub: { slug: data.slug, name: data.name } }} />
     </div>
   );
 }

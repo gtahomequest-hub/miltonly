@@ -30,6 +30,15 @@
 //   strip, a form) and its CTA. No rail item may lead to an empty panel, and the first item
 //   must be the one selected before anybody touches anything.
 //
+//   THE CHROME BEFORE HYDRATION (MH-006, MA-004 change 5). With JavaScript off, at 380 the
+//   burger opens a menu carrying the search and every destination, and the search form lands
+//   on the street it names; at 1440 the bar search does the same. The served HTML must carry
+//   the bar search, the compact menu, the skip link and the nav's label.
+//
+//   THE PAGE IN THE CHROME (changes 6 and 10). On a street page the bar CTA carries the
+//   street and the strips name it; on a hub the CTA is the hub's valuation page and the
+//   Streets strip is that hub's streets; every rail item carries a sub-label.
+//
 // A parser that reaches nothing must fail on its own coverage. Every count below is asserted
 // against the number of pages or widths it was supposed to read.
 import { get } from '../lib/http.mjs';
@@ -44,12 +53,14 @@ const MENU_INDEX = { buy: '/listings', streets: '/streets', sell: '/sell' };
 /** The rail, as the brief states it. Open houses are absent on purpose: see megaLive.ts. */
 const ITEMS = {
   buy: ['new', 'changes', 'condos', 'freehold', 'rentals', 'alerts'],
-  streets: ['hoods', 'video', 'az', 'search'],
+  streets: ['search', 'hoods', 'video', 'az'],
   sell: ['worth', 'soldmtd', 'watch'],
 };
 /** What counts as live content inside an item's panel. A CTA alone does not. */
 const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-edition, .m-mega-strip a, .m-mega-figs dd, form.m-mega-search';
 const TYPE_FLOOR_PX = 14;
+/** The fixed bar's height; the phone panel sits under it. */
+const BAR_PX = 66;
 
 /** The <nav> element's own markup. */
 function navMarkup(html) {
@@ -426,6 +437,10 @@ const CONTRAST_WIDTHS = [
   { w: 380, h: 780 },
   { w: 1440, h: 900 },
 ];
+const NOSCRIPT_WIDTHS = [
+  { w: 380, h: 780 },
+  { w: 1440, h: 900 },
+];
 const CONTRAST_JS = `
   const lum = (r, g, b) => {
     const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
@@ -477,8 +492,11 @@ async function driveMobile(page, url, w, h, findings) {
     return { top: Math.round(b.top), h: Math.round(b.height), w: Math.round(b.width), vw: innerWidth, vh: innerHeight, pos: getComputedStyle(p).position };
   });
   if (!r) { findings.push(`${tag}: burger did not open the panel`); return; }
-  if (r.pos !== 'fixed' || r.top !== 0 || Math.abs(r.h - r.vh) > 20 || r.w !== r.vw)
-    findings.push(`${tag}: phone panel is ${r.w}x${r.h} at top ${r.top} (${r.pos}) in a ${r.vw}x${r.vh} viewport`);
+  // under the 66px bar, not over it: the burger stays on screen as the close control
+  if (r.pos !== 'fixed' || Math.abs(r.top - BAR_PX) > 2 || Math.abs(r.h - (r.vh - BAR_PX)) > 20 || r.w !== r.vw)
+    findings.push(`${tag}: phone panel is ${r.w}x${r.h} at top ${r.top} (${r.pos}) in a ${r.vw}x${r.vh} viewport, expected under the ${BAR_PX}px bar`);
+  const acc0 = await page.$('.sn-panel .sn-acc');
+  if (!acc0) findings.push(`${tag}: the open phone panel did not swap the compact menu for the accordion`);
 
   // open every accordion and read the live content behind it
   const acc = await page.evaluate((floor) => {
@@ -551,8 +569,60 @@ async function driveMobile(page, url, w, h, findings) {
 
   await page.keyboard.press('Escape');
   await sleep(300);
-  const still = await page.$('.sn-panel');
-  if (still) findings.push(`${tag}: Escape did not close the phone panel`);
+  const still = await page.evaluate(() => {
+    const d = document.querySelector('.sn-mobile');
+    const p = document.querySelector('.sn-panel');
+    return { open: d ? d.open : null, shown: !!(p && p.getBoundingClientRect().height > 0) };
+  });
+  if (still.open || still.shown) findings.push(`${tag}: Escape did not close the phone panel (open=${still.open}, shown=${still.shown})`);
+}
+
+/** THE CHROME WITH JAVASCRIPT OFF (MH-006, MA-004 change 5 and defect 6). Measured on
+ *  production, the menu did not exist until hydration, four to ten seconds on a phone. Now
+ *  the burger is a <summary> and the search is a real GET: with scripting disabled, a tap
+ *  opens a menu with the search and every destination, and the search form lands on the
+ *  street it names, at 380 through the panel and at 1440 through the bar. */
+async function driveNoScript(page, url, w, h, streetSlug, findings) {
+  const tag = `${w} ${url} no-js`;
+  await page.setJavaScriptEnabled(false);
+  try {
+    await page.setViewport({ width: w, height: h });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+    const mobile = w < 820;
+    if (mobile) {
+      await page.click('.sn-burger');
+      await sleep(300);
+      const r = await page.evaluate(() => {
+        const d = document.querySelector('.sn-mobile');
+        const p = document.querySelector('.sn-panel');
+        const b = p ? p.getBoundingClientRect() : null;
+        return {
+          open: !!(d && d.open),
+          shown: !!(b && b.height > 100 && b.width > 0),
+          links: p ? p.querySelectorAll('a[href]').length : 0,
+          search: !!p?.querySelector('form[action="/search"] input[name="q"]'),
+          cta: !!p?.querySelector('.sn-panel-cta'),
+        };
+      });
+      if (!r.open || !r.shown) findings.push(`${tag}: the burger did not open the panel without JavaScript (open=${r.open}, shown=${r.shown})`);
+      if (r.links < 12) findings.push(`${tag}: the no-JS menu carries ${r.links} links, expected at least 12`);
+      if (!r.search) findings.push(`${tag}: the no-JS menu has no search form posting to /search`);
+      if (!r.cta) findings.push(`${tag}: the no-JS menu has no CTA`);
+    }
+    // the search: type the street's slug words and submit the form natively
+    const input = mobile ? '.sn-panel form[action="/search"] input[name="q"]' : 'nav form.m-navsearch input[name="q"]';
+    const el = await page.$(input);
+    if (!el) { findings.push(`${tag}: no search input at ${input}`); return; }
+    const q = streetSlug.replace(/-milton$/, '').replace(/-/g, ' ');
+    await el.type(q);
+    await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 60000 }), page.keyboard.press('Enter')]);
+    const landed = new URL(page.url()).pathname;
+    if (landed !== `/streets/${streetSlug}`) findings.push(`${tag}: searching "${q}" without JavaScript landed on ${landed}, expected /streets/${streetSlug}`);
+  } catch (e) {
+    findings.push(`${tag}: ${e.message.split('\n')[0]}`);
+  } finally {
+    await page.setJavaScriptEnabled(true);
+  }
 }
 
 export default {
@@ -569,12 +639,46 @@ export default {
     const read = [];
     const nonButton = [], badAria = [], missingPanel = [], notHidden = [], noCta = [], noStrip = [], sameStrip = [];
     const badFig = [], hubMiss = [], redirectLinks = [], deadLinks = [], railBad = [], emptyItems = [];
+    const chrome = [], contextBad = [], subMiss = [];
     const allHrefs = new Set();
+    const hubSlug = hubRecord.publishedSlugs[0];
     for (const path of pages) {
       const r = await get(base + path);
       if (r.status !== 200) { read.push(`${path} -> ${r.status}`); continue; }
       const nav = navMarkup(r.body);
       read.push(`${path} ok`);
+
+      // THE CHROME BEFORE HYDRATION, in the served HTML: the nav's label, the skip link, the
+      // bar search as a real form, the phone menu as a <details> with a compact menu inside
+      if (!/<nav\b[^>]*aria-label="/.test(nav)) chrome.push(`${path}: <nav> has no aria-label`);
+      if (!/class="sn-skip"/.test(nav)) chrome.push(`${path}: no skip link`);
+      if (!/<form\b[^>]*class="m-navsearch[^"]*"[^>]*action="\/search"[^>]*method="get"/.test(nav)) chrome.push(`${path}: the bar search is not a GET form to /search`);
+      if (!/<details\b[^>]*class="sn-mobile"/.test(nav)) chrome.push(`${path}: the phone menu is not a <details>`);
+      if (!/<summary\b[^>]*class="sn-burger"/.test(nav)) chrome.push(`${path}: the burger is not a <summary>`);
+      const compactAt = nav.indexOf('class="sn-compact"');
+      const compact = compactAt === -1 ? '' : nav.slice(compactAt, nav.indexOf('</details>', compactAt));
+      if (!compact) chrome.push(`${path}: no compact menu in the served HTML`);
+      else {
+        if (hrefsIn(compact).length < 12) chrome.push(`${path}: the compact menu carries ${hrefsIn(compact).length} links`);
+        if (!/action="\/search"/.test(compact)) chrome.push(`${path}: the compact menu has no search form`);
+      }
+      // /saved is a sign-in wall: it left the nav
+      if (hrefsIn(nav).includes('/saved')) chrome.push(`${path}: the nav still links /saved`);
+
+      // THE PAGE IN THE CHROME: the CTA and the strips follow the street or the hub
+      const barCta = (nav.match(/<a\b[^>]*class="m-navcta"[^>]*href="([^"]+)"/) || [])[1] || '';
+      const stripLabels = [...nav.matchAll(/<div class="m-mega-strip"><span class="m-mega-label">([^<]+)</g)].map((m) => m[1]);
+      if (path.startsWith('/streets/')) {
+        if (!barCta.startsWith('/sell?street=')) contextBad.push(`${path}: bar CTA is ${barCta || 'absent'}, expected /sell?street=`);
+        if (!stripLabels.some((l) => /^(Streets that meet|Most sales in) /.test(l))) contextBad.push(`${path}: no strip names the street's neighbours or its hub (${stripLabels.join(' | ')})`);
+      } else if (path.startsWith('/neighbourhoods/')) {
+        if (barCta !== `/value/${hubSlug}`) contextBad.push(`${path}: bar CTA is ${barCta || 'absent'}, expected /value/${hubSlug}`);
+        if (!stripLabels.some((l) => l.startsWith('Streets in '))) contextBad.push(`${path}: no strip is the hub's streets (${stripLabels.join(' | ')})`);
+      } else if (barCta !== '/sell') contextBad.push(`${path}: bar CTA is ${barCta}, expected /sell`);
+      // the rail reads at a glance: a sub-label on the tabs
+      const tabs = (nav.match(/<button\b[^>]*role="tab"/g) || []).length;
+      const subs = (nav.match(/class="m-mega-tabsub"/g) || []).length;
+      if (subs < tabs - 1) subMiss.push(`${path}: ${subs} of ${tabs} rail tabs carry a sub-label`);
       const triggers = [...nav.matchAll(/<([a-z]+)\b[^>]*class="[^"]*m-navtrigger[^"]*"[^>]*>/g)];
       if (triggers.length !== 3) nonButton.push(`${path}: ${triggers.length} triggers`);
       for (const t of triggers) {
@@ -605,8 +709,9 @@ export default {
         }
         if (shownPanels !== 1) railBad.push(`${path}: ${key} serves ${shownPanels} visible item panels, expected 1`);
         // every item carries its own CTA; at least one of them is the menu's index page
-        const ctas = [...p.body.matchAll(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
-        if (!ctas.includes(MENU_INDEX[key])) noCta.push(`${path}: ${key} CTAs ${ctas.join(' ') || 'absent'}, none is ${MENU_INDEX[key]}`);
+        const ctas = [...p.body.matchAll(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/g)].map((m) => m[1].replace(/[?#].*$/, ''));
+        const indexOk = ctas.includes(MENU_INDEX[key]) || (key === 'sell' && ctas.some((c) => c.startsWith('/value/')));
+        if (!indexOk) noCta.push(`${path}: ${key} CTAs ${ctas.join(' ') || 'absent'}, none is ${MENU_INDEX[key]}`);
         const stripAt = p.body.indexOf('m-mega-strip');
         const strip = stripAt === -1 ? '' : p.body.slice(stripAt);
         const stripLinks = hrefsIn(strip).filter((h) => h.startsWith('/streets/'));
@@ -665,13 +770,17 @@ export default {
             runs++;
           }
         }
+        for (const v of NOSCRIPT_WIDTHS) {
+          await driveNoScript(page, base + '/streets', v.w, v.h, slugs[0], findings);
+          runs++;
+        }
       } finally {
         await browser.close();
       }
     } catch (e) {
       browserError = e.message;
     }
-    const expectedRuns = 2 * WIDTHS.length + SCROLL_WIDTHS.length + pages.length * CONTRAST_WIDTHS.length;
+    const expectedRuns = 2 * WIDTHS.length + SCROLL_WIDTHS.length + pages.length * CONTRAST_WIDTHS.length + NOSCRIPT_WIDTHS.length;
 
     return {
       coverage: [
@@ -693,10 +802,13 @@ export default {
         ['pages missing a hub count', hubMiss.length, 0],
         ['panel hrefs that redirect', redirectLinks.length, 0],
         ['panel hrefs that fail', deadLinks.length, 0],
+        ['served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu', chrome.length, 0],
+        ['pages whose CTA or strips do not follow the street or the hub', contextBad.length, 0],
+        ['pages whose rail tabs lack sub-labels', subMiss.length, 0],
         ['browser runs completed', runs, expectedRuns],
-        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, CTA contrast)', findings.length, 0],
+        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, CTA contrast, no-JS)', findings.length, 0],
       ],
-      examples: [
+      examples: [...chrome, ...contextBad, ...subMiss, 
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,
         ...sameStrip.map((p) => `identical strips on ${p}`),
         ...railBad, ...emptyItems, ...badFig, ...hubMiss, ...redirectLinks, ...deadLinks, ...findings,

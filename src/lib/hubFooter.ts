@@ -16,7 +16,11 @@
 import { prisma } from "@/lib/prisma";
 import { surfacedStreetWhere, publishedStreetPageCount } from "@/lib/streetSurface";
 import { resolveStreetName } from "@/lib/streetName";
-import type { FooterData, TrustInfo } from "@/components/home/types";
+import { GUIDE_DEFS } from "@/lib/guides/guides";
+import { schools } from "@/lib/schools";
+import { mosques } from "@/lib/mosques";
+import { formatDateProse } from "@/lib/figureFormat";
+import type { FooterData, FooterMap, TrustInfo } from "@/components/home/types";
 
 /** Same user-confirmed business facts getHomepageData() carries. */
 export const HUB_BRAND: TrustInfo = {
@@ -27,8 +31,25 @@ export const HUB_BRAND: TrustInfo = {
   vow: "1848370",
 };
 
+/** THE MAP (MA-004 change 9). The eight guides and the school and mosque counts are the
+ *  registries' own; the edition is the latest published row. The homepage's footer and every
+ *  other page's share this read, so the two footers cannot list different guides. */
+export async function getFooterMap(): Promise<FooterMap> {
+  const edition = await prisma.marketEdition.findFirst({
+    where: { status: "published" },
+    orderBy: { weekOf: "desc" },
+    select: { weekOf: true },
+  });
+  return {
+    guides: GUIDE_DEFS.map((g) => ({ slug: g.slug, title: g.title })),
+    schoolCount: schools.length,
+    mosqueCount: mosques.length,
+    edition: edition ? { weekOf: edition.weekOf, label: `Week of ${formatDateProse(edition.weekOf)}` } : null,
+  };
+}
+
 async function computeHubFooter(): Promise<FooterData> {
-  const [publishedHubs, vipRows, streetPageCount, totalNbhd] = await Promise.all([
+  const [publishedHubs, vipRows, streetPageCount, totalNbhd, map] = await Promise.all([
     prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
     prisma.residentialStreet.findMany({
       where: { isVip: true, ...(await surfacedStreetWhere()) },
@@ -38,6 +59,7 @@ async function computeHubFooter(): Promise<FooterData> {
     }),
     publishedStreetPageCount(),
     prisma.neighbourhood.count(),
+    getFooterMap(),
   ]);
 
   const hoods = await prisma.neighbourhood.findMany({
@@ -47,6 +69,7 @@ async function computeHubFooter(): Promise<FooterData> {
   });
 
   return {
+    ...map,
     neighbourhoods: hoods.map((n) => ({ name: n.name, slug: n.slug })),
     topStreets: vipRows.map((s) => ({ name: resolveStreetName(s.slug, s.name).name, slug: s.slug })),
     neighbourhoodCount: totalNbhd,

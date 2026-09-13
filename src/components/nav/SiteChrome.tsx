@@ -5,9 +5,11 @@
 // not suppress, and each of those pages ended without a footer. Navbar is deleted; the pages
 // that leaned on it (about, exclusive, privacy, terms, rent, rentals, saved, signin, admin)
 // wrap their body in this instead and get the same bar and the same map every forest page
-// has. The 66px offset clears the fixed bar the way every forest theme's hero does.
+// has, and (site-chrome.css) the forest tokens and Fraunces headings for the body between
+// them. The 66px offset clears the fixed bar the way every forest theme's hero does.
 import SiteNavLive from "./SiteNavLive";
 import SiteFooter from "./SiteFooter";
+import "./site-chrome.css";
 
 export default function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
