@@ -84,7 +84,7 @@ ok(shapedZero.split("differentPriorities").length - 1 === 1, "zero-price: exactl
 for (const t of OWN_PRICE_FAQ_TEMPLATES) ok(!shapedZero.includes(`- "${t}"\n`), `zero-price: withdrawn question is out of the bank: ${t}`);
 ok(shapedZero.includes("- PRICE cluster: WITHDRAWN"), "zero-price: the price-cluster rule is withdrawn");
 ok(shapedZero.includes("- RENTAL cluster: WITHDRAWN"), "zero-price: the rental-cluster rule is withdrawn");
-ok(shapedZero.includes("- INVESTOR cluster: WITHDRAWN"), "zero-price: the investor-cluster rule is withdrawn");
+ok(shapedZero.includes("- LEASE COUNT cluster: WITHDRAWN"), "zero-price: the lease-count-cluster rule is withdrawn");
 ok(shapedZero.includes('- "Which schools are close to {Street}?"'), "zero-price: a question that needs no figure stays");
 ok(shapedZero.includes('- "How far is {Street} from Toronto?"'), "zero-price: the commute questions stay");
 

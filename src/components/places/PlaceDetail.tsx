@@ -5,7 +5,7 @@
 // -> siblings -> FAQ -> CTA -> Footer. Domain-specific fields (Fraser, services)
 // are typed props, not hardcoded into the shell.
 import Link from "next/link";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import { config } from "@/lib/config";
 import type { PlaceDetailProps } from "./types";
@@ -22,7 +22,7 @@ export default function PlaceDetail(props: PlaceDetailProps) {
 
   return (
     <div className="places-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
 
       <div className="pl-crumb">
         <div className="pl-wrap">

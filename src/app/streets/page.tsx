@@ -17,7 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import { formatPriceFull } from "@/lib/format";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
@@ -160,7 +160,7 @@ export default async function StreetsIndexPage() {
 
   return (
     <div className="dir-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
 
       <section className="dir-hero">
         <div className="dir-wrap">

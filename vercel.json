@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)scratchpad/audit/nightly'",
   "crons": [
     {
       "path": "/api/sync/detect?secret=miltonly-cron-2026",
@@ -67,6 +68,14 @@
     {
       "path": "/api/content/market-watch",
       "schedule": "0 13 * * 1"
+    },
+    {
+      "path": "/api/digest/leads",
+      "schedule": "0 11 * * 1"
+    },
+    {
+      "path": "/api/digest/leads",
+      "schedule": "0 12 * * 1"
     }
   ]
 }

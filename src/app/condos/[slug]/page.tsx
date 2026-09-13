@@ -16,6 +16,7 @@ import { buildBuildingAttributes } from "@/lib/ai/buildBuildingAttributes";
 import { composeCondoBrief } from "@/lib/ai/condoBrief";
 import { toCondoView } from "@/lib/ai/condoView";
 import BuildingAttributesPage from "@/components/condo/BuildingAttributesPage";
+import { getMegaLive } from "@/lib/megaLive";
 import { isCondoPilot } from "@/lib/condoPilots";
 import { resolveCondoName } from "@/lib/condoName";
 
@@ -101,7 +102,7 @@ export default async function CondoBuildingPage({ params }: Props) {
     return (
       <>
         <SchemaScript schemas={schemas} />
-        <BuildingAttributesPage view={view} />
+        <BuildingAttributesPage view={view} live={await getMegaLive().catch(() => undefined)} />
         <FooterSection />
       </>
     );

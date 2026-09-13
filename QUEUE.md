@@ -20,6 +20,8 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 
 *Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 done**, merged as `543ef99` (merges `26381f9`; ML-001 fast-forwarded `feat/leads` to `00e0eb1` and set `BRIEF_UNSUBSCRIBE_SECRET`): all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
+*Out-of-queue work 2026-09-12: MC-016, the Neon egress recon. Recon only, no code. Neon's per-day consumption endpoint is Scale-plan only; measured with `pg_stat_statements` (now on DB1 and DB2) instead: ≈ 0.15 GB per battery run, `/streets`, the published-slug sets, `/rentals` and the `Neighbourhood`/`HubContent` sets are the heavy readers; ceiling proposed 16 GB/month. Record in `scratchpad/reports/MC-016-neon-egress-recon.md`. MC-017 (Vercel build cost, `fix/build-cost`) and item 6 (MC-015, `feat/video-playbook`) are next, in that order.*
+
 ---
 
 ## 1. Naming close-out and hygiene
@@ -211,6 +213,12 @@ Populate solar exposure, surface, lanes, sidewalk, maxspeed, length, and terminu
 
 *Built 2026-09-11 (MC-004) on `feat/geometry` at `b0d424b`, preview `miltonly-ra87zyzmu`, battery `PASS · 13 checks · 449 pages`. Merged 2026-09-11 (MC-005) as `142b9a9`. 447 of 449 published streets render a Road facts card; 2,646 facts, every one equal to the layer row. Record in `scratchpad/reports/MC-004-merge-queue-geometry.md`.*
 
+*MC-014, 2026-09-12: hubs v2 merged as `05bc914` (approved), core batch 3 merged as `f01a96a`, production `PASS · 16 checks · 489 pages`. Nothing waits on a merge. Record in `scratchpad/reports/MC-014-hubs-and-batch-3-on-main.md`.*
+
+*MC-012, 2026-09-12: three merges by SHA (`3d905a6`, `798f610`, `94ddc49`); core batch 3 on `fix/core-batch-3` `bf4f8b3` (board never family, judge non-violation labels, hub meta without em-dashes, scoped /rentals, the overflow page retired to a 301, parking and GO up-links, the `sources-fresh` check), preview 15/15, not merged. Record in `scratchpad/reports/MC-012-merges-core-batch-3.md`.*
+
+*MC-011, 2026-09-11/12: five merges by SHA (`9ba0811`, `9c8b520`, `e71a7f6`, `625e000`, `d01787f`), production 14/14 at `2a89120`; the three judge rulings built on `fix/judge-rulings` `1b4ab5d` (investor question out, K-gated lease count in; option not resident; one retry on an unparseable judge reply), preview 14/14; 13 of the 15 judge-refused crossed streets republished ($0.1549), 21 of 23 now on the repaired sample. Record in `scratchpad/reports/MC-011-merges-judge-rulings.md`.*
+
 *MC-009 and MC-010, 2026-09-11: `e12b1b6` merged as `f347001`; the judge verdict persisted (`feat/judge-verdict`, migration applied), the seven clips uploaded with two re-keyed and the orphan retired (`feat/video-rekey`), 8 of the 23 k-crossed streets republished on DeepSeek ($0.2770), a validator false positive fixed (`fix/comparator-park-mask`), and the sold sync's two-cache purge proven on preview (`fix/sold-sync-purge`); four branches wait on merges. Record in `scratchpad/reports/MC-009-judge-video-regen.md`.*
 
 *MC-005, 2026-09-11: five merges by SHA (`cbea785`, `142b9a9`, `1f0915e`, `bfb78f3`, `854ffd3`), production green at `bfb78f3` with 13 checks, `AI_PROVIDER_MARKET=deepseek` on Production and Preview, the evaluative prompt shaped to the input (`src/lib/ai/evalPromptShape.ts`), the programme re-queued and building on the cron: 14 pages today for $0.3270, 20 a day, DeepSeek first. Record in `scratchpad/reports/MC-005-merges-provider-prompt-programme.md`.*
@@ -340,6 +348,7 @@ Records: `scratchpad/reports/062-homepage-gate-a.md` (recon),
 *Report numbering collided with the leads worktree, which used 062 and 063 on the same days.
 Both sets are in the repo under different slugs. Numbers are no longer unique across worktrees.*
 
+- [x] **THE MEGA MENU, DONE 2026-09-11 (MH-002, merged as `d01787f`, branch head `3ec8b51`, approved by Aamir).** The left rail is a tablist driving one live panel per item (Buy / Streets / Sell), every panel server-rendered from `src/lib/megaLive.ts`, gated in a browser at three widths; on a phone each item is a nested `<details>`. Record in `scratchpad/reports/MH-002-menu-v2.md`.
 - [x] **The header emits crawlable links.** Three menus (Buy / Streets / Sell), every trigger a
       real `<a href>`, every panel server-rendered and closed with `hidden`. The popover is
       progressive enhancement; below 820px the same links are native `<details>` accordions.
@@ -380,6 +389,40 @@ Both sets are in the repo under different slugs. Numbers are no longer unique ac
       `permAdvertise AND status='active'` with no city and no transaction-type filter. Exactly
       right today (448 either way), so latent rather than wrong. Needs a decision.
 - [ ] **380px is sized for, not visually verified.**
+
+---
+
+## Out of queue, 2026-09-11: the neighbourhood hub rebuild (MH-004), DONE
+
+**Merged 2026-09-12 (MC-014) as `05bc914`, branch head `26af26b`, approved by Aamir, full gate exit 0.**
+
+Not a numbered item. Prompted directly in the home worktree (`D:\miltonly-home`) on
+`feat/hubs-v2`, per the rulings on report 065. Record in
+`scratchpad/reports/MH-004-hub-rebuild.md` (preview URL, three hub URLs, head SHA, battery).
+The branch stacks on `feat/menu-v2@3ec8b51`; merging its SHA lands the menu too.
+
+- [x] **Static glance claims replaced with derived facts or dropped.** Typical with basis and
+      count, streets with a page, streets filmed, schools inside the Town polygon, homes for
+      sale today, dominant housing form as a share of sales. Each carries its basis under the
+      figure and links to the rows behind it. `suits`, `commute`, `schools` prose is gone.
+- [x] **The ladder is every published street** at the street page's own k-gated typical,
+      "sample too small to publish" below k, sold count always. Pooled on `deriveIdentity`,
+      graduated 12mo then full record, rounded the same way; the gate asserts the rendered
+      strings equal the street page's, row by row (468 rows, 0 differ).
+- [x] **Intent squares with real destinations**: the filtered feed, `/value/<slug>`,
+      `/rentals`, `/sold?nbhd=<slug>`, two of them carrying live counts.
+- [x] **Three rungs, video first**: the film strip (every filmed street in the hub), the
+      ladder (marks filmed streets), the A-to-Z index.
+- [x] **Guides linked up** (MC-003's block, kept).
+- [x] **Nearest neighbourhoods by position**, distance printed, from the Town polygons.
+- [x] **The hub gate**: `scripts/verify/checks/hub-page.mjs`, 18 assertions. Every figure
+      declares source/format/tolerance, every link resolves (699 targets), ladder == published
+      set, JSON-LD present and mirroring the ladder.
+- [x] **The homepage footer's two redirecting links are replaced** (`/map`, `/book`).
+- [ ] **Merge**, on Aamir's approval of the preview. Core merges the SHA.
+- [ ] **The overflow page** `/neighbourhoods/<slug>/streets` is now a sorted duplicate of the
+      hub's own ladder above the cap. Keep as the A-to-Z rung, or retire: Core's call.
+- [ ] **`/rentals` takes no neighbourhood filter**, so "I'm renting" is Milton-wide.
 
 ---
 
@@ -467,3 +510,5 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
 - [ ] **192 For Sale and 53 For Lease rows carry a future `sold_date`**, furthest 2027-01-29.
       A Core data bug, logged not fixed. Every Content window is bounded, so nothing in this
       tier publishes them
+
+*Out-of-queue work 2026-09-12, MA-001, the street-page AUDIT in the `D:\miltonly-audit` worktree on `feat/audit`. Read-only against production: ten streets, two widths, Puppeteer and Lighthouse, a cache sweep of all 490 pages, and a benchmark against Rightmove, Zoopla, HouseSigma, Zolo, Realtor.ca and Zillow. Thirty defects ranked and ten changes in priority order for core to take; nothing built. Not a queue item, prompted directly. Record in `scratchpad/reports/MA-001-street-page-audit.md`, state in `HANDOFF-audit.md`.*

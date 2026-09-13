@@ -9,7 +9,7 @@
 
 import './listings-theme.css';
 import type { ListingsV2Data } from './types';
-import { SiteNav } from '../../nav/SiteNav';
+import SiteNavLive from '../../nav/SiteNavLive';
 import { ResultsClient } from './ResultsClient';
 import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
 import { COMPARE_TEASER } from '@/lib/comparisonData';
@@ -41,7 +41,7 @@ export function ListingsV2Page({
 }) {
   return (
     <div className="listings-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <ListingsHero data={data} basePath={basePath} />
       <StatsBand data={data} />
       <ResultsClient data={data} basePath={basePath} />

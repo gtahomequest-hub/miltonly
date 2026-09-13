@@ -2,48 +2,80 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-11 (MC-009, with MC-010 folded in): the fail-closed merge on main, four branches built and proven and waiting on merges, the seven clips up, the sold-sync purge proven on preview._
+_Last rewritten 2026-09-12 (MC-016): Neon egress recon done, no code; MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
 
 ## READ THIS FIRST
 
-**MAIN IS `f347001` (merge of `e12b1b6`) AND PRODUCTION SERVES IT.** A page the judge refuses is
-now a failed attempt in the queue. Record: `scratchpad/reports/MC-009-judge-video-regen.md`.
+**MAIN IS `f01a96a` AND PRODUCTION SERVES IT, `PASS · 16 checks · 489 pages · 596s`.** Two
+merges by SHA on 2026-09-12: `05bc914` (hubs v2 `26af26b`, approved; marked done in QUEUE.md)
+and `f01a96a` (core batch 3 `bf4f8b3`). Three conflicts between them, all resolved by keeping
+both intents: the runner carries both new checks (`hub-page`, `sources-fresh`); the rebuilt
+hub's renting square is scoped to `/rentals?neighbourhood=<slug>`; the ladder's third rung goes
+to `/streets` for every hub because the per-hub overflow page now 301s to the ladder. Record:
+`scratchpad/reports/MC-014-hubs-and-batch-3-on-main.md`.
 
-**FOUR BRANCHES WAIT ON MERGES, EACH BUILT EXIT 0, NONE MERGED:**
-- `feat/judge-verdict` `25b59a6`: `StreetGeneration.judgeVerdict` `{ result, round, rounds[] }`
-  written on every run by cron and local runners alike. **The migration is applied** (27, clean).
-- `fix/comparator-park-mask` `db3be15`: a grounded park name ("Bronte Meadows Park") no longer
-  reads as a comparator placement claim; a real one still does.
-- `feat/video-rekey` `dde23bd`: a superseding clip goes under `streets/<slug>/<YYYYMMDD>/`, the
-  old objects are deleted after production serves the new URL, orphans retire.
-- `fix/sold-sync-purge` `67fcf7f`: MC-010, below.
-`package.json`'s prebuild line will conflict trivially between the first two and the fourth: union.
-`3ec8b51` (menu v2) is also waiting, on Aamir's word.
+**NOTHING WAITS ON A MERGE.** Every branch opened this week is on main.
 
-**THERE ARE TWO CACHES BEHIND EVERY SOLD FIGURE, AND THE SECOND WAS INVISIBLE.** Upstash under
-`cached()` for an hour, and Next's Data Cache over the Neon HTTP client for an hour
-(`src/lib/db.ts`, `next: { revalidate: 3600 }`), keyed by the SQL text. Measured: Upstash key
-deleted, table at 60, production rendered 59 four times in twenty seconds. On the branch the
-sold sync purges Upstash (exact keys plus per-street and per-neighbourhood prefixes for what it
-wrote, with a settle pass) and the sold route drops the `db2` tag; `/api/revalidate` takes
-`{ tag: "db2" | "db3" }`. Proven on preview `miltonly-4rwyyu3vn`: stale 59 against 60, one sync,
-60 with no wait. **DB3 (analytics) reads sit in the same hour** under `db3`; nothing drops that
-tag yet.
+**NEON EGRESS (MC-016, recon only, `scratchpad/reports/MC-016-neon-egress-recon.md`).** Neon's
+per-day consumption endpoint is Scale-plan only (403); the month-to-date counters say DB1 46.4 GB,
+DB2/DB3 1.8 GB, and they lag by hours, so the "101 GiB yesterday" console figure could not be
+reconciled from the API. Measured instead with `pg_stat_statements`, **now enabled on DB1 and
+DB2** (statistics only; `DROP EXTENSION pg_stat_statements` removes it): one full battery costs
+≈ 0.15 GB, its own loaders 0.29 MB; the rows leave through the renders it triggers. The four
+heavy readers, in order: `/streets` (`force-dynamic`, in-memory `distinct` pulls every Milton
+listing, 3,414 rows a render, 57 renders in the window), `publishedStreetPageSlugs()` and the
+`ResidentialStreet` floor (490 + 963 rows on nearly every render, 18 call sites), `/rentals`
+(66,712 rows scanned a render, uncached), and the `Neighbourhood`/`HubContent` sets fetched 2,600
+times a window. Proposals and a 16 GB/month ceiling are in the report. **No code was changed.**
 
-**THE JUDGE IS THE PROGRAMME'S LIMITING GATE, AND ITS VERDICTS ARE NOW READABLE.** 23 crossed
-streets regenerated: 8 republished, 13 refused by the judge, among them two FAQ-bank questions
-("Is Derry Road a good fit for investors?") and "most residents" commute sentences tagged as
-tenure characterization, plus one truncated judge reply counted as a refusal. Rulings needed:
-the investor question in the bank, the commute sentences, a retry on an unparseable reply.
+**NEXT, IN ORDER: MC-017 then MC-015.** MC-017 on `fix/build-cost`: `vercel.json` `ignoreCommand`
+skipping docs-only diffs, automatic Git deploys off for every branch but main, street/hub/condo/
+guide pages on on-demand ISR (top 50 by traffic prerendered, `dynamicParams: true`), build minutes
+before and after. MC-015 on `feat/video-playbook` (branch exists, empty): dated keys for all 49
+published clips, captured-at backfill, `sitemap-video.xml`, the coverage sentence, the takedown
+mailto, ffprobe and blur guards in the upload script, the `db3` tag drop after an analytics run,
+and a `video` battery check. Survey facts: only the 7 recent clips have registry start/end in
+`D:/dashcam/work/stage3-match.json`; the other 42 need `clip-coverage.js` with the GPS cache.
 
-**THE SEVEN CLIPS ARE LIVE.** anne-boulevard, bronte-street, commercial-street, heslop-road,
-locker-place (re-keyed), martin-street, nipissing-road (re-keyed). Manifest 173 rows, 49
-published; `bronte-street-south` retired. anne-boulevard and martin-street pages built on
-DeepSeek ($0.0150 and $0.0094; $0.0528 more spent on three failed anne runs, two on the park
-false positive and one on my own mistimed tooling).
+**WHAT LANDED WITH CORE BATCH 3.** The board never the family; the judge cannot refuse on a
+finding it labels not a violation; hub titles and descriptions have no em-dash and the LIVE
+title serves (the stored one carried the old dash); `/rentals?neighbourhood=<hub>`; the overflow
+page 301s and left the sitemap; parking and GO up-links from the guides' own hub rules, held by
+the battery against the guides' down-links; `sources-fresh`, which will fire on 2026-11-28
+(GTFS) and 2026-12-11 (parking pages) by design: refetch, then rebuild.
 
-**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11 (cap 20 per UTC day, holding),
-217 pending, DeepSeek first, hourly.
+**WHAT LANDED WITH HUBS V2 (MH-004).** Glance claims derived or dropped; the ladder is every
+published street at the street page's own k-gated typical (Timberlea: 22 rows = 22 published);
+schools inside the Town polygon; the `hub-page` check.
+
+**THE BATTERY LIES FOR AN HOUR AT A WINDOW EDGE, AND IT LIED ON PRODUCTION TONIGHT.** At 00:00Z
+the 12-month window's trailing edge passed nine rows and `chretien-street` fell from five
+sales to four while its page held the k5 figures; the homepage's neighbourhood typicals were
+served from an entry a pre-tag build had computed from an untagged Data Cache reply. Production
+and the rulings preview failed the same assertions at the same minute on code that had passed
+an hour earlier, and the tagged Data Cache serves one stale reply past its expiry
+(stale-while-revalidate), so "wait an hour" is not enough either. Read a FAIL after a window
+edge or a sold-sync write against production first; if production fails the same lines, it is
+the caches. `scratchpad/mc003/purge-street.ts <slug> <base…>` clears one street on both
+caches and the path; after that the rulings preview passed 14/14.
+
+**THE SOLD SYNC NOW PURGES BOTH CACHES ON MAIN.** Upstash (exact keys, per-street and
+per-neighbourhood prefixes for what it wrote, a settle pass) and the `db2` Data Cache tag,
+dropped by the sold route after a writing run. `/api/revalidate` takes `{ tag: "db2" | "db3" }`.
+**Nothing drops `db3`** (analytics) yet.
+
+**THE JUDGE, NOW READABLE ON EVERY ROW (`StreetGeneration.judgeVerdict`).** Two things its
+verdicts show for a ruling: "For Catholic families …" is how the model names the Catholic
+board's schools and the judge reads it as `religion` (three round-1 refusals tonight, all
+passed on round 2); and on `barclay-circle` it refused with a finding it labelled "amenity
+fact, not a violation". `barclay-circle` and `gordon-krantz-avenue` are the two crossed
+streets still on the suppressed sample.
+
+**THE SEVEN CLIPS ARE LIVE, THE MANIFEST IS 173 ROWS / 49 PUBLISHED**, `bronte-street-south`
+retired. Re-keyed clips live under `streets/<slug>/<YYYYMMDD>/`.
+
+**THE CREATION PROGRAMME IS RUNNING.** 19 pages created 2026-09-11, the cap held; the 00:00Z
+pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 **THE FIGURES MOVE DAILY, SO DO NOT PIN THEM.** The battery asserts each against its own source.
 
@@ -53,12 +85,14 @@ false positive and one on my own mistimed tooling).
 
 | | |
 |---|---|
-| `main` | code SHA **`f347001`**, docs on top |
-| battery on production | **`PASS · 13 checks · 449 pages · 126s`** at `bfb78f3` (2026-09-11); `854ffd3` and `f347001` change the generator and the cron only |
-| `prisma migrate status` | **clean**, 27 migrations (`judgeVerdict` applied 2026-09-11) |
-| waiting on merges | `25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`; `3ec8b51` on approval |
-| creation programme | **running**, 19 created today, 217 pending, cap 20/UTC day |
+| `main` | code SHA **`f01a96a`**, docs on top |
+| battery on production | **`PASS · 16 checks · 489 pages · 596s`** at `f01a96a`, 2026-09-12 |
+| `prisma migrate status` | **clean**, 27 migrations |
+| waiting on merge | nothing |
+| creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
+| Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
+| open tasks | MC-017 (`fix/build-cost`), then MC-015 (`feat/video-playbook`) |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -427,5 +461,5 @@ without the parameter.
 
 ## Next expected task
 
-**Aamir's call on the four merges by SHA** (`25b59a6`, `db3be15`, `dde23bd`, `67fcf7f`) and on
-`3ec8b51`. Then the judge rulings, the `db3` tag drop for the analytics sync, and QUEUE item 6.
+Whatever Aamir names. Open: a `db3` tag drop for the analytics sync; `barclay-circle` and
+`gordon-krantz-avenue` on a later pass; QUEUE item 6.

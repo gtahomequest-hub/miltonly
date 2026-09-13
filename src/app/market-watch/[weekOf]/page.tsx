@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import MarketWatchPage from "@/components/marketwatch/MarketWatchPage";
 import type { EditionSections } from "@/lib/marketWatch/edition";
 import SchemaScript from "@/components/SchemaScript";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import { generateBreadcrumbSchema } from "@/lib/schema";
 
@@ -76,7 +76,7 @@ export default async function EditionPage({ params }: { params: { weekOf: string
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <MarketWatchPage
         s={sections}
         summarySentence={e.summarySentence}

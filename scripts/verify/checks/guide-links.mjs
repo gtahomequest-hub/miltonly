@@ -10,7 +10,7 @@
 // The population for the condo guide is DERIVED FROM THE PAGE, not from a list:
 //   · a street is condo-heavy when its hero renders a condo SALE pill (the lease pill is also
 //     typed condo in the seam, so the match is on the pill's label, not its anchor alone)
-//   · a hub is condo-heavy when it renders the condo-buildings section (h-condos)
+//   · a hub is condo-heavy when it renders the condo-buildings section (h-condos / hh-condos)
 // and the assertion runs in both directions: condo-heavy without the condo guide, and the
 // condo guide without a condo-heavy page, are each a defect.
 //
@@ -28,6 +28,33 @@ const REQUIRED_HUB = [
   '/guides/milton-schools-what-the-data-shows',
 ];
 const CONDO_GUIDE = '/guides/milton-condo-fees-parking-and-lockers';
+// MC-012: the parking and GO guides link DOWN to a set of hubs (the pilot parks' hubs, the hubs
+// within 1.6 km of the station). The up-link population is derived from those pages, not from a
+// list: a hub the guide links to must link back, a hub it does not must not, and a street
+// carries each guide exactly when a hub it names in its "Around" block does.
+const PARKING_GUIDE = '/guides/parking-in-milton';
+const GO_GUIDE = '/guides/milton-go-train-to-toronto';
+
+/** The hub slugs a guide page links down to, from its g-links blocks. */
+function hubsLinkedFrom(raw) {
+  const html = stripScripts(raw);
+  const out = new Set();
+  for (const block of html.matchAll(/<div class="g-links">([\s\S]*?)<\/div>/g)) {
+    for (const m of block[1].matchAll(/href="\/neighbourhoods\/([a-z0-9-]+)"/g)) out.add(m[1]);
+  }
+  return out;
+}
+/** The hubs a street page decided its parking and GO up-links from: declared on the ledger
+ *  (data-hubs), and each one must also be a real /neighbourhoods/<slug> anchor on the page, so
+ *  a page cannot declare a hub it does not itself link to. Returns null when the declared hub
+ *  is not linked anywhere on the page. */
+function streetHubs(raw) {
+  const html = stripScripts(raw);
+  const m = html.match(/<section class="g-up g-up-street"[^>]*data-hubs="([^"]*)"/);
+  const declared = m ? m[1].split(',').filter(Boolean) : [];
+  const linked = new Set([...html.matchAll(/href="\/neighbourhoods\/([a-z0-9-]+)"/g)].map((x) => x[1]));
+  return { declared, undeclaredLink: declared.filter((h) => !linked.has(h)) };
+}
 
 const stripScripts = (raw) => raw.replace(/<script[\s\S]*?<\/script>/g, ' ');
 
@@ -37,7 +64,9 @@ function guideHrefs(raw) {
 }
 const streetIsCondoHeavy = (raw) =>
   /<a class="s-pill" href="#type-condo"><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
-const hubIsCondoHeavy = (raw) => /class="h-condos"/.test(stripScripts(raw));
+// Both the legacy hub markup (h-condos) and the 2026-09-11 rebuild (hh-sec hh-condos), so a
+// template rename cannot blind this the way it blinded hub-intents.mjs.
+const hubIsCondoHeavy = (raw) => /class="(h-condos|hh-sec hh-condos)"/.test(stripScripts(raw));
 
 function audit(hrefs, required, condoHeavy) {
   const set = new Set(hrefs);
@@ -55,7 +84,8 @@ export default {
   title: 'Every street page and every hub links up to its guides, in the served HTML',
 
   perPage(slug, raw) {
-    return { slug, ...audit(guideHrefs(raw), REQUIRED_STREET, streetIsCondoHeavy(raw)) };
+    const sh = streetHubs(raw);
+    return { slug, ...audit(guideHrefs(raw), REQUIRED_STREET, streetIsCondoHeavy(raw)), hubs: sh.declared, hubNotLinked: sh.undeclaredLink };
   },
 
   async finish(streetRows, { base, slugs }) {
@@ -66,6 +96,19 @@ export default {
       if (r.status !== 200) continue;
       hubRows.push({ slug, ...audit(guideHrefs(r.body), REQUIRED_HUB, hubIsCondoHeavy(r.body)) });
     }
+
+    // the down-link sets, read off the two guide pages
+    const parkingPage = await get(base + PARKING_GUIDE);
+    const goPage = await get(base + GO_GUIDE);
+    const parkingHubs = parkingPage.status === 200 ? hubsLinkedFrom(parkingPage.body) : new Set();
+    const goHubs = goPage.status === 200 ? hubsLinkedFrom(goPage.body) : new Set();
+    const expectsParking = (hubs) => hubs.some((h) => parkingHubs.has(h));
+    const expectsGo = (hubs) => hubs.some((h) => goHubs.has(h));
+    const hubParkingWrong = hubRows.filter((r) => new Set(r.hrefs).has(PARKING_GUIDE) !== parkingHubs.has(r.slug)).map((r) => `hub ${r.slug}: parking guide ${parkingHubs.has(r.slug) ? 'missing' : 'present but the guide does not link to this hub'}`);
+    const hubGoWrong = hubRows.filter((r) => new Set(r.hrefs).has(GO_GUIDE) !== goHubs.has(r.slug)).map((r) => `hub ${r.slug}: GO guide ${goHubs.has(r.slug) ? 'missing' : 'present but the guide does not link to this hub'}`);
+    const streetParkingWrong = streetRows.filter((r) => new Set(r.hrefs).has(PARKING_GUIDE) !== expectsParking(r.hubs)).map((r) => `${r.slug}: parking guide ${expectsParking(r.hubs) ? 'missing' : 'present'} (hubs ${r.hubs.join(',') || 'none'})`);
+    const streetGoWrong = streetRows.filter((r) => new Set(r.hrefs).has(GO_GUIDE) !== expectsGo(r.hubs)).map((r) => `${r.slug}: GO guide ${expectsGo(r.hubs) ? 'missing' : 'present'} (hubs ${r.hubs.join(',') || 'none'})`);
+    const hubNotLinked = streetRows.filter((r) => r.hubNotLinked.length).map((r) => `${r.slug}: declares hub ${r.hubNotLinked.join(',')} it does not link to`);
 
     const targets = new Set();
     for (const r of [...streetRows, ...hubRows]) for (const h of r.hrefs) targets.add(h);
@@ -97,6 +140,10 @@ export default {
         ['condo-heavy street pages (condo sale pill)', streetRows.filter((r) => r.condoHeavy).length],
         ['condo-heavy hubs (condo section)', hubRows.filter((r) => r.condoHeavy).length],
         ['unique guide destinations resolved', targets.size],
+        ['hubs the parking guide links down to', parkingHubs.size],
+        ['hubs the GO guide links down to', goHubs.size],
+        ['street pages carrying the parking guide', streetRows.filter((r) => r.hrefs.includes(PARKING_GUIDE)).length],
+        ['street pages carrying the GO guide', streetRows.filter((r) => r.hrefs.includes(GO_GUIDE)).length],
       ],
       assertions: [
         ['street pages read == live sitemap count', streetRows.length, slugs.length],
@@ -110,6 +157,14 @@ export default {
         ['hubs missing a required guide', hubMissing.length, 0],
         ['condo-heavy hubs without the condo guide', hubCondoNoGuide.length, 0],
         ['hubs carrying the condo guide with no condo section', hubGuideNoCondo.length, 0],
+        // A guide page that links to no hub would make every assertion below vacuous.
+        ['parking guide links down to at least one hub', parkingHubs.size > 0, true],
+        ['GO guide links down to at least one hub', goHubs.size > 0, true],
+        ['hubs whose parking up-link disagrees with the guide\'s down-link', hubParkingWrong.length, 0],
+        ['hubs whose GO up-link disagrees with the guide\'s down-link', hubGoWrong.length, 0],
+        ['street pages whose parking up-link disagrees with their hub', streetParkingWrong.length, 0],
+        ['street pages whose GO up-link disagrees with their hub', streetGoWrong.length, 0],
+        ['street pages declaring a hub they do not link to', hubNotLinked.length, 0],
         ['guide anchors not shaped /guides/<slug>', malformed.length, 0],
         ['guide destinations not returning 200', dead.length, 0],
       ],
@@ -118,6 +173,7 @@ export default {
         ...streetMissing, ...streetCondoNoGuide, ...streetGuideNoCondo,
         ...hubNoBlock.map((s) => `hub ${s}: no guides ledger parsed`),
         ...hubMissing, ...hubCondoNoGuide, ...hubGuideNoCondo, ...malformed, ...dead,
+        ...hubParkingWrong, ...hubGoWrong, ...streetParkingWrong, ...streetGoWrong, ...hubNotLinked,
       ],
     };
   },

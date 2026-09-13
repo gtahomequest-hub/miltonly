@@ -9,7 +9,7 @@ import "@/components/compare/compare-theme.css";
 import { config } from "@/lib/config";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { COMPARISONS } from "@/lib/comparisonData";
-import { SiteNav } from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import SchemaScript from "@/components/SchemaScript";
 import FooterSection from "@/components/sections/FooterSection";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
@@ -35,7 +35,7 @@ export default function CompareIndexPage() {
     <>
       <SchemaScript schemas={schemas} />
       <div className="hub-v2">
-        <SiteNav variant="page" />
+        <SiteNavLive variant="page" />
 
         <header className="h-hero">
           <div className="h-wrap">

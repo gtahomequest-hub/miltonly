@@ -1,153 +1,173 @@
-HOME · D:\miltonly-home · feat/homepage
+HOME · D:\miltonly-home · feat/hubs-v2
 
-# Handoff — homepage worktree
+# Handoff, homepage worktree
 
-_Last rewritten 2026-09-10, after `feat/homepage` merged to main and production was verified._
+_Last rewritten 2026-09-11, MH-004: the hub rebuild on `feat/hubs-v2`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**MERGED AND LIVE.** `feat/homepage` merged to main as **`a9546a7`**, approved by Aamir after
-preview review of `1f495e8` (`miltonly-nlr4rvlrr`). Battery on production at `a9546a7`:
-**`PASS · 10 checks · 444 pages · 68s`**, exit 0.
+**TWO BRANCHES FROM THIS WORKTREE ARE PREVIEWED AND NOT MERGED, AND ONE STACKS ON THE OTHER.**
 
-**THE CODE SHA IS `a9546a7`. Main's tip is a documentation commit and always will be.** This
-handoff records the merge, so it cannot exist before the merge; committing it moves main, which
-redeploys production, which changes the SHA the handoff would have to name. That is a chase with
-no end, so this file names the CODE merge and stops. Every commit on main after `a9546a7` in this
-sequence touches `HANDOFF-home.md` alone and changes no rendered byte — `git diff a9546a7..main
--- src scripts` is empty. Verify that before assuming a docs commit is inert.
+- `feat/menu-v2` at `3ec8b51` (MH-003, the menu). Handoff state for it is in this file's git
+  history and `scratchpad/reports/MH-003-rail-drives-panel.md`. Unchanged by MH-004.
+- `feat/hubs-v2` (MH-004, the hubs) was branched FROM `feat/menu-v2` (`ef8d70b`), then
+  `origin/main@15835ed` merged in as `c393c4b`, then the hub work. So merging `feat/hubs-v2`
+  by SHA brings the menu with it. Merge order that keeps every preview honest: `3ec8b51`
+  first, then the hubs SHA. Merging the hubs SHA alone also works, it just lands both.
+  The preview URL, the SHA and the battery line are in
+  `scratchpad/reports/MH-004-hub-rebuild.md`. The brief was "stop; no merge".
 
-**Production has been verified green on each of them**: `a9546a7`
-(`PASS · 10 checks · 444 pages · 68s`), `d94e6b5` (`73s`), and the tip. Re-run
-`EXPECT_SHA=$(git rev-parse origin/main) BASE=https://miltonly.com node scripts/verify/run.mjs`
-if you need it confirmed at this instant rather than at close-out.
+**THE HUB IS REBUILT ON DERIVED FACTS (MH-004).** `src/components/hub/sections.tsx` and
+`hub-sections.css` (`.hub-v3`), data from `src/lib/hubData.ts`. Nothing static survives on the
+page: the glance is `HubFact[]` (value, label, basis, href), the sibling cards lost their
+hand-written character line, the intent squares land on hub-scoped destinations. Every figure
+prints its basis in the same block. The ladder is EVERY published street in the hub, each row
+carrying the street page's own k-gated typical, its disclosure line, and "sample too small to
+publish" below k; the sold count is always printed. Film strip first (all filmed streets in the
+hub, horizontally scrolling), ladder second, the A-to-Z index third.
 
-**The merge was made with plumbing, not `git merge`, and the shape is identical.** `main` is
-checked out in another worktree (`D:\miltonly`), so it cannot be checked out here. The commit
-was created as `git commit-tree feat/homepage^{tree} -p origin/main -p feat/homepage` and
-pushed to `main`: a two-parent merge commit whose tree is byte-identical to the reviewed branch
-(`git diff --stat a9546a7 feat/homepage` is empty). `origin/main` was merged INTO the branch
-and the build gate run BEFORE that, so nothing untested reached main. **`D:\miltonly`'s local
-`main` is now stale and needs a `git pull` before anyone works there.**
+**THE HUB GATE IS `scripts/verify/checks/hub-page.mjs`** (15th check). Every `data-fig` outside
+the site nav must have a row in its `FIG_SPECS` (source, pattern, tolerance) or it is a
+finding; the ladder must equal the hub's published street set; each ladder row's typical AND
+basis must equal the street page's hero tile as rendered in the same crawl; every internal
+href must be 200 (no redirect) and every fragment must match an id; JSON-LD must parse and its
+ItemList must count the ladder. `loadHubRecord()` in `scripts/verify/lib/db.mjs` grew
+`hubPage(slug)` (published/filmed street counts, active listings, the dominant-type share) and
+`miltonTypicalRounded`. It is a per-page check, so it puts the street crawl back into any
+`--only=` run that includes it.
 
-**Report numbering now collides across worktrees.** The leads worktree used `062` and `063` on
-the same days this one did. Both sets are in the repo under different slugs
-(`062-homepage-gate-a.md` / `062-leads-gate-a.md`). Quote the full filename, never the number.
+**c98f40e IS ABSORBED.** The WIP hub commit on `feat/homepage` was applied three-way onto this
+branch and finished. `feat/homepage` itself is now historical: everything approved from it is
+on main, everything unapproved is superseded here.
 
 ## Scope of this worktree
 
-`D:\miltonly-home` on `feat/homepage` owns **the homepage, the header with its mega menu, and
-the footer**. It never touches street pages, generation, or the database.
+`D:\miltonly-home` owns **the homepage, the header with its mega menu, the footer, and the
+neighbourhood hub template**. It never touches street pages, generation, or the database.
 
-Owned files:
+Owned files (added by MH-004 in bold):
 
 - `src/app/page.tsx`, `src/app/layout.tsx` (header/footer wiring only)
 - `src/components/home/*` including `home-theme.css`, `home-sections.css`, `mockData.ts`
-- `src/components/nav/*` — `SiteNav.tsx`, `megaTypes.ts`, `site-nav.css`
-- `src/lib/homepageData.ts`, `src/lib/neighbourhoodCards.ts`, `src/lib/homeSignals.ts`
+- `src/components/nav/*`
+- **`src/components/hub/*`** (`HubPage.tsx`, `sections.tsx`, `hub-sections.css`, `types.ts`,
+  `mockData.ts`; `hub-theme.css` and `icons.tsx` are shared with the tenure hubs)
+- `src/lib/homepageData.ts`, `src/lib/megaLive.ts`, `src/lib/figureFormat.ts`,
+  `src/lib/neighbourhoodCards.ts`, `src/lib/homeSignals.ts`
+- **`src/lib/hubData.ts`, `src/lib/hubStreetLadder.ts`, `src/lib/hubSchools.ts`,
+  `src/lib/hubNearby.ts`, `src/lib/hubFooter.ts`**
 - `src/components/ChromeGate.tsx` (only the `/` line)
+- `scripts/verify/checks/homepage.mjs`, `scripts/verify/checks/nav.mjs`,
+  **`scripts/verify/checks/hub-page.mjs`**, and the hub rows of `scripts/verify/lib/db.mjs`
+- `scripts/probe-mobile-menu.mjs`, `scripts/probe-hub-contrast.mjs`
 
-Touched outside that scope, deliberately and under ruling, all now on main:
-`src/lib/streetSurface.ts` (`publishedStreetPageSlugs`), `src/app/sitemap.ts` and
-`src/app/streets/page.tsx` (both read it), `src/app/neighbourhoods/page.tsx` (reads
-`getNeighbourhoodCards`), `src/lib/listingsV2Data.ts` + `src/lib/stats.ts` +
-`src/components/listings/v2/*` (the `priceReduced` removal), `src/lib/schema.ts`
-(`generateOrganizationSchema`), `src/lib/heroSearch.ts` (address anchors), and
-`scripts/verify/*` (the 10th check).
+Touched outside that scope on `feat/hubs-v2`: `src/lib/tenureHubData.ts` and
+`src/components/tenure/tenure-sections.tsx`, because the tenure hubs share `HubData` and
+`HubAtAGlance` became a fact list (their entries are definitional and say so in their basis;
+the asking-price range now states it is an asking range over N active listings, which it
+always was). `src/app/neighbourhoods/[slug]/page.tsx` swaps `FooterSection` for the homepage
+footer through `getHubFooter()`.
 
 ## Standing rules for this worktree
 
-- **The first line of every report is the worktree folder and branch**, e.g.
-  `HOME · D:\miltonly-home · feat/homepage`.
+- **Every task prompt begins with `MH-`.** The report is `scratchpad/reports/MH-NNN-slug.md`,
+  first line `# MH-NNN`, second line the worktree and branch, committed with the work.
 - Keep this file updated instead of `HANDOFF.md`. Do not rewrite `HANDOFF.md` from here.
 - Everything in the root `CLAUDE.md` still applies: pnpm only, exit-code gate, no em-dashes,
-  "typical" not "median", reports to `scratchpad/reports/`, terminal gets 10 lines or fewer.
+  "typical" not "median", terminal gets 10 lines or fewer, no clipboard writes.
+- **Stop the local `next start` before `pnpm build`.** A running server holds the Prisma query
+  engine DLL and the build fails on `EPERM ... query_engine-windows.dll.node`. Kill the
+  listener on 3000 first (`Get-NetTCPConnection -LocalPort 3000`).
+- **Local battery needs `VERCEL_GIT_COMMIT_SHA=local pnpm start` and `EXPECT_SHA=local`.**
+  `/api/build` reports `unknown` otherwise and the deployment gate aborts.
+- **The Bash tool collapses `\\` to `\` inside heredocs, and long heredocs can fail to parse
+  at all.** Write patch scripts with the Write tool into `scratchpad/hubs-v2/` and run them.
+  `/tmp` in Git Bash is not `/tmp` in Python on this machine; keep scratch files in the repo
+  scratchpad or the session scratchpad, never `/tmp`.
 
 ## Where things stand
 
 | | |
 |---|---|
-| main, code | **`a9546a7`** — the merge. Commits after it touch this file only |
-| production | serves main's tip, confirmed on the apex |
-| battery on production | **`PASS · 10 checks · 444 pages`**, exit 0, re-run at each close-out SHA |
-| local build after merging main | exit 0, zero `P2024`, **19/19 prebuild**, 546 static pages |
-| reviewed preview | `miltonly-nlr4rvlrr` (`1f495e8`) |
-| reports | `062-homepage-gate-a.md`, `063-homepage-build.md`, `064-homepage-figure-defects.md` |
-| QUEUE | marked done, out of queue, at the end of the file |
+| branch head | see `scratchpad/reports/MH-004-hub-rebuild.md` (head SHA, preview URL, battery line) |
+| local build | exit 0, zero `P2024`, 24/24 prebuild, 581 static |
+| local battery | `--only=hub-page,hub-meta,hub-intents,homepage,nav,guide-links`, see the report |
+| `feat/menu-v2` | `3ec8b51`, previewed, not merged, unchanged |
+| main | has neither branch |
+| production | main's tip; the old menu and the old hub |
 
-Served on `https://miltonly.com` and verified after the merge:
+## What `feat/hubs-v2` carries
 
-```
-TITLE : Milton Homes for Sale, Street by Street
-CANON : https://miltonly.com
-H1    : What Milton homes actually sell for, street by street
-proof-street-pages -> 444        FOOTER: All 444 street pages
-proof-sold-to-ask  -> 98%        LINKS : 66 unique internal
-```
-
-## What shipped
-
-- **The header is three menus** (Buy / Streets / Sell). Every trigger is an `<a href>`, every
-  panel is server-rendered and closed with `hidden`, and below 820px the same links are native
-  `<details>` accordions. **Site-wide**: the page variant had no mega menu at all before.
-- **The footer is a live link graph** — every published hub, the in-demand streets, the tools.
-- **Five sections**: 01 streets on film, 02 newest on the market, 03 the neighbourhood ladder,
-  04 valuation with three live proof points, 05 the daily brief. THE BOARD unchanged, TrustBand
-  retired.
-- **24 unique internal links -> 66**, 302 visible words -> 1,146, hubs 3 -> 22, street pages
-  2 -> 17.
-- **Title and H1 set on the page** with a declared canonical, not inherited.
-- **A 10th battery check**, `scripts/verify/checks/homepage.mjs`, plus `loadHomeRecord()` in
-  `scripts/verify/lib/db.mjs`.
+- **The glance, derived.** `buildFacts()` in `hubData.ts`: typical sale price with `across N
+  sales in the last 12 months` (or, sub-k, the sale count with "below the publication floor of
+  five"); streets with a page (`#streets`); streets filmed (`#film`); schools inside the
+  boundary (`#schools`, by position against the Town polygons, `hubSchools.ts`); homes for
+  sale today (`/listings?neighbourhood=<token>`); the dominant housing form as a share of
+  12-month sales, suppressed under k5. A fact with an empty source is not rendered.
+- **The ladder is the street page.** `hubStreetLadder.ts` takes two grouped DB2 queries
+  (12-month and full record, `COUNT(*)`, `COUNT(sold_price)`, `SUM`), pools by
+  `deriveIdentity(slug).identityKey` (the same identity `resolveSiblingSlugs` keys on),
+  graduates 12mo-then-full at k5, rounds through `roundPriceForProse`. No cap: 48 rows on
+  Beaty, 1 on Moffat. Ranked by the pooled 12-month count the row prints.
+- **Intent squares.** buying -> `/listings?neighbourhood=<token>` with the live active count;
+  selling -> `/value/<slug>`; renting -> `/rentals` (it takes no hood filter); investing ->
+  `/sold?nbhd=<slug>` with the 12-month sale count. `listingsFilterToken()` strips the TREB
+  prefix (`1037 - TM Timberlea` -> `Timberlea`, `1051 - Walker` -> `Walker`) and picks the
+  shortest token every raw string of the hub contains.
+- **Nearest neighbourhoods by position.** `hubNearby.ts`: boundary centre per hub from the
+  Town polygons; the four nearest published hubs of either tier, distance printed to 0.1 km.
+  The four rural hubs with no polygon (nassagaweya, campbellville, brookville-haltonville,
+  moffat) get "Other rural neighbourhoods" and no distance. Cards print typical, sample and
+  street-page count; `data-fig="hub-sibling-typical"` is asserted per slug.
+- **Market section.** The compare row carries both bases (hub sample, Milton sample) and
+  `data-fig="hub-compare-typical"` / `hub-compare-milton`; Milton's is
+  `buildMiltonWideContext` k-gated and round5k'd, the same as every hub figure.
+- **Section numbers are computed** (`idx()` in `sections.tsx`) so a hub with no film, no
+  schools or no condos never shows 01 then 03.
+- **The footer** is `HomeFooter` inside a `.home-v2` wrapper (its rules are scoped there). Its
+  two redirecting links are gone: `/map` -> `/market-watch`, `/book` -> `/guides`. This
+  changes the homepage footer too.
+- **Contrast.** Small text on the forest and deep grounds sits at 0.62 white or above; the
+  `.hh-glance` ground needed `.hh-sec.hh-glance` specificity or the generic `.hh-sec` cream
+  won by source order and painted white figures on cream. `probe-hub-contrast.mjs` reads the
+  `.hh-*` small-text classes now and returns nothing under 4.5:1.
 
 ## Traps, and decisions that must not be re-litigated
 
-- **A price *drop* is not derivable and there is no function for one.**
-  `Listing.lastPriceChangeAt` marks that a price changed; no prior price is stored. The
-  `priceReduced` flag, its "Price reduced" badge, and `stats.ts getFeaturedListings` (whose
-  `priceDrops` returned the cheapest actives) are all deleted. Do not re-add any of them. A
-  price-drop section returns when Core stores a prior price, not before.
-- **Three counts, three sets, and only one of them is "pages".**
-  `publishedStreetPageSlugs()` in `streetSurface.ts` is the sitemap's set (**444**) and is read
-  by `sitemap.ts`, `/streets` and the homepage. `surfacedStreetWhere()`'s count (**738**) is the
-  set allowed to appear in search and hub ladders; it was being published as a page count. A raw
-  `StreetContent` count (**445**) includes `15-side-road-side-road-milton`, an address artifact
-  with no entity, which the sitemap refuses. Never state a page count from anything but
-  `publishedStreetPageCount()`.
-- **One neighbourhood price, from `getNeighbourhoodCards()`.** It is the hub page's own k-gated
-  12-month typical sold price. `/neighbourhoods` reads the same function. Do not reintroduce an
-  active list-price average: two statistics under one word is the defect `hub-meta.mjs` exists
-  to catch.
-- **A figure crossing a component boundary must carry its unit in its name.**
-  `BoardTab.soldToAsk.value` is a RATIO that `TheBoard` multiplies at render; reading it
-  elsewhere printed `0.980868783307145%`. The homepage reads `soldToAskPct` from
-  `getMiltonSoldOverall()`. The Board (urban, 13 weeks, 98.1%) and `/sold` (all Milton, 12
-  months, 98.3%) are different aggregates and are not expected to agree.
-- **A presence assertion is not a value assertion.** The homepage gate passed with both figure
-  defects on the page because it checked that a `data-fig` existed and parsed as a number.
-  `data-value` was correct in both defects; the fault was in the rendering. The check reads
-  rendered TEXT now. Do not "simplify" it back to reading the attribute.
-- **A fixed-width figure column is a promise about data that CSS cannot keep.** The proof row
-  was `128px` and the long value sat on its label. It is `minmax(0, max-content)` now.
-- **The link floor in the battery does not guard the header.** 65 of the 66 links come from the
-  body. The anchor assertions guard the header. Do not raise the floor to "catch the nav".
-- **Never hand-roll a listing query.** `getNewestListingCards` runs `toCard`, which applies the
-  RECO/IDX display gate server-side.
-- **A raw TREB neighbourhood string is not a slug.** Resolve it through `getRawStringHubMap()`.
-- **`mockData.ts` is no longer typed `HomepageData`.** It holds static hero editorial only.
+- **The ladder's count column is the 12-month pooled count; the basis line may name a
+  different sample.** "4 sales / across 6 sales in the last ~2 years" is the street page's own
+  graduated state, reproduced exactly. Do not "fix" the row to make the two numbers agree.
+- **Money tolerance in `hub-page.mjs` is "the exact rendering passes, else 500".** `$2.12M`
+  is 2,115,000 printed to two decimals; a numeric tolerance alone fails it.
+- **`hub-fact-schools` has no page-independent source in the record.** It is asserted against
+  the schools list on the same page, and every school link is resolved. The polygon test is
+  the app's; the record does not re-run it.
+- **A moving count can fail once and pass the next minute** (active listings, sales). Re-run
+  before diagnosing a one-hub, off-by-one mismatch as a code defect.
+- **The film strip shows every filmed street in the hub** (Ford: 19), not eight. A poster that
+  cannot be derived drops the card but not the count; the gate would then report a dead
+  `#film` fragment on a hub whose only filmed streets lack posters. None do today.
+- **`hub-meta.mjs` already parses the `.hh-fact` markup** and passed on all 22. Its sub-k
+  model reads the sale count out of the typical slot, which is the rebuilt page's contract.
+- **The overflow page `/neighbourhoods/<slug>/streets` is Core's and is untouched.** It is
+  rung three (A to Z) above the 12-street cap; below the cap the hub links `/streets`. With
+  the ladder uncapped, the overflow page is now a sorted duplicate of the hub's list. Whether
+  it stays is Core's call, noted in the report.
+- **The hub `<title>` and meta description carry em-dashes.** They come from
+  `src/lib/ai/hub/hubMeta.ts`, the one shared formula that `hub-meta.mjs` parses. Not touched
+  here; Core's.
+- Everything in MH-002/003's trap list still holds for the menu.
 
 ## Open, and owned elsewhere
 
-- **Daily-brief consent is sent but not persisted.** `/api/leads`' generic path drops
-  `consentText` / `consentTimestamp`; the branch that stores them requires a phone number.
-  **Leads owns this.**
-- **`on-market` counts more than its label implies.** `buildMiltonWideContext` counts
-  `permAdvertise AND status='active'` with no city and no transaction-type filter, so "on the
-  market today" would include leases and non-Milton rows. Exactly right today (448 either way),
-  so latent rather than wrong. The gate asserts the query the app actually runs, on purpose.
-  Needs a decision, not a silent change.
-- **380px is sized for, not visually verified.**
+- **Merge order.** `3ec8b51` (menu) then the hubs SHA; or the hubs SHA alone, which lands
+  both. Core's call on approval.
+- **The overflow page's purpose** now that the hub lists every street (above).
+- **`/rentals` takes no neighbourhood filter**, so "I'm renting" is Milton-wide. A hood filter
+  on `/rentals` (Core's page) would let the square scope like the other three.
+- **School positions are approximate for centroid-placed schools** (`src/lib/schools.ts`).
+  The basis line says "position", the standfirst says it is not a catchment.
 
 ## Next action
 
-None outstanding in this worktree. The branch is merged and production is verified on it.
+Aamir reviews the hub preview (three URLs in the report). Core merges by SHA on approval.

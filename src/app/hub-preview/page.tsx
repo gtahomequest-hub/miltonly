@@ -6,4 +6,8 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function Page() { return <HubPage data={mockHubUrban} />; }
+export default function Page() { return <HubPage
+      data={mockHubUrban}
+      footer={{ neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0 }}
+      brand={{ rating: 5, reviewCount: 235, credentials: [], idx: '1809031', vow: '1848370' }}
+    />; }

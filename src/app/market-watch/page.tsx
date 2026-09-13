@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 import MarketWatchPage from "@/components/marketwatch/MarketWatchPage";
 import type { EditionSections } from "@/lib/marketWatch/edition";
 import SchemaScript from "@/components/SchemaScript";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import FooterSection from "@/components/sections/FooterSection";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
 
@@ -43,7 +43,7 @@ export default async function MarketWatchIndex() {
   if (!e) {
     return (
       <>
-        <SiteNav variant="page" />
+        <SiteNavLive variant="page" />
         <div className="market-watch">
           <header className="mw-mast">
             <div className="mw-wrap">
@@ -97,7 +97,7 @@ export default async function MarketWatchIndex() {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <MarketWatchPage
         s={sections}
         summarySentence={e.summarySentence}

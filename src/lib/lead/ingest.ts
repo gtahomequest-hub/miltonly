@@ -24,7 +24,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveLeadEnv, isCountable, type LeadEnv } from "@/lib/lead/env";
 import { normalizeIntent, leadValueFor } from "@/lib/lead/intent";
 import { checkHoneypot, checkOrigin, checkRateLimit, type GuardVerdict } from "@/lib/lead/guards";
-import { sendLeadConfirmation, sendOpsAlert } from "@/lib/lead/notify";
+import { sendLeadConfirmation, sendOpsAlert, recordDeliveries, errorMessage, type Delivery } from "@/lib/lead/notify";
 import { createWatchForLead, type WatchResult } from "@/lib/lead/savedSearch";
 import { scoreLead } from "@/lib/lead/score";
 import {
@@ -298,12 +298,17 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
     return { created: false, skipped: "error" };
   });
 
-  const confirmPromise = email
-    ? sendLeadConfirmation({ to: email, name: name || null, ctx }).catch((err) => {
-        console.warn("[lead/ingest] confirmation email failed", err);
-        return null;
-      })
-    : Promise.resolve(null);
+  // Each send resolves to a Delivery rather than an id, so the outcome survives into the
+  // delivery log below. A throw is a failed attempt; a null id is a send that never left.
+  const confirmPromise: Promise<Delivery> = email
+    ? sendLeadConfirmation({ to: email, name: name || null, ctx }).then(
+        (id): Delivery => ({ kind: "confirmation", outcome: id ? "sent" : "skipped", resendId: id }),
+        (err): Delivery => {
+          console.warn("[lead/ingest] confirmation email failed", err);
+          return { kind: "confirmation", outcome: "failed", resendId: null, error: errorMessage(err) };
+        },
+      )
+    : Promise.resolve<Delivery>({ kind: "confirmation", outcome: "skipped", resendId: null });
 
   // The market-pulse reveal. Computed from the consented criteria snapshot, k-anonymity
   // enforced inside getMarketPulse, and awaited because the page cannot render without it.
@@ -354,10 +359,13 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
       page: page ?? undefined,
       watch: watch.created ? `${watch.kind} watch ${watch.id}` : watch.skipped,
     },
-  }).catch((err) => {
-    console.warn("[lead/ingest] ops alert failed", err);
-    return null;
-  });
+  }).then(
+    (id): Delivery => ({ kind: "ops_alert", outcome: id ? "sent" : "skipped", resendId: id }),
+    (err): Delivery => {
+      console.warn("[lead/ingest] ops alert failed", err);
+      return { kind: "ops_alert", outcome: "failed", resendId: null, error: errorMessage(err) };
+    },
+  );
 
   // Twilio, to Aamir. The same environment rule the ops alert follows: a preview submission
   // must not ring a real phone unless the path is deliberately being proven.
@@ -390,8 +398,10 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
       }).catch(() => ({ ok: false }))
     : Promise.resolve({ ok: false });
 
-  const [confirmationEmailId, opsAlertId, stats] = await Promise.all([confirmPromise, alertPromise, statsPromise]);
-  await Promise.all([crmPromise, capiPromise, smsPromise]);
+  const [confirmation, alert, stats] = await Promise.all([confirmPromise, alertPromise, statsPromise]);
+  await Promise.all([crmPromise, capiPromise, smsPromise, recordDeliveries(leadId, [confirmation, alert])]);
+  const confirmationEmailId = confirmation.resendId;
+  const opsAlertId = alert.resendId;
 
   console.log("[lead/ingest] stored", { leadId, source, env, value, score, watch: watch.created ? watch.kind : watch.skipped });
 

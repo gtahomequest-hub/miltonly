@@ -51,7 +51,10 @@ export function HomeFooter({ footer, brand }: Props) {
                 street pages existed; 738 is the set allowed to appear in search and in a
                 hub ladder. /streets is the index for both, and it states both itself. */}
             <a href="/streets">All {footer.streetPageCount} street pages</a>
-            <a href="/map">Street map</a>
+            {/* /map and /book were both redirects (to /streets and /about). A footer link
+                that lands on a redirect is a dead link with extra steps; the hub gate
+                resolves every href on the page and refuses a 3xx, so they go. */}
+            <a href="/market-watch">Market watch</a>
           </div>
 
           <div className="m-fcol">
@@ -78,7 +81,7 @@ export function HomeFooter({ footer, brand }: Props) {
             <a href="/schools">Schools</a>
             <a href="/mosques">Mosques</a>
             <a href="/about">About Aamir</a>
-            <a href="/book">Book a call</a>
+            <a href="/guides">Guides</a>
           </div>
         </div>
 

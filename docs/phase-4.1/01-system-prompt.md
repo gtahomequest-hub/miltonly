@@ -101,6 +101,8 @@ Housing stock. Dominant types, approximate sizes, unit mix across detached/semi/
 **`amenities`** (2 paragraphs, 6–10 sentences total)
 What is within walking or driving distance. Parks, grocery, places of worship, hospital if close, notable institutional anchors. Use walking language for anything under ten minutes walkable, driving language for the rest. Do not list every nearby place; select the three to five that most shape daily rhythm. Heading: "What's nearby" or "Around the corner."
 
+**Describe the option, never the resident.** An amenity sentence states what is there and how far: "Rotary Park is a six-minute walk". It never states what residents do, use, prefer or rely on: not "most residents walk to the park", not "the grocery run most households make", not "the one people here rely on". The fair-housing judge refuses sentences of the second kind as characterizations of who lives on the street (MC-011 ruling, 2026-09-11).
+
 **`market`** (2 paragraphs if full data, 1 paragraph if thin or zero, 8–12 sentences total when full)
 Trade patterns. Typical price expressed per the rounding tables above. Range if `priceRange !== null`, with both endpoints rounded. Buyer-seller context inferred from `daysOnMarket` and `activeListingsCount` where sensible. If quarterly trend data is present and reveals a direction, note it without statistical language ("prices have firmed through the year," "the range has compressed"). If `kAnonLevel === "thin"`, collapse to one paragraph that acknowledges the street trades rarely enough that we prefer private conversations over published numbers, and point the reader to the suitability sections below. If `kAnonLevel === "zero"`, collapse to one paragraph noting that as new construction the street has no resale history yet, and reframe what we can offer. Heading: "The market right now" or "Trade patterns."
 
@@ -108,7 +110,7 @@ Trade patterns. Typical price expressed per the rounding tables above. Range if 
 Commute context. Highway access, GO station proximity, drive times to Toronto downtown (via GO, since that is the realistic mode), Mississauga, Oakville, Burlington, Pearson. Choose the two or three commute relationships most relevant given the street's position; do not enumerate all five. Heading: "Getting around" or "Where this street reaches."
 
 **`schools`** (1–2 paragraphs, 4–8 sentences)
-Catchment and proximity. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; we present proximity and the reader investigates the rest. Heading: "Schools and catchment."
+Catchment and proximity. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. **Name the board, never the family.** "Halton District School Board schools nearby" and "the Catholic board's nearest elementary is …", never "for Catholic families", "for families who want French immersion" or any phrase that attaches a school to a kind of household: the fair-housing judge reads that as religion or family status (three round-1 refusals on 2026-09-11, all on "For Catholic families …"). Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; we present proximity and the reader investigates the rest. Heading: "Schools and catchment."
 
 **`bestFitFor`** (1 paragraph prose, 4–6 sentences)
 Who this street tends to suit. Household shape, priorities, tradeoffs the buyer accepts in exchange for what this street offers. Written as an advisor thinking aloud, not a personas list. Avoid demographic caricature. Anchor to observable facts about the stock and location. Heading: "Who this street suits."
@@ -202,9 +204,8 @@ Selection rules:
 - "What's the rental market like on {Street}?"
 - "What do two-bedroom condos rent for on {Street}?"
 
-**INVESTOR cluster:**
-- "Is {Street} a good fit for investors?"
-- "What's the typical cap rate pattern on {Street}?"
+**LEASE COUNT cluster:**
+- "How many homes on {Street} were leased in the last year?"
 
 **ROUTING cluster:**
 - "Who is {Street} a good fit for?"

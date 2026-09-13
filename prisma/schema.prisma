@@ -252,7 +252,10 @@ model Lead {
 model LeadActivity {
   id        String   @id @default(cuid())
   leadId    String
-  type      String // form_submit | email_sent | page_view | call_logged | status_change | note | manual_action
+  type      String // form_submit | email_sent | email_failed | page_view | call_logged | status_change | note | manual_action
+  // email_sent and email_failed are written by src/lib/lead/notify.ts recordDeliveries on every
+  // send attempt, payload { kind: "confirmation" | "ops_alert", resendId | error }. The weekly
+  // leads digest counts them.
   payload   Json
   createdAt DateTime @default(now())
   createdBy String? // null = system, "aamir" = manual

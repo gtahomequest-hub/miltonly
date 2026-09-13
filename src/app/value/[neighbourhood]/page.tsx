@@ -16,6 +16,7 @@ import { getHubData } from "@/lib/hubData";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import ValueLanding, { type ValueData } from "@/components/value/ValueLanding";
+import { getMegaLive } from "@/lib/megaLive";
 import "../../sell/sell-theme.css";
 import "../value-theme.css";
 
@@ -74,5 +75,5 @@ export default async function ValueNeighbourhoodPage(
       }
     : null;
 
-  return <ValueLanding locationName={nb.name} data={data} />;
+  return <ValueLanding locationName={nb.name} data={data} live={await getMegaLive().catch(() => undefined)} />;
 }

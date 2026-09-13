@@ -54,6 +54,10 @@ export interface ListingCardData {
   photos: string[];
   listedAt: string; // ISO
   daysOnMarket: number | null;
+  /** DEC-PRICE-HISTORY: the list price before the most recent observed change, and when.
+   *  Present only on cards from getListingCards; the grid's own queries do not select them. */
+  priorPrice?: number | null;
+  priceChangedAt?: string | null;
   listOfficeName: string | null;
   // NO COORDINATE ON THE CARD. It carried the legacy feed value — 0 on every row — and no
   // component ever read it, so each page shipped 36 sentinels to the client waiting for someone

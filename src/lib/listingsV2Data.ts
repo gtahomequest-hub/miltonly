@@ -23,6 +23,7 @@
 // the live grid page didn't redact; the detail page's gate is the standard).
 
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { config } from '@/lib/config';
 import { hasValidCoords } from '@/lib/geo';
 import type {
@@ -390,4 +391,28 @@ export async function getNewestListingCards(take = 8): Promise<ListingCardData[]
     select: CARD_SELECT,
   });
   return rows.map(toCard);
+}
+
+/**
+ * THE SAME MAPPER FOR ANY SLICE OF THE FEED. The mega menu's rail items each show a slice
+ * (listed in the last 24 hours, price changed this week, condos, freehold, rentals) and every
+ * one of them must come through `toCard`, where the RECO/IDX address gate is applied. This is
+ * the one exported way to run a custom `where` through that gate; there is no other, so a
+ * caller cannot reach a raw address by writing its own query.
+ *
+ * `permAdvertise: true` is ANDed in unconditionally. A caller may narrow the set; it cannot
+ * widen it past what may be shown.
+ */
+export async function getListingCards(opts: {
+  where: Prisma.ListingWhereInput;
+  orderBy?: Prisma.ListingOrderByWithRelationInput | Prisma.ListingOrderByWithRelationInput[];
+  take?: number;
+}): Promise<ListingCardData[]> {
+  const rows = await prisma.listing.findMany({
+    where: { AND: [opts.where, { permAdvertise: true, city: config.PRISMA_CITY_VALUE }] },
+    orderBy: opts.orderBy ?? { listedAt: 'desc' },
+    take: opts.take ?? 4,
+    select: { ...CARD_SELECT, priorPrice: true, priceChangedAt: true },
+  });
+  return rows.map((r) => ({ ...toCard(r), priorPrice: r.priorPrice, priceChangedAt: r.priceChangedAt ? r.priceChangedAt.toISOString() : null }));
 }

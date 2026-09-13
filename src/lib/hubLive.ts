@@ -69,10 +69,13 @@ export const getHubInputCached = cache(
  * Title + description for a published hub, composed from live aggregates.
  * Returns null when the hub is not published — the caller renders "not found".
  *
- * The stored metaTitle is still honoured as the title fallback (titles carry no
- * figures, so they cannot go stale), but the DESCRIPTION is always live. When
- * the aggregate is unavailable the composer's own no-hook branch fires: a
- * number-free description, not a stale one and not an empty one.
+ * Title AND description are live. The stored metaTitle used to win as a fallback
+ * (titles carry no figures, so they could not go stale on a figure), and then the
+ * template itself changed (MC-012 took the em-dash out) and every stored title was
+ * stale on its punctuation. A snapshot of a formula is stale the moment the
+ * formula moves, so the formula is what serves. When the aggregate is unavailable
+ * the composer's own no-hook branch fires: a number-free description, not a stale
+ * one and not an empty one.
  */
 export const getHubMetaLive = cache(async (
   slug: string,
@@ -102,7 +105,7 @@ export const getHubMetaLive = cache(async (
   );
 
   return {
-    title: content.metaTitle ?? metaTitle,
+    title: metaTitle,
     description: metaDescription,
   };
 });

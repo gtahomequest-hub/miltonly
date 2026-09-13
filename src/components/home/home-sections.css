@@ -433,6 +433,8 @@
 /* ── footer: the hub link block ────────────────────────────────────────── */
 .home-v2 .m-fhoods {
   padding: 26px 0 4px;
+  /* the link columns below get the same breath the hood list gets above it */
+  margin-bottom: 26px;
 }
 .home-v2 .m-fhoods h4 {
   font-family: var(--m-mono);

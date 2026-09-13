@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
-import SiteNav from "@/components/nav/SiteNav";
+import SiteNavLive from "@/components/nav/SiteNavLive";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import AgentContactSection from "@/components/AgentContactSection";
 import FooterSection from "@/components/sections/FooterSection";
@@ -30,7 +30,7 @@ const WHATSAPP_URL = `https://wa.me/${config.realtor.phoneE164.replace("+", "")}
 export default function SellPage() {
   return (
     <div className="sell-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
 
       {/* hero — copy left, the proven valuation form right */}
       <section className="s-hero">

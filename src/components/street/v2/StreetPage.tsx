@@ -21,7 +21,7 @@ import {
   StreetFinalCtas,
 } from './sections';
 import { StreetAddresses } from './AddressLadder';
-import { SiteNav } from '../../nav/SiteNav';
+import SiteNavLive from '../../nav/SiteNavLive';
 import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
 import { COMPARE_TEASER } from '@/lib/comparisonData';
 import { GuideUplinks } from '../../guides/GuideUplinks';
@@ -44,10 +44,11 @@ export function StreetV2Page({
 }) {
   // MC-003 guide up-links. Condo-heavy means a condo sale pill renders in the hero, which is
   // the same marker the battery's guide-links check reads off the served page.
-  const guides = guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo') });
+  const hubSlugs = data.context.neighbourhoods.map((n) => n.slug);
+  const guides = guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo'), hubSlugs });
   return (
     <div className="street-v2">
-      <SiteNav variant="page" />
+      <SiteNavLive variant="page" />
       <StreetHero data={data} />
       <StreetVideo data={data} />
       <StreetGlance data={data} />
@@ -60,7 +61,7 @@ export function StreetV2Page({
       <StreetInventory data={data} />
       <StreetAddresses data={data} />
       <StreetContext data={data} />
-      <GuideUplinks guides={guides} context={data.name} variant="street" />
+      <GuideUplinks guides={guides} context={data.name} variant="street" hubs={hubSlugs} />
       <StreetFaq data={data} />
       <StreetFinalCtas data={data} />
     </div>

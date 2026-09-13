@@ -118,3 +118,6 @@ scripts/town/.cache/
 # next build type-checks whatever it finds, so an un-deleted scratch file breaks an unrelated build
 # — that happened twice. Excluded in tsconfig.json too; this keeps them out of commits as well.
 tmp-*
+scratchpad/audit/*
+# The nightly audit report and its state are tracked: the diff against the previous night reads them.
+!scratchpad/audit/nightly/

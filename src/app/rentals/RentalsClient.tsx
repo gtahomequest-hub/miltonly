@@ -119,10 +119,15 @@ interface Props {
   totalRentals: number;
   avgRent: number;
   rentAvgs: RentAvg[];
+  /** MC-012: the hub this page is scoped to, or null for all of Milton. */
+  scope?: { slug: string; name: string } | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs }: Props) {
+export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs, scope = null }: Props) {
+  // Every figure on a scoped page is the hub's; the town-wide badge the homepage gate reads by
+  // data-fig="rentals-available" is emitted only on the unscoped page, so the two never disagree.
+  const placeName = scope ? scope.name : config.CITY_NAME;
   const router = useRouter();
   const { user, isListingSaved, saveListing, unsaveListing } = useUser();
 
@@ -430,13 +435,18 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <div className="live-row">
             {/* data-fig is the battery's handle: the homepage gate asserts its
                 "available to rent" tile equals the figure THIS page publishes. */}
-            <div className="live-badge" data-fig="rentals-available" data-value={totalRentals}><span className="live-dot" />{totalRentals} active rentals · live TREB data</div>
+            <div className="live-badge" data-fig={scope ? "rentals-available-in-hub" : "rentals-available"} data-value={totalRentals} data-scope={scope?.slug ?? undefined}><span className="live-dot" />{totalRentals} active rentals{scope ? ` in ${scope.name}` : ""} · live TREB data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
             <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#f59e0b"}}>
               📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}
             </a>
           </div>
-          <h1>Find your next<br />home in <em>{config.CITY_NAME}</em></h1>
+          <h1>Find your next<br />home in <em>{placeName}</em></h1>
+          {scope && (
+            <p className="hl-scope" style={{ marginTop: 4, fontSize: 14, opacity: 0.85 }}>
+              Showing {scope.name} only. <a href="/rentals" style={{ textDecoration: "underline" }}>All {config.CITY_NAME} rentals</a>
+            </p>
+          )}
           <p className="hl-desc">Browse every active rental — condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
 
           {/* Search box */}

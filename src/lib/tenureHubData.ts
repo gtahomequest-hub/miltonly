@@ -23,7 +23,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
-import type { HubData, HubStats, TenureCompareFacts } from "@/components/hub/types";
+import type { HubData, HubStats, HubFact, TenureCompareFacts } from "@/components/hub/types";
 import { fullPrice, compactPrice } from "@/components/hub/format";
 
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
@@ -132,12 +132,30 @@ async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
 
 // ---- the seam --------------------------------------------------------------
 
+/**
+ * A TENURE hub's glance entries are definitional, not measured: they explain what a tenure IS.
+ * Each says so in its basis. The fee and "vs" rows keep the per-tenure relabelling
+ * (`glanceLabels`) the five-slot glance used to apply, so the condo guide still says
+ * "vs Freehold" rather than "vs Condo".
+ */
+function definitionalFacts(cfg: TenureConfig): HubFact[] {
+  const relabel = (label: string) =>
+    label === "Monthly fee" ? cfg.glanceLabels?.fee ?? label : label === "vs Condo" ? cfg.glanceLabels?.vs ?? label : label;
+  return cfg.glanceStatic
+    .filter((g): g is { label: string; value: string } => typeof g.value === "string" && g.value.length > 0)
+    .map((g) => ({
+      key: g.label.toLowerCase().replace(/\s+/g, "-"),
+      value: g.value,
+      label: relabel(g.label),
+      basis: "how this tenure works, not a market measurement",
+    }));
+}
+
 export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | null> {
   // NULL-STATS path (POTL): sub-k activity -> run NO stat queries (no DB hit) and
   // return an editorial-only HubData. The composer hides every stat-bearing
   // section (hero tiles, at-a-glance, market). Intentionally number-free.
   if (cfg.nullStats) {
-    const glanceVal = (label: string) => cfg.glanceStatic.find((g) => g.label === label)?.value ?? "";
     return {
       slug: cfg.slug,
       name: cfg.h1,
@@ -145,13 +163,10 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
       character: cfg.character,
       intents: cfg.intents,
       stats: { typicalPrice: null, sold12mo: null, onMarket: null, dom: null },
-      atAGlance: {
-        priceRange: null,
-        dominantType: glanceVal("Home types"),
-        suits: glanceVal("Best suits").split(",").map((s) => s.trim()).filter(Boolean),
-        commute: glanceVal("Monthly fee"),
-        schools: glanceVal("vs Condo"),
-      },
+      // HubAtAGlance became a list of derived facts when the neighbourhood hubs dropped their
+      // static claims. A TENURE hub is a different animal: it explains what a tenure IS, so its
+      // glance entries are definitional rather than measured, and each says so in its basis.
+      atAGlance: { facts: definitionalFacts(cfg) },
       glanceLabels: cfg.glanceLabels,
       breadcrumbLabel: cfg.breadcrumbLabel ?? "Freehold",
       sectionTitles: cfg.sectionTitles ?? {
@@ -346,12 +361,20 @@ export async function getTenureHubData(cfg: TenureConfig): Promise<HubData | nul
     feeHi,
   };
 
+  // The one measured entry leads, with the sample behind it. It is an ASKING range over the
+  // priced active listings, so its basis says so; it is not a sold figure and never was.
   const glance = {
-    priceRange,
-    dominantType: cfg.glanceStatic.find((g) => g.label === "Home types")?.value ?? "Detached, semis & freehold townhomes",
-    suits: (cfg.glanceStatic.find((g) => g.label === "Best suits")?.value ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-    commute: cfg.glanceStatic.find((g) => g.label === "Monthly fee")?.value ?? "No condo fee",
-    schools: cfg.glanceStatic.find((g) => g.label === "vs Condo")?.value ?? "Full control, full upkeep",
+    facts: [
+      ...(priceRange
+        ? [{
+            key: "price-range",
+            value: priceRange,
+            label: "Asking price range",
+            basis: `asking prices across ${prices.length} active ${prices.length === 1 ? "listing" : "listings"} today`,
+          }]
+        : []),
+      ...definitionalFacts(cfg),
+    ],
   };
 
   return {

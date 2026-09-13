@@ -3,6 +3,7 @@
 
 import { Fragment, useState } from 'react';
 import type { BoardTab, MetricBlock } from '@/lib/board/computeBoard';
+import { formatDays, formatMoney1k, formatPct1 } from '@/lib/figureFormat';
 import './board.css';
 
 // Short labels for the compact inline metric selector (Price · Volume · Days · Sold/ask).
@@ -14,8 +15,10 @@ const METRICS = [
 ] as const;
 type MetricKey = (typeof METRICS)[number]['key'];
 
-const money1k = (n: number | null) => (n === null ? '—' : '$' + (Math.round(n / 1000) * 1000).toLocaleString('en-CA'));
-const pct1 = (n: number | null) => (n === null ? '—' : (n * 100).toFixed(1) + '%');
+// THE SHARED FORMATTERS. These were module-local copies, and the mega menu re-derived its own
+// and got them wrong. One definition each now, in figureFormat.ts, imported by both surfaces.
+const money1k = formatMoney1k;
+const pct1 = formatPct1;
 const titleCase = (slug: string) =>
   slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -180,7 +183,7 @@ export function TheBoard({ board }: { board: BoardTab[] }) {
             <div className="brd-tile-l">Sales volume<span>trailing 12mo</span></div>
           </div>
           <div className="brd-tile">
-            <div className="brd-tile-v" data-fig="board-days" data-value={tab.daysToSell.value === null ? '—' : `${Math.round(tab.daysToSell.value)} days`}>{tab.daysToSell.value === null ? '—' : Math.round(tab.daysToSell.value)}</div>
+            <div className="brd-tile-v" data-fig="board-days" data-value={formatDays(tab.daysToSell.value)}>{tab.daysToSell.value === null ? '—' : Math.round(tab.daysToSell.value)}</div>
             <div className="brd-tile-l">Days to sell<span>{tab.daysToSell.window}</span></div>
           </div>
           <div className="brd-tile">
