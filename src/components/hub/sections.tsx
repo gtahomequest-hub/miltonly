@@ -221,11 +221,10 @@ export function HubStreets({ data }: { data: HubData }) {
   const n = data.streets.length;
   const max = Math.max(...data.streets.map((s) => s.soldCount ?? 0), 1);
   const filmed = data.streets.filter((s) => s.hasVideo).length;
-  // RUNG THREE. The hub's own A-to-Z page exists only above the ladder cap (it would be a
-  // duplicate of this list below it); under the cap the third rung is the Milton-wide directory.
-  const action = data.hasStreetOverflow
-    ? { href: `/neighbourhoods/${data.slug}/streets`, label: `${data.streetCount} streets, A to Z` }
-    : { href: '/streets', label: 'Every Milton street, A to Z' };
+  // RUNG THREE. The ladder is every published street, so the hub's own A-to-Z page had nothing
+  // to add; since MC-012 it answers 301 to this section. The third rung is the Milton-wide
+  // directory for every hub.
+  const action = { href: '/streets', label: 'Every Milton street, A to Z' };
   return (
     <section className="hh-sec hh-streets" id="streets">
       <div className="hh-wrap">

@@ -25,6 +25,7 @@ import {
   generateLongFormStreetDescription,
   generatePhase41StreetContent,
   Phase41GenerationError,
+  buildJudgeVerdict,
   type SafeStreetStats,
 } from "@/lib/ai/compliance";
 
@@ -430,6 +431,7 @@ export async function generateStreetContent(
         totalOutputTokens: 0,
         totalCostUsd: 0,
         attempts: [],
+        judgeRounds: [],
       };
     } else {
       try {
@@ -456,6 +458,7 @@ export async function generateStreetContent(
             costUsd: costFromErr,
             inputHash,
             inputJson: phase41Input as unknown as object,
+            judgeVerdict: buildJudgeVerdict(isPhase41Err ? ((err as Phase41GenerationError).payload.judgeRounds ?? []) : []) as unknown as object,
           },
         });
 
@@ -514,6 +517,7 @@ export async function generateStreetContent(
           tokensIn: phase41Result.totalInputTokens,
           tokensOut: phase41Result.totalOutputTokens,
           costUsd: phase41Result.totalCostUsd,
+          judgeVerdict: buildJudgeVerdict(phase41Result.judgeRounds) as unknown as object,
         },
       });
       // Clear any prior review row.
@@ -531,6 +535,7 @@ export async function generateStreetContent(
           costUsd: phase41Result.totalCostUsd,
           inputHash,
           inputJson: phase41Input as unknown as object,
+          judgeVerdict: buildJudgeVerdict(phase41Result.judgeRounds) as unknown as object,
         },
       });
       await prisma.streetGenerationReview.upsert({

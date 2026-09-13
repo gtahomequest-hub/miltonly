@@ -434,6 +434,83 @@
   margin-bottom: 4px;
 }
 
+/* Cited ledger and data table under a body section. Added 2026-09-11 with
+   GuideSection.cited and GuideSection.table for the source-grounded guides.
+   Existing tokens only; the mono face carries the provenance line. */
+.guides-v2 .g-cited {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 18px;
+  border-left: 2px solid var(--g-accent);
+}
+.guides-v2 .g-cited li {
+  padding: 10px 0 10px 18px;
+  border-bottom: 1px solid var(--g-border-muted);
+}
+.guides-v2 .g-cited li:last-child {
+  border-bottom: 0;
+}
+.guides-v2 .g-cited-t {
+  display: block;
+  font-family: var(--g-serif);
+  font-size: 17px;
+  line-height: 1.6;
+  color: #222;
+}
+.guides-v2 .g-src {
+  display: inline-block;
+  margin-top: 5px;
+  font-family: var(--g-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  color: var(--g-text-muted);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--g-border);
+}
+.guides-v2 .g-src:hover,
+.guides-v2 .g-src:focus-visible {
+  color: var(--g-accent);
+  border-bottom-color: var(--g-accent);
+}
+.guides-v2 .g-tablewrap {
+  overflow-x: auto;
+  margin: 8px 0 18px;
+}
+.guides-v2 .g-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.guides-v2 .g-table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: 13px;
+  color: var(--g-text-muted);
+  padding: 0 0 8px;
+}
+.guides-v2 .g-table th,
+.guides-v2 .g-table td {
+  text-align: left;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--g-border-muted);
+  vertical-align: top;
+}
+.guides-v2 .g-table th {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--g-accent);
+  font-weight: 700;
+}
+.guides-v2 .g-table td:first-child {
+  font-family: var(--g-mono);
+  white-space: nowrap;
+}
+.guides-v2 .g-faq-s {
+  margin-top: 6px;
+}
+
 /* faq */
 .guides-v2 .g-faq {
   max-width: 800px;

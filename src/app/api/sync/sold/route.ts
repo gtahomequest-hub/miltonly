@@ -14,6 +14,8 @@
 // Local test hook: `?limit=N` query param caps total upserts.
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { DB_CACHE_TAG } from "@/lib/db";
 import { getSoldDb } from "@/lib/db";
 import { runSoldSync, type AmpConfig, type SqlExecutor } from "@/lib/vow-sync";
 
@@ -60,7 +62,15 @@ export async function POST(req: NextRequest) {
     const amp: AmpConfig = { propertyUrl: TREB_API_URL, token: VOW_TOKEN, pageSize: 500 };
 
     const result = await runSoldSync({ db, amp, limit });
-    return NextResponse.json(result);
+    // MC-010: the Upstash purge inside runSoldSync is one of two caches. Every DB2 read from a
+    // page also sits in Next's Data Cache for an hour (src/lib/db.ts); a run that wrote rows
+    // drops that whole tag here, so the next render's SQL goes to the database.
+    let dataCache: "revalidated" | "untouched" = "untouched";
+    if (result.purge) {
+      revalidateTag(DB_CACHE_TAG.SOLD_DATABASE_URL);
+      dataCache = "revalidated";
+    }
+    return NextResponse.json({ ...result, dataCache });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[sync/sold] crash: ${msg}`, err instanceof Error ? err.stack : undefined);

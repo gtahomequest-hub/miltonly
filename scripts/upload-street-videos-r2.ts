@@ -42,7 +42,7 @@
 //   npx tsx --tsconfig tsconfig.test.json scripts/upload-street-videos-r2.ts --write
 //   ... --write --only=lemieux-court,locker-place
 
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -105,6 +105,27 @@ interface Meta {
   night: boolean;
   blur_verified?: boolean;
   blur_signed_at?: string;
+  /** set by the staging pass when this clip replaces one already in the bucket */
+  supersedes_r2_key?: string;
+  r2_key?: string;
+  poster_r2_key?: string;
+}
+
+// A SUPERSEDING CLIP GETS A NEW KEY (MC-007, 2026-09-11). Every object is uploaded with
+// Cache-Control immutable, max-age one year, so replacing day.mp4 in place would leave the old
+// footage at the edge for as long as any cache held it while the page claimed a new capture
+// date. locker-place and nipissing-road both supersede a clip shipped on 09-04 at the same key.
+// The new clip and its poster go under a capture-date segment, streets/<slug>/<YYYYMMDD>/day.mp4,
+// the page is repointed at that, and the old objects are deleted only after production is seen
+// serving the new URL (scripts/retire-superseded-clips.ts). deriveVideoPoster rewrites the
+// trailing /day.mp4, so the segment costs the render layer nothing.
+function keysFor(fullSlug: string, clipName: string, meta: Meta, capturedAt: Date): { clipKey: string; posterKey: string; rekeyed: boolean } {
+  const canonicalClip = `streets/${fullSlug}/${clipName}`;
+  if (meta.supersedes_r2_key && meta.supersedes_r2_key === canonicalClip) {
+    const seg = capturedAt.toISOString().slice(0, 10).replace(/-/g, "");
+    return { clipKey: `streets/${fullSlug}/${seg}/${clipName}`, posterKey: `streets/${fullSlug}/${seg}/poster.webp`, rekeyed: true };
+  }
+  return { clipKey: canonicalClip, posterKey: `streets/${fullSlug}/poster.webp`, rekeyed: false };
 }
 
 /** UTC midnight of the shot date. The filename timestamp is local and the caption renders in UTC,
@@ -153,6 +174,8 @@ export interface PlanRow {
   posterPath: string;
   clipKey: string;
   posterKey: string;
+  rekeyed: boolean;
+  metaPath: string;
   clipSize: number;
   posterSize: number;
   contentStatus: string | null;
@@ -187,15 +210,19 @@ async function buildPlan(): Promise<{ plan: PlanRow[]; refused: ManifestRow[]; p
     if (!existsSync(posterPath)) { problems.push(`${row.slug}: missing poster.webp`); continue; }
 
     const fullSlug = row.slug + SLUG_SUFFIX;
+    const capturedAt = capturedUtcMidnight(meta.captured_at);
+    const keys = keysFor(fullSlug, clipName, meta, capturedAt);
     plan.push({
       slug: row.slug,
       fullSlug,
       night,
-      capturedAt: capturedUtcMidnight(meta.captured_at),
+      capturedAt,
       clipPath,
       posterPath,
-      clipKey: `streets/${fullSlug}/${clipName}`,
-      posterKey: `streets/${fullSlug}/poster.webp`,
+      clipKey: keys.clipKey,
+      posterKey: keys.posterKey,
+      rekeyed: keys.rekeyed,
+      metaPath,
       clipSize: statSync(clipPath).size,
       posterSize: statSync(posterPath).size,
       contentStatus: await contentStatusFor(fullSlug),
@@ -228,7 +255,7 @@ async function main() {
     const sc = r.contentStatus === null ? "MISSING" : r.contentStatus === "published" ? "exists (published)" : `exists (${r.contentStatus})`;
     console.log(
       `${r.fullSlug.padEnd(26)} ${(r.night ? "night" : "day").padEnd(5)} ${String(r.clipSize).padStart(10)} ${String(r.posterSize).padStart(7)}  ` +
-      `${r.capturedAt.toISOString().slice(0, 10)} ${sc}`,
+      `${r.capturedAt.toISOString().slice(0, 10)} ${sc}${r.rekeyed ? `  RE-KEYED -> ${r.clipKey}` : ""}`,
     );
   }
   console.log(`\n${plan.length} rows, ${totalBytes} bytes (${(totalBytes / 1048576).toFixed(1)} MiB) to consider`);
@@ -257,6 +284,12 @@ async function main() {
     }
     console.log(`${r.fullSlug.padEnd(26)} ${v.action.padEnd(8)} clip ${String(v.size).padStart(8)}B  ${p.action.padEnd(8)} poster ${String(p.size).padStart(6)}B  ${dbNote}`);
     console.log(`${" ".repeat(26)} ${url}`);
+    // The keys the bytes actually landed under, written back so promote-staged-clips verifies
+    // and records the same keys rather than recomputing the canonical ones.
+    const meta = JSON.parse(readFileSync(r.metaPath, "utf8")) as Meta;
+    meta.r2_key = r.clipKey;
+    meta.poster_r2_key = r.posterKey;
+    writeFileSync(r.metaPath, JSON.stringify(meta, null, 2) + "\n", "utf8");
   }
   console.log(`\nStreetContent rows touched: ${touched.length}`);
   console.log(touched.join(","));

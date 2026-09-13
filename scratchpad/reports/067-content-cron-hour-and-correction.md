@@ -142,7 +142,175 @@ The run report gains `STATUS ... REWRITTEN over a published edition` and a
 
 ---
 
-## The regeneration is NOT run
+## ADDENDUM, same day: the regeneration RAN
+
+Core merged this branch as **`31a9ab0`** and reported the production battery
+**PASS, 11 checks, 449 pages, 99 s, exit 0**, at the served SHA. The
+precondition was met, so the held regeneration was run. Everything below the
+addendum was written before that and is left as it stood.
+
+### Core's `vercel.json` resolution is correct
+
+`vercel.json` conflicted on merge: main already carried `/api/brief/send`
+(`15 13 * * 1-5`) from `feat/leads` and both sides appended to the end of the
+same `crons` array. Core kept all three entries. Verified by parse, 17 crons,
+and both market-watch lines are present:
+
+```
+0 11 * * *     /api/sync/sold
+30 11 * * *    /api/jobs/compute-sold-stats
+15 13 * * 1-5  /api/brief/send
+0 12 * * 1     /api/content/market-watch
+0 13 * * 1     /api/content/market-watch
+```
+
+That reads the intent right, and dropping either market-watch line would have
+lost the edition for half the year. `/api/brief/send` at 13:15 UTC sits 15
+minutes after the EST firing; different paths, no interaction.
+
+### What the sold-date backfill actually did to this edition
+
+Measured before writing anything, by building the week against the corrected
+DB2 and printing it beside the stored row. **Every headline figure moved.**
+
+| | stored | corrected |
+|---|---|---|
+| homes sold | 40 | **62** |
+| previous week | 43 | **76** |
+| typical sold price | $920,000 | **$975,000** |
+| middle half | $750,000 to $1,180,000 | **$775,000 to $1,135,000** |
+| days on market | 76 | **85** |
+| sold to ask | 97.5% | **97.3%** |
+| 12-month sample | 1,531 | **1,728** |
+| 12-month typical | $930,000 | $930,000, unchanged |
+| detached, 28 days | 82 | **141** |
+| townhouse, 28 days | 42 | **75** |
+| neighbourhoods with a sale | 12 | **18** |
+| streets with a published page | 32 | **45** |
+
+New listings held at 56, which is the check that the diagnosis is right: that
+figure comes from DB1's `Listing.listedAt`, which the backfill never touched.
+Only the DB2 side moved.
+
+The cause, in Core's words: `CloseDate` is the agreed completion date, not the
+sale date. 255 rows carried a future `sold_date` and were re-dated to their
+contract date. Because every DB2 window in this tier carries `sold_date <=
+NOW()` (ruling 10), those rows were **excluded**, and sales that belonged in
+this week had been dated forward out of it. The edition undercounted by 22.
+
+### The run
+
+```
+CORRECTION_NOTE="Corrected 10 September 2026. Some sales carried their agreed
+completion date rather than the date they sold, so this edition first published
+40 sales where 62 had completed. Every figure below is rebuilt from the
+corrected records."
+WEEK_OF=2026-08-31 --publish --revalidate=https://miltonly.com
+```
+
+231 characters, under the 240 cap, no em-dash, both guards passed.
+
+`scripts/purge-sold-caches.ts` was run **first**, per Core's order: 15 keys
+deleted, which had repopulated under the 1 h TTL since Core's own purge. The
+edition's 12-month context comes through `getMiltonSoldOverall`, which is one
+of those cached keys, so generating before the purge would have baked a stale
+1,531 into a page corrected for exactly that.
+
+```
+SOLD        62   (previous week 76)
+TYPICAL     975000
+STATUS      published, REWRITTEN over a published edition
+PARAGRAPH   written - passed on attempt 1
+COST        $0.0003
+REVALIDATE  200  /market-watch/2026-08-31
+REVALIDATE  200  /market-watch
+REVALIDATE  200  /guides
+```
+
+The paragraph was regenerated rather than dropped. The stored one was wrong in
+almost every clause: it read "Sales of 40 were down from 43" and put $920,000
+*below* the 12-month figure, where the corrected week is *above* it. It passed
+the validator on the first attempt against the corrected figures.
+
+### Verified on production, not locally
+
+`https://miltonly.com/market-watch/2026-08-31`, 200:
+
+- the correction stamp renders, once, above every figure, with the note verbatim
+- 62 homes sold, $975,000, 97.3%, 85 days
+- **no occurrence of $920,000 or "40 homes sold" anywhere in the document**
+- `datePublished` **`2026-09-10T08:21:38.061Z`**, the original, unmoved
+- `dateModified` **`2026-09-10T18:01:25.631Z`**, the correction
+
+That pair is the whole point of the `publishedAt` and `dateModified` changes,
+and it is now observable on the live page rather than argued from the code.
+
+`https://miltonly.com/market-watch`, 200: the index serves the corrected
+edition as current, carries the same stamp, same figures.
+
+Em-dashes on the edition page: still **4**, the same four site-wide chrome
+occurrences catalogued below. The regenerated paragraph adds none; the
+validator forbids them.
+
+### CORRECTION to this report, later the same day: the migration-ledger claim
+
+This report justified keeping `correctionNote` out of a column partly on the
+grounds that "`_prisma_migrations` in this project is out of step with the live
+database". **That was false**, and it is corrected here rather than edited out.
+
+Measured directly against `DATABASE_URL`: **26 rows in `_prisma_migrations`, 0
+unfinished, 0 rolled back.** The ledger is clean.
+
+The earlier reading was taken against the wrong database. `prisma migrate
+status` could not run in this worktree, and the reason is sharper than "the
+variable is absent": **the Prisma CLI reads `.env`, not `.env.local`**, and
+this worktree had no `.env`. Everything else in the project reads `.env.local`
+through `loadEnvLocal()`, so the gap is invisible until a Prisma command hits
+it and fails `P1012` before opening a connection. The only way
+to make it run here is to supply a value, and the nearest-looking one is
+`NEON_DATABASE_URL_UNPOOLED`, **which is DB2**. Verified today: **DB2 has no
+`_prisma_migrations` table at all**, under either `NEON_DATABASE_URL_UNPOOLED`
+or `SOLD_DATABASE_URL`. Point Prisma at it and every migration reports
+unapplied, correctly, about the wrong database.
+
+The consequence was real. `20260910120000_market_edition` was applied with
+`db execute` on that false premise, so the ledger never recorded it while both
+tables existed with data in them. Core caught the drift, verified the live
+schema against the migration column for column and index for index, and ran
+`prisma migrate resolve --applied` rather than the migration, which would have
+failed on `CREATE TABLE`. The row reads `applied_steps_count: 0`, the signature
+of a resolve. Nothing broke only because Vercel runs `prisma generate && next
+build`, not `migrate deploy`.
+
+Both are now closed. The worktree has a gitignored `.env` and
+`npx prisma migrate status` reports **"Database schema is up to date!"** from
+here; `DIRECT_DATABASE_URL` needed no fetching, being `DATABASE_URL` with
+`-pooler` dropped from the host. And Core audited the full ledger: 26 rows, 26
+directories, 0 drift, and exactly two rows at `applied_steps_count: 0`,
+`0_init` and this one, so `market_edition` was the only migration ever applied
+outside the ledger. The "treat as unverified" flag raised with Core is
+resolved.
+
+**The decision to keep the note in `sectionsJson` stands**, on the other ground
+this report gave: nothing queries, filters or sorts on it and only the renderer
+reads it. That reason never depended on the ledger. The withdrawn one is now
+marked withdrawn in `HANDOFF-content.md`, along with the instruction it
+produced, which was the actively harmful part.
+
+### What was deliberately NOT done
+
+- **`scripts/revalidate-figure-pages.ts`, the 487-path pass, was not re-run.**
+  Core already ran it after the backfill and the battery passed at the served
+  SHA. This write changed one row, and the runner revalidated the three paths
+  that read it, all 200.
+- **No street or hub regeneration.** Core reports 17 streets crossed k5 and 9
+  crossed k10, so some can now publish a figure they were suppressing. Those
+  numbers live in `StreetContent` prose, `StreetContent` is Core's, and this
+  worktree does not write it. **Flagged for Core, not actioned.**
+
+---
+
+## The regeneration is NOT run *(as written before the addendum above)*
 
 The ruling was: regenerate 2026-08-31 **only after Core reports the battery
 green**. It is not green.

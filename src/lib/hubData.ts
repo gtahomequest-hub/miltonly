@@ -159,7 +159,7 @@ export function listingsFilterToken(rawStrings: string[]): string | null {
  *
  *   buying     /listings?neighbourhood=<token>   the feed, filtered to this hood, with the count
  *   selling    /value/<slug>                     the hood's own valuation landing
- *   renting    /rentals                          the one rentals source (it takes no hood filter)
+ *   renting    /rentals?neighbourhood=<slug>     the rentals page scoped to this hood (MC-012)
  *   investing  /sold?nbhd=<slug>                 the hood's sold record, VOW-gated on the page
  *
  * The previous squares sent "buying" to a fragment on the same page and "investing" to the
@@ -186,7 +186,7 @@ function intentsFor(input: {
   return [
     { key: "buy", label: "I'm buying", sub: buySub, href: buyHref },
     { key: "sell", label: "I'm selling", sub: `What a ${name} home is worth`, href: `/value/${slug}` },
-    { key: "rent", label: "I'm renting", sub: "Every lease listed in Milton", href: "/rentals" },
+    { key: "rent", label: "I'm renting", sub: `Leases in ${name}`, href: `/rentals?neighbourhood=${slug}` },
     { key: "invest", label: "I'm investing", sub: investSub, href: `/sold?nbhd=${encodeURIComponent(slug)}` },
   ];
 }

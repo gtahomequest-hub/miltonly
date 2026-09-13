@@ -11,6 +11,7 @@
 
 import { Resend } from "resend";
 import { config } from "@/lib/config";
+import { prisma } from "@/lib/prisma";
 import { isCountable, alertsForcedOnNonProduction, type LeadEnv } from "@/lib/lead/env";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -193,4 +194,42 @@ export async function sendOpsAlert(args: {
   });
   if (result.error) throw new Error(`ops alert refused: ${result.error.message}`);
   return result.data?.id ?? null;
+}
+
+// ── the delivery log ──────────────────────────────────────────────────────────
+//
+// Neither send above left a trace before ML-003. The Resend id came back in the response,
+// was echoed into preview diagnostics, and was gone. So "did the confirmations go out this
+// week" had no answer in the database, and the weekly digest needs one. Each send attempt
+// that reached Resend now writes one LeadActivity row on its lead: email_sent with the
+// Resend id, or email_failed with the message. A skipped send (no address, a non-production
+// alert, Resend unset) is not an attempt and leaves no row. The log never costs a lead: a
+// write failure is logged and swallowed.
+
+export type DeliveryKind = "confirmation" | "ops_alert";
+
+export interface Delivery {
+  kind: DeliveryKind;
+  outcome: "sent" | "failed" | "skipped";
+  resendId: string | null;
+  error?: string;
+}
+
+export const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+export async function recordDeliveries(leadId: string, deliveries: Delivery[]): Promise<void> {
+  const rows = deliveries
+    .filter((d) => d.outcome !== "skipped")
+    .map((d) => ({
+      leadId,
+      type: d.outcome === "sent" ? "email_sent" : "email_failed",
+      payload: d.outcome === "sent" ? { kind: d.kind, resendId: d.resendId } : { kind: d.kind, error: d.error ?? "unknown" },
+      createdBy: null,
+    }));
+  if (rows.length === 0) return;
+  try {
+    await prisma.leadActivity.createMany({ data: rows });
+  } catch (err) {
+    console.warn("[lead/notify] delivery log write failed", { leadId, err: errorMessage(err) });
+  }
 }

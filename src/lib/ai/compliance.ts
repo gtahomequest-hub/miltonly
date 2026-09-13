@@ -1052,10 +1052,87 @@ Calibration examples, all real published violations: "the street's family-orient
 
 Return ONLY a JSON object: {"pass": boolean, "findings": [{"span": "<verbatim offending text, <=140 chars>", "class": "<banned class>"}]}. Empty findings array when pass is true. No commentary.`;
 
-interface JudgeVerdict {
+export interface JudgeVerdict {
   pass: boolean;
   findings: Array<{ span: string; class: string }>;
   judgeError?: string;
+}
+
+// --- The persisted judge verdict (MC-009, 2026-09-11) ---
+// The judge's per-round findings used to live only in .judge-log.jsonl in the process's working
+// directory, which on Vercel is the function's ephemeral filesystem: for every page the cron
+// built, the round-1 findings were gone the moment the function returned, and "the judge passed"
+// could only be inferred from the page existing. Every run now carries its rounds out through the
+// result (or the error payload) and generateStreet.ts writes them to StreetGeneration.judgeVerdict
+// on every terminal update: the cron and the local runner share that path.
+export interface JudgeRound {
+  round: number;
+  pass: boolean;
+  spans: Array<{ span: string; class: string }>;
+  judgeError?: string;
+  at: string;
+}
+export interface PersistedJudgeVerdict {
+  /** "pass": the final round passed. "fail": the final round refused or the judge errored.
+   *  "not_run": the deterministic validators failed first, so the judge was never called. */
+  result: "pass" | "fail" | "not_run";
+  /** the final round's number, or null when not run */
+  round: number | null;
+  rounds: JudgeRound[];
+}
+/** Pure, so the prebuild case can assert it without a model. */
+export function buildJudgeVerdict(rounds: JudgeRound[]): PersistedJudgeVerdict {
+  if (rounds.length === 0) return { result: "not_run", round: null, rounds: [] };
+  const last = rounds[rounds.length - 1];
+  return { result: last.pass && !last.judgeError ? "pass" : "fail", round: last.round, rounds };
+}
+
+/** The judge's reply, read. Throws on a reply that carries no complete JSON object, which is
+ *  what a truncated reply looks like ({"pass": true, "findings). Pure, exported for the case. */
+/** A class the judge itself uses to say "this is fine": barclay-circle-milton was refused on
+ *  2026-09-11 with the single finding `[amenity fact, not a violation]` and `pass: false`. */
+export const NOT_A_VIOLATION = /\bnot a violation\b|\bno violation\b|\bnot a finding\b/i;
+
+export function parseJudgeReply(text: string): JudgeVerdict {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error(`no JSON in judge response: ${text.slice(0, 120)}`);
+  const parsed = JSON.parse(jsonMatch[0]) as { pass?: unknown; findings?: unknown };
+  const raw = Array.isArray(parsed.findings)
+    ? (parsed.findings as Array<{ span?: unknown; class?: unknown }>)
+        .filter((f) => typeof f?.span === "string")
+        .map((f) => ({ span: String(f.span).slice(0, 140), class: String(f.class ?? "unspecified") }))
+    : [];
+  // A finding the judge labels not a violation is not one. If every finding was such a label,
+  // the refusal had no reason and the page passes; a refusal with no findings at all stays a
+  // refusal (fail-closed), because a judge that gives no reason has not cleared the page.
+  const findings = raw.filter((f) => !NOT_A_VIOLATION.test(f.class));
+  const pass = parsed.pass === true || (raw.length > 0 && findings.length === 0);
+  return { pass, findings };
+}
+
+/** ONE RETRY ON AN UNPARSEABLE REPLY (MC-011 ruling, 2026-09-11). nadalin-heights-milton lost a
+ *  page on 09-11 to a reply that read `{"pass": true, "findings` and stopped: the judge had
+ *  passed it and the parser could not say so, and fail-closed counted the truncation as a
+ *  refusal. A reply with no complete JSON object is now asked for once more; a second such
+ *  reply, or any other error, still fails closed. A parsed refusal is never retried. The
+ *  caller is injectable so the case can exercise both paths without a model. */
+export async function judgeWithOneRetry(
+  call: () => Promise<string>,
+): Promise<JudgeVerdict & { retried: boolean }> {
+  let retried = false;
+  try {
+    try {
+      return { ...parseJudgeReply(await call()), retried };
+    } catch (first) {
+      const msg = first instanceof Error ? first.message : String(first);
+      if (!/^no JSON in judge response|Unexpected|JSON/.test(msg)) throw first;
+      retried = true;
+      return { ...parseJudgeReply(await call()), retried };
+    }
+  } catch (e) {
+    // Fail-closed per ruling: a judge error is a FAIL, never a silent pass.
+    return { pass: false, findings: [], judgeError: (e as Error).message.slice(0, 200), retried };
+  }
 }
 
 async function judgeFairHousing(
@@ -1063,33 +1140,20 @@ async function judgeFairHousing(
   slug: string,
   round: number,
 ): Promise<JudgeVerdict> {
-  let verdict: JudgeVerdict;
-  try {
-    const body = [
-      ...output.sections.map((s) => `## ${s.heading}\n${s.paragraphs.join("\n")}`),
-      ...output.faq.map((q) => `Q: ${q.question}\nA: ${q.answer}`),
-    ].join("\n\n");
+  const body = [
+    ...output.sections.map((s) => `## ${s.heading}\n${s.paragraphs.join("\n")}`),
+    ...output.faq.map((q) => `Q: ${q.question}\nA: ${q.answer}`),
+  ].join("\n\n");
+  const { retried, ...verdict } = await judgeWithOneRetry(async () => {
     const res = await callDeepSeek({
       systemPrompt: FAIR_HOUSING_JUDGE_PROMPT,
       userPrompt: body,
       maxTokens: 800,
       temperature: 0,
     });
-    const jsonMatch = res.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error(`no JSON in judge response: ${res.text.slice(0, 120)}`);
-    const parsed = JSON.parse(jsonMatch[0]) as { pass?: unknown; findings?: unknown };
-    verdict = {
-      pass: parsed.pass === true,
-      findings: Array.isArray(parsed.findings)
-        ? (parsed.findings as Array<{ span?: unknown; class?: unknown }>)
-            .filter((f) => typeof f?.span === "string")
-            .map((f) => ({ span: String(f.span).slice(0, 140), class: String(f.class ?? "unspecified") }))
-        : [],
-    };
-  } catch (e) {
-    // Fail-closed per ruling: a judge error is a FAIL, never a silent pass.
-    verdict = { pass: false, findings: [], judgeError: (e as Error).message.slice(0, 200) };
-  }
+    return res.text;
+  });
+  if (retried) console.log(`[Phase41/judge] ${slug} round=${round} first reply was unparseable; asked once more`);
   const logRow = {
     slug,
     ts: new Date().toISOString(),
@@ -1125,6 +1189,8 @@ export interface Phase41GenerationResult {
   totalOutputTokens: number;
   totalCostUsd: number;
   attempts: Phase41Attempt[];
+  /** every fair-housing judge round this run made, in order; empty when the judge never ran */
+  judgeRounds: JudgeRound[];
 }
 
 export interface Phase41GenerationErrorPayload {
@@ -1134,6 +1200,8 @@ export interface Phase41GenerationErrorPayload {
   totalOutputTokens: number;
   totalCostUsd: number;
   attempts: Phase41Attempt[];
+  /** judge rounds made before the retry budget ran out (a round-1 refusal whose retry then exhausted) */
+  judgeRounds: JudgeRound[];
 }
 
 export class Phase41GenerationError extends Error {
@@ -1953,6 +2021,7 @@ Original draft below:`;
         totalOutputTokens,
         totalCostUsd,
         attempts,
+        judgeRounds: [],
       },
     );
   }
@@ -1994,22 +2063,40 @@ Original draft below:`;
   // output, only when the deterministic validators passed. One retry round
   // with the findings appended to all three prompts; a second failure (or a
   // judge error at any round) fail-closes into the review queue.
+  const judgeRounds: JudgeRound[] = [];
   if (finalViolations.length === 0) {
     const round = __judgeRetryFeedback ? 2 : 1;
     const verdict = await judgeFairHousing(finalOutput, input.street.slug, round);
+    judgeRounds.push({
+      round,
+      pass: verdict.pass,
+      spans: verdict.findings.map((f) => ({ span: f.span, class: f.class })),
+      ...(verdict.judgeError ? { judgeError: verdict.judgeError } : {}),
+      at: new Date().toISOString(),
+    });
     if (!verdict.pass) {
       const findingText = verdict.judgeError
         ? `judge unavailable (${verdict.judgeError}) — fail-closed per ruling`
         : verdict.findings.map((f) => `"${f.span}" [${f.class}]`).join("; ");
       if (round === 1 && !verdict.judgeError) {
         console.log(`[Phase41/judge] ${input.street.slug} retrying full generation with judge feedback`);
-        const retry = await generatePhase41StreetContent(input, findingText);
+        let retry: Phase41GenerationResult;
+        try {
+          retry = await generatePhase41StreetContent(input, findingText);
+        } catch (err) {
+          // The retry's halves ran out of budget: round 1 still happened and is kept on the error.
+          if (err instanceof Phase41GenerationError) {
+            err.payload.judgeRounds = [...judgeRounds, ...(err.payload.judgeRounds ?? [])];
+          }
+          throw err;
+        }
         return {
           ...retry,
           totalInputTokens: totalInputTokens + retry.totalInputTokens,
           totalOutputTokens: totalOutputTokens + retry.totalOutputTokens,
           totalCostUsd: totalCostUsd + retry.totalCostUsd,
           attempts: [...attempts, ...retry.attempts],
+          judgeRounds: [...judgeRounds, ...retry.judgeRounds],
         };
       }
       return {
@@ -2025,6 +2112,7 @@ Original draft below:`;
         totalOutputTokens,
         totalCostUsd,
         attempts,
+        judgeRounds,
       };
     }
   }
@@ -2038,5 +2126,6 @@ Original draft below:`;
     totalOutputTokens,
     totalCostUsd,
     attempts,
+    judgeRounds,
   };
 }

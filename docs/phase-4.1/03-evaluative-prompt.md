@@ -97,6 +97,8 @@ For single-direction streets (most streets; `directionalStats` absent or only on
 
 **This section is editorial narrative, not enumeration.** Weave the most-relevant commute relationships into observation about the street's position and the rhythms of getting around. A list of destinations with drive times reads as a directory.
 
+**Describe the option, never the resident.** A commute sentence states what the street reaches and how long it takes: "the GO station is a nine-minute drive", "the 401 is reached without crossing town". It never states what residents do, use, prefer, rely on or build their day around: not "most residents take the GO", not "the train is the mode most households here would use", not "the commute most households plan around". The same holds for schools, parks, shops and every amenity: the option and its distance, never the people who use it. The fair-housing judge refused twelve pages on 2026-09-11 for sentences of the second kind.
+
   Bad pattern (do NOT write this): "Toronto is 45 minutes away. Mississauga is 22 minutes. Pearson is 32 minutes. Oakville is 24 minutes. Burlington is 20 minutes."
 
   Good pattern (STRUCTURE ONLY — substitute this street's own facts from the input; copying any phrase from this example verbatim is a validator failure): "{Street} sits in {neighbourhood from input}, a position that makes {most relevant commute mode from input} the realistic Toronto commute; {second commute relationship from input, woven into an observation about the street's position}."
@@ -104,7 +106,7 @@ For single-direction streets (most streets; `directionalStats` absent or only on
 The good pattern selects two or three commute relationships and embeds them in geographic observation, all sourced from `input.commute` and `input.nearby`. The bad pattern enumerates all five drive times in flat sequence. Choose detail over coverage. These example shapes are scaffolding, not copy: every sentence you emit must be original phrasing built from THIS street's input. Reusing an example's sentence across streets produced verbatim batch-wide boilerplate; the validator now rejects known example phrasing.
 
 **`schools`** (1–2 paragraphs, 4–8 sentences)
-**This section MUST be between 90 and 130 words.** Outputs below 90 words will fail validation and force a retry. Aim for the middle of the range. Proximity ONLY. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; present proximity and let the reader investigate the rest. Heading: "Schools nearby."
+**This section MUST be between 90 and 130 words.** Outputs below 90 words will fail validation and force a retry. Aim for the middle of the range. Proximity ONLY. Elementary first, secondary after. Public board and Catholic board both covered if input carries them. **Name the board, never the family.** "Halton District School Board schools nearby" and "the Catholic board's nearest elementary is …", never "for Catholic families", "for families who want French immersion" or any phrase that attaches a school to a kind of household: the fair-housing judge reads that as religion or family status (three round-1 refusals on 2026-09-11, all on "For Catholic families …"). Use distance in walking minutes where under ten, driving otherwise. Do not editorialize on school quality or rankings; present proximity and let the reader investigate the rest. Heading: "Schools nearby."
 
 **SPATIAL PRECISION BAN (batch-002 N4).** Distances in the input are computed from neighbourhood centroids, not per-street geocoding. A small `distanceMin` licenses "under a minute's walk" at most — NEVER "directly on the street", "right on {Street} itself", "adjacent to the street", "at the doorstep", "steps away", or "zero-minute walk", for any school, park, or station. A hard validator rule (`spatial_precision_claim`) rejects these.
 
@@ -184,7 +186,7 @@ Selection rules:
 - COMMUTE cluster: always include one.
 - BUILDER cluster: include only if the input contains a `primaryBuilder` object AND its `confidence` field equals "high". When `primaryBuilder` is absent from the input (the normal case — no builder pipeline exists yet), never name any builder anywhere on the page, and never mention "confidence" in prose: it is an internal field name, not a fact about the builder. "The builder is X, whose confidence is high" is a schema leak and a fabrication.
 - RENTAL cluster: include one if `leaseActivity !== undefined`.
-- INVESTOR cluster: include one if lease-heavy (`leasesCount > salesCount`) or condo-dominated (condo count > 50% of byType total).
+- LEASE COUNT cluster: include one if `leaseActivity` is present (it is present only when the lease count meets the publish floor).
 - ROUTING cluster: always include one as the closer.
 
 **PRICE cluster:**
@@ -223,10 +225,12 @@ When `input.aggregates.priceRange` is NON-null (full-data street), answer the pr
 - "What's the rental market like on {Street}?"
 - "What do two-bedroom condos rent for on {Street}?"
 
-**INVESTOR cluster:**
-- "Is {Street} a good fit for investors?"
+**LEASE COUNT cluster:**
+- "How many homes on {Street} were leased in the last year?"
 
-(The cap-rate question is retired: answering it requires combining the sale and lease pools, which the mixed-pool rule forbids. An investor-fit answer may describe the lease pool OR the sale pool, never a yield, cap rate, or rent-to-price figure.)
+Answer with the lease count from `aggregates.leasesCount`, as a count of leases. Never a share, a percentage, a ratio against sales, or a "split between" sales and leases: that combines the two pools, which the mixed-pool rule forbids. Never a rent figure here unless `leaseActivity.byBed` carries it and the rounding table is applied.
+
+(The investor-fit question is retired 2026-09-11: it asks who the street suits, and the fair-housing judge refuses the answer. The cap-rate question is retired: answering it requires combining the sale and lease pools, which the mixed-pool rule forbids.)
 
 **ROUTING cluster:**
 - "If {Street} isn't the right fit, what similar streets should I look at?"

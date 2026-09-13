@@ -187,9 +187,10 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
       {/* MC-003 guide up-links. A minimal street has no condo sale pill by construction, so
           the condo guide never joins this set; the three every street carries do. */}
       <GuideUplinks
-        guides={guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo') })}
+        guides={guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo'), hubSlugs: view.neighbourhoodSlug ? [view.neighbourhoodSlug] : [] })}
         context={data.name}
         variant="street"
+        hubs={view.neighbourhoodSlug ? [view.neighbourhoodSlug] : []}
       />
 
       <StreetFinalCtas data={data} />

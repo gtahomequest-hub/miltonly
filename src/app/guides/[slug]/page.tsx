@@ -42,6 +42,14 @@ export default async function GuidePage({ params }: { params: { slug: string } }
   if (!full) notFound();
   const { data, def } = full;
 
+  // A source-grounded guide names its sources in the Article node too. Unique URLs, in the
+  // order they first appear on the page; a guide with no cited sentence emits no citation key.
+  const citations = Array.from(
+    new Set(
+      data.sections.flatMap((s) => [...(s.cited ?? []).map((c) => c.source.url), ...(s.table?.source ? [s.table.source.url] : [])]),
+    ),
+  );
+
   const schemas: Array<Record<string, unknown>> = [
     generateBreadcrumbSchema([
       { name: "Home", url: config.SITE_URL },
@@ -60,6 +68,7 @@ export default async function GuidePage({ params }: { params: { slug: string } }
       isAccessibleForFree: true,
       publisher: { "@type": "Organization", name: config.SITE_NAME, url: config.SITE_URL },
       about: { "@type": "Place", name: `${config.CITY_NAME}, ${config.CITY_PROVINCE}` },
+      ...(citations.length ? { citation: citations } : {}),
     },
     ...(data.faqs.length ? [generateFAQSchema(data.faqs)] : []),
   ];

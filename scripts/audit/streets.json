@@ -1,0 +1,12 @@
+[
+  { "slug": "woodward-avenue-milton",  "shape": "full data, freehold, no clip" },
+  { "slug": "beaver-court-milton",     "shape": "thin, 4 sales in 12 months" },
+  { "slug": "harvest-drive-milton",    "shape": "zero-price, no 12-month sale" },
+  { "slug": "scott-boulevard-milton",  "shape": "with video, 22 sales" },
+  { "slug": "sauve-street-milton",     "shape": "condo-heavy, 16 of 18 condo" },
+  { "slug": "guelph-line-milton",      "shape": "rural, Rural Milton West" },
+  { "slug": "richardson-way-milton",   "shape": "sub-k, minimal template, 1 sale" },
+  { "slug": "bussel-crescent-milton",  "shape": "programme page, created 2026-09-11" },
+  { "slug": "main-street-milton",      "shape": "Main Street, 63 sales, condo 52" },
+  { "slug": "frost-court-milton",      "shape": "night clip" }
+]

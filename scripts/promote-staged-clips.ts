@@ -96,8 +96,11 @@ async function main() {
 
     const full = slug + SLUG_SUFFIX;
     const clipName = meta.night === true ? "night.mp4" : "day.mp4";
-    const clipKey = `streets/${full}/${clipName}`;
-    const posterKey = `streets/${full}/poster.webp`;
+    // The upload script writes the keys the bytes landed under (a superseding clip is re-keyed
+    // under a capture-date segment); those are verified. Only a clip uploaded before that was
+    // recorded falls back to the canonical layout.
+    const clipKey = typeof meta.r2_key === "string" && meta.r2_key.startsWith(`streets/${full}/`) ? meta.r2_key : `streets/${full}/${clipName}`;
+    const posterKey = typeof meta.poster_r2_key === "string" && meta.poster_r2_key.startsWith(`streets/${full}/`) ? meta.poster_r2_key : `streets/${full}/poster.webp`;
     const localClip = path.join(dir, clipName);
     const localPoster = path.join(dir, "poster.webp");
     if (!existsSync(localClip) || !existsSync(localPoster)) { held.push(`${slug}: local files missing`); continue; }
@@ -134,6 +137,24 @@ async function main() {
   }
 
   // ── rebuild manifest.json from the directories ──
+  // THE DIRECTORIES ARE THE FACTS; THE OLD MANIFEST IS CARRIED, NOT TRUSTED. The dashcam side
+  // (DC-004, DC-007) rebuilds this file from published/ + staged/ meta.json and carries over the
+  // row fields no meta holds (registry blocks, clipKey, exposure, Homesly clock errors) and the
+  // top-level provenance (blur generations, the approved plate model). So does this: a row starts
+  // from its old manifest row, matched on slug and capture instant, and every meta field overlays
+  // it; the top-level fields are kept and the counts recomputed. The previous manifest is backed
+  // up beside the DC backups before a byte is written.
+  const old = existsSync(MANIFEST) ? (JSON.parse(readFileSync(MANIFEST, "utf8")) as Record<string, unknown>) : {};
+  const oldRows = (Array.isArray(old.streets) ? old.streets : []) as Array<Record<string, unknown>>;
+  const backupDir = "D:/dashcam/work/_town";
+  if (existsSync(MANIFEST) && existsSync(backupDir)) {
+    const backup = path.join(backupDir, `manifest.before-MC-007-${TODAY}.json`);
+    if (!existsSync(backup)) copyFileSync(MANIFEST, backup);
+  }
+  const rowKey = (slug: unknown, capturedAt: unknown) => `${String(slug)}|${String(capturedAt ?? "").slice(0, 19)}`;
+  const oldByKey = new Map<string, Record<string, unknown>>();
+  for (const r of oldRows) oldByKey.set(rowKey(r.slug, r.captured_at), r);
+
   const streets: Array<Record<string, unknown>> = [];
   for (const [status, root] of [["published", PUBLISHED], ["staged", STAGED]] as const) {
     if (!existsSync(root)) continue;
@@ -144,37 +165,54 @@ async function main() {
       if (!meta) continue;
       const full = slug + SLUG_SUFFIX;
       const clipName = meta.night === true ? "night.mp4" : "day.mp4";
+      const prior = oldByKey.get(rowKey(slug, meta.captured_at)) ?? {};
+      // fields the manifest carries from meta by name, when present
+      const carried: Record<string, unknown> = {};
+      for (const k of ["score", "blur_signed_at", "blur_reviewer", "clipKey", "blur_generation", "exposureClass", "meanY", "darkRatio", "drive_s", "durationS", "staged_at", "registry", "supersedes_captured_at", "supersedes_r2_key", "match_status", "uploaded_at", "rekeyed_at", "retired_at"]) {
+        if (meta[k] !== undefined) carried[k] = meta[k];
+      }
       streets.push({
+        ...prior,
         slug,
         status,
         captured_at: meta.captured_at,
         night: meta.night === true,
-        r2_key: (meta.r2_key as string) ?? `streets/${full}/${clipName}`,
-        poster_r2_key: (meta.poster_r2_key as string) ?? `streets/${full}/poster.webp`,
-        score: meta.score,
+        r2_key: typeof meta.r2_key === "string" ? meta.r2_key : `streets/${full}/${clipName}`,
+        poster_r2_key: typeof meta.poster_r2_key === "string" ? meta.poster_r2_key : `streets/${full}/poster.webp`,
         blur_verified: meta.blur_verified === true,
         local_path: `${status}\\${slug}\\${clipName}`,
-        ...(meta.uploaded_at ? { uploaded_at: meta.uploaded_at } : {}),
-        ...(meta.rekeyed_at ? { rekeyed_at: meta.rekeyed_at } : {}),
+        ...carried,
       });
     }
   }
-  streets.sort((a, b) => String(a.slug).localeCompare(String(b.slug)));
+  streets.sort((a, b) => String(a.slug).localeCompare(String(b.slug)) || String(a.captured_at).localeCompare(String(b.captured_at)));
+  const isHomesly = (r: Record<string, unknown>) => String(r.slug).includes("--");
+  const oldCounts = (old.counts ?? {}) as Record<string, unknown>;
+  const blurGen: Record<string, number> = {};
+  for (const r of streets) if (r.blur_generation !== undefined) blurGen[String(r.blur_generation)] = (blurGen[String(r.blur_generation)] ?? 0) + 1;
   const manifest = {
-    generator: "claude-code upload pass",
+    ...old,
+    generator: `MC-007 rebuild from published/ + staged/ meta.json (Core upload pass; prior: ${String(old.generator ?? "none")})`,
     builtAt: TODAY,
     r2_bucket: R2_BUCKET,
     r2_base: R2_PUBLIC_BASE_URL,
     counts: {
+      ...oldCounts,
       total: streets.length,
       published: streets.filter((s) => s.status === "published").length,
       staged: streets.filter((s) => s.status === "staged").length,
+      milton: streets.filter((s) => !isHomesly(s)).length,
+      milton_published: streets.filter((s) => !isHomesly(s) && s.status === "published").length,
+      milton_staged: streets.filter((s) => !isHomesly(s) && s.status === "staged").length,
+      homesly: streets.filter(isHomesly).length,
+      blur_verified_false: streets.filter((s) => s.blur_verified !== true).length,
+      blur_gen: blurGen,
     },
     streets,
   };
   writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + "\n", "utf8");
   console.log(`\npromoted ${promoted.length}`);
-  console.log(`manifest rebuilt: ${manifest.counts.total} total, ${manifest.counts.published} published, ${manifest.counts.staged} staged`);
+  console.log(`manifest rebuilt: ${manifest.counts.total} total, ${manifest.counts.published} published, ${manifest.counts.staged} staged (was ${oldRows.length} rows)`);
 }
 
 main().catch((e) => {
