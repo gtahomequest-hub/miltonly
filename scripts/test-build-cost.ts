@@ -1,6 +1,7 @@
 // Prebuild case for MC-017 (2026-09-13), the build-cost and TTFB change:
 //   (a) hub, condo, guide and listing pages, and the three indexes, are ISR for a day, not
-//       force-dynamic, and none of the detail pages prerenders at build (no generateStaticParams)
+//       force-dynamic; each detail page declares an empty generateStaticParams (Next 14 caches a
+//       dynamic route only when it exists) so nothing prerenders and every page renders on visit
 //   (b) /listings (searchParams) stays force-dynamic
 //   (c) every DB1 write path those pages read from drops them: the three listing syncs, the two
 //       hub generators and the condo generator
@@ -30,7 +31,7 @@ for (const p of isrPages) {
   ok(/export const revalidate = 86400;/.test(c), `${p} revalidates daily`);
   ok(!/force-dynamic/.test(c), `${p} is not force-dynamic`);
   if (p.includes("[")) {
-    ok(!/generateStaticParams/.test(c), `${p} has no build-time prerender`);
+    ok(/export function generateStaticParams\(\) \{\s*return \[\];\s*\}/.test(c), `${p} declares generateStaticParams returning nothing (ISR needs it; nothing prerenders)`);
     ok(/export const dynamicParams = true;/.test(c), `${p} renders an unknown slug on first visit`);
   }
 }
