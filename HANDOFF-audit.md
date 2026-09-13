@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-13 (MA-002): the autonomous nightly audit built and proven once; waits on Core._
+_Last rewritten 2026-09-13 (MA-003): the nightly checks tightened; the rerun is the state Core merges with MC-020._
 
 ## What this worktree is
 
@@ -15,10 +15,20 @@ and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a 
 
 ## READ THIS FIRST
 
-**THE NIGHTLY AUDIT IS ON `feat/audit` AT `4a1e349` AND HAS RUN ONCE, BY HAND.** Record:
-`scratchpad/reports/MA-002-nightly-audit.md`. The baseline is committed:
-`scratchpad/audit/nightly/2026-09-13.md` and `state.json`. Email `7a8d3344-57b4-4068-bfcd-97f6ed7a63cf`
-went to gtahomequest@gmail.com through Resend.
+**THE NIGHTLY AUDIT IS ON `feat/audit`, MA-002 AT `4a1e349` AND MA-003 ON TOP; CORE MERGES THE HEAD WITH
+MC-020.** Records: `scratchpad/reports/MA-002-nightly-audit.md` and `MA-003-checks-tightened.md`. The
+committed `scratchpad/audit/nightly/2026-09-13.md` and `state.json` are the MA-003 rerun (the second run
+of the date, no email); the MA-002 proof email was `7a8d3344-57b4-4068-bfcd-97f6ed7a63cf`.
+
+**MA-003 TIGHTENED FOUR THINGS.** A catchment word counts only within twelve words of school, board,
+zone or catchment context (the match itself counts when it names one, so "school zone" always fires);
+the bare nouns never in a Town-polygon or distance sentence; the hub disclaimer ("a catchment is the
+school board's fact") is exempt; a `data-remarks` block is the seller's words and leaves the body
+before the catchment, superlative and TREB checks, and is itself an S2 `remarks-unlabelled` when it
+lacks the visible label "Listing agent's remarks". Until Core ships the attribute (MC-020), a
+listing page gets one S3 `remarks-unmarked` and its body keeps the old exemption; once the block
+exists, the rest of the listing page is our copy and is checked in full. TREB strings on our own
+copy stay S2.
 
 **IT DOES NOT RUN BY ITSELF UNTIL CORE DOES TWO THINGS.** (1) Merge `feat/audit` to main: GitHub runs
 `schedule` and lists `workflow_dispatch` only from the default branch. (2) Add two repository
@@ -28,16 +38,18 @@ the same values as `.env.local`. Without them the run completes, commits the rep
 Run workflow` proves the runner path (Chrome at `/usr/bin/google-chrome`, a lean `npm install` of
 `puppeteer-core@24 lighthouse@12`, no app install, no database).
 
-**THE BASELINE SAYS WHAT PRODUCTION LOOKS LIKE TONIGHT, 2,025 OPEN FINDINGS.** S1 32: `catchment`
-vocabulary, 30 of them the `/schools/*` title "Prices, Listings & School Zone Data", plus `/schools`
-and `/listings` chrome. S2 38: `treb-string` (the listing fact strip prints "Bungalow-Raised",
-"Sidesplit 3", "Backsplit 4"), `h1-multiple` on `/rentals`, the S2 catchment nouns. S3 1,955:
-`em-dash` 935 (every listing title and description, most street descriptions), `meta-length` 423
-and `title-length` 387 (templates), `dead-anchor` 125 (the street hero's `#type-*` links point at
-no id), `font-under-12` on all 40 sampled pages (the compliance footer at 11 px), `superlative` 29,
-`link-unpublished` 12 (`/streets/<rural road>` renders but is not on the sitemap), `link-redirect` 4.
-Nothing 4xx or 5xx, no host leak, no canonical mismatch, no JSON-LD parse failure, no overflow at
-390. `x-vercel-cache` was MISS on 497 of 507 swept pages; GET p50 2.1 s.
+**THE STATE AFTER TWO RUNS ON 2026-09-13 (1,013 PAGES SWEPT, 308 NEVER), 3,572 OPEN FINDINGS.** S1 32:
+`catchment`, the `/schools/*` title "Prices, Listings & School Zone Data" (29), `/schools` text and
+description, `/listings` "School zones". S2 16: `treb-string` 13 (the listing fact strip prints
+"Bungalow-Raised", "Sidesplit 3", "Backsplit 4"), `h1-multiple` on `/rentals`, `catchment` 2 (the
+schools guide's "boundary data" sentence and one carried listing). S3 3,524: `em-dash` 1,722,
+`meta-length` 687, `title-length` 494, `dead-anchor` 378, `remarks-unmarked` 107, `superlative` 58,
+`font-under-12` 43, `link-unpublished` 31, `link-redirect` 4. MA-003 cleared 26 hub findings (the
+disclaimer and "Schools inside the boundary" on 13 hubs). Nothing 4xx or 5xx, no host leak, no
+canonical mismatch, no JSON-LD parse failure, no overflow at 390. The rerun took 265 s: production
+answered GET p50 3.2 s (183 REVALIDATED, 267 MISS), the sweep yielded to the clock with 55 pages
+unswept and the sample stopped at 29 of 40. The clock guards work; a slow host costs coverage, not
+the run.
 
 **THE FETCH BUDGET IS THE SHAPE OF THE RUN.** The sitemap is 1,113 URLs (510 streets, 461 listings,
 144 other) and the budget is 600 fetches, so the sweep is 507 a night: the 144 non-street pages and
@@ -82,8 +94,12 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
   390, broken or unpublished link, the bare catchment nouns in school context. S3: length out of
   range, em-dash, superlative, dead anchor, missing alt, fonts under 12 px, a link that redirects, a
   page that renders but is off the sitemap, Lighthouse drops. S4: informational.
-- **Voice checks skip listing bodies** (the remarks are the seller's words) but never skip titles
-  and descriptions. Board attribution ("TRREB", the MLS mark) is not a TREB string.
+- **Catchment words** need school, board, zone or catchment context within twelve words; the bare
+  nouns are S2 and never count in a Town-polygon or distance sentence; the hub disclaimer is exempt.
+- **Remarks.** A `data-remarks` block leaves the body before the vocabulary checks and must carry the
+  label "Listing agent's remarks" (S2 `remarks-unlabelled` otherwise). A listing page without the
+  block is S3 `remarks-unmarked` and its body keeps the third-party exemption. Titles and
+  descriptions are always checked. Board attribution ("TRREB", the MLS mark) is not a TREB string.
 - **Lighthouse moves** in the email: a category down 10 (perf) or 5 (seo, a11y, bp), LCP moved a
   quarter and 500 ms, an audit newly failing.
 - **The email.** Baseline night: every open finding by severity, capped at 80. A night with change:
@@ -96,8 +112,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 report and tooling, MA-002 nightly at `4a1e349`, baseline committed |
+| `feat/audit` | MA-001 tooling, MA-002 nightly at `4a1e349`, MA-003 tightened checks on top, state committed |
 | production audited | `f01a96a` on 2026-09-12 (MA-001); the nightly baseline 2026-09-13 |
 | pages edited | none |
-| waiting on Core | merge `feat/audit`; add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` as Actions secrets; run the workflow once by hand |
+| waiting on Core | MC-020: merge the `feat/audit` head; add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` as Actions secrets; run the workflow once by hand; label the remarks block with `data-remarks` and the visible label. `D:miltonly` main holds an unpushed local merge `8326b2a` of `4a1e349` from the interrupted MC-019 (`pnpm build` exit 0); supersede or keep it |
 | next | whatever the next `MA-` prompt asks; the ten MA-001 changes and the baseline's S1 and S2 belong to core |
