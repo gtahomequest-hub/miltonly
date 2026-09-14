@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **built 2026-09-14 on `feat/video-playbook @ 0fd6cb1`, waiting on approval to merge** (MC-015; the re-key and the migration are already live, the row backfill and the retire run follow the merge).
 
 **Ownership.** Core (`D:\miltonly`, `main`) owns the app, the schema, the crons and this queue. Home (`D:\miltonly-home`), Content (`D:\miltonly-content`) and Leads (`D:\miltonly-leads`) own their tiers. Audit (`D:\miltonly-audit`, `feat/audit`, `MA-`) owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`; it reads production and never edits a page. The nightly audit commits its report to `main` at 03:00 Toronto as `audit(nightly): <date>`, and `vercel.json` `ignoreCommand` keeps that commit, and only that commit, out of Vercel builds. Findings the audit raises are Core's to take, never Audit's to fix.
 
@@ -20,7 +20,7 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 
 *Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 done**, merged as `543ef99` (merges `26381f9`; ML-001 fast-forwarded `feat/leads` to `00e0eb1` and set `BRIEF_UNSUBSCRIBE_SECRET`): all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
 
-*Out-of-queue work 2026-09-12: MC-016, the Neon egress recon. Recon only, no code. Neon's per-day consumption endpoint is Scale-plan only; measured with `pg_stat_statements` (now on DB1 and DB2) instead: ≈ 0.15 GB per battery run, `/streets`, the published-slug sets, `/rentals` and the `Neighbourhood`/`HubContent` sets are the heavy readers; ceiling proposed 16 GB/month. Record in `scratchpad/reports/MC-016-neon-egress-recon.md`. MC-017 (Vercel build cost, `fix/build-cost`) and item 6 (MC-015, `feat/video-playbook`) are next, in that order.*
+*Out-of-queue work 2026-09-12: MC-016, the Neon egress recon. Recon only, no code. Neon's per-day consumption endpoint is Scale-plan only; measured with `pg_stat_statements` (now on DB1 and DB2) instead: ≈ 0.15 GB per battery run, `/streets`, the published-slug sets, `/rentals` and the `Neighbourhood`/`HubContent` sets are the heavy readers; ceiling proposed 16 GB/month. Record in `scratchpad/reports/MC-016-neon-egress-recon.md`. MC-017 (Vercel build cost, `fix/build-cost`) **merged 2026-09-14 as `69075d2`**, and the Git-build gate (`ignoreCommand` runs a Git-triggered build only on `main`) as `3ba3d91`; record `scratchpad/reports/MC-017-merge-and-ignore.md`. Item 6 (MC-015) built the same day.*
 
 ---
 
@@ -269,6 +269,43 @@ blur refusal is.
 
 **Done when** all six are live, the 42 clip-carrying rows are backfilled, and
 `sitemap-video.xml` validates.
+
+## MC-015, 2026-09-14: built, previewed, waiting on approval to merge
+
+`feat/video-playbook @ 0fd6cb1`, CLI preview `miltonly-4vz89iwdo`, local build exit 0,
+`test-video-playbook` 40 assertions in the prebuild, battery check `video` added (18 checks).
+Record: `scratchpad/reports/MC-017-merge-and-ignore.md` (this session's report carries both).
+
+- [x] **dated keys, live on production**: all 47 clip-carrying rows point at
+  `streets/<slug>-milton/<YYYYMMDD>/{day,night}.mp4` with `poster.webp` beside each
+  (`scripts/rekey-video-dated.ts`, server-side copy, size-verified, repointed, revalidated).
+  The convention is MC-007's segment, not the `<YYYY-MM-DD>-day.mp4` spelling above: two
+  clips already lived under it and `deriveVideoPoster` reads it. The 45 old clips and 45
+  shared posters stay in the bucket until `retire-superseded-clips.ts` sees production
+  serving the new URLs (post-merge)
+- [x] **the offset**: `videoCapturedOffsetMin` / `nightCapturedOffsetMin` (minutes east of
+  UTC), migration applied to DB1; `*CapturedAt` becomes the instant. Two nullable columns,
+  asked for here by name; duration and coverage stayed in a sidecar per the 2026-08-30 rule
+- [ ] **the backfill**: `scripts/backfill-video-captured.ts --write`, **after** `0fd6cb1` is
+  on production (the old resolver would print the UTC date on the three night clips for the
+  interim). Dry run: 47 rows, 7 offsets carried from `meta.captured_at`, 40 bare local times
+  read as America/Toronto. The "42" counted two published clips with no page:
+  `louis-st-laurent-avenue` (entity, no row) and `lower-base-line-west` (no entity)
+- [x] **`sitemap-video.xml`**: 45 pages, 45 clips, duration on every one, named from
+  `robots.txt`; the page set is `publishedStreetPageSlugs`, so it can never list a page
+  `/sitemap.xml` does not. Search Console submission is a human step after the merge
+- [x] **the coverage sentence**: under every player, "A 45-second daytime pass along Anne
+  Boulevard. Filmed 7 September 2026." Endpoints and metres only when both are recorded,
+  which is never today: no `clip-coverage.js` output covers the Milton clips (the three on
+  disk target Homesly). Producing them is dashcam-side work against the GPS cache
+- [x] **the takedown mailto**: `config.video.takedownEmail`, one line under the grid
+- [x] **audio refused at upload**: ffprobe on the bytes (`scripts/videoProbe.ts`); ffprobe
+  missing refuses the run. Also: every upload keyed by date, `captured_at` without an offset
+  refused, offset columns written, page + `/streets` + `/` revalidated. Not exercised on a
+  real candidate (the 124 staged rows are Homesly, all `blur_verified: false`)
+- [x] **`video` battery check**: takedown, sentence, dated key, poster beside, no preload,
+  night after 8 pm when a time is stated, VideoObjects mirror players, clips and posters
+  HEAD 200, `sitemap-video.xml` lists exactly the pages with a clip and exactly their clips
 
 ---
 
