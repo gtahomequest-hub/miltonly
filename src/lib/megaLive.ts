@@ -10,9 +10,10 @@
 // homepage's does without a second code path formatting them.
 //
 // THE LEFT RAIL DRIVES THE RIGHT PANEL. Each menu is a rail of items and each item selects
-// its own panel: Buy has new today, price changes, condos, freehold, rentals and alerts;
-// Streets has by neighbourhood, with video, A to Z and address search; Sell has what it's
-// worth, sold this month and market watch. Every item's content is one `MegaItemContent`,
+// its own panel: Buy has new today, price changes, condos, freehold and alerts; Rent (MH-007)
+// has available now, by neighbourhood, typical rent, new this week and landlords; Streets has
+// by neighbourhood, with video, A to Z and address search; Sell has what it's worth, sold
+// this month and market watch. Every item's content is one `MegaItemContent`,
 // composed here from a live query and rendered by one component. No item may lead to an
 // empty panel: each carries at least one live block and its CTA, and the battery asserts it.
 //
@@ -26,8 +27,9 @@
 // Board renders below it) plus `getMegaExtras()` for the rest; every other page feeds it
 // from `getMegaLive()`. Two callers, one formatter.
 //
-// THE STRIPS ARE THREE DIFFERENT QUESTIONS, from three real counts:
+// THE STRIPS ARE FOUR DIFFERENT QUESTIONS, from four real counts:
 //   Buy      which streets have the most homes for sale right now   (live Listing rows)
+//   Rent     which streets have the most homes for rent right now   (live lease rows)
 //   Streets  which streets are searched for most                     (GSC impressions,
 //            when the sense run has enough of them; else 12-month sales)
 //   Sell     which streets sold the most in the last 12 months       (ResidentialStreet)
@@ -41,9 +43,10 @@ import { getNeighbourhoodCards, getRawStringHubMap, type NeighbourhoodCard } fro
 import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVideoCount, type SoldThisMonth, type StreetVideoCard } from "@/lib/homeSignals";
 import { getNewestListingCards, getListingCards } from "@/lib/listingsV2Data";
 import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
+import { getLeaseMarket, RENT_TYPE_LABEL, type LeaseMarket } from "@/lib/rentSignals";
 import { getBoardData } from "@/lib/board/boardData";
 import { resolveStreetName } from "@/lib/streetName";
-import { formatCount, formatDateProse, formatDays, formatMoney1k, formatMoneyWhole, formatPct1, NULL_GLYPH } from "@/lib/figureFormat";
+import { formatCount, formatDateProse, formatDays, formatMoney1k, formatMoneyWhole, formatPct1, formatRent, NULL_GLYPH } from "@/lib/figureFormat";
 import { getContextStrips } from "@/lib/megaContext";
 import type { ListingCardData } from "@/components/listings/v2/types";
 import type { BoardTab } from "@/lib/board/computeBoard";
@@ -51,6 +54,7 @@ import type { EditionSections } from "@/lib/marketWatch/edition";
 import type { HomepageData } from "@/components/home/types";
 import type {
   LeadSegment,
+  MegaHub,
   MegaItemContent,
   MegaLetter,
   MegaListing,
@@ -63,8 +67,23 @@ import type {
 
 export interface MegaStrips {
   buy?: MegaStrip;
+  rent?: MegaStrip;
   streets?: MegaStrip;
   sell?: MegaStrip;
+}
+
+/** The Rent menu's inputs (MH-007). The live side is DB1's available leases; the closed
+ *  side is DB2's, k-gated in rentSignals.ts. */
+export interface MegaRent {
+  /** available now, Milton-wide: the figure /rentals publishes */
+  available: number;
+  /** available now per PUBLISHED hub, by slug; a hub with none is present at 0 */
+  byHub: Map<string, number>;
+  /** the newest four available */
+  cards: ListingCardData[];
+  /** listed for lease in the last 7 days */
+  week: { count: number; cards: ListingCardData[] };
+  market: LeaseMarket;
 }
 
 /** Everything the menu needs that the homepage does not already fetch for itself. */
@@ -75,7 +94,7 @@ export interface MegaExtras {
   priceChanges: { windowDays: number; count: number; cards: ListingCardData[] };
   condos: { count: number; cards: ListingCardData[] };
   freehold: { count: number; cards: ListingCardData[] };
-  rentals: { count: number; cards: ListingCardData[] };
+  rent: MegaRent;
   /** filmed streets, newest capture first */
   videos: StreetVideoCard[];
   letters: MegaLetter[];
@@ -93,6 +112,8 @@ export interface MegaInputs {
   hubs: NeighbourhoodCard[];
   board: BoardTab[] | null;
   extras: MegaExtras;
+  /** the page's subject, when it has one: the Rent menu scopes "available now" to its hub */
+  context?: NavContext;
 }
 
 const STRIP_SIZE = 8;
@@ -105,6 +126,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // ── formatting helpers, all through figureFormat ─────────────────────────────────────────
 
 const sales = (n: number) => `${formatCount(n)} ${n === 1 ? "sale" : "sales"}`;
+const leases = (n: number) => `${formatCount(n)} ${n === 1 ? "lease" : "leases"}`;
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 /** A listing's display address, minus the city suffix the feed appends. The card sits under
@@ -200,12 +222,6 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
       cards: cards(x.freehold.cards),
       note: "Detached, semi-detached, freehold townhomes and duplexes. No condo corporation, no fee.",
     },
-    rentals: {
-      sub: `${formatCount(x.rentals.count)} available`,
-      cta: `See all ${formatCount(x.rentals.count)} for rent`,
-      lead: [fig("menu-buy-rentals", formatCount(x.rentals.count)), t(` ${plural(x.rentals.count, "home", "homes")} for rent in Milton, available now.`)],
-      cards: cards(x.rentals.cards),
-    },
     alerts: {
       sub: "One email, each weekday",
       lead: [
@@ -217,6 +233,14 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
       note: "One email each weekday morning with what listed, what sold and what moved on price. Nothing else, and no newsletter.",
     },
   };
+
+  // ── RENT (MH-007) ───────────────────────────────────────────────────────
+  // A RENTER FINDS THEIR NEIGHBOURHOOD IN TWO CLICKS: the hub list links the scoped /rentals,
+  // and on a hub or a street page "available now" is already that hub's count and its CTA
+  // already that hub's page. A LANDLORD SEES THE MARKET THEY ARE LISTING INTO: what leased,
+  // how fast and at what share of asking, from the Board's closed leases, and the form to
+  // list is the panel's CTA.
+  const rent = composeRent(i);
 
   // ── STREETS ─────────────────────────────────────────────────────────────
   const streets: Record<string, MegaItemContent> = {
@@ -321,7 +345,128 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
       : { note: "The weekly edition covers the most recent complete Monday to Sunday week. None has been published yet." },
   };
 
-  return { buy, streets, sell };
+  return { buy, rent, streets, sell };
+}
+
+/** The Rent menu, its own function because it has its own inputs. Every figure is a display
+ *  string from figureFormat; every closed-lease figure arrives already gated. */
+function composeRent(i: MegaInputs): Record<string, MegaItemContent> {
+  const x = i.extras;
+  const r = x.rent;
+  const m = r.market;
+  const cards = (rows: ListingCardData[]) => rows.slice(0, CARDS).map((l) => card(l, i.hubByRaw));
+  const available = formatCount(r.available);
+  const seeAll = `See all ${available} for rent`;
+
+  // The page's hub: a hub page's own, or a street page's (a street passes both). A hub with
+  // nothing for rent is scoped at 0, which is true, rather than falling back to Milton.
+  const hub = i.context?.hub;
+  const scoped = hub ? { name: hub.name, slug: hub.slug, count: r.byHub.get(hub.slug) ?? 0 } : null;
+
+  // Alphabetical, like the Streets menu's hub list: a visitor scans for a name they know.
+  // Every published hub is listed, at 0 where nothing is for rent, because a count of what is
+  // advertised is a count, not a suppressed figure; and each links the scoped /rentals.
+  const hubs: MegaHub[] = [...i.hubs]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((h) => ({ slug: h.slug, name: h.name, active: formatCount(r.byHub.get(h.slug) ?? 0), href: `/rentals?neighbourhood=${h.slug}` }));
+
+  const basis = m.count > 0
+    ? `Typical rent is the midpoint of the leases the Board recorded as closed in the ${m.window}, by home type, where at least five closed; a type with fewer is not stated. Asking rents on the cards are the feed's own.`
+    : undefined;
+
+  return {
+    now: {
+      sub: `${available} available`,
+      cta: scoped ? `See all ${formatCount(scoped.count)} in ${scoped.name}` : seeAll,
+      lead: scoped
+        ? [
+            fig("menu-rent-now-hub", formatCount(scoped.count)),
+            t(` ${plural(scoped.count, "home", "homes")} for rent in ${scoped.name}, available now, `),
+            fig("menu-rent-now", available),
+            t(" across Milton."),
+          ]
+        : [fig("menu-rent-now", available), t(` ${plural(r.available, "home", "homes")} for rent in Milton, available now.`)],
+      cards: cards(r.cards),
+      strip: x.strips.rent,
+      note: "Every home advertised for lease on the MLS today, newest first. Asking rents, as the feed states them.",
+    },
+    hoods: {
+      sub: `${formatCount(i.hubs.length)} neighbourhoods`,
+      cta: seeAll,
+      lead: [
+        fig("menu-rent-now", available),
+        t(" homes for rent across "),
+        fig("menu-rent-hubs", formatCount(i.hubs.length)),
+        t(" Milton neighbourhoods. Pick yours to see only what is available there."),
+      ],
+      hubs,
+      hubsLabel: "Neighbourhoods, with homes for rent now",
+      hubsFig: "menu-rent-hub",
+    },
+    typical: {
+      sub: m.typical !== null ? `Typically ${formatRent(m.typical)}` : `${leases(m.count)} on record`,
+      cta: seeAll,
+      lead:
+        m.count > 0
+          ? [
+              fig("menu-rent-leased", formatCount(m.count)),
+              t(` ${plural(m.count, "home", "homes")} leased in Milton in the ${m.window}`),
+              ...(m.typical !== null ? [t(", typically "), fig("menu-rent-typical", formatRent(m.typical)), t(".")] : [t(".")]),
+            ]
+          : [t(`No closed leases on record for the ${m.window}.`)],
+      // ONE FIGURE PER HOME TYPE, EACH GATED ON ITS OWN SAMPLE. Below the floor the value says
+      // so in words; the sample beside it says how far below.
+      figures: m.byType.map((f) => ({
+        key: f.type,
+        label: RENT_TYPE_LABEL[f.type],
+        value: f.typical !== null ? formatRent(f.typical) : "Sample too small",
+        window: m.window,
+        sample: leases(f.count),
+      })),
+      basis,
+      note: m.through ? `Closed leases through ${formatDateProse(m.through)}.` : undefined,
+    },
+    new: {
+      sub: `${formatCount(r.week.count)} this week`,
+      cta: seeAll,
+      lead: [
+        fig("menu-rent-week", formatCount(r.week.count)),
+        t(` ${plural(r.week.count, "home", "homes")} listed for rent in the last 7 days, `),
+        fig("menu-rent-now", available),
+        t(" available in all."),
+      ],
+      // The newest four regardless: a quiet week must not empty the panel.
+      cards: cards(r.week.count >= CARDS ? r.week.cards : r.cards),
+      strip: x.strips.rent,
+      note: r.week.count < CARDS ? "The newest homes for rent, most recent first." : undefined,
+    },
+    landlord: {
+      sub: "List with Aamir",
+      cta: "List your rental with Aamir",
+      // ONE TRUE SENTENCE FROM LIVE FIGURES. Three figures, each gated on the same pool; if
+      // the pool is under the floor, the sentence is the count alone.
+      lead:
+        m.count > 0
+          ? m.days !== null && m.leasedToAsk !== null
+            ? [
+                fig("menu-rent-leased", formatCount(m.count)),
+                t(` Milton ${plural(m.count, "home", "homes")} leased through the MLS in the ${m.window}, in `),
+                fig("menu-rent-days", formatDays(m.days)),
+                t(" on the market and at "),
+                fig("menu-rent-lta", formatPct1(m.leasedToAsk)),
+                t(" of asking."),
+              ]
+            : [fig("menu-rent-leased", formatCount(m.count)), t(` Milton ${plural(m.count, "home", "homes")} leased through the MLS in the ${m.window}.`)]
+          : [t(`No closed leases on record for the ${m.window}.`)],
+      // THREE PROOF POINTS, each a figure with its window and its sample.
+      figures: [
+        { key: "leased", label: "Leased in 12 months", value: formatCount(m.count), window: m.window, sample: "the Board's record" },
+        { key: "days", label: "Days to lease", value: formatDays(m.days), window: m.window, sample: leases(m.count) },
+        { key: "lta", label: "Leased to ask", value: formatPct1(m.leasedToAsk), window: m.window, sample: leases(m.count) },
+      ],
+      note: "An MLS listing is on every brokerage's site and every portal the same day, with a screened tenant (credit, references, employment) on the Ontario standard lease. A Facebook post reaches whoever scrolls past it.",
+    },
+  };
 }
 
 // ── the homepage's caller ────────────────────────────────────────────────────────────────
@@ -350,6 +495,11 @@ export function buildMegaLive(data: HomepageData, board: BoardTab[] | null, extr
 
 // ── the queries ──────────────────────────────────────────────────────────────────────────
 
+const SALE_ACTIVE = { status: "active", transactionType: { not: "For Lease" } } as const;
+/** A lease is `status='rented'` for life; `leaseStatus` carries the lifecycle. See rentalsAvailable.ts. */
+const LEASE_AVAILABLE = { transactionType: "For Lease", leaseStatus: "active" } as const;
+const SHOWN = { permAdvertise: true, city: config.PRISMA_CITY_VALUE } as const;
+
 /** slug -> display name, through the one street-name resolver. */
 async function namesFor(slugs: string[]): Promise<Map<string, string>> {
   if (slugs.length === 0) return new Map();
@@ -359,7 +509,7 @@ async function namesFor(slugs: string[]): Promise<Map<string, string>> {
 
 /** The three strips. Each is one query over a real count, filtered to published pages. */
 export async function getMegaStrips(published: Set<string>): Promise<MegaStrips> {
-  const [activeByStreet, gscRows, soldRows] = await Promise.all([
+  const [activeByStreet, rentByStreet, gscRows, soldRows] = await Promise.all([
     prisma.listing.groupBy({
       by: ["streetSlug"],
       _count: { _all: true },
@@ -370,6 +520,13 @@ export async function getMegaStrips(published: Set<string>): Promise<MegaStrips>
         transactionType: { not: "For Lease" },
         streetSlug: { in: Array.from(published) },
       },
+      orderBy: { _count: { streetSlug: "desc" } },
+      take: STRIP_SIZE,
+    }),
+    prisma.listing.groupBy({
+      by: ["streetSlug"],
+      _count: { _all: true },
+      where: { ...LEASE_AVAILABLE, ...SHOWN, streetSlug: { in: Array.from(published) } },
       orderBy: { _count: { streetSlug: "desc" } },
       take: STRIP_SIZE,
     }),
@@ -402,6 +559,7 @@ export async function getMegaStrips(published: Set<string>): Promise<MegaStrips>
 
   const names = await namesFor([
     ...activeByStreet.map((r) => r.streetSlug),
+    ...rentByStreet.map((r) => r.streetSlug),
     ...searched.map((s) => s.slug),
     ...soldRows.map((r) => r.slug),
   ]);
@@ -411,6 +569,13 @@ export async function getMegaStrips(published: Set<string>): Promise<MegaStrips>
     ? {
         label: "Most for sale right now",
         items: activeByStreet.map((r) => ({ slug: r.streetSlug, name: name(r.streetSlug), note: `${r._count._all} for sale` })),
+      }
+    : undefined;
+
+  const rent: MegaStrip | undefined = rentByStreet.length
+    ? {
+        label: "Most for rent right now",
+        items: rentByStreet.map((r) => ({ slug: r.streetSlug, name: name(r.streetSlug), note: `${r._count._all} for rent` })),
       }
     : undefined;
 
@@ -426,7 +591,7 @@ export async function getMegaStrips(published: Set<string>): Promise<MegaStrips>
         ? { label: "Busiest streets, last 12 months", items: sellItems }
         : undefined;
 
-  return { buy, streets, sell };
+  return { buy, rent, streets, sell };
 }
 
 /** The A to Z index: published street pages per first letter. Letters with none are not links.
@@ -451,10 +616,6 @@ const SUBTYPES = {
   freehold: ["Detached", "Semi-Detached", "Att/Row/Townhouse", "Duplex"],
 };
 const subtypeIn = (set: string[]) => ({ in: set.flatMap((s) => [s, `${s} `]) });
-const SALE_ACTIVE = { status: "active", transactionType: { not: "For Lease" } } as const;
-/** A lease is `status='rented'` for life; `leaseStatus` carries the lifecycle. See rentalsAvailable.ts. */
-const LEASE_AVAILABLE = { transactionType: "For Lease", leaseStatus: "active" } as const;
-const SHOWN = { permAdvertise: true, city: config.PRISMA_CITY_VALUE } as const;
 
 /** Everything the menu needs beyond what the homepage already fetches. */
 export async function getMegaExtras(): Promise<MegaExtras> {
@@ -462,7 +623,8 @@ export async function getMegaExtras(): Promise<MegaExtras> {
   const now = Date.now();
   const changed7 = { ...SALE_ACTIVE, lastPriceChangeAt: { gte: new Date(now - 7 * DAY_MS) } };
 
-  const [strips, newLast24h, changes7, condoCount, condoCards, freeholdCount, freeholdCards, rentalCount, rentalCards, videos, soldMtd, edition] =
+  const week = { ...LEASE_AVAILABLE, listedAt: { gte: new Date(now - 7 * DAY_MS) } };
+  const [strips, newLast24h, changes7, condoCount, condoCards, freeholdCount, freeholdCards, rentalCount, rentalCards, leaseWeek, leaseWeekCards, leaseByRaw, hubByRaw, market, videos, soldMtd, edition] =
     await Promise.all([
       getMegaStrips(published),
       prisma.listing.count({ where: { ...SALE_ACTIVE, ...SHOWN, listedAt: { gte: new Date(now - DAY_MS) } } }),
@@ -473,6 +635,14 @@ export async function getMegaExtras(): Promise<MegaExtras> {
       getListingCards({ where: { ...SALE_ACTIVE, propertySubType: subtypeIn(SUBTYPES.freehold) }, take: CARDS }),
       getRentalsAvailableCount(),
       getListingCards({ where: LEASE_AVAILABLE, take: CARDS }),
+      prisma.listing.count({ where: { ...week, ...SHOWN } }),
+      getListingCards({ where: week, take: CARDS }),
+      // Available leases per raw TREB string, folded onto PUBLISHED hubs below through the
+      // same map every listing-to-hub link uses; a raw string with no published hub counts
+      // for nothing rather than for a guessed page.
+      prisma.listing.groupBy({ by: ["neighbourhood"], _count: { _all: true }, where: { ...LEASE_AVAILABLE, ...SHOWN } }),
+      getRawStringHubMap(),
+      getLeaseMarket(),
       getStreetsWithVideo(POSTERS),
       getSoldThisMonth(),
       prisma.marketEdition.findFirst({
@@ -496,13 +666,19 @@ export async function getMegaExtras(): Promise<MegaExtras> {
     priceChanges = { windowDays: 30, count, cards };
   }
 
+  const byHub = new Map<string, number>();
+  for (const row of leaseByRaw) {
+    const hub = hubByRaw.get(row.neighbourhood);
+    if (hub) byHub.set(hub.slug, (byHub.get(hub.slug) ?? 0) + row._count._all);
+  }
+
   return {
     strips,
     newLast24h,
     priceChanges,
     condos: { count: condoCount, cards: condoCards },
     freehold: { count: freeholdCount, cards: freeholdCards },
-    rentals: { count: rentalCount, cards: rentalCards },
+    rent: { available: rentalCount, byHub, cards: rentalCards, week: { count: leaseWeek, cards: leaseWeekCards }, market },
     videos,
     letters: lettersOf(published),
     soldMtd,
@@ -565,6 +741,6 @@ function getMegaInputs(): Promise<MegaInputs> {
  *  (getContextStrips) and the composer is pure and cheap. */
 export async function getMegaLive(context?: NavContext): Promise<MegaLive> {
   const [inputs, strips] = await Promise.all([getMegaInputs(), getContextStrips(context)]);
-  if (!Object.keys(strips).length) return composeMegaLive(inputs);
-  return composeMegaLive({ ...inputs, extras: { ...inputs.extras, strips: { ...inputs.extras.strips, ...strips } } });
+  if (!Object.keys(strips).length) return composeMegaLive({ ...inputs, context });
+  return composeMegaLive({ ...inputs, context, extras: { ...inputs.extras, strips: { ...inputs.extras.strips, ...strips } } });
 }

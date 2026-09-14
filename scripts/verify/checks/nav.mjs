@@ -45,17 +45,25 @@ import { get } from '../lib/http.mjs';
 
 const WIDTHS = [
   { w: 380, h: 780, mobile: true },
+  // 390: the phone the MH-007 brief names for the accordion; 380 stays as the floor
+  { w: 390, h: 844, mobile: true },
   { w: 1024, h: 768, mobile: false },
   { w: 1440, h: 900, mobile: false },
 ];
-const MENUS = ['buy', 'streets', 'sell'];
-const MENU_INDEX = { buy: '/listings', streets: '/streets', sell: '/sell' };
+/** Four menus (MH-007 added Rent between Buy and Streets); Rentals left the Buy rail. */
+const MENUS = ['buy', 'rent', 'streets', 'sell'];
+const MENU_INDEX = { buy: '/listings', rent: '/rentals', streets: '/streets', sell: '/sell' };
 /** The rail, as the brief states it. Open houses are absent on purpose: see megaLive.ts. */
 const ITEMS = {
-  buy: ['new', 'changes', 'condos', 'freehold', 'rentals', 'alerts'],
+  buy: ['new', 'changes', 'condos', 'freehold', 'alerts'],
+  rent: ['now', 'hoods', 'typical', 'new', 'landlord'],
   streets: ['search', 'hoods', 'video', 'az'],
   sell: ['worth', 'soldmtd', 'watch'],
 };
+/** Figures the served panels carry in <dl class="m-mega-figs">: Sell's three, Rent's four
+ *  typical rents (one per home type, present even when suppressed) and three landlord proof
+ *  points. A count, so a panel that drops a figure is a finding. */
+const FIGS_SERVED = 3 + 4 + 3;
 /** What counts as live content inside an item's panel. A CTA alone does not. */
 const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-edition, .m-mega-strip a, .m-mega-figs dd, form.m-mega-search';
 const TYPE_FLOOR_PX = 14;
@@ -105,6 +113,8 @@ const INT = /^[\d,]{1,7}$/;
 const MONEY = /^(\$\d{1,3}(,\d{3})+|—)$/;
 const DAYS = /^(\d{1,3} days?|—)$/;
 const PCT = /^(\d{2,3}\.\d%|—)$/;
+/** A monthly rent in whole dollars, the suppression glyph, or the words the k-gate leaves. */
+const RENT = /^(\$\d{1,3}(,\d{3})*\/mo|—|Sample too small)$/;
 /** Every menu figure's stated format. A `menu-` figure with no entry here is a finding: a
  *  figure nobody declared a format for is a figure nobody is checking. */
 const FIG_FORMAT = {
@@ -114,7 +124,19 @@ const FIG_FORMAT = {
   'menu-buy-changes': INT,
   'menu-buy-condos': INT,
   'menu-buy-freehold': INT,
-  'menu-buy-rentals': INT,
+  'menu-rent-now': INT,
+  'menu-rent-now-hub': INT,
+  'menu-rent-hubs': INT,
+  'menu-rent-hub': INT,
+  'menu-rent-week': INT,
+  'menu-rent-leased': INT,
+  'menu-rent-typical': RENT,
+  'menu-rent-detached': RENT,
+  'menu-rent-semi': RENT,
+  'menu-rent-townhouse': RENT,
+  'menu-rent-condo': RENT,
+  'menu-rent-days': DAYS,
+  'menu-rent-lta': PCT,
   'menu-streets-pages': INT,
   'menu-streets-filmed': INT,
   'menu-streets-hubs': INT,
@@ -199,6 +221,36 @@ async function driveDesktop(page, url, w, h, findings) {
   await page.setViewport({ width: w, height: h });
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
   const trigger = (k) => `.m-navtrigger[aria-controls="m-mega-${k}"]`;
+
+  // THE BAR SEARCH AT 1024 AND UP (MH-006 change 5, verified by MH-007). On a page that is
+  // not the homepage the search is in the bar from the first paint, beside all four triggers
+  // and the CTA, and the row does not overflow. The homepage's copy slides in on scroll and is
+  // asserted by driveHomeScroll.
+  if (new URL(url).pathname !== '/') {
+    const bar = await page.evaluate(() => {
+      const vis = (el) => {
+        if (!el) return false;
+        const cs = getComputedStyle(el);
+        const b = el.getBoundingClientRect();
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.5 && b.width > 0 && b.height > 0;
+      };
+      const wrap = document.querySelector('nav .m-wrap');
+      const search = document.querySelector('nav .m-navsearch');
+      const input = search ? search.querySelector('input') : null;
+      return {
+        searchVisible: vis(search) && vis(input),
+        inputWidth: input ? Math.round(input.getBoundingClientRect().width) : 0,
+        triggersVisible: [...document.querySelectorAll('nav .m-navtrigger')].filter(vis).length,
+        ctaVisible: vis(document.querySelector('nav .m-navcta')),
+        overflow: wrap ? wrap.scrollWidth > wrap.clientWidth + 1 : null,
+      };
+    });
+    if (!bar.searchVisible) findings.push(`${tag}: the bar search is not visible on the page variant`);
+    else if (bar.inputWidth < 120) findings.push(`${tag}: the bar search input is ${bar.inputWidth}px wide`);
+    if (bar.triggersVisible !== MENUS.length) findings.push(`${tag}: ${bar.triggersVisible} of ${MENUS.length} triggers visible beside the bar search`);
+    if (!bar.ctaVisible) findings.push(`${tag}: the bar CTA is not visible beside the search`);
+    if (bar.overflow) findings.push(`${tag}: the bar row overflows its wrap with the search in it`);
+  }
 
   // hover with intent: resting on the trigger opens, leaving the nav closes
   const buy = await page.$(trigger('buy'));
@@ -421,7 +473,7 @@ async function driveHomeScroll(page, url, w, h, findings) {
     if (r.triggersVisible) findings.push(`${tag}: ${r.triggersVisible} trigger(s) visible beside the search between 820 and 1023`);
   } else {
     if (!r.searchVisible) findings.push(`${tag}: the search did not slide in`);
-    if (r.triggersVisible !== 3) findings.push(`${tag}: ${r.triggersVisible} of 3 triggers visible beside the search`);
+    if (r.triggersVisible !== MENUS.length) findings.push(`${tag}: ${r.triggersVisible} of ${MENUS.length} triggers visible beside the search`);
     if (!r.searchInput) findings.push(`${tag}: the bar search input has no accessible name`);
   }
 }
@@ -513,6 +565,8 @@ async function driveMobile(page, url, w, h, findings) {
     out.figs = p.querySelectorAll('.m-mega-figs dd[data-fig]').length;
     out.ctas = p.querySelectorAll('.m-mega-cta').length;
     out.strips = p.querySelectorAll('.m-mega-strip').length;
+    out.rentHubs = p.querySelectorAll('.m-mega-hubs a[href^="/rentals?neighbourhood="]').length;
+    out.landlordForm = !!p.querySelector('form.m-mega-brief input[type="email"] ~ * button.m-mega-cta, form.m-mega-brief button.m-mega-cta');
     const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
     let n;
     while ((n = walker.nextNode())) {
@@ -527,7 +581,7 @@ async function driveMobile(page, url, w, h, findings) {
     out.bandLinks = bandLinks.size;
     return out;
   }, TYPE_FLOOR_PX);
-  if (acc.items !== 3) findings.push(`${tag}: ${acc.items} accordion items, expected 3`);
+  if (acc.items !== MENUS.length) findings.push(`${tag}: ${acc.items} accordion items, expected ${MENUS.length}`);
 
   // the rail on a phone: one <details> per item, the first open by default, a tap opens the
   // rest, and none is empty
@@ -561,9 +615,11 @@ async function driveMobile(page, url, w, h, findings) {
   if (acc.cards === 0) findings.push(`${tag}: phone Buy accordion has no listing cards`);
   if (acc.cardImgs === 0) findings.push(`${tag}: phone Buy accordion has no photographs`);
   if (acc.hubs === 0) findings.push(`${tag}: phone Streets accordion lists no neighbourhoods`);
-  if (acc.figs !== 3) findings.push(`${tag}: phone Sell accordion has ${acc.figs} figures, expected 3`);
-  if (acc.ctas < 3) findings.push(`${tag}: ${acc.ctas} CTAs across the phone accordions, expected 3`);
-  if (acc.strips < 3) findings.push(`${tag}: ${acc.strips} strips across the phone accordions, expected 3`);
+  if (acc.figs !== FIGS_SERVED) findings.push(`${tag}: phone accordions carry ${acc.figs} figures, expected ${FIGS_SERVED}`);
+  if (acc.ctas < MENUS.length) findings.push(`${tag}: ${acc.ctas} CTAs across the phone accordions, expected ${MENUS.length}`);
+  if (acc.strips < MENUS.length) findings.push(`${tag}: ${acc.strips} strips across the phone accordions, expected ${MENUS.length}`);
+  if (acc.rentHubs === 0) findings.push(`${tag}: phone Rent accordion lists no neighbourhoods as scoped /rentals`);
+  if (!acc.landlordForm) findings.push(`${tag}: phone Rent accordion has no landlord form`);
   if (acc.small.length) findings.push(`${tag}: phone text below ${TYPE_FLOOR_PX}px: ${acc.small.slice(0, 3).join(' · ')}`);
   if (acc.missing.length) findings.push(`${tag}: ${acc.missing.length} of ${acc.bandLinks} desktop links absent from the phone panel: ${acc.missing.slice(0, 4).join(' ')}`);
 
@@ -639,7 +695,7 @@ export default {
     const read = [];
     const nonButton = [], badAria = [], missingPanel = [], notHidden = [], noCta = [], noStrip = [], sameStrip = [];
     const badFig = [], hubMiss = [], redirectLinks = [], deadLinks = [], railBad = [], emptyItems = [];
-    const chrome = [], contextBad = [], subMiss = [];
+    const chrome = [], contextBad = [], subMiss = [], rentBad = [];
     const allHrefs = new Set();
     const hubSlug = hubRecord.publishedSlugs[0];
     for (const path of pages) {
@@ -680,11 +736,30 @@ export default {
       const subs = (nav.match(/class="m-mega-tabsub"/g) || []).length;
       if (subs < tabs - 1) subMiss.push(`${path}: ${subs} of ${tabs} rail tabs carry a sub-label`);
       const triggers = [...nav.matchAll(/<([a-z]+)\b[^>]*class="[^"]*m-navtrigger[^"]*"[^>]*>/g)];
-      if (triggers.length !== 3) nonButton.push(`${path}: ${triggers.length} triggers`);
+      if (triggers.length !== MENUS.length) nonButton.push(`${path}: ${triggers.length} triggers`);
       for (const t of triggers) {
         if (t[1] !== 'button') nonButton.push(`${path}: trigger is <${t[1]}>`);
-        if (!/aria-expanded="false"/.test(t[0]) || !/aria-controls="m-mega-(buy|streets|sell)"/.test(t[0])) badAria.push(`${path}: ${t[0].slice(0, 80)}`);
+        if (!/aria-expanded="false"/.test(t[0]) || !/aria-controls="m-mega-(buy|rent|streets|sell)"/.test(t[0])) badAria.push(`${path}: ${t[0].slice(0, 80)}`);
       }
+      // THE RENT MENU (MH-007): every published hub as a scoped /rentals link with its count,
+      // the four typical rents, the landlord form as the panel's CTA, and Rentals gone from
+      // the Buy rail. On a hub or a street page, "available now" is the hub's own count and
+      // its CTA the hub's own scoped page.
+      const rentPanel = panelMarkup(nav, 'rent');
+      if (rentPanel) {
+        const rentHubs = [...rentPanel.body.matchAll(/href="\/rentals\?neighbourhood=([a-z0-9-]+)"/g)].map((m) => m[1]);
+        if (new Set(rentHubs).size !== hubCount) rentBad.push(`${path}: Rent lists ${new Set(rentHubs).size} hubs as scoped /rentals, expected ${hubCount}`);
+        const rentHubFigs = figures(rentPanel.body).filter((f) => f.fig === 'menu-rent-hub').length;
+        if (rentHubFigs !== hubCount) rentBad.push(`${path}: ${rentHubFigs} hub rent counts, expected ${hubCount}`);
+        for (const key of ['detached', 'semi', 'townhouse', 'condo']) if (!rentPanel.body.includes(`data-fig="menu-rent-${key}"`)) rentBad.push(`${path}: no typical rent for ${key}`);
+        if (!/<form\b[^>]*class="m-mega-search m-mega-brief"[\s\S]*?<button\b[^>]*class="m-mega-cta"/.test(rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-landlord"')))) rentBad.push(`${path}: the landlord panel does not end in its form's submit`);
+        const nowCta = (rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-now"')).match(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/) || [])[1] || '';
+        if (path.startsWith('/neighbourhoods/') || path.startsWith('/streets/')) {
+          if (!nowCta.startsWith('/rentals?neighbourhood=')) contextBad.push(`${path}: Rent "available now" CTA is ${nowCta || 'absent'}, expected the scoped /rentals`);
+          if (!rentPanel.body.includes('data-fig="menu-rent-now-hub"')) contextBad.push(`${path}: Rent "available now" does not state the hub's own count`);
+        } else if (nowCta !== '/rentals') contextBad.push(`${path}: Rent "available now" CTA is ${nowCta}, expected /rentals`);
+      }
+      if (/id="m-tab-buy-rentals"/.test(nav)) rentBad.push(`${path}: Rentals is still in the Buy rail`);
       const stripSets = [];
       for (const key of MENUS) {
         const p = panelMarkup(nav, key);
@@ -719,8 +794,7 @@ export default {
         stripSets.push(stripLinks.join(' '));
         for (const h of hrefsIn(p.body)) allHrefs.add(h);
       }
-      if (stripSets.length === 3 && (stripSets[0] === stripSets[1] || stripSets[1] === stripSets[2] || stripSets[0] === stripSets[2]))
-        sameStrip.push(path);
+      if (stripSets.length === MENUS.length && new Set(stripSets).size !== stripSets.length) sameStrip.push(path);
       const figs = figures(nav);
       for (const f of figs) {
         if (!f.fig.startsWith('menu-')) continue;
@@ -797,7 +871,7 @@ export default {
         ['rail tabs and item panels served as stated (one selected, one visible)', railBad.length, 0],
         ['rail items whose served panel is empty', emptyItems.length, 0],
         ['every panel carries a strip', noStrip.length, 0],
-        ['pages whose three strips are not all different', sameStrip.length, 0],
+        ['pages whose four strips are not all different', sameStrip.length, 0],
         ['menu figures in the wrong format', badFig.length, 0],
         ['pages missing a hub count', hubMiss.length, 0],
         ['panel hrefs that redirect', redirectLinks.length, 0],
@@ -805,10 +879,11 @@ export default {
         ['served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu', chrome.length, 0],
         ['pages whose CTA or strips do not follow the street or the hub', contextBad.length, 0],
         ['pages whose rail tabs lack sub-labels', subMiss.length, 0],
+        ['Rent menu: every hub as scoped /rentals with its count, four typical rents, the landlord form, Rentals out of Buy', rentBad.length, 0],
         ['browser runs completed', runs, expectedRuns],
-        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, CTA contrast, no-JS)', findings.length, 0],
+        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS)', findings.length, 0],
       ],
-      examples: [...chrome, ...contextBad, ...subMiss, 
+      examples: [...chrome, ...contextBad, ...subMiss, ...rentBad,
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,
         ...sameStrip.map((p) => `identical strips on ${p}`),
         ...railBad, ...emptyItems, ...badFig, ...hubMiss, ...redirectLinks, ...deadLinks, ...findings,

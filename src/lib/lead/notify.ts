@@ -66,6 +66,8 @@ export function confirmationLineFor(ctx: NotifyContext): string {
       return `Your pre-approval request is in. ${FIRST_NAME}'s broker calls within one business day with a real approval, not an estimate.`;
     case "landlord-listing-page":
       return `${FIRST_NAME} prepares every rental valuation by hand from comparable leases. Your figure arrives by email within 24 business hours.`;
+    case "landlord":
+      return `Your listing request is in. ${FIRST_NAME} replies during business hours with a rent figure from the comparable leases and what listing on the MLS involves.`;
     case "seller-listing-page":
       return `${FIRST_NAME} prepares every valuation by hand from comparable sales. Your written report arrives by email within 24 business hours.`;
     case "alert":
@@ -111,6 +113,8 @@ function confirmationSubject(ctx: NotifyContext): string {
     case "landlord-listing-page":
     case "seller-listing-page":
       return "Your valuation is being prepared";
+    case "landlord":
+      return "Your listing request is in";
     case "alert":
     case "new-match-alert":
       return "Your search is saved";

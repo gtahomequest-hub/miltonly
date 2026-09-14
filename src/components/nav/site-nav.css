@@ -57,6 +57,9 @@ nav .sn-skip-target {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* four triggers, the search and the CTA fill a 1024 row (MH-007); the gap keeps the
+     wordmark off the first trigger when space-between has nothing left to spread */
+  gap: 16px;
   height: 66px;
   color: #ffffff;
 }
@@ -145,6 +148,23 @@ nav .sn-skip-target {
 @media (min-width: 1024px) {
   .site-nav .m-navsearch.m-show {
     display: flex;
+    /* it gives way before the triggers or the CTA do */
+    flex: 0 1 380px;
+    min-width: 170px;
+  }
+  /* the wordmark, the triggers and the CTA hold their width; only the search gives */
+  .site-nav .m-logo,
+  .site-nav .m-navlinks,
+  .site-nav .m-navcta {
+    flex-shrink: 0;
+  }
+  .site-nav .m-navcta {
+    white-space: nowrap;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1180px) {
+  .site-nav .m-navlinks {
+    gap: 20px;
   }
 }
 .site-nav .m-navsearch:focus-within {
@@ -734,12 +754,21 @@ nav .m-mega-frames .m-mega-sub {
   padding: 6px 8px 7px;
 }
 
-/* SELL: three figures, each with its own window */
+/* SELL: three figures, each with its own window. RENT (MH-007): four typical rents, or three
+   landlord proof points. A wrapping row rather than a three-column grid, so four fit at 1024
+   and a suppressed one ("Sample too small", set smaller and in Inter, since it is words and
+   not a figure) does not stretch the column beside it. */
 nav .m-mega-figs {
   margin: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, max-content));
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px 40px;
+}
+nav .m-mega-figs dd[data-value="Sample too small"] {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
 }
 nav .m-mega-figs dt {
   font-size: 14px;
@@ -963,10 +992,14 @@ nav button.m-mega-cta[disabled] {
   opacity: 0.7;
   cursor: default;
 }
-/* the brief form ends in the panel CTA, so its email row has no button of its own */
+/* the brief form ends in the panel CTA, so its email row has no button of its own; the
+   landlord form (MH-007) is the same shape with two rows, the rental's address and the email */
 nav .m-mega-brief .m-mega-cta {
   margin-top: 12px;
   align-self: flex-start;
+}
+nav .m-mega-brief .m-mega-searchrow + .m-mega-searchrow {
+  margin-top: 8px;
 }
 nav a.m-mega-cta:hover,
 nav a.m-mega-cta:focus-visible,
@@ -980,6 +1013,13 @@ nav button.m-mega-cta:focus-visible {
 @media (max-width: 1180px) {
   nav .m-mega-in {
     padding: 18px 24px 20px;
+  }
+  /* four typical rents in one row of the narrower main column */
+  nav .m-mega-figs {
+    gap: 12px 28px;
+  }
+  nav .m-mega-figs dd {
+    font-size: 26px;
   }
   nav .m-mega-body {
     grid-template-columns: 180px minmax(0, 1fr);
@@ -1131,11 +1171,19 @@ nav .sn-acc-body .m-mega-hubs a {
   font-size: 16px;
 }
 nav .sn-acc-body .m-mega-figs {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 8px 24px;
+}
+nav .sn-acc-body .m-mega-figs > div {
+  flex: 1 1 40%;
 }
 nav .sn-acc-body .m-mega-figs dd {
   font-size: 22px;
+}
+nav .sn-acc-body .m-mega-figs dd.m-mega-figwin {
+  font-size: 14px;
+}
+nav .sn-acc-body .m-mega-figs dd[data-value="Sample too small"] {
+  font-size: 16px;
 }
 nav .sn-acc-body .m-mega-strip a {
   min-height: 40px;
