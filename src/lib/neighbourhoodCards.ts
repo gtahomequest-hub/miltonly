@@ -21,6 +21,7 @@
 // the public MLS is public by construction. It is the sold-side aggregate that carries
 // the VOW obligation, and that is the figure this module gates.
 import { prisma } from "@/lib/prisma";
+import { publishedHubSlugs } from "@/lib/hubSets";
 import { getMiltonSoldByNeighbourhood } from "@/lib/soldAggregates";
 
 export interface NeighbourhoodCard {
@@ -44,10 +45,7 @@ export interface NeighbourhoodCard {
  * from it gets no link rather than a guessed one.
  */
 export async function getRawStringHubMap(): Promise<Map<string, { slug: string; name: string }>> {
-  const published = await prisma.hubContent.findMany({
-    where: { status: "published" },
-    select: { neighbourhoodSlug: true },
-  });
+  const published = (await publishedHubSlugs()).map((neighbourhoodSlug) => ({ neighbourhoodSlug }));
   const hoods = await prisma.neighbourhood.findMany({
     where: { slug: { in: published.map((p) => p.neighbourhoodSlug) } },
     select: { slug: true, name: true, rawStrings: true },
