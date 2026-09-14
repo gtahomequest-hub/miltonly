@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-14 (MC-017 close, MC-015 built): MC-017 merged and on production, Git-triggered builds now run only on `main`; MC-015 built on `feat/video-playbook`, previewed from the CLI, battery-clean, waiting on approval to merge. Two deadlines below, one of them 17 days out._
+_Last rewritten 2026-09-14 (MC-015): MC-017 merged and on production, Git-triggered builds run only on `main`; MC-015 built on `feat/video-playbook` @ `b090002`, its data moves already live (dated keys, GPS capture times, three clips relabelled day), previewed from the CLI, battery-clean, waiting on approval to merge. Node 20 stops deploying on 2026-10-01._
 
 ## READ THIS FIRST
 
@@ -45,48 +45,72 @@ hub `/neighbourhoods/timberlea` 2.13 s → 0.18 s, condo 0.90 s → 0.15 s, guid
 (the battery was running concurrently), listing 0.49 s → 0.15 s. `X-Vercel-Cache: HIT` on all
 four after the first hit. `scratchpad/mc003/ttfb-after-69075d2-prod.txt`.
 
-**MC-015 IS BUILT ON `feat/video-playbook` @ `0fd6cb1` AND WAITS ON APPROVAL TO MERGE.**
-CLI preview `miltonly-4vz89iwdo` serving `0fd6cb1`; battery on the preview in the report.
-Local build exit 0, 149/149; `test-video-playbook` 40 assertions in the prebuild; the battery
-has an 18th check, `video`. What is live and what is not:
+**MC-015 IS BUILT ON `feat/video-playbook` AND WAITS ON APPROVAL TO MERGE.** Head is the docs
+commit on top of `b090002` (app code). CLI preview `miltonly-3d306kdaz` serving `b090002`,
+battery on the preview in the report (`scratchpad/reports/MC-015-video-playbook.md`). Local
+build exit 0, 149/149; `test-video-playbook` 50 assertions in the prebuild; the battery has an
+18th check, `video`. **Everything below the code is already live on production**, because the
+data moves were done in the order the queue set (copy, repoint, confirm per page, delete) and
+the old resolver prints the same dates from the new instants; only the sentence, the takedown
+line, the sitemaps and the VideoObject duration wait for the merge.
 
-- **Dated keys: DONE, on production now.** All 47 clip-carrying rows point at
-  `streets/<slug>-milton/<YYYYMMDD>/{day,night}.mp4` with `poster.webp` beside each
-  (`scripts/rekey-video-dated.ts`: server-side CopyObject, size-verified, column repointed,
-  page revalidated; `tock-close` first as the proof, then the other 44). The **old objects are
-  still in the bucket** (45 clips + 45 shared posters); `published/<slug>/meta.json` carries
-  `supersedes_r2_key` and `rekeyed_at`, so `scripts/retire-superseded-clips.ts` deletes them
-  once it sees production serving the new URL. Run it after the merge, dry first. The manifest
-  was rebuilt (`promote-staged-clips.ts --write`, 173 rows, 49 published).
-- **Offset columns: migration applied to DB1 (`20260914200000_video_captured_offset`,
-  `migrate status` clean, 28), rows NOT yet backfilled.** `videoCapturedOffsetMin` and
-  `nightCapturedOffsetMin` are null on all 47 rows and `*CapturedAt` still holds UTC midnight.
-  Run `npx tsx --tsconfig tsconfig.test.json scripts/backfill-video-captured.ts --write`
-  **after** `0fd6cb1` is on production, not before: the old resolver formats the instant in
-  UTC and would print 26 August on the three 20:15 to 20:21 night clips for the interim. The
-  new resolver reads a null offset as the old semantics, so the order is deploy, then backfill.
-  Dry run: 47 rows, 7 carry an offset in `meta.captured_at`, 40 are bare local times read as
-  America/Toronto (-240; `-04:00` is the zone's offset on those dates, not a guess). The 42 the
-  queue counted include two published clips with no StreetContent row, below.
-- **Sidecar `src/data/streetVideoMeta.json`: DONE**, 47 dated keys, duration from ffprobe on
-  the published bytes, zero audio streams on all 47, coverage endpoints null on all 47 (no
-  clip-coverage.js output covers the Milton clips; the existing outputs target Homesly).
-  Rebuilt by the same backfill script (`--write --sidecar-only` touches no row).
-- **`sitemap-video.xml`: DONE**, 45 pages / 45 clips on the preview (the 2 draft rows are
-  not published), named from `robots.txt` beside `/sitemap.xml`. Submit it in Search Console
-  after the merge; nothing here does that.
-- **Coverage sentence: DONE**, under every player: "A 45-second daytime pass along Anne
-  Boulevard. Filmed 7 September 2026." Endpoints and metres appear only when both are
-  recorded, which today is never. After the backfill the sentence carries the time ("at 9:40
-  pm"), which is what makes a night clip's claim checkable; the battery counts night clips
-  with no stated time and fails a night clip stated before 8 pm.
-- **Takedown mailto: DONE**, `config.video.takedownEmail` = `aamir@miltonly.com`, one line
-  under the grid on every page carrying footage.
-- **Audio refusal: DONE** in `scripts/upload-street-videos-r2.ts` via `scripts/videoProbe.ts`
-  (ffprobe on the bytes; ffprobe missing refuses the run). The same script now keys every
-  upload by date, refuses a `captured_at` without an offset, writes the offset columns, and
-  revalidates the page, `/streets` and `/`. Not exercised on a real candidate: the 124 staged
-  rows are all Homesly and all `blur_verified: false`.
+- **Dated keys, live.** All 47 clip-carrying rows point at `streets/<slug>-milton/<YYYYMMDD>/
+  {day,night}.mp4` with `poster.webp` beside each (`scripts/rekey-video-dated.ts`: server-side
+  CopyObject, size-verified, column repointed, page revalidated). The 45 old clips and 45 shared
+  posters were deleted by `retire-superseded-clips.ts --write` after it saw production serving
+  every dated URL (90 objects; the old keys 404). The upload script writes dated keys only.
+- **The clock was wrong by an hour on 40 clips, and three "night" clips were daylight.** The
+  camera's filename clock runs one hour fast (raw `2026_0901_193438` opens at GPS 22:34:41Z,
+  18:34 in Milton). Every clip published before 2026-09-11 took `captured_at` from the filename.
+  `scripts/video-coverage.ts` rewrote all 47 from the GPS row of the clip's own trace
+  (`D:/dashcam/raw/.gpscache`, the first row on the street; `britannia-road` from the file's
+  first row because that stretch is the Region's, not in the Town layer), keeping the filename
+  value as `captured_at_filename`. `clifford-point`, `first-line` and `frost-court` were filed
+  as night at "20:15 to 20:21"; the GPS says 19:15 to 19:21 and their mean luma (ffmpeg
+  signalstats YAVG 114) is the daytime clips' figure, so they were relabelled day
+  (`rekey-video-dated.ts --to-day`: copied to `<seg>/day.mp4`, `videoUrl` takes the pointer,
+  night columns cleared, `meta.night` false, the `night.mp4` object retires on the next
+  retire run). No clip on the site is a night clip now; the one night row left in the manifest
+  is `lower-base-line-west`, which has no page.
+- **`*CapturedAt` is the instant, rendered in America/Toronto.** The offset columns added at
+  20:00Z were withdrawn by a second migration at 23:00Z before any row carried one
+  (`migrate status` clean, 29): the task prompt says render in Toronto, every clip is filmed in
+  Milton, and a dead nullable pair is what the 2026-08-30 rule forbids. Rows backfilled: 47
+  of 47, from `meta.captured_at` (`scripts/backfill-video-captured.ts --write`).
+- **The extent, measured.** `video-coverage.ts` projects the run onto the street's Town
+  centreline segments (`identityFromSlug` == `identityFromTown`, the geometry generator's
+  join): `capturedMetres` is the projected path, capped at the street (a close is driven in
+  and out); `streetMetres` is `STREET_GEOMETRY.lengthM`; the endpoints are the registry
+  streets whose Town segment meets the run within 40 m of its first and last point, named by
+  `resolveStreetName`, "from A" alone when both ends meet the same street or only one meets
+  any. 46 of 47 have metres, 30 have both endpoints, 14 one, 3 none (`first-line`,
+  `hinton-terrace`, `britannia-road`). Written into `published/<slug>/meta.json` and carried
+  by the manifest (`promote-staged-clips.ts` carries the coverage fields now).
+- **The sentence** is "Footage covers 460 m of 510 m, from Leiterman Drive to Parmenter
+  Point. Filmed 1 September 2026." under every player and as `VideoObject.description`
+  (prefixed by the street and town). Only sourced clauses appear: no metres and it reads
+  "Footage is one pass along <Street>"; a night clip would add "after dark".
+- **Sidecar `src/data/streetVideoMeta.json`**: 47 dated keys, duration from ffprobe on the
+  published bytes (zero audio streams on all 47), the coverage fields from meta. Rebuilt by
+  `backfill-video-captured.ts --write` (or `--sidecar-only`).
+- **`sitemap-video.xml`**: 45 pages / 45 clips (the 2 draft rows are unpublished), duration
+  and `publication_date` with the Toronto offset on every one. **`sitemap-index.xml`** names
+  it beside `/sitemap.xml`, and `robots.txt` names the index. `/sitemap.xml` itself is
+  unchanged, so the battery and the audit read what they always read. Submit the index in
+  Search Console after the merge.
+- **Takedown mailto**: `config.video.takedownEmail` = `aamir@miltonly.com`, one line under
+  the grid on every page carrying footage.
+- **Upload script**: refuses an audio stream (ffprobe, `scripts/videoProbe.ts`) and
+  `blur_verified` false, naming both; ffprobe missing refuses the run; refuses a
+  `captured_at` without an offset; writes dated keys only; revalidates the page, `/streets`
+  and `/` (`scripts/videoRevalidate.ts`). Not exercised on a real candidate: the 124 staged
+  rows are Homesly, all `blur_verified: false`.
+- **`db3` after an analytics run**: already live since MC-017 (the three jobs call
+  `revalidateTag(DB_CACHE_TAG.ANALYTICS_DATABASE_URL)`, held by `test-build-cost.ts`).
+
+**AFTER THE MERGE.** `retire-superseded-clips.ts` dry then `--write` (the three `night.mp4`
+objects at dated keys retire once production serves the day URLs, which it does); submit
+`sitemap-index.xml` in Search Console. Nothing else.
 
 **TWO PUBLISHED CLIPS HAVE NO PAGE.** `louis-st-laurent-avenue` (registry entity, no
 StreetContent row) and `lower-base-line-west` (no entity) are `published` in the manifest at
@@ -94,9 +118,11 @@ undated keys with nothing pointing at them. Left alone. The first gets a page un
 programme one day and the upload then needs a re-run; the second is an orphan candidate for
 `retire-superseded-clips.ts --orphan=lower-base-line-west`, which is a decision.
 
-**THE OFFSET IS TWO NULLABLE COLUMNS, AGAINST THE 2026-08-30 RULE, BECAUSE QUEUE ITEM 6 ASKED
-FOR IT BY NAME** ("carry the offset, and backfill the 42 rows"). Duration and coverage stayed
-out of the schema, in the sidecar, per that rule.
+**THE DASHCAM SIDE SHOULD KNOW.** Its `captured_at` rule (GPS, never the filename) was right;
+the 40 clips that predate it carried the filename clock into production for ten days, and its
+day/night rule (luma first, hour as tiebreak) was not applied to them either. `meta.json` now
+carries `captured_at_filename`, `captured_at_source`, `captured_end`, `coverage_source` and
+`relabelled` on the rows this touched.
 
 **THE `#type-<type>` DEAD ANCHORS ARE STREET PAGE V3 CHANGE 7 (HOME).** 196 S3 `dead-anchor`
 findings, one defect: a hero pill links `#type-<type>` for any type with n >= 1 and the lease
@@ -161,10 +187,8 @@ listing, 3,414 rows a render, 57 renders in the window), `publishedStreetPageSlu
 (66,712 rows scanned a render, uncached), and the `Neighbourhood`/`HubContent` sets fetched 2,600
 times a window. Proposals and a 16 GB/month ceiling are in the report. **No code was changed.**
 
-**MC-015 STATE IS IN THE TOP OF THIS FILE.** After the merge: backfill the offsets, retire
-the superseded objects, submit `sitemap-video.xml` in Search Console, then the queue's
-remaining question is coverage endpoints for the Milton clips (`clip-coverage.js` against the
-GPS cache, a dashcam-side task) and `louis-st-laurent-avenue` / `lower-base-line-west`.
+**MC-015 STATE IS IN THE TOP OF THIS FILE.** After the merge: one retire run and the Search
+Console submission. Open: `louis-st-laurent-avenue` / `lower-base-line-west`.
 
 **WHAT LANDED WITH CORE BATCH 3.** The board never the family; the judge cannot refuse on a
 finding it labels not a violation; hub titles and descriptions have no em-dash and the LIVE
@@ -216,8 +240,8 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 |---|---|
 | `main` | **`3ba3d91`** (MC-017 `69075d2` + the `ignoreCommand` merge), production serves it |
 | battery on production | **`PASS · 17 checks · 529 pages · 698s`** at `3ba3d91`, 2026-09-14 |
-| `prisma migrate status` | **clean**, 28 migrations (`video_captured_offset` applied, rows not yet backfilled) |
-| waiting on merge | **MC-015** `feat/video-playbook @ 0fd6cb1`, preview `miltonly-4vz89iwdo` |
+| `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
+| waiting on merge | **MC-015** `feat/video-playbook @ b090002` (docs on top), preview `miltonly-3d306kdaz` |
 | Node runtime | **`20.x`, deploys fail from 2026-10-01**; move to `24.x` is an open task |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -592,6 +616,6 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the MC-015 merge (`0fd6cb1`) and its post-merge steps at the top
-of this file; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
+Whatever Aamir names. Open: the MC-015 merge (`b090002` + docs) and its two post-merge steps at
+the top of this file; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
 `gordon-krantz-avenue` on a later pass.
