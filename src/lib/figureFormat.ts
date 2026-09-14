@@ -36,3 +36,11 @@ export const formatDays = (n: number | null | undefined): string => {
   const d = Math.round(n);
   return `${d} ${d === 1 ? "day" : "days"}`;
 };
+
+/** An ISO date (YYYY-MM-DD) in prose: "September 13, 2026". The menu printed "Closed sales
+ *  through 2026-09-13" (MA-004 defect 8); a date in a sentence is written as one. */
+export const formatDateProse = (iso: string): string => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12)).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+};

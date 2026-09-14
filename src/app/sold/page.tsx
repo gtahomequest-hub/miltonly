@@ -5,7 +5,7 @@
 // 90-day/100-record caps, server-side address redaction, the GET-param filter
 // contract (type / ptype / nbhd), revalidate=0, and the VOW consumer notice +
 // TREB attribution are all unchanged. Only the shell is repainted forest, with
-// SiteNav + FooterSection (ChromeGate suppresses the navy Navbar on /sold).
+// SiteNav + SiteFooter (the site chrome; the navy Navbar is gone since MH-006).
 //
 // The pre-existing anon teaser (VowGate with no street/nbhd rendered "0 homes
 // sold on Milton" under a hero that already shows the real totals) is dropped
@@ -26,7 +26,7 @@ import {
 } from "@/lib/sold-data";
 import { getMiltonSoldAggregates, getMiltonSoldOverall } from "@/lib/soldAggregates";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import SoldTableForest from "@/components/sold/SoldTableForest";
 import SoldAggregates from "@/components/sold/SoldAggregates";
 import SoldValuationCTA from "@/components/sold/SoldValuationCTA";
@@ -290,7 +290,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

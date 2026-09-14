@@ -3,12 +3,12 @@
 // and is absent from the sitemap — so it is marked noindex (Google won't index
 // an empty page) while staying a valid 200 (nothing dead-ends here). The dead
 // email-stub input (no POST) is removed — no fake signup. Minimal forest shell
-// (SiteNav + FooterSection) so a direct visitor isn't stranded on a navy box;
+// (SiteNav + SiteFooter) so a direct visitor isn't stranded on a navy box;
 // this is deliberately NOT a forest directory build (there is nothing to render).
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 
 export const metadata = {
   ...genMeta({
@@ -71,7 +71,7 @@ export default function BlogPage() {
           </p>
         </div>
       </section>
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

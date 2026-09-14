@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const metadata = genMeta({
   title: "Privacy Policy",
@@ -10,12 +11,13 @@ export const metadata = genMeta({
 
 export default function PrivacyPage() {
   return (
-    <main className="bg-white text-[#07111f] min-h-screen py-12 sm:py-16">
+    <SiteChrome>
+    <main className="bg-white text-[#073126] min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
-        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to {config.SITE_NAME}</Link>
+        <Link href="/" className="text-[13px] text-[#6b6f6a] hover:text-[#073126]">← Back to {config.SITE_NAME}</Link>
 
         <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Privacy Policy</h1>
-        <p className="text-[13px] text-[#64748b] mb-8">Last updated: April 23, 2026</p>
+        <p className="text-[13px] text-[#6b6f6a] mb-8">Last updated: April 23, 2026</p>
 
         <div className="prose prose-slate max-w-none space-y-6 text-[15px] leading-relaxed">
           <p>
@@ -76,7 +78,7 @@ export default function PrivacyPage() {
             <li>Withdraw consent to be contacted at any time</li>
           </ul>
           <p>
-            To exercise any of these rights, email <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a> or call {config.realtor.phone}.
+            To exercise any of these rights, email <a href="mailto:gtahomequest@gmail.com" className="text-[#017848] underline">gtahomequest@gmail.com</a> or call {config.realtor.phone}.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Cookies and analytics</h2>
@@ -98,15 +100,16 @@ export default function PrivacyPage() {
           <p>
             <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
             {config.brokerage.name}<br />
-            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
-            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
+            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#017848] underline">gtahomequest@gmail.com</a><br />
+            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#017848] underline">{config.realtor.phone}</a>
           </p>
-          <p className="text-[13px] text-[#64748b] mt-8">
+          <p className="text-[13px] text-[#6b6f6a] mt-8">
             If you have a complaint about our handling of your personal information, you may contact the Office of the
             Privacy Commissioner of Canada at <a href="https://www.priv.gc.ca" className="underline" target="_blank" rel="noopener noreferrer">priv.gc.ca</a>.
           </p>
         </div>
       </div>
     </main>
+    </SiteChrome>
   );
 }

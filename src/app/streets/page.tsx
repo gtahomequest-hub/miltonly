@@ -3,7 +3,7 @@
 // the 4 bulk DB1 queries (city=Milton, permAdvertise=true) are byte-identical to
 // the legacy navy page; the search / A-Z / neighbourhood-chip mechanics are the
 // same (now owned by the reusable <DirectoryGrid>). Only the shell is repainted
-// forest — SiteNav + hero + FooterSection, scoped .dir-v2 theme. ChromeGate
+// forest — SiteNav + hero + SiteFooter, scoped .dir-v2 theme. ChromeGate
 // suppresses the navy Navbar on /streets (exact) and /streets/<slug> (prefix).
 //
 // Two Wave-2 quirks folded in:
@@ -18,7 +18,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import { formatPriceFull } from "@/lib/format";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import "@/components/directory/directory-theme.css";
@@ -184,7 +184,7 @@ export default async function StreetsIndexPage() {
         itemNoun="street"
       />
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

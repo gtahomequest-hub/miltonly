@@ -50,6 +50,7 @@ export default function robots(): MetadataRoute.Robots {
         "/admin/",
         "/api/",     // was only ever in the dead static file
         "/rentals?",
+        "/search",   // the search form's no-JS redirect endpoint (MH-006); a hop, never a page
       ],
     },
     // /sitemap-index.xml (MC-015) lists /sitemap.xml and /sitemap-video.xml. Next's sitemap.ts

@@ -28,6 +28,7 @@ import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVi
 import { getNewestListingCards } from "@/lib/listingsV2Data";
 import { getMiltonSoldOverall } from "@/lib/soldAggregates";
 import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
+import { getFooterMap } from "@/lib/hubFooter";
 
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 
@@ -150,6 +151,8 @@ export async function getHomepageData(): Promise<HomepageData> {
     newestListings,
     inDemandStreets,
     footer: {
+      // The map's fixed destinations, the same read every other page's footer uses.
+      ...(await getFooterMap()),
       // EVERY published hub, not the first three. The footer is the homepage's link
       // graph and a truncated one was costing 19 crawlable links for no reader benefit.
       neighbourhoods: neighbourhoods.map((n) => ({ name: n.name, slug: n.slug })),

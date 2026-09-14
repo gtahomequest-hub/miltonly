@@ -205,6 +205,31 @@ export default {
     const figs = figures(html);
     const nodes = ldNodes(html);
 
+    // ── 1b. THE CHROME BEFORE HYDRATION, AND THE MAP (MH-006, MA-004) ────────────
+    // The homepage is the one page whose nav is composed by the page itself (buildMegaLive)
+    // and whose footer is fed by getHomepageData, so the contract every other page meets
+    // through SiteNavLive and SiteFooter is asserted here on this page's own render: the
+    // nav is labelled and carries a skip link, the bar search is a real GET to /search, the
+    // phone menu is a <details> whose compact menu is in the HTML, and the footer opens with
+    // an <h2>, has no <h4>, and carries both the search well and the brief form.
+    const chromeBad = [];
+    if (!/<nav\b[^>]*aria-label="/.test(nav)) chromeBad.push('<nav> has no aria-label');
+    if (!/class="sn-skip"/.test(nav)) chromeBad.push('no skip link');
+    if (!/<form\b[^>]*class="m-navsearch[^"]*"[^>]*action="\/search"[^>]*method="get"/.test(nav)) chromeBad.push('the bar search is not a GET form to /search');
+    if (!/<details\b[^>]*class="sn-mobile"[\s\S]*class="sn-compact"/.test(nav)) chromeBad.push('the phone menu is not a <details> with a compact menu in the HTML');
+    if (navLinks.has('/saved')) chromeBad.push('the nav links /saved, a sign-in wall');
+    const footerAt = html.indexOf('<footer');
+    const footer = footerAt === -1 ? '' : html.slice(footerAt, html.indexOf('</footer>', footerAt));
+    if (!footer) chromeBad.push('no <footer>');
+    else {
+      if (!/<h2\b/.test(footer)) chromeBad.push('the footer has no <h2>');
+      if (/<h4\b/.test(footer)) chromeBad.push('the footer still uses <h4>');
+      if (!/class="m-fsearch"/.test(footer)) chromeBad.push('the footer has no search well');
+      if (!/class="m-fbrief"/.test(footer)) chromeBad.push('the footer has no brief form');
+      for (const h of ['/privacy', '/terms', '/guides', '/schools', '/mosques', '/compare/freehold-vs-condo']) if (!internalLinks(footer).has(h)) chromeBad.push(`the footer does not link ${h}`);
+      if ((footer.match(/href="\/sold"/g) || []).length !== 1) chromeBad.push('the footer links /sold other than once');
+    }
+
     // ── 2. header anchors ────────────────────────────────────────────────
     // THE TRIGGER IS A <button> NOW (2026-09-11) and the panel's index page is the panel's
     // own CTA. The first version of the menu had <button> triggers whose panels mounted on
@@ -370,6 +395,7 @@ export default {
         [`unique internal links >= ${LINK_FLOOR}`, links.size >= LINK_FLOOR, true],
         // A parser that reaches nothing must fail on its own coverage.
         ['neighbourhood price figures found', hoodFigs.length > 0, true],
+        ['chrome contract: labelled nav, skip link, GET search, <details> menu, map footer with the brief form', chromeBad.length, 0],
         ['menu triggers rendered as buttons', nonAnchorTriggers.length, 0],
         ['menu trigger hrefs in served nav markup', missingTriggers.length, 0],
         ['rail links in served nav markup', missingRail.length, 0],

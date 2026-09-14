@@ -43,7 +43,8 @@ import { getNewestListingCards, getListingCards } from "@/lib/listingsV2Data";
 import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 import { getBoardData } from "@/lib/board/boardData";
 import { resolveStreetName } from "@/lib/streetName";
-import { formatCount, formatDays, formatMoney1k, formatMoneyWhole, formatPct1, NULL_GLYPH } from "@/lib/figureFormat";
+import { formatCount, formatDateProse, formatDays, formatMoney1k, formatMoneyWhole, formatPct1, NULL_GLYPH } from "@/lib/figureFormat";
+import { getContextStrips } from "@/lib/megaContext";
 import type { ListingCardData } from "@/components/listings/v2/types";
 import type { BoardTab } from "@/lib/board/computeBoard";
 import type { EditionSections } from "@/lib/marketWatch/edition";
@@ -55,6 +56,7 @@ import type {
   MegaListing,
   MegaLive,
   MegaStrip,
+  NavContext,
 } from "@/components/nav/megaTypes";
 
 // ── the inputs ───────────────────────────────────────────────────────────────────────────
@@ -151,8 +153,13 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
   const changesWindow = x.priceChanges.windowDays === 7 ? "the last week" : `the last ${x.priceChanges.windowDays} days`;
 
   // ── BUY ─────────────────────────────────────────────────────────────────
+  // THE RAIL READS AT A GLANCE (MA-004 change 10). Every item carries one live fact under its
+  // name and its CTA carries the count it leads to, the way Homesly's rail does; a rail of six
+  // bare words made the visitor open each one to learn what it held.
   const buy: Record<string, MegaItemContent> = {
     new: {
+      sub: `${newWeek} this week`,
+      cta: `See all ${active} for sale`,
       lead: [
         fig("menu-buy-new24", formatCount(x.newLast24h)),
         t(` ${plural(x.newLast24h, "home", "homes")} listed in the last 24 hours, `),
@@ -167,6 +174,8 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
       note: x.newLast24h < CARDS ? "The newest homes on the market, most recent first." : undefined,
     },
     changes: {
+      sub: `${formatCount(x.priceChanges.count)} in ${changesWindow}`,
+      cta: `See all ${active} for sale`,
       lead:
         x.priceChanges.count > 0
           ? [
@@ -179,20 +188,26 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
       note: "A prior price is stated only where the change was observed on this site. The feed records that a price moved, not what it moved from.",
     },
     condos: {
+      sub: `${formatCount(x.condos.count)} for sale`,
+      cta: `Every condo building`,
       lead: [fig("menu-buy-condos", formatCount(x.condos.count)), t(` ${plural(x.condos.count, "condo", "condos")} for sale in Milton.`)],
       cards: cards(x.condos.cards),
       note: "Condo apartments and condo townhouses, by the feed's own ownership type.",
     },
     freehold: {
+      sub: `${formatCount(x.freehold.count)} for sale`,
       lead: [fig("menu-buy-freehold", formatCount(x.freehold.count)), t(` freehold ${plural(x.freehold.count, "home", "homes")} for sale in Milton.`)],
       cards: cards(x.freehold.cards),
       note: "Detached, semi-detached, freehold townhomes and duplexes. No condo corporation, no fee.",
     },
     rentals: {
+      sub: `${formatCount(x.rentals.count)} available`,
+      cta: `See all ${formatCount(x.rentals.count)} for rent`,
       lead: [fig("menu-buy-rentals", formatCount(x.rentals.count)), t(` ${plural(x.rentals.count, "home", "homes")} for rent in Milton, available now.`)],
       cards: cards(x.rentals.cards),
     },
     alerts: {
+      sub: "One email, each weekday",
       lead: [
         fig("menu-buy-new", newWeek),
         t(" new listings this week and "),
@@ -206,6 +221,8 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
   // ── STREETS ─────────────────────────────────────────────────────────────
   const streets: Record<string, MegaItemContent> = {
     hoods: {
+      sub: `${formatCount(i.hubs.length)} with a page`,
+      cta: `All ${formatCount(i.hubs.length)} neighbourhoods`,
       lead: [
         fig("menu-streets-pages", pages),
         t(" Milton streets with their own page, across "),
@@ -216,23 +233,40 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
       hubs: [...i.hubs].sort((a, b) => a.name.localeCompare(b.name)).map((h) => ({ slug: h.slug, name: h.name, active: formatCount(h.activeCount) })),
     },
     video: {
+      sub: `${filmed} filmed`,
+      cta: `All ${pages} street pages`,
       lead: [fig("menu-streets-filmed", filmed), t(` ${plural(i.videoCount, "street", "streets")} filmed end to end, by day and overnight.`)],
       videos: x.videos.slice(0, POSTERS).map((v) => ({ slug: v.slug, name: v.name, poster: v.poster, variant: v.variant })),
     },
     az: {
-      lead: [fig("menu-streets-pages", pages), t(" street pages, A to Z. Every one states what homes there actually sold for.")],
+      sub: `${pages} pages`,
+      cta: `All ${pages} street pages`,
+      // "Every one states what homes there actually sold for" left this sentence: the minimal
+      // template shows no price and individual sold prices are gated (MA-004 defect 15).
+      lead: [fig("menu-streets-pages", pages), t(" street pages, A to Z, each with its own sales record and the neighbourhood around it.")],
       letters: x.letters,
     },
     search: {
+      sub: "Street, address or neighbourhood",
+      cta: `All ${pages} street pages`,
       lead: [t("Type a street, an address or a neighbourhood and land on its page. "), fig("menu-streets-pages", pages), t(" streets have one.")],
       strip: x.strips.streets,
     },
   };
 
   // ── SELL ────────────────────────────────────────────────────────────────
+  // TWO BASES SHARE THE SELL PANEL, AND THE PANEL SAYS SO (MA-004 defect 8). The typical price
+  // is the Board's mix-adjusted basket: each street-and-type cell's typical, weighted by that
+  // cell's share of the last 12 months' sales, over the cells that reached the floor of five.
+  // Days to sell and sold to ask are every urban sale in the Board's shorter window. /sold reads
+  // every Milton sale over 12 months. Three honest samples, and the reader is told which is which.
+  const basis = overall
+    ? `Typical price is mix-adjusted: each street and home type's typical, weighted by its share of the last 12 months' sales, over the ${sales(overall.typical.sample)} that reached the floor of five. Days to sell and sold to ask are every urban Milton sale in the last ${overall.daysToSell.window}. Sold data and trends reads every Milton sale over 12 months, a wider sample.`
+    : undefined;
   const sell: Record<string, MegaItemContent> = {
     worth: overall
       ? {
+          sub: overall.typical.value !== null ? `Typically ${formatMoney1k(overall.typical.value)}` : undefined,
           // The sentence states two figures; if either is suppressed there is no sentence. The
           // Board's rows are urban Milton, and the sentence says so.
           lead:
@@ -252,11 +286,13 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
             // calls on the same row, so the two surfaces cannot disagree.
             { key: "sta", label: "Sold to ask", value: formatPct1(overall.soldToAsk.value), window: overall.soldToAsk.window, sample: sales(overall.soldToAsk.sample) },
           ],
+          basis,
           strip: x.strips.sell,
           note: VALUATION_NOTE,
         }
       : { strip: x.strips.sell, note: VALUATION_NOTE },
     soldmtd: {
+      sub: `${formatCount(x.soldMtd.count)} so far`,
       // "So far": the month is still filling in. The typical is k-gated and absent below k.
       lead: [
         fig("menu-sold-mtd", formatCount(x.soldMtd.count)),
@@ -264,10 +300,11 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
         ...(x.soldMtd.typicalPrice !== null ? [t(", typically "), fig("menu-sold-mtd-typical", formatMoney1k(x.soldMtd.typicalPrice)), t(".")] : [t(".")]),
       ],
       strip: x.strips.sell,
-      note: `Closed sales through ${x.soldMtd.through}. Individual sold prices are on the street pages, for signed-in readers.`,
+      note: `Closed sales through ${formatDateProse(x.soldMtd.through)}. Individual sold prices are on the street pages, for signed-in readers.`,
     },
     watch: x.edition
       ? {
+          sub: x.edition.sections.weekLabel,
           lead: [
             fig("menu-mw-sales", formatCount(x.edition.sections.sales.count)),
             t(` ${plural(x.edition.sections.sales.count, "home", "homes")} sold in the ${x.edition.sections.weekLabel}, `),
@@ -479,7 +516,7 @@ export async function getMegaExtras(): Promise<MegaExtras> {
 // queries. A rejected promise is dropped rather than cached, so one database blip cannot
 // poison every menu on the site for the length of the TTL.
 const MEGA_TTL_MS = 5 * 60 * 1000;
-let _cache: Promise<MegaLive> | null = null;
+let _cache: Promise<MegaInputs> | null = null;
 let _cachedAt = 0;
 
 export function resetMegaLiveCache(): void {
@@ -487,7 +524,7 @@ export function resetMegaLiveCache(): void {
   _cachedAt = 0;
 }
 
-async function computeMegaLive(): Promise<MegaLive> {
+async function computeMegaInputs(): Promise<MegaInputs> {
   const [mw, newThisWeek, listings, hubByRaw, published, videoCount, hubs, board, extras] = await Promise.all([
     buildMiltonWideContext(),
     getNewThisWeekCount(),
@@ -499,7 +536,7 @@ async function computeMegaLive(): Promise<MegaLive> {
     getBoardData(),
     getMegaExtras(),
   ]);
-  return composeMegaLive({
+  return {
     onMarket: mw.activeListingsCount,
     newThisWeek,
     listings,
@@ -509,17 +546,25 @@ async function computeMegaLive(): Promise<MegaLive> {
     hubs,
     board,
     extras,
-  });
+  };
 }
 
-/** The menu's live content for any page that is not the homepage. */
-export function getMegaLive(): Promise<MegaLive> {
+function getMegaInputs(): Promise<MegaInputs> {
   if (_cache && Date.now() - _cachedAt < MEGA_TTL_MS) return _cache;
-  const p = computeMegaLive();
+  const p = computeMegaInputs();
   _cache = p;
   _cachedAt = Date.now();
   p.catch(() => {
     if (_cache === p) resetMegaLiveCache();
   });
   return p;
+}
+
+/** The menu's live content for any page that is not the homepage. The INPUTS are memoised;
+ *  the composition runs per page, because a hub or a street page swaps in its own strips
+ *  (getContextStrips) and the composer is pure and cheap. */
+export async function getMegaLive(context?: NavContext): Promise<MegaLive> {
+  const [inputs, strips] = await Promise.all([getMegaInputs(), getContextStrips(context)]);
+  if (!Object.keys(strips).length) return composeMegaLive(inputs);
+  return composeMegaLive({ ...inputs, extras: { ...inputs.extras, strips: { ...inputs.extras.strips, ...strips } } });
 }

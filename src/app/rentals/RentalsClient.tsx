@@ -13,9 +13,6 @@ import "./rentals.css";
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
-const FOOTER_NEIGHBOURHOODS = ["Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton"];
-const toFooterSlug = (n: string) =>
-  n.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
 
 const svgProps = {
   width: 26,
@@ -412,19 +409,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   const streetSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
   const hoodOf = (hood: string) => hood.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
 
-  // Top streets by listing count (for footer)
-  const topStreets = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const l of listings) {
-      const s = streetOf(l.address);
-      if (!s) continue;
-      counts.set(s, (counts.get(s) || 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([name]) => ({ name, slug: streetSlug(name) }));
-  }, [listings]);
 
   return (
     <div className="rentals-page">
@@ -437,7 +421,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 "available to rent" tile equals the figure THIS page publishes. */}
             <div className="live-badge" data-fig={scope ? "rentals-available-in-hub" : "rentals-available"} data-value={totalRentals} data-scope={scope?.slug ?? undefined}><span className="live-dot" />{totalRentals} active rentals{scope ? ` in ${scope.name}` : ""} · live TREB data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
-            <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#f59e0b"}}>
+            <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#00ff80"}}>
               📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}
             </a>
           </div>
@@ -530,7 +514,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               <div style={{ fontSize: 11, lineHeight: 1.4 }}>
                 {hasActivePending ? (
                   <>
-                    <span style={{ color: "#f59e0b", fontWeight: 700 }}>{pendingActiveLabels.length} filter{pendingActiveLabels.length === 1 ? "" : "s"} selected</span>
+                    <span style={{ color: "#017848", fontWeight: 700 }}>{pendingActiveLabels.length} filter{pendingActiveLabels.length === 1 ? "" : "s"} selected</span>
                     <span style={{ color: "var(--t4)" }}> — {pendingActiveLabels.join(", ")}</span>
                   </>
                 ) : (
@@ -567,7 +551,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         <div className="hm">
           <div className="wiz-topbar">
             {/* MC-020: the page has one H1, the hero's; the wizard heading is an H2. */}
-            <h2 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,color:"var(--pearl)",lineHeight:1.09,marginBottom:3,marginTop:0}}>Answer 3 questions. Get matched.</h2>
+            <h2 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:500,color:"var(--pearl)",lineHeight:1.09,marginBottom:3,marginTop:0}}>Answer 3 questions. Get matched.</h2>
             <div className="wiz-sub">3 quick questions · 30 seconds · no commitment</div>
             <div className="prog-track"><div className="prog-bar" style={{ width: `${progWidth}%` }} /></div>
           </div>
@@ -697,7 +681,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             <div className="bc-strip" />
             <div className="bc-head">
               <div className="bc-eyebrow">Book a showing</div>
-              <h2 className="bc-title" style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,lineHeight:1.09,margin:0}}>Usually confirmed within <span style={{color:"#f59e0b"}}>the hour</span></h2>
+              <h2 className="bc-title" style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:500,lineHeight:1.09,margin:0}}>Usually confirmed within <span style={{color:"#00ff80"}}>the hour</span></h2>
               <div className="bc-sub">Name any {config.CITY_NAME} listing. {REALTOR_FIRST_NAME} typically confirms your showing within an hour during business hours.</div>
             </div>
             <div className="bc-form">
@@ -791,7 +775,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <div className="fb-count">
             <em>{totalRentals}</em> {config.CITY_NAME} rentals
             {filteredListings.length !== totalRentals && (
-              <span style={{ fontSize: 11, color: "#f59e0b", marginLeft: 8 }}>· {filteredListings.length} match filters</span>
+              <span style={{ fontSize: 12, color: "#017848", marginLeft: 8 }}>· {filteredListings.length} match filters</span>
             )}
           </div>
           <div className="fb-right">
@@ -913,7 +897,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     <div className="lbody">
                       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:2}}>
                         <div className="lprice" style={{marginBottom:0}}>{formatPriceFull(l.price)} <span>/ month</span></div>
-                        <span style={{background:"#07111f",color:"#cbd5e1",fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,flexShrink:0,alignSelf:"center"}}>
+                        <span style={{background:"#073126",color:"rgba(255,255,255,.86)",fontSize:12,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,flexShrink:0,alignSelf:"center"}}>
                           {propertyBadgeLabel(l.propertyType)}
                         </span>
                       </div>
@@ -1026,13 +1010,13 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       {/* ═══ EXCLUSIVE CROSS-LINK BANNER ═══ */}
       <Link
         href="/exclusive"
-        className="mx-5 sm:mx-11 my-4 bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#2d5a8e] transition-colors"
+        className="mx-5 sm:mx-11 my-4 bg-[#0b3d2e] border border-[#1c5a45] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#2a7a5c] transition-colors"
       >
         <div>
           <p className="text-[14px] font-semibold text-[#f8f9fb]">🏠 Looking for exclusive off-market rentals?</p>
           <p className="text-[12px] text-[#94a3b8] mt-0.5">{REALTOR_FIRST_NAME} has exclusive listings not on MLS</p>
         </div>
-        <span className="text-[13px] font-semibold text-[#f59e0b] shrink-0">View exclusive listings →</span>
+        <span className="text-[13px] font-semibold text-[#00ff80] shrink-0">View exclusive listings →</span>
       </Link>
 
       <AgentContactSection />
@@ -1063,43 +1047,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         <span>{toast}</span>
       </div>
 
-      {/* ═══ RENTALS PAGE FOOTER ═══ */}
-      <footer className="rentals-footer">
-        <div className="rf-inner">
-          <div className="rf-col">
-            <h4>Popular {config.CITY_NAME} streets</h4>
-            <ul>
-              {topStreets.map((s) => (
-                <li key={s.slug}><Link href={`/streets/${s.slug}`}>{s.name}</Link></li>
-              ))}
-              {topStreets.length === 0 && (
-                <li><Link href="/streets">Browse all {config.CITY_NAME} streets →</Link></li>
-              )}
-            </ul>
-          </div>
-          <div className="rf-col">
-            <h4>{config.CITY_NAME} neighbourhoods</h4>
-            <ul>
-              {FOOTER_NEIGHBOURHOODS.map((n) => (
-                <li key={n}><Link href={`/neighbourhoods/${toFooterSlug(n)}`}>{n}</Link></li>
-              ))}
-            </ul>
-          </div>
-          <div className="rf-col">
-            <h4>Quick links</h4>
-            <ul>
-              <li><Link href="/listings">Buy in {config.CITY_NAME}</Link></li>
-              <li><Link href="/sell">Sell in {config.CITY_NAME}</Link></li>
-              <li><Link href="/schools">Schools</Link></li>
-              <li><Link href="/mosques">Mosques</Link></li>
-              <li><Link href="/about">About</Link></li>
-            </ul>
-          </div>
-        </div>
-        <div className="rf-bottom">
-          {config.realtor.name} · {BROKERAGE_SHORT_NAME} · {config.CITY_NAME} {config.CITY_PROVINCE} · <a href={`tel:${config.realtor.phoneE164}`}>{config.realtor.phone}</a>
-        </div>
-      </footer>
+      {/* The page footer that stood here is gone (MH-006): the site footer under this
+          component is the map, on this page as on every other. */}
 
       {/* ═══ MOBILE STICKY CTA (visible below 900px via CSS) ═══ */}
       <div className="mobile-cta">

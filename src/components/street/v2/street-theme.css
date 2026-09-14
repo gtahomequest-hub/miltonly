@@ -49,7 +49,12 @@
   padding: 0;
   box-sizing: border-box;
 }
-.street-v2 a {
+/* SCOPED TO THE PAGE, NOT THE CHROME (MH-006, MA-004 defect 3). This was `.street-v2 a`, the
+   same specificity as `nav .m-mega-cta` and loaded after it, so on every street page the
+   menu's CTA inherited the panel's white and sat on bright green at 1.34:1. The :where()
+   keeps the specificity at (0,1,1) while excluding anything inside a <nav>; the nav dresses
+   its own links. */
+.street-v2 :where(:not(nav, nav *)) > a {
   color: inherit;
   text-decoration: none;
 }

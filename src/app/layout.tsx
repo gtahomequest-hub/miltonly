@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Fraunces, Inter, JetBrains_Mono, Kaushan_Script, Playfair_Display } from "next/font/google";
-import Navbar from "@/components/Navbar";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import MetaPixel from "@/components/MetaPixel";
@@ -136,9 +135,6 @@ export default function RootLayout({
         <MetaPixel />
         <AttributionCapture />
         <UserProvider>
-          <ChromeGate>
-            <Navbar />
-          </ChromeGate>
           {children}
           <ChromeGate>
             <CrispChat />

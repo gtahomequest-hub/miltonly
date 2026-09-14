@@ -20,6 +20,17 @@
 
 export type MenuKey = 'buy' | 'streets' | 'sell';
 
+/** THE PAGE THE NAV IS ON (MH-006, MA-004 change 6). A street page or a hub hands the nav
+ *  its subject, and the nav carries it: the bar CTA and the Sell panel CTA arrive at the
+ *  valuation with the street prefilled (or at the hub's own /value page), the brief form
+ *  records which street or hub the signup came from, and the Streets and Sell strips
+ *  (change 10) are that hub's streets rather than the same eight from every page. A page
+ *  with no subject passes nothing and gets the global chrome. */
+export interface NavContext {
+  street?: { slug: string; name: string };
+  hub?: { slug: string; name: string };
+}
+
 /** A sentence with live figures in it. Figure segments render as <b data-fig data-value>. */
 export interface LeadSegment {
   text: string;
@@ -95,8 +106,14 @@ export interface MegaEdition {
 }
 
 export interface MegaItemContent {
+  /** the rail item's sub-label, one live fact under its name ("20 this week") */
+  sub?: string;
+  /** the item's CTA text with its count in it ("See all 460 for sale"); the ItemDef's static text otherwise */
+  cta?: string;
   lead?: LeadSegment[];
   figures?: MegaFigure[];
+  /** one sentence under the figures stating how they were measured, where two bases share a panel */
+  basis?: string;
   cards?: MegaListing[];
   hubs?: MegaHub[];
   videos?: MegaVideo[];

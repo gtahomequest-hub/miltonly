@@ -10,7 +10,7 @@ import { getTenureHubData, FREEHOLD_CONFIG } from "@/lib/tenureHubData";
 import { COMPARE_TEASER, getCompareContrast, FREEHOLD_VS_CONDO_CONFIG } from "@/lib/comparisonData";
 import TenureHubPage from "@/components/tenure/TenureHubPage";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema, generateFAQSchema } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -52,7 +52,7 @@ export default async function FreeholdPage() {
           compareLink={{ ...COMPARE_TEASER.freehold, contrast: compareContrast }}
         />
       )}
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

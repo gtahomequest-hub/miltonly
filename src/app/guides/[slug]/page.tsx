@@ -10,7 +10,7 @@ import { getGuideArticleFull } from "@/lib/guides";
 import { GUIDE_DEFS, GUIDES_UPDATED } from "@/lib/guides/guides";
 import SchemaScript from "@/components/SchemaScript";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 
 // generateStaticParams returns NOTHING, deliberately. Every figure on a guide is
@@ -86,7 +86,7 @@ export default async function GuidePage({ params }: { params: { slug: string } }
       <SchemaScript schemas={schemas} />
       <SiteNavLive variant="page" />
       <GuideArticlePage data={data} />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }
