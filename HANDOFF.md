@@ -2,29 +2,147 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-13 (MC-017): MC-020 merged and on production (17 checks); MC-017 built on `fix/build-cost`, previewed, battery-clean, TTFB measured, waiting on approval to merge. MC-015 (video playbook) is next._
+_Last rewritten 2026-09-14 (MC-015): MC-017 merged and on production, Git-triggered builds run only on `main`; MC-015 built on `feat/video-playbook` @ `b090002`, its data moves already live (dated keys, GPS capture times, three clips relabelled day), previewed from the CLI, battery-clean, waiting on approval to merge. Node 20 stops deploying on 2026-10-01._
 
 ## READ THIS FIRST
 
-**MAIN IS `1900c46` AND PRODUCTION SERVES `1900c46`, `PASS · 17 checks · 509 pages · 1142s`.**
-`1900c46` merges `fix/audit-night-1 @ 13214eb` (app code `31f3d98`, MC-020: the first night's
-audit findings) on top of `1ad86d8` (MC-021 docs) and `20aa2d7` (MA-003). Local build exit 0,
-609/609, no `P2024`; production `miltonly-pedwawpmh`. The 17th check is `catchment` (a title or
-meta tag with zone vocabulary); it passes on production now. Record:
-`scratchpad/reports/MC-020-audit-night-1.md`.
+**MAIN IS `3ba3d91` AND PRODUCTION SERVES `3ba3d91`, `PASS · 17 checks · 529 pages · 698s`.**
+`3ba3d91` merges `chore/ignore-nonmain @ 65e9c90` (the `ignoreCommand` change) on top of
+`69075d2`, which merges `fix/build-cost @ 5e395c9` (MC-017, app code `0e48e18`). Both
+production batteries passed, 17 checks over 529 pages (the corpus grew from 509 under the
+20-a-day programme). Record: `scratchpad/reports/MC-017-merge-and-ignore.md`.
 
-**`fix/build-cost` (MC-017) IS FINISHED AND WAITS ON APPROVAL TO MERGE.** Head is the docs commit
-on top of `0e48e18` (app code). Hub, condo, guide and listing pages, and the `/neighbourhoods`,
-`/condos` and `/guides` indexes, were `force-dynamic`: a render and a DB1, DB2, DB3 and Upstash
-round trip on every request. They are ISR now, `revalidate = 86400`, and the build prerenders
-fifty streets instead of 509. Preview `miltonly-4rpubqh2v` serving `0e48e18`: battery in the
-report; **TTFB p50 hub 2.13 s to 0.13 s, condo 0.90 s to 0.11 s, guide 0.50 s to 0.10 s,
-listing 0.49 s to 0.10 s** (production before, preview after, 7 samples each,
-`scratchpad/mc003/ttfb-before-1900c46.txt` and `ttfb-after-0e48e18-preview.txt`); Vercel
-prerender 62 s to 13 s, build 2 m 19 s to 1 m 44 s wall on the Turbo machine. To merge:
-`git merge --no-ff <head of fix/build-cost>` on main, push, `npx vercel ls --prod`, battery with
-the merge SHA, then the TTFB script against production: `sh scratchpad/mc003/ttfb.sh
-https://miltonly.com after`. Record: `scratchpad/reports/MC-017-build-cost.md`.
+**NODE 20 IS DEPRECATED ON VERCEL AND DEPLOYS FAIL FROM 2026-10-01.** Every CLI deploy
+tonight printed: `Node.js version 20.x is deprecated. Deployments created on or after
+2026-10-01 will fail to build. Please set "engines": { "node": "24.x" } in your package.json`.
+`package.json` pins `"node": "20.x"`. Nothing was changed: the runtime moves every function
+and the Prisma engine at once, so it is a task of its own, and it has to land before
+2026-10-01 or nothing deploys. The AWS SDK printed its own notice (node >= 22 from January
+2027), the same fix.
+
+**THE NIGHTLY AUDIT DID NOT COMMIT ON 2026-09-14.** The last `audit(nightly)` on `main` is
+`bbb792f` for 2026-09-13, committed 16:38 that day (the by-hand run). Nothing landed at 03:00
+Toronto today; `main` had no audit commit when this session pulled at 19:34Z. `gh` is not
+installed, so the workflow run was not inspected. Audit's to look at; Core notes it.
+
+**GIT-TRIGGERED BUILDS RUN ONLY ON `main` NOW.** `vercel.json` `ignoreCommand` is
+`if [ "$VERCEL_GIT_COMMIT_REF" != "main" ]; then exit 0; fi; git diff --quiet HEAD^ HEAD -- .
+':(exclude)scratchpad/audit/nightly'`. Proven both ways: a push to `chore/ignore-nonmain`
+was cancelled in 2 s (`miltonly-iac0jwv82`, "the Ignored Build Step command returned exit
+code 0"); `npx vercel deploy --yes` from the same branch ran no ignore step, built, and served
+the commit (`miltonly-ey0vbhme3`); the `main` merge ran the step and built (`miltonly-
+jmcmjk6u0`). **Every worktree gets its preview from `npx vercel deploy --yes` in its own
+folder now**; the URL is in the command's output and `vercel ls` shows it as Preview. A branch
+push produces a Canceled row, which is correct. CLAUDE.md says the same.
+
+**BUILD MINUTES.** Production builds before MC-017 (the last four on `1900c46`'s lineage):
+2 m 19 s, 2 m 18 s, 2 m 17 s, 2 m 17 s wall from "Running build" to "Build cache uploaded",
+609 static pages. After: `69075d2` 1 m 29 s, `3ba3d91` 1 m 27 s, 149 static pages. Vercel's
+dashboard shows the same as "2m" and "1m". The branch cancels are 2 s each.
+
+**TTFB ON PRODUCTION AFTER MC-017**, p50 over 7 samples, first sample the cold render:
+hub `/neighbourhoods/timberlea` 2.13 s → 0.18 s, condo 0.90 s → 0.15 s, guide 0.50 s → 0.27 s
+(the battery was running concurrently), listing 0.49 s → 0.15 s. `X-Vercel-Cache: HIT` on all
+four after the first hit. `scratchpad/mc003/ttfb-after-69075d2-prod.txt`.
+
+**MC-015 IS BUILT ON `feat/video-playbook` AND WAITS ON APPROVAL TO MERGE.** Head is the docs
+commit on top of `b090002` (app code). CLI preview `miltonly-3d306kdaz` serving `b090002`,
+battery on the preview in the report (`scratchpad/reports/MC-015-video-playbook.md`). Local
+build exit 0, 149/149; `test-video-playbook` 50 assertions in the prebuild; the battery has an
+18th check, `video`. **Everything below the code is already live on production**, because the
+data moves were done in the order the queue set (copy, repoint, confirm per page, delete) and
+the old resolver prints the same dates from the new instants; only the sentence, the takedown
+line, the sitemaps and the VideoObject duration wait for the merge.
+
+- **Dated keys, live.** All 47 clip-carrying rows point at `streets/<slug>-milton/<YYYYMMDD>/
+  {day,night}.mp4` with `poster.webp` beside each (`scripts/rekey-video-dated.ts`: server-side
+  CopyObject, size-verified, column repointed, page revalidated). The 45 old clips and 45 shared
+  posters were deleted by `retire-superseded-clips.ts --write` after it saw production serving
+  every dated URL (90 objects; the old keys 404). The upload script writes dated keys only.
+- **The clock was wrong by an hour on 40 clips, and three "night" clips were daylight.** The
+  camera's filename clock runs one hour fast (raw `2026_0901_193438` opens at GPS 22:34:41Z,
+  18:34 in Milton). Every clip published before 2026-09-11 took `captured_at` from the filename.
+  `scripts/video-coverage.ts` rewrote all 47 from the GPS row of the clip's own trace
+  (`D:/dashcam/raw/.gpscache`, the first row on the street; `britannia-road` from the file's
+  first row because that stretch is the Region's, not in the Town layer), keeping the filename
+  value as `captured_at_filename`. `clifford-point`, `first-line` and `frost-court` were filed
+  as night at "20:15 to 20:21"; the GPS says 19:15 to 19:21 and their mean luma (ffmpeg
+  signalstats YAVG 114) is the daytime clips' figure, so they were relabelled day
+  (`rekey-video-dated.ts --to-day`: copied to `<seg>/day.mp4`, `videoUrl` takes the pointer,
+  night columns cleared, `meta.night` false, the `night.mp4` object retires on the next
+  retire run). No clip on the site is a night clip now; the one night row left in the manifest
+  is `lower-base-line-west`, which has no page.
+- **`*CapturedAt` is the instant, rendered in America/Toronto.** The offset columns added at
+  20:00Z were withdrawn by a second migration at 23:00Z before any row carried one
+  (`migrate status` clean, 29): the task prompt says render in Toronto, every clip is filmed in
+  Milton, and a dead nullable pair is what the 2026-08-30 rule forbids. Rows backfilled: 47
+  of 47, from `meta.captured_at` (`scripts/backfill-video-captured.ts --write`).
+- **The extent, measured.** `video-coverage.ts` projects the run onto the street's Town
+  centreline segments (`identityFromSlug` == `identityFromTown`, the geometry generator's
+  join): `capturedMetres` is the projected path, capped at the street (a close is driven in
+  and out); `streetMetres` is `STREET_GEOMETRY.lengthM`; the endpoints are the registry
+  streets whose Town segment meets the run within 40 m of its first and last point, named by
+  `resolveStreetName`, "from A" alone when both ends meet the same street or only one meets
+  any. 46 of 47 have metres, 30 have both endpoints, 14 one, 3 none (`first-line`,
+  `hinton-terrace`, `britannia-road`). Written into `published/<slug>/meta.json` and carried
+  by the manifest (`promote-staged-clips.ts` carries the coverage fields now).
+- **The sentence** is "Footage covers 460 m of 510 m, from Leiterman Drive to Parmenter
+  Point. Filmed 1 September 2026." under every player and as `VideoObject.description`
+  (prefixed by the street and town). Only sourced clauses appear: no metres and it reads
+  "Footage is one pass along <Street>"; a night clip would add "after dark".
+- **Sidecar `src/data/streetVideoMeta.json`**: 47 dated keys, duration from ffprobe on the
+  published bytes (zero audio streams on all 47), the coverage fields from meta. Rebuilt by
+  `backfill-video-captured.ts --write` (or `--sidecar-only`).
+- **`sitemap-video.xml`**: 45 pages / 45 clips (the 2 draft rows are unpublished), duration
+  and `publication_date` with the Toronto offset on every one. **`sitemap-index.xml`** names
+  it beside `/sitemap.xml`, and `robots.txt` names the index. `/sitemap.xml` itself is
+  unchanged, so the battery and the audit read what they always read. Submit the index in
+  Search Console after the merge.
+- **Takedown mailto**: `config.video.takedownEmail` = `aamir@miltonly.com`, one line under
+  the grid on every page carrying footage.
+- **Upload script**: refuses an audio stream (ffprobe, `scripts/videoProbe.ts`) and
+  `blur_verified` false, naming both; ffprobe missing refuses the run; refuses a
+  `captured_at` without an offset; writes dated keys only; revalidates the page, `/streets`
+  and `/` (`scripts/videoRevalidate.ts`). Not exercised on a real candidate: the 124 staged
+  rows are Homesly, all `blur_verified: false`.
+- **`db3` after an analytics run**: already live since MC-017 (the three jobs call
+  `revalidateTag(DB_CACHE_TAG.ANALYTICS_DATABASE_URL)`, held by `test-build-cost.ts`).
+
+**AFTER THE MERGE.** `retire-superseded-clips.ts` dry then `--write` (the three `night.mp4`
+objects at dated keys retire once production serves the day URLs, which it does); submit
+`sitemap-index.xml` in Search Console. Nothing else.
+
+**TWO PUBLISHED CLIPS HAVE NO PAGE.** `louis-st-laurent-avenue` (registry entity, no
+StreetContent row) and `lower-base-line-west` (no entity) are `published` in the manifest at
+undated keys with nothing pointing at them. Left alone. The first gets a page under the
+programme one day and the upload then needs a re-run; the second is an orphan candidate for
+`retire-superseded-clips.ts --orphan=lower-base-line-west`, which is a decision.
+
+**THE DASHCAM SIDE SHOULD KNOW.** Its `captured_at` rule (GPS, never the filename) was right;
+the 40 clips that predate it carried the filename clock into production for ten days, and its
+day/night rule (luma first, hour as tiebreak) was not applied to them either. `meta.json` now
+carries `captured_at_filename`, `captured_at_source`, `captured_end`, `coverage_source` and
+`relabelled` on the rows this touched.
+
+**THE `#type-<type>` DEAD ANCHORS ARE STREET PAGE V3 CHANGE 7 (HOME).** 196 S3 `dead-anchor`
+findings, one defect: a hero pill links `#type-<type>` for any type with n >= 1 and the lease
+pill `#type-condo`, but a `TypeCard` renders only above k5 (`buildProductTypeSections`);
+`TypeSection.tsx` is rendered nowhere. Core does not take it.
+
+**THE NIGHTLY AUDIT** runs at 03:00 Toronto and commits `audit(nightly): <date>` to main
+without a human; `ignoreCommand` keeps that commit out of Vercel. **Pull before you branch or
+push.** Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is
+not installed system-wide. **Vercel and Windows gotchas:** `vercel ls` reports a preview
+`● Ready` a minute before the URL stops serving a "Deployment is building" page; match rows on
+`vercel.app`, never a line number; find a deployment by `/api/build` commit, never by position.
+A battery under the Bash tool dies at the 10-minute cap: run
+`nohup sh scratchpad/mc003/run-battery.sh <sha> <base> <log> &` and poll the log for `^EXIT`.
+A local `next start` holds Prisma's engine DLL and `prisma generate` then fails `EPERM`; stop it
+with `Stop-Process` from PowerShell, Git Bash `kill` does not reach it. The machine is shared:
+a build was killed for memory while other sessions ran ffmpeg. **The Bash tool collapses a
+doubled backslash in a heredoc**: a `python - <<'EOF'` patch carrying `\\b` wrote a backspace
+byte into `test-audit-night-1.ts` tonight (caught by the prebuild, fixed). Put a patch that
+carries backslashes in a file and run the file.
 
 **THREE THINGS MC-017 HAD TO LEARN, ALL IN THE CODE COMMENTS.** (1) **Next 14 caches a dynamic
 route only when `generateStaticParams` exists.** The first preview served every hub, condo, guide
@@ -54,29 +172,6 @@ holds 26 street pages, zero clicks), then active listings, then the slug. It onl
 pages are warm at deploy; the other 459 render on first visit under the page's own hour and
 serve from the cache after (checked: `aird-court-milton` MISS then HIT on the preview).
 
-**NOT DONE, ASKED IN THE REPORT.** "Automatic Git deploys off for every branch but main" is a
-branch condition in `vercel.json` `ignoreCommand`, and CLAUDE.md says that command skips a build
-only for the nightly path. Three previews were building at once tonight from three worktrees;
-that is the minute sink. It changes how every worktree gets a preview (`npx vercel deploy` from
-the branch), so it waits for a decision.
-
-**THE `#type-<type>` DEAD ANCHORS ARE STREET PAGE V3 CHANGE 7 (HOME).** 196 S3 `dead-anchor`
-findings, one defect: a hero pill links `#type-<type>` for any type with n >= 1 and the lease
-pill `#type-condo`, but a `TypeCard` renders only above k5 (`buildProductTypeSections`);
-`TypeSection.tsx` is rendered nowhere. Core does not take it.
-
-**THE NIGHTLY AUDIT IS LIVE** at 03:00 Toronto; it commits `audit(nightly): <date>` to main
-without a human, and Vercel cancels that build under `ignoreCommand`. **Pull before you branch or
-push.** Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is
-not installed system-wide. **Vercel and Windows gotchas:** `vercel ls` reports a preview
-`● Ready` a minute before the URL stops serving a "Deployment is building" page; match rows on
-`vercel.app`, never a line number; three worktrees push, so find the preview by `/api/build`
-commit, never by position. A battery under the Bash tool dies at the 10-minute cap: run
-`nohup sh scratchpad/mc003/run-battery.sh <sha> <base> <log> &` and poll the log for `^EXIT`.
-A local `next start` holds Prisma's engine DLL and `prisma generate` then fails `EPERM`; stop it
-with `Stop-Process` from PowerShell, Git Bash `kill` does not reach it. The machine is shared:
-a build was killed for memory while other sessions ran ffmpeg.
-
 **CLAUDE.md REPORTING (MC-021).** A task ends with `scratchpad/reports/<TASK-ID>-<slug>.md` and a
 reply whose last line is `Report: <path>`; nothing opens the editor.
 
@@ -92,12 +187,8 @@ listing, 3,414 rows a render, 57 renders in the window), `publishedStreetPageSlu
 (66,712 rows scanned a render, uncached), and the `Neighbourhood`/`HubContent` sets fetched 2,600
 times a window. Proposals and a 16 GB/month ceiling are in the report. **No code was changed.**
 
-**NEXT: MC-015.** On `feat/video-playbook` (branch exists, empty): dated keys for all 49
-published clips, captured-at backfill, `sitemap-video.xml`, the coverage sentence, the takedown
-mailto, ffprobe and blur guards in the upload script, and a `video` battery check. The `db3` tag
-drop after an analytics run is done (MC-017). Survey facts: only the 7 recent clips have registry
-start/end in `D:/dashcam/work/stage3-match.json`; the other 42 need `clip-coverage.js` with the
-GPS cache.
+**MC-015 STATE IS IN THE TOP OF THIS FILE.** After the merge: one retire run and the Search
+Console submission. Open: `louis-st-laurent-avenue` / `lower-base-line-west`.
 
 **WHAT LANDED WITH CORE BATCH 3.** The board never the family; the judge cannot refuse on a
 finding it labels not a violation; hub titles and descriptions have no em-dash and the LIVE
@@ -124,7 +215,7 @@ caches and the path; after that the rulings preview passed 14/14.
 **THE SOLD SYNC NOW PURGES BOTH CACHES ON MAIN.** Upstash (exact keys, per-street and
 per-neighbourhood prefixes for what it wrote, a settle pass) and the `db2` Data Cache tag,
 dropped by the sold route after a writing run. `/api/revalidate` takes `{ tag: "db2" | "db3" }`.
-**Nothing drops `db3`** (analytics) yet.
+**The three analytics jobs drop `db3`** since MC-017 (`src/lib/revalidateSurfaces.ts`).
 
 **THE JUDGE, NOW READABLE ON EVERY ROW (`StreetGeneration.judgeVerdict`).** Two things its
 verdicts show for a ruling: "For Catholic families …" is how the model names the Catholic
@@ -147,15 +238,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | code SHA **`8326b2a`**, nightly commit `bbb792f` and docs on top |
-| battery on production | **`PASS · 16 checks · 509 pages · 672s`** at `8326b2a`, 2026-09-13 |
-| `prisma migrate status` | **clean**, 27 migrations |
-| waiting on merge | nothing |
+| `main` | **`3ba3d91`** (MC-017 `69075d2` + the `ignoreCommand` merge), production serves it |
+| battery on production | **`PASS · 17 checks · 529 pages · 698s`** at `3ba3d91`, 2026-09-14 |
+| `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
+| waiting on merge | **MC-015** `feat/video-playbook @ b090002` (docs on top), preview `miltonly-3d306kdaz` |
+| Node runtime | **`20.x`, deploys fail from 2026-10-01**; move to `24.x` is an open task |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | MC-017 (`fix/build-cost`), then MC-015 (`feat/video-playbook`) |
+| open tasks | MC-015 merge and post-merge steps; Node 24; the nightly audit's missed 2026-09-14 run (Audit) |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -524,5 +616,6 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: a `db3` tag drop for the analytics sync; `barclay-circle` and
-`gordon-krantz-avenue` on a later pass; QUEUE item 6.
+Whatever Aamir names. Open: the MC-015 merge (`b090002` + docs) and its two post-merge steps at
+the top of this file; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
+`gordon-krantz-avenue` on a later pass.
