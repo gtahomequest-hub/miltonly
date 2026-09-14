@@ -14,10 +14,13 @@
 // unblurred faces and plates are the one thing in this pipeline that cannot be walked back after
 // publication.
 //
-// KEY LAYOUT
-//   streets/<slug>-milton/day.mp4     (meta.night === false)
-//   streets/<slug>-milton/night.mp4   (meta.night === true)
-//   streets/<slug>-milton/poster.webp
+// KEY LAYOUT (MC-015: every key is dated)
+//   streets/<slug>-milton/<YYYYMMDD>/day.mp4     (meta.night === false)
+//   streets/<slug>-milton/<YYYYMMDD>/night.mp4   (meta.night === true)
+//   streets/<slug>-milton/<YYYYMMDD>/poster.webp
+// The segment is the capture date under the clip's own offset. Every object is immutable at
+// the edge for a year, so an undated key could only ever be overwritten, and two captures of
+// one street could never coexist; a dated key is free cache-busting and a re-key is a copy.
 // NOTE the "-milton" suffix. The manifest's own r2_key field omits it ("streets/1st-line/night.mp4"),
 // but every one of the 18 objects already in the bucket carries it, and so does every StreetContent
 // slug. Following the manifest literally would have created a second, orphaned copy of every asset
@@ -34,8 +37,23 @@
 // which is what lemieux-court and locker-place need: both have newer captures than the ones
 // shipped on 2026-09-03.
 //
-// CAPTURE DATE comes from meta.captured_at, stored as UTC midnight of the shot date.
+// CAPTURE INSTANT comes from meta.captured_at, ISO with an offset since the pipeline started
+// writing one ("2026-09-07T11:20:31-04:00", the GPS row). videoCapturedAt is the instant
+// (MC-015) and every surface renders it in America/Toronto. A bare local time is REFUSED here:
+// the staging pass writes the offset now, and a candidate without one is a candidate whose
+// clock nobody checked (the filename clock runs an hour fast).
 // videoCapturedAt is a claim about the world and the page prints it, so it is never today.
+//
+// AUDIO IS REFUSED (MC-015). The pipeline strips audio at ingest and asserts it twice, but this
+// script is the last gate before the bytes are public and a dashcam clip that kept its audio
+// can carry a recorded conversation, which no blur pass addresses. ffprobe on the bytes about
+// to be uploaded; any audio stream and the row is refused and named, exactly like a blur
+// refusal. ffprobe missing from PATH is itself a refusal of the whole run: an unchecked clip
+// is not an uploadable clip.
+//
+// EVERY WRITE REVALIDATES the street page, /streets and the home page through /api/revalidate
+// (scripts/videoRevalidate.ts), so page and schema move together. Then run scripts/backfill-video-captured.ts --write to rebuild the sidecar
+// (duration, coverage) that the page reads for the new key.
 //
 // Usage:
 //   npx tsx --tsconfig tsconfig.test.json scripts/upload-street-videos-r2.ts           # dry run
@@ -48,6 +66,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { neon } from "@neondatabase/serverless";
+import { probeClip } from "./videoProbe";
+import { revalidateVideoSurfaces } from "./videoRevalidate";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 function loadEnvLocal() {
@@ -111,30 +131,33 @@ interface Meta {
   poster_r2_key?: string;
 }
 
-// A SUPERSEDING CLIP GETS A NEW KEY (MC-007, 2026-09-11). Every object is uploaded with
-// Cache-Control immutable, max-age one year, so replacing day.mp4 in place would leave the old
-// footage at the edge for as long as any cache held it while the page claimed a new capture
-// date. locker-place and nipissing-road both supersede a clip shipped on 09-04 at the same key.
-// The new clip and its poster go under a capture-date segment, streets/<slug>/<YYYYMMDD>/day.mp4,
-// the page is repointed at that, and the old objects are deleted only after production is seen
+// EVERY CLIP GETS A DATED KEY (MC-007 for a superseding clip, MC-015 for all of them). Every
+// object is uploaded with Cache-Control immutable, max-age one year, so replacing day.mp4 in
+// place would leave the old footage at the edge for as long as any cache held it while the
+// page claimed a new capture date. The clip and its poster go under a capture-date segment,
+// streets/<slug>/<YYYYMMDD>/day.mp4, the page is pointed at that, and when a clip supersedes
+// one (meta.supersedes_r2_key) the old objects are deleted only after production is seen
 // serving the new URL (scripts/retire-superseded-clips.ts). deriveVideoPoster rewrites the
 // trailing /day.mp4, so the segment costs the render layer nothing.
-function keysFor(fullSlug: string, clipName: string, meta: Meta, capturedAt: Date): { clipKey: string; posterKey: string; rekeyed: boolean } {
-  const canonicalClip = `streets/${fullSlug}/${clipName}`;
-  if (meta.supersedes_r2_key && meta.supersedes_r2_key === canonicalClip) {
-    const seg = capturedAt.toISOString().slice(0, 10).replace(/-/g, "");
-    return { clipKey: `streets/${fullSlug}/${seg}/${clipName}`, posterKey: `streets/${fullSlug}/${seg}/poster.webp`, rekeyed: true };
-  }
-  return { clipKey: canonicalClip, posterKey: `streets/${fullSlug}/poster.webp`, rekeyed: false };
+function keysFor(fullSlug: string, clipName: string, meta: Meta, localDate: string): { clipKey: string; posterKey: string; rekeyed: boolean } {
+  const seg = localDate.replace(/-/g, "");
+  return {
+    clipKey: `streets/${fullSlug}/${seg}/${clipName}`,
+    posterKey: `streets/${fullSlug}/${seg}/poster.webp`,
+    rekeyed: typeof meta.supersedes_r2_key === "string" && meta.supersedes_r2_key.length > 0,
+  };
 }
 
-/** UTC midnight of the shot date. The filename timestamp is local and the caption renders in UTC,
- *  so parsing it as an instant pushes an evening capture a day forward. */
-function capturedUtcMidnight(iso: string): Date {
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) throw new Error(`unparseable captured_at: ${iso}`);
-  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+/** meta.captured_at with its offset -> the instant and the local date (the key segment). A
+ *  bare local time is refused: no offset, no clock, no upload. */
+function parseCaptured(iso: string): { instant: Date; localDate: string } | null {
+  const m = iso.match(/^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}(?::\d{2})?(Z|[+-]\d{2}:\d{2})$/);
+  if (!m) return null;
+  const instant = new Date(iso);
+  if (Number.isNaN(instant.getTime())) return null;
+  return { instant, localDate: m[1] };
 }
+
 
 async function existingSize(key: string): Promise<number | null> {
   try {
@@ -170,6 +193,7 @@ export interface PlanRow {
   fullSlug: string;
   night: boolean;
   capturedAt: Date;
+  localDate: string;
   clipPath: string;
   posterPath: string;
   clipKey: string;
@@ -181,9 +205,10 @@ export interface PlanRow {
   contentStatus: string | null;
 }
 
-async function buildPlan(): Promise<{ plan: PlanRow[]; refused: ManifestRow[]; problems: string[] }> {
+async function buildPlan(): Promise<{ plan: PlanRow[]; refused: ManifestRow[]; refusedAudio: Array<{ slug: string; audio: number }>; problems: string[] }> {
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as { streets: ManifestRow[] };
   const refused: ManifestRow[] = [];
+  const refusedAudio: Array<{ slug: string; audio: number }> = [];
   const problems: string[] = [];
   const plan: PlanRow[] = [];
 
@@ -209,14 +234,20 @@ async function buildPlan(): Promise<{ plan: PlanRow[]; refused: ManifestRow[]; p
     if (!existsSync(clipPath)) { problems.push(`${row.slug}: missing ${clipName}`); continue; }
     if (!existsSync(posterPath)) { problems.push(`${row.slug}: missing poster.webp`); continue; }
 
+    const probe = probeClip(clipPath);
+    if (probe === null) throw new Error("ffprobe is not on PATH; no clip is uploaded unchecked");
+    if (probe.audio !== 0) { refusedAudio.push({ slug: row.slug, audio: probe.audio }); continue; }
+
     const fullSlug = row.slug + SLUG_SUFFIX;
-    const capturedAt = capturedUtcMidnight(meta.captured_at);
-    const keys = keysFor(fullSlug, clipName, meta, capturedAt);
+    const captured = parseCaptured(meta.captured_at);
+    if (!captured) { problems.push(`${row.slug}: captured_at "${meta.captured_at}" carries no offset; refused`); continue; }
+    const keys = keysFor(fullSlug, clipName, meta, captured.localDate);
     plan.push({
       slug: row.slug,
       fullSlug,
       night,
-      capturedAt,
+      capturedAt: captured.instant,
+      localDate: captured.localDate,
       clipPath,
       posterPath,
       clipKey: keys.clipKey,
@@ -228,11 +259,11 @@ async function buildPlan(): Promise<{ plan: PlanRow[]; refused: ManifestRow[]; p
       contentStatus: await contentStatusFor(fullSlug),
     });
   }
-  return { plan, refused, problems };
+  return { plan, refused, refusedAudio, problems };
 }
 
 async function main() {
-  const { plan, refused, problems } = await buildPlan();
+  const { plan, refused, refusedAudio, problems } = await buildPlan();
   console.log(`${WRITE ? "WRITE" : "DRY RUN"} · ${plan.length} candidate(s) · bucket ${R2_BUCKET}`);
   console.log(`public base ${R2_PUBLIC_BASE_URL}`);
   console.log("");
@@ -240,6 +271,11 @@ async function main() {
   if (refused.length > 0) {
     console.log(`REFUSED — blur_verified is not true on ${refused.length} row(s). Not uploaded:`);
     for (const r of refused) console.log(`  ${r.slug}  status=${r.status}  blur_verified=${r.blur_verified}`);
+    console.log("");
+  }
+  if (refusedAudio.length > 0) {
+    console.log(`REFUSED — an audio stream on ${refusedAudio.length} row(s). Not uploaded:`);
+    for (const r of refusedAudio) console.log(`  ${r.slug}  audio streams=${r.audio}`);
     console.log("");
   }
   if (problems.length > 0) {
@@ -255,7 +291,7 @@ async function main() {
     const sc = r.contentStatus === null ? "MISSING" : r.contentStatus === "published" ? "exists (published)" : `exists (${r.contentStatus})`;
     console.log(
       `${r.fullSlug.padEnd(26)} ${(r.night ? "night" : "day").padEnd(5)} ${String(r.clipSize).padStart(10)} ${String(r.posterSize).padStart(7)}  ` +
-      `${r.capturedAt.toISOString().slice(0, 10)} ${sc}${r.rekeyed ? `  RE-KEYED -> ${r.clipKey}` : ""}`,
+      `${r.localDate} ${sc}  -> ${r.clipKey}${r.rekeyed ? "  (supersedes)" : ""}`,
     );
   }
   console.log(`\n${plan.length} rows, ${totalBytes} bytes (${(totalBytes / 1048576).toFixed(1)} MiB) to consider`);
@@ -279,7 +315,7 @@ async function main() {
       } else {
         await db`UPDATE public."StreetContent" SET "videoUrl" = ${url}, "videoCapturedAt" = ${r.capturedAt.toISOString()} WHERE "streetSlug" = ${r.fullSlug}`;
       }
-      dbNote = r.night ? "nightVideoUrl set" : "videoUrl set";
+      dbNote = `${r.night ? "nightVideoUrl" : "videoUrl"} set; ${await revalidateVideoSurfaces(r.fullSlug)}`;
       touched.push(r.fullSlug);
     }
     console.log(`${r.fullSlug.padEnd(26)} ${v.action.padEnd(8)} clip ${String(v.size).padStart(8)}B  ${p.action.padEnd(8)} poster ${String(p.size).padStart(6)}B  ${dbNote}`);
@@ -293,6 +329,7 @@ async function main() {
   }
   console.log(`\nStreetContent rows touched: ${touched.length}`);
   console.log(touched.join(","));
+  if (touched.length > 0) console.log("\nnow: npx tsx --tsconfig tsconfig.test.json scripts/backfill-video-captured.ts --write   (rebuilds the sidecar for the new keys)");
 }
 
 main().catch((e) => {

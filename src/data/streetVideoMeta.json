@@ -1,0 +1,335 @@
+{
+  "generator": "scripts/backfill-video-captured.ts",
+  "builtAt": "2026-09-14T22:43:04.802Z",
+  "clips": {
+    "streets/anne-boulevard-milton/20260907/day.mp4": {
+      "durationS": 45,
+      "coverageFrom": "Bronte Street",
+      "coverageTo": null,
+      "capturedMetres": 400,
+      "streetMetres": 570
+    },
+    "streets/attenborough-terrace-milton/20260901/day.mp4": {
+      "durationS": 55,
+      "coverageFrom": "Leiterman Drive",
+      "coverageTo": "Parmenter Point",
+      "capturedMetres": 460,
+      "streetMetres": 510
+    },
+    "streets/beam-court-milton/20260902/day.mp4": {
+      "durationS": 38,
+      "coverageFrom": "Hamman Way",
+      "coverageTo": null,
+      "capturedMetres": 320,
+      "streetMetres": 320
+    },
+    "streets/beasley-terrace-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": "Farmstead Drive",
+      "coverageTo": "Duignan Crescent",
+      "capturedMetres": 160,
+      "streetMetres": 160
+    },
+    "streets/britannia-road-milton/20260829/day.mp4": {
+      "durationS": 40,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/bronte-street-milton/20260907/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": "Victoria Street",
+      "coverageTo": null,
+      "capturedMetres": 990,
+      "streetMetres": 6330
+    },
+    "streets/cavanagh-lane-milton/20260901/day.mp4": {
+      "durationS": 46,
+      "coverageFrom": "Farmstead Drive",
+      "coverageTo": "Haxton Heights",
+      "capturedMetres": 380,
+      "streetMetres": 580
+    },
+    "streets/chee-chee-landing-milton/20260902/day.mp4": {
+      "durationS": 31,
+      "coverageFrom": "Parent Place",
+      "coverageTo": "Hamman Way",
+      "capturedMetres": 260,
+      "streetMetres": 270
+    },
+    "streets/childs-drive-milton/20260827/day.mp4": {
+      "durationS": 28,
+      "coverageFrom": "Ontario Street",
+      "coverageTo": null,
+      "capturedMetres": 280,
+      "streetMetres": 1470
+    },
+    "streets/chretien-street-milton/20260902/day.mp4": {
+      "durationS": 51,
+      "coverageFrom": "Whitlock Avenue",
+      "coverageTo": null,
+      "capturedMetres": 490,
+      "streetMetres": 1030
+    },
+    "streets/clifford-point-milton/20260825/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": "Locker Place",
+      "coverageTo": "Whitlock Avenue",
+      "capturedMetres": 160,
+      "streetMetres": 160
+    },
+    "streets/commercial-street-milton/20260907/day.mp4": {
+      "durationS": 47,
+      "coverageFrom": "Sydney Street",
+      "coverageTo": "Pine Street",
+      "capturedMetres": 380,
+      "streetMetres": 1910
+    },
+    "streets/costigan-road-milton/20260827/day.mp4": {
+      "durationS": 44,
+      "coverageFrom": "Miller Way",
+      "coverageTo": "Gorham Way",
+      "capturedMetres": 360,
+      "streetMetres": 1260
+    },
+    "streets/dalhousie-gate-milton/20260901/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": "Cavanagh Lane",
+      "coverageTo": "Farmstead Drive",
+      "capturedMetres": 180,
+      "streetMetres": 180
+    },
+    "streets/diefenbaker-street-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": "Nadalin Heights",
+      "coverageTo": "Leiterman Drive",
+      "capturedMetres": 160,
+      "streetMetres": 260
+    },
+    "streets/duignan-crescent-milton/20260901/day.mp4": {
+      "durationS": 37,
+      "coverageFrom": "Farmstead Drive",
+      "coverageTo": "Gillett Point",
+      "capturedMetres": 310,
+      "streetMetres": 470
+    },
+    "streets/etheridge-avenue-milton/20260901/day.mp4": {
+      "durationS": 45,
+      "coverageFrom": "Regional Road No 25",
+      "coverageTo": "Farmstead Drive",
+      "capturedMetres": 370,
+      "streetMetres": 1610
+    },
+    "streets/farmstead-drive-milton/20260827/day.mp4": {
+      "durationS": 57,
+      "coverageFrom": "Hamman Way",
+      "coverageTo": null,
+      "capturedMetres": 480,
+      "streetMetres": 3540
+    },
+    "streets/first-line-milton/20260825/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": 1350,
+      "streetMetres": 3070
+    },
+    "streets/frost-court-milton/20260825/day.mp4": {
+      "durationS": 27,
+      "coverageFrom": "Chretien Street",
+      "coverageTo": null,
+      "capturedMetres": 220,
+      "streetMetres": 230
+    },
+    "streets/gillett-point-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": "Duignan Crescent",
+      "coverageTo": "Farmstead Drive",
+      "capturedMetres": 160,
+      "streetMetres": 160
+    },
+    "streets/gosford-crescent-milton/20260901/day.mp4": {
+      "durationS": 15,
+      "coverageFrom": "Tock Close",
+      "coverageTo": "Cavanagh Lane",
+      "capturedMetres": 130,
+      "streetMetres": 140
+    },
+    "streets/hamman-way-milton/20260901/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": "Beam Court",
+      "coverageTo": "Britton Crescent",
+      "capturedMetres": 180,
+      "streetMetres": 980
+    },
+    "streets/haxton-heights-milton/20260901/day.mp4": {
+      "durationS": 15,
+      "coverageFrom": "Dalhousie Gate",
+      "coverageTo": "Cavanagh Lane",
+      "capturedMetres": 120,
+      "streetMetres": 130
+    },
+    "streets/heaven-crescent-milton/20260830/day.mp4": {
+      "durationS": 15,
+      "coverageFrom": "Shade Lane",
+      "coverageTo": null,
+      "capturedMetres": 100,
+      "streetMetres": 180
+    },
+    "streets/heslop-road-milton/20260907/day.mp4": {
+      "durationS": 21,
+      "coverageFrom": "Bell Street",
+      "coverageTo": "Thomas Street",
+      "capturedMetres": 190,
+      "streetMetres": 920
+    },
+    "streets/hinton-terrace-milton/20260902/day.mp4": {
+      "durationS": 28,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": 420,
+      "streetMetres": 680
+    },
+    "streets/leger-way-milton/20260827/day.mp4": {
+      "durationS": 34,
+      "coverageFrom": "Louis St Laurent Avenue",
+      "coverageTo": "Locker Place",
+      "capturedMetres": 340,
+      "streetMetres": 1800
+    },
+    "streets/lemieux-court-milton/20260901/day.mp4": {
+      "durationS": 39,
+      "coverageFrom": "Mulroney Heights",
+      "coverageTo": null,
+      "capturedMetres": 330,
+      "streetMetres": 340
+    },
+    "streets/little-crescent-milton/20260904/day.mp4": {
+      "durationS": 23,
+      "coverageFrom": "McCuaig Drive",
+      "coverageTo": "Tupper Drive",
+      "capturedMetres": 200,
+      "streetMetres": 210
+    },
+    "streets/locker-place-milton/20260910/day.mp4": {
+      "durationS": 28,
+      "coverageFrom": "Leger Way",
+      "coverageTo": "Lemieux Court",
+      "capturedMetres": 260,
+      "streetMetres": 280
+    },
+    "streets/martin-street-milton/20260907/day.mp4": {
+      "durationS": 50,
+      "coverageFrom": "Steeles Avenue",
+      "coverageTo": null,
+      "capturedMetres": 410,
+      "streetMetres": 2070
+    },
+    "streets/mccuaig-drive-milton/20260904/day.mp4": {
+      "durationS": 30,
+      "coverageFrom": "Andrews Trail",
+      "coverageTo": "Little Crescent",
+      "capturedMetres": 300,
+      "streetMetres": 480
+    },
+    "streets/miller-way-milton/20260827/day.mp4": {
+      "durationS": 26,
+      "coverageFrom": "Derry Road",
+      "coverageTo": "Hartley Boulevard",
+      "capturedMetres": 250,
+      "streetMetres": 330
+    },
+    "streets/mulroney-heights-milton/20260827/day.mp4": {
+      "durationS": 9,
+      "coverageFrom": "Whitlock Avenue",
+      "coverageTo": "Lemieux Court",
+      "capturedMetres": 70,
+      "streetMetres": 160
+    },
+    "streets/murlock-heights-milton/20260901/day.mp4": {
+      "durationS": 16,
+      "coverageFrom": "Duignan Crescent",
+      "coverageTo": "Farmstead Drive",
+      "capturedMetres": 130,
+      "streetMetres": 170
+    },
+    "streets/nadalin-heights-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": "Parmenter Point",
+      "coverageTo": null,
+      "capturedMetres": 150,
+      "streetMetres": 420
+    },
+    "streets/nipissing-road-milton/20260910/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": "Childs Drive",
+      "coverageTo": null,
+      "capturedMetres": 130,
+      "streetMetres": 1370
+    },
+    "streets/parent-place-milton/20260902/day.mp4": {
+      "durationS": 30,
+      "coverageFrom": "Hamman Way",
+      "coverageTo": "Chee Chee Landing",
+      "capturedMetres": 270,
+      "streetMetres": 370
+    },
+    "streets/pharo-point-milton/20260901/day.mp4": {
+      "durationS": 16,
+      "coverageFrom": "Stemman Place",
+      "coverageTo": "Attenborough Terrace",
+      "capturedMetres": 130,
+      "streetMetres": 150
+    },
+    "streets/scott-boulevard-milton/20260902/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": "Farrington Crossing",
+      "coverageTo": null,
+      "capturedMetres": 620,
+      "streetMetres": 3140
+    },
+    "streets/shade-lane-milton/20260830/day.mp4": {
+      "durationS": 9,
+      "coverageFrom": "Tasker Court",
+      "coverageTo": "Heaven Crescent",
+      "capturedMetres": 60,
+      "streetMetres": 190
+    },
+    "streets/solomon-court-milton/20260901/day.mp4": {
+      "durationS": 35,
+      "coverageFrom": "Leiterman Drive",
+      "coverageTo": null,
+      "capturedMetres": 290,
+      "streetMetres": 420
+    },
+    "streets/tasker-court-milton/20260830/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": "Bronte Street",
+      "coverageTo": "Shade Lane",
+      "capturedMetres": 180,
+      "streetMetres": 180
+    },
+    "streets/timmer-place-milton/20260901/day.mp4": {
+      "durationS": 20,
+      "coverageFrom": "Attenborough Terrace",
+      "coverageTo": "Nadalin Heights",
+      "capturedMetres": 160,
+      "streetMetres": 160
+    },
+    "streets/tock-close-milton/20260901/day.mp4": {
+      "durationS": 18,
+      "coverageFrom": "Leiterman Drive",
+      "coverageTo": "Gosford Crescent",
+      "capturedMetres": 140,
+      "streetMetres": 140
+    },
+    "streets/whitlock-avenue-milton/20260830/day.mp4": {
+      "durationS": 24,
+      "coverageFrom": "Mulroney Heights",
+      "coverageTo": "Bronte Street",
+      "capturedMetres": 190,
+      "streetMetres": 4230
+    }
+  }
+}

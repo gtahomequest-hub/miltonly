@@ -285,9 +285,9 @@ export function buildAddressesItemListSchema(
 
 /**
  * VideoObject for one resolved clip. Emitted for any page carrying video. Returns null
- * unless Google's required trio is satisfiable — name, uploadDate, and a thumbnailUrl
- * (the derived poster). `duration` is intentionally omitted: it has no source that is
- * worth a schema change, and we do not fabricate one (see src/lib/streetVideo.ts).
+ * unless Google's required trio is satisfiable: name, uploadDate, and a thumbnailUrl
+ * (the derived poster). `duration` comes from the sidecar (src/data/streetVideoMeta.json,
+ * MC-015) and is omitted, never fabricated, when the clip has no entry.
  */
 export function buildVideoObjectSchema(clip: StreetVideoClip): object | null {
   if (!clip.poster || !clip.uploadDate) return null;
@@ -298,6 +298,7 @@ export function buildVideoObjectSchema(clip: StreetVideoClip): object | null {
     thumbnailUrl: clip.poster,
     uploadDate: clip.uploadDate,
     contentUrl: clip.src,
+    ...(clip.durationIso ? { duration: clip.durationIso } : {}),
   };
 }
 

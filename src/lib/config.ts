@@ -113,6 +113,14 @@ export const config = {
       "Milton District Hospital", "Milton Islamic Centre",
     ],
   },
+
+  // === Street video (MC-015) ===
+  video: {
+    // The takedown route for anyone whose property is in a clip: one address, printed on
+    // every page carrying footage, read by a person. The realtor's own mailbox, not a role
+    // address nobody checks.
+    takedownEmail: "aamir@miltonly.com",
+  },
 } as const;
 
 export type Config = typeof config;

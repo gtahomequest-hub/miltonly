@@ -107,11 +107,31 @@
   object-fit: cover;
 }
 .street-v2 .s-video-cap {
-  padding: 12px 16px;
+  padding: 12px 16px 0;
   font-size: 13px;
   color: var(--s-text-muted);
   font-family: var(--s-mono);
   letter-spacing: 0.02em;
+}
+/* the coverage sentence: body prose under the caption, inside the clip card */
+.street-v2 .s-video-coverage {
+  margin: 0;
+  padding: 6px 16px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--s-text-body);
+}
+/* the takedown line: one sentence under the grid, muted, the address a plain link */
+.street-v2 .s-video-takedown {
+  margin: 20px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--s-text-muted);
+}
+.street-v2 .s-video-takedown a {
+  color: var(--s-text-body);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .street-v2 .s-sechead h2 {
   font-family: var(--s-serif);
