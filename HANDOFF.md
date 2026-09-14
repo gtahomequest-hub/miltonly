@@ -2,57 +2,80 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-13 (MC-020, after the crash): main pushed and on production, the first night's audit findings finished on `fix/audit-night-1`, previewed and battery-clean, waiting on approval to merge; MC-021 (Reporting, no editor) merged. MC-017 (build cost) and MC-015 (video playbook) are next, in that order._
+_Last rewritten 2026-09-13 (MC-017): MC-020 merged and on production (17 checks); MC-017 built on `fix/build-cost`, previewed, battery-clean, TTFB measured, waiting on approval to merge. MC-015 (video playbook) is next._
 
 ## READ THIS FIRST
 
-**MAIN IS `1ad86d8` AND PRODUCTION SERVES `1ad86d8`.** Main carries the MA-003 merge (`20aa2d7`,
-`feat/audit @ e3261a7`, local `pnpm build` exit 0, 609/609, no `P2024`) and the MC-021 docs merge
-(`1ad86d8`, `docs/MC-021-reporting @ 1ecc166`). Production `miltonly-55r4p6xwv` serves `1ad86d8`.
-The battery against it, run from the fix branch's working tree so it carried the branch's new
-17th check: **16 of 17 pass; the 17th, `catchment`, fails on 520 pages** because the site-wide
-`og:description` in `src/app/layout.tsx` still says "school zones" on main. That is the finding
-`fix/audit-night-1` removes; it is not a regression. Main's own 16 checks are clean. Logs:
-`scratchpad/mc003/build-mc020-main.log`, `battery-mc020-prod-1ad86d8.log`.
+**MAIN IS `1900c46` AND PRODUCTION SERVES `1900c46`, `PASS · 17 checks · 509 pages · 1142s`.**
+`1900c46` merges `fix/audit-night-1 @ 13214eb` (app code `31f3d98`, MC-020: the first night's
+audit findings) on top of `1ad86d8` (MC-021 docs) and `20aa2d7` (MA-003). Local build exit 0,
+609/609, no `P2024`; production `miltonly-pedwawpmh`. The 17th check is `catchment` (a title or
+meta tag with zone vocabulary); it passes on production now. Record:
+`scratchpad/reports/MC-020-audit-night-1.md`.
 
-**`fix/audit-night-1` IS FINISHED AND WAITS ON APPROVAL TO MERGE.** Head is the docs commit on top of
-`d2bbee3` (main merged in); app code is `31f3d98`'s, plus the docs (this file, QUEUE, the reports, CLAUDE.md from MC-021). What it takes from
-the first night (record `scratchpad/reports/MC-020-audit-night-1.md`): (a) the battery's
-`catchment` check carries the render guard's pattern list verbatim and is registered in
-`run.mjs`; the school page titles, `/schools` copy, the `/listings` schools block and the site
-OG description lose "school zone" and "top-rated"; (b) `formatArchitecturalStyle` in
-`src/lib/listingStyle.ts` labels every feed style ("Bungalow-Raised" is "Raised bungalow",
-"Backsplit 4" is "Four-level backsplit") and the listing page renders style only through it;
-(c) the listing page's remarks block carries `data-remarks` and the visible label "Listing
-agent's remarks", and the hashed "people viewed today" counter is gone; (d) `/rentals` renders
-one H1; (e) the condo intent squares resolve (`#listings` exists, `/#mls` is gone); (f) the
-schools guide says "placement maps", not "boundary data", beside "school boards" (the two S2
-`catchment` findings left after MA-003). `scripts/test-audit-night-1.ts` (57 assertions) is in
-the prebuild. Local build exit 0, 609/609, no `P2024`. Preview `miltonly-q1zdch6qs` serving
-`31f3d98`: **`PASS · 17 checks · 509 pages · 799s`**. To merge: `git merge --no-ff <head of fix/audit-night-1>` on
-main, push, `npx vercel ls --prod`, battery with the merge SHA; the 17th check then passes on
-production and the next nightly's `remarks-unmarked` 107, `treb-string` 4, `h1-multiple` 1 and
-the S1 `catchment` 34 clear.
+**`fix/build-cost` (MC-017) IS FINISHED AND WAITS ON APPROVAL TO MERGE.** Head is the docs commit
+on top of `0e48e18` (app code). Hub, condo, guide and listing pages, and the `/neighbourhoods`,
+`/condos` and `/guides` indexes, were `force-dynamic`: a render and a DB1, DB2, DB3 and Upstash
+round trip on every request. They are ISR now, `revalidate = 86400`, and the build prerenders
+fifty streets instead of 509. Preview `miltonly-4rpubqh2v` serving `0e48e18`: battery in the
+report; **TTFB p50 hub 2.13 s to 0.13 s, condo 0.90 s to 0.11 s, guide 0.50 s to 0.10 s,
+listing 0.49 s to 0.10 s** (production before, preview after, 7 samples each,
+`scratchpad/mc003/ttfb-before-1900c46.txt` and `ttfb-after-0e48e18-preview.txt`); Vercel
+prerender 62 s to 13 s, build 2 m 19 s to 1 m 44 s wall on the Turbo machine. To merge:
+`git merge --no-ff <head of fix/build-cost>` on main, push, `npx vercel ls --prod`, battery with
+the merge SHA, then the TTFB script against production: `sh scratchpad/mc003/ttfb.sh
+https://miltonly.com after`. Record: `scratchpad/reports/MC-017-build-cost.md`.
 
-**NOT TAKEN, NAMED FOR CORE.** The 196 S3 `dead-anchor` findings on street pages are one
-defect: a hero pill links to `#type-<type>` for any type with n >= 1 (`src/lib/street-data.ts`
-`anchor`), and the lease pill to `#type-condo`, but a `TypeCard` renders (`id="type-<type>"`,
-`src/components/street/v2/sections.tsx`) only for a type that clears k5 on sold price
-(`buildProductTypeSections`). `src/components/street/TypeSection.tsx` is rendered nowhere.
-The fix is a pill with no href below k, or an anchor at a section that exists; it touches the
-street page and was not in MC-020's scope. Also open: one carried listing with a catchment
-word in its own copy, which clears on its next sweep.
+**THREE THINGS MC-017 HAD TO LEARN, ALL IN THE CODE COMMENTS.** (1) **Next 14 caches a dynamic
+route only when `generateStaticParams` exists.** The first preview served every hub, condo, guide
+and listing page MISS, `private, no-store`, exactly as before, with `revalidate` set and no
+dynamic API in sight; an empty `generateStaticParams() { return []; }` on each page is what
+turns the route ISR, and nothing prerenders. (2) **The Upstash client fetches `no-store`, and
+under a static render that is a bailout Next records before the client throws**: `cached()` in
+`src/lib/cache.ts` caught the error and the page lived, but the route's revalidate was already 0.
+`cached()` now skips Redis when `staticGenerationAsyncStorage` says the render is static (the
+store `unstable_noStore` reads); the route cache is the cache there, Redis keeps the dynamic
+routes and the route handlers. That also removed the 60 `DYNAMIC_SERVER_USAGE` lines every build
+printed. (3) **A page's effective revalidate is the smaller of its own and any fetch's**: the
+Neon reads carry an hour (`src/lib/db.ts`, MC-010), so a page that reads DB2 or DB3 serves
+`s-maxage=3600` and one that does not (a condo page, a 404) serves 86400. The hour stays: it is
+what bounds the 12-month window's trailing edge (the battery lies for an hour, not a day).
+
+**THE WRITE PATHS DROP WHAT THEY CHANGE.** `src/lib/revalidateSurfaces.ts`: the three listing syncs
+(`/api/sync`, `/api/sync/detect`, `/api/sync/expire`) purge `/listings/[mlsNumber]`,
+`/condos/[slug]`, `/neighbourhoods/[slug]` and the two indexes after a run that wrote rows; the
+two hub generators and the condo generator purge their page and index after the upsert; the
+three analytics jobs (`compute-sold-stats`, `compute-board`, `compute-geni`) drop the `db3` tag,
+pulled forward from MC-015. The sold sync already dropped `db2`. `scripts/test-build-cost.ts`
+(42 assertions) holds all of it in the prebuild.
+
+**WHICH FIFTY STREETS.** `src/lib/streetPrerender.ts`: Search Console impressions (SeoOpportunity
+holds 26 street pages, zero clicks), then active listings, then the slug. It only decides which
+pages are warm at deploy; the other 459 render on first visit under the page's own hour and
+serve from the cache after (checked: `aird-court-milton` MISS then HIT on the preview).
+
+**NOT DONE, ASKED IN THE REPORT.** "Automatic Git deploys off for every branch but main" is a
+branch condition in `vercel.json` `ignoreCommand`, and CLAUDE.md says that command skips a build
+only for the nightly path. Three previews were building at once tonight from three worktrees;
+that is the minute sink. It changes how every worktree gets a preview (`npx vercel deploy` from
+the branch), so it waits for a decision.
+
+**THE `#type-<type>` DEAD ANCHORS ARE STREET PAGE V3 CHANGE 7 (HOME).** 196 S3 `dead-anchor`
+findings, one defect: a hero pill links `#type-<type>` for any type with n >= 1 and the lease
+pill `#type-condo`, but a `TypeCard` renders only above k5 (`buildProductTypeSections`);
+`TypeSection.tsx` is rendered nowhere. Core does not take it.
 
 **THE NIGHTLY AUDIT IS LIVE** at 03:00 Toronto; it commits `audit(nightly): <date>` to main
 without a human, and Vercel cancels that build under `ignoreCommand`. **Pull before you branch or
 push.** Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is
-not installed system-wide. **Two Vercel gotchas from tonight:** `vercel ls` reports a preview
-`● Ready` while the URL still serves a "Deployment is building" HTML page for a minute or so;
-`/api/build` returning HTML is that, not a broken deployment, so re-probe before the battery.
-And `vercel ls` output shifts by a line between calls; match rows on `vercel.app`, never on a
-line number. A battery run through the Bash tool dies at the 10-minute tool cap; run it under
-`nohup sh scratchpad/mc003/run-prod-battery.sh &` (or `run-preview-battery.sh`) and poll the
-log for `^EXIT`.
+not installed system-wide. **Vercel and Windows gotchas:** `vercel ls` reports a preview
+`● Ready` a minute before the URL stops serving a "Deployment is building" page; match rows on
+`vercel.app`, never a line number; three worktrees push, so find the preview by `/api/build`
+commit, never by position. A battery under the Bash tool dies at the 10-minute cap: run
+`nohup sh scratchpad/mc003/run-battery.sh <sha> <base> <log> &` and poll the log for `^EXIT`.
+A local `next start` holds Prisma's engine DLL and `prisma generate` then fails `EPERM`; stop it
+with `Stop-Process` from PowerShell, Git Bash `kill` does not reach it. The machine is shared:
+a build was killed for memory while other sessions ran ffmpeg.
 
 **CLAUDE.md REPORTING (MC-021).** A task ends with `scratchpad/reports/<TASK-ID>-<slug>.md` and a
 reply whose last line is `Report: <path>`; nothing opens the editor.
@@ -69,14 +92,12 @@ listing, 3,414 rows a render, 57 renders in the window), `publishedStreetPageSlu
 (66,712 rows scanned a render, uncached), and the `Neighbourhood`/`HubContent` sets fetched 2,600
 times a window. Proposals and a 16 GB/month ceiling are in the report. **No code was changed.**
 
-**NEXT, IN ORDER: MC-017 then MC-015.** MC-017 on `fix/build-cost`: `vercel.json` `ignoreCommand`
-skipping docs-only diffs, automatic Git deploys off for every branch but main, street/hub/condo/
-guide pages on on-demand ISR (top 50 by traffic prerendered, `dynamicParams: true`), build minutes
-before and after. MC-015 on `feat/video-playbook` (branch exists, empty): dated keys for all 49
+**NEXT: MC-015.** On `feat/video-playbook` (branch exists, empty): dated keys for all 49
 published clips, captured-at backfill, `sitemap-video.xml`, the coverage sentence, the takedown
-mailto, ffprobe and blur guards in the upload script, the `db3` tag drop after an analytics run,
-and a `video` battery check. Survey facts: only the 7 recent clips have registry start/end in
-`D:/dashcam/work/stage3-match.json`; the other 42 need `clip-coverage.js` with the GPS cache.
+mailto, ffprobe and blur guards in the upload script, and a `video` battery check. The `db3` tag
+drop after an analytics run is done (MC-017). Survey facts: only the 7 recent clips have registry
+start/end in `D:/dashcam/work/stage3-match.json`; the other 42 need `clip-coverage.js` with the
+GPS cache.
 
 **WHAT LANDED WITH CORE BATCH 3.** The board never the family; the judge cannot refuse on a
 finding it labels not a violation; hub titles and descriptions have no em-dash and the LIVE
