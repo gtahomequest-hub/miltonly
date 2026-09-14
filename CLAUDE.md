@@ -67,7 +67,7 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
 
 - `D:\miltonly` (main) is Core. `D:\miltonly-home`, `D:\miltonly-content`, `D:\miltonly-leads` own their tiers. `D:\miltonly-audit` (`feat/audit`) is Audit: it owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`, reads production and previews, and never edits a page, a component, a library file or the schema.
 - The nightly audit runs on a GitHub runner at 03:00 Toronto and commits `scratchpad/audit/nightly/<date>.md` and `state.json` to `main` as `audit(nightly): <date>`. Pull before you branch or push; that commit lands without a human.
-- `vercel.json` `ignoreCommand` skips a build only when a commit touches nothing outside `scratchpad/audit/nightly/`. Never put anything else under that path, and never widen the exclude: a commit that touches any other file, docs included, builds.
+- `vercel.json` `ignoreCommand` lets a Git-triggered build run only on `main`, and on `main` only when the commit touches something outside `scratchpad/audit/nightly/`. A push to any other branch is cancelled; a branch gets its preview from `npx vercel` in its worktree (CLI deploys do not run the command). Never put anything else under the nightly path, and never widen the exclude: a `main` commit that touches any other file, docs included, builds.
 - Audit secrets are repository Actions secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, the `.env.local` values.
 
 ## Windows and PowerShell
