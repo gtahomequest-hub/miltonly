@@ -33,7 +33,7 @@ async function main() {
   ok(catchmentHits(headFields(listingHead)).length === 0, `"zoned for residential" with no school context does not fire`);
   const fixedHead = `<html><head><title>Anne J. MacArthur PS, Milton: Homes and Prices Nearby</title><meta name="description" content="Homes for sale near Anne J. MacArthur PS in Hawthorne Village, Milton Ontario: live TREB listings."><meta property="og:description" content="Schools nearby, GO commute data, and live TREB listings."></head></html>`;
   ok(catchmentHits(headFields(fixedHead)).length === 0, `the new school title and the site OG description are clean`);
-  ok(/catchment\]/.test(read("scripts/verify/run.mjs")), "catchment is registered in run.mjs ALL");
+  ok(/catchment[,\]]/.test(read("scripts/verify/run.mjs")), "catchment is registered in run.mjs ALL");
 
   // (b) the style formatter
   const feedValues = ["2-Storey", "Apartment", "3-Storey", "1 Storey/Apt", "Bungalow", "Stacked Townhouse", "Multi-Level", "1 1/2 Storey",

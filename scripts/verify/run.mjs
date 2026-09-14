@@ -26,10 +26,11 @@ import geometryFacts from './checks/geometry-facts.mjs';
 import hubPage from './checks/hub-page.mjs';
 import sourcesFresh from './checks/sources-fresh.mjs';
 import catchment from './checks/catchment.mjs';
+import video from './checks/video.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, catchment];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, catchment, video];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

@@ -1,0 +1,335 @@
+{
+  "generator": "scripts/backfill-video-captured.ts",
+  "builtAt": "2026-09-14T20:09:49.548Z",
+  "clips": {
+    "streets/anne-boulevard-milton/20260907/day.mp4": {
+      "durationS": 45,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/attenborough-terrace-milton/20260901/day.mp4": {
+      "durationS": 55,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/beam-court-milton/20260902/day.mp4": {
+      "durationS": 38,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/beasley-terrace-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/britannia-road-milton/20260829/day.mp4": {
+      "durationS": 40,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/bronte-street-milton/20260907/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/cavanagh-lane-milton/20260901/day.mp4": {
+      "durationS": 46,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/chee-chee-landing-milton/20260902/day.mp4": {
+      "durationS": 31,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/childs-drive-milton/20260827/day.mp4": {
+      "durationS": 28,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/chretien-street-milton/20260902/day.mp4": {
+      "durationS": 51,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/clifford-point-milton/20260825/night.mp4": {
+      "durationS": 19,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/commercial-street-milton/20260907/day.mp4": {
+      "durationS": 47,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/costigan-road-milton/20260827/day.mp4": {
+      "durationS": 44,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/dalhousie-gate-milton/20260901/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/diefenbaker-street-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/duignan-crescent-milton/20260901/day.mp4": {
+      "durationS": 37,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/etheridge-avenue-milton/20260901/day.mp4": {
+      "durationS": 45,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/farmstead-drive-milton/20260827/day.mp4": {
+      "durationS": 57,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/first-line-milton/20260825/night.mp4": {
+      "durationS": 59,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/frost-court-milton/20260825/night.mp4": {
+      "durationS": 27,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/gillett-point-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/gosford-crescent-milton/20260901/day.mp4": {
+      "durationS": 15,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/hamman-way-milton/20260901/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/haxton-heights-milton/20260901/day.mp4": {
+      "durationS": 15,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/heaven-crescent-milton/20260830/day.mp4": {
+      "durationS": 15,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/heslop-road-milton/20260907/day.mp4": {
+      "durationS": 21,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/hinton-terrace-milton/20260902/day.mp4": {
+      "durationS": 28,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/leger-way-milton/20260827/day.mp4": {
+      "durationS": 34,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/lemieux-court-milton/20260901/day.mp4": {
+      "durationS": 39,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/little-crescent-milton/20260904/day.mp4": {
+      "durationS": 23,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/locker-place-milton/20260910/day.mp4": {
+      "durationS": 28,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/martin-street-milton/20260907/day.mp4": {
+      "durationS": 50,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/mccuaig-drive-milton/20260904/day.mp4": {
+      "durationS": 30,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/miller-way-milton/20260827/day.mp4": {
+      "durationS": 26,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/mulroney-heights-milton/20260827/day.mp4": {
+      "durationS": 9,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/murlock-heights-milton/20260901/day.mp4": {
+      "durationS": 16,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/nadalin-heights-milton/20260901/day.mp4": {
+      "durationS": 19,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/nipissing-road-milton/20260910/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/parent-place-milton/20260902/day.mp4": {
+      "durationS": 30,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/pharo-point-milton/20260901/day.mp4": {
+      "durationS": 16,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/scott-boulevard-milton/20260902/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/shade-lane-milton/20260830/day.mp4": {
+      "durationS": 9,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/solomon-court-milton/20260901/day.mp4": {
+      "durationS": 35,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/tasker-court-milton/20260830/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/timmer-place-milton/20260901/day.mp4": {
+      "durationS": 20,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/tock-close-milton/20260901/day.mp4": {
+      "durationS": 18,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    },
+    "streets/whitlock-avenue-milton/20260830/day.mp4": {
+      "durationS": 24,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": null,
+      "streetMetres": null
+    }
+  }
+}

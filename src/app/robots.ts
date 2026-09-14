@@ -52,6 +52,8 @@ export default function robots(): MetadataRoute.Robots {
         "/rentals?",
       ],
     },
-    sitemap: `${config.SITE_URL}/sitemap.xml`,
+    // /sitemap-video.xml (MC-015) is a separate file, not an index entry: Next's sitemap.ts
+    // emits one urlset with no index, so robots is where the second file gets named.
+    sitemap: [`${config.SITE_URL}/sitemap.xml`, `${config.SITE_URL}/sitemap-video.xml`],
   };
 }

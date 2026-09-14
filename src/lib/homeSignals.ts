@@ -20,7 +20,7 @@ import { getSoldDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
-import { deriveVideoPoster } from "@/lib/streetVideo";
+import { deriveVideoPoster, wallClock } from "@/lib/streetVideo";
 
 const WEEK_MS = 7 * 86_400_000;
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
@@ -130,8 +130,10 @@ export async function getStreetsWithVideo(limit = 12): Promise<StreetVideoCard[]
       streetName: true,
       videoUrl: true,
       videoCapturedAt: true,
+      videoCapturedOffsetMin: true,
       nightVideoUrl: true,
       nightCapturedAt: true,
+      nightCapturedOffsetMin: true,
     },
   });
 
@@ -142,7 +144,12 @@ export async function getStreetsWithVideo(limit = 12): Promise<StreetVideoCard[]
     if (!url) continue;
     const poster = deriveVideoPoster(url);
     if (!poster) continue; // no thumbnail, no card
-    const capturedAt = useDay ? r.videoCapturedAt : r.nightCapturedAt;
+    // the wall-clock date under the clip's own offset, never the UTC date of the instant
+    // (a 9:40 pm capture is the next day in UTC)
+    const capturedAt = wallClock(
+      useDay ? r.videoCapturedAt : r.nightCapturedAt,
+      useDay ? r.videoCapturedOffsetMin : r.nightCapturedOffsetMin,
+    );
     cards.push({
       slug: r.streetSlug,
       // resolveStreetName is the only source of a street name on any surface.
@@ -200,8 +207,8 @@ export async function getStreetsWithVideoForSlugs(slugs: string[], limit = 8): P
     },
     select: {
       streetSlug: true, streetName: true,
-      videoUrl: true, videoCapturedAt: true,
-      nightVideoUrl: true, nightCapturedAt: true,
+      videoUrl: true, videoCapturedAt: true, videoCapturedOffsetMin: true,
+      nightVideoUrl: true, nightCapturedAt: true, nightCapturedOffsetMin: true,
     },
   });
 
@@ -212,7 +219,12 @@ export async function getStreetsWithVideoForSlugs(slugs: string[], limit = 8): P
     if (!url) continue;
     const poster = deriveVideoPoster(url);
     if (!poster) continue;
-    const capturedAt = useDay ? r.videoCapturedAt : r.nightCapturedAt;
+    // the wall-clock date under the clip's own offset, never the UTC date of the instant
+    // (a 9:40 pm capture is the next day in UTC)
+    const capturedAt = wallClock(
+      useDay ? r.videoCapturedAt : r.nightCapturedAt,
+      useDay ? r.videoCapturedOffsetMin : r.nightCapturedOffsetMin,
+    );
     cards.push({
       slug: r.streetSlug,
       name: resolveStreetName(r.streetSlug, r.streetName).name,

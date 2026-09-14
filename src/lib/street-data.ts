@@ -564,8 +564,10 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           streetName,
           videoUrl: streetContent.videoUrl,
           videoCapturedAt: streetContent.videoCapturedAt,
+          videoCapturedOffsetMin: streetContent.videoCapturedOffsetMin,
           nightVideoUrl: streetContent.nightVideoUrl,
           nightCapturedAt: streetContent.nightCapturedAt,
+          nightCapturedOffsetMin: streetContent.nightCapturedOffsetMin,
         })
       : null,
     lastUpdated: new Date().toISOString(),

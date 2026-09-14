@@ -127,21 +127,28 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
   );
 }
 
-/* ───── street video (PoC) ───── */
+/* ───── street video ───── */
 
 // Renders the resolved day/night clips. A null view, or a view whose clips are all null,
-// renders NOTHING — no placeholder, no "video coming soon" (that's the whole PoC rule).
-// <video> is controls + no autoplay + playsInline; the poster frame is the derived JPG.
+// renders NOTHING: no placeholder, no "video coming soon". <video> is controls + no autoplay
+// + playsInline + preload none (the clips carry no audio stream, asserted at upload), the
+// poster frame is the derived webp.
+//
+// Under each player, the coverage sentence (MC-015): what the clip is a pass along, its
+// endpoints when they are recorded, and when it was filmed. A clip with no stated extent
+// implies it covers the street, and most cover a fraction of one. Under the grid, the
+// takedown address: one line, one mailbox, read by a person, on every page carrying footage.
 export function StreetVideo({ data }: { data: StreetV2Data }) {
   const v = data.video;
   const clips = v ? ([v.day, v.night].filter(Boolean) as StreetVideoClip[]) : [];
-  if (clips.length === 0) return null;
+  if (clips.length === 0 || !v) return null;
+  const subject = encodeURIComponent(`Footage takedown: ${data.name}`);
   return (
     <section className="s-block s-video">
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">On the ground</span>
-          {/* full display name here (data.name = "Lemieux Court"), not shortName — shortName
+          {/* full display name here (data.name = "Lemieux Court"), not shortName: shortName
               strips the street-type suffix for in-prose use ("homes on Lemieux"). */}
           <h2>{data.name} on video</h2>
         </div>
@@ -152,15 +159,21 @@ export function StreetVideo({ data }: { data: StreetV2Data }) {
                 className="s-video-el"
                 controls
                 playsInline
-                preload="metadata"
+                preload="none"
                 poster={c.poster ?? undefined}
               >
                 <source src={c.src} type="video/mp4" />
               </video>
               {c.caption && <figcaption className="s-video-cap">{c.caption}</figcaption>}
+              {c.coverage && <p className="s-video-coverage">{c.coverage}</p>}
             </figure>
           ))}
         </div>
+        <p className="s-video-takedown">
+          Footage of your own property here? Write to{" "}
+          <a href={`mailto:${v.takedownEmail}?subject=${subject}`}>{v.takedownEmail}</a> and the clip comes
+          down. A person reads that mailbox.
+        </p>
       </div>
     </section>
   );
