@@ -22,6 +22,7 @@ import { buildHubInput, buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
 import { HubGenerationError } from "@/lib/ai/hub/generateHubContent";
 import { buildHubMeta } from "@/lib/ai/hub/hubMeta";
+import { revalidateHubSurfaces } from "@/lib/revalidateSurfaces";
 import {
   generateUrbanHubContent,
   type UrbanProviderOpts,
@@ -185,6 +186,9 @@ export async function generateUrbanHub(
       attempts: attemptCount,
     },
   });
+
+  // MC-017: the hub page is ISR; the write drops it.
+  revalidateHubSurfaces(neighbourhoodSlug, "generateUrbanHub");
 
   console.log(
     `[generateUrbanHub] ${neighbourhoodSlug}: PUBLISHED — ${totalWords} words, ` +

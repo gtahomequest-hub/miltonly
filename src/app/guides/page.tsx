@@ -12,7 +12,9 @@ import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
 import { GUIDE_DEFS } from "@/lib/guides/guides";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request; see the detail page for the tags and the
+// write paths that drop it.
+export const revalidate = 86400;
 
 export const metadata: Metadata = genMeta({
   title: `${config.CITY_NAME} Real Estate Guides`,

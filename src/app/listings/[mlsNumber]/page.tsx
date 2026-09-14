@@ -10,7 +10,20 @@ import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
 import { resolvePublishedHubSlug } from "@/lib/hubResolve";
 
-export const dynamic = 'force-dynamic';
+// MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
+// once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
+// the db3 tag (src/lib/db.ts), dropped by the sold sync and the analytics jobs; the DB1 rows are
+// dropped by path from the write paths (src/lib/revalidateSurfaces.ts). generateStaticParams
+// returns nothing, and it must exist: without it Next 14 treats a dynamic route as dynamic on
+// every request and never fills the route cache (the first MC-017 preview served every page
+// MISS, private, no-store). With it, nothing is prerendered at build and every page renders on
+// its first visit, then serves from the cache. A page whose Neon reads carry their own hour
+// revalidates on the hour: Next takes the smaller of the route's and a fetch's.
+export const revalidate = 86400;
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 interface Props { params: { mlsNumber: string } }
 
@@ -24,14 +37,6 @@ function titleCase(s: string | null | undefined): string {
   }).join("");
 }
 const cleanHood = (h: string) => titleCase(h.replace(/^\d+\s*-\s*\w+\s+/, "").trim());
-
-// Deterministic "views today" based on mlsNumber + date — stable within a day
-function viewsToday(mls: string): number {
-  let h = 0;
-  for (let i = 0; i < mls.length; i++) h = (h * 31 + mls.charCodeAt(i)) & 0xfffff;
-  const day = Math.floor(Date.now() / 86400000);
-  return 12 + ((h + day) & 0xff) % 9;
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
@@ -133,7 +138,6 @@ export default async function ListingDetailPage({ params }: Props) {
   }));
 
   const domDays = Math.floor((Date.now() - new Date(listing.listedAt).getTime()) / 86400000);
-  const views = viewsToday(listing.mlsNumber);
 
   // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
@@ -227,7 +231,6 @@ export default async function ListingDetailPage({ params }: Props) {
           hoodName,
           hoodAvgRent,
           schools: schoolsLite,
-          viewsToday: views,
           domDays,
         }}
       />

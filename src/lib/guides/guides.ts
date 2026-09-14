@@ -809,7 +809,7 @@ async function buildSchools(def: GuideDef): Promise<BuiltGuide> {
       paragraphs: paras(
         para(
           `This page cannot tell you which school a given address is placed with. Placement is set by the school boards, changes with enrolment, and is published by the boards themselves.`,
-          `The boundary data behind those decisions is not held on this site, so any statement here about which homes go with which school would be a guess presented as a fact.`,
+          `The placement maps behind those decisions are not held on this site, so any statement here about which homes go with which school would be a guess presented as a fact.`,
         ),
         para(
           `Two other things are absent and worth naming rather than glossing. There is no street address for any school in this data, and there is no distance from a home to a school. The coordinates this site holds for some schools are neighbourhood-level approximations, and a distance computed from an approximation is not a distance.`,
@@ -835,7 +835,7 @@ async function buildSchools(def: GuideDef): Promise<BuiltGuide> {
   const faqs: GuideFaq[] = [
     {
       question: `Which school will my child go to in ${CITY}?`,
-      answer: `The school boards decide that, and this site does not hold the boundary data behind the decision. Contact the board directly. It is the only source that can answer it, and the answer can change with enrolment.`,
+      answer: `The school boards decide that, and this site does not hold the placement maps behind the decision. Contact the board directly. It is the only source that can answer it, and the answer can change with enrolment.`,
     },
     {
       question: `How many schools are there in ${CITY}?`,

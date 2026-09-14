@@ -24,6 +24,7 @@ import { config } from "@/lib/config";
 import { buildCondoBuildingInput } from "@/lib/ai/buildCondoBuildingInput";
 import { routeCondoGeneration } from "@/lib/ai/hub/condoFailClosed";
 import { HubGenerationError } from "@/lib/ai/hub/generateHubContent";
+import { revalidateCondoSurfaces } from "@/lib/revalidateSurfaces";
 import {
   generateCondoBuildingContent,
   type CondoProviderOpts,
@@ -197,6 +198,9 @@ export async function generateCondoBuilding(
       attempts: attemptCount,
     },
   });
+
+  // MC-017: the condo page is ISR; the write drops it.
+  revalidateCondoSurfaces(buildingSlug, "generateCondoBuilding");
 
   console.log(
     `[generateCondoBuilding] ${buildingSlug}: PUBLISHED — ${totalWords} words, ` +

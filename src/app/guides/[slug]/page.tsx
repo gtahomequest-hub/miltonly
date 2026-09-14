@@ -13,15 +13,23 @@ import SiteNavLive from "@/components/nav/SiteNavLive";
 import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 
-export const dynamic = "force-dynamic";
-
-// NO generateStaticParams, deliberately. Every figure on a guide is read live
-// from the sold aggregates, so a prerendered guide would freeze its numbers at
-// build time and quietly diverge from /sold and from the hub pages it links
-// to. The first build did prerender these (● in the route table) and the
-// figures would have been stale from the moment the deploy finished. The
-// sitemap still lists all six from GUIDE_SLUGS, and an unknown slug 404s
-// through notFound() below.
+// generateStaticParams returns NOTHING, deliberately. Every figure on a guide is
+// read live from the sold aggregates, so a build-time prerender would freeze its
+// numbers and quietly diverge from /sold and from the hub pages it links to. The
+// first build did prerender these (● in the route table). The sitemap still lists
+// every slug from GUIDE_SLUGS, and an unknown slug 404s through notFound() below.
+//
+// MC-017 (2026-09-13): ISR, not a render per request. The function must exist,
+// empty: without it Next 14 renders a dynamic route on every request and never
+// fills the route cache. A guide renders on its first visit and serves until its
+// Neon reads' hour or a purge: its DB2 reads carry the db2 tag and its DB3 reads
+// the db3 tag (src/lib/db.ts), dropped by the sold sync and the analytics jobs
+// the moment the rows change, so the figures move with /sold.
+export const revalidate = 86400;
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,

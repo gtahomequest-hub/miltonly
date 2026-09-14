@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { extractStreetName } from "@/lib/streetUtils";
 import { parseLivingAreaRange } from "@/lib/sync/parse-utils";
+import { revalidateListingSurfaces } from "@/lib/revalidateSurfaces";
 
 export const maxDuration = 300;
 
@@ -417,8 +418,12 @@ export async function POST(request: NextRequest) {
     fetch(`${baseUrl}/api/sync/generate?secret=${process.env.CRON_SECRET}`, { method: "GET" }).catch(() => {});
   }
 
+  // MC-017: the listing, condo and hub pages are ISR; a run that wrote rows drops them.
+  const revalidated = added + updated > 0 ? revalidateListingSurfaces("sync/detect") : [];
+
   return NextResponse.json({
     success: true,
+    revalidated,
     listingsSynced: added + updated,
     added,
     updated,

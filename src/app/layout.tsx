@@ -13,7 +13,7 @@ import "./globals.css";
 
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
 const ENCYCLOPEDIA_LABEL = `${config.CITY_NAME} Real Estate Encyclopedia`;
-const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, school zones, GO commute data, and live TREB listings.`;
+const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live TREB listings.`;
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
