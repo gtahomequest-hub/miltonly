@@ -528,16 +528,12 @@ model StreetContent {
   videoCapturedAt DateTime?
   nightVideoUrl   String?
   nightCapturedAt DateTime?
-  // ── Capture offset (MC-015, 2026-09-14). *CapturedAt is the capture instant and
-  //    *CapturedOffsetMin is the clip's local UTC offset in minutes (-240 for Milton in
-  //    September). A night clip's claim to be night is only checkable against the wall
-  //    clock it was shot under, so the offset travels with the timestamp instead of being
-  //    inferred at render. Rows written before this carried UTC midnight of the shot date
-  //    and a null offset; the backfill (scripts/backfill-video-captured.ts) rewrote both
-  //    from each clip's meta.json. Duration and coverage are NOT here: they live in
-  //    src/data/streetVideoMeta.json, keyed by R2 key (owner decision 2026-08-30).
-  videoCapturedOffsetMin Int?
-  nightCapturedOffsetMin Int?
+  // ── Capture instant (MC-015, 2026-09-14). *CapturedAt is the instant the clip was shot,
+  //    from the GPS row of its trace, and every surface renders it in America/Toronto, where
+  //    every clip is filmed. Rows written before this held UTC midnight of the shot date; the
+  //    backfill (scripts/backfill-video-captured.ts) rewrote them from each clip's meta.json.
+  //    Duration and coverage are NOT here: they live in src/data/streetVideoMeta.json, keyed
+  //    by R2 key (owner decision 2026-08-30).
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

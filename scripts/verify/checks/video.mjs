@@ -3,7 +3,7 @@
 //
 // MC-015. A clip with no stated extent implies it covers the street, and most cover a fraction
 // of one: the coverage sentence is body text under every player, and it says when the clip was
-// filmed, on the clip's own wall clock. Real streets and real houses are on camera, so the
+// filmed, on Toronto's clock. Real streets and real houses are on camera, so the
 // takedown address is on every page carrying footage. Every object is immutable at the edge for
 // a year, so every key is dated and a newer capture can never overwrite an older one. Google's
 // video index reads sitemap-video.xml, not the page schema, so the sitemap lists exactly the
@@ -14,11 +14,10 @@
 // VideoObject nodes. sitemap-video.xml is fetched once and compared to that set. The clips and
 // posters are HEADed, because a pointer to a deleted object is the failure a re-key can leave.
 //
-// NIGHT IS CHECKABLE ONLY WHEN THE TIME IS STATED. A night clip's sentence carries "at 9:40 pm"
-// once the row holds its offset; before the backfill it carries the date alone. A stated time
-// before 8 pm on a night clip fails; a night clip with no stated time is counted, not failed,
-// so the check reads the same before and after the backfill and the count says which world it
-// is in.
+// THE SENTENCE IS "Footage covers X m of Y m, from A to B. Filmed <date>." with the clauses it
+// can source: metres only with both figures, "from A" alone when only one end met a registry
+// street, and "Footage is one pass along <Street>" when no extent was measured. The VideoObject
+// carries the same sentence as its description, and a duration.
 import { get } from '../lib/http.mjs';
 import { clean } from '../lib/parse.mjs';
 
@@ -37,15 +36,14 @@ export function videoFacts(html) {
     const src = unescape(attr((fig.match(/<source\b[^>]*>/) || [])[0] || '', 'src'));
     const coverage = clean((fig.match(/<p class="s-video-coverage">([\s\S]*?)<\/p>/) || [])[1] || '');
     const caption = clean((fig.match(/<figcaption class="s-video-cap">([\s\S]*?)<\/figcaption>/) || [])[1] || '');
-    const time = coverage.match(/Filmed .+? at (\d{1,2}):(\d{2}) (am|pm)\.$/);
-    const hour = time ? (Number(time[1]) % 12) + (time[3] === 'pm' ? 12 : 0) : null;
     clips.push({
       src,
       poster: unescape(attr(video, 'poster')) || null,
       preload: attr(video, 'preload') || null,
       night: /night\.mp4/.test(src) || /^Overnight/.test(caption),
       coverage,
-      hour,
+      metres: /^Footage covers [\d,]+ m of [\d,]+ m/.test(coverage),
+      ends: /, from .+? to .+?\. Filmed/.test(coverage),
     });
   }
 
@@ -101,18 +99,21 @@ export default {
     const clips = pages.flatMap((p) => p.clips.map((c) => ({ ...c, url: p.url })));
 
     const noTakedown = pages.filter((p) => !p.takedown);
-    const noSentence = clips.filter((c) => !/^A(n overnight)? .+\. Filmed .+\.$/.test(c.coverage));
+    const noSentence = clips.filter((c) => !/^Footage (covers [\d,]+ m of [\d,]+ m|is one (overnight )?pass along .+?)(, from .+?)?\. Filmed \d{1,2} [A-Z][a-z]+ \d{4}(, after dark)?\.$/.test(c.coverage));
+    const withMetres = clips.filter((c) => c.metres);
+    const withEnds = clips.filter((c) => c.ends);
     const undated = clips.filter((c) => !DATED.test(c.src));
     const noPoster = clips.filter((c) => !c.poster || !DATED.test(c.poster.replace(/poster\.webp$/, c.night ? 'night.mp4' : 'day.mp4')));
     const eager = clips.filter((c) => c.preload !== 'none');
-    const nightEarly = clips.filter((c) => c.night && c.hour !== null && c.hour < 20);
-    const nightUnstated = clips.filter((c) => c.night && c.hour === null);
 
     // the schema on the page mirrors the players on the page: one VideoObject per clip, on that
-    // clip's URL, with a thumbnail
+    // clip's URL, with a thumbnail, a duration, and the clip's own sentence as its description
     const schemaMismatch = pages.filter((p) => {
-      const srcs = new Set(p.clips.map((c) => c.src));
-      return p.videoObjects.length !== p.clips.length || p.videoObjects.some((v) => !srcs.has(v.contentUrl) || !v.thumbnailUrl || !v.uploadDate);
+      const bySrc = new Map(p.clips.map((c) => [c.src, c]));
+      return p.videoObjects.length !== p.clips.length || p.videoObjects.some((v) => {
+        const c = bySrc.get(v.contentUrl);
+        return !c || !v.thumbnailUrl || !v.uploadDate || !/^PT\d+M?\d*S?$/.test(v.duration || '') || !(v.description || '').includes(c.coverage);
+      });
     });
 
     // the objects serve
@@ -124,7 +125,9 @@ export default {
     }));
     const dead = heads.filter((h) => h.status !== 200);
 
-    // the video sitemap lists exactly these pages and exactly these clips
+    // the index names both files; the video sitemap lists exactly these pages and exactly these clips
+    const idx = await get(`${base}/sitemap-index.xml`);
+    const idxOk = idx.status === 200 && /\/sitemap\.xml<\/loc>/.test(idx.body) && /\/sitemap-video\.xml<\/loc>/.test(idx.body);
     const sm = await get(`${base}/sitemap-video.xml`);
     const listed = sm.status === 200 ? parseVideoSitemap(sm.body) : new Map();
     const origin = [...listed.keys()][0] ? new URL([...listed.keys()][0]).origin : base;
@@ -149,7 +152,8 @@ export default {
         ['sitemap-video.xml status', sm.status],
         ['clips listed in sitemap-video.xml', listedClips],
         ['listed clips with a duration', listedWithDuration],
-        ['night clips with no stated time (pre-backfill rows)', nightUnstated.length],
+        ['sentences stating metres', withMetres.length],
+        ['sentences stating both endpoints', withEnds.length],
       ],
       assertions: [
         ['pages with a clip and no takedown address', noTakedown.length, 0],
@@ -157,10 +161,11 @@ export default {
         ['clips at an undated key', undated.length, 0],
         ['clips whose poster is not beside them', noPoster.length, 0],
         ['players that preload', eager.length, 0],
-        ['night clips filmed before 8 pm by their own clock', nightEarly.length, 0],
-        ['pages whose VideoObjects do not mirror their players', schemaMismatch.length, 0],
+        ['pages whose VideoObjects do not mirror their players (URL, thumbnail, duration, the sentence)', schemaMismatch.length, 0],
         ['clips or posters that do not serve', dead.length, 0],
+        ['sitemap-index.xml names both files', idxOk, true],
         ['sitemap-video.xml serves', sm.status, 200],
+        ['listed clips without a duration', listedClips - listedWithDuration, 0],
         ['pages with a clip missing from sitemap-video.xml', notListed.length, 0],
         ['sitemap-video.xml pages with no clip on the page', extraListed.length, 0],
         ['pages whose listed clips differ from their players', clipMismatch.length, 0],
@@ -170,7 +175,6 @@ export default {
         ...noSentence.slice(0, 2).map((c) => `${c.url} · sentence: "${c.coverage}"`),
         ...undated.slice(0, 2).map((c) => `${c.url} · ${c.src}`),
         ...noPoster.slice(0, 2).map((c) => `${c.url} · poster ${c.poster}`),
-        ...nightEarly.slice(0, 2).map((c) => `${c.url} · night at ${c.hour}:00`),
         ...schemaMismatch.slice(0, 2).map((p) => `${p.url} · ${p.videoObjects.length} VideoObject(s) for ${p.clips.length} clip(s)`),
         ...dead.slice(0, 3).map((h) => `${h.u} -> ${h.status}`),
         ...notListed.slice(0, 2).map((p) => `${p.url} · not in sitemap-video.xml`),

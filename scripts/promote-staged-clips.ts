@@ -168,7 +168,7 @@ async function main() {
       const prior = oldByKey.get(rowKey(slug, meta.captured_at)) ?? {};
       // fields the manifest carries from meta by name, when present
       const carried: Record<string, unknown> = {};
-      for (const k of ["score", "blur_signed_at", "blur_reviewer", "clipKey", "blur_generation", "exposureClass", "meanY", "darkRatio", "drive_s", "durationS", "staged_at", "registry", "supersedes_captured_at", "supersedes_r2_key", "match_status", "uploaded_at", "rekeyed_at", "retired_at"]) {
+      for (const k of ["score", "blur_signed_at", "blur_reviewer", "clipKey", "blur_generation", "exposureClass", "meanY", "darkRatio", "drive_s", "durationS", "captured_end", "captured_at_source", "captured_at_filename", "coverageFrom", "coverageTo", "capturedMetres", "streetMetres", "coverage_source", "relabelled", "staged_at", "registry", "supersedes_captured_at", "supersedes_r2_key", "match_status", "uploaded_at", "rekeyed_at", "retired_at"]) {
         if (meta[k] !== undefined) carried[k] = meta[k];
       }
       streets.push({

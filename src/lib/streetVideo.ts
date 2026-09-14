@@ -1,28 +1,30 @@
 // src/lib/streetVideo.ts
-// Resolver for street video. StreetContent stores six fields: videoUrl / videoCapturedAt /
-// videoCapturedOffsetMin and the night trio. EVERYTHING ELSE the page, the VideoObject
-// JSON-LD and sitemap-video.xml need is derived here, so no second copy drifts:
+// Resolver for street video. StreetContent stores four fields: videoUrl / videoCapturedAt /
+// nightVideoUrl / nightCapturedAt. EVERYTHING ELSE the page, the VideoObject JSON-LD and
+// sitemap-video.xml need is derived here, so no second copy drifts:
 //   - poster frame  → key convention: the .mp4 URL with poster.webp beside it (see
 //                     deriveVideoPoster). Null when the URL is not an .mp4 we can rewrite
 //                     (then no poster, and, per Google's required trio, no VideoObject).
-//   - local time    → *CapturedAt is the capture instant and *CapturedOffsetMin the clip's
-//                     local UTC offset (MC-015). Shift the instant by the offset and read the
-//                     wall clock in UTC: that is the date the caption prints and the hour a
-//                     night clip is checked against. Rows with a null offset predate the
-//                     backfill and hold UTC midnight of the shot date, so UTC is the wall clock.
-//   - duration and  → src/data/streetVideoMeta.json, keyed by R2 key, written at upload from
-//     coverage        the clip's own meta.json (scripts/backfill-video-captured.ts rebuilds it).
-//                     A sidecar, not a column: owner decision 2026-08-30. Missing entry means
-//                     no duration and no endpoints, and the sentence says less, never more.
+//   - wall clock    → *CapturedAt is the capture instant (the GPS row of the clip's trace,
+//                     MC-015) and every surface reads it in America/Toronto, where every clip
+//                     is filmed. That is the date the caption prints, the offset uploadDate
+//                     carries, and the hour a night clip is checked against.
+//   - duration and  → src/data/streetVideoMeta.json, keyed by R2 key, written from each clip's
+//     coverage        meta.json by scripts/backfill-video-captured.ts (ffprobe on the published
+//                     bytes; the extent from scripts/video-coverage.ts, the clip's GPS trace on
+//                     the Town road layer). A sidecar, not a column: owner decision 2026-08-30.
 //
-// THE COVERAGE SENTENCE never claims an extent it cannot source. With endpoints it says "from
-// A to B"; without them it states the pass length in seconds and nothing about how much of
-// the street that is. "Covering X m of Y m" appears only when both metres are recorded.
+// THE COVERAGE SENTENCE is "Footage covers X m of Y m, from A to B. Filmed <date>." and every
+// clause is sourced: the metres from the trace and the Town centreline, the endpoints from the
+// registry streets the run meets, the date from the instant in Toronto. A clause with no source
+// is dropped, never filled: no metres and the sentence says the footage is one pass along the
+// street; one endpoint and it says "from A"; none and it says neither.
 
 import videoMeta from "@/data/streetVideoMeta.json";
 import { config } from "@/lib/config";
 
 const MILTON = "Milton, Ontario";
+export const VIDEO_ZONE = "America/Toronto";
 
 export interface SidecarEntry {
   durationS: number | null;
@@ -40,12 +42,11 @@ export interface StreetVideoClip {
   poster: string | null;
   /** Human caption under the player, e.g. "Captured 27 August 2026". "" when no date. */
   caption: string;
-  /** VideoObject.uploadDate: the capture instant with its offset when the offset is known,
-   *  else the bare date; null when no capture timestamp. */
+  /** VideoObject.uploadDate: the capture instant with its Toronto offset; null when no timestamp. */
   uploadDate: string | null;
   /** VideoObject.name. */
   name: string;
-  /** VideoObject.description, which is the coverage sentence when one can be written. */
+  /** VideoObject.description: the coverage sentence. */
   description: string;
   /** The coverage sentence rendered under the player. "" only when there is no date at all. */
   coverage: string;
@@ -53,7 +54,7 @@ export interface StreetVideoClip {
   durationS: number | null;
   /** ISO 8601 duration ("PT45S") for VideoObject.duration and the video sitemap; null when unknown. */
   durationIso: string | null;
-  /** Wall-clock hour (0-23) at capture under the clip's own offset; null when unknown. */
+  /** Wall-clock hour (0-23) at capture in Toronto; null when no timestamp. */
   localHour: number | null;
 }
 
@@ -69,16 +70,15 @@ export interface StreetVideoView {
 /** Poster URL by name convention, because there is no poster column to read.
  *
  *  Two layouts, in order:
- *    R2      streets/<slug>/day.mp4               ->  streets/<slug>/poster.webp
- *            streets/<slug>/night.mp4             ->  streets/<slug>/poster.webp
- *            streets/<slug>/<YYYYMMDD>/day.mp4    ->  streets/<slug>/<YYYYMMDD>/poster.webp
+ *    R2      streets/<slug>/<YYYYMMDD>/day.mp4    ->  streets/<slug>/<YYYYMMDD>/poster.webp
+ *            streets/<slug>/<YYYYMMDD>/night.mp4  ->  streets/<slug>/<YYYYMMDD>/poster.webp
+ *            streets/<slug>/day.mp4               ->  streets/<slug>/poster.webp   (undated, retired)
  *    legacy  <anything>.mp4                       ->  <anything>.webp      (the Vercel Blob PoC)
  *
- *  A dated key carries its own poster beside the clip (MC-007 re-key, MC-015 for every clip);
- *  the undated layout shares one poster.webp per street. The night arm had to be added before
- *  the 2026-09-04 upload run: without it "night.mp4" fell through to the legacy arm and
- *  produced "night.webp", a key that does not exist, and with the poster gone the VideoObject
- *  went with it (Google's required trio includes a thumbnail).
+ *  Every live key is dated (MC-015) and carries its own poster beside the clip. The night arm
+ *  had to be added before the 2026-09-04 upload run: without it "night.mp4" fell through to
+ *  the legacy arm and produced "night.webp", a key that does not exist, and with the poster
+ *  gone the VideoObject went with it (Google's required trio includes a thumbnail).
  *
  *  The legacy arm stays because it costs one regex and removing it would silently drop the poster,
  *  and with it the VideoObject, for any row still holding a Blob URL. Returns null when the URL
@@ -107,41 +107,36 @@ export function sidecarFor(url: string): SidecarEntry | null {
   return key && SIDECAR[key] ? SIDECAR[key] : null;
 }
 
-/** The capture instant shifted into the clip's wall clock, to be read in UTC. A null offset
- *  means a pre-backfill row holding UTC midnight of the shot date, so the instant is already
- *  the wall clock. */
-export function wallClock(capturedAt: Date | null, offsetMin: number | null): Date | null {
+interface Wall {
+  /** "2026-09-07" */
+  date: string;
+  /** "7 September 2026" */
+  dateLong: string;
+  /** 0-23 */
+  hour: number;
+  /** "2026-09-07T11:20:17-04:00" */
+  iso: string;
+}
+
+/** The instant read on Toronto's clock. Null for a missing or invalid Date. */
+export function torontoWall(capturedAt: Date | null): Wall | null {
   if (!capturedAt || Number.isNaN(capturedAt.getTime())) return null;
-  return offsetMin == null ? capturedAt : new Date(capturedAt.getTime() + offsetMin * 60_000);
-}
-
-/** "27 August 2026" (no leading zero) from a wall-clock instant read in UTC. */
-function formatDate(wall: Date): string {
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(wall);
-}
-
-/** "9:40 pm" from a wall-clock instant read in UTC. */
-function formatTime(wall: Date): string {
-  const h = wall.getUTCHours();
-  const m = wall.getUTCMinutes();
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
-}
-
-/** "+05:30" / "-04:00" for an offset in minutes. */
-function formatOffset(offsetMin: number): string {
-  const sign = offsetMin < 0 ? "-" : "+";
-  const abs = Math.abs(offsetMin);
-  return `${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
-}
-
-/** VideoObject.uploadDate: "2026-09-07T11:20:31-04:00" when the offset is known, else the
- *  bare date. Google reads either; the offset form is the one that carries the wall clock. */
-export function uploadDateOf(capturedAt: Date | null, offsetMin: number | null): string | null {
-  const wall = wallClock(capturedAt, offsetMin);
-  if (!wall) return null;
-  const iso = wall.toISOString();
-  return offsetMin == null ? iso.slice(0, 10) : `${iso.slice(0, 19)}${formatOffset(offsetMin)}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: VIDEO_ZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "longOffset",
+  }).formatToParts(capturedAt);
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const off = (g("timeZoneName").match(/GMT([+-]\d{2}:\d{2})/) || [])[1] ?? "+00:00";
+  const date = `${g("year")}-${g("month")}-${g("day")}`;
+  const dateLong = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: VIDEO_ZONE }).format(capturedAt);
+  return { date, dateLong, hour: Number(g("hour")), iso: `${date}T${g("hour")}:${g("minute")}:${g("second")}${off}` };
 }
 
 /** "PT1M5S" for 65 seconds. */
@@ -152,104 +147,58 @@ export function isoDuration(seconds: number): string {
   return `PT${m > 0 ? `${m}M` : ""}${r > 0 || m === 0 ? `${r}S` : ""}`;
 }
 
-/** "45-second" / "1-minute" / "2-minute 10-second" for prose. */
-function durationPhrase(seconds: number): string {
-  const s = Math.round(seconds);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  if (m === 0) return `${r}-second`;
-  if (r === 0) return `${m}-minute`;
-  return `${m}-minute ${r}-second`;
-}
-
-function formatMetres(m: number): string {
+function metres(m: number): string {
   return `${Math.round(m).toLocaleString("en-CA")} m`;
 }
 
-/** The coverage sentence. Every clause is sourced: the pass length from the sidecar, the
- *  endpoints only when both are recorded, the metres only when both are recorded, the date
- *  and time from the capture instant under its own offset. "" when there is no date, because
- *  a sentence that cannot say when it was filmed says nothing. */
-export function buildCoverageSentence(args: {
-  streetName: string;
-  night: boolean;
-  wall: Date | null;
-  offsetKnown: boolean;
-  sidecar: SidecarEntry | null;
-}): string {
-  const { streetName, night, wall, offsetKnown, sidecar } = args;
+/** The coverage sentence. "" when there is no date, because a sentence that cannot say when
+ *  it was filmed says nothing. */
+export function buildCoverageSentence(args: { streetName: string; night: boolean; wall: Wall | null; sidecar: SidecarEntry | null }): string {
+  const { streetName, night, wall, sidecar } = args;
   if (!wall) return "";
-  const dur = sidecar?.durationS != null ? `${durationPhrase(sidecar.durationS)} ` : "";
-  const lead = night ? `An overnight ${dur}pass along ${streetName}` : `A ${dur}daytime pass along ${streetName}`;
-  const ends = sidecar?.coverageFrom && sidecar?.coverageTo ? `, from ${sidecar.coverageFrom} to ${sidecar.coverageTo}` : "";
-  const metres =
-    sidecar?.capturedMetres != null && sidecar?.streetMetres != null
-      ? `, covering ${formatMetres(sidecar.capturedMetres)} of the street's ${formatMetres(sidecar.streetMetres)}`
-      : "";
-  const when = offsetKnown ? `${formatDate(wall)} at ${formatTime(wall)}` : formatDate(wall);
-  return `${lead}${ends}${metres}. Filmed ${when}.`;
+  const hasMetres = sidecar?.capturedMetres != null && sidecar?.streetMetres != null;
+  const from = sidecar?.coverageFrom ?? null;
+  const to = sidecar?.coverageTo ?? null;
+  const ends = from && to ? `, from ${from} to ${to}` : from ? `, from ${from}` : "";
+  const lead = hasMetres
+    ? `Footage covers ${metres(sidecar!.capturedMetres!)} of ${metres(sidecar!.streetMetres!)}${ends}`
+    : `Footage is one ${night ? "overnight " : ""}pass along ${streetName}${ends}`;
+  return `${lead}. Filmed ${wall.dateLong}${night ? ", after dark" : ""}.`;
 }
 
-function buildClip(args: {
-  streetName: string;
-  url: string;
-  capturedAt: Date | null;
-  offsetMin: number | null;
-  variant: "day" | "night";
-}): StreetVideoClip {
-  const { streetName, url, capturedAt, offsetMin, variant } = args;
+function buildClip(args: { streetName: string; url: string; capturedAt: Date | null; variant: "day" | "night" }): StreetVideoClip {
+  const { streetName, url, capturedAt, variant } = args;
   const night = variant === "night";
-  const wall = wallClock(capturedAt, offsetMin);
-  const captured = wall ? formatDate(wall) : null;
-  const caption = captured ? (night ? `Overnight · Captured ${captured}` : `Captured ${captured}`) : night ? "Overnight" : "";
+  const wall = torontoWall(capturedAt);
+  const caption = wall ? (night ? `Overnight · Captured ${wall.dateLong}` : `Captured ${wall.dateLong}`) : night ? "Overnight" : "";
   const sidecar = sidecarFor(url);
-  const coverage = buildCoverageSentence({ streetName, night, wall, offsetKnown: offsetMin != null, sidecar });
-  const fallback = night
-    ? `An overnight video of ${streetName} in ${MILTON}: street lighting, on-street parking and after-hours character.`
-    : `A daytime video of ${streetName} in ${MILTON}.`;
+  const coverage = buildCoverageSentence({ streetName, night, wall, sidecar });
+  const fallback = night ? `An overnight video of ${streetName} in ${MILTON}.` : `A daytime video of ${streetName} in ${MILTON}.`;
   return {
     src: url,
     poster: deriveVideoPoster(url),
     caption,
-    uploadDate: uploadDateOf(capturedAt, offsetMin),
+    uploadDate: wall?.iso ?? null,
     name: night ? `${streetName} overnight tour, ${MILTON}` : `${streetName} street tour, ${MILTON}`,
-    description: coverage ? `${coverage.replace(/\.$/, "")}, in ${MILTON}.` : fallback,
+    description: coverage ? `${streetName}, ${MILTON}. ${coverage}` : fallback,
     coverage,
     durationS: sidecar?.durationS ?? null,
     durationIso: sidecar?.durationS != null ? isoDuration(sidecar.durationS) : null,
-    localHour: wall ? wall.getUTCHours() : null,
+    localHour: wall?.hour ?? null,
   };
 }
 
-/** Build the video view model from the six StreetContent columns, or null when the street
+/** Build the video view model from the four StreetContent columns, or null when the street
  *  carries no clip at all (the common case). */
 export function resolveStreetVideo(input: {
   streetName: string;
   videoUrl: string | null;
   videoCapturedAt: Date | null;
-  videoCapturedOffsetMin?: number | null;
   nightVideoUrl: string | null;
   nightCapturedAt: Date | null;
-  nightCapturedOffsetMin?: number | null;
 }): StreetVideoView | null {
-  const day = input.videoUrl
-    ? buildClip({
-        streetName: input.streetName,
-        url: input.videoUrl,
-        capturedAt: input.videoCapturedAt,
-        offsetMin: input.videoCapturedOffsetMin ?? null,
-        variant: "day",
-      })
-    : null;
-  const night = input.nightVideoUrl
-    ? buildClip({
-        streetName: input.streetName,
-        url: input.nightVideoUrl,
-        capturedAt: input.nightCapturedAt,
-        offsetMin: input.nightCapturedOffsetMin ?? null,
-        variant: "night",
-      })
-    : null;
+  const day = input.videoUrl ? buildClip({ streetName: input.streetName, url: input.videoUrl, capturedAt: input.videoCapturedAt, variant: "day" }) : null;
+  const night = input.nightVideoUrl ? buildClip({ streetName: input.streetName, url: input.nightVideoUrl, capturedAt: input.nightCapturedAt, variant: "night" }) : null;
   if (!day && !night) return null;
   return { day, night, takedownEmail: config.video.takedownEmail };
 }

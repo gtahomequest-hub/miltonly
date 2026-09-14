@@ -38,10 +38,10 @@
 // shipped on 2026-09-03.
 //
 // CAPTURE INSTANT comes from meta.captured_at, ISO with an offset since the pipeline started
-// writing one ("2026-09-07T11:20:31-04:00"). videoCapturedAt is the instant and
-// videoCapturedOffsetMin the offset (MC-015), so the wall clock the clip was shot under is
-// recoverable on every surface. A bare local time is REFUSED here: the staging pass writes the
-// offset now, and a candidate without one is a candidate whose clock nobody checked.
+// writing one ("2026-09-07T11:20:31-04:00", the GPS row). videoCapturedAt is the instant
+// (MC-015) and every surface renders it in America/Toronto. A bare local time is REFUSED here:
+// the staging pass writes the offset now, and a candidate without one is a candidate whose
+// clock nobody checked (the filename clock runs an hour fast).
 // videoCapturedAt is a claim about the world and the page prints it, so it is never today.
 //
 // AUDIO IS REFUSED (MC-015). The pipeline strips audio at ingest and asserts it twice, but this
@@ -148,15 +148,14 @@ function keysFor(fullSlug: string, clipName: string, meta: Meta, localDate: stri
   };
 }
 
-/** meta.captured_at with its offset -> the instant, the offset in minutes and the local date
- *  (the key segment). A bare local time is refused: no offset, no clock, no upload. */
-function parseCaptured(iso: string): { instant: Date; offsetMin: number; localDate: string } | null {
+/** meta.captured_at with its offset -> the instant and the local date (the key segment). A
+ *  bare local time is refused: no offset, no clock, no upload. */
+function parseCaptured(iso: string): { instant: Date; localDate: string } | null {
   const m = iso.match(/^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}(?::\d{2})?(Z|[+-]\d{2}:\d{2})$/);
   if (!m) return null;
   const instant = new Date(iso);
   if (Number.isNaN(instant.getTime())) return null;
-  const offsetMin = m[2] === "Z" ? 0 : (m[2][0] === "-" ? -1 : 1) * (Number(m[2].slice(1, 3)) * 60 + Number(m[2].slice(4, 6)));
-  return { instant, offsetMin, localDate: m[1] };
+  return { instant, localDate: m[1] };
 }
 
 
@@ -194,7 +193,6 @@ export interface PlanRow {
   fullSlug: string;
   night: boolean;
   capturedAt: Date;
-  offsetMin: number;
   localDate: string;
   clipPath: string;
   posterPath: string;
@@ -249,7 +247,6 @@ async function buildPlan(): Promise<{ plan: PlanRow[]; refused: ManifestRow[]; r
       fullSlug,
       night,
       capturedAt: captured.instant,
-      offsetMin: captured.offsetMin,
       localDate: captured.localDate,
       clipPath,
       posterPath,
@@ -314,9 +311,9 @@ async function main() {
     let dbNote = "no StreetContent row - columns not set";
     if (r.contentStatus !== null) {
       if (r.night) {
-        await db`UPDATE public."StreetContent" SET "nightVideoUrl" = ${url}, "nightCapturedAt" = ${r.capturedAt.toISOString()}, "nightCapturedOffsetMin" = ${r.offsetMin} WHERE "streetSlug" = ${r.fullSlug}`;
+        await db`UPDATE public."StreetContent" SET "nightVideoUrl" = ${url}, "nightCapturedAt" = ${r.capturedAt.toISOString()} WHERE "streetSlug" = ${r.fullSlug}`;
       } else {
-        await db`UPDATE public."StreetContent" SET "videoUrl" = ${url}, "videoCapturedAt" = ${r.capturedAt.toISOString()}, "videoCapturedOffsetMin" = ${r.offsetMin} WHERE "streetSlug" = ${r.fullSlug}`;
+        await db`UPDATE public."StreetContent" SET "videoUrl" = ${url}, "videoCapturedAt" = ${r.capturedAt.toISOString()} WHERE "streetSlug" = ${r.fullSlug}`;
       }
       dbNote = `${r.night ? "nightVideoUrl" : "videoUrl"} set; ${await revalidateVideoSurfaces(r.fullSlug)}`;
       touched.push(r.fullSlug);

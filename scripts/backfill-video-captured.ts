@@ -3,15 +3,12 @@
 // MC-015. Two things, from one read of D:/dashcam/published/<slug>/meta.json per clip-carrying
 // StreetContent row:
 //
-//   1. THE CAPTURE INSTANT AND ITS OFFSET. videoCapturedAt / nightCapturedAt used to hold UTC
-//      midnight of the shot date and nothing else. They now hold the capture instant, and
-//      videoCapturedOffsetMin / nightCapturedOffsetMin the clip's local UTC offset in minutes,
-//      so the wall clock the clip was shot under is recoverable on any surface. meta.captured_at
-//      is ISO with an offset on the 7 clips staged since the pipeline started writing one
-//      ("2026-09-07T11:20:31-04:00"); the 42 older ones carry a bare local time
-//      ("2026-09-01T19:34:00"). A bare time is read as America/Toronto, because every clip
-//      was shot in Milton and the offset of that zone at that wall time is a fact, not a
-//      guess: -240 for all of them (EDT). The script prints which rule each row took.
+//   1. THE CAPTURE INSTANT. videoCapturedAt / nightCapturedAt used to hold UTC midnight of the
+//      shot date and nothing else. They now hold the capture instant, which every surface
+//      renders in America/Toronto. meta.captured_at is ISO with an offset on every published
+//      clip since scripts/video-coverage.ts rewrote it from the GPS trace ("2026-09-07T11:20:31
+//      -04:00"); a bare local time, should one appear again, is read as America/Toronto, because
+//      every clip is shot in Milton. The script prints which rule each row took.
 //
 //   2. THE SIDECAR, src/data/streetVideoMeta.json. Duration, coverage endpoints and metres are
 //      not columns (owner decision 2026-08-30); the render layer reads them from this file,
@@ -23,7 +20,8 @@
 //      re-key or a new upload is one re-run away from a correct file.
 //
 //   A row whose URL does not match the meta's r2_key is reported and skipped, never guessed.
-//   ffprobe also asserts zero audio streams on every published clip.
+//   ffprobe also asserts zero audio streams on every published clip. A row whose Toronto hour
+//   is under 20 on the night column, or 20 or over on the day column, is reported.
 //
 // Usage:
 //   npx tsx --tsconfig tsconfig.test.json scripts/backfill-video-captured.ts            # dry run
@@ -81,10 +79,8 @@ interface Row {
   streetSlug: string;
   videoUrl: string | null;
   videoCapturedAt: Date | null;
-  videoCapturedOffsetMin: number | null;
   nightVideoUrl: string | null;
   nightCapturedAt: Date | null;
-  nightCapturedOffsetMin: number | null;
 }
 interface SidecarEntry {
   durationS: number | null;
@@ -139,7 +135,7 @@ function probe(file: string): { durationS: number; audio: number } | null {
 async function main() {
   console.log(`${WRITE ? "WRITE" : "DRY RUN"} · sidecar ${path.relative(process.cwd(), SIDECAR)}\n`);
   const rows = (await db`
-    SELECT "streetSlug", "videoUrl", "videoCapturedAt", "videoCapturedOffsetMin", "nightVideoUrl", "nightCapturedAt", "nightCapturedOffsetMin"
+    SELECT "streetSlug", "videoUrl", "videoCapturedAt", "nightVideoUrl", "nightCapturedAt"
     FROM public."StreetContent"
     WHERE "videoUrl" IS NOT NULL OR "nightVideoUrl" IS NOT NULL
     ORDER BY "streetSlug"`) as Row[];
@@ -165,14 +161,16 @@ async function main() {
       const { instant, offsetMin, rule } = parseCaptured(meta.captured_at);
       byRule[rule]++;
       const curAt = variant === "day" ? r.videoCapturedAt : r.nightCapturedAt;
-      const curOff = variant === "day" ? r.videoCapturedOffsetMin : r.nightCapturedOffsetMin;
-      const same = curAt && new Date(curAt).getTime() === instant.getTime() && curOff === offsetMin;
+      const same = curAt && new Date(curAt).getTime() === instant.getTime();
       const local = new Date(instant.getTime() + offsetMin * 60_000).toISOString().slice(0, 16).replace("T", " ");
-      console.log(`${r.streetSlug.padEnd(30)} ${variant.padEnd(5)} ${meta.captured_at.padEnd(25)} -> ${instant.toISOString()} off ${offsetMin} (${rule}) local ${local}${same ? "  (unchanged)" : ""}`);
+      const localHour = Number(local.slice(11, 13));
+      if (variant === "night" && localHour < 20) problems.push(`${r.streetSlug} night: filmed ${local} local, before 20:00`);
+      if (variant === "day" && localHour >= 20) problems.push(`${r.streetSlug} day: filmed ${local} local, 20:00 or later`);
+      console.log(`${r.streetSlug.padEnd(30)} ${variant.padEnd(5)} ${meta.captured_at.padEnd(25)} -> ${instant.toISOString()} (${rule}) local ${local}${same ? "  (unchanged)" : ""}`);
       if (same) unchanged++;
       else if (WRITE && !SIDECAR_ONLY) {
-        if (variant === "day") await db`UPDATE public."StreetContent" SET "videoCapturedAt" = ${instant.toISOString()}, "videoCapturedOffsetMin" = ${offsetMin} WHERE "streetSlug" = ${r.streetSlug}`;
-        else await db`UPDATE public."StreetContent" SET "nightCapturedAt" = ${instant.toISOString()}, "nightCapturedOffsetMin" = ${offsetMin} WHERE "streetSlug" = ${r.streetSlug}`;
+        if (variant === "day") await db`UPDATE public."StreetContent" SET "videoCapturedAt" = ${instant.toISOString()} WHERE "streetSlug" = ${r.streetSlug}`;
+        else await db`UPDATE public."StreetContent" SET "nightCapturedAt" = ${instant.toISOString()} WHERE "streetSlug" = ${r.streetSlug}`;
         updated++;
       } else updated++;
 

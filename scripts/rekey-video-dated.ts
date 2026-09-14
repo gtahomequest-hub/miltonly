@@ -21,6 +21,13 @@
 //   npx tsx --tsconfig tsconfig.test.json scripts/rekey-video-dated.ts            # dry run
 //   npx tsx --tsconfig tsconfig.test.json scripts/rekey-video-dated.ts --write
 //   ... --only=anne-boulevard,beam-court
+//
+// --to-day=<slug,...>: RELABEL a night clip as day. Three clips were filed as night on the
+// camera's filename clock, which runs an hour fast; the GPS row says 19:15 to 19:21 and the
+// measured luma (YAVG 114, the daytime clips' figure) says daylight. The clip is copied from
+// <seg>/night.mp4 to <seg>/day.mp4 beside the same poster, videoUrl takes the pointer and the
+// night columns are cleared, meta.night flips, and the night object retires like any
+// superseded key once production serves the day URL.
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -52,6 +59,8 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const WRITE = process.argv.includes("--write");
 const onlyArg = process.argv.find((a) => a.startsWith("--only="));
 const ONLY = onlyArg ? new Set(onlyArg.slice(7).split(",").map((s) => s.trim()).filter(Boolean)) : null;
+const toDayArg = process.argv.find((a) => a.startsWith("--to-day="));
+const TO_DAY = toDayArg ? new Set(toDayArg.slice(9).split(",").map((s) => s.trim()).filter(Boolean)) : null;
 
 const { R2_ACCOUNT_ID = "", R2_ACCESS_KEY_ID = "", R2_SECRET_ACCESS_KEY = "", R2_BUCKET = "", R2_PUBLIC_BASE_URL = "", DATABASE_URL = "" } = process.env;
 for (const [k, v] of Object.entries({ R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_BASE_URL, DATABASE_URL })) {
@@ -115,11 +124,48 @@ async function copy(from: string, to: string): Promise<"copied" | "present"> {
   return "copied";
 }
 
+const DATED_NIGHT = /^streets\/([a-z0-9-]+)\/(\d{8})\/night\.mp4$/;
+
+async function relabelToDay(rows: Row[]): Promise<void> {
+  let done = 0;
+  for (const r of rows) {
+    const slug = r.streetSlug.endsWith(SLUG_SUFFIX) ? r.streetSlug.slice(0, -SLUG_SUFFIX.length) : r.streetSlug;
+    if (!TO_DAY!.has(slug)) continue;
+    if (!r.nightVideoUrl) { console.log(`${r.streetSlug}: no night clip`); continue; }
+    if (r.videoUrl) { console.log(`${r.streetSlug}: already carries a day clip; not overwriting it`); continue; }
+    const key = r2KeyOf(r.nightVideoUrl);
+    const m = key.match(DATED_NIGHT);
+    if (!m || m[1] !== r.streetSlug) { console.log(`${r.streetSlug}: night key ${key} is not a dated key of this street`); continue; }
+    const metaPath = path.join(PUBLISHED, slug, "meta.json");
+    const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Meta;
+    if (meta.r2_key !== key || meta.night !== true) { console.log(`${r.streetSlug}: meta disagrees (r2_key ${meta.r2_key}, night ${meta.night})`); continue; }
+    if (meta.supersedes_r2_key && !meta.retired_at) { console.log(`${r.streetSlug}: an earlier re-key is still unretired (${meta.supersedes_r2_key})`); continue; }
+    const newClip = `streets/${r.streetSlug}/${m[2]}/day.mp4`;
+    const newUrl = `${R2_PUBLIC_BASE_URL}/${newClip}`;
+    console.log(`${r.streetSlug.padEnd(30)} night -> day  ${key}\n${" ".repeat(36)}-> ${newClip}`);
+    if (!WRITE) continue;
+    const c = await copy(key, newClip);
+    await db`UPDATE public."StreetContent" SET "videoUrl" = ${newUrl}, "videoCapturedAt" = "nightCapturedAt", "nightVideoUrl" = NULL, "nightCapturedAt" = NULL WHERE "streetSlug" = ${r.streetSlug}`;
+    const rv = await revalidateVideoSurfaces(r.streetSlug);
+    meta.supersedes_r2_key = key;
+    meta.r2_key = newClip;
+    meta.night = false;
+    meta.rekeyed_at = TODAY;
+    (meta as Record<string, unknown>).relabelled = `night -> day ${TODAY}: filename clock ran +1 h; GPS row and measured luma say daylight`;
+    delete meta.retired_at;
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2) + "\n", "utf8");
+    done++;
+    console.log(`${" ".repeat(36)}clip ${c}, columns moved to day, meta flipped; ${rv}`);
+  }
+  console.log(`\n${WRITE ? "relabelled" : "would relabel"} ${done} clip(s)`);
+}
+
 async function main() {
   console.log(`${WRITE ? "WRITE" : "DRY RUN"} · bucket ${R2_BUCKET}\n`);
   const rows = (await db`
     SELECT "streetSlug", "videoUrl", "nightVideoUrl" FROM public."StreetContent"
     WHERE "videoUrl" IS NOT NULL OR "nightVideoUrl" IS NOT NULL ORDER BY "streetSlug"`) as Row[];
+  if (TO_DAY) { await relabelToDay(rows); return; }
 
   let planned = 0, done = 0, dated = 0;
   const problems: string[] = [];

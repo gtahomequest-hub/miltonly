@@ -10,7 +10,7 @@
 // The page set is the sitemap's own: published content AND a ResidentialStreet entity
 // (publishedStreetPageSlugs), so this file can never list a page /sitemap.xml does not.
 // Duration comes from the sidecar and is omitted, never fabricated, when the clip has none.
-// robots.ts names this file beside /sitemap.xml.
+// /sitemap-index.xml lists this file beside /sitemap.xml, and robots.ts names the index.
 
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
@@ -54,10 +54,8 @@ export async function GET() {
       streetName: true,
       videoUrl: true,
       videoCapturedAt: true,
-      videoCapturedOffsetMin: true,
       nightVideoUrl: true,
       nightCapturedAt: true,
-      nightCapturedOffsetMin: true,
     },
     orderBy: { streetSlug: "asc" },
   });
@@ -69,10 +67,8 @@ export async function GET() {
       streetName: resolveStreetName(r.streetSlug, r.streetName).name,
       videoUrl: r.videoUrl,
       videoCapturedAt: r.videoCapturedAt,
-      videoCapturedOffsetMin: r.videoCapturedOffsetMin,
       nightVideoUrl: r.nightVideoUrl,
       nightCapturedAt: r.nightCapturedAt,
-      nightCapturedOffsetMin: r.nightCapturedOffsetMin,
     });
     if (!view) continue;
     const videos = [view.day, view.night].map((c) => (c ? videoXml(c) : null)).filter((x): x is string => x !== null);
