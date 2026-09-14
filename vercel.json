@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)scratchpad/audit/nightly'",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]; then exit 0; fi; git diff --quiet HEAD^ HEAD -- . ':(exclude)scratchpad/audit/nightly'",
   "crons": [
     {
       "path": "/api/sync/detect?secret=miltonly-cron-2026",
