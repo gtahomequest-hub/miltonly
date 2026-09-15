@@ -6,6 +6,8 @@ _Last rewritten 2026-09-13, MH-006: the chrome, on `feat/nav-v3`, previewed, NOT
 
 ## READ THIS FIRST
 
+**MERGED BY CORE 2026-09-14 as `6aac9c9` (`feat/nav-v3 @ 3b56020`), production battery `PASS · 19 checks · 529 pages · 835s`; the rest of this file is the pre-merge state (MC-022).**
+
 **`feat/nav-v3` IS PREVIEWED AND NOT MERGED. Core merges by SHA on approval.** Head
 `287f8adcc174896cb97a8bd514454bd397f41921`, preview `https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app`, battery `PASS · 17 checks · 509 pages · 666s`. The brief was "stop; Core merges".
 The record is `scratchpad/reports/MH-006-chrome.md` (the ten audit changes, the addendum, the

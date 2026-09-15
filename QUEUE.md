@@ -2,7 +2,7 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **built 2026-09-14 on `feat/video-playbook @ b090002`, waiting on approval to merge** (MC-015; every data move is already live: dated keys, GPS capture times, the row backfill, three clips relabelled day, the old objects deleted).
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **DONE** (MC-015, merged as `60780ca` @ `d88742c`, production battery 18/18 at `60780ca`; record `scratchpad/reports/MC-015-video-playbook.md`).
 
 **Ownership.** Core (`D:\miltonly`, `main`) owns the app, the schema, the crons and this queue. Home (`D:\miltonly-home`), Content (`D:\miltonly-content`) and Leads (`D:\miltonly-leads`) own their tiers. Audit (`D:\miltonly-audit`, `feat/audit`, `MA-`) owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`; it reads production and never edits a page. The nightly audit commits its report to `main` at 03:00 Toronto as `audit(nightly): <date>`, and `vercel.json` `ignoreCommand` keeps that commit, and only that commit, out of Vercel builds. Findings the audit raises are Core's to take, never Audit's to fix.
 
@@ -270,7 +270,7 @@ blur refusal is.
 **Done when** all six are live, the 42 clip-carrying rows are backfilled, and
 `sitemap-video.xml` validates.
 
-## MC-015, 2026-09-14: built, previewed, waiting on approval to merge
+## DONE 2026-09-14, merged as `60780ca` (MC-015 @ `d88742c`, app code `b090002`)
 
 `feat/video-playbook @ b090002` (docs on top), CLI preview `miltonly-3d306kdaz`, local build
 exit 0, `test-video-playbook` 50 assertions in the prebuild, battery check `video` (18 checks).
@@ -307,8 +307,10 @@ Record: `scratchpad/reports/MC-015-video-playbook.md`.
   VideoObject with duration and the sentence, clip and poster HEAD 200, `sitemap-index.xml`
   names both, `sitemap-video.xml` lists exactly the pages with a clip and their clips with a
   duration
-- [ ] after the merge: one `retire-superseded-clips.ts` run (the three dated `night.mp4`
-  objects), Search Console
+- [x] after the merge: the three dated `night.mp4` objects retired once production served the
+  day URLs; `sitemap-video.xml` 200 with 45 clips on production, `attenborough-terrace` shows
+  the sentence and the mailto
+- [ ] Search Console submission of `sitemap-index.xml` (human)
 
 ## 7. `makeStreetDecision`'s minimum-data gate
 
@@ -559,7 +561,7 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
 
 *Out-of-queue work 2026-09-13: MC-021, CLAUDE.md Reporting. The `code <root> <path>` step is removed; a task ends with `scratchpad/reports/<TASK-ID>-<slug>.md` and a reply whose last line is `Report: <path>`; nothing opens the editor. Docs only. Record in `scratchpad/reports/MC-021-reporting-no-editor.md`.*
 
-*Out-of-queue work 2026-09-13: MH-006, the chrome, in the `D:\miltonly-home` worktree on `feat/nav-v3`, resumed after a crash. All ten MA-004 changes are on the branch: the scrolled homepage's bar, a footer on every street page, the CTA colour, the listing page and guides on the forest chrome with `Navbar` and `FooterSection` deleted, the street search in the bar and a menu that opens before hydration (`/search`), the nav carrying its street or hub, one basis sentence in the Sell panel, the Alerts CTA as the brief form and `/saved` noindex, the footer as the map with the brief field, contextual strips and rail sub-labels. Addendum: `/rentals`, `/exclusive`, `/about`, `/saved`, `/signin`, `/privacy`, `/terms` and the 404 page on the forest tokens under `SiteChrome`. Gates: `nav.mjs`, `homepage.mjs`, `footer.mjs`; Lighthouse before/after on the five audit pages. Previewed, NOT merged; Core merges by SHA. Record in `scratchpad/reports/MH-006-chrome.md`.*
+*Out-of-queue work 2026-09-13: MH-006, the chrome (Nav v3), **DONE, merged by Core 2026-09-14 as `6aac9c9` (`feat/nav-v3 @ 3b56020`, app code `287f8ad`), production battery 19/19; at 390 the homepage keeps its bar, burger and CTA after a 2,400 px scroll and a street page ends in the map footer (MC-022).** In the `D:\miltonly-home` worktree on `feat/nav-v3`, resumed after a crash. All ten MA-004 changes are on the branch: the scrolled homepage's bar, a footer on every street page, the CTA colour, the listing page and guides on the forest chrome with `Navbar` and `FooterSection` deleted, the street search in the bar and a menu that opens before hydration (`/search`), the nav carrying its street or hub, one basis sentence in the Sell panel, the Alerts CTA as the brief form and `/saved` noindex, the footer as the map with the brief field, contextual strips and rail sub-labels. Addendum: `/rentals`, `/exclusive`, `/about`, `/saved`, `/signin`, `/privacy`, `/terms` and the 404 page on the forest tokens under `SiteChrome`. Gates: `nav.mjs`, `homepage.mjs`, `footer.mjs`; Lighthouse before/after on the five audit pages. Previewed, NOT merged; Core merges by SHA. Record in `scratchpad/reports/MH-006-chrome.md`.*
 
 *Out-of-queue work 2026-09-13: MC-020, the first night's audit findings taken by Core on `fix/audit-night-1` (app code `31f3d98`, main merged in as `d2bbee3`, the docs commit on top): the `catchment` battery check sharing the render guard's patterns, school titles and the site OG description without zone language, `formatArchitecturalStyle` for the TREB style strings, the labelled `data-remarks` block, one H1 on `/rentals`, the condo intent anchors, the schools guide reworded. Preview `PASS · 17 checks · 509 pages · 799s`. Main `1ad86d8` pushed and on production (16 of main's checks clean; the branch's 17th flags the OG description until the merge). Merged as `1900c46` (approved), production `PASS · 17 checks · 509 pages · 1142s`. The 196 `dead-anchor` `#type-*` findings are Street Page v3 change 7 (Home). Record in `scratchpad/reports/MC-020-audit-night-1.md`.*
 

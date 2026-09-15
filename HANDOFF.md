@@ -2,15 +2,23 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-14 (MC-015): MC-017 merged and on production, Git-triggered builds run only on `main`; MC-015 built on `feat/video-playbook` @ `b090002`, its data moves already live (dated keys, GPS capture times, three clips relabelled day), previewed from the CLI, battery-clean, waiting on approval to merge. Node 20 stops deploying on 2026-10-01._
+_Last rewritten 2026-09-14 (MC-022): MC-015 and Nav v3 merged and on production (19 checks); MC-018 (Neon egress) built on `fix/neon-egress` @ `cce6ee8`, previewed from the CLI, waiting on approval to merge. Node 20 stops deploying on 2026-10-01._
 
 ## READ THIS FIRST
 
-**MAIN IS `3ba3d91` AND PRODUCTION SERVES `3ba3d91`, `PASS · 17 checks · 529 pages · 698s`.**
-`3ba3d91` merges `chore/ignore-nonmain @ 65e9c90` (the `ignoreCommand` change) on top of
-`69075d2`, which merges `fix/build-cost @ 5e395c9` (MC-017, app code `0e48e18`). Both
-production batteries passed, 17 checks over 529 pages (the corpus grew from 509 under the
-20-a-day programme). Record: `scratchpad/reports/MC-017-merge-and-ignore.md`.
+**MAIN IS `6aac9c9` AND PRODUCTION SERVES `6aac9c9`, `PASS · 19 checks · 529 pages · 835s`.**
+Two merges by SHA on 2026-09-14 (MC-022): `feat/video-playbook @ d88742c` as `60780ca`
+(MC-015, app code `b090002`; production battery `PASS · 18 checks · 529 pages · 668s`), then
+`feat/nav-v3 @ 3b56020` as `6aac9c9` (Nav v3, app code `287f8ad`; one conflict in
+`scripts/verify/run.mjs`, resolved as `footer, catchment, video`, 19 checks). Confirmed on
+production: `sitemap-video.xml` 200 with 45 clips, `sitemap-index.xml` names both files,
+`attenborough-terrace` shows the sentence and the mailto; at 390 wide the homepage keeps its
+bar, burger and CTA in the viewport after a 2,400 px scroll and a street page ends in an
+`m-footer` with 58 links (`scratchpad/mc003/probe-nav-390.mjs`, puppeteer, PASS). The three
+superseded `night.mp4` objects were retired after the merge (production served the day URLs).
+Record: `scratchpad/reports/MC-022-two-merges.md`. **The SHA the prompt named for Nav v3,
+`91c6ae5`, exists nowhere** (local, origin, the home worktree's reflog); Aamir chose the
+branch head `3b56020` when asked.
 
 **NODE 20 IS DEPRECATED ON VERCEL AND DEPLOYS FAIL FROM 2026-10-01.** Every CLI deploy
 tonight printed: `Node.js version 20.x is deprecated. Deployments created on or after
@@ -45,78 +53,45 @@ hub `/neighbourhoods/timberlea` 2.13 s → 0.18 s, condo 0.90 s → 0.15 s, guid
 (the battery was running concurrently), listing 0.49 s → 0.15 s. `X-Vercel-Cache: HIT` on all
 four after the first hit. `scratchpad/mc003/ttfb-after-69075d2-prod.txt`.
 
-**MC-015 IS BUILT ON `feat/video-playbook` AND WAITS ON APPROVAL TO MERGE.** Head is the docs
-commit on top of `b090002` (app code). CLI preview `miltonly-3d306kdaz` serving `b090002`,
-battery on the preview in the report (`scratchpad/reports/MC-015-video-playbook.md`). Local
-build exit 0, 149/149; `test-video-playbook` 50 assertions in the prebuild; the battery has an
-18th check, `video`. **Everything below the code is already live on production**, because the
-data moves were done in the order the queue set (copy, repoint, confirm per page, delete) and
-the old resolver prints the same dates from the new instants; only the sentence, the takedown
-line, the sitemaps and the VideoObject duration wait for the merge.
+**MC-015 IS ON PRODUCTION.** What it is, in one paragraph: every clip at a dated key with its
+poster beside it; capture times from the GPS trace (the camera's filename clock runs an hour
+fast, 41 of 47 moved; three "night" clips were 19:15 to 19:21 daylight and are day now);
+`*CapturedAt` the instant, rendered in America/Toronto; the sentence "Footage covers 460 m of
+510 m, from Leiterman Drive to Parmenter Point. Filmed 1 September 2026." under every player
+and as `VideoObject.description`, with only the clauses it can source (46 of 47 with metres,
+30 both endpoints, 14 one, 3 none); the takedown mailto; `sitemap-video.xml` and
+`sitemap-index.xml`; the upload script's audio and offset refusals; the `video` battery check.
+Sidecar `src/data/streetVideoMeta.json`, rebuilt by `scripts/backfill-video-captured.ts`;
+extent by `scripts/video-coverage.ts`. Full record `scratchpad/reports/MC-015-video-playbook.md`.
+Open: Search Console submission of `sitemap-index.xml` (human); `louis-st-laurent-avenue` and
+`lower-base-line-west`, published clips with no page, left alone.
 
-- **Dated keys, live.** All 47 clip-carrying rows point at `streets/<slug>-milton/<YYYYMMDD>/
-  {day,night}.mp4` with `poster.webp` beside each (`scripts/rekey-video-dated.ts`: server-side
-  CopyObject, size-verified, column repointed, page revalidated). The 45 old clips and 45 shared
-  posters were deleted by `retire-superseded-clips.ts --write` after it saw production serving
-  every dated URL (90 objects; the old keys 404). The upload script writes dated keys only.
-- **The clock was wrong by an hour on 40 clips, and three "night" clips were daylight.** The
-  camera's filename clock runs one hour fast (raw `2026_0901_193438` opens at GPS 22:34:41Z,
-  18:34 in Milton). Every clip published before 2026-09-11 took `captured_at` from the filename.
-  `scripts/video-coverage.ts` rewrote all 47 from the GPS row of the clip's own trace
-  (`D:/dashcam/raw/.gpscache`, the first row on the street; `britannia-road` from the file's
-  first row because that stretch is the Region's, not in the Town layer), keeping the filename
-  value as `captured_at_filename`. `clifford-point`, `first-line` and `frost-court` were filed
-  as night at "20:15 to 20:21"; the GPS says 19:15 to 19:21 and their mean luma (ffmpeg
-  signalstats YAVG 114) is the daytime clips' figure, so they were relabelled day
-  (`rekey-video-dated.ts --to-day`: copied to `<seg>/day.mp4`, `videoUrl` takes the pointer,
-  night columns cleared, `meta.night` false, the `night.mp4` object retires on the next
-  retire run). No clip on the site is a night clip now; the one night row left in the manifest
-  is `lower-base-line-west`, which has no page.
-- **`*CapturedAt` is the instant, rendered in America/Toronto.** The offset columns added at
-  20:00Z were withdrawn by a second migration at 23:00Z before any row carried one
-  (`migrate status` clean, 29): the task prompt says render in Toronto, every clip is filmed in
-  Milton, and a dead nullable pair is what the 2026-08-30 rule forbids. Rows backfilled: 47
-  of 47, from `meta.captured_at` (`scripts/backfill-video-captured.ts --write`).
-- **The extent, measured.** `video-coverage.ts` projects the run onto the street's Town
-  centreline segments (`identityFromSlug` == `identityFromTown`, the geometry generator's
-  join): `capturedMetres` is the projected path, capped at the street (a close is driven in
-  and out); `streetMetres` is `STREET_GEOMETRY.lengthM`; the endpoints are the registry
-  streets whose Town segment meets the run within 40 m of its first and last point, named by
-  `resolveStreetName`, "from A" alone when both ends meet the same street or only one meets
-  any. 46 of 47 have metres, 30 have both endpoints, 14 one, 3 none (`first-line`,
-  `hinton-terrace`, `britannia-road`). Written into `published/<slug>/meta.json` and carried
-  by the manifest (`promote-staged-clips.ts` carries the coverage fields now).
-- **The sentence** is "Footage covers 460 m of 510 m, from Leiterman Drive to Parmenter
-  Point. Filmed 1 September 2026." under every player and as `VideoObject.description`
-  (prefixed by the street and town). Only sourced clauses appear: no metres and it reads
-  "Footage is one pass along <Street>"; a night clip would add "after dark".
-- **Sidecar `src/data/streetVideoMeta.json`**: 47 dated keys, duration from ffprobe on the
-  published bytes (zero audio streams on all 47), the coverage fields from meta. Rebuilt by
-  `backfill-video-captured.ts --write` (or `--sidecar-only`).
-- **`sitemap-video.xml`**: 45 pages / 45 clips (the 2 draft rows are unpublished), duration
-  and `publication_date` with the Toronto offset on every one. **`sitemap-index.xml`** names
-  it beside `/sitemap.xml`, and `robots.txt` names the index. `/sitemap.xml` itself is
-  unchanged, so the battery and the audit read what they always read. Submit the index in
-  Search Console after the merge.
-- **Takedown mailto**: `config.video.takedownEmail` = `aamir@miltonly.com`, one line under
-  the grid on every page carrying footage.
-- **Upload script**: refuses an audio stream (ffprobe, `scripts/videoProbe.ts`) and
-  `blur_verified` false, naming both; ffprobe missing refuses the run; refuses a
-  `captured_at` without an offset; writes dated keys only; revalidates the page, `/streets`
-  and `/` (`scripts/videoRevalidate.ts`). Not exercised on a real candidate: the 124 staged
-  rows are Homesly, all `blur_verified: false`.
-- **`db3` after an analytics run**: already live since MC-017 (the three jobs call
-  `revalidateTag(DB_CACHE_TAG.ANALYTICS_DATABASE_URL)`, held by `test-build-cost.ts`).
+**MC-018 IS BUILT ON `fix/neon-egress` @ `cce6ee8` AND WAITS ON APPROVAL TO MERGE.** CLI
+preview `miltonly-2flv2tscv`; battery on the preview `PASS · 19 checks · 548 pages · 756s` (after
+a `db2`/`db3` tag and hub-path purge: the window edge at 00:00Z and the creation cron's 17 new
+pages at 00:01Z failed three earlier runs, and production failed the same `hub-meta` lines). The four fixes MC-016
+proposed under "select only the needed columns", which were really "stop re-fetching the set":
+(a) the published and entity slug sets (490 + 963 rows on nearly every render, 18 call sites)
+sit in Upstash for fifteen minutes (`streetSurface.ts`, `SURFACE_KEYS`), dropped by every
+in-app publication write (generateStreet's hook, admin publish and reject) and by
+`/api/revalidate` on a `/streets` path (how the local scripts announce a write); (b) the
+Neighbourhood and published-hub sets (2,600 reads a window) do the same in `src/lib/hubSets.ts`,
+read by the street render, the footer, the sold options and the hub-card map, dropped by both
+hub generators and `/api/revalidate` on a `/neighbourhoods` path; (c) `/streets`, the standing
+consumer (57 renders in fifteen minutes, 3,414 rows each), is ISR at an hour (`○` in the build,
+`X-Vercel-Cache: HIT` on the preview, the same 688 links as production) and its sample is
+`DISTINCT ON` on the server; (d) `/rentals` caches its 48 listings, counts and nine aggregates
+per scope for fifteen minutes. `scripts/test-neon-egress.ts`, 29 assertions, in the prebuild.
+**Not done, by design:** proposals 1 and 2 (a `--structure` battery mode and one battery per
+merge) are process changes for a separate prompt; proposal 4 (scoping the `db2` drop) was
+"not worth it" in the recon. `cached()` bypasses Redis under a static render (MC-017), so the
+ISR pages still read Neon once per render, which is once per page per hour or day. After the
+merge, measure: `pg_stat_statements` on DB1 over one battery, against MC-016's 1,138,193 rows.
 
-**AFTER THE MERGE.** `retire-superseded-clips.ts` dry then `--write` (the three `night.mp4`
-objects at dated keys retire once production serves the day URLs, which it does); submit
-`sitemap-index.xml` in Search Console. Nothing else.
-
-**TWO PUBLISHED CLIPS HAVE NO PAGE.** `louis-st-laurent-avenue` (registry entity, no
-StreetContent row) and `lower-base-line-west` (no entity) are `published` in the manifest at
-undated keys with nothing pointing at them. Left alone. The first gets a page under the
-programme one day and the upload then needs a re-run; the second is an orphan candidate for
-`retire-superseded-clips.ts --orphan=lower-base-line-west`, which is a decision.
+**AFTER THE MC-018 MERGE.** A `/streets` change now waits for the hour or a StreetContent
+write's purge; a new hub or a reassigned neighbourhood is on every page within fifteen minutes
+or on its own purge. If a page ever shows a stale slug set for longer, the two keys are
+`surface:published-slugs:v1` and `surface:entity-slugs:v1` in Upstash.
 
 **THE DASHCAM SIDE SHOULD KNOW.** Its `captured_at` rule (GPS, never the filename) was right;
 the 40 clips that predate it carried the filename clock into production for ten days, and its
@@ -187,8 +162,8 @@ listing, 3,414 rows a render, 57 renders in the window), `publishedStreetPageSlu
 (66,712 rows scanned a render, uncached), and the `Neighbourhood`/`HubContent` sets fetched 2,600
 times a window. Proposals and a 16 GB/month ceiling are in the report. **No code was changed.**
 
-**MC-015 STATE IS IN THE TOP OF THIS FILE.** After the merge: one retire run and the Search
-Console submission. Open: `louis-st-laurent-avenue` / `lower-base-line-west`.
+**MC-015 IS ON PRODUCTION; see the top of this file.** Open: Search Console,
+`louis-st-laurent-avenue` / `lower-base-line-west`.
 
 **WHAT LANDED WITH CORE BATCH 3.** The board never the family; the judge cannot refuse on a
 finding it labels not a violation; hub titles and descriptions have no em-dash and the LIVE
@@ -238,16 +213,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`3ba3d91`** (MC-017 `69075d2` + the `ignoreCommand` merge), production serves it |
-| battery on production | **`PASS · 17 checks · 529 pages · 698s`** at `3ba3d91`, 2026-09-14 |
+| `main` | **`6aac9c9`** (MC-015 `60780ca`, Nav v3 `6aac9c9`), production serves it |
+| battery on production | **`PASS · 19 checks · 529 pages · 835s`** at `6aac9c9`, 2026-09-14 |
 | `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
-| waiting on merge | **MC-015** `feat/video-playbook @ b090002` (docs on top), preview `miltonly-3d306kdaz` |
+| waiting on merge | **MC-018** `fix/neon-egress @ cce6ee8`, preview `miltonly-2flv2tscv` |
 | Node runtime | **`20.x`, deploys fail from 2026-10-01**; move to `24.x` is an open task |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | MC-015 merge and post-merge steps; Node 24; the nightly audit's missed 2026-09-14 run (Audit) |
+| open tasks | MC-018 merge; Node 24 before 2026-10-01; the nightly audit's missed 2026-09-14 run (Audit); Search Console for `sitemap-index.xml` |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -616,6 +591,5 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the MC-015 merge (`b090002` + docs) and its two post-merge steps at
-the top of this file; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
+Whatever Aamir names. Open: the MC-018 merge (`cce6ee8`) and the egress measurement after it; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
 `gordon-krantz-avenue` on a later pass.
