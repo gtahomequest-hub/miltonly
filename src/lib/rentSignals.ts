@@ -14,6 +14,16 @@
 // "Typical" is the midpoint of the pool, the statistic the hero, the Board and the homepage's
 // month-to-date figure all publish (PERCENTILE_CONT(0.5)), so the menu cannot state a
 // different kind of typical from the page under it.
+//
+// A HOUSE IS NOT ONE UNIT TYPE (MH-007 addendum). Measured 2026-09-15 over the 12-month pool:
+// of 568 detached leases, 195 were a basement unit and 87 the upper floors only; of 141 semis,
+// 19 and 15. A blended detached "typical" of $3,200 sat between a $3,500 whole home and a
+// $1,750 basement, describing neither. So each lease is classed from the feed's own markers,
+// the unit field ("Bsmt", "Lower", "Upper", "Main & Upper") and the remarks ("legal basement
+// apartment", "main floor only", "basement not included"), and the typical rent for a house
+// type is stated for the WHOLE HOME, with a BASEMENT UNIT figure beside it where at least
+// K_ANON_PRICE leased. Upper-floors-only leases are in the count and in neither figure. A
+// condo suite is one unit and is not classed.
 import { config } from "@/lib/config";
 import { getSoldDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
@@ -29,19 +39,28 @@ export const RENT_TYPE_LABEL: Record<RentType, string> = {
   condo: "Condo",
 };
 
+/** How a lease was classed from the feed's markers. `whole` is the default: no marker. */
+export type UnitClass = "whole" | "basement" | "upper";
+
 export interface LeaseTypeFigure {
   type: RentType;
-  /** closed leases in the window, the exact sample behind `typical` */
+  /** closed leases of the type in the window, every unit class */
   count: number;
-  /** midpoint rent; null below K_ANON_PRICE */
+  /** whole-home leases, the exact sample behind `typical` (for a condo, every lease) */
+  wholeCount: number;
+  /** midpoint whole-home rent; null below K_ANON_PRICE */
   typical: number | null;
+  /** basement-unit leases; 0 for a condo */
+  basementCount: number;
+  /** midpoint basement-unit rent; null below K_ANON_PRICE or for a condo */
+  basementTypical: number | null;
+  /** upper-floors-only leases, counted and stated in neither figure */
+  upperCount: number;
 }
 
 export interface LeaseMarket {
   /** closed leases in the last 12 months, Milton-wide */
   count: number;
-  /** midpoint rent over that pool; null below K_ANON_PRICE */
-  typical: number | null;
   /** mean days on market over that pool; null below K_ANON_PRICE */
   days: number | null;
   /** mean leased-to-ask RATIO (not a percent) over that pool; null below K_ANON_PRICE */
@@ -55,6 +74,19 @@ export interface LeaseMarket {
 
 const WINDOW = "last 12 months";
 
+/** The unit-class markers, as Postgres regexes (case-insensitive via ~*). The unit field is
+ *  the feed's UnitNumber, which a listing of part of a house carries as words; the remarks
+ *  patterns name the unit as what is offered, not as a feature of a whole home ("finished
+ *  basement" is a feature; "basement apartment" is the unit). A basement phrase counts only
+ *  in the opening of the remarks, where a listing says what it is; a whole home that mentions
+ *  its basement apartment does so later. Measured 2026-09-15: "legal basement" and "main and
+ *  second floor" without "only" classed whole townhomes wrongly and were dropped. */
+export const REMARKS_LEAD = 120;
+export const UNIT_BASEMENT = "(bsmt|bsmnt|bsment|basement|basemnt|basmt|lower|lwr|\\mll\\M)";
+export const REMARKS_BASEMENT = "(basement (apartment|unit|suite|apt)|lower[- ]level (unit|apartment|apt|suite)|\\mbsmt\\M)";
+export const UNIT_UPPER = "(upper|upr|upl|\\mmain\\M|\\mmn\\M|ground|grnd|1st|first|2nd)";
+export const REMARKS_UPPER = "((upper|main) (level|floor)s? only|main (and|&) (second|upper|2nd) (floors?|levels?) only|excluding (the )?basement|basement (is )?not included|basement excluded|no (access to (the )?)?basement( access)?|upper (two|2) (levels|floors) only)";
+
 const num = (v: unknown): number | null => {
   if (v === null || v === undefined) return null;
   const n = Number(v);
@@ -62,12 +94,12 @@ const num = (v: unknown): number | null => {
 };
 
 /** The empty market: no DB2, or nothing closed. Every figure suppressed, every count 0. */
+const emptyType = (type: RentType): LeaseTypeFigure => ({ type, count: 0, wholeCount: 0, typical: null, basementCount: 0, basementTypical: null, upperCount: 0 });
 const EMPTY: LeaseMarket = {
   count: 0,
-  typical: null,
   days: null,
   leasedToAsk: null,
-  byType: RENT_TYPES.map((type) => ({ type, count: 0, typical: null })),
+  byType: RENT_TYPES.map(emptyType),
   window: WINDOW,
   through: null,
 };
@@ -76,14 +108,15 @@ const EMPTY: LeaseMarket = {
 export async function getLeaseMarket(): Promise<LeaseMarket> {
   const db = getSoldDb();
   if (!db) return EMPTY;
+  // v3: the classed shape with the tightened markers (MH-007 addendum). The key is versioned because Upstash is shared
+  // across builds, and a cached row of the old shape would be read as the new one for an hour.
   const day = new Date().toISOString().slice(0, 10);
-  return cached(`home:lease-market:${day}`, CACHE_TTL.stats, async () => {
-    type AllRow = { n: number; typical: unknown; dom: unknown; ratio: unknown; latest: unknown };
-    type TypeRow = { property_type: string; n: number; typical: unknown };
-    const [all, types] = await Promise.all([
+  return cached(`home:lease-market:v3:${day}`, CACHE_TTL.stats, async () => {
+    type AllRow = { n: number; dom: unknown; ratio: unknown; latest: unknown };
+    type ClassRow = { property_type: string; unit_class: string; n: number; typical: unknown };
+    const [all, classes] = await Promise.all([
       db`
         SELECT COUNT(*)::int AS n,
-               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical,
                AVG(days_on_market) AS dom,
                AVG(sold_price::float / NULLIF(list_price, 0)) AS ratio,
                MAX(sold_date) AS latest
@@ -92,32 +125,61 @@ export async function getLeaseMarket(): Promise<LeaseMarket> {
           AND transaction_type = 'For Lease'
           AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
       `.then((rows) => rows as AllRow[]),
+      // THE UNIT CLASS, from the feed's own markers. The unit field first ("Bsmt", "Lower",
+      // "Upper", "Main & Upper"), then the remarks; a basement marker wins over an upper one
+      // because a whole-home remark can mention its upper floors, but only a basement lease
+      // calls itself a basement apartment. A condo suite is one unit: its class is `whole`.
+      // Postgres regex: \m and \M are word boundaries (doubled for the JS template).
       db`
-        SELECT property_type, COUNT(*)::int AS n,
+        WITH pool AS (
+          SELECT property_type, sold_price,
+                 CASE
+                   WHEN property_type = 'condo' THEN 'whole'
+                   WHEN COALESCE(unit_number, '') ~* ${UNIT_BASEMENT}
+                     OR LEFT(COALESCE(public_remarks, ''), ${REMARKS_LEAD}) ~* ${REMARKS_BASEMENT} THEN 'basement'
+                   WHEN COALESCE(unit_number, '') ~* ${UNIT_UPPER}
+                     OR COALESCE(public_remarks, '') ~* ${REMARKS_UPPER} THEN 'upper'
+                   ELSE 'whole'
+                 END AS unit_class
+          FROM sold.sold_records
+          WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
+            AND transaction_type = 'For Lease'
+            AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
+        )
+        SELECT property_type, unit_class, COUNT(*)::int AS n,
                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
-        FROM sold.sold_records
-        WHERE city = ${config.PRISMA_CITY_VALUE} AND perm_advertise = TRUE
-          AND transaction_type = 'For Lease'
-          AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
-        GROUP BY property_type
-      `.then((rows) => rows as TypeRow[]),
+        FROM pool
+        GROUP BY property_type, unit_class
+      `.then((rows) => rows as ClassRow[]),
     ]);
     const r = all[0];
     const count = Number(r?.n ?? 0);
-    // THE FLOOR IS CHECKED AGAINST THE SAMPLE EACH FIGURE IS COMPUTED OVER: the three overall
-    // figures share the pool of `count`, each type's typical has its own.
+    // THE FLOOR IS CHECKED AGAINST THE SAMPLE EACH FIGURE IS COMPUTED OVER: the two overall
+    // figures share the pool of `count`; each type's whole-home typical has the whole-home
+    // count and its basement typical the basement count.
     const gate = <T>(n: number, v: T | null): T | null => (n >= K_ANON_PRICE ? v : null);
     const latest = r?.latest instanceof Date ? r.latest : r?.latest ? new Date(String(r.latest)) : null;
-    const byRow = new Map(types.map((t) => [t.property_type, t]));
+    const cell = (type: string, cls: UnitClass) => classes.find((c) => c.property_type === type && c.unit_class === cls);
     return {
       count,
-      typical: gate(count, num(r?.typical)),
       days: gate(count, num(r?.dom)),
       leasedToAsk: gate(count, num(r?.ratio)),
       byType: RENT_TYPES.map((type) => {
-        const row = byRow.get(type);
-        const n = Number(row?.n ?? 0);
-        return { type, count: n, typical: gate(n, num(row?.typical)) };
+        const whole = cell(type, "whole");
+        const basement = cell(type, "basement");
+        const upper = cell(type, "upper");
+        const wholeCount = Number(whole?.n ?? 0);
+        const basementCount = Number(basement?.n ?? 0);
+        const upperCount = Number(upper?.n ?? 0);
+        return {
+          type,
+          count: wholeCount + basementCount + upperCount,
+          wholeCount,
+          typical: gate(wholeCount, num(whole?.typical)),
+          basementCount,
+          basementTypical: gate(basementCount, num(basement?.typical)),
+          upperCount,
+        };
       }),
       window: WINDOW,
       through: latest && !Number.isNaN(latest.getTime()) ? latest.toISOString().slice(0, 10) : null,

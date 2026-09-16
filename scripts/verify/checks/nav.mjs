@@ -60,10 +60,11 @@ const ITEMS = {
   streets: ['search', 'hoods', 'video', 'az'],
   sell: ['worth', 'soldmtd', 'watch'],
 };
-/** Figures the served panels carry in <dl class="m-mega-figs">: Sell's three, Rent's four
- *  typical rents (one per home type, present even when suppressed) and three landlord proof
- *  points. A count, so a panel that drops a figure is a finding. */
-const FIGS_SERVED = 3 + 4 + 3;
+/** The phone accordions must carry every <dl class="m-mega-figs"> figure the desktop band
+ *  does: Sell's three, Rent's typical rents (one per home type, a whole-home and a basement-unit
+ *  figure where a house type's basement leases clear the floor, so the number follows the data)
+ *  and three landlord proof points. The band is in the DOM at every width, so it is the count
+ *  to match. */
 /** What counts as live content inside an item's panel. A CTA alone does not. */
 const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-edition, .m-mega-strip a, .m-mega-figs dd, form.m-mega-search';
 const TYPE_FLOOR_PX = 14;
@@ -115,6 +116,9 @@ const DAYS = /^(\d{1,3} days?|—)$/;
 const PCT = /^(\d{2,3}\.\d%|—)$/;
 /** A monthly rent in whole dollars, the suppression glyph, or the words the k-gate leaves. */
 const RENT = /^(\$\d{1,3}(,\d{3})*\/mo|—|Sample too small)$/;
+/** A typical rent by home type: the type alone, or the type with its unit class where the
+ *  house type's leases were split (MH-007 addendum). */
+const RENT_TYPICAL_FIG = /^menu-rent-(detached|semi|townhouse|condo)(-whole|-basement)?$/;
 /** Every menu figure's stated format. A `menu-` figure with no entry here is a finding: a
  *  figure nobody declared a format for is a figure nobody is checking. */
 const FIG_FORMAT = {
@@ -130,11 +134,6 @@ const FIG_FORMAT = {
   'menu-rent-hub': INT,
   'menu-rent-week': INT,
   'menu-rent-leased': INT,
-  'menu-rent-typical': RENT,
-  'menu-rent-detached': RENT,
-  'menu-rent-semi': RENT,
-  'menu-rent-townhouse': RENT,
-  'menu-rent-condo': RENT,
   'menu-rent-days': DAYS,
   'menu-rent-lta': PCT,
   'menu-streets-pages': INT,
@@ -563,6 +562,7 @@ async function driveMobile(page, url, w, h, findings) {
     out.cardImgs = p.querySelectorAll('.m-mega-cards img').length;
     out.hubs = p.querySelectorAll('.m-mega-hubs a').length;
     out.figs = p.querySelectorAll('.m-mega-figs dd[data-fig]').length;
+    out.bandFigs = document.querySelectorAll('.m-band .m-mega-figs dd[data-fig]').length;
     out.ctas = p.querySelectorAll('.m-mega-cta').length;
     out.strips = p.querySelectorAll('.m-mega-strip').length;
     out.rentHubs = p.querySelectorAll('.m-mega-hubs a[href^="/rentals?neighbourhood="]').length;
@@ -615,7 +615,8 @@ async function driveMobile(page, url, w, h, findings) {
   if (acc.cards === 0) findings.push(`${tag}: phone Buy accordion has no listing cards`);
   if (acc.cardImgs === 0) findings.push(`${tag}: phone Buy accordion has no photographs`);
   if (acc.hubs === 0) findings.push(`${tag}: phone Streets accordion lists no neighbourhoods`);
-  if (acc.figs !== FIGS_SERVED) findings.push(`${tag}: phone accordions carry ${acc.figs} figures, expected ${FIGS_SERVED}`);
+  if (acc.bandFigs < 9) findings.push(`${tag}: the desktop band carries ${acc.bandFigs} figures, expected Sell's 3, at least 4 typical rents and 3 landlord proof points`);
+  if (acc.figs !== acc.bandFigs) findings.push(`${tag}: phone accordions carry ${acc.figs} figures, the desktop band ${acc.bandFigs}`);
   if (acc.ctas < MENUS.length) findings.push(`${tag}: ${acc.ctas} CTAs across the phone accordions, expected ${MENUS.length}`);
   if (acc.strips < MENUS.length) findings.push(`${tag}: ${acc.strips} strips across the phone accordions, expected ${MENUS.length}`);
   if (acc.rentHubs === 0) findings.push(`${tag}: phone Rent accordion lists no neighbourhoods as scoped /rentals`);
@@ -751,7 +752,12 @@ export default {
         if (new Set(rentHubs).size !== hubCount) rentBad.push(`${path}: Rent lists ${new Set(rentHubs).size} hubs as scoped /rentals, expected ${hubCount}`);
         const rentHubFigs = figures(rentPanel.body).filter((f) => f.fig === 'menu-rent-hub').length;
         if (rentHubFigs !== hubCount) rentBad.push(`${path}: ${rentHubFigs} hub rent counts, expected ${hubCount}`);
-        for (const key of ['detached', 'semi', 'townhouse', 'condo']) if (!rentPanel.body.includes(`data-fig="menu-rent-${key}"`)) rentBad.push(`${path}: no typical rent for ${key}`);
+        for (const key of ['detached', 'semi', 'townhouse', 'condo']) if (!new RegExp(`data-fig="menu-rent-${key}(-whole)?"`).test(rentPanel.body)) rentBad.push(`${path}: no typical rent for ${key}`);
+        // a split type states both figures under labels that say which unit each is
+        for (const m of rentPanel.body.matchAll(/data-fig="menu-rent-(detached|semi|townhouse|condo)-basement"/g)) {
+          if (!rentPanel.body.includes(`data-fig="menu-rent-${m[1]}-whole"`)) rentBad.push(`${path}: ${m[1]} has a basement-unit figure but no whole-home figure`);
+        }
+        if (/<dt>(Detached|Semi-detached|Townhouse)<\/dt>\s*<dd data-fig="menu-rent-[a-z]+-whole"/.test(rentPanel.body)) rentBad.push(`${path}: a whole-home figure is not labelled as one`);
         if (!/<form\b[^>]*class="m-mega-search m-mega-brief"[\s\S]*?<button\b[^>]*class="m-mega-cta"/.test(rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-landlord"')))) rentBad.push(`${path}: the landlord panel does not end in its form's submit`);
         const nowCta = (rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-now"')).match(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/) || [])[1] || '';
         if (path.startsWith('/neighbourhoods/') || path.startsWith('/streets/')) {
@@ -798,7 +804,7 @@ export default {
       const figs = figures(nav);
       for (const f of figs) {
         if (!f.fig.startsWith('menu-')) continue;
-        const fmt = FIG_FORMAT[f.fig];
+        const fmt = FIG_FORMAT[f.fig] ?? (RENT_TYPICAL_FIG.test(f.fig) ? RENT : undefined);
         if (!fmt) { badFig.push(`${path}: ${f.fig} has no stated format`); continue; }
         if (!fmt.test(f.text)) badFig.push(`${path}: ${f.fig} "${f.text}"`);
         if (f.value !== null && f.value !== f.text) badFig.push(`${path}: ${f.fig} text "${f.text}" != data-value "${f.value}"`);

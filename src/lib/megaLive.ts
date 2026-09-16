@@ -44,6 +44,7 @@ import { getNewThisWeekCount, getSoldThisMonth, getStreetsWithVideo, getStreetVi
 import { getNewestListingCards, getListingCards } from "@/lib/listingsV2Data";
 import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 import { getLeaseMarket, RENT_TYPE_LABEL, type LeaseMarket } from "@/lib/rentSignals";
+import { K_ANON_PRICE } from "@/lib/kAnon";
 import { getBoardData } from "@/lib/board/boardData";
 import { resolveStreetName } from "@/lib/streetName";
 import { formatCount, formatDateProse, formatDays, formatMoney1k, formatMoneyWhole, formatPct1, formatRent, NULL_GLYPH } from "@/lib/figureFormat";
@@ -370,9 +371,33 @@ function composeRent(i: MegaInputs): Record<string, MegaItemContent> {
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((h) => ({ slug: h.slug, name: h.name, active: formatCount(r.byHub.get(h.slug) ?? 0), href: `/rentals?neighbourhood=${h.slug}` }));
 
+  // WHOLE HOME AND BASEMENT UNIT ARE TWO FIGURES (MH-007 addendum). A house type's leases mix
+  // whole homes, basement units and upper-floors-only, at rents a blended midpoint describes
+  // for none of them; each figure states the sample it is over and the basis says what is out.
+  const split = m.byType.some((f) => f.basementCount > 0 || f.upperCount > 0);
   const basis = m.count > 0
-    ? `Typical rent is the midpoint of the leases the Board recorded as closed in the ${m.window}, by home type, where at least five closed; a type with fewer is not stated. Asking rents on the cards are the feed's own.`
+    ? `Typical rent is the midpoint of the leases the Board recorded as closed in the ${m.window}, by home type, where at least five closed; a type with fewer is not stated.${
+        split
+          ? " For a house, whole home leaves out leases of a basement unit or of the upper floors only, read from the feed's unit field and remarks; a basement unit is stated where at least five leased."
+          : ""
+      } Asking rents on the cards are the feed's own.`
     : undefined;
+  const typicalFigures = m.byType.flatMap((f) => {
+    const label = RENT_TYPE_LABEL[f.type];
+    const classed = f.basementCount > 0 || f.upperCount > 0;
+    const whole = {
+      key: classed ? `${f.type}-whole` : f.type,
+      label: classed ? `${label}, whole home` : label,
+      value: f.typical !== null ? formatRent(f.typical) : "Sample too small",
+      window: m.window,
+      sample: leases(classed ? f.wholeCount : f.count),
+    };
+    // A basement figure is shown only where it clears the floor: below it, the whole-home
+    // figure stands alone and the basement leases are in the type's count, not in a figure.
+    return f.basementCount >= K_ANON_PRICE && f.basementTypical !== null
+      ? [whole, { key: `${f.type}-basement`, label: `${label}, basement unit`, value: formatRent(f.basementTypical), window: m.window, sample: leases(f.basementCount) }]
+      : [whole];
+  });
 
   return {
     now: {
@@ -404,25 +429,20 @@ function composeRent(i: MegaInputs): Record<string, MegaItemContent> {
       hubsFig: "menu-rent-hub",
     },
     typical: {
-      sub: m.typical !== null ? `Typically ${formatRent(m.typical)}` : `${leases(m.count)} on record`,
+      // No blended Milton-wide typical: one number over houses, basements and condo suites
+      // together describes none of them. The figures below are the statement.
+      sub: `By home type, ${m.window}`,
       cta: seeAll,
       lead:
         m.count > 0
           ? [
               fig("menu-rent-leased", formatCount(m.count)),
-              t(` ${plural(m.count, "home", "homes")} leased in Milton in the ${m.window}`),
-              ...(m.typical !== null ? [t(", typically "), fig("menu-rent-typical", formatRent(m.typical)), t(".")] : [t(".")]),
+              t(` ${plural(m.count, "home", "homes")} leased in Milton in the ${m.window}. What each kind of home went for, from the Board's closed leases:`),
             ]
           : [t(`No closed leases on record for the ${m.window}.`)],
-      // ONE FIGURE PER HOME TYPE, EACH GATED ON ITS OWN SAMPLE. Below the floor the value says
-      // so in words; the sample beside it says how far below.
-      figures: m.byType.map((f) => ({
-        key: f.type,
-        label: RENT_TYPE_LABEL[f.type],
-        value: f.typical !== null ? formatRent(f.typical) : "Sample too small",
-        window: m.window,
-        sample: leases(f.count),
-      })),
+      // ONE FIGURE PER HOME TYPE AND UNIT CLASS, EACH GATED ON ITS OWN SAMPLE. Below the floor
+      // the value says so in words; the sample beside it says how far below.
+      figures: typicalFigures,
       basis,
       note: m.through ? `Closed leases through ${formatDateProse(m.through)}.` : undefined,
     },
