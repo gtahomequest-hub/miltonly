@@ -2,15 +2,15 @@ HOME · D:\miltonly-home · feat/rent-menu
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-14, MH-007: the Rent menu, on `feat/rent-menu`, previewed, NOT merged._
+_Last rewritten 2026-09-15, MH-007 addendum: typical rent by unit type, on `feat/rent-menu`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
 **TWO BRANCHES ARE PREVIEWED AND NOT MERGED. Core merges by SHA on approval.**
 
-- **`feat/rent-menu@b1a2bc3be2876019995697a746d50a02ae549e92` (MH-007, the Rent menu).** Preview
-  `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 289s`. It branches from `feat/nav-v3@3b56020` with `origin/main@60780ca`
+- **`feat/rent-menu@91f8ef0b063b4114b2bbbc42e335b9becd11a783` (MH-007 and its addendum, the Rent menu).** Preview
+  `https://miltonly-hwz0nkjza-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta`
+  `PASS · 3 checks · 567 pages · 284s`. It branches from `feat/nav-v3@3b56020` with `origin/main@60780ca`
   merged in, so it CONTAINS the chrome: merging it merges MH-006 too. Record in
   `scratchpad/reports/MH-007-rent-menu.md`.
 - **`feat/nav-v3@3b56020c524525acf666906b670d0e85397b2c06` (MH-006, the chrome).** Merged up to
@@ -30,7 +30,12 @@ the last `https://miltonly-...vercel.app` line of the CLI's output.
 per-hub counts folded through `getRawStringHubMap()`, the newest four, this week's, and
 `getLeaseMarket()` from `src/lib/rentSignals.ts`). The closed-lease figures are DB2's
 `sold.sold_records` For Lease rows over 12 months, midpoint rent, gated at `K_ANON_PRICE` on
-each type's own sample; below it the value is the words "Sample too small". `MegaInputs.context`
+each type's own sample; below it the value is the words "Sample too small". **A house is not one
+unit type (addendum, 2026-09-15):** each lease is classed in SQL from the feed's unit field and the
+opening of its remarks as whole home, basement unit or upper floors only; a house type's figure is
+the WHOLE HOME (`menu-rent-<type>-whole`), a BASEMENT UNIT figure sits beside it where at least
+five leased (`menu-rent-<type>-basement`), upper-only leases are in the count and in neither, and a
+condo suite is one unit (`menu-rent-condo`). There is no blended Milton-wide typical rent. `MegaInputs.context`
 carries the page's hub into the composer so "available now" states the hub's count and its CTA is
 `/rentals?neighbourhood=<hub>` (`itemOf` in `SiteNav.tsx`). Rentals left the Buy rail; the
 homepage gate reads `menu-rent-now`. The landlord panel's CTA is `LandlordSignup`
@@ -114,8 +119,8 @@ about, saved, signin, privacy, terms).
 
 | | |
 |---|---|
-| rent branch head | **`b1a2bc3be2876019995697a746d50a02ae549e92`** (`feat/rent-menu`, app), plus the docs commit carrying this handoff and the MH-007 report |
-| rent preview | `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta` **`PASS · 3 checks · 529 pages · 289s`** |
+| rent branch head | **`91f8ef0b063b4114b2bbbc42e335b9becd11a783`** (`feat/rent-menu`, app), plus the docs commit carrying this handoff and the MH-007 report |
+| rent preview | `https://miltonly-hwz0nkjza-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta` **`PASS · 3 checks · 567 pages · 284s`** |
 | chrome branch head | `3b56020c524525acf666906b670d0e85397b2c06` (`feat/nav-v3`), contained in the rent branch |
 | local build | exit 0, zero `P2024`, prebuild all green, 149/149 static (MC-017's fifty-street prerender) |
 | main | `60780ca` (MC-015), has neither branch |
@@ -170,8 +175,15 @@ Addendum: `/rentals` (tokens remapped in `rentals.css`, its own footer removed, 
 - **The phone panel sits UNDER the bar** (`top: 66px`) so the burger stays reachable as the close
   control with or without React. `nav.mjs` asserts that geometry; do not restore `inset: 0`.
 - **A lease figure's floor is its own sample.** `getLeaseMarket()` gates each home type's
-  typical on that type's count and the three landlord figures on the pool's; do not gate one on
-  another. Per-hub counts are counts of advertised listings and are not gated (rentalsAvailable.ts).
+  whole-home typical on its whole-home count, its basement typical on its basement count, and the
+  three landlord figures on the pool's; do not gate one on another. Per-hub counts are counts of
+  advertised listings and are not gated (rentalsAvailable.ts).
+- **The unit-class markers are regexes in `rentSignals.ts` and were inspected by hand.** "legal
+  basement" and "main and second floor" without "only" classed whole townhomes as units and were
+  dropped; the basement phrase counts only in the first 120 characters of the remarks. Re-inspect
+  the classes (the report's table) before widening a pattern.
+- **Version the `cached()` key when the shape changes.** Upstash is shared across builds; a row of
+  the old shape under the same key was served for an hour (`home:lease-market:v3:<day>` now).
 - **The figures block keys on its menu** (`menu-${menu.key}-${f.key}`); `menu-hub-active` is
   the Streets list's key and the battery counts it per page, so the Rent list uses `menu-rent-hub`.
 - **The lease-market cache key is in `SOLD_WIDE_PATTERNS`.** A new `cached()` key over
