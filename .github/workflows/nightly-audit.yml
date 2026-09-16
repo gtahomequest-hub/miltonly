@@ -9,10 +9,16 @@ name: Nightly audit
 
 on:
   schedule:
-    # 03:00 America/Toronto is 07:00 UTC in summer and 08:00 UTC in winter. Both fire; the gate
-    # keeps the one that is 03:00 local.
+    # 03:00 America/Toronto is 07:00 UTC in summer and 08:00 UTC in winter. GitHub delivers a
+    # scheduled run late, often by hours (MC-023: both 2026-09-14 crons fired after 13:30 UTC,
+    # 09:37 and 10:43 Toronto), so the gate no longer asks for the hour to be 03: it runs the
+    # first delivery of each Toronto day at or after 03:00 and skips the rest, because the
+    # first run commits scratchpad/audit/nightly/<date>.md and the later ones find it. Four
+    # crons give four chances; a day with no delivery at all is a GitHub outage, not ours.
     - cron: '0 7 * * *'
     - cron: '0 8 * * *'
+    - cron: '0 9 * * *'
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 permissions:
@@ -28,13 +34,23 @@ jobs:
     outputs:
       run: ${{ steps.clock.outputs.run }}
     steps:
+      # the report of a run that already happened today is on the branch; a shallow checkout
+      # is enough to see it
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - id: clock
         run: |
+          D=$(TZ=America/Toronto date +%F)
           H=$(TZ=America/Toronto date +%H)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$H" = "03" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "dispatched by hand"
+          elif [ -f "scratchpad/audit/nightly/$D.md" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "$D already audited: skipping"
+          elif [ "$H" -lt 3 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "Toronto hour is $H, before 03: skipping"
           else
-            echo "run=false" >> "$GITHUB_OUTPUT"; echo "Toronto hour is $H, not 03: skipping"
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "first delivery for $D at Toronto hour $H"
           fi
 
   audit:
