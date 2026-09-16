@@ -5,22 +5,23 @@
 // to keep one per street, the two hub sets several times a render, /rentals with nothing
 // cached. Each fix is a shape in the code, and this test holds the shape:
 //
-//   1. the slug sets go through cached() under SURFACE_KEYS, and every in-app publication
+//   1. the slug sets go through unstable_cache under SURFACE_KEYS, and every in-app publication
 //      write drops them (generateStreet's hook, admin publish, admin reject, /api/revalidate
 //      on a /streets path);
-//   2. the hub sets go through cached() under HUB_SET_KEYS, the street render, the footer,
+//   2. the hub sets go through unstable_cache under HUB_SET_KEYS, the street render, the footer,
 //      the sold options and the hub-card map read them from hubSets.ts, and both hub
 //      generators and /api/revalidate on a /neighbourhoods path drop them;
 //   3. /streets is ISR (no force-dynamic, a revalidate) and its sample is DISTINCT ON;
 //   4. /rentals caches its bundle per scope and no longer declares a revalidate beside
 //      force-dynamic;
-//   5. the two TTLs are fifteen minutes: long enough to take a render's reads off Neon,
-//      short enough that a write nobody announced is visible within the quarter hour.
+//   5. the two TTLs are an hour, the Neon reads' own (MC-017): a shorter one would cut every
+//      ISR page's revalidate to it. The Data Cache, not Upstash: `cached()` is bypassed under a
+//      static render, which since MC-017 is nearly every page's first render.
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { SURFACE_KEYS, SURFACE_TTL } from "../src/lib/streetSurface";
-import { HUB_SET_KEYS, HUB_SET_TTL } from "../src/lib/hubSets";
+import { SURFACE_KEYS, SURFACE_TTL, SURFACE_TAG } from "../src/lib/streetSurface";
+import { HUB_SET_KEYS, HUB_SET_TTL, HUB_SET_TAG } from "../src/lib/hubSets";
 
 const ROOT = resolve(__dirname, "..");
 const code = (p: string) => readFileSync(resolve(ROOT, p), "utf8");
@@ -34,10 +35,11 @@ function ok(cond: boolean, label: string) {
 // ── 1. the slug sets ─────────────────────────────────────────────────────────────────
 {
   const s = code("src/lib/streetSurface.ts");
-  ok(/cached\(SURFACE_KEYS\.published, SURFACE_TTL/.test(s), "publishedStreetSlugs reads through cached() under SURFACE_KEYS.published");
-  ok(/cached\(SURFACE_KEYS\.entities, SURFACE_TTL/.test(s), "the entity set reads through cached() under SURFACE_KEYS.entities");
+  ok(/\[SURFACE_KEYS\.published\],\s*\{ revalidate: SURFACE_TTL, tags: \[SURFACE_TAG\] \}/.test(s), "publishedStreetSlugs reads through dataCached (unstable_cache) under SURFACE_KEYS.published");
+  ok(/\[SURFACE_KEYS\.entities\],\s*\{ revalidate: SURFACE_TTL, tags: \[SURFACE_TAG\] \}/.test(s), "the entity set reads through dataCached (unstable_cache) under SURFACE_KEYS.entities");
+  ok(!/from "@\/lib\/cache"/.test(s), "streetSurface does not go through cached(), which a static render bypasses");
   ok(!/prisma\.residentialStreet\.findMany\(\{ select: \{ slug: true \} \}\),\s*\]\)/.test(s), "publishedStreetPageSlugs no longer runs its own two queries");
-  ok(/export async function dropSurfaceCache/.test(s) && /invalidateMany\(\[SURFACE_KEYS\.published, SURFACE_KEYS\.entities\]\)/.test(s), "dropSurfaceCache drops both keys");
+  ok(/export async function dropSurfaceCache/.test(s) && /revalidateTag\(SURFACE_TAG\)/.test(s), "dropSurfaceCache revalidates the tag");
   ok(SURFACE_KEYS.published !== SURFACE_KEYS.entities && /:v\d+$/.test(SURFACE_KEYS.published), "the keys are distinct and versioned");
   for (const [file, label] of [
     ["src/lib/generateStreet.ts", "generateStreet's revalidation hook"],
@@ -53,7 +55,8 @@ function ok(cond: boolean, label: string) {
 // ── 2. the hub sets ──────────────────────────────────────────────────────────────────
 {
   const s = code("src/lib/hubSets.ts");
-  ok(/cached\(HUB_SET_KEYS\.neighbourhoods, HUB_SET_TTL/.test(s) && /cached\(HUB_SET_KEYS\.published, HUB_SET_TTL/.test(s), "both hub sets read through cached()");
+  ok(/\[HUB_SET_KEYS\.neighbourhoods\],\s*\{ revalidate: HUB_SET_TTL, tags: \[HUB_SET_TAG\] \}/.test(s) && /\[HUB_SET_KEYS\.published\],\s*\{ revalidate: HUB_SET_TTL, tags: \[HUB_SET_TAG\] \}/.test(s), "both hub sets read through dataCached (unstable_cache)");
+  ok(!/from "@\/lib\/cache"/.test(s) && /revalidateTag\(HUB_SET_TAG\)/.test(s), "hubSets does not go through cached() and drops by tag");
   ok(HUB_SET_KEYS.neighbourhoods !== HUB_SET_KEYS.published && /:v\d+$/.test(HUB_SET_KEYS.published), "the hub keys are distinct and versioned");
   const street = code("src/lib/street-data.ts");
   ok(/from "\.\/hubSets"/.test(street) && !/prisma\.hubContent\.findMany\(\{ where: \{ status: "published" \}, select: \{ neighbourhoodSlug: true \} \}\),\s*prisma\.neighbourhood\.findMany/.test(street), "the street render reads the hub sets from hubSets.ts, not its own two queries");
@@ -85,9 +88,10 @@ function ok(cond: boolean, label: string) {
   ok(/const RENTALS_TTL = 900/.test(s), "/rentals TTL is fifteen minutes");
 }
 
-// ── 5. the TTLs ──────────────────────────────────────────────────────────────────────
-ok(SURFACE_TTL === 900, `SURFACE_TTL is 900 (got ${SURFACE_TTL})`);
-ok(HUB_SET_TTL === 900, `HUB_SET_TTL is 900 (got ${HUB_SET_TTL})`);
+// ── 5. the TTLs: an hour, the Neon reads' own, so no ISR page is cut shorter by them ──
+ok(SURFACE_TTL === 3600, `SURFACE_TTL is 3600 (got ${SURFACE_TTL})`);
+ok(HUB_SET_TTL === 3600, `HUB_SET_TTL is 3600 (got ${HUB_SET_TTL})`);
+ok(SURFACE_TAG !== HUB_SET_TAG, "the two tags are distinct");
 
 if (failures.length) {
   console.error(`[neon-egress] FAIL: ${failures.length} of ${n} assertions:`);
