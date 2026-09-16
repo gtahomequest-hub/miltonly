@@ -2,36 +2,33 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-14 (MC-022): MC-015 and Nav v3 merged and on production (19 checks); MC-018 (Neon egress) built on `fix/neon-egress` @ `cce6ee8`, previewed from the CLI, waiting on approval to merge. Node 20 stops deploying on 2026-10-01._
+_Last rewritten 2026-09-15 (MC-023): MC-018 merged and measured, and it made egress worse (4.2 M rows a battery against 1.1 M); the fix is on `fix/neon-egress-2` @ `8279ead` and measures 0.26 M. Node 22 on `fix/node-22` @ `320f325` with the nightly audit's gate fix. Both previewed, battery-clean, waiting on approval._
 
 ## READ THIS FIRST
 
-**MAIN IS `6aac9c9` AND PRODUCTION SERVES `6aac9c9`, `PASS · 19 checks · 529 pages · 835s`.**
-Two merges by SHA on 2026-09-14 (MC-022): `feat/video-playbook @ d88742c` as `60780ca`
-(MC-015, app code `b090002`; production battery `PASS · 18 checks · 529 pages · 668s`), then
-`feat/nav-v3 @ 3b56020` as `6aac9c9` (Nav v3, app code `287f8ad`; one conflict in
-`scripts/verify/run.mjs`, resolved as `footer, catchment, video`, 19 checks). Confirmed on
-production: `sitemap-video.xml` 200 with 45 clips, `sitemap-index.xml` names both files,
-`attenborough-terrace` shows the sentence and the mailto; at 390 wide the homepage keeps its
-bar, burger and CTA in the viewport after a 2,400 px scroll and a street page ends in an
-`m-footer` with 58 links (`scratchpad/mc003/probe-nav-390.mjs`, puppeteer, PASS). The three
-superseded `night.mp4` objects were retired after the merge (production served the day URLs).
-Record: `scratchpad/reports/MC-022-two-merges.md`. **The SHA the prompt named for Nav v3,
-`91c6ae5`, exists nowhere** (local, origin, the home worktree's reflog); Aamir chose the
-branch head `3b56020` when asked.
+**MAIN IS `9cbcdb8` AND PRODUCTION SERVES `9cbcdb8`, `PASS · 19 checks · 567 pages · 781s`.**
+`9cbcdb8` is one test fix on top of `eb3a5e8`, the MC-018 merge (`fix/neon-egress @ cce6ee8`).
+The corpus is 567 published pages (the programme created 17 at 00:01Z on the 15th and more
+since). Record: `scratchpad/reports/MC-023-egress-node22-nightly.md`.
 
-**NODE 20 IS DEPRECATED ON VERCEL AND DEPLOYS FAIL FROM 2026-10-01.** Every CLI deploy
-tonight printed: `Node.js version 20.x is deprecated. Deployments created on or after
-2026-10-01 will fail to build. Please set "engines": { "node": "24.x" } in your package.json`.
-`package.json` pins `"node": "20.x"`. Nothing was changed: the runtime moves every function
-and the Prisma engine at once, so it is a task of its own, and it has to land before
-2026-10-01 or nothing deploys. The AWS SDK printed its own notice (node >= 22 from January
-2027), the same fix.
+**NODE 22 IS BUILT ON `fix/node-22` @ `320f325`, WAITING ON APPROVAL.** `engines.node` is
+`22.x`; `pnpm build` under a local 22.23.2 (nvm, installed beside 20, not switched; run
+through Node 22's own corepack because the `pnpm` shim on PATH runs the nvm4w Node 20) exits 0,
+prebuild green, 149/149, no deprecation warnings; the CLI preview `miltonly-mijq5oxtm` built on
+22 ("Skipping build cache since Node.js version changed from 20.x to 22.x", 1 m 20 s) and
+serves `320f325`. Battery on that preview in the report. Vercel stops building Node 20 on
+2026-10-01. The first `npx vercel deploy` after npx pulled CLI 59.18.0 answered "Not
+authorized" once and worked on the retry.
 
-**THE NIGHTLY AUDIT DID NOT COMMIT ON 2026-09-14.** The last `audit(nightly)` on `main` is
-`bbb792f` for 2026-09-13, committed 16:38 that day (the by-hand run). Nothing landed at 03:00
-Toronto today; `main` had no audit commit when this session pulled at 19:34Z. `gh` is not
-installed, so the workflow run was not inspected. Audit's to look at; Core notes it.
+**THE NIGHTLY AUDIT SKIPPED FOUR RUNS, AND THE GATE IS FIXED ON THE SAME BRANCH.** The
+workflow ran on schedule on the 14th and the 15th, twice each, but GitHub delivered every run
+five to seven hours late (13:37 and 14:43 UTC on the 14th, 12:26 and 13:08 on the 15th; runs
+`34850386523`, `34857529130`, `34968896477`, `34973136768`, all `success`), and the gate kept
+only a run whose Toronto hour was 03, so the audit job was `skipped` every time and nothing was
+committed. Secrets were not reached and are not the cause. The gate now runs the first delivery
+of each Toronto day at or after 03:00 that finds no `scratchpad/audit/nightly/<date>.md`, and
+skips the rest; four crons, 07 to 10 UTC. The workflow is Audit's file, changed here because
+the prompt said fix it if it is ours; Audit's handoff still describes the old gate.
 
 **GIT-TRIGGERED BUILDS RUN ONLY ON `main` NOW.** `vercel.json` `ignoreCommand` is
 `if [ "$VERCEL_GIT_COMMIT_REF" != "main" ]; then exit 0; fi; git diff --quiet HEAD^ HEAD -- .
@@ -66,32 +63,23 @@ extent by `scripts/video-coverage.ts`. Full record `scratchpad/reports/MC-015-vi
 Open: Search Console submission of `sitemap-index.xml` (human); `louis-st-laurent-avenue` and
 `lower-base-line-west`, published clips with no page, left alone.
 
-**MC-018 IS BUILT ON `fix/neon-egress` @ `cce6ee8` AND WAITS ON APPROVAL TO MERGE.** CLI
-preview `miltonly-2flv2tscv`; battery on the preview `PASS · 19 checks · 548 pages · 756s` (after
-a `db2`/`db3` tag and hub-path purge: the window edge at 00:00Z and the creation cron's 17 new
-pages at 00:01Z failed three earlier runs, and production failed the same `hub-meta` lines). The four fixes MC-016
-proposed under "select only the needed columns", which were really "stop re-fetching the set":
-(a) the published and entity slug sets (490 + 963 rows on nearly every render, 18 call sites)
-sit in Upstash for fifteen minutes (`streetSurface.ts`, `SURFACE_KEYS`), dropped by every
-in-app publication write (generateStreet's hook, admin publish and reject) and by
-`/api/revalidate` on a `/streets` path (how the local scripts announce a write); (b) the
-Neighbourhood and published-hub sets (2,600 reads a window) do the same in `src/lib/hubSets.ts`,
-read by the street render, the footer, the sold options and the hub-card map, dropped by both
-hub generators and `/api/revalidate` on a `/neighbourhoods` path; (c) `/streets`, the standing
-consumer (57 renders in fifteen minutes, 3,414 rows each), is ISR at an hour (`○` in the build,
-`X-Vercel-Cache: HIT` on the preview, the same 688 links as production) and its sample is
-`DISTINCT ON` on the server; (d) `/rentals` caches its 48 listings, counts and nine aggregates
-per scope for fifteen minutes. `scripts/test-neon-egress.ts`, 29 assertions, in the prebuild.
-**Not done, by design:** proposals 1 and 2 (a `--structure` battery mode and one battery per
-merge) are process changes for a separate prompt; proposal 4 (scoping the `db2` drop) was
-"not worth it" in the recon. `cached()` bypasses Redis under a static render (MC-017), so the
-ISR pages still read Neon once per render, which is once per page per hour or day. After the
-merge, measure: `pg_stat_statements` on DB1 over one battery, against MC-016's 1,138,193 rows.
-
-**AFTER THE MC-018 MERGE.** A `/streets` change now waits for the hour or a StreetContent
-write's purge; a new hub or a reassigned neighbourhood is on every page within fifteen minutes
-or on its own purge. If a page ever shows a stale slug set for longer, the two keys are
-`surface:published-slugs:v1` and `surface:entity-slugs:v1` in Upstash.
+**MC-018 AS MERGED MADE EGRESS WORSE, AND THE FIX IS ON `fix/neon-egress-2` @ `8279ead`,
+WAITING ON APPROVAL.** One production battery after the merge, `pg_stat_statements` reset
+before it and read after: **DB1 4,241,533 rows against MC-016's 1,138,193**. The two slug sets
+alone were 3.3 million rows: 2,031 calls of the entity set (963 rows each) and 2,438 of the
+published set, against 481 in the baseline. The cause is MC-017's own rule: `cached()` skips
+Redis under a static render, because the Upstash client's `no-store` fetch is a bailout Next
+records, and since MC-017 nearly every page IS a static render on its first visit, so the sets
+left Neon on every ISR render, twice, where before they left once. `unstable_cache` is the
+cache a static render keeps: the Data Cache holds each set for the deployment for an hour (the
+Neon reads' own revalidate, so no ISR page is cut shorter), tagged (`surface`, `hubsets`) so
+every publication and hub write drops it; `src/lib/dataCache.ts` wraps it so a local script
+outside a Next server runs the function instead of hitting "incrementalCache missing".
+**Measured on the fix's preview `miltonly-k581rfzw7`, same method, one full battery: DB1
+263,706 rows**, the slug sets at 20 calls each, the battery `PASS · 19 checks · 568 pages ·
+752s`. That is 23 % of the MC-016 baseline and 6 % of the merged MC-018. `/streets` on ISR
+and the `DISTINCT ON` sample, `/rentals` cached per scope and the hub sets on the same
+Data Cache are all in that number. Merge `8279ead`, then measure production once more.
 
 **THE DASHCAM SIDE SHOULD KNOW.** Its `captured_at` rule (GPS, never the filename) was right;
 the 40 clips that predate it carried the filename clock into production for ten days, and its
@@ -104,7 +92,8 @@ findings, one defect: a hero pill links `#type-<type>` for any type with n >= 1 
 pill `#type-condo`, but a `TypeCard` renders only above k5 (`buildProductTypeSections`);
 `TypeSection.tsx` is rendered nowhere. Core does not take it.
 
-**THE NIGHTLY AUDIT** runs at 03:00 Toronto and commits `audit(nightly): <date>` to main
+**THE NIGHTLY AUDIT** is scheduled for 03:00 Toronto (GitHub delivers it hours late; the gate
+on `fix/node-22` takes the first delivery of the day) and commits `audit(nightly): <date>` to main
 without a human; `ignoreCommand` keeps that commit out of Vercel. **Pull before you branch or
 push.** Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is
 not installed system-wide. **Vercel and Windows gotchas:** `vercel ls` reports a preview
@@ -213,16 +202,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`6aac9c9`** (MC-015 `60780ca`, Nav v3 `6aac9c9`), production serves it |
-| battery on production | **`PASS · 19 checks · 529 pages · 835s`** at `6aac9c9`, 2026-09-14 |
+| `main` | **`9cbcdb8`** (MC-018 `eb3a5e8` + a test fix), production serves it |
+| battery on production | **`PASS · 19 checks · 567 pages · 781s`** at `9cbcdb8`, 2026-09-15 |
 | `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
-| waiting on merge | **MC-018** `fix/neon-egress @ cce6ee8`, preview `miltonly-2flv2tscv` |
-| Node runtime | **`20.x`, deploys fail from 2026-10-01**; move to `24.x` is an open task |
+| waiting on merge | **`fix/neon-egress-2 @ 8279ead`** (preview `miltonly-k581rfzw7`, 0.26 M rows) and **`fix/node-22 @ 320f325`** (preview `miltonly-mijq5oxtm`) |
+| Node runtime | `20.x` on production, **deploys fail from 2026-10-01**; `22.x` built and previewed on `fix/node-22` |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | MC-018 merge; Node 24 before 2026-10-01; the nightly audit's missed 2026-09-14 run (Audit); Search Console for `sitemap-index.xml` |
+| open tasks | merge `8279ead` then measure production; merge `320f325` before 2026-10-01; Search Console for `sitemap-index.xml` |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -591,5 +580,5 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the MC-018 merge (`cce6ee8`) and the egress measurement after it; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
+Whatever Aamir names. Open: the two merges at the top of this file and the production measurement after the egress fix; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
 `gordon-krantz-avenue` on a later pass.
