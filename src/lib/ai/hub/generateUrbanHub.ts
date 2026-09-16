@@ -23,6 +23,7 @@ import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
 import { HubGenerationError } from "@/lib/ai/hub/generateHubContent";
 import { buildHubMeta } from "@/lib/ai/hub/hubMeta";
 import { revalidateHubSurfaces } from "@/lib/revalidateSurfaces";
+import { dropHubSetCache } from "@/lib/hubSets";
 import {
   generateUrbanHubContent,
   type UrbanProviderOpts,
@@ -189,6 +190,7 @@ export async function generateUrbanHub(
 
   // MC-017: the hub page is ISR; the write drops it.
   revalidateHubSurfaces(neighbourhoodSlug, "generateUrbanHub");
+  await dropHubSetCache(); // the published-hub set changed (MC-018)
 
   console.log(
     `[generateUrbanHub] ${neighbourhoodSlug}: PUBLISHED — ${totalWords} words, ` +

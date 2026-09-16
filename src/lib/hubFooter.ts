@@ -15,6 +15,7 @@
 // footer on the site for the length of the TTL.
 import { prisma } from "@/lib/prisma";
 import { surfacedStreetWhere, publishedStreetPageCount } from "@/lib/streetSurface";
+import { publishedHubSlugs } from "@/lib/hubSets";
 import { resolveStreetName } from "@/lib/streetName";
 import { GUIDE_DEFS } from "@/lib/guides/guides";
 import { schools } from "@/lib/schools";
@@ -50,7 +51,7 @@ export async function getFooterMap(): Promise<FooterMap> {
 
 async function computeHubFooter(): Promise<FooterData> {
   const [publishedHubs, vipRows, streetPageCount, totalNbhd, map] = await Promise.all([
-    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
+    publishedHubSlugs().then((slugs) => slugs.map((neighbourhoodSlug) => ({ neighbourhoodSlug }))),
     prisma.residentialStreet.findMany({
       where: { isVip: true, ...(await surfacedStreetWhere()) },
       orderBy: [{ recencyWeightedSold: "desc" }],

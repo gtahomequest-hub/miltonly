@@ -14,6 +14,7 @@
 //     no sold record) — so every linked /streets/<slug> resolves 200. hasPage
 //     just toggles the "Full report" badge.
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import { formatPriceFull } from "@/lib/format";
@@ -25,7 +26,14 @@ import "@/components/directory/directory-theme.css";
 import { resolveStreetName } from "@/lib/streetName";
 import { publishedStreetPageCount } from "@/lib/streetSurface";
 
-export const dynamic = "force-dynamic";
+// MC-018 (2026-09-14): ISR, not a render per request. MC-016 measured this page as the
+// standing consumer on DB1: 57 renders in one fifteen-minute window, each pulling every Milton
+// listing's four columns (3,414 rows) to keep one per street, for every crawler hit and every
+// StreetContent write's revalidation. It reads no request data (the search and the A-Z are
+// client-side in DirectoryGrid), so it serves from the route cache for an hour; every
+// StreetContent write already purges it by path (DEC-REGEN-REVALIDATE, revalidateSurfaces.ts),
+// so a new page is listed within the write's own revalidation, not the hour.
+export const revalidate = 3600;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
@@ -48,12 +56,15 @@ export default async function StreetsIndexPage() {
   // triggered Application error: digest 306433527.
   const slugs = streets.map((s) => s.streetSlug);
 
-  // Bulk #1: sample streetName + neighbourhood per slug
-  const samples = await prisma.listing.findMany({
-    where: { streetSlug: { in: slugs }, streetName: { not: null } },
-    distinct: ["streetSlug"],
-    select: { streetSlug: true, streetName: true, neighbourhood: true },
-  });
+  // Bulk #1: sample streetName + neighbourhood per slug. Prisma's `distinct` is done in memory
+  // after the whole set leaves the database (3,414 rows for 687 streets, MC-016); DISTINCT ON
+  // keeps one row per slug on the server, so 687 rows leave. The sample is the newest listing
+  // that carries a name, which is what Prisma's first-row-wins gave in practice.
+  const samples = slugs.length === 0 ? [] : await prisma.$queryRaw<Array<{ streetSlug: string; streetName: string | null; neighbourhood: string | null }>>`
+    SELECT DISTINCT ON ("streetSlug") "streetSlug", "streetName", "neighbourhood"
+    FROM "public"."Listing"
+    WHERE "streetSlug" IN (${Prisma.join(slugs)}) AND "streetName" IS NOT NULL
+    ORDER BY "streetSlug", "listedAt" DESC NULLS LAST`;
   const sampleMap = new Map(samples.map((r) => [r.streetSlug, r]));
 
   // Bulk #2: active counts per slug

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { revalidatePath } from "next/cache";
 import { sendSMS } from "@/lib/smsAlert";
+import { dropSurfaceCache } from "@/lib/streetSurface";
 
 export async function POST(request: NextRequest) {
   if (!verifyAdminCookieValue(request.cookies.get("miltonly_admin")?.value)) {
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
 
   // This is the ONLY place revalidatePath is called
   revalidatePath(`/streets/${streetSlug}`);
+  // the published set changed (MC-018)
+  await dropSurfaceCache();
 
   await sendSMS(
     `\u2713 Published: ${updated.streetName} \u2014 ${config.SITE_DOMAIN}/streets/${streetSlug}`
