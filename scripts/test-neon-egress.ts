@@ -62,7 +62,7 @@ function ok(cond: boolean, label: string) {
   ok(/publishedHubSlugs\(\)/.test(code("src/lib/neighbourhoodCards.ts")), "the hub-card map reads the published hubs from hubSets.ts");
   for (const f of ["src/lib/ai/hub/generateRuralHub.ts", "src/lib/ai/hub/generateUrbanHub.ts"]) {
     const g = code(f);
-    ok(/revalidateHubSurfaces\(neighbourhoodSlug, "[^"]+"\);\n\s*await dropHubSetCache\(\)/.test(g), `${f} drops the hub sets right after its revalidation`);
+    ok(/revalidateHubSurfaces\(neighbourhoodSlug, "[^"]+"\);\r?\n\s*await dropHubSetCache\(\)/.test(g), `${f} drops the hub sets right after its revalidation`);
   }
   ok(/path === "\/neighbourhoods" \|\| path\.startsWith\("\/neighbourhoods\/"\)\) await dropHubSetCache\(\)/.test(code("src/app/api/revalidate/route.ts")), "/api/revalidate drops the hub sets on a /neighbourhoods path");
 }
