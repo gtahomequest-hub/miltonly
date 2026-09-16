@@ -2,33 +2,49 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-15 (MC-023): MC-018 merged and measured, and it made egress worse (4.2 M rows a battery against 1.1 M); the fix is on `fix/neon-egress-2` @ `8279ead` and measures 0.26 M. Node 22 on `fix/node-22` @ `320f325` with the nightly audit's gate fix. Both previewed, battery-clean, waiting on approval._
+_Last rewritten 2026-09-16 (MC-025, MC-024): the egress fix, Node 22 and the Rent menu merged and on production; DB1 244,828 rows a battery against the 1,138,193 baseline. Follow-up: confirm the nightly audit ran on the 17th after 07:00 UTC._
 
 ## READ THIS FIRST
 
-**MAIN IS `9cbcdb8` AND PRODUCTION SERVES `9cbcdb8`, `PASS · 19 checks · 567 pages · 781s`.**
-`9cbcdb8` is one test fix on top of `eb3a5e8`, the MC-018 merge (`fix/neon-egress @ cce6ee8`).
-The corpus is 567 published pages (the programme created 17 at 00:01Z on the 15th and more
-since). Record: `scratchpad/reports/MC-023-egress-node22-nightly.md`.
+**MAIN IS `1b2d7d8` AND PRODUCTION SERVES `1b2d7d8`, `PASS · 19 checks · 569 pages · 694s`, ON
+NODE 22.** Three merges by SHA on 2026-09-16: `fix/neon-egress-2 @ 8279ead` as `89e88e4`
+(the Data Cache fix), `fix/node-22 @ 320f325` as `2aed6f9` (Node 22.x and the nightly gate),
+`feat/rent-menu @ 91f8ef0` as `1b2d7d8` (MH-007, the Rent menu; one conflict, `HANDOFF-home.md`,
+resolved to Home's text under a merged banner). Records:
+`scratchpad/reports/MC-025-egress-node22-merges.md`, `scratchpad/reports/MC-024-rent-menu.md`.
 
-**NODE 22 IS BUILT ON `fix/node-22` @ `320f325`, WAITING ON APPROVAL.** `engines.node` is
-`22.x`; `pnpm build` under a local 22.23.2 (nvm, installed beside 20, not switched; run
-through Node 22's own corepack because the `pnpm` shim on PATH runs the nvm4w Node 20) exits 0,
-prebuild green, 149/149, no deprecation warnings; the CLI preview `miltonly-mijq5oxtm` built on
-22 ("Skipping build cache since Node.js version changed from 20.x to 22.x", 1 m 20 s) and
-serves `320f325`. Battery on that preview in the report. Vercel stops building Node 20 on
-2026-10-01. The first `npx vercel deploy` after npx pulled CLI 59.18.0 answered "Not
-authorized" once and worked on the retry.
+**EGRESS, MEASURED ON PRODUCTION AFTER THE FIX: DB1 244,828 ROWS FOR ONE FULL BATTERY.**
+Same method as the two earlier readings (`pg_stat_statements_reset()` on DB1 and DB2, the `db2`
+tag dropped, one battery, read after): MC-016 baseline 1,138,193; MC-018 as first merged
+4,241,533; the fix's preview 263,706; production now **244,828**, 21 % of the baseline. The
+two slug sets no longer appear in DB1's top twelve statements; the top one is the mega menu's
+live panel (84 calls × 464 rows). `scratchpad/mc003/pgss-reset.ts` and `pgss-read.ts` are the
+two halves of the method.
 
-**THE NIGHTLY AUDIT SKIPPED FOUR RUNS, AND THE GATE IS FIXED ON THE SAME BRANCH.** The
-workflow ran on schedule on the 14th and the 15th, twice each, but GitHub delivered every run
-five to seven hours late (13:37 and 14:43 UTC on the 14th, 12:26 and 13:08 on the 15th; runs
-`34850386523`, `34857529130`, `34968896477`, `34973136768`, all `success`), and the gate kept
-only a run whose Toronto hour was 03, so the audit job was `skipped` every time and nothing was
-committed. Secrets were not reached and are not the cause. The gate now runs the first delivery
-of each Toronto day at or after 03:00 that finds no `scratchpad/audit/nightly/<date>.md`, and
-skips the rest; four crons, 07 to 10 UTC. The workflow is Audit's file, changed here because
-the prompt said fix it if it is ours; Audit's handoff still describes the old gate.
+**NODE 22 IS ON PRODUCTION.** The build log says "Skipping build cache since Node.js version
+changed from 20.x to 22.x" and "the Node.js Version defined in your Project Settings (20.x)
+will not apply, 22.x will be used instead": the Vercel project setting still says 20.x and is
+overridden by `engines`; set it to 22.x in the dashboard when convenient so the two agree.
+Locally, `pnpm build` on 22 has to go through Node 22's own corepack (`"$N/node.exe"
+"$N/node_modules/corepack/dist/pnpm.js" build`, `N=C:/Users/amazo/AppData/Local/nvm/v22.23.2`),
+because the `pnpm` shim on PATH runs the nvm4w Node 20; nvm's default was not switched.
+
+**FOLLOW-UP, TOMORROW AFTER 07:00 UTC: CONFIRM THE NIGHTLY AUDIT RAN.** The gate fix
+(`fix/node-22`) is on `main` since 22:10Z on the 16th. The 16th's own runs were delivered
+before it landed and skipped like the 14th's and 15th's (no `audit(nightly): 2026-09-16` on
+`main`). On the 17th, after 07:00 UTC, check the Actions page (or the API:
+`repos/gtahomequest-hub/miltonly/actions/workflows/nightly-audit.yml/runs`) for a run whose
+`audit` job ran, and `git log main` for `audit(nightly): 2026-09-17`. If every delivery is
+still late, the first one after 03:00 Toronto runs now; if none is delivered at all, that is
+GitHub's schedule, not the gate.
+
+**THE RENT MENU IS ON PRODUCTION (MH-007).** Confirmed at 1024 with puppeteer
+(`scratchpad/mc003/probe-rent-1024.mjs`): four triggers (Buy 250 to 294, Rent 322 to 372,
+Streets 400 to 463, Sell 491 to 535), the bar search 327 px wide on a street page (433 to
+760; on the homepage it shows on scroll), the CTA 796 to 992, nothing overlapping, no
+horizontal overflow; the Rent panel's Typical rent rail shows "Detached, whole home $3,500/mo
+· 309 leases" and "Detached, basement unit $1,750/mo · 191 leases", semi and townhouse the
+same way. Battery on production after the merge `PASS · 19 checks · 569 pages · 694s`.
 
 **GIT-TRIGGERED BUILDS RUN ONLY ON `main` NOW.** `vercel.json` `ignoreCommand` is
 `if [ "$VERCEL_GIT_COMMIT_REF" != "main" ]; then exit 0; fi; git diff --quiet HEAD^ HEAD -- .
@@ -63,8 +79,8 @@ extent by `scripts/video-coverage.ts`. Full record `scratchpad/reports/MC-015-vi
 Open: Search Console submission of `sitemap-index.xml` (human); `louis-st-laurent-avenue` and
 `lower-base-line-west`, published clips with no page, left alone.
 
-**MC-018 AS MERGED MADE EGRESS WORSE, AND THE FIX IS ON `fix/neon-egress-2` @ `8279ead`,
-WAITING ON APPROVAL.** One production battery after the merge, `pg_stat_statements` reset
+**HOW MC-018 WENT (the fix is merged as `89e88e4`; kept for the reasoning).** MC-018 as merged made egress worse, and the fix was `fix/neon-egress-2` @ `8279ead`,
+one production battery after the merge, `pg_stat_statements` reset
 before it and read after: **DB1 4,241,533 rows against MC-016's 1,138,193**. The two slug sets
 alone were 3.3 million rows: 2,031 calls of the entity set (963 rows each) and 2,438 of the
 published set, against 481 in the baseline. The cause is MC-017's own rule: `cached()` skips
@@ -202,16 +218,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`9cbcdb8`** (MC-018 `eb3a5e8` + a test fix), production serves it |
-| battery on production | **`PASS · 19 checks · 567 pages · 781s`** at `9cbcdb8`, 2026-09-15 |
+| `main` | **`1b2d7d8`** (egress fix `89e88e4`, Node 22 `2aed6f9`, Rent menu `1b2d7d8`), production serves it |
+| battery on production | **`PASS · 19 checks · 569 pages · 694s`** at `1b2d7d8`, 2026-09-16 |
 | `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
-| waiting on merge | **`fix/neon-egress-2 @ 8279ead`** (preview `miltonly-k581rfzw7`, 0.26 M rows) and **`fix/node-22 @ 320f325`** (preview `miltonly-mijq5oxtm`) |
-| Node runtime | `20.x` on production, **deploys fail from 2026-10-01**; `22.x` built and previewed on `fix/node-22` |
+| waiting on merge | nothing |
+| Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | merge `8279ead` then measure production; merge `320f325` before 2026-10-01; Search Console for `sitemap-index.xml` |
+| open tasks | confirm the nightly audit ran on the 17th (after 07:00 UTC); Search Console for `sitemap-index.xml`; the Vercel Node setting |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -580,5 +596,5 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the two merges at the top of this file and the production measurement after the egress fix; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
+Whatever Aamir names. Open: the nightly-audit confirmation on the 17th; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
 `gordon-krantz-avenue` on a later pass.
