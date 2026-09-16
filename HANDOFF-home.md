@@ -1,21 +1,42 @@
-HOME · D:\miltonly-home · feat/nav-v3
+HOME · D:\miltonly-home · feat/rent-menu
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-13, MH-006: the chrome, on `feat/nav-v3`, previewed, NOT merged._
+_Last rewritten 2026-09-14, MH-007: the Rent menu, on `feat/rent-menu`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**MERGED BY CORE 2026-09-14 as `6aac9c9` (`feat/nav-v3 @ 3b56020`), production battery `PASS · 19 checks · 529 pages · 835s`; the rest of this file is the pre-merge state (MC-022).**
+**BOTH BRANCHES ARE MERGED BY CORE: `feat/nav-v3 @ 3b56020` as `6aac9c9` (2026-09-14, MC-022) and `feat/rent-menu @ 91f8ef0` as the MC-024 merge (2026-09-16); the rest of this file is the pre-merge state.**
 
-**`feat/nav-v3` IS PREVIEWED AND NOT MERGED. Core merges by SHA on approval.** Head
-`287f8adcc174896cb97a8bd514454bd397f41921`, preview `https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app`, battery `PASS · 17 checks · 509 pages · 666s`. The brief was "stop; Core merges".
-The record is `scratchpad/reports/MH-006-chrome.md` (the ten audit changes, the addendum, the
-before/after Lighthouse table).
+**TWO BRANCHES ARE PREVIEWED AND NOT MERGED. Core merges by SHA on approval.**
 
-`feat/menu-v2@3ec8b51` (MH-003) and `feat/hubs-v2@26af26b` (MH-004) are BOTH ON MAIN now; the
-previous handoff's "not merged" state is history. Production before this branch lands serves
-the menu and the rebuilt hubs with the old chrome around them.
+- **`feat/rent-menu@b1a2bc3be2876019995697a746d50a02ae549e92` (MH-007, the Rent menu).** Preview
+  `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta`
+  `PASS · 3 checks · 529 pages · 289s`. It branches from `feat/nav-v3@3b56020` with `origin/main@60780ca`
+  merged in, so it CONTAINS the chrome: merging it merges MH-006 too. Record in
+  `scratchpad/reports/MH-007-rent-menu.md`.
+- **`feat/nav-v3@3b56020c524525acf666906b670d0e85397b2c06` (MH-006, the chrome).** Merged up to
+  `origin/main@1900c46`; preview `miltonly-iskzekw24` (CLI deploy), `--only=nav,homepage,hub-meta`
+  `PASS · 3 checks · 529 pages · 229s`; the full battery on the earlier Git preview of the same
+  SHA was `PASS · 18 checks · 529 pages · 801s`. Record in `scratchpad/reports/MH-006-chrome.md`.
+  The brief for MH-007 said "from origin/main after MC-022 lands"; MC-022 had not landed, so the
+  rent branch sits on nav-v3 instead (report, first bullet).
+
+**PREVIEWS COME FROM THE CLI NOW.** `vercel.json` cancels Git-triggered builds on every branch but
+`main` (MC-017). `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`
+from the worktree; without the env, `/api/build` says `unknown` and the battery aborts. The URL is
+the last `https://miltonly-...vercel.app` line of the CLI's output.
+
+**RENT IS THE FOURTH MENU (MH-007).** Buy · Rent · Streets · Sell, one rail-and-panel shape.
+`composeRent()` in `megaLive.ts` builds it from `MegaExtras.rent` (`MegaRent`: available now,
+per-hub counts folded through `getRawStringHubMap()`, the newest four, this week's, and
+`getLeaseMarket()` from `src/lib/rentSignals.ts`). The closed-lease figures are DB2's
+`sold.sold_records` For Lease rows over 12 months, midpoint rent, gated at `K_ANON_PRICE` on
+each type's own sample; below it the value is the words "Sample too small". `MegaInputs.context`
+carries the page's hub into the composer so "available now" states the hub's count and its CTA is
+`/rentals?neighbourhood=<hub>` (`itemOf` in `SiteNav.tsx`). Rentals left the Buy rail; the
+homepage gate reads `menu-rent-now`. The landlord panel's CTA is `LandlordSignup`
+(`src/components/nav/LandlordSignup.tsx`), source `landlord`, intent `sell`.
 
 **THE CHROME IS ONE THING ON EVERY PAGE (MH-006).** Every page serves one forest bar
 (`SiteNav`, via `SiteNavLive` on a server page, or handed `live` by a client page) and one
@@ -28,7 +49,8 @@ footer). The street templates end in `SiteFooter` now (both of them).
 phone CTA go to `/sell?street=<name>#valuation` or `/value/<hub>`; the brief form (menu and
 footer) posts `property_address` / `neighbourhood` and `consentText`; the Streets and Sell
 strips become the hub's streets, or the street's neighbours and its hub's busiest
-(`src/lib/megaContext.ts`). `getMegaLive(context)` memoises the INPUTS and composes per page.
+(`src/lib/megaContext.ts`); the Rent "available now" is the hub's. `getMegaLive(context)`
+memoises the INPUTS and composes per page.
 
 **THE MENU EXISTS BEFORE HYDRATION.** The burger is a `<summary>`; the served HTML carries a
 compact menu (search, every destination, the CTA) inside `<details class="sn-mobile">`, and
@@ -51,15 +73,19 @@ Owned files (added by MH-006 in bold):
 
 - `src/app/page.tsx`, `src/app/layout.tsx` (header/footer wiring only)
 - `src/components/home/*` including `home-theme.css`, `home-sections.css`, `footer.css`, `mockData.ts`
-- `src/components/nav/*` (**`BriefSignup.tsx`, `SiteChrome.tsx`, `SiteFooter.tsx`, `site-chrome.css`**)
+- `src/components/nav/*` (`BriefSignup.tsx`, `SiteChrome.tsx`, `SiteFooter.tsx`, `site-chrome.css`, **`LandlordSignup.tsx`** from MH-007)
 - `src/components/hub/*`
-- `src/lib/homepageData.ts`, `src/lib/megaLive.ts`, **`src/lib/megaContext.ts`**, `src/lib/figureFormat.ts`,
+- `src/lib/homepageData.ts`, `src/lib/megaLive.ts`, `src/lib/megaContext.ts`, **`src/lib/rentSignals.ts`**, `src/lib/figureFormat.ts`,
   `src/lib/neighbourhoodCards.ts`, `src/lib/homeSignals.ts`, `src/lib/hubData.ts`,
   `src/lib/hubStreetLadder.ts`, `src/lib/hubSchools.ts`, `src/lib/hubNearby.ts`, `src/lib/hubFooter.ts`
 - **`src/app/search/route.ts`**
 - `src/components/ChromeGate.tsx`
 - `scripts/verify/checks/homepage.mjs`, `nav.mjs`, `hub-page.mjs`, **`footer.mjs`**, and the hub rows of `scripts/verify/lib/db.mjs`
 - `scripts/probe-mobile-menu.mjs`, `scripts/probe-hub-contrast.mjs`
+
+Touched outside that scope on `feat/rent-menu` (MH-007), one line each: `src/lib/lead/sources.ts`
+(source `landlord`), `src/lib/lead/notify.ts` (its confirmation and subject), `src/lib/soldCachePurge.ts`
+(`home:lease-market:*` in the sold sync's purge) and `scripts/test-sold-cache-purge.ts`.
 
 Touched outside that scope on `feat/nav-v3`, each for the chrome and nothing else: the two
 street templates (`SiteFooter` under `StreetFinalCtas`, `context` on `SiteNavLive`),
@@ -90,11 +116,11 @@ about, saved, signin, privacy, terms).
 
 | | |
 |---|---|
-| branch head | **`287f8adcc174896cb97a8bd514454bd397f41921`** (app), plus the docs-only commit carrying this handoff and the MH-006 report |
-| preview | `https://miltonly-ob5xg0oae-gtahomequest-hubs-projects.vercel.app` |
-| battery on preview | **`PASS · 17 checks · 509 pages · 666s`** |
-| local build | exit 0, zero `P2024`, prebuild all green, 609/609 static |
-| main | `1ad86d8`, has menu-v2 and hubs-v2, not this branch |
+| rent branch head | **`b1a2bc3be2876019995697a746d50a02ae549e92`** (`feat/rent-menu`, app), plus the docs commit carrying this handoff and the MH-007 report |
+| rent preview | `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta` **`PASS · 3 checks · 529 pages · 289s`** |
+| chrome branch head | `3b56020c524525acf666906b670d0e85397b2c06` (`feat/nav-v3`), contained in the rent branch |
+| local build | exit 0, zero `P2024`, prebuild all green, 149/149 static (MC-017's fifty-street prerender) |
+| main | `60780ca` (MC-015), has neither branch |
 | production | main's tip; the old chrome around the new menu and hubs |
 
 ## What `feat/nav-v3` carries, by audit change (MA-004, `scratchpad/nav-v3/MA-004.md`)
@@ -118,10 +144,13 @@ Addendum: `/rentals` (tokens remapped in `rentals.css`, its own footer removed, 
 ## Gates
 
 - `nav.mjs`: the served chrome contract (label, skip link, GET search, `<details>` menu with its
-  compact copy, no `/saved`), the CTA and strips following the page, sub-labels on the rail; in a
-  browser, the phone panel under the 66px bar, Escape closing the `<details>`, and two NO-JS runs
-  (380: burger opens the compact menu and the search lands on the street; 1440: the bar search does).
-  Streets rail order is `search, hoods, video, az`.
+  compact copy, no `/saved`), the CTA and strips following the page, sub-labels on the rail, the
+  Rent contract (22 scoped hub links and counts, four typical rents, the landlord form as the CTA,
+  Rentals out of Buy, the scoped CTA and hub count on hub and street pages); in a browser at 380,
+  390, 1024 and 1440: four menus, the bar search on the page variant at 1024 and up, the phone
+  panel under the 66px bar with 10 figures across its accordions, Escape closing the `<details>`,
+  and two NO-JS runs. Rail orders: Buy `new, changes, condos, freehold, alerts`; Rent
+  `now, hoods, typical, new, landlord`; Streets `search, hoods, video, az`; Sell `worth, soldmtd, watch`.
 - `homepage.mjs`: the same chrome contract on the homepage's own render, plus the map footer's
   legal and guide links, `/sold` once, the brief form.
 - `footer.mjs` (17th check, from `89535dd`): thirty page types, one map footer under one bar,
@@ -142,6 +171,13 @@ Addendum: `/rentals` (tokens remapped in `rentals.css`, its own footer removed, 
   touch, so it sees them; a desktop browser narrowed to 380 does not.
 - **The phone panel sits UNDER the bar** (`top: 66px`) so the burger stays reachable as the close
   control with or without React. `nav.mjs` asserts that geometry; do not restore `inset: 0`.
+- **A lease figure's floor is its own sample.** `getLeaseMarket()` gates each home type's
+  typical on that type's count and the three landlord figures on the pool's; do not gate one on
+  another. Per-hub counts are counts of advertised listings and are not gated (rentalsAvailable.ts).
+- **The figures block keys on its menu** (`menu-${menu.key}-${f.key}`); `menu-hub-active` is
+  the Streets list's key and the battery counts it per page, so the Rent list uses `menu-rent-hub`.
+- **The lease-market cache key is in `SOLD_WIDE_PATTERNS`.** A new `cached()` key over
+  `sold.sold_records` fails `test-sold-cache-purge.ts` until it is.
 - Everything in MH-002/003/004's trap lists still holds for the menu and the hub.
 
 ## Open, and owned elsewhere
@@ -154,4 +190,5 @@ Addendum: `/rentals` (tokens remapped in `rentals.css`, its own footer removed, 
 
 ## Next action
 
-Aamir reviews the preview (report has the URLs). Core merges by SHA on approval.
+Aamir reviews the rent preview (report has the URL). Core merges `feat/rent-menu` by SHA on
+approval; it carries `feat/nav-v3`.

@@ -6,19 +6,20 @@ import './site-nav.css';
 import { IconSearch } from '../home/icons';
 import { resolveHeroHref } from '@/lib/heroSearchClient';
 import { BriefSignup } from './BriefSignup';
+import { LandlordSignup } from './LandlordSignup';
 import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey, NavContext } from './megaTypes';
 
 type Variant = 'home' | 'page';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THREE MENUS, ONE BAND, A RAIL THAT DRIVES THE PANEL, AND WHY THE MARKUP IS SHAPED SO
+// FOUR MENUS, ONE BAND, A RAIL THAT DRIVES THE PANEL, AND WHY THE MARKUP IS SHAPED SO
 //
 // The nav this replaces (2026-09-10 audit, scratchpad/reports/home-menu-audit.md) had a
 // trigger that was also a link, so a click that missed the panel navigated away; no hover;
 // no keyboard path into any panel; a panel anchored to its trigger that ran 149px off a
 // 1024 viewport; and a phone menu 66px tall. Five rules govern this file now:
 //
-//   1. EVERY DESTINATION IS AN <a href> AND IS ALWAYS IN THE DOM. The three panels are
+//   1. EVERY DESTINATION IS AN <a href> AND IS ALWAYS IN THE DOM. The four panels are
 //      server-rendered inside the band and closed with the `hidden` attribute, never by not
 //      existing; every rail item's panel is likewise rendered and hidden, one visible. A
 //      closed panel is invisible to a reader and fully present to a crawler.
@@ -52,8 +53,8 @@ export interface ItemDef {
   blurb: string;
   /** the street search form belongs in this panel */
   search?: boolean;
-  /** the daily-brief signup belongs in this panel */
-  brief?: boolean;
+  /** a lead form is this panel's CTA: the daily brief, or the landlord's listing request */
+  form?: 'brief' | 'landlord';
 }
 
 export interface MenuDef {
@@ -79,17 +80,42 @@ const MENUS: MenuDef[] = [
       { key: 'changes', label: 'Price changes', href: '/listings', cta: 'See every home for sale', blurb: 'Listings whose asking price moved, most recent change first.' },
       { key: 'condos', label: 'Condos', href: '/condos', cta: 'Every condo building', blurb: 'Condo apartments and condo townhouses, building by building.' },
       { key: 'freehold', label: 'Freehold', href: '/freehold', cta: 'The freehold market', blurb: 'Detached, semi-detached and freehold townhomes: no condo corporation, no fee.' },
-      { key: 'rentals', label: 'Rentals', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes for rent in Milton, available now.' },
       // THE CTA IS THE FORM (MH-006, MA-004 defect 9). It went to /saved, which renders a sign-in
       // wall under "No account". The brief form's submit is this panel's CTA; href is the
       // Buy index for the crawler's copy of the rail and is never rendered for this item.
-      { key: 'alerts', label: 'Alerts', href: '/listings', cta: 'Send me the brief', blurb: 'What listed, what sold and what moved on price, each weekday morning.', brief: true },
+      { key: 'alerts', label: 'Alerts', href: '/listings', cta: 'Send me the brief', blurb: 'What listed, what sold and what moved on price, each weekday morning.', form: 'brief' },
     ],
     more: [
       { href: '/sold', label: 'Recently sold' },
       { href: '/potl', label: 'POTL and freehold condos' },
       { href: '/compare', label: 'Compare' },
       { href: '/exclusive', label: 'Exclusive listings' },
+    ],
+  },
+  // RENT IS ITS OWN MENU (MH-007). It was one item in the Buy rail, four cards and a count. A
+  // renter and a landlord are neither buyers nor sellers, and the site has the lease record
+  // to serve both: what is available, where, at what rent by home type, what is new, and
+  // for a landlord what leased and how fast. "Available now" scopes to the page's hub (its
+  // href is rewritten in itemOf); the hub list links the scoped /rentals for every hub.
+  {
+    key: 'rent',
+    label: 'Rent',
+    href: '/rentals',
+    items: [
+      { key: 'now', label: 'Available now', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes for rent in Milton, available now.' },
+      { key: 'hoods', label: 'By neighbourhood', href: '/rentals', cta: 'Every home for rent', blurb: 'Every published neighbourhood, with the homes for rent in it now.' },
+      { key: 'typical', label: 'Typical rent', href: '/rentals', cta: 'Every home for rent', blurb: 'What Milton homes leased for in the last 12 months, by home type.' },
+      { key: 'new', label: 'New this week', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes listed for rent in the last seven days, newest first.' },
+      // THE CTA IS THE FORM, like Alerts: the landlord's listing request posts through the one
+      // lead path as source "landlord". href is the Rent index for the crawler's copy of the
+      // rail and is never rendered for this item.
+      { key: 'landlord', label: 'Landlords', href: '/rentals', cta: 'List your rental with Aamir', blurb: 'What Milton homes leased for, how fast, and how a listing on the MLS reaches every renter at once.', form: 'landlord' },
+    ],
+    more: [
+      { href: '/neighbourhoods', label: 'Every neighbourhood' },
+      { href: '/condos', label: 'Condo buildings' },
+      { href: '/guides/milton-go-train-to-toronto', label: 'The GO train to Toronto' },
+      { href: '/guides/parking-in-milton', label: 'Parking in Milton' },
     ],
   },
   {
@@ -238,7 +264,7 @@ function ItemBody({
           {c.figures.map((f) => (
             <div key={f.key}>
               <dt>{f.label}</dt>
-              <dd data-fig={`menu-sell-${f.key}`} data-value={f.value}>
+              <dd data-fig={`menu-${menu.key}-${f.key}`} data-value={f.value}>
                 {f.value}
               </dd>
               <dd className="m-mega-figwin">
@@ -281,13 +307,13 @@ function ItemBody({
 
       {c?.hubs?.length ? (
         <div className="m-mega-hubs">
-          <span className="m-mega-label">Neighbourhoods, with homes listed now</span>
+          <span className="m-mega-label">{c.hubsLabel ?? 'Neighbourhoods, with homes listed now'}</span>
           <ul>
             {c.hubs.map((h) => (
               <li key={h.slug}>
-                <a href={`/neighbourhoods/${h.slug}`} onClick={onNavigate}>
+                <a href={h.href ?? `/neighbourhoods/${h.slug}`} onClick={onNavigate}>
                   {h.name}
-                  <span className="m-mega-count" data-fig="menu-hub-active" data-slug={h.slug} data-value={h.active}>
+                  <span className="m-mega-count" data-fig={c.hubsFig ?? 'menu-hub-active'} data-slug={h.slug} data-value={h.active}>
                     {h.active}
                   </span>
                 </a>
@@ -346,8 +372,10 @@ function ItemBody({
 
       <Strip strip={c?.strip} onNavigate={onNavigate} />
       {c?.note ? <p className="m-mega-note">{c.note}</p> : null}
-      {item.brief ? (
+      {item.form === 'brief' ? (
         <BriefSignup id={`${idPrefix}-brief-${menu.key}-${item.key}`} context={context} cta={c?.cta ?? item.cta} />
+      ) : item.form === 'landlord' ? (
+        <LandlordSignup id={`${idPrefix}-landlord-${menu.key}-${item.key}`} context={context} cta={c?.cta ?? item.cta} />
       ) : (
         <a className="m-mega-cta" href={item.href} onClick={onNavigate}>
           {c?.cta ?? item.cta}
@@ -360,7 +388,8 @@ function ItemBody({
 
 // ── the component ─────────────────────────────────────────────────────────────
 
-const firstItems = (): Record<MenuKey, string> => ({ buy: MENUS[0].items[0].key, streets: MENUS[1].items[0].key, sell: MENUS[2].items[0].key });
+const firstItems = (): Record<MenuKey, string> =>
+  Object.fromEntries(MENUS.map((m) => [m.key, m.items[0].key])) as Record<MenuKey, string>;
 
 export function SiteNav({ variant = 'page', live, context }: { variant?: Variant; live?: MegaLive; context?: NavContext }) {
   const isHome = variant === 'home';
@@ -379,7 +408,7 @@ export function SiteNav({ variant = 'page', live, context }: { variant?: Variant
   // opens before hydration; React takes the `open` attribute over once it is running.
   const burgerRef = useRef<HTMLElement>(null);
   const detailsRef = useRef<HTMLDetailsElement>(null);
-  const triggerRefs = useRef<Record<MenuKey, HTMLButtonElement | null>>({ buy: null, streets: null, sell: null });
+  const triggerRefs = useRef<Record<MenuKey, HTMLButtonElement | null>>({ buy: null, rent: null, streets: null, sell: null });
   const openTimer = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
   const railTimer = useRef<number | null>(null);
@@ -629,7 +658,11 @@ export function SiteNav({ variant = 'page', live, context }: { variant?: Variant
       : '/sell';
   const closeMobile = () => setMenuOpen(false);
   const contentOf = (m: MenuDef, item: ItemDef): MegaItemContent | undefined => live?.[m.key]?.[item.key];
-  const itemOf = (m: MenuDef, item: ItemDef): ItemDef => (m.key === 'sell' && item.key === 'worth' ? { ...item, href: ctaHref } : item);
+  // The Rent menu's "available now" follows the page too: on a hub, or a street with a hub,
+  // its CTA is the scoped /rentals, the page whose count the panel just stated.
+  const rentHref = context?.hub ? `/rentals?neighbourhood=${context.hub.slug}` : '/rentals';
+  const itemOf = (m: MenuDef, item: ItemDef): ItemDef =>
+    m.key === 'sell' && item.key === 'worth' ? { ...item, href: ctaHref } : m.key === 'rent' && item.key === 'now' ? { ...item, href: rentHref } : item;
 
   return (
     <nav
@@ -775,7 +808,7 @@ export function SiteNav({ variant = 'page', live, context }: { variant?: Variant
                 <StreetSearch id="sn-street-search" />
                 {MENUS.map((m) => {
                   const seen = new Set<string>();
-                  const links = [...m.items.filter((it) => !it.brief).map((it) => ({ href: itemOf(m, it).href, label: it.label })), ...m.more].filter((l) => !seen.has(l.href) && seen.add(l.href));
+                  const links = [...m.items.filter((it) => !it.form).map((it) => ({ href: itemOf(m, it).href, label: it.label })), ...m.more].filter((l) => !seen.has(l.href) && seen.add(l.href));
                   return (
                     <div key={m.key} className="sn-compact-group">
                       <span className="m-mega-label">{m.label}</span>

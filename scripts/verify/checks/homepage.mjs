@@ -67,7 +67,7 @@ const LINK_FLOOR = 50;
 
 /** Each menu's index page (its panel's CTA) and the rail links each panel must carry in
  *  the served HTML. `/map` and `/book` left the rails on 2026-09-11: both were redirects. */
-const MENU_TRIGGERS = ['/listings', '/streets', '/sell'];
+const MENU_TRIGGERS = ['/listings', '/rentals', '/streets', '/sell'];
 const RAIL_SAMPLE = [
   '/rentals', '/sold', '/condos', '/freehold', '/potl', '/compare', '/exclusive',
   '/neighbourhoods', '/guides', '/schools', '/mosques', '/condos-guide', '/about', '/market-watch',
@@ -161,7 +161,7 @@ const FIG_SPECS = [
   { fig: 'menu-buy-active', source: 'onMarket', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-buy-new', source: 'newThisWeek', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-streets-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
-  { fig: 'menu-buy-rentals', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  { fig: 'menu-rent-now', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-sold-mtd', source: 'soldMonthToDate', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
   { fig: 'proof-sales-12mo', source: 'sold12mo', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   {

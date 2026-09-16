@@ -18,7 +18,8 @@
 //    nothing renders the rails, each item's static blurb and its CTA, which is still a
 //    complete, crawlable menu. A panel is never padded with a placeholder.
 
-export type MenuKey = 'buy' | 'streets' | 'sell';
+/** Four menus (MH-007 added Rent). The order the bar shows them in is the nav's MENUS. */
+export type MenuKey = 'buy' | 'rent' | 'streets' | 'sell';
 
 /** THE PAGE THE NAV IS ON (MH-006, MA-004 change 6). A street page or a hub hands the nav
  *  its subject, and the nav carries it: the bar CTA and the Sell panel CTA arrive at the
@@ -79,6 +80,8 @@ export interface MegaHub {
   name: string;
   /** live listing count across the hub's raw strings, formatted */
   active: string;
+  /** the link, when it is not the hub page: the Rent menu lists hubs as scoped /rentals */
+  href?: string;
 }
 
 export interface MegaVideo {
@@ -116,6 +119,10 @@ export interface MegaItemContent {
   basis?: string;
   cards?: MegaListing[];
   hubs?: MegaHub[];
+  /** the hubs block's heading and figure key; "Neighbourhoods, with homes listed now" and
+   *  `menu-hub-active` when absent (the Streets menu's, which the battery counts per page) */
+  hubsLabel?: string;
+  hubsFig?: string;
   videos?: MegaVideo[];
   letters?: MegaLetter[];
   edition?: MegaEdition;
