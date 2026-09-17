@@ -58,7 +58,7 @@ const playfair = Playfair_Display({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0A1628",
+  themeColor: "#073126",
 };
 
 export const metadata: Metadata = {
@@ -113,6 +113,18 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // THE ICON SET (MH-005 pre-step): the wordmark's M on the forest ground, every size a browser
+  // or a home screen asks for; the manifest carries the 192 and 512 (src/app/manifest.ts).
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
