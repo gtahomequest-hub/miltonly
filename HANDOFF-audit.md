@@ -2,18 +2,46 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-13 (MA-004): the header, mega menu and footer audited on production; the nightly (MA-002, MA-003) is unchanged and still waits on Core._
+_Last rewritten 2026-09-16 (MA-005): the neighbourhood hub page audited on production, five hubs, two widths; the nightly is merged (MC-019) and its gate fixed (fix/node-22), first unattended run to confirm on the 17th._
 
 ## What this worktree is
 
 It owns `scripts/audit/` only. It reads production and previews and writes reports. It never edits a
-page, a component, a library file or the schema. Reports open with `code D:\miltonly-audit <path>`.
+page, a component, a library file or the schema. A task ends with its report under `scratchpad/reports/`
+and a reply whose last line is `Report: <path>`; nothing opens the editor (MC-021).
 
 MA-002 touched three files outside `scripts/audit/`, each one line and each for the nightly to
 exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratchpad/audit/nightly/`)
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-005 IS DONE: THE NEIGHBOURHOOD HUB PAGE ON PRODUCTION, FIVE HUBS, TWO WIDTHS.** Record:
+`scratchpad/reports/MA-005-hub-page-audit.md`, 25 defects ranked and ten changes. Production at `1b2d7d8`.
+The four S1s to read first: every paragraph and FAQ answer on all 22 hubs is a June snapshot whose figures
+contradict the live tiles beside them (Timberlea "102 sales" under a standfirst saying 95; Nassagaweya prose
+saying no typical can be stated under a row saying $1.83M) and the same answers ship as `FAQPage` JSON-LD;
+the hub's "typical" is `AVG` while `/sold`'s is the median, so Milton reads $1.01M on the hub and $930,000
+one click later, and `/sold?nbhd=` shows no active chip for 12 hubs and drops `nbhd` at sign-in; there is
+no lead capture on the hub body at all (first email field 14.6 to 16.0 phone screens down); Bronte Meadows
+is registered `rural_hub`, which makes its title "Road Guide" and makes it a "rural neighbourhood" on Moffat
+and Nassagaweya while Nassagaweya, Rural Milton West and Rural Trafalgar are never anyone's sibling. Also
+measured: 21 of 22 hubs render synchronously at 2.4 to 4.0 s for the first visitor after a deploy or a tag
+drop, then `HIT` at 120 ms; mobile LCP 3.6 to 5.2 s (render delay, fonts, Facebook and GTM, same shape as
+MA-001); seven streets on five hubs where the street page's up-link and the ladder disagree; the ladder
+printing "1 sale · $925K" on full-window rows; the condo cap of six under-counting Dempsey's 17. Tooling:
+`hubs.json`, `hub-sweep.mjs` (all 22, cache state and shape), `hub-page.mjs` (Puppeteer, the full read),
+`hub-intents.mjs` (where the four squares and two cards land, at 390), `hub-lighthouse.mjs`,
+`hub-inbound.mjs` (body links only, chrome stripped), `hub-bench.mjs` (Zolo, HouseSigma, Realtor.ca,
+Rightmove). Raw output in `scratchpad/audit/MA-005/`, untracked. HouseSigma renders a client-only shell to
+headless Chrome and Realtor.ca blocks the phone UA; both are noted as such in the report.
+
+**WHAT CORE AND HOME HAVE TAKEN SINCE MA-004.** The nightly is on `main` (MC-019, `feat/audit @ 4a1e349`
+as `8326b2a`) and its gate is fixed (`fix/node-22`, on `main` 2026-09-16 22:10Z); the 14th to 16th runs
+were delivered before the fix and skipped. The first unattended run to confirm is the 17th after 07:00 UTC
+(`git log main` for `audit(nightly): 2026-09-17`). MC-020 took the first night's findings; MH-006 took all
+ten MA-004 changes (merged `6aac9c9`); MH-007 added the Rent menu (`1b2d7d8`). The brief signup now records
+the hub or street on the lead row (`BriefSignup.tsx:56`), which closes MA-004 defect 7.
 
 **MA-004 IS DONE: THE HEADER, MEGA MENU AND FOOTER ON PRODUCTION, FIVE PAGE TYPES, THREE WIDTHS.**
 Record: `scratchpad/reports/MA-004-nav-footer-audit.md`, 22 defects ranked and ten changes. The four
@@ -47,13 +75,9 @@ listing page gets one S3 `remarks-unmarked` and its body keeps the old exemption
 exists, the rest of the listing page is our copy and is checked in full. TREB strings on our own
 copy stay S2.
 
-**IT DOES NOT RUN BY ITSELF UNTIL CORE DOES TWO THINGS.** (1) Merge `feat/audit` to main: GitHub runs
-`schedule` and lists `workflow_dispatch` only from the default branch. (2) Add two repository
-secrets under Settings, Secrets and variables, Actions: `RESEND_API_KEY` and `RESEND_FROM_EMAIL`,
-the same values as `.env.local`. Without them the run completes, commits the report and prints
-"RESEND_API_KEY or RESEND_FROM_EMAIL unset; no email". After the merge, `Actions > Nightly audit >
-Run workflow` proves the runner path (Chrome at `/usr/bin/google-chrome`, a lean `npm install` of
-`puppeteer-core@24 lighthouse@12`, no app install, no database).
+**IT RUNS BY ITSELF NOW.** Merged by MC-019, secrets added, gate fixed by `fix/node-22`; see the paragraph
+above for what to confirm on the 17th. The runner path is Chrome at `/usr/bin/google-chrome`, a lean
+`npm install` of `puppeteer-core@24 lighthouse@12`, no app install, no database.
 
 **THE STATE AFTER TWO RUNS ON 2026-09-13 (1,013 PAGES SWEPT, 308 NEVER), 3,572 OPEN FINDINGS.** S1 32:
 `catchment`, the `/schools/*` title "Prices, Listings & School Zone Data" (29), `/schools` text and
@@ -87,6 +111,7 @@ left (32 of 308 tonight). The report's Summary and Budget sections say exactly w
 | `street-page.mjs` | MA-001: Puppeteer at 1440 and 390, the full structural read of one street. `--only=slug` |
 | `lighthouse.mjs` | MA-001: Lighthouse mobile + desktop per street; `LH_BIN` points at an installed CLI |
 | `inbound-links.mjs` | MA-001: crawls the sitemap and counts pages linking to each audit street |
+| `hubs.json`, `hub-sweep.mjs`, `hub-page.mjs`, `hub-intents.mjs`, `hub-lighthouse.mjs`, `hub-inbound.mjs`, `hub-bench.mjs` | MA-005: the hub page. `hub-sweep.mjs` reads all 22 hubs once (cache, TTFB, shape); the rest mirror the MA-001 set for `/neighbourhoods/<slug>`; `hub-intents.mjs` opens every intent square and CTA card destination at 390 |
 | `bytes.mjs` | MA-001: bytes on the wire per resource type via CDP at 390 px; `--throttle` for slow 4G |
 | `cache-sweep.mjs` | one GET per published street: `x-vercel-cache`, `x-matched-path`, TTFB |
 | `crops.mjs` | per-section screenshots at 390 px for visual review |
@@ -134,8 +159,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, MA-002 nightly at `4a1e349`, MA-003 tightened checks, MA-004 nav and footer audit on top |
-| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); the nightly baseline 2026-09-13 |
+| `feat/audit` | MA-001 tooling, the nightly (merged to main by MC-019), MA-003, MA-004, MA-005 hub audit on top; `origin/main` merged in at MA-005 start |
+| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); the nightly baseline 2026-09-13 |
 | pages edited | none |
-| waiting on Core | MC-020: merge the `feat/audit` head; add `RESEND_API_KEY` and `RESEND_FROM_EMAIL` as Actions secrets; run the workflow once by hand; label the remarks block with `data-remarks` and the visible label. `D:miltonly` main holds an unpushed local merge `8326b2a` of `4a1e349` from the interrupted MC-019 (`pnpm build` exit 0); supersede or keep it |
-| next | whatever the next `MA-` prompt asks; the ten MA-001 changes, the ten MA-004 changes and the baseline's S1 and S2 belong to core (the MA-004 S1s are one-line CSS fixes, a footer on the street page, and the listing-page chrome cutover) |
+| waiting on Core | confirm the nightly ran on the 17th; the ten MA-005 changes (change 1, the June prose, and change 6, the `bronte-meadows` profile row, are the two with no design work in them); the MA-001 changes not yet taken |
+| next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |
