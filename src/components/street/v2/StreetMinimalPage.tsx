@@ -11,6 +11,7 @@ import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
 import { StreetAddresses } from './AddressLadder';
 import { resaleClaim } from './resaleClaim';
 import SiteNavLive from '../../nav/SiteNavLive';
+import SiteFooter from '../../nav/SiteFooter';
 import { GuideUplinks } from '../../guides/GuideUplinks';
 import { guidesForStreet } from '@/lib/guides/uplinks';
 
@@ -22,10 +23,14 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
   if (view.neighbourhoodName) facts.push({ label: 'Neighbourhood', value: view.neighbourhoodName });
   if (view.typeLabel) facts.push({ label: 'Street type', value: view.typeLabel.charAt(0).toUpperCase() + view.typeLabel.slice(1) });
   facts.push({ label: 'Official name', value: view.name });
+  // THE PAGE IN THE CHROME (MH-006). The nav's CTA, the brief form and the strips follow the
+  // street and its hub; the footer's brief form records the same.
+  const hub = data.context.neighbourhoods[0];
+  const navContext = { street: { slug: data.slug, name: data.name }, hub: hub ? { slug: hub.slug, name: hub.name } : undefined };
 
   return (
     <div className="street-v2">
-      <SiteNavLive variant="page" />
+      <SiteNavLive variant="page" context={navContext} />
       <StreetHero data={data} />
 
       {/* Section 6 — the trust anchor. Plain, prominent, no hedging.
@@ -194,6 +199,8 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
       />
 
       <StreetFinalCtas data={data} />
+      {/* The same map every page has (MH-006, MA-004 change 2). */}
+      <SiteFooter context={navContext} />
     </div>
   );
 }

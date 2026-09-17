@@ -8,11 +8,13 @@ import GuidesIndexPage from "@/components/guides/GuidesIndexPage";
 import { getGuidesIndexData } from "@/lib/guides";
 import SchemaScript from "@/components/SchemaScript";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
 import { GUIDE_DEFS } from "@/lib/guides/guides";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request; see the detail page for the tags and the
+// write paths that drop it.
+export const revalidate = 86400;
 
 export const metadata: Metadata = genMeta({
   title: `${config.CITY_NAME} Real Estate Guides`,
@@ -47,7 +49,7 @@ export default async function GuidesPage() {
       <SchemaScript schemas={schemas} />
       <SiteNavLive variant="page" />
       <GuidesIndexPage data={data} />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

@@ -4,11 +4,11 @@
 // components only.
 
 import "server-only";
+import { neighbourhoodRows } from "@/lib/hubSets";
 import { getSoldDb, getAnalyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
 import { getSession } from "./auth";
 import { config } from "./config";
-import { prisma } from "./prisma";
 import type {
   SoldRecord,
   StreetSoldStats,
@@ -386,9 +386,7 @@ function slugifyRawNeighbourhood(raw: string): string {
 export async function getSoldNeighbourhoodOptions(): Promise<SoldNeighbourhoodOption[]> {
   const raws = await getDistinctSoldNeighbourhoods();
   if (raws.length === 0) return [];
-  const registry = await prisma.neighbourhood
-    .findMany({ select: { slug: true, name: true, rawStrings: true } })
-    .catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>);
+  const registry = await neighbourhoodRows().catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>);
   const byRaw = new Map<string, { slug: string; name: string }>();
   for (const n of registry) for (const r of n.rawStrings ?? []) byRaw.set(r, { slug: n.slug, name: n.name });
   return raws.map((raw) => {

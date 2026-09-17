@@ -18,8 +18,11 @@ export function FooterSearch() {
   };
 
   return (
-    <form className="m-fsearch" onSubmit={submit} role="search">
+    // A real GET to /search, the same resolver server-side, so the well works before
+    // hydration; the submit handler takes over once React is running.
+    <form className="m-fsearch" action="/search" method="get" onSubmit={submit} role="search">
       <input
+        name="q"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         type="search"

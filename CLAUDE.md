@@ -54,15 +54,21 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
 
 ## Reporting
 
-- **Every task prompt begins with a task ID.** `MC-` core, `MH-` home, `MCT-` content, `ML-` leads.
+- **Every task prompt begins with a task ID.** `MC-` core, `MH-` home, `MCT-` content, `ML-` leads, `MA-` audit.
 - At the end of every task, write the final summary **verbatim** to
   `scratchpad/reports/<TASK-ID>-<slug>.md`. Verbatim means the file and the reply say the same
   thing: write the file first, then paste it into the reply, so the two cannot drift.
 - The file is **tracked in git**. It is committed with the task's work, not left untracked.
 - Its first line is `# <TASK-ID>` and nothing else on that line.
-- Then run `code D:\miltonly <that path>` so it opens in the editor, in this repo's window. A worktree uses its own root: `D:\miltonly-home`, `D:\miltonly-leads`, `D:\miltonly-content`.
-- The **last line of the reply** is `Report: <path>`.
+- The **last line of the reply** is `Report: <path>`. Nothing opens the editor.
 - **No clipboard writes from any session.**
+
+## Worktrees and the nightly audit
+
+- `D:\miltonly` (main) is Core. `D:\miltonly-home`, `D:\miltonly-content`, `D:\miltonly-leads` own their tiers. `D:\miltonly-audit` (`feat/audit`) is Audit: it owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`, reads production and previews, and never edits a page, a component, a library file or the schema.
+- The nightly audit runs on a GitHub runner at 03:00 Toronto and commits `scratchpad/audit/nightly/<date>.md` and `state.json` to `main` as `audit(nightly): <date>`. Pull before you branch or push; that commit lands without a human.
+- `vercel.json` `ignoreCommand` lets a Git-triggered build run only on `main`, and on `main` only when the commit touches something outside `scratchpad/audit/nightly/`. A push to any other branch is cancelled; a branch gets its preview from `npx vercel` in its worktree (CLI deploys do not run the command). Never put anything else under the nightly path, and never widen the exclude: a `main` commit that touches any other file, docs included, builds.
+- Audit secrets are repository Actions secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, the `.env.local` values.
 
 ## Windows and PowerShell
 

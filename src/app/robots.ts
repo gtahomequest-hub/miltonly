@@ -50,8 +50,11 @@ export default function robots(): MetadataRoute.Robots {
         "/admin/",
         "/api/",     // was only ever in the dead static file
         "/rentals?",
+        "/search",   // the search form's no-JS redirect endpoint (MH-006); a hop, never a page
       ],
     },
-    sitemap: `${config.SITE_URL}/sitemap.xml`,
+    // /sitemap-index.xml (MC-015) lists /sitemap.xml and /sitemap-video.xml. Next's sitemap.ts
+    // emits one urlset and cannot name a sibling, so the index is its own route.
+    sitemap: `${config.SITE_URL}/sitemap-index.xml`,
   };
 }

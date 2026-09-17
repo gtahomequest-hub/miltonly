@@ -108,25 +108,25 @@ export default function SavedDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#017848] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5">
+      <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-5">
         <div className="text-center max-w-[400px]">
           <div className="text-[48px] mb-4">&#9825;</div>
-          <h1 className="text-[24px] font-extrabold text-[#07111f] mb-3 tracking-[-0.02em]">Saved Listings & Alerts</h1>
-          <p className="text-[14px] text-[#64748b] mb-8 leading-relaxed">
+          <h1 className="text-[24px] font-extrabold text-[#073126] mb-3 tracking-[-0.02em]">Saved Listings & Alerts</h1>
+          <p className="text-[14px] text-[#6b6f6a] mb-8 leading-relaxed">
             Sign in to save listings, create search alerts, and get notified when new properties match your criteria.
           </p>
           <Link
             href="/signin"
             rel="nofollow"
-            className="inline-block bg-[#07111f] text-[#f59e0b] text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#0c1e35] transition-colors"
+            className="inline-block bg-[#017848] text-white text-[14px] font-bold px-8 py-3.5 rounded-xl hover:bg-[#0a8f57] transition-colors"
           >
             Sign in to get started
           </Link>
@@ -136,21 +136,21 @@ export default function SavedDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb]">
+    <div className="min-h-screen bg-[#fffdfa]">
       {/* Header */}
-      <section className="bg-[#07111f] px-5 sm:px-11 py-8">
+      <section className="bg-[#073126] px-5 sm:px-11 py-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-[24px] sm:text-[28px] font-extrabold text-[#f8f9fb] tracking-[-0.02em]">
+            <h1 className="text-[24px] sm:text-[28px] font-extrabold text-[#fffdfa] tracking-[-0.02em]">
               Welcome back{user.firstName ? `, ${user.firstName}` : ""}
             </h1>
-            <p className="text-[13px] text-[rgba(248,249,251,0.5)] mt-1">{user.email}</p>
+            <p className="text-[13px] text-[rgba(255,255,255,0.72)] mt-1">{user.email}</p>
           </div>
           <button
             onClick={() => {
               fetch("/api/auth/logout", { method: "POST" }).then(() => window.location.reload());
             }}
-            className="text-[12px] text-[#94a3b8] hover:text-[#f8f9fb] transition-colors self-start"
+            className="text-[12px] text-white/75 hover:text-white transition-colors self-start"
           >
             Sign out
           </button>
@@ -158,7 +158,7 @@ export default function SavedDashboard() {
       </section>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11">
+      <div className="bg-white border-b border-[#dfe0dc] px-5 sm:px-11">
         <div className="max-w-6xl mx-auto flex gap-0">
           {([["listings", `Saved listings (${user.savedListings.length})`], ["searches", `Search alerts (${searches.length})`]] as const).map(
             ([key, label]) => (
@@ -167,8 +167,8 @@ export default function SavedDashboard() {
                 onClick={() => setTab(key)}
                 className={`px-5 py-3.5 text-[13px] font-bold border-b-2 transition-colors ${
                   tab === key
-                    ? "text-[#07111f] border-[#f59e0b]"
-                    : "text-[#94a3b8] border-transparent hover:text-[#07111f]"
+                    ? "text-[#073126] border-[#017848]"
+                    : "text-[#6b6f6a] border-transparent hover:text-[#073126]"
                 }`}
               >
                 {label}
@@ -184,16 +184,16 @@ export default function SavedDashboard() {
           <div>
             {listingsLoading ? (
               <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-[#017848] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : savedListings.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-[48px] mb-3">&#9825;</p>
-                <p className="text-[16px] font-bold text-[#07111f] mb-2">No saved listings yet</p>
-                <p className="text-[13px] text-[#94a3b8] mb-6">Browse listings and tap the heart to save them here</p>
+                <p className="text-[16px] font-bold text-[#073126] mb-2">No saved listings yet</p>
+                <p className="text-[13px] text-[#6b6f6a] mb-6">Browse listings and tap the heart to save them here</p>
                 <Link
                   href="/listings"
-                  className="inline-block bg-[#07111f] text-[#f59e0b] text-[13px] font-bold px-6 py-3 rounded-xl hover:bg-[#0c1e35] transition-colors"
+                  className="inline-block bg-[#017848] text-white text-[13px] font-bold px-6 py-3 rounded-xl hover:bg-[#0a8f57] transition-colors"
                 >
                   Browse listings
                 </Link>
@@ -201,7 +201,7 @@ export default function SavedDashboard() {
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {savedListings.map((listing) => (
-                  <div key={listing.mlsNumber} className="bg-white rounded-xl border border-[#e2e8f0] p-5 relative group">
+                  <div key={listing.mlsNumber} className="bg-white rounded-xl border border-[#dfe0dc] p-5 relative group">
                     <button
                       onClick={() => handleRemoveListing(listing.mlsNumber)}
                       className="absolute top-3 right-3 text-[18px] text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -210,15 +210,15 @@ export default function SavedDashboard() {
                       &times;
                     </button>
                     <Link href={`/listings/${listing.mlsNumber}`}>
-                      <p className="text-[14px] font-bold text-[#07111f] mb-1">{listing.address}</p>
-                      <p className="text-[20px] font-extrabold text-[#07111f]">${listing.price.toLocaleString()}</p>
+                      <p className="text-[14px] font-bold text-[#073126] mb-1">{listing.address}</p>
+                      <p className="text-[20px] font-extrabold text-[#073126]">${listing.price.toLocaleString()}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[11px] text-[#94a3b8]">{listing.propertyType}</span>
-                        {listing.bedrooms && <span className="text-[11px] text-[#94a3b8]">{listing.bedrooms} bed</span>}
-                        {listing.bathrooms && <span className="text-[11px] text-[#94a3b8]">{listing.bathrooms} bath</span>}
+                        <span className="text-[12px] text-[#6b6f6a]">{listing.propertyType}</span>
+                        {listing.bedrooms && <span className="text-[12px] text-[#6b6f6a]">{listing.bedrooms} bed</span>}
+                        {listing.bathrooms && <span className="text-[12px] text-[#6b6f6a]">{listing.bathrooms} bath</span>}
                       </div>
                       <span
-                        className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        className={`inline-block mt-2 text-[12px] font-bold px-2 py-0.5 rounded-full ${
                           listing.status === "active"
                             ? "bg-green-100 text-green-700"
                             : listing.status === "sold"
@@ -239,35 +239,35 @@ export default function SavedDashboard() {
         {tab === "searches" && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <p className="text-[13px] text-[#64748b]">Get email alerts when new listings match your criteria</p>
+              <p className="text-[13px] text-[#6b6f6a]">Get email alerts when new listings match your criteria</p>
               <button
                 onClick={() => setShowNewSearch(!showNewSearch)}
-                className="bg-[#07111f] text-[#f59e0b] text-[12px] font-bold px-4 py-2 rounded-lg hover:bg-[#0c1e35] transition-colors"
+                className="bg-[#017848] text-white text-[12px] font-bold px-4 py-2 rounded-lg hover:bg-[#0a8f57] transition-colors"
               >
                 {showNewSearch ? "Cancel" : "+ New alert"}
               </button>
             </div>
 
             {showNewSearch && (
-              <form onSubmit={handleCreateSearch} className="bg-white rounded-xl border border-[#e2e8f0] p-6 mb-6">
+              <form onSubmit={handleCreateSearch} className="bg-white rounded-xl border border-[#dfe0dc] p-6 mb-6">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Alert name</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Alert name</label>
                     <input
                       type="text"
                       required
                       value={newSearch.name}
                       onChange={(e) => setNewSearch({ ...newSearch, name: e.target.value })}
                       placeholder='e.g. "Detached under $1.2M in Scott"'
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Property type</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Property type</label>
                     <select
                       value={newSearch.propertyType}
                       onChange={(e) => setNewSearch({ ...newSearch, propertyType: e.target.value })}
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     >
                       <option value="">Any</option>
                       <option value="detached">Detached</option>
@@ -277,41 +277,41 @@ export default function SavedDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Neighbourhood</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Neighbourhood</label>
                     <input
                       type="text"
                       value={newSearch.neighbourhood}
                       onChange={(e) => setNewSearch({ ...newSearch, neighbourhood: e.target.value })}
                       placeholder="e.g. Scott, Willmott"
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Min price</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Min price</label>
                     <input
                       type="number"
                       value={newSearch.priceMin}
                       onChange={(e) => setNewSearch({ ...newSearch, priceMin: e.target.value })}
                       placeholder="e.g. 500000"
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Max price</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Max price</label>
                     <input
                       type="number"
                       value={newSearch.priceMax}
                       onChange={(e) => setNewSearch({ ...newSearch, priceMax: e.target.value })}
                       placeholder="e.g. 1200000"
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Min bedrooms</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Min bedrooms</label>
                     <select
                       value={newSearch.bedsMin}
                       onChange={(e) => setNewSearch({ ...newSearch, bedsMin: e.target.value })}
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     >
                       <option value="">Any</option>
                       <option value="1">1+</option>
@@ -322,11 +322,11 @@ export default function SavedDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#374151] mb-1">Transaction</label>
+                    <label className="block text-[12px] font-bold text-[#292b29] mb-1">Transaction</label>
                     <select
                       value={newSearch.transactionType}
                       onChange={(e) => setNewSearch({ ...newSearch, transactionType: e.target.value })}
-                      className="w-full border border-[#e2e8f0] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#f59e0b]"
+                      className="w-full border border-[#dfe0dc] rounded-lg px-4 py-2.5 text-[13px] outline-none focus:border-[#017848]"
                     >
                       <option value="For Sale">For Sale</option>
                       <option value="For Lease">For Lease</option>
@@ -335,7 +335,7 @@ export default function SavedDashboard() {
                 </div>
                 <button
                   type="submit"
-                  className="mt-5 bg-[#07111f] text-[#f59e0b] text-[13px] font-bold px-6 py-2.5 rounded-lg hover:bg-[#0c1e35] transition-colors"
+                  className="mt-5 bg-[#017848] text-white text-[13px] font-bold px-6 py-2.5 rounded-lg hover:bg-[#0a8f57] transition-colors"
                 >
                   Create alert
                 </button>
@@ -344,59 +344,59 @@ export default function SavedDashboard() {
 
             {searchesLoading ? (
               <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-[#017848] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : searches.length === 0 && !showNewSearch ? (
               <div className="text-center py-12">
-                <p className="text-[48px] mb-3">&#128276;</p>
-                <p className="text-[16px] font-bold text-[#07111f] mb-2">No search alerts yet</p>
-                <p className="text-[13px] text-[#94a3b8] mb-6">Create an alert to get notified when new listings match your criteria</p>
+                <p className="text-[48px] mb-3">&#017848;</p>
+                <p className="text-[16px] font-bold text-[#073126] mb-2">No search alerts yet</p>
+                <p className="text-[13px] text-[#6b6f6a] mb-6">Create an alert to get notified when new listings match your criteria</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {searches.map((search) => (
-                  <div key={search.id} className="bg-white rounded-xl border border-[#e2e8f0] p-5 flex items-start justify-between gap-4">
+                  <div key={search.id} className="bg-white rounded-xl border border-[#dfe0dc] p-5 flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[14px] font-bold text-[#07111f]">{search.name}</p>
+                      <p className="text-[14px] font-bold text-[#073126]">{search.name}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {search.propertyType && (
-                          <span className="text-[10px] font-bold bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full capitalize">
+                          <span className="text-[12px] font-bold bg-[#f6f6f3] text-[#4f534f] px-2 py-0.5 rounded-full capitalize">
                             {search.propertyType}
                           </span>
                         )}
                         {search.neighbourhood && (
-                          <span className="text-[10px] font-bold bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+                          <span className="text-[12px] font-bold bg-[#f6f6f3] text-[#4f534f] px-2 py-0.5 rounded-full">
                             {search.neighbourhood}
                           </span>
                         )}
                         {search.priceMin && (
-                          <span className="text-[10px] font-bold bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+                          <span className="text-[12px] font-bold bg-[#f6f6f3] text-[#4f534f] px-2 py-0.5 rounded-full">
                             Min ${(search.priceMin / 1000).toFixed(0)}K
                           </span>
                         )}
                         {search.priceMax && (
-                          <span className="text-[10px] font-bold bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+                          <span className="text-[12px] font-bold bg-[#f6f6f3] text-[#4f534f] px-2 py-0.5 rounded-full">
                             Max ${(search.priceMax / 1000).toFixed(0)}K
                           </span>
                         )}
                         {search.bedsMin && (
-                          <span className="text-[10px] font-bold bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+                          <span className="text-[12px] font-bold bg-[#f6f6f3] text-[#4f534f] px-2 py-0.5 rounded-full">
                             {search.bedsMin}+ beds
                           </span>
                         )}
                         {search.transactionType && (
-                          <span className="text-[10px] font-bold bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded-full">
+                          <span className="text-[12px] font-bold bg-[#f6f6f3] text-[#4f534f] px-2 py-0.5 rounded-full">
                             {search.transactionType}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-[#94a3b8] mt-2">
+                      <p className="text-[12px] text-[#6b6f6a] mt-2">
                         {search.alertEnabled ? `Daily alerts · ${search.lastMatchCount} matches last check` : "Alerts paused"}
                       </p>
                     </div>
                     <button
                       onClick={() => handleDeleteSearch(search.id)}
-                      className="text-[12px] text-[#94a3b8] hover:text-red-500 transition-colors shrink-0"
+                      className="text-[12px] text-[#6b6f6a] hover:text-red-500 transition-colors shrink-0"
                     >
                       Delete
                     </button>

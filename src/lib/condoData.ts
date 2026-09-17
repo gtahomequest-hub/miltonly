@@ -27,7 +27,8 @@ function intentsFor(slug: string): CondoData["intents"] {
     { key: "buy", label: "I'm buying", sub: "See units for sale here", href: `/condos/${slug}#listings` },
     { key: "sell", label: "I'm selling", sub: "What my unit is worth", href: "/sell" },
     { key: "rent", label: "I'm renting", sub: "Lease listings in the building", href: `/condos/${slug}#listings` },
-    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/#mls" },
+    // MC-020: "/#mls" pointed at a homepage section that no longer exists (56 dead anchors a night).
+    { key: "invest", label: "I'm investing", sub: "Yield & rental rules", href: "/listings" },
   ];
 }
 

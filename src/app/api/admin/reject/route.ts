@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminCookieValue } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
+import { dropSurfaceCache } from "@/lib/streetSurface";
 
 export async function POST(request: NextRequest) {
   if (!verifyAdminCookieValue(request.cookies.get("miltonly_admin")?.value)) {
@@ -19,6 +20,8 @@ export async function POST(request: NextRequest) {
       reviewNotes: reviewNotes || null,
     },
   });
+  // the published set may have changed (MC-018)
+  await dropSurfaceCache();
 
   return NextResponse.json({ ok: true, streetSlug });
 }

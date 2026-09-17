@@ -8,7 +8,7 @@
 import { generateMetadata as genMeta } from '@/lib/seo';
 import { config } from '@/lib/config';
 import ListingsV2Page from '@/components/listings/v2/ListingsPage';
-import FooterSection from '@/components/sections/FooterSection';
+import SiteFooter from '@/components/nav/SiteFooter';
 import SchemaScript from '@/components/SchemaScript';
 import { generateFAQSchema } from '@/lib/schema';
 import type { Metadata } from 'next';
@@ -73,7 +73,7 @@ export default async function ListingsPage({ searchParams }: Props) {
     <>
       <SchemaScript schemas={[generateFAQSchema(data.faqs), articleSchema]} />
       <ListingsV2Page data={data} compareContrast={compareContrast} />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

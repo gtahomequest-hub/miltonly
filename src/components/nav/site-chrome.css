@@ -1,0 +1,42 @@
+/* src/components/nav/site-chrome.css
+   THE FOREST BODY for a page with no theme of its own (MH-006 addendum). The pages that
+   wrap in <SiteChrome> (about, exclusive, privacy, terms, rent, rentals, saved, signin) kept
+   the navy palette (#07111f, #f59e0b, #1e3a5f) under a forest bar and a forest footer, so a
+   visitor changed brand between a hub and a listing. The Miltonly tokens, resolved to
+   literals the way site-nav.css and footer.css do, and Fraunces for every heading, the way
+   every forest theme sets it. Scoped to .site-chrome-body only. */
+.site-chrome-body {
+  --sc-bg-deep: #073126;
+  --sc-bg-body: #fffdfa;
+  --sc-bg-secondary: #f6f6f3;
+  --sc-surface: #ffffff;
+  --sc-border: #c7c9c5;
+  --sc-border-muted: #dfe0dc;
+  --sc-accent: #017848;
+  --sc-accent-on: #0a8f57;
+  --sc-green: #00ff80;
+  --sc-text: #ffffff;
+  --sc-text-body: #292b29;
+  --sc-text-muted: #6b6f6a;
+  --sc-serif: var(--font-fraunces), 'Fraunces', Georgia, serif;
+  --sc-sans: 'Inter', system-ui, sans-serif;
+
+  padding-top: 66px;
+  font-family: var(--sc-sans);
+  color: var(--sc-text-body);
+  background: var(--sc-bg-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+/* Every heading is Fraunces at a book weight; the utility classes the pages carry
+   (font-extrabold, tracking-*) lose to this on specificity, as they should. */
+.site-chrome-body h1,
+.site-chrome-body h2,
+.site-chrome-body h3 {
+  font-family: var(--sc-serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.site-chrome-body h1 {
+  line-height: 1.05;
+}

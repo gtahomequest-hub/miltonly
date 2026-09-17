@@ -30,26 +30,46 @@
 //   strip, a form) and its CTA. No rail item may lead to an empty panel, and the first item
 //   must be the one selected before anybody touches anything.
 //
+//   THE CHROME BEFORE HYDRATION (MH-006, MA-004 change 5). With JavaScript off, at 380 the
+//   burger opens a menu carrying the search and every destination, and the search form lands
+//   on the street it names; at 1440 the bar search does the same. The served HTML must carry
+//   the bar search, the compact menu, the skip link and the nav's label.
+//
+//   THE PAGE IN THE CHROME (changes 6 and 10). On a street page the bar CTA carries the
+//   street and the strips name it; on a hub the CTA is the hub's valuation page and the
+//   Streets strip is that hub's streets; every rail item carries a sub-label.
+//
 // A parser that reaches nothing must fail on its own coverage. Every count below is asserted
 // against the number of pages or widths it was supposed to read.
 import { get } from '../lib/http.mjs';
 
 const WIDTHS = [
   { w: 380, h: 780, mobile: true },
+  // 390: the phone the MH-007 brief names for the accordion; 380 stays as the floor
+  { w: 390, h: 844, mobile: true },
   { w: 1024, h: 768, mobile: false },
   { w: 1440, h: 900, mobile: false },
 ];
-const MENUS = ['buy', 'streets', 'sell'];
-const MENU_INDEX = { buy: '/listings', streets: '/streets', sell: '/sell' };
+/** Four menus (MH-007 added Rent between Buy and Streets); Rentals left the Buy rail. */
+const MENUS = ['buy', 'rent', 'streets', 'sell'];
+const MENU_INDEX = { buy: '/listings', rent: '/rentals', streets: '/streets', sell: '/sell' };
 /** The rail, as the brief states it. Open houses are absent on purpose: see megaLive.ts. */
 const ITEMS = {
-  buy: ['new', 'changes', 'condos', 'freehold', 'rentals', 'alerts'],
-  streets: ['hoods', 'video', 'az', 'search'],
+  buy: ['new', 'changes', 'condos', 'freehold', 'alerts'],
+  rent: ['now', 'hoods', 'typical', 'new', 'landlord'],
+  streets: ['search', 'hoods', 'video', 'az'],
   sell: ['worth', 'soldmtd', 'watch'],
 };
+/** The phone accordions must carry every <dl class="m-mega-figs"> figure the desktop band
+ *  does: Sell's three, Rent's typical rents (one per home type, a whole-home and a basement-unit
+ *  figure where a house type's basement leases clear the floor, so the number follows the data)
+ *  and three landlord proof points. The band is in the DOM at every width, so it is the count
+ *  to match. */
 /** What counts as live content inside an item's panel. A CTA alone does not. */
 const LIVE_BLOCK = '[data-fig], .m-mega-cards a, .m-mega-hubs a, .m-mega-frames a, .m-mega-az a, .m-mega-edition, .m-mega-strip a, .m-mega-figs dd, form.m-mega-search';
 const TYPE_FLOOR_PX = 14;
+/** The fixed bar's height; the phone panel sits under it. */
+const BAR_PX = 66;
 
 /** The <nav> element's own markup. */
 function navMarkup(html) {
@@ -94,6 +114,11 @@ const INT = /^[\d,]{1,7}$/;
 const MONEY = /^(\$\d{1,3}(,\d{3})+|—)$/;
 const DAYS = /^(\d{1,3} days?|—)$/;
 const PCT = /^(\d{2,3}\.\d%|—)$/;
+/** A monthly rent in whole dollars, the suppression glyph, or the words the k-gate leaves. */
+const RENT = /^(\$\d{1,3}(,\d{3})*\/mo|—|Sample too small)$/;
+/** A typical rent by home type: the type alone, or the type with its unit class where the
+ *  house type's leases were split (MH-007 addendum). */
+const RENT_TYPICAL_FIG = /^menu-rent-(detached|semi|townhouse|condo)(-whole|-basement)?$/;
 /** Every menu figure's stated format. A `menu-` figure with no entry here is a finding: a
  *  figure nobody declared a format for is a figure nobody is checking. */
 const FIG_FORMAT = {
@@ -103,7 +128,14 @@ const FIG_FORMAT = {
   'menu-buy-changes': INT,
   'menu-buy-condos': INT,
   'menu-buy-freehold': INT,
-  'menu-buy-rentals': INT,
+  'menu-rent-now': INT,
+  'menu-rent-now-hub': INT,
+  'menu-rent-hubs': INT,
+  'menu-rent-hub': INT,
+  'menu-rent-week': INT,
+  'menu-rent-leased': INT,
+  'menu-rent-days': DAYS,
+  'menu-rent-lta': PCT,
   'menu-streets-pages': INT,
   'menu-streets-filmed': INT,
   'menu-streets-hubs': INT,
@@ -188,6 +220,36 @@ async function driveDesktop(page, url, w, h, findings) {
   await page.setViewport({ width: w, height: h });
   await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
   const trigger = (k) => `.m-navtrigger[aria-controls="m-mega-${k}"]`;
+
+  // THE BAR SEARCH AT 1024 AND UP (MH-006 change 5, verified by MH-007). On a page that is
+  // not the homepage the search is in the bar from the first paint, beside all four triggers
+  // and the CTA, and the row does not overflow. The homepage's copy slides in on scroll and is
+  // asserted by driveHomeScroll.
+  if (new URL(url).pathname !== '/') {
+    const bar = await page.evaluate(() => {
+      const vis = (el) => {
+        if (!el) return false;
+        const cs = getComputedStyle(el);
+        const b = el.getBoundingClientRect();
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.5 && b.width > 0 && b.height > 0;
+      };
+      const wrap = document.querySelector('nav .m-wrap');
+      const search = document.querySelector('nav .m-navsearch');
+      const input = search ? search.querySelector('input') : null;
+      return {
+        searchVisible: vis(search) && vis(input),
+        inputWidth: input ? Math.round(input.getBoundingClientRect().width) : 0,
+        triggersVisible: [...document.querySelectorAll('nav .m-navtrigger')].filter(vis).length,
+        ctaVisible: vis(document.querySelector('nav .m-navcta')),
+        overflow: wrap ? wrap.scrollWidth > wrap.clientWidth + 1 : null,
+      };
+    });
+    if (!bar.searchVisible) findings.push(`${tag}: the bar search is not visible on the page variant`);
+    else if (bar.inputWidth < 120) findings.push(`${tag}: the bar search input is ${bar.inputWidth}px wide`);
+    if (bar.triggersVisible !== MENUS.length) findings.push(`${tag}: ${bar.triggersVisible} of ${MENUS.length} triggers visible beside the bar search`);
+    if (!bar.ctaVisible) findings.push(`${tag}: the bar CTA is not visible beside the search`);
+    if (bar.overflow) findings.push(`${tag}: the bar row overflows its wrap with the search in it`);
+  }
 
   // hover with intent: resting on the trigger opens, leaving the nav closes
   const buy = await page.$(trigger('buy'));
@@ -343,6 +405,131 @@ async function driveRail(page, tag, key, findings) {
   }
 }
 
+/** THE SCROLLED HOMEPAGE (MH-006, MA-004 defects 1 and 11). Once the hero's search band passes
+ *  under the bar, the nav search slides in. Measured on production at 390 it took the row and
+ *  pushed the CTA and the burger off-screen; at 1440 it replaced the triggers with three
+ *  invisible buttons still in the Tab order. So, after a scroll: below 820 the search must not
+ *  be in the bar and the CTA and burger must sit inside the viewport; between 820 and 1023 the
+ *  search takes the triggers' place and the triggers must be `visibility: hidden`, so a Tab
+ *  from the logo lands on something visible; at 1024 and up the triggers and the search must
+ *  BOTH be visible, and the row must not overflow. */
+const SCROLL_WIDTHS = [
+  { w: 380, h: 780 },
+  { w: 900, h: 800 },
+  { w: 1024, h: 768 },
+  { w: 1440, h: 900 },
+];
+async function driveHomeScroll(page, url, w, h, findings) {
+  const tag = `${w} ${url} scrolled`;
+  await page.setViewport({ width: w, height: h });
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
+  await page.evaluate(() => window.scrollTo(0, 1400));
+  await sleep(500);
+  const r = await page.evaluate(() => {
+    const vis = (el) => {
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.5 && b.width > 0 && b.height > 0;
+    };
+    const inView = (el) => {
+      if (!el) return false;
+      const b = el.getBoundingClientRect();
+      return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight;
+    };
+    const wrap = document.querySelector('nav .m-wrap');
+    const triggers = [...document.querySelectorAll('nav .m-navtrigger')];
+    const search = document.querySelector('nav .m-navsearch');
+    const cta = document.querySelector('nav .m-navcta');
+    const burger = document.querySelector('nav .sn-burger');
+    // an invisible trigger must not be focusable: focus it and see whether focus took
+    const invisibleFocusable = triggers.filter((t) => {
+      if (vis(t)) return false;
+      t.focus();
+      const took = document.activeElement === t;
+      t.blur();
+      return took;
+    }).length;
+    return {
+      overflow: wrap ? wrap.scrollWidth > wrap.clientWidth + 1 : null,
+      triggersVisible: triggers.filter(vis).length,
+      searchVisible: vis(search),
+      ctaInView: vis(cta) && inView(cta),
+      burgerVisible: vis(burger),
+      burgerInView: vis(burger) && inView(burger),
+      invisibleFocusable,
+      searchInput: search ? search.querySelector('input')?.getAttribute('aria-label') || search.querySelector('label')?.textContent || '' : '',
+    };
+  });
+  if (r.overflow) findings.push(`${tag}: the bar row overflows its wrap`);
+  if (r.invisibleFocusable) findings.push(`${tag}: ${r.invisibleFocusable} invisible trigger(s) still take focus`);
+  if (!r.ctaInView) findings.push(`${tag}: the bar CTA is not inside the viewport`);
+  if (w < 820) {
+    if (r.searchVisible) findings.push(`${tag}: the scrolled-in search is in the bar below 820`);
+    if (!r.burgerInView) findings.push(`${tag}: the burger is not inside the viewport`);
+  } else if (w < 1024) {
+    if (!r.searchVisible) findings.push(`${tag}: the search did not slide in`);
+    if (r.triggersVisible) findings.push(`${tag}: ${r.triggersVisible} trigger(s) visible beside the search between 820 and 1023`);
+  } else {
+    if (!r.searchVisible) findings.push(`${tag}: the search did not slide in`);
+    if (r.triggersVisible !== MENUS.length) findings.push(`${tag}: ${r.triggersVisible} of ${MENUS.length} triggers visible beside the search`);
+    if (!r.searchInput) findings.push(`${tag}: the bar search input has no accessible name`);
+  }
+}
+
+/** EVERY CTA, ON EVERY PAGE TYPE, AT 4.5:1 (MH-006, MA-004 defect 3). The panel CTA is one
+ *  element with one rule, and on the street page it rendered white on bright green at 1.34:1
+ *  because a page theme's `a { color: inherit }` tied with the nav's rule and won on order.
+ *  Computed in the browser from the element's own colour and its own opaque background, on
+ *  the bar CTA, every open panel's CTA at 1440, and every accordion CTA and the panel CTA at
+ *  380. A rule that only one stylesheet order satisfies is a rule the next page breaks. */
+const CTA_FLOOR = 4.5;
+const CONTRAST_WIDTHS = [
+  { w: 380, h: 780 },
+  { w: 1440, h: 900 },
+];
+const NOSCRIPT_WIDTHS = [
+  { w: 380, h: 780 },
+  { w: 1440, h: 900 },
+];
+const CONTRAST_JS = `
+  const lum = (r, g, b) => {
+    const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  const rgb = (s) => { const m = s.match(/rgba?\\(([^)]+)\\)/); if (!m) return null; const p = m[1].split(',').map(Number); return p.length === 4 && p[3] === 0 ? null : p; };
+  const ratio = (fg, bg) => { const a = lum(...fg) + 0.05, b = lum(...bg) + 0.05; return a > b ? a / b : b / a; };
+  const bgOf = (el) => { for (let e = el; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c) return c; } return [255, 255, 255]; };
+  const check = (el) => { const cs = getComputedStyle(el); const fg = rgb(cs.color) || [0, 0, 0]; return { text: el.textContent.trim().slice(0, 40), ratio: Math.round(ratio(fg, bgOf(el)) * 100) / 100, cls: el.className }; };
+`;
+async function driveContrast(page, url, w, h, findings) {
+  const tag = `${w} ${url} contrast`;
+  await page.setViewport({ width: w, height: h });
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 });
+  const mobile = w < 820;
+  if (mobile) {
+    await page.click('.sn-burger');
+    await sleep(400);
+    await page.evaluate(() => { for (const d of document.querySelectorAll('.sn-panel details')) d.open = true; });
+  } else {
+    await page.click('.m-navtrigger[aria-controls="m-mega-buy"]');
+    await sleep(250);
+  }
+  const rows = await page.evaluate(
+    (js, isMobile) => {
+      // eslint-disable-next-line no-new-func
+      const check = new Function(`${js}; return check;`)();
+      const sel = isMobile ? '.sn-panel .m-mega-cta, .sn-panel .sn-panel-cta, nav .m-navcta' : 'nav .m-navcta, .m-band .m-mega-cta';
+      return [...document.querySelectorAll(sel)].map(check);
+    },
+    CONTRAST_JS,
+    mobile,
+  );
+  if (rows.length < 3) findings.push(`${tag}: only ${rows.length} CTAs measured`);
+  for (const r of rows) if (r.ratio < CTA_FLOOR) findings.push(`${tag}: "${r.text}" (${r.cls}) at ${r.ratio}:1`);
+  if (mobile) await page.keyboard.press('Escape');
+}
+
 async function driveMobile(page, url, w, h, findings) {
   const tag = `${w} ${url}`;
   await page.setViewport({ width: w, height: h });
@@ -356,8 +543,11 @@ async function driveMobile(page, url, w, h, findings) {
     return { top: Math.round(b.top), h: Math.round(b.height), w: Math.round(b.width), vw: innerWidth, vh: innerHeight, pos: getComputedStyle(p).position };
   });
   if (!r) { findings.push(`${tag}: burger did not open the panel`); return; }
-  if (r.pos !== 'fixed' || r.top !== 0 || Math.abs(r.h - r.vh) > 20 || r.w !== r.vw)
-    findings.push(`${tag}: phone panel is ${r.w}x${r.h} at top ${r.top} (${r.pos}) in a ${r.vw}x${r.vh} viewport`);
+  // under the 66px bar, not over it: the burger stays on screen as the close control
+  if (r.pos !== 'fixed' || Math.abs(r.top - BAR_PX) > 2 || Math.abs(r.h - (r.vh - BAR_PX)) > 20 || r.w !== r.vw)
+    findings.push(`${tag}: phone panel is ${r.w}x${r.h} at top ${r.top} (${r.pos}) in a ${r.vw}x${r.vh} viewport, expected under the ${BAR_PX}px bar`);
+  const acc0 = await page.$('.sn-panel .sn-acc');
+  if (!acc0) findings.push(`${tag}: the open phone panel did not swap the compact menu for the accordion`);
 
   // open every accordion and read the live content behind it
   const acc = await page.evaluate((floor) => {
@@ -372,8 +562,11 @@ async function driveMobile(page, url, w, h, findings) {
     out.cardImgs = p.querySelectorAll('.m-mega-cards img').length;
     out.hubs = p.querySelectorAll('.m-mega-hubs a').length;
     out.figs = p.querySelectorAll('.m-mega-figs dd[data-fig]').length;
+    out.bandFigs = document.querySelectorAll('.m-band .m-mega-figs dd[data-fig]').length;
     out.ctas = p.querySelectorAll('.m-mega-cta').length;
     out.strips = p.querySelectorAll('.m-mega-strip').length;
+    out.rentHubs = p.querySelectorAll('.m-mega-hubs a[href^="/rentals?neighbourhood="]').length;
+    out.landlordForm = !!p.querySelector('form.m-mega-brief input[type="email"] ~ * button.m-mega-cta, form.m-mega-brief button.m-mega-cta');
     const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
     let n;
     while ((n = walker.nextNode())) {
@@ -388,7 +581,7 @@ async function driveMobile(page, url, w, h, findings) {
     out.bandLinks = bandLinks.size;
     return out;
   }, TYPE_FLOOR_PX);
-  if (acc.items !== 3) findings.push(`${tag}: ${acc.items} accordion items, expected 3`);
+  if (acc.items !== MENUS.length) findings.push(`${tag}: ${acc.items} accordion items, expected ${MENUS.length}`);
 
   // the rail on a phone: one <details> per item, the first open by default, a tap opens the
   // rest, and none is empty
@@ -422,16 +615,71 @@ async function driveMobile(page, url, w, h, findings) {
   if (acc.cards === 0) findings.push(`${tag}: phone Buy accordion has no listing cards`);
   if (acc.cardImgs === 0) findings.push(`${tag}: phone Buy accordion has no photographs`);
   if (acc.hubs === 0) findings.push(`${tag}: phone Streets accordion lists no neighbourhoods`);
-  if (acc.figs !== 3) findings.push(`${tag}: phone Sell accordion has ${acc.figs} figures, expected 3`);
-  if (acc.ctas < 3) findings.push(`${tag}: ${acc.ctas} CTAs across the phone accordions, expected 3`);
-  if (acc.strips < 3) findings.push(`${tag}: ${acc.strips} strips across the phone accordions, expected 3`);
+  if (acc.bandFigs < 9) findings.push(`${tag}: the desktop band carries ${acc.bandFigs} figures, expected Sell's 3, at least 4 typical rents and 3 landlord proof points`);
+  if (acc.figs !== acc.bandFigs) findings.push(`${tag}: phone accordions carry ${acc.figs} figures, the desktop band ${acc.bandFigs}`);
+  if (acc.ctas < MENUS.length) findings.push(`${tag}: ${acc.ctas} CTAs across the phone accordions, expected ${MENUS.length}`);
+  if (acc.strips < MENUS.length) findings.push(`${tag}: ${acc.strips} strips across the phone accordions, expected ${MENUS.length}`);
+  if (acc.rentHubs === 0) findings.push(`${tag}: phone Rent accordion lists no neighbourhoods as scoped /rentals`);
+  if (!acc.landlordForm) findings.push(`${tag}: phone Rent accordion has no landlord form`);
   if (acc.small.length) findings.push(`${tag}: phone text below ${TYPE_FLOOR_PX}px: ${acc.small.slice(0, 3).join(' · ')}`);
   if (acc.missing.length) findings.push(`${tag}: ${acc.missing.length} of ${acc.bandLinks} desktop links absent from the phone panel: ${acc.missing.slice(0, 4).join(' ')}`);
 
   await page.keyboard.press('Escape');
   await sleep(300);
-  const still = await page.$('.sn-panel');
-  if (still) findings.push(`${tag}: Escape did not close the phone panel`);
+  const still = await page.evaluate(() => {
+    const d = document.querySelector('.sn-mobile');
+    const p = document.querySelector('.sn-panel');
+    return { open: d ? d.open : null, shown: !!(p && p.getBoundingClientRect().height > 0) };
+  });
+  if (still.open || still.shown) findings.push(`${tag}: Escape did not close the phone panel (open=${still.open}, shown=${still.shown})`);
+}
+
+/** THE CHROME WITH JAVASCRIPT OFF (MH-006, MA-004 change 5 and defect 6). Measured on
+ *  production, the menu did not exist until hydration, four to ten seconds on a phone. Now
+ *  the burger is a <summary> and the search is a real GET: with scripting disabled, a tap
+ *  opens a menu with the search and every destination, and the search form lands on the
+ *  street it names, at 380 through the panel and at 1440 through the bar. */
+async function driveNoScript(page, url, w, h, streetSlug, findings) {
+  const tag = `${w} ${url} no-js`;
+  await page.setJavaScriptEnabled(false);
+  try {
+    await page.setViewport({ width: w, height: h });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+    const mobile = w < 820;
+    if (mobile) {
+      await page.click('.sn-burger');
+      await sleep(300);
+      const r = await page.evaluate(() => {
+        const d = document.querySelector('.sn-mobile');
+        const p = document.querySelector('.sn-panel');
+        const b = p ? p.getBoundingClientRect() : null;
+        return {
+          open: !!(d && d.open),
+          shown: !!(b && b.height > 100 && b.width > 0),
+          links: p ? p.querySelectorAll('a[href]').length : 0,
+          search: !!p?.querySelector('form[action="/search"] input[name="q"]'),
+          cta: !!p?.querySelector('.sn-panel-cta'),
+        };
+      });
+      if (!r.open || !r.shown) findings.push(`${tag}: the burger did not open the panel without JavaScript (open=${r.open}, shown=${r.shown})`);
+      if (r.links < 12) findings.push(`${tag}: the no-JS menu carries ${r.links} links, expected at least 12`);
+      if (!r.search) findings.push(`${tag}: the no-JS menu has no search form posting to /search`);
+      if (!r.cta) findings.push(`${tag}: the no-JS menu has no CTA`);
+    }
+    // the search: type the street's slug words and submit the form natively
+    const input = mobile ? '.sn-panel form[action="/search"] input[name="q"]' : 'nav form.m-navsearch input[name="q"]';
+    const el = await page.$(input);
+    if (!el) { findings.push(`${tag}: no search input at ${input}`); return; }
+    const q = streetSlug.replace(/-milton$/, '').replace(/-/g, ' ');
+    await el.type(q);
+    await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 60000 }), page.keyboard.press('Enter')]);
+    const landed = new URL(page.url()).pathname;
+    if (landed !== `/streets/${streetSlug}`) findings.push(`${tag}: searching "${q}" without JavaScript landed on ${landed}, expected /streets/${streetSlug}`);
+  } catch (e) {
+    findings.push(`${tag}: ${e.message.split('\n')[0]}`);
+  } finally {
+    await page.setJavaScriptEnabled(true);
+  }
 }
 
 export default {
@@ -448,18 +696,76 @@ export default {
     const read = [];
     const nonButton = [], badAria = [], missingPanel = [], notHidden = [], noCta = [], noStrip = [], sameStrip = [];
     const badFig = [], hubMiss = [], redirectLinks = [], deadLinks = [], railBad = [], emptyItems = [];
+    const chrome = [], contextBad = [], subMiss = [], rentBad = [];
     const allHrefs = new Set();
+    const hubSlug = hubRecord.publishedSlugs[0];
     for (const path of pages) {
       const r = await get(base + path);
       if (r.status !== 200) { read.push(`${path} -> ${r.status}`); continue; }
       const nav = navMarkup(r.body);
       read.push(`${path} ok`);
+
+      // THE CHROME BEFORE HYDRATION, in the served HTML: the nav's label, the skip link, the
+      // bar search as a real form, the phone menu as a <details> with a compact menu inside
+      if (!/<nav\b[^>]*aria-label="/.test(nav)) chrome.push(`${path}: <nav> has no aria-label`);
+      if (!/class="sn-skip"/.test(nav)) chrome.push(`${path}: no skip link`);
+      if (!/<form\b[^>]*class="m-navsearch[^"]*"[^>]*action="\/search"[^>]*method="get"/.test(nav)) chrome.push(`${path}: the bar search is not a GET form to /search`);
+      if (!/<details\b[^>]*class="sn-mobile"/.test(nav)) chrome.push(`${path}: the phone menu is not a <details>`);
+      if (!/<summary\b[^>]*class="sn-burger"/.test(nav)) chrome.push(`${path}: the burger is not a <summary>`);
+      const compactAt = nav.indexOf('class="sn-compact"');
+      const compact = compactAt === -1 ? '' : nav.slice(compactAt, nav.indexOf('</details>', compactAt));
+      if (!compact) chrome.push(`${path}: no compact menu in the served HTML`);
+      else {
+        if (hrefsIn(compact).length < 12) chrome.push(`${path}: the compact menu carries ${hrefsIn(compact).length} links`);
+        if (!/action="\/search"/.test(compact)) chrome.push(`${path}: the compact menu has no search form`);
+      }
+      // /saved is a sign-in wall: it left the nav
+      if (hrefsIn(nav).includes('/saved')) chrome.push(`${path}: the nav still links /saved`);
+
+      // THE PAGE IN THE CHROME: the CTA and the strips follow the street or the hub
+      const barCta = (nav.match(/<a\b[^>]*class="m-navcta"[^>]*href="([^"]+)"/) || [])[1] || '';
+      const stripLabels = [...nav.matchAll(/<div class="m-mega-strip"><span class="m-mega-label">([^<]+)</g)].map((m) => m[1]);
+      if (path.startsWith('/streets/')) {
+        if (!barCta.startsWith('/sell?street=')) contextBad.push(`${path}: bar CTA is ${barCta || 'absent'}, expected /sell?street=`);
+        if (!stripLabels.some((l) => /^(Streets that meet|Most sales in) /.test(l))) contextBad.push(`${path}: no strip names the street's neighbours or its hub (${stripLabels.join(' | ')})`);
+      } else if (path.startsWith('/neighbourhoods/')) {
+        if (barCta !== `/value/${hubSlug}`) contextBad.push(`${path}: bar CTA is ${barCta || 'absent'}, expected /value/${hubSlug}`);
+        if (!stripLabels.some((l) => l.startsWith('Streets in '))) contextBad.push(`${path}: no strip is the hub's streets (${stripLabels.join(' | ')})`);
+      } else if (barCta !== '/sell') contextBad.push(`${path}: bar CTA is ${barCta}, expected /sell`);
+      // the rail reads at a glance: a sub-label on the tabs
+      const tabs = (nav.match(/<button\b[^>]*role="tab"/g) || []).length;
+      const subs = (nav.match(/class="m-mega-tabsub"/g) || []).length;
+      if (subs < tabs - 1) subMiss.push(`${path}: ${subs} of ${tabs} rail tabs carry a sub-label`);
       const triggers = [...nav.matchAll(/<([a-z]+)\b[^>]*class="[^"]*m-navtrigger[^"]*"[^>]*>/g)];
-      if (triggers.length !== 3) nonButton.push(`${path}: ${triggers.length} triggers`);
+      if (triggers.length !== MENUS.length) nonButton.push(`${path}: ${triggers.length} triggers`);
       for (const t of triggers) {
         if (t[1] !== 'button') nonButton.push(`${path}: trigger is <${t[1]}>`);
-        if (!/aria-expanded="false"/.test(t[0]) || !/aria-controls="m-mega-(buy|streets|sell)"/.test(t[0])) badAria.push(`${path}: ${t[0].slice(0, 80)}`);
+        if (!/aria-expanded="false"/.test(t[0]) || !/aria-controls="m-mega-(buy|rent|streets|sell)"/.test(t[0])) badAria.push(`${path}: ${t[0].slice(0, 80)}`);
       }
+      // THE RENT MENU (MH-007): every published hub as a scoped /rentals link with its count,
+      // the four typical rents, the landlord form as the panel's CTA, and Rentals gone from
+      // the Buy rail. On a hub or a street page, "available now" is the hub's own count and
+      // its CTA the hub's own scoped page.
+      const rentPanel = panelMarkup(nav, 'rent');
+      if (rentPanel) {
+        const rentHubs = [...rentPanel.body.matchAll(/href="\/rentals\?neighbourhood=([a-z0-9-]+)"/g)].map((m) => m[1]);
+        if (new Set(rentHubs).size !== hubCount) rentBad.push(`${path}: Rent lists ${new Set(rentHubs).size} hubs as scoped /rentals, expected ${hubCount}`);
+        const rentHubFigs = figures(rentPanel.body).filter((f) => f.fig === 'menu-rent-hub').length;
+        if (rentHubFigs !== hubCount) rentBad.push(`${path}: ${rentHubFigs} hub rent counts, expected ${hubCount}`);
+        for (const key of ['detached', 'semi', 'townhouse', 'condo']) if (!new RegExp(`data-fig="menu-rent-${key}(-whole)?"`).test(rentPanel.body)) rentBad.push(`${path}: no typical rent for ${key}`);
+        // a split type states both figures under labels that say which unit each is
+        for (const m of rentPanel.body.matchAll(/data-fig="menu-rent-(detached|semi|townhouse|condo)-basement"/g)) {
+          if (!rentPanel.body.includes(`data-fig="menu-rent-${m[1]}-whole"`)) rentBad.push(`${path}: ${m[1]} has a basement-unit figure but no whole-home figure`);
+        }
+        if (/<dt>(Detached|Semi-detached|Townhouse)<\/dt>\s*<dd data-fig="menu-rent-[a-z]+-whole"/.test(rentPanel.body)) rentBad.push(`${path}: a whole-home figure is not labelled as one`);
+        if (!/<form\b[^>]*class="m-mega-search m-mega-brief"[\s\S]*?<button\b[^>]*class="m-mega-cta"/.test(rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-landlord"')))) rentBad.push(`${path}: the landlord panel does not end in its form's submit`);
+        const nowCta = (rentPanel.body.slice(rentPanel.body.indexOf('id="m-item-rent-now"')).match(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/) || [])[1] || '';
+        if (path.startsWith('/neighbourhoods/') || path.startsWith('/streets/')) {
+          if (!nowCta.startsWith('/rentals?neighbourhood=')) contextBad.push(`${path}: Rent "available now" CTA is ${nowCta || 'absent'}, expected the scoped /rentals`);
+          if (!rentPanel.body.includes('data-fig="menu-rent-now-hub"')) contextBad.push(`${path}: Rent "available now" does not state the hub's own count`);
+        } else if (nowCta !== '/rentals') contextBad.push(`${path}: Rent "available now" CTA is ${nowCta}, expected /rentals`);
+      }
+      if (/id="m-tab-buy-rentals"/.test(nav)) rentBad.push(`${path}: Rentals is still in the Buy rail`);
       const stripSets = [];
       for (const key of MENUS) {
         const p = panelMarkup(nav, key);
@@ -484,8 +790,9 @@ export default {
         }
         if (shownPanels !== 1) railBad.push(`${path}: ${key} serves ${shownPanels} visible item panels, expected 1`);
         // every item carries its own CTA; at least one of them is the menu's index page
-        const ctas = [...p.body.matchAll(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
-        if (!ctas.includes(MENU_INDEX[key])) noCta.push(`${path}: ${key} CTAs ${ctas.join(' ') || 'absent'}, none is ${MENU_INDEX[key]}`);
+        const ctas = [...p.body.matchAll(/<a\b[^>]*class="[^"]*m-mega-cta[^"]*"[^>]*href="([^"]+)"/g)].map((m) => m[1].replace(/[?#].*$/, ''));
+        const indexOk = ctas.includes(MENU_INDEX[key]) || (key === 'sell' && ctas.some((c) => c.startsWith('/value/')));
+        if (!indexOk) noCta.push(`${path}: ${key} CTAs ${ctas.join(' ') || 'absent'}, none is ${MENU_INDEX[key]}`);
         const stripAt = p.body.indexOf('m-mega-strip');
         const strip = stripAt === -1 ? '' : p.body.slice(stripAt);
         const stripLinks = hrefsIn(strip).filter((h) => h.startsWith('/streets/'));
@@ -493,12 +800,11 @@ export default {
         stripSets.push(stripLinks.join(' '));
         for (const h of hrefsIn(p.body)) allHrefs.add(h);
       }
-      if (stripSets.length === 3 && (stripSets[0] === stripSets[1] || stripSets[1] === stripSets[2] || stripSets[0] === stripSets[2]))
-        sameStrip.push(path);
+      if (stripSets.length === MENUS.length && new Set(stripSets).size !== stripSets.length) sameStrip.push(path);
       const figs = figures(nav);
       for (const f of figs) {
         if (!f.fig.startsWith('menu-')) continue;
-        const fmt = FIG_FORMAT[f.fig];
+        const fmt = FIG_FORMAT[f.fig] ?? (RENT_TYPICAL_FIG.test(f.fig) ? RENT : undefined);
         if (!fmt) { badFig.push(`${path}: ${f.fig} has no stated format`); continue; }
         if (!fmt.test(f.text)) badFig.push(`${path}: ${f.fig} "${f.text}"`);
         if (f.value !== null && f.value !== f.text) badFig.push(`${path}: ${f.fig} text "${f.text}" != data-value "${f.value}"`);
@@ -534,13 +840,27 @@ export default {
             runs++;
           }
         }
+        for (const v of SCROLL_WIDTHS) {
+          await driveHomeScroll(page, base + '/', v.w, v.h, findings);
+          runs++;
+        }
+        for (const path of pages) {
+          for (const v of CONTRAST_WIDTHS) {
+            await driveContrast(page, base + path, v.w, v.h, findings);
+            runs++;
+          }
+        }
+        for (const v of NOSCRIPT_WIDTHS) {
+          await driveNoScript(page, base + '/streets', v.w, v.h, slugs[0], findings);
+          runs++;
+        }
       } finally {
         await browser.close();
       }
     } catch (e) {
       browserError = e.message;
     }
-    const expectedRuns = 2 * WIDTHS.length;
+    const expectedRuns = 2 * WIDTHS.length + SCROLL_WIDTHS.length + pages.length * CONTRAST_WIDTHS.length + NOSCRIPT_WIDTHS.length;
 
     return {
       coverage: [
@@ -557,15 +877,19 @@ export default {
         ['rail tabs and item panels served as stated (one selected, one visible)', railBad.length, 0],
         ['rail items whose served panel is empty', emptyItems.length, 0],
         ['every panel carries a strip', noStrip.length, 0],
-        ['pages whose three strips are not all different', sameStrip.length, 0],
+        ['pages whose four strips are not all different', sameStrip.length, 0],
         ['menu figures in the wrong format', badFig.length, 0],
         ['pages missing a hub count', hubMiss.length, 0],
         ['panel hrefs that redirect', redirectLinks.length, 0],
         ['panel hrefs that fail', deadLinks.length, 0],
+        ['served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu', chrome.length, 0],
+        ['pages whose CTA or strips do not follow the street or the hub', contextBad.length, 0],
+        ['pages whose rail tabs lack sub-labels', subMiss.length, 0],
+        ['Rent menu: every hub as scoped /rentals with its count, four typical rents, the landlord form, Rentals out of Buy', rentBad.length, 0],
         ['browser runs completed', runs, expectedRuns],
-        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone)', findings.length, 0],
+        ['interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS)', findings.length, 0],
       ],
-      examples: [
+      examples: [...chrome, ...contextBad, ...subMiss, ...rentBad,
         ...nonButton, ...badAria, ...missingPanel, ...notHidden, ...noCta, ...noStrip,
         ...sameStrip.map((p) => `identical strips on ${p}`),
         ...railBad, ...emptyItems, ...badFig, ...hubMiss, ...redirectLinks, ...deadLinks, ...findings,

@@ -34,6 +34,7 @@ import { buildAddressLadder, addressLadderEnabledFor } from "./streetAddresses";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
 import { resolveStreetVideo } from "./streetVideo";
+import { publishedHubSlugs as publishedHubSlugList, neighbourhoodRows } from "./hubSets";
 import { cleanNeighbourhoodName, roundPriceForProse, roundRentForProse } from "./format";
 import { formatCAD, formatCADShort } from "./charts/theme";
 import type {
@@ -1523,11 +1524,9 @@ async function buildContextCards(input: {
   // under-linked. Registry resolution maps every raw/name/slug variant to its canonical slug, so
   // Walker/Brookville now link CORRECTLY; a neighbourhood with no published hub, or one that can't
   // be resolved, emits NO link rather than a broken one.
-  const [pubHubRows, nbhdRows] = await Promise.all([
-    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
-    prisma.neighbourhood.findMany({ select: { slug: true, name: true, rawStrings: true } }),
-  ]);
-  const publishedHubSlugs = new Set(pubHubRows.map((h) => h.neighbourhoodSlug));
+  // the two sets come from hubSets.ts (MC-018): once per fifteen minutes, not once per render
+  const [pubHubSlugList, nbhdRows] = await Promise.all([publishedHubSlugList(), neighbourhoodRows()]);
+  const publishedHubSlugs = new Set(pubHubSlugList);
   const hubSlugify = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const resolveMap = new Map<string, string>(); // normalized key -> canonical slug
   const nameBySlug = new Map<string, string>();

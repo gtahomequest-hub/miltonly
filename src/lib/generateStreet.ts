@@ -6,6 +6,7 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { dropSurfaceCache } from "@/lib/streetSurface";
 import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
 import { deriveIdentity } from "@/lib/streetUtils";
@@ -755,6 +756,8 @@ async function revalidateStreetSurfaces(
   rawNeighbourhood: string | null,
 ): Promise<string[]> {
   const paths = [`/streets/${streetSlug}`, "/streets"];
+  // the published set changed (MC-018): the cached slug sets go before the paths do
+  await dropSurfaceCache();
   try {
     if (rawNeighbourhood) {
       const hub = await prisma.neighbourhood.findFirst({

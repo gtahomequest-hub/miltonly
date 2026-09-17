@@ -2,7 +2,9 @@
 
 Seven items, in order. **The builder never reorders this list and never self-starts an item.** Each begins only on an explicit prompt, and is marked done in the same commit that rewrites `HANDOFF.md`.
 
-Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **not started**.
+Status: item 1 **done** (merged as `973940a`). Item 2 **done** (merged as `7c2a448`), **extended and done 2026-09-04** (merged as `243cee5`, upload run `11f877b`). Item 3 **done** (merged as `e14bfa2`, with `a6229a7` on top; production `miltonly-c25astehn`). Item 4 **done** (merged as `a7e3a7f`, with `ff70116` on top). Item 7 **DONE** (merged as `8db80da`, branch head `dce1b70`, production verified). Item 5 **DONE** (merged as `142b9a9`, branch head `b0d424b`, production battery 13/13 at `bfb78f3`). Item 6 **DONE** (MC-015, merged as `60780ca` @ `d88742c`, production battery 18/18 at `60780ca`; record `scratchpad/reports/MC-015-video-playbook.md`).
+
+**Ownership.** Core (`D:\miltonly`, `main`) owns the app, the schema, the crons and this queue. Home (`D:\miltonly-home`), Content (`D:\miltonly-content`) and Leads (`D:\miltonly-leads`) own their tiers. Audit (`D:\miltonly-audit`, `feat/audit`, `MA-`) owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`; it reads production and never edits a page. The nightly audit commits its report to `main` at 03:00 Toronto as `audit(nightly): <date>`, and `vercel.json` `ignoreCommand` keeps that commit, and only that commit, out of Vercel builds. Findings the audit raises are Core's to take, never Audit's to fix.
 
 **The 249-page creation programme (from item 7), and its cap.** The widened gate admits 249
 registry-filtered streets with no page. They ship at **a maximum of 20 new pages a day** on the
@@ -17,6 +19,8 @@ per-invocation limit would have allowed 480 a day. Regenerations are not capped 
 *Out-of-queue work 2026-09-10: the guides tier and the Market Watch weekly edition, merged as `f6bbc92`. Not a queue item — it was prompted directly in the `feat/content` worktree. Records in `scratchpad/reports/062-content-gate-a.md`, `063-content-gate-a.md` and `064-content-build.md`.*
 
 *Out-of-queue work 2026-09-10, the LEAD LAYER. **Phase 0 done**, merged as `c4a162b`: the two street forms that captured nothing, and `ALERT_EMAIL_TO`. **Phase 1 done**, merged as `3461e13`, a two-parent merge of `feat/leads`: one lead model, one guarded submission path, source-specific confirmations, watches for the alert surfaces, the alert cron, leads-per-page, and the environment tag. Not queue items — both were prompted directly. Records in `scratchpad/reports/062-leads-gate-a.md` and `063-unnotified-leads.md`, state in `HANDOFF-leads.md`. **Phase 2 done**, merged as `543ef99` (merges `26381f9`; ML-001 fast-forwarded `feat/leads` to `00e0eb1` and set `BRIEF_UNSUBSCRIBE_SECRET`): all twenty submission points on one client helper, `/api/leads` + `/api/off-market-leads` + `/api/exclusive-inquiry` deleted, a prebuild gate that walks `src/`, and the Monday-to-Friday daily-brief sender with a signed one-click unsubscribe. Record in `scratchpad/reports/067-leads-phase2.md`.*
+
+*Out-of-queue work 2026-09-12: MC-016, the Neon egress recon. Recon only, no code. Neon's per-day consumption endpoint is Scale-plan only; measured with `pg_stat_statements` (now on DB1 and DB2) instead: ≈ 0.15 GB per battery run, `/streets`, the published-slug sets, `/rentals` and the `Neighbourhood`/`HubContent` sets are the heavy readers; ceiling proposed 16 GB/month. Record in `scratchpad/reports/MC-016-neon-egress-recon.md`. MC-018 (the egress fixes, `fix/neon-egress`) **merged 2026-09-15 as `eb3a5e8`**, and measured worse (4.2 M DB1 rows a battery against 1.1 M: `cached()` is bypassed under a static render); the Data Cache fix on `fix/neon-egress-2 @ 8279ead` **merged 2026-09-16 as `89e88e4`** and measures 244,828 DB1 rows a battery on production (MC-025, `scratchpad/reports/MC-025-egress-node22-merges.md`). Node 22 (`fix/node-22 @ 320f325`) merged the same day as `2aed6f9`. MC-017 (Vercel build cost, `fix/build-cost`) **merged 2026-09-14 as `69075d2`**, and the Git-build gate (`ignoreCommand` runs a Git-triggered build only on `main`) as `3ba3d91`; record `scratchpad/reports/MC-017-merge-and-ignore.md`. Item 6 (MC-015) built the same day.*
 
 ---
 
@@ -266,7 +270,47 @@ blur refusal is.
 **Done when** all six are live, the 42 clip-carrying rows are backfilled, and
 `sitemap-video.xml` validates.
 
----
+## DONE 2026-09-14, merged as `60780ca` (MC-015 @ `d88742c`, app code `b090002`)
+
+`feat/video-playbook @ b090002` (docs on top), CLI preview `miltonly-3d306kdaz`, local build
+exit 0, `test-video-playbook` 50 assertions in the prebuild, battery check `video` (18 checks).
+Record: `scratchpad/reports/MC-015-video-playbook.md`.
+
+- [x] **dated keys**: all 47 clip-carrying rows at `streets/<slug>-milton/<YYYYMMDD>/
+  {day,night}.mp4` with `poster.webp` beside each (`scripts/rekey-video-dated.ts`: server-side
+  copy, size-verified, repointed, revalidated); production confirmed serving every dated URL
+  per page, then `retire-superseded-clips.ts --write` deleted the 90 old objects; manifest and
+  meta updated; the upload script writes dated keys only. The spelling is MC-007's segment,
+  not `<YYYY-MM-DD>-day.mp4`: two clips and `deriveVideoPoster` already used it
+- [x] **captured_at**: 47 rows rewritten from each clip's GPS trace (`scripts/video-coverage.ts`
+  then `backfill-video-captured.ts --write`); rendered in America/Toronto. **The filename
+  clock the 40 older clips carried runs an hour fast**, so 41 moved; three "night" clips
+  (`clifford-point`, `first-line`, `frost-court`) were 19:15 to 19:21 daylight (luma YAVG
+  114) and were relabelled day. The offset columns added earlier in the day were withdrawn
+  by migration; the instant is enough when the zone is fixed
+- [x] **`sitemap-video.xml`** (title, description, thumbnail, contentUrl, duration,
+  publication date with the Toronto offset), 45 pages / 45 clips; **`sitemap-index.xml`**
+  names it beside `/sitemap.xml` and robots names the index; `VideoObject.duration` on every
+  clip. Search Console submission is a human step after the merge
+- [x] **the coverage sentence** under every player and as `VideoObject.description`:
+  "Footage covers 460 m of 510 m, from Leiterman Drive to Parmenter Point. Filmed 1 September
+  2026." Metres from the GPS run projected onto the Town centreline and `streetGeometry`
+  length; endpoints from the registry streets the run meets within 40 m, named by
+  `resolveStreetName`. 46 of 47 with metres, 30 with both endpoints, 14 with one, 3 with none;
+  a clause with no source is dropped, never filled
+- [x] **the takedown mailto** on every page with footage (`config.video.takedownEmail`)
+- [x] **the upload script** refuses an audio stream (ffprobe) or `blur_verified` false and names
+  them; also refuses a `captured_at` without an offset; not exercised on a real candidate
+  (the 124 staged rows are Homesly, all `blur_verified: false`)
+- [x] **`db3` after an analytics run**: live since MC-017, held by `test-build-cost.ts`
+- [x] **battery `video` check**: sentence, mailto, dated key, poster beside, no preload,
+  VideoObject with duration and the sentence, clip and poster HEAD 200, `sitemap-index.xml`
+  names both, `sitemap-video.xml` lists exactly the pages with a clip and their clips with a
+  duration
+- [x] after the merge: the three dated `night.mp4` objects retired once production served the
+  day URLs; `sitemap-video.xml` 200 with 45 clips on production, `attenborough-terrace` shows
+  the sentence and the mailto
+- [ ] Search Console submission of `sitemap-index.xml` (human)
 
 ## 7. `makeStreetDecision`'s minimum-data gate
 
@@ -514,3 +558,17 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
 *Out-of-queue work 2026-09-13, MA-003, the nightly checks tightened in the `D:miltonly-audit` worktree on `feat/audit`: catchment words need school, board, zone or catchment context within twelve words, the hub disclaimer and Town-polygon sentences are exempt, `data-remarks` blocks are the seller's words and must carry the label "Listing agent's remarks". Rerun against production, no email. Core merges the head with MC-020 and labels the remarks block. Record in `scratchpad/reports/MA-003-checks-tightened.md`.*
 
 *Out-of-queue work 2026-09-13, MA-004, the header, mega menu and footer AUDIT in the `D:\miltonly-audit` worktree on `feat/audit`. Read-only against production: five page types (home, street, hub, listing, guide) at 1440, 1024 and 390 with Puppeteer and Lighthouse, every chrome href checked, footer coverage against the sitemap, the brief form submitted with its POST intercepted, and a benchmark against Homesly, Rightmove, Zoopla and Airbnb. Twenty-two defects ranked (four S1: the scrolled homepage bar at 390 loses the CTA and burger, no footer on 509 street pages, the panel CTA white on green on street pages, the navy chrome on 461 listing pages) and ten changes for core; nothing built. Not a queue item, prompted directly. Record in `scratchpad/reports/MA-004-nav-footer-audit.md`, state in `HANDOFF-audit.md`.*
+
+*Out-of-queue work 2026-09-13: MC-019, `feat/audit @ 4a1e349` merged by SHA as `8326b2a` with the full gate (local build exit 0, preview battery 16/16, production battery `PASS · 16 checks · 509 pages · 672s`). The nightly audit ran once by hand (run `34769017742`, email `f97ac935-4da6-443b-b155-7b6606f7428c`) and committed `bbb792f` to main, which Vercel cancelled in 2 s under the `ignoreCommand`. Ownership above and in `CLAUDE.md`. Record in `scratchpad/reports/MC-019-audit-merge-and-nightly.md`.*
+
+*Out-of-queue work 2026-09-13: MC-021, CLAUDE.md Reporting. The `code <root> <path>` step is removed; a task ends with `scratchpad/reports/<TASK-ID>-<slug>.md` and a reply whose last line is `Report: <path>`; nothing opens the editor. Docs only. Record in `scratchpad/reports/MC-021-reporting-no-editor.md`.*
+
+*Out-of-queue work 2026-09-16: MH-007, the Rent menu, **DONE, merged by Core as `1b2d7d8` (`feat/rent-menu @ 91f8ef0`, approved), production battery 19/19; at 1024 four triggers, the bar search and the CTA fit, and the Rent panel states whole-home and basement-unit figures apart (MC-024, `scratchpad/reports/MC-024-rent-menu.md`).**
+
+*Out-of-queue work 2026-09-13: MH-006, the chrome (Nav v3), **DONE, merged by Core 2026-09-14 as `6aac9c9` (`feat/nav-v3 @ 3b56020`, app code `287f8ad`), production battery 19/19; at 390 the homepage keeps its bar, burger and CTA after a 2,400 px scroll and a street page ends in the map footer (MC-022).** In the `D:\miltonly-home` worktree on `feat/nav-v3`, resumed after a crash. All ten MA-004 changes are on the branch: the scrolled homepage's bar, a footer on every street page, the CTA colour, the listing page and guides on the forest chrome with `Navbar` and `FooterSection` deleted, the street search in the bar and a menu that opens before hydration (`/search`), the nav carrying its street or hub, one basis sentence in the Sell panel, the Alerts CTA as the brief form and `/saved` noindex, the footer as the map with the brief field, contextual strips and rail sub-labels. Addendum: `/rentals`, `/exclusive`, `/about`, `/saved`, `/signin`, `/privacy`, `/terms` and the 404 page on the forest tokens under `SiteChrome`. Gates: `nav.mjs`, `homepage.mjs`, `footer.mjs`; Lighthouse before/after on the five audit pages. Previewed, NOT merged; Core merges by SHA. Record in `scratchpad/reports/MH-006-chrome.md`.*
+
+*Out-of-queue work 2026-09-13: MC-020, the first night's audit findings taken by Core on `fix/audit-night-1` (app code `31f3d98`, main merged in as `d2bbee3`, the docs commit on top): the `catchment` battery check sharing the render guard's patterns, school titles and the site OG description without zone language, `formatArchitecturalStyle` for the TREB style strings, the labelled `data-remarks` block, one H1 on `/rentals`, the condo intent anchors, the schools guide reworded. Preview `PASS · 17 checks · 509 pages · 799s`. Main `1ad86d8` pushed and on production (16 of main's checks clean; the branch's 17th flags the OG description until the merge). Merged as `1900c46` (approved), production `PASS · 17 checks · 509 pages · 1142s`. The 196 `dead-anchor` `#type-*` findings are Street Page v3 change 7 (Home). Record in `scratchpad/reports/MC-020-audit-night-1.md`.*
+
+*Out-of-queue work 2026-09-13: MC-017, build cost and TTFB on `fix/build-cost` (app code `0e48e18`). Hub, condo, guide and listing pages and the three indexes moved from `force-dynamic` to day ISR (tagged Neon reads, path purges from every write path, the `db3` tag dropped by the analytics jobs); the build prerenders fifty streets instead of 509. TTFB p50 hub 2.13 s to 0.13 s, condo 0.90 s to 0.11 s, guide 0.50 s to 0.10 s, listing 0.49 s to 0.10 s; Vercel prerender 62 s to 13 s. "Git deploys off for every branch but main" not done, asked. Waits on approval to merge. Item 6's `db3` tag drop is done here. Record in `scratchpad/reports/MC-017-build-cost.md`.*
+
+*Out-of-queue work 2026-09-14: MH-007, the Rent menu, in the `D:\miltonly-home` worktree on `feat/rent-menu` (from `feat/nav-v3@3b56020` with `origin/main@60780ca` merged in; MC-022 had not landed). Rent is the fourth top-level menu with the Buy and Sell rail shape: available now (scoped to the page's hub), by neighbourhood (22 hubs with live lease counts, each a scoped `/rentals` link), typical rent by home type (DB2 closed leases, k-gated per type, "Sample too small" below), new this week, and a landlord panel whose CTA posts through the one lead path as source `landlord`. Rentals left the Buy rail. `nav.mjs` covers the fourth menu at 380, 390, 1024 and 1440 and asserts the bar search on the page variant at 1024 and up (MH-006 change 5, verified present). Previewed at `b1a2bc3` (`PASS · 3 checks`), NOT merged; Core merges by SHA. Record in `scratchpad/reports/MH-007-rent-menu.md`.*
