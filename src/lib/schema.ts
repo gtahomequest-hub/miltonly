@@ -74,6 +74,8 @@ export function generateOrganizationSchema() {
     logo: {
       "@type": "ImageObject",
       url: `${SITE_URL}/logo.png`,
+      width: 512,
+      height: 512,
     },
     description: `${CITY_PROVINCE_LABEL} real estate data, street by street.`,
     areaServed: {

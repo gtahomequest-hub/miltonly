@@ -183,6 +183,38 @@ function ldNodes(html) {
   return nodes;
 }
 
+/** The Next default favicon (the Vercel triangle) by size and SHA-256 prefix, so the check
+ *  names the file it refuses rather than any 25,931-byte ICO. */
+const DEFAULT_ICO = { bytes: 25931, sha256Prefix: '2b8ad2d33455a8f7' };
+
+async function fetchIcons(base) {
+  const notes = [];
+  let icoOk = false;
+  let svgOk = false;
+  try {
+    const r = await fetch(`${base}/favicon.ico`, { headers: { 'user-agent': 'miltonly-verify' }, redirect: 'manual' });
+    const buf = Buffer.from(await r.arrayBuffer());
+    const { createHash } = await import('node:crypto');
+    const sha = createHash('sha256').update(buf).digest('hex');
+    const isIco = buf.length > 6 && buf[0] === 0 && buf[1] === 0 && buf[2] === 1 && buf[3] === 0;
+    const isDefault = buf.length === DEFAULT_ICO.bytes && sha.startsWith(DEFAULT_ICO.sha256Prefix);
+    icoOk = r.status === 200 && isIco && !isDefault;
+    if (!icoOk) notes.push(`favicon.ico: status ${r.status}, ${buf.length} bytes, ico=${isIco}, default=${isDefault}`);
+  } catch (e) {
+    notes.push(`favicon.ico: ${e.message}`);
+  }
+  try {
+    const r = await fetch(`${base}/icon.svg`, { headers: { 'user-agent': 'miltonly-verify' }, redirect: 'manual' });
+    const body = r.status === 200 ? await r.text() : '';
+    const type = r.headers.get('content-type') || '';
+    svgOk = r.status === 200 && type.includes('svg') && body.includes('#073126') && /<path\b/.test(body) && !/<text\b/.test(body);
+    if (!svgOk) notes.push(`icon.svg: status ${r.status}, type ${type}, ground=${body.includes('#073126')}, path=${/<path\b/.test(body)}`);
+  } catch (e) {
+    notes.push(`icon.svg: ${e.message}`);
+  }
+  return { icoOk, svgOk, notes };
+}
+
 export default {
   id: 'homepage',
   title: 'The homepage links, states its figures, and declares itself',
@@ -301,6 +333,12 @@ export default {
     const homeRentalsShown = homeRentals ? Number(homeRentals.text.replace(/[,\s]/g, '')) : null;
     const rentalsAgree = rentalsShown !== null && homeRentalsShown !== null && rentalsShown === homeRentalsShown;
 
+    // ── 3c'. THE ICON IS OURS (MH-005 pre-step) ─────────────────────────
+    // The site served the default Next favicon, a 25,931-byte ICO of the Vercel triangle,
+    // and no icon.svg. Both must answer 200, the ICO must be an ICO that is not that file, and
+    // the SVG must be the forest-ground M: it carries the ground colour and a path, no <text>.
+    const icon = await fetchIcons(base);
+
     // ── 3d. THE MENU IS A SURFACE TOO ────────────────────────────────────
     // The mega menu printed "$937,465.504", "27.829694323144103" and a ratio wearing a
     // percent sign, on production, for as long as the panel existed. Every gate written to
@@ -404,6 +442,8 @@ export default {
         ['Milton-wide figures outside their source + tolerance', offSource.length, 0],
         ['street-page figure == the published page count', pagesMatch, true],
         ['/rentals returns 200', rentalsPage.status, 200],
+        ['/favicon.ico is a 200 ICO that is not the default triangle', icon.icoOk, true],
+        ['/icon.svg is a 200 SVG of the wordmark M on the forest ground', icon.svgOk, true],
         ['homepage rentals figure == the figure /rentals publishes', rentalsAgree, true],
         ['menu figure != the Board figure on the same page', menuMismatch.length, 0],
         ['any data-fig rendering a raw float', rawFloats.length, 0],
@@ -428,6 +468,7 @@ export default {
         ...absent, ...malformed, ...offSource,
         ...(pagesMatch ? [] : [`street-page figure shows ${pagesShown} vs ${homeRecord.publishedStreetPages} published pages`]),
         ...(rentalsAgree ? [] : [`rentals: homepage ${homeRentalsShown ?? 'absent'} vs /rentals ${rentalsShown ?? 'absent'}`]),
+        ...icon.notes,
         ...menuMismatch, ...rawFloats,
         ...emDashes.map((c) => `em-dash: ...${c}...`),
         ...enDashes.map((c) => `en-dash outside a numeric range: ...${c}...`),
