@@ -16,7 +16,7 @@
 //      - combined-validator failure → same fail-closed.
 //      - clean → HubGeneration.status=succeeded + dual-write HubContent (published).
 
-import crypto from "crypto";
+import { calcHubDataHash } from "@/lib/hubDataHash";
 import { prisma } from "@/lib/prisma";
 import { buildHubInput, buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
@@ -57,7 +57,8 @@ export async function generateUrbanHub(
   // Throws unless profile==='urban_hub' (guard lives in buildHubInput).
   const input = await buildHubInput(neighbourhoodSlug);
   const milton = await buildMiltonWideContext();
-  const inputHash = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex");
+  // the tolerance hash (src/lib/hubDrift.ts), the same rule the regenerate cron compares by
+  const inputHash = calcHubDataHash(input);
 
   // Atomic claim — insert-or-flip-to-generating (mirror generateRuralHub.ts).
   await prisma.$queryRaw`

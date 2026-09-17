@@ -183,7 +183,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawTypeAgg>(
       (db) => db`SELECT property_type,
                          COUNT(*)::int AS n,
-                         AVG(sold_price) AS avg_price,
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                          MIN(sold_price) AS min_price,
                          MAX(sold_price) AS max_price
                   FROM sold.sold_records
@@ -197,7 +197,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawTypeAgg>(
       (db) => db`SELECT property_type,
                          COUNT(*)::int AS n,
-                         AVG(sold_price) AS avg_price,
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                          MIN(sold_price) AS min_price,
                          MAX(sold_price) AS max_price
                   FROM sold.sold_records
@@ -211,7 +211,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawLeaseByBed>(
       (db) => db`SELECT COALESCE(beds, 0)::int AS bed,
                          COUNT(*)::int AS n,
-                         AVG(sold_price) AS typical
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
                   FROM sold.sold_records
                   WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
@@ -241,7 +241,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
       (db) => db`SELECT COUNT(*)::int AS n,
                          MIN(sold_price) AS lo,
                          MAX(sold_price) AS hi,
-                         AVG(sold_price) AS avg_price,
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                          AVG(days_on_market) AS avg_dom
                   FROM sold.sold_records
                   WHERE street_slug = ANY(${siblingSlugs}::text[])
@@ -321,7 +321,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     ? await (__sd`
         SELECT street_slug,
                COUNT(*) FILTER (WHERE transaction_type='For Sale')::int AS n_sales,
-               AVG(sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
+               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
                MIN(sold_price) FILTER (WHERE transaction_type='For Sale') AS min_sale,
                MAX(sold_price) FILTER (WHERE transaction_type='For Sale') AS max_sale,
                MODE() WITHIN GROUP (ORDER BY property_type) FILTER (WHERE transaction_type='For Sale') AS dominant_type

@@ -50,6 +50,7 @@ import {
   HubGenerationError,
   type HubAttempt,
   type HubGenerationResult,
+  hubFallbackModel,
 } from "@/lib/ai/hub/generateHubContent";
 import type {
   HubGeneratorInput,
@@ -307,6 +308,8 @@ export interface UrbanProviderOpts {
   // correctness — NOT baked into the orchestrator default.
   primaryProvider?: "deepseek" | "claude";
   primaryClaudeModel?: ClaudeModelKey;
+  /** refuse the AI_PROVIDER_FALLBACK escalation: DeepSeek or nothing */
+  deepseekOnly?: boolean;
 }
 
 export async function generateUrbanHubContent(
@@ -337,11 +340,7 @@ export async function generateUrbanHubContent(
   // Surgical fallback (mirror generateRuralHubContent): when AI_PROVIDER_FALLBACK
   // is a Claude mode and a call exhausted its budget with violations, re-run ONLY
   // that call with the fallback model; replace it only if the fallback is clean.
-  const fallbackRaw = (process.env.AI_PROVIDER_FALLBACK || "").trim();
-  const fallbackModel: ClaudeModelKey | null =
-    fallbackRaw === "claude" || fallbackRaw === "opus" ? "opus" :
-    fallbackRaw === "sonnet" ? "sonnet" :
-    fallbackRaw === "haiku" ? "haiku" : null;
+  const fallbackModel = hubFallbackModel(opts?.deepseekOnly);
 
   if (fallbackModel) {
     const calls: Array<{ label: "editorial" | "market" | "compared"; res: HubHalfResult; prompt: string; ids: HubSectionId[]; faq: boolean; milton: boolean }> = [];

@@ -19,7 +19,7 @@
 // It is NOT auto-run on any slug here. The fail-closed queue is the EXISTING
 // StreetGenerationReview, keyed hub:<slug> via routeHubGeneration — no new table.
 
-import crypto from "crypto";
+import { calcHubDataHash } from "@/lib/hubDataHash";
 import { prisma } from "@/lib/prisma";
 import { buildRuralHubInput } from "@/lib/ai/buildHubInput";
 import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
@@ -39,10 +39,11 @@ export interface GenerateRuralHubResult {
   queued: boolean;
 }
 
-export async function generateRuralHub(neighbourhoodSlug: string): Promise<GenerateRuralHubResult> {
+export async function generateRuralHub(neighbourhoodSlug: string, opts?: { deepseekOnly?: boolean }): Promise<GenerateRuralHubResult> {
   // Throws unless profile==='rural_hub' (guard lives in buildRuralHubInput).
   const input = await buildRuralHubInput(neighbourhoodSlug);
-  const inputHash = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex");
+  // the tolerance hash (src/lib/hubDrift.ts), the same rule the regenerate cron compares by
+  const inputHash = calcHubDataHash(input);
 
   // Atomic claim — insert-or-flip-to-generating (mirror generateStreet.ts:319-334).
   await prisma.$queryRaw`
@@ -62,7 +63,7 @@ export async function generateRuralHub(neighbourhoodSlug: string): Promise<Gener
 
   let result: Awaited<ReturnType<typeof generateRuralHubContent>>;
   try {
-    result = await generateRuralHubContent(neighbourhoodSlug, input);
+    result = await generateRuralHubContent(neighbourhoodSlug, input, opts);
   } catch (err) {
     // Retry-exhausted: HubGenerationError carries violations + telemetry.
     const isHubErr = err instanceof HubGenerationError;

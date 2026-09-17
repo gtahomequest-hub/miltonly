@@ -11,11 +11,12 @@
 //     interquartile (p25–p75) band, so a lone luxury/rural sale can't skew it.
 //   - DEC-SOLD-UPPER-BOUND: EVERY window carries `sold_date <= NOW()` alongside
 //     the 12-month lower bound, so future-dated closings never inflate a figure.
-//   - AGGREGATE KIND matches the linked sibling (DEC-GENI-1 consistency): the Milton-wide
-//     overall + by-type + trend use the MEDIAN (== the homepage/Board top-level convention),
-//     while each NEIGHBOURHOOD row uses the MEAN via the hub's own saleAggQuery (== the
-//     /neighbourhoods/[slug] page it links to). No surface shows two "typical" prices one
-//     click apart.
+//   - AGGREGATE KIND matches the linked sibling (DEC-GENI-1 consistency), and since
+//     DEC-TYPICAL-MEDIAN (MC-027) that kind is ONE kind: the K-gated median. The Milton-wide
+//     overall, by-type and trend figures are PERCENTILE_CONT(0.5); each NEIGHBOURHOOD row is the
+//     hub's own saleAggQuery, which is the same median over the hub's raw strings (== the
+//     /neighbourhoods/[slug] page it links to). No surface shows a mean labelled typical, and
+//     no two "typical" prices sit one click apart.
 //   - deterministic — every number traces to one of these queries. No LLM.
 //
 // Computed ON-DEMAND from DB2 (sold.sold_records), NOT from the DB3
@@ -51,7 +52,13 @@ const round5k = (v: number | null): number | null => (v === null ? null : Math.r
 export interface SoldOverall {
   count: number;
   medianPrice: number | null; // k>=5 — the MIDPOINT (matches homepage/Board)
-  meanPrice: number | null; // k>=5 — the AVERAGE (== the statistic each neighbourhood row uses)
+  /** k>=5, the town-wide typical by the hub's own query (saleAggQuery(null)), which is the median
+   *  since DEC-TYPICAL-MEDIAN; equal to medianPrice by construction, kept so the neighbourhood
+   *  table's anchor and its rows trace to one query. */
+  hubTypical: number | null;
+  /** k>=5, the plain arithmetic mean, for the one surface that names it "average" beside the
+   *  typical on purpose (the "Typical is not average" guide). Never labelled typical. */
+  meanPrice: number | null;
   bandLow: number | null; // p25, k>=10
   bandHigh: number | null; // p75, k>=10
   avgDom: number | null; // k>=5
@@ -59,10 +66,10 @@ export interface SoldOverall {
 }
 
 export async function getMiltonSoldOverall(): Promise<SoldOverall> {
-  const empty: SoldOverall = { count: 0, medianPrice: null, meanPrice: null, bandLow: null, bandHigh: null, avgDom: null, soldToAskPct: null };
+  const empty: SoldOverall = { count: 0, medianPrice: null, hubTypical: null, meanPrice: null, bandLow: null, bandHigh: null, avgDom: null, soldToAskPct: null };
   const db = getSoldDb();
   if (!db) return empty;
-  return cached("sold-agg:overall-12mo-v2", CACHE_TTL.stats, async () => {
+  return cached("sold-agg:overall-12mo-v3", CACHE_TTL.stats, async () => {
     const [rows, townSale] = await Promise.all([
       db`
       SELECT
@@ -70,14 +77,15 @@ export async function getMiltonSoldOverall(): Promise<SoldOverall> {
         PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY sold_price) AS median,
         PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY sold_price) AS p25,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY sold_price) AS p75,
+        AVG(sold_price)       AS mean,
         AVG(days_on_market)   AS avg_dom,
         AVG(sold_to_ask_ratio) AS avg_sta
       FROM sold.sold_records
       WHERE city = ${CITY} AND perm_advertise = TRUE AND transaction_type = 'For Sale'
         AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
     ` as Promise<Array<Record<string, unknown>>>,
-      // Town-wide MEAN via the SAME rollup the neighbourhood rows + hub pages use, so the
-      // snapshot average is the identical statistic (anchor for the mean-based table below).
+      // Town-wide typical via the SAME rollup the neighbourhood rows + hub pages use, so the
+      // table's anchor is the identical statistic (the median, since DEC-TYPICAL-MEDIAN).
       saleAggQuery(null),
     ]);
     const r = rows[0] ?? {};
@@ -89,7 +97,8 @@ export async function getMiltonSoldOverall(): Promise<SoldOverall> {
     return {
       count: n,
       medianPrice: kPrice ? round5k(num(r.median)) : null,
-      meanPrice: townAgg.typicalPrice != null ? round5k(townAgg.typicalPrice) : null,
+      hubTypical: townAgg.typicalPrice != null ? round5k(townAgg.typicalPrice) : null,
+      meanPrice: kPrice ? round5k(num(r.mean)) : null,
       bandLow: kRange ? round5k(num(r.p25)) : null,
       bandHigh: kRange ? round5k(num(r.p75)) : null,
       avgDom: kPrice && num(r.avg_dom) !== null ? Math.round(num(r.avg_dom) as number) : null,
@@ -153,7 +162,7 @@ export interface SoldNbhdRow {
 export async function getMiltonSoldByNeighbourhood(): Promise<SoldNbhdRow[]> {
   const db = getSoldDb();
   if (!db) return [];
-  return cached("sold-agg:by-nbhd-12mo-mean", CACHE_TTL.stats, async () => {
+  return cached("sold-agg:by-nbhd-12mo-typical", CACHE_TTL.stats, async () => {
     // Published hubs are the link universe — the exact set the sitemap emits.
     const published = await prisma.hubContent.findMany({
       where: { status: "published" },
