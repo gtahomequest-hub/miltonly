@@ -1348,21 +1348,28 @@
   margin: 0 0 14px;
 }
 .street-v2 .s-addr-find-l {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+}
+.street-v2 .s-addr-find-l > span {
   font-family: var(--s-mono);
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--s-accent);
-  margin-bottom: 8px;
 }
 .street-v2 .s-addr-find-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 8px;
 }
-.street-v2 .s-addr-find-row input {
-  flex: 0 1 220px;
+.street-v2 .s-addr-find-row:empty {
+  display: none;
+}
+.street-v2 .s-addr-find-l input {
   min-width: 0;
   padding: 11px 14px;
   border: 1px solid var(--s-border);
@@ -1372,7 +1379,7 @@
   background: var(--s-surface);
   color: var(--s-text-body);
 }
-.street-v2 .s-addr-find-row input:focus {
+.street-v2 .s-addr-find-l input:focus {
   outline: 2px solid var(--s-accent);
   outline-offset: 1px;
 }
@@ -1631,7 +1638,6 @@
   .street-v2 .s-addr-sum { font-size: 15px; }
   .street-v2 .s-addr-key { display: none; }
   .street-v2 .s-addr-showall { display: inline-block; }
-  .street-v2 .s-addr-find-row input { flex: 1 1 140px; }
   .street-v2 .s-addr-lad {
     height: auto;
     max-height: 66vh;
