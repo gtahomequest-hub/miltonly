@@ -24,6 +24,7 @@ import StreetCapture from './StreetCapture';
 export const sellHrefFor = (streetName: string) => `/sell?street=${encodeURIComponent(streetName)}#valuation`;
 import { resaleClaim } from './resaleClaim';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
+import { K_ANON_PRICE, K_ANON_RANGE } from '@/lib/kAnon';
 
 const DEFAULT_SILENT = 'sample too small to publish';
 
@@ -370,16 +371,30 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
 
 /* ───── per-type sections ───── */
 
+// BARS WITH VALUES AND AN AXIS (MH-005, MA-001 change 10). The figure lived in a title
+// attribute, which does not exist on touch, so eight near-identical bars read as decoration.
+// Each bar carries its typical and its count; the axis states the floor and the ceiling of the
+// scale, so the bars' heights mean something. The scale starts at zero: a bar's height is its
+// price, not its distance from the cheapest quarter.
 function MiniBars({ data }: { data: ChartPoint[] }) {
   const max = Math.max(...data.map((d) => d.value), 0);
   return (
-    <div className="s-bars">
-      {data.map((d) => (
-        <div className="s-bar" key={d.quarter} title={`${d.quarter}: ${fullPrice(Math.round(d.value))} · ${d.count} sold`}>
-          <div className="s-bar-fill" style={{ height: `${barFraction(d.value, max) * 100}%` }} />
-          <div className="s-bar-q">{d.quarter}</div>
-        </div>
-      ))}
+    <div className="s-chartbox">
+      <div className="s-axis" aria-hidden="true">
+        <span>{shortPrice(max)}</span>
+        <span>{shortPrice(max / 2)}</span>
+        <span>$0</span>
+      </div>
+      <div className="s-bars" role="img" aria-label={`Quarterly typical sold price: ${data.map((d) => `${d.quarter} ${fullPrice(Math.round(d.value))} over ${d.count} sales`).join('; ')}`}>
+        {data.map((d) => (
+          <div className="s-bar" key={d.quarter}>
+            <div className="s-bar-v">{shortPrice(d.value)}</div>
+            <div className="s-bar-fill" style={{ height: `${barFraction(d.value, max) * 100}%` }} />
+            <div className="s-bar-q">{d.quarter}</div>
+            <div className="s-bar-n">{d.count} sold</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -412,11 +427,13 @@ function TypeCard({ t, streetName }: { t: TypeBlock; streetName: string }) {
         <h3>{t.displayName}</h3>
       </div>
       <p className="s-type-intro">{t.intro}</p>
+      {/* A silent cell says what would end the silence (MA-001 defect 24): the floor and the
+          sample, in words, instead of a dash. */}
       <div className="s-type-stats">
-        <TypeStatCell label="Typical price" value={t.typicalPrice} detail={t.typicalDetail} silentNote="under publish threshold" />
-        <TypeStatCell label="Price band" value={t.priceBand} silentNote="—" />
-        <TypeStatCell label="Time on market" value={t.dom} silentNote="—" />
-        <TypeStatCell label="Sold to ask" value={t.soldToAsk} silentNote="—" />
+        <TypeStatCell label="Typical price" value={t.typicalPrice} detail={t.typicalDetail} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
+        <TypeStatCell label="Price band" value={t.priceBand} silentNote={`needs ${K_ANON_RANGE} sales, has ${t.sampleCount}`} />
+        <TypeStatCell label="Time on market" value={t.dom} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
+        <TypeStatCell label="Sold to ask" value={t.soldToAsk} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
         {t.active !== null && <TypeStatCell label="Active listings" value={t.active} detail={t.activeDetail} />}
       </div>
       {t.contactTeamPrompt && (
@@ -515,6 +532,7 @@ export function StreetMarket({ data }: { data: StreetV2Data }) {
             </div>
             <MiniBars data={m.priceChart.data} />
             <div className="s-chart-cap">{m.priceChart.caption}</div>
+            {m.yoy && <p className="s-yoy">{m.yoy}</p>}
           </div>
         )}
         <StreetSoldRecords slug={data.slug} streetName={data.name} />

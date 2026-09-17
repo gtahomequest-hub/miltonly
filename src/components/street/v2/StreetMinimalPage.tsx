@@ -6,6 +6,7 @@
 // schools, and nearby streets. NO LLM prose, NO fabricated street-level stats.
 import './street-theme.css';
 import type { StreetV2Data } from './types';
+import { compactPrice } from './format';
 import type { MinimalStreetView } from '@/lib/streetMinimal';
 import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
 import { StreetAddresses } from './AddressLadder';
@@ -120,10 +121,17 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
                   <div className="s-stat-l">Window</div>
                   <div className="s-stat-v">{view.area.window}</div>
                 </div>
-                {view.area.marketScore != null && (
+                {/* "Market activity score 85" (MA-001 defect 16) had no unit, scale or source on the
+                    page and none in the code that produced it; the one number an owner came for,
+                    the neighbourhood typical, was missing. The score is gone, the typical is here. */}
+                {data.areaContext?.typicalPrice != null && (
                   <div className="s-stat" style={{ padding: 0 }}>
-                    <div className="s-stat-l">Market activity score</div>
-                    <div className="s-stat-v">{Math.round(view.area.marketScore)}</div>
+                    <div className="s-stat-l">Neighbourhood typical price</div>
+                    <div className="s-stat-v">
+                      <b>$</b>
+                      {compactPrice(data.areaContext.typicalPrice)}
+                    </div>
+                    {data.areaContext.basis && <div className="s-stat-d">{data.areaContext.basis}</div>}
                   </div>
                 )}
               </div>

@@ -15,6 +15,7 @@ import { windowDisclosure } from '@/lib/streetEnrichment';
 import { stripNumericSentences, stripNumericParagraphs, answersQuestion, isDisclaimerOnly, isFragment } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import { geometryFactsFor } from '@/lib/town/geometry';
+import { K_ANON_PRICE, K_ANON_RANGE } from '@/lib/kAnon';
 import type {
   StreetPageData,
   StreetHeroProps,
@@ -25,6 +26,7 @@ import type {
   MarketSummary,
 } from '@/types/street';
 import type {
+  ChartPoint,
   StreetV2Data,
   StreetStat,
   ProductPill,
@@ -42,7 +44,7 @@ function unsilent(v: string): string | null {
   return v === SILENT ? null : v;
 }
 
-function mapHeroStats(hp: StreetHeroProps, activeCount: number): StreetStat[] {
+function mapHeroStats(hp: StreetHeroProps, activeCount: number, data: StreetPageData): StreetStat[] {
   const byLabel = (l: string) => hp.heroStats.find((s) => s.label === l);
   const mix = byLabel('Housing mix');
   const typical = byLabel('Typical price');
@@ -60,7 +62,8 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number): StreetStat[] {
       value: hp.rawTypicalPrice ?? null, // null => k-anon silent
       sub: range,
       basis: typical?.basis ?? null, // window+sample disclosure (mandatory on priced tiles)
-      silentNote: 'sample too small to publish',
+      // the silence says what would end it (MA-001 defect 24)
+      silentNote: `needs ${K_ANON_PRICE} sales, has ${data.enrichment.counts.sale12mo}`,
     },
     // EVERY count states its subject and its window. This mapper REBUILDS the hero tiles, so a sub
     // set upstream in buildHero never reaches the v2 shell — it has to be set here.
@@ -88,7 +91,7 @@ function mapPill(p: ProductPillData, anchor: string | null): ProductPill {
   };
 }
 
-function mapType(t: TypeSectionProps): TypeBlock {
+function mapType(t: TypeSectionProps, sampleCount: number): TypeBlock {
   // statsSold cells are pre-formatted; a suppressed stat's cell is simply ABSENT
   // (getStreetPageData omits Typical price / Price band / DOM / Sold-to-ask below
   // k>=5). Absent -> null -> .s-silent. No re-derivation.
@@ -115,7 +118,32 @@ function mapType(t: TypeSectionProps): TypeBlock {
         }
       : null,
     contactTeamPrompt: !!t.showContactTeamPrompt,
+    sampleCount,
   };
+}
+
+/** THE YEAR-ON-YEAR SENTENCE (MH-005, MA-001 change 10). The quarterly chart carried figures
+ *  with no axis; this states the one comparison a chart is for. The last four quarters against
+ *  the four before, each window's typical the count-weighted mean of its quarters' typicals,
+ *  stated only where BOTH windows clear K_ANON_PRICE and hold at least two quarters, so the
+ *  sentence never rests on a sample the chart itself would suppress. */
+function yoySentence(points: ChartPoint[] | undefined, streetName: string): string | null {
+  if (!points || points.length < 5) return null;
+  const recent = points.slice(-4);
+  const prior = points.slice(-8, -4);
+  const agg = (ps: ChartPoint[]) => {
+    const n = ps.reduce((a, p) => a + p.count, 0);
+    const v = n > 0 ? ps.reduce((a, p) => a + p.value * p.count, 0) / n : 0;
+    return { n, v, q: ps.length };
+  };
+  const a = agg(recent);
+  const b = agg(prior);
+  if (a.q < 2 || b.q < 2 || a.n < K_ANON_PRICE || b.n < K_ANON_PRICE || a.v <= 0 || b.v <= 0) return null;
+  const change = (a.v - b.v) / b.v;
+  const pct = `${Math.abs(change * 100).toFixed(1)}%`;
+  const direction = Math.abs(change) < 0.005 ? 'level with' : change > 0 ? `up ${pct} on` : `down ${pct} on`;
+  const money = (v: number) => `$${Math.round(v / 1000) * 1000 >= 1_000_000 ? (Math.round(v / 10000) * 10000 / 1_000_000).toFixed(2).replace(/0$/, '') + 'M' : Math.round(v / 1000).toLocaleString('en-CA') + 'K'}`;
+  return `Over the last four quarters homes on ${streetName} sold for typically ${money(a.v)} across ${a.n} sales, ${direction} the ${money(b.v)} of the four quarters before (${b.n} sales).`;
 }
 
 function mapGlance(tiles: StatCell[]): GlanceTile[] {
@@ -189,7 +217,7 @@ export function mapStreetV2Data(
     neighbourhoods: data.street.neighbourhoods,
 
     hero: {
-      stats: mapHeroStats(hp, activeCount),
+      stats: mapHeroStats(hp, activeCount, data),
       // THE ANCHOR MUST RESOLVE (MH-005, MA-001 change 7). A sale pill points at its type
       // section only where that section renders; a lease pill points at the leases card in the
       // market section where there is one. Otherwise the pill carries no href and the shell
@@ -238,12 +266,13 @@ export function mapStreetV2Data(
       },
     },
 
-    productTypes: data.productTypes.map(mapType),
+    productTypes: data.productTypes.map((t) => mapType(t, saleRow?.pills.find((p) => p.type === t.type)?.count ?? 0)),
     glance: mapGlance(data.glanceTiles),
 
     market: {
       sales: mapSummary(ma.salesSummary),
       leases: ma.leasesSummary ? mapSummary(ma.leasesSummary) : null,
+      yoy: yoySentence(ma.priceChart?.data, data.street.name),
       priceChart: ma.priceChart
         ? {
             data: ma.priceChart.data.map((d) => ({ quarter: d.quarter, value: d.value, count: d.count })),

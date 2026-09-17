@@ -130,6 +130,8 @@ export interface TypeBlock {
   chart: { headline: string; note: string; trendLabel: string; data: ChartPoint[] } | null;
   /** true at 0 < sales < 5 — surfaces the "contact the team" prompt, chart hidden. */
   contactTeamPrompt: boolean;
+  /** closed sales of this type in the window: what a silent cell says it has (MA-001 defect 24) */
+  sampleCount: number;
 }
 
 // ───── At-a-glance (12 tiles) ────────────────────────────────────────────────
@@ -166,6 +168,8 @@ export interface MarketBlock {
   leases: MarketSummaryCard | null;
   /** null => suppressed (k<5): a quarterly line would expose individual prices. */
   priceChart: { data: ChartPoint[]; caption: string } | null;
+  /** the last four quarters against the four before, where both clear the floor (change 10) */
+  yoy: string | null;
   rentByBeds: RentByBedTile[] | null;
 }
 
