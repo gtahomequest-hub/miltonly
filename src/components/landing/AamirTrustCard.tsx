@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { SMS_EMAIL_FINE_PRINT } from "@/lib/lead/finePrint";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -265,6 +266,8 @@ function MessageCaptureModal({
         preApproved: "no",
         mlsNumber,
         message: messagePreview,
+        consentText: SMS_EMAIL_FINE_PRINT,
+        consentTimestamp: new Date().toISOString(),
         honeypot: honey,
       });
       if (!result.ok) {
@@ -386,7 +389,7 @@ function MessageCaptureModal({
         </form>
 
         <p className="text-[10px] text-[#94a3b8] text-center mt-[10px]">
-          No spam. Reply STOP anytime.{" "}
+          {SMS_EMAIL_FINE_PRINT}{" "}
           <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">
             Privacy
           </Link>

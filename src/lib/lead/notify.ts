@@ -34,11 +34,11 @@ export function confirmationLineFor(ctx: NotifyContext): string {
   switch (ctx.source) {
     case "street-alert":
     case "street-exit-intent":
-      return `You are on the alert list for ${where}. We will email you when a home there is listed or sold, and nothing else.`;
+      return `You are on the alert list for ${where}. We will email you when a home there is listed for sale, and nothing else.`;
     case "street-corner-widget":
       return `Your note about ${where} is in. ${FIRST_NAME} will reply during business hours.`;
     case "condo-building-alert":
-      return `You are on the alert list for ${where}. We will email you when a unit there is listed or sold, and nothing else.`;
+      return `You are on the alert list for ${where}. We will email you when a unit there is listed, and nothing else.`;
     case "condo-building-contact":
       return `Your question about ${where} is in. ${FIRST_NAME} will reply during business hours.`;
     case "sold-home-valuation":

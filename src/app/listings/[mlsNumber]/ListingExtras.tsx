@@ -11,6 +11,7 @@ import {
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
+import { REPLY_FINE_PRINT, VALUATION_FINE_PRINT } from "@/lib/lead/finePrint";
 
 // Fires GA4 generate_lead with cold-cache polling (mirrors /rentals/thank-you).
 // Same event Google Ads imports as a conversion via the GA4↔Ads link, so listing-
@@ -510,6 +511,8 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
       email,
       name: "Valuation request",
       mlsNumber: mls,
+      consentText: VALUATION_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setBusy(false);
@@ -563,6 +566,7 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
           </div>
         )}
         {err && !sent && <p className="text-[12px] text-[#fca5a5] mt-2">{err}</p>}
+        {!sent && <p className="text-[10px] text-white/50 mt-3 leading-snug">{VALUATION_FINE_PRINT}</p>}
       </div>
     </div>
   );
@@ -623,6 +627,8 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
       notes: payload.notes,
       property_address: address,
       mlsNumber: mls,
+      consentText: REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     if (!result.ok) {
@@ -689,6 +695,7 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           >
             Submit booking request →
           </button>
+          <p className="text-[10px] text-white/50 leading-snug">{REPLY_FINE_PRINT}</p>
           <button onClick={() => setMode("none")} className="w-full text-[11px] text-white/60 hover:text-white">← Back</button>
         </div>
       )}
@@ -713,6 +720,7 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           >
             Send my question →
           </button>
+          <p className="text-[10px] text-white/50 leading-snug">{REPLY_FINE_PRINT}</p>
           <button onClick={() => setMode("none")} className="w-full text-[11px] text-white/60 hover:text-white">← Back</button>
         </div>
       )}

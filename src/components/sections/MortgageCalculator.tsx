@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { monthlyPayment, ontarioLTT, cmhcPremium, stressTestRate, formatMoney, formatMoneyShort } from "@/lib/mortgage-math";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 
 export default function MortgageCalculator() {
   const [price, setPrice] = useState(1050000);
@@ -199,6 +200,8 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
         email: email.trim() || undefined,
         priceMax: Math.round(context.price),
         notes,
+        consentText: REPLY_FINE_PRINT,
+        consentTimestamp: new Date().toISOString(),
         honeypot: honey,
       });
       if (!result.ok) {
@@ -241,6 +244,7 @@ function PreApprovalModal({ onClose, context }: { onClose: () => void; context: 
             <button type="submit" disabled={submitting} className="w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold py-3 rounded-xl hover:bg-[#fbbf24] disabled:opacity-60">
               {submitting ? "Sending…" : "Request pre-approval call →"}
             </button>
+            <p className="text-[11px] text-[#94a3b8] mt-3 leading-snug">{REPLY_FINE_PRINT}</p>
             <button type="button" onClick={onClose} className="w-full text-[12px] text-[#94a3b8] mt-3 hover:text-[#f8f9fb]">Cancel</button>
           </form>
         )}

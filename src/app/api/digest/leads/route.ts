@@ -14,12 +14,19 @@
 //     lifts the slot guard for a proof; it changes nothing about what is read.
 //   - `dryRun=true` computes the whole digest and returns it without sending. That is how
 //     the figures are checked against their sources before a Monday.
+//   - It is a recurring commercial email all the same (ML-004), so it carries the shared
+//     footer and a signed one-click unsubscribe like the brief and the alerts. The thing the
+//     unsubscribe disables is a SavedSearch of kind "digest" for the recipient, created on the
+//     first send and read on every one; a disabled row stops the digest until it is re-enabled.
 
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { resolveLeadEnv } from "@/lib/lead/env";
 import { digestWindow, isDigestSlot, DIGEST_HOUR } from "@/lib/digest/window";
 import { getDigestData, composeDigest } from "@/lib/digest/compose";
+import { digestWatchFor } from "@/lib/digest/recipient";
+import { canSignUnsubscribe, unsubscribeUrl, listUnsubscribeHeaders } from "@/lib/email/unsubscribe";
+import { emailFooter } from "@/lib/email/footer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -64,8 +71,27 @@ async function run(request: NextRequest) {
     );
   }
 
+  if (!dryRun && !canSignUnsubscribe()) {
+    return NextResponse.json(
+      { success: false, env, error: "no secret to sign the unsubscribe link with", sent: 0 },
+      { status: 500 },
+    );
+  }
+
+  // The recipient's watch: the row the unsubscribe link disables. One per (address, env),
+  // found or created, never duplicated. A preview digest links to the preview host.
+  const host = request.headers.get("host");
+  const linkOrigin = env === "production" || !host ? undefined : `https://${host}`;
+  const watch = to ? await digestWatchFor(to, env, { create: !dryRun }) : null;
+
+  if (watch && !watch.alertEnabled && !dryRun) {
+    return NextResponse.json({ success: true, env, to, skipped: "recipient unsubscribed from the digest", watch: watch.id, sent: 0 });
+  }
+
   const data = await getDigestData(win);
-  const digest = composeDigest(data, win);
+  const unsubscribe = watch ? unsubscribeUrl(watch.id, linkOrigin) : null;
+  const footer = unsubscribe ? emailFooter({ unsubscribeUrl: unsubscribe, listName: "the weekly leads digest", origin: linkOrigin }) : undefined;
+  const digest = composeDigest(data, win, footer);
   const subject = env === "production" ? digest.subject : `[${env}] ${digest.subject}`;
 
   const summary = {
@@ -96,13 +122,14 @@ async function run(request: NextRequest) {
     subject,
     html: digest.html,
     text: digest.text,
+    headers: listUnsubscribeHeaders(unsubscribe!),
   });
   if (result.error) {
     return NextResponse.json({ success: false, env, error: result.error.message, ...summary, sent: 0 }, { status: 502 });
   }
 
   console.log("[digest/leads]", { env, asOf: win.asOf, to, resendId: result.data?.id ?? null, totals: data.totals });
-  return NextResponse.json({ success: true, env, to, resendId: result.data?.id ?? null, subject, ...summary, sent: 1 });
+  return NextResponse.json({ success: true, env, to, watch: watch?.id ?? null, resendId: result.data?.id ?? null, subject, ...summary, sent: 1 });
 }
 
 export async function GET(request: NextRequest) {

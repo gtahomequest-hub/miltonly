@@ -39,6 +39,7 @@ import { K_ANON_PRICE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
 import { publishedStreetPageSlugs } from "@/lib/streetSurface";
 import type { BriefWindow } from "@/lib/brief/window";
+import { emailFooter } from "@/lib/email/footer";
 
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
 const CITY = config.PRISMA_CITY_VALUE;
@@ -295,6 +296,7 @@ export async function composeEdition(
   // exercising the preview and not production. Both share one database.
   const origin = data.siteOrigin ?? config.SITE_URL;
   const personal = personalLine(sub, brief, published, origin);
+  const footer = emailFooter({ unsubscribeUrl, listName: `the ${config.CITY_NAME} daily brief`, origin });
   const figures = figureLines(brief);
 
   const subject = `${config.CITY_NAME} brief: ${briefSubjectTail(brief)}`;
@@ -308,14 +310,11 @@ export async function composeEdition(
         ${figures.map((f) => `<li>${esc(f)}</li>`).join("")}
       </ul>
       ${personal.html ? `<p style="font-size:15px;line-height:1.55;margin:0 0 18px;">${personal.html}</p>` : ""}
-      <p style="font-size:13px;line-height:1.5;color:#4b5563;margin:0 0 18px;">
+      <p style="font-size:13px;line-height:1.5;color:#4b5563;margin:0;">
         Every figure is the same one <a href="${origin}" style="color:#017848;">${esc(config.SITE_NAME)}</a> publishes.
         Prices are suppressed when too few homes sold to publish one.
       </p>
-      <p style="font-size:11px;color:#6b7280;margin:0;border-top:1px solid #e5e7eb;padding-top:12px;">
-        ${esc(config.realtor.name)} &middot; RE/MAX Realty Specialists Inc., Brokerage<br/>
-        <a href="${unsubscribeUrl}" style="color:#6b7280;">Unsubscribe from the brief</a>
-      </p>
+      ${footer.html}
     </div>
   `.trim();
 
@@ -327,7 +326,7 @@ export async function composeEdition(
     personal.text,
     "",
     `Every figure is the same one ${config.SITE_NAME} publishes: ${origin}`,
-    `Unsubscribe: ${unsubscribeUrl}`,
+    footer.text,
   ]
     .filter((l) => l !== undefined)
     .join("\n");

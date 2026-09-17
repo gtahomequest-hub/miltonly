@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/components/UserProvider';
 import { postLeadDetailed } from '@/lib/postLeadClient';
 import { config } from '@/lib/config';
+import { REPLY_FINE_PRINT } from '@/lib/lead/finePrint';
 import type { ListingCardData, ListingsQuery, ListingsV2Data } from './types';
 import { ListingCard } from './ListingCard';
 import { FiltersBar, buildHref } from './FiltersBar';
@@ -95,6 +96,8 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
       phone,
       property_address: booking.address,
       mlsNumber: booking.mlsNumber,
+      consentText: REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
     });
     if (!result.ok) {
       showToast(result.error || 'Could not submit. Please try again');
@@ -249,6 +252,7 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
             <p className="lv-modal-trust">
               {config.realtor.name.split(' ')[0]} confirms within the hour · no obligation
             </p>
+            <p className="lv-modal-trust">{REPLY_FINE_PRINT}</p>
           </div>
         </div>
       )}

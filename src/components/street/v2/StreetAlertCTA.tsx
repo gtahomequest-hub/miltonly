@@ -12,6 +12,7 @@
 // the value model scores it instead of returning 0.
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
+import { ALERT_FINE_PRINT } from "@/lib/lead/finePrint";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -45,6 +46,8 @@ export default function StreetAlertCTA({
       property_address: streetName,
       neighbourhood,
       notes: `Street alerts requested, ${streetName}`,
+      consentText: ALERT_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setStatus(ok ? "ok" : "error");
@@ -55,7 +58,7 @@ export default function StreetAlertCTA({
       <h3>{headline}</h3>
       <p>{body}</p>
       {status === "ok" ? (
-        <p className="s-alert-done">Done, you&rsquo;re on the list. We&rsquo;ll email you the moment a home on {streetLabel} is listed or sold.</p>
+        <p className="s-alert-done">Done, you&rsquo;re on the list. We&rsquo;ll email you when a home on {streetName} is listed for sale.</p>
       ) : (
         <form className="s-alert-form" onSubmit={submit}>
           <div className="s-alert-row">
@@ -79,7 +82,7 @@ export default function StreetAlertCTA({
             </label>
           </div>
           {status === "error" && <div className="s-alert-err">Something went wrong. Please try again.</div>}
-          <div className="s-alert-fine">Miltonly emails only. No account, unsubscribe anytime.</div>
+          <div className="s-alert-fine">{ALERT_FINE_PRINT}</div>
         </form>
       )}
     </div>

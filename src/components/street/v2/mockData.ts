@@ -301,7 +301,7 @@ export const mockStreetRich: StreetV2Data = {
     buyer: {
       eyebrow: 'For buyers',
       headline: 'Buying on Main St E',
-      body: 'An email when a home on the street is listed or sold. Nothing else, and no account.',
+      body: 'An email when a home on the street is listed for sale. Nothing else, and no account.',
       actionLabel: 'Set an alert',
       actionHref: '/listings',
       secondary: true,
@@ -487,7 +487,7 @@ export const mockStreetThin: StreetV2Data = {
     buyer: {
       eyebrow: 'For buyers',
       headline: 'Buying on Marigold',
-      body: 'An email when a home on the street is listed or sold. Nothing else, and no account.',
+      body: 'An email when a home on the street is listed for sale. Nothing else, and no account.',
       actionLabel: 'Set an alert',
       actionHref: '/listings',
       secondary: true,

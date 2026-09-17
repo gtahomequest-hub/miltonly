@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { ALERT_FINE_PRINT } from "@/lib/lead/finePrint";
 
 export default function PreFooterCTA() {
   const [email, setEmail] = useState("");
@@ -38,6 +39,8 @@ export default function PreFooterCTA() {
       email,
       name: "Newsletter Subscriber",
       notes: "Pre-footer newsletter signup",
+      consentText: ALERT_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setSubmitting(false);
@@ -105,6 +108,8 @@ export default function PreFooterCTA() {
         {error && !success && (
           <p className="text-sm text-red-400 mt-2">{error}</p>
         )}
+
+        {!success && <p className="text-[11px] text-slate-500 mt-3">{ALERT_FINE_PRINT}</p>}
 
         <p className="text-xs text-slate-500 mt-4">
           Joining 1,400+ {config.CITY_NAME} homeowners and buyers. Curated, never automated.

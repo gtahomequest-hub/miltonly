@@ -7,6 +7,7 @@ import { formatPriceFull, daysAgo } from "@/lib/format";
 import { postLeadDetailed, type PostLeadPayload } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
+import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import AgentContactSection from "@/components/AgentContactSection";
 import {
   UrgencyBanner, VOWTeaser, WhatsNearby, MortgageCalc, TypicalRentBlock, type ListingRentFigure,
@@ -103,8 +104,10 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
   // GA4 fires only on a confirmed write. The helper resolves false for a 429, a 500 and a
   // network failure alike, which is the difference between a conversion and an attempt.
+  // Every submission from this page is a request for a reply, and the fine print under the
+  // form is REPLY_FINE_PRINT, so the wrapper stamps it once rather than each caller.
   const submitLead = async (data: PostLeadPayload): Promise<boolean> => {
-    const result = await postLeadDetailed(data);
+    const result = await postLeadDetailed({ ...data, consentText: REPLY_FINE_PRINT, consentTimestamp: new Date().toISOString() });
     if (!result.ok) return false;
     try {
       if (typeof window === "undefined") return true;
@@ -403,6 +406,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                       <input name="phone" required type="tel" placeholder="Phone number" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
                       <input name="email" type="email" placeholder="Email (optional)" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
                       <button type="submit" className="w-full bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#5cffa8] transition-colors">Request a showing</button>
+                      <p className="text-[10px] text-white/60 leading-snug">{REPLY_FINE_PRINT}</p>
                     </form>
                   )}
                   <p className="text-[10px] text-white/60 text-center mt-3">{config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")}</p>
