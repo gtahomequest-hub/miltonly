@@ -31,7 +31,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
   return (
     <div className="street-v2">
       <SiteNavLive variant="page" context={navContext} />
-      <StreetHero data={data} />
+      <StreetHero data={data} soldGate={false} />
 
       {/* Section 6 — the trust anchor. Plain, prominent, no hedging.
           It used to hardcode "No resales recorded yet" for every street that reached this shell,

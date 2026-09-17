@@ -1700,3 +1700,33 @@
     min-height: 40px;
   }
 }
+
+/* THE SOLD-GATE LINE IN THE HERO (MH-005, MA-001 change 5). A link, in the CTA token, above
+   the capture; it lands on the records table and its gate. */
+.street-v2 .s-hero-gate {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 255, 128, 0.35);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 14px;
+  text-decoration: none;
+}
+.street-v2 .s-hero-gate:hover,
+.street-v2 .s-hero-gate:focus-visible {
+  border-color: var(--s-green);
+  color: #fff;
+}
+.street-v2 .s-hero-gate-n {
+  font-family: var(--s-mono);
+  font-weight: 600;
+  color: var(--s-green);
+}
+.street-v2 .s-hero-gate-cta {
+  color: var(--s-green);
+  font-weight: 600;
+}
