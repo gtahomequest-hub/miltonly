@@ -649,7 +649,27 @@ model User {
   vowAcknowledgementIp        String?
   vowAcknowledgementUserAgent String?
 
+  // The door (MP-002).
+  //   verifyTokenHash  sha256 of the magic-link token the sign-in email carries. The raw
+  //                    token is in the email and nowhere else; the code and the link share
+  //                    one expiry (verifyExpiry) and one attempt counter.
+  //   verifyAttempts   wrong codes since the last code was issued. Five and the code is
+  //                    dead; a fresh code resets it. A 6-digit code with no counter is a
+  //                    million guesses in fifteen minutes.
+  //   consentText      the consent sentence the person saw on the acknowledgement card, and
+  //   consentTimestamp when they ticked it. Same pair Lead carries, same reason: the copy
+  //                    can change, the record of what was agreed cannot.
+  //   homeStreetSlug   the street the person said they live on, a ResidentialStreet slug
+  //                    (entity floor: the acknowledge route refuses a slug the registry
+  //                    does not know). The account page opens on it.
+  verifyTokenHash  String?
+  verifyAttempts   Int       @default(0)
+  consentText      String?
+  consentTimestamp DateTime?
+  homeStreetSlug   String?
+
   @@index([email])
+  @@index([verifyTokenHash])
   @@schema("public")
 }
 
