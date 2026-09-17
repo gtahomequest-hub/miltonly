@@ -1,31 +1,40 @@
-HOME · D:\miltonly-home · feat/rent-menu
+HOME · D:\miltonly-home · feat/mobile-fixes
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-14, MH-007: the Rent menu, on `feat/rent-menu`, previewed, NOT merged._
+_Last rewritten 2026-09-17, MH-008: Aamir's phone review, on `feat/mobile-fixes`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**BOTH BRANCHES ARE MERGED BY CORE: `feat/nav-v3 @ 3b56020` as `6aac9c9` (2026-09-14, MC-022) and `feat/rent-menu @ 91f8ef0` as the MC-024 merge (2026-09-16); the rest of this file is the pre-merge state.**
+**`feat/mobile-fixes@dd1118febafcbfd942050c4d7c7c6823e92f962c` IS PREVIEWED AND NOT MERGED. Core merges by SHA.**
+Preview `https://miltonly-30qag5057-gtahomequest-hubs-projects.vercel.app` (CLI deploy), `--only=phone-390,footer,nav,homepage,hub-page,guide-links`
+`PASS · 6 checks · 589 pages · 599s`. Branched from `origin/main@3ad3c0a`, which already carries the chrome (MH-006, merged as MC-022) and
+the Rent menu (MH-007, merged with MC-024). Record in `scratchpad/reports/MH-008-mobile-fixes.md`.
 
-**TWO BRANCHES ARE PREVIEWED AND NOT MERGED. Core merges by SHA on approval.**
+**WHAT MH-008 CHANGED, IN ONE PARAGRAPH EACH.**
 
-- **`feat/rent-menu@b1a2bc3be2876019995697a746d50a02ae549e92` (MH-007, the Rent menu).** Preview
-  `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 289s`. It branches from `feat/nav-v3@3b56020` with `origin/main@60780ca`
-  merged in, so it CONTAINS the chrome: merging it merges MH-006 too. Record in
-  `scratchpad/reports/MH-007-rent-menu.md`.
-- **`feat/nav-v3@3b56020c524525acf666906b670d0e85397b2c06` (MH-006, the chrome).** Merged up to
-  `origin/main@1900c46`; preview `miltonly-iskzekw24` (CLI deploy), `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 229s`; the full battery on the earlier Git preview of the same
-  SHA was `PASS · 18 checks · 529 pages · 801s`. Record in `scratchpad/reports/MH-006-chrome.md`.
-  The brief for MH-007 said "from origin/main after MC-022 lands"; MC-022 had not landed, so the
-  rent branch sits on nav-v3 instead (report, first bullet).
+- **The listing detail page is on the forest tokens.** Three files of Tailwind arbitrary colours
+  (`src/app/listings/[mlsNumber]/*`) mapped onto `site-chrome.css`'s literals; on a deep-ground
+  card muted text is `white/60` and the accent is `#00ff80`. Both columns of its grid are
+  `min-w-0`. The investor block is `TypicalRentBlock`: the k-gated lease figure for the home
+  type from `getLeaseMarket()`, whole home and basement unit, or nothing.
+- **The cookie banner** (`src/components/consent/ConsentBanner.tsx`) is one sentence in the
+  tokens and pads the body by its own height while it is up. `ChromeGate` still keeps it off
+  the homepage, hubs, streets, `/listings`, `/sell` and `/value`; it shows on `/listings/<mls>`,
+  `/rentals`, the guides.
+- **The footer's phone gap** was `flex: 1 1 340px` becoming a 340px height once the column
+  stacked (`footer.css`, the ≤780 block).
+- **The street CTA card** fits a phone: `.s-finalgrid > * { min-width: 0 }`, the alert row
+  wraps, phone padding. Every heading carries the resolved name (`street-data.ts`
+  `buildFinalCTAs`, the sidebar eyebrow, the corner insights); the alert body says what the
+  alert does. `guide-uplinks.css` rules carry the block class (the street and hub `*` resets
+  are (0,1,0) and load later). The sold gate is on `--s-green`; `--s-gold` is retired. The
+  records table scrolls inside its card.
+- **`phone-390.mjs`** is the 20th check: no sideways scroll and no visible text past the
+  viewport at 390 on home, street, hub, listing, rentals and a guide.
 
-**PREVIEWS COME FROM THE CLI NOW.** `vercel.json` cancels Git-triggered builds on every branch but
-`main` (MC-017). `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`
-from the worktree; without the env, `/api/build` says `unknown` and the battery aborts. The URL is
-the last `https://miltonly-...vercel.app` line of the CLI's output.
+**PREVIEWS COME FROM THE CLI.** `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`
+from the worktree; without the env, `/api/build` says `unknown` and the battery aborts.
 
 **RENT IS THE FOURTH MENU (MH-007).** Buy · Rent · Streets · Sell, one rail-and-panel shape.
 `composeRent()` in `megaLive.ts` builds it from `MegaExtras.rent` (`MegaRent`: available now,
@@ -96,6 +105,10 @@ about, saved, signin, privacy, terms).
 
 ## Standing rules for this worktree
 
+- **Stop the local server before `pnpm build`, every time.** MH-008 hit the `EPERM ...
+  query_engine-windows.dll.node` trap again with a `next start` still holding the DLL.
+- **A `.street-v2 *` / `.hub-v2 *` reset zeroes any (0,1,0) rule that loads before it.** A
+  component that renders inside both themes writes its rules at (0,2,0) (`guide-uplinks.css`).
 - **Every task prompt begins with `MH-`.** The report is `scratchpad/reports/MH-NNN-slug.md`,
   first line `# MH-NNN`, second line the worktree and branch, committed with the work.
 - Keep this file updated instead of `HANDOFF.md`. Do not rewrite `HANDOFF.md` from here.
@@ -116,12 +129,11 @@ about, saved, signin, privacy, terms).
 
 | | |
 |---|---|
-| rent branch head | **`b1a2bc3be2876019995697a746d50a02ae549e92`** (`feat/rent-menu`, app), plus the docs commit carrying this handoff and the MH-007 report |
-| rent preview | `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta` **`PASS · 3 checks · 529 pages · 289s`** |
-| chrome branch head | `3b56020c524525acf666906b670d0e85397b2c06` (`feat/nav-v3`), contained in the rent branch |
-| local build | exit 0, zero `P2024`, prebuild all green, 149/149 static (MC-017's fifty-street prerender) |
-| main | `60780ca` (MC-015), has neither branch |
-| production | main's tip; the old chrome around the new menu and hubs |
+| branch head | **`dd1118febafcbfd942050c4d7c7c6823e92f962c`** (`feat/mobile-fixes`, app), plus the docs commit carrying this handoff and the MH-008 report |
+| preview | `https://miltonly-30qag5057-gtahomequest-hubs-projects.vercel.app`, the six touched checks `PASS · 6 checks · 589 pages · 599s` |
+| local build | exit 0, zero `P2024`, prebuild all green |
+| main | `3ad3c0a`, has the chrome and the Rent menu, not this branch |
+| production | main's tip |
 
 ## What `feat/nav-v3` carries, by audit change (MA-004, `scratchpad/nav-v3/MA-004.md`)
 
@@ -190,5 +202,5 @@ Addendum: `/rentals` (tokens remapped in `rentals.css`, its own footer removed, 
 
 ## Next action
 
-Aamir reviews the rent preview (report has the URL). Core merges `feat/rent-menu` by SHA on
-approval; it carries `feat/nav-v3`.
+Aamir reviews the mobile preview on his phone (report has the URL). Core merges
+`feat/mobile-fixes` by SHA on approval.
