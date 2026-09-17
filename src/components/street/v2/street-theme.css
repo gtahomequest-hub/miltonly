@@ -1569,3 +1569,134 @@
   .street-v2 .s-m.s-q { width: 46px; }
   .street-v2 .s-addr-cta { margin-top: 20px; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   THE CAPTURE UNDER THE HERO (MH-005, MA-001 change 4). One field, two intents, inside the
+   hero's deep ground so it reads as part of the first screen, not as a form bolted on. The
+   segmented control is two radios; its labels are the tap targets (44px on a coarse pointer).
+   ───────────────────────────────────────────────────────────── */
+.street-v2 .s-capture {
+  margin: 8px 0 0;
+  padding: 20px 22px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 640px;
+}
+.street-v2 .s-capture-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.street-v2 .s-capture-h {
+  font-family: var(--s-serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.street-v2 .s-capture-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.street-v2 .s-capture-seg label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+.street-v2 .s-capture-seg label.s-on {
+  background: var(--s-accent);
+  color: #fff;
+}
+.street-v2 .s-capture-seg input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+.street-v2 .s-capture-seg label:has(input:focus-visible) {
+  outline: 2px solid var(--s-green);
+  outline-offset: 2px;
+}
+.street-v2 .s-capture-p {
+  margin: 10px 0 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--s-text-sec);
+}
+.street-v2 .s-capture-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.street-v2 .s-capture-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9px;
+  font-family: var(--s-sans);
+  font-size: 15px;
+  background: #fff;
+  color: var(--s-text-body);
+}
+.street-v2 .s-capture-row button {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--s-green);
+  color: var(--s-bg-deep);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 44px;
+}
+.street-v2 .s-capture-row button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.street-v2 .s-capture-fine {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--s-text-faint);
+  line-height: 1.5;
+}
+.street-v2 .s-capture-fine a {
+  color: var(--s-green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.street-v2 .s-capture-done {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--s-green);
+}
+@media (max-width: 560px) {
+  .street-v2 .s-capture {
+    padding: 16px 16px 14px;
+  }
+  .street-v2 .s-capture-row input {
+    flex: 1 1 100%;
+  }
+  .street-v2 .s-capture-row button {
+    flex: 1 1 auto;
+  }
+  .street-v2 .s-capture-seg label {
+    min-height: 40px;
+  }
+}

@@ -22,6 +22,7 @@ export interface LeadSource {
 export const LIVE_SOURCES: readonly LeadSource[] = [
   // Street pages
   { source: "street-alert", where: "street page alert card" },
+  { source: "street-valuation", where: "street page, the one-field valuation under the hero" },
   // Condo buildings
   { source: "condo-building-alert", where: "condo building alerts" },
   { source: "condo-building-contact", where: "condo building contact" },

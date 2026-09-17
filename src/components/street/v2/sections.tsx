@@ -17,6 +17,11 @@ import { CommuteIcon } from './icons';
 import Image from 'next/image';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
+import StreetCapture from './StreetCapture';
+
+/** Every link to /sell from a street page carries the street (MA-001 defect 4): the valuation
+ *  form prefills its address from ?street=, and four of the five links dropped it. */
+export const sellHrefFor = (streetName: string) => `/sell?street=${encodeURIComponent(streetName)}#valuation`;
 import { resaleClaim } from './resaleClaim';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
 
@@ -123,6 +128,12 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
             ))}
           </div>
         )}
+        {/* the one field on the first screen: valuation or watch, the street prefilled */}
+        <StreetCapture
+          streetName={data.name}
+          neighbourhood={data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton'}
+          sellHref={sellHrefFor(data.name)}
+        />
       </div>
     </header>
   );
@@ -271,7 +282,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
         <span className="s-eyebrow">{sidebar.cta.eyebrow}</span>
         <h4>{sidebar.cta.headline}</h4>
         <p>{ctaBody}</p>
-        <a className="s-b1" href={sidebar.cta.actionHref}>
+        <a className="s-b1" href={sidebar.cta.actionHref === '/sell' ? sellHrefFor(data.name) : sidebar.cta.actionHref}>
           {sidebar.cta.actionLabel}
         </a>
         {sidebar.cta.trustLine && <div className="s-trust">{sidebar.cta.trustLine}</div>}
@@ -307,7 +318,7 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
                       <div className="s-inline-h">
                         Own on {data.name}? Typical is <b>{shortPrice(data.ownerCtaPrice)}</b>.
                       </div>
-                      <a href="/sell">Value my home</a>
+                      <a href={sellHrefFor(data.name)}>Value my home</a>
                     </div>
                   )}
                 </div>
@@ -358,7 +369,7 @@ function TypeStatCell({
   );
 }
 
-function TypeCard({ t }: { t: TypeBlock }) {
+function TypeCard({ t, streetName }: { t: TypeBlock; streetName: string }) {
   return (
     <div className="s-type" id={`type-${t.type}`}>
       <div className="s-type-head">
@@ -376,7 +387,7 @@ function TypeCard({ t }: { t: TypeBlock }) {
         <div className="s-contact-prompt">
           Too few recent {t.displayName.toLowerCase()} sales on record to publish a typical price without identifying a
           home.{' '}
-          <a href="/sell">Ask the team for a private read →</a>
+          <a href={sellHrefFor(streetName)}>Ask the team for a private read →</a>
         </div>
       )}
       {t.chart && (
@@ -404,7 +415,7 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
         </div>
         <div className="s-types">
           {data.productTypes.map((t) => (
-            <TypeCard key={t.type} t={t} />
+            <TypeCard key={t.type} t={t} streetName={data.name} />
           ))}
         </div>
       </div>
@@ -701,7 +712,7 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
                   street the page is simultaneously arguing has too few sales to price, that reads
                   as boilerplate written for rich streets. Same population gate as the buyer copy. */}
               <p>{alertFraming ? claim.sellerBody(data.name) : seller.body}</p>
-              <a className="s-b1" href={seller.actionHref}>
+              <a className="s-b1" href={seller.actionHref === '/sell' ? sellHrefFor(data.name) : seller.actionHref}>
                 {seller.actionLabel} →
               </a>
             </div>
