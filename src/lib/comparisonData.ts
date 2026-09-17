@@ -216,13 +216,13 @@ const TEASER_HREF = `/compare/${FREEHOLD_VS_CONDO_CONFIG.slug}`;
 
 export const COMPARE_TEASER: { freehold: CompareTeaserCopy; condo: CompareTeaserCopy } = {
   freehold: {
-    title: "Freehold vs. condo — see them side by side",
+    title: "Freehold vs. condo, side by side",
     sub: TEASER_SUB,
     label: TEASER_LABEL,
     href: TEASER_HREF,
   },
   condo: {
-    title: "Condo vs. freehold — see them side by side",
+    title: "Condo vs. freehold, side by side",
     sub: TEASER_SUB,
     label: TEASER_LABEL,
     href: TEASER_HREF,
