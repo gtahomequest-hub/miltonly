@@ -2,12 +2,24 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-16 (MC-025, MC-024): the egress fix, Node 22 and the Rent menu merged and on production; DB1 244,828 rows a battery against the 1,138,193 baseline. Follow-up: confirm the nightly audit ran on the 17th after 07:00 UTC._
+_Last rewritten 2026-09-17 (MC-026; MC-027 in progress on `fix/hub-truth`): MH-008 merged, 20 checks; before that MC-025, MC-024: the egress fix, Node 22 and the Rent menu merged and on production; DB1 244,828 rows a battery against the 1,138,193 baseline. Follow-up: confirm the nightly audit ran on the 17th after 07:00 UTC._
 
 ## READ THIS FIRST
 
-**MAIN IS `1b2d7d8` AND PRODUCTION SERVES `1b2d7d8`, `PASS · 19 checks · 569 pages · 694s`, ON
-NODE 22.** Three merges by SHA on 2026-09-16: `fix/neon-egress-2 @ 8279ead` as `89e88e4`
+**MAIN IS `0480e15` AND PRODUCTION SERVES `0480e15`, `PASS · 20 checks · 589 pages · 673s`, ON
+NODE 22.** `0480e15` merges `feat/mobile-fixes @ dd1118f` (MH-008: the phone review, five items
+and the 20th check, `phone-390`) on top of the three merges below (MC-026,
+`scratchpad/reports/MC-026-mobile-fixes.md`). Confirmed at 390 on production with puppeteer
+(`scratchpad/mc003/probe-mobile-390.mjs`): the street page's "Your move on" card sits at 32 to
+358 px with no clipped text; the listing page carries the site nav and the map footer on a white
+body with no cap rate, cashflow or investor text; the cookie banner's sentence is one line (18 px
+in an 18 px line-height; the two buttons wrap under it on a phone, so the box is 80 px).
+`ChromeGate` hides the banner on street, hub and home pages, so a probe reads it on a listing
+page. The shared contact card (`acs-brokerage`, `acs-award`, `acs-btn-wa`) still prints in
+amber on the listing page; that is `AgentContactSection`, not MH-008's palette work.
+
+**THE THREE MERGES BEFORE IT (MC-025, MC-024): production was `1b2d7d8`, `PASS · 19 checks ·
+569 pages · 694s`, on Node 22.** Three merges by SHA on 2026-09-16: `fix/neon-egress-2 @ 8279ead` as `89e88e4`
 (the Data Cache fix), `fix/node-22 @ 320f325` as `2aed6f9` (Node 22.x and the nightly gate),
 `feat/rent-menu @ 91f8ef0` as `1b2d7d8` (MH-007, the Rent menu; one conflict, `HANDOFF-home.md`,
 resolved to Home's text under a merged banner). Records:
@@ -218,8 +230,8 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`1b2d7d8`** (egress fix `89e88e4`, Node 22 `2aed6f9`, Rent menu `1b2d7d8`), production serves it |
-| battery on production | **`PASS · 19 checks · 569 pages · 694s`** at `1b2d7d8`, 2026-09-16 |
+| `main` | **`0480e15`** (MH-008 mobile fixes on top of the egress fix, Node 22 and the Rent menu), production serves it |
+| battery on production | **`PASS · 20 checks · 589 pages · 673s`** at `0480e15`, 2026-09-17 |
 | `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
 | waiting on merge | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
