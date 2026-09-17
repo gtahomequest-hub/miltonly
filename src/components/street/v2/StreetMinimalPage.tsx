@@ -43,7 +43,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
             className="s-placeholder"
             style={{ borderLeft: '3px solid var(--s-green, #2f6b3f)', paddingLeft: 20 }}
           >
-            <h3>{claim.heading}</h3>
+            <h2>{claim.heading}</h2>
             <p>{claim.body}</p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
             </div>
             <aside className="s-side">
               <div className="s-side-card">
-                <h4>Street facts</h4>
+                <h3>Street facts</h3>
                 {facts.map((f) => (
                   <div className="s-fact" key={f.label}>
                     <span className="s-fact-l">{f.label}</span>
@@ -80,7 +80,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
               {/* QUEUE item 5: the same road-facts card the full shell carries, same markup. */}
               {data.sidebar.geometry && (
                 <div className="s-side-card s-geo" data-identity={data.sidebar.geometry.identity}>
-                  <h4>Road facts</h4>
+                  <h3>Road facts</h3>
                   {data.sidebar.geometry.facts.map((f) => (
                     <div className="s-fact s-geo-fact" data-key={f.key} key={f.key}>
                       <span className="s-fact-l">{f.label}</span>

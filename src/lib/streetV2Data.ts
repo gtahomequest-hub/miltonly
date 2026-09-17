@@ -76,7 +76,7 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number): StreetStat[] {
   ];
 }
 
-function mapPill(p: ProductPillData): ProductPill {
+function mapPill(p: ProductPillData, anchor: string | null): ProductPill {
   // p.typicalPrice is already null when k<5; p.priceLabel is "sample too small" there.
   return {
     type: p.type,
@@ -84,7 +84,7 @@ function mapPill(p: ProductPillData): ProductPill {
     count: p.count,
     typicalPrice: p.typicalPrice,
     priceLabel: p.priceLabel,
-    anchor: p.anchor,
+    anchor,
   };
 }
 
@@ -190,8 +190,14 @@ export function mapStreetV2Data(
 
     hero: {
       stats: mapHeroStats(hp, activeCount),
-      salePills: saleRow ? saleRow.pills.map(mapPill) : [],
-      leasePills: leaseRow ? leaseRow.pills.map(mapPill) : [],
+      // THE ANCHOR MUST RESOLVE (MH-005, MA-001 change 7). A sale pill points at its type
+      // section only where that section renders; a lease pill points at the leases card in the
+      // market section where there is one. Otherwise the pill carries no href and the shell
+      // renders it as text: a dead #type-condo on a street with no condo section is not a link.
+      salePills: saleRow
+        ? saleRow.pills.map((p) => mapPill(p, data.productTypes.some((t) => t.type === p.type) ? `#type-${p.type}` : null))
+        : [],
+      leasePills: leaseRow ? leaseRow.pills.map((p) => mapPill(p, ma.leasesSummary ? '#leases' : null)) : [],
       leaseWindowNote: data.enrichment.leaseBasis
         ? data.enrichment.leaseBasis.window === '12mo' ? 'last 12 months' : 'last ~2 years'
         : null,

@@ -61,14 +61,22 @@ function HeroStat({ stat }: { stat: StreetStat }) {
 
 function Pill({ p }: { p: ProductPill }) {
   const silent = p.typicalPrice === null;
-  return (
-    <a className="s-pill" href={p.anchor}>
+  const body = (
+    <>
       <span className="s-pill-t">{p.displayName}</span>
       <span className="s-pill-c">{p.count}</span>
       <span className={`s-pill-p${silent ? ' s-silent' : ''}`}>
         {silent ? p.priceLabel : `${dollars(p.typicalPrice as number)} ${p.priceLabel}`}
       </span>
+    </>
+  );
+  // a pill with nowhere to land is a statement, not a link (MA-001 defect 8)
+  return p.anchor ? (
+    <a className="s-pill" href={p.anchor}>
+      {body}
     </a>
+  ) : (
+    <span className="s-pill s-pill-static">{body}</span>
   );
 }
 
@@ -249,7 +257,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
     <aside className="s-side">
       {sidebar.facts.length > 0 && (
         <div className="s-side-card">
-          <h4>Street facts</h4>
+          <h3>Street facts</h3>
           {sidebar.facts.map((f) => (
             <div className="s-fact" key={f.label}>
               <span className="s-fact-l">{f.label}</span>
@@ -264,7 +272,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
           claim. The battery's geometry-facts check reads these rows by data-key. */}
       {sidebar.geometry && (
         <div className="s-side-card s-geo" data-identity={sidebar.geometry.identity}>
-          <h4>Road facts</h4>
+          <h3>Road facts</h3>
           {sidebar.geometry.facts.map((f) => (
             <div className="s-fact s-geo-fact" data-key={f.key} key={f.key}>
               <span className="s-fact-l">{f.label}</span>
@@ -276,7 +284,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
       )}
       {sidebar.nearby.length > 0 && (
         <div className="s-side-card">
-          <h4>Nearby</h4>
+          <h3>Nearby</h3>
           {sidebar.nearby.map((n) => (
             <div className="s-near" key={n.name}>
               {n.icon && <span className="s-near-ic">{n.icon}</span>}
@@ -299,7 +307,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
       )}
       <div className="s-side-cta">
         <span className="s-eyebrow">{sidebar.cta.eyebrow}</span>
-        <h4>{sidebar.cta.headline}</h4>
+        <h3>{sidebar.cta.headline}</h3>
         <p>{ctaBody}</p>
         <a className="s-b1" href={sidebar.cta.actionHref === '/sell' ? sellHrefFor(data.name) : sidebar.cta.actionHref}>
           {sidebar.cta.actionLabel}
@@ -314,6 +322,14 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
   return (
     <section className="s-block">
       <div className="s-wrap">
+        {/* THE HEADING TREE (MH-005, MA-001 change 7). The prose sections were H3s under no H2 and
+            the sidebar cards H4s under no H3; Lighthouse heading-order failed on every run. One
+            H2 heads the block; the generated "About <street>" section, which said the same
+            thing, keeps its paragraphs and drops its own heading. */}
+        <div className="s-sechead">
+          <span className="s-eyebrow">The profile</span>
+          <h2>About {data.name}</h2>
+        </div>
         <div className="s-desc-grid">
           <div className="s-prose">
             {data.placeholder ? (
@@ -327,7 +343,7 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
             ) : (
               data.sections.map((sec, i) => (
                 <div className="s-prose-sec" key={sec.id} id={`s-${sec.id}`}>
-                  <h3>{sec.heading}</h3>
+                  {i === 0 && sec.id === 'about' ? null : <h3>{sec.heading}</h3>}
                   {sec.paragraphs.map((p, j) => (
                     <p key={j}>{p}</p>
                   ))}
@@ -444,9 +460,9 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
 
 /* ───── market activity + gated sold records ───── */
 
-function SummaryCard({ card }: { card: MarketSummaryCard }) {
+function SummaryCard({ card, id }: { card: MarketSummaryCard; id?: string }) {
   return (
-    <div className="s-msum">
+    <div className="s-msum" id={id}>
       <h3>{card.title}</h3>
       <p>{card.body}</p>
       <div className="s-msum-stats">
@@ -475,7 +491,7 @@ export function StreetMarket({ data }: { data: StreetV2Data }) {
         </div>
         <div className="s-market-grid">
           <SummaryCard card={m.sales} />
-          {m.leases && <SummaryCard card={m.leases} />}
+          {m.leases && <SummaryCard card={m.leases} id="leases" />}
         </div>
         {m.rentByBeds && (
           <div className="s-rentgrid">
@@ -625,7 +641,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
               behind it" links. Nothing renders when this street matched no OSM way. */}
           {c.connectedStreets.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Connected streets</h4>
+              <h3>Connected streets</h3>
               {c.connectedStreets.map((s) => (
                 <a className="s-ctx-item" href={`/streets/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
@@ -635,7 +651,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           )}
           {c.similarStreets.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Similar streets</h4>
+              <h3>Similar streets</h3>
               {c.similarStreets.map((s) => (
                 <a className="s-ctx-item" href={`/streets/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
@@ -648,7 +664,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           )}
           {c.neighbourhoods.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Neighbourhoods</h4>
+              <h3>Neighbourhoods</h3>
               {c.neighbourhoods.map((n) => (
                 <a className="s-ctx-item" href={`/neighbourhoods/${n.slug}`} key={n.slug}>
                   <div className="s-ctx-n">{n.name}</div>
@@ -659,7 +675,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           )}
           {c.schools.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Schools</h4>
+              <h3>Schools</h3>
               {c.schools.map((s) => (
                 <a className="s-ctx-item" href={`/schools/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
@@ -685,7 +701,7 @@ export function StreetFaq({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">Common questions</span>
-          <h2>About {data.name}</h2>
+          <h2>Questions about {data.name}</h2>
         </div>
         <div className="s-faq">
           {data.faqs.map((f, i) => (

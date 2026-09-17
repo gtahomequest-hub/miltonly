@@ -422,7 +422,7 @@
   padding: 22px;
   box-shadow: var(--s-sh-sm);
 }
-.street-v2 .s-side-card h4 {
+.street-v2 .s-side-card h3 {
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -485,7 +485,7 @@
 .street-v2 .s-side-cta .s-eyebrow {
   color: var(--s-green);
 }
-.street-v2 .s-side-cta h4 {
+.street-v2 .s-side-cta h3 {
   font-family: var(--s-serif);
   font-weight: 400;
   font-size: 21px;
@@ -557,7 +557,8 @@
   padding: 48px;
   text-align: center;
 }
-.street-v2 .s-placeholder h3 {
+.street-v2 .s-placeholder h3,
+.street-v2 .s-placeholder h2 {
   font-family: var(--s-serif);
   font-weight: 400;
   font-size: 24px;
@@ -1050,7 +1051,7 @@
     grid-template-columns: 1fr;
   }
 }
-.street-v2 .s-ctx-col h4 {
+.street-v2 .s-ctx-col h3 {
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1736,4 +1737,9 @@
   margin: 0 0 14px;
   font-size: 12px;
   color: var(--s-text-faint);
+}
+
+/* a pill with no section to land on renders as text (MA-001 defect 8) */
+.street-v2 .s-pill-static {
+  cursor: default;
 }

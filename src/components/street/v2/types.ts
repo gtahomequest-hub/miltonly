@@ -49,7 +49,8 @@ export interface ProductPill {
   typicalPrice: number | null;
   /** "typical" | "sample too small" | "typical / mo" */
   priceLabel: string;
-  anchor: string;
+  /** the section this pill lands on; null when no section renders for it (the pill is text) */
+  anchor: string | null;
 }
 
 export interface StreetHeroData {
