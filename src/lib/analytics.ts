@@ -3,7 +3,7 @@
 
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "";
 
-// Page view — called automatically by GoogleAnalytics component
+// Page view — the gtag stub in DeferredTags queues it until gtag.js loads
 export function pageview(url: string) {
   if (!GA_ID) return;
   window.gtag("config", GA_ID, { page_path: url });
