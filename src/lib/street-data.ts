@@ -64,7 +64,6 @@ import type {
 
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const SITE_URL = config.SITE_URL;
-const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPE PEEKS — raw DB3 row shapes (loose; SQL is ad-hoc).
@@ -734,7 +733,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   // publishing the placeholder. street.characterSummary is set from THIS value.
   const suppressedSummary =
     rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale) ? rawSummary : "";
-  const subtitle = suppressedSummary || `A street in ${CITY_PROVINCE_LABEL}.`;
+  // A PROGRAMME PAGE'S SUBTITLE IS A FACT OR NOTHING (MH-005, MA-001 defect 17). "A street in
+  // Milton Ontario." was the placeholder on every page with no surviving summary. The
+  // neighbourhood is a fact the page has; where it has none, the hero carries no subtitle.
+  const firstNbhd = neighbourhoods.map(cleanNeighbourhoodName).find(Boolean);
+  const subtitle = suppressedSummary || (firstNbhd ? `${streetName} is in ${firstNbhd}, ${config.CITY_NAME}.` : "");
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -1113,7 +1116,8 @@ function buildSidebar(input: {
       body: `A short conversation grounded in every sale we have tracked on ${streetName}.`,
       actionLabel: "Request a valuation",
       actionHref: "/sell",
-      trustLine: "Complimentary · Response within one hour",
+      // "Response within one hour" was a service level nothing measures (MA-001 defect 9).
+      trustLine: "Complimentary. No obligation.",
     },
   };
 }

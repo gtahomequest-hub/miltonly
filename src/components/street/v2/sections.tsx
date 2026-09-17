@@ -117,7 +117,7 @@ export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; sold
         <h1>
           <ItalicLastWord name={data.name} />
         </h1>
-        <p className="s-character">{data.subtitle}</p>
+        {data.subtitle ? <p className="s-character">{data.subtitle}</p> : null}
         <div className="s-herostats">
           {data.hero.stats.map((s) => (
             <HeroStat key={s.label} stat={s} />
@@ -334,10 +334,11 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
           <div className="s-prose">
             {data.placeholder ? (
               <div className="s-placeholder">
-                <h3>Profile in preparation</h3>
+                <h3>No written profile yet</h3>
                 <p>
-                  We are still assembling the editorial read for {data.name}. The live market
-                  data below is current, the written profile follows shortly.
+                  The figures on this page are live from the Board and the Town. A written read
+                  of {data.name} follows once the street has enough sales to describe without
+                  identifying a home.
                 </p>
               </div>
             ) : (

@@ -12,7 +12,7 @@
 import 'server-only';
 import { getStreetPageData } from '@/lib/street-data';
 import { windowDisclosure } from '@/lib/streetEnrichment';
-import { stripNumericSentences, stripNumericParagraphs, answersQuestion, isDisclaimerOnly } from '@/lib/prose/numericSentences';
+import { stripNumericSentences, stripNumericParagraphs, answersQuestion, isDisclaimerOnly, isFragment } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import { geometryFactsFor } from '@/lib/town/geometry';
 import type {
@@ -212,7 +212,7 @@ export function mapStreetV2Data(
           .map((s) => ({ id: s.id, heading: s.heading, paragraphs: stripNumericParagraphs(s.paragraphs, stripOpts) }))
           // A heading is a promise that something follows it. Empty fails that; so does a
           // section whose only survivor is the compliance caveat.
-          .filter((s) => s.paragraphs.length > 0 && !isDisclaimerOnly(s.paragraphs))
+          .filter((s) => s.paragraphs.length > 0 && !isDisclaimerOnly(s.paragraphs) && !isFragment(s.paragraphs))
       : [],
     ownerCtaPrice: ownerTyped && ownerTyped > 0 ? ownerTyped : null,
 
