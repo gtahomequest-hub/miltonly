@@ -14,6 +14,7 @@ import type {
 import type { StreetVideoClip } from '@/lib/streetVideo';
 import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './format';
 import { CommuteIcon } from './icons';
+import Image from 'next/image';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
 import { resaleClaim } from './resaleClaim';
@@ -519,13 +520,29 @@ export function StreetCommute({ data }: { data: StreetV2Data }) {
 
 /* ───── active inventory ───── */
 
-function ListingTile({ l }: { l: ListingCard }) {
+// THE PHOTO IS AN IMAGE, SIZED TO THE TILE (MH-005, MA-001 change 2). It was a CSS background
+// on the raw `rs:fit:3840:3840` feed URL: every active listing's photo at up to 3,840 px,
+// eager, one format, no srcset; Main Street weighed 16.3 MB at 390 px. The feed's resize
+// parameter is inside a signed path, so it cannot be changed here, and the sync keeps only
+// the largest size; the optimiser (next.config `images.remotePatterns`) resizes the source
+// once per width and serves AVIF or WebP from the edge. `sizes` is the tile's real width:
+// the full column on a phone, a 260px-minimum grid cell above it.
+function ListingTile({ l, index }: { l: ListingCard; index: number }) {
   return (
     <a className="s-listing" href={l.href}>
-      <div
-        className="s-listing-ph"
-        style={l.photo ? { backgroundImage: `url(${l.photo})` } : undefined}
-      >
+      <div className="s-listing-ph">
+        {l.photo ? (
+          <Image
+            src={l.photo}
+            alt=""
+            fill
+            sizes="(max-width: 560px) calc(100vw - 64px), (max-width: 1180px) 50vw, 360px"
+            quality={70}
+            loading={index < 2 ? 'eager' : 'lazy'}
+            decoding="async"
+            className="s-listing-img"
+          />
+        ) : null}
         {l.daysOnMarket !== null && <span className="s-listing-dom">{l.daysOnMarket}d on market</span>}
       </div>
       <div className="s-listing-body">
@@ -552,8 +569,8 @@ export function StreetInventory({ data }: { data: StreetV2Data }) {
           <h2>Active listings on {data.name}</h2>
         </div>
         <div className="s-inv">
-          {data.activeListings.map((l) => (
-            <ListingTile key={l.mlsNumber} l={l} />
+          {data.activeListings.map((l, i) => (
+            <ListingTile key={l.mlsNumber} l={l} index={i} />
           ))}
         </div>
       </div>

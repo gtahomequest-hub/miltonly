@@ -997,8 +997,14 @@
 }
 .street-v2 .s-listing .s-listing-ph {
   aspect-ratio: 3 / 2;
-  background: var(--s-bg-secondary) center/cover no-repeat;
+  background: var(--s-bg-secondary);
   position: relative;
+  overflow: hidden;
+}
+/* the photo is an <img> now (MA-001 change 2): filled, cropped like the background it replaced */
+.street-v2 .s-listing .s-listing-img {
+  object-fit: cover;
+  object-position: center;
 }
 .street-v2 .s-listing .s-listing-dom {
   position: absolute;
