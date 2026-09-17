@@ -1730,3 +1730,10 @@
   color: var(--s-green);
   font-weight: 600;
 }
+
+/* the Updated line (MA-001 change 6): the date the page's facts last changed, in prose */
+.street-v2 .s-updated {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--s-text-faint);
+}

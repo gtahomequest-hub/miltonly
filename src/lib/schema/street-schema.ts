@@ -147,6 +147,26 @@ export function buildFAQPageSchema(faqs: FAQItem[]): object | null {
   return generateFAQSchema(faqs);
 }
 
+/** THE PAGE ITSELF (MH-005, MA-001 change 6): a WebPage node with the date the page's facts
+ *  last changed (the later of the profile's generation and the most recent closed sale), its
+ *  image (the filmed poster, or the rendered price card) and the Place it is about. No node
+ *  in the graph carried a date or an image before. */
+export function buildWebPageSchema(data: StreetPageData): object {
+  const url = `${SITE_URL}/streets/${data.street.slug}`;
+  const poster = data.video?.day?.poster ?? data.video?.night?.poster ?? null;
+  return {
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: `${data.street.name}, ${config.CITY_NAME}: Homes, Prices and Sales History`,
+    dateModified: data.lastUpdated,
+    image: poster ?? `${url}/og.png`,
+    about: { "@id": `${url}#place` },
+    isPartOf: { "@type": "WebSite", url: SITE_URL, name: config.SITE_NAME },
+    inLanguage: "en-CA",
+  };
+}
+
 export function buildAggregateOfferSchema(
   pt: TypeSectionProps,
   streetName: string,
@@ -314,6 +334,7 @@ export function buildStreetPageSchema(
     buildLocalBusinessSchema(data),
     buildPlaceSchema(data),
     buildBreadcrumbListSchema(data),
+    buildWebPageSchema(data),
   ];
 
   // FAQPage and Alternatives ItemList both source from `resolved`, not from

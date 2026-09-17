@@ -72,6 +72,13 @@ function Pill({ p }: { p: ProductPill }) {
   );
 }
 
+/** "2026-09-17" in prose, the way the menu writes a date (figureFormat.formatDateProse). */
+function formatUpdated(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12)).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
 /** render the street name with its final word italic (matches the navy hero's H1 treatment) */
 function ItalicLastWord({ name }: { name: string }) {
   const words = name.trim().split(/\s+/);
@@ -139,6 +146,7 @@ export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; sold
             <span className="s-hero-gate-cta">see every one, free →</span>
           </a>
         )}
+        <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board's closed records; listings live.</p>
         {/* the one field on the first screen: valuation or watch, the street prefilled */}
         <StreetCapture
           streetName={data.name}
