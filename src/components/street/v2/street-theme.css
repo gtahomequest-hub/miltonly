@@ -19,7 +19,8 @@
   --s-accent-bright: #004733;
   --s-accent-on: #0a8f57;
   --s-green: #00ff80;
-  --s-gold: #c8a45c;
+  /* MH-008: the sold gate was the one gold surface on the site; it is in the site tokens now
+     and the gold token is retired. */
 
   --s-text: #ffffff;
   --s-text-sec: rgba(255, 255, 255, 0.8);
@@ -800,7 +801,11 @@
   border-radius: 13px;
   box-shadow: var(--s-sh-sm);
   margin-top: 16px;
-  overflow: hidden;
+  /* MH-008: the six-column records table is wider than a phone; it scrolls inside its card
+     rather than being cut at the card's edge (the DOM and brokerage columns were), and the
+     radius still clips on the vertical axis. */
+  overflow-x: auto;
+  overflow-y: hidden;
   position: relative;
 }
 .street-v2 .s-records-cap {
@@ -879,7 +884,7 @@
   font-family: var(--s-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: var(--s-gold);
+  color: var(--s-green);
   text-transform: uppercase;
   font-weight: 600;
   margin-bottom: 10px;
@@ -898,7 +903,7 @@
 }
 .street-v2 .s-gate .s-gate-btn {
   display: inline-block;
-  background: var(--s-gold);
+  background: var(--s-green);
   color: var(--s-bg-deep);
   font-weight: 600;
   font-size: 13px;
@@ -1149,6 +1154,34 @@
   font-size: 14px;
   padding: 12px 24px;
   border-radius: 7px;
+}
+/* MH-008: at 390 the alert card ran to x=443. A grid item's min-width is auto, so the alert
+   row (an email input beside a no-wrap button) set the track wider than the screen and the
+   card was clipped on the right. The cards may shrink, the row may wrap, and the block and
+   the cards give back their desktop padding on a phone. */
+.street-v2 .s-finalgrid > * {
+  min-width: 0;
+}
+.street-v2 .s-alert-row {
+  flex-wrap: wrap;
+}
+.street-v2 .s-alert-row input {
+  flex: 1 1 160px;
+}
+@media (max-width: 560px) {
+  .street-v2 .s-final {
+    padding: 32px 20px;
+    border-radius: 16px;
+  }
+  .street-v2 .s-fcard {
+    padding: 22px 20px;
+  }
+  .street-v2 .s-alert-row input {
+    flex: 1 1 100%;
+  }
+  .street-v2 .s-alert-row button {
+    flex: 1 1 auto;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────

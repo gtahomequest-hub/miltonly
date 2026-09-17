@@ -1055,7 +1055,7 @@ function buildSidebar(input: {
   neighbourhoods: string[];
   enrichment: StreetEnrichment;
 }): DescriptionSidebarProps {
-  const { shortName, streetName, sale12, centroid, neighbourhoods, enrichment } = input;
+  const { streetName, sale12, centroid, neighbourhoods, enrichment } = input;
 
   const facts: Record<string, string> = {};
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
@@ -1090,7 +1090,7 @@ function buildSidebar(input: {
       .slice(0, 6)
       .map((p) => (isStreetSpecificCoord(centroid) ? p : { ...p, distance: null })),
     sidebarCTA: {
-      eyebrow: `For ${shortName} owners`,
+      eyebrow: `For ${streetName} owners`,
       headline: `What is yours worth today?`,
       body: `A short conversation grounded in every sale we have tracked on ${streetName}.`,
       actionLabel: "Request a valuation",
@@ -1580,19 +1580,24 @@ async function buildContextCards(input: {
    FINAL CTAs + CORNER WIDGET
    ───────────────────────────────────────────────────────────────────── */
 
+// THE RESOLVED NAME IN THE HEADINGS (MH-008). These read "Selling on Main" and "Buying on
+// Asleton": shortName is the prose form and never appears in a heading (CLAUDE.md, Names). The
+// alert body promised "access before they go public", which nothing on the site does; the
+// alert emails when a home on the street is listed or sold (StreetAlertCTA, street-alert).
 function buildFinalCTAs(input: { streetName: string; shortName: string }): FinalCTAsProps {
+  void input.shortName;
   return {
     sellerCTA: {
       eyebrow: "For owners",
-      headline: `Selling on ${input.shortName}`,
+      headline: `Selling on ${input.streetName}`,
       body: `A thoughtful conversation grounded in every sale we have tracked on ${input.streetName}.`,
       actionLabel: "Request a valuation",
       actionHref: "/sell",
     },
     buyerCTA: {
       eyebrow: "For buyers",
-      headline: `Buying on ${input.shortName}`,
-      body: `Private access to new and upcoming listings before they go public.`,
+      headline: `Buying on ${input.streetName}`,
+      body: `An email when a home on ${input.streetName} is listed or sold. Nothing else, and no account.`,
       actionLabel: "Set an alert",
       actionHref: "/listings",
       secondary: true,
@@ -1620,14 +1625,14 @@ function buildCornerWidget(input: {
   const heroHeadline = [typicalText, txText].filter(Boolean).join(" · ");
 
   const sectionInsights: SectionInsight[] = [
-    { id: "s1", text: `Where you land on ${shortName} shapes what you are buying.` },
+    { id: "s1", text: `Where you land on ${streetName} shapes what you are buying.` },
     ...productTypes.map((p) => ({
       id: `type-${p.type}`,
       text: `${p.displayName}: ${p.typicalPrice ? formatCADShort(roundPriceForProse(p.typicalPrice)) + " typical" : "thin data"} · see details inline.`,
     })),
-    { id: "s5", text: `The fine details that distinguish ${shortName}.` },
-    { id: "s6", text: `What has actually been closing on ${shortName}, by the numbers.` },
-    { id: "s7", text: `Commute reach from ${shortName}.` },
+    { id: "s5", text: `The fine details that distinguish ${streetName}.` },
+    { id: "s6", text: `What has actually been closing on ${streetName}, by the numbers.` },
+    { id: "s7", text: `Commute reach from ${streetName}.` },
     { id: "s8", text: `Active inventory on ${streetName} right now.` },
     { id: "s9", text: `How ${streetName} compares to nearby streets and schools.` },
     { id: "s10", text: `Common questions about ${streetName}.` },
