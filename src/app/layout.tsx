@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Fraunces, Inter, JetBrains_Mono, Kaushan_Script, Playfair_Display } from "next/font/google";
-import Navbar from "@/components/Navbar";
 import CrispChat from "@/components/CrispChat";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import MetaPixel from "@/components/MetaPixel";
@@ -14,7 +13,7 @@ import "./globals.css";
 
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
 const ENCYCLOPEDIA_LABEL = `${config.CITY_NAME} Real Estate Encyclopedia`;
-const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, school zones, GO commute data, and live TREB listings.`;
+const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live TREB listings.`;
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -136,9 +135,6 @@ export default function RootLayout({
         <MetaPixel />
         <AttributionCapture />
         <UserProvider>
-          <ChromeGate>
-            <Navbar />
-          </ChromeGate>
           {children}
           <ChromeGate>
             <CrispChat />

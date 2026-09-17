@@ -1,0 +1,176 @@
+SOURCE: Town of Milton, Permanent 15-hour Parking
+URL: https://www.milton.ca/en/living-in-milton/permanent-extended-15-hour-parking.aspx
+PAGE TITLE: Permanent 15-hour Parking - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: 0c245c7dd0d793c75a2e98e026cc0182a0e7c024c81dd233b17f19d8bf997eef
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+New: Overnight parking permits now availableThe Town of Milton is piloting overnight parking in select municipal parks to help ease on-street parking in residential areas.Limited spaces available – $60 per month.Apply now [https://milton.gtechna.net/permit-portal/]
+
+Parking throughout Milton is limited to five hours. You cannot park on the street between 2-6 a.m., unless otherwise posted. Residents in Milton may apply to get extended parking for up to 15 hours on one side of a residential street.
+
+## Apply for permanent 15-hour parking
+
+Please send us an email [https://forms.milton.ca/ContactUs/Engineering] to apply for permanent 15-hour parking. The request should include the reason for requesting parking on your street. Once we receive your request, we will conduct a site inspection to see if your street can support permanent 15-hour parking.
+
+Please be advised that permanent 15-hour parking can only be requested by the homeowner. Non-homeowners must ask homeowners to submit a request. The process to look at permanent 15-hour parking takes anywhere between 2-3 months.
+
+|
+
+### Step-by-step process
+
+|
+
+#### Considerations before applying
+
+- Are you the registered homeowner?
+
+- Have you already used your 25 parking exceptions per vehicle for the year?
+
+- Do you have a garage? If yes, are you utilizing it to park a vehicle?
+
+#### Send an email to apply
+
+To apply for permanent 15-hour parking, please send an email to Engineering [https://forms.milton.ca/ContactUs/Engineering] for consideration.
+
+If you would like to submit your request in writing, please address the request to:
+
+Development Services
+
+150 Mary St.
+
+Milton, ON L9T 6Z5
+
+#### Gather signatures
+
+If we feel your street can support permanent 15-hour parking, we will give you an information package and petition form. You must gather signatures from 51 per cent of the homeowners on your street indicating that they support permanent 15-hour parking.
+
+#### Fill out the parking questionnaire
+
+If you are able to get 51 per cent or more support, we will issue an official parking questionnaire to confirm support. Each individual homeowner on the street must complete the questionnaire and return it to the Town of Milton before the specified date.
+
+#### Parking by-law amendment request
+
+If 51 per cent or more of homeowners support permanent 15-hour parking on the questionnaire, we will ask Council for an amendment to the parking by-law on your street. Once this is approved, new parking signs will be installed on your street.
+
+Permanent 15-hour parking will not take effect until all appropriate signs have been installed.
+
+|
+
+### Impact of permanent 15-hour parking
+
+|
+It is important to note that permanent 15-hour parking on one side of your street will result in no parking on the other side of the street at all times. Permanent 15-hour street parking may:
+
+- Complicate parking enforcement, snow removal, road maintenance and waste collection efforts
+
+- Result in residents from nearby streets parking on your street
+
+|
+
+### Completed parking survey results
+
+|
+Parking survey results
+
+| Location
+| Date
+| Parking prohibition/duration of on-street parking being requested
+| Percentage of homeowners supporting request
+| Result
+
+| Bennett Boulevard Lee's Gate to Cooper Avenue
+| Oct. 25, 2021
+| 15-hour parking anytime
+| 13%
+| Unsuccessful
+
+| Lemieux Court
+| Aug. 25, 2021
+| 15-hour parking anytime
+| 4%
+| Unsuccessful
+
+| 651 Farmstead Drive
+| June 28, 2021
+| 15-hour parking Anytime
+| 40%
+| Unsuccessful
+
+| John Street
+| March 15, 2021
+| South side - No parking anytime
+| 18%
+| Unsuccessful
+
+| Izumi Gate
+| Feb. 1, 2021
+| 15-hour parking anytime
+| 3%
+| Unsuccessful
+
+| Tasker Court
+| Dec. 14, 2020
+| 15-hour parking anytime
+| 67%
+|
+Successful
+
+| Anne Boulevard, Meadowbrook Drive and Vanier Drive
+| Nov. 9, 2022
+| Parking prohibition
+| 20%
+|
+Unsuccessful
+
+| Meadowbrook Drive
+| Nov. 9, 2022
+| Parking prohibition
+| 18%
+|
+Unsuccessful
+
+|
+Robert Street
+
+| Dec. 6, 2022
+| Parking prohibition
+| 4%
+|
+Unsuccessful
+
+|
+
+Ashbrook Court
+
+| Dec. 6, 2022
+| Parking prohibition
+| 43%
+| Unsuccessful
+
+|
+
+Bessborough Drive from house #540 to #566
+
+| Sept. 8, 2023
+| Reversal parking regulation
+| 75%
+| Successful
+
+|
+
+Mowat Lane
+
+| Oct. 13, 2023
+| 15 hour parking anytime
+| 22%
+| Unsuccessful
+
+|
+
+Severn Drive
+
+| Dec. 6, 2023
+| 15 hour parking anytime
+| 43%
+| Unsuccessful

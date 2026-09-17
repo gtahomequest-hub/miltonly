@@ -53,7 +53,7 @@ export function shapeEvaluativePrompt(prompt: string, input: StreetGeneratorInpu
   // the withdrawn questions; the bank underneath still offered them, and its selection rule still
   // said "PRICE cluster: always include one or two". 7 of the 18 first-batch failures carried
   // zero_price_faq_question beside the shape fault. The withdrawn lines leave the bank, and the
-  // three clusters that only ask for a figure are marked withdrawn where the rule stood.
+  // three clusters that only ask for a figure (or a lease count no such street has) are marked withdrawn where the rule stood.
   if (dropPriceFaq) {
     for (const t of OWN_PRICE_FAQ_TEMPLATES) {
       const line = `- "${t}"\n`;
@@ -61,7 +61,7 @@ export function shapeEvaluativePrompt(prompt: string, input: StreetGeneratorInpu
     }
     p = must(p, "- PRICE cluster: always include one or two.", "- PRICE cluster: WITHDRAWN for this street. No price is published, so include none.", "the price-cluster rule");
     p = must(p, /^- RENTAL cluster: [^\n]*$/m, "- RENTAL cluster: WITHDRAWN for this street. Include none.", "the rental-cluster rule");
-    p = must(p, /^- INVESTOR cluster: [^\n]*$/m, "- INVESTOR cluster: WITHDRAWN for this street. Include none.", "the investor-cluster rule");
+    p = must(p, /^- LEASE COUNT cluster: [^\n]*$/m, "- LEASE COUNT cluster: WITHDRAWN for this street. Include none.", "the lease-count-cluster rule");
   }
   if (!dropSection) return p;
 

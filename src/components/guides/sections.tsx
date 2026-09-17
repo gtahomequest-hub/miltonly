@@ -1,5 +1,5 @@
 // src/components/guides/sections.tsx
-import type { GuidesIndexData, GuideArticleData, GuideTeaser, GuideCta } from './types';
+import type { GuidesIndexData, GuideArticleData, GuideTeaser, GuideCta, GuideSource } from './types';
 import { CategoryIcon, IconClock, IconBulb, IconCheck } from './icons';
 
 function TeaserCard({ g }: { g: GuideTeaser }) {
@@ -85,6 +85,15 @@ export function GuidesCategories({ data }: { data: GuidesIndexData }) {
 
 /* ---------- guide article ---------- */
 
+/** The provenance of a sentence, inline: who said it, where, and when it was read. */
+function SourceLink({ source }: { source: GuideSource }) {
+  return (
+    <a className="g-src" href={source.url} target="_blank" rel="noopener noreferrer">
+      {source.label} · read {source.fetchedOn}
+    </a>
+  );
+}
+
 export function GuideHero({ data }: { data: GuideArticleData }) {
   return (
     <header className="g-hero">
@@ -141,6 +150,49 @@ export function GuideBody({ data }: { data: GuideArticleData }) {
             {s.paragraphs.map((p, j) => (
               <p key={j}>{p}</p>
             ))}
+            {s.cited && s.cited.length > 0 && (
+              <ul className="g-cited">
+                {s.cited.map((c, j) => (
+                  <li key={j}>
+                    <span className="g-cited-t">{c.text}</span>
+                    <SourceLink source={c.source} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {s.table && (
+              <div className="g-tablewrap">
+                <table className="g-table">
+                  <caption>
+                    {s.table.caption}
+                    {s.table.source && (
+                      <>
+                        {' '}
+                        <SourceLink source={s.table.source} />
+                      </>
+                    )}
+                  </caption>
+                  <thead>
+                    <tr>
+                      {s.table.head.map((h, j) => (
+                        <th key={j} scope="col">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.table.rows.map((r, j) => (
+                      <tr key={j}>
+                        {r.map((cell, k) => (
+                          <td key={k}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {s.tip && (
               <div className="g-tip">
                 <IconBulb />
@@ -180,6 +232,11 @@ export function GuideFaqs({ data }: { data: GuideArticleData }) {
             <div className="g-faq-item" key={i}>
               <div className="g-faq-q">{f.question}</div>
               <div className="g-faq-a">{f.answer}</div>
+              {f.source && (
+                <div className="g-faq-s">
+                  <SourceLink source={f.source} />
+                </div>
+              )}
             </div>
           ))}
         </div>

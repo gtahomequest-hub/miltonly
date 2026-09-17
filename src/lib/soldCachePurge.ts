@@ -43,7 +43,7 @@ export const SOLD_STREET_PREFIXES = ["street-sale-stats:", "street-lease-stats:"
 /** Prefixes that are keyed by a raw neighbourhood string. */
 export const SOLD_NBHD_PREFIXES = ["nbhd-sale-stats:", "nbhd-lease-stats:", "sold-list:nbhd:"] as const;
 /** Patterns purged whole on every write. */
-export const SOLD_WIDE_PATTERNS = ["home:sold-mtd:*", "sold-list:all:*"] as const;
+export const SOLD_WIDE_PATTERNS = ["home:sold-mtd:*", "home:lease-market:*", "sold-list:all:*"] as const;
 
 /** The exact patterns a purge will match for a given write. Pure, so the prebuild case can assert it. */
 export function soldPurgePatterns(input: { streetSlugs: Set<string> | string[]; neighbourhoods: Set<string> | string[] }): string[] {

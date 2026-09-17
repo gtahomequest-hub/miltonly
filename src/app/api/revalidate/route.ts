@@ -1,5 +1,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { DB_CACHE_TAG } from "@/lib/db";
+import { dropSurfaceCache } from "@/lib/streetSurface";
+import { dropHubSetCache } from "@/lib/hubSets";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -25,6 +27,10 @@ export async function POST(request: NextRequest) {
 
   if (path) {
     revalidatePath(path);
+    // a street path posted from outside the app is how the local scripts announce a
+    // StreetContent write; the cached slug sets (MC-018) go with it
+    if (path === "/streets" || path.startsWith("/streets/")) await dropSurfaceCache();
+    if (path === "/neighbourhoods" || path.startsWith("/neighbourhoods/")) await dropHubSetCache();
     return NextResponse.json({ revalidated: true, path });
   }
 

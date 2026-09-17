@@ -1,0 +1,91 @@
+# MA-002. The nightly audit of production: scripts/audit/nightly/run.mjs on a GitHub runner, so it
+# spends no Vercel build minutes and opens no database connection. It reads pages, writes
+# scratchpad/audit/nightly/<date>.md and state.json back to the branch it ran on, and sends one
+# email through Resend with what changed or broke.
+#
+# Secrets: RESEND_API_KEY, RESEND_FROM_EMAIL (repository settings, Actions secrets).
+# The report commit is excluded from Vercel builds by the ignoreCommand in vercel.json.
+name: Nightly audit
+
+on:
+  schedule:
+    # 03:00 America/Toronto is 07:00 UTC in summer and 08:00 UTC in winter. GitHub delivers a
+    # scheduled run late, often by hours (MC-023: both 2026-09-14 crons fired after 13:30 UTC,
+    # 09:37 and 10:43 Toronto), so the gate no longer asks for the hour to be 03: it runs the
+    # first delivery of each Toronto day at or after 03:00 and skips the rest, because the
+    # first run commits scratchpad/audit/nightly/<date>.md and the later ones find it. Four
+    # crons give four chances; a day with no delivery at all is a GitHub outage, not ours.
+    - cron: '0 7 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 9 * * *'
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-audit
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.clock.outputs.run }}
+    steps:
+      # the report of a run that already happened today is on the branch; a shallow checkout
+      # is enough to see it
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - id: clock
+        run: |
+          D=$(TZ=America/Toronto date +%F)
+          H=$(TZ=America/Toronto date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "dispatched by hand"
+          elif [ -f "scratchpad/audit/nightly/$D.md" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "$D already audited: skipping"
+          elif [ "$H" -lt 3 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "Toronto hour is $H, before 03: skipping"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "first delivery for $D at Toronto hour $H"
+          fi
+
+  audit:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # A lean install: puppeteer-core and lighthouse only, not the app. Chrome is the runner's.
+      - name: Audit dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/audit-deps" && cd "$RUNNER_TEMP/audit-deps"
+          echo '{"name":"audit-deps","private":true}' > package.json
+          npm install --no-audit --no-fund --no-package-lock puppeteer-core@24 lighthouse@12
+
+      - name: Audit production
+        env:
+          BASE: https://miltonly.com
+          AUDIT_DEPS: ${{ runner.temp }}/audit-deps
+          CHROME_PATH: /usr/bin/google-chrome
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+        run: node scripts/audit/nightly/run.mjs
+
+      - name: Commit the report
+        if: always()
+        run: |
+          git config user.name "miltonly-audit"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scratchpad/audit/nightly
+          git commit -m "audit(nightly): $(TZ=America/Toronto date +%F)" || { echo "nothing to commit"; exit 0; }
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"

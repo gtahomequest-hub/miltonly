@@ -1,35 +1,51 @@
 // src/components/home/HomeFooter.tsx
-// The homepage's link graph, and the reason it is a section rather than a postscript.
+// THE SITE'S MAP, on every page.
 //
-// The page it sits under shipped 24 unique internal links, and 20 of them came from
-// here — the nav emitted none, and this footer listed three of twenty-two hubs and two
-// of the streets. A footer that truncates a list of twenty-two links to three is not
-// tidier; it is a crawl budget spent on an ellipsis. Every published hub is named here
-// now, and so is every in-demand street, because each one is a page we want found.
+// The page it sat under shipped 24 unique internal links, and 20 of them came from here.
+// Every published hub is named here, and so is every in-demand street, because each one is a
+// page we want found. MH-006 (MA-004 change 9) made it the whole map: the eight guides, the
+// schools and mosques with their counts, the current Market Watch edition, the flagship
+// comparison, and the legal pages, which no forest page had linked anywhere. Every entity
+// kind is one click from the bottom of every page. /sold is listed once; a link that lands on
+// a redirect is not listed at all (the footer gate refuses a 3xx).
+//
+// IT CAPTURES. The brief field sits beside the search well (change 8): a footer on every page
+// is a lead surface, and the one form in the chrome used to point at a sign-in wall.
+//
+// HEADINGS: one <h2>, then <h3> columns. Lighthouse heading-order failed on the homepage and
+// named the five <h4>s that used to open here under no <h3>.
 import type { FooterData, TrustInfo } from './types';
+import type { NavContext } from '../nav/megaTypes';
 import { FooterSearch } from './FooterSearch';
+import { BriefSignup } from '../nav/BriefSignup';
+import './footer.css';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
 
 interface Props {
   footer: FooterData;
   brand: TrustInfo;
+  /** the page's subject, recorded by the brief form; see NavContext */
+  context?: NavContext;
 }
 
-export function HomeFooter({ footer, brand }: Props) {
+export function HomeFooter({ footer, brand, context }: Props) {
   return (
     <footer className="m-footer">
       <div className="m-wrap">
         <div className="m-ftop">
           <div className="m-fbrand">
             <div className="m-logo">Miltonly</div>
-            <p>Milton real estate, neighbourhood by neighbourhood, street by street.</p>
+            <h2>Milton real estate, neighbourhood by neighbourhood, street by street.</h2>
           </div>
-          <FooterSearch />
+          <div className="m-fforms">
+            <FooterSearch />
+            <BriefSignup id="m-footer-brief" context={context} where="footer" variant="footer" />
+          </div>
         </div>
 
-        {/* Every published hub, in the order the grid above ranks them. */}
+        {/* Every published hub, alphabetically. */}
         <div className="m-fhoods">
-          <h4>All {footer.neighbourhoods.length} neighbourhoods</h4>
+          <h3>All {footer.neighbourhoods.length} neighbourhoods</h3>
           <div className="m-fhoodlinks">
             {footer.neighbourhoods.map((n) => (
               <a href={`/neighbourhoods/${n.slug}`} key={n.slug}>
@@ -41,7 +57,9 @@ export function HomeFooter({ footer, brand }: Props) {
 
         <div className="m-fgrid">
           <div className="m-fcol">
-            <h4>In-demand streets</h4>
+            {/* The basis is in the heading: these are ranked by recency-weighted sales, and the
+                old "In-demand streets" stated no basis (MA-004 defect 15). */}
+            <h3>Busiest streets, recent sales</h3>
             {footer.topStreets.map((s) => (
               <a href={`/streets/${s.slug}`} key={s.slug}>
                 {s.name}
@@ -51,35 +69,46 @@ export function HomeFooter({ footer, brand }: Props) {
                 street pages existed; 738 is the set allowed to appear in search and in a
                 hub ladder. /streets is the index for both, and it states both itself. */}
             <a href="/streets">All {footer.streetPageCount} street pages</a>
-            <a href="/map">Street map</a>
+            <a href="/schools">{footer.schoolCount ? `${footer.schoolCount} schools` : 'Schools'}</a>
+            <a href="/mosques">{footer.mosqueCount ? `${footer.mosqueCount} mosques` : 'Mosques'}</a>
           </div>
 
           <div className="m-fcol">
-            <h4>Buy</h4>
+            <h3>Buy</h3>
             <a href="/listings">Homes for sale</a>
-            <a href="/rentals">For rent</a>
-            <a href="/sold">Recently sold</a>
-            <a href="/exclusive">Exclusive listings</a>
-            <a href="/compare">Compare</a>
-          </div>
-
-          <div className="m-fcol">
-            <h4>Condos &amp; tenure</h4>
-            <a href="/condos">Browse condo buildings</a>
-            <a href="/condos-guide">Condo buying guide</a>
-            <a href="/potl">POTL &amp; freehold condos</a>
+            <a href="/rentals">Homes for rent</a>
+            <a href="/condos">Condo buildings</a>
             <a href="/freehold">Freehold homes</a>
+            <a href="/potl">POTL and freehold condos</a>
+            <a href="/condos-guide">Condo buying guide</a>
+            <a href="/compare/freehold-vs-condo">Freehold or condo</a>
+            <a href="/compare">Compare</a>
+            <a href="/exclusive">Exclusive listings</a>
           </div>
 
           <div className="m-fcol">
-            <h4>Sell &amp; tools</h4>
+            <h3>Sell</h3>
             <a href="/sell">Home valuation</a>
-            <a href="/sold">Sold data &amp; trends</a>
-            <a href="/schools">Schools</a>
-            <a href="/mosques">Mosques</a>
+            <a href="/sold">Sold prices and trends</a>
+            <a href="/market-watch">Market watch</a>
+            {footer.edition ? <a href={`/market-watch/${footer.edition.weekOf}`}>{footer.edition.label}</a> : null}
             <a href="/about">About Aamir</a>
-            <a href="/book">Book a call</a>
           </div>
+
+          <div className="m-fcol">
+            <h3>Guides</h3>
+            {footer.guides.map((g) => (
+              <a href={`/guides/${g.slug}`} key={g.slug}>
+                {g.title}
+              </a>
+            ))}
+            <a href="/guides">All guides</a>
+          </div>
+        </div>
+
+        <div className="m-flegal">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
         </div>
 
         <div className="m-compliance">

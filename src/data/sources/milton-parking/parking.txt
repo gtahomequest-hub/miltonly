@@ -1,0 +1,33 @@
+SOURCE: Town of Milton, Parking
+URL: https://www.milton.ca/en/living-in-milton/parking.aspx
+PAGE TITLE: Parking - Town of Milton
+FETCHED: 2026-09-11 (curl, HTTP 200)
+SHA256 OF FETCHED HTML: 9bfb2b43d1469525a36213d8f463e34914b84adc05434c542422cd37493d0b71
+EXTRACTION: text of div#mainContent up to the share/contact block; links kept as [url]; tables flattened with |
+
+New: Monthly parking permits available in select parksThe Town of Milton is piloting overnight parking in select municipal parks to help ease on-street parking in residential areas.Limited spaces available – $60 per month.Apply now [https://milton.gtechna.net/permit-portal/]
+
+Welcome to the Town of Milton’s Parking Information page! Here, you’ll find important details about parking in Milton, including permits, rules, and enforcement. Whether you live here or are just visiting, this page has resources to help with on-street parking, municipal lots, overnight parking, and parking violations.
+
+Winter Parking
+[/en/living-in-milton/winter-parking.aspx]
+
+Parking Regulations
+[/en/living-in-milton/parking-regulations.aspx]
+
+Parking Exception Permits
+[/en/living-in-milton/parking-exceptions.aspx]
+
+Pay or dispute a Parking Ticket
+[/en/town-hall/parking-tickets-and-penalty-notices.aspx]
+
+Permanent 15-Hour Parking
+[/en/living-in-milton/permanent-extended-15-hour-parking.aspx]
+
+Licence Plate Recognition (LPR)
+[/en/living-in-milton/licence-plate-recognition-lpr.aspx]
+
+## You may also be interested in
+
+Ontario Accessible Parking Permit
+[https://www.ontario.ca/page/get-accessible-parking-permit]

@@ -1,0 +1,696 @@
+/* src/components/hub/hub-sections.css
+   The rebuilt neighbourhood hub, in the homepage's design language.
+
+   Scoped behind .hub-v3 so the tenure hubs (/freehold, /condos-guide, /potl), which share
+   .hub-v2 and hub-theme.css, are untouched. Every class here is .hh-*; nothing collides with
+   the .h-* classes those pages still use.
+
+   THE DEVICE, identical to home-sections.css: a monospace index number in the left margin, a
+   full-width hairline, the heading hard left with its standfirst beside it. Cream and forest
+   grounds alternate. The palette is the Miltonly one, resolved to literals rather than read
+   from --m-* because those variables live under .home-v2 and this page is not inside it.
+
+   THE ONE RULE THE LAYOUT ENFORCES: a figure and its basis are one block. The basis line is
+   not a hover, not a tooltip, not a footnote. It sits under the number, always, at a size
+   that is quiet but readable. That is why the ladder row is a grid with a full-width second
+   line rather than a single row of columns.
+
+   Sized for 380px: the fact panel and the sibling grid collapse to one column, the ladder
+   drops its measure bar (decorative; the count beside it is not), and the film strip scrolls
+   on its own axis rather than widening the page. */
+
+.hub-v3 {
+  --hh-forest: #073126;
+  --hh-deep: #04160f;
+  --hh-accent: #017848;
+  --hh-accent-dk: #004733;
+  --hh-signal: #00ff80;
+  --hh-cream: #f6f4ef;
+  --hh-body: #fffdfa;
+  --hh-sec2: #f6f6f3;
+  --hh-text: #292b29;
+  --hh-muted: #6b6f6a;
+  --hh-border: #dfe0dc;
+  --hh-serif: var(--font-fraunces), Georgia, serif;
+  --hh-sans: 'Inter', system-ui, sans-serif;
+  --hh-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  font-family: var(--hh-sans);
+  color: var(--hh-text);
+  background: var(--hh-body);
+  line-height: 1.6;
+}
+.hub-v3 *,
+.hub-v3 *::before,
+.hub-v3 *::after {
+  box-sizing: border-box;
+}
+.hub-v3 a {
+  color: inherit;
+  text-decoration: none;
+}
+.hub-v3 .hh-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ── hero ──────────────────────────────────────────────────────────────── */
+.hub-v3 .hh-hero {
+  background-color: var(--hh-forest);
+  background-image: linear-gradient(180deg, #051f15 0%, var(--hh-forest) 100%);
+  color: #fff;
+  padding: 104px 0 54px; /* clears the fixed nav */
+}
+.hub-v3 .hh-crumb {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.62);
+  margin-bottom: 22px;
+}
+.hub-v3 .hh-crumb a:hover {
+  color: var(--hh-signal);
+}
+.hub-v3 .hh-hero h1 {
+  margin: 0;
+  font-family: var(--hh-serif);
+  font-weight: 500;
+  font-size: clamp(40px, 6vw, 74px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+}
+.hub-v3 .hh-lede {
+  margin: 14px 0 0;
+  max-width: 60ch;
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.hub-v3 .hh-intents {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 34px;
+}
+.hub-v3 .hh-intent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.hub-v3 .hh-intent:hover {
+  border-color: rgba(0, 255, 128, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+}
+.hub-v3 .hh-intent-l {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+.hub-v3 .hh-intent-s {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.64);
+}
+
+/* ── the derived-fact panel ────────────────────────────────────────────── */
+/* .hh-sec.hh-glance, not .hh-glance: the generic .hh-sec rule below sets the cream body ground
+   at the same specificity and would win by source order, leaving white figures on cream. */
+.hub-v3 .hh-sec.hh-glance {
+  background: var(--hh-deep);
+  padding: 0;
+}
+.hub-v3 .hh-facts {
+  display: grid;
+  /* six facts fit one row inside the 1116px measure; auto-fit wraps them below it */
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+.hub-v3 .hh-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 22px 20px 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.hub-v3 a.hh-fact:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.hub-v3 .hh-fact-ic {
+  color: var(--hh-signal);
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+.hub-v3 .hh-fact-ic svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  fill: none;
+}
+.hub-v3 .hh-fact-v {
+  font-family: var(--hh-mono);
+  font-size: 25px;
+  line-height: 1.1;
+  color: #fff;
+}
+.hub-v3 .hh-fact-l {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+/* THE BASIS. Quiet, permanent, never behind an interaction. 0.62 white on the deep ground
+   clears 4.5:1 at this size; the earlier 0.42 read as decoration and measured under 4:1. */
+.hub-v3 .hh-fact-b {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ── section shell + the repeated head ─────────────────────────────────── */
+.hub-v3 .hh-sec {
+  padding: 68px 0;
+  background: var(--hh-body);
+}
+.hub-v3 .hh-sec.hh-streets,
+.hub-v3 .hh-sec.hh-schools,
+.hub-v3 .hh-sec.hh-siblings {
+  background: var(--hh-sec2);
+}
+.hub-v3 .hh-sec.hh-video {
+  background: var(--hh-forest);
+  color: #fff;
+}
+.hub-v3 .hh-head {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: start;
+  gap: 0 20px;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--hh-border);
+}
+.hub-v3 .hh-video .hh-head {
+  border-bottom-color: rgba(255, 255, 255, 0.18);
+}
+.hub-v3 .hh-index {
+  font-family: var(--hh-mono);
+  font-size: 13px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
+  color: var(--hh-accent);
+}
+.hub-v3 .hh-video .hh-index {
+  color: var(--hh-signal);
+}
+.hub-v3 .hh-headmain h2 {
+  margin: 0;
+  font-family: var(--hh-serif);
+  font-size: clamp(25px, 3.4vw, 38px);
+  font-weight: 500;
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+}
+.hub-v3 .hh-headmain p {
+  margin: 10px 0 0;
+  max-width: 66ch;
+  font-size: 14.5px;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-video .hh-headmain p {
+  color: rgba(255, 255, 255, 0.72);
+}
+.hub-v3 .hh-headaction {
+  align-self: end;
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  color: var(--hh-accent);
+  white-space: nowrap;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}
+.hub-v3 .hh-video .hh-headaction {
+  color: var(--hh-signal);
+}
+
+/* ── 01 · film strip ───────────────────────────────────────────────────── */
+.hub-v3 .hh-filmstrip {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 12px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 268px;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+.hub-v3 .hh-filmstrip li {
+  scroll-snap-align: start;
+}
+.hub-v3 .hh-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #062018;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.hub-v3 .hh-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.hub-v3 .hh-filmstrip a:hover .hh-frame img {
+  transform: scale(1.04);
+}
+.hub-v3 .hh-nightmark {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  font-family: var(--hh-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hh-signal);
+  background: rgba(4, 22, 15, 0.82);
+  border: 1px solid rgba(0, 255, 128, 0.35);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+.hub-v3 .hh-framename {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--hh-serif);
+  font-size: 18px;
+  color: #fff;
+}
+.hub-v3 .hh-framedate {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ── 02 · the ladder ───────────────────────────────────────────────────── */
+.hub-v3 .hh-ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--hh-border);
+}
+.hub-v3 .hh-ladder li {
+  border-bottom: 1px solid var(--hh-border);
+}
+/* Two lines per row: the figures, then the basis running under them. A single-row grid
+   cannot carry a disclosure without truncating it, and a truncated disclosure is worse
+   than none: it looks like the page is hiding the sample. */
+.hub-v3 .hh-ladder a {
+  display: grid;
+  grid-template-columns: 30px minmax(150px, 1.2fr) minmax(80px, 1.4fr) 82px 190px;
+  grid-template-areas:
+    'rank name bar sales price'
+    'rank basis basis basis basis';
+  align-items: center;
+  gap: 2px 16px;
+  padding: 12px 6px 11px;
+  transition: background 0.15s ease;
+}
+.hub-v3 .hh-ladrank {
+  grid-area: rank;
+  align-self: start;
+  padding-top: 5px;
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-ladder a:hover {
+  background: rgba(1, 120, 72, 0.06);
+}
+.hub-v3 .hh-ladname {
+  grid-area: name;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--hh-serif);
+  font-size: 18px;
+}
+.hub-v3 .hh-ladder a:hover .hh-ladname {
+  color: var(--hh-accent);
+}
+.hub-v3 .hh-ladfilm {
+  font-family: var(--hh-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hh-accent-dk);
+  background: rgba(0, 255, 128, 0.16);
+  border: 1px solid rgba(1, 120, 72, 0.3);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+.hub-v3 .hh-ladbar {
+  grid-area: bar;
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(1, 120, 72, 0.1);
+  overflow: hidden;
+}
+.hub-v3 .hh-ladbar > span {
+  display: block;
+  height: 100%;
+  background: var(--hh-accent);
+  border-radius: 3px;
+}
+.hub-v3 .hh-ladsales {
+  grid-area: sales;
+  font-family: var(--hh-mono);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.hub-v3 .hh-ladsales em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-ladprice {
+  grid-area: price;
+  font-family: var(--hh-mono);
+  font-size: 15px;
+  color: var(--hh-accent-dk);
+  text-align: right;
+  white-space: nowrap;
+}
+.hub-v3 .hh-ladsilent {
+  font-family: var(--hh-sans);
+  font-style: normal;
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-ladbasis {
+  grid-area: basis;
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+
+/* ── prose ─────────────────────────────────────────────────────────────── */
+.hub-v3 .hh-prose {
+  max-width: 68ch;
+}
+.hub-v3 .hh-prose p {
+  margin: 0 0 16px;
+  font-size: 16.5px;
+  line-height: 1.72;
+}
+.hub-v3 .hh-prose p:last-child {
+  margin-bottom: 0;
+}
+.hub-v3 .hh-source {
+  margin: 22px 0 0;
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+
+/* ── 04 · compare rows ─────────────────────────────────────────────────── */
+.hub-v3 .hh-compare {
+  margin-bottom: 30px;
+  border-top: 1px solid var(--hh-border);
+}
+.hub-v3 .hh-comparerow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 18px;
+  align-items: baseline;
+  padding: 13px 4px;
+  border-bottom: 1px solid var(--hh-border);
+}
+.hub-v3 .hh-comparel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14.5px;
+}
+.hub-v3 .hh-compareb {
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-comparem b {
+  font-weight: 500;
+  color: var(--hh-text);
+}
+.hub-v3 .hh-comparev {
+  font-family: var(--hh-mono);
+  font-size: 19px;
+  color: var(--hh-accent-dk);
+}
+.hub-v3 .hh-comparem,
+.hub-v3 .hh-compared {
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+
+/* ── 05/06 · schools + condos ──────────────────────────────────────────── */
+.hub-v3 .hh-schoollist,
+.hub-v3 .hh-condolist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
+}
+.hub-v3 .hh-schoollist a,
+.hub-v3 .hh-condolist a {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 15px 17px;
+  background: #fff;
+  border: 1px solid var(--hh-border);
+  border-radius: 12px;
+  transition: border-color 0.18s ease;
+}
+.hub-v3 .hh-schoollist a:hover,
+.hub-v3 .hh-condolist a:hover {
+  border-color: var(--hh-accent);
+}
+.hub-v3 .hh-schoolname,
+.hub-v3 .hh-condoname {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+.hub-v3 .hh-schoolmeta,
+.hub-v3 .hh-condoaddr {
+  font-size: 12.5px;
+  color: var(--hh-muted);
+}
+
+/* ── 07 · FAQs ─────────────────────────────────────────────────────────── */
+.hub-v3 .hh-faqlist {
+  max-width: 78ch;
+  border-top: 1px solid var(--hh-border);
+}
+.hub-v3 .hh-faqlist details {
+  border-bottom: 1px solid var(--hh-border);
+}
+.hub-v3 .hh-faqlist summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.hub-v3 .hh-faqlist summary::-webkit-details-marker {
+  display: none;
+}
+.hub-v3 .hh-faqlist summary::after {
+  content: '+';
+  color: var(--hh-accent);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+}
+.hub-v3 .hh-faqlist details[open] summary::after {
+  content: '−';
+}
+.hub-v3 .hh-faqlist p {
+  margin: 0;
+  padding: 0 4px 18px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--hh-muted);
+  max-width: 68ch;
+}
+
+/* ── 08 · siblings ─────────────────────────────────────────────────────── */
+.hub-v3 .hh-sibgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.hub-v3 .hh-sib {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--hh-border);
+  border-radius: 12px;
+  transition: border-color 0.18s ease;
+}
+.hub-v3 .hh-sib:hover {
+  border-color: var(--hh-accent);
+}
+.hub-v3 .hh-sibname {
+  font-family: var(--hh-serif);
+  font-size: 19px;
+}
+.hub-v3 .hh-sibdist {
+  font-family: var(--hh-mono);
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-sibprice {
+  margin-top: 6px;
+  font-family: var(--hh-mono);
+  font-size: 14px;
+  color: var(--hh-accent-dk);
+}
+.hub-v3 .hh-sibbasis {
+  font-size: 12px;
+  color: var(--hh-muted);
+}
+
+/* ── 09 · CTAs ─────────────────────────────────────────────────────────── */
+.hub-v3 .hh-ctagrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.hub-v3 .hh-ctacard {
+  padding: 26px 26px 28px;
+  border: 1px solid var(--hh-border);
+  border-radius: 14px;
+  background: #fff;
+}
+.hub-v3 .hh-ctacard h3 {
+  margin: 0 0 8px;
+  font-family: var(--hh-serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.hub-v3 .hh-ctacard p {
+  margin: 0 0 18px;
+  font-size: 14.5px;
+  color: var(--hh-muted);
+}
+.hub-v3 .hh-ctacard a {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 9px;
+  background: var(--hh-accent);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: background 0.18s ease;
+}
+.hub-v3 .hh-ctacard a:hover {
+  background: #0a8f57;
+}
+
+/* ── narrow ────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hub-v3 .hh-intents {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hub-v3 .hh-ctagrid {
+    grid-template-columns: 1fr;
+  }
+  .hub-v3 .hh-ladder a {
+    grid-template-columns: 28px minmax(130px, 1fr) 74px 190px;
+    grid-template-areas:
+      'rank name sales price'
+      'rank basis basis basis';
+  }
+  .hub-v3 .hh-ladbar {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .hub-v3 .hh-wrap {
+    padding: 0 20px;
+  }
+  .hub-v3 .hh-sec {
+    padding: 48px 0;
+  }
+  .hub-v3 .hh-hero {
+    padding: 92px 0 44px;
+  }
+  .hub-v3 .hh-head {
+    grid-template-columns: 34px 1fr;
+    gap: 0 12px;
+  }
+  .hub-v3 .hh-headaction {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 12px;
+  }
+  .hub-v3 .hh-comparerow {
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+  }
+}
+@media (max-width: 420px) {
+  .hub-v3 .hh-wrap {
+    padding: 0 16px;
+  }
+  .hub-v3 .hh-intents {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .hub-v3 .hh-intent {
+    padding: 12px 12px;
+  }
+  .hub-v3 .hh-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hub-v3 .hh-fact {
+    padding: 18px 14px 20px;
+  }
+  .hub-v3 .hh-filmstrip {
+    grid-auto-columns: 232px;
+  }
+  .hub-v3 .hh-ladder a {
+    grid-template-columns: 24px 1fr auto;
+    grid-template-areas:
+      'rank name price'
+      'rank sales price'
+      'rank basis basis';
+    gap: 2px 10px;
+  }
+  .hub-v3 .hh-ladprice {
+    max-width: 150px;
+    text-align: right;
+    white-space: normal;
+  }
+}

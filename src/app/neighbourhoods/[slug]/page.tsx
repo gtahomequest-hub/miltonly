@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getHubData } from "@/lib/hubData";
+import { getHubFooter, HUB_BRAND } from "@/lib/hubFooter";
 import { getHubMetaLive, getHubInputCached, hubCanonical } from "@/lib/hubLive";
 import HubPage from "@/components/hub/HubPage";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
 import {
   generateNeighbourhoodSchema,
   generateBreadcrumbSchema,
@@ -14,7 +14,20 @@ import {
 } from "@/lib/schema";
 import { projectHubSchema } from "@/lib/ai/hub/projectHubEntities";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
+// once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
+// the db3 tag (src/lib/db.ts), dropped by the sold sync and the analytics jobs; the DB1 rows are
+// dropped by path from the write paths (src/lib/revalidateSurfaces.ts). generateStaticParams
+// returns nothing, and it must exist: without it Next 14 treats a dynamic route as dynamic on
+// every request and never fills the route cache (the first MC-017 preview served every page
+// MISS, private, no-store). With it, nothing is prerendered at build and every page renders on
+// its first visit, then serves from the cache. A page whose Neon reads carry their own hour
+// revalidates on the hour: Next takes the smaller of the route's and a fetch's.
+export const revalidate = 86400;
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 interface Props {
   params: { slug: string };
@@ -38,6 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function NeighbourhoodPage({ params }: Props) {
   const data = await getHubData(params.slug);
   if (!data) notFound();
+  // The site footer, on the hub too. The legacy navy footer it replaced (2026-09-11)
+  // linked three neighbourhoods and two streets; this links every published hub.
+  const footer = await getHubFooter();
 
   // Projected hub Place/ItemList schema (DEC-WS4-2) — rebuilt best-effort so the SEO
   // the WS5 page carried is preserved; falls back to the neighbourhood schema if it throws.
@@ -81,8 +97,7 @@ export default async function NeighbourhoodPage({ params }: Props) {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <HubPage data={data} />
-      <FooterSection />
+      <HubPage data={data} footer={footer} brand={HUB_BRAND} />
     </>
   );
 }

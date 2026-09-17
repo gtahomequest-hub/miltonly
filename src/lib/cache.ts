@@ -7,6 +7,7 @@
 //   helpers bypass the cache and call the compute fn directly.
 
 import { Redis } from "@upstash/redis";
+import { staticGenerationAsyncStorage } from "next/dist/client/components/static-generation-async-storage.external";
 
 export const CACHE_TTL = {
   stats: 3600,        // 1h — street/neighbourhood stats
@@ -31,6 +32,22 @@ function makeRedis(): Redis | null {
 
 export const redis: Redis | null = makeRedis();
 
+// MC-017 (2026-09-13). The Upstash client fetches with cache: "no-store", and under a static
+// render (a build prerender, an ISR page's first visit, a regeneration) Next's patched fetch
+// treats that as a bailout: it sets the route's revalidate to 0 BEFORE the client throws, so the
+// catch blocks below keep the page alive but the render is dynamic and the route cache never
+// fills. That is what turned /guides, /condos and /neighbourhoods into ƒ routes on the first
+// MC-017 build. Under a static render the route cache is the cache, so Redis is skipped and the
+// compute runs once. isStaticGeneration is false under a force-dynamic render, in a route
+// handler, and inside unstable_cache, where Redis keeps its job. Same store unstable_noStore reads.
+function inStaticRender(): boolean {
+  try {
+    return staticGenerationAsyncStorage.getStore()?.isStaticGeneration === true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Read-through cache with stampede protection + graceful degradation.
  * 1. Cache hit → return cached value.
@@ -43,7 +60,7 @@ export async function cached<T>(
   ttlSeconds: number,
   compute: () => Promise<T>
 ): Promise<T> {
-  if (!redis) return compute();
+  if (!redis || inStaticRender()) return compute();
 
   // 1. Try cache
   try {

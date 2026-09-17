@@ -5,20 +5,21 @@ import { useRouter } from 'next/navigation';
 import './site-nav.css';
 import { IconSearch } from '../home/icons';
 import { resolveHeroHref } from '@/lib/heroSearchClient';
-import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from '@/lib/postLeadClient';
-import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey } from './megaTypes';
+import { BriefSignup } from './BriefSignup';
+import { LandlordSignup } from './LandlordSignup';
+import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey, NavContext } from './megaTypes';
 
 type Variant = 'home' | 'page';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THREE MENUS, ONE BAND, A RAIL THAT DRIVES THE PANEL, AND WHY THE MARKUP IS SHAPED SO
+// FOUR MENUS, ONE BAND, A RAIL THAT DRIVES THE PANEL, AND WHY THE MARKUP IS SHAPED SO
 //
 // The nav this replaces (2026-09-10 audit, scratchpad/reports/home-menu-audit.md) had a
 // trigger that was also a link, so a click that missed the panel navigated away; no hover;
 // no keyboard path into any panel; a panel anchored to its trigger that ran 149px off a
 // 1024 viewport; and a phone menu 66px tall. Five rules govern this file now:
 //
-//   1. EVERY DESTINATION IS AN <a href> AND IS ALWAYS IN THE DOM. The three panels are
+//   1. EVERY DESTINATION IS AN <a href> AND IS ALWAYS IN THE DOM. The four panels are
 //      server-rendered inside the band and closed with the `hidden` attribute, never by not
 //      existing; every rail item's panel is likewise rendered and hidden, one visible. A
 //      closed panel is invisible to a reader and fully present to a crawler.
@@ -36,9 +37,10 @@ type Variant = 'home' | 'page';
 //      panel; so does focusing it (Tab, ArrowUp/Down, Home/End) and so does a click. The
 //      first item is selected by default, so a panel never opens onto nothing.
 //
-// Below 820px the triggers and the band are hidden and the burger opens a full-viewport
-// panel: one <details> per menu, and inside it one <details> per rail item, the first open,
-// each carrying the SAME live content as its desktop panel.
+// Below 820px the triggers and the band are hidden and the burger, a <summary>, opens a
+// panel under the bar: one <details> per menu, and inside it one <details> per rail item, the
+// first open, each carrying the SAME live content as its desktop panel. Before hydration the
+// same <details> opens a compact menu of every destination and the search.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ItemDef {
@@ -51,8 +53,8 @@ export interface ItemDef {
   blurb: string;
   /** the street search form belongs in this panel */
   search?: boolean;
-  /** the daily-brief signup belongs in this panel */
-  brief?: boolean;
+  /** a lead form is this panel's CTA: the daily brief, or the landlord's listing request */
+  form?: 'brief' | 'landlord';
 }
 
 export interface MenuDef {
@@ -78,8 +80,10 @@ const MENUS: MenuDef[] = [
       { key: 'changes', label: 'Price changes', href: '/listings', cta: 'See every home for sale', blurb: 'Listings whose asking price moved, most recent change first.' },
       { key: 'condos', label: 'Condos', href: '/condos', cta: 'Every condo building', blurb: 'Condo apartments and condo townhouses, building by building.' },
       { key: 'freehold', label: 'Freehold', href: '/freehold', cta: 'The freehold market', blurb: 'Detached, semi-detached and freehold townhomes: no condo corporation, no fee.' },
-      { key: 'rentals', label: 'Rentals', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes for rent in Milton, available now.' },
-      { key: 'alerts', label: 'Alerts', href: '/saved', cta: 'Saved listings and alerts', blurb: 'What listed, what sold and what moved on price, each weekday morning.', brief: true },
+      // THE CTA IS THE FORM (MH-006, MA-004 defect 9). It went to /saved, which renders a sign-in
+      // wall under "No account". The brief form's submit is this panel's CTA; href is the
+      // Buy index for the crawler's copy of the rail and is never rendered for this item.
+      { key: 'alerts', label: 'Alerts', href: '/listings', cta: 'Send me the brief', blurb: 'What listed, what sold and what moved on price, each weekday morning.', form: 'brief' },
     ],
     more: [
       { href: '/sold', label: 'Recently sold' },
@@ -88,15 +92,43 @@ const MENUS: MenuDef[] = [
       { href: '/exclusive', label: 'Exclusive listings' },
     ],
   },
+  // RENT IS ITS OWN MENU (MH-007). It was one item in the Buy rail, four cards and a count. A
+  // renter and a landlord are neither buyers nor sellers, and the site has the lease record
+  // to serve both: what is available, where, at what rent by home type, what is new, and
+  // for a landlord what leased and how fast. "Available now" scopes to the page's hub (its
+  // href is rewritten in itemOf); the hub list links the scoped /rentals for every hub.
+  {
+    key: 'rent',
+    label: 'Rent',
+    href: '/rentals',
+    items: [
+      { key: 'now', label: 'Available now', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes for rent in Milton, available now.' },
+      { key: 'hoods', label: 'By neighbourhood', href: '/rentals', cta: 'Every home for rent', blurb: 'Every published neighbourhood, with the homes for rent in it now.' },
+      { key: 'typical', label: 'Typical rent', href: '/rentals', cta: 'Every home for rent', blurb: 'What Milton homes leased for in the last 12 months, by home type.' },
+      { key: 'new', label: 'New this week', href: '/rentals', cta: 'Every home for rent', blurb: 'Homes listed for rent in the last seven days, newest first.' },
+      // THE CTA IS THE FORM, like Alerts: the landlord's listing request posts through the one
+      // lead path as source "landlord". href is the Rent index for the crawler's copy of the
+      // rail and is never rendered for this item.
+      { key: 'landlord', label: 'Landlords', href: '/rentals', cta: 'List your rental with Aamir', blurb: 'What Milton homes leased for, how fast, and how a listing on the MLS reaches every renter at once.', form: 'landlord' },
+    ],
+    more: [
+      { href: '/neighbourhoods', label: 'Every neighbourhood' },
+      { href: '/condos', label: 'Condo buildings' },
+      { href: '/guides/milton-go-train-to-toronto', label: 'The GO train to Toronto' },
+      { href: '/guides/parking-in-milton', label: 'Parking in Milton' },
+    ],
+  },
   {
     key: 'streets',
     label: 'Streets',
     href: '/streets',
+    // THE SEARCH IS FIRST (MH-006). It is the panel's stated purpose and the fastest way to
+    // any street; it was the last rail item on desktop while the phone panel put it first.
     items: [
+      { key: 'search', label: 'Address search', href: '/streets', cta: 'Browse every street page', blurb: 'Type a street, an address or a neighbourhood and land on its page.', search: true },
       { key: 'hoods', label: 'By neighbourhood', href: '/neighbourhoods', cta: 'Every neighbourhood', blurb: 'Every published neighbourhood, with the homes listed in it now.' },
       { key: 'video', label: 'With video', href: '/streets', cta: 'Browse every street page', blurb: 'Streets filmed end to end, by day and overnight.' },
       { key: 'az', label: 'A to Z', href: '/streets', cta: 'Browse every street page', blurb: 'Every street page, alphabetically.' },
-      { key: 'search', label: 'Address search', href: '/streets', cta: 'Browse every street page', blurb: 'Type a street, an address or a neighbourhood and land on its page.', search: true },
     ],
     more: [
       { href: '/guides', label: 'Guides' },
@@ -129,7 +161,13 @@ const MOBILE_MAX = 820;
 // ── shared pieces ─────────────────────────────────────────────────────────────
 
 /** The street search: the fastest way to any Milton street, from any page. Same
- *  entity-first resolver as the hero, so one search behaviour sitewide. */
+ *  entity-first resolver as the hero, so one search behaviour sitewide.
+ *
+ *  A REAL FORM. `action="/search" method="get"` is the same resolver server-side, answering
+ *  with a redirect, so the search works from the first byte of HTML; once hydrated the submit
+ *  handler resolves in place and pushes the route without a full load. Same destination
+ *  either way. */
+const SEARCH_ACTION = '/search';
 function StreetSearch({ id }: { id: string }) {
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -139,7 +177,7 @@ function StreetSearch({ id }: { id: string }) {
     router.push(await resolveHeroHref(q));
   };
   return (
-    <form className="m-mega-search" onSubmit={submit} role="search">
+    <form className="m-mega-search" action={SEARCH_ACTION} method="get" onSubmit={submit} role="search">
       <label htmlFor={id} className="m-mega-label">
         Find your street
       </label>
@@ -147,51 +185,11 @@ function StreetSearch({ id }: { id: string }) {
         <span className="m-mega-searchlead" aria-hidden="true">
           <IconSearch />
         </span>
-        <input id={id} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Street, address or neighbourhood" autoComplete="off" />
+        <input id={id} name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Street, address or neighbourhood" autoComplete="off" />
         <button type="submit" className="m-mega-searchgo">
           Go
         </button>
       </div>
-    </form>
-  );
-}
-
-/** The daily-brief signup, through the one lead helper every form on the site uses. Source
- *  "daily-brief", the same as the homepage's and /sell's forms, so one list, one sender. */
-function BriefSignup({ id }: { id: string }) {
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
-  const [email, setEmail] = useState('');
-  const [honey, setHoney] = useState('');
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || status === 'submitting') return;
-    setStatus('submitting');
-    const ok = await postLead({ source: 'daily-brief', intent: 'buy', email, notes: 'Daily brief signup (menu)', honeypot: honey });
-    setStatus(ok ? 'ok' : 'error');
-  };
-  if (status === 'ok') {
-    return <p className="m-mega-note m-mega-ok">You are on the list. Your first brief lands the next weekday morning.</p>;
-  }
-  return (
-    <form className="m-mega-search" onSubmit={submit}>
-      <label htmlFor={id} className="m-mega-label">
-        The Milton daily brief
-      </label>
-      <div className="m-mega-searchrow">
-        <input id={id} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" autoComplete="email" />
-        <button type="submit" className="m-mega-searchgo" disabled={status === 'submitting'}>
-          {status === 'submitting' ? '…' : 'Send me the brief'}
-        </button>
-      </div>
-      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
-      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
-        <label>
-          Company website
-          <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
-        </label>
-      </div>
-      {status === 'error' ? <p className="m-mega-note">Something went wrong. Please try again.</p> : null}
-      <p className="m-mega-fine">Miltonly emails only. No account, unsubscribe anytime.</p>
     </form>
   );
 }
@@ -243,19 +241,20 @@ function ItemBody({
   content,
   idPrefix,
   onNavigate,
+  context,
 }: {
   menu: MenuDef;
   item: ItemDef;
   content?: MegaItemContent;
   idPrefix: string;
   onNavigate?: () => void;
+  context?: NavContext;
 }) {
   const c = content;
   return (
     <>
       <Lead segments={c?.lead} blurb={item.blurb} />
       {item.search ? <StreetSearch id={`${idPrefix}-search-${menu.key}-${item.key}`} /> : null}
-      {item.brief ? <BriefSignup id={`${idPrefix}-brief-${menu.key}-${item.key}`} /> : null}
 
       {c?.figures?.length ? (
         // NO FORMATTING HERE, DELIBERATELY. Every value arrives as a display string built by
@@ -265,7 +264,7 @@ function ItemBody({
           {c.figures.map((f) => (
             <div key={f.key}>
               <dt>{f.label}</dt>
-              <dd data-fig={`menu-sell-${f.key}`} data-value={f.value}>
+              <dd data-fig={`menu-${menu.key}-${f.key}`} data-value={f.value}>
                 {f.value}
               </dd>
               <dd className="m-mega-figwin">
@@ -275,6 +274,7 @@ function ItemBody({
           ))}
         </dl>
       ) : null}
+      {c?.figures?.length && c.basis ? <p className="m-mega-figbasis">{c.basis}</p> : null}
 
       {c?.cards?.length ? (
         <ul className="m-mega-cards">
@@ -307,13 +307,13 @@ function ItemBody({
 
       {c?.hubs?.length ? (
         <div className="m-mega-hubs">
-          <span className="m-mega-label">Neighbourhoods, with homes listed now</span>
+          <span className="m-mega-label">{c.hubsLabel ?? 'Neighbourhoods, with homes listed now'}</span>
           <ul>
             {c.hubs.map((h) => (
               <li key={h.slug}>
-                <a href={`/neighbourhoods/${h.slug}`} onClick={onNavigate}>
+                <a href={h.href ?? `/neighbourhoods/${h.slug}`} onClick={onNavigate}>
                   {h.name}
-                  <span className="m-mega-count" data-fig="menu-hub-active" data-slug={h.slug} data-value={h.active}>
+                  <span className="m-mega-count" data-fig={c.hubsFig ?? 'menu-hub-active'} data-slug={h.slug} data-value={h.active}>
                     {h.active}
                   </span>
                 </a>
@@ -372,19 +372,26 @@ function ItemBody({
 
       <Strip strip={c?.strip} onNavigate={onNavigate} />
       {c?.note ? <p className="m-mega-note">{c.note}</p> : null}
-      <a className="m-mega-cta" href={item.href} onClick={onNavigate}>
-        {item.cta}
-        <span aria-hidden="true"> →</span>
-      </a>
+      {item.form === 'brief' ? (
+        <BriefSignup id={`${idPrefix}-brief-${menu.key}-${item.key}`} context={context} cta={c?.cta ?? item.cta} />
+      ) : item.form === 'landlord' ? (
+        <LandlordSignup id={`${idPrefix}-landlord-${menu.key}-${item.key}`} context={context} cta={c?.cta ?? item.cta} />
+      ) : (
+        <a className="m-mega-cta" href={item.href} onClick={onNavigate}>
+          {c?.cta ?? item.cta}
+          <span aria-hidden="true"> →</span>
+        </a>
+      )}
     </>
   );
 }
 
 // ── the component ─────────────────────────────────────────────────────────────
 
-const firstItems = (): Record<MenuKey, string> => ({ buy: MENUS[0].items[0].key, streets: MENUS[1].items[0].key, sell: MENUS[2].items[0].key });
+const firstItems = (): Record<MenuKey, string> =>
+  Object.fromEntries(MENUS.map((m) => [m.key, m.items[0].key])) as Record<MenuKey, string>;
 
-export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: MegaLive }) {
+export function SiteNav({ variant = 'page', live, context }: { variant?: Variant; live?: MegaLive; context?: NavContext }) {
   const isHome = variant === 'home';
   const router = useRouter();
   const [searchVisible, setSearchVisible] = useState(false);
@@ -397,8 +404,11 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
   const navRef = useRef<HTMLElement>(null);
   const bandRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const burgerRef = useRef<HTMLButtonElement>(null);
-  const triggerRefs = useRef<Record<MenuKey, HTMLButtonElement | null>>({ buy: null, streets: null, sell: null });
+  // The burger is a <summary> and the phone panel lives inside its <details>, so the menu
+  // opens before hydration; React takes the `open` attribute over once it is running.
+  const burgerRef = useRef<HTMLElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const triggerRefs = useRef<Record<MenuKey, HTMLButtonElement | null>>({ buy: null, rent: null, streets: null, sell: null });
   const openTimer = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
   const railTimer = useRef<number | null>(null);
@@ -569,6 +579,10 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     // Same entity-first resolver as the hero: one search behaviour sitewide.
     router.push(await resolveHeroHref(navQuery));
   };
+  // THE BAR SEARCH IS ON EVERY PAGE (MH-006). The page variant shows it at 1024 and up from the
+  // first paint (site-nav.css hides it below); the homepage, whose hero is a search, reveals it
+  // once the hero's band has scrolled under the bar.
+  const showSearch = isHome ? searchVisible : true;
 
   useEffect(() => {
     if (!isHome) return; // page variant has no scroll-reveal dependency
@@ -586,6 +600,12 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     };
   }, [isHome]);
 
+  // A panel opened natively before hydration is still open when React arrives with
+  // `menuOpen=false`; adopt it, so the full accordion and the scroll lock take over at once.
+  useEffect(() => {
+    if (detailsRef.current?.open) setMenuOpen(true);
+  }, []);
+
   // Mobile panel: body scroll lock + Esc close + focus trap while open.
   useEffect(() => {
     if (!menuOpen) return;
@@ -594,7 +614,9 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     const panel = panelRef.current;
     const focusables = () =>
       Array.from(panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), summary, input') ?? []);
-    focusables()[0]?.focus();
+    // Focus the panel itself, not its first control: the first control is the search input,
+    // and focusing it on open would raise the phone's keyboard over the menu.
+    panel?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setMenuOpen(false);
@@ -626,19 +648,37 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
     };
   }, [menuOpen]);
 
-  const ctaHref = '/sell';
+  // THE CTA CARRIES THE PAGE (MH-006, MA-004 change 6). On a street page the valuation opens
+  // with the street prefilled (HomeValuationCard reads ?street=); on a hub it is the hub's own
+  // /value page. The bar, the Sell panel's "What's it worth" and the phone panel all use it.
+  const ctaHref = context?.street
+    ? `/sell?street=${encodeURIComponent(context.street.name)}#valuation`
+    : context?.hub
+      ? `/value/${context.hub.slug}`
+      : '/sell';
   const closeMobile = () => setMenuOpen(false);
   const contentOf = (m: MenuDef, item: ItemDef): MegaItemContent | undefined => live?.[m.key]?.[item.key];
+  // The Rent menu's "available now" follows the page too: on a hub, or a street with a hub,
+  // its CTA is the scoped /rentals, the page whose count the panel just stated.
+  const rentHref = context?.hub ? `/rentals?neighbourhood=${context.hub.slug}` : '/rentals';
+  const itemOf = (m: MenuDef, item: ItemDef): ItemDef =>
+    m.key === 'sell' && item.key === 'worth' ? { ...item, href: ctaHref } : m.key === 'rent' && item.key === 'now' ? { ...item, href: rentHref } : item;
 
   return (
     <nav
       ref={navRef}
       className={isHome ? 'm-nav' : 'site-nav'}
+      aria-label="Site"
       onPointerOver={onNavPointerOver}
       onPointerLeave={onNavPointerLeave}
       onKeyDown={onNavKeyDown}
       onBlur={onNavBlur}
     >
+      {/* The skip link (MA-004 defect 20). Its target is the sentinel at the end of this nav,
+          so the next Tab lands on the page's first control, past the bar and every panel. */}
+      <a className="sn-skip" href="#after-nav">
+        Skip to content
+      </a>
       <div className="m-wrap">
         <a className="m-logo" href="/" aria-label="Miltonly home">
           Milton<b>ly</b>
@@ -671,38 +711,124 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
           })}
         </div>
 
-        {isHome && (
-          <form className={`m-navsearch${searchVisible ? ' m-show' : ''}`} aria-hidden={!searchVisible} onSubmit={submitNavSearch}>
-            <span className="m-navsearch-lead">
-              <IconSearch />
-            </span>
-            <input
-              value={navQuery}
-              onChange={(e) => setNavQuery(e.target.value)}
-              placeholder="Street, address, or neighbourhood…"
-              tabIndex={searchVisible ? 0 : -1}
-            />
-            <button type="submit" className="m-navsearch-go" aria-label="Search" tabIndex={searchVisible ? 0 : -1}>
-              →
-            </button>
-          </form>
-        )}
+        <form
+          className={`m-navsearch${showSearch ? ' m-show' : ''}`}
+          aria-hidden={!showSearch}
+          action={SEARCH_ACTION}
+          method="get"
+          role="search"
+          onSubmit={submitNavSearch}
+        >
+          <span className="m-navsearch-lead">
+            <IconSearch />
+          </span>
+          <input
+            name="q"
+            value={navQuery}
+            onChange={(e) => setNavQuery(e.target.value)}
+            placeholder="Street, address, or neighbourhood…"
+            aria-label="Find a street, address or neighbourhood"
+            tabIndex={showSearch ? 0 : -1}
+          />
+          <button type="submit" className="m-navsearch-go" aria-label="Search" tabIndex={showSearch ? 0 : -1}>
+            →
+          </button>
+        </form>
 
         <a className="m-navcta" href={ctaHref}>
           What&apos;s my home worth?
         </a>
 
-        <button
-          ref={burgerRef}
-          className="sn-burger"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((o) => !o)}
+        {/* THE PHONE MENU IS A <details> (MH-006, MA-004 defect 6). The burger is its <summary>,
+            so a tap opens the panel with no JavaScript, from the first byte of HTML; once
+            hydrated the `open` attribute is React's, and Escape, the focus trap, the scroll
+            lock and the resize close all run on the same state. Closed, the panel is not
+            rendered by the browser; open before hydration it carries the compact menu below
+            (the search, every destination, the CTA); open after, the full accordion. The
+            panel sits UNDER the bar rather than over it, so the burger stays reachable as the
+            close control either way. */}
+        <details
+          ref={detailsRef}
+          className="sn-mobile"
+          open={menuOpen}
+          onToggle={(e) => setMenuOpen((e.currentTarget as HTMLDetailsElement).open)}
         >
-          <span />
-          <span />
-          <span />
-        </button>
+          <summary ref={burgerRef} className="sn-burger" aria-label={menuOpen ? 'Close menu' : 'Open menu'}>
+            <span />
+            <span />
+            <span />
+          </summary>
+          <div className="sn-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Site menu" tabIndex={-1}>
+            {menuOpen ? (
+              <>
+                <StreetSearch id="sn-street-search" />
+                {/* Native <details>: an accordion that opens with no JavaScript and stays usable
+                    at 380px, where a popover cannot be. One per menu; inside it one per rail
+                    item, the first open, each carrying the SAME live content as its desktop
+                    panel. A tap on an item opens that item's content inline. */}
+                <div className="sn-acc">
+                  {MENUS.map((m) => (
+                    <details key={m.key} className="sn-acc-item">
+                      <summary>{m.label}</summary>
+                      <div className="sn-acc-body">
+                        {m.items.map((it, k) => (
+                          <details key={it.key} className="sn-item" open={k === 0}>
+                            <summary>
+                              {it.label}
+                              {contentOf(m, it)?.sub ? <span className="m-mega-tabsub">{contentOf(m, it)!.sub}</span> : null}
+                            </summary>
+                            <div className="sn-item-body">
+                              <ItemBody menu={m} item={itemOf(m, it)} content={contentOf(m, it)} idPrefix="sn" onNavigate={closeMobile} context={context} />
+                            </div>
+                          </details>
+                        ))}
+                        <ul className="m-mega-more">
+                          {m.more.map((r) => (
+                            <li key={r.href}>
+                              <a href={r.href} onClick={closeMobile}>
+                                {r.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+                <a className="sn-panel-cta" href={ctaHref} onClick={closeMobile}>
+                  What&apos;s my home worth?
+                </a>
+              </>
+            ) : (
+              // THE COMPACT MENU, served in the HTML. Every destination once, no live blocks:
+              // the desktop band is the crawlable copy and rendering the accordion here too
+              // would double every menu link on every page. This is what a finger reaches in
+              // the seconds before hydration, and it is a complete menu.
+              <div className="sn-compact">
+                <StreetSearch id="sn-street-search" />
+                {MENUS.map((m) => {
+                  const seen = new Set<string>();
+                  const links = [...m.items.filter((it) => !it.form).map((it) => ({ href: itemOf(m, it).href, label: it.label })), ...m.more].filter((l) => !seen.has(l.href) && seen.add(l.href));
+                  return (
+                    <div key={m.key} className="sn-compact-group">
+                      <span className="m-mega-label">{m.label}</span>
+                      <ul className="m-mega-more">
+                        {links.map((l) => (
+                          <li key={l.href}>
+                            <a href={l.href}>{l.label}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+                <a className="sn-panel-cta" href={ctaHref}>
+                  What&apos;s my home worth?
+                </a>
+              </div>
+            )}
+          </div>
+        </details>
       </div>
 
       {/* THE BAND. One full-bleed strip under the bar; every menu panel is always inside it
@@ -734,6 +860,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
                         onKeyDown={onRailKeyDown(m, k)}
                       >
                         {it.label}
+                        {contentOf(m, it)?.sub ? <span className="m-mega-tabsub">{contentOf(m, it)!.sub}</span> : null}
                       </button>
                     );
                   })}
@@ -748,7 +875,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
                       className="m-item"
                       hidden={selected[m.key] !== it.key}
                     >
-                      <ItemBody menu={m} item={it} content={contentOf(m, it)} idPrefix="m" />
+                      <ItemBody menu={m} item={itemOf(m, it)} content={contentOf(m, it)} idPrefix="m" context={context} />
                     </div>
                   ))}
                 </div>
@@ -767,60 +894,7 @@ export function SiteNav({ variant = 'page', live }: { variant?: Variant; live?: 
           </section>
         ))}
       </div>
-
-      {menuOpen && (
-        <div className="sn-panel" ref={panelRef} role="dialog" aria-modal="true" aria-label="Site menu">
-          <div className="sn-panel-head">
-            <a className="m-logo" href="/" aria-label="Miltonly home" onClick={closeMobile}>
-              Milton<b>ly</b>
-            </a>
-            <button
-              className="sn-close"
-              aria-label="Close menu"
-              onClick={() => {
-                setMenuOpen(false);
-                burgerRef.current?.focus();
-              }}
-            >
-              ×
-            </button>
-          </div>
-          <StreetSearch id="sn-street-search" />
-          {/* Native <details>: an accordion that opens with no JavaScript and stays usable at
-              380px, where a popover cannot be. One per menu; inside it one per rail item, the
-              first open, each carrying the SAME live content as its desktop panel. A tap on
-              an item opens that item's content inline. */}
-          <div className="sn-acc">
-            {MENUS.map((m) => (
-              <details key={m.key} className="sn-acc-item">
-                <summary>{m.label}</summary>
-                <div className="sn-acc-body">
-                  {m.items.map((it, k) => (
-                    <details key={it.key} className="sn-item" open={k === 0}>
-                      <summary>{it.label}</summary>
-                      <div className="sn-item-body">
-                        <ItemBody menu={m} item={it} content={contentOf(m, it)} idPrefix="sn" onNavigate={closeMobile} />
-                      </div>
-                    </details>
-                  ))}
-                  <ul className="m-mega-more">
-                    {m.more.map((r) => (
-                      <li key={r.href}>
-                        <a href={r.href} onClick={closeMobile}>
-                          {r.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </details>
-            ))}
-          </div>
-          <a className="sn-panel-cta" href={ctaHref} onClick={closeMobile}>
-            What&apos;s my home worth?
-          </a>
-        </div>
-      )}
+      <span id="after-nav" className="sn-skip-target" tabIndex={-1} />
     </nav>
   );
 }

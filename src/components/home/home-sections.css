@@ -430,31 +430,6 @@
   color: var(--m-accent-bright);
 }
 
-/* ── footer: the hub link block ────────────────────────────────────────── */
-.home-v2 .m-fhoods {
-  padding: 26px 0 4px;
-}
-.home-v2 .m-fhoods h4 {
-  font-family: var(--m-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--m-green);
-  margin-bottom: 12px;
-}
-.home-v2 .m-fhoodlinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 22px;
-}
-.home-v2 .m-fhoodlinks a {
-  font-size: 13.5px;
-  color: var(--m-text-sec);
-}
-.home-v2 .m-fhoodlinks a:hover {
-  color: var(--m-green);
-}
-
 /* ── narrow ────────────────────────────────────────────────────────────── */
 @media (max-width: 1040px) {
   .home-v2 .mh-cards {

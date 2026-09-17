@@ -82,7 +82,7 @@ export function SaveShareRow({ mls, address, isRental }: { mls: string; address:
   };
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const shareText = `${address} — ${isRental ? "for rent" : "for sale"} on ${config.SITE_NAME}`;
+  const shareText = `${address}, ${isRental ? "for rent" : "for sale"} on ${config.SITE_NAME}`;
 
   const handleShare = async () => {
     if (typeof navigator !== "undefined" && "share" in navigator) {
@@ -104,27 +104,27 @@ export function SaveShareRow({ mls, address, isRental }: { mls: string; address:
     <div className="flex items-center gap-2 mt-3">
       <button
         onClick={handleSave}
-        className={`flex items-center gap-1.5 text-[12px] font-bold rounded-lg px-3 py-2 border transition-colors ${saved ? "bg-[#f59e0b] border-[#f59e0b] text-white" : "border-[#1e3a5f] text-[#f59e0b] hover:bg-[#0c1e35]"}`}
+        className={`flex items-center gap-1.5 text-[12px] font-bold rounded-lg px-3 py-2 border transition-colors ${saved ? "bg-[#00ff80] border-[#017848] text-[#073126]" : "border-[#dfe0dc] text-[#017848] hover:bg-[#f6f6f3]"}`}
       >
         <span className="text-[14px]">{saved ? "♥" : "♡"}</span> {saved ? "Saved" : "Save"}
       </button>
       <div className="relative">
         <button
           onClick={handleShare}
-          className="flex items-center gap-1.5 text-[12px] font-bold rounded-lg px-3 py-2 border border-[#1e3a5f] text-[#94a3b8] hover:bg-[#0c1e35] hover:text-[#f59e0b] transition-colors"
+          className="flex items-center gap-1.5 text-[12px] font-bold rounded-lg px-3 py-2 border border-[#dfe0dc] text-[#3e423f] hover:bg-[#f6f6f3] hover:text-[#017848] transition-colors"
         >
           <span className="text-[14px]">↗</span> Share
         </button>
         {shareOpen && (
-          <div className="absolute right-0 top-full mt-1 bg-white border border-[#e2e8f0] rounded-lg shadow-lg min-w-[180px] z-20">
-            <button onClick={copyLink} className="block w-full text-left px-3 py-2 text-[12px] text-[#475569] hover:bg-[#f8f9fb]">
+          <div className="absolute right-0 top-full mt-1 bg-white border border-[#dfe0dc] rounded-lg shadow-lg min-w-[180px] z-20">
+            <button onClick={copyLink} className="block w-full text-left px-3 py-2 text-[12px] text-[#3e423f] hover:bg-[#fffdfa]">
               {copied ? "✓ Copied!" : "📋 Copy link"}
             </button>
             <a
               href={`https://wa.me/?text=${encodeURIComponent(shareText + "\n" + shareUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block px-3 py-2 text-[12px] text-[#475569] hover:bg-[#f8f9fb]"
+              className="block px-3 py-2 text-[12px] text-[#3e423f] hover:bg-[#fffdfa]"
             >
               💬 Share on WhatsApp
             </a>
@@ -166,25 +166,25 @@ function NearbyRow({ p, lat, lng, commute = false, coordsValid }: { p: POI; lat:
     ? directionsUrl(p.lat, p.lng, lat, lng)
     : directionsUrl(p.lat, p.lng);
   return (
-    <div className="flex items-center justify-between gap-3 bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 hover:border-[#07111f] transition-colors">
+    <div className="flex items-center justify-between gap-3 bg-white border border-[#dfe0dc] rounded-lg px-3 py-2.5 hover:border-[#073126] transition-colors">
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="text-[16px] shrink-0">{p.icon}</span>
         <div className="min-w-0">
           {p.href ? (
-            <Link href={p.href} className="text-[13px] font-semibold text-[#07111f] hover:text-[#f59e0b] truncate block">
+            <Link href={p.href} className="text-[13px] font-semibold text-[#073126] hover:text-[#017848] truncate block">
               {p.name}
             </Link>
           ) : (
-            <span className="text-[13px] font-semibold text-[#07111f] truncate block">{p.name}</span>
+            <span className="text-[13px] font-semibold text-[#073126] truncate block">{p.name}</span>
           )}
-          <p className="text-[11px] text-[#94a3b8]">{timeStr}</p>
+          <p className="text-[11px] text-[#6b6f6a]">{timeStr}</p>
         </div>
       </div>
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-[11px] font-semibold text-[#f59e0b] hover:underline shrink-0"
+        className="text-[11px] font-semibold text-[#017848] hover:underline shrink-0"
       >
         Directions →
       </a>
@@ -197,25 +197,25 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
   const coordsValid = hasValidCoords(lat, lng);
 
   const unavailableNote = (
-    <div className="bg-[#f8f9fb] border border-[#e2e8f0] rounded-lg p-4 text-center">
-      <p className="text-[13px] font-semibold text-[#475569]">Precise distances unavailable for this listing</p>
-      <p className="text-[11px] text-[#94a3b8] mt-1">Coordinates are still syncing. See the Commutes tab for {config.CITY_NAME}-average drive times.</p>
+    <div className="bg-[#fffdfa] border border-[#dfe0dc] rounded-lg p-4 text-center">
+      <p className="text-[13px] font-semibold text-[#3e423f]">Precise distances unavailable for this listing</p>
+      <p className="text-[11px] text-[#6b6f6a] mt-1">Coordinates are still syncing. See the Commutes tab for {config.CITY_NAME}-average drive times.</p>
     </div>
   );
 
   return (
     <div className="mb-8">
-      <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">What&apos;s nearby</h2>
+      <h2 className="text-[18px] font-extrabold text-[#073126] mb-3">What&apos;s nearby</h2>
       {/* Where the derived fact is the content. With a rooftop these are real distances from
           this house to Town-published school and park geometry; the source is named beside them,
           not only in a footer. Absent when there is nothing derived to attribute. */}
       {coordsValid && (
-        <p className="text-[11px] text-[#94a3b8] mb-3">
+        <p className="text-[11px] text-[#6b6f6a] mb-3">
           Distances from this property&apos;s municipal address point. Contains information
           licensed under the Open Government Licence – Milton.
         </p>
       )}
-      <div className="flex gap-1 mb-4 border-b border-[#e2e8f0] overflow-x-auto">
+      <div className="flex gap-1 mb-4 border-b border-[#dfe0dc] overflow-x-auto">
         {([
           ["commutes", "🏙️ Commutes"],
           ["groceries", "🛒 Groceries"],
@@ -225,7 +225,7 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={`text-[12px] font-semibold px-3 py-2 border-b-2 -mb-[1px] transition-colors whitespace-nowrap ${tab === k ? "border-[#07111f] text-[#07111f]" : "border-transparent text-[#94a3b8] hover:text-[#475569]"}`}
+            className={`text-[12px] font-semibold px-3 py-2 border-b-2 -mb-[1px] transition-colors whitespace-nowrap ${tab === k ? "border-[#073126] text-[#073126]" : "border-transparent text-[#6b6f6a] hover:text-[#3e423f]"}`}
           >
             {l}
           </button>
@@ -254,20 +254,20 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
               <Link
                 key={s.slug}
                 href={`/schools/${s.slug}`}
-                className="flex items-start justify-between gap-3 bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 hover:border-[#07111f] transition-colors"
+                className="flex items-start justify-between gap-3 bg-white border border-[#dfe0dc] rounded-lg px-3 py-2.5 hover:border-[#073126] transition-colors"
               >
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-[#07111f] truncate">{s.name}</p>
-                  <p className="text-[11px] text-[#94a3b8]">
+                  <p className="text-[13px] font-semibold text-[#073126] truncate">{s.name}</p>
+                  <p className="text-[11px] text-[#6b6f6a]">
                     {s.board === "public" ? "Public" : "Catholic"} · {s.grades}
                     {s.fraserScore && ` · Fraser ${s.fraserScore}/10`}
                   </p>
                 </div>
-                <span className="text-[11px] font-semibold text-[#f59e0b] shrink-0 self-center">→</span>
+                <span className="text-[11px] font-semibold text-[#017848] shrink-0 self-center">→</span>
               </Link>
             ))
           ) : (
-            <p className="text-[13px] text-[#94a3b8] col-span-full py-4">No schools mapped to this neighbourhood yet — <Link href="/schools" className="text-[#f59e0b] hover:underline">browse all {config.CITY_NAME} schools</Link>.</p>
+            <p className="text-[13px] text-[#6b6f6a] col-span-full py-4">No schools mapped to this neighbourhood yet. <Link href="/schools" className="text-[#017848] hover:underline">browse all {config.CITY_NAME} schools</Link>.</p>
           )}
         </div>
       )}
@@ -276,13 +276,13 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
         coordsValid ? (
           <div className="space-y-4">
             <div>
-              <h3 className="text-[12px] font-bold text-[#07111f] uppercase tracking-[0.08em] mb-2">Mosques</h3>
+              <h3 className="text-[12px] font-bold text-[#073126] uppercase tracking-[0.08em] mb-2">Mosques</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {MOSQUES.map((p) => <NearbyRow key={p.name} p={p} lat={lat} lng={lng} coordsValid />)}
               </div>
             </div>
             <div>
-              <h3 className="text-[12px] font-bold text-[#07111f] uppercase tracking-[0.08em] mb-2">Parks & Trails</h3>
+              <h3 className="text-[12px] font-bold text-[#073126] uppercase tracking-[0.08em] mb-2">Parks & Trails</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {/* The parks list went from 9 hand-entered coordinates to the Town's 93. Rendering
                     all of them would be a wall, and the far ones say nothing about this house —
@@ -294,14 +294,14 @@ export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; s
               </div>
             </div>
             <div>
-              <h3 className="text-[12px] font-bold text-[#07111f] uppercase tracking-[0.08em] mb-2">Transit</h3>
+              <h3 className="text-[12px] font-bold text-[#073126] uppercase tracking-[0.08em] mb-2">Transit</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {TRANSIT.map((p) => <NearbyRow key={p.name} p={p} lat={lat} lng={lng} coordsValid />)}
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${encodeURIComponent(`${config.CITY_NAME} GO`)}&travelmode=transit`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 bg-[#07111f] text-[#f59e0b] text-[12px] font-semibold rounded-lg px-3 py-2.5 hover:bg-[#0c1e35] transition-colors"
+                  className="flex items-center justify-center gap-1.5 bg-[#073126] text-[#00ff80] text-[12px] font-semibold rounded-lg px-3 py-2.5 hover:bg-[#0a3d30] transition-colors"
                 >
                   Plan transit route →
                 </a>
@@ -351,98 +351,105 @@ export function MortgageCalc({ price, taxAmount, propertyType }: { price: number
 
   return (
     <div className="mb-8">
-      <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">Mortgage & monthly cost</h2>
-      <div className="bg-white rounded-xl border border-[#e2e8f0] p-5">
+      <h2 className="text-[18px] font-extrabold text-[#073126] mb-3">Mortgage & monthly cost</h2>
+      <div className="bg-white rounded-xl border border-[#dfe0dc] p-5">
         <div className="flex items-baseline gap-1 mb-4">
-          <span className="text-[32px] font-extrabold text-[#07111f]">${total.toLocaleString()}</span>
-          <span className="text-[13px] text-[#94a3b8]">/month estimated total</span>
+          <span className="text-[32px] font-extrabold text-[#073126]">${total.toLocaleString()}</span>
+          <span className="text-[13px] text-[#6b6f6a]">/month estimated total</span>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="flex items-center justify-between text-[12px] font-semibold text-[#475569] mb-1">
-              Down payment <span className="text-[#07111f]">{downPct}% · ${down.toLocaleString()}</span>
+            <label className="flex items-center justify-between text-[12px] font-semibold text-[#3e423f] mb-1">
+              Down payment <span className="text-[#073126]">{downPct}% · ${down.toLocaleString()}</span>
             </label>
-            <input type="range" min="5" max="50" step="1" value={downPct} onChange={(e) => setDownPct(parseInt(e.target.value))} className="w-full accent-[#f59e0b]" />
+            <input type="range" min="5" max="50" step="1" value={downPct} onChange={(e) => setDownPct(parseInt(e.target.value))} className="w-full accent-[#017848]" />
           </div>
           <div>
-            <label className="flex items-center justify-between text-[12px] font-semibold text-[#475569] mb-1">
-              Interest rate <span className="text-[#07111f]">{rate.toFixed(2)}%</span>
+            <label className="flex items-center justify-between text-[12px] font-semibold text-[#3e423f] mb-1">
+              Interest rate <span className="text-[#073126]">{rate.toFixed(2)}%</span>
             </label>
-            <input type="range" min="3" max="8" step="0.25" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="w-full accent-[#f59e0b]" />
+            <input type="range" min="3" max="8" step="0.25" value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="w-full accent-[#017848]" />
           </div>
           <div>
-            <label className="flex items-center justify-between text-[12px] font-semibold text-[#475569] mb-1">
-              Amortization <span className="text-[#07111f]">{amort} yrs</span>
+            <label className="flex items-center justify-between text-[12px] font-semibold text-[#3e423f] mb-1">
+              Amortization <span className="text-[#073126]">{amort} yrs</span>
             </label>
-            <input type="range" min="15" max="30" step="5" value={amort} onChange={(e) => setAmort(parseInt(e.target.value))} className="w-full accent-[#f59e0b]" />
+            <input type="range" min="15" max="30" step="5" value={amort} onChange={(e) => setAmort(parseInt(e.target.value))} className="w-full accent-[#017848]" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-[#f1f5f9] text-center">
-          <div><p className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Mortgage</p><p className="text-[14px] font-bold text-[#07111f]">${mortgage.toLocaleString()}</p></div>
-          <div><p className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Tax</p><p className="text-[14px] font-bold text-[#07111f]">${taxPerMonth.toLocaleString()}</p></div>
-          <div><p className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Maintenance</p><p className="text-[14px] font-bold text-[#07111f]">${maintenance}</p></div>
-          <div><p className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Insurance</p><p className="text-[14px] font-bold text-[#07111f]">${insurance}</p></div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-[#f6f6f3] text-center">
+          <div><p className="text-[10px] text-[#6b6f6a] uppercase tracking-wider">Mortgage</p><p className="text-[14px] font-bold text-[#073126]">${mortgage.toLocaleString()}</p></div>
+          <div><p className="text-[10px] text-[#6b6f6a] uppercase tracking-wider">Tax</p><p className="text-[14px] font-bold text-[#073126]">${taxPerMonth.toLocaleString()}</p></div>
+          <div><p className="text-[10px] text-[#6b6f6a] uppercase tracking-wider">Maintenance</p><p className="text-[14px] font-bold text-[#073126]">${maintenance}</p></div>
+          <div><p className="text-[10px] text-[#6b6f6a] uppercase tracking-wider">Insurance</p><p className="text-[14px] font-bold text-[#073126]">${insurance}</p></div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-[#f1f5f9]">
-          <label className="flex items-center gap-2 text-[12px] font-semibold text-[#475569] mb-2 cursor-pointer">
-            <input type="checkbox" checked={firstTime} onChange={(e) => setFirstTime(e.target.checked)} className="accent-[#f59e0b]" />
+        <div className="mt-4 pt-4 border-t border-[#f6f6f3]">
+          <label className="flex items-center gap-2 text-[12px] font-semibold text-[#3e423f] mb-2 cursor-pointer">
+            <input type="checkbox" checked={firstTime} onChange={(e) => setFirstTime(e.target.checked)} className="accent-[#017848]" />
             First-time homebuyer (applies Ontario rebate up to $4,000)
           </label>
           <div className="flex items-baseline justify-between text-[13px]">
-            <span className="text-[#94a3b8]">Estimated Ontario Land Transfer Tax</span>
-            <span className="font-bold text-[#07111f]">${ltt.toLocaleString()}</span>
+            <span className="text-[#6b6f6a]">Estimated Ontario Land Transfer Tax</span>
+            <span className="font-bold text-[#073126]">${ltt.toLocaleString()}</span>
           </div>
         </div>
 
-        <p className="text-[10px] text-[#94a3b8] mt-3">Estimates only. Call {config.realtor.name.split(" ")[0]} for a full cost breakdown and pre-approval guidance.</p>
+        <p className="text-[10px] text-[#6b6f6a] mt-3">Estimates only. Call {config.realtor.name.split(" ")[0]} for a full cost breakdown and pre-approval guidance.</p>
       </div>
     </div>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// INVESTOR WIDGET (sale > $500K)
+// TYPICAL RENT (sale listings; MH-008)
 // ═══════════════════════════════════════════════════════════════
-export function InvestorWidget({ price, taxAmount, propertyType, hoodAvgRent }: { price: number; taxAmount: number | null; propertyType: string; hoodAvgRent: number | null }) {
-  const estimatedRent = hoodAvgRent ?? (price > 1_500_000 ? 4200 : price > 900_000 ? 3400 : 2700);
-  const annualRent = estimatedRent * 12;
-  const capRate = (annualRent / price) * 100;
-  const mortgage = Math.round((price * 0.8 * 0.05) / 12 + (price * 0.8) / (25 * 12));
-  const monthlyTax = taxAmount ? Math.round(taxAmount / 12) : 0;
-  const maintenance = propertyType === "condo" ? 200 : 300;
-  const cashflow = estimatedRent - mortgage - monthlyTax - maintenance;
+// The investment analysis this replaces printed a gross cap rate and a monthly cashflow from
+// an assumed 20% down, a 5% rate, a flat maintenance figure and an average ASKING rent from
+// the feed, and rendered a negative cashflow as "$-3,341". None of those was a figure this
+// site measured. What it does measure is what homes of this type LEASED for: the Board's
+// closed leases over 12 months, midpoint, k-gated per home type and unit class in
+// src/lib/rentSignals.ts, the same figure the Rent menu states. The block renders only when
+// the whole-home figure for this type clears the floor; below it there is nothing to say.
+export interface ListingRentFigure {
+  /** the home type, in words ("Detached") */
+  label: string;
+  /** whole-home typical, already formatted ("$3,500/mo"), with its sample ("308 leases") */
+  whole: { value: string; sample: string };
+  /** basement-unit typical, present only where it cleared the floor */
+  basement: { value: string; sample: string } | null;
+  /** "last 12 months" */
+  window: string;
+  /** the date in prose the closed leases run through, or null */
+  through: string | null;
+}
+
+export function TypicalRentBlock({ rent }: { rent: ListingRentFigure | null }) {
+  if (!rent) return null;
   return (
     <div className="mb-8">
-      <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">Investment analysis</h2>
-      <div className="bg-[#0c1e35] text-[#f8f9fb] rounded-xl p-5 border border-[#1e3a5f]">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <h2 className="text-[18px] font-extrabold text-[#073126] mb-3">Typical rent, {rent.label.toLowerCase()}</h2>
+      <div className="bg-[#073126] text-[#fffdfa] rounded-xl p-5 border border-[#1a5a47]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Est. monthly rent</p>
-            <p className="text-[22px] font-extrabold">${estimatedRent.toLocaleString()}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/60">{rent.basement ? "Whole home" : "Typical rent"}</p>
+            <p className="text-[22px] font-extrabold" data-fig="listing-rent-whole" data-value={rent.whole.value}>{rent.whole.value}</p>
+            <p className="text-[11px] text-white/60">{rent.window} · {rent.whole.sample}</p>
           </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Gross cap rate</p>
-            <p className="text-[22px] font-extrabold text-[#f59e0b]">{capRate.toFixed(1)}%</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Monthly cashflow</p>
-            <p className={`text-[22px] font-extrabold ${cashflow >= 0 ? "text-[#86efac]" : "text-[#fca5a5]"}`}>
-              {cashflow >= 0 ? "+" : ""}${cashflow.toLocaleString()}
-            </p>
-          </div>
+          {rent.basement ? (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-white/60">Basement unit</p>
+              <p className="text-[22px] font-extrabold" data-fig="listing-rent-basement" data-value={rent.basement.value}>{rent.basement.value}</p>
+              <p className="text-[11px] text-white/60">{rent.window} · {rent.basement.sample}</p>
+            </div>
+          ) : null}
         </div>
-        {cashflow < 0 && (
-          <p className="text-[12px] text-[#fbbf24] mb-3 leading-relaxed font-medium">
-            Negative cashflow reflects current mortgage rates. Contact {config.realtor.name.split(" ")[0]} for a full investment strategy — down-payment sizing, rate-shopping, and {config.CITY_NAME}-specific rental benchmarks can all move this number.
-          </p>
-        )}
-        <p className="text-[11px] text-[#94a3b8] leading-relaxed">
-          Assumes 20% down · 5% rate · 25-yr amortization · ${maintenance}/mo maintenance · est. rent
-          {hoodAvgRent ? ` from live ${config.CITY_NAME} rental data` : ` based on comparable ${config.CITY_NAME} properties`}.
-          Estimates only — contact {config.realtor.name.split(" ")[0]} for a full investment analysis.
+        <p className="text-[11px] text-white/60 leading-relaxed">
+          The midpoint of the {rent.label.toLowerCase()} leases the Board recorded as closed in {config.CITY_NAME} in the {rent.window}, where at least five closed.
+          {rent.basement ? " Whole home leaves out leases of a basement unit or of the upper floors only." : ""}
+          {rent.through ? ` Closed leases through ${rent.through}.` : ""} Not a projection for this home: ask {config.realtor.name.split(" ")[0]} what it would lease for.
         </p>
       </div>
     </div>
@@ -465,16 +472,16 @@ export function VOWTeaser({ mls, soldCount, hoodSoldCount, hoodName }: { mls: st
       <Link
         href={`/signin?redirect=/listings/${mls}`}
         rel="nofollow"
-        className="block bg-[#07111f] text-white rounded-xl p-5 border border-[#1e3a5f] hover:border-[#f59e0b] transition-colors"
+        className="block bg-[#073126] text-white rounded-xl p-5 border border-[#1a5a47] hover:border-[#00ff80] transition-colors"
       >
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-[15px] font-extrabold mb-1">{heading}</p>
-            <p className="text-[12px] text-[#94a3b8]">
+            <p className="text-[12px] text-white/60">
               Sign in free to view sold prices, price history, and days on market.
             </p>
           </div>
-          <span className="text-[#f59e0b] text-[14px] font-bold whitespace-nowrap">View sold prices →</span>
+          <span className="text-[#00ff80] text-[14px] font-bold whitespace-nowrap">View sold prices →</span>
         </div>
       </Link>
     </div>
@@ -516,20 +523,20 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
 
   return (
     <div className="mb-8">
-      <div className="bg-[#07111f] text-white rounded-xl p-6 border border-[#1e3a5f]">
-        <p className="text-[11px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-2">
+      <div className="bg-[#073126] text-white rounded-xl p-6 border border-[#1a5a47]">
+        <p className="text-[11px] font-bold text-[#00ff80] uppercase tracking-[0.14em] mb-2">
           {isRental ? `${config.CITY_NAME} landlord?` : `${config.CITY_NAME} homeowner?`}
         </p>
         <h3 className="text-[20px] font-extrabold mb-2">
           {isRental ? `Thinking about renting out your ${config.CITY_NAME} home?` : `Own a similar home in ${config.CITY_NAME}?`}
         </h3>
-        <p className="text-[13px] text-[#94a3b8] mb-4 leading-relaxed">
+        <p className="text-[13px] text-white/60 mb-4 leading-relaxed">
           {isRental
-            ? `${config.realtor.name.split(" ")[0]} manages rentals across ${config.CITY_NAME}. Free rental valuation — find out what your home earns per month.`
-            : "Get a free valuation in 24 hours — see what a home like this could list for today."}
+            ? `${config.realtor.name.split(" ")[0]} manages rentals across ${config.CITY_NAME}. Free rental valuation: find out what your home earns per month.`
+            : "Get a free valuation in 24 hours: see what a home like this could list for today."}
         </p>
         {sent ? (
-          <p className="text-[13px] text-[#86efac] font-semibold">✓ Thanks — {config.realtor.name.split(" ")[0]} will email your valuation within 24 hours.</p>
+          <p className="text-[13px] text-[#86efac] font-semibold">✓ Thanks. {config.realtor.name.split(" ")[0]} will email your valuation within 24 hours.</p>
         ) : (
           <div className="flex flex-col sm:flex-row gap-2">
             <input
@@ -537,12 +544,12 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="flex-1 bg-[#0c1e35] border border-[#1e3a5f] rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-[#475569] outline-none focus:border-[#f59e0b]"
+              className="flex-1 bg-[#0a3d30] border border-[#1a5a47] rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]"
             />
             <button
               onClick={submit}
               disabled={busy}
-              className="bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg px-5 py-2.5 hover:bg-[#fbbf24] transition-colors disabled:opacity-60"
+              className="bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg px-5 py-2.5 hover:bg-[#5cffa8] transition-colors disabled:opacity-60"
             >
               {busy ? "Sending…" : isRental ? "Get my rental estimate →" : "Get my valuation →"}
             </button>
@@ -564,20 +571,20 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
 // ═══════════════════════════════════════════════════════════════
 // URGENCY BANNER
 // ═══════════════════════════════════════════════════════════════
-export function UrgencyBanner({ viewsToday, domDays, isRental }: { viewsToday: number; domDays: number; isRental: boolean }) {
+// "N people viewed today" was removed 2026-09-13 (MC-020): the figure was a hash of the MLS
+// number and the day, not a counter. Nothing on this page states a number it did not measure.
+export function UrgencyBanner({ domDays, isRental }: { domDays: number; isRental: boolean }) {
   const isNew = domDays <= 7;
+  if (!isNew) return null;
   return (
     <div className="flex flex-wrap gap-2 mb-4">
-      <span className="inline-flex items-center gap-1.5 bg-[#fef3c7] text-[#92400e] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#fde68a]">
-        👁 {viewsToday} people viewed today
-      </span>
       {isNew && isRental && (
         <span className="inline-flex items-center gap-1.5 bg-[#fee2e2] text-[#991b1b] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#fecaca]">
-          🔥 New listing — rentals like this typically go within 2 weeks
+          🔥 New listing: rentals like this typically go within 2 weeks
         </span>
       )}
       {isNew && !isRental && (
-        <span className="inline-flex items-center gap-1.5 bg-[#dbeafe] text-[#1e40af] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#bfdbfe]">
+        <span className="inline-flex items-center gap-1.5 bg-[#e6f4ec] text-[#0b5c3a] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#bfe6d0]">
           🆕 New to market · {domDays === 0 ? "listed today" : `listed ${domDays}d ago`}
         </span>
       )}
@@ -628,24 +635,24 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
 
   if (sent) {
     return (
-      <div className="bg-[#07111f] rounded-2xl p-6">
+      <div className="bg-[#073126] rounded-2xl p-6">
         <p className="text-[16px] font-extrabold text-[#86efac] mb-2">✓ Request received</p>
-        <p className="text-[13px] text-[#cbd5e1]">{config.realtor.name.split(" ")[0]} usually replies within the hour during business hours.</p>
+        <p className="text-[13px] text-[#c7c9c5]">{config.realtor.name.split(" ")[0]} usually replies within the hour during business hours.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#07111f] rounded-2xl p-6">
-      <p className="text-[22px] font-extrabold text-white">${price.toLocaleString()}<span className="text-[14px] font-normal text-[#94a3b8]">/month</span></p>
-      <p className="text-[11px] text-[#94a3b8] mt-1 mb-5">Available now · {config.realtor.name.split(" ")[0]} usually replies within the hour</p>
+    <div className="bg-[#073126] rounded-2xl p-6">
+      <p className="text-[22px] font-extrabold text-white">${price.toLocaleString()}<span className="text-[14px] font-normal text-white/60">/month</span></p>
+      <p className="text-[11px] text-white/60 mt-1 mb-5">Available now · {config.realtor.name.split(" ")[0]} usually replies within the hour</p>
 
       {mode === "none" && (
         <div className="space-y-2">
-          <button onClick={() => setMode("book")} className="w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors">
+          <button onClick={() => setMode("book")} className="w-full bg-[#00ff80] text-[#073126] text-[14px] font-extrabold rounded-lg py-3 hover:bg-[#5cffa8] transition-colors">
             Book a showing
           </button>
-          <button onClick={() => setMode("ask")} className="w-full border border-[#1e3a5f] text-[#94a3b8] text-[13px] font-semibold rounded-lg py-2.5 hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors">
+          <button onClick={() => setMode("ask")} className="w-full border border-[#1a5a47] text-white/60 text-[13px] font-semibold rounded-lg py-2.5 hover:border-[#00ff80] hover:text-[#00ff80] transition-colors">
             Ask a question
           </button>
         </div>
@@ -653,21 +660,21 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
 
       {mode === "book" && (
         <div className="space-y-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="Phone" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-          <input value={moveIn} onChange={(e) => setMoveIn(e.target.value)} type="date" placeholder="Preferred move-in" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white outline-none focus:border-[#f59e0b]" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="Phone" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+          <input value={moveIn} onChange={(e) => setMoveIn(e.target.value)} type="date" placeholder="Preferred move-in" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white outline-none focus:border-[#00ff80]" />
           <div>
-            <p className="text-[11px] text-[#94a3b8] mb-1.5">Bringing pets?</p>
+            <p className="text-[11px] text-white/60 mb-1.5">Bringing pets?</p>
             <div className="flex gap-2">
               {(["yes", "no"] as const).map((v) => (
-                <button key={v} onClick={() => setPets(v)} className={`flex-1 text-[12px] font-semibold rounded-lg py-2 border ${pets === v ? "border-[#f59e0b] bg-[#f59e0b]/10 text-[#f59e0b]" : "border-[#1e3a5f] text-[#94a3b8]"}`}>
+                <button key={v} onClick={() => setPets(v)} className={`flex-1 text-[12px] font-semibold rounded-lg py-2 border ${pets === v ? "border-[#017848] bg-[#00ff80]/10 text-[#00ff80]" : "border-[#1a5a47] text-white/60"}`}>
                   {v === "yes" ? "Yes" : "No"}
                 </button>
               ))}
             </div>
           </div>
-          <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Message (optional)" rows={2} className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b] resize-none" />
+          <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Message (optional)" rows={2} className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80] resize-none" />
           {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
           <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
             <label>
@@ -678,20 +685,20 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           {err && <p className="text-[11px] text-[#fca5a5]">{err}</p>}
           <button
             onClick={() => submit("rental-detail-book", { name, email, phone, notes: [msg, moveIn ? `Move-in: ${moveIn}` : "", pets ? `Pets: ${pets}` : ""].filter(Boolean).join(". ") })}
-            className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors mt-1"
+            className="w-full bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#5cffa8] transition-colors mt-1"
           >
             Submit booking request →
           </button>
-          <button onClick={() => setMode("none")} className="w-full text-[11px] text-[#94a3b8] hover:text-white">← Back</button>
+          <button onClick={() => setMode("none")} className="w-full text-[11px] text-white/60 hover:text-white">← Back</button>
         </div>
       )}
 
       {mode === "ask" && (
         <div className="space-y-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="Phone" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-          <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What would you like to know?" rows={3} className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-white placeholder:text-[#334155] outline-none focus:border-[#f59e0b] resize-none" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="Phone" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+          <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What would you like to know?" rows={3} className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-white placeholder:text-white/40 outline-none focus:border-[#00ff80] resize-none" />
           {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
           <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
             <label>
@@ -702,17 +709,17 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
           {err && <p className="text-[11px] text-[#fca5a5]">{err}</p>}
           <button
             onClick={() => submit("rental-detail-question", { name, email, phone, notes: question })}
-            className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors"
+            className="w-full bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#5cffa8] transition-colors"
           >
             Send my question →
           </button>
-          <button onClick={() => setMode("none")} className="w-full text-[11px] text-[#94a3b8] hover:text-white">← Back</button>
+          <button onClick={() => setMode("none")} className="w-full text-[11px] text-white/60 hover:text-white">← Back</button>
         </div>
       )}
 
       <div className="flex gap-2 mt-3">
-        <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b]">📞 {config.realtor.phone}</a>
-        <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-[#94a3b8] border border-[#1e3a5f] rounded-lg py-2 hover:text-[#f59e0b] hover:border-[#f59e0b]">💬 WhatsApp</a>
+        <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#00ff80] border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80]">📞 {config.realtor.phone}</a>
+        <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-white/60 border border-[#1a5a47] rounded-lg py-2 hover:text-[#00ff80] hover:border-[#00ff80]">💬 WhatsApp</a>
       </div>
     </div>
   );
@@ -724,22 +731,22 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
 export function MobileBottomBar({ price, isRental, onBook }: { price: number; isRental: boolean; onBook: () => void }) {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#07111f] border-t border-white/10 px-4 py-3 md:hidden flex items-center gap-3"
+      className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#073126] border-t border-white/10 px-4 py-3 md:hidden flex items-center gap-3"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
       <div className="min-w-0 flex-shrink-0">
         <p className="text-[14px] font-extrabold text-white leading-tight">
           ${price.toLocaleString()}
-          {isRental && <span className="text-[11px] font-normal text-[#94a3b8]">/mo</span>}
+          {isRental && <span className="text-[11px] font-normal text-white/60">/mo</span>}
         </p>
       </div>
       <button
         onClick={onBook}
-        className="flex-1 bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-2.5"
+        className="flex-1 bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-2.5"
       >
         {isRental ? "Book showing" : "Request showing"}
       </button>
-      <a href={`tel:${config.realtor.phoneE164}`} className="w-10 h-10 flex items-center justify-center border border-white/15 rounded-lg text-[#f59e0b] text-[16px]">📞</a>
+      <a href={`tel:${config.realtor.phoneE164}`} className="w-10 h-10 flex items-center justify-center border border-white/15 rounded-lg text-[#017848] text-[16px]">📞</a>
     </div>
   );
 }
@@ -747,6 +754,6 @@ export function MobileBottomBar({ price, isRental, onBook }: { price: number; is
 // Components are consumed individually via named exports by ListingDetailClient.
 
 // Exported separately so it can be placed at the very top of the left column
-export function UrgencySection({ viewsToday, domDays, isRental }: { viewsToday: number; domDays: number; isRental: boolean }) {
-  return <UrgencyBanner viewsToday={viewsToday} domDays={domDays} isRental={isRental} />;
+export function UrgencySection({ domDays, isRental }: { domDays: number; isRental: boolean }) {
+  return <UrgencyBanner domDays={domDays} isRental={isRental} />;
 }

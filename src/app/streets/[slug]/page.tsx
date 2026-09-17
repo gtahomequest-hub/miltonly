@@ -9,21 +9,21 @@ import { roundPriceForProse } from "@/lib/format";
 import { formatCAD } from "@/lib/charts/theme";
 import { windowDisclosure } from "@/lib/streetEnrichment";
 import { loadStreetGeneration } from "@/lib/ai/loadStreetGeneration";
+import { topStreetSlugsForPrerender } from "@/lib/streetPrerender";
 import type { StreetSection, FAQItem } from "@/types/street";
 import StreetV2Page from "@/components/street/v2/StreetPage";
 import StreetMinimalPage from "@/components/street/v2/StreetMinimalPage";
 import { getMinimalStreetView } from "@/lib/streetMinimal";
 import { getStreetCompareContrast } from "@/lib/comparisonData";
-import { prisma } from "@/lib/prisma";
 
 interface Props { params: { slug: string } }
 
+// MC-017: the build prerenders the top fifty (src/lib/streetPrerender.ts); every other published
+// street renders on its first visit under dynamicParams and the hour's revalidate below, and the
+// publish floor (an unpublished slug 404s) is unchanged.
 export async function generateStaticParams() {
-  const streets = await prisma.streetContent.findMany({
-    where: { status: "published" },
-    select: { streetSlug: true },
-  });
-  return streets.map((s) => ({ slug: s.streetSlug }));
+  const slugs = await topStreetSlugsForPrerender();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export const dynamicParams = true;

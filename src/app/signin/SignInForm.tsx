@@ -87,49 +87,49 @@ export default function SignInForm() {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e2e8f0] p-8 shadow-sm">
+    <div className="bg-white rounded-2xl border border-[#dfe0dc] p-8 shadow-sm">
       {step === "email" ? (
         <form onSubmit={handleSendCode} className="space-y-4">
           <div>
-            <label className="block text-[12px] font-bold text-[#374151] mb-1.5">First name</label>
+            <label className="block text-[12px] font-bold text-[#292b29] mb-1.5">First name</label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="Your first name"
-              className="w-full border border-[#e2e8f0] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#f59e0b] transition-colors"
+              className="w-full border border-[#dfe0dc] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#017848] transition-colors"
             />
           </div>
           <div>
-            <label className="block text-[12px] font-bold text-[#374151] mb-1.5">Email</label>
+            <label className="block text-[12px] font-bold text-[#292b29] mb-1.5">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
-              className="w-full border border-[#e2e8f0] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#f59e0b] transition-colors"
+              className="w-full border border-[#dfe0dc] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#017848] transition-colors"
             />
           </div>
           {error && <p className="text-[12px] text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#07111f] text-[#f59e0b] text-[14px] font-bold py-3.5 rounded-xl hover:bg-[#0c1e35] transition-colors disabled:opacity-50"
+            className="w-full bg-[#017848] text-white text-[14px] font-bold py-3.5 rounded-xl hover:bg-[#0a8f57] transition-colors disabled:opacity-50"
           >
             {loading ? "Sending..." : "Continue with email"}
           </button>
-          <p className="text-[11px] text-[#94a3b8] text-center">
+          <p className="text-[12px] text-[#6b6f6a] text-center">
             We&apos;ll email you a 6-digit code — no password needed
           </p>
         </form>
       ) : (
         <form onSubmit={handleVerify} className="space-y-4">
           <div className="text-center mb-2">
-            <p className="text-[13px] text-[#64748b]">{message || `Code sent to ${email}`}</p>
+            <p className="text-[13px] text-[#6b6f6a]">{message || `Code sent to ${email}`}</p>
           </div>
           <div>
-            <label className="block text-[12px] font-bold text-[#374151] mb-1.5">Verification code</label>
+            <label className="block text-[12px] font-bold text-[#292b29] mb-1.5">Verification code</label>
             <input
               type="text"
               required
@@ -138,7 +138,7 @@ export default function SignInForm() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               placeholder="123456"
-              className="w-full border border-[#e2e8f0] rounded-lg px-4 py-3 text-[22px] font-bold text-center tracking-[6px] outline-none focus:border-[#f59e0b] transition-colors"
+              className="w-full border border-[#dfe0dc] rounded-lg px-4 py-3 text-[22px] font-bold text-center tracking-[6px] outline-none focus:border-[#017848] transition-colors"
               autoFocus
             />
           </div>
@@ -146,15 +146,15 @@ export default function SignInForm() {
           <button
             type="submit"
             disabled={loading || code.length < 6}
-            className="w-full bg-[#07111f] text-[#f59e0b] text-[14px] font-bold py-3.5 rounded-xl hover:bg-[#0c1e35] transition-colors disabled:opacity-50"
+            className="w-full bg-[#017848] text-white text-[14px] font-bold py-3.5 rounded-xl hover:bg-[#0a8f57] transition-colors disabled:opacity-50"
           >
             {loading ? "Verifying..." : "Verify & sign in"}
           </button>
           <div className="flex justify-between items-center">
-            <button type="button" onClick={() => setStep("email")} className="text-[12px] text-[#64748b] hover:text-[#07111f]">
+            <button type="button" onClick={() => setStep("email")} className="text-[12px] text-[#6b6f6a] hover:text-[#073126]">
               ← Change email
             </button>
-            <button type="button" onClick={handleResend} disabled={loading} className="text-[12px] text-[#f59e0b] font-semibold hover:underline disabled:opacity-50">
+            <button type="button" onClick={handleResend} disabled={loading} className="text-[12px] text-[#017848] font-semibold hover:underline disabled:opacity-50">
               Resend code
             </button>
           </div>

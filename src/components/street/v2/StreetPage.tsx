@@ -22,6 +22,7 @@ import {
 } from './sections';
 import { StreetAddresses } from './AddressLadder';
 import SiteNavLive from '../../nav/SiteNavLive';
+import SiteFooter from '../../nav/SiteFooter';
 import { CompareModule, type CompareContrast } from '../../compare/CompareModule';
 import { COMPARE_TEASER } from '@/lib/comparisonData';
 import { GuideUplinks } from '../../guides/GuideUplinks';
@@ -44,10 +45,15 @@ export function StreetV2Page({
 }) {
   // MC-003 guide up-links. Condo-heavy means a condo sale pill renders in the hero, which is
   // the same marker the battery's guide-links check reads off the served page.
-  const guides = guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo') });
+  const hubSlugs = data.context.neighbourhoods.map((n) => n.slug);
+  const guides = guidesForStreet({ condoHeavy: data.hero.salePills.some((p) => p.type === 'condo'), hubSlugs });
+  // THE PAGE IN THE CHROME (MH-006). The nav's CTA, the brief form and the strips follow the
+  // street and its hub; the footer's brief form records the same.
+  const hub = data.context.neighbourhoods[0];
+  const navContext = { street: { slug: data.slug, name: data.name }, hub: hub ? { slug: hub.slug, name: hub.name } : undefined };
   return (
     <div className="street-v2">
-      <SiteNavLive variant="page" />
+      <SiteNavLive variant="page" context={navContext} />
       <StreetHero data={data} />
       <StreetVideo data={data} />
       <StreetGlance data={data} />
@@ -60,9 +66,13 @@ export function StreetV2Page({
       <StreetInventory data={data} />
       <StreetAddresses data={data} />
       <StreetContext data={data} />
-      <GuideUplinks guides={guides} context={data.name} variant="street" />
+      <GuideUplinks guides={guides} context={data.name} variant="street" hubs={hubSlugs} />
       <StreetFaq data={data} />
       <StreetFinalCtas data={data} />
+      {/* THE FOOTER (MH-006, MA-004 change 2). 509 street pages ended here with no path to a
+          hub, another street, a guide, sold data or the legal pages except back up to the
+          bar, and contributed nothing to the footer link graph. The same map every page has. */}
+      <SiteFooter context={navContext} />
     </div>
   );
 }

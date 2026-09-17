@@ -4,13 +4,29 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import ListingDetailClient from "./ListingDetailClient";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteChrome from "@/components/nav/SiteChrome";
+import { getLeaseMarket, RENT_TYPE_LABEL, type RentType } from "@/lib/rentSignals";
+import { formatCount, formatDateProse, formatRent } from "@/lib/figureFormat";
+import type { ListingRentFigure } from "./ListingExtras";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
 import { resolvePublishedHubSlug } from "@/lib/hubResolve";
 
-export const dynamic = 'force-dynamic';
+// MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
+// once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
+// the db3 tag (src/lib/db.ts), dropped by the sold sync and the analytics jobs; the DB1 rows are
+// dropped by path from the write paths (src/lib/revalidateSurfaces.ts). generateStaticParams
+// returns nothing, and it must exist: without it Next 14 treats a dynamic route as dynamic on
+// every request and never fills the route cache (the first MC-017 preview served every page
+// MISS, private, no-store). With it, nothing is prerendered at build and every page renders on
+// its first visit, then serves from the cache. A page whose Neon reads carry their own hour
+// revalidates on the hour: Next takes the smaller of the route's and a fetch's.
+export const revalidate = 86400;
+export const dynamicParams = true;
+export function generateStaticParams() {
+  return [];
+}
 
 interface Props { params: { mlsNumber: string } }
 
@@ -25,14 +41,6 @@ function titleCase(s: string | null | undefined): string {
 }
 const cleanHood = (h: string) => titleCase(h.replace(/^\d+\s*-\s*\w+\s+/, "").trim());
 
-// Deterministic "views today" based on mlsNumber + date — stable within a day
-function viewsToday(mls: string): number {
-  let h = 0;
-  for (let i = 0; i < mls.length; i++) h = (h * 31 + mls.charCodeAt(i)) & 0xfffff;
-  const day = Math.floor(Date.now() / 86400000);
-  return 12 + ((h + day) & 0xff) % 9;
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!l) return { title: "Listing Not Found" };
@@ -45,14 +53,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const priceStr = `$${l.price.toLocaleString()}${isRental ? "/mo" : ""}`;
 
   const title = isRental
-    ? `${addr} — ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
-    : `${addr} — ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
+    ? `${addr}: ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
+    : `${addr}: ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
 
   const days = Math.floor((Date.now() - new Date(l.listedAt).getTime()) / 86400000);
   const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
-    ? `${typeLabel} rental at ${addr}, ${hood} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} — usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME} — ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName} — usually confirmed within the hour.`;
+    ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName}, usually confirmed within the hour.`
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName}, usually confirmed within the hour.`;
 
   return {
     title,
@@ -74,12 +82,12 @@ export default async function ListingDetailPage({ params }: Props) {
   // If permAdvertise = false, do not render the listing publicly.
   if (!listingRaw.permAdvertise) {
     return (
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5 py-20">
+      <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-5 py-20">
         <div className="max-w-md text-center">
-          <p className="text-[12px] font-bold text-[#94a3b8] uppercase tracking-[0.14em] mb-3">Not available</p>
-          <h1 className="text-[22px] font-extrabold text-[#07111f] mb-3">This listing is not available for display</h1>
-          <p className="text-[14px] text-[#64748b] mb-6">The brokerage or seller has opted out of public display for this property.</p>
-          <Link href="/listings" className="text-[14px] text-[#f59e0b] font-bold hover:underline">← Browse other {config.CITY_NAME} listings</Link>
+          <p className="text-[12px] font-bold text-[#6b6f6a] uppercase tracking-[0.14em] mb-3">Not available</p>
+          <h1 className="text-[22px] font-extrabold text-[#073126] mb-3">This listing is not available for display</h1>
+          <p className="text-[14px] text-[#6b6f6a] mb-6">The brokerage or seller has opted out of public display for this property.</p>
+          <Link href="/listings" className="text-[14px] text-[#017848] font-bold hover:underline">← Browse other {config.CITY_NAME} listings</Link>
         </div>
       </div>
     );
@@ -93,7 +101,7 @@ export default async function ListingDetailPage({ params }: Props) {
   // neighbourhood + soldDate) were removed. DB1 no longer carries soldDate
   // values; the sold-count information surfaces on the page through the
   // gated StreetSoldBlock / NeighbourhoodSoldBlock fed from DB2.
-  const [similarRaw, hoodRentAvg] = await Promise.all([
+  const [similarRaw, leaseMarket] = await Promise.all([
     prisma.listing.findMany({
       where: {
         propertyType: listing.propertyType,
@@ -105,23 +113,29 @@ export default async function ListingDetailPage({ params }: Props) {
       orderBy: { listedAt: "desc" },
       take: 4,
     }),
-    // Average rent in same neighbourhood for investor widget
-    prisma.listing.aggregate({
-      where: {
-        transactionType: "For Lease",
-        city: config.PRISMA_CITY_VALUE,
-        permAdvertise: true,
-        neighbourhood: { contains: cleanHood(listing.neighbourhood), mode: "insensitive" },
-        price: { gt: 500, lt: 10000 },
-      },
-      _avg: { price: true },
-    }),
+    // The Board's closed leases by home type, k-gated (rentSignals.ts), for the typical-rent
+    // block. The average ASKING rent this replaced fed a cap rate and a cashflow built on
+    // assumed figures (MH-008).
+    listing.transactionType === "For Lease" ? Promise.resolve(null) : getLeaseMarket(),
   ]);
   const soldCountOnStreet = 0; // deprecated — see StreetSoldBlock on street page
   const soldCountInHood = 0; // deprecated — see NeighbourhoodSoldBlock
 
   const similar = similarRaw.map(redactAddress);
-  const hoodAvgRent = hoodRentAvg._avg.price ? Math.round(hoodRentAvg._avg.price) : null;
+  const rentFigure = ((): ListingRentFigure | null => {
+    const type = listing.propertyType as RentType;
+    const f = leaseMarket?.byType.find((t) => t.type === type);
+    if (!leaseMarket || !f || f.typical === null) return null;
+    const leases = (n: number) => `${formatCount(n)} ${n === 1 ? "lease" : "leases"}`;
+    const classed = f.basementCount > 0 || f.upperCount > 0;
+    return {
+      label: RENT_TYPE_LABEL[type],
+      whole: { value: formatRent(f.typical), sample: leases(classed ? f.wholeCount : f.count) },
+      basement: f.basementTypical !== null ? { value: formatRent(f.basementTypical), sample: leases(f.basementCount) } : null,
+      window: leaseMarket.window,
+      through: leaseMarket.through ? formatDateProse(leaseMarket.through) : null,
+    };
+  })();
 
   const serialized = JSON.parse(JSON.stringify(listing));
   const serializedSimilar = JSON.parse(JSON.stringify(similar));
@@ -133,7 +147,6 @@ export default async function ListingDetailPage({ params }: Props) {
   }));
 
   const domDays = Math.floor((Date.now() - new Date(listing.listedAt).getTime()) / 86400000);
-  const views = viewsToday(listing.mlsNumber);
 
   // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
@@ -199,19 +212,20 @@ export default async function ListingDetailPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb]">
+    <SiteChrome>
+    <div className="min-h-screen bg-[#fffdfa]">
       <SchemaScript schemas={[residenceSchema, offerSchema, breadcrumbSchema]} />
 
       {/* Breadcrumbs */}
-      <div className="bg-white border-b border-[#e2e8f0] px-5 sm:px-11 py-3">
-        <div className="flex items-center gap-2 text-[12px] text-[#94a3b8] max-w-6xl mx-auto">
-          <Link href="/" className="hover:text-[#07111f]">{config.SITE_NAME}</Link>
+      <div className="bg-white border-b border-[#dfe0dc] px-5 sm:px-11 py-3">
+        <div className="flex items-center gap-2 text-[12px] text-[#6b6f6a] max-w-6xl mx-auto">
+          <Link href="/" className="hover:text-[#073126]">{config.SITE_NAME}</Link>
           <span>›</span>
-          <Link href={isRental ? "/rentals" : "/listings"} className="hover:text-[#07111f]">{isRental ? "Rent" : "Buy"}</Link>
+          <Link href={isRental ? "/rentals" : "/listings"} className="hover:text-[#073126]">{isRental ? "Rent" : "Buy"}</Link>
           <span>›</span>
-          <span className="text-[#64748b]">{hoodName}</span>
+          <span className="text-[#6b6f6a]">{hoodName}</span>
           <span>›</span>
-          <span className="text-[#475569] font-medium">
+          <span className="text-[#3e423f] font-medium">
             {listing.displayAddress ? titleCase(listing.address.split(",")[0]) : "Address on request"}
           </span>
         </div>
@@ -224,13 +238,12 @@ export default async function ListingDetailPage({ params }: Props) {
           soldCountOnStreet,
           soldCountInHood,
           hoodName,
-          hoodAvgRent,
+          rent: rentFigure,
           schools: schoolsLite,
-          viewsToday: views,
           domDays,
         }}
       />
-      <FooterSection />
     </div>
+    </SiteChrome>
   );
 }

@@ -2,6 +2,7 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import RentalsClient from "../rentals/RentalsClient";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const dynamic = 'force-dynamic';
 
@@ -58,11 +59,13 @@ export default async function RentLandingPage() {
   const serialized = JSON.parse(JSON.stringify(listings));
 
   return (
+    <SiteChrome>
     <RentalsClient
       listings={serialized}
       totalRentals={totalRentals}
       avgRent={Math.round(avgRent._avg.price || 2419)}
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}
     />
+    </SiteChrome>
   );
 }

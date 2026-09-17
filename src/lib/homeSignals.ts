@@ -20,7 +20,7 @@ import { getSoldDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
-import { deriveVideoPoster } from "@/lib/streetVideo";
+import { deriveVideoPoster, torontoWall } from "@/lib/streetVideo";
 
 const WEEK_MS = 7 * 86_400_000;
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
@@ -142,14 +142,15 @@ export async function getStreetsWithVideo(limit = 12): Promise<StreetVideoCard[]
     if (!url) continue;
     const poster = deriveVideoPoster(url);
     if (!poster) continue; // no thumbnail, no card
-    const capturedAt = useDay ? r.videoCapturedAt : r.nightCapturedAt;
+    // the Toronto date of the instant, never its UTC date (a 9:40 pm capture is the next day in UTC)
+    const capturedAt = torontoWall(useDay ? r.videoCapturedAt : r.nightCapturedAt)?.date ?? null;
     cards.push({
       slug: r.streetSlug,
       // resolveStreetName is the only source of a street name on any surface.
       name: resolveStreetName(r.streetSlug, r.streetName).name,
       poster,
       variant: useDay ? "day" : "night",
-      capturedAt: capturedAt ? capturedAt.toISOString().slice(0, 10) : null,
+      capturedAt,
     });
   }
 
@@ -165,4 +166,63 @@ export async function getStreetVideoCount(): Promise<number> {
       OR: [{ videoUrl: { not: null } }, { nightVideoUrl: { not: null } }],
     },
   });
+}
+
+/**
+ * Which published streets carry a clip, as a set of slugs.
+ *
+ * The hub ladder needs to MARK filmed streets, not render them, so it needs membership rather
+ * than the card. One query, one set, no poster derivation for streets nobody is showing.
+ */
+export async function getVideoStreetSlugs(): Promise<Set<string>> {
+  const rows = await prisma.streetContent.findMany({
+    where: {
+      status: "published",
+      OR: [{ videoUrl: { not: null } }, { nightVideoUrl: { not: null } }],
+    },
+    select: { streetSlug: true },
+  });
+  return new Set(rows.map((r) => r.streetSlug));
+}
+
+/**
+ * The filmed streets belonging to one neighbourhood, as cards.
+ *
+ * Same poster gate as the corpus-wide version: a row whose poster URL cannot be derived is
+ * dropped rather than rendered as a grey box.
+ */
+export async function getStreetsWithVideoForSlugs(slugs: string[], limit = 8): Promise<StreetVideoCard[]> {
+  if (slugs.length === 0) return [];
+  const rows = await prisma.streetContent.findMany({
+    where: {
+      status: "published",
+      streetSlug: { in: slugs },
+      OR: [{ videoUrl: { not: null } }, { nightVideoUrl: { not: null } }],
+    },
+    select: {
+      streetSlug: true, streetName: true,
+      videoUrl: true, videoCapturedAt: true,
+      nightVideoUrl: true, nightCapturedAt: true,
+    },
+  });
+
+  const cards: StreetVideoCard[] = [];
+  for (const r of rows) {
+    const useDay = r.videoUrl !== null;
+    const url = useDay ? r.videoUrl : r.nightVideoUrl;
+    if (!url) continue;
+    const poster = deriveVideoPoster(url);
+    if (!poster) continue;
+    // the Toronto date of the instant, never its UTC date (a 9:40 pm capture is the next day in UTC)
+    const capturedAt = torontoWall(useDay ? r.videoCapturedAt : r.nightCapturedAt)?.date ?? null;
+    cards.push({
+      slug: r.streetSlug,
+      name: resolveStreetName(r.streetSlug, r.streetName).name,
+      poster,
+      variant: useDay ? "day" : "night",
+      capturedAt,
+    });
+  }
+  cards.sort((a, b) => (b.capturedAt ?? "").localeCompare(a.capturedAt ?? ""));
+  return cards.slice(0, limit);
 }

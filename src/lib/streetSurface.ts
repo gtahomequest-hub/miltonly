@@ -38,6 +38,46 @@
 import * as React from "react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag } from "next/cache";
+import { dataCached } from "@/lib/dataCache";
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE TWO SLUG SETS LEAVE NEON ONCE PER DEPLOYMENT PER HOUR, NOT ONCE PER RENDER (MC-018).
+//
+// MC-016 measured them: the published set (≈ 530 rows) and the entity set (963 rows) were the
+// two heaviest statements on DB1, 466,000 rows in one fifteen-minute window, because eighteen
+// call sites ask on nearly every render of every page and React.cache only spans one request.
+//
+// THE DATA CACHE, NOT UPSTASH. The first cut of this put the sets in Upstash through `cached()`,
+// and the production battery that followed the merge read 3.3 million rows from the two
+// statements instead of fewer: `cached()` bypasses Redis under a static render (MC-017, because
+// the Upstash client's no-store fetch is a bailout Next records), and since MC-017 nearly every
+// page IS a static render on its first visit, so the sets left Neon on every ISR render, twice.
+// `unstable_cache` is what survives a static render: the Data Cache holds the value for the
+// deployment, every render reads it, and a fetch inside it does not touch the route's own
+// revalidate. SURFACE_TTL is an hour, the same as the Neon reads (MC-017: a page's effective
+// revalidate is the smallest of its own and any cached read's, so fifteen minutes here would
+// have cut every ISR page to fifteen minutes).
+//
+// STALENESS IS BOUNDED TWO WAYS. Every in-app StreetContent status write calls
+// dropSurfaceCache() (generateStreet's revalidation hook, admin publish and reject), which
+// revalidates SURFACE_TAG, and /api/revalidate does the same whenever a path under /streets is
+// posted, which is how the local scripts announce a write. A write nobody announced is visible
+// within SURFACE_TTL. revalidateTag needs a request scope; outside one (a script running
+// generateStreet directly) it is skipped, as revalidatePath is there.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+export const SURFACE_KEYS = { published: "surface:published-slugs:v1", entities: "surface:entity-slugs:v1" } as const;
+export const SURFACE_TAG = "surface";
+export const SURFACE_TTL = 3600;
+
+/** Drop the cached slug sets. Called on every publication change; cheap, idempotent. */
+export async function dropSurfaceCache(): Promise<void> {
+  try {
+    revalidateTag(SURFACE_TAG);
+  } catch (e) {
+    console.log(`[streetSurface] tag drop skipped (no request scope): ${String((e as Error).message).slice(0, 90)}`);
+  }
+}
 
 /**
  * React's cache() exists only under the react-server condition. Next resolves it; a Node script
@@ -52,13 +92,31 @@ const perRequest = <T>(fn: T): T => {
 };
 
 /** Slugs with a published StreetContent row. Memoised for the request. */
-export const publishedStreetSlugs = perRequest(async (): Promise<string[]> => {
-  const rows = await prisma.streetContent.findMany({
-    where: { status: "published" },
-    select: { streetSlug: true },
-  });
-  return rows.map((r) => r.streetSlug);
-});
+export const publishedStreetSlugs = perRequest(
+  dataCached(
+    async (): Promise<string[]> => {
+      const rows = await prisma.streetContent.findMany({
+        where: { status: "published" },
+        select: { streetSlug: true },
+      });
+      return rows.map((r) => r.streetSlug);
+    },
+    [SURFACE_KEYS.published],
+    { revalidate: SURFACE_TTL, tags: [SURFACE_TAG] },
+  ),
+);
+
+/** Every ResidentialStreet slug, the entity floor. Changes only on a registry backfill. */
+const entityStreetSlugs = perRequest(
+  dataCached(
+    async (): Promise<string[]> => {
+      const rows = await prisma.residentialStreet.findMany({ select: { slug: true } });
+      return rows.map((r) => r.slug);
+    },
+    [SURFACE_KEYS.entities],
+    { revalidate: SURFACE_TTL, tags: [SURFACE_TAG] },
+  ),
+);
 
 /**
  * THE PUBLISHED STREET PAGES. Slugs that both carry a published StreetContent row AND exist as
@@ -77,12 +135,9 @@ export const publishedStreetSlugs = perRequest(async (): Promise<string[]> => {
  * page count reads THIS, and so does the sitemap, so the two cannot drift apart again.
  */
 export const publishedStreetPageSlugs = perRequest(async (): Promise<string[]> => {
-  const [published, entities] = await Promise.all([
-    prisma.streetContent.findMany({ where: { status: "published" }, select: { streetSlug: true } }),
-    prisma.residentialStreet.findMany({ select: { slug: true } }),
-  ]);
-  const entitySlugs = new Set(entities.map((e) => e.slug));
-  return published.map((r) => r.streetSlug).filter((slug) => entitySlugs.has(slug));
+  const [published, entities] = await Promise.all([publishedStreetSlugs(), entityStreetSlugs()]);
+  const entitySlugs = new Set(entities);
+  return published.filter((slug) => entitySlugs.has(slug));
 });
 
 /** How many street pages are published. The count of the set above, never a second query. */

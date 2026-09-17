@@ -4,6 +4,11 @@
 // k-anon contract: any *PriceRounded field === null => suppress/silent state.
 // profile === 'rural' => VIP strip + heavy stats hidden, character-led instead.
 
+import type { StreetVideoCard } from '@/lib/homeSignals';
+import type { HubSchool } from '@/lib/hubSchools';
+
+export type { StreetVideoCard, HubSchool };
+
 export type HubProfile = 'urban' | 'rural';
 
 export interface HubStats {
@@ -14,12 +19,25 @@ export interface HubStats {
 }
 
 /** the fast "is this neighbourhood right for me?" answer */
+/** ONE DERIVED FACT. Every entry in the glance panel is now one of these: a figure, a
+ *  label, and the basis the figure was computed over. `basis` is not optional — a number
+ *  without its sample is the defect this codebase spends most of its guards on. */
+export interface HubFact {
+  key: string;
+  value: string;
+  label: string;
+  basis: string;
+  /** where the reader goes to check it, when there is such a page */
+  href?: string;
+}
+
 export interface HubAtAGlance {
-  priceRange: string | null; // "$845K – $1.4M" — null when k-anon silent
-  dominantType: string; // "Detached & townhomes"
-  suits: string[]; // ["Families", "Move-up buyers"]
-  commute: string; // "8 min to Milton GO · 45 min to Union"
-  schools: string; // "Strong public + Catholic options"
+  /** NOTHING STATIC SURVIVES HERE (ruling, 2026-09-10). `suits`, `commute` and `schools`
+   *  were per-profile constants presented beside live figures: every urban hub claimed the
+   *  same three buyer types, the same commute sentence and the same schools sentence, none
+   *  of which distinguished one neighbourhood from another. Each is replaced by a fact
+   *  derived from data, or dropped. An empty array renders no panel. */
+  facts: HubFact[];
 }
 
 export interface HubMarketCommentary {
@@ -39,7 +57,12 @@ export interface HubStreetCard {
   name: string;
   slug: string;
   soldCount: number | null;
-  typicalPriceRounded: number | null; // null => price-silent
+  /** THE STREET PAGE'S OWN TYPICAL. null => below the k floor, and the row says so. */
+  typicalPriceRounded: number | null;
+  /** the mandatory window+sample disclosure that travels with the price */
+  basis: string | null;
+  /** the street carries a filmed clip — the ladder marks it, the strip above shows it */
+  hasVideo: boolean;
   signal?: string; // optional badge: "Most active", "Top sold"
 }
 
@@ -60,11 +83,14 @@ export interface HubFaq {
   answer: string;
 }
 
+/** A nearby hub's card. Every line on it is derived; the hand-written character line is gone. */
 export interface HubSibling {
   name: string;
   slug: string;
-  character: string;
-  typicalPriceRounded: number | null;
+  typicalPriceRounded: number | null; // null => k-anon silent, and the card says so
+  salesCount: number; // 12-month sales, the sample behind the typical
+  streetPages: number; // published street guides in that hub
+  distanceKm: number | null; // boundary centre to boundary centre; null when either has no polygon
 }
 
 export interface HubCta {
@@ -94,6 +120,20 @@ export interface HubData {
   commentary: HubMarketCommentary;
   streets: HubStreetCard[];
   streetCount: number;
+  // NEIGHBOURHOOD HUBS ONLY. The tenure hubs (/freehold, /condos-guide, /potl) reuse this
+  // seam and have no streets of their own, so these are optional rather than empty-array
+  // ceremony on a page where the concept does not apply.
+  /** rung one: the hood's filmed streets, poster-gated. Empty on the 14 hubs with none. */
+  videoStreets?: StreetVideoCard[];
+  /** schools standing inside the Town's boundary for this hood. Empty renders nothing. */
+  schools?: HubSchool[];
+  /** the sample and window behind stats.typicalPrice, e.g. "across 159 sales in the last 12 months" */
+  typicalBasis?: string | null;
+  /** the same disclosure for the Milton-wide figure the market section compares against */
+  miltonBasis?: string | null;
+  /** true when `siblings` are the nearest by the Town's polygons; false when the hub has no
+   *  polygon and the list is simply the other hubs of its tier. The heading depends on it. */
+  nearbyByDistance?: boolean;
   // True only when this neighbourhood has MORE published streets than the ladder cap — gates the
   // "View all streets →" overflow link so it never points at a redundant/thin page. Optional so
   // tenure hubs (condo/POTL) that never have a street-overflow page can leave it unset (= no link).

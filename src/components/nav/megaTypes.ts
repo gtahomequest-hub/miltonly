@@ -18,7 +18,19 @@
 //    nothing renders the rails, each item's static blurb and its CTA, which is still a
 //    complete, crawlable menu. A panel is never padded with a placeholder.
 
-export type MenuKey = 'buy' | 'streets' | 'sell';
+/** Four menus (MH-007 added Rent). The order the bar shows them in is the nav's MENUS. */
+export type MenuKey = 'buy' | 'rent' | 'streets' | 'sell';
+
+/** THE PAGE THE NAV IS ON (MH-006, MA-004 change 6). A street page or a hub hands the nav
+ *  its subject, and the nav carries it: the bar CTA and the Sell panel CTA arrive at the
+ *  valuation with the street prefilled (or at the hub's own /value page), the brief form
+ *  records which street or hub the signup came from, and the Streets and Sell strips
+ *  (change 10) are that hub's streets rather than the same eight from every page. A page
+ *  with no subject passes nothing and gets the global chrome. */
+export interface NavContext {
+  street?: { slug: string; name: string };
+  hub?: { slug: string; name: string };
+}
 
 /** A sentence with live figures in it. Figure segments render as <b data-fig data-value>. */
 export interface LeadSegment {
@@ -68,6 +80,8 @@ export interface MegaHub {
   name: string;
   /** live listing count across the hub's raw strings, formatted */
   active: string;
+  /** the link, when it is not the hub page: the Rent menu lists hubs as scoped /rentals */
+  href?: string;
 }
 
 export interface MegaVideo {
@@ -95,10 +109,20 @@ export interface MegaEdition {
 }
 
 export interface MegaItemContent {
+  /** the rail item's sub-label, one live fact under its name ("20 this week") */
+  sub?: string;
+  /** the item's CTA text with its count in it ("See all 460 for sale"); the ItemDef's static text otherwise */
+  cta?: string;
   lead?: LeadSegment[];
   figures?: MegaFigure[];
+  /** one sentence under the figures stating how they were measured, where two bases share a panel */
+  basis?: string;
   cards?: MegaListing[];
   hubs?: MegaHub[];
+  /** the hubs block's heading and figure key; "Neighbourhoods, with homes listed now" and
+   *  `menu-hub-active` when absent (the Streets menu's, which the battery counts per page) */
+  hubsLabel?: string;
+  hubsFig?: string;
   videos?: MegaVideo[];
   letters?: MegaLetter[];
   edition?: MegaEdition;

@@ -23,10 +23,16 @@ import hubIntents from './checks/hub-intents.mjs';
 import guideLinks from './checks/guide-links.mjs';
 import nav from './checks/nav.mjs';
 import geometryFacts from './checks/geometry-facts.mjs';
+import hubPage from './checks/hub-page.mjs';
+import sourcesFresh from './checks/sources-fresh.mjs';
+import footer from './checks/footer.mjs';
+import catchment from './checks/catchment.mjs';
+import video from './checks/video.mjs';
+import phone390 from './checks/phone-390.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

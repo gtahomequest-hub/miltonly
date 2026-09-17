@@ -14,7 +14,7 @@ import MarketWatchPage from "@/components/marketwatch/MarketWatchPage";
 import type { EditionSections } from "@/lib/marketWatch/edition";
 import SchemaScript from "@/components/SchemaScript";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,7 @@ export default async function MarketWatchIndex() {
             </div>
           </header>
         </div>
-        <FooterSection />
+        <SiteFooter />
       </>
     );
   }
@@ -108,7 +108,7 @@ export default async function MarketWatchIndex() {
           label: (a.sectionsJson as unknown as EditionSections).weekLabel,
         }))}
       />
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

@@ -51,11 +51,41 @@ export interface GuideLink {
   href: string;
 }
 
+/**
+ * Where a sentence came from, rendered beside it. Added 2026-09-11 for the two
+ * source-grounded guides (parking, GO): a rule the Town publishes or a figure a
+ * transit feed carries is only as good as its provenance, so the URL and the
+ * date it was read render on the page, next to the sentence, not in a footnote.
+ */
+export interface GuideSource {
+  label: string; // "Town of Milton, Parking regulations"
+  url: string;
+  fetchedOn: string; // "11 September 2026", rendered as written, never locale-formatted
+}
+
+/** a sentence that carries its own citation */
+export interface GuideCited {
+  text: string;
+  source: GuideSource;
+}
+
+/** a small data table under a section; every cell is plain text */
+export interface GuideTable {
+  caption: string;
+  head: string[];
+  rows: string[][];
+  source?: GuideSource;
+}
+
 /** one body section of an article; tip renders as a callout when present */
 export interface GuideSection {
   heading: string;
   paragraphs: string[];
   tip: string | null;
+  /** Cited sentences, rendered as a ledger after the paragraphs. Optional and additive. */
+  cited?: GuideCited[];
+  /** A data table, rendered after the cited ledger. Optional and additive. */
+  table?: GuideTable;
   /**
    * Optional link row rendered under the paragraphs. Added 2026-09-10 because
    * `paragraphs: string[]` is plain text and cannot carry an anchor, which
@@ -69,6 +99,8 @@ export interface GuideSection {
 export interface GuideFaq {
   question: string;
   answer: string;
+  /** Optional citation rendered under the answer; the FAQ schema carries question and answer only. */
+  source?: GuideSource;
 }
 
 export interface GuideArticleData {
