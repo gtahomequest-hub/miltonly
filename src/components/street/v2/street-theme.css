@@ -1321,11 +1321,77 @@
 
 .street-v2 .s-addr-lad {
   position: relative;
+  height: var(--lad-h);
   background: #f6f4ef;
   border: 1px solid var(--s-border-muted);
   border-radius: 14px;
   padding: 14px 0;
   overflow: hidden;
+}
+/* the mark the house-number field found, drawn like a deep-link target */
+.street-v2 .s-m.s-hit {
+  z-index: 8;
+  color: var(--s-accent);
+}
+.street-v2 .s-m.s-hit::before {
+  background: var(--s-accent);
+  animation: s-addr-flash 1.6s ease-out 2;
+}
+.street-v2 .s-m.s-hit[data-d]::after,
+.street-v2 .s-m.s-hit .s-d {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* THE WAY IN (MH-005, MA-001 change 8): a house-number field above the track, at every width */
+.street-v2 .s-addr-find {
+  margin: 0 0 14px;
+}
+.street-v2 .s-addr-find-l {
+  display: block;
+  font-family: var(--s-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--s-accent);
+  margin-bottom: 8px;
+}
+.street-v2 .s-addr-find-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.street-v2 .s-addr-find-row input {
+  flex: 0 1 220px;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--s-border);
+  border-radius: 9px;
+  font-family: var(--s-mono);
+  font-size: 16px;
+  background: var(--s-surface);
+  color: var(--s-text-body);
+}
+.street-v2 .s-addr-find-row input:focus {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 1px;
+}
+.street-v2 .s-addr-showall {
+  padding: 11px 16px;
+  border: 1px solid var(--s-border);
+  border-radius: 9px;
+  background: var(--s-surface);
+  color: var(--s-bg-deep);
+  font-family: var(--s-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: none;
+}
+.street-v2 .s-addr-find-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--s-text-muted);
 }
 .street-v2 .s-addr-spine {
   position: absolute;
@@ -1556,19 +1622,91 @@
   color: var(--s-text-muted);
 }
 
+/* THE PHONE LADDER (MH-005, MA-001 change 8). The spine, the two sides and the pushed labels
+   made a 3,000px wall of dots at 390. Same DOM, another layout: the marks flow in number order
+   as 44px rows, each with its detail beside it, the cross streets as named rows in sequence, in
+   a box no taller than two thirds of the screen that scrolls inside itself. A street with more
+   than COLLAPSE_ABOVE addresses hides the box until the field finds a number or "Show all". */
 @media (max-width: 560px) {
   .street-v2 .s-addr-sum { font-size: 15px; }
-  .street-v2 .s-m { font-size: 12.5px; margin-right: 5px; }
-  .street-v2 .s-m.s-e { margin-left: 5px; margin-right: 0; }
+  .street-v2 .s-addr-key { display: none; }
+  .street-v2 .s-addr-showall { display: inline-block; }
+  .street-v2 .s-addr-find-row input { flex: 1 1 140px; }
+  .street-v2 .s-addr-lad {
+    height: auto;
+    max-height: 66vh;
+    overflow-y: auto;
+    padding: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .street-v2 .s-addr-lad.s-addr-collapsed:not(.s-addr-open) { display: none; }
+  .street-v2 .s-addr-spine,
+  .street-v2 .s-addr-end { display: none; }
+  .street-v2 .s-addr-tick {
+    position: static;
+    height: auto;
+    border-top: 0;
+    justify-content: flex-start;
+    padding: 9px 14px;
+    background: rgba(1, 120, 72, 0.08);
+    border-bottom: 1px solid var(--s-border-muted);
+  }
+  .street-v2 .s-addr-tick-l {
+    transform: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    max-width: none;
+    font-size: 12px;
+    white-space: normal;
+  }
+  .street-v2 .s-addr-tick-l::before { content: 'Cross street: '; color: var(--s-text-muted); text-transform: none; letter-spacing: 0; }
+  .street-v2 .s-m,
+  .street-v2 .s-m.s-e,
+  .street-v2 .s-m.s-q {
+    position: static;
+    top: auto !important;
+    transform: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.35;
+    border-bottom: 1px solid var(--s-border-muted);
+    scroll-margin-top: 0;
+  }
+  .street-v2 .s-m::before { display: none; }
   .street-v2 .s-m:hover,
   .street-v2 .s-m:focus-within,
   .street-v2 .s-m:focus,
-  .street-v2 .s-m:target { font-size: 12.5px; }
+  .street-v2 .s-m:target,
+  .street-v2 .s-m.s-hit { font-size: 15px; background: rgba(0, 255, 128, 0.14); }
   .street-v2 .s-m[data-d]::after,
-  .street-v2 .s-d { padding: 9px 11px; max-width: 84vw; }
-  .street-v2 .s-addr-tick-l { max-width: 46%; font-size: 10px; margin-right: 6px; }
-  .street-v2 .s-m.s-q { width: 46px; }
+  .street-v2 .s-d {
+    position: static;
+    transform: none;
+    display: inline;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    font-size: 12px;
+    opacity: 1;
+    visibility: visible;
+    transition: none;
+  }
+  .street-v2 .s-lv { display: inline; margin: 0 0 0 8px; }
   .street-v2 .s-addr-cta { margin-top: 20px; }
+  .street-v2 .s-addr-cta .s-b1 { white-space: nowrap; }
 }
 
 /* ─────────────────────────────────────────────────────────────
