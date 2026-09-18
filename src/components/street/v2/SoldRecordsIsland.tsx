@@ -11,6 +11,11 @@ import { usePathname } from 'next/navigation';
 import type { SoldTableRow } from '@/types/street';
 import { shortPrice, pct } from './format';
 
+// THE GATE IS IN THE SERVED HTML (MH-005, MA-001 change 5). The island used to render a
+// "Loading sold records…" row on every visit and show the gate only after the fetch answered:
+// the action with the most intent behind it was invisible to a crawler and late for a person.
+// Now the unauthenticated state is the default the server renders, so the gate is on the page
+// from the first byte; a signed-in visitor's rows replace it when the fetch confirms access.
 export function StreetSoldRecords({ slug, streetName }: { slug: string; streetName: string }) {
   const pathname = usePathname();
   const [state, setState] = useState<'loading' | 'done'>('loading');
@@ -36,10 +41,10 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
   }, [slug]);
 
   const signinHref = `/signin?redirect=${encodeURIComponent(pathname)}&intent=sold&street=${encodeURIComponent(slug)}`;
-  const gated = state === 'done' && !canSee;
+  const gated = !canSee;
 
   return (
-    <div className={`s-records${gated ? ' s-gated' : ''}`}>
+    <div className={`s-records${gated ? ' s-gated' : ''}`} id="sold-records">
       <div className="s-records-cap">Recent closed sales, {streetName}</div>
       <table className="s-rtable">
         <thead>
@@ -54,13 +59,7 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
           </tr>
         </thead>
         <tbody>
-          {state === 'loading' ? (
-            <tr>
-              <td colSpan={7} style={{ textAlign: 'center', color: 'var(--s-text-muted)', padding: 28 }}>
-                Loading sold records…
-              </td>
-            </tr>
-          ) : rows.length === 0 && canSee ? (
+          {state === 'done' && rows.length === 0 && canSee ? (
             <tr>
               <td colSpan={7} style={{ textAlign: 'center', color: 'var(--s-text-muted)', padding: 28 }}>
                 No recent sales on record.

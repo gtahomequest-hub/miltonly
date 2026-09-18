@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import { Fraunces, Inter, JetBrains_Mono, Kaushan_Script, Playfair_Display } from "next/font/google";
 import CrispChat from "@/components/CrispChat";
-import GoogleAnalytics from "@/components/GoogleAnalytics";
-import MetaPixel from "@/components/MetaPixel";
+import { TagStubs, DeferredTagLoader } from "@/components/DeferredTags";
 import UserProvider from "@/components/UserProvider";
 import ConsentBanner from "@/components/consent/ConsentBanner";
 import ChromeGate from "@/components/ChromeGate";
@@ -15,17 +13,12 @@ const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Esta
 const ENCYCLOPEDIA_LABEL = `${config.CITY_NAME} Real Estate Encyclopedia`;
 const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live TREB listings.`;
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
-
+// FONTS (MH-005, MA-001 change 3). Geist Sans and Geist Mono, two 66 KB `.woff` files, were
+// preloaded on every route and used by nothing the site designs in: Tailwind's `font-sans`
+// pointed at Geist while every themed page sets Inter, and `font-mono` already preferred
+// JetBrains. Both are gone; Tailwind's sans is Inter now. Playfair is the homepage hero's
+// face and nothing else's, so it is not preloaded on every route; Kaushan is the wordmark on
+// every bar and stays. Everything left is woff2 from next/font/google.
 const fraunces = Fraunces({
   subsets: ["latin"],
   axes: ["opsz"],
@@ -59,6 +52,7 @@ const playfair = Playfair_Display({
   weight: "500",
   variable: "--font-playfair",
   display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -141,10 +135,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} ${kaushan.variable} ${playfair.variable} font-sans antialiased`}
+        className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} ${kaushan.variable} ${playfair.variable} font-sans antialiased`}
       >
-        <GoogleAnalytics />
-        <MetaPixel />
+        {/* the analytics and pixel stubs, then the real scripts on first interaction or idle */}
+        <TagStubs />
+        <DeferredTagLoader />
         <AttributionCapture />
         <UserProvider>
           {children}

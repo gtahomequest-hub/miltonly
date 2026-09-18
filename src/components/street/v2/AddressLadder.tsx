@@ -8,9 +8,13 @@
 // cross streets drawn across it in the order you would meet them. It is true whether or not
 // anything is for sale, which is the point.
 //
-// SERVER-RENDERED, NO CLIENT JS. Every address is an <a href="#<number>"> onto its own id, so a
-// deep link, a tap and a keyboard focus all resolve through :target / :focus-within / :hover in
-// CSS. That keeps the anchor working with scripting off, which is the state Googlebot indexes in.
+// SERVER-RENDERED MARKUP, WITH ONE CLIENT ISLAND (MH-005, MA-001 change 8). Every address is an
+// <a href="#<number>"> onto its own id, so a deep link, a tap and a keyboard focus all resolve
+// through :target / :focus-within / :hover in CSS, with scripting off, which is the state
+// Googlebot indexes in. The track itself is LadderTrack, a client component: it adds the
+// house-number field, the phone's one-column list and the collapse, and, because a client
+// component's element tree is not inlined in the RSC payload, it halves what the address list
+// costs in the served HTML. The placement math stays here, on the server.
 //
 // ONE ELEMENT PER ADDRESS. The detail line lives in a single `data-d` attribute and is drawn by
 // CSS `content: attr(data-d)` on interaction, so an address costs one tag instead of six. That is
@@ -27,7 +31,8 @@
 // date, no owner, no historical listing, no per-address coordinate. Signal green (--s-green) is
 // reserved here for the "listed now" mark and appears nowhere else in the section.
 import type { StreetV2Data } from './types';
-import type { AddressMark, AddressCrossTick } from '@/lib/streetAddresses';
+import type { AddressMark } from '@/lib/streetAddresses';
+import { LadderTrack, type MarkTuple, type TickTuple } from './LadderTrack';
 
 /** vertical room a number label needs before it touches its neighbour */
 const LABEL_GAP = 22;
@@ -187,51 +192,23 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
           )}
         </div>
 
-        <div className="s-addr-lad" style={{ height }}>
-          <div className="s-addr-spine" aria-hidden="true" />
-          <span className="s-addr-end s-addr-end-lo">{ladder.low}</span>
-          <span className="s-addr-end s-addr-end-hi">{ladder.high}</span>
-
-          {ladder.crossStreets.map((c: AddressCrossTick) => (
-            <div className="s-addr-tick" key={c.slug} style={{ top: Math.round(tickY(c.fraction)) }}>
-              {/* Right edge, mono, truncated with an ellipsis where the track is narrow. The
-                  title carries the full name so a truncated label is never a lost one. */}
-              <span className="s-addr-tick-l" title={c.name}>
-                {c.href ? <a href={c.href}>{c.name}</a> : c.name}
-              </span>
-            </div>
-          ))}
-
-          {inOrder.map(({ mark, y, labelled }) => {
-            const cls = `s-m${mark.side === 'even' ? ' s-e' : ''}${labelled ? '' : ' s-q'}`;
-            const top = Math.round(y);
-            const detail = detailOf(mark, lowEnd, highEnd);
-            // A live listing needs a real link, which CSS generated content cannot hold. Only
-            // these marks pay for a detail element; every other address is one tag.
-            return mark.active ? (
-              <span key={mark.number} id={String(mark.number)} className={`${cls} s-on`} style={{ top }}>
-                <a href={`#${mark.number}`}>{mark.number}</a>
-                <span className="s-d">
-                  {detail}
-                  <a className="s-lv" href={mark.active.href}>
-                    Listed now
-                  </a>
-                </span>
-              </span>
-            ) : (
-              <a
-                key={mark.number}
-                id={String(mark.number)}
-                className={cls}
-                data-d={detail}
-                style={{ top }}
-                href={`#${mark.number}`}
-              >
-                {mark.number}
-              </a>
-            );
-          })}
-        </div>
+        {/* The track: the field, the phone list, the collapse and the marks, in one client island
+            fed a tuple per address. See LadderTrack.tsx for the markup contract. */}
+        <LadderTrack
+          height={height}
+          low={ladder.low}
+          high={ladder.high}
+          ticks={ladder.crossStreets.map((c): TickTuple => [c.name, c.href ?? null, Math.round(tickY(c.fraction)), c.fraction])}
+          marks={inOrder.map(({ mark, y, labelled }): MarkTuple => [
+            mark.number,
+            Math.round(y),
+            mark.side === 'even' ? 1 : 0,
+            labelled ? 1 : 0,
+            detailOf(mark, lowEnd, highEnd),
+            mark.active ? mark.active.href : null,
+          ])}
+          fractions={inOrder.map(({ mark }) => mark.fraction)}
+        />
 
         <p className="s-addr-src">
           Civic addresses from the Town of Milton under the Open Government Licence. Positions
@@ -260,8 +237,8 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
             <div className="s-fcard">
               <h3>Watch {data.name}</h3>
               <p>
-                Be told when a home on {data.name} is listed or sold, before it reaches the public
-                portals.
+                An email when a home on {data.name} is listed or sold. Nothing else, and no
+                account.
               </p>
               <a className="s-b1" href="#street-alert">
                 Watch {data.name} →

@@ -1,7 +1,7 @@
 // Browser-side Pixel helpers used by form submit handlers (and any other
 // page interaction that should fire a Meta event).
 //
-// The Pixel base script (src/components/MetaPixel.tsx) defines window.fbq
+// The Pixel base script (src/components/DeferredTags.tsx) defines window.fbq
 // synchronously when it loads. These helpers run later — typically after
 // a user clicks Submit — and there's a narrow race window where the
 // inline script is still parsing. The retry guard handles that case

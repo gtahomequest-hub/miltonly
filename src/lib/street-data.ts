@@ -64,7 +64,6 @@ import type {
 
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const SITE_URL = config.SITE_URL;
-const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPE PEEKS — raw DB3 row shapes (loose; SQL is ad-hoc).
@@ -123,6 +122,8 @@ interface RawSale12mo {
   hi: string | null;
   dom: string | null;
   sta: string | null;
+  /** the most recent closed sale in the window; the page's honest "updated" date */
+  latest: string | Date | null;
 }
 interface RawLease12mo {
   n: number;
@@ -258,7 +259,8 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
                  MIN(sold_price) AS lo,
                  MAX(sold_price) AS hi,
                  AVG(days_on_market) AS dom,
-                 AVG(sold_to_ask_ratio) AS sta
+                 AVG(sold_to_ask_ratio) AS sta,
+                 MAX(sold_date) AS latest
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
@@ -570,8 +572,23 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           nightCapturedAt: streetContent.nightCapturedAt,
         })
       : null,
-    lastUpdated: new Date().toISOString(),
+    // THE UPDATED DATE IS A DATE SOMETHING HAPPENED (MH-005, MA-001 change 6). It was the
+    // render time, which is not a modification date and would have told Google every page
+    // changed every hour. It is the later of the profile's generation and the most recent
+    // closed sale in the 12-month sample: the two things that change what the page says.
+    lastUpdated: latestOf(streetContent?.generatedAt ?? null, sale12?.latest ?? null),
   };
+}
+
+function latestOf(...dates: Array<string | Date | null>): string {
+  let best: Date | null = null;
+  for (const d of dates) {
+    if (!d) continue;
+    const t = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(t.getTime())) continue;
+    if (!best || t > best) best = t;
+  }
+  return (best ?? new Date()).toISOString().slice(0, 10);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -717,7 +734,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   // publishing the placeholder. street.characterSummary is set from THIS value.
   const suppressedSummary =
     rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale) ? rawSummary : "";
-  const subtitle = suppressedSummary || `A street in ${CITY_PROVINCE_LABEL}.`;
+  // A PROGRAMME PAGE'S SUBTITLE IS A FACT OR NOTHING (MH-005, MA-001 defect 17). "A street in
+  // Milton Ontario." was the placeholder on every page with no surviving summary. The
+  // neighbourhood is a fact the page has; where it has none, the hero carries no subtitle.
+  const firstNbhd = neighbourhoods.map(cleanNeighbourhoodName).find(Boolean);
+  const subtitle = suppressedSummary || (firstNbhd ? `${streetName} is in ${firstNbhd}, ${config.CITY_NAME}.` : "");
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -798,7 +819,8 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
       // on 46 pages ($884K pill vs $875K card). Round once, at the point of publication, and
       // every surface that formats it lands on the same string.
       typicalPrice: publishable ? roundPriceForProse(typicalPrice!) : null,
-      priceLabel: publishable ? "typical" : "sample too small",
+      // the silence says what would end it (MA-001 defect 24): the count sits beside the label
+      priceLabel: publishable ? "typical" : `needs ${K_ANON_PRICE} sales`,
       anchor: `#type-${type}`,
     });
   }
@@ -1096,7 +1118,8 @@ function buildSidebar(input: {
       body: `A short conversation grounded in every sale we have tracked on ${streetName}.`,
       actionLabel: "Request a valuation",
       actionHref: "/sell",
-      trustLine: "Complimentary · Response within one hour",
+      // "Response within one hour" was a service level nothing measures (MA-001 defect 9).
+      trustLine: "Complimentary. No obligation.",
     },
   };
 }

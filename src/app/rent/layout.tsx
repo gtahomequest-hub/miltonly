@@ -1,5 +1,4 @@
 import CrispChat from "@/components/CrispChat";
-import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 export default function RentLandingLayout({
   children,
@@ -8,7 +7,7 @@ export default function RentLandingLayout({
 }) {
   return (
     <>
-      <GoogleAnalytics />
+      {/* analytics comes from the root layout (DeferredTags); a second gtag.js here was a duplicate */}
       {children}
       <CrispChat />
     </>
