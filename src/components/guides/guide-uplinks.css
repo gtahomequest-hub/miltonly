@@ -40,7 +40,7 @@ section.g-up {
 }
 .g-up .g-up-eyebrow {
   font-family: var(--g-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--g-accent);
@@ -89,7 +89,7 @@ section.g-up {
 .g-up .g-up-cat {
   grid-area: cat;
   font-family: var(--g-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--g-muted);

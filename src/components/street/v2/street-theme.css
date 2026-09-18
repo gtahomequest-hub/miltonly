@@ -1966,3 +1966,22 @@
 .street-v2 .s-final .s-eyebrow {
   color: #5cffa8;
 }
+
+/* A FINGER GETS 44PX (MA-001 defect 30, the harness re-run of MH-005): the hero pills, the
+   ladder sentence's cross-street links, the capture's fine-print link and the breadcrumb were
+   16 to 41px tall on a phone. */
+@media (pointer: coarse) {
+  .street-v2 .s-pill {
+    min-height: 44px;
+    align-items: center;
+  }
+  .street-v2 .s-addr-sl,
+  .street-v2 .s-capture-fine a,
+  .street-v2 .s-crumb a {
+    display: inline-block;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-top: -12px;
+    margin-bottom: -12px;
+  }
+}
