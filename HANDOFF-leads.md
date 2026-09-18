@@ -2,85 +2,66 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-12, after ML-003 built the weekly leads digest._
+_Last rewritten 2026-09-17, after ML-004 put CASL on every recurring email and consent text on every surface._
 
 ## READ THIS FIRST
 
-**ML-003 AND ML-002 ARE ON THIS BRANCH, AWAITING CORE'S MERGE.** The proven tree is
-**`e205757`** (ML-003 on top of ML-002, with `origin/main` `2a89120` merged in and the prebuild
-line unioned); the head is one docs commit above it. Merge the head.
+**ML-004, ML-003 AND ML-002 ARE ON THIS BRANCH, AWAITING CORE'S MERGE.** Proven tree
+**`7eeeb79a17f848ee23e8819a60743ab6568116fc`**, with `origin/main` `5ac650b` merged in clean
+as `8b0a17a`; the head is one docs commit above it. Merge the head. Record in `scratchpad/reports/ML-004-casl-consent.md`.
 
-**ML-003 IS THE WEEKLY LEADS DIGEST.** Monday 07:00 Toronto, one email to the desk
-(`LEADS_DIGEST_TO`, falling back to `ALERT_EMAIL_TO`, which is the desk address in both
-environments, so no new production variable is needed): leads by source and by page for the
-7 and the 28 local days ending Sunday, from `lead_daily_by_page`; brief subscribers and
-watches active; confirmation and desk-alert delivery counts; every mounted surface with no
-submission in 28 days. Two UTC crons, `0 11 * * 1` and `0 12 * * 1`, and the route runs only
-when the Toronto hour is 7 (the market-watch pattern). **One send proven on preview
-`miltonly-bsn6qltes`** to `gtahomequest+ml003@gmail.com` (Resend
-`118ed5c7-b5fa-455f-8991-a5fc15e7ca94`, received 23:58Z); the Preview variable was then
-deleted. Full battery on that preview: **PASS · 14 checks · 481 pages**. Record in
-`scratchpad/reports/ML-003-weekly-leads-digest.md`.
+**EVERY RECURRING EMAIL NOW CARRIES ONE FOOTER AND ONE UNSUBSCRIBE.** The brief, the deal
+alerts (`sendDealAlertEmail`) and the weekly leads digest all render `src/lib/email/footer.ts`:
+sender, brokerage, `config.brokerage.mailingAddress`, why the reader is receiving it, and a
+signed one-click link, in both bodies, plus `List-Unsubscribe` and `List-Unsubscribe-Post`
+headers from `listUnsubscribeHeaders`. `src/lib/brief/unsubscribe.ts` moved to
+`src/lib/email/unsubscribe.ts` and signs ANY watch id; `/api/unsubscribe` is the route every
+new link points at, `/api/brief/unsubscribe` still answers for links already in inboxes, and
+both mount `src/lib/email/unsubscribeHandler.ts`, which names what stops by kind. A sender
+that cannot sign refuses before its loop (`canSignUnsubscribe`). A deal alert that did not go
+out no longer stamps the watch. **Proven on preview `miltonly-md810529s`:** one brief, one
+deal alert and one digest received; one-click POST, GET, the legacy path and a forged token
+each answered as designed; after the unsubscribes both senders found nothing to send.
 
-**DELIVERY COUNTS HAD NO SOURCE, SO THE INGEST PATH NOW LOGS EVERY SEND ATTEMPT.** Neither
-the confirmation nor the desk alert left a trace before ML-003. `recordDeliveries` in
-`src/lib/lead/notify.ts` writes one `LeadActivity` row per attempt that reached Resend:
-`email_sent` with the Resend id, `email_failed` with the message. A skipped send leaves no
-row, a log failure is swallowed, and the digest joins the rows to production leads only.
-Proven on preview with lead `cmtxmrdy70000glan0oblr6e7`: two `email_sent` rows whose ids
-match the diagnostics. **The log begins at the production deploy that carries this**, and the
-first digests say so; nothing before it is counted.
+**THE DIGEST'S RECIPIENT IS NOW A WATCH.** `src/lib/digest/recipient.ts` finds or creates a
+`SavedSearch` of kind `digest` per (address, environment) on every send, so the desk's
+unsubscribe has a row to disable; a disabled row makes the route return
+`skipped: "recipient unsubscribed from the digest"`. `/api/alerts/match` excludes `brief` and
+`digest` by name. A dry run creates nothing.
 
-**THE VIEW BUCKETS BY UTC DAY, AND THE DIGEST SAYS SO RATHER THAN HIDING IT.**
-`lead_daily_by_page.day` is `("createdAt" AT TIME ZONE 'UTC')::date` (Phase 1 migration), so a
-lead sent after 20:00 Toronto sits on the following day's row. The digest reads `day` on the
-date basis, as the rule says, and the route returns a cross-check count of `Lead.createdAt` on
-the Toronto instants beside it (they agreed, 10 and 11, on 2026-09-11). Moving the view to
-`America/Toronto` is a one-line `CREATE OR REPLACE VIEW` migration and Core's to apply; open
-item 1 below.
+**THE MAILING ADDRESS IS THE ONE THE SITE ALREADY PUBLISHES**, `178 Lemieux Ct, Milton, ON
+L9E 1E9`, the LocalBusiness address on `/rentals/ads`. If CASL should carry the brokerage
+office instead, change `config.brokerage.mailingAddress` once. Nothing was invented.
 
-**ML-002 IS ON THIS BRANCH, AWAITING CORE'S MERGE.** The brief's sold read bounded `sold_date`
-with the Toronto instants. `sold_date` is a calendar date stamped 00:00 UTC, and Toronto
-midnight is 04:00 UTC, so the edition for the 9th read nothing stamped on the 9th and everything
-stamped on the 10th: **3 sales where the day holds 8, and the 3 were the wrong day's.** Every
-production edition so far reported the following day's sales under yesterday's date. The fix
-is the Market Watch pattern (`src/lib/marketWatch/windows.ts`, "TWO BASES FOR ONE WEEK"):
-`BriefWindow` carries `dateStartUtc` and `dateEndExclusiveUtc` beside `start` and `end`, the
-sold read uses the date pair plus `sold_date <= NOW()` (Ruling 10), and `listedAt` and
-`lastPriceChangeAt`, which are real timestamps, stay on the instants. Dry run of the 09-09
-edition reads **8, typical $825,000** (8 clears `K_ANON_PRICE`, where 3 did not). Twelve new
-prebuild assertions in `test-lead-guards.ts` pin the fixture day and read the query off the
-source. Merge SHA and preview in `scratchpad/reports/ML-002-brief-sold-date-basis.md`.
+**ALL 26 LEAD SUBMISSIONS SEND `consentText`, AND THE PREBUILD HOLDS THEM TO IT.**
+`src/lib/lead/finePrint.ts` holds the four shared disclosures (`ALERT_`, `REPLY_`,
+`VALUATION_`, `SMS_EMAIL_FINE_PRINT`); `DailyBrief`, `HomeValuationCard` and
+`MarketPulseUnlockCard` keep their own `CONSENT_TEXT`. The rule is: a surface renders a named
+constant in JSX and sends the same constant, so the row records the words the visitor saw.
+`scripts/test-lead-forms.ts` fails a submission with no `consentText`, a string literal, an
+opaque payload (`postLead(data)`) or a constant the file never renders. **Nothing was
+backfilled**; rows before the deploy that carries this have whatever they had.
 
-**Phase 2 IS MERGED.** Core merged `feat/leads @ 26381f9` as **`543ef99`**, a real two-parent
-merge, and main has moved on to `00e0eb1`. `feat/leads` was fast-forwarded to **`00e0eb1`** in
-ML-001, and ML-002 is the only commit on top of it.
-
-**`BRIEF_UNSUBSCRIBE_SECRET` IS NOW SET** in Production and Preview (32 random bytes, hex, one
-value for both, added via stdin as a sensitive variable in ML-001). It no longer shares
-`CRON_SECRET`. **It binds on the next deploy of each environment**; until then the running
-builds still sign with `CRON_SECRET`. Any unsubscribe link signed before that deploy stops
-verifying after it. Production brief watches were 0 at the time, so no live link is affected.
-
-**The battery's two hub failures are main's, not this branch's.** `hub-meta` and `hub-intents`
-fail identically on the final Phase 2 preview and on production, from the hub tier that landed on
-main between the merges. Nothing in the lead layer touches a hub page, a hub parser or a stat
-tile. Main's own `HANDOFF.md` owns them.
+**THE STREET ALERT CARD SAYS "LISTED FOR SALE".** `/api/alerts/match` reads new active listings
+only; nothing sends a sold alert. The card body (`street-data.ts`), its done copy, the address
+ladder's watch card, both `resaleClaim` CTA bodies, the mock data and the confirmation line in
+`notify.ts` all say listed now. The condo card and its confirmation line took the same one-line
+fix. When a sold alert exists, put the promise back in those seven places.
 
 ## Where things stand
 
 | | |
 |---|---|
-| branch | `feat/leads`, ML-003 and ML-002 on top of `origin/main` `2a89120`. Proven tree **`e205757`**, head one docs commit above |
+| branch | `feat/leads`, ML-004 on ML-003 on ML-002, `origin/main` `5ac650b` merged. Proven tree **`7eeeb79`**, head one docs commit above |
 | Phase 2 merge on main | **`543ef99`** (merges `26381f9`) |
-| last preview of this branch | `miltonly-bsn6qltes` at `e205757` |
-| battery there | **PASS · 14 checks · 481 pages · 394s** (the first run failed one homepage figure by $5k against its live hub record, a sold-figure cache timing outside the lead layer; the re-run and the full re-run passed) |
-| prebuild, lead layer | `[lead-guards] 183` · `[lead-forms] 105` · `[leads-digest] 228` assertions |
+| last preview of this branch | `miltonly-3obrz4ffz` at `7eeeb79` (battery); the sends were from `miltonly-md810529s` at `1721347` |
+| battery there | `--only=claims,nav,footer,homepage` **PASS** after the preview's surface cache was purged (see Traps) |
+| prebuild, lead layer | `[lead-guards] 209` · `[lead-forms] 221` · `[leads-digest] 232` assertions |
 | `public.Lead` | 25 production rows (10 `sale-detail` on 2026-09-11 alone, on four listings; open item 7), 30 preview |
-| `SavedSearch` | 9 rows, all `env=preview`. **Production watches: 0, brief subscribers: 0** |
+| `SavedSearch` | the three ML-004 preview rows were deleted; the preview `digest` row is recreated on the next preview send |
 | ingress routes | **one**: `/api/leads/create` |
 | Phase 0, 1, 2 | **all merged** |
-| `BRIEF_UNSUBSCRIBE_SECRET` | **set** in Production and Preview, pending a deploy to bind |
+| `BRIEF_UNSUBSCRIBE_SECRET` | **set** in both environments and bound (the ML-004 preview signed with it); the name stays, the module is generic |
 | `LEADS_DIGEST_TO` | **unset everywhere**, deliberately. The digest falls back to `ALERT_EMAIL_TO` |
 
 ## The shape that shipped
@@ -98,13 +79,20 @@ a form  →  postLeadDetailed()  →  POST /api/leads/create  →  ingestLead()
 
 a brief watch  →  /api/brief/send (cron 15 13 * * 1-5)  →  src/lib/brief/
                                                              ├─ window.ts     the local-day period
-                                                             ├─ compose.ts    the reads and the copy
-                                                             └─ unsubscribe.ts  HMAC, fails closed
-                  /api/brief/unsubscribe  ← the signed one-click link
+                                                             └─ compose.ts    the reads and the copy
+a listing/street/hub/band watch  →  /api/alerts/match (cron 0 14 * * *)  →  sendDealAlertEmail (src/lib/email-user.ts)
+
+every recurring email  →  src/lib/email/
+                          ├─ footer.ts             sender, brokerage, mailing address, why, the link (ML-004)
+                          ├─ unsubscribe.ts        HMAC over the watch id, any kind, fails closed
+                          └─ unsubscribeHandler.ts one click, GET or POST, names what stops
+                  /api/unsubscribe  ← every new link;  /api/brief/unsubscribe  ← links already in inboxes
+a form's fine print  →  src/lib/lead/finePrint.ts  ← rendered AND sent as consentText, held by test-lead-forms.ts
 
 the desk  ←  /api/digest/leads (cron 0 11 * * 1 and 0 12 * * 1, runs at Toronto hour 7)  →  src/lib/digest/
-                                                                                          ├─ window.ts   7 and 28 local days ending Sunday, both bases
-                                                                                          └─ compose.ts  the reads and the copy
+                                                                                          ├─ window.ts     7 and 28 local days ending Sunday, both bases
+                                                                                          ├─ compose.ts    the reads and the copy
+                                                                                          └─ recipient.ts  the desk's digest watch, the row its unsubscribe disables
              every send attempt in ingest  →  LeadActivity email_sent | email_failed  (notify.ts recordDeliveries)
              src/lib/lead/sources.ts  the mounted surfaces, held to src/ by scripts/test-leads-digest.ts
 ```
@@ -133,6 +121,21 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
   edition with nothing in it is not sent.**
 
 ## Traps
+
+- **A fresh preview's Data Cache holds the published street set for an hour, and only
+  production's writes revalidate it.** The homepage check failed `proof-street-pages` 589 vs
+  606 on `miltonly-3obrz4ffz` minutes after deploy. `POST /api/revalidate?secret=…` with
+  `{"path":"/streets"}` on the preview, then re-run. Production was never wrong.
+- **A CLI preview reports `/api/build` as "unknown" unless the SHA is passed:**
+  `npx vercel deploy --yes -e VERCEL_GIT_COMMIT_SHA=<head>`. Without it the battery aborts at
+  the deployment gate.
+- **`git add -A` picks up `vercel-deploy*.log`.** Delete the logs before staging.
+- **The unsubscribe token is HMAC(watch id) and nothing else**, so a link works on either route
+  and a link minted before ML-004 still verifies. Changing the HMAC input invalidates every link
+  in every inbox; do not.
+- **Preview proof watches go in by script, not by form:** a form submission spends a rate-limit
+  token, writes a Lead row and fires the desk alert. `prisma.savedSearch.create` with
+  `env: "preview"` and a `+tag` address does not. Delete them after.
 
 - **`origin/main` moved twice during ML-003** (sold-sync purge, menu v2). The first push built at
   `ee846bf` without them; the ancestor check caught it, main was merged, the tree rebuilt and
@@ -185,15 +188,23 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
 3. **The Sunday brief `PreFooterCTA` promises has no sender.** Either its copy becomes the daily
    brief and its source becomes `daily-brief` (homepage worktree owns the copy), or a weekly
    sender gets built. Today those subscribers get a confirmation and nothing after it.
-4. **`BRIEF_UNSUBSCRIBE_SECRET` needs a deploy to bind** in each environment. The next
-   production deploy of any branch does it. Nothing to build.
+4. **`BRIEF_UNSUBSCRIBE_SECRET` is bound** on preview (ML-004 signed with it) and binds on
+   production with the next deploy there. Nothing to build.
 5. **The brief cron is live on production** since the Phase 2 merge deployed. Production brief
    watches are **0**, so each run sends nothing. The first real subscriber makes it real.
 6. **Eight questionable `homepage-newsletter` rows** predate that surface having a honeypot.
    Still in the table, untouched.
 7. **Ten `sale-detail` leads on 2026-09-11**, on four listings, in a table that held 15 rows the
-   day before. Not examined in ML-003; the digest will show them Monday. Worth a look before
-   they are read as demand.
+   day before. Not examined; see item 11.
 8. **Nine preview watches** remain, matching Phase 1's posture. Tagged, so no cron reads them.
-9. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
+9. **`/api/seo/digest` (Core, behind `ORGANIC_LOOP_ENABLED`) sends with no footer and no
+   unsubscribe.** `emailFooter` and a `digest`-kind watch through `digestWatchFor` would give it
+   both in a few lines; it is Core's file.
+10. **The rentals alert strip promises "SMS alert before it appears on any other site"** and
+    the cron sends email, daily, about listings already on the site. Rentals tier's copy.
+11. **64 `sale-detail` leads in 7 days across 30 listings, 1 to 5 per page**, in the ML-004
+    proof digest. Item 7 is now a pattern, not a day. Read the rows before they are read as demand.
+12. **Production's homepage check fails `proof-sales-12mo` 1,723 vs 1,712** at `10de234`,
+    on production, with no lead code involved. Main's.
+13. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
    MOD-58 lead admin columns with no UI.
