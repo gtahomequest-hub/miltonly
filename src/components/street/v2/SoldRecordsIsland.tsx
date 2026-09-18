@@ -3,12 +3,19 @@
 // as the legacy navy island (/api/streets/<slug>/sold-records -> { canSee, records })
 // and applies the TREB-VOW sign-in gate per session. Restyle only — identical data
 // path and gate logic to src/components/street/SoldRecordsIsland.tsx, forest classes.
+//
+// MP-002 (Portal) added the third state: signed in but not yet acknowledged renders the
+// one-time VOW card inline (src/components/vow/VowAcknowledgementPrompt.tsx) and refetches
+// when it is done; the sign-in link carries this block's anchor so the person lands back here.
+// That is the only Portal edit in a street file, made because the card has to appear on the
+// page that needed it.
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { SoldTableRow } from '@/types/street';
+import VowAcknowledgementPrompt from '@/components/vow/VowAcknowledgementPrompt';
 import { shortPrice, pct } from './format';
 
 // THE GATE IS IN THE SERVED HTML (MH-005, MA-001 change 5). The island used to render a
@@ -20,15 +27,19 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
   const pathname = usePathname();
   const [state, setState] = useState<'loading' | 'done'>('loading');
   const [canSee, setCanSee] = useState(false);
+  const [needsAck, setNeedsAck] = useState(false);
   const [rows, setRows] = useState<SoldTableRow[]>([]);
+  const [generation, setGeneration] = useState(0);
+  const refetch = useCallback(() => setGeneration((g) => g + 1), []);
 
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/streets/${encodeURIComponent(slug)}/sold-records`)
       .then((r) => r.json())
-      .then((d: { canSee: boolean; records: SoldTableRow[] }) => {
+      .then((d: { canSee: boolean; needsAcknowledgement?: boolean; records: SoldTableRow[] }) => {
         if (cancelled) return;
         setCanSee(d.canSee);
+        setNeedsAck(!d.canSee && !!d.needsAcknowledgement);
         setRows(d.records);
         setState('done');
       })
@@ -38,10 +49,21 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, generation]);
 
-  const signinHref = `/signin?redirect=${encodeURIComponent(pathname)}&intent=sold&street=${encodeURIComponent(slug)}`;
-  const gated = !canSee;
+  const signinHref = `/signin?redirect=${encodeURIComponent(`${pathname}#sold-records`)}&intent=sold&street=${encodeURIComponent(slug)}`;
+  // MH-005 keeps the gate in the served HTML: unauthenticated is the default the server
+  // renders. MP-002's ack card takes over only once the fetch says the person is signed in.
+  const gated = !canSee && !needsAck;
+
+  if (state === 'done' && needsAck) {
+    return (
+      <div className="s-records" id="sold-records">
+        <div className="s-records-cap">Recent closed sales, {streetName}</div>
+        <VowAcknowledgementPrompt onDone={refetch} />
+      </div>
+    );
+  }
 
   return (
     <div className={`s-records${gated ? ' s-gated' : ''}`} id="sold-records">

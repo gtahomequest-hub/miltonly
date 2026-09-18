@@ -12,7 +12,10 @@ export async function GET(
   const user = await getSession();
   const canSee = !!(user && user.vowAcknowledgedAt);
   if (!canSee) {
-    return NextResponse.json({ canSee: false, records: [] as SoldTableRow[] });
+    // MP-002: a signed-in person who has not yet acknowledged is told so, and the island
+    // renders the one-time card in place of the sign-in gate. Before this, both states got
+    // "Sign in free to unlock", and signing in again led nowhere.
+    return NextResponse.json({ canSee: false, needsAcknowledgement: !!user, records: [] as SoldTableRow[] });
   }
 
   const items = await getStreetSoldList(params.slug, "sale", 90, 20).catch(
