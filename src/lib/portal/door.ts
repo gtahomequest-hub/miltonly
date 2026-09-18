@@ -20,11 +20,13 @@
 // time and dies after five wrong tries: six digits with no counter is a million guesses in
 // fifteen minutes, and a bot has fifteen minutes.
 //
-// PASSWORDLESS STANDS PENDING THE BROKER OF RECORD'S RULING. The TRREB VOW Policy words are
-// "username and a password"; MP-001's reading is that the emailed one-time secret is that
-// credential and the address is the username. The reading is written into the VOW terms the
-// person agrees to (src/lib/vow-acknowledgement.ts) and the session never outlives the policy's
-// 90-day validity (SESSION_MAX_DAYS in src/lib/auth.ts).
+// THE PASSWORD (MP-002b). The broker of record ruled under TRREB R-805(c): a username and a
+// password per consumer. So the link and the code verify the email (first sign-in, and the
+// fallback when a password is forgotten), the card then asks the consumer to set a password
+// (src/lib/portal/password.ts), the returning sign-in is /api/auth/login with email + password,
+// and no VOW record is served until the password exists (src/lib/vow-access.ts). The email is
+// the username. The session never outlives the policy's 90-day validity (SESSION_MAX_DAYS in
+// src/lib/auth.ts).
 
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { checkHoneypot, checkOrigin, checkRateLimit, hostAllowed, type GuardVerdict } from "@/lib/lead/guards";

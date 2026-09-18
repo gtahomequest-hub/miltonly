@@ -55,13 +55,12 @@ export default function TermsPage() {
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Signing in and sold data</h2>
           <p>
             Sold and leased MLS® records are shown only to registered consumers with a bona fide interest in buying,
-            selling or leasing, under TRREB&apos;s VOW rules. Registration is your name, a verified email and your
-            agreement to the acknowledgement shown at first sign-in. There is no password: your email address is your
-            username, and the one-time code or link sent to it is your credential. Each sign-in lasts at most 90 days,
-            after which you confirm your email again. The records of your registration are kept for at least 180 days
-            after a sign-in expires, as the VOW rules require. This sign-in method stands pending the brokerage&apos;s
-            broker of record confirming it against the TRREB VOW Policy; if a password is required, one will be added to
-            the same account.
+            selling or leasing, under TRREB&apos;s VOW rules (R-805). Registration is a username and a password: your
+            username is your verified email address, and you choose your password (twelve characters or more) at first
+            sign-in, after agreeing to the acknowledgement shown there. A one-time emailed link or code verifies your
+            email and stands in when you forget your password; no sold record is shown until your password is set. Each
+            sign-in lasts at most 90 days, after which you sign in again. The records of your registration are kept for
+            at least 180 days after a sign-in expires, as the VOW rules require.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Limitation of liability</h2>

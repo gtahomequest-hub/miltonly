@@ -667,6 +667,12 @@ model User {
   consentText      String?
   consentTimestamp DateTime?
   homeStreetSlug   String?
+  // The password (MP-002b, TRREB R-805(c): a username and a password per consumer). bcrypt,
+  // cost 12, set on the acknowledgement card after the email is verified; null until then, and
+  // no VOW record is served while it is null. The username is `email`, unique above, so one
+  // address is one username. `passwordSetAt` is when it was last set.
+  passwordHash     String?
+  passwordSetAt    DateTime?
 
   @@index([email])
   @@index([verifyTokenHash])

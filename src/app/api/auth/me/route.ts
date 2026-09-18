@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { vowStepsLeft } from "@/lib/vow-access";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -12,6 +13,8 @@ export async function GET() {
       email: user.email,
       firstName: user.firstName,
       savedListings: user.savedListings,
+      // What the VOW card still has to ask (MP-002b): the acknowledgement, the password.
+      ...vowStepsLeft(user),
     },
   });
 }
