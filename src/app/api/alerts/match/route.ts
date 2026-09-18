@@ -13,11 +13,18 @@
 //     from `email` when there is not, and the verified gate applies only to the former.
 //
 // `kind` chooses the query. "brief" is not sent here: the daily brief is a digest of what
-// changed, not a match notification, and its sender is a later step.
+// changed, not a match notification, and its sender is /api/brief/send. "digest" is the desk's
+// weekly leads report (/api/digest/leads) and is not a listing watch at all.
+//
+// ML-004: every alert carries the shared footer (sender, brokerage mailing address, signed
+// one-click unsubscribe) and the List-Unsubscribe headers, from src/lib/email. A run that
+// cannot sign the link refuses before its loop, and a send that did not go out does not
+// stamp the watch, so the matches are offered again on the next run.
 
 import { prisma } from "@/lib/prisma";
 import { sendDealAlertEmail } from "@/lib/email-user";
 import { resolveLeadEnv } from "@/lib/lead/env";
+import { canSignUnsubscribe } from "@/lib/email/unsubscribe";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +48,9 @@ async function run(request: NextRequest) {
   }
 
   const dryRun = request.nextUrl.searchParams.get("dryRun") === "true";
+  // A single address, for a preview proof. Still environment-scoped: it cannot reach a
+  // production watch from a preview deployment.
+  const only = request.nextUrl.searchParams.get("only")?.trim().toLowerCase() || null;
 
   // ONLY watches from this deployment's own environment. Preview and production share one
   // database, so without this the production cron would mail every address a preview test
@@ -48,8 +58,20 @@ async function run(request: NextRequest) {
   // submissions from the counts and left them in the sends.
   const env = resolveLeadEnv(request.headers.get("host"));
 
+  // A production alert links to the canonical site; a preview alert links to itself, so a
+  // preview test of the unsubscribe exercises the preview and not production.
+  const host = request.headers.get("host");
+  const linkOrigin = env === "production" || !host ? undefined : `https://${host}`;
+
+  if (!dryRun && !canSignUnsubscribe()) {
+    return NextResponse.json(
+      { success: false, env, error: "no secret to sign the unsubscribe link with", alertsSent: 0 },
+      { status: 500 },
+    );
+  }
+
   const searches = await prisma.savedSearch.findMany({
-    where: { alertEnabled: true, kind: { not: "brief" }, env },
+    where: { alertEnabled: true, kind: { notIn: ["brief", "digest"] }, env, ...(only ? { email: only } : {}) },
     include: { user: true },
   });
 
@@ -123,7 +145,7 @@ async function run(request: NextRequest) {
       continue;
     }
 
-    await sendDealAlertEmail(
+    const outcome = await sendDealAlertEmail(
       to.email,
       to.firstName,
       search.name,
@@ -133,7 +155,16 @@ async function run(request: NextRequest) {
         mlsNumber: m.mlsNumber,
         propertyType: m.propertyType || "Home",
       })),
+      search.id,
+      linkOrigin,
+      env,
     );
+
+    if (!outcome.sent) {
+      skipped++;
+      report.push({ id: search.id, kind: search.kind, matches: matches.length, to: to.email, skipped: "send failed", error: outcome.reason ?? null });
+      continue;
+    }
 
     await prisma.savedSearch.update({
       where: { id: search.id },
@@ -141,7 +172,7 @@ async function run(request: NextRequest) {
     });
 
     sent++;
-    report.push({ id: search.id, kind: search.kind, matches: matches.length, to: to.email, sent: true });
+    report.push({ id: search.id, kind: search.kind, matches: matches.length, to: to.email, resendId: outcome.resendId ?? null, sent: true });
   }
 
   return NextResponse.json({

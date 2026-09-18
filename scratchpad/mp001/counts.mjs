@@ -1,0 +1,20 @@
+import fs from 'node:fs'; import path from 'node:path';
+const ROOT = process.cwd();
+function loadEnvLocal(){const f=path.join(ROOT,'.env.local');if(!fs.existsSync(f))return;for(const l of fs.readFileSync(f,'utf8').split('\n')){const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);if(!m||process.env[m[1]]!=null)continue;process.env[m[1]]=m[2].replace(/^(["'])(.*)\1$/,'$2');}}
+loadEnvLocal();
+const { PrismaClient } = await import('@prisma/client');
+const p = new PrismaClient();
+const users = await p.user.count();
+const verified = await p.user.count({ where: { verified: true } });
+const vow = await p.user.count({ where: { vowAcknowledgedAt: { not: null } } });
+const withSaved = await p.user.count({ where: { NOT: { savedListings: { isEmpty: true } } } });
+const lastLogin = await p.user.findFirst({ where: { lastLoginAt: { not: null } }, orderBy: { lastLoginAt: 'desc' }, select: { lastLoginAt: true } });
+const ss = await p.savedSearch.groupBy({ by: ['kind','env','alertEnabled'], _count: { _all: true } });
+const ssUser = await p.savedSearch.count({ where: { userId: { not: null } } });
+const leads = await p.lead.groupBy({ by: ['env'], _count: { _all: true } });
+const leadsConsent = await p.lead.count({ where: { env: 'production', consentText: { not: null } } });
+const leadsEmail = await p.lead.count({ where: { env: 'production', email: { not: null } } });
+const val = await p.lead.groupBy({ by: ['source'], where: { env: 'production', source: { in: ['sell-page','sold-home-valuation','doorhanger-valuation','homepage-valuation','sales-ads-home-valuation'] } }, _count: { _all: true } });
+const overlap = await p.$queryRaw`SELECT COUNT(DISTINCT u.email)::int AS n FROM "User" u JOIN "Lead" l ON lower(l.email)=u.email`;
+console.log(JSON.stringify({ users, verified, vow, withSaved, lastLogin, ss, ssUser, leads, leadsConsent, leadsEmail, val, overlap }, null, 1));
+await p.$disconnect();

@@ -1,5 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // LISTING PHOTOS THROUGH THE OPTIMISER (MH-005, MA-001 change 2). The feed's photo URLs are
+  // signed imgproxy paths at rs:fit:3840:3840; the resize is inside the signature, so the only
+  // way to serve a 700px tile is to resize the source ourselves. next/image does that once per
+  // width at the edge (AVIF/WebP, cached), and the street page's tiles are the first caller.
+  // Each unique source photo counts once toward the Vercel image-optimisation quota.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "trreb-image.ampre.ca" }],
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [390, 640, 750, 828, 1080, 1200, 1440],
+    imageSizes: [180, 260, 360, 480],
+    minimumCacheTTL: 86400,
+  },
   async redirects() {
     return [
       // WWW -> APEX, PINNED IN CODE. This redirect already exists at the Vercel domain layer —

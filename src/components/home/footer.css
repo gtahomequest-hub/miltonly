@@ -232,6 +232,18 @@
   }
   .m-footer .m-fforms {
     max-width: none;
+    /* MH-008: `flex: 1 1 340px` is a 340px flex-basis, and once the column stacks that basis
+       is HEIGHT: the forms block reserved 340px and sat over an empty band at 390 */
+    flex: 0 0 auto;
+  }
+  /* MH-008: and the stacked padding and margin under it come down to a phone's scale */
+  .m-footer .m-ftop {
+    padding-bottom: 22px;
+    margin-bottom: 6px;
+    gap: 22px;
+  }
+  .m-footer .m-fhoods {
+    padding-top: 14px;
   }
 }
 .m-footer .m-fcol h3 {

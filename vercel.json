@@ -76,6 +76,26 @@
     {
       "path": "/api/digest/leads",
       "schedule": "0 12 * * 1"
+    },
+    {
+      "path": "/api/sync/regenerate-hubs",
+      "schedule": "45 12 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "12 11 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "42 11 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "12 12 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "55 12 * * *"
     }
   ]
 }

@@ -12,9 +12,14 @@
 //
 // The street page derives its typical through `graduate()` in src/lib/streetEnrichment.ts:
 //
-//   12-month COUNT(*) >= 5 and AVG(sold_price) not null  -> typical = round(12mo avg), "12mo"
-//   else full-record priced COUNT(*) >= 5                -> typical = round(all-time avg), "full"
+//   12-month COUNT(*) >= 5 and a priced row             -> typical = round(12mo median), "12mo"
+//   else full-record priced COUNT(*) >= 5                -> typical = round(all-time median), "full"
 //   else                                                 -> no typical at all
+//
+// DEC-TYPICAL-MEDIAN (MC-027): the typical is the K-gated median, here as everywhere. A median
+// cannot be pooled from per-slug sums, so each slug's priced rows travel as a sorted array
+// (array_agg) and the sibling pooling merges the arrays before taking the midpoint. One row
+// per slug still leaves the database; the arrays are the prices the average used to sum.
 //
 // and it resolves SIBLING SLUGS first, because a street with a directional or abbreviated
 // variant is one street: `main-street-east-milton` and `main-st-milton` share an identity and
@@ -23,8 +28,8 @@
 //
 // So the aggregates are taken ONCE, grouped by `street_slug` across the whole table, and the
 // sibling pooling is done in memory on the identity key. Two queries per hub request, whatever
-// the ladder length. The arithmetic is the same arithmetic: SUM over the pooled priced rows
-// divided by their count is what AVG over the pooled rows returns.
+// the ladder length. The arithmetic is the same arithmetic: the midpoint of the merged sorted
+// price arrays is what PERCENTILE_CONT(0.5) over the pooled rows returns.
 //
 // THE PARTS THAT MUST NOT DRIFT, and what protects them:
 //   · the identity is `deriveIdentity()` itself, the function `resolveSiblingSlugs` keys on.
@@ -61,9 +66,8 @@ export interface LadderStreet {
 interface Agg {
   /** rows, the count the street page floors on (COUNT(*)) */
   n: number;
-  /** priced rows, the count AVG(sold_price) divides by */
-  np: number;
-  sum: number;
+  /** the priced rows themselves, sorted, the sample the median is taken over */
+  prices: number[];
 }
 
 /** The identity a street page pools over. The same function resolveSiblingSlugs keys on. */
@@ -71,23 +75,34 @@ function identityKey(slug: string): string {
   return deriveIdentity(slug)?.identityKey ?? slug;
 }
 
-function addTo(map: Map<string, Agg>, key: string, n: number, np: number, sum: number): void {
+function addTo(map: Map<string, Agg>, key: string, n: number, prices: number[]): void {
   const cur = map.get(key);
   if (cur) {
     cur.n += n;
-    cur.np += np;
-    cur.sum += sum;
+    cur.prices = cur.prices.concat(prices);
   } else {
-    map.set(key, { n, np, sum });
+    map.set(key, { n, prices: prices.slice() });
   }
+}
+
+/** PERCENTILE_CONT(0.5) over a list: the midpoint, interpolated between the two middle values
+ *  of an even sample, exactly as Postgres computes it. null on an empty list. */
+export function medianOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const v = values.slice().sort((a, b) => a - b);
+  const mid = (v.length - 1) / 2;
+  const lo = Math.floor(mid), hi = Math.ceil(mid);
+  return lo === hi ? v[lo] : (v[lo] + v[hi]) / 2;
 }
 
 interface Row {
   s: string;
   n: number;
-  np: number;
-  sum: unknown;
+  prices: unknown;
 }
+
+const toPrices = (x: unknown): number[] =>
+  (Array.isArray(x) ? x : []).map((p) => Number(p)).filter((p) => Number.isFinite(p) && p > 0);
 
 /**
  * Pooled sale aggregates for every street in the table, keyed by identity.
@@ -104,8 +119,8 @@ async function pooledAggregates(): Promise<{ twelve: Map<string, Agg>; full: Map
   if (!sd) return { twelve, full };
 
   const [rows12, rowsFull] = await Promise.all([
-    sd`SELECT street_slug AS s, COUNT(*)::int AS n, COUNT(sold_price)::int AS np,
-              COALESCE(SUM(sold_price), 0) AS sum
+    sd`SELECT street_slug AS s, COUNT(*)::int AS n,
+              array_agg(sold_price ORDER BY sold_price) FILTER (WHERE sold_price IS NOT NULL) AS prices
        FROM sold.sold_records
        WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
@@ -113,8 +128,8 @@ async function pooledAggregates(): Promise<{ twelve: Map<string, Agg>; full: Map
        GROUP BY 1` as unknown as Promise<Row[]>,
     // The "full" window is the whole record, matching fullWindowAgg: no lower bound, and
     // priced rows only. That filter is the street page's, mirrored here.
-    sd`SELECT street_slug AS s, COUNT(*)::int AS n, COUNT(sold_price)::int AS np,
-              COALESCE(SUM(sold_price), 0) AS sum
+    sd`SELECT street_slug AS s, COUNT(*)::int AS n,
+              array_agg(sold_price ORDER BY sold_price) AS prices
        FROM sold.sold_records
        WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
          AND sold_date <= NOW() AND sold_price IS NOT NULL
@@ -122,8 +137,8 @@ async function pooledAggregates(): Promise<{ twelve: Map<string, Agg>; full: Map
        GROUP BY 1` as unknown as Promise<Row[]>,
   ]);
 
-  for (const r of rows12) addTo(twelve, identityKey(r.s), Number(r.n), Number(r.np), Number(r.sum) || 0);
-  for (const r of rowsFull) addTo(full, identityKey(r.s), Number(r.n), Number(r.np), Number(r.sum) || 0);
+  for (const r of rows12) addTo(twelve, identityKey(r.s), Number(r.n), toPrices(r.prices));
+  for (const r of rowsFull) addTo(full, identityKey(r.s), Number(r.n), toPrices(r.prices));
   return { twelve, full };
 }
 
@@ -155,12 +170,14 @@ export async function buildLadder(
     let typical: number | null = null;
     let basis: string | null = null;
 
-    if (a12 && a12.n >= K_TYPICAL && a12.np > 0) {
-      typical = roundPriceForProse(Math.round(a12.sum / a12.np));
-      basis = disclose(a12.n, "12mo");
-    } else if (aFull && aFull.n >= K_TYPICAL && aFull.np > 0) {
-      typical = roundPriceForProse(Math.round(aFull.sum / aFull.np));
-      basis = disclose(aFull.n, "full");
+    const m12 = a12 && a12.n >= K_TYPICAL ? medianOf(a12.prices) : null;
+    const mFull = aFull && aFull.n >= K_TYPICAL ? medianOf(aFull.prices) : null;
+    if (m12 !== null) {
+      typical = roundPriceForProse(Math.round(m12));
+      basis = disclose(a12!.n, "12mo");
+    } else if (mFull !== null) {
+      typical = roundPriceForProse(Math.round(mFull));
+      basis = disclose(aFull!.n, "full");
     }
 
     return {

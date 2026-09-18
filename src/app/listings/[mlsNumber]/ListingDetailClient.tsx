@@ -7,9 +7,10 @@ import { formatPriceFull, daysAgo } from "@/lib/format";
 import { postLeadDetailed, type PostLeadPayload } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
+import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import AgentContactSection from "@/components/AgentContactSection";
 import {
-  UrgencyBanner, VOWTeaser, WhatsNearby, MortgageCalc, InvestorWidget,
+  UrgencyBanner, VOWTeaser, WhatsNearby, MortgageCalc, TypicalRentBlock, type ListingRentFigure,
   AudienceCTA, RentalBookingCard, SaveShareRow, MobileBottomBar,
 } from "./ListingExtras";
 
@@ -43,7 +44,8 @@ interface Extras {
   soldCountOnStreet: number;
   soldCountInHood: number;
   hoodName: string;
-  hoodAvgRent: number | null;
+  /** the Board's k-gated lease figure for this home type; null below the floor */
+  rent: ListingRentFigure | null;
   schools: SchoolLite[];
   domDays: number;
 }
@@ -64,7 +66,7 @@ function titleCase(s: string | null | undefined): string {
 
 function domColor(d: number): string {
   if (d <= 14) return "text-[#15803d] bg-[#f0fdf4] border-[#bbf7d0]";
-  if (d <= 30) return "text-[#92400e] bg-[#fef3c7] border-[#fde68a]";
+  if (d <= 30) return "text-[#0b5c3a] bg-[#e6f4ec] border-[#bfe6d0]";
   return "text-[#991b1b] bg-[#fef2f2] border-[#fecaca]";
 }
 
@@ -94,7 +96,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
   const displayAddr = l.displayAddress ? titleCase(l.address) : "Address on request";
   const priceLabel = isRental ? formatPriceFull(l.price) + "/mo" : formatPriceFull(l.price);
   const statusLabel = isRental ? "FOR RENT" : l.status === "sold" ? "SOLD" : "FOR SALE";
-  const statusColor = isRental ? "#2563eb" : l.status === "sold" ? "#ef4444" : "#16a34a";
+  const statusColor = isRental ? "#017848" : l.status === "sold" ? "#ef4444" : "#16a34a";
   const brokerage = l.listOfficeName ? titleCase(l.listOfficeName) : null;
   const pricePerSqft = l.sqft && !isRental ? Math.round(l.price / l.sqft) : null;
 
@@ -102,8 +104,10 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
   // GA4 fires only on a confirmed write. The helper resolves false for a 429, a 500 and a
   // network failure alike, which is the difference between a conversion and an attempt.
+  // Every submission from this page is a request for a reply, and the fine print under the
+  // form is REPLY_FINE_PRINT, so the wrapper stamps it once rather than each caller.
   const submitLead = async (data: PostLeadPayload): Promise<boolean> => {
-    const result = await postLeadDetailed(data);
+    const result = await postLeadDetailed({ ...data, consentText: REPLY_FINE_PRINT, consentTimestamp: new Date().toISOString() });
     if (!result.ok) return false;
     try {
       if (typeof window === "undefined") return true;
@@ -182,9 +186,9 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
       const yes = incl.some((x) => x.includes(key));
       utilBadges.push({ label: `${lbl}: ${yes ? "Included" : "Tenant pays"}`, cls: yes ? "bg-[#f0fdf4] text-[#166534] border-[#bbf7d0]" : "bg-[#fef2f2] text-[#991b1b] border-[#fecaca]" });
     });
-    if (l.laundryFeatures) utilBadges.push({ label: `Laundry: ${l.laundryFeatures}`, cls: "bg-[#eff6ff] text-[#1e40af] border-[#bfdbfe]" });
-    if (l.furnished && l.furnished !== "Unfurnished") utilBadges.push({ label: `${l.furnished}`, cls: "bg-[#fef3c7] text-[#92400e] border-[#fde68a]" });
-    if (l.petsAllowed) utilBadges.push({ label: `Pets: ${l.petsAllowed}`, cls: "bg-[#f1f5f9] text-[#475569] border-[#e2e8f0]" });
+    if (l.laundryFeatures) utilBadges.push({ label: `Laundry: ${l.laundryFeatures}`, cls: "bg-[#eef6f2] text-[#0b5c3a] border-[#bfe6d0]" });
+    if (l.furnished && l.furnished !== "Unfurnished") utilBadges.push({ label: `${l.furnished}`, cls: "bg-[#e6f4ec] text-[#0b5c3a] border-[#bfe6d0]" });
+    if (l.petsAllowed) utilBadges.push({ label: `Pets: ${l.petsAllowed}`, cls: "bg-[#f6f6f3] text-[#3e423f] border-[#dfe0dc]" });
   }
 
   return (
@@ -193,7 +197,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
         {/* ═══ PHOTO GALLERY ═══ */}
         <div className="mb-6">
           {l.photos.length === 0 ? (
-            <div className="rounded-2xl bg-[#07111f] aspect-[16/9] flex items-center justify-center text-[#475569]">No photos available</div>
+            <div className="rounded-2xl bg-[#073126] aspect-[16/9] flex items-center justify-center text-[#3e423f]">No photos available</div>
           ) : l.photos.length === 1 ? (
             <div className="relative rounded-2xl overflow-hidden cursor-pointer" onClick={() => openGallery(0)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -206,7 +210,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                 <img src={l.photos[0]} alt={displayAddr} className="w-full h-full object-cover" />
               </div>
               {[1, 2, 3, 4].map((idx) => (
-                <div key={idx} className={`relative cursor-pointer ${idx > l.photos.length - 1 ? "bg-[#f1f5f9]" : ""}`} onClick={() => idx <= l.photos.length - 1 && openGallery(idx)}>
+                <div key={idx} className={`relative cursor-pointer ${idx > l.photos.length - 1 ? "bg-[#f6f6f3]" : ""}`} onClick={() => idx <= l.photos.length - 1 && openGallery(idx)}>
                   {idx <= l.photos.length - 1 && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={l.photos[idx]} alt="" className="w-full h-full object-cover hover:brightness-90 transition-all" />
@@ -223,9 +227,11 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
           )}
         </div>
 
+        {/* min-w-0 on both columns: a grid item's min-width is auto, and the wide rows inside
+            (the photo grid, the chips) were forcing the column past the 390 viewport. */}
         <div className="grid lg:grid-cols-[1fr_360px] gap-8">
           {/* ═══ LEFT ═══ */}
-          <div>
+          <div className="min-w-0">
             {/* Price + status */}
             <div className="flex items-start justify-between gap-4 mb-2">
               <div>
@@ -235,12 +241,12 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                     {extras.domDays === 0 ? "Listed today" : `${extras.domDays}d on market`}
                   </span>
                 </div>
-                <h1 className="text-[32px] font-extrabold text-[#07111f] tracking-[-0.5px]">{priceLabel}</h1>
+                <h1 className="text-[32px] font-extrabold text-[#073126] tracking-[-0.5px]">{priceLabel}</h1>
                 {pricePerSqft && (
-                  <p className="text-[12px] text-[#64748b] mt-0.5">${pricePerSqft.toLocaleString()}/sqft</p>
+                  <p className="text-[12px] text-[#6b6f6a] mt-0.5">${pricePerSqft.toLocaleString()}/sqft</p>
                 )}
-                <p className="text-[14px] text-[#64748b] mt-1">{l.bedrooms} bd · {l.bathrooms} ba · {titleCase(l.propertyType)}{l.sqft ? ` · ${l.sqft.toLocaleString()} sqft` : ""}</p>
-                <p className="text-[14px] text-[#07111f] font-medium mt-1">{displayAddr}</p>
+                <p className="text-[14px] text-[#6b6f6a] mt-1">{l.bedrooms} bd · {l.bathrooms} ba · {titleCase(l.propertyType)}{l.sqft ? ` · ${l.sqft.toLocaleString()} sqft` : ""}</p>
+                <p className="text-[14px] text-[#073126] font-medium mt-1">{displayAddr}</p>
               </div>
             </div>
 
@@ -248,13 +254,13 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
             {/* Virtual tour prominent CTA */}
             {l.virtualTourUrl && (
-              <a href={l.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#07111f] text-white font-bold text-[13px] px-5 py-2.5 rounded-lg hover:bg-[#0c1e35] transition-colors mb-4">
+              <a href={l.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#073126] text-white font-bold text-[13px] px-5 py-2.5 rounded-lg hover:bg-[#0a3d30] transition-colors mb-4">
                 🎥 Take the 3D tour →
               </a>
             )}
 
             {/* Specs bar */}
-            <div className="flex flex-wrap gap-4 py-4 my-4 border-y border-[#e2e8f0]">
+            <div className="flex flex-wrap gap-4 py-4 my-4 border-y border-[#dfe0dc]">
               {[
                 { icon: "🏠", label: titleCase(l.propertyType), sub: formatArchitecturalStyle(l.architecturalStyle) ?? "Residential" },
                 l.totalRooms ? { icon: "🚪", label: `${l.totalRooms} rooms`, sub: `${l.kitchens || 1} kitchen` } : null,
@@ -262,11 +268,11 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                 l.taxAmount ? { icon: "📋", label: `$${Math.round(l.taxAmount).toLocaleString()}/yr`, sub: `Tax (${l.taxYear || "—"})` } : null,
                 l.approximateAge ? { icon: "📅", label: l.approximateAge, sub: "Approx. age" } : null,
               ].filter(Boolean).map((s, i) => (
-                <div key={i} className="flex items-center gap-2.5 pr-4 border-r border-[#e2e8f0] last:border-0 last:pr-0">
+                <div key={i} className="flex items-center gap-2.5 pr-4 border-r border-[#dfe0dc] last:border-0 last:pr-0">
                   <span className="text-[18px]">{s!.icon}</span>
                   <div>
-                    <p className="text-[13px] font-bold text-[#07111f]">{s!.label}</p>
-                    <p className="text-[10px] text-[#94a3b8]">{s!.sub}</p>
+                    <p className="text-[13px] font-bold text-[#073126]">{s!.label}</p>
+                    <p className="text-[10px] text-[#6b6f6a]">{s!.sub}</p>
                   </div>
                 </div>
               ))}
@@ -282,7 +288,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             )}
 
             {/* Listing info */}
-            <p className="text-[11px] text-[#94a3b8] mb-6">
+            <p className="text-[11px] text-[#6b6f6a] mb-6">
               Listed {daysAgo(new Date(l.listedAt)) === 0 ? "today" : `${daysAgo(new Date(l.listedAt))} days ago`} · Source: TREB MLS® {l.mlsNumber}
               {brokerage && ` · ${brokerage}`}
               {l.crossStreet && ` · Near ${l.crossStreet}`}
@@ -293,13 +299,13 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                 page to the site's own voice (MA-003); the label is the reader's notice. */}
             {l.description && (
               <div className="mb-8" data-remarks>
-                <h2 className="text-[18px] font-extrabold text-[#07111f] mb-1">Listing agent&apos;s remarks</h2>
-                <p className="text-[11px] text-[#94a3b8] mb-3">As written by the listing brokerage, unedited.</p>
-                <div className={`text-[13px] text-[#475569] leading-[1.8] ${showFullDesc ? "" : "line-clamp-4"}`}>
+                <h2 className="text-[18px] font-extrabold text-[#073126] mb-1">Listing agent&apos;s remarks</h2>
+                <p className="text-[11px] text-[#6b6f6a] mb-3">As written by the listing brokerage, unedited.</p>
+                <div className={`text-[13px] text-[#3e423f] leading-[1.8] ${showFullDesc ? "" : "line-clamp-4"}`}>
                   {l.description}
                 </div>
                 {l.description.length > 300 && (
-                  <button onClick={() => setShowFullDesc(!showFullDesc)} className="text-[12px] font-semibold text-[#2563eb] mt-2 hover:underline">
+                  <button onClick={() => setShowFullDesc(!showFullDesc)} className="text-[12px] font-semibold text-[#017848] mt-2 hover:underline">
                     {showFullDesc ? "Show less ↑" : "Show more ↓"}
                   </button>
                 )}
@@ -309,15 +315,15 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             {/* Features */}
             {(l.interiorFeatures.length > 0 || l.exteriorFeatures.length > 0 || l.fireplace || l.basement) && (
               <div className="mb-8">
-                <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">Features</h2>
+                <h2 className="text-[18px] font-extrabold text-[#073126] mb-3">Features</h2>
                 <div className="flex flex-wrap gap-2">
                   {l.interiorFeatures.map((f) => (
-                    <span key={f} className="text-[11px] font-medium bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] rounded-lg px-3 py-1.5">{f}</span>
+                    <span key={f} className="text-[11px] font-medium bg-[#f6f6f3] text-[#3e423f] border border-[#dfe0dc] rounded-lg px-3 py-1.5">{f}</span>
                   ))}
                   {l.exteriorFeatures.map((f) => (
-                    <span key={f} className="text-[11px] font-medium bg-[#eff6ff] text-[#1e3a8a] border border-[#bfdbfe] rounded-lg px-3 py-1.5">{f}</span>
+                    <span key={f} className="text-[11px] font-medium bg-[#eef6f2] text-[#073126] border border-[#bfe6d0] rounded-lg px-3 py-1.5">{f}</span>
                   ))}
-                  {l.fireplace && <span className="text-[11px] font-medium bg-[#fef3c7] text-[#92400e] border border-[#fde68a] rounded-lg px-3 py-1.5">🔥 Fireplace</span>}
+                  {l.fireplace && <span className="text-[11px] font-medium bg-[#e6f4ec] text-[#0b5c3a] border border-[#bfe6d0] rounded-lg px-3 py-1.5">🔥 Fireplace</span>}
                   {l.basement && <span className="text-[11px] font-medium bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0] rounded-lg px-3 py-1.5">Basement</span>}
                 </div>
               </div>
@@ -325,19 +331,19 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
             {/* Property details */}
             <div className="mb-8">
-              <h2 className="text-[18px] font-extrabold text-[#07111f] mb-3">Property details</h2>
+              <h2 className="text-[18px] font-extrabold text-[#073126] mb-3">Property details</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {details.map((section) => {
                   const validItems = section.items.filter((i) => i.value);
                   if (validItems.length === 0) return null;
                   return (
-                    <div key={section.label} className="bg-white rounded-xl border border-[#e2e8f0] p-4">
-                      <h3 className="text-[12px] font-bold text-[#07111f] uppercase tracking-[0.08em] mb-3 pb-2 border-b border-[#f1f5f9]">{section.label}</h3>
+                    <div key={section.label} className="bg-white rounded-xl border border-[#dfe0dc] p-4">
+                      <h3 className="text-[12px] font-bold text-[#073126] uppercase tracking-[0.08em] mb-3 pb-2 border-b border-[#f6f6f3]">{section.label}</h3>
                       <div className="space-y-2">
                         {validItems.map((item) => (
                           <div key={item.key} className="flex justify-between text-[12px]">
-                            <span className="text-[#94a3b8]">{item.key}</span>
-                            <span className="text-[#07111f] font-medium text-right">{item.value}</span>
+                            <span className="text-[#6b6f6a]">{item.key}</span>
+                            <span className="text-[#073126] font-medium text-right">{item.value}</span>
                           </div>
                         ))}
                       </div>
@@ -353,10 +359,8 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             {/* Mortgage (sales only) */}
             {!isRental && <MortgageCalc price={l.price} taxAmount={l.taxAmount} propertyType={l.propertyType} />}
 
-            {/* Investor widget (sales > $500K) */}
-            {!isRental && l.price >= 500_000 && (
-              <InvestorWidget price={l.price} taxAmount={l.taxAmount} propertyType={l.propertyType} hoodAvgRent={extras.hoodAvgRent} />
-            )}
+            {/* Typical rent for this home type, the Board's closed leases (MH-008) */}
+            {!isRental && <TypicalRentBlock rent={extras.rent} />}
 
             {/* VOW teaser */}
             <VOWTeaser mls={l.mlsNumber} soldCount={extras.soldCountOnStreet} hoodSoldCount={extras.soldCountInHood} hoodName={extras.hoodName} />
@@ -366,27 +370,27 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
             {/* Street link */}
             <div className="mb-8">
-              <Link href={`/streets/${l.streetSlug}`} className="flex items-center justify-between bg-white rounded-xl border border-[#e2e8f0] p-5 hover:shadow-md transition-shadow">
+              <Link href={`/streets/${l.streetSlug}`} className="flex items-center justify-between bg-white rounded-xl border border-[#dfe0dc] p-5 hover:shadow-md transition-shadow">
                 <div>
-                  <p className="text-[14px] font-bold text-[#07111f]">Street Intelligence</p>
-                  <p className="text-[12px] text-[#64748b]">See sold prices, trends, and market data for this street</p>
+                  <p className="text-[14px] font-bold text-[#073126]">Street Intelligence</p>
+                  <p className="text-[12px] text-[#6b6f6a]">See sold prices, trends, and market data for this street</p>
                 </div>
-                <span className="text-[#f59e0b] text-lg">→</span>
+                <span className="text-[#017848] text-lg">→</span>
               </Link>
             </div>
           </div>
 
           {/* ═══ SIDEBAR ═══ */}
-          <div className="space-y-4 self-start">
+          <div className="space-y-4 self-start min-w-0">
             <div id="sidebar-cta" className="sticky top-[70px] space-y-4">
               {isRental ? (
                 <RentalBookingCard mls={l.mlsNumber} address={displayAddr} price={l.price} />
               ) : (
-                <div className="bg-[#07111f] rounded-2xl p-6">
-                  <h3 className="text-[16px] font-extrabold text-[#f8f9fb] mb-1">Request a showing</h3>
+                <div className="bg-[#073126] rounded-2xl p-6">
+                  <h3 className="text-[16px] font-extrabold text-[#fffdfa] mb-1">Request a showing</h3>
                   <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-5">Tour this home. No obligation, no pressure.</p>
                   {saleFormSent ? (
-                    <p className="text-[13px] text-[#86efac] font-semibold">✓ Request sent — {config.realtor.name.split(" ")[0]} usually replies within the hour.</p>
+                    <p className="text-[13px] text-[#86efac] font-semibold">✓ Request sent. {config.realtor.name.split(" ")[0]} usually replies within the hour.</p>
                   ) : (
                     <form className="space-y-3" onSubmit={async (e) => {
                       e.preventDefault();
@@ -398,16 +402,17 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                       if (!ok) { showToast("Could not submit. Please try again."); return; }
                       setSaleFormSent(true);
                     }}>
-                      <input name="name" required placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-                      <input name="phone" required type="tel" placeholder="Phone number" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-                      <input name="email" type="email" placeholder="Email (optional)" className="w-full px-3 py-2.5 text-[12px] bg-[#0c1e35] border border-[#1e3a5f] rounded-lg text-[#f8f9fb] placeholder:text-[#334155] outline-none focus:border-[#f59e0b]" />
-                      <button type="submit" className="w-full bg-[#f59e0b] text-[#07111f] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#fbbf24] transition-colors">Request a showing</button>
+                      <input name="name" required placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+                      <input name="phone" required type="tel" placeholder="Phone number" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+                      <input name="email" type="email" placeholder="Email (optional)" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+                      <button type="submit" className="w-full bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#5cffa8] transition-colors">Request a showing</button>
+                      <p className="text-[10px] text-white/60 leading-snug">{REPLY_FINE_PRINT}</p>
                     </form>
                   )}
-                  <p className="text-[10px] text-[#94a3b8] text-center mt-3">{config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")}</p>
+                  <p className="text-[10px] text-white/60 text-center mt-3">{config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")}</p>
                   <div className="flex gap-2 mt-2">
-                    <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#f59e0b] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] transition-colors">📞 {config.realtor.phone}</a>
-                    <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-[#94a3b8] border border-[#1e3a5f] rounded-lg py-2 hover:border-[#f59e0b] hover:text-[#f59e0b] transition-colors">💬 WhatsApp</a>
+                    <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#00ff80] border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80] transition-colors">📞 {config.realtor.phone}</a>
+                    <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-white/60 border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80] hover:text-[#00ff80] transition-colors">💬 WhatsApp</a>
                   </div>
                 </div>
               )}
@@ -416,8 +421,8 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             </div>
 
             {/* Quick facts */}
-            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5">
-              <h3 className="text-[12px] font-bold text-[#07111f] uppercase tracking-[0.08em] mb-3">Quick facts</h3>
+            <div className="bg-white rounded-2xl border border-[#dfe0dc] p-5">
+              <h3 className="text-[12px] font-bold text-[#073126] uppercase tracking-[0.08em] mb-3">Quick facts</h3>
               <div className="space-y-2.5">
                 {[
                   { label: "MLS®", value: l.mlsNumber },
@@ -431,8 +436,8 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                   l.taxAmount ? { label: "Annual tax", value: `$${Math.round(l.taxAmount).toLocaleString()}` } : null,
                 ].filter(Boolean).map((item) => (
                   <div key={item!.label} className="flex justify-between text-[12px]">
-                    <span className="text-[#94a3b8]">{item!.label}</span>
-                    <span className="text-[#07111f] font-medium">{item!.value}</span>
+                    <span className="text-[#6b6f6a]">{item!.label}</span>
+                    <span className="text-[#073126] font-medium">{item!.value}</span>
                   </div>
                 ))}
               </div>
@@ -445,15 +450,15 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
         {/* Similar */}
         {similar.length > 0 && (
           <div className="mt-10 mb-8">
-            <h2 className="text-[18px] font-extrabold text-[#07111f] mb-4">Similar homes in {config.CITY_NAME}</h2>
+            <h2 className="text-[18px] font-extrabold text-[#073126] mb-4">Similar homes in {config.CITY_NAME}</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {similar.map((s) => (
-                <Link key={s.mlsNumber} href={`/listings/${s.mlsNumber}`} className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="h-[120px] relative" style={{ background: s.photos[0] ? `url(${s.photos[0]}) center/cover` : "#e0f2fe" }} />
+                <Link key={s.mlsNumber} href={`/listings/${s.mlsNumber}`} className="bg-white rounded-xl border border-[#dfe0dc] overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="h-[120px] relative" style={{ background: s.photos[0] ? `url(${s.photos[0]}) center/cover` : "#e6f4ec" }} />
                   <div className="p-3">
-                    <p className="text-[16px] font-extrabold text-[#07111f]">{formatPriceFull(s.price)}{s.transactionType === "For Lease" ? "/mo" : ""}</p>
-                    <p className="text-[11px] text-[#64748b] truncate mt-0.5">{s.displayAddress ? titleCase(s.address.split(",")[0]) : "Address on request"}</p>
-                    <p className="text-[10px] text-[#94a3b8] mt-1">{s.bedrooms}bd · {s.bathrooms}ba · {titleCase(s.propertyType)}</p>
+                    <p className="text-[16px] font-extrabold text-[#073126]">{formatPriceFull(s.price)}{s.transactionType === "For Lease" ? "/mo" : ""}</p>
+                    <p className="text-[11px] text-[#6b6f6a] truncate mt-0.5">{s.displayAddress ? titleCase(s.address.split(",")[0]) : "Address on request"}</p>
+                    <p className="text-[10px] text-[#6b6f6a] mt-1">{s.bedrooms}bd · {s.bathrooms}ba · {titleCase(s.propertyType)}</p>
                   </div>
                 </Link>
               ))}
@@ -461,7 +466,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
           </div>
         )}
 
-        <p className="text-[10px] text-[#94a3b8] text-center py-6 border-t border-[#e2e8f0]">
+        <p className="text-[10px] text-[#6b6f6a] text-center py-6 border-t border-[#dfe0dc]">
           Data provided by TREB via Miltonly. MLS® {l.mlsNumber}. Information deemed reliable but not guaranteed. Updated daily.
         </p>
       </div>
@@ -469,7 +474,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
       <MobileBottomBar price={l.price} isRental={isRental} onBook={scrollToCTA} />
 
       {toast && (
-        <div className="fixed bottom-20 right-5 z-50 bg-[#07111f] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center gap-2 text-[13px] text-[#f8f9fb] shadow-lg">
+        <div className="fixed bottom-20 right-5 z-50 bg-[#073126] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center gap-2 text-[13px] text-[#fffdfa] shadow-lg">
           <span className="text-[#22c55e]">✓</span> {toast}
         </div>
       )}

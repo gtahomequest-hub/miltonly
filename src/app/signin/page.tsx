@@ -1,5 +1,6 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import { Suspense } from "react";
 import SignInForm from "./SignInForm";
 import SiteChrome from "@/components/nav/SiteChrome";
 
@@ -18,7 +19,7 @@ import SiteChrome from "@/components/nav/SiteChrome";
 // the /listings and /sold facets.
 export const metadata = genMeta({
   title: `Sign In — ${config.SITE_NAME}`,
-  description: `Sign in to save listings and get alerts on ${config.CITY_NAME} real estate.`,
+  description: `Sign in to ${config.SITE_NAME} with an emailed link. No password.`,
   canonical: `${config.SITE_URL}/signin`,
   noIndex: true,
 });
@@ -26,13 +27,16 @@ export const metadata = genMeta({
 export default function SignInPage() {
   return (
     <SiteChrome>
-    <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-5">
+    <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-[400px]">
-        <div className="text-center mb-8">
+        <div className="text-center mb-7">
           <h1 className="text-[24px] font-extrabold text-[#073126] tracking-[-0.02em] mb-2">Sign in to {config.SITE_NAME}</h1>
-          <p className="text-[13px] text-[#6b6f6a]">Save listings and get personalized alerts</p>
+          <p className="text-[13px] text-[#6b6f6a]">Sold prices, your streets, your alerts. An email, no password.</p>
         </div>
-        <SignInForm />
+        {/* useSearchParams in the form needs a boundary on a static page (Next 14). */}
+        <Suspense fallback={<div className="bg-white rounded-2xl border border-[#dfe0dc] p-8 min-h-[220px]" />}>
+          <SignInForm />
+        </Suspense>
       </div>
     </div>
     </SiteChrome>

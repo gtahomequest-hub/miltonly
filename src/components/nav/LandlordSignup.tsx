@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from '@/lib/postLeadClient';
 import type { NavContext } from './megaTypes';
-
-/** The fine print under the landlord form. A request for service, not a subscription. */
-export const LANDLORD_FINE_PRINT = 'Aamir replies personally, during business hours. No account, no list.';
+import { REPLY_FINE_PRINT } from '@/lib/lead/finePrint';
 
 /** The landlord's listing request, the Rent menu's Landlords panel CTA (MH-007). Through the
  *  one lead helper every form on the site uses, as source "landlord": one row, the ops alert
@@ -48,6 +46,8 @@ export function LandlordSignup({
       property_address: typed || context?.street?.name,
       neighbourhood: context?.hub?.name,
       notes: `Landlord listing request (${where}${subject ? `, ${subject}` : ''})`,
+      consentText: REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setStatus(ok ? 'ok' : 'error');
@@ -81,7 +81,7 @@ export function LandlordSignup({
         </label>
       </div>
       {status === 'error' ? <p className="m-mega-note">Something went wrong. Please try again.</p> : null}
-      <p className="m-mega-fine">{LANDLORD_FINE_PRINT}</p>
+      <p className="m-mega-fine">{REPLY_FINE_PRINT}</p>
       <button type="submit" className="m-mega-cta" disabled={status === 'submitting'}>
         {status === 'submitting' ? 'Sending…' : cta}
         <span aria-hidden="true"> →</span>

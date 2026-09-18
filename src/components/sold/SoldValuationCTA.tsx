@@ -8,6 +8,7 @@
 // the honeypot and the attribution payload.
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
+import { VALUATION_FINE_PRINT } from "@/lib/lead/finePrint";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -28,6 +29,8 @@ export default function SoldValuationCTA() {
       email,
       property_address: address || undefined,
       notes: `Home-value request from /sold${address ? `, ${address}` : ""}`,
+      consentText: VALUATION_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setStatus(ok ? "ok" : "error");
@@ -86,7 +89,7 @@ export default function SoldValuationCTA() {
               {status === "error" && (
                 <div className="sv-sell-err">Something went wrong — please try again.</div>
               )}
-              <div className="sv-sell-fine">No spam, no obligation. Miltonly · RE/MAX Realty Specialists Inc.</div>
+              <div className="sv-sell-fine">{VALUATION_FINE_PRINT}</div>
             </form>
           )}
         </div>

@@ -30,9 +30,10 @@ export default function SoldAggregates({ data }: { data: SoldAggregatesData }) {
           </p>
         </div>
 
-        {/* ── market snapshot: two plainly-labelled anchors (midpoint + average), then stats.
-            The average is the SAME statistic the neighbourhood table uses, so the table has a
-            coherent town-wide anchor sitting right above it. ── */}
+        {/* ── market snapshot: the typical (the K-gated median, DEC-TYPICAL-MEDIAN), then stats.
+            The neighbourhood table below is measured the same way, so it has a coherent
+            town-wide anchor sitting right above it. The "average sold price" tile that stood
+            here was a mean labelled beside a typical; it is gone (MC-027). ── */}
         <div className="sv-snap-prices">
           <div className="sv-snap-tile sv-snap-hero">
             <div className="sv-snap-l">Midpoint sold price</div>
@@ -43,14 +44,6 @@ export default function SoldAggregates({ data }: { data: SoldAggregatesData }) {
                 ? ` — most between ${money(overall.bandLow)} and ${money(overall.bandHigh)}`
                 : ""}
               .
-            </div>
-          </div>
-          <div className="sv-snap-tile sv-snap-hero sv-snap-hero-alt">
-            <div className="sv-snap-l">Average sold price</div>
-            <div className="sv-snap-v">{overall.meanPrice != null ? money(overall.meanPrice) : "—"}</div>
-            <div className="sv-snap-band">
-              The average runs higher — a smaller number of premium sales pull it up. Each neighbourhood
-              below is measured this same way.
             </div>
           </div>
         </div>
@@ -113,10 +106,10 @@ export default function SoldAggregates({ data }: { data: SoldAggregatesData }) {
           <>
             <h3 className="sv-agg-sh">Sold prices by {CITY} neighbourhood</h3>
             <p className="sv-agg-note">
-              Each row is that neighbourhood&rsquo;s <strong>average</strong> sold price — the same figure
-              shown on the neighbourhood&rsquo;s own page, so the two always agree — clustered around the{" "}
-              {CITY} average{overall.meanPrice != null ? ` of ${money(overall.meanPrice)}` : ""} above. Where
-              a sample is too small to publish safely we hold the price back, but the neighbourhood is
+              Each row is that neighbourhood&rsquo;s <strong>typical</strong> sold price, the midpoint of its
+              sales, the same figure shown on the neighbourhood&rsquo;s own page, so the two always agree,
+              clustered around the {CITY} typical{overall.hubTypical != null ? ` of ${money(overall.hubTypical)}` : ""} above.
+              Where a sample is too small to publish safely we hold the price back, but the neighbourhood is
               still here, and still linked.
             </p>
             <div className="sv-nbtable-wrap">
@@ -125,7 +118,7 @@ export default function SoldAggregates({ data }: { data: SoldAggregatesData }) {
                   <tr>
                     <th>Neighbourhood</th>
                     <th className="sv-num">Homes sold</th>
-                    <th className="sv-num">Average sold price</th>
+                    <th className="sv-num">Typical sold price</th>
                   </tr>
                 </thead>
                 <tbody>

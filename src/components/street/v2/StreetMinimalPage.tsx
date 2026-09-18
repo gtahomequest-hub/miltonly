@@ -6,6 +6,7 @@
 // schools, and nearby streets. NO LLM prose, NO fabricated street-level stats.
 import './street-theme.css';
 import type { StreetV2Data } from './types';
+import { compactPrice } from './format';
 import type { MinimalStreetView } from '@/lib/streetMinimal';
 import { StreetHero, StreetInventory, StreetFinalCtas } from './sections';
 import { StreetAddresses } from './AddressLadder';
@@ -31,7 +32,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
   return (
     <div className="street-v2">
       <SiteNavLive variant="page" context={navContext} />
-      <StreetHero data={data} />
+      <StreetHero data={data} soldGate={false} />
 
       {/* Section 6 — the trust anchor. Plain, prominent, no hedging.
           It used to hardcode "No resales recorded yet" for every street that reached this shell,
@@ -43,7 +44,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
             className="s-placeholder"
             style={{ borderLeft: '3px solid var(--s-green, #2f6b3f)', paddingLeft: 20 }}
           >
-            <h3>{claim.heading}</h3>
+            <h2>{claim.heading}</h2>
             <p>{claim.body}</p>
           </div>
         </div>
@@ -69,7 +70,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
             </div>
             <aside className="s-side">
               <div className="s-side-card">
-                <h4>Street facts</h4>
+                <h3>Street facts</h3>
                 {facts.map((f) => (
                   <div className="s-fact" key={f.label}>
                     <span className="s-fact-l">{f.label}</span>
@@ -80,7 +81,7 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
               {/* QUEUE item 5: the same road-facts card the full shell carries, same markup. */}
               {data.sidebar.geometry && (
                 <div className="s-side-card s-geo" data-identity={data.sidebar.geometry.identity}>
-                  <h4>Road facts</h4>
+                  <h3>Road facts</h3>
                   {data.sidebar.geometry.facts.map((f) => (
                     <div className="s-fact s-geo-fact" data-key={f.key} key={f.key}>
                       <span className="s-fact-l">{f.label}</span>
@@ -120,10 +121,17 @@ export function StreetMinimalPage({ data, view }: { data: StreetV2Data; view: Mi
                   <div className="s-stat-l">Window</div>
                   <div className="s-stat-v">{view.area.window}</div>
                 </div>
-                {view.area.marketScore != null && (
+                {/* "Market activity score 85" (MA-001 defect 16) had no unit, scale or source on the
+                    page and none in the code that produced it; the one number an owner came for,
+                    the neighbourhood typical, was missing. The score is gone, the typical is here. */}
+                {data.areaContext?.typicalPrice != null && (
                   <div className="s-stat" style={{ padding: 0 }}>
-                    <div className="s-stat-l">Market activity score</div>
-                    <div className="s-stat-v">{Math.round(view.area.marketScore)}</div>
+                    <div className="s-stat-l">Neighbourhood typical price</div>
+                    <div className="s-stat-v">
+                      <b>$</b>
+                      {compactPrice(data.areaContext.typicalPrice)}
+                    </div>
+                    {data.areaContext.basis && <div className="s-stat-d">{data.areaContext.basis}</div>}
                   </div>
                 )}
               </div>

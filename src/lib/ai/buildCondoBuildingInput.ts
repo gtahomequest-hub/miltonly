@@ -89,7 +89,7 @@ interface RawLeaseRecord {
 function saleAggQuery(keys: string[]) {
   return querySold<RawSaleAgg>((db) =>
     db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
-              AVG(sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
+              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
        FROM sold.sold_records
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})
@@ -117,7 +117,7 @@ function leaseAggQuery(keys: string[]) {
 function saleByTypeQuery(keys: string[]) {
   return querySold<RawTypeAgg>((db) =>
     db`SELECT property_type, COUNT(*)::int AS n,
-              AVG(sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
+              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
        FROM sold.sold_records
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})
@@ -132,7 +132,7 @@ function saleQuarterlyQuery(keys: string[]) {
   return querySold<RawQuarterRow>((db) =>
     db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
               EXTRACT(QUARTER FROM sold_date)::int AS qtr,
-              COUNT(*)::int AS cnt, AVG(sold_price) AS typical
+              COUNT(*)::int AS cnt, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
        FROM sold.sold_records
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})

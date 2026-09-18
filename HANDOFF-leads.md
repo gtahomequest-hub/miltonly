@@ -2,9 +2,42 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-11, after ML-002 fixed the brief's sold read._
+_Last rewritten 2026-09-12, after ML-003 built the weekly leads digest._
 
 ## READ THIS FIRST
+
+**ML-003 AND ML-002 ARE ON THIS BRANCH, AWAITING CORE'S MERGE.** The proven tree is
+**`e205757`** (ML-003 on top of ML-002, with `origin/main` `2a89120` merged in and the prebuild
+line unioned); the head is one docs commit above it. Merge the head.
+
+**ML-003 IS THE WEEKLY LEADS DIGEST.** Monday 07:00 Toronto, one email to the desk
+(`LEADS_DIGEST_TO`, falling back to `ALERT_EMAIL_TO`, which is the desk address in both
+environments, so no new production variable is needed): leads by source and by page for the
+7 and the 28 local days ending Sunday, from `lead_daily_by_page`; brief subscribers and
+watches active; confirmation and desk-alert delivery counts; every mounted surface with no
+submission in 28 days. Two UTC crons, `0 11 * * 1` and `0 12 * * 1`, and the route runs only
+when the Toronto hour is 7 (the market-watch pattern). **One send proven on preview
+`miltonly-bsn6qltes`** to `gtahomequest+ml003@gmail.com` (Resend
+`118ed5c7-b5fa-455f-8991-a5fc15e7ca94`, received 23:58Z); the Preview variable was then
+deleted. Full battery on that preview: **PASS · 14 checks · 481 pages**. Record in
+`scratchpad/reports/ML-003-weekly-leads-digest.md`.
+
+**DELIVERY COUNTS HAD NO SOURCE, SO THE INGEST PATH NOW LOGS EVERY SEND ATTEMPT.** Neither
+the confirmation nor the desk alert left a trace before ML-003. `recordDeliveries` in
+`src/lib/lead/notify.ts` writes one `LeadActivity` row per attempt that reached Resend:
+`email_sent` with the Resend id, `email_failed` with the message. A skipped send leaves no
+row, a log failure is swallowed, and the digest joins the rows to production leads only.
+Proven on preview with lead `cmtxmrdy70000glan0oblr6e7`: two `email_sent` rows whose ids
+match the diagnostics. **The log begins at the production deploy that carries this**, and the
+first digests say so; nothing before it is counted.
+
+**THE VIEW BUCKETS BY UTC DAY, AND THE DIGEST SAYS SO RATHER THAN HIDING IT.**
+`lead_daily_by_page.day` is `("createdAt" AT TIME ZONE 'UTC')::date` (Phase 1 migration), so a
+lead sent after 20:00 Toronto sits on the following day's row. The digest reads `day` on the
+date basis, as the rule says, and the route returns a cross-check count of `Lead.createdAt` on
+the Toronto instants beside it (they agreed, 10 and 11, on 2026-09-11). Moving the view to
+`America/Toronto` is a one-line `CREATE OR REPLACE VIEW` migration and Core's to apply; open
+item 1 below.
 
 **ML-002 IS ON THIS BRANCH, AWAITING CORE'S MERGE.** The brief's sold read bounded `sold_date`
 with the Toronto instants. `sold_date` is a calendar date stamped 00:00 UTC, and Toronto
@@ -38,16 +71,17 @@ tile. Main's own `HANDOFF.md` owns them.
 
 | | |
 |---|---|
-| branch | `feat/leads`, ML-002 on top of `origin/main` `00e0eb1`. **See the ML-002 report for the SHA** |
+| branch | `feat/leads`, ML-003 and ML-002 on top of `origin/main` `2a89120`. Proven tree **`e205757`**, head one docs commit above |
 | Phase 2 merge on main | **`543ef99`** (merges `26381f9`) |
-| last preview of this branch | in the ML-002 report |
-| battery there | in the ML-002 report |
-| prebuild, lead layer | `[lead-guards] 183 assertions` · `[lead-forms] 105 assertions` · 22 tests |
-| `public.Lead` | 15 production rows (untouched), 25 preview |
-| `SavedSearch` | 9 rows, all `env=preview`. **Production watches: 0** |
+| last preview of this branch | `miltonly-bsn6qltes` at `e205757` |
+| battery there | **PASS · 14 checks · 481 pages · 394s** (the first run failed one homepage figure by $5k against its live hub record, a sold-figure cache timing outside the lead layer; the re-run and the full re-run passed) |
+| prebuild, lead layer | `[lead-guards] 183` · `[lead-forms] 105` · `[leads-digest] 228` assertions |
+| `public.Lead` | 25 production rows (10 `sale-detail` on 2026-09-11 alone, on four listings; open item 7), 30 preview |
+| `SavedSearch` | 9 rows, all `env=preview`. **Production watches: 0, brief subscribers: 0** |
 | ingress routes | **one**: `/api/leads/create` |
 | Phase 0, 1, 2 | **all merged** |
 | `BRIEF_UNSUBSCRIBE_SECRET` | **set** in Production and Preview, pending a deploy to bind |
+| `LEADS_DIGEST_TO` | **unset everywhere**, deliberately. The digest falls back to `ALERT_EMAIL_TO` |
 
 ## The shape that shipped
 
@@ -67,6 +101,12 @@ a brief watch  →  /api/brief/send (cron 15 13 * * 1-5)  →  src/lib/brief/
                                                              ├─ compose.ts    the reads and the copy
                                                              └─ unsubscribe.ts  HMAC, fails closed
                   /api/brief/unsubscribe  ← the signed one-click link
+
+the desk  ←  /api/digest/leads (cron 0 11 * * 1 and 0 12 * * 1, runs at Toronto hour 7)  →  src/lib/digest/
+                                                                                          ├─ window.ts   7 and 28 local days ending Sunday, both bases
+                                                                                          └─ compose.ts  the reads and the copy
+             every send attempt in ingest  →  LeadActivity email_sent | email_failed  (notify.ts recordDeliveries)
+             src/lib/lead/sources.ts  the mounted surfaces, held to src/ by scripts/test-leads-digest.ts
 ```
 
 `scripts/test-lead-forms.ts` walks `src/` at prebuild and fails the build on a lead ingress
@@ -94,6 +134,17 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
 
 ## Traps
 
+- **`origin/main` moved twice during ML-003** (sold-sync purge, menu v2). The first push built at
+  `ee846bf` without them; the ancestor check caught it, main was merged, the tree rebuilt and
+  re-pushed. **Run the ancestor check after the LAST fetch, not the first.**
+- **The digest slot guard refuses everything but Monday 07:00 Toronto.** A manual trigger needs
+  `force=true`; `dryRun=true` computes and returns without sending and needs no force. The
+  Preview `CRON_SECRET` is the value in `.env.local`; a bearer header against the preview URL works.
+- **`LEADS_DIGEST_TO` overrides the recipient wherever it is set.** Set on Preview for the proof
+  and deleted after. The running `miltonly-bsn6qltes` deployment still has it bound; a new
+  preview deploy does not.
+- **`scripts/migrate-digest-dry.ts`** (gitignored) composes the digest locally for any instant:
+  `npx tsx --tsconfig tsconfig.test.json scripts/migrate-digest-dry.ts 2026-09-14T11:00:00Z`.
 - **`git commit-tree` DOES NOT MERGE — it snapshots.** Re-check
   `git merge-base --is-ancestor origin/main HEAD` after the last fetch and **STOP if it fails**;
   merge main into the branch first, then build from that tree.
@@ -126,15 +177,23 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
 
 ## What is open
 
-1. **The Sunday brief `PreFooterCTA` promises has no sender.** Either its copy becomes the daily
+1. **`lead_daily_by_page` buckets by UTC day.** One-line fix, `AT TIME ZONE 'America/Toronto'`
+   in a `CREATE OR REPLACE VIEW` migration; Core's ledger. Until then the digest states the
+   basis and the route's cross-check shows the gap, which was 0 on 2026-09-11.
+2. **The first production digest is Monday 2026-09-14 at 07:00 EDT (11:00 UTC)** if the merge
+   deploys before then. Its delivery counts will be partial: the log begins at the deploy.
+3. **The Sunday brief `PreFooterCTA` promises has no sender.** Either its copy becomes the daily
    brief and its source becomes `daily-brief` (homepage worktree owns the copy), or a weekly
    sender gets built. Today those subscribers get a confirmation and nothing after it.
-2. **`BRIEF_UNSUBSCRIBE_SECRET` needs a deploy to bind** in each environment. The next
+4. **`BRIEF_UNSUBSCRIBE_SECRET` needs a deploy to bind** in each environment. The next
    production deploy of any branch does it. Nothing to build.
-3. **The brief cron is live on production** since the Phase 2 merge deployed. Production brief
+5. **The brief cron is live on production** since the Phase 2 merge deployed. Production brief
    watches are **0**, so each run sends nothing. The first real subscriber makes it real.
-4. **Eight questionable `homepage-newsletter` rows** predate that surface having a honeypot.
+6. **Eight questionable `homepage-newsletter` rows** predate that surface having a honeypot.
    Still in the table, untouched.
-5. **Nine preview watches** remain, matching Phase 1's posture. Tagged, so no cron reads them.
-6. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
+7. **Ten `sale-detail` leads on 2026-09-11**, on four listings, in a table that held 15 rows the
+   day before. Not examined in ML-003; the digest will show them Monday. Worth a look before
+   they are read as demand.
+8. **Nine preview watches** remain, matching Phase 1's posture. Tagged, so no cron reads them.
+9. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
    MOD-58 lead admin columns with no UI.

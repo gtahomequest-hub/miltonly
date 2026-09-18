@@ -163,7 +163,9 @@ export default async function StreetsIndexPage() {
       subtitle: s.neighbourhood,
       // sale-only; omitted entirely when null so the card shows counts, no price
       stat: s.avgSalePrice != null ? formatPriceFull(s.avgSalePrice) : undefined,
-      statLabel: s.avgSalePrice != null ? "Avg sale price" : undefined,
+      // The figure is the mean ASKING price of the street's live for-sale listings, not a sale
+      // price and not the page's typical (MA-001 defect 13); the label says which.
+      statLabel: s.avgSalePrice != null ? "Typical asking, listed now" : undefined,
       badges,
       meta,
     };

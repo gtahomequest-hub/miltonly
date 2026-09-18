@@ -11,6 +11,13 @@
 // agreed to even after the text rotates. Do not rewrite the historical text
 // on existing users.
 
+// VERSION 2 (MP-002, 2026-09-17). Adds the sign-in sentence: the site never asks for a
+// password, and this text is where the consumer is told what their credential is. The TRREB
+// VOW Policy's words are "username and a password"; MP-001's reading is that the emailed
+// one-time link or code is the consumer's private, expiring credential, the email address the
+// username, and the 90-day session ceiling (src/lib/auth.ts) the policy's validity period.
+// That reading stands pending the broker of record's ruling. If the ruling is "a password",
+// a password is added to the same account and this sentence is version 3.
 export const VOW_ACKNOWLEDGEMENT_TEXT =
   "I confirm I have a bona fide interest in the purchase, sale, or lease of " +
   "residential real estate in the markets served by this website. I acknowledge " +
@@ -18,4 +25,6 @@ export const VOW_ACKNOWLEDGEMENT_TEXT =
   "Salesperson, RE/MAX Realty Specialists Inc. (Membership #9541183), under the " +
   "Trust in Real Estate Services Act, 2002, for the sole purpose of accessing " +
   "MLS sold and leased data. I agree not to use this data for any commercial " +
-  "purpose or redistribute it in any form.";
+  "purpose or redistribute it in any form. My email address is my username and " +
+  "the one-time code or link sent to it is my credential; each sign-in lasts at " +
+  "most 90 days, after which I confirm my email again.";

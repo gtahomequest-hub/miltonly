@@ -19,7 +19,8 @@
   --s-accent-bright: #004733;
   --s-accent-on: #0a8f57;
   --s-green: #00ff80;
-  --s-gold: #c8a45c;
+  /* MH-008: the sold gate was the one gold surface on the site; it is in the site tokens now
+     and the gold token is retired. */
 
   --s-text: #ffffff;
   --s-text-sec: rgba(255, 255, 255, 0.8);
@@ -69,7 +70,7 @@
   padding: 0 32px;
 }
 .street-v2 .s-eyebrow {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--s-accent);
@@ -248,7 +249,7 @@
 }
 .street-v2 .s-hs .s-sub {
   font-family: var(--s-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--s-text-faint);
   margin-top: 4px;
 }
@@ -265,7 +266,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--s-text-faint);
@@ -300,7 +301,7 @@
 }
 .street-v2 .s-pill .s-pill-c {
   font-family: var(--s-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--s-text-faint);
 }
 .street-v2 .s-pill .s-pill-p {
@@ -310,7 +311,7 @@
 }
 .street-v2 .s-pill .s-pill-p.s-silent {
   color: var(--s-text-faint);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* ───── at-a-glance band (12 tiles, overlaps hero) ───── */
@@ -343,7 +344,7 @@
   border-bottom: 1px solid var(--s-border-muted);
 }
 .street-v2 .s-gi .s-gi-l {
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--s-text-muted);
@@ -359,7 +360,7 @@
   font-size: 13px;
 }
 .street-v2 .s-gi .s-gi-d {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--s-text-muted);
   margin-top: 3px;
 }
@@ -421,8 +422,8 @@
   padding: 22px;
   box-shadow: var(--s-sh-sm);
 }
-.street-v2 .s-side-card h4 {
-  font-size: 11px;
+.street-v2 .s-side-card h3 {
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--s-text-muted);
@@ -464,14 +465,14 @@
 .street-v2 .s-near .s-near-d {
   margin-left: auto;
   font-family: var(--s-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--s-text-muted);
 }
 /* shown when every travel time in the block is suppressed — states the grain we can support */
 .street-v2 .s-near-note {
   margin-top: 10px;
   font-family: var(--s-mono);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
   color: var(--s-text-muted);
 }
@@ -484,7 +485,7 @@
 .street-v2 .s-side-cta .s-eyebrow {
   color: var(--s-green);
 }
-.street-v2 .s-side-cta h4 {
+.street-v2 .s-side-cta h3 {
   font-family: var(--s-serif);
   font-weight: 400;
   font-size: 21px;
@@ -510,8 +511,9 @@
 }
 .street-v2 .s-side-cta .s-trust {
   font-family: var(--s-mono);
-  font-size: 10.5px;
-  color: var(--s-text-faint);
+  font-size: 12px;
+  /* 4.07:1 as --s-text-faint (MA-001 defect 20); 0.78 white on the deep ground is 11:1 */
+  color: rgba(255, 255, 255, 0.78);
   margin-top: 12px;
 }
 
@@ -556,7 +558,8 @@
   padding: 48px;
   text-align: center;
 }
-.street-v2 .s-placeholder h3 {
+.street-v2 .s-placeholder h3,
+.street-v2 .s-placeholder h2 {
   font-family: var(--s-serif);
   font-weight: 400;
   font-size: 24px;
@@ -622,7 +625,7 @@
   padding: 16px 18px;
 }
 .street-v2 .s-stat .s-stat-l {
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--s-text-muted);
@@ -637,7 +640,7 @@
   font-size: 13px;
 }
 .street-v2 .s-stat .s-stat-d {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--s-text-muted);
   margin-top: 2px;
 }
@@ -679,24 +682,57 @@
   font-weight: 500;
 }
 .street-v2 .s-chart-note {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--s-text-muted);
   margin-bottom: 12px;
+}
+/* BARS WITH VALUES AND AN AXIS (MH-005, MA-001 change 10). The axis column states the scale's
+   top, middle and zero; each bar carries its typical above and its count below. The labels are
+   12px, the site's floor on a phone. */
+.street-v2 .s-chartbox {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0 10px;
+  align-items: stretch;
+}
+.street-v2 .s-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* aligns with the fill's range: below the value label, above the quarter and count */
+  padding: 18px 0 34px;
+  font-family: var(--s-mono);
+  font-size: 12px;
+  color: var(--s-text-muted);
+  text-align: right;
+  border-right: 1px solid var(--s-border-muted);
+  padding-right: 8px;
 }
 .street-v2 .s-bars {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  height: 120px;
+  height: 172px;
+  border-bottom: 1px solid var(--s-border-muted);
+  padding-bottom: 34px;
+  position: relative;
 }
 .street-v2 .s-bar {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   height: 100%;
   justify-content: flex-end;
+  position: relative;
+  min-width: 0;
+}
+.street-v2 .s-bar .s-bar-v {
+  font-family: var(--s-mono);
+  font-size: 12px;
+  color: var(--s-text-body);
+  white-space: nowrap;
 }
 .street-v2 .s-bar .s-bar-fill {
   width: 100%;
@@ -705,10 +741,33 @@
   border-radius: 4px 4px 0 0;
   min-height: 4px;
 }
-.street-v2 .s-bar .s-bar-q {
+.street-v2 .s-bar .s-bar-q,
+.street-v2 .s-bar .s-bar-n {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
   font-family: var(--s-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--s-text-muted);
+  white-space: nowrap;
+}
+.street-v2 .s-bar .s-bar-q { bottom: -18px; }
+.street-v2 .s-bar .s-bar-n { bottom: -33px; font-size: 12px; color: var(--s-text-muted); }
+/* the year-on-year sentence under the market chart */
+.street-v2 .s-yoy {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--s-text-body);
+  max-width: 70ch;
+}
+@media (max-width: 560px) {
+  /* eight bars in a 326px card: the value labels take turns */
+  .street-v2 .s-bar:nth-child(even) .s-bar-v { visibility: hidden; }
+  .street-v2 .s-bar:nth-child(even) .s-bar-n,
+  .street-v2 .s-bar:nth-child(even) .s-bar-q { visibility: hidden; }
+  .street-v2 .s-bars { gap: 5px; }
 }
 
 /* ───── market activity ───── */
@@ -767,7 +826,7 @@
   padding: 14px 16px;
 }
 .street-v2 .s-rent .s-rent-l {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--s-text-muted);
   margin-bottom: 4px;
 }
@@ -788,7 +847,7 @@
   margin-top: 16px;
 }
 .street-v2 .s-market-chart .s-chart-cap {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--s-text-muted);
   margin-top: 12px;
 }
@@ -800,7 +859,11 @@
   border-radius: 13px;
   box-shadow: var(--s-sh-sm);
   margin-top: 16px;
-  overflow: hidden;
+  /* MH-008: the six-column records table is wider than a phone; it scrolls inside its card
+     rather than being cut at the card's edge (the DOM and brokerage columns were), and the
+     radius still clips on the vertical axis. */
+  overflow-x: auto;
+  overflow-y: hidden;
   position: relative;
 }
 .street-v2 .s-records-cap {
@@ -816,7 +879,7 @@
 }
 .street-v2 .s-rtable th {
   text-align: left;
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--s-text-muted);
@@ -835,7 +898,7 @@
 }
 .street-v2 .s-rtable .s-r-brok {
   color: var(--s-text-muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 /* gated state: blur the table + overlay */
 .street-v2 .s-records.s-gated .s-rtable {
@@ -877,9 +940,9 @@
 }
 .street-v2 .s-gate .s-gate-k {
   font-family: var(--s-mono);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.14em;
-  color: var(--s-gold);
+  color: var(--s-green);
   text-transform: uppercase;
   font-weight: 600;
   margin-bottom: 10px;
@@ -898,7 +961,7 @@
 }
 .street-v2 .s-gate .s-gate-btn {
   display: inline-block;
-  background: var(--s-gold);
+  background: var(--s-green);
   color: var(--s-bg-deep);
   font-weight: 600;
   font-size: 13px;
@@ -950,7 +1013,7 @@
   color: var(--s-accent-bright);
 }
 .street-v2 .s-cc-s {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--s-text-muted);
 }
 .street-v2 .s-cd {
@@ -966,7 +1029,7 @@
 }
 .street-v2 .s-cd .s-cd-t {
   font-family: var(--s-mono);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--s-text-muted);
   text-align: right;
   white-space: nowrap;
@@ -992,15 +1055,21 @@
 }
 .street-v2 .s-listing .s-listing-ph {
   aspect-ratio: 3 / 2;
-  background: var(--s-bg-secondary) center/cover no-repeat;
+  background: var(--s-bg-secondary);
   position: relative;
+  overflow: hidden;
+}
+/* the photo is an <img> now (MA-001 change 2): filled, cropped like the background it replaced */
+.street-v2 .s-listing .s-listing-img {
+  object-fit: cover;
+  object-position: center;
 }
 .street-v2 .s-listing .s-listing-dom {
   position: absolute;
   top: 10px;
   left: 10px;
   font-family: var(--s-mono);
-  font-size: 10px;
+  font-size: 12px;
   background: rgba(7, 49, 38, 0.82);
   color: #fff;
   padding: 4px 8px;
@@ -1022,7 +1091,7 @@
 }
 .street-v2 .s-listing-m {
   font-family: var(--s-mono);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--s-text-muted);
   display: flex;
   gap: 10px;
@@ -1039,8 +1108,8 @@
     grid-template-columns: 1fr;
   }
 }
-.street-v2 .s-ctx-col h4 {
-  font-size: 11px;
+.street-v2 .s-ctx-col h3 {
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--s-text-muted);
@@ -1150,6 +1219,34 @@
   padding: 12px 24px;
   border-radius: 7px;
 }
+/* MH-008: at 390 the alert card ran to x=443. A grid item's min-width is auto, so the alert
+   row (an email input beside a no-wrap button) set the track wider than the screen and the
+   card was clipped on the right. The cards may shrink, the row may wrap, and the block and
+   the cards give back their desktop padding on a phone. */
+.street-v2 .s-finalgrid > * {
+  min-width: 0;
+}
+.street-v2 .s-alert-row {
+  flex-wrap: wrap;
+}
+.street-v2 .s-alert-row input {
+  flex: 1 1 160px;
+}
+@media (max-width: 560px) {
+  .street-v2 .s-final {
+    padding: 32px 20px;
+    border-radius: 16px;
+  }
+  .street-v2 .s-fcard {
+    padding: 22px 20px;
+  }
+  .street-v2 .s-alert-row input {
+    flex: 1 1 100%;
+  }
+  .street-v2 .s-alert-row button {
+    flex: 1 1 auto;
+  }
+}
 
 /* ─────────────────────────────────────────────────────────────
    DEC-CONDO-6 street port — window disclosure · area-context · alerts CTA
@@ -1157,12 +1254,12 @@
 /* window+sample disclosure under the hero typical price (dark hero) */
 .street-v2 .s-hs .s-basis {
   font-family: var(--s-mono);
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--s-text-faint);
   margin-top: 3px;
   letter-spacing: 0.01em;
 }
-.street-v2 .s-pillrow-win { color: var(--s-text-faint); font-weight: 400; font-size: 11px; }
+.street-v2 .s-pillrow-win { color: var(--s-text-faint); font-weight: 400; font-size: 12px; }
 
 /* area-context anchor (light body section) */
 .street-v2 .s-areacx .s-areacx-card {
@@ -1183,7 +1280,7 @@
 .street-v2 .s-areacx-num b { font-size: 24px; vertical-align: super; font-weight: 400; margin-right: 2px; }
 .street-v2 .s-areacx-lbl { font-size: 14px; color: var(--s-text-body); margin-top: 12px; line-height: 1.55; }
 .street-v2 .s-areacx-lbl a { color: var(--s-accent); border-bottom: 1px solid rgba(1, 120, 72, 0.3); }
-.street-v2 .s-areacx-card .s-basis { font-family: var(--s-mono); font-size: 11px; color: var(--s-text-muted); margin-top: 8px; }
+.street-v2 .s-areacx-card .s-basis { font-family: var(--s-mono); font-size: 12px; color: var(--s-text-muted); margin-top: 8px; }
 .street-v2 .s-areacx-read {
   font-size: 14px;
   color: var(--s-text-muted);
@@ -1220,7 +1317,7 @@
   white-space: nowrap;
 }
 .street-v2 .s-alert-row button:disabled { opacity: 0.6; cursor: default; }
-.street-v2 .s-alert-fine { font-size: 11.5px; color: var(--s-text-faint); margin-top: 8px; }
+.street-v2 .s-alert-fine { font-size: 12px; color: var(--s-text-faint); margin-top: 8px; }
 .street-v2 .s-alert-err { font-size: 12.5px; color: #ffb4a1; margin-top: 8px; }
 .street-v2 .s-alert-done { font-size: 14px; color: var(--s-green); margin-top: 10px; line-height: 1.5; }
 
@@ -1259,7 +1356,7 @@
   align-items: center;
   gap: 7px;
   font-family: var(--s-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--s-text-muted);
 }
@@ -1281,11 +1378,84 @@
 
 .street-v2 .s-addr-lad {
   position: relative;
+  height: var(--lad-h);
   background: #f6f4ef;
   border: 1px solid var(--s-border-muted);
   border-radius: 14px;
   padding: 14px 0;
   overflow: hidden;
+}
+/* the mark the house-number field found, drawn like a deep-link target */
+.street-v2 .s-m.s-hit {
+  z-index: 8;
+  color: var(--s-accent);
+}
+.street-v2 .s-m.s-hit::before {
+  background: var(--s-accent);
+  animation: s-addr-flash 1.6s ease-out 2;
+}
+.street-v2 .s-m.s-hit[data-d]::after,
+.street-v2 .s-m.s-hit .s-d {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* THE WAY IN (MH-005, MA-001 change 8): a house-number field above the track, at every width */
+.street-v2 .s-addr-find {
+  margin: 0 0 14px;
+}
+.street-v2 .s-addr-find-l {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+}
+.street-v2 .s-addr-find-l > span {
+  font-family: var(--s-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--s-accent);
+}
+.street-v2 .s-addr-find-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.street-v2 .s-addr-find-row:empty {
+  display: none;
+}
+.street-v2 .s-addr-find-l input {
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--s-border);
+  border-radius: 9px;
+  font-family: var(--s-mono);
+  font-size: 16px;
+  background: var(--s-surface);
+  color: var(--s-text-body);
+}
+.street-v2 .s-addr-find-l input:focus {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 1px;
+}
+.street-v2 .s-addr-showall {
+  padding: 11px 16px;
+  border: 1px solid var(--s-border);
+  border-radius: 9px;
+  background: var(--s-surface);
+  color: var(--s-bg-deep);
+  font-family: var(--s-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: none;
+}
+.street-v2 .s-addr-find-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--s-text-muted);
 }
 .street-v2 .s-addr-spine {
   position: absolute;
@@ -1308,7 +1478,7 @@
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--s-mono);
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   color: var(--s-text-muted);
   background: #f6f4ef;
@@ -1338,7 +1508,7 @@
   background: #f6f4ef;
   padding: 0 6px;
   font-family: var(--s-mono);
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--s-accent);
@@ -1454,7 +1624,7 @@
   border-radius: 10px;
   box-shadow: var(--s-sh);
   font-family: var(--s-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.55;
   text-align: left;
@@ -1516,17 +1686,302 @@
   color: var(--s-text-muted);
 }
 
+/* THE PHONE LADDER (MH-005, MA-001 change 8). The spine, the two sides and the pushed labels
+   made a 3,000px wall of dots at 390. Same DOM, another layout: the marks flow in number order
+   as 44px rows, each with its detail beside it, the cross streets as named rows in sequence, in
+   a box no taller than two thirds of the screen that scrolls inside itself. A street with more
+   than COLLAPSE_ABOVE addresses hides the box until the field finds a number or "Show all". */
 @media (max-width: 560px) {
   .street-v2 .s-addr-sum { font-size: 15px; }
-  .street-v2 .s-m { font-size: 12.5px; margin-right: 5px; }
-  .street-v2 .s-m.s-e { margin-left: 5px; margin-right: 0; }
+  .street-v2 .s-addr-key { display: none; }
+  .street-v2 .s-addr-showall { display: inline-block; }
+  .street-v2 .s-addr-lad {
+    height: auto;
+    max-height: 66vh;
+    overflow-y: auto;
+    padding: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .street-v2 .s-addr-lad.s-addr-collapsed:not(.s-addr-open) { display: none; }
+  .street-v2 .s-addr-spine,
+  .street-v2 .s-addr-end { display: none; }
+  .street-v2 .s-addr-tick {
+    position: static;
+    height: auto;
+    border-top: 0;
+    justify-content: flex-start;
+    padding: 9px 14px;
+    background: rgba(1, 120, 72, 0.08);
+    border-bottom: 1px solid var(--s-border-muted);
+  }
+  .street-v2 .s-addr-tick-l {
+    transform: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    max-width: none;
+    font-size: 12px;
+    white-space: normal;
+  }
+  .street-v2 .s-addr-tick-l::before { content: 'Cross street: '; color: var(--s-text-muted); text-transform: none; letter-spacing: 0; }
+  .street-v2 .s-m,
+  .street-v2 .s-m.s-e,
+  .street-v2 .s-m.s-q {
+    position: static;
+    top: auto !important;
+    transform: none;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    gap: 0 12px;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.35;
+    border-bottom: 1px solid var(--s-border-muted);
+    scroll-margin-top: 0;
+    white-space: normal;
+  }
+  .street-v2 .s-m::before { display: none; }
   .street-v2 .s-m:hover,
   .street-v2 .s-m:focus-within,
   .street-v2 .s-m:focus,
-  .street-v2 .s-m:target { font-size: 12.5px; }
+  .street-v2 .s-m:target,
+  .street-v2 .s-m.s-hit { font-size: 15px; background: rgba(0, 255, 128, 0.14); }
+  /* the detail beside the number on one line; the even-side popup rules (a translate to the
+     left of the spine) are undone here at the same specificity */
   .street-v2 .s-m[data-d]::after,
-  .street-v2 .s-d { padding: 9px 11px; max-width: 84vw; }
-  .street-v2 .s-addr-tick-l { max-width: 46%; font-size: 10px; margin-right: 6px; }
-  .street-v2 .s-m.s-q { width: 46px; }
+  .street-v2 .s-m.s-e[data-d]::after,
+  .street-v2 .s-d,
+  .street-v2 .s-m.s-e .s-d {
+    position: static;
+    left: auto;
+    right: auto;
+    transform: none;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    font-size: 12px;
+    line-height: 1.4;
+    opacity: 1;
+    visibility: visible;
+    transition: none;
+    white-space: normal;
+  }
+  .street-v2 .s-m.s-on > a:first-child { flex: 0 0 auto; }
+  .street-v2 .s-lv { display: inline; margin: 0 0 0 8px; }
   .street-v2 .s-addr-cta { margin-top: 20px; }
+  .street-v2 .s-addr-cta .s-b1 { white-space: nowrap; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   THE CAPTURE UNDER THE HERO (MH-005, MA-001 change 4). One field, two intents, inside the
+   hero's deep ground so it reads as part of the first screen, not as a form bolted on. The
+   segmented control is two radios; its labels are the tap targets (44px on a coarse pointer).
+   ───────────────────────────────────────────────────────────── */
+.street-v2 .s-capture {
+  margin: 8px 0 0;
+  padding: 20px 22px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 640px;
+}
+.street-v2 .s-capture-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.street-v2 .s-capture-h {
+  font-family: var(--s-serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.street-v2 .s-capture-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.street-v2 .s-capture-seg label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+.street-v2 .s-capture-seg label.s-on {
+  background: var(--s-accent);
+  color: #fff;
+}
+.street-v2 .s-capture-seg input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+.street-v2 .s-capture-seg label:has(input:focus-visible) {
+  outline: 2px solid var(--s-green);
+  outline-offset: 2px;
+}
+.street-v2 .s-capture-p {
+  margin: 10px 0 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--s-text-sec);
+}
+.street-v2 .s-capture-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.street-v2 .s-capture-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9px;
+  font-family: var(--s-sans);
+  font-size: 15px;
+  background: #fff;
+  color: var(--s-text-body);
+}
+.street-v2 .s-capture-row button {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--s-green);
+  color: var(--s-bg-deep);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 44px;
+}
+.street-v2 .s-capture-row button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.street-v2 .s-capture-fine {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--s-text-faint);
+  line-height: 1.5;
+}
+.street-v2 .s-capture-fine a {
+  color: var(--s-green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.street-v2 .s-capture-done {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--s-green);
+}
+@media (max-width: 560px) {
+  .street-v2 .s-capture {
+    padding: 16px 16px 14px;
+  }
+  .street-v2 .s-capture-row input {
+    flex: 1 1 100%;
+  }
+  .street-v2 .s-capture-row button {
+    flex: 1 1 auto;
+  }
+  .street-v2 .s-capture-seg label {
+    min-height: 40px;
+  }
+}
+
+/* THE SOLD-GATE LINE IN THE HERO (MH-005, MA-001 change 5). A link, in the CTA token, above
+   the capture; it lands on the records table and its gate. */
+.street-v2 .s-hero-gate {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 255, 128, 0.35);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 14px;
+  text-decoration: none;
+}
+.street-v2 .s-hero-gate:hover,
+.street-v2 .s-hero-gate:focus-visible {
+  border-color: var(--s-green);
+  color: #fff;
+}
+.street-v2 .s-hero-gate-n {
+  font-family: var(--s-mono);
+  font-weight: 600;
+  color: var(--s-green);
+}
+.street-v2 .s-hero-gate-cta {
+  color: var(--s-green);
+  font-weight: 600;
+}
+
+/* the Updated line (MA-001 change 6): the date the page's facts last changed, in prose */
+.street-v2 .s-updated {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--s-text-faint);
+}
+
+/* a pill with no section to land on renders as text (MA-001 defect 8) */
+.street-v2 .s-pill-static {
+  cursor: default;
+}
+
+/* CONTRAST ON THE DEEP GROUND (MA-001 defect 20). The accent (#017848) on the hero's #073126 is
+   2.56:1; every eyebrow that sits on the deep ground takes the light green, 11:1. The light
+   grounds keep the accent, which is 5.9:1 on white. The font floor on this page is 12px:
+   every size below it was raised (defect 19). */
+.street-v2 .s-hero .s-eyebrow,
+.street-v2 .s-side-cta .s-eyebrow,
+.street-v2 .s-final .s-eyebrow {
+  color: #5cffa8;
+}
+
+/* A FINGER GETS 44PX (MA-001 defect 30, the harness re-run of MH-005): the hero pills, the
+   ladder sentence's cross-street links, the capture's fine-print link and the breadcrumb were
+   16 to 41px tall on a phone. */
+@media (pointer: coarse) {
+  .street-v2 .s-pill {
+    min-height: 44px;
+    align-items: center;
+  }
+  .street-v2 .s-addr-sl,
+  .street-v2 .s-capture-fine a,
+  .street-v2 .s-crumb a {
+    display: inline-block;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-top: -12px;
+    margin-bottom: -12px;
+  }
 }

@@ -14,10 +14,17 @@ import type {
 import type { StreetVideoClip } from '@/lib/streetVideo';
 import { compactPrice, fullPrice, shortPrice, dollars, barFraction } from './format';
 import { CommuteIcon } from './icons';
+import Image from 'next/image';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
+import StreetCapture from './StreetCapture';
+
+/** Every link to /sell from a street page carries the street (MA-001 defect 4): the valuation
+ *  form prefills its address from ?street=, and four of the five links dropped it. */
+export const sellHrefFor = (streetName: string) => `/sell?street=${encodeURIComponent(streetName)}#valuation`;
 import { resaleClaim } from './resaleClaim';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
+import { K_ANON_PRICE, K_ANON_RANGE } from '@/lib/kAnon';
 
 const DEFAULT_SILENT = 'sample too small to publish';
 
@@ -55,15 +62,30 @@ function HeroStat({ stat }: { stat: StreetStat }) {
 
 function Pill({ p }: { p: ProductPill }) {
   const silent = p.typicalPrice === null;
-  return (
-    <a className="s-pill" href={p.anchor}>
+  const body = (
+    <>
       <span className="s-pill-t">{p.displayName}</span>
       <span className="s-pill-c">{p.count}</span>
       <span className={`s-pill-p${silent ? ' s-silent' : ''}`}>
         {silent ? p.priceLabel : `${dollars(p.typicalPrice as number)} ${p.priceLabel}`}
       </span>
-    </a>
+    </>
   );
+  // a pill with nowhere to land is a statement, not a link (MA-001 defect 8)
+  return p.anchor ? (
+    <a className="s-pill" href={p.anchor}>
+      {body}
+    </a>
+  ) : (
+    <span className="s-pill s-pill-static">{body}</span>
+  );
+}
+
+/** "2026-09-17" in prose, the way the menu writes a date (figureFormat.formatDateProse). */
+function formatUpdated(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12)).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
 /** render the street name with its final word italic (matches the navy hero's H1 treatment) */
@@ -79,7 +101,9 @@ function ItalicLastWord({ name }: { name: string }) {
   );
 }
 
-export function StreetHero({ data }: { data: StreetV2Data }) {
+export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; soldGate?: boolean }) {
+  const closedSales = data.hero.salePills.reduce((n, p) => n + p.count, 0);
+  const soldGateLine = soldGate && closedSales > 0 ? { count: closedSales } : null;
   return (
     <header className="s-hero">
       <div className="s-wrap">
@@ -94,7 +118,7 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
         <h1>
           <ItalicLastWord name={data.name} />
         </h1>
-        <p className="s-character">{data.subtitle}</p>
+        {data.subtitle ? <p className="s-character">{data.subtitle}</p> : null}
         <div className="s-herostats">
           {data.hero.stats.map((s) => (
             <HeroStat key={s.label} stat={s} />
@@ -122,6 +146,22 @@ export function StreetHero({ data }: { data: StreetV2Data }) {
             ))}
           </div>
         )}
+        {/* THE SOLD RECORD, SOLD FROM THE TOP (MA-001 change 5): the gate sat at screen 4 to 9
+            with no mention above it. One line in the hero, anchored to the table, whenever the
+            page has a closed sale to show and a table to show it in. */}
+        {soldGateLine && (
+          <a className="s-hero-gate" href="#sold-records">
+            <span className="s-hero-gate-n">{soldGateLine.count}</span> closed {soldGateLine.count === 1 ? 'sale' : 'sales'} in the last 12 months
+            <span className="s-hero-gate-cta">see every one, free →</span>
+          </a>
+        )}
+        <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board&rsquo;s closed records; listings live.</p>
+        {/* the one field on the first screen: valuation or watch, the street prefilled */}
+        <StreetCapture
+          streetName={data.name}
+          neighbourhood={data.areaContext?.neighbourhoodName ?? data.neighbourhoods[0] ?? 'Milton'}
+          sellHref={sellHrefFor(data.name)}
+        />
       </div>
     </header>
   );
@@ -218,7 +258,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
     <aside className="s-side">
       {sidebar.facts.length > 0 && (
         <div className="s-side-card">
-          <h4>Street facts</h4>
+          <h3>Street facts</h3>
           {sidebar.facts.map((f) => (
             <div className="s-fact" key={f.label}>
               <span className="s-fact-l">{f.label}</span>
@@ -233,7 +273,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
           claim. The battery's geometry-facts check reads these rows by data-key. */}
       {sidebar.geometry && (
         <div className="s-side-card s-geo" data-identity={sidebar.geometry.identity}>
-          <h4>Road facts</h4>
+          <h3>Road facts</h3>
           {sidebar.geometry.facts.map((f) => (
             <div className="s-fact s-geo-fact" data-key={f.key} key={f.key}>
               <span className="s-fact-l">{f.label}</span>
@@ -245,7 +285,7 @@ function Sidebar({ data }: { data: StreetV2Data }) {
       )}
       {sidebar.nearby.length > 0 && (
         <div className="s-side-card">
-          <h4>Nearby</h4>
+          <h3>Nearby</h3>
           {sidebar.nearby.map((n) => (
             <div className="s-near" key={n.name}>
               {n.icon && <span className="s-near-ic">{n.icon}</span>}
@@ -268,9 +308,9 @@ function Sidebar({ data }: { data: StreetV2Data }) {
       )}
       <div className="s-side-cta">
         <span className="s-eyebrow">{sidebar.cta.eyebrow}</span>
-        <h4>{sidebar.cta.headline}</h4>
+        <h3>{sidebar.cta.headline}</h3>
         <p>{ctaBody}</p>
-        <a className="s-b1" href={sidebar.cta.actionHref}>
+        <a className="s-b1" href={sidebar.cta.actionHref === '/sell' ? sellHrefFor(data.name) : sidebar.cta.actionHref}>
           {sidebar.cta.actionLabel}
         </a>
         {sidebar.cta.trustLine && <div className="s-trust">{sidebar.cta.trustLine}</div>}
@@ -283,20 +323,29 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
   return (
     <section className="s-block">
       <div className="s-wrap">
+        {/* THE HEADING TREE (MH-005, MA-001 change 7). The prose sections were H3s under no H2 and
+            the sidebar cards H4s under no H3; Lighthouse heading-order failed on every run. One
+            H2 heads the block; the generated "About <street>" section, which said the same
+            thing, keeps its paragraphs and drops its own heading. */}
+        <div className="s-sechead">
+          <span className="s-eyebrow">The profile</span>
+          <h2>About {data.name}</h2>
+        </div>
         <div className="s-desc-grid">
           <div className="s-prose">
             {data.placeholder ? (
               <div className="s-placeholder">
-                <h3>Profile in preparation</h3>
+                <h3>No written profile yet</h3>
                 <p>
-                  We are still assembling the editorial read for {data.name}. The live market
-                  data below is current, the written profile follows shortly.
+                  The figures on this page are live from the Board and the Town. A written read
+                  of {data.name} follows once the street has enough sales to describe without
+                  identifying a home.
                 </p>
               </div>
             ) : (
               data.sections.map((sec, i) => (
                 <div className="s-prose-sec" key={sec.id} id={`s-${sec.id}`}>
-                  <h3>{sec.heading}</h3>
+                  {i === 0 && sec.id === 'about' ? null : <h3>{sec.heading}</h3>}
                   {sec.paragraphs.map((p, j) => (
                     <p key={j}>{p}</p>
                   ))}
@@ -306,7 +355,7 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
                       <div className="s-inline-h">
                         Own on {data.name}? Typical is <b>{shortPrice(data.ownerCtaPrice)}</b>.
                       </div>
-                      <a href="/sell">Value my home</a>
+                      <a href={sellHrefFor(data.name)}>Value my home</a>
                     </div>
                   )}
                 </div>
@@ -322,16 +371,30 @@ export function StreetBody({ data }: { data: StreetV2Data }) {
 
 /* ───── per-type sections ───── */
 
+// BARS WITH VALUES AND AN AXIS (MH-005, MA-001 change 10). The figure lived in a title
+// attribute, which does not exist on touch, so eight near-identical bars read as decoration.
+// Each bar carries its typical and its count; the axis states the floor and the ceiling of the
+// scale, so the bars' heights mean something. The scale starts at zero: a bar's height is its
+// price, not its distance from the cheapest quarter.
 function MiniBars({ data }: { data: ChartPoint[] }) {
   const max = Math.max(...data.map((d) => d.value), 0);
   return (
-    <div className="s-bars">
-      {data.map((d) => (
-        <div className="s-bar" key={d.quarter} title={`${d.quarter}: ${fullPrice(Math.round(d.value))} · ${d.count} sold`}>
-          <div className="s-bar-fill" style={{ height: `${barFraction(d.value, max) * 100}%` }} />
-          <div className="s-bar-q">{d.quarter}</div>
-        </div>
-      ))}
+    <div className="s-chartbox">
+      <div className="s-axis" aria-hidden="true">
+        <span>{shortPrice(max)}</span>
+        <span>{shortPrice(max / 2)}</span>
+        <span>$0</span>
+      </div>
+      <div className="s-bars" role="img" aria-label={`Quarterly typical sold price: ${data.map((d) => `${d.quarter} ${fullPrice(Math.round(d.value))} over ${d.count} sales`).join('; ')}`}>
+        {data.map((d) => (
+          <div className="s-bar" key={d.quarter}>
+            <div className="s-bar-v">{shortPrice(d.value)}</div>
+            <div className="s-bar-fill" style={{ height: `${barFraction(d.value, max) * 100}%` }} />
+            <div className="s-bar-q">{d.quarter}</div>
+            <div className="s-bar-n">{d.count} sold</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -357,25 +420,27 @@ function TypeStatCell({
   );
 }
 
-function TypeCard({ t }: { t: TypeBlock }) {
+function TypeCard({ t, streetName }: { t: TypeBlock; streetName: string }) {
   return (
     <div className="s-type" id={`type-${t.type}`}>
       <div className="s-type-head">
         <h3>{t.displayName}</h3>
       </div>
       <p className="s-type-intro">{t.intro}</p>
+      {/* A silent cell says what would end the silence (MA-001 defect 24): the floor and the
+          sample, in words, instead of a dash. */}
       <div className="s-type-stats">
-        <TypeStatCell label="Typical price" value={t.typicalPrice} detail={t.typicalDetail} silentNote="under publish threshold" />
-        <TypeStatCell label="Price band" value={t.priceBand} silentNote="—" />
-        <TypeStatCell label="Time on market" value={t.dom} silentNote="—" />
-        <TypeStatCell label="Sold to ask" value={t.soldToAsk} silentNote="—" />
+        <TypeStatCell label="Typical price" value={t.typicalPrice} detail={t.typicalDetail} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
+        <TypeStatCell label="Price band" value={t.priceBand} silentNote={`needs ${K_ANON_RANGE} sales, has ${t.sampleCount}`} />
+        <TypeStatCell label="Time on market" value={t.dom} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
+        <TypeStatCell label="Sold to ask" value={t.soldToAsk} silentNote={`needs ${K_ANON_PRICE} sales, has ${t.sampleCount}`} />
         {t.active !== null && <TypeStatCell label="Active listings" value={t.active} detail={t.activeDetail} />}
       </div>
       {t.contactTeamPrompt && (
         <div className="s-contact-prompt">
           Too few recent {t.displayName.toLowerCase()} sales on record to publish a typical price without identifying a
           home.{' '}
-          <a href="/sell">Ask the team for a private read →</a>
+          <a href={sellHrefFor(streetName)}>Ask the team for a private read →</a>
         </div>
       )}
       {t.chart && (
@@ -403,7 +468,7 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
         </div>
         <div className="s-types">
           {data.productTypes.map((t) => (
-            <TypeCard key={t.type} t={t} />
+            <TypeCard key={t.type} t={t} streetName={data.name} />
           ))}
         </div>
       </div>
@@ -413,9 +478,9 @@ export function StreetTypes({ data }: { data: StreetV2Data }) {
 
 /* ───── market activity + gated sold records ───── */
 
-function SummaryCard({ card }: { card: MarketSummaryCard }) {
+function SummaryCard({ card, id }: { card: MarketSummaryCard; id?: string }) {
   return (
-    <div className="s-msum">
+    <div className="s-msum" id={id}>
       <h3>{card.title}</h3>
       <p>{card.body}</p>
       <div className="s-msum-stats">
@@ -444,7 +509,7 @@ export function StreetMarket({ data }: { data: StreetV2Data }) {
         </div>
         <div className="s-market-grid">
           <SummaryCard card={m.sales} />
-          {m.leases && <SummaryCard card={m.leases} />}
+          {m.leases && <SummaryCard card={m.leases} id="leases" />}
         </div>
         {m.rentByBeds && (
           <div className="s-rentgrid">
@@ -467,6 +532,7 @@ export function StreetMarket({ data }: { data: StreetV2Data }) {
             </div>
             <MiniBars data={m.priceChart.data} />
             <div className="s-chart-cap">{m.priceChart.caption}</div>
+            {m.yoy && <p className="s-yoy">{m.yoy}</p>}
           </div>
         )}
         <StreetSoldRecords slug={data.slug} streetName={data.name} />
@@ -519,13 +585,29 @@ export function StreetCommute({ data }: { data: StreetV2Data }) {
 
 /* ───── active inventory ───── */
 
-function ListingTile({ l }: { l: ListingCard }) {
+// THE PHOTO IS AN IMAGE, SIZED TO THE TILE (MH-005, MA-001 change 2). It was a CSS background
+// on the raw `rs:fit:3840:3840` feed URL: every active listing's photo at up to 3,840 px,
+// eager, one format, no srcset; Main Street weighed 16.3 MB at 390 px. The feed's resize
+// parameter is inside a signed path, so it cannot be changed here, and the sync keeps only
+// the largest size; the optimiser (next.config `images.remotePatterns`) resizes the source
+// once per width and serves AVIF or WebP from the edge. `sizes` is the tile's real width:
+// the full column on a phone, a 260px-minimum grid cell above it.
+function ListingTile({ l, index }: { l: ListingCard; index: number }) {
   return (
     <a className="s-listing" href={l.href}>
-      <div
-        className="s-listing-ph"
-        style={l.photo ? { backgroundImage: `url(${l.photo})` } : undefined}
-      >
+      <div className="s-listing-ph">
+        {l.photo ? (
+          <Image
+            src={l.photo}
+            alt=""
+            fill
+            sizes="(max-width: 560px) calc(100vw - 64px), (max-width: 1180px) 50vw, 360px"
+            quality={70}
+            loading={index < 2 ? 'eager' : 'lazy'}
+            decoding="async"
+            className="s-listing-img"
+          />
+        ) : null}
         {l.daysOnMarket !== null && <span className="s-listing-dom">{l.daysOnMarket}d on market</span>}
       </div>
       <div className="s-listing-body">
@@ -552,8 +634,8 @@ export function StreetInventory({ data }: { data: StreetV2Data }) {
           <h2>Active listings on {data.name}</h2>
         </div>
         <div className="s-inv">
-          {data.activeListings.map((l) => (
-            <ListingTile key={l.mlsNumber} l={l} />
+          {data.activeListings.map((l, i) => (
+            <ListingTile key={l.mlsNumber} l={l} index={i} />
           ))}
         </div>
       </div>
@@ -578,7 +660,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
               behind it" links. Nothing renders when this street matched no OSM way. */}
           {c.connectedStreets.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Connected streets</h4>
+              <h3>Connected streets</h3>
               {c.connectedStreets.map((s) => (
                 <a className="s-ctx-item" href={`/streets/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
@@ -588,7 +670,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           )}
           {c.similarStreets.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Similar streets</h4>
+              <h3>Similar streets</h3>
               {c.similarStreets.map((s) => (
                 <a className="s-ctx-item" href={`/streets/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
@@ -601,7 +683,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           )}
           {c.neighbourhoods.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Neighbourhoods</h4>
+              <h3>Neighbourhoods</h3>
               {c.neighbourhoods.map((n) => (
                 <a className="s-ctx-item" href={`/neighbourhoods/${n.slug}`} key={n.slug}>
                   <div className="s-ctx-n">{n.name}</div>
@@ -612,7 +694,7 @@ export function StreetContext({ data }: { data: StreetV2Data }) {
           )}
           {c.schools.length > 0 && (
             <div className="s-ctx-col">
-              <h4>Schools</h4>
+              <h3>Schools</h3>
               {c.schools.map((s) => (
                 <a className="s-ctx-item" href={`/schools/${s.slug}`} key={s.slug}>
                   <div className="s-ctx-n">{s.name}</div>
@@ -638,7 +720,7 @@ export function StreetFaq({ data }: { data: StreetV2Data }) {
       <div className="s-wrap">
         <div className="s-sechead">
           <span className="s-eyebrow">Common questions</span>
-          <h2>About {data.name}</h2>
+          <h2>Questions about {data.name}</h2>
         </div>
         <div className="s-faq">
           {data.faqs.map((f, i) => (
@@ -684,7 +766,7 @@ export function StreetFinalCtas({ data }: { data: StreetV2Data }) {
                   street the page is simultaneously arguing has too few sales to price, that reads
                   as boilerplate written for rich streets. Same population gate as the buyer copy. */}
               <p>{alertFraming ? claim.sellerBody(data.name) : seller.body}</p>
-              <a className="s-b1" href={seller.actionHref}>
+              <a className="s-b1" href={seller.actionHref === '/sell' ? sellHrefFor(data.name) : seller.actionHref}>
                 {seller.actionLabel} →
               </a>
             </div>

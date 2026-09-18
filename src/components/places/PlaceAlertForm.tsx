@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
+import { ALERT_FINE_PRINT } from "@/lib/lead/finePrint";
 
 export default function PlaceAlertForm({
   source,
@@ -45,6 +46,8 @@ export default function PlaceAlertForm({
       neighbourhood: trimmedArea || undefined,
       property_address: trimmedArea || undefined,
       notes: `Alerts requested from ${source}${trimmedArea ? `, ${trimmedArea}` : ", no area given"}`,
+      consentText: ALERT_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setLoading(false);
@@ -81,6 +84,7 @@ export default function PlaceAlertForm({
       <button type="submit" disabled={loading}>
         {loading ? "Sending…" : "Get alerts"}
       </button>
+      <p className="pl-alert-fine">{ALERT_FINE_PRINT}</p>
     </form>
   );
 }

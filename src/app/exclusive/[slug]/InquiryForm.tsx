@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
+import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 
 interface Props {
   address: string;
@@ -43,6 +44,8 @@ export default function InquiryForm({ address, slug }: Props) {
       property_address: address,
       message,
       notes: `Off-market listing page: ${slug}`,
+      consentText: REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setSending(false);
@@ -124,6 +127,7 @@ export default function InquiryForm({ address, slug }: Props) {
       >
         {sending ? "Sending…" : "Send inquiry"}
       </button>
+      <p className="text-[11px] text-[#6b6f6a] mt-3 leading-snug">{REPLY_FINE_PRINT}</p>
     </form>
   );
 }

@@ -34,17 +34,18 @@ export function confirmationLineFor(ctx: NotifyContext): string {
   switch (ctx.source) {
     case "street-alert":
     case "street-exit-intent":
-      return `You are on the alert list for ${where}. We will email you when a home there is listed or sold, and nothing else.`;
+      return `You are on the alert list for ${where}. We will email you when a home there is listed for sale, and nothing else.`;
     case "street-corner-widget":
       return `Your note about ${where} is in. ${FIRST_NAME} will reply during business hours.`;
     case "condo-building-alert":
-      return `You are on the alert list for ${where}. We will email you when a unit there is listed or sold, and nothing else.`;
+      return `You are on the alert list for ${where}. We will email you when a unit there is listed, and nothing else.`;
     case "condo-building-contact":
       return `Your question about ${where} is in. ${FIRST_NAME} will reply during business hours.`;
     case "sold-home-valuation":
     case "sell-page":
     case "doorhanger-valuation":
     case "sales-ads-home-valuation":
+    case "street-valuation":
       return `${FIRST_NAME} prepares every valuation by hand from comparable sales. Your written report arrives by email within 24 business hours.`;
     case "mosque-alert":
     case "school-alert":
@@ -105,6 +106,7 @@ function confirmationSubject(ctx: NotifyContext): string {
     case "sell-page":
     case "doorhanger-valuation":
     case "sales-ads-home-valuation":
+    case "street-valuation":
       return "Your valuation is being prepared";
     case "daily-brief":
       return `Your ${config.CITY_NAME} daily brief starts tomorrow`;

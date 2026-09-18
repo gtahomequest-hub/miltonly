@@ -226,6 +226,7 @@
 .places-v2 .pl-alert button:hover { background: var(--pl-accent-on); }
 .places-v2 .pl-alert button:disabled { opacity: 0.5; }
 .places-v2 .pl-alert-done { font-size: 14px; font-weight: 600; color: var(--pl-green); text-align: center; }
+.places-v2 .pl-alert-fine { flex-basis: 100%; margin: 0; font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.6); text-align: center; }
 
 @media (max-width: 900px) {
   .places-v2 .pl-grid, .places-v2 .pl-lgrid { grid-template-columns: repeat(2,1fr); }

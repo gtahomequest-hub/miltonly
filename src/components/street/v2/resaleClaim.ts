@@ -56,7 +56,7 @@ export function resaleClaim(
       heading: 'Too few recent sales to publish a price',
       body: `Homes have changed hands on ${streetName}, but not often enough recently for us to publish a typical price, the record's there, it just can't support a number yet. We'd rather show you nothing than a figure the record can't stand behind.`,
       // verbatim the suppression copy the full shell has always used
-      ctaBody: `Too few recent sales on ${streetName} to publish a typical price yet, the record's there, it just can't support a number. Get an email the moment the next home here lists or closes.`,
+      ctaBody: `Too few recent sales on ${streetName} to publish a typical price yet, the record's there, it just can't support a number. Get an email when the next home here is listed for sale.`,
       areaFallbackLine: `With too few recent sales on ${streetName} to price it on its own, the area read below is the closest honest signal we can give you.`,
       sellerBody: (streetName) =>
         `Few recent sales on ${streetName} means less to compare against, which is exactly when pricing needs judgement rather than a formula. A conversation grounded in what the record does show, and in the ${streetName} homes we've tracked.`,
@@ -70,7 +70,7 @@ export function resaleClaim(
     heading: 'No resales recorded yet',
     body: absenceBody ?? `No resales recorded on ${streetName} yet, a real street with quiet turnover, not a page without homes.`,
     // verbatim the absence copy the full shell has always used
-    ctaBody: `No resales recorded on ${streetName} yet, a real street with quiet turnover, not a page without homes. Get an email the moment one is listed or sold.`,
+    ctaBody: `No resales recorded on ${streetName} yet, a real street with quiet turnover, not a page without homes. Get an email when one is listed for sale.`,
     areaFallbackLine: `The area read below is the closest market signal we can offer honestly until a home on ${streetName} trades.`,
     sellerBody: (streetName) =>
       `No resale on record for ${streetName} yet, so there is no local comparable to lean on, pricing here is a judgement call, and worth a conversation before you list.`,

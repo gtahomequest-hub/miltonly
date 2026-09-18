@@ -2,127 +2,111 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-16 (MC-025, MC-024): the egress fix, Node 22 and the Rent menu merged and on production; DB1 244,828 rows a battery against the 1,138,193 baseline. Follow-up: confirm the nightly audit ran on the 17th after 07:00 UTC._
+_Last rewritten 2026-09-18 (MC-028 merged): four merges by SHA in order, the favicon set, Street Page v3 (MH-005), Portal slice 1 (MP-002, the door) and ML-004 (the CASL footer), each behind a full local gate; production serves `7196623` and the battery passed. Nothing waits on a merge._
 
 ## READ THIS FIRST
 
-**MAIN IS `1b2d7d8` AND PRODUCTION SERVES `1b2d7d8`, `PASS · 19 checks · 569 pages · 694s`, ON
-NODE 22.** Three merges by SHA on 2026-09-16: `fix/neon-egress-2 @ 8279ead` as `89e88e4`
-(the Data Cache fix), `fix/node-22 @ 320f325` as `2aed6f9` (Node 22.x and the nightly gate),
-`feat/rent-menu @ 91f8ef0` as `1b2d7d8` (MH-007, the Rent menu; one conflict, `HANDOFF-home.md`,
-resolved to Home's text under a merged banner). Records:
-`scratchpad/reports/MC-025-egress-node22-merges.md`, `scratchpad/reports/MC-024-rent-menu.md`.
+**MAIN IS `7196623` AND PRODUCTION SERVES `7196623`, `PASS · 20 checks · 609 pages · 713s`, ON
+NODE 22.** MC-028 merged four commits by SHA, in order, each followed by the full local gate
+(`pnpm build` on Node 22, exit code 0, 171 then 170 prerenders): `fix/favicon @ 9144b35` as
+`ea81883` (the Miltonly icon set, the manifest on the site tokens, `logo.png`), `feat/street-v3 @
+2553f2e` as `e078e91` (Street Page v3, MH-005: the hero capture field, the ladder with a house-number
+box, the gate in the served HTML, 44px targets, the 12px floor), `feat/portal @ 86d5f9f` as
+`706ce07` (Portal slice 1, MP-002: magic link and code, a guarded signup, the VOW card inline on
+the street page, a 90-day ceiling; `prisma migrate status` clean at 30 migrations, the
+`portal_door` migration already applied) and `feat/leads @ 7eeeb79` as `7196623` (ML-004: one
+CASL footer on every recurring email, sender, brokerage, mailing address, why, and a signed
+one-click unsubscribe with `List-Unsubscribe` headers; `consentText` on every surface; the alert
+copy says "listed for sale" because `/api/alerts/match` reads new listings only). Confirmed on
+production: `/favicon.ico` is byte-identical to `src/app/favicon.ico` (3,660 bytes, three sizes);
+`/streets/main-street-milton` serves `<form class="s-capture" id="capture">` and the ladder's "Find
+a house number" box (`5 to 6895`, 381 addresses); a sign-in requested from that street came back
+with `redirect: /streets/main-street-milton#sold-records` on both the emailed link (`r=`) and the
+code path, and the session then answered `needsAcknowledgement: true` on `sold-records`, which
+is the inline VOW card; one forced brief send to `gtahomequest+mc028@gmail.com` (Resend
+`01a0b291-c9e2-7233-8992-1bcebee4897c`) carried the footer, and its unsubscribe link disabled the
+watch (a dry run then found 0 subscribers). Lighthouse mobile on main-street: **perf 90, SEO 100,
+a11y 100, best-practices 79**, LCP 3.6 s, CLS 0, TBT 34 ms (MH-006 measured the street page at
+perf 71, a11y 91, LCP 6.4 s, TBT 112 ms; the 79 is the Meta pixel's third-party `fr` cookie, older
+than this batch). Record: `scratchpad/reports/MC-028-four-merges.md`.
 
-**EGRESS, MEASURED ON PRODUCTION AFTER THE FIX: DB1 244,828 ROWS FOR ONE FULL BATTERY.**
-Same method as the two earlier readings (`pg_stat_statements_reset()` on DB1 and DB2, the `db2`
-tag dropped, one battery, read after): MC-016 baseline 1,138,193; MC-018 as first merged
-4,241,533; the fix's preview 263,706; production now **244,828**, 21 % of the baseline. The
-two slug sets no longer appear in DB1's top twelve statements; the top one is the mega menu's
-live panel (84 calls × 464 rows). `scratchpad/mc003/pgss-reset.ts` and `pgss-read.ts` are the
-two halves of the method.
+**THREE MERGE RESOLUTIONS, ALL IN THE MERGE COMMITS.** `package.json` unions the prebuild line
+(`test-hub-truth` then `test-portal-door`). `SoldRecordsIsland.tsx` keeps MH-005's gate-from-the-
+first-byte (`gated = !canSee && !needsAck`) under MP-002's ack card. `AddressLadder.tsx` takes
+Leads' "listed for sale", and `StreetCapture.tsx`, which Street v3 added after ML-004 branched,
+was brought under ML-004's consent rule in the merge itself: `VALUATION_FINE_PRINT` or
+`ALERT_FINE_PRINT` rendered under the field and sent as `consentText` (without it
+`test-lead-forms.ts` fails the build by file). Home and Leads should pull `main` before their next
+commit on those files.
 
-**NODE 22 IS ON PRODUCTION.** The build log says "Skipping build cache since Node.js version
-changed from 20.x to 22.x" and "the Node.js Version defined in your Project Settings (20.x)
-will not apply, 22.x will be used instead": the Vercel project setting still says 20.x and is
-overridden by `engines`; set it to 22.x in the dashboard when convenient so the two agree.
-Locally, `pnpm build` on 22 has to go through Node 22's own corepack (`"$N/node.exe"
-"$N/node_modules/corepack/dist/pnpm.js" build`, `N=C:/Users/amazo/AppData/Local/nvm/v22.23.2`),
-because the `pnpm` shim on PATH runs the nvm4w Node 20; nvm's default was not switched.
+**LEFT ON PRODUCTION BY THE PROOFS.** A verified, unacknowledged `User` row for
+`gtahomequest+mc028@gmail.com` (the door proof) and a `daily-brief` lead for the same address whose
+brief watch `cmu6ej7ua0002xa8boopmia3i` is disabled by the unsubscribe. Both are the desk's own
+address; leave them or delete them, nothing reads them.
 
-**FOLLOW-UP, TOMORROW AFTER 07:00 UTC: CONFIRM THE NIGHTLY AUDIT RAN.** The gate fix
-(`fix/node-22`) is on `main` since 22:10Z on the 16th. The 16th's own runs were delivered
-before it landed and skipped like the 14th's and 15th's (no `audit(nightly): 2026-09-16` on
-`main`). On the 17th, after 07:00 UTC, check the Actions page (or the API:
-`repos/gtahomequest-hub/miltonly/actions/workflows/nightly-audit.yml/runs`) for a run whose
-`audit` job ran, and `git log main` for `audit(nightly): 2026-09-17`. If every delivery is
-still late, the first one after 03:00 Toronto runs now; if none is delivered at all, that is
-GitHub's schedule, not the gate.
+**BEFORE MC-028, MAIN WAS `56cf3ea` AND PRODUCTION SERVED IT, `PASS · 20 checks · 608 pages · 794s`, ON
+NODE 22.** `56cf3ea` merges `fix/hub-truth @ b7183b4` (MC-027, app code `f415ae4`) on top of
+`5ac650b`, the nightly audit's own commit for 2026-09-17, which is the proof the gate fix
+works (MC-023): GitHub delivered the run late again and the first delivery of the Toronto day
+ran. Local build exit 0, 171/171 (the 22 hubs prerender). After the merge: the `db2` and `db3`
+tags and the 22 hub paths were purged and `/api/jobs/warm-hubs` walked the 22 in 67 s, so
+production serves the regenerated prose (Timberlea reads "95 sales here in 12 months" under
+its tile); `scripts/queue-mean-typical-streets.ts --write` queued **39** street pages whose
+stored prose states the old mean typical, for the hourly cron; **Maple Avenue is Dempsey's**
+(its centreline centroid sits in the Dempsey polygon, 73 % of its length too, and 26 of 35
+sold records agree), applied to the registry and purged on both hubs and the street; the hub
+checks rerun clean on production (`--only=hub-page,hub-meta`, 2 checks, 608 pages). Record:
+`scratchpad/reports/MC-027-hub-truth.md` (the build) and `MC-027-merge.md` (the merge).
 
-**THE RENT MENU IS ON PRODUCTION (MH-007).** Confirmed at 1024 with puppeteer
-(`scratchpad/mc003/probe-rent-1024.mjs`): four triggers (Buy 250 to 294, Rent 322 to 372,
-Streets 400 to 463, Sell 491 to 535), the bar search 327 px wide on a street page (433 to
-760; on the homepage it shows on scroll), the CTA 796 to 992, nothing overlapping, no
-horizontal overflow; the Rent panel's Typical rent rail shows "Detached, whole home $3,500/mo
-· 309 leases" and "Detached, basement unit $1,750/mo · 191 leases", semi and townhouse the
-same way. Battery on production after the merge `PASS · 19 checks · 569 pages · 694s`.
+**WHAT MC-027 IS, IN ONE PARAGRAPH.** A hub's generation is drifted when
+`calcHubDataHash(live input)` (typical to $10,000, sale count, days on market, active count)
+differs from `HubGeneration.inputHash`; the page emits FAQPage only when current;
+`/api/sync/regenerate-hubs` (12:45 UTC, three a run, DeepSeek only) regenerates the rest, and
+all 22 were regenerated on 2026-09-17 for $0.109. The 22 hubs prerender at build and
+`/api/jobs/warm-hubs` re-warms them after every sold and analytics job (11:12, 11:42, 12:12,
+12:55 UTC): first-visitor TTFB p50 0.24 s prerendered against 2.9 to 5.6 s purged.
+DEC-TYPICAL-MEDIAN: every typical is `PERCENTILE_CONT(0.5)`, K-gated, on the street page, the
+AI inputs, the hub, the ladder (`medianOf` over pooled price arrays), the sibling cards, /sold
+(no average tile, the hub named in the H1, 22 chips, the sign-in returns to the view) and the
+battery's record; the "Typical is not average" guide keeps a real mean named as one. Bronte
+Meadows is an urban hub. The street page's up-link is the registry row only
+(`scripts/hub-membership-reconcile.ts` lists disagreements: three long roads with one or two
+records each way remain listed, unchanged). Prebuild `scripts/test-hub-truth.ts`, 44 assertions.
 
-**GIT-TRIGGERED BUILDS RUN ONLY ON `main` NOW.** `vercel.json` `ignoreCommand` is
-`if [ "$VERCEL_GIT_COMMIT_REF" != "main" ]; then exit 0; fi; git diff --quiet HEAD^ HEAD -- .
-':(exclude)scratchpad/audit/nightly'`. Proven both ways: a push to `chore/ignore-nonmain`
-was cancelled in 2 s (`miltonly-iac0jwv82`, "the Ignored Build Step command returned exit
-code 0"); `npx vercel deploy --yes` from the same branch ran no ignore step, built, and served
-the commit (`miltonly-ey0vbhme3`); the `main` merge ran the step and built (`miltonly-
-jmcmjk6u0`). **Every worktree gets its preview from `npx vercel deploy --yes` in its own
-folder now**; the URL is in the command's output and `vercel ls` shows it as Preview. A branch
-push produces a Canceled row, which is correct. CLAUDE.md says the same.
+**WATCH THE 39 QUEUED STREETS.** They regenerate on the hourly `/api/sync/generate` cron
+(regenerations are uncapped); each lands with prose grounded on the median. If one fails closed
+it sits in `StreetGenerationReview`, the same as any other. `scripts/queue-mean-typical-streets.ts`
+without `--write` lists what still states a mean.
 
-**BUILD MINUTES.** Production builds before MC-017 (the last four on `1900c46`'s lineage):
-2 m 19 s, 2 m 18 s, 2 m 17 s, 2 m 17 s wall from "Running build" to "Build cache uploaded",
-609 static pages. After: `69075d2` 1 m 29 s, `3ba3d91` 1 m 27 s, 149 static pages. Vercel's
-dashboard shows the same as "2m" and "1m". The branch cancels are 2 s each.
+**THE OPEN LIST.** Search Console: submit `sitemap-index.xml` (human). The Vercel project's
+Node setting still reads 20.x and is overridden by `engines` 22.x; set it to 22.x when
+convenient. `15-side-road-side-road-milton` is a published page with no registry row.
+`louis-st-laurent-avenue` and `lower-base-line-west` are published clips with no page. The
+shared `AgentContactSection` prints amber on the listing page. `/sold` still carries 17
+em-dashes outside the lines MC-027 touched. The first `npx vercel deploy` after a pause answers
+"Not authorized" and the retry works; three times now.
 
-**TTFB ON PRODUCTION AFTER MC-017**, p50 over 7 samples, first sample the cold render:
-hub `/neighbourhoods/timberlea` 2.13 s → 0.18 s, condo 0.90 s → 0.15 s, guide 0.50 s → 0.27 s
-(the battery was running concurrently), listing 0.49 s → 0.15 s. `X-Vercel-Cache: HIT` on all
-four after the first hit. `scratchpad/mc003/ttfb-after-69075d2-prod.txt`.
-
-**MC-015 IS ON PRODUCTION.** What it is, in one paragraph: every clip at a dated key with its
-poster beside it; capture times from the GPS trace (the camera's filename clock runs an hour
-fast, 41 of 47 moved; three "night" clips were 19:15 to 19:21 daylight and are day now);
-`*CapturedAt` the instant, rendered in America/Toronto; the sentence "Footage covers 460 m of
-510 m, from Leiterman Drive to Parmenter Point. Filmed 1 September 2026." under every player
-and as `VideoObject.description`, with only the clauses it can source (46 of 47 with metres,
-30 both endpoints, 14 one, 3 none); the takedown mailto; `sitemap-video.xml` and
-`sitemap-index.xml`; the upload script's audio and offset refusals; the `video` battery check.
-Sidecar `src/data/streetVideoMeta.json`, rebuilt by `scripts/backfill-video-captured.ts`;
-extent by `scripts/video-coverage.ts`. Full record `scratchpad/reports/MC-015-video-playbook.md`.
-Open: Search Console submission of `sitemap-index.xml` (human); `louis-st-laurent-avenue` and
-`lower-base-line-west`, published clips with no page, left alone.
-
-**HOW MC-018 WENT (the fix is merged as `89e88e4`; kept for the reasoning).** MC-018 as merged made egress worse, and the fix was `fix/neon-egress-2` @ `8279ead`,
-one production battery after the merge, `pg_stat_statements` reset
-before it and read after: **DB1 4,241,533 rows against MC-016's 1,138,193**. The two slug sets
-alone were 3.3 million rows: 2,031 calls of the entity set (963 rows each) and 2,438 of the
-published set, against 481 in the baseline. The cause is MC-017's own rule: `cached()` skips
-Redis under a static render, because the Upstash client's `no-store` fetch is a bailout Next
-records, and since MC-017 nearly every page IS a static render on its first visit, so the sets
-left Neon on every ISR render, twice, where before they left once. `unstable_cache` is the
-cache a static render keeps: the Data Cache holds each set for the deployment for an hour (the
-Neon reads' own revalidate, so no ISR page is cut shorter), tagged (`surface`, `hubsets`) so
-every publication and hub write drops it; `src/lib/dataCache.ts` wraps it so a local script
-outside a Next server runs the function instead of hitting "incrementalCache missing".
-**Measured on the fix's preview `miltonly-k581rfzw7`, same method, one full battery: DB1
-263,706 rows**, the slug sets at 20 calls each, the battery `PASS · 19 checks · 568 pages ·
-752s`. That is 23 % of the MC-016 baseline and 6 % of the merged MC-018. `/streets` on ISR
-and the `DISTINCT ON` sample, `/rentals` cached per scope and the hub sets on the same
-Data Cache are all in that number. Merge `8279ead`, then measure production once more.
-
-**THE DASHCAM SIDE SHOULD KNOW.** Its `captured_at` rule (GPS, never the filename) was right;
-the 40 clips that predate it carried the filename clock into production for ten days, and its
-day/night rule (luma first, hour as tiebreak) was not applied to them either. `meta.json` now
-carries `captured_at_filename`, `captured_at_source`, `captured_end`, `coverage_source` and
-`relabelled` on the rows this touched.
-
-**THE `#type-<type>` DEAD ANCHORS ARE STREET PAGE V3 CHANGE 7 (HOME).** 196 S3 `dead-anchor`
-findings, one defect: a hero pill links `#type-<type>` for any type with n >= 1 and the lease
-pill `#type-condo`, but a `TypeCard` renders only above k5 (`buildProductTypeSections`);
-`TypeSection.tsx` is rendered nowhere. Core does not take it.
-
-**THE NIGHTLY AUDIT** is scheduled for 03:00 Toronto (GitHub delivers it hours late; the gate
-on `fix/node-22` takes the first delivery of the day) and commits `audit(nightly): <date>` to main
-without a human; `ignoreCommand` keeps that commit out of Vercel. **Pull before you branch or
-push.** Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is
-not installed system-wide. **Vercel and Windows gotchas:** `vercel ls` reports a preview
-`● Ready` a minute before the URL stops serving a "Deployment is building" page; match rows on
-`vercel.app`, never a line number; find a deployment by `/api/build` commit, never by position.
-A battery under the Bash tool dies at the 10-minute cap: run
+**THE NIGHTLY AUDIT** runs on the first GitHub delivery of each Toronto day at or after 03:00
+(four crons, 07 to 10 UTC; MC-023) and commits `audit(nightly): <date>` to main without a
+human; `ignoreCommand` keeps that commit out of Vercel. **Pull before you branch or push.**
+Secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are repository Actions secrets. `gh` is not
+installed; the Actions API answers with the machine's stored Git credential. **Vercel and
+Windows gotchas:** `vercel ls` reports a preview `● Ready` a minute before the URL stops serving
+a "Deployment is building" page; match rows on `vercel.app`, never a line number; find a
+deployment by `/api/build` commit, never by position; every worktree previews with `npx vercel
+deploy --yes`. A battery under the Bash tool dies at the 10-minute cap: run
 `nohup sh scratchpad/mc003/run-battery.sh <sha> <base> <log> &` and poll the log for `^EXIT`.
 A local `next start` holds Prisma's engine DLL and `prisma generate` then fails `EPERM`; stop it
-with `Stop-Process` from PowerShell, Git Bash `kill` does not reach it. The machine is shared:
-a build was killed for memory while other sessions ran ffmpeg. **The Bash tool collapses a
-doubled backslash in a heredoc**: a `python - <<'EOF'` patch carrying `\\b` wrote a backspace
-byte into `test-audit-night-1.ts` tonight (caught by the prebuild, fixed). Put a patch that
-carries backslashes in a file and run the file.
+with `Stop-Process` from PowerShell. The machine is shared. **The Bash tool collapses a doubled
+backslash in a heredoc**: put a patch that carries backslashes in a file and run the file.
+**`pnpm build` on Node 22 goes through Node 22's own corepack** (`"$N/node.exe"
+"$N/node_modules/corepack/dist/pnpm.js" build`, `N=C:/Users/amazo/AppData/Local/nvm/v22.23.2`);
+the `pnpm` shim on PATH runs the nvm4w Node 20. **A script that imports a module using
+`React.cache`** runs under `tsx --require ./scripts/_server-only-shim.cjs`, which stands in for
+it; never `--conditions=react-server`. **The battery lies for an hour at a window edge and after
+a creation-cron hour** (00:01Z and every :01): read a FAIL against production first, purge the
+`db2`/`db3` tags and the hub paths, rerun.
+
 
 **THREE THINGS MC-017 HAD TO LEARN, ALL IN THE CODE COMMENTS.** (1) **Next 14 caches a dynamic
 route only when `generateStaticParams` exists.** The first preview served every hub, condo, guide
@@ -218,16 +202,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`1b2d7d8`** (egress fix `89e88e4`, Node 22 `2aed6f9`, Rent menu `1b2d7d8`), production serves it |
-| battery on production | **`PASS · 19 checks · 569 pages · 694s`** at `1b2d7d8`, 2026-09-16 |
-| `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
+| `main` | **`7196623`** (MC-028: the favicon set, Street Page v3, Portal slice 1, ML-004, on top of MC-027), production serves it |
+| battery on production | **`PASS · 20 checks · 609 pages · 713s`** at `7196623`, 2026-09-18 |
+| `prisma migrate status` | **clean**, 30 migrations (`20260917120000_portal_door` was already applied when merged) |
 | waiting on merge | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | confirm the nightly audit ran on the 17th (after 07:00 UTC); Search Console for `sitemap-index.xml`; the Vercel Node setting |
+| open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -596,5 +580,5 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the nightly-audit confirmation on the 17th; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
-`gordon-krantz-avenue` on a later pass.
+Whatever Aamir names. Open: the 39 queued streets; Portal slices MP-003 (the account) and MP-004 (the loop back) on
+a prompt; the Node 24 runtime move before 2026-10-01; `barclay-circle` and `gordon-krantz-avenue` on a later pass.
