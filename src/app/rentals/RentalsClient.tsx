@@ -7,6 +7,7 @@ import { formatPriceFull, daysAgo } from "@/lib/format";
 import AgentContactSection from "@/components/AgentContactSection";
 import { useUser } from "@/components/UserProvider";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, type PostLeadPayload } from "@/lib/postLeadClient";
+import { ALERT_FINE_PRINT, REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import { config } from "@/lib/config";
 import "./rentals.css";
 
@@ -186,11 +187,20 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   // IT USED TO RETURN TRUE FOR A 429 AND A 500. Only a thrown network error reached the
   // catch, so every one of the five call sites below showed its confirmation toast over a
   // refused submission. The helper resolves false unless the row was written.
-  const submitLead = async (data: PostLeadPayload): Promise<boolean> => {
+  //
+  // Two kinds of submission share it: a request for a reply (bookings, the quiz) under
+  // REPLY_FINE_PRINT, and an alert signup under ALERT_FINE_PRINT. Each form renders the one it
+  // sends, and the row records it as consentText.
+  const submitLead = async (data: PostLeadPayload, kind: "reply" | "alert" = "reply"): Promise<boolean> => {
     // This file reads every field off the DOM by id, so the honeypot does too rather than
     // introducing a second pattern beside it. A missing node reads as empty, which passes.
     const honeypot = (document.getElementById("rc-honey") as HTMLInputElement | null)?.value ?? "";
-    const result = await postLeadDetailed({ ...data, honeypot });
+    const result = await postLeadDetailed({
+      ...data,
+      consentText: kind === "alert" ? ALERT_FINE_PRINT : REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
+      honeypot,
+    });
     if (!result.ok) showToast(result.error || "Could not submit. Please try again.");
     return result.ok;
   };
@@ -648,7 +658,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     }}>
                       Show me matching rentals →
                     </button>
-                    <div className="submit-note">{REALTOR_FIRST_NAME} usually replies within the hour · No spam</div>
+                    <div className="submit-note">{REALTOR_FIRST_NAME} usually replies within the hour. {REPLY_FINE_PRINT}</div>
                     <div className="back-lnk" onClick={() => setWizStep(2)}>← Back</div>
                   </div>
                 )}
@@ -667,9 +677,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     source: "new-match-alert", intent: "rent",
                     name: userName, email: quizContact.email, phone: quizContact.phone,
                     priceMin, priceMax,
-                  });
+                  }, "alert");
                   if (ok) showToast("🔔 Alert set. You'll hear from us first.");
                 }}>🔔 Alert me when new matches list</button>
+                <div className="submit-note">{ALERT_FINE_PRINT}</div>
               </div>
             )}
           </div>
@@ -703,6 +714,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 }
               }}><em>⏱</em> Request my showing</button>
               <div className="bc-trust">No obligation · {REALTOR_FIRST_NAME} usually calls back within the hour</div>
+              <div className="bc-trust">{REPLY_FINE_PRINT}</div>
               <div className="bc-agent">{config.realtor.name} · {BROKERAGE_SHORT_NAME}</div>
             </div>
           </div>
@@ -999,12 +1011,13 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               source: "alert", intent: "rent", email, name: "Alert Subscriber",
               priceMin, priceMax,
               homeType: typeFilter !== "All" ? typeFilter : undefined,
-            });
+            }, "alert");
             if (!ok) return;
             showToast("🔔 Alert saved. You'll hear from us first.");
             (document.getElementById("alert-email") as HTMLInputElement).value = "";
           }}>Save this search →</button>
         </div>
+        <p className="as-fine">{ALERT_FINE_PRINT}</p>
       </div>
 
       {/* ═══ EXCLUSIVE CROSS-LINK BANNER ═══ */}
@@ -1037,6 +1050,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               {bookingModal.type === "1hr" ? "⏱ Confirm 1-hour showing" : "Request showing"}
             </button>
             <div className="bm-note">We&apos;ll call you within {bookingModal.type === "1hr" ? "1 hour" : "15 minutes"} to confirm</div>
+            <div className="bm-note">{REPLY_FINE_PRINT}</div>
           </div>
         </div>
       )}

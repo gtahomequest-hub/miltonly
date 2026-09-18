@@ -6,7 +6,7 @@
 // before it was a link to /sell, a second page load with four required fields, most of them
 // dropping the street on the way. This is one field, in the first two screens, for the two
 // intents the page already has: the owner who wants the written valuation and the watcher who
-// wants an email when a home here is listed or sold. Both post through the one lead helper
+// wants an email when a home here is listed for sale (the matcher reads new listings only, ML-004). Both post through the one lead helper
 // with the street as `property_address`, so the seller path never leaves the page; /sell
 // stays for the long form, and every link to it now carries ?street=.
 //
@@ -15,6 +15,7 @@
 // control is two radio inputs, so the form is one form and a keyboard walks it.
 import { useId, useState } from 'react';
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from '@/lib/postLeadClient';
+import { ALERT_FINE_PRINT, VALUATION_FINE_PRINT } from '@/lib/lead/finePrint';
 
 type Intent = 'value' | 'watch';
 
@@ -38,6 +39,8 @@ export function StreetCapture({ streetName, neighbourhood, sellHref }: { streetN
             property_address: streetName,
             neighbourhood,
             notes: `Written valuation requested from the street page, ${streetName}`,
+            consentText: VALUATION_FINE_PRINT,
+            consentTimestamp: new Date().toISOString(),
             honeypot: honey,
           })
         : await postLead({
@@ -47,6 +50,8 @@ export function StreetCapture({ streetName, neighbourhood, sellHref }: { streetN
             property_address: streetName,
             neighbourhood,
             notes: `Street alerts requested, ${streetName} (hero)`,
+            consentText: ALERT_FINE_PRINT,
+            consentTimestamp: new Date().toISOString(),
             honeypot: honey,
           });
     setStatus(ok ? 'ok' : 'error');
@@ -58,7 +63,7 @@ export function StreetCapture({ streetName, neighbourhood, sellHref }: { streetN
         <p className="s-capture-done">
           {intent === 'value'
             ? `Your request is in. Aamir prepares the valuation by hand from the comparable sales on ${streetName} and emails it within one business day.`
-            : `You are watching ${streetName}. One email when a home here is listed or sold, and nothing else.`}
+            : `You are watching ${streetName}. One email when a home here is listed for sale, and nothing else.`}
         </p>
       </div>
     );
@@ -84,7 +89,7 @@ export function StreetCapture({ streetName, neighbourhood, sellHref }: { streetN
       <p className="s-capture-p">
         {intent === 'value'
           ? `A written valuation from the comparable sales on ${streetName}, prepared by hand and sent by email. Nothing on this page estimates a single address.`
-          : `An email when a home on ${streetName} is listed or sold. Nothing else, and no account.`}
+          : `An email when a home on ${streetName} is listed for sale. Nothing else, and no account.`}
       </p>
       <div className="s-capture-row">
         <input
@@ -110,7 +115,7 @@ export function StreetCapture({ streetName, neighbourhood, sellHref }: { streetN
       </div>
       {status === 'error' ? <div className="s-alert-err">Something went wrong. Please try again.</div> : null}
       <div className="s-capture-fine">
-        Miltonly emails only. No account, unsubscribe anytime.
+        {intent === 'value' ? VALUATION_FINE_PRINT : ALERT_FINE_PRINT}
         {intent === 'value' ? (
           <>
             {' '}

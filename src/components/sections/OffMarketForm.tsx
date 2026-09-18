@@ -20,6 +20,10 @@ import { useState } from "react";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
 
+/** The fine print under the button, and the consent text the row records: one value. */
+const OFF_MARKET_FINE_PRINT =
+  `I consent to receive texts about off-market homes from ${config.realtor.name} (${config.brokerage.name}), typically 1 to 2 a month. Reply STOP to opt out.`;
+
 export default function OffMarketForm() {
   const [propertyType, setPropertyType] = useState("");
   const [budget, setBudget] = useState("");
@@ -63,6 +67,8 @@ export default function OffMarketForm() {
       bedrooms,
       budget,
       notes: `Off-market list signup. Budget: ${budget}`,
+      consentText: OFF_MARKET_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setSubmitting(false);
@@ -164,9 +170,7 @@ export default function OffMarketForm() {
         {submitting ? "Submitting…" : "🔔 Notify me of off-market matches →"}
       </button>
 
-      <p className="mt-3 text-[11px] text-[#64748b] text-center">
-        No spam. Avg 1–2 texts/month. Unsubscribe anytime.
-      </p>
+      <p className="mt-3 text-[11px] text-[#64748b] text-center">{OFF_MARKET_FINE_PRINT}</p>
     </form>
   );
 }

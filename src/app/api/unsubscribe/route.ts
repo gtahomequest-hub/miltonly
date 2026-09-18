@@ -1,6 +1,5 @@
-// The brief's original unsubscribe path. Every link minted before ML-004 points here, and
-// those links sit in inboxes for as long as the inbox does, so the path stays and runs the
-// same handler as /api/unsubscribe. New links point at the generic path.
+// The one-click unsubscribe for every recurring email. The handler and its reasons live in
+// src/lib/email/unsubscribeHandler.ts; this file only mounts it.
 
 import { NextRequest } from "next/server";
 import { handleUnsubscribe } from "@/lib/email/unsubscribeHandler";

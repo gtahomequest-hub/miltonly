@@ -14,7 +14,7 @@
 // locally, the real Upstash one on a Vercel build. Its keys carry per-run entropy for that
 // reason, and it asserts only what holds of both. See the comment on that block.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { checkHoneypot, checkOrigin, checkRateLimit, hostAllowed, HONEYPOT_FIELD } from "@/lib/lead/guards";
 import { resolveLeadEnv, isCountable } from "@/lib/lead/env";
 import { normalizeIntent, isCanonicalIntent, leadValueFor } from "@/lib/lead/intent";
@@ -331,18 +331,57 @@ async function main() {
   ok(/kind: "brief"/.test(briefSender), "brief sender: reads the brief watches");
   ok(briefSender.includes("isSendingDay("), "brief sender: Monday to Friday");
   ok(briefSender.includes("unsubscribeUrl("), "brief sender: every edition carries an unsubscribe link");
-  ok(briefSender.includes("List-Unsubscribe"), "brief sender: and the one-click header a mail client reads");
+  ok(briefSender.includes("listUnsubscribeHeaders("), "brief sender: and the one-click headers a mail client reads");
   ok(briefSender.includes("byEmail"), "brief sender: one email per subscriber, not one per watch");
   ok(briefSender.includes("lastAlertAt"), "brief sender: stamps the send so a retry cannot repeat an edition");
   ok(
-    briefSender.includes("BRIEF_UNSUBSCRIBE_SECRET") && briefSender.includes("CRON_SECRET"),
+    briefSender.includes("canSignUnsubscribe()"),
     "brief sender: refuses to send a commercial email it cannot sign an unsubscribe link for",
   );
 
-  const unsub = readFileSync("src/lib/brief/unsubscribe.ts", "utf-8");
+  // ML-004: one unsubscribe module for every watch kind, one footer for every recurring email.
+  ok(!existsSync("src/lib/brief/unsubscribe.ts"), "unsubscribe: the brief-only module is gone; src/lib/email/unsubscribe.ts serves every kind");
+  const unsub = readFileSync("src/lib/email/unsubscribe.ts", "utf-8");
   ok(unsub.includes("createHmac("), "unsubscribe: the link is signed, so it cannot be forged or scanned");
   ok(unsub.includes("timingSafeEqual("), "unsubscribe: the token comparison is constant time");
   ok(/throw new Error\(/.test(unsub), "unsubscribe: an unsignable link throws rather than shipping one that will not verify");
+  ok(unsub.includes("BRIEF_UNSUBSCRIBE_SECRET") && unsub.includes("CRON_SECRET"), "unsubscribe: signs under the secret already set in both environments, so no link minted before ML-004 stops verifying");
+  ok(/"List-Unsubscribe-Post":\s*"List-Unsubscribe=One-Click"/.test(unsub), "unsubscribe: the RFC 8058 one-click header is minted in one place");
+
+  const unsubHandler = readFileSync("src/lib/email/unsubscribeHandler.ts", "utf-8");
+  ok(unsubHandler.includes("verifyWatch("), "unsubscribe handler: verifies the token before touching a row");
+  ok(!/kind !== "brief"/.test(unsubHandler), "unsubscribe handler: no longer refuses a watch that is not a brief");
+  ok(/alertEnabled: false/.test(unsubHandler), "unsubscribe handler: disables the row rather than deleting it");
+  for (const route of ["src/app/api/unsubscribe/route.ts", "src/app/api/brief/unsubscribe/route.ts"]) {
+    const r = readFileSync(route, "utf-8");
+    ok(r.includes("handleUnsubscribe("), `${route}: mounts the one handler`);
+    ok(/export async function POST/.test(r), `${route}: answers POST for one-click clients`);
+  }
+
+  const footer = readFileSync("src/lib/email/footer.ts", "utf-8");
+  ok(footer.includes("brokerage.mailingAddress"), "footer: prints the brokerage mailing address from config");
+  ok(footer.includes("config.brokerage.name"), "footer: names the brokerage");
+  ok(footer.includes("input.unsubscribeUrl"), "footer: carries the signed unsubscribe link in both bodies");
+  const cfg = readFileSync("src/lib/config.ts", "utf-8");
+  ok(/mailingAddress:\s*\{[\s\S]*?postalCode:\s*"[A-Z]\d[A-Z] \d[A-Z]\d"/.test(cfg), "config: the mailing address has a Canadian postal code");
+
+  // Every recurring sender: footer in the body, headers on the message, refusal without a secret.
+  const dealAlert = readFileSync("src/lib/email-user.ts", "utf-8");
+  ok(dealAlert.includes("emailFooter("), "deal alert: carries the shared footer");
+  ok(dealAlert.includes("listUnsubscribeHeaders("), "deal alert: carries the List-Unsubscribe headers");
+  ok(/footer\.html/.test(dealAlert) && /footer\.text/.test(dealAlert), "deal alert: the footer is in the HTML body and the text body");
+  ok(/unsubscribeUrl\(watchId/.test(dealAlert), "deal alert: the link is signed over the watch it is mailing");
+  ok(/return \{ sent: false, reason \}/.test(dealAlert), "deal alert: an unsignable link is a refused send, not a sent email with no unsubscribe");
+  const alertCron = readFileSync("src/app/api/alerts/match/route.ts", "utf-8");
+  ok(alertCron.includes("canSignUnsubscribe()"), "alert cron: refuses the run when the link cannot be signed");
+  ok(/if \(!outcome\.sent\)/.test(alertCron), "alert cron: a send that did not go out does not stamp the watch");
+  ok(/notIn: \["brief", "digest"\]/.test(alertCron), "alert cron: neither the brief nor the digest watch is a listing watch");
+  ok(compose.includes("emailFooter("), "brief: the edition carries the shared footer");
+  const digestRoute = readFileSync("src/app/api/digest/leads/route.ts", "utf-8");
+  ok(digestRoute.includes("emailFooter(") && digestRoute.includes("listUnsubscribeHeaders("), "leads digest: carries the shared footer and the headers");
+  const digestRecipient = readFileSync("src/lib/digest/recipient.ts", "utf-8");
+  ok(/kind: "digest"/.test(digestRecipient) && digestRoute.includes("digestWatchFor(") && digestRoute.includes("canSignUnsubscribe()"), "leads digest: the unsubscribe disables a digest watch, and no secret means no send");
+  ok(/recipient unsubscribed from the digest/.test(digestRoute), "leads digest: a disabled digest watch stops the send");
 
   const cron = JSON.parse(readFileSync("vercel.json", "utf-8")) as { crons: Array<{ path: string; schedule: string }> };
   const briefCron = cron.crons.find((c) => c.path.startsWith("/api/brief/send"));

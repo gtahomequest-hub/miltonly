@@ -42,6 +42,16 @@ export const config = {
   brokerage: {
     name: "RE/MAX Realty Specialists Inc., Brokerage",
     serviceArea: "Milton, Ontario",
+    // The postal address every recurring email prints in its footer (CASL s.6(2)(b): a
+    // commercial electronic message identifies the sender and gives a mailing address). It
+    // is the one postal address the site already publishes, as the LocalBusiness address on
+    // /rentals/ads. Change it here and every footer follows.
+    mailingAddress: {
+      street: "178 Lemieux Ct",
+      city: "Milton",
+      province: "ON",
+      postalCode: "L9E 1E9",
+    },
   },
 
   // === SLA copy — single source of truth ===

@@ -28,7 +28,7 @@ import { resolveLeadEnv } from "@/lib/lead/env";
 import { config } from "@/lib/config";
 import { briefWindow, isSendingDay } from "@/lib/brief/window";
 import { getBriefData, shouldSend, publishedSet, composeEdition, type Subscriber } from "@/lib/brief/compose";
-import { unsubscribeUrl } from "@/lib/brief/unsubscribe";
+import { unsubscribeUrl, canSignUnsubscribe, listUnsubscribeHeaders } from "@/lib/email/unsubscribe";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -83,7 +83,7 @@ async function run(request: NextRequest) {
       { status: 500 },
     );
   }
-  if (!process.env.BRIEF_UNSUBSCRIBE_SECRET && !process.env.CRON_SECRET) {
+  if (!canSignUnsubscribe()) {
     return NextResponse.json(
       { success: false, env, error: "no secret to sign the unsubscribe link with", sent: 0 },
       { status: 500 },
@@ -174,7 +174,7 @@ async function run(request: NextRequest) {
         subject: env === "production" ? edition.subject : `[${env}] ${edition.subject}`,
         html: edition.html,
         text: edition.text,
-        headers: { "List-Unsubscribe": `<${unsubscribeUrl(watch.id, linkOrigin)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+        headers: listUnsubscribeHeaders(unsubscribeUrl(watch.id, linkOrigin)),
       });
       if (result.error) throw new Error(result.error.message);
       await prisma.savedSearch.update({

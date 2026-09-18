@@ -237,7 +237,7 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
             <div className="s-fcard">
               <h3>Watch {data.name}</h3>
               <p>
-                An email when a home on {data.name} is listed or sold. Nothing else, and no
+                An email when a home on {data.name} is listed for sale. Nothing else, and no
                 account.
               </p>
               <a className="s-b1" href="#street-alert">

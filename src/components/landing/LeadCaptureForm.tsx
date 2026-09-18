@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { SMS_EMAIL_FINE_PRINT } from "@/lib/lead/finePrint";
 import { generateEventId, readFbCookies, firePixelLead } from "@/lib/pixel-client";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
@@ -214,6 +215,8 @@ export default function LeadCaptureForm({
       fbc,
       fbp,
       fbclid: searchParams.get("fbclid") || undefined,
+      consentText: SMS_EMAIL_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
 
@@ -414,7 +417,7 @@ export default function LeadCaptureForm({
           {submitting ? "Sending…" : resolvedCtaLabel}
         </button>
         <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
-          🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {config.brokerage.name}. Reply STOP to opt out.{" "}
+          🔒 No spam. No fees. {SMS_EMAIL_FINE_PRINT}{" "}
           <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy</Link>.
         </p>
       </form>

@@ -29,6 +29,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { LIVE_SOURCES } from "@/lib/lead/sources";
 import type { DigestWindow, DigestPeriod } from "@/lib/digest/window";
+import type { Footer } from "@/lib/email/footer";
 
 export interface CountPair {
   week: number;
@@ -248,8 +249,10 @@ function para(s: string): string {
   return `<p style="margin:0 0 10px;">${esc(s)}</p>`;
 }
 
-/** The whole digest, as one HTML body and one plain-text body that say the same things. */
-export function composeDigest(data: DigestData, win: DigestWindow): Digest {
+/** The whole digest, as one HTML body and one plain-text body that say the same things.
+ *  `footer` is the shared recurring-email footer (sender, mailing address, signed unsubscribe);
+ *  the sender composes it for the desk digest watch and a dry run may omit it. */
+export function composeDigest(data: DigestData, win: DigestWindow, footer?: Footer): Digest {
   const { week, month } = win;
   const subject = `Leads digest, week to ${week.lastDate}`;
 
@@ -347,6 +350,7 @@ export function composeDigest(data: DigestData, win: DigestWindow): Digest {
     `<p style="margin:28px 0 0;padding-top:12px;border-top:1px solid #d9d4c7;color:#4a5a54;font-size:12px;">${esc(basis)}</p>`,
     `\n${basis}`,
   );
+  if (footer) both(footer.html, footer.text);
 
   return {
     subject,

@@ -1600,7 +1600,9 @@ async function buildContextCards(input: {
 // THE RESOLVED NAME IN THE HEADINGS (MH-008). These read "Selling on Main" and "Buying on
 // Asleton": shortName is the prose form and never appears in a heading (CLAUDE.md, Names). The
 // alert body promised "access before they go public", which nothing on the site does; the
-// alert emails when a home on the street is listed or sold (StreetAlertCTA, street-alert).
+// alert emails when a home on the street is listed for sale (StreetAlertCTA, street-alert):
+// /api/alerts/match reads new active listings and nothing else, so the card says listed, not
+// "listed or sold", until a sold alert exists (ML-004).
 function buildFinalCTAs(input: { streetName: string; shortName: string }): FinalCTAsProps {
   void input.shortName;
   return {
@@ -1614,7 +1616,7 @@ function buildFinalCTAs(input: { streetName: string; shortName: string }): Final
     buyerCTA: {
       eyebrow: "For buyers",
       headline: `Buying on ${input.streetName}`,
-      body: `An email when a home on ${input.streetName} is listed or sold. Nothing else, and no account.`,
+      body: `An email when a home on ${input.streetName} is listed for sale. Nothing else, and no account.`,
       actionLabel: "Set an alert",
       actionHref: "/listings",
       secondary: true,
