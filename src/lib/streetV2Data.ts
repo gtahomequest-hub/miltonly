@@ -54,8 +54,9 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number, data: StreetPage
     hp.rawTypicalPrice != null && typeof typical?.sub === 'string' && typical.sub.startsWith('range ')
       ? typical.sub
       : null;
+  // THE PRICE FIRST (MA-001 defect 18). The housing mix led, and on a phone each tile is a
+  // 110px block, so the one number the searcher came for arrived at 1,000px.
   return [
-    { label: 'Housing mix', kind: 'text', value: null, textValue: mix ? String(mix.value) : null },
     {
       label: 'Typical price',
       kind: 'price',
@@ -76,6 +77,7 @@ function mapHeroStats(hp: StreetHeroProps, activeCount: number, data: StreetPage
       sub: (hp.rawTotalTransactions ?? 0) > 0 ? 'sales + leases · last 12 months' : 'no closed deals · last 12 months',
     },
     { label: 'Active right now', kind: 'count', value: activeCount, sub: 'live listings · today' },
+    { label: 'Housing mix', kind: 'text', value: null, textValue: mix ? String(mix.value) : null },
   ];
 }
 

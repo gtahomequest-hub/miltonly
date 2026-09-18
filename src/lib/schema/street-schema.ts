@@ -211,6 +211,28 @@ export function buildAggregateOfferSchema(
   };
 }
 
+/** The typical sale price per home type, as a PropertyValue on the Place: name, value, unit,
+ *  and a description stating the window and the sample it was derived from. Emitted only where
+ *  the page itself publishes the figure (the type card's typical, k >= K_ANON_AGG). */
+export function buildTypicalPriceProperties(data: StreetPageData): object[] {
+  const out: object[] = [];
+  for (const pt of data.productTypes) {
+    if (!pt.hasData || pt.showContactTeamPrompt || pt.typicalPrice <= 0) continue;
+    const n = inferSampleSize(pt.statsSold);
+    if (n < K_ANON_AGG) continue;
+    out.push({
+      "@type": "PropertyValue",
+      propertyID: `typical-sale-price-${pt.type}`,
+      name: `Typical sale price, ${pt.displayName.toLowerCase()}, last 12 months`,
+      value: pt.typicalPrice,
+      unitCode: "CAD",
+      description: `The typical closing price of a ${pt.displayName.toLowerCase()} home sold on ${data.street.name}, ${config.CITY_NAME}, over the last 12 months, across ${n} sale${n === 1 ? "" : "s"}. A statistic about past sales on the street, not an offer.`,
+      measurementTechnique: "Midpoint of closed sale prices recorded by the real estate board, published only where at least five sales back the figure.",
+    });
+  }
+  return out;
+}
+
 export function buildAlternativesItemListSchema(
   items: DifferentPriorityItem[],
   streetSlug: string
@@ -344,9 +366,15 @@ export function buildStreetPageSchema(
   const faq = buildFAQPageSchema(resolved.faqs);
   if (faq) graph.push(faq);
 
-  for (const pt of data.productTypes) {
-    const saleOffer = buildAggregateOfferSchema(pt, data.street.name, data.street.slug, "sale");
-    if (saleOffer) graph.push(saleOffer);
+  // AGGREGATEOFFER IS GONE (MH-005, MA-001 defect 28). It described last year's sold homes as
+  // in-stock offers by the organisation, which is a different thing from what the page says
+  // and is eligible for no rich result. What the page states is an observation about a place:
+  // the typical sale price of a home type over a window and a sample. That is what the Place
+  // node now carries, as PropertyValues, on the same k floor the page uses.
+  const observations = buildTypicalPriceProperties(data);
+  if (observations.length) {
+    const place = graph[1] as Record<string, unknown>;
+    place.additionalProperty = observations;
   }
 
   // DROPPED (A2): the "alternative streets" ItemList sourced from prose paragraphs, so every item
