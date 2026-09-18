@@ -15,7 +15,7 @@ import { windowDisclosure } from '@/lib/streetEnrichment';
 import { stripNumericSentences, stripNumericParagraphs, answersQuestion, isDisclaimerOnly, isFragment } from '@/lib/prose/numericSentences';
 import { loadStreetGeneration, type LoadedStreetGeneration } from '@/lib/ai/loadStreetGeneration';
 import { geometryFactsFor } from '@/lib/town/geometry';
-import { K_ANON_PRICE, K_ANON_RANGE } from '@/lib/kAnon';
+import { K_ANON_PRICE } from '@/lib/kAnon';
 import type {
   StreetPageData,
   StreetHeroProps,

@@ -155,7 +155,7 @@ export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; sold
             <span className="s-hero-gate-cta">see every one, free →</span>
           </a>
         )}
-        <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board's closed records; listings live.</p>
+        <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board&rsquo;s closed records; listings live.</p>
         {/* the one field on the first screen: valuation or watch, the street prefilled */}
         <StreetCapture
           streetName={data.name}

@@ -102,6 +102,7 @@ export default {
     const read = [];
     const clipped = [];
     const sideways = [];
+    const ladder = [];
     let runs = 0;
     let browserError = null;
     try {
@@ -124,6 +125,26 @@ export default {
           });
           await sleep(300);
           const r = await page.evaluate(CLIPPED_JS);
+          // THE LADDER IS ONE SCREEN AT MOST (MH-005, MA-001 change 8). On the street page the
+          // address ladder's track (open, if it is collapsed behind the field) must not be taller
+          // than the viewport, and the section around it must reach the next section within two.
+          if (name === 'street') {
+            const l = await page.evaluate(() => {
+              const sec = document.getElementById('addresses');
+              const track = sec?.querySelector('.s-addr-lad');
+              if (!sec || !track) return { present: false };
+              const btn = sec.querySelector('.s-addr-showall');
+              if (btn instanceof HTMLElement) btn.click();
+              const h = track.getBoundingClientRect().height;
+              const cs = getComputedStyle(track);
+              return { present: true, trackH: Math.round(h), scrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll', vh: innerHeight, sectionH: Math.round(sec.getBoundingClientRect().height), hasField: !!sec.querySelector('.s-addr-find input') };
+            });
+            if (l.present) {
+              if (!l.hasField) ladder.push(`${name} ${path}: the ladder has no house-number field`);
+              if (l.trackH > l.vh) ladder.push(`${name} ${path}: the ladder track is ${l.trackH}px in an ${l.vh}px viewport`);
+              if (!l.scrolls) ladder.push(`${name} ${path}: the ladder track does not scroll inside itself on a phone`);
+            }
+          }
           read.push(`${name} ok`);
           runs++;
           if (r.scrollW > r.vw + 1) sideways.push(`${name} ${path}: the document scrolls sideways (${r.scrollW} > ${r.vw})`);
@@ -145,8 +166,9 @@ export default {
         ['pages rendered at 390', runs, expected],
         ['pages that scroll sideways', sideways.length, 0],
         ['text nodes clipped by the viewport', clipped.length, 0],
+        ['the street ladder at 390: a house-number field, a track no taller than the viewport that scrolls inside itself', ladder.length, 0],
       ],
-      examples: [...sideways, ...clipped],
+      examples: [...sideways, ...clipped, ...ladder],
     };
   },
 };
