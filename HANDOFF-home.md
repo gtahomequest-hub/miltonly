@@ -1,31 +1,43 @@
-HOME · D:\miltonly-home · feat/rent-menu
+HOME · D:\miltonly-home · feat/street-v3
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-14, MH-007: the Rent menu, on `feat/rent-menu`, previewed, NOT merged._
+_Last rewritten 2026-09-17, MH-005: Street Page v3, on `feat/street-v3`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**BOTH BRANCHES ARE MERGED BY CORE: `feat/nav-v3 @ 3b56020` as `6aac9c9` (2026-09-14, MC-022) and `feat/rent-menu @ 91f8ef0` as the MC-024 merge (2026-09-16); the rest of this file is the pre-merge state.**
+**TWO BRANCHES ARE PREVIEWED AND NOT MERGED. Core merges by SHA, `fix/favicon` first.**
 
-**TWO BRANCHES ARE PREVIEWED AND NOT MERGED. Core merges by SHA on approval.**
+- **`fix/favicon@9144b35`** (the MH-005 pre-step, from `origin/main`): the Miltonly icon set from the
+  wordmark's M, the manifest on the site tokens, `logo.png` for the Organization node, and a
+  `homepage.mjs` assertion that `/favicon.ico` and `/icon.svg` are ours. Merged into the v3 branch.
+- **`feat/street-v3@2553f2ed83139ea738010a3b51c41287ef78385e`** (MH-005): MA-001 changes 2 through 10, one commit each, the
+  phone-review items, `phone-390`'s ladder assertion. Preview `https://miltonly-8g65ix8ay-gtahomequest-hubs-projects.vercel.app`,
+  full battery `PASS · 20 checks · 606 pages · 764s`. Lighthouse mobile before/after and the MA-001 harness re-run are in
+  `scratchpad/reports/MH-005-street-v3.md`. From `origin/main@5ac650b`.
 
-- **`feat/rent-menu@b1a2bc3be2876019995697a746d50a02ae549e92` (MH-007, the Rent menu).** Preview
-  `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 289s`. It branches from `feat/nav-v3@3b56020` with `origin/main@60780ca`
-  merged in, so it CONTAINS the chrome: merging it merges MH-006 too. Record in
-  `scratchpad/reports/MH-007-rent-menu.md`.
-- **`feat/nav-v3@3b56020c524525acf666906b670d0e85397b2c06` (MH-006, the chrome).** Merged up to
-  `origin/main@1900c46`; preview `miltonly-iskzekw24` (CLI deploy), `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 229s`; the full battery on the earlier Git preview of the same
-  SHA was `PASS · 18 checks · 529 pages · 801s`. Record in `scratchpad/reports/MH-006-chrome.md`.
-  The brief for MH-007 said "from origin/main after MC-022 lands"; MC-022 had not landed, so the
-  rent branch sits on nav-v3 instead (report, first bullet).
+**WHAT V3 CHANGED, BY FILE.** `sections.tsx`: `StreetCapture` under the hero (one field, valuation
+or watch, through `postLead`, sources `street-valuation` and `street-alert`), the sold-gate line
+anchored to `#sold-records`, the Updated line, the H2 over the prose, H3 cards, `MiniBars` with an
+axis and values, silent cells that name their floor, `next/image` tiles, `sellHrefFor()` on every
+`/sell` link. `LadderTrack.tsx` (client island) + `AddressLadder.tsx`: the house-number field, the
+phone list, the collapse. `SoldRecordsIsland.tsx`: the gate is the server default. `streetV2Data.ts`:
+pills anchor only where a section renders, `sampleCount`, `yoy`, the price first. `street-data.ts`:
+`lastUpdated` is a real date, the subtitle is a fact or nothing, the pill floor in words, no
+`shortName` in headings. `page.tsx`: the head; `og.png/route.tsx` (edge) with
+`api/streets/[slug]/card` (node). `street-schema.ts`: `WebPage` with `dateModified`, `PropertyValue`s
+in place of `AggregateOffer`. `numericSentences.ts`: `isResidue`, `isFragment`. `DeferredTags.tsx`:
+gtag and fbq stubs, scripts on interaction or idle; Geist deleted. `next.config.mjs`: `images`.
 
-**PREVIEWS COME FROM THE CLI NOW.** `vercel.json` cancels Git-triggered builds on every branch but
-`main` (MC-017). `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`
-from the worktree; without the env, `/api/build` says `unknown` and the battery aborts. The URL is
-the last `https://miltonly-...vercel.app` line of the CLI's output.
+**PREVIEWS COME FROM THE CLI.** `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`.
+Lighthouse is `scripts/audit/lighthouse.mjs` with `LH_BIN` pointing at the audit worktree's install;
+the MA-001 harness is `scripts/audit/street-page.mjs`; both take `--out=` into the session scratchpad.
+
+**OPEN AFTER V3.** Mobile LCP under the slow-4G lab preset is 2.9 to 4.3 s against a 2.5 s target:
+the hero paragraph waits on the document, one CSS chain and 167 KB of woff2 (Fraunces variable
+66 KB, Inter 400 to 700). Fewer Inter weights and a static Fraunces cut are the next lever. The
+night poster per clip is Core's upload script (no night clip exists today). The image-optimisation
+quota counts each unique listing photo once.
 
 **RENT IS THE FOURTH MENU (MH-007).** Buy · Rent · Streets · Sell, one rail-and-panel shape.
 `composeRent()` in `megaLive.ts` builds it from `MegaExtras.rent` (`MegaRent`: available now,
@@ -116,12 +128,12 @@ about, saved, signin, privacy, terms).
 
 | | |
 |---|---|
-| rent branch head | **`b1a2bc3be2876019995697a746d50a02ae549e92`** (`feat/rent-menu`, app), plus the docs commit carrying this handoff and the MH-007 report |
-| rent preview | `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta` **`PASS · 3 checks · 529 pages · 289s`** |
-| chrome branch head | `3b56020c524525acf666906b670d0e85397b2c06` (`feat/nav-v3`), contained in the rent branch |
-| local build | exit 0, zero `P2024`, prebuild all green, 149/149 static (MC-017's fifty-street prerender) |
-| main | `60780ca` (MC-015), has neither branch |
-| production | main's tip; the old chrome around the new menu and hubs |
+| branch head | **`2553f2ed83139ea738010a3b51c41287ef78385e`** (`feat/street-v3`, app), plus the docs commit carrying this handoff and the MH-005 report |
+| preview | `https://miltonly-8g65ix8ay-gtahomequest-hubs-projects.vercel.app`, full battery `PASS · 20 checks · 606 pages · 764s` |
+| favicon branch | `fix/favicon@9144b35`, from `origin/main`, pushed, not merged |
+| local build | exit 0, zero `P2024`, prebuild all green |
+| main | `5ac650b`, has neither branch |
+| production | main's tip |
 
 ## What `feat/nav-v3` carries, by audit change (MA-004, `scratchpad/nav-v3/MA-004.md`)
 
