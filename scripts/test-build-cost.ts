@@ -31,7 +31,15 @@ for (const p of isrPages) {
   ok(/export const revalidate = 86400;/.test(c), `${p} revalidates daily`);
   ok(!/force-dynamic/.test(c), `${p} is not force-dynamic`);
   if (p.includes("[")) {
-    ok(/export function generateStaticParams\(\) \{\s*return \[\];\s*\}/.test(c), `${p} declares generateStaticParams returning nothing (ISR needs it; nothing prerenders)`);
+    // the hub page prerenders its 22 published hubs since MC-027 (MA-005 defect 5); the other
+    // three still declare an empty list, which is what makes the route ISR at all
+    const hub = p.includes("neighbourhoods");
+    ok(
+      hub
+        ? /export async function generateStaticParams\(\)[\s\S]*hubContent\.findMany\(\{ where: \{ status: "published" \}/.test(c)
+        : /export function generateStaticParams\(\) \{\s*return \[\];\s*\}/.test(c),
+      hub ? `${p} declares generateStaticParams returning the published hubs` : `${p} declares generateStaticParams returning nothing (ISR needs it; nothing prerenders)`,
+    );
     ok(/export const dynamicParams = true;/.test(c), `${p} renders an unknown slug on first visit`);
   }
 }

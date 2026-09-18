@@ -234,7 +234,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       ? (sd`
           SELECT property_type,
                  COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg_price,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                  MIN(sold_price) AS min_price,
                  MAX(sold_price) AS max_price,
                  AVG(days_on_market) AS avg_dom,
@@ -254,7 +254,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
                  MIN(sold_price) AS lo,
                  MAX(sold_price) AS hi,
                  AVG(days_on_market) AS dom,
@@ -272,7 +272,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
                  AVG(days_on_market) AS dom
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
@@ -288,7 +288,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       ? (sd`
           SELECT LEAST(beds, 4)::int AS bed,
                  COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
@@ -475,6 +475,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   // ─── Context cards ────────────────────────────────────────────────
   const contextCards = await buildContextCards({
     slug,
+    siblingSlugs,
     neighbourhoods,
     centroid,
   });
@@ -1484,10 +1485,11 @@ function buildActiveInventory(input: {
 
 async function buildContextCards(input: {
   slug: string;
+  siblingSlugs: string[];
   neighbourhoods: string[];
   centroid: { lat: number; lng: number } | null;
 }): Promise<ContextCardsProps> {
-  const { slug, neighbourhoods } = input;
+  const { slug, siblingSlugs, neighbourhoods } = input;
 
   const similar = await prisma.listing.groupBy({
     by: ["streetSlug"],
@@ -1518,39 +1520,31 @@ async function buildContextCards(input: {
     })
   );
 
-  // RESOLVE the up-link through the Neighbourhood REGISTRY, then require a PUBLISHED hub — the slug
-  // was a slugified NAME-GUESS, never validated. That both 404'd (Walker's raw "1051 - Walker"
-  // name-guessed to /neighbourhoods/1051---walker; "Brookville/Haltonville" kept its slash) AND
-  // under-linked. Registry resolution maps every raw/name/slug variant to its canonical slug, so
-  // Walker/Brookville now link CORRECTLY; a neighbourhood with no published hub, or one that can't
-  // be resolved, emits NO link rather than a broken one.
-  // the two sets come from hubSets.ts (MC-018): once per fifteen minutes, not once per render
+  // THE UP-LINK IS THE REGISTRY'S HUB, AND ONLY THAT (MC-027 item 5, MA-005 defect 8). It used
+  // to be resolved from the sold records' neighbourhood strings on the street, while the hub's
+  // ladder is the registry (ResidentialStreet.neighbourhoodId): seven streets on five hubs
+  // linked up to a hub whose ladder did not list them, and two ladder leaders linked nowhere.
+  // One source now: the street's registry row (the first sibling slug that carries one), and
+  // only when that hub is published. A street the Town's polygons never placed gets no card,
+  // never a guess from a listing agent's string. scripts/hub-membership-reconcile.ts lists
+  // where the records and the registry disagree.
   const [pubHubSlugList, nbhdRows] = await Promise.all([publishedHubSlugList(), neighbourhoodRows()]);
   const publishedHubSlugs = new Set(pubHubSlugList);
-  const hubSlugify = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  const resolveMap = new Map<string, string>(); // normalized key -> canonical slug
-  const nameBySlug = new Map<string, string>();
-  for (const nb of nbhdRows) {
-    nameBySlug.set(nb.slug, nb.name);
-    for (const key of [nb.slug, nb.name, ...nb.rawStrings]) {
-      const k = hubSlugify(key);
-      if (k) resolveMap.set(k, nb.slug);
-    }
-  }
-  const seenHub = new Set<string>();
+  const registryRows = await prisma.residentialStreet.findMany({
+    where: { slug: { in: siblingSlugs }, neighbourhoodId: { not: null } },
+    select: { slug: true, neighbourhood: { select: { slug: true, name: true } } },
+  });
+  const registryHub = [slug, ...siblingSlugs]
+    .map((sl) => registryRows.find((r) => r.slug === sl)?.neighbourhood ?? null)
+    .find((h): h is { slug: string; name: string } => h !== null && h !== undefined) ?? null;
   const neighbourhoodCards: Array<{ slug: string; name: string; summary: string }> = [];
-  for (const raw of neighbourhoods.map(cleanNeighbourhoodName)) {
-    if (!raw || raw.length === 0) continue;
-    const resolved = resolveMap.get(hubSlugify(raw));
-    if (!resolved || !publishedHubSlugs.has(resolved) || seenHub.has(resolved)) continue;
-    seenHub.add(resolved);
-    const name = nameBySlug.get(resolved) ?? raw;
+  if (registryHub && publishedHubSlugs.has(registryHub.slug)) {
+    const name = nbhdRows.find((nb) => nb.slug === registryHub.slug)?.name ?? registryHub.name;
     neighbourhoodCards.push({
-      slug: resolved,
+      slug: registryHub.slug,
       name,
       summary: `Explore the ${name} area of ${config.CITY_NAME}, its streets and comparable housing stock.`,
     });
-    if (neighbourhoodCards.length >= 2) break;
   }
 
   const schoolCards = schools

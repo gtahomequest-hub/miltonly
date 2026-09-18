@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-17 (MC-026; MC-027 in progress on `fix/hub-truth`): MH-008 merged, 20 checks; before that MC-025, MC-024: the egress fix, Node 22 and the Rent menu merged and on production; DB1 244,828 rows a battery against the 1,138,193 baseline. Follow-up: confirm the nightly audit ran on the 17th after 07:00 UTC._
+_Last rewritten 2026-09-17 (MC-027): the hub audit's five Core items built on `fix/hub-truth` @ `7f2e798` (docs on top), the 22 hubs regenerated on DeepSeek for $0.11, previewed, battery 20/20, waiting on approval; MH-008 merged earlier (MC-026); before that MC-025, MC-024: the egress fix, Node 22 and the Rent menu merged and on production; DB1 244,828 rows a battery against the 1,138,193 baseline. Follow-up: confirm the nightly audit ran on the 17th after 07:00 UTC._
 
 ## READ THIS FIRST
 
@@ -17,6 +17,70 @@ in an 18 px line-height; the two buttons wrap under it on a phone, so the box is
 `ChromeGate` hides the banner on street, hub and home pages, so a probe reads it on a listing
 page. The shared contact card (`acs-brokerage`, `acs-award`, `acs-btn-wa`) still prints in
 amber on the listing page; that is `AgentContactSection`, not MH-008's palette work.
+
+**MC-027 IS BUILT ON `fix/hub-truth` AND WAITS ON APPROVAL TO MERGE.** App code `f415ae4`,
+scripts on top as `7f2e798`, the docs commit above that is the head. CLI preview
+`miltonly-6e2ddgzp7` serving `7f2e798`; battery on the preview `PASS · 20 checks · 589 pages ·
+679s` with the battery's own record moved to the median. Local build exit 0, 171/171 (the 22
+hubs prerender now). Record: `scratchpad/reports/MC-027-hub-truth.md`. The five MA-005 items:
+
+1. **Drift.** `src/lib/hubDataHash.ts` is the hub twin of `calcMarketDataHash`: typical to
+   $10,000, sale count, days on market to the day, active count. Both generators write it as
+   `HubGeneration.inputHash`; `src/lib/hubDrift.ts` compares it to the live input
+   (`getHubInputCached`, the page's own computation); the hub page emits FAQPage only when not
+   drifted; `/api/sync/regenerate-hubs` (cron 12:45 UTC, three hubs a run, DeepSeek only, the
+   Opus fallback refused by `deepseekOnly`) regenerates the rest. **All 22 hubs were
+   regenerated tonight on DeepSeek** (`scripts/regenerate-hubs-drift.ts`, log
+   `scratchpad/mc003/hub-regen.jsonl`): $0.109 in total across 22 hubs and two retries (cobban
+   failed closed twice on the compared-to-Milton half, `comparison_mismatch` then
+   `invalid_json_shape`, and passed on the third run; dorset-park once). The preview's dry run
+   of the route reports 0 drifted. **Production still serves the June prose from its day cache
+   until its next tag drop (the 11:00 UTC sold sync) or the merge**; the new prose is grounded
+   on the median input, so on production's mean tiles it would read wrong for the interim, which
+   is why nothing purged production tonight.
+2. **Prerender and warm.** The hub page's `generateStaticParams` returns the published hubs
+   (171 static pages in the build, was 149); `/api/jobs/warm-hubs` walks the 22 paths and is on
+   the crons at 11:12, 11:42, 12:12 and 12:55 UTC, after the sold sync, the three analytics
+   jobs and the regenerate run. **First-visitor TTFB on the preview: purged (a tag drop) 2.9,
+   3.1 and 5.6 s; prerendered 22 of 22 `PRERENDER`, p50 0.24 s, max 0.36 s.** The warm route
+   walked 22 hubs in 5 s. `scripts/test-build-cost.ts` now expects the hub page to prerender.
+3. **DEC-TYPICAL-MEDIAN.** Every `AVG(sold_price)` that fed a "typical" is
+   `PERCENTILE_CONT(0.5)`: `street-data.ts` (the street page's 12-month, full-window and lease
+   typicals and the per-bed rents), `buildGeneratorInput.ts` (the street AI input),
+   `buildHubInput.ts` (the hub aggregate, the quarterly trend, the by-type figures and the
+   Milton-wide context), `neighbourhoodLookup.ts`, `streetEnrichment.ts`,
+   `tenureHubData.ts`, `buildCondoBuildingInput.ts`, the sibling cards (now the hub's own
+   `saleAggQuery`), the ladder (`hubStreetLadder.ts` pools each slug's sorted price array per
+   identity and takes the midpoint, `medianOf`), and the battery's record
+   (`scripts/verify/lib/db.mjs`: one median query per hub over its raw strings). `/sold` lost
+   its "Average sold price" tile (its table says "Typical sold price"), names the hub in the H1
+   and the title when `nbhd` is set, shows a chip for all 22 published hubs in the seed's order,
+   and its sign-in redirect carries `type`, `nbhd` and `ptype`. The one mean that stays is the
+   "Typical is not average" guide's, computed as a mean and named as one
+   (`SoldOverall.meanPrice`); the hub anchor is `hubTypical`. Cache keys
+   `sold-agg:overall-12mo-v3` and `sold-agg:by-nbhd-12mo-typical`. **Post-merge step:**
+   `scripts/queue-mean-typical-streets.ts --write` queues the 40 published street pages whose
+   stored prose states the old mean (the median differs at $5,000) for the hourly cron; run it
+   after the merge, because the cron generates with production's code. DB3's
+   `avg_sold_price` and the sold-stats API's averages are still means and still say average.
+4. **Bronte Meadows is an urban hub** (`Neighbourhood.profile` updated in DB1, the seed
+   changed to `u(...)`, `hasVipTier` true), regenerated as one: the title reads "Street Guide".
+   A polygon-less rural hub's "Other rural neighbourhoods" are the other `kind: rural` seeds in
+   seed order (Nassagaweya: Rural Trafalgar, Brookville / Haltonville, Campbellville, Moffat).
+5. **Membership from the registry only.** The street page's up-link reads
+   `ResidentialStreet.neighbourhoodId` on the street or a sibling slug and links only a
+   published hub; the sold strings no longer decide. `scripts/hub-membership-reconcile.ts`:
+   590 published pages, 551 agree, 33 have no sales string, **1 fixed** (`geddes-landing`,
+   registry empty, records say Scott), **4 conflicts listed and not changed**: `maple-avenue`
+   (registry Dorset Park; 26 records say Dempsey, 9 Dorset Park), `20-side-road` (Nassagaweya;
+   1 and 1), `old-tremaine-road` and `tremaine-road` (Rural Milton West and Milton North, 1 to 2
+   each way); `15-side-road-side-road` has no registry row. Maple Avenue is the one worth a
+   look at the map.
+
+**ALSO ON THE BRANCH.** `scripts/_server-only-shim.cjs` stands in for `React.cache` when a
+script imports a module that uses it (`hubLive.ts`, `hubSets.ts`), so the hub runner works
+under `tsx` without the react-server condition. The first `npx vercel deploy` after a pause
+answers "Not authorized" and the retry works; twice now.
 
 **THE THREE MERGES BEFORE IT (MC-025, MC-024): production was `1b2d7d8`, `PASS · 19 checks ·
 569 pages · 694s`, on Node 22.** Three merges by SHA on 2026-09-16: `fix/neon-egress-2 @ 8279ead` as `89e88e4`
@@ -233,13 +297,13 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 | `main` | **`0480e15`** (MH-008 mobile fixes on top of the egress fix, Node 22 and the Rent menu), production serves it |
 | battery on production | **`PASS · 20 checks · 589 pages · 673s`** at `0480e15`, 2026-09-17 |
 | `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
-| waiting on merge | nothing |
+| waiting on merge | **MC-027** `fix/hub-truth @ 7f2e798` (docs on top), preview `miltonly-6e2ddgzp7`; post-merge: `scripts/queue-mean-typical-streets.ts --write` |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | confirm the nightly audit ran on the 17th (after 07:00 UTC); Search Console for `sitemap-index.xml`; the Vercel Node setting |
+| open tasks | MC-027 merge and the 40-street queue after it; confirm the nightly audit ran on the 17th (after 07:00 UTC); Maple Avenue's hub; Search Console for `sitemap-index.xml`; the Vercel Node setting |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -608,5 +672,5 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the nightly-audit confirmation on the 17th; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
+Whatever Aamir names. Open: the MC-027 merge; the nightly-audit confirmation on the 17th; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
 `gordon-krantz-avenue` on a later pass.

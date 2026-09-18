@@ -8,10 +8,11 @@
 // getCondoData / getHomepageData null-tolerance.
 import { condoDisplayName } from "@/lib/condoName";
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
 import { HUB_STREET_LADDER_CAP } from "@/lib/streetSurface";
 import { buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { getHubInputCached, getHubMetaLive } from "@/lib/hubLive";
+import { saleAggQuery, assembleAggregates } from "@/lib/ai/buildHubInput";
+import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import { nearestHubs } from "@/lib/hubNearby";
 import { fullPrice, compactPrice } from "@/components/hub/format";
 import type {
@@ -77,22 +78,30 @@ async function siblingsFor(slug: string, profile: HubProfile): Promise<{ sibling
     select: { id: true, slug: true, name: true, profile: true, rawStrings: true },
   });
   if (!hoods.length) return { siblings: [], byDistance: false };
-  const sameTier = hoods.filter((h) => (h.profile === "urban_hub" ? "urban" : "rural") === profile).map((h) => h.slug);
   const { hubs, byDistance } = nearestHubs(slug, hoods.map((h) => h.slug), 4);
-  const chosen = byDistance ? hubs : nearestHubs(slug, sameTier, 4).hubs;
+  // A hub with no polygon (the unmapped rural four) cannot be "near" anything, so its
+  // siblings are the other RURAL hubs in the rural tier's own order (NEIGHBOURHOOD_SEED,
+  // kind "rural"), not the first four rural_hub rows alphabetically, which put the thin-urban
+  // Bronte Meadows and Milton North under "Other rural neighbourhoods" and left Nassagaweya,
+  // Rural Milton West and Rural Trafalgar as nobody's sibling (MA-005 defect 4, MC-027).
+  const publishedSet = new Set(hoods.map((h) => h.slug));
+  const ruralOrder = NEIGHBOURHOOD_SEED.filter((n) => n.kind === "rural" && n.slug !== slug && publishedSet.has(n.slug)).map((n) => n.slug);
+  const sameTier = hoods.filter((h) => (h.profile === "urban_hub" ? "urban" : "rural") === profile).map((h) => h.slug);
+  const chosen = byDistance ? hubs : nearestHubs(slug, profile === "rural" ? ruralOrder : sameTier, 4).hubs;
   const bySlug = new Map(hoods.map((h) => [h.slug, h]));
   const picked = chosen.map((c) => ({ ...c, hood: bySlug.get(c.slug)! })).filter((c) => c.hood);
   if (!picked.length) return { siblings: [], byDistance };
 
-  // per-sibling typical via one grouped DB2 query (k-anon: null when <5 sales)
-  const sold = getSoldDb();
-  const rows: Array<{ neighbourhood: string; n: number; total: number }> = sold
-    ? ((await sold`SELECT neighbourhood, COUNT(*)::int AS n, COALESCE(SUM(sold_price),0)::float AS total
-         FROM sold.sold_records
-         WHERE perm_advertise = TRUE AND transaction_type = 'For Sale' AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
-         GROUP BY neighbourhood`) as Array<{ neighbourhood: string; n: number; total: number }>)
-    : [];
-  const byRaw = new Map(rows.map((r) => [r.neighbourhood, r]));
+  // per-sibling typical: the hub's own aggregate (saleAggQuery, the K-gated median since
+  // DEC-TYPICAL-MEDIAN), one query per sibling, so the card and the sibling's own page agree
+  const sibAgg = new Map<string, { n: number; typical: number | null }>();
+  await Promise.all(
+    picked.map(async ({ hood }) => {
+      const row = (await saleAggQuery(hood.rawStrings))[0] ?? null;
+      const a = assembleAggregates(row, 0);
+      sibAgg.set(hood.slug, { n: a.salesCount, typical: a.typicalPrice });
+    }),
+  );
   // published street guides per sibling, one grouped query
   const streetRows = await prisma.residentialStreet.findMany({
     where: { neighbourhoodId: { in: picked.map((p) => p.hood.id) } },
@@ -110,13 +119,12 @@ async function siblingsFor(slug: string, profile: HubProfile): Promise<{ sibling
   return {
     byDistance,
     siblings: picked.map(({ hood, distanceKm }) => {
-      let n = 0, t = 0;
-      for (const raw of hood.rawStrings) { const r = byRaw.get(raw); if (r) { n += r.n; t += r.total; } }
+      const a = sibAgg.get(hood.slug) ?? { n: 0, typical: null };
       return {
         name: hood.name,
         slug: hood.slug,
-        typicalPriceRounded: n >= K_ANON_PRICE && t > 0 ? round5k(t / n) : null,
-        salesCount: n,
+        typicalPriceRounded: a.n >= K_ANON_PRICE && a.typical !== null && a.typical > 0 ? round5k(a.typical) : null,
+        salesCount: a.n,
         streetPages: pagesByHood.get(hood.id) ?? 0,
         distanceKm,
       };
