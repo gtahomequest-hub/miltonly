@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-16 (MA-005): the neighbourhood hub page audited on production, five hubs, two widths; the nightly is merged (MC-019) and its gate fixed (fix/node-22), first unattended run to confirm on the 17th._
+_Last rewritten 2026-09-18 (MA-006 addendum): every VOW-only field rendered to an anonymous visitor, listed by surface with file:line; MA-005 hub audit before it; the nightly ran unattended on the 17th and 18th._
 
 ## What this worktree is
 
@@ -15,6 +15,21 @@ exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratc
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-006 ADDENDUM IS DONE: VOW-ONLY FIELDS ON PUBLIC SURFACES, BY SURFACE, WITH FILE:LINE.** Record:
+`scratchpad/reports/MA-006-vow-fields-addendum.md`. Production at `e606d8b`. The facts Core needs first: no
+surface reads `Listing.daysOnMarket` (null on every row); every "Nd on market" is today minus `listedAt`
+(`OriginalEntryTimestamp`), on the listing page in five places including the meta description, on
+`/listings` cards, `/rentals`, the homepage, school and mosque pages, and the three ad surfaces. The listing
+page renders any row that exists and is advertisable, so 604 sold, 1,044 expired and 229 leased rows answer
+`index, follow` with a status label and a DOM counted to today, and `Offer.availability: InStock` on all of
+them; the whole Prisma row (`priorPrice`, `priceChangedAt`, `lastPriceChangeAt`, `listedAt`) is in the RSC
+payload. `/listings?status=sold` (noindex) badges 604 rows "Sold" and prints "Sold for $875,000" over the
+asking price because `soldPrice` is null; `/listings?status=rent` badges every available rental "Leased for"
+because `status === 'rented'` is read as sold, and includes the 229 leased units. The mega menu on every page
+shows a struck-through prior price and "down $40,000" per listing (`megaLive.ts:152-155`, `SiteNav.tsx:294-296`).
+Aggregates (street "Time on market", hub prose, market-watch line, the `/listings` "Avg days on market: —"
+tile and `/api/street-stats` `avgDOM`, both over the null column) are listed separately, not as findings.
 
 **MA-005 IS DONE: THE NEIGHBOURHOOD HUB PAGE ON PRODUCTION, FIVE HUBS, TWO WIDTHS.** Record:
 `scratchpad/reports/MA-005-hub-page-audit.md`, 25 defects ranked and ten changes. Production at `1b2d7d8`.
@@ -159,8 +174,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, the nightly (merged to main by MC-019), MA-003, MA-004, MA-005 hub audit on top; `origin/main` merged in at MA-005 start |
-| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); the nightly baseline 2026-09-13 |
+| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum on top; `origin/main` merged in at each start |
+| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); `e606d8b` on 2026-09-18 (MA-006 addendum); the nightly baseline 2026-09-13 |
 | pages edited | none |
-| waiting on Core | confirm the nightly ran on the 17th; the ten MA-005 changes (change 1, the June prose, and change 6, the `bronte-meadows` profile row, are the two with no design work in them); the MA-001 changes not yet taken |
+| waiting on Core | the MA-006 addendum list (the listing page rendering sold, expired and leased rows; "Sold for" over asking prices; the rent grid's "Leased" badge; the menu's prior prices); the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
 | next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |
