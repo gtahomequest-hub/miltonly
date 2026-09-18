@@ -157,6 +157,7 @@ async function run(request: NextRequest) {
       })),
       search.id,
       linkOrigin,
+      env,
     );
 
     if (!outcome.sent) {

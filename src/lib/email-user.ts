@@ -53,7 +53,9 @@ export interface DealAlertSend {
 
 /**
  * One deal alert, for one watch. `watchId` is what the unsubscribe link is signed over, and
- * `origin` is where the links point (the preview host on a preview deployment). The footer
+ * `origin` is where the links point (the preview host on a preview deployment). `env` tags a
+ * non-production subject, because preview and production share one database and an untagged
+ * preview email is indistinguishable from the real thing. The footer
  * and the List-Unsubscribe headers come from src/lib/email, the same as the brief and the
  * digest, so a CASL element cannot be present in one recurring mail and absent from another.
  *
@@ -68,6 +70,7 @@ export async function sendDealAlertEmail(
   matches: { address: string; price: number; mlsNumber: string; propertyType: string }[],
   watchId: string,
   origin?: string,
+  env: string = "production",
 ): Promise<DealAlertSend> {
   if (!resend) {
     console.log(`[DEV] Deal alert for ${email}: ${matches.length} matches`);
@@ -114,7 +117,7 @@ export async function sendDealAlertEmail(
     from: FROM,
     to: email,
     replyTo: process.env.REALTOR_EMAIL,
-    subject: `${matches.length} new listing${plural} matching "${searchName}" · ${config.SITE_NAME}`,
+    subject: `${env === "production" ? "" : `[${env}] `}${matches.length} new listing${plural} matching "${searchName}" · ${config.SITE_NAME}`,
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:500px;margin:0 auto;">
         <div style="background:linear-gradient(135deg,#07111f,#1e3a5f);padding:20px 24px;border-radius:12px 12px 0 0;">
