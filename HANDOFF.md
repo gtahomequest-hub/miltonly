@@ -2,11 +2,49 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-17 (MC-027 merged): the hub audit's five Core items are on production, the 22 hubs regenerated on DeepSeek and served, 39 street pages queued for the median, Maple Avenue moved to Dempsey by its centroid. Nothing waits on a merge. The nightly audit ran under the new gate._
+_Last rewritten 2026-09-18 (MC-028 merged): four merges by SHA in order, the favicon set, Street Page v3 (MH-005), Portal slice 1 (MP-002, the door) and ML-004 (the CASL footer), each behind a full local gate; production serves `7196623` and the battery passed. Nothing waits on a merge._
 
 ## READ THIS FIRST
 
-**MAIN IS `56cf3ea` AND PRODUCTION SERVES `56cf3ea`, `PASS · 20 checks · 608 pages · 794s`, ON
+**MAIN IS `7196623` AND PRODUCTION SERVES `7196623`, `PASS · 20 checks · 609 pages · 713s`, ON
+NODE 22.** MC-028 merged four commits by SHA, in order, each followed by the full local gate
+(`pnpm build` on Node 22, exit code 0, 171 then 170 prerenders): `fix/favicon @ 9144b35` as
+`ea81883` (the Miltonly icon set, the manifest on the site tokens, `logo.png`), `feat/street-v3 @
+2553f2e` as `e078e91` (Street Page v3, MH-005: the hero capture field, the ladder with a house-number
+box, the gate in the served HTML, 44px targets, the 12px floor), `feat/portal @ 86d5f9f` as
+`706ce07` (Portal slice 1, MP-002: magic link and code, a guarded signup, the VOW card inline on
+the street page, a 90-day ceiling; `prisma migrate status` clean at 30 migrations, the
+`portal_door` migration already applied) and `feat/leads @ 7eeeb79` as `7196623` (ML-004: one
+CASL footer on every recurring email, sender, brokerage, mailing address, why, and a signed
+one-click unsubscribe with `List-Unsubscribe` headers; `consentText` on every surface; the alert
+copy says "listed for sale" because `/api/alerts/match` reads new listings only). Confirmed on
+production: `/favicon.ico` is byte-identical to `src/app/favicon.ico` (3,660 bytes, three sizes);
+`/streets/main-street-milton` serves `<form class="s-capture" id="capture">` and the ladder's "Find
+a house number" box (`5 to 6895`, 381 addresses); a sign-in requested from that street came back
+with `redirect: /streets/main-street-milton#sold-records` on both the emailed link (`r=`) and the
+code path, and the session then answered `needsAcknowledgement: true` on `sold-records`, which
+is the inline VOW card; one forced brief send to `gtahomequest+mc028@gmail.com` (Resend
+`01a0b291-c9e2-7233-8992-1bcebee4897c`) carried the footer, and its unsubscribe link disabled the
+watch (a dry run then found 0 subscribers). Lighthouse mobile on main-street: **perf 90, SEO 100,
+a11y 100, best-practices 79**, LCP 3.6 s, CLS 0, TBT 34 ms (MH-006 measured the street page at
+perf 71, a11y 91, LCP 6.4 s, TBT 112 ms; the 79 is the Meta pixel's third-party `fr` cookie, older
+than this batch). Record: `scratchpad/reports/MC-028-four-merges.md`.
+
+**THREE MERGE RESOLUTIONS, ALL IN THE MERGE COMMITS.** `package.json` unions the prebuild line
+(`test-hub-truth` then `test-portal-door`). `SoldRecordsIsland.tsx` keeps MH-005's gate-from-the-
+first-byte (`gated = !canSee && !needsAck`) under MP-002's ack card. `AddressLadder.tsx` takes
+Leads' "listed for sale", and `StreetCapture.tsx`, which Street v3 added after ML-004 branched,
+was brought under ML-004's consent rule in the merge itself: `VALUATION_FINE_PRINT` or
+`ALERT_FINE_PRINT` rendered under the field and sent as `consentText` (without it
+`test-lead-forms.ts` fails the build by file). Home and Leads should pull `main` before their next
+commit on those files.
+
+**LEFT ON PRODUCTION BY THE PROOFS.** A verified, unacknowledged `User` row for
+`gtahomequest+mc028@gmail.com` (the door proof) and a `daily-brief` lead for the same address whose
+brief watch `cmu6ej7ua0002xa8boopmia3i` is disabled by the unsubscribe. Both are the desk's own
+address; leave them or delete them, nothing reads them.
+
+**BEFORE MC-028, MAIN WAS `56cf3ea` AND PRODUCTION SERVED IT, `PASS · 20 checks · 608 pages · 794s`, ON
 NODE 22.** `56cf3ea` merges `fix/hub-truth @ b7183b4` (MC-027, app code `f415ae4`) on top of
 `5ac650b`, the nightly audit's own commit for 2026-09-17, which is the proof the gate fix
 works (MC-023): GitHub delivered the run late again and the first delivery of the Toronto day
@@ -164,16 +202,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`56cf3ea`** (MC-027 on top of the 17th's nightly commit, MH-008, the egress fix, Node 22, the Rent menu), production serves it |
-| battery on production | **`PASS · 20 checks · 608 pages · 794s`** at `56cf3ea`, 2026-09-17 |
-| `prisma migrate status` | **clean**, 29 migrations (the offset pair added and withdrawn today; rows hold instants) |
+| `main` | **`7196623`** (MC-028: the favicon set, Street Page v3, Portal slice 1, ML-004, on top of MC-027), production serves it |
+| battery on production | **`PASS · 20 checks · 609 pages · 713s`** at `7196623`, 2026-09-18 |
+| `prisma migrate status` | **clean**, 30 migrations (`20260917120000_portal_door` was already applied when merged) |
 | waiting on merge | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting |
+| open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -542,5 +580,5 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the 39 queued streets; the Node 24 runtime move before 2026-10-01; `barclay-circle` and
-`gordon-krantz-avenue` on a later pass.
+Whatever Aamir names. Open: the 39 queued streets; Portal slices MP-003 (the account) and MP-004 (the loop back) on
+a prompt; the Node 24 runtime move before 2026-10-01; `barclay-circle` and `gordon-krantz-avenue` on a later pass.
