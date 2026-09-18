@@ -765,7 +765,8 @@
 @media (max-width: 560px) {
   /* eight bars in a 326px card: the value labels take turns */
   .street-v2 .s-bar:nth-child(even) .s-bar-v { visibility: hidden; }
-  .street-v2 .s-bar:nth-child(even) .s-bar-n { visibility: hidden; }
+  .street-v2 .s-bar:nth-child(even) .s-bar-n,
+  .street-v2 .s-bar:nth-child(even) .s-bar-q { visibility: hidden; }
   .street-v2 .s-bars { gap: 5px; }
 }
 
