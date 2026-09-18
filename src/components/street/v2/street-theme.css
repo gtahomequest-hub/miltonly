@@ -1730,9 +1730,9 @@
     top: auto !important;
     transform: none;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: baseline;
-    gap: 4px 10px;
+    gap: 0 12px;
     width: auto;
     height: auto;
     min-height: 44px;
@@ -1743,6 +1743,7 @@
     line-height: 1.35;
     border-bottom: 1px solid var(--s-border-muted);
     scroll-margin-top: 0;
+    white-space: normal;
   }
   .street-v2 .s-m::before { display: none; }
   .street-v2 .s-m:hover,
@@ -1750,11 +1751,19 @@
   .street-v2 .s-m:focus,
   .street-v2 .s-m:target,
   .street-v2 .s-m.s-hit { font-size: 15px; background: rgba(0, 255, 128, 0.14); }
+  /* the detail beside the number on one line; the even-side popup rules (a translate to the
+     left of the spine) are undone here at the same specificity */
   .street-v2 .s-m[data-d]::after,
-  .street-v2 .s-d {
+  .street-v2 .s-m.s-e[data-d]::after,
+  .street-v2 .s-d,
+  .street-v2 .s-m.s-e .s-d {
     position: static;
+    left: auto;
+    right: auto;
     transform: none;
-    display: inline;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
     width: auto;
     max-width: none;
     padding: 0;
@@ -1762,10 +1771,13 @@
     box-shadow: none;
     background: transparent;
     font-size: 12px;
+    line-height: 1.4;
     opacity: 1;
     visibility: visible;
     transition: none;
+    white-space: normal;
   }
+  .street-v2 .s-m.s-on > a:first-child { flex: 0 0 auto; }
   .street-v2 .s-lv { display: inline; margin: 0 0 0 8px; }
   .street-v2 .s-addr-cta { margin-top: 20px; }
   .street-v2 .s-addr-cta .s-b1 { white-space: nowrap; }

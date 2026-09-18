@@ -82,11 +82,19 @@ export function LadderTrack({
     }
     setOpen(true);
     setHit(target);
-    // after the track has opened; the mark is inside a scroll container on a phone
-    requestAnimationFrame(() => {
-      const el = trackRef.current?.querySelector<HTMLElement>(`[id="${target}"]`);
-      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    });
+    // after the track has opened. On a phone the track is its own scroll box, so it is scrolled
+    // directly (scrollIntoView would drag the page as well); on desktop the mark sits in a
+    // fixed-height track and the page scrolls to it.
+    window.setTimeout(() => {
+      const track = trackRef.current;
+      const el = track?.querySelector<HTMLElement>(`[id="${target}"]`);
+      if (!track || !el) return;
+      if (track.scrollHeight > track.clientHeight + 1) {
+        track.scrollTop = Math.max(0, el.offsetTop - track.clientHeight / 2 + el.offsetHeight / 2);
+      } else {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }, 60);
   };
 
   return (

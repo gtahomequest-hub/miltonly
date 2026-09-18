@@ -818,7 +818,8 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
       // on 46 pages ($884K pill vs $875K card). Round once, at the point of publication, and
       // every surface that formats it lands on the same string.
       typicalPrice: publishable ? roundPriceForProse(typicalPrice!) : null,
-      priceLabel: publishable ? "typical" : "sample too small",
+      // the silence says what would end it (MA-001 defect 24): the count sits beside the label
+      priceLabel: publishable ? "typical" : `needs ${K_ANON_PRICE} sales`,
       anchor: `#type-${type}`,
     });
   }
