@@ -561,7 +561,7 @@ Local gate on the merged tree: exit 0, zero `P2024`, **20/20 prebuild**, 548 sta
 
 *Out-of-queue work 2026-09-13: MC-021, CLAUDE.md Reporting. The `code <root> <path>` step is removed; a task ends with `scratchpad/reports/<TASK-ID>-<slug>.md` and a reply whose last line is `Report: <path>`; nothing opens the editor. Docs only. Record in `scratchpad/reports/MC-021-reporting-no-editor.md`.*
 
-*Out-of-queue work 2026-09-17: MC-027, the hub audit's Core items (MA-005): drift and the regenerate-on-drift cron for the 22 hubs, prerender and warm, DEC-TYPICAL-MEDIAN everywhere, Bronte Meadows urban, hub membership from the registry. **Built on `fix/hub-truth @ 7f2e798`, the 22 hubs regenerated on DeepSeek ($0.11), previewed, battery 20/20, waiting on approval** (`scratchpad/reports/MC-027-hub-truth.md`).*
+*Out-of-queue work 2026-09-17: MC-027, the hub audit's Core items (MA-005): drift and the regenerate-on-drift cron for the 22 hubs, prerender and warm, DEC-TYPICAL-MEDIAN everywhere, Bronte Meadows urban, hub membership from the registry. **DONE, merged as `56cf3ea` (`fix/hub-truth @ b7183b4`), production battery 20/20 over 608 pages, the hub tags purged and warmed, 39 streets queued for the median, Maple Avenue moved to Dempsey by its centroid** (`scratchpad/reports/MC-027-hub-truth.md`, `MC-027-merge.md`).*
 
 *Out-of-queue work 2026-09-17: MH-008, the phone review, **DONE, merged by Core as `0480e15` (`feat/mobile-fixes @ dd1118f`, approved), production battery 20/20 (MC-026, `scratchpad/reports/MC-026-mobile-fixes.md`).**
 
