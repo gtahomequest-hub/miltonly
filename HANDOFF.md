@@ -14,8 +14,10 @@ through the door; status columns stripped from public rows). Local gate on Node 
 production at `895962b` (`battery-mc029-prod-red.log`: 16 of 16 anonymous surfaces carry a
 VOW-only field, 8 of 15 assertions fail) and green on the branch. Record:
 `scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB reply.
-**To merge:** `git merge --no-ff 6c23bdc` on main, the local gate, push, `npx vercel ls --prod`,
-then `EXPECT_SHA=<merge sha> BASE=https://miltonly.com node scripts/verify/run.mjs`.
+**To merge:** the branch head is the docs commit on top of `6c23bdc` (`git log -1
+origin/fix/vow-compliance`); merge it by SHA with `--no-ff` on main, the local gate, push,
+`npx vercel ls --prod`, then `EXPECT_SHA=<merge sha> BASE=https://miltonly.com node
+scripts/verify/run.mjs`.
 
 **WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
 columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
