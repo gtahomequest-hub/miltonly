@@ -66,9 +66,9 @@ interface Listing {
   bathrooms: number;
   parking: number;
   propertyType: string;
-  status: string;
   photos: string[];
-  // No listedAt (MC-029): the rows arrive stripped of every VOW-only column, newest first.
+  // No listedAt and no status (MC-029): the rows arrive stripped of every VOW-only column,
+  // available units only, newest first.
   neighbourhood: string;
   description: string | null;
   transactionType: string | null;

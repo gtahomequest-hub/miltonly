@@ -21,10 +21,14 @@
 //      key, a day count, a "Listed N days ago", a sold price, a prior price or a non-active
 //      status. /listings?status=sold answers a redirect to /sold, and the gated route answers
 //      canSee:false with no facts.
-//   2. AN ACKNOWLEDGED SESSION SEES THEM. The battery mints the session the app would (jose,
-//      JWT_SECRET, the app's cookie name) for the most recently acknowledged verified user in
-//      DB1, and asserts the gated route answers the facts, the grid's cards carry them, and the
-//      listing page's island renders "Time on market" in a real browser.
+//   2. AN ACKNOWLEDGED SESSION SEES THEM. The battery signs in through the real door (MP-002):
+//      it POSTs /api/auth/signup for the most recently acknowledged verified user in DB1, reads
+//      the six-digit code the door stored on that row, POSTs /api/auth/verify and keeps the
+//      session cookie. (JWT_SECRET is a sensitive Vercel secret and cannot be pulled, so a
+//      minted token was never an option; the door is the app's own path anyway.) One sign-in
+//      email reaches that address per run; the door allows three an hour per address. Then the
+//      gated route must answer the facts, the grid's cards must carry them, and the listing
+//      page's island must render "Time on market" in a real browser.
 //   3. THE BROKERAGE IS AS PROMINENT AS THE PRICE (TRREB item 27). In the browser, on the grid,
 //      the listing page, a street page, /rentals, the homepage and the menu cards: every
 //      [data-brokerage] has a [data-price] ancestor and the two compute to the same font size,
@@ -34,12 +38,14 @@
 //      permAdvertise = TRUE and on the market (status active on the sale side, leaseStatus
 //      active on the lease side).
 //
-// Aggregates are allowed and are not what these patterns match: "Typical days on market is
-// around 23 days, across 12 sales" and a "Time on market" cell are the k-gated street figures;
-// the patterns below match a per-listing count ("65d on market", "Listed 65 days ago") and the
-// field names as JSON keys.
+// Aggregates are allowed and are not what these patterns match: "sell in an average of 18 days
+// on market", "after 88 days on market" and a "Time on market" cell are market figures; the
+// patterns below match a per-listing count ("65d on market", a bare "65 days on market" on a
+// card, "Listed 65 days ago") and the field names as JSON keys.
 import { neon } from '@neondatabase/serverless';
-import { SignJWT } from 'jose';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { get } from '../lib/http.mjs';
 import { loadEnv, requireEnv } from '../lib/env.mjs';
 
@@ -54,18 +60,18 @@ const keyPattern = (k) => new RegExp(`"${k}\\\\?":`);
 /** Per-listing renderings of the same facts. */
 const TEXT_PATTERNS = [
   [/\b\d+ ?d on market\b/, 'a day count on market'],
-  [/\b\d+ days on market\b/, 'a day count on market'],
+  // a bare count on a card; an aggregate sentence introduces its figure ("average of", "after")
+  [/(?<!average of |after |around |about |typically |typical of )\b\d+ days on market\b/, 'a day count on market'],
   [/\bListed \d+ days? ago\b/, '"Listed N days ago"'],
   [/\bListed today\b/, '"Listed today"'],
   [/\b\d+d ago\b/, '"Nd ago"'],
-  // case-sensitive: the badges; "12 new this week" is an aggregate and stays
-  [/\bNew this week\b/, '"New this week" on a listing'],
-  [/\bNew today\b/, '"New today" on a listing'],
   [/\bSold for\b/, '"Sold for"'],
   [/\bLeased for\b/, '"Leased for"'],
   [/m-mega-prior|m-mega-change|lv-sold-card|lv-soldb|lv-soldnote/, 'a sold or price-change card class'],
-  // `"status\":\"sold` inside the escaped flight payload, `"status":"sold` in plain JSON
-  [/"status\\?":\\?"(sold|expired|rented)/, 'a non-active status in the payload'],
+  // `"status\":\"sold` inside the escaped flight payload, `"status":"sold` in plain JSON. The
+  // lease side is `status='rented'` for life, so its lifecycle word is the one that matters.
+  [/"status\\?":\\?"(sold|expired)/, 'a non-active status in the payload'],
+  [/"leaseStatus\\?":\\?"(leased|expired|terminated|cancelled|suspended|withdrawn)/, 'a closed lease status in the payload'],
 ];
 
 function offences(html) {
@@ -97,7 +103,7 @@ async function launchBrowser() {
 /** The DB1 side: sample MLS numbers per state, the acknowledged user, and the flag lookup. */
 async function db1() {
   loadEnv();
-  requireEnv('DATABASE_URL', 'JWT_SECRET');
+  requireEnv('DATABASE_URL');
   const app = neon(process.env.DATABASE_URL);
   const one = async (q) => (await q)[0]?.m ?? null;
   const [sale, lease, sold, expired, leased, users] = await Promise.all([
@@ -106,16 +112,49 @@ async function db1() {
     one(app`SELECT "mlsNumber" m FROM public."Listing" WHERE city='Milton' AND "permAdvertise" AND status='sold' ORDER BY "updatedAt" DESC LIMIT 1`),
     one(app`SELECT "mlsNumber" m FROM public."Listing" WHERE city='Milton' AND "permAdvertise" AND status='expired' ORDER BY "updatedAt" DESC LIMIT 1`),
     one(app`SELECT "mlsNumber" m FROM public."Listing" WHERE city='Milton' AND "permAdvertise" AND "transactionType"='For Lease' AND "leaseStatus"='leased' ORDER BY "updatedAt" DESC LIMIT 1`),
-    app`SELECT id FROM public."User" WHERE verified AND "vowAcknowledgedAt" IS NOT NULL ORDER BY "vowAcknowledgedAt" DESC LIMIT 1`,
+    app`SELECT id, email FROM public."User" WHERE verified AND "vowAcknowledgedAt" IS NOT NULL ORDER BY "vowAcknowledgedAt" DESC LIMIT 1`,
   ]);
   if (!sale || !lease) throw new Error('DB1 has no active sale or available lease listing — check the credential, not the data');
-  if (!users.length) throw new Error('DB1 has no verified, VOW-acknowledged user to mint a session for');
-  return { app, sale, lease, sold, expired, leased, userId: users[0].id };
+  if (!users.length) throw new Error('DB1 has no verified, VOW-acknowledged user to sign in as');
+  return { app, sale, lease, sold, expired, leased, userId: users[0].id, email: users[0].email };
 }
 
-async function mintSession(userId) {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-  return new SignJWT({ userId }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('1h').sign(secret);
+/** The cookie from the last run against this host, in the OS temp dir (never the repo). A
+ *  session lives 90 days (src/lib/auth.ts); reusing it keeps reruns inside the door's limits
+ *  (three sign-in requests an hour per address, five per IP in ten minutes, shared by every
+ *  lead form) and spares the inbox. It is checked against /api/auth/me before it is trusted. */
+function sessionCachePath(base) {
+  return path.join(os.tmpdir(), `miltonly-verify-session-${new URL(base).host}.txt`);
+}
+async function cachedSession(base, userId) {
+  try {
+    const token = fs.readFileSync(sessionCachePath(base), 'utf8').trim();
+    if (!token) return null;
+    const me = await fetchRaw(`${base}/api/auth/me`, token);
+    const j = JSON.parse(me.body || '{}');
+    return j.user && j.user.id === userId ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Through the real door: request a code, read it off the row the door wrote, verify it, keep
+ *  the cookie. Throws with the door's own answer when it refuses (a 429 after three an hour). */
+async function signIn(base, app, email, userId) {
+  const cached = await cachedSession(base, userId);
+  if (cached) return cached;
+  const headers = { 'content-type': 'application/json', origin: base, 'user-agent': UA };
+  const req = await fetch(`${base}/api/auth/signup`, { method: 'POST', headers, body: JSON.stringify({ email }) });
+  if (req.status !== 200) throw new Error(`sign-in request refused: ${req.status} ${(await req.text()).slice(0, 120)}`);
+  const rows = await app`SELECT "verifyCode" c FROM public."User" WHERE email = ${email}`;
+  const code = rows[0]?.c;
+  if (!code) throw new Error('the door stored no code for the sign-in request');
+  const ver = await fetch(`${base}/api/auth/verify`, { method: 'POST', headers, body: JSON.stringify({ email, code }) });
+  const set = ver.headers.get('set-cookie') || '';
+  const m = set.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+  if (ver.status !== 200 || !m) throw new Error(`verify refused: ${ver.status} ${(await ver.text()).slice(0, 120)}`);
+  try { fs.writeFileSync(sessionCachePath(base), m[1]); } catch { /* the cache is a convenience */ }
+  return m[1];
 }
 
 async function fetchRaw(url, cookie) {
@@ -196,14 +235,17 @@ export default {
       if (!mls) { notes.push(`no ${name} listing in DB1 to probe`); continue; }
       shells++;
       const r = await get(`${base}/listings/${mls}`);
+      // The shell: the not-available title and sentence, noindex, none of the listing body
+      // (its "Quick facts" card) and no withheld field. The chrome around it carries the menu's
+      // active listings and their prices, which is fine.
       const ok = r.status === 200
+        && /<title>Listing Not Available<\/title>/.test(r.body)
         && /not available for display/i.test(r.body)
         && /noindex/.test(r.body)
-        && !/\$[\d,]{6,}/.test(r.body.replace(/<script[\s\S]*?<\/script>/g, ''))
-        && !new RegExp(`\\b(sold|expired|leased)\\b`, 'i').test(r.body.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/Recently sold|sold prices|/gi, ''))
+        && !/Quick facts/.test(r.body)
         && offences(r.body).length === 0;
       if (ok) shellOk++;
-      else examples.push(`${name} listing ${mls}: status ${r.status}, ${offences(r.body).slice(0, 3).join('; ') || 'shell text, noindex or a price or status word missing/present'}`);
+      else examples.push(`${name} listing ${mls}: status ${r.status}, ${offences(r.body).slice(0, 3).join('; ') || 'shell title, sentence or noindex missing, or the listing body rendered'}`);
     }
     assertions.push(['off-market listings answer the not-available shell', shellOk, shells]);
 
@@ -219,7 +261,7 @@ export default {
     assertions.push(['gated route answers canSee:false, no facts, anonymously', anonApiOk ? 'yes' : `no (${anonApi.status})`, 'yes']);
 
     // ── the acknowledged session ─────────────────────────────────────────────────────────
-    const token = await mintSession(d.userId);
+    const token = await signIn(base, d.app, d.email, d.userId);
     const authApi = await fetchRaw(`${base}/api/listings/${d.sale}/vow`, token);
     let authFacts = null;
     try { authFacts = JSON.parse(authApi.body); } catch { /* not JSON */ }

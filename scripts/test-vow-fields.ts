@@ -28,7 +28,8 @@ const row = {
 };
 const stripped = stripVowFields(row) as Record<string, unknown>;
 for (const f of VOW_ONLY_FIELDS) ok(!(f in stripped), `stripVowFields removes ${f}`);
-ok(stripped.mlsNumber === "W1" && stripped.price === 1 && stripped.listOfficeName === "X" && stripped.status === "active", "stripVowFields keeps the public columns");
+ok(stripped.mlsNumber === "W1" && stripped.price === 1 && stripped.listOfficeName === "X", "stripVowFields keeps the public columns");
+ok(!("status" in stripped) && !("leaseStatus" in stripped), "stripVowFields drops the status columns, redundant on a public row");
 ok("daysOnMarket" in row, "stripVowFields does not mutate its input");
 ok(VOW_ONLY_FIELDS.length === 7, "seven withheld columns");
 

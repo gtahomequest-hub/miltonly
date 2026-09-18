@@ -32,13 +32,20 @@ export const VOW_ONLY_FIELDS = [
 
 export type VowOnlyField = (typeof VOW_ONLY_FIELDS)[number];
 
-/** A listing with the VOW-only columns removed. */
-export type PublicListing<T> = Omit<T, VowOnlyField>;
+/** A listing with the VOW-only columns removed, and the status columns with them. */
+export type PublicListing<T> = Omit<T, VowOnlyField | "status" | "leaseStatus">;
 
-/** Returns a copy of the row without the VOW-only columns. Never mutates. */
+/** Dropped with them: on a public row both are "on the market" by construction (the caller
+ *  selected by PUBLIC_*_WHERE or checked isPublicListing), so the columns carry nothing, and
+ *  the lease side's lifelong `status = 'rented'` would otherwise read as a disclosure. */
+const REDUNDANT_ON_PUBLIC_ROWS = ["status", "leaseStatus"] as const;
+
+/** Returns a copy of the row without the VOW-only columns (and the status columns, see above).
+ *  Never mutates. */
 export function stripVowFields<T extends object>(row: T): PublicListing<T> {
   const out = { ...row } as Record<string, unknown>;
   for (const f of VOW_ONLY_FIELDS) delete out[f];
+  for (const f of REDUNDANT_ON_PUBLIC_ROWS) delete out[f];
   return out as PublicListing<T>;
 }
 
