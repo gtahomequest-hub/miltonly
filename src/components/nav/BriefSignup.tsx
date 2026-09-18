@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from '@/lib/postLeadClient';
 import type { NavContext } from './megaTypes';
-
-/** The fine print under every brief form, and the consent text the lead row records. */
-export const BRIEF_FINE_PRINT = 'Miltonly emails only. No account, unsubscribe anytime.';
+import { ALERT_FINE_PRINT } from '@/lib/lead/finePrint';
 
 /** The daily-brief signup, through the one lead helper every form on the site uses. Source
  *  "daily-brief", the same as the homepage's and /sell's forms, so one list, one sender. It
@@ -55,7 +53,7 @@ export function BriefSignup({
       property_address: context?.street?.name,
       neighbourhood: context?.hub?.name,
       notes: `Daily brief signup (${where}${subject ? `, ${subject}` : ''})`,
-      consentText: BRIEF_FINE_PRINT,
+      consentText: ALERT_FINE_PRINT,
       consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
@@ -87,7 +85,7 @@ export function BriefSignup({
         </label>
       </div>
       {status === 'error' ? <p className={cls.note}>Something went wrong. Please try again.</p> : null}
-      <p className={cls.fine}>{BRIEF_FINE_PRINT}</p>
+      <p className={cls.fine}>{ALERT_FINE_PRINT}</p>
       {footer ? null : button}
     </form>
   );

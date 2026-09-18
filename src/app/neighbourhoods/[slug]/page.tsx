@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { hubDrift } from "@/lib/hubDrift";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getHubData } from "@/lib/hubData";
@@ -25,8 +27,19 @@ import { projectHubSchema } from "@/lib/ai/hub/projectHubEntities";
 // revalidates on the hour: Next takes the smaller of the route's and a fetch's.
 export const revalidate = 86400;
 export const dynamicParams = true;
-export function generateStaticParams() {
-  return [];
+// THE 22 HUBS PRERENDER AT BUILD (MC-027 item 2, MA-005 defect 5). MC-017 left this empty to
+// keep the build short; MA-005 then measured 21 of 22 hubs answering MISS at p50 2.9 s for their
+// first visitor after every deploy and every tag drop, and Googlebot is often that visitor.
+// Twenty-two renders at build is a minute; the tag drops are covered by /api/jobs/warm-hubs,
+// which walks the 22 paths after each sold and analytics job so the cache is warm before a
+// reader arrives. dynamicParams stays true: a hub published after the build renders on visit.
+export async function generateStaticParams() {
+  try {
+    const rows = await prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } });
+    return rows.map((r) => ({ slug: r.neighbourhoodSlug }));
+  } catch {
+    return [];
+  }
 }
 
 interface Props {
@@ -50,6 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NeighbourhoodPage({ params }: Props) {
   const data = await getHubData(params.slug);
+  const drift = await hubDrift(params.slug);
   if (!data) notFound();
   // The site footer, on the hub too. The legacy navy footer it replaced (2026-09-11)
   // linked three neighbourhoods and two streets; this links every published hub.
@@ -91,7 +105,11 @@ export default async function NeighbourhoodPage({ params }: Props) {
       slug: data.slug,
       description: data.character || `Real estate data for ${data.name}, ${config.CITY_NAME}.`,
     }),
-    ...(data.faqs.length ? [generateFAQSchema(data.faqs)] : []),
+    // FAQPage only while the stored generation matches the live aggregate (MC-027, MA-005 defect
+    // 1): the June answers carried June figures into the SERP. A drifted hub keeps its FAQs on
+    // the page (dated prose beside live tiles is the regenerate cron's job) and hands Google
+    // nothing until it is regenerated.
+    ...(data.faqs.length && !drift.drifted ? [generateFAQSchema(data.faqs)] : []),
   ];
 
   return (

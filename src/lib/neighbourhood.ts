@@ -45,8 +45,12 @@ export const NEIGHBOURHOOD_SEED: NeighbourhoodSeed[] = [
   u("timberlea", "Timberlea", ["1037 - TM Timberlea"]),
   u("willmott", "Willmott", ["1038 - WI Willmott"]),
   u("walker", "Walker", ["1051 - Walker"]),
+  // Bronte Meadows was "thin urban" (profile rural_hub, no VIP) from decision #3; MC-027
+  // (MA-005 defect 4) made it an urban hub: its own lede called it a settled residential
+  // pocket, its ladder is every street in it, and the rural profile leaked "Road Guide" into
+  // its title and put it under "Other rural neighbourhoods" on two rural hubs.
+  u("bronte-meadows", "Bronte Meadows", ["1024 - BM Bronte Meadows"]),
   // ── Thin urban: kind=urban, profile=rural_hub, no VIP (decision #3) ──
-  thinUrban("bronte-meadows", "Bronte Meadows", ["1024 - BM Bronte Meadows"]),
   thinUrban("milton-north", "Milton North", ["1034 - MN Milton North"]),
   // ── Rural hubs (character-led, no VIP) ──
   r("rural-milton", "Rural Milton", ["1039 - MI Rural Milton"]),

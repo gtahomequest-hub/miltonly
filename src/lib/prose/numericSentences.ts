@@ -299,8 +299,32 @@ export function isDisclaimerOnly(paragraphs: string[]): boolean {
   return paragraphs.length > 0 && paragraphs.every(isDisclaimer);
 }
 
+/** THE RESIDUE OF SUPPRESSION (MH-005, MA-001 defects 11 and 12). When every substantive
+ *  sentence of an answer is cut, what is left is either the compliance caveat ("Confirm current
+ *  school assignment with the boards directly.") or a hedge that was written to qualify a figure
+ *  now gone ("Townhomes appear less frequently, and their pricing is less established."). Both
+ *  were served to Google as accepted answers. An answer is residue when every sentence in it is
+ *  a disclaimer, or when it is one sentence and that sentence is a hedge. */
+const HEDGE_RESIDUE =
+  /\b(less established|not (?:yet )?(?:specified|available|published)|appear(?:s)? less frequently|is not (?:yet )?clear|hard to (?:say|pin down)|too (?:few|early) to)\b/i;
+
+export function isResidue(answer: string): boolean {
+  const sentences = answer.split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+  if (sentences.length === 0) return true;
+  if (sentences.every(isDisclaimer)) return true;
+  return sentences.length === 1 && HEDGE_RESIDUE.test(sentences[0]);
+}
+
+/** A section reduced to one sentence under a heading is a heading over a fragment. */
+export function isFragment(paragraphs: string[]): boolean {
+  const text = paragraphs.join(' ').trim();
+  const sentences = text.split(/(?<=[.!?])\s+/).filter((x) => x.trim());
+  return sentences.length < 2;
+}
+
 export function answersQuestion(question: string, answer: string): boolean {
   if (!answer.trim()) return false;
+  if (isResidue(answer)) return false;
   for (const t of TOPICS) if (t.q.test(question)) return t.a.test(answer);
   // no topic rule matched: require a shared content word beyond the street name / stopwords
   const qWords = question.toLowerCase().match(/[a-z]{4,}/g) ?? [];

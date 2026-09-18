@@ -129,6 +129,7 @@ export const mockStreetRich: StreetV2Data = {
         data: SALE_CHART,
       },
       contactTeamPrompt: false,
+      sampleCount: 12,
     },
     {
       type: 'townhouse',
@@ -143,6 +144,7 @@ export const mockStreetRich: StreetV2Data = {
       activeDetail: 'avg list $915K',
       chart: null,
       contactTeamPrompt: false,
+      sampleCount: 12,
     },
   ],
 
@@ -184,6 +186,7 @@ export const mockStreetRich: StreetV2Data = {
       data: SALE_CHART,
       caption: 'Typical sold price across all product types on Main Street East, plotted with transaction volume.',
     },
+    yoy: null,
     rentByBeds: [
       { label: '1 bed', value: '$2,100', detail: 'typical' },
       { label: '2 bed', value: '$2,650', detail: 'typical' },
@@ -301,7 +304,7 @@ export const mockStreetRich: StreetV2Data = {
     buyer: {
       eyebrow: 'For buyers',
       headline: 'Buying on Main St E',
-      body: 'An email when a home on the street is listed or sold. Nothing else, and no account.',
+      body: 'An email when a home on the street is listed for sale. Nothing else, and no account.',
       actionLabel: 'Set an alert',
       actionHref: '/listings',
       secondary: true,
@@ -392,6 +395,7 @@ export const mockStreetThin: StreetV2Data = {
       activeDetail: 'avg list $1.02M',
       chart: null, // suppressed (k<5)
       contactTeamPrompt: true, // 0 < 3 < 5
+      sampleCount: 3,
     },
   ],
 
@@ -422,6 +426,7 @@ export const mockStreetThin: StreetV2Data = {
     },
     leases: null, // no lease activity
     priceChart: null, // suppressed
+    yoy: null,
     rentByBeds: null, // suppressed
   },
 
@@ -487,7 +492,7 @@ export const mockStreetThin: StreetV2Data = {
     buyer: {
       eyebrow: 'For buyers',
       headline: 'Buying on Marigold',
-      body: 'An email when a home on the street is listed or sold. Nothing else, and no account.',
+      body: 'An email when a home on the street is listed for sale. Nothing else, and no account.',
       actionLabel: 'Set an alert',
       actionHref: '/listings',
       secondary: true,

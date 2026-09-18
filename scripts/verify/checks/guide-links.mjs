@@ -62,8 +62,11 @@ const stripScripts = (raw) => raw.replace(/<script[\s\S]*?<\/script>/g, ' ');
 function guideHrefs(raw) {
   return [...stripScripts(raw).matchAll(/<a\b[^>]*class="g-up-link"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
 }
+// A pill is a link where its type section renders and a <span class="s-pill s-pill-static">
+// where it does not (MH-005, MA-001 change 7); the match is on the pill and its label, whichever
+// element carries them. The lease pill is typed condo too, but its label is "Lease".
 const streetIsCondoHeavy = (raw) =>
-  /<a class="s-pill" href="#type-condo"><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
+  /<(?:a|span) class="s-pill(?: s-pill-static)?"(?: href="#type-condo")?><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
 // Both the legacy hub markup (h-condos) and the 2026-09-11 rebuild (hh-sec hh-condos), so a
 // template rename cannot blind this the way it blinded hub-intents.mjs.
 const hubIsCondoHeavy = (raw) => /class="(h-condos|hh-sec hh-condos)"/.test(stripScripts(raw));

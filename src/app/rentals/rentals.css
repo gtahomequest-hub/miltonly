@@ -284,6 +284,7 @@
 .rentals-page .as-left h3{font-size:17px;font-weight:800;color:var(--pearl);margin-bottom:4px;}
 .rentals-page .as-left p{font-size:13px;color:var(--t3);}
 .rentals-page .as-form{display:flex;gap:8px;flex-shrink:0;}
+.rentals-page .as-fine{flex-basis:100%;font-size:11px;line-height:1.6;color:var(--t3);margin:0;}
 .rentals-page .as-input{background:var(--mid);color:var(--pearl);border:1.5px solid var(--nb);border-radius:9px;padding:10px 14px;font-size:13px;width:240px;transition:border-color .2s;}
 .rentals-page .as-input:focus{outline:none;border-color:var(--amber);}
 .rentals-page .as-input::placeholder{color:var(--t3);}

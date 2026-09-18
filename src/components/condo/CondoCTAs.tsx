@@ -9,6 +9,7 @@
 // intents are "buy" rather than "buyer" so the value model scores them.
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
+import { ALERT_FINE_PRINT, REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 
 type Panel = "none" | "alert" | "contact";
 type Status = "idle" | "submitting" | "ok" | "error";
@@ -31,21 +32,21 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
     e.preventDefault();
     if (!email) return;
     setStatus("submitting");
-    const ok = await postLead({ source: "condo-building-alert", intent: "buy", email, property_address: buildingName, neighbourhood, notes: `Building alerts requested, ${buildingName}`, honeypot: honey });
+    const ok = await postLead({ source: "condo-building-alert", intent: "buy", email, property_address: buildingName, neighbourhood, notes: `Building alerts requested, ${buildingName}`, consentText: ALERT_FINE_PRINT, consentTimestamp: new Date().toISOString(), honeypot: honey });
     setStatus(ok ? "ok" : "error");
   };
   const submitContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email && !phone) return;
     setStatus("submitting");
-    const ok = await postLead({ source: "condo-building-contact", intent: "buy", name, email, phone, property_address: buildingName, neighbourhood, notes: `${message ? message + " " : ""}[re: ${buildingName}]`, honeypot: honey });
+    const ok = await postLead({ source: "condo-building-contact", intent: "buy", name, email, phone, property_address: buildingName, neighbourhood, notes: `${message ? message + " " : ""}[re: ${buildingName}]`, consentText: REPLY_FINE_PRINT, consentTimestamp: new Date().toISOString(), honeypot: honey });
     setStatus(ok ? "ok" : "error");
   };
 
   const alertHead = thin ? "Be first to know when this building trades" : "Track this building";
   const alertSub = thin
-    ? "It rarely comes to market — get an email the moment a unit is listed or sold."
-    : "Get an email when a unit here is listed, sold, or leased. No account, unsubscribe anytime.";
+    ? "It rarely comes to market. Get an email when a unit is listed."
+    : "Get an email when a unit here is listed. No account, unsubscribe anytime.";
 
   return (
     <>
@@ -79,7 +80,7 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
                       <button type="submit" disabled={status === "submitting"}>{status === "submitting" ? "…" : "Notify me"}</button>
                     </div>
                     {status === "error" && <div className="cb-cta-err">Something went wrong — try again, or use the contact option.</div>}
-                    <div className="cb-cta-fine">Miltonly emails only. We never share your address.</div>
+                    <div className="cb-cta-fine">{ALERT_FINE_PRINT}</div>
                   </form>
                 )}
 
@@ -103,7 +104,7 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
                       <button type="submit" disabled={status === "submitting" || (!email && !phone)}>{status === "submitting" ? "Sending…" : "Send to Miltonly"}</button>
                     </div>
                     {status === "error" && <div className="cb-cta-err">Something went wrong — please try again.</div>}
-                    <div className="cb-cta-fine">Add an email or phone so Miltonly can reply.</div>
+                    <div className="cb-cta-fine">{REPLY_FINE_PRINT}</div>
                   </form>
                 )}
               </>

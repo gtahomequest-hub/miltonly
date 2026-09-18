@@ -10,10 +10,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { postLeadDetailed, honeypotInputProps } from "@/lib/postLeadClient";
+import { SMS_EMAIL_FINE_PRINT } from "@/lib/lead/finePrint";
 import { config } from "@/lib/config";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const BUDGET_OPTIONS = [
@@ -107,6 +107,8 @@ export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
       email: trimmedEmail,
       budget,
       homeType: initialType || "any",
+      consentText: SMS_EMAIL_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     if (!result.ok) {
@@ -228,7 +230,7 @@ export default function UnlockModal({ isOpen, onClose, initialType }: Props) {
             {submitting ? "Sending…" : "Text me my matches"}
           </button>
           <p className="text-[11px] text-[#64748b] text-center mt-2.5 leading-relaxed">
-            🔒 No spam. No fees. By submitting, I consent to receive SMS and email from {config.realtor.name}, {BROKERAGE_SHORT_NAME}. Reply STOP to opt out.{" "}
+            🔒 No spam. No fees. {SMS_EMAIL_FINE_PRINT}{" "}
             <Link href="/privacy" className="underline hover:text-[#07111f]" target="_blank">Privacy</Link>.
           </p>
         </form>

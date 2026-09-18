@@ -18,6 +18,11 @@ import type { SoldTableRow } from '@/types/street';
 import VowAcknowledgementPrompt from '@/components/vow/VowAcknowledgementPrompt';
 import { shortPrice, pct } from './format';
 
+// THE GATE IS IN THE SERVED HTML (MH-005, MA-001 change 5). The island used to render a
+// "Loading sold records…" row on every visit and show the gate only after the fetch answered:
+// the action with the most intent behind it was invisible to a crawler and late for a person.
+// Now the unauthenticated state is the default the server renders, so the gate is on the page
+// from the first byte; a signed-in visitor's rows replace it when the fetch confirms access.
 export function StreetSoldRecords({ slug, streetName }: { slug: string; streetName: string }) {
   const pathname = usePathname();
   const [state, setState] = useState<'loading' | 'done'>('loading');
@@ -47,7 +52,9 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
   }, [slug, generation]);
 
   const signinHref = `/signin?redirect=${encodeURIComponent(`${pathname}#sold-records`)}&intent=sold&street=${encodeURIComponent(slug)}`;
-  const gated = state === 'done' && !canSee && !needsAck;
+  // MH-005 keeps the gate in the served HTML: unauthenticated is the default the server
+  // renders. MP-002's ack card takes over only once the fetch says the person is signed in.
+  const gated = !canSee && !needsAck;
 
   if (state === 'done' && needsAck) {
     return (
@@ -74,13 +81,7 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
           </tr>
         </thead>
         <tbody>
-          {state === 'loading' ? (
-            <tr>
-              <td colSpan={7} style={{ textAlign: 'center', color: 'var(--s-text-muted)', padding: 28 }}>
-                Loading sold records…
-              </td>
-            </tr>
-          ) : rows.length === 0 && canSee ? (
+          {state === 'done' && rows.length === 0 && canSee ? (
             <tr>
               <td colSpan={7} style={{ textAlign: 'center', color: 'var(--s-text-muted)', padding: 28 }}>
                 No recent sales on record.

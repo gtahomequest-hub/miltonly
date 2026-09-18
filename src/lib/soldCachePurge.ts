@@ -32,9 +32,9 @@ import { redis, invalidateMany } from "@/lib/cache";
 export const SOLD_WIDE_KEYS = [
   "milton-sold-totals",
   "milton-sold-nbhds",
-  "sold-agg:overall-12mo-v2",
+  "sold-agg:overall-12mo-v3",
   "sold-agg:by-type-12mo",
-  "sold-agg:by-nbhd-12mo-mean",
+  "sold-agg:by-nbhd-12mo-typical",
   "sold-agg:quarterly",
 ] as const;
 

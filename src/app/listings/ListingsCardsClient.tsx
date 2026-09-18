@@ -7,6 +7,7 @@ import { useUser } from "@/components/UserProvider";
 import { formatPriceFull, daysAgo } from "@/lib/format";
 import { postLeadDetailed } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 
 export interface CardListing {
   mlsNumber: string;
@@ -108,6 +109,8 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
       phone,
       property_address: bookingModal.address,
       mlsNumber: bookingModal.mlsNumber,
+      consentText: REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
     });
     if (!result.ok) {
       showToast(result.error || "Could not submit. Please try again");
@@ -233,6 +236,7 @@ export default function ListingsCardsClient({ listings }: { listings: CardListin
               Request showing
             </button>
             <p className="text-[11px] text-[#94a3b8] mt-2 text-center">{config.realtor.name.split(" ")[0]} confirms within the hour · no obligation</p>
+            <p className="text-[11px] text-[#94a3b8] mt-2 text-center">{REPLY_FINE_PRINT}</p>
           </div>
         </div>
       )}
