@@ -38,6 +38,8 @@ export interface CondoListing {
   title: string; // "Unit 1204 · 2 bed"
   meta: string; // "2 bed · 2 bath · 920 sqft"
   price: string; // "$685,000" or "$2,650/mo"
+  /** the listing brokerage, rendered inside the price at its size (TRREB item 27, MC-029) */
+  listOfficeName: string | null;
   tenure: 'sale' | 'lease';
   href: string;
 }

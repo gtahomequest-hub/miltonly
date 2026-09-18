@@ -2,6 +2,7 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import AdsClient from "./AdsClient";
+import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +29,7 @@ const str = (sp: SP, k: string) => {
 // data artifacts on this paid-traffic LP. Listings under $2K stay in the DB
 // and still appear on /listings + /rentals — only filtered on /rentals/ads.
 const ALWAYS_WHERE = {
-  transactionType: "For Lease" as const,
-  city: config.PRISMA_CITY_VALUE,
-  permAdvertise: true,
+  ...PUBLIC_LEASE_WHERE, // MC-029: available units only; this carried no leaseStatus
   price: { gte: 2000 },
 };
 
@@ -112,7 +111,8 @@ export default async function RentalsAdsPage({
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const newThisWeek = allListed.filter((l) => new Date(l.listedAt) > weekAgo).length;
-  const serialized = JSON.parse(JSON.stringify(listings));
+  // MC-029: stripped of every VOW-only column before the client component sees it.
+  const serialized = JSON.parse(JSON.stringify(listings.map(stripVowFields)));
 
   // "Updated X min ago" — clamp to "RECENTLY" if unknown or > 60 minutes.
   let updatedMinAgo: number | null = null;

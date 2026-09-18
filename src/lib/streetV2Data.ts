@@ -307,7 +307,7 @@ export function mapStreetV2Data(
       bathrooms: l.bathrooms,
       parking: l.parking,
       propertyType: l.propertyType,
-      daysOnMarket: l.daysOnMarket,
+      listOfficeName: l.listOfficeName,
       photo: l.photo,
       href: l.href,
     })),

@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,8 @@ import type { ListingRentFigure } from "./ListingExtras";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
+import { isPublicListing, stripVowFields, PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE } from "@/lib/listings/vow";
+import ListingVowFacts from "@/components/listings/ListingVowFacts";
 import { resolvePublishedHubSlug } from "@/lib/hubResolve";
 
 // MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
@@ -44,7 +46,9 @@ const cleanHood = (h: string) => titleCase(h.replace(/^\d+\s*-\s*\w+\s+/, "").tr
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!l) return { title: "Listing Not Found" };
-  if (!l.permAdvertise) return { title: "Listing Not Available", robots: { index: false, follow: false } };
+  // MC-029: a listing that is not advertised, or not on the market, has no public page and no
+  // index entry. "Not available" says nothing about which, on purpose.
+  if (!isPublicListing(l)) return { title: "Listing Not Available", robots: { index: false, follow: false } };
 
   const isRental = l.transactionType === "For Lease";
   const hood = cleanHood(l.neighbourhood);
@@ -56,11 +60,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${addr}: ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
     : `${addr}: ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
 
-  const days = Math.floor((Date.now() - new Date(l.listedAt).getTime()) / 86400000);
+  // MC-029: the description no longer says "Listed N days ago". Days since the list date is the
+  // listing's time on market, a VOW-only fact, and a meta description is public.
   const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
-    ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName}, usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName}, usually confirmed within the hour.`;
+    ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`;
 
   return {
     title,
@@ -79,8 +84,11 @@ export default async function ListingDetailPage({ params }: Props) {
   if (!listingRaw) notFound();
 
   // â”€â”€â”€ COMPLIANCE GATE â”€â”€â”€
-  // If permAdvertise = false, do not render the listing publicly.
-  if (!listingRaw.permAdvertise) {
+  // If permAdvertise = false, do not render the listing publicly. MC-029 widened the gate to
+  // the whole public predicate: a sold, expired or leased listing is VOW data in its entirety
+  // (its page says what happened to it), so it gets the same shell, with the same words, and
+  // generateMetadata above marks it noindex. The shell never says which condition failed.
+  if (!isPublicListing(listingRaw)) {
     return (
       <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-5 py-20">
         <div className="max-w-md text-center">
@@ -104,11 +112,11 @@ export default async function ListingDetailPage({ params }: Props) {
   const [similarRaw, leaseMarket] = await Promise.all([
     prisma.listing.findMany({
       where: {
+        // MC-029: the same public predicate as the grid. This selected by permAdvertise alone,
+        // so a sold or expired listing could sit in "similar homes" with its status in the payload.
+        ...(listing.transactionType === "For Lease" ? PUBLIC_LEASE_WHERE : PUBLIC_SALE_WHERE),
         propertyType: listing.propertyType,
-        transactionType: listing.transactionType,
         mlsNumber: { not: listing.mlsNumber },
-        city: config.PRISMA_CITY_VALUE,
-        permAdvertise: true,
       },
       orderBy: { listedAt: "desc" },
       take: 4,
@@ -137,16 +145,17 @@ export default async function ListingDetailPage({ params }: Props) {
     };
   })();
 
-  const serialized = JSON.parse(JSON.stringify(listing));
-  const serializedSimilar = JSON.parse(JSON.stringify(similar));
+  // MC-029: the row is stripped of every VOW-only column BEFORE it is serialised for the client
+  // component, so the RSC payload never carries a day count, a list date, a prior price or a
+  // sold price. The island below fetches those for an acknowledged session.
+  const serialized = JSON.parse(JSON.stringify(stripVowFields(listing)));
+  const serializedSimilar = JSON.parse(JSON.stringify(similar.map(stripVowFields)));
 
   // Match schools by neighbourhood (no lat/lng on schools data)
   const schoolsLite = schools.map((s) => ({
     slug: s.slug, name: s.name, board: s.board as string, level: s.level as string,
     grades: s.grades, fraserScore: s.fraserScore, neighbourhood: s.neighbourhood,
   }));
-
-  const domDays = Math.floor((Date.now() - new Date(listing.listedAt).getTime()) / 86400000);
 
   // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
@@ -240,8 +249,8 @@ export default async function ListingDetailPage({ params }: Props) {
           hoodName,
           rent: rentFigure,
           schools: schoolsLite,
-          domDays,
         }}
+        vowFacts={<ListingVowFacts mlsNumber={listing.mlsNumber} isRental={isRental} />}
       />
     </div>
     </SiteChrome>

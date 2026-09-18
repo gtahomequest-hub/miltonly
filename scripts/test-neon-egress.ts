@@ -83,7 +83,8 @@ function ok(cond: boolean, label: string) {
 // ── 4. /rentals ──────────────────────────────────────────────────────────────────────
 {
   const s = code("src/app/rentals/page.tsx");
-  ok(/cached\(`rentals:\$\{scope\?\.slug \?\? "all"\}:v1`, RENTALS_TTL/.test(s), "/rentals caches its bundle per scope");
+  // the key's version suffix moves when the bundle's shape changes (v2: MC-029 added newThisWeek)
+  ok(/cached\(`rentals:\$\{scope\?\.slug \?\? "all"\}:v\d+`, RENTALS_TTL/.test(s), "/rentals caches its bundle per scope");
   ok(!/export const revalidate/.test(s), "/rentals no longer declares a revalidate beside force-dynamic");
   ok(/const RENTALS_TTL = 900/.test(s), "/rentals TTL is fifteen minutes");
 }
