@@ -128,7 +128,10 @@ async function db1() {
  *  (three sign-in requests an hour per address, five per IP in ten minutes, shared by every
  *  lead form) and spares the inbox. It is checked against /api/auth/me before it is trusted. */
 function sessionCachePath(base) {
-  return path.join(os.tmpdir(), `miltonly-verify-session-${new URL(base).host}.txt`);
+  // the host with its port, made a plain file name: "localhost:3100" would be an NTFS
+  // alternate data stream on Windows, not a file
+  const host = new URL(base).host.replace(/[^a-z0-9.-]/gi, '_');
+  return path.join(os.tmpdir(), `miltonly-verify-session-${host}.txt`);
 }
 async function whoAmI(base, token) {
   try {

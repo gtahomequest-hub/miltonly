@@ -1,30 +1,54 @@
-CORE · D:\miltonly · main
+CORE · D:\miltonly · prep/mc030
 
 # Handoff
 
-_Last rewritten 2026-09-19 (MC-029 merged locally, NOT pushed): Vercel is paused (402), so `fix/vow-compliance @ de199c2` is merged on local `main` as `5994cc7`, gated locally (build exit 0, `next start` battery, hub drift purged and rerun clean), preview pending. `origin/main` is still `e606d8b` and production serves `895962b`, which the new `vow-fields` check fails 8 of 15. Push when production answers 200._
+_Last rewritten 2026-09-19 (MC-030, production still 402): local `main` is `c83fffb` (MC-029 merged as `5994cc7` plus docs), unpushed; `prep/mc030` on top of it merges MP-002b (`51a9bf9` as `9c98903`) and ML-005 (`064c5b6` as `fc05ae0`) and rewires MC-029's gates to the password (`d85a701`), gated locally, pushed as a branch. Production and every preview answer 402. Push `main`, verify, then fast-forward to `prep/mc030`, when production answers 200._
 
 ## READ THIS FIRST
 
-**LOCAL `main` IS THE MERGE `5994cc7` PLUS THE DOCS COMMITS ON IT, AHEAD OF `origin/main`
-(`e606d8b`), AND MUST NOT BE PUSHED UNTIL PRODUCTION ANSWERS 200.** Vercel was paused for about seven hours from the evening of
-2026-09-18 (every deployment, production included, answers 402). On that basis the merge was
-prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
-landed as `5994cc7` on `e606d8b`. Gated locally: `pnpm build` on Node 22 exit 0, 168/168; then
-`next start` on port 3100 (`scratchpad/mc003/run-start22.sh <port> <sha> <log>` sets
-`VERCEL_GIT_COMMIT_SHA` so `/api/build` answers the SHA the battery expects) and the full battery
-with `BASE=http://localhost:3100`: `FAIL · 21 checks · 626 pages · 749s` with four `hub-page`
-drifts and nothing else, then `PASS · 2 checks` on `hub-page,hub-meta` after purging the db2/db3
-tags, the 22 hubs and the street through `/api/revalidate` (the window-edge lie: gordon-krantz
-has a sale dated 2025-09-18, and Harrison's stock share moved with the feed; no MC-029 file
-touches a hub figure). `vow-fields` 15 of 15 locally. **When production is back:** `git push`,
-`npx vercel ls --prod`, `EXPECT_SHA=5994cc760c8b357f0e4dfe4bed13ca55ffe992b9
-BASE=https://miltonly.com node scripts/verify/run.mjs`. Before the pause, preview `czlzy3wc7`
-served `6c23bdc` and the full battery passed there (`PASS · 21 checks · 609 pages · 769s`).
-Record: `scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB
-reply and reconciles the audit's checklist (`MA-006-vow-fields-addendum.md` on `feat/audit`,
-every file:line) against the branch. Note the sitemap grew from 609 to 626 street pages overnight
-(the creation cron).
+**TWO THINGS WAIT ON VERCEL, IN THIS ORDER.** Production (`/api/build`) and every preview answered
+402 `DEPLOYMENT_DISABLED` for the whole of MC-030 (2026-09-19, probed for over an hour), so nothing
+was pushed to `main`. (a) Local `main` is `c83fffb`: MC-029 merged as `5994cc7` on `e606d8b` plus
+three docs commits, the app code `5994cc7`'s exactly. When production answers 200: `git push
+origin main`, `npx vercel ls --prod` to Ready, then purge and run the battery with the SERVED
+commit (`c83fffb…`, the head, not the merge; `/api/build` reports the head), and rerun the three
+MC-030 confirmations on production. (b) `prep/mc030` (pushed as a branch) is `main` plus
+`feat/portal @ 51a9bf9` as `9c98903` (MP-002b, the password; its migration is already applied on
+the production database), `feat/leads @ 064c5b6` as `fc05ae0` (ML-005, the bot gate) and
+`d85a701` (MC-029's three gates judge through `canSeeVowRecords`; the battery signs in with the
+password). Gated locally: build exit 0, 168/168; `next start` battery `PASS · 21 checks · 626
+pages · 647s`. After (a) is green: `git merge --ff-only prep/mc030` on main, push, Ready, purge,
+battery with the new head. Records: `scratchpad/reports/MC-030-production-return.md`,
+`MC-029-vow-compliance.md`.
+
+**THE PURGE AND THE BATTERY, VERBATIM.** `S=$(grep '^REVALIDATION_SECRET=' .env.local | cut -d=
+-f2- | tr -d '"')`; for `db2` and `db3`: `curl -s -X POST
+"https://miltonly.com/api/revalidate?secret=$S" -H 'content-type: application/json' -d
+'{"tag":"db2"}'`; for each hub path from `/sitemap.xml`'s `/neighbourhoods/<slug>` entries the
+same with `{"path":"/neighbourhoods/<slug>"}`. Then `nohup sh scratchpad/mc003/run-battery.sh
+<sha> https://miltonly.com <log> &` and poll for `^EXIT`. Locally: `sh
+scratchpad/mc003/run-start22.sh <port> <sha> <log>` starts the built app on Node 22 with
+`/api/build` answering `<sha>`; stop it with `Stop-Process` from PowerShell (it holds Prisma's
+engine DLL).
+
+**THE BATTERY'S SIGN-IN NEEDS A PASSWORD THE DESK OWNS.** Since MP-002b no VOW record shows
+without a password. `vow-fields` logs in as the most recently acknowledged verified user in DB1
+with `VOW_BATTERY_PASSWORD` (`.env.local`, gitignored), falls back to the code path, and sets
+that password through the card route only when the row has none; it never acknowledges or
+resets a row. It set one on `gtahomequest@gmail.com` at 18:2xZ and the gate passed; at 21:43Z
+another session on the shared database (Portal's local proof, or the desk) re-acknowledged the
+row and set a different password, so the check now fails by name ("the account has a password
+and it is not VOW_BATTERY_PASSWORD"). **The desk decides:** put the account's password in
+`.env.local` as `VOW_BATTERY_PASSWORD`, or name a second acknowledged account. Until then the
+full battery fails on that one check and everything else in it is readable. Every worktree's
+local `next start` shares the production database, so proofs collide on the same `User` row.
+
+**THE THREE CONFIRMATIONS (MC-030), ON THE LOCAL BUILD OF `d85a701`.** Anonymous
+`/listings/W13800708`: 200, zero VOW-only keys, zero day counts, and `/api/listings/W13800708/vow`
+answers `canSee:false`. The signed-in half and the brokerage measurement were asserted by the
+18:35Z battery run (facts from the route, `vow` on the grid's cards, "Time on market" in the
+island, 0 brokerage/price mismatches on five surfaces). Rerun all three on production after the
+push, and the signed-in one only once the password is settled.
 
 **WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
 columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
