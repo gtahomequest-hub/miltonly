@@ -4,7 +4,9 @@
 //     opens the street page, taps "Sign in free to unlock", types the email, submits.
 //     Prints the /signin URL it landed on and the message shown. Screenshots 01..03.
 //
-//   node scratchpad/mp002/probe-door.mjs link <link> <name> <streetQuery>
+//   node scratchpad/mp002/probe-door.mjs link <link> <name> <streetQuery> <password>
+//   node scratchpad/mp002/probe-door.mjs login <base> <slug> <email> <password>   (MP-002b)
+//   node scratchpad/mp002/probe-door.mjs wrong <base> <slug> <email> <badpassword> (MP-002b)
 //     opens the emailed link, waits to land on the street's sold records, fills the
 //     one-time card (name, street from the registry autocomplete, tick), submits, waits for
 //     rows. Prints the landing URL, the card's presence, the row count and the first row.
@@ -19,7 +21,8 @@ const [, , mode, ...args] = process.argv;
 const OUT = "scratchpad/mp002/shots";
 fs.mkdirSync(OUT, { recursive: true });
 
-const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+const CHROME = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const browser = await puppeteer.launch({ headless: true, executablePath: CHROME, args: ["--no-sandbox"] });
 const page = await browser.newPage();
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 await page.setUserAgent(
@@ -45,13 +48,17 @@ try {
     await page.waitForSelector("#signin-email", { timeout: 30000 });
     await page.type("#signin-email", email);
     await shot("02-signin-email");
-    await page.click('button[type="submit"]');
+    await page.$eval("#signin-email", (el) => el.form.querySelector('button[type="submit"]').click());
+    await page.waitForSelector("#signin-password", { timeout: 30000 });
+    mark("password step shown");
+    await shot("02b-signin-password-step");
+    await page.click("#signin-link-instead");
     await page.waitForSelector("#signin-code", { timeout: 30000 });
-    const msg = await page.$eval("form", (f) => f.innerText.split("\n").slice(0, 3).join(" | "));
+    const msg = await page.$eval("#signin-code", (el) => el.form.innerText.split("\n").slice(0, 3).join(" | "));
     mark(`code step shown: ${msg}`);
     await shot("03-signin-code-step");
   } else if (mode === "link") {
-    const [link, name, streetQuery] = args;
+    const [link, name, streetQuery, password] = args;
     await page.goto(link, { waitUntil: "networkidle2", timeout: 90000 });
     await page.waitForFunction(() => location.pathname.startsWith("/streets/"), { timeout: 60000 });
     mark(`link landed ${page.url()}`);
@@ -60,14 +67,21 @@ try {
     await new Promise((r) => setTimeout(r, 400));
     await shot("04-card");
     const inputs = await page.$$("[data-vow-ack] input[type=text]");
-    await inputs[0].type(name);
-    await inputs[1].type(streetQuery);
-    await page.waitForSelector("#vow-street-options button", { timeout: 15000 });
-    const first = await page.$eval("#vow-street-options button", (b) => b.textContent.trim());
-    mark(`autocomplete first hit "${first}"`);
-    await shot("05-card-autocomplete");
-    await page.click("#vow-street-options button");
-    await page.click("[data-vow-ack] input[type=checkbox]");
+    if (inputs.length) {
+      await inputs[0].type(name);
+      await inputs[1].type(streetQuery);
+    }
+    const pw = await page.$$("[data-vow-ack] input[type=password]");
+    mark(`card shows ${inputs.length} text fields and ${pw.length} password fields`);
+    for (const el of pw) await el.type(password);
+    if (inputs.length) {
+      await page.waitForSelector("#vow-street-options button", { timeout: 15000 });
+      const first = await page.$eval("#vow-street-options button", (b) => b.textContent.trim());
+      mark(`autocomplete first hit "${first}"`);
+      await shot("05-card-autocomplete");
+      await page.click("#vow-street-options button");
+      await page.click("[data-vow-ack] input[type=checkbox]");
+    }
     await shot("06-card-filled");
     await page.click("[data-vow-ack] button[type=button]");
     await page.waitForFunction(() => !document.querySelector("[data-vow-ack]") && document.querySelectorAll("#sold-records tbody tr td:not([colspan])").length > 0, {
@@ -82,8 +96,36 @@ try {
     await shot("07-records");
     const me = await page.evaluate(() => fetch("/api/auth/me").then((r) => r.json()));
     mark(`/api/auth/me: ${JSON.stringify(me)}`);
+  } else if (mode === "login" || mode === "wrong") {
+    const [base, slug, email, password] = args;
+    await page.goto(`${base}/streets/${slug}`, { waitUntil: "networkidle2", timeout: 90000 });
+    await page.waitForSelector("#sold-records .s-gate-btn", { timeout: 30000 });
+    await Promise.all([page.waitForNavigation({ waitUntil: "networkidle2" }), page.click("#sold-records .s-gate-btn")]);
+    await page.waitForSelector("#signin-email", { timeout: 30000 });
+    await page.type("#signin-email", email);
+    await page.$eval("#signin-email", (el) => el.form.querySelector('button[type="submit"]').click());
+    await page.waitForSelector("#signin-password", { timeout: 30000 });
+    await page.type("#signin-password", password);
+    await shot(mode === "login" ? "08-login-password" : "10-wrong-password");
+    await page.$eval("#signin-password", (el) => el.form.querySelector('button[type="submit"]').click());
+    if (mode === "wrong") {
+      await page.waitForFunction(() => /do not match/.test(document.body.innerText), { timeout: 30000 });
+      const msg = await page.$eval("#signin-password", (el) => [...el.form.querySelectorAll("p")].map((p) => p.textContent.trim()).find((t) => /do not match/.test(t)));
+      mark(`refused: "${msg}"; still on ${page.url()}`);
+      await shot("11-wrong-password-refused");
+    } else {
+      await page.waitForFunction(() => location.pathname.startsWith("/streets/"), { timeout: 60000 });
+      mark(`login landed ${page.url()}`);
+      await page.waitForFunction(() => document.querySelectorAll("#sold-records tbody tr td:not([colspan])").length > 0 || document.querySelector("[data-vow-ack]"), { timeout: 30000 });
+      const card = !!(await page.$("[data-vow-ack]"));
+      const rows = await page.$$eval("#sold-records tbody tr", (trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent.trim()).join(" · ")));
+      mark(`card shown: ${card}; ${rows.length} rows; first: ${rows[0]}`);
+      await page.evaluate(() => document.querySelector("#sold-records").scrollIntoView({ block: "start" }));
+      await new Promise((r) => setTimeout(r, 400));
+      await shot("09-login-records");
+    }
   } else {
-    throw new Error("mode: request | link");
+    throw new Error("mode: request | link | login | wrong");
   }
 } finally {
   await browser.close();

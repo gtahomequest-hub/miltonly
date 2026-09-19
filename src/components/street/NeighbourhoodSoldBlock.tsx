@@ -3,6 +3,7 @@
 // chart gated behind VowGate for authed users only.
 
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import {
   getNeighbourhoodSaleStats,
   getNeighbourhoodLeaseStats,
@@ -32,7 +33,7 @@ export default async function NeighbourhoodSoldBlock({
 }) {
   const user = await getSession();
   const authed = !!user;
-  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
+  const canSeeRecords = canSeeVowRecords(user);
 
   const [saleStats, leaseStats, saleRecords, leaseRecords] = await Promise.all([
     getNeighbourhoodSaleStats(neighbourhood).catch(() => null),

@@ -1,4 +1,6 @@
-// Prebuild test for the door (MP-002): the sign-in request, the code and the link.
+// Prebuild test for the door (MP-002): the sign-in request, the code and the link; and
+// (MP-002b) the password: the rule, the hash, the login route, and the one VOW gate that
+// requires it on every surface.
 //
 // The headline assertion is the one the task set: a run of 100 bot signups sends zero emails.
 // It runs the real requestSignIn() with the database and the sender replaced by counters, so
@@ -29,6 +31,8 @@ import {
 } from "@/lib/portal/door";
 import { HONEYPOT_FIELD, type GuardVerdict } from "@/lib/lead/guards";
 import { SESSION_MAX_DAYS } from "@/lib/auth";
+import { judgePassword, hashPassword, verifyPassword, MIN_PASSWORD_LENGTH, BCRYPT_COST } from "@/lib/portal/password";
+import { canSeeVowRecords, vowStepsLeft } from "@/lib/vow-access";
 import { VOW_ACKNOWLEDGEMENT_TEXT } from "@/lib/vow-acknowledgement";
 import { PORTAL_CONSENT_TEXT } from "@/lib/portal/consent";
 
@@ -225,13 +229,77 @@ async function main() {
   ok(auth.includes("setExpirationTime(`${SESSION_MAX_DAYS}d`)"), "the JWT expiry is the ceiling");
   ok(!/refresh|sliding|extend/i.test(auth.replace(/\/\/.*$/gm, "")), "auth.ts has no sliding window");
 
+  const terms = readFileSync("src/app/terms/page.tsx", "utf8");
+
+  // ── the password (MP-002b, R-805(c)) ─────────────────────────────────────────
+  eq(MIN_PASSWORD_LENGTH, 12, "twelve characters or more");
+  eq(BCRYPT_COST, 12, "bcrypt cost 12");
+  eq(judgePassword("correct horse battery", "person@example.com").ok, true, "a 21-character phrase passes");
+  eq(judgePassword("elevenchars", "person@example.com").ok, false, "eleven characters fail");
+  eq(judgePassword("twelvecharss", "person@example.com").ok, true, "exactly twelve pass");
+  {
+    const v = judgePassword("Person@Example.com", "person@example.com");
+    ok(!v.ok && v.reason === "email", "the email address itself is refused, any case");
+  }
+  {
+    const v = judgePassword("xxperson@example.comxx", "person@example.com");
+    ok(!v.ok && v.reason === "email", "a password containing the address is refused");
+  }
+  {
+    const v = judgePassword("longlocalpartname", "longlocalpartname@example.com");
+    ok(!v.ok && v.reason === "email", "the part before the @ is refused");
+  }
+  ok(!judgePassword(undefined, "person@example.com").ok, "no password fails");
+  ok(!judgePassword("x".repeat(201), "person@example.com").ok, "201 characters fail");
+  {
+    const hash = await hashPassword("correct horse battery");
+    ok(hash.startsWith("$2") && hash.includes("$12$"), `the hash is bcrypt at cost 12: ${hash.slice(0, 7)}`);
+    ok(await verifyPassword("correct horse battery", hash), "the right password verifies");
+    ok(!(await verifyPassword("correct horse batterx", hash)), "a wrong password does not");
+    ok(!(await verifyPassword("correct horse battery", null)), "no hash never verifies");
+    ok(!(await verifyPassword("", hash)), "an empty password never verifies");
+    const hash2 = await hashPassword("correct horse battery");
+    ok(hash !== hash2, "two hashes of one password differ (salted)");
+  }
+
+  // ── the gate: acknowledgement AND password ───────────────────────────────────
+  const acked = new Date();
+  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: acked, passwordHash: "$2a$12$x" }), true, "verified + acknowledged + password sees records");
+  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: acked, passwordHash: null }), false, "no password: no records, even acknowledged");
+  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: null, passwordHash: "$2a$12$x" }), false, "no acknowledgement: no records, even with a password");
+  eq(canSeeVowRecords({ verified: false, vowAcknowledgedAt: acked, passwordHash: "$2a$12$x" }), false, "unverified: no records");
+  eq(canSeeVowRecords(null), false, "no session: no records");
+  {
+    const steps = vowStepsLeft({ verified: true, vowAcknowledgedAt: acked, passwordHash: null });
+    ok(!steps.needsAcknowledgement && steps.needsPassword, "an acknowledged row without a password owes only the password");
+  }
+  for (const f of [
+    "src/lib/sold-data.ts",
+    "src/app/api/sold/route.ts",
+    "src/app/api/sold-stats/route.ts",
+    "src/app/api/streets/[slug]/sold-records/route.ts",
+    "src/components/vow/VowGate.tsx",
+    "src/app/sold/page.tsx",
+    "src/components/street/NeighbourhoodSoldBlock.tsx",
+  ]) {
+    const src = readFileSync(f, "utf8");
+    ok(src.includes("canSeeVowRecords("), `${f} gates through canSeeVowRecords`);
+    ok(!/if \(!user\.vowAcknowledgedAt\)|!!user\?\.vowAcknowledgedAt|user && user\.vowAcknowledgedAt/.test(src), `${f} has no bare acknowledgement check`);
+  }
+  const login = readFileSync("src/app/api/auth/login/route.ts", "utf8");
+  ok(login.includes("verifyPassword(password, user?.passwordHash)"), "login compares even when there is no row or no hash");
+  ok(login.includes("checkLoginRateLimit(") && login.includes("checkOrigin("), "login is rate limited and origin checked");
+  ok((login.match(/MISMATCH/g) || []).length >= 2 && !/no account|not set|unknown address/i.test(login.replace(/\/\/.*$/gm, "")), "login answers one message for wrong, unknown and unset");
+  const ackRoute = readFileSync("src/app/api/auth/acknowledge-vow/route.ts", "utf8");
+  ok(ackRoute.includes("judgePassword(body.password, user.email)") && ackRoute.includes("hashPassword("), "the card's route judges and hashes the password");
+  ok(ackRoute.indexOf("judgePassword(") < ackRoute.indexOf("hashPassword("), "the password is judged before it is hashed");
+
   // ── the words ────────────────────────────────────────────────────────────────
   ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("90 days"), "the VOW text states the 90-day sign-in");
-  ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("one-time code or link"), "the VOW text names the credential");
+  ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("username is my email address") && VOW_ACKNOWLEDGEMENT_TEXT.includes("my password is mine alone"), "the VOW text (v3) names username and password");
+  ok(terms.includes("username") && terms.includes("password") && terms.includes("R-805"), "/terms names the username, the password and R-805");
   ok(!/—/.test(VOW_ACKNOWLEDGEMENT_TEXT + PORTAL_CONSENT_TEXT), "no em-dash in the texts");
   ok(PORTAL_CONSENT_TEXT.includes("unsubscribe"), "the consent sentence promises an unsubscribe");
-  const terms = readFileSync("src/app/terms/page.tsx", "utf8");
-  ok(terms.includes("broker of record"), "/terms notes the ruling passwordless waits on");
 
   // ── the wiring ───────────────────────────────────────────────────────────────
   const signup = readFileSync("src/app/api/auth/signup/route.ts", "utf8");
@@ -257,8 +325,12 @@ async function main() {
   const form = readFileSync("src/app/signin/SignInForm.tsx", "utf8");
   ok(form.includes('params.get("redirect")'), "the form reads redirect");
   ok(form.includes("honeypotInputProps"), "the form renders the honeypot");
-  ok(form.includes("window.location.assign(data.redirect"), "the form lands on the redirect the server returned");
-  ok(!/password/i.test(form.replace(/No password/g, "")), "the form has no password field");
+  ok(form.includes("window.location.assign(path") && form.includes("land(data.redirect)"), "the form lands on the redirect the server returned");
+  ok(form.includes('type="password"') && form.includes('autoComplete="current-password"'), "the form has the password step");
+  ok(form.includes('id="signin-link-instead"') && form.includes("/api/auth/login"), "the form offers the link instead and posts to login");
+  const card = readFileSync("src/components/vow/VowAcknowledgementPrompt.tsx", "utf8");
+  ok(card.includes('autoComplete="new-password"') && card.includes("data-vow-password"), "the card asks for the password");
+  ok(card.includes('fetch("/api/auth/me")') && card.includes("needsPassword"), "the card asks /me which parts are owed");
   const landing = readFileSync("src/app/signin/link/LinkLanding.tsx", "utf8");
   ok(landing.includes('method: "POST"'), "the link page consumes the token by POST, not by the GET a scanner makes");
 
