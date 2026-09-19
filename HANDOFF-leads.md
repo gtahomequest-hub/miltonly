@@ -2,9 +2,35 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-19, after ML-004 was merged by Core and gated locally during the Vercel pause._
+_Last rewritten 2026-09-19, after ML-005 put the bot gate on the lead ingress and purged the sale-detail bot._
 
 ## READ THIS FIRST
+
+**ML-005 IS ON THIS BRANCH, GATED LOCALLY, PREVIEW PENDING, AWAITING CORE'S MERGE.** Head
+**`064c5b6988f6370dac20ce7b645dfd48a2e503e2`**, one commit above the ML-004 docs, `origin/main`
+`e606d8b` an ancestor. Record in `scratchpad/reports/ML-005-bot-gate.md`.
+
+**THE SALE-DETAIL BOT IS GONE AND CANNOT COME BACK THE SAME WAY.** 64 production rows (09-11 to
+09-16), one per Tor exit, harvested addresses, gibberish names, and a User-Agent WRAPPED IN
+DOUBLE QUOTES on every row. Purged with `scripts/purge-bot-leads.ts --apply` on 2026-09-19:
+64 rows, 104 `LeadActivity` rows cascaded, 0 watches or users touched. `public.Lead` is 46 rows.
+`src/lib/lead/guards.ts` now has `checkUserAgent` (missing or quoted UA: 200, nothing written)
+and `emailLimitKey` (the per-inbox limit keys on the address with Gmail dots and plus-tags
+removed; the stored address is never touched), plus daily windows: IP 5/10 min and 12/day,
+inbox 3/hour and 6/day. The portal door inherits the collapse through `checkRateLimit`; it does
+not yet pass a User-Agent (open item). The sale-detail form has a honeypot now; it was the one
+form without one.
+
+**EVERY WRITE AND SEND IN `ingestLead` IS INJECTABLE (`IngestDeps`).** `scripts/test-lead-bot-gate.ts`
+runs 100 bot submissions through the real path with counters at prebuild: 0 rows, 0 emails.
+The dotted drip and the one-IP burst stop at the household's allowance; a control reaches
+everything. Removing a guard fails the build.
+
+**THE REPLAY SAYS THE LISTED SET ALONE WOULD NOT HAVE STOPPED THIS BOT.** Over the last 30 days
+of production rows, the limits and the collapse refuse 0 of the 64; the user-agent guard
+refuses all 64. The dry run prints this by environment, source and guard; the preview rows it
+refuses are the worktrees' own proof batches (30 leads from one IP in an hour), so a proof of
+that size now needs the limiter lifted or ten minutes between rows.
 
 **ML-004 IS MERGED.** Core merged `feat/leads @ 7eeeb79` as **`7196623`** (MC-028), with ML-003
 and ML-002 beneath it. **IT HAS NOT DEPLOYED: VERCEL IS PAUSED** (production and every preview
@@ -58,12 +84,12 @@ fix. When a sold alert exists, put the promise back in those seven places.
 
 | | |
 |---|---|
-| branch | `feat/leads`, everything merged to main as of `7196623`; `origin/main` `e606d8b` merged back as **`def48e6`**, head is docs above it |
+| branch | `feat/leads`, ML-005 at **`064c5b6`** above the ML-004 docs; ML-004 and below merged to main as of `7196623` |
 | Phase 2 merge on main | **`543ef99`** (merges `26381f9`) |
 | last preview of this branch | `miltonly-3obrz4ffz` at `7eeeb79` (battery, before the pause); the sends were from `miltonly-md810529s` at `1721347`. **Vercel paused since 2026-09-19; both answer 402** |
 | battery there | `--only=claims,nav,footer,homepage` **PASS** on the preview (after its surface cache was purged, see Traps) and **PASS · 4 checks · 626 pages** locally at `def48e6` |
-| prebuild, lead layer | `[lead-guards] 209` · `[lead-forms] 229` · `[leads-digest] 236` assertions (main's `street-valuation` surface added) |
-| `public.Lead` | 25 production rows (10 `sale-detail` on 2026-09-11 alone, on four listings; open item 7), 30 preview |
+| prebuild, lead layer | `[lead-guards] 234` · `[lead-forms] 230` · `[leads-digest] 236` · `[lead-bot-gate] 21` assertions |
+| `public.Lead` | **46 rows** after the ML-005 purge (64 bot rows gone); the 30 preview proof rows remain |
 | `SavedSearch` | the three ML-004 preview rows were deleted; the preview `digest` row is recreated on the next preview send |
 | ingress routes | **one**: `/api/leads/create` |
 | Phase 0, 1, 2 | **all merged** |
@@ -75,7 +101,8 @@ fix. When a sold alert exists, put the promise back in those seven places.
 ```
 a form  →  postLeadDetailed()  →  POST /api/leads/create  →  ingestLead()
            src/lib/postLeadClient.ts                          src/lib/lead/ingest.ts
-                                                                ├─ guards.ts    honeypot, origin, rate limit
+                                                                ├─ guards.ts    honeypot, origin, user agent, rate limit (inbox key, daily windows)
+                                                                │               every write and send behind IngestDeps; test-lead-bot-gate.ts counts them
                                                                 ├─ fields.ts    every form→column mapping
                                                                 ├─ score.ts     the one scoring rule
                                                                 ├─ intent.ts    the value vocabulary
@@ -128,6 +155,12 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
 
 ## Traps
 
+- **The honeypot field is `company_website`** (`src/lib/lead/honeypot.ts`). A smoke test that
+  guesses the name posts a REAL lead: on 2026-09-19 one did, wrote a development row and sent
+  a confirmation to a stranger's Gmail alias. Read the constant; never guess it.
+- **A proof batch from one IP now hits the daily window at 13 and the burst at 6 in ten
+  minutes.** Space the rows or run the path with `IngestDeps` and an in-memory store, as the
+  bot gate does.
 - **Local gate during a Vercel pause:** `pnpm build`, then
   `VERCEL_GIT_COMMIT_SHA=$(git rev-parse HEAD) npx next start -p 3005`, then
   `BASE=http://localhost:3005 node scripts/verify/run.mjs --only=…`. `next start` reads
@@ -206,16 +239,15 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
    watches are **0**, so each run sends nothing. The first real subscriber makes it real.
 6. **Eight questionable `homepage-newsletter` rows** predate that surface having a honeypot.
    Still in the table, untouched.
-7. **Ten `sale-detail` leads on 2026-09-11**, on four listings, in a table that held 15 rows the
-   day before. Not examined; see item 11.
+7. **The `sale-detail` bot** (items 7 and 11 before): identified, purged and gated in ML-005.
 8. **Nine preview watches** remain, matching Phase 1's posture. Tagged, so no cron reads them.
 9. **`/api/seo/digest` (Core, behind `ORGANIC_LOOP_ENABLED`) sends with no footer and no
    unsubscribe.** `emailFooter` and a `digest`-kind watch through `digestWatchFor` would give it
    both in a few lines; it is Core's file.
 10. **The rentals alert strip promises "SMS alert before it appears on any other site"** and
     the cron sends email, daily, about listings already on the site. Rentals tier's copy.
-11. **64 `sale-detail` leads in 7 days across 30 listings, 1 to 5 per page**, in the ML-004
-    proof digest. Item 7 is now a pattern, not a day. Read the rows before they are read as demand.
+11. **The portal door does not pass a User-Agent to its guards.** `checkUserAgent` exists; wiring
+    it into `requestSignIn` is two lines in the portal tier.
 12. **Production's homepage check fails `proof-sales-12mo` 1,723 vs 1,712** at `10de234`,
     on production, with no lead code involved. Main's.
 13. Still open from report 062: **G10, the street-grain valuation figure on `/sell`**, and the
