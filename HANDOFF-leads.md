@@ -2,13 +2,19 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-17, after ML-004 put CASL on every recurring email and consent text on every surface._
+_Last rewritten 2026-09-19, after ML-004 was merged by Core and gated locally during the Vercel pause._
 
 ## READ THIS FIRST
 
-**ML-004, ML-003 AND ML-002 ARE ON THIS BRANCH, AWAITING CORE'S MERGE.** Proven tree
-**`7eeeb79a17f848ee23e8819a60743ab6568116fc`**, with `origin/main` `5ac650b` merged in clean
-as `8b0a17a`; the head is one docs commit above it. Merge the head. Record in `scratchpad/reports/ML-004-casl-consent.md`.
+**ML-004 IS MERGED.** Core merged `feat/leads @ 7eeeb79` as **`7196623`** (MC-028), with ML-003
+and ML-002 beneath it. **IT HAS NOT DEPLOYED: VERCEL IS PAUSED** (production and every preview
+answer 402 on 2026-09-19). Until production answers 200: no `npx vercel` deploys, gate with
+`pnpm build` then `next start -p <port>` and `BASE=http://localhost:<port>` with
+`VERCEL_GIT_COMMIT_SHA` set for `/api/build`, and write "gated locally, preview pending" in
+the report. `origin/main` `e606d8b` is merged back into this branch as `def48e6`; the head is
+that merge plus docs. **Gated locally at `def48e6`: `--only=claims,nav,footer,homepage`
+PASS · 4 checks · 626 pages.** Outstanding when Vercel returns: `npx vercel ls --prod` and the
+battery on production at the deployed SHA. Record in `scratchpad/reports/ML-004-casl-consent.md`.
 
 **EVERY RECURRING EMAIL NOW CARRIES ONE FOOTER AND ONE UNSUBSCRIBE.** The brief, the deal
 alerts (`sendDealAlertEmail`) and the weekly leads digest all render `src/lib/email/footer.ts`:
@@ -52,11 +58,11 @@ fix. When a sold alert exists, put the promise back in those seven places.
 
 | | |
 |---|---|
-| branch | `feat/leads`, ML-004 on ML-003 on ML-002, `origin/main` `5ac650b` merged. Proven tree **`7eeeb79`**, head one docs commit above |
+| branch | `feat/leads`, everything merged to main as of `7196623`; `origin/main` `e606d8b` merged back as **`def48e6`**, head is docs above it |
 | Phase 2 merge on main | **`543ef99`** (merges `26381f9`) |
-| last preview of this branch | `miltonly-3obrz4ffz` at `7eeeb79` (battery); the sends were from `miltonly-md810529s` at `1721347` |
-| battery there | `--only=claims,nav,footer,homepage` **PASS** after the preview's surface cache was purged (see Traps) |
-| prebuild, lead layer | `[lead-guards] 209` · `[lead-forms] 221` · `[leads-digest] 232` assertions |
+| last preview of this branch | `miltonly-3obrz4ffz` at `7eeeb79` (battery, before the pause); the sends were from `miltonly-md810529s` at `1721347`. **Vercel paused since 2026-09-19; both answer 402** |
+| battery there | `--only=claims,nav,footer,homepage` **PASS** on the preview (after its surface cache was purged, see Traps) and **PASS · 4 checks · 626 pages** locally at `def48e6` |
+| prebuild, lead layer | `[lead-guards] 209` · `[lead-forms] 229` · `[leads-digest] 236` assertions (main's `street-valuation` surface added) |
 | `public.Lead` | 25 production rows (10 `sale-detail` on 2026-09-11 alone, on four listings; open item 7), 30 preview |
 | `SavedSearch` | the three ML-004 preview rows were deleted; the preview `digest` row is recreated on the next preview send |
 | ingress routes | **one**: `/api/leads/create` |
@@ -121,6 +127,12 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
   edition with nothing in it is not sent.**
 
 ## Traps
+
+- **Local gate during a Vercel pause:** `pnpm build`, then
+  `VERCEL_GIT_COMMIT_SHA=$(git rev-parse HEAD) npx next start -p 3005`, then
+  `BASE=http://localhost:3005 node scripts/verify/run.mjs --only=…`. `next start` reads
+  `.env.local`, so the reads hit the real databases; `/api/build` needs the env var or the
+  battery aborts at the gate. Kill the listener on the port afterwards (`netstat -ano`, `taskkill`).
 
 - **A fresh preview's Data Cache holds the published street set for an hour, and only
   production's writes revalidate it.** The homepage check failed `proof-street-pages` 589 vs
