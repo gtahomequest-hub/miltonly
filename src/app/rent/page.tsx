@@ -3,6 +3,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import RentalsClient from "../rentals/RentalsClient";
 import SiteChrome from "@/components/nav/SiteChrome";
+import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
 
 export const dynamic = 'force-dynamic';
 
@@ -27,15 +28,18 @@ const rentCategories = [
 ];
 
 export default async function RentLandingPage() {
-  const listings = await prisma.listing.findMany({
-    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true },
+  // MC-029: available units only (src/lib/listings/vow.ts), stripped of every VOW-only column
+  // before serialisation; "new this week" is counted here so the client holds no list date.
+  const listingRows = await prisma.listing.findMany({
+    where: PUBLIC_LEASE_WHERE,
     orderBy: { listedAt: "desc" },
     take: 48,
   });
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+  const newThisWeek = listingRows.filter((l) => l.listedAt >= weekAgo).length;
+  const listings = listingRows.map(stripVowFields);
 
-  const totalRentals = await prisma.listing.count({
-    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true },
-  });
+  const totalRentals = await prisma.listing.count({ where: PUBLIC_LEASE_WHERE });
 
   const avgRent = await prisma.listing.aggregate({
     where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true },
@@ -62,6 +66,7 @@ export default async function RentLandingPage() {
     <SiteChrome>
     <RentalsClient
       listings={serialized}
+      newThisWeek={newThisWeek}
       totalRentals={totalRentals}
       avgRent={Math.round(avgRent._avg.price || 2419)}
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}

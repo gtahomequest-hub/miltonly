@@ -4,13 +4,14 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Lock } from "lucide-react";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
 import { config } from "@/lib/config";
 import ComparisonTable from "./ComparisonTable";
 import UnlockModal from "./UnlockModal";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import TrustPillars from "@/components/landing/TrustPillars";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
@@ -24,7 +25,8 @@ interface Listing {
   parking: number;
   propertyType: string;
   photos: string[];
-  listedAt: string;
+  listOfficeName?: string | null;
+  // No listedAt (MC-029): VOW-only, stripped before serialisation.
   neighbourhood: string;
   possessionDetails: string | null;
 }
@@ -217,7 +219,6 @@ function AdsClientInner({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {/* Real listings — full info visible, property-type badge below photo */}
             {teaserClear.map((l) => {
-              const days = daysAgo(new Date(l.listedAt));
               const streetAddr = l.address.split(",")[0];
               const typeLabel = TYPE_DISPLAY_LABEL[l.propertyType?.toLowerCase()] || l.propertyType;
               return (
@@ -233,9 +234,6 @@ function AdsClientInner({
                     {!l.photos[0] && (
                       <div className="absolute inset-0 flex items-center justify-center text-[40px]">🏠</div>
                     )}
-                    <span className="absolute top-2.5 left-2.5 bg-[#07111f]/85 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2 py-1 rounded">
-                      {days === 0 ? "New today" : days <= 7 ? `${days}d new` : `${days}d ago`}
-                    </span>
                   </div>
                   <div className="p-4">
                     {/* Property-type badge — branded amber pill, sits just above the price */}
@@ -244,8 +242,9 @@ function AdsClientInner({
                         {typeLabel}
                       </span>
                     )}
-                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1">
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1" data-price>
                       {formatPriceFull(l.price)}<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
+                      <ListingBrokerage name={l.listOfficeName} />
                     </div>
                     <div className="text-[13px] font-semibold text-[#cbd5e1] mb-1 line-clamp-1">{streetAddr}</div>
                     <div className="flex gap-3 text-[12px] text-[#94a3b8]">

@@ -1,10 +1,71 @@
-CORE · D:\miltonly · main
+CORE · D:\miltonly · fix/vow-compliance
 
 # Handoff
 
-_Last rewritten 2026-09-18 (MC-028 merged): four merges by SHA in order, the favicon set, Street Page v3 (MH-005), Portal slice 1 (MP-002, the door) and ML-004 (the CASL footer), each behind a full local gate; production serves `7196623` and the battery passed. Nothing waits on a merge._
+_Last rewritten 2026-09-18 (MC-029 built, NOT merged): the TRREB VOW compliance hotfix on `fix/vow-compliance @ 6c23bdc`, preview `https://miltonly-czlzy3wc7-gtahomequest-hubs-projects.vercel.app` serving that SHA, full battery `PASS · 21 checks · 609 pages · 769s`. It waits on explicit approval to merge. Main is `e606d8b` (the nightly audit's commit on MC-028's `895962b`) and production serves `895962b`, which the new check fails 8 of 15._
 
 ## READ THIS FIRST
+
+**MC-029 IS BUILT ON `fix/vow-compliance @ 6c23bdc` AND WAITS ON APPROVAL. DO NOT MERGE WITHOUT
+IT.** Two commits on top of `e606d8b`: `486ff2a` (the work) and `6c23bdc` (the battery signs in
+through the door; status columns stripped from public rows). Local gate on Node 22: exit 0,
+168/168, twice. Preview `czlzy3wc7` serves `6c23bdc` and the full battery passed there
+(`scratchpad/mc003/battery-mc029-preview-6c23bdc.log`); the new `vow-fields` check is red on
+production at `895962b` (`battery-mc029-prod-red.log`: 16 of 16 anonymous surfaces carry a
+VOW-only field, 8 of 15 assertions fail) and green on the branch. Record:
+`scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB reply.
+**To merge:** the branch head is the docs commit on top of `6c23bdc` (`git log -1
+origin/fix/vow-compliance`); merge it by SHA with `--no-ff` on main, the local gate, push,
+`npx vercel ls --prod`, then `EXPECT_SHA=<merge sha> BASE=https://miltonly.com node
+scripts/verify/run.mjs`.
+
+**WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
+columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
+`soldPrice`, `soldDate`), the public predicate (`permAdvertise` AND on the market: sale by
+`status='active'`, lease by `leaseStatus='active'`, as `PUBLIC_SALE_WHERE`, `PUBLIC_LEASE_WHERE`,
+`PUBLIC_LISTING_WHERE`, `isPublicListing`) and `stripVowFields`, which every page runs on a
+Prisma row before `JSON.parse(JSON.stringify(...))` hands it to a client component (it also drops
+`status` and `leaseStatus`, redundant on a public row). The listing page (ISR) never carries a
+VOW column; `/api/listings/[mls]/vow` (force-dynamic, `getSession` + `vowAcknowledgedAt`) answers
+them to an acknowledged session and `ListingVowFacts` renders them, with the sign-in line as the
+server default and MP-002's card for a signed-in, unacknowledged person. `/listings` is
+force-dynamic, reads the session on the server and passes `{ vow }` to `getListingsV2Data`, whose
+`CARD_SELECT` names no VOW column; the VOW columns join the select only then and land under
+`card.vow`. `/listings?status=sold` redirects to `/sold`; a sold, expired or leased listing page
+answers the display-flag shell ("This listing is not available for display", noindex, the same
+words for every reason). `/rentals`, `/rent`, `/rentals/ads`, the ad landing pages and the condo
+page use the public predicates (they selected leased units before). The Buy menu's "Price
+changes" panel keeps the count and shows the newest four homes, not the changed ones. The
+listing brokerage renders through one component, `src/components/listings/ListingBrokerage.tsx`,
+placed INSIDE the `[data-price]` element on every card and the detail page so it inherits the
+price's face, size, weight and colour (TRREB item 27), and beside the price in the alert email.
+Deleted: `/listings-v2-preview` and its mock fixtures (a public route rendering fabricated sold
+cards), `ListingsCardsClient.tsx`, `ListingsGrid.tsx`, `street/ActiveInventory.tsx` (dead).
+
+**THE BATTERY SIGNS IN THROUGH THE DOOR, AND THE DOOR HAS LIMITS.** `JWT_SECRET` is a sensitive
+Vercel secret: `vercel env pull` writes `[SENSITIVE]`, so a minted token was never an option and
+`.env.local` carries no `JWT_SECRET`. `vow-fields` POSTs `/api/auth/signup` for the most recently
+acknowledged verified user in DB1 (`gtahomequest@gmail.com`), reads `verifyCode` off the row,
+POSTs `/api/auth/verify`, keeps the cookie in the OS temp dir per host and checks it against
+`/api/auth/me` before reuse. One real sign-in email reaches that inbox per fresh sign-in. The
+limiter is shared by every lead form: three requests an hour per address, five per IP in ten
+minutes; a 429 fails the check by name (it did once tonight, running production straight after
+the preview). The Upstash keys are shared between preview and production.
+
+**AGGREGATES LEFT AS THEY WERE, ON PURPOSE.** A street's typical days on market (k5, DB3), the
+hub's and the homepage's days on market, the market edition's "after 88 days on market", the
+menu's "N price changes in the last week" and "N listed in the last 24 hours", `/rentals` "N new
+this week" (now counted on the server), `/api/street-stats` (k-floored DB1 averages, no caller),
+`/api/listings/count`. The `/api/content/v1/*` routes still return `listedAt` per listing to the
+bearer-token content engine; they are not public. The daily brief names streets with a closing,
+never a listing.
+
+**LEFT ON PRODUCTION BY THE PROOFS.** The desk's user `cmu66lk3y0000lhuz6ye554f3` has a fresh
+`verifyCode` cleared by the verify, and two sign-in emails in its inbox. Nothing else.
+
+**BEFORE MC-029: MAIN WAS `7196623` AND PRODUCTION SERVES `895962b`** (MC-028's docs commit;
+`e606d8b` is the nightly audit on top), `PASS · 20 checks · 609 pages · 713s`, ON NODE 22. The
+MC-028 paragraphs below stand.
 
 **MAIN IS `7196623` AND PRODUCTION SERVES `7196623`, `PASS · 20 checks · 609 pages · 713s`, ON
 NODE 22.** MC-028 merged four commits by SHA, in order, each followed by the full local gate

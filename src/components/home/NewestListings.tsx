@@ -15,6 +15,7 @@
 //      street address the client could reveal.
 import type { ListingCardData } from '@/components/listings/v2/types';
 import { SectionHead } from './SectionHead';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 
 interface Props {
   listings: ListingCardData[];
@@ -34,9 +35,6 @@ function hood(raw: string): { label: string; slug: string } {
 
 const money = (n: number) => `$${n.toLocaleString('en-CA')}`;
 
-function daysSince(iso: string): number {
-  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
-}
 
 export function NewestListings({ listings, newThisWeek }: Props) {
   if (listings.length === 0) return null;
@@ -52,7 +50,6 @@ export function NewestListings({ listings, newThisWeek }: Props) {
         <ul className="mh-cards">
           {listings.map((l) => {
             const h = hood(l.neighbourhood);
-            const d = daysSince(l.listedAt);
             return (
               <li key={l.mlsNumber} className="mh-card">
                 <a className="mh-cardphoto" href={`/listings/${l.mlsNumber}`} tabIndex={-1} aria-hidden="true">
@@ -64,7 +61,11 @@ export function NewestListings({ listings, newThisWeek }: Props) {
                   )}
                 </a>
                 <div className="mh-cardbody">
-                  <span className="mh-cardprice">{money(l.price)}</span>
+                  {/* The brokerage inside the price, at its size (TRREB item 27, MC-029). */}
+                  <span className="mh-cardprice" data-price>
+                    {money(l.price)}
+                    <ListingBrokerage name={l.listOfficeName} />
+                  </span>
                   <a className="mh-cardaddr" href={`/listings/${l.mlsNumber}`}>
                     {l.address}
                   </a>
@@ -73,7 +74,6 @@ export function NewestListings({ listings, newThisWeek }: Props) {
                   </span>
                   <span className="mh-cardfoot">
                     <a href={`/neighbourhoods/${h.slug}`}>{h.label}</a>
-                    <span className="mh-carddays">{d === 0 ? 'Listed today' : `${d} days on market`}</span>
                   </span>
                 </div>
               </li>

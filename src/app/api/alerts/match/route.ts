@@ -130,7 +130,7 @@ async function run(request: NextRequest) {
 
     const matches = await prisma.listing.findMany({
       where,
-      select: { address: true, price: true, mlsNumber: true, propertyType: true },
+      select: { address: true, price: true, mlsNumber: true, propertyType: true, listOfficeName: true },
       take: 20,
       orderBy: { createdAt: "desc" },
     });
@@ -154,6 +154,7 @@ async function run(request: NextRequest) {
         price: m.price,
         mlsNumber: m.mlsNumber,
         propertyType: m.propertyType || "Home",
+        listOfficeName: m.listOfficeName,
       })),
       search.id,
       linkOrigin,

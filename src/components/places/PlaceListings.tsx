@@ -7,7 +7,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 import { config } from "@/lib/config";
 
 interface Listing {
@@ -18,7 +19,8 @@ interface Listing {
   bathrooms: number | null;
   propertyType: string;
   photos: string[];
-  listedAt: string;
+  listOfficeName?: string | null;
+  // No listedAt (MC-029): the rows arrive stripped of every VOW-only column.
 }
 
 export default function PlaceListings({
@@ -44,7 +46,6 @@ export default function PlaceListings({
     <>
       <div className="pl-lgrid">
         {visible.map((l) => {
-          const days = daysAgo(new Date(l.listedAt));
           return (
             <Link key={l.mlsNumber} href={`/listings/${l.mlsNumber}`} className="pl-lcard">
               <div className="pl-lphoto">
@@ -52,12 +53,12 @@ export default function PlaceListings({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={l.photos[0]} alt={l.address} loading="lazy" />
                 )}
-                <span className="pl-ltag">
-                  {days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d on market`}
-                </span>
               </div>
               <div className="pl-lbody">
-                <p className="pl-lprice">{formatPriceFull(l.price)}</p>
+                <p className="pl-lprice" data-price>
+                  {formatPriceFull(l.price)}
+                  <ListingBrokerage name={l.listOfficeName} />
+                </p>
                 <p className="pl-laddr">{l.address}</p>
                 <div className="pl-lspecs">
                   {l.bedrooms != null && <span>{l.bedrooms} bed</span>}

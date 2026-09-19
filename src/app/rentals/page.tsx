@@ -6,6 +6,7 @@ import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 import { resolveRentalScope } from "@/lib/rentalScope";
 import SiteChrome from "@/components/nav/SiteChrome";
 import { cached } from "@/lib/cache";
+import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
 
 // The page reads searchParams (the hub scope), so it is dynamic; `revalidate` was a no-op
 // beside force-dynamic and is gone. What it reads is cached instead (MC-018, below).
@@ -49,12 +50,20 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
   const scope = await resolveRentalScope(searchParams?.neighbourhood);
   const scopeWhere = scope ? { neighbourhood: { in: scope.rawStrings } } : {};
 
-  const { serialized, totalRentals, avgRentValue, rentAvgs } = await cached(`rentals:${scope?.slug ?? "all"}:v1`, RENTALS_TTL, async () => {
-    const listings = await prisma.listing.findMany({
-      where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true, ...scopeWhere },
+  const { serialized, totalRentals, avgRentValue, rentAvgs, newThisWeek } = await cached(`rentals:${scope?.slug ?? "all"}:v2`, RENTALS_TTL, async () => {
+    // MC-029: the public lease predicate (src/lib/listings/vow.ts). This selected every For
+    // Lease row ever advertised, so leased units sat in the grid; and the whole row went to the
+    // client, VOW-only columns included. Now the set is available units only, ordered newest
+    // first on the server, and the rows are stripped before they are serialised.
+    const listingRows = await prisma.listing.findMany({
+      where: { ...PUBLIC_LEASE_WHERE, ...scopeWhere },
       orderBy: { listedAt: "desc" },
       take: 48,
     });
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+    // An aggregate across the set, computed here so the client never sees a list date.
+    const newThisWeek = listingRows.filter((l) => l.listedAt >= weekAgo).length;
+    const listings = listingRows.map(stripVowFields);
 
     // AVAILABLE, not "ever advertised". This counted every For Lease row regardless of
     // leaseStatus and the page printed the result as "N active rentals" five times over. On
@@ -87,13 +96,14 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
     );
 
     // JSON in, JSON out: the cache stores what the client component receives
-    return { serialized: JSON.parse(JSON.stringify(listings)) as Parameters<typeof RentalsClient>[0]["listings"], totalRentals, avgRentValue: avgRent._avg.price, rentAvgs };
+    return { serialized: JSON.parse(JSON.stringify(listings)) as Parameters<typeof RentalsClient>[0]["listings"], totalRentals, avgRentValue: avgRent._avg.price, rentAvgs, newThisWeek };
   });
 
   return (
     <SiteChrome>
     <RentalsClient
       listings={serialized}
+      newThisWeek={newThisWeek}
       totalRentals={totalRentals}
       avgRent={Math.round(avgRentValue || 2419)}
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}
