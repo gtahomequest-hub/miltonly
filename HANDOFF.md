@@ -1,23 +1,30 @@
-CORE · D:\miltonly · fix/vow-compliance
+CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-18 (MC-029 built, NOT merged): the TRREB VOW compliance hotfix on `fix/vow-compliance @ 6c23bdc`, preview `https://miltonly-czlzy3wc7-gtahomequest-hubs-projects.vercel.app` serving that SHA, full battery `PASS · 21 checks · 609 pages · 769s`. It waits on explicit approval to merge. Main is `e606d8b` (the nightly audit's commit on MC-028's `895962b`) and production serves `895962b`, which the new check fails 8 of 15._
+_Last rewritten 2026-09-19 (MC-029 merged locally, NOT pushed): Vercel is paused (402), so `fix/vow-compliance @ de199c2` is merged on local `main` as `5994cc7`, gated locally (build exit 0, `next start` battery, hub drift purged and rerun clean), preview pending. `origin/main` is still `e606d8b` and production serves `895962b`, which the new `vow-fields` check fails 8 of 15. Push when production answers 200._
 
 ## READ THIS FIRST
 
-**MC-029 IS BUILT ON `fix/vow-compliance @ 6c23bdc` AND WAITS ON APPROVAL. DO NOT MERGE WITHOUT
-IT.** Two commits on top of `e606d8b`: `486ff2a` (the work) and `6c23bdc` (the battery signs in
-through the door; status columns stripped from public rows). Local gate on Node 22: exit 0,
-168/168, twice. Preview `czlzy3wc7` serves `6c23bdc` and the full battery passed there
-(`scratchpad/mc003/battery-mc029-preview-6c23bdc.log`); the new `vow-fields` check is red on
-production at `895962b` (`battery-mc029-prod-red.log`: 16 of 16 anonymous surfaces carry a
-VOW-only field, 8 of 15 assertions fail) and green on the branch. Record:
-`scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB reply.
-**To merge:** the branch head is the docs commit on top of `6c23bdc` (`git log -1
-origin/fix/vow-compliance`); merge it by SHA with `--no-ff` on main, the local gate, push,
-`npx vercel ls --prod`, then `EXPECT_SHA=<merge sha> BASE=https://miltonly.com node
-scripts/verify/run.mjs`.
+**LOCAL `main` IS `5994cc7`, FIVE COMMITS AHEAD OF `origin/main`, AND MUST NOT BE PUSHED UNTIL
+PRODUCTION ANSWERS 200.** Vercel was paused for about seven hours from the evening of
+2026-09-18 (every deployment, production included, answers 402). On that basis the merge was
+prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
+landed as `5994cc7` on `e606d8b`. Gated locally: `pnpm build` on Node 22 exit 0, 168/168; then
+`next start` on port 3100 (`scratchpad/mc003/run-start22.sh <port> <sha> <log>` sets
+`VERCEL_GIT_COMMIT_SHA` so `/api/build` answers the SHA the battery expects) and the full battery
+with `BASE=http://localhost:3100`: `FAIL · 21 checks · 626 pages · 749s` with four `hub-page`
+drifts and nothing else, then `PASS · 2 checks` on `hub-page,hub-meta` after purging the db2/db3
+tags, the 22 hubs and the street through `/api/revalidate` (the window-edge lie: gordon-krantz
+has a sale dated 2025-09-18, and Harrison's stock share moved with the feed; no MC-029 file
+touches a hub figure). `vow-fields` 15 of 15 locally. **When production is back:** `git push`,
+`npx vercel ls --prod`, `EXPECT_SHA=5994cc760c8b357f0e4dfe4bed13ca55ffe992b9
+BASE=https://miltonly.com node scripts/verify/run.mjs`. Before the pause, preview `czlzy3wc7`
+served `6c23bdc` and the full battery passed there (`PASS · 21 checks · 609 pages · 769s`).
+Record: `scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB
+reply and reconciles the audit's checklist (`MA-006-vow-fields-addendum.md` on `feat/audit`,
+every file:line) against the branch. Note the sitemap grew from 609 to 626 street pages overnight
+(the creation cron).
 
 **WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
 columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
@@ -61,7 +68,8 @@ bearer-token content engine; they are not public. The daily brief names streets 
 never a listing.
 
 **LEFT ON PRODUCTION BY THE PROOFS.** The desk's user `cmu66lk3y0000lhuz6ye554f3` has a fresh
-`verifyCode` cleared by the verify, and two sign-in emails in its inbox. Nothing else.
+`verifyCode` cleared by the verify, and three sign-in emails in its inbox (preview, production,
+localhost). Nothing else. A `next start` battery signs in against localhost like any other host.
 
 **BEFORE MC-029: MAIN WAS `7196623` AND PRODUCTION SERVES `895962b`** (MC-028's docs commit;
 `e606d8b` is the nightly audit on top), `PASS · 20 checks · 609 pages · 713s`, ON NODE 22. The
