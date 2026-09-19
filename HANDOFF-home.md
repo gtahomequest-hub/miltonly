@@ -29,6 +29,8 @@ pills anchor only where a section renders, `sampleCount`, `yoy`, the price first
 in place of `AggregateOffer`. `numericSentences.ts`: `isResidue`, `isFragment`. `DeferredTags.tsx`:
 gtag and fbq stubs, scripts on interaction or idle; Geist deleted. `next.config.mjs`: `images`.
 
+**VERCEL IS PAUSED (2026-09-19, about seven hours; every deployment answers 402).** No `npx vercel` deploys until production answers 200. Gate locally: `pnpm build`, then `VERCEL_GIT_COMMIT_SHA=local pnpm start -- -p <port>`, then the battery and checks with `BASE=http://localhost:<port> EXPECT_SHA=local`, and write "gated locally, preview pending" in the report. Merges to main may be prepared but not pushed until production is back. MH-005's gates all ran on the preview before the pause.
+
 **PREVIEWS COME FROM THE CLI.** `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`.
 Lighthouse is `scripts/audit/lighthouse.mjs` with `LH_BIN` pointing at the audit worktree's install;
 the MA-001 harness is `scripts/audit/street-page.mjs`; both take `--out=` into the session scratchpad.

@@ -3,6 +3,8 @@ HOME · D:\miltonly-home · feat/street-v3
 
 **Street Page v3, previewed, NOT merged.** Head `2553f2ed83139ea738010a3b51c41287ef78385e`, preview `https://miltonly-8g65ix8ay-gtahomequest-hubs-projects.vercel.app` (CLI deploy, `VERCEL_GIT_COMMIT_SHA` as env), full battery on it with the full SHA: `PASS · 20 checks · 606 pages · 764s`. Local build exit 0, zero `P2024`. Branched from `origin/main@5ac650b`; MA-001 changes 2 through 10 one commit each, then the phone-review items, then the gates. The MH-005 pre-step (the icon set) is its own branch, `fix/favicon@9144b35` from `origin/main`, pushed for Core to merge first and merged into this branch.
 
+**Vercel pause, 2026-09-19.** Every gate above ran on the preview before the pause; the preview and production both answer 402 now, for about seven hours. Nothing on this branch is pending: the merge is Core's and waits for production to answer 200. Anything that follows on this worktree gates locally (`pnpm build`, `next start` on a free port, `BASE=http://localhost:<port>` with the local build SHA) and says "gated locally, preview pending" until Vercel is back.
+
 ## Lighthouse mobile, the ten audit streets (slow-4G Moto G preset), production before against the preview after
 
 | street | perf before / after | LCP before / after | TBT before / after | bytes before / after | a11y | best practices |
