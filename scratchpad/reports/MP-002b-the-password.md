@@ -2,7 +2,7 @@
 
 PORTAL · D:\miltonly-portal · feat/portal
 
-The password, under TRREB R-805(c). App code at **`98d2cd7`** (on top of `b1a0c83`, the merge of `origin/main` `e606d8b` into the branch, one `QUEUE.md` conflict resolved by keeping both notes); the docs commit on top is the branch head, named in the reply. Previewed and proven, NOT merged; Core merges by SHA.
+The password, under TRREB R-805(c). **Gated locally, preview pending** (Vercel paused 2026-09-19; see the last section). App code at **`98d2cd7`** (on top of `b1a0c83`, the merge of `origin/main` `e606d8b` into the branch, one `QUEUE.md` conflict resolved by keeping both notes); the docs commit on top is the branch head, named in the reply. Previewed and proven, NOT merged; Core merges by SHA.
 
 ## What was done
 
@@ -39,11 +39,22 @@ Test row `gtahomequest@gmail.com` reset first (no acknowledgement, no password).
 5. **Acknowledged but no password** (password nulled by script, acknowledgement kept): password login → 401 same message; link → the card shows **0 text fields and 2 password fields** ("Choose a password to finish"), password twice → 12 rows at 3.9 s.
 6. With curl: login with no origin 403; unknown address 401 with the same message as a wrong password; right password 200.
 
+## Local gate, 2026-09-19: gated locally, preview pending
+
+Vercel is paused (production and every preview answer 402), so the branch head **`f7ddf4b`** was gated on this machine instead: `pnpm build` on Node 22 **exit 0**, `P2024` 0, prebuild 38 tests; `next start -p 3111` with `VERCEL_GIT_COMMIT_SHA=f7ddf4b…` so `/api/build` serves the local build SHA; the battery `EXPECT_SHA=f7ddf4b… BASE=http://localhost:3111 node scripts/verify/run.mjs`.
+
+**First full run: `FAIL · 20 checks · 626 pages · 739s`, two findings in `hub-page`**, both stale data, neither this branch's: `walker gordon-krantz-avenue-milton: ladder 9 sales vs street page meta 10` and `harrison hub-fact-stock 47% vs source 46`. Diagnosis: the street has a sale dated 2025-09-19, which left the 12-month window at 04:00 UTC today; DB2 live says 9, the DB3 nightly aggregate still says 10 until tonight; and the local `.next/cache/fetch-cache` (7,886 entries from earlier local runs) served yesterday's Neon reads to the first render. Dropping the `db2` and `db3` Data Cache tags and the two paths through `/api/revalidate` made the pages read 9 and 46 %; `--only=hub-page` then `PASS · 1 checks · 626 pages`. **Second full run, after the drop: `PASS · 20 checks · 626 pages · 258s`, exit 0.** Isolated, pre-existing, date-and-cache-dependent; the portal touched none of the hub or street figure paths.
+
+**The phone proof, repeated on `http://localhost:3111`** (iPhone UA, 390 × 844, emails through the real Resend key in `.env.local`, links carrying `http://localhost:3111`): first sign-in by link → the card (this time acknowledgement-only, because the row kept its password from the 18th) → 12 rows at 7.0 s; returning sign-in by password → no card, 12 rows at 5.6 s; a wrong password refused with the one message; password nulled → login 401 → link → the password-only card (0 text fields, 2 password fields) → 12 rows at 6.2 s; the stored hash `$2b$12$`, text version 3. Local times are slower than the preview's because the battery was crawling the same server.
+
+The preview proof on `miltonly-g8swlwol7` above stands; it was made before the pause. No `npx vercel` deploy was attempted today. Nothing is pushed to `main`; Core merges when production answers 200.
+
 ## Open
 
 - `NeighbourhoodSoldBlock.tsx` is the second street file the portal has touched (one line, the gate rule). Home should know.
 - The `+mc028` test row Core made on 2026-09-18 (`gtahomequest+mc028@gmail.com`, verified, no acknowledgement, no password) is still in `User`; the next link sign-in on it meets the full card.
 - A "change my password" surface does not exist yet; the link path resets nothing and the card only asks when the row has no password. MP-003 (the account) is the place: set a new password from the account page, and "forgot" = link → account → change.
 - `/rentals` still sends `?next=`; the form reads both.
+- A local `next start` serves the on-disk Data Cache from earlier runs; drop `db2` and `db3` through `/api/revalidate` before a local battery, or the first run can report yesterday's figures.
 
 Report: scratchpad/reports/MP-002b-the-password.md

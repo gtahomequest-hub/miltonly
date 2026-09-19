@@ -2,11 +2,23 @@
 
 PORTAL · D:\miltonly-portal · feat/portal
 
-_Last rewritten 2026-09-18 after MP-002b, the password: built, previewed, proven on a phone viewport, NOT merged. MP-002 (the door) was merged by Core as `706ce07` on 2026-09-18._
+_Last rewritten 2026-09-19: MP-002b, the password, gated locally at `f7ddf4b` while Vercel is paused (402 everywhere); the preview proof of the 18th stands; NOT merged. MP-002 (the door) was merged by Core as `706ce07` on 2026-09-18._
 
 ## READ THIS FIRST
 
-**MP-002b IS ON THIS BRANCH AT `98d2cd7` (app code), AWAITING CORE'S MERGE BY SHA.** The broker
+**VERCEL IS PAUSED (2026-09-19, about seven hours): every deployment answers 402.** No `npx
+vercel` deploys; gate with `pnpm build` then `next start -p <port>` with
+`VERCEL_GIT_COMMIT_SHA=$(git rev-parse HEAD)` so `/api/build` serves the local SHA, and run the
+battery with `EXPECT_SHA=<sha> BASE=http://localhost:<port>`. **Drop the `db2` and `db3` tags
+through `/api/revalidate` first**: a local `next start` serves the on-disk Data Cache from
+earlier runs, and the first battery of the 19th reported yesterday's figures on two hubs
+(`scratchpad/reports/MP-002b-the-password.md`, last section). `scratchpad/mp002/
+run-battery-local.sh <ref> <base> <log>` is the detached runner. Merges to `main` can be
+prepared, not pushed, until production answers 200.
+
+**MP-002b IS ON THIS BRANCH AT `98d2cd7` (app code, head `f7ddf4b` with docs), GATED LOCALLY
+(build exit 0, battery `PASS · 20 checks · 626 pages` on localhost, the four phone flows
+repeated on localhost), AWAITING CORE'S MERGE BY SHA.** The broker
 of record ruled under TRREB R-805(c): a username and a password per consumer. The email is the
 username; the password (12+ characters, not the email, bcrypt cost 12) is set on the card after
 the link or code verifies the email; the returning sign-in is email + password with "Email me a
@@ -92,7 +104,8 @@ exceptions above). A nav change is a request to Home.
   limit is its own** (`auth:login:ip` 10 per 10 min, `auth:login:email` 10 per 15 min).
 - **`scratchpad/mp002/null-password.mjs <email>`** clears a row's password and keeps its
   acknowledgement, for proving the password-only card; `inspect-user.mjs --reset-ack` clears
-  the acknowledgement, consent, street and password together.
+  the acknowledgement, consent and street and KEEPS the password (so the card comes back
+  acknowledgement-only). Null the password too for the full card.
 - **`/api/build` says `commit: unknown` on a CLI deploy.** Match the preview by its URL from
   the deploy output, not by commit.
 - **The street theme's `.street-v2 *` reset lands after Tailwind and beats its utilities.**
