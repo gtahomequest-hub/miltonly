@@ -16,6 +16,16 @@ and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a 
 
 ## READ THIS FIRST
 
+**VERCEL IS PAUSED (2026-09-19, about seven hours from 17:00Z): EVERY DEPLOYMENT ANSWERS 402.** Until
+production answers 200 again: no `npx vercel` deploys; a gate is `pnpm build` then `next start` on a free
+port, with the battery and checks run as `BASE=http://localhost:<port>` against the local build SHA, and the
+report says "gated locally, preview pending"; merges to `main` may be prepared but not pushed. This worktree
+builds nothing and deploys nothing, so the only effect here is on the nightly: it ran three times on the 19th
+(12:16Z, 12:57Z, 13:42Z) and exited 2 at "sitemap unreadable: status 402" each time, which is correct: no
+report, no email, `state.json` unchanged, and the first run after production returns diffs against the
+18th. An audit prompted while the pause holds reads the local build the same way (`BASE=http://localhost:<port>`
+for `hub-page.mjs`, `hub-lighthouse.mjs`, `hub-inbound.mjs` and the rest; `hub-bench.mjs` needs no host).
+
 **MA-006 ADDENDUM IS DONE: VOW-ONLY FIELDS ON PUBLIC SURFACES, BY SURFACE, WITH FILE:LINE.** Record:
 `scratchpad/reports/MA-006-vow-fields-addendum.md`. Production at `e606d8b`. The facts Core needs first: no
 surface reads `Listing.daysOnMarket` (null on every row); every "Nd on market" is today minus `listedAt`
