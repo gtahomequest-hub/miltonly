@@ -11,5 +11,10 @@ const Mod = require("module");
 const load = Mod._load;
 Mod._load = function (request, parent, isMain) {
   if (request === "server-only") return {};
-  return load.call(this, request, parent, isMain);
+  const mod = load.call(this, request, parent, isMain);
+  // React.cache exists only in the react-server build, which tsx cannot load ("not yet supported
+  // outside of experimental channels"). A request-scoped memo has nothing to memoise in a script,
+  // so the identity function stands in (MC-027; src/lib/hubLive.ts and hubSets.ts use it).
+  if (request === "react" && mod && typeof mod.cache !== "function") mod.cache = (fn) => fn;
+  return mod;
 };

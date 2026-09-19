@@ -124,7 +124,7 @@ export async function getNeighbourhoodComparable(
   const dbType = dominantPropertyType.toLowerCase() === "townhouse" ? "town" : dominantPropertyType.toLowerCase();
   const agg = await (sd`
     SELECT COUNT(*)::int AS n,
-           AVG(sold_price) AS avg,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
            AVG(days_on_market) AS dom,
            AVG(sold_to_ask_ratio) AS sta
     FROM sold.sold_records

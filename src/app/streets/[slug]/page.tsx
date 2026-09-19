@@ -88,10 +88,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ? `${leasePhrase} on record, current listings, and the full street read`
         : `current listings and the full street read`;
 
-  const baseTitle = `${data.street.name}, ${config.CITY_NAME} — Homes, Prices & Sales History`;
+  // THE HEAD (MH-005, MA-001 change 6). No dash and no ampersand in the title; the description
+  // opens with the hook, the one clickable fact, and takes as much of the character summary
+  // as fits under 155 characters, cut at a word, so the SERP shows the whole of what it shows.
+  // og:image is the filmed poster where there is one and the rendered price card otherwise
+  // (/streets/<slug>/og.png), so a shared link has a card.
+  const baseTitle = `${data.street.name}, ${config.CITY_NAME}: Homes, Prices and Sales History`;
   const ogTitle = `${baseTitle} | ${config.SITE_NAME}`;
-  const description =
-    `${data.street.name} in ${config.CITY_NAME}, ${config.CITY_PROVINCE} — ${hook}. ${data.street.characterSummary || ""}`.trim();
+  const lead = `${data.street.name}, ${config.CITY_NAME}: ${hook}.`;
+  const description = fitDescription(lead, data.street.characterSummary || "", 155);
+  const poster = data.video?.day?.poster ?? data.video?.night?.poster ?? null;
+  const image = poster ?? `${config.SITE_URL}/streets/${params.slug}/og.png`;
 
   return {
     title: baseTitle,
@@ -102,8 +109,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: canonicalUrlFor(params.slug),
       type: "article",
+      modifiedTime: data.lastUpdated,
+      images: [{ url: image, width: 1200, height: 630, alt: `${data.street.name}, ${config.CITY_NAME}` }],
     },
-    twitter: { card: "summary_large_image", title: ogTitle, description },
+    twitter: { card: "summary_large_image", title: ogTitle, description, images: [image] },
   };
 }
 
@@ -164,6 +173,20 @@ export default async function StreetPage({ params }: Props) {
       <StreetV2Page data={v2} compareContrast={compareContrast} />
     </>
   );
+}
+
+/** The lead sentence, then as many whole words of the summary as fit under `max`. The lead is
+ *  never cut: a hook with its number chopped is worse than a hook alone. */
+function fitDescription(lead: string, summary: string, max: number): string {
+  const l = lead.replace(/\s+/g, " ").trim();
+  const s = summary.replace(/\s+/g, " ").trim();
+  if (!s || l.length + 1 >= max) return l;
+  const room = max - l.length - 1;
+  if (s.length <= room) return `${l} ${s}`;
+  const cut = s.slice(0, room);
+  const atWord = cut.lastIndexOf(" ");
+  const part = (atWord > 20 ? cut.slice(0, atWord) : cut).replace(/[,;:\s]+$/, "");
+  return part ? `${l} ${part}.`.slice(0, max) : l;
 }
 
 const KNOWN_SECTION_IDS = new Set([

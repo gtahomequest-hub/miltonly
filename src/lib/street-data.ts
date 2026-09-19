@@ -64,7 +64,6 @@ import type {
 
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const SITE_URL = config.SITE_URL;
-const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPE PEEKS — raw DB3 row shapes (loose; SQL is ad-hoc).
@@ -123,6 +122,8 @@ interface RawSale12mo {
   hi: string | null;
   dom: string | null;
   sta: string | null;
+  /** the most recent closed sale in the window; the page's honest "updated" date */
+  latest: string | Date | null;
 }
 interface RawLease12mo {
   n: number;
@@ -234,7 +235,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       ? (sd`
           SELECT property_type,
                  COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg_price,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                  MIN(sold_price) AS min_price,
                  MAX(sold_price) AS max_price,
                  AVG(days_on_market) AS avg_dom,
@@ -254,11 +255,12 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
                  MIN(sold_price) AS lo,
                  MAX(sold_price) AS hi,
                  AVG(days_on_market) AS dom,
-                 AVG(sold_to_ask_ratio) AS sta
+                 AVG(sold_to_ask_ratio) AS sta,
+                 MAX(sold_date) AS latest
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
@@ -272,7 +274,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
                  AVG(days_on_market) AS dom
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
@@ -288,7 +290,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       ? (sd`
           SELECT LEAST(beds, 4)::int AS bed,
                  COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
@@ -475,6 +477,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   // ─── Context cards ────────────────────────────────────────────────
   const contextCards = await buildContextCards({
     slug,
+    siblingSlugs,
     neighbourhoods,
     centroid,
   });
@@ -569,8 +572,23 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           nightCapturedAt: streetContent.nightCapturedAt,
         })
       : null,
-    lastUpdated: new Date().toISOString(),
+    // THE UPDATED DATE IS A DATE SOMETHING HAPPENED (MH-005, MA-001 change 6). It was the
+    // render time, which is not a modification date and would have told Google every page
+    // changed every hour. It is the later of the profile's generation and the most recent
+    // closed sale in the 12-month sample: the two things that change what the page says.
+    lastUpdated: latestOf(streetContent?.generatedAt ?? null, sale12?.latest ?? null),
   };
+}
+
+function latestOf(...dates: Array<string | Date | null>): string {
+  let best: Date | null = null;
+  for (const d of dates) {
+    if (!d) continue;
+    const t = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(t.getTime())) continue;
+    if (!best || t > best) best = t;
+  }
+  return (best ?? new Date()).toISOString().slice(0, 10);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -716,7 +734,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   // publishing the placeholder. street.characterSummary is set from THIS value.
   const suppressedSummary =
     rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale) ? rawSummary : "";
-  const subtitle = suppressedSummary || `A street in ${CITY_PROVINCE_LABEL}.`;
+  // A PROGRAMME PAGE'S SUBTITLE IS A FACT OR NOTHING (MH-005, MA-001 defect 17). "A street in
+  // Milton Ontario." was the placeholder on every page with no surviving summary. The
+  // neighbourhood is a fact the page has; where it has none, the hero carries no subtitle.
+  const firstNbhd = neighbourhoods.map(cleanNeighbourhoodName).find(Boolean);
+  const subtitle = suppressedSummary || (firstNbhd ? `${streetName} is in ${firstNbhd}, ${config.CITY_NAME}.` : "");
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -797,7 +819,8 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
       // on 46 pages ($884K pill vs $875K card). Round once, at the point of publication, and
       // every surface that formats it lands on the same string.
       typicalPrice: publishable ? roundPriceForProse(typicalPrice!) : null,
-      priceLabel: publishable ? "typical" : "sample too small",
+      // the silence says what would end it (MA-001 defect 24): the count sits beside the label
+      priceLabel: publishable ? "typical" : `needs ${K_ANON_PRICE} sales`,
       anchor: `#type-${type}`,
     });
   }
@@ -1095,7 +1118,8 @@ function buildSidebar(input: {
       body: `A short conversation grounded in every sale we have tracked on ${streetName}.`,
       actionLabel: "Request a valuation",
       actionHref: "/sell",
-      trustLine: "Complimentary · Response within one hour",
+      // "Response within one hour" was a service level nothing measures (MA-001 defect 9).
+      trustLine: "Complimentary. No obligation.",
     },
   };
 }
@@ -1484,10 +1508,11 @@ function buildActiveInventory(input: {
 
 async function buildContextCards(input: {
   slug: string;
+  siblingSlugs: string[];
   neighbourhoods: string[];
   centroid: { lat: number; lng: number } | null;
 }): Promise<ContextCardsProps> {
-  const { slug, neighbourhoods } = input;
+  const { slug, siblingSlugs, neighbourhoods } = input;
 
   const similar = await prisma.listing.groupBy({
     by: ["streetSlug"],
@@ -1518,39 +1543,31 @@ async function buildContextCards(input: {
     })
   );
 
-  // RESOLVE the up-link through the Neighbourhood REGISTRY, then require a PUBLISHED hub — the slug
-  // was a slugified NAME-GUESS, never validated. That both 404'd (Walker's raw "1051 - Walker"
-  // name-guessed to /neighbourhoods/1051---walker; "Brookville/Haltonville" kept its slash) AND
-  // under-linked. Registry resolution maps every raw/name/slug variant to its canonical slug, so
-  // Walker/Brookville now link CORRECTLY; a neighbourhood with no published hub, or one that can't
-  // be resolved, emits NO link rather than a broken one.
-  // the two sets come from hubSets.ts (MC-018): once per fifteen minutes, not once per render
+  // THE UP-LINK IS THE REGISTRY'S HUB, AND ONLY THAT (MC-027 item 5, MA-005 defect 8). It used
+  // to be resolved from the sold records' neighbourhood strings on the street, while the hub's
+  // ladder is the registry (ResidentialStreet.neighbourhoodId): seven streets on five hubs
+  // linked up to a hub whose ladder did not list them, and two ladder leaders linked nowhere.
+  // One source now: the street's registry row (the first sibling slug that carries one), and
+  // only when that hub is published. A street the Town's polygons never placed gets no card,
+  // never a guess from a listing agent's string. scripts/hub-membership-reconcile.ts lists
+  // where the records and the registry disagree.
   const [pubHubSlugList, nbhdRows] = await Promise.all([publishedHubSlugList(), neighbourhoodRows()]);
   const publishedHubSlugs = new Set(pubHubSlugList);
-  const hubSlugify = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  const resolveMap = new Map<string, string>(); // normalized key -> canonical slug
-  const nameBySlug = new Map<string, string>();
-  for (const nb of nbhdRows) {
-    nameBySlug.set(nb.slug, nb.name);
-    for (const key of [nb.slug, nb.name, ...nb.rawStrings]) {
-      const k = hubSlugify(key);
-      if (k) resolveMap.set(k, nb.slug);
-    }
-  }
-  const seenHub = new Set<string>();
+  const registryRows = await prisma.residentialStreet.findMany({
+    where: { slug: { in: siblingSlugs }, neighbourhoodId: { not: null } },
+    select: { slug: true, neighbourhood: { select: { slug: true, name: true } } },
+  });
+  const registryHub = [slug, ...siblingSlugs]
+    .map((sl) => registryRows.find((r) => r.slug === sl)?.neighbourhood ?? null)
+    .find((h): h is { slug: string; name: string } => h !== null && h !== undefined) ?? null;
   const neighbourhoodCards: Array<{ slug: string; name: string; summary: string }> = [];
-  for (const raw of neighbourhoods.map(cleanNeighbourhoodName)) {
-    if (!raw || raw.length === 0) continue;
-    const resolved = resolveMap.get(hubSlugify(raw));
-    if (!resolved || !publishedHubSlugs.has(resolved) || seenHub.has(resolved)) continue;
-    seenHub.add(resolved);
-    const name = nameBySlug.get(resolved) ?? raw;
+  if (registryHub && publishedHubSlugs.has(registryHub.slug)) {
+    const name = nbhdRows.find((nb) => nb.slug === registryHub.slug)?.name ?? registryHub.name;
     neighbourhoodCards.push({
-      slug: resolved,
+      slug: registryHub.slug,
       name,
       summary: `Explore the ${name} area of ${config.CITY_NAME}, its streets and comparable housing stock.`,
     });
-    if (neighbourhoodCards.length >= 2) break;
   }
 
   const schoolCards = schools

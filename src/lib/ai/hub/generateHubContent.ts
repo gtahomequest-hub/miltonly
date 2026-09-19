@@ -327,9 +327,22 @@ async function runHubHalfWithRetry(params: RunHubHalfParams): Promise<HubHalfRes
 // generateRuralHubContent — the rural analogue of generatePhase41StreetContent.
 // ---------------------------------------------------------------------------
 
+/** The Claude model AI_PROVIDER_FALLBACK names, or null. `deepseekOnly` (the regenerate-on-drift
+ *  cron and the MC-027 batch) refuses the fallback whatever the env says: a regeneration of
+ *  prose that already exists is not worth an Opus call, and the Anthropic account has no
+ *  credit to make one. */
+export function hubFallbackModel(deepseekOnly?: boolean): ClaudeModelKey | null {
+  if (deepseekOnly) return null;
+  const fallbackRaw = (process.env.AI_PROVIDER_FALLBACK || "").trim();
+  return fallbackRaw === "claude" || fallbackRaw === "opus" ? "opus" :
+    fallbackRaw === "sonnet" ? "sonnet" :
+    fallbackRaw === "haiku" ? "haiku" : null;
+}
+
 export async function generateRuralHubContent(
   neighbourhoodSlug: string,
   prebuiltInput?: HubGeneratorInput,
+  opts?: { deepseekOnly?: boolean },
 ): Promise<HubGenerationResult> {
   // Throws unless profile==='rural_hub' (the 9 rural pools). NO MiltonWideContext.
   // The entry (generateRuralHub) builds the input once for the atomic claim and
@@ -348,11 +361,7 @@ export async function generateRuralHubContent(
   // Surgical fallback (mirror compliance.ts): when AI_PROVIDER_FALLBACK is a
   // Claude mode and a half exhausted retries with violations, re-run ONLY that
   // half with the fallback model; replace the half only if the fallback is clean.
-  const fallbackRaw = (process.env.AI_PROVIDER_FALLBACK || "").trim();
-  const fallbackModel: ClaudeModelKey | null =
-    fallbackRaw === "claude" || fallbackRaw === "opus" ? "opus" :
-    fallbackRaw === "sonnet" ? "sonnet" :
-    fallbackRaw === "haiku" ? "haiku" : null;
+  const fallbackModel = hubFallbackModel(opts?.deepseekOnly);
 
   if (fallbackModel) {
     const halves: Array<{ label: "editorial" | "market"; res: HubHalfResult; prompt: string; ids: HubSectionId[]; faq: boolean }> = [];

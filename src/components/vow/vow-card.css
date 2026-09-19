@@ -1,0 +1,179 @@
+/* The one-time VOW card (MP-002). Its own stylesheet because it renders inside two themes:
+   the street page's forest stylesheet zeroes margin and padding on every descendant with
+   `.street-v2 *`, which lands after Tailwind and beats its utilities. Every selector here is
+   `section[data-vow-ack] ...`, one specificity step above that reset, so the card looks the
+   same on a street page and on /sold. Tokens: #073126 base, #017848 accent, #f6f4ef cream. */
+
+section[data-vow-ack] {
+  box-sizing: border-box;
+  border: 1px solid #dfe0dc;
+  border-radius: 16px;
+  background: #f6f4ef;
+  color: #073126;
+  padding: 22px 20px;
+  text-align: left;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+@media (min-width: 640px) {
+  section[data-vow-ack] {
+    padding: 28px;
+  }
+}
+section[data-vow-ack] * {
+  box-sizing: border-box;
+}
+section[data-vow-ack] .vc-k {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #017848;
+  margin: 0 0 6px;
+}
+section[data-vow-ack] h3.vc-h {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 21px;
+  line-height: 1.15;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+section[data-vow-ack] p.vc-lead {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4b5563;
+  margin: 0 0 16px;
+}
+section[data-vow-ack] .vc-fields {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+@media (min-width: 640px) {
+  section[data-vow-ack] .vc-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+section[data-vow-ack] label.vc-field {
+  display: block;
+  position: relative;
+}
+section[data-vow-ack] .vc-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+section[data-vow-ack] .vc-label small {
+  font-weight: 400;
+  color: #6b6f6a;
+  font-size: 12px;
+}
+section[data-vow-ack] input.vc-input {
+  width: 100%;
+  border: 1px solid #dfe0dc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 16px;
+  color: #073126;
+  background: #fff;
+  outline: none;
+  font-family: inherit;
+}
+section[data-vow-ack] input.vc-input:focus {
+  border-color: #017848;
+}
+section[data-vow-ack] ul.vc-options {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #dfe0dc;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(7, 49, 38, 0.12);
+  max-height: 224px;
+  overflow: auto;
+}
+section[data-vow-ack] ul.vc-options button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #073126;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+section[data-vow-ack] ul.vc-options button:hover {
+  background: #f6f4ef;
+}
+section[data-vow-ack] .vc-texts {
+  background: #fff;
+  border: 1px solid #dfe0dc;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+}
+section[data-vow-ack] .vc-texts p {
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+}
+section[data-vow-ack] .vc-texts p + p {
+  margin-top: 12px;
+  color: #4b5563;
+}
+section[data-vow-ack] label.vc-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 16px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+section[data-vow-ack] label.vc-agree input {
+  margin: 3px 0 0;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  accent-color: #017848;
+}
+section[data-vow-ack] p.vc-error {
+  font-size: 12px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0 0 16px;
+}
+section[data-vow-ack] button.vc-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  background: #017848;
+  color: #fff;
+  cursor: pointer;
+}
+section[data-vow-ack] button.vc-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+section[data-vow-ack] p.vc-fine {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #6b6f6a;
+  margin: 16px 0 0;
+}
