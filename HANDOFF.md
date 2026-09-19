@@ -6,8 +6,8 @@ _Last rewritten 2026-09-19 (MC-029 merged locally, NOT pushed): Vercel is paused
 
 ## READ THIS FIRST
 
-**LOCAL `main` IS `5994cc7`, FIVE COMMITS AHEAD OF `origin/main`, AND MUST NOT BE PUSHED UNTIL
-PRODUCTION ANSWERS 200.** Vercel was paused for about seven hours from the evening of
+**LOCAL `main` IS THE MERGE `5994cc7` PLUS THE DOCS COMMITS ON IT, AHEAD OF `origin/main`
+(`e606d8b`), AND MUST NOT BE PUSHED UNTIL PRODUCTION ANSWERS 200.** Vercel was paused for about seven hours from the evening of
 2026-09-18 (every deployment, production included, answers 402). On that basis the merge was
 prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
 landed as `5994cc7` on `e606d8b`. Gated locally: `pnpm build` on Node 22 exit 0, 168/168; then
