@@ -15,6 +15,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getListingsV2Data, parseListingsQuery } from '@/lib/listingsV2Data';
 import { getSession } from '@/lib/auth';
+import { canSeeVowRecords } from '@/lib/vow-access';
 import { getStreetCompareContrast } from '@/lib/comparisonData';
 
 export const dynamic = 'force-dynamic';
@@ -58,8 +59,7 @@ export default async function ListingsPage({ searchParams }: Props) {
   // The page is force-dynamic, so the session is read here, per request, and the loader is
   // told whether the cards may carry the VOW-only facts. The decision is the server's; the
   // anonymous payload never contains them (src/lib/listings/vow.ts).
-  const user = await getSession();
-  const vow = !!(user && user.vowAcknowledgedAt);
+  const vow = canSeeVowRecords(await getSession());
   // City-wide freehold-vs-condo contrast for the CompareModule teaser — same
   // hoisted memoized-promise seam the street pages use (one resolution per
   // process; /listings is force-dynamic so this is a warm-cache hit per request).

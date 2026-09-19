@@ -5,12 +5,15 @@
 // this route's own session check, the same one /api/streets/[slug]/sold-records runs; nothing
 // is decided in the browser.
 //
-// Anonymous: { canSee: false, needsAcknowledgement: false }. Signed in, not yet acknowledged:
-// needsAcknowledgement true, so the island shows the one-time card. Either way no field.
+// Anonymous: { canSee: false, needsAcknowledgement: false }. Signed in with a step still owed
+// (the acknowledgement, the password since MP-002b, or both; src/lib/vow-access.ts is the one
+// judge): needsAcknowledgement true, so the island shows the card, which asks for what is
+// owed. Either way no field.
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +37,7 @@ export type ListingVowResponse =
 
 export async function GET(_req: NextRequest, { params }: { params: { mlsNumber: string } }) {
   const user = await getSession();
-  const canSee = !!(user && user.vowAcknowledgedAt);
+  const canSee = canSeeVowRecords(user);
   if (!canSee) {
     const body: ListingVowResponse = { canSee: false, needsAcknowledgement: !!user };
     return NextResponse.json(body, { headers: { "Cache-Control": "private, no-store" } });

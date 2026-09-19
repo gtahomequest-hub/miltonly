@@ -21,14 +21,18 @@
 //      key, a day count, a "Listed N days ago", a sold price, a prior price or a non-active
 //      status. /listings?status=sold answers a redirect to /sold, and the gated route answers
 //      canSee:false with no facts.
-//   2. AN ACKNOWLEDGED SESSION SEES THEM. The battery signs in through the real door (MP-002):
-//      it POSTs /api/auth/signup for the most recently acknowledged verified user in DB1, reads
-//      the six-digit code the door stored on that row, POSTs /api/auth/verify and keeps the
-//      session cookie. (JWT_SECRET is a sensitive Vercel secret and cannot be pulled, so a
-//      minted token was never an option; the door is the app's own path anyway.) One sign-in
-//      email reaches that address per run; the door allows three an hour per address. Then the
-//      gated route must answer the facts, the grid's cards must carry them, and the listing
-//      page's island must render "Time on market" in a real browser.
+//   2. AN ACKNOWLEDGED SESSION SEES THEM. The battery signs in through the real door (MP-002,
+//      MP-002b): first the returning sign-in, POST /api/auth/login with VOW_BATTERY_PASSWORD
+//      for the most recently acknowledged verified user in DB1; when that is refused (no
+//      password on the row yet), the first-visit path, POST /api/auth/signup, the six-digit
+//      code read off the row, POST /api/auth/verify, and then the card's route sets
+//      VOW_BATTERY_PASSWORD as the account's password, once, because since MP-002b no record
+//      shows without one. (JWT_SECRET is a sensitive Vercel secret and cannot be pulled, so a
+//      minted token was never an option; the door is the app's own path anyway.) The session
+//      cookie is kept per host and checked against /api/auth/me before reuse. A sign-in email
+//      reaches that address only on the first-visit path. Then the gated route must answer the
+//      facts, the grid's cards must carry them, and the listing page's island must render
+//      "Time on market" in a real browser.
 //   3. THE BROKERAGE IS AS PROMINENT AS THE PRICE (TRREB item 27). In the browser, on the grid,
 //      the listing page, a street page, /rentals, the homepage and the menu cards: every
 //      [data-brokerage] has a [data-price] ancestor and the two compute to the same font size,
@@ -103,7 +107,7 @@ async function launchBrowser() {
 /** The DB1 side: sample MLS numbers per state, the acknowledged user, and the flag lookup. */
 async function db1() {
   loadEnv();
-  requireEnv('DATABASE_URL');
+  requireEnv('DATABASE_URL', 'VOW_BATTERY_PASSWORD');
   const app = neon(process.env.DATABASE_URL);
   const one = async (q) => (await q)[0]?.m ?? null;
   const [sale, lease, sold, expired, leased, users] = await Promise.all([
@@ -126,17 +130,31 @@ async function db1() {
 function sessionCachePath(base) {
   return path.join(os.tmpdir(), `miltonly-verify-session-${new URL(base).host}.txt`);
 }
-async function cachedSession(base, userId) {
+async function whoAmI(base, token) {
   try {
-    const token = fs.readFileSync(sessionCachePath(base), 'utf8').trim();
-    if (!token) return null;
     const me = await fetchRaw(`${base}/api/auth/me`, token);
-    const j = JSON.parse(me.body || '{}');
-    return j.user && j.user.id === userId ? token : null;
+    return JSON.parse(me.body || '{}').user ?? null;
   } catch {
     return null;
   }
 }
+/** A session that is the right person with nothing left to do (acknowledged, password set). */
+async function complete(base, token, userId) {
+  const u = await whoAmI(base, token);
+  return !!(u && u.id === userId && !u.needsAcknowledgement && !u.needsPassword);
+}
+async function cachedSession(base, userId) {
+  try {
+    const token = fs.readFileSync(sessionCachePath(base), 'utf8').trim();
+    return token && (await complete(base, token, userId)) ? token : null;
+  } catch {
+    return null;
+  }
+}
+const cookieOf = (res) => {
+  const m = (res.headers.get('set-cookie') || '').match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+  return m ? m[1] : null;
+};
 
 /** Through the real door: request a code, read it off the row the door wrote, verify it, keep
  *  the cookie. Throws with the door's own answer when it refuses (a 429 after three an hour). */
@@ -144,17 +162,39 @@ async function signIn(base, app, email, userId) {
   const cached = await cachedSession(base, userId);
   if (cached) return cached;
   const headers = { 'content-type': 'application/json', origin: base, 'user-agent': UA };
+  const password = process.env.VOW_BATTERY_PASSWORD;
+  const keep = (token) => { try { fs.writeFileSync(sessionCachePath(base), token); } catch { /* a convenience */ } return token; };
+
+  // The returning sign-in: email and password (MP-002b).
+  const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: JSON.stringify({ email, password }) });
+  const loginCookie = cookieOf(login);
+  if (login.status === 200 && loginCookie) {
+    if (await complete(base, loginCookie, userId)) return keep(loginCookie);
+    throw new Error('login succeeded but the account still owes a step (acknowledgement or password)');
+  }
+  if (login.status === 429) throw new Error(`login rate-limited: ${(await login.text()).slice(0, 120)}`);
+
+  // The first-visit path: a code by email, read off the row, then the card sets the password.
   const req = await fetch(`${base}/api/auth/signup`, { method: 'POST', headers, body: JSON.stringify({ email }) });
   if (req.status !== 200) throw new Error(`sign-in request refused: ${req.status} ${(await req.text()).slice(0, 120)}`);
   const rows = await app`SELECT "verifyCode" c FROM public."User" WHERE email = ${email}`;
   const code = rows[0]?.c;
   if (!code) throw new Error('the door stored no code for the sign-in request');
   const ver = await fetch(`${base}/api/auth/verify`, { method: 'POST', headers, body: JSON.stringify({ email, code }) });
-  const set = ver.headers.get('set-cookie') || '';
-  const m = set.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
-  if (ver.status !== 200 || !m) throw new Error(`verify refused: ${ver.status} ${(await ver.text()).slice(0, 120)}`);
-  try { fs.writeFileSync(sessionCachePath(base), m[1]); } catch { /* the cache is a convenience */ }
-  return m[1];
+  const token = cookieOf(ver);
+  if (ver.status !== 200 || !token) throw new Error(`verify refused: ${ver.status} ${(await ver.text()).slice(0, 120)}`);
+  const me = await whoAmI(base, token);
+  if (!me || me.id !== userId) throw new Error('the verified session is not the acknowledged user');
+  if (me.needsAcknowledgement) throw new Error('the acknowledged user reads as unacknowledged; the battery never acknowledges on a person\'s behalf');
+  if (me.needsPassword) {
+    // An acknowledged row with no password: the card's route sets one and nothing else moves.
+    const set = await fetch(`${base}/api/auth/acknowledge-vow`, { method: 'POST', headers: { ...headers, cookie: `${COOKIE_NAME}=${token}` }, body: JSON.stringify({ password }) });
+    if (set.status !== 200) throw new Error(`setting the account password refused: ${set.status} ${(await set.text()).slice(0, 120)}`);
+  } else {
+    throw new Error('the account has a password and it is not VOW_BATTERY_PASSWORD: set the variable to the account\'s password');
+  }
+  if (!(await complete(base, token, userId))) throw new Error('the session still owes a step after the card');
+  return keep(token);
 }
 
 async function fetchRaw(url, cookie) {
