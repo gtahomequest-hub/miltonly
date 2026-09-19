@@ -82,7 +82,7 @@ const FORM_SURFACES = SURFACES.filter(
     // fields off the DOM or out of component state with no <form> element at all.
     ![
       "src/app/listings/ListingsCardsClient.tsx",
-      "src/app/listings/[mlsNumber]/ListingDetailClient.tsx",
+      // ListingDetailClient renders a real <form> and carries the honeypot since ML-005.
       "src/components/listings/v2/ResultsClient.tsx",
       "src/app/listings/[mlsNumber]/ListingExtras.tsx",
       "src/components/condo/CondoCTAs.tsx",
