@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { formatArchitecturalStyle } from "@/lib/listingStyle";
 import { formatPriceFull } from "@/lib/format";
-import { postLeadDetailed, type PostLeadPayload } from "@/lib/postLeadClient";
+import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, HONEYPOT_FIELD, type PostLeadPayload } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
@@ -400,13 +400,22 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
                       const name = fd.get("name") as string;
                       const phone = fd.get("phone") as string;
                       if (!name || !phone) { showToast("Please enter name and phone."); return; }
-                      const ok = await submitLead({ source: "sale-detail", intent: "buy", name, phone, email: (fd.get("email") as string) || undefined, property_address: displayAddr, mlsNumber: l.mlsNumber });
+                      // The honeypot travels with the rest of the form (ML-005): this form had none, and
+                      // it is the one the sale-detail bot filed 64 rows through.
+                      const ok = await submitLead({ source: "sale-detail", intent: "buy", name, phone, email: (fd.get("email") as string) || undefined, property_address: displayAddr, mlsNumber: l.mlsNumber, honeypot: (fd.get(HONEYPOT_FIELD) as string) || "" });
                       if (!ok) { showToast("Could not submit. Please try again."); return; }
                       setSaleFormSent(true);
                     }}>
                       <input name="name" required placeholder="Your name" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
                       <input name="phone" required type="tel" placeholder="Phone number" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
                       <input name="email" type="email" placeholder="Email (optional)" className="w-full px-3 py-2.5 text-[12px] bg-[#0a3d30] border border-[#1a5a47] rounded-lg text-[#fffdfa] placeholder:text-white/40 outline-none focus:border-[#00ff80]" />
+                      {/* Honeypot. A person never sees it; a bot fills it and the row is silently dropped. */}
+                      <div style={HONEYPOT_WRAPPER_STYLE} aria-hidden="true">
+                        <label>
+                          Company website
+                          <input {...honeypotInputProps} type="text" defaultValue="" />
+                        </label>
+                      </div>
                       <button type="submit" className="w-full bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-3 hover:bg-[#5cffa8] transition-colors">Request a showing</button>
                       <p className="text-[10px] text-white/60 leading-snug">{REPLY_FINE_PRINT}</p>
                     </form>

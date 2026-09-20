@@ -7,7 +7,8 @@
 // address, and the market-pulse aggregate packet that has to come back in the response.
 //
 // Order is load-bearing:
-//   1. guards      — honeypot, origin, rate limit. Nothing is written for a rejected call.
+//   1. guards      — honeypot, origin, user agent, rate limit. Nothing is written for a
+//                    rejected call, and the first three spend nothing (see guards.ts).
 //   2. validation  — field-level, with the message the visitor reads. No row for a refusal.
 //   3. Lead row    — must succeed. A failure here is a 500 and no side effects fire.
 //   4. side effects — confirmation, ops alert, SMS, CRM parser email, watch, CAPI. Each is
@@ -18,12 +19,19 @@
 // monolith branches all sent Aamir a Twilio message as a second channel, added in May after
 // a Vercel-to-Resend outage swallowed leads. Migrating the paid surfaces onto this path
 // without it would have removed that redundancy exactly where it was bought.
+//
+// EVERYTHING THAT WRITES OR SENDS IS A DEPENDENCY (ML-005). The row, the watch, the four
+// senders, the CAPI event, the delivery log and the market-pulse read arrive through
+// `IngestDeps`, live by default. scripts/test-lead-bot-gate.ts calls this function with every
+// one of them replaced by a counter, runs a hundred bot submissions through it, and fails the
+// build if a single one reaches a write or a send. That is the door's pattern
+// (src/lib/portal/door.ts), and it is what makes "0 rows, 0 emails" a fact about this code
+// rather than a hope about the guards.
 
-import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveLeadEnv, isCountable, type LeadEnv } from "@/lib/lead/env";
 import { normalizeIntent, leadValueFor } from "@/lib/lead/intent";
-import { checkHoneypot, checkOrigin, checkRateLimit, type GuardVerdict } from "@/lib/lead/guards";
+import { checkHoneypot, checkOrigin, checkUserAgent, checkRateLimit, type GuardVerdict } from "@/lib/lead/guards";
 import { sendLeadConfirmation, sendOpsAlert, recordDeliveries, errorMessage, type Delivery } from "@/lib/lead/notify";
 import { createWatchForLead, type WatchResult } from "@/lib/lead/savedSearch";
 import { scoreLead } from "@/lib/lead/score";
@@ -94,6 +102,36 @@ export interface LeadBody {
 
 type MarketPulsePacket = Awaited<ReturnType<typeof getMarketPulse>>;
 
+/** The headers the path reads. A NextRequest satisfies it; so does a test's plain object. */
+export type IngestRequest = { headers: Pick<Headers, "get"> };
+
+/** Every write and every send, injectable. Live by default. */
+export interface IngestDeps {
+  rateLimit: typeof checkRateLimit;
+  createLead: (data: Prisma.LeadCreateInput) => Promise<{ id: string }>;
+  watch: typeof createWatchForLead;
+  confirm: typeof sendLeadConfirmation;
+  opsAlert: typeof sendOpsAlert;
+  sms: typeof notifyAamirBySMS;
+  crmEmail: typeof sendKvcoreParserEmail;
+  capi: typeof sendCapiEvent;
+  deliveries: typeof recordDeliveries;
+  marketPulse: typeof getMarketPulse;
+}
+
+export const LIVE_DEPS: IngestDeps = {
+  rateLimit: checkRateLimit,
+  createLead: (data) => prisma.lead.create({ data, select: { id: true } }),
+  watch: createWatchForLead,
+  confirm: sendLeadConfirmation,
+  opsAlert: sendOpsAlert,
+  sms: notifyAamirBySMS,
+  crmEmail: sendKvcoreParserEmail,
+  capi: sendCapiEvent,
+  deliveries: recordDeliveries,
+  marketPulse: getMarketPulse,
+};
+
 export interface IngestResult {
   ok: boolean;
   status: number;
@@ -117,7 +155,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** The one source whose reveal is computed server-side and returned to the page. */
 const MARKET_PULSE_SOURCE = "sales-ads-market-pulse-unlock";
 
-function clientIp(req: NextRequest): string {
+function clientIp(req: IngestRequest): string {
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0]?.trim() || "unknown";
   return req.headers.get("x-real-ip") ?? "unknown";
@@ -147,7 +185,7 @@ function parseDate(v: unknown): Date | null {
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
-export async function ingestLead(body: LeadBody, req: NextRequest): Promise<IngestResult> {
+export async function ingestLead(body: LeadBody, req: IngestRequest, deps: IngestDeps = LIVE_DEPS): Promise<IngestResult> {
   // 1. guards
   const honeypot = checkHoneypot(body);
   if (!honeypot.ok) {
@@ -162,6 +200,13 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
   if (!origin.ok) {
     console.warn("[lead/ingest] rejected", { reason: origin.reason, source });
     return { ok: false, status: origin.status, error: origin.error };
+  }
+
+  // A header no browser sends. Refused like the honeypot: 200, the success body, no row.
+  const agent = checkUserAgent(req.headers.get("user-agent"));
+  if (!agent.ok) {
+    console.warn("[lead/ingest] rejected", { reason: agent.reason, source });
+    return { ok: true, status: agent.status };
   }
 
   // 2. validation, in the words the visitor reads
@@ -185,7 +230,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
   }
 
   const ip = clientIp(req);
-  const limit = await checkRateLimit({ ip, email: email || undefined });
+  const limit = await deps.rateLimit({ ip, email: email || undefined });
   if (!limit.ok) {
     console.warn("[lead/ingest] rejected", { reason: limit.reason, source });
     return { ok: false, status: limit.status, error: limit.error };
@@ -223,8 +268,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
 
   let leadId: string;
   try {
-    const row = await prisma.lead.create({
-      data: {
+    const row = await deps.createLead({
         firstName: name || "Unknown",
         email: email || null,
         phone,
@@ -272,8 +316,6 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
         referrer: req.headers.get("referer")?.slice(0, 300) || null,
         userAgent: req.headers.get("user-agent")?.slice(0, 300) || null,
         ip,
-      },
-      select: { id: true },
     });
     leadId = row.id;
   } catch (err) {
@@ -284,7 +326,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
   // 4. side effects
   const ctx = { source, subject };
 
-  const watchPromise = createWatchForLead({
+  const watchPromise = deps.watch({
     source,
     email: email || null,
     leadId,
@@ -301,7 +343,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
   // Each send resolves to a Delivery rather than an id, so the outcome survives into the
   // delivery log below. A throw is a failed attempt; a null id is a send that never left.
   const confirmPromise: Promise<Delivery> = email
-    ? sendLeadConfirmation({ to: email, name: name || null, ctx }).then(
+    ? deps.confirm({ to: email, name: name || null, ctx }).then(
         (id): Delivery => ({ kind: "confirmation", outcome: id ? "sent" : "skipped", resendId: id }),
         (err): Delivery => {
           console.warn("[lead/ingest] confirmation email failed", err);
@@ -319,7 +361,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
           const mc = matchCriteria as { propertyType?: string; neighbourhood?: string };
           if (!mc.propertyType || !mc.neighbourhood) return null;
           try {
-            return await getMarketPulse({ propertyType: mc.propertyType, neighbourhood: mc.neighbourhood });
+            return await deps.marketPulse({ propertyType: mc.propertyType, neighbourhood: mc.neighbourhood });
           } catch (err) {
             console.error("[lead/ingest] market pulse compute failed", { leadId, err });
             return null;
@@ -347,7 +389,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
     notes: notes ?? undefined,
   };
 
-  const alertPromise = sendOpsAlert({
+  const alertPromise = deps.opsAlert({
     leadId,
     env,
     value,
@@ -370,19 +412,19 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
   // Twilio, to Aamir. The same environment rule the ops alert follows: a preview submission
   // must not ring a real phone unless the path is deliberately being proven.
   const smsPromise = isCountable(env)
-    ? notifyAamirBySMS(notifyFields, leadId).catch((err) => console.warn("[lead/ingest] sms failed", err))
+    ? deps.sms(notifyFields, leadId).catch((err) => console.warn("[lead/ingest] sms failed", err))
     : Promise.resolve(undefined);
 
   // kvCORE / BoldTrail parser email on every lead. A silent no-op while
   // KVCORE_LEAD_PARSE_EMAIL is unset, which it is in production today.
-  const crmPromise = sendKvcoreParserEmail(notifyFields, leadId).catch((err) =>
+  const crmPromise = deps.crmEmail(notifyFields, leadId).catch((err) =>
     console.warn("[lead/ingest] kvcore parser email failed", err),
   );
 
   // Meta CAPI. Only for countable leads: a preview test must not move a real ad account's
   // optimization, and Meta has no environment dimension to file it under.
   const capiPromise = isCountable(env)
-    ? sendCapiEvent({
+    ? deps.capi({
         event_name: "Lead",
         event_time: Math.floor(Date.now() / 1000),
         event_id: (typeof body.event_id === "string" && body.event_id) || leadId,
@@ -399,7 +441,7 @@ export async function ingestLead(body: LeadBody, req: NextRequest): Promise<Inge
     : Promise.resolve({ ok: false });
 
   const [confirmation, alert, stats] = await Promise.all([confirmPromise, alertPromise, statsPromise]);
-  await Promise.all([crmPromise, capiPromise, smsPromise, recordDeliveries(leadId, [confirmation, alert])]);
+  await Promise.all([crmPromise, capiPromise, smsPromise, deps.deliveries(leadId, [confirmation, alert])]);
   const confirmationEmailId = confirmation.resendId;
   const opsAlertId = alert.resendId;
 
