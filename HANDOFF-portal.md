@@ -2,33 +2,37 @@
 
 PORTAL · D:\miltonly-portal · feat/portal
 
-_Last rewritten 2026-09-19: MP-002b, the password, gated locally at `f7ddf4b` while Vercel is paused (402 everywhere); the preview proof of the 18th stands; NOT merged. MP-002 (the door) was merged by Core as `706ce07` on 2026-09-18._
+_Last rewritten 2026-09-20: MP-002c, the User-Agent guard on the door, gated locally at `f7813c1`; MP-002b (the password) is on the same branch beneath it; both NOT merged. MP-002 (the door) was merged by Core as `706ce07` on 2026-09-18._
 
 ## READ THIS FIRST
 
-**VERCEL IS PAUSED (2026-09-19, about seven hours): every deployment answers 402.** No `npx
-vercel` deploys; gate with `pnpm build` then `next start -p <port>` with
-`VERCEL_GIT_COMMIT_SHA=$(git rev-parse HEAD)` so `/api/build` serves the local SHA, and run the
-battery with `EXPECT_SHA=<sha> BASE=http://localhost:<port>`. **Drop the `db2` and `db3` tags
-through `/api/revalidate` first**: a local `next start` serves the on-disk Data Cache from
-earlier runs, and the first battery of the 19th reported yesterday's figures on two hubs
-(`scratchpad/reports/MP-002b-the-password.md`, last section). `scratchpad/mp002/
-run-battery-local.sh <ref> <base> <log>` is the detached runner. Merges to `main` can be
-prepared, not pushed, until production answers 200.
+**MP-002c IS ON THIS BRANCH AT `f7813c1` (app code), GATED LOCALLY, AWAITING CORE'S MERGE BY
+SHA, WITH MP-002b (`98d2cd7`) BENEATH IT.** `requestSignIn()` runs ML-005's `checkUserAgent`
+after the honeypot and before the origin check: a missing or quoted User-Agent answers 200 with
+the success words, writes nothing, sends nothing, spends no limiter token; the refused value is
+logged as `detail`. **`src/lib/lead/guards.ts` on this branch is `origin/feat/leads @ 064c5b6`
+verbatim** (ML-005, unmerged): `checkUserAgent`, `emailLimitKey`, the daily windows, the
+injectable store. Whichever branch Core merges first, that file merges clean; `main`'s
+`test-lead-guards` passes against it. Battery on localhost at `f7813c1`: `PASS · 21 checks ·
+646 pages`. A 61-agent adversarial review confirmed 19 findings; six were fixed in `f7813c1`,
+the rest are in the report's Open list, the first two being **`/api/auth/verify` has no guard
+at all** (pre-existing, proposed MP-002d). Record:
+`scratchpad/reports/MP-002c-user-agent-guard.md`.
 
-**MP-002b IS ON THIS BRANCH AT `98d2cd7` (app code, head `f7ddf4b` with docs), GATED LOCALLY
-(build exit 0, battery `PASS · 20 checks · 626 pages` on localhost, the four phone flows
-repeated on localhost), AWAITING CORE'S MERGE BY SHA.** The broker
-of record ruled under TRREB R-805(c): a username and a password per consumer. The email is the
-username; the password (12+ characters, not the email, bcrypt cost 12) is set on the card after
-the link or code verifies the email; the returning sign-in is email + password with "Email me a
-link instead" as the fallback; **no VOW record is served until the password exists**
-(`src/lib/vow-access.ts` `canSeeVowRecords()`, called by all seven VOW surfaces). Preview
-`miltonly-g8swlwol7` is the proof, four flows at 390 x 844: first sign-in by link then the full
-card (12 rows at 4.7 s), returning sign-in by password (no card, 12 rows at 3.0 s), a wrong
-password refused, and an acknowledged row without a password meeting the password-only card.
-Record: `scratchpad/reports/MP-002b-the-password.md`. Local build exit 0 on Node 22, `P2024` 0,
-prebuild 38 tests, `[portal-door] PASS: 120 assertions`.
+**VERCEL WAS PAUSED ON 2026-09-19 AND ANSWERS 200 AGAIN ON THE 20TH.** MP-002b and MP-002c were
+both gated locally: `pnpm build` then `next start -p <port>` with
+`VERCEL_GIT_COMMIT_SHA=$(git rev-parse HEAD)` so `/api/build` serves the local SHA, the battery
+with `EXPECT_SHA=<sha> BASE=http://localhost:<port>`. **Drop the `db2` and `db3` tags through
+`/api/revalidate` first**: a local `next start` serves the on-disk Data Cache from earlier runs.
+**Do not run the battery while a workflow's agents are busy on the same machine**: the run at
+`0ac988d` reported 20 pages "not a 200" that answered in 18 ms afterwards. `scratchpad/mp002/
+run-battery-local.sh <ref> <base> <log>` is the detached runner. MP-002b's preview proof
+(`miltonly-g8swlwol7`, 2026-09-18) stands; MP-002c has had no preview, by the task's word.
+
+**MP-002b, BENEATH, IS UNCHANGED SINCE ITS REPORT** (`scratchpad/reports/MP-002b-the-password.md`):
+the email is the username, the password is set on the card, the returning sign-in is email +
+password with the link as fallback, no VOW record without a password
+(`src/lib/vow-access.ts`, seven surfaces).
 
 **TWO MIGRATIONS ARE ALREADY APPLIED**, both through `prisma migrate deploy` against the shared
 database: `20260917120000_portal_door` (MP-002, merged) and `20260918120000_portal_password`
@@ -64,14 +68,15 @@ exceptions above). A nav change is a request to Home.
 
 | | |
 |---|---|
-| branch | `feat/portal`, app code `98d2cd7` (on the merge of `origin/main` `e606d8b`), docs commit on top |
-| merged | MP-001 and MP-002 (`706ce07`); MP-002b awaits Core |
-| preview | `miltonly-g8swlwol7-gtahomequest-hubs-projects.vercel.app` |
-| `User` | 2 rows (Aamir's), 0 bot |
+| branch | `feat/portal`, app code `f7813c1` (on the merge of `origin/main` `e087209`), docs commit on top |
+| merged | MP-001 and MP-002 (`706ce07`); MP-002b and MP-002c await Core |
+| preview | none for MP-002c (gated locally); MP-002b's `miltonly-g8swlwol7` stands |
+| `User` | 1 row (Aamir's), 0 bot |
 | `SavedSearch` | 9 rows, all preview, 0 with a userId |
 | migrations | `portal_door`, `portal_password` applied, ledger clean, 31 |
-| prebuild | 38 tests; `[portal-door] PASS: 120 assertions` |
-| next | MP-003, the account, on a prompt (the change-password surface goes there) |
+| prebuild | 38 tests; `[portal-door] PASS: 155 assertions` |
+| `guards.ts` | identical to `origin/feat/leads @ 064c5b6` (ML-005) |
+| next | MP-002d (guards on `/api/auth/verify` and `/login`) or MP-003 (the account), on a prompt |
 
 ## The shape that shipped
 
@@ -79,7 +84,8 @@ exceptions above). A nav change is a request to Home.
 /signin?redirect=<path>          SignInForm: email -> password step -> "Sign in"
   |-> POST /api/auth/login       origin -> own rate limit -> bcrypt compare (dummy hash when no
   |                              row or no password, one message) -> 90-day session -> redirect
-  '-> "Email me a link instead"  POST /api/auth/signup: honeypot -> origin -> rate limit -> upsert
+  '-> "Email me a link instead"  POST /api/auth/signup: honeypot -> user agent -> origin -> rate
+                                 limit (all src/lib/lead/guards.ts, ML-005's file) -> upsert
                                  secret (code + sha256(token), 15 min, attempts 0) -> email
      -> /signin/link?t=&r=       LinkLanding POSTs the token (a scanner's GET spends nothing)
      -> POST /api/auth/verify    judgeToken / judgeCode: expiry, five-attempt lock,
@@ -119,10 +125,15 @@ exceptions above). A nav change is a request to Home.
 
 ## What is open
 
-1. MP-003, the account: `/account` replacing `/saved`, the first-screen card on
+1. **MP-002d, the guards on `/api/auth/verify` and `/api/auth/login`.** verify has no origin
+   check, no User-Agent guard, no rate limit, and its five-attempt lock is check-then-increment:
+   five wrong codes against any address while its code is pending lock it, concurrently. login
+   accepts a missing or quoted User-Agent and keys its email bucket on the raw address. Both are
+   the portal's files; proposed as one slice, with `updateMany where verifyAttempts < MAX`.
+2. MP-003, the account: `/account` replacing `/saved`, the first-screen card on
    `homeStreetSlug`, watches with toggles, the brief, sold records scoped to my streets,
-   `VowAccessLog`, **change my password** (the link path resets nothing; the card only asks
-   when the row has no password). The CASL footer and unsubscribe landed in ML-004.
-2. The street page's sold table clips at 390 (pre-existing island layout; Home's).
-3. `/rentals` sends `?next=`; the form reads both, so it works, but the site should settle on
-   `redirect`.
+   `VowAccessLog`, **change my password**.
+3. `guards.ts` cites RFC 9110 for "no quotes in a User-Agent"; the grammar allows them and the
+   rule is empirical. Leads' wording; any change must land identically on both branches.
+4. The street page's sold table clips at 390 (pre-existing island layout; Home's).
+5. `/rentals` sends `?next=`; the form reads both.
