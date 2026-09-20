@@ -244,18 +244,31 @@ async function readStreetListings(siblingSlugs: string[]): Promise<StreetListing
 
 // Three layers, each measured (MC-034). The select above cuts the bytes a row costs. React's
 // cache() on getStreetPageData collapses generateMetadata and the page body into one read within
-// a render pass. This Data Cache entry, keyed by the sibling set and tagged LISTING_ROWS_TAG,
-// carries the rows across passes (the HTML and the RSC payload of one ISR revalidation are two
-// passes) and across renders until a listing sync writes a row and drops the tag
-// (src/lib/revalidateSurfaces.ts revalidateListingSurfaces, called by /api/sync, /api/sync/detect
-// and /api/sync/expire after a write) or an hour passes, the page's own ISR window. Outside a
+// a render pass. This Data Cache entry carries the rows across passes (the HTML and the RSC
+// payload of one ISR revalidation are two passes) and across renders for up to an hour, the
+// page's own ISR window. Its key carries a write stamp, one indexed row (the row count and the
+// latest updatedAt of the street's rows, which every Prisma write bumps), so a listing sync
+// that touches the street changes the key and the next render misses: unstable_cache serves a
+// tag-dropped entry stale while it refreshes in the background, and a stamp in the key is what
+// keeps a regeneration from rendering the rows as they were before the sync. The tag
+// LISTING_ROWS_TAG is on the entry as well, and through it on every street page: dropped by
+// revalidateListingSurfaces (src/lib/revalidateSurfaces.ts, called by /api/sync,
+// /api/sync/detect and /api/sync/expire after a write) and by /api/revalidate { tag: "listings" },
+// so the pages regenerate on their next visit after a sync rather than at their hour. Outside a
 // Next server dataCached runs the read (a script sees live rows). Not the Upstash cached()
 // helper: that one skips Redis under a static render.
-const streetListingsFor = (siblingSlugs: string[]): Promise<StreetListing[]> =>
-  dataCached(() => readStreetListings(siblingSlugs), ["street-listings:v1", ...siblingSlugs], {
+async function streetListingsFor(siblingSlugs: string[]): Promise<StreetListing[]> {
+  const stamp = await prisma.listing.aggregate({
+    where: { streetSlug: { in: siblingSlugs }, permAdvertise: true },
+    _count: { _all: true },
+    _max: { updatedAt: true },
+  });
+  const written = `${stamp._count._all}:${stamp._max.updatedAt?.getTime() ?? 0}`;
+  return dataCached(() => readStreetListings(siblingSlugs), ["street-listings:v1", written, ...siblingSlugs], {
     revalidate: 3600,
     tags: [LISTING_ROWS_TAG],
   })();
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    MAIN EXPORT
