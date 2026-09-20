@@ -10,9 +10,12 @@
 // fails the build if a single one reaches the sender.
 //
 // ORDER OF THE GUARDS MATTERS. Honeypot first, because it costs nothing and answers 200 so the
-// bot learns nothing. Origin second, because a non-browser caller never gets as far as the
-// store. Rate limit last, because it is the only guard that spends anything (an Upstash token),
-// and a request refused by the first two must not spend it.
+// bot learns nothing. User-Agent second (MP-002c), for the same reason: a missing or quoted
+// User-Agent is a script, never a browser (the ML-005 guard, src/lib/lead/guards.ts), and it
+// is refused the honeypot's way, 200 and nothing written, before any answer that could teach
+// the script what to fix. Origin third, because a non-browser caller never gets as far as the
+// store. Rate limit last, because it is the only guard that spends anything (an Upstash
+// token), and a request refused by the first three must not spend it.
 //
 // ONE SECRET, TWO SHAPES. The email carries a 6-digit code (typed on the phone that has the
 // page open) and a link (tapped on the phone that has the inbox open). They expire together,
@@ -29,7 +32,7 @@
 // src/lib/auth.ts).
 
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-import { checkHoneypot, checkOrigin, checkRateLimit, hostAllowed, type GuardVerdict } from "@/lib/lead/guards";
+import { checkHoneypot, checkOrigin, checkRateLimit, checkUserAgent, hostAllowed, type GuardVerdict } from "@/lib/lead/guards";
 import { config } from "@/lib/config";
 
 export const CODE_MINUTES = 15;
@@ -99,6 +102,8 @@ export function magicLink(origin: string, token: string, redirect: string): stri
 export interface SignInRequest {
   body: Record<string, unknown>;
   ip: string;
+  /** The User-Agent header as received; null when absent. Judged by checkUserAgent. */
+  userAgent: string | null;
   origin: string | null;
   referer: string | null;
   host: string | null;
@@ -133,6 +138,12 @@ export async function requestSignIn(req: SignInRequest, deps: SignInDeps): Promi
   if (!trapped.ok) {
     // 200 with the success body. Nothing persisted, nothing sent.
     return { ok: true, status: 200, body: { success: true, message: SENT_MESSAGE }, sent: false, reason: trapped.reason };
+  }
+
+  const agent = checkUserAgent(req.userAgent);
+  if (!agent.ok) {
+    // The honeypot's way again: the same 200 and the same words, nothing persisted, nothing sent.
+    return { ok: true, status: 200, body: { success: true, message: SENT_MESSAGE }, sent: false, reason: agent.reason };
   }
 
   const origin = checkOrigin(req.origin, req.referer);

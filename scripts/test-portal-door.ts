@@ -1,6 +1,7 @@
-// Prebuild test for the door (MP-002): the sign-in request, the code and the link; and
-// (MP-002b) the password: the rule, the hash, the login route, and the one VOW gate that
-// requires it on every surface.
+// Prebuild test for the door (MP-002): the sign-in request, the code and the link; (MP-002b)
+// the password: the rule, the hash, the login route, and the one VOW gate that requires it on
+// every surface; and (MP-002c) the User-Agent guard from src/lib/lead/guards.ts, refusing a
+// missing or quoted User-Agent the honeypot's way, before the origin check.
 //
 // The headline assertion is the one the task set: a run of 100 bot signups sends zero emails.
 // It runs the real requestSignIn() with the database and the sender replaced by counters, so
@@ -64,10 +65,15 @@ function counters() {
   };
 }
 
+const BROWSER_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+// The sign-in bot's exact header, MP-001: a Chrome string wrapped in double quotes.
+const BOT_UA = '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"';
+
 function req(over: Partial<SignInRequest> & { body?: Record<string, unknown> }): SignInRequest {
   return {
     body: { email: "person@example.com", redirect: "/streets/pine-street-milton#sold-records" },
     ip: "203.0.113.7",
+    userAgent: BROWSER_UA,
     origin: "https://miltonly.com",
     referer: null,
     host: "miltonly.com",
@@ -145,6 +151,69 @@ async function main() {
     const r = await requestSignIn(req({ body: { email: "not an email" } }), { ...c.deps, rateLimit: fakeLimiter() });
     eq(r.status, 400, "a bad address is refused before the limiter");
     eq(c.sent.length, 0, "a bad address sends nothing");
+  }
+
+  // ── the User-Agent guard (MP-002c): missing or quoted, the honeypot's way ────
+  {
+    const c = counters();
+    let twoHundreds = 0;
+    let sameWords = 0;
+    let limiterCalls = 0;
+    const counting = fakeLimiter();
+    const limiter = async (a: { ip: string; email?: string }) => {
+      limiterCalls++;
+      return counting(a);
+    };
+    for (let i = 0; i < 100; i++) {
+      const r = await requestSignIn(
+        req({ body: { email: `s.i.l.e.n.t.${i}@gmail.com` }, ip: `198.51.100.${i % 20}`, userAgent: i % 2 ? BOT_UA : null }),
+        { ...c.deps, rateLimit: limiter },
+      );
+      if (r.status === 200) twoHundreds++;
+      if (r.ok && r.body.message === "Check your email. Tap the link, or type the code. It works for 15 minutes." && r.sent === false) sameWords++;
+    }
+    eq(c.sent.length, 0, "100 signups with a missing or quoted User-Agent: emails sent");
+    eq(c.persisted.length, 0, "100 signups with a missing or quoted User-Agent: rows written");
+    eq(twoHundreds, 100, "100 signups with a missing or quoted User-Agent: every one answered 200");
+    eq(sameWords, 100, "100 signups with a missing or quoted User-Agent: every one got the success words and sent nothing");
+    eq(limiterCalls, 0, "a missing or quoted User-Agent never reaches the limiter, so it spends nothing");
+  }
+  for (const [ua, label] of [
+    [null, "no header"],
+    ["", "empty header"],
+    ["   ", "whitespace header"],
+    [BOT_UA, "the bot's double-quoted Chrome string"],
+    ["'Mozilla/5.0'", "a single-quoted string"],
+    ['Mozilla/5.0 "x"', "a quote anywhere in the value"],
+  ] as const) {
+    const c = counters();
+    const r = await requestSignIn(req({ userAgent: ua }), { ...c.deps, rateLimit: fakeLimiter() });
+    ok(r.ok && r.status === 200 && r.sent === false && c.sent.length === 0 && c.persisted.length === 0, `User-Agent ${label}: 200, nothing sent, nothing written`);
+    ok(!r.ok || r.reason === "no user agent" || r.reason === "quoted user agent", `User-Agent ${label}: the reason is the guard's`);
+  }
+  for (const [ua, label] of [
+    [BROWSER_UA, "an iPhone Safari string"],
+    ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36", "a desktop Chrome string"],
+    ["curl/8.4.0", "curl, which the proofs use"],
+    ["node", "node, which the battery uses"],
+  ] as const) {
+    const c = counters();
+    const r = await requestSignIn(req({ userAgent: ua }), { ...c.deps, rateLimit: fakeLimiter() });
+    ok(r.ok && r.sent === true && c.sent.length === 1, `User-Agent ${label}: passes and sends`);
+  }
+  {
+    // The order: a request with a quoted User-Agent AND no origin answers 200, not 403. The
+    // silent refusal comes before the one that speaks.
+    const c = counters();
+    const r = await requestSignIn(req({ userAgent: BOT_UA, origin: null, referer: null }), { ...c.deps, rateLimit: fakeLimiter() });
+    eq(r.status, 200, "quoted User-Agent with no origin: 200 (the silent guard runs before the origin check)");
+    eq(c.sent.length, 0, "quoted User-Agent with no origin: nothing sent");
+  }
+  {
+    // And the honeypot still comes first: a trapped body with a good User-Agent is the honeypot's reason.
+    const c = counters();
+    const r = await requestSignIn(req({ body: { email: "person@example.com", [HONEYPOT_FIELD]: "x" } }), { ...c.deps, rateLimit: fakeLimiter() });
+    ok(r.ok && r.reason === "honeypot", "honeypot before User-Agent");
   }
 
   // ── one real request: the shape of what is sent ──────────────────────────────
@@ -312,7 +381,16 @@ async function main() {
   ok(!/user\.verifyCode !== code|=== code/.test(verify), "verify route has no plain string compare");
   const door = readFileSync("src/lib/portal/door.ts", "utf8");
   ok(door.includes("timingSafeEqual"), "the compare is constant-time");
-  ok(door.indexOf("checkHoneypot(") < door.indexOf("checkOrigin(") && door.indexOf("checkOrigin(") < door.indexOf("checkRateLimit)"), "guards run honeypot, origin, rate limit, in that order");
+  ok(
+    door.indexOf("checkHoneypot(") < door.indexOf("checkUserAgent(") &&
+      door.indexOf("checkUserAgent(") < door.indexOf("checkOrigin(") &&
+      door.indexOf("checkOrigin(") < door.indexOf("checkRateLimit)"),
+    "guards run honeypot, user agent, origin, rate limit, in that order",
+  );
+  ok(door.includes('from "@/lib/lead/guards"') && /import \{[^}]*checkUserAgent[^}]*\} from "@\/lib\/lead\/guards"/.test(door), "checkUserAgent is the lead layer's, imported from guards.ts, not a copy");
+  ok(signup.includes('userAgent: request.headers.get("user-agent")'), "signup route passes the User-Agent header to the door");
+  const guards = readFileSync("src/lib/lead/guards.ts", "utf8");
+  ok(guards.includes("export function checkUserAgent("), "guards.ts exports checkUserAgent");
   const ack = readFileSync("src/app/api/auth/acknowledge-vow/route.ts", "utf8");
   ok(ack.includes("consentText: PORTAL_CONSENT_TEXT") && ack.includes("consentTimestamp: now"), "acknowledge route stores the consent pair");
   ok(ack.includes("residentialStreet.findUnique"), "acknowledge route checks the street against the registry");
@@ -339,7 +417,7 @@ async function main() {
     for (const f of failures) console.error("  - " + f);
     process.exit(1);
   }
-  console.log(`[portal-door] PASS: ${assertions} assertions. 100 honeypot signups sent 0 emails; 100 no-origin signups sent 0.`);
+  console.log(`[portal-door] PASS: ${assertions} assertions. 100 honeypot signups sent 0 emails; 100 no-origin signups sent 0; 100 missing-or-quoted-User-Agent signups sent 0.`);
 }
 
 main().catch((err) => {
