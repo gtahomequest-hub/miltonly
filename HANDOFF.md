@@ -2,14 +2,39 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-19 (MC-029 merged locally, NOT pushed): Vercel is paused (402), so `fix/vow-compliance @ de199c2` is merged on local `main` as `5994cc7`, gated locally (build exit 0, `next start` battery, hub drift purged and rerun clean), preview pending. `origin/main` is still `e606d8b` and production serves `895962b`, which the new `vow-fields` check fails 8 of 15. Push when production answers 200._
+_Last rewritten 2026-09-20 (MC-030, MC-029 on production): `main` is `c83fffb`, pushed and served (`/api/build` answers it; it is the head above merge `5994cc7`, docs only on top). Full production battery `FAIL · 21 checks · 644 pages · 910s` with every failing line one street the creation cron published at 02:01Z mid-crawl; purged and rerun `PASS · 4 checks · 645 pages · 596s`; `vow-fields` 15 of 15 on production. Record `scratchpad/reports/MC-030-vow-to-production.md`._
 
 ## READ THIS FIRST
 
-**LOCAL `main` IS THE MERGE `5994cc7` PLUS THE DOCS COMMITS ON IT, AHEAD OF `origin/main`
-(`e606d8b`), AND MUST NOT BE PUSHED UNTIL PRODUCTION ANSWERS 200.** Vercel was paused for about seven hours from the evening of
-2026-09-18 (every deployment, production included, answers 402). On that basis the merge was
-prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
+**MAIN IS `c83fffb` AND PRODUCTION SERVES `c83fffb`, MC-029 LIVE, ON NODE 22.** Production
+answered 200 again on 2026-09-19 evening (Vercel's pause lifted after about seven hours of 402),
+`main` was pushed (`e606d8b..c83fffb`: the merge `5994cc7` of `fix/vow-compliance @ de199c2`
+plus two docs commits), deployment `miltonly-82uy36xiw` built to Ready in 2m and `/api/build`
+answers `c83fffb5c642143f08befa75c89d8790fef5a79c`. **The battery expects the served head, not
+the merge SHA:** Vercel builds the pushed commit, so `EXPECT_SHA` is `c83fffb…` even though the
+code is `5994cc7`'s. The `db2`/`db3` tags and the 22 hubs were purged through `/api/revalidate`
+(a session-scratch `purge-prod.mjs` modelled on `scratchpad/mc003/purge.mjs`: tags first, then
+every `/neighbourhoods/<slug>` in the sitemap), then the full battery ran: `FAIL · 21 checks ·
+644 pages · 910s` (`scratchpad/mc003/battery-mc030-prod-c83fffb.log`) with seven failing lines
+that are all one street, `dinsmore-drive-milton`, published by the creation cron at 02:01Z one
+minute after the crawl read a 644-page sitemap (645 `StreetContent` rows by the end, 1259 of
+1260 sitemap URLs read, Beaty's ladder 68 vs 67, the home and menu page counts 645 vs 644).
+That is the creation-cron hour named below, isolated and pre-existing in kind; purged again
+(tags, hubs, `/`, `/streets`) and rerun `--only=homepage,hub-page,hub-meta,catchment`: `PASS · 4
+checks · 645 pages · 596s` (`-rerun.log`). The other 17 checks passed in the full run;
+`vow-fields` 15 of 15 on production: 16 of 16 anonymous surfaces carry no VOW-only field, the
+gated route answers no facts anonymously and the facts to the acknowledged session, the grid
+cards and the listing page island render them for that session, 474 listing URLs checked against
+DB1 with 0 off market or lacking `permAdvertise`, 5 of 5 surfaces measured with 0 brokerage
+elements differing from their price. An independent curl of `/listings/W13800708` (MISS) carries
+zero of the seven keys; its only "days on market" and "price history" text is the sign-in line
+and the market edition's aggregate. **Do not start a battery at :00 local**: the creation cron
+runs at :01Z every hour and a page published mid-crawl fails four checks by one street.
+Record: `scratchpad/reports/MC-030-vow-to-production.md`. The MC-029 paragraphs below stand.
+
+**HOW MC-029 REACHED MAIN (2026-09-19, UNDER THE PAUSE).** Vercel was paused for about seven
+hours from the evening of 2026-09-18 (every deployment answered 402). On that basis the merge
+was prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
 landed as `5994cc7` on `e606d8b`. Gated locally: `pnpm build` on Node 22 exit 0, 168/168; then
 `next start` on port 3100 (`scratchpad/mc003/run-start22.sh <port> <sha> <log>` sets
 `VERCEL_GIT_COMMIT_SHA` so `/api/build` answers the SHA the battery expects) and the full battery
@@ -17,14 +42,12 @@ with `BASE=http://localhost:3100`: `FAIL · 21 checks · 626 pages · 749s` with
 drifts and nothing else, then `PASS · 2 checks` on `hub-page,hub-meta` after purging the db2/db3
 tags, the 22 hubs and the street through `/api/revalidate` (the window-edge lie: gordon-krantz
 has a sale dated 2025-09-18, and Harrison's stock share moved with the feed; no MC-029 file
-touches a hub figure). `vow-fields` 15 of 15 locally. **When production is back:** `git push`,
-`npx vercel ls --prod`, `EXPECT_SHA=5994cc760c8b357f0e4dfe4bed13ca55ffe992b9
-BASE=https://miltonly.com node scripts/verify/run.mjs`. Before the pause, preview `czlzy3wc7`
+touches a hub figure). `vow-fields` 15 of 15 locally. Before the pause, preview `czlzy3wc7`
 served `6c23bdc` and the full battery passed there (`PASS · 21 checks · 609 pages · 769s`).
 Record: `scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB
 reply and reconciles the audit's checklist (`MA-006-vow-fields-addendum.md` on `feat/audit`,
-every file:line) against the branch. Note the sitemap grew from 609 to 626 street pages overnight
-(the creation cron).
+every file:line) against the branch. The sitemap grew from 609 to 626 street pages overnight
+and stands at 645 (the creation cron).
 
 **WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
 columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
