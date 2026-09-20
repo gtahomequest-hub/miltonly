@@ -12,7 +12,10 @@ import SiteFooter from '@/components/nav/SiteFooter';
 import SchemaScript from '@/components/SchemaScript';
 import { generateFAQSchema } from '@/lib/schema';
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { getListingsV2Data, parseListingsQuery } from '@/lib/listingsV2Data';
+import { getSession } from '@/lib/auth';
+import { canSeeVowRecords } from '@/lib/vow-access';
 import { getStreetCompareContrast } from '@/lib/comparisonData';
 
 export const dynamic = 'force-dynamic';
@@ -49,12 +52,20 @@ interface Props {
 }
 
 export default async function ListingsPage({ searchParams }: Props) {
+  // MC-029: the sold grid was a public list of sold listings with their sold prices. /sold is
+  // the gated surface for that; the old URL sends the visitor there.
+  if (searchParams.status === 'sold') redirect('/sold');
   const query = parseListingsQuery(searchParams);
+  // The page is force-dynamic, so the session is read here, per request, and the loader is
+  // told whether the cards may carry the VOW-only facts. The decision is the server's; the
+  // anonymous payload never contains them (src/lib/listings/vow.ts).
+  const user = await getSession();
+  const vow = canSeeVowRecords(user);
   // City-wide freehold-vs-condo contrast for the CompareModule teaser — same
   // hoisted memoized-promise seam the street pages use (one resolution per
   // process; /listings is force-dynamic so this is a warm-cache hit per request).
   const [data, compareContrast] = await Promise.all([
-    getListingsV2Data(query),
+    getListingsV2Data(query, { vow }),
     getStreetCompareContrast(),
   ]);
 

@@ -325,7 +325,9 @@ export interface ActiveListingCard {
   bathrooms: number;
   parking: number;
   propertyType: string;
-  daysOnMarket: number | null;
+  /** the listing brokerage, rendered inside the price at its size (TRREB item 27, MC-029) */
+  listOfficeName: string | null;
+  // No daysOnMarket (MC-029): a day count on a card is a VOW-only fact, src/lib/listings/vow.ts.
   photo?: string;
   href: string;
 }

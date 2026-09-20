@@ -1493,7 +1493,7 @@ function buildActiveInventory(input: {
       bathrooms: l.bathrooms,
       parking: l.parking,
       propertyType: l.propertyType,
-      daysOnMarket: l.daysOnMarket ?? null,
+      listOfficeName: l.listOfficeName ?? null,
       photo: l.photos && l.photos.length > 0 ? l.photos[0] : undefined,
       href: `/listings/${l.mlsNumber}`,
     })),

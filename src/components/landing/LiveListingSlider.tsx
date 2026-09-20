@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
 import { config } from "@/lib/config";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -89,7 +90,8 @@ export interface LiveListingSliderListing {
   bathrooms: number;
   sqft: number | null;
   photos: string[];
-  listedAt: string;
+  listOfficeName?: string | null;
+  // No listedAt (MC-029): the pool arrives in the server's newest-first order.
   propertyType: string;
   // 4l-fix: similar-listings matcher uses these two TRREB-native fields.
   // architecturalStyle is the storeys/archetype signal (2-Storey vs Bungalow
@@ -144,9 +146,11 @@ function getGtag(): GtagFn | null {
   return w.gtag || null;
 }
 
-// Sort helper: newest listedAt first.
-function byNewest(a: LiveListingSliderListing, b: LiveListingSliderListing): number {
-  return new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime();
+// Sort helper: newest first. The pool arrives in the server's listedAt-desc order and carries no
+// list date (MC-029, a VOW-only fact), so "newest first" is "keep the order": a stable sort with
+// a zero comparator preserves it, and the filtered subsets keep their relative order.
+function byNewest(): number {
+  return 0;
 }
 
 // Default filter pill is derived from the current listing's propertyType so
@@ -613,8 +617,6 @@ export default function LiveListingSlider({
           onMouseEnter={pauseAutoScroll}
         >
           {filtered.map((listing) => {
-            const days = daysAgo(new Date(listing.listedAt));
-            const tag = days <= 7 ? `NEW · ${days}d` : `${days}d ago`;
             const streetAddr = listing.address.split(",")[0];
             const photoUrl = listing.photos?.[0];
             return (
@@ -640,13 +642,11 @@ export default function LiveListingSlider({
                   {!photoUrl && (
                     <div className="absolute inset-0 flex items-center justify-center text-[28px] opacity-30">🏠</div>
                   )}
-                  <span className="absolute top-2 left-2 bg-[#07111f]/85 backdrop-blur-sm text-[#fbbf24] text-[9px] font-medium uppercase tracking-[0.5px] px-[6px] py-[3px] rounded-[3px]">
-                    {tag}
-                  </span>
                 </div>
                 <div className="px-[12px] py-[10px]">
-                  <div className="text-[15px] font-medium tracking-tight text-[#f8f9fb] leading-none mb-1">
+                  <div className="text-[15px] font-medium tracking-tight text-[#f8f9fb] leading-none mb-1" data-price>
                     {formatPriceFull(listing.price)}
+                    <ListingBrokerage name={listing.listOfficeName} />
                     {transactionType === "For Lease" && (
                       <span className="text-[10px] font-normal text-[#94a3b8] ml-1">/mo</span>
                     )}

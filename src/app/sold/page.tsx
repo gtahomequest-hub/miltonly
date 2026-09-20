@@ -21,6 +21,7 @@ import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import {
   getMiltonSoldTotals,
   getSoldNeighbourhoodOptions,
@@ -103,7 +104,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function SoldHubPage({ searchParams }: PageProps) {
   const user = await getSession();
   const authed = !!user;
-  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
+  const canSeeRecords = canSeeVowRecords(user);
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
   const nbhdParam = searchParams?.nbhd;

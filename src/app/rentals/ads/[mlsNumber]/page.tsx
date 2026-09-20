@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import RentalsAdsClient from "./RentalsAdsClient";
+import { stripVowFields } from "@/lib/listings/vow";
 
 export const dynamic = "force-dynamic";
 
@@ -118,14 +119,15 @@ export default async function RentalsAdsListingPage({ params }: PageProps) {
       bathrooms: true,
       sqft: true,
       photos: true,
-      listedAt: true,
+      listOfficeName: true,
       propertyType: true,
       architecturalStyle: true,
       approximateAge: true,
     },
   });
 
-  const listingSerialized = JSON.parse(JSON.stringify(listing));
+  // MC-029: stripped of every VOW-only column before the client component sees it.
+  const listingSerialized = JSON.parse(JSON.stringify(stripVowFields(listing)));
   const sliderListingsSerialized = JSON.parse(JSON.stringify(sliderListings));
 
   return (

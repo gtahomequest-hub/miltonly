@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { config } from "@/lib/config";
 import { unsubscribeUrl, listUnsubscribeHeaders } from "@/lib/email/unsubscribe";
 import { emailFooter } from "@/lib/email/footer";
+import { brokerageDisplayName } from "@/components/listings/ListingBrokerage";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -94,7 +95,7 @@ export async function sendDealAlertEmail(
   email: string,
   firstName: string | null,
   searchName: string,
-  matches: { address: string; price: number; mlsNumber: string; propertyType: string }[],
+  matches: { address: string; price: number; mlsNumber: string; propertyType: string; listOfficeName?: string | null }[],
   watchId: string,
   origin?: string,
   env: string = "production",
@@ -125,7 +126,11 @@ export async function sendDealAlertEmail(
             <a href="${site}/listings/${m.mlsNumber}" style="color:#07111f;font-weight:600;text-decoration:none;font-size:14px;">${m.address}</a>
             <br/><span style="color:#94a3b8;font-size:11px;">${m.propertyType} · MLS ${m.mlsNumber}</span>
           </td>
-          <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#07111f;font-size:14px;">$${m.price.toLocaleString()}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#07111f;font-size:14px;">$${m.price.toLocaleString()}${
+            // The listing brokerage beside the price, in the price's size, weight and colour
+            // (TRREB item 27, MC-029).
+            brokerageDisplayName(m.listOfficeName) ? `<br/><span style="font-weight:700;color:#07111f;font-size:14px;">Listed by ${brokerageDisplayName(m.listOfficeName)}</span>` : ""
+          }</td>
         </tr>`
     )
     .join("");
@@ -134,7 +139,7 @@ export async function sendDealAlertEmail(
   const text = [
     `Hi ${firstName || "there"}, ${matches.length} new listing${plural} match "${searchName}".`,
     "",
-    ...matches.slice(0, 10).map((m) => `- ${m.address}, $${m.price.toLocaleString()}: ${site}/listings/${m.mlsNumber}`),
+    ...matches.slice(0, 10).map((m) => `- ${m.address}, $${m.price.toLocaleString()}${brokerageDisplayName(m.listOfficeName) ? `, listed by ${brokerageDisplayName(m.listOfficeName)}` : ""}: ${site}/listings/${m.mlsNumber}`),
     "",
     `View all on ${config.SITE_NAME}: ${site}/saved`,
     footer.text,

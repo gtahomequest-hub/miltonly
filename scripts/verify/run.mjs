@@ -29,10 +29,11 @@ import footer from './checks/footer.mjs';
 import catchment from './checks/catchment.mjs';
 import video from './checks/video.mjs';
 import phone390 from './checks/phone-390.mjs';
+import vowFields from './checks/vow-fields.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390, vowFields];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

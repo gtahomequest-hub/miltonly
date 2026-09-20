@@ -19,10 +19,6 @@ export function ListingsHero({ data, basePath }: { data: ListingsV2Data; basePat
       <>
         Homes for rent in <em>Milton</em>
       </>
-    ) : mode === 'sold' ? (
-      <>
-        Recently sold in <em>Milton</em>
-      </>
     ) : (
       <>
         Homes for sale in <em>Milton</em>
@@ -35,7 +31,7 @@ export function ListingsHero({ data, basePath }: { data: ListingsV2Data; basePat
         <div className="lv-crumb">
           <Link href="/">Miltonly</Link>
           <span>/</span>
-          {mode === 'rent' ? 'Rent' : mode === 'sold' ? 'Sold' : 'Buy'}
+          {mode === 'rent' ? 'Rent' : 'Buy'}
         </div>
 
         <nav className="lv-modes" aria-label="Listing mode">
@@ -45,7 +41,8 @@ export function ListingsHero({ data, basePath }: { data: ListingsV2Data; basePat
           <Link className={`lv-mode${mode === 'rent' ? ' lv-on' : ''}`} href={`${basePath}?status=rent`}>
             For Rent
           </Link>
-          <Link className={`lv-mode${mode === 'sold' ? ' lv-on' : ''}`} href={`${basePath}?status=sold`}>
+          {/* MC-029: sold records live on /sold, behind the VOW sign-in; the grid has no sold mode. */}
+          <Link className="lv-mode" href="/sold">
             Sold
           </Link>
         </nav>

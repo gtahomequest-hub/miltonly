@@ -19,7 +19,7 @@ import SiteChrome from "@/components/nav/SiteChrome";
 // the /listings and /sold facets.
 export const metadata = genMeta({
   title: `Sign In — ${config.SITE_NAME}`,
-  description: `Sign in to ${config.SITE_NAME} with an emailed link. No password.`,
+  description: `Sign in to ${config.SITE_NAME}: your email and your password, or an emailed link.`,
   canonical: `${config.SITE_URL}/signin`,
   noIndex: true,
 });
@@ -31,7 +31,7 @@ export default function SignInPage() {
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-7">
           <h1 className="text-[24px] font-extrabold text-[#073126] tracking-[-0.02em] mb-2">Sign in to {config.SITE_NAME}</h1>
-          <p className="text-[13px] text-[#6b6f6a]">Sold prices, your streets, your alerts. An email, no password.</p>
+          <p className="text-[13px] text-[#6b6f6a]">Sold prices, your streets, your alerts. Your email and your password.</p>
         </div>
         {/* useSearchParams in the form needs a boundary on a static page (Next 14). */}
         <Suspense fallback={<div className="bg-white rounded-2xl border border-[#dfe0dc] p-8 min-h-[220px]" />}>

@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import SalesAdsClient from "./SalesAdsClient";
+import { isPublicListing, stripVowFields } from "@/lib/listings/vow";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ async function fetchListingForRender(mlsNumber: string) {
   if (!row) return null;
   if (row.status !== ACTIVE_STATUS) return null;
   if (row.transactionType !== SALE_TX_TYPE) return null;
+  if (!isPublicListing(row)) return null; // MC-029: the display flag was never checked here
   return row;
 }
 
@@ -93,6 +95,7 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
   if (!listing) redirect("/rentals");
   if (listing.status !== ACTIVE_STATUS) redirect("/rentals");
   if (listing.transactionType !== SALE_TX_TYPE) redirect("/rentals");
+  if (!isPublicListing(listing)) redirect("/rentals");
 
   // Slider pool — top 80 active Milton sale listings across all property
   // types, ordered by recency. The slider component filters client-side
@@ -117,7 +120,7 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
       bathrooms: true,
       sqft: true,
       photos: true,
-      listedAt: true,
+      listOfficeName: true,
       propertyType: true,
       // 4l-fix: similar-listings matcher uses architecturalStyle as the
       // TRREB-native storeys signal (2-Storey vs Bungalow vs Backsplit 3 etc.)
@@ -131,7 +134,8 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
   // Prisma Decimal/Date fields don't serialize through to a Client
   // Component cleanly — JSON.parse(JSON.stringify(...)) is the cheap fix
   // matching the existing /rentals/ads pattern.
-  const listingSerialized = JSON.parse(JSON.stringify(listing));
+  // MC-029: stripped of every VOW-only column before the client component sees it.
+  const listingSerialized = JSON.parse(JSON.stringify(stripVowFields(listing)));
   const sliderListingsSerialized = JSON.parse(JSON.stringify(sliderListings));
 
   return (

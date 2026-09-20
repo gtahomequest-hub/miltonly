@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
 import StreetCapture from './StreetCapture';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 
 /** Every link to /sell from a street page carries the street (MA-001 defect 4): the valuation
  *  form prefills its address from ?street=, and four of the five links dropped it. */
@@ -608,10 +609,14 @@ function ListingTile({ l, index }: { l: ListingCard; index: number }) {
             className="s-listing-img"
           />
         ) : null}
-        {l.daysOnMarket !== null && <span className="s-listing-dom">{l.daysOnMarket}d on market</span>}
       </div>
       <div className="s-listing-body">
-        <div className="s-listing-p">{shortPrice(l.price)}</div>
+        {/* The brokerage inside the price, at its size (TRREB item 27, MC-029). No day count on
+            a tile: it is a VOW-only fact (src/lib/listings/vow.ts). */}
+        <div className="s-listing-p" data-price>
+          {shortPrice(l.price)}
+          <ListingBrokerage name={l.listOfficeName} />
+        </div>
         <div className="s-listing-a">{l.address}</div>
         <div className="s-listing-m">
           <span>{l.bedrooms} bd</span>

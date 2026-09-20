@@ -28,15 +28,16 @@ import { config } from '@/lib/config';
 import { hasValidCoords } from '@/lib/geo';
 import type {
   ListingCardData,
+  ListingCardVow,
   ListingsQuery,
   ListingsSort,
-  ListingsStatus,
   ListingsType,
   ListingsV2Data,
   MapPin,
 } from '@/components/listings/v2/types';
 import { formatPriceFull } from '@/lib/format';
 import { resolveStreetName } from "@/lib/streetName";
+import { PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE, PUBLIC_LISTING_WHERE } from '@/lib/listings/vow';
 
 const PER_PAGE = 36;
 // The map shows every listing it has a validated rooftop for. The cap is a runaway guard, not a
@@ -81,7 +82,8 @@ export function parseListingsQuery(
   const type = get('type');
   const sort = get('sort');
   return {
-    status: status === 'rent' || status === 'sold' ? (status as ListingsStatus) : 'active',
+    // MC-029: 'sold' is not a public mode; the page redirects it to /sold before this runs.
+    status: status === 'rent' ? 'rent' : 'active',
     type: ['detached', 'semi', 'townhouse', 'condo'].includes(type ?? '') ? (type as ListingsType) : 'all',
     min: num('min'),
     max: num('max') ?? num('maxPrice'),
@@ -96,14 +98,12 @@ export function parseListingsQuery(
 
 /** The live page's where-builder, verbatim (beds gte is the one semantic change). */
 function buildWhere(query: ListingsQuery): Record<string, unknown> {
+  // MC-029: the public predicate from src/lib/listings/vow.ts. The rent mode used to select
+  // every For Lease row ever advertised, leased ones included, and rendered them "Leased".
   const where: Record<string, unknown> = {
-    city: config.PRISMA_CITY_VALUE,
-    permAdvertise: true,
+    ...(query.status === 'rent' ? PUBLIC_LEASE_WHERE : PUBLIC_SALE_WHERE),
   };
   if (query.type !== 'all') where.propertyType = query.type;
-  if (query.status === 'rent') where.transactionType = 'For Lease';
-  else if (query.status === 'sold') where.status = 'sold';
-  else where.status = 'active';
   if (query.min != null) where.price = { ...(where.price as object || {}), gte: query.min };
   if (query.max != null) where.price = { ...(where.price as object || {}), lte: query.max };
   if (query.beds != null) where.bedrooms = { gte: query.beds };
@@ -125,9 +125,6 @@ interface CardRow {
   address: string;
   neighbourhood: string;
   price: number;
-  soldPrice: number | null;
-  soldDate: Date | null;
-  status: string;
   transactionType: string | null;
   propertyType: string;
   bedrooms: number;
@@ -135,22 +132,41 @@ interface CardRow {
   sqft: number | null;
   parking: number;
   photos: string[];
-  listedAt: Date;
-  daysOnMarket: number | null;
   listOfficeName: string | null;
   maintenanceFeeAmt: number | null;
   virtualTourUrl: string | null;
   displayAddress: boolean;
 }
 
+/** The VOW-only columns, selected only for an acknowledged session (VOW_SELECT below). */
+interface VowRow {
+  listedAt: Date;
+  daysOnMarket: number | null;
+  priorPrice: number | null;
+  priceChangedAt: Date | null;
+}
+
+// THE SELECT IS THE GATE (MC-029). The public card select names no VOW-only column, so a row
+// read through it cannot carry one; the VOW columns are added to the select only when the
+// caller has established the session may see them, and the mapper puts them under `vow`.
 const CARD_SELECT = {
   mlsNumber: true, address: true, neighbourhood: true, price: true,
-  soldPrice: true, soldDate: true, status: true, transactionType: true,
+  transactionType: true,
   propertyType: true, bedrooms: true, bathrooms: true, sqft: true,
-  parking: true, photos: true, listedAt: true, daysOnMarket: true,
+  parking: true, photos: true,
   listOfficeName: true, maintenanceFeeAmt: true, virtualTourUrl: true,
   displayAddress: true,
 } as const;
+const VOW_SELECT = { listedAt: true, daysOnMarket: true, priorPrice: true, priceChangedAt: true } as const;
+
+function vowOf(r: VowRow): ListingCardVow {
+  return {
+    daysOnMarket: r.daysOnMarket ?? Math.max(0, Math.floor((Date.now() - r.listedAt.getTime()) / 86_400_000)),
+    listedAt: r.listedAt.toISOString(),
+    priorPrice: r.priorPrice,
+    priceChangedAt: r.priceChangedAt ? r.priceChangedAt.toISOString() : null,
+  };
+}
 
 /** RECO/IDX address redaction, applied server-side so a withheld address
  *  never reaches the client (mirrors redactAddress in listings/display-gate). */
@@ -164,9 +180,6 @@ function toCard(row: CardRow): ListingCardData {
     address: gateAddress(row),
     neighbourhood: row.neighbourhood,
     price: row.price,
-    soldPrice: row.soldPrice,
-    soldDate: row.soldDate ? row.soldDate.toISOString() : null,
-    status: row.status === 'sold' ? 'sold' : row.status === 'rented' ? 'rented' : 'active',
     transactionType: row.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
     propertyType: (['detached', 'semi', 'townhouse', 'condo'].includes(row.propertyType)
       ? row.propertyType
@@ -176,8 +189,6 @@ function toCard(row: CardRow): ListingCardData {
     sqft: row.sqft,
     parking: row.parking,
     photos: row.photos,
-    listedAt: row.listedAt.toISOString(),
-    daysOnMarket: row.daysOnMarket,
     listOfficeName: row.listOfficeName,
     maintenanceFeeAmt: row.maintenanceFeeAmt,
     virtualTourUrl: row.virtualTourUrl,
@@ -196,8 +207,14 @@ function titleCaseHood(h: string): string {
     .join(' ');
 }
 
-export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV2Data> {
+/**
+ * @param opts.vow true when the request's session is a signed-in, acknowledged VOW consumer
+ *   (the page decides that with getSession; this loader never reads a cookie). The cards then
+ *   carry `vow`. Default false: nothing VOW-only is selected, let alone serialised.
+ */
+export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: boolean } = {}): Promise<ListingsV2Data> {
   const where = buildWhere(query);
+  const vow = opts.vow === true;
 
   let orderBy: Record<string, string> = { listedAt: 'desc' };
   if (query.sort === 'price_asc') orderBy = { price: 'asc' };
@@ -205,11 +222,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const activeBase = {
-    status: 'active',
-    city: config.PRISMA_CITY_VALUE,
-    permAdvertise: true,
-  } as const;
+  const activeBase = PUBLIC_SALE_WHERE;
 
   const totalCount = await prisma.listing.count({ where });
   const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
@@ -226,7 +239,9 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     neighbourhoodStats,
     topStreets,
   ] = await Promise.all([
-    prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
+    vow
+      ? prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: { ...CARD_SELECT, ...VOW_SELECT } })
+      : prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
     // map pins: ALL filtered results (page-independent), lightweight select.
     //
     // The coordinate requirement is in the WHERE, not a .filter() after the fact, because
@@ -239,7 +254,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
       take: MAP_PIN_CAP,
       select: {
         mlsNumber: true, townLat: true, townLng: true, price: true,
-        transactionType: true, status: true, propertyType: true,
+        transactionType: true, propertyType: true,
         bedrooms: true, bathrooms: true, address: true, displayAddress: true,
         photos: true,
       },
@@ -268,7 +283,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     }),
   ]);
 
-  const listings = rows.map(toCard);
+  const listings = rows.map((r) => (vow && 'listedAt' in r ? { ...toCard(r), vow: vowOf(r as CardRow & VowRow) } : toCard(r)));
 
   // A PIN IS A CLAIM ABOUT WHERE A HOUSE IS. It renders only from a validated coordinate.
   //
@@ -287,7 +302,6 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
       longitude: r.townLng as number,
       price: r.price,
       transactionType: r.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
-      status: r.status === 'sold' ? 'sold' : r.status === 'rented' ? 'rented' : 'active',
       propertyType: r.propertyType,
       bedrooms: r.bedrooms,
       bathrooms: r.bathrooms,
@@ -329,8 +343,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const avg = Math.round(avgPriceAgg._avg.price || 0);
   const avgDom = Math.round(domAgg._avg.daysOnMarket || 0);
-  const statusLabel =
-    query.status === 'rent' ? 'for rent' : query.status === 'sold' ? 'sold' : 'for sale';
+  const statusLabel = query.status === 'rent' ? 'for rent' : 'for sale';
 
   // FAQs ported from the live page — built from the same real aggregates.
   const faqs = [
@@ -380,12 +393,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
  */
 export async function getNewestListingCards(take = 8): Promise<ListingCardData[]> {
   const rows = await prisma.listing.findMany({
-    where: {
-      status: 'active',
-      permAdvertise: true,
-      city: config.PRISMA_CITY_VALUE,
-      transactionType: { not: 'For Lease' },
-    },
+    where: PUBLIC_SALE_WHERE,
     orderBy: { listedAt: 'desc' },
     take,
     select: CARD_SELECT,
@@ -400,8 +408,10 @@ export async function getNewestListingCards(take = 8): Promise<ListingCardData[]
  * the one exported way to run a custom `where` through that gate; there is no other, so a
  * caller cannot reach a raw address by writing its own query.
  *
- * `permAdvertise: true` is ANDed in unconditionally. A caller may narrow the set; it cannot
- * widen it past what may be shown.
+ * The public predicate (`permAdvertise`, on the market, Milton) is ANDed in unconditionally.
+ * A caller may narrow the set; it cannot widen it past what may be shown. The card select
+ * names no VOW-only column (MC-029): a caller that orders by `lastPriceChangeAt` gets the
+ * listings, never the prior price.
  */
 export async function getListingCards(opts: {
   where: Prisma.ListingWhereInput;
@@ -409,10 +419,10 @@ export async function getListingCards(opts: {
   take?: number;
 }): Promise<ListingCardData[]> {
   const rows = await prisma.listing.findMany({
-    where: { AND: [opts.where, { permAdvertise: true, city: config.PRISMA_CITY_VALUE }] },
+    where: { AND: [opts.where, PUBLIC_LISTING_WHERE] },
     orderBy: opts.orderBy ?? { listedAt: 'desc' },
     take: opts.take ?? 4,
-    select: { ...CARD_SELECT, priorPrice: true, priceChangedAt: true },
+    select: CARD_SELECT,
   });
-  return rows.map((r) => ({ ...toCard(r), priorPrice: r.priorPrice, priceChangedAt: r.priceChangedAt ? r.priceChangedAt.toISOString() : null }));
+  return rows.map(toCard);
 }

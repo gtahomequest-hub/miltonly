@@ -184,7 +184,7 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
           <span className="lv-rescount">
             <b>{totalCount.toLocaleString()}</b>
             home{totalCount === 1 ? '' : 's'}
-            {query.status === 'rent' ? ' for rent' : query.status === 'sold' ? ' sold' : ' for sale'} in{' '}
+            {query.status === 'rent' ? ' for rent' : ' for sale'} in{' '}
             {query.neighbourhood ?? config.CITY_NAME}
           </span>
           <button

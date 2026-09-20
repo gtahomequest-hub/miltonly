@@ -205,7 +205,7 @@ export interface ListingCard {
   bathrooms: number;
   parking: number;
   propertyType: string;
-  daysOnMarket: number | null;
+  listOfficeName: string | null;
   photo?: string;
   href: string;
 }

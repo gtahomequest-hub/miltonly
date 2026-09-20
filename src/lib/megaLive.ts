@@ -92,7 +92,10 @@ export interface MegaExtras {
   strips: MegaStrips;
   newLast24h: number;
   /** listings whose price changed in the window, newest change first */
-  priceChanges: { windowDays: number; count: number; cards: ListingCardData[] };
+  /** THE COUNT ONLY (MC-029). The panel used to list the listings whose price moved, with the
+   *  prior price and the direction on each card. Which listing changed price, and from what,
+   *  is price history, a VOW-only fact per listing; the count across the market is not. */
+  priceChanges: { windowDays: number; count: number };
   condos: { count: number; cards: ListingCardData[] };
   freehold: { count: number; cards: ListingCardData[] };
   rent: MegaRent;
@@ -144,16 +147,9 @@ function card(l: ListingCardData, hubByRaw: Map<string, { slug: string; name: st
     photo: l.photos[0] ?? null,
     beds: l.bedrooms,
     baths: l.bathrooms,
-    dom: l.daysOnMarket === null ? null : formatDays(l.daysOnMarket),
+    listOfficeName: l.listOfficeName,
     hub: hubByRaw.get(l.neighbourhood)?.name ?? null,
   };
-  // DEC-PRICE-HISTORY: a prior price is stated only when one was observed. A change with no
-  // prior on record is a change, not a drop, and says nothing about direction.
-  if (l.priorPrice != null && l.priorPrice > 0 && l.priorPrice !== l.price) {
-    out.priorPrice = formatMoneyWhole(l.priorPrice);
-    const d = l.price - l.priorPrice;
-    out.change = `${d < 0 ? "down" : "up"} ${formatMoneyWhole(Math.abs(d))}`;
-  }
   return out;
 }
 
@@ -206,9 +202,11 @@ export function composeMegaLive(i: MegaInputs): MegaLive {
               t(` price ${plural(x.priceChanges.count, "change", "changes")} in ${changesWindow}.`),
             ]
           : [t(`No price changes recorded in ${changesWindow}.`)],
-      cards: cards(x.priceChanges.cards),
+      // The newest homes, not the changed ones: naming a listing under this heading would say
+      // its price moved, which is its price history (MC-029).
+      cards: cards(i.listings),
       strip: x.strips.buy,
-      note: "A prior price is stated only where the change was observed on this site. The feed records that a price moved, not what it moved from.",
+      note: "Which homes moved, and from what, is price history: sign in free on any listing page to see it.",
     },
     condos: {
       sub: `${formatCount(x.condos.count)} for sale`,
@@ -676,14 +674,10 @@ export async function getMegaExtras(): Promise<MegaExtras> {
   // stated on the panel either way.
   let priceChanges: MegaExtras["priceChanges"];
   if (changes7 > 0) {
-    priceChanges = { windowDays: 7, count: changes7, cards: await getListingCards({ where: changed7, orderBy: { lastPriceChangeAt: "desc" }, take: CARDS }) };
+    priceChanges = { windowDays: 7, count: changes7 };
   } else {
     const changed30 = { ...SALE_ACTIVE, lastPriceChangeAt: { gte: new Date(now - 30 * DAY_MS) } };
-    const [count, cards] = await Promise.all([
-      prisma.listing.count({ where: { ...changed30, ...SHOWN } }),
-      getListingCards({ where: changed30, orderBy: { lastPriceChangeAt: "desc" }, take: CARDS }),
-    ]);
-    priceChanges = { windowDays: 30, count, cards };
+    priceChanges = { windowDays: 30, count: await prisma.listing.count({ where: { ...changed30, ...SHOWN } }) };
   }
 
   const byHub = new Map<string, number>();

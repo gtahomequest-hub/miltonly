@@ -65,7 +65,6 @@ const SURFACES = [
   "src/components/listings/v2/ResultsClient.tsx",
   "src/app/rentals/ads/UnlockModal.tsx",
   "src/app/rentals/RentalsClient.tsx",
-  "src/app/listings/ListingsCardsClient.tsx",
   "src/app/listings/[mlsNumber]/ListingDetailClient.tsx",
   "src/app/listings/[mlsNumber]/ListingExtras.tsx",
   "src/app/exclusive/[slug]/InquiryForm.tsx",
@@ -81,8 +80,7 @@ const FORM_SURFACES = SURFACES.filter(
     // Every listed surface renders a form EXCEPT these, whose capture is a button reading
     // fields off the DOM or out of component state with no <form> element at all.
     ![
-      "src/app/listings/ListingsCardsClient.tsx",
-      "src/app/listings/[mlsNumber]/ListingDetailClient.tsx",
+      // ListingDetailClient renders a real <form> and carries the honeypot since ML-005.
       "src/components/listings/v2/ResultsClient.tsx",
       "src/app/listings/[mlsNumber]/ListingExtras.tsx",
       "src/components/condo/CondoCTAs.tsx",

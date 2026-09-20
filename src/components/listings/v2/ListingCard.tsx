@@ -1,15 +1,18 @@
 'use client';
 // src/components/listings/v2/ListingCard.tsx
-// The forest-v2 listing card. Data hierarchy: price (serif) → specs (mono) →
-// address → hood chip + freshness → book CTA + brokerage (compliance).
-// States designed here: active sale (default) / lease (/mo + amber type pill) /
-// sold (sold price, asking strikethrough, desaturated photo) / new ≤3d /
-// price-reduced / no-photo / no-sqft (spec simply omitted) / redacted address /
-// saved heart. Save + book behaviors are props-driven so the island owns wiring.
+// The forest-v2 listing card. Data hierarchy: price (serif) with the listing brokerage inside
+// it at the same size (TRREB item 27, MC-029) → specs (mono) → address → hood chip → book CTA.
+// States designed here: active sale (default) / lease (/mo + amber type pill) / no-photo /
+// no-sqft (spec simply omitted) / redacted address / saved heart. The sold treatment, the
+// "new" badge and the day count are gone (MC-029): a card never carries a VOW-only fact
+// (src/lib/listings/vow.ts). An acknowledged session's card carries `vow`, rendered below the
+// hood chip; anonymous cards have no such field to render.
+// Save + book behaviors are props-driven so the island owns wiring.
 
 import Link from 'next/link';
 import type { ListingCardData } from './types';
-import { fullPrice, titleCase, cleanHood, daysSince, TYPE_LABELS } from './format';
+import { fullPrice, titleCase, cleanHood, TYPE_LABELS } from './format';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 import { BedIcon, BathIcon, SqftIcon, CarIcon, HeartIcon, CameraIcon, PinIcon, TourIcon } from './icons';
 
 export interface ListingCardProps {
@@ -21,17 +24,11 @@ export interface ListingCardProps {
 
 export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardProps) {
   const isLease = l.transactionType === 'For Lease';
-  const isSold = l.status === 'sold' || l.status === 'rented';
-  const days = daysSince(l.listedAt);
-  const dom = l.daysOnMarket ?? days;
-  const isNew = !isSold && days <= 3;
   const addr = l.displayAddress ? titleCase(l.address) : 'Address on request';
   const hood = cleanHood(l.neighbourhood);
-  const broker = l.listOfficeName ? titleCase(l.listOfficeName) : 'TREB MLS®';
-  const headlinePrice = isSold && l.soldPrice ? l.soldPrice : l.price;
 
   return (
-    <article className={`lv-lcard${isSold ? ' lv-sold-card' : ''}`}>
+    <article className="lv-lcard">
       {/* photo */}
       <div className="lv-lphoto">
         {l.photos[0] ? (
@@ -45,9 +42,7 @@ export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardPr
         )}
 
         <div className="lv-badges">
-          {isNew && <span className="lv-badge lv-new">{days === 0 ? 'New today' : 'New'}</span>}
-          {isSold && <span className="lv-badge lv-soldb">{l.status === 'rented' ? 'Leased' : 'Sold'}</span>}
-          {!isSold && l.virtualTourUrl && (
+          {l.virtualTourUrl && (
             <span className="lv-badge lv-tour">
               <TourIcon /> 3D tour
             </span>
@@ -79,15 +74,10 @@ export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardPr
       <div className="lv-lbody">
         <div className="lv-lrow1">
           <div>
-            {isSold && (
-              <div className="lv-soldnote">{l.status === 'rented' ? 'Leased' : 'Sold'} for</div>
-            )}
-            <div className="lv-lprice">
-              {fullPrice(headlinePrice)}
-              {isLease && !isSold && <span className="lv-permo">/mo</span>}
-              {isSold && l.soldPrice && l.soldPrice !== l.price && (
-                <span className="lv-was">asking {fullPrice(l.price)}</span>
-              )}
+            <div className="lv-lprice" data-price>
+              {fullPrice(l.price)}
+              {isLease && <span className="lv-permo">/mo</span>}
+              <ListingBrokerage name={l.listOfficeName} />
             </div>
           </div>
           <span className={`lv-typepill${isLease ? ' lv-lease' : ''}`}>
@@ -129,34 +119,29 @@ export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardPr
             <PinIcon />
             {hood}
           </Link>
-          <span className={`lv-dom${dom <= 7 && !isSold ? ' lv-fresh' : ''}`}>
-            {isSold && l.soldDate
-              ? new Date(l.soldDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
-              : dom === 0
-                ? 'Listed today'
-                : `${dom}d on market`}
-          </span>
+          {l.vow && (
+            <span className="lv-dom" data-vow-facts>
+              {l.vow.daysOnMarket === 0 ? 'Listed today' : `${l.vow.daysOnMarket}d on market`}
+              {l.vow.priorPrice != null && l.vow.priorPrice > 0 && l.vow.priorPrice !== l.price && (
+                <> · was {fullPrice(l.vow.priorPrice)}</>
+              )}
+            </span>
+          )}
         </div>
 
         <div className="lv-lfoot">
-          {!isSold ? (
-            <button
-              type="button"
-              className="lv-book"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onBook(l);
-              }}
-            >
-              Book a showing
-            </button>
-          ) : (
-            <span className="lv-book" style={{ visibility: 'hidden' }} aria-hidden />
-          )}
-          <span className="lv-broker">
-            {broker} · MLS® {l.mlsNumber}
-          </span>
+          <button
+            type="button"
+            className="lv-book"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onBook(l);
+            }}
+          >
+            Book a showing
+          </button>
+          <span className="lv-broker">MLS® {l.mlsNumber}</span>
         </div>
       </div>
 
