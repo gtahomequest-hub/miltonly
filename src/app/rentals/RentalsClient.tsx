@@ -3,7 +3,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 import AgentContactSection from "@/components/AgentContactSection";
 import { useUser } from "@/components/UserProvider";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, type PostLeadPayload } from "@/lib/postLeadClient";
@@ -65,9 +66,9 @@ interface Listing {
   bathrooms: number;
   parking: number;
   propertyType: string;
-  status: string;
   photos: string[];
-  listedAt: string;
+  // No listedAt and no status (MC-029): the rows arrive stripped of every VOW-only column,
+  // available units only, newest first.
   neighbourhood: string;
   description: string | null;
   transactionType: string | null;
@@ -114,6 +115,8 @@ interface RentAvg {
 
 interface Props {
   listings: Listing[];
+  /** computed on the server across the set; the client has no list dates to count */
+  newThisWeek: number;
   totalRentals: number;
   avgRent: number;
   rentAvgs: RentAvg[];
@@ -122,7 +125,7 @@ interface Props {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs, scope = null }: Props) {
+export default function RentalsClient({ listings, newThisWeek, totalRentals, avgRent, rentAvgs, scope = null }: Props) {
   // Every figure on a scoped page is the hub's; the town-wide badge the homepage gate reads by
   // data-fig="rentals-available" is emitted only on the unscoped page, so the two never disagree.
   const placeName = scope ? scope.name : config.CITY_NAME;
@@ -275,16 +278,14 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       return true;
     });
 
-    // Sort
+    // Sort. "Newest" is the server's order (listedAt desc, which the client does not hold).
     if (sortBy === "price_asc") result.sort((a, b) => a.price - b.price);
     else if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price);
-    else result.sort((a, b) => new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime());
 
     return result;
   }, [listings, searchQuery, typeFilter, filters, priceMin, priceMax, sortBy]);
 
   const progWidth = wizSuccess ? 100 : Math.round((wizStep / 3) * 100);
-  const newThisWeek = useMemo(() => listings.filter((l) => daysAgo(new Date(l.listedAt)) <= 7).length, [listings]);
   const typeIcons: Record<string, string> = { detached: "🏠", semi: "🏘", townhouse: "🏗", condo: "🏢", other: "🏠" };
 
   // ── SEARCH HANDLER ──
@@ -891,7 +892,6 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         ) : (
           <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
             {filteredListings.map((l) => {
-              const days = daysAgo(new Date(l.listedAt));
               const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
               const cardStreet = streetOf(l.address);
               const cardHood = hoodOf(l.neighbourhood);
@@ -903,12 +903,14 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 >
                     <div className="lcard-img" style={{ background: l.photos[0] ? `url(${l.photos[0]}) center/cover` : "#e0f2fe" }}>
                       {!l.photos[0] && <span style={{ fontSize: 44 }}>{typeIcons[l.propertyType] || "🏠"}</span>}
-                      <span className="lbadge">{days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d ago`}</span>
                       <span className="avail-tag">{l.possessionDetails === "Vacant" || l.possessionDetails === "Immediate" ? "Available now" : l.possessionDetails || "Available"}</span>
                     </div>
                     <div className="lbody">
                       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:2}}>
-                        <div className="lprice" style={{marginBottom:0}}>{formatPriceFull(l.price)} <span>/ month</span></div>
+                        <div className="lprice" style={{marginBottom:0}} data-price>
+                          {formatPriceFull(l.price)} <span>/ month</span>
+                          <ListingBrokerage name={l.listOfficeName} />
+                        </div>
                         <span style={{background:"#073126",color:"rgba(255,255,255,.86)",fontSize:12,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,flexShrink:0,alignSelf:"center"}}>
                           {propertyBadgeLabel(l.propertyType)}
                         </span>
@@ -923,10 +925,9 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                         <span>🛏 {l.bedrooms} bed</span>
                         <span>🚿 {l.bathrooms} bath</span>
                         {l.parking > 0 && <span>🚗 {l.parking} park</span>}
-                        <span>⏱ {days}d on market</span>
                       </div>
                       <div style={{fontSize:11,color:"#94a3b8",marginTop:-4,marginBottom:8}}>
-                        {l.listOfficeName ? titleCase(l.listOfficeName) : "MLS®"} · {days === 0 ? "Listed today" : `${days}d on ${config.SITE_NAME}`}
+                        MLS® {l.mlsNumber}
                       </div>
 
                       {/* ── LIST VIEW EXTRAS — ALL REAL DATA ── */}

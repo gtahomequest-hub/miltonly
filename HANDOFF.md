@@ -2,9 +2,101 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-18 (MC-028 merged): four merges by SHA in order, the favicon set, Street Page v3 (MH-005), Portal slice 1 (MP-002, the door) and ML-004 (the CASL footer), each behind a full local gate; production serves `7196623` and the battery passed. Nothing waits on a merge._
+_Last rewritten 2026-09-20 (MC-030, MC-029 on production): `main` is `c83fffb`, pushed and served (`/api/build` answers it; it is the head above merge `5994cc7`, docs only on top). Full production battery `FAIL · 21 checks · 644 pages · 910s` with every failing line one street the creation cron published at 02:01Z mid-crawl; purged and rerun `PASS · 4 checks · 645 pages · 596s`; `vow-fields` 15 of 15 on production. Record `scratchpad/reports/MC-030-vow-to-production.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `c83fffb` AND PRODUCTION SERVES `c83fffb`, MC-029 LIVE, ON NODE 22.** Production
+answered 200 again on 2026-09-19 evening (Vercel's pause lifted after about seven hours of 402),
+`main` was pushed (`e606d8b..c83fffb`: the merge `5994cc7` of `fix/vow-compliance @ de199c2`
+plus two docs commits), deployment `miltonly-82uy36xiw` built to Ready in 2m and `/api/build`
+answers `c83fffb5c642143f08befa75c89d8790fef5a79c`. **The battery expects the served head, not
+the merge SHA:** Vercel builds the pushed commit, so `EXPECT_SHA` is `c83fffb…` even though the
+code is `5994cc7`'s. The `db2`/`db3` tags and the 22 hubs were purged through `/api/revalidate`
+(a session-scratch `purge-prod.mjs` modelled on `scratchpad/mc003/purge.mjs`: tags first, then
+every `/neighbourhoods/<slug>` in the sitemap), then the full battery ran: `FAIL · 21 checks ·
+644 pages · 910s` (`scratchpad/mc003/battery-mc030-prod-c83fffb.log`) with seven failing lines
+that are all one street, `dinsmore-drive-milton`, published by the creation cron at 02:01Z one
+minute after the crawl read a 644-page sitemap (645 `StreetContent` rows by the end, 1259 of
+1260 sitemap URLs read, Beaty's ladder 68 vs 67, the home and menu page counts 645 vs 644).
+That is the creation-cron hour named below, isolated and pre-existing in kind; purged again
+(tags, hubs, `/`, `/streets`) and rerun `--only=homepage,hub-page,hub-meta,catchment`: `PASS · 4
+checks · 645 pages · 596s` (`-rerun.log`). The other 17 checks passed in the full run;
+`vow-fields` 15 of 15 on production: 16 of 16 anonymous surfaces carry no VOW-only field, the
+gated route answers no facts anonymously and the facts to the acknowledged session, the grid
+cards and the listing page island render them for that session, 474 listing URLs checked against
+DB1 with 0 off market or lacking `permAdvertise`, 5 of 5 surfaces measured with 0 brokerage
+elements differing from their price. An independent curl of `/listings/W13800708` (MISS) carries
+zero of the seven keys; its only "days on market" and "price history" text is the sign-in line
+and the market edition's aggregate. **Do not start a battery at :00 local**: the creation cron
+runs at :01Z every hour and a page published mid-crawl fails four checks by one street.
+Record: `scratchpad/reports/MC-030-vow-to-production.md`. The MC-029 paragraphs below stand.
+
+**HOW MC-029 REACHED MAIN (2026-09-19, UNDER THE PAUSE).** Vercel was paused for about seven
+hours from the evening of 2026-09-18 (every deployment answered 402). On that basis the merge
+was prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
+landed as `5994cc7` on `e606d8b`. Gated locally: `pnpm build` on Node 22 exit 0, 168/168; then
+`next start` on port 3100 (`scratchpad/mc003/run-start22.sh <port> <sha> <log>` sets
+`VERCEL_GIT_COMMIT_SHA` so `/api/build` answers the SHA the battery expects) and the full battery
+with `BASE=http://localhost:3100`: `FAIL · 21 checks · 626 pages · 749s` with four `hub-page`
+drifts and nothing else, then `PASS · 2 checks` on `hub-page,hub-meta` after purging the db2/db3
+tags, the 22 hubs and the street through `/api/revalidate` (the window-edge lie: gordon-krantz
+has a sale dated 2025-09-18, and Harrison's stock share moved with the feed; no MC-029 file
+touches a hub figure). `vow-fields` 15 of 15 locally. Before the pause, preview `czlzy3wc7`
+served `6c23bdc` and the full battery passed there (`PASS · 21 checks · 609 pages · 769s`).
+Record: `scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB
+reply and reconciles the audit's checklist (`MA-006-vow-fields-addendum.md` on `feat/audit`,
+every file:line) against the branch. The sitemap grew from 609 to 626 street pages overnight
+and stands at 645 (the creation cron).
+
+**WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
+columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
+`soldPrice`, `soldDate`), the public predicate (`permAdvertise` AND on the market: sale by
+`status='active'`, lease by `leaseStatus='active'`, as `PUBLIC_SALE_WHERE`, `PUBLIC_LEASE_WHERE`,
+`PUBLIC_LISTING_WHERE`, `isPublicListing`) and `stripVowFields`, which every page runs on a
+Prisma row before `JSON.parse(JSON.stringify(...))` hands it to a client component (it also drops
+`status` and `leaseStatus`, redundant on a public row). The listing page (ISR) never carries a
+VOW column; `/api/listings/[mls]/vow` (force-dynamic, `getSession` + `vowAcknowledgedAt`) answers
+them to an acknowledged session and `ListingVowFacts` renders them, with the sign-in line as the
+server default and MP-002's card for a signed-in, unacknowledged person. `/listings` is
+force-dynamic, reads the session on the server and passes `{ vow }` to `getListingsV2Data`, whose
+`CARD_SELECT` names no VOW column; the VOW columns join the select only then and land under
+`card.vow`. `/listings?status=sold` redirects to `/sold`; a sold, expired or leased listing page
+answers the display-flag shell ("This listing is not available for display", noindex, the same
+words for every reason). `/rentals`, `/rent`, `/rentals/ads`, the ad landing pages and the condo
+page use the public predicates (they selected leased units before). The Buy menu's "Price
+changes" panel keeps the count and shows the newest four homes, not the changed ones. The
+listing brokerage renders through one component, `src/components/listings/ListingBrokerage.tsx`,
+placed INSIDE the `[data-price]` element on every card and the detail page so it inherits the
+price's face, size, weight and colour (TRREB item 27), and beside the price in the alert email.
+Deleted: `/listings-v2-preview` and its mock fixtures (a public route rendering fabricated sold
+cards), `ListingsCardsClient.tsx`, `ListingsGrid.tsx`, `street/ActiveInventory.tsx` (dead).
+
+**THE BATTERY SIGNS IN THROUGH THE DOOR, AND THE DOOR HAS LIMITS.** `JWT_SECRET` is a sensitive
+Vercel secret: `vercel env pull` writes `[SENSITIVE]`, so a minted token was never an option and
+`.env.local` carries no `JWT_SECRET`. `vow-fields` POSTs `/api/auth/signup` for the most recently
+acknowledged verified user in DB1 (`gtahomequest@gmail.com`), reads `verifyCode` off the row,
+POSTs `/api/auth/verify`, keeps the cookie in the OS temp dir per host and checks it against
+`/api/auth/me` before reuse. One real sign-in email reaches that inbox per fresh sign-in. The
+limiter is shared by every lead form: three requests an hour per address, five per IP in ten
+minutes; a 429 fails the check by name (it did once tonight, running production straight after
+the preview). The Upstash keys are shared between preview and production.
+
+**AGGREGATES LEFT AS THEY WERE, ON PURPOSE.** A street's typical days on market (k5, DB3), the
+hub's and the homepage's days on market, the market edition's "after 88 days on market", the
+menu's "N price changes in the last week" and "N listed in the last 24 hours", `/rentals` "N new
+this week" (now counted on the server), `/api/street-stats` (k-floored DB1 averages, no caller),
+`/api/listings/count`. The `/api/content/v1/*` routes still return `listedAt` per listing to the
+bearer-token content engine; they are not public. The daily brief names streets with a closing,
+never a listing.
+
+**LEFT ON PRODUCTION BY THE PROOFS.** The desk's user `cmu66lk3y0000lhuz6ye554f3` has a fresh
+`verifyCode` cleared by the verify, and three sign-in emails in its inbox (preview, production,
+localhost). Nothing else. A `next start` battery signs in against localhost like any other host.
+
+**BEFORE MC-029: MAIN WAS `7196623` AND PRODUCTION SERVES `895962b`** (MC-028's docs commit;
+`e606d8b` is the nightly audit on top), `PASS · 20 checks · 609 pages · 713s`, ON NODE 22. The
+MC-028 paragraphs below stand.
 
 **MAIN IS `7196623` AND PRODUCTION SERVES `7196623`, `PASS · 20 checks · 609 pages · 713s`, ON
 NODE 22.** MC-028 merged four commits by SHA, in order, each followed by the full local gate

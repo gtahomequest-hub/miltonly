@@ -16,6 +16,7 @@ import {
 } from "@/lib/schema";
 import PlaceDetail from "@/components/places/PlaceDetail";
 import PlaceListings from "@/components/places/PlaceListings";
+import { stripVowFields } from "@/lib/listings/vow";
 import type { BadgeTone } from "@/components/places/types";
 import { resolveStreetName } from "@/lib/streetName";
 
@@ -154,7 +155,8 @@ export default async function MosqueDetailPage({ params }: Props) {
     },
   ];
 
-  const serializedListings = JSON.parse(JSON.stringify(listings));
+  // MC-029: stripped of every VOW-only column before it reaches the client component.
+  const serializedListings = JSON.parse(JSON.stringify(listings.map(stripVowFields)));
 
   return (
     <>

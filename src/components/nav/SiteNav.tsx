@@ -7,6 +7,7 @@ import { IconSearch } from '../home/icons';
 import { resolveHeroHref } from '@/lib/heroSearchClient';
 import { BriefSignup } from './BriefSignup';
 import { LandlordSignup } from './LandlordSignup';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey, NavContext } from './megaTypes';
 
 type Variant = 'home' | 'page';
@@ -77,7 +78,7 @@ const MENUS: MenuDef[] = [
     href: '/listings',
     items: [
       { key: 'new', label: 'New today', href: '/listings', cta: 'See every home for sale', blurb: 'Every home for sale in Milton, newest first.' },
-      { key: 'changes', label: 'Price changes', href: '/listings', cta: 'See every home for sale', blurb: 'Listings whose asking price moved, most recent change first.' },
+      { key: 'changes', label: 'Price changes', href: '/listings', cta: 'See every home for sale', blurb: 'How many asking prices moved this week. Each listing page shows its own price history to signed-in visitors.' },
       { key: 'condos', label: 'Condos', href: '/condos', cta: 'Every condo building', blurb: 'Condo apartments and condo townhouses, building by building.' },
       { key: 'freehold', label: 'Freehold', href: '/freehold', cta: 'The freehold market', blurb: 'Detached, semi-detached and freehold townhomes: no condo corporation, no fee.' },
       // THE CTA IS THE FORM (MH-006, MA-004 defect 9). It went to /saved, which renders a sign-in
@@ -289,13 +290,13 @@ function ItemBody({
                     <span className="m-mega-nophoto">Photos coming soon</span>
                   )}
                 </span>
-                <span className="m-mega-price">
+                <span className="m-mega-price" data-price>
                   {l.price}
-                  {l.priorPrice ? <s className="m-mega-prior">{l.priorPrice}</s> : null}
+                  {/* one line in a 200px card: the same face, size, weight and colour as the price */}
+                  <ListingBrokerage name={l.listOfficeName} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                 </span>
-                {l.change ? <span className="m-mega-change">{l.change}</span> : null}
                 <span className="m-mega-meta">
-                  {l.beds} bd · {l.baths} ba{l.dom ? ` · ${l.dom}` : ''}
+                  {l.beds} bd · {l.baths} ba
                 </span>
                 <span className="m-mega-sub">{l.address}</span>
                 {l.hub ? <span className="m-mega-hub">{l.hub}</span> : null}

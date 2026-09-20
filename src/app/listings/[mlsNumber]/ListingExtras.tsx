@@ -572,29 +572,9 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// URGENCY BANNER
-// ═══════════════════════════════════════════════════════════════
-// "N people viewed today" was removed 2026-09-13 (MC-020): the figure was a hash of the MLS
-// number and the day, not a counter. Nothing on this page states a number it did not measure.
-export function UrgencyBanner({ domDays, isRental }: { domDays: number; isRental: boolean }) {
-  const isNew = domDays <= 7;
-  if (!isNew) return null;
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {isNew && isRental && (
-        <span className="inline-flex items-center gap-1.5 bg-[#fee2e2] text-[#991b1b] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#fecaca]">
-          🔥 New listing: rentals like this typically go within 2 weeks
-        </span>
-      )}
-      {isNew && !isRental && (
-        <span className="inline-flex items-center gap-1.5 bg-[#e6f4ec] text-[#0b5c3a] text-[11px] font-semibold rounded-full px-2.5 py-1 border border-[#bfe6d0]">
-          🆕 New to market · {domDays === 0 ? "listed today" : `listed ${domDays}d ago`}
-        </span>
-      )}
-    </div>
-  );
-}
+// The urgency banner ("New to market · listed Nd ago") was removed by MC-029: days since the
+// list date is the listing's time on market, a VOW-only fact. The island (ListingVowFacts)
+// shows it to an acknowledged session.
 
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR — rental booking w/ pets + move-in
@@ -761,7 +741,3 @@ export function MobileBottomBar({ price, isRental, onBook }: { price: number; is
 
 // Components are consumed individually via named exports by ListingDetailClient.
 
-// Exported separately so it can be placed at the very top of the left column
-export function UrgencySection({ domDays, isRental }: { domDays: number; isRental: boolean }) {
-  return <UrgencyBanner domDays={domDays} isRental={isRental} />;
-}
