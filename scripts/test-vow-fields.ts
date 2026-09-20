@@ -92,7 +92,7 @@ for (const f of [
 
 // 4. The grid: the sold mode is gone, the session is read on the page, the select is the gate.
 const gridPage = code("src/app/listings/page.tsx");
-ok(/getSession\(\)/.test(gridPage) && /vowAcknowledgedAt/.test(gridPage), "/listings reads the session server-side");
+ok(/getSession\(\)/.test(gridPage) && /canSeeVowRecords\(/.test(gridPage), "/listings reads the session server-side and gates through canSeeVowRecords");
 ok(/status === 'sold'\) redirect\('\/sold'\)/.test(gridPage), "/listings?status=sold redirects to /sold");
 const loader = code("src/lib/listingsV2Data.ts");
 ok(!/status: 'sold'|status === 'sold'/.test(loader), "the grid loader has no sold mode");
@@ -108,7 +108,7 @@ ok(!/days ago/.test(detail), "listing page metadata no longer says 'Listed N day
 
 // 6. The gated route checks the session and is dynamic.
 const route = code("src/app/api/listings/[mlsNumber]/vow/route.ts");
-ok(/force-dynamic/.test(route) && /getSession\(\)/.test(route) && /vowAcknowledgedAt/.test(route), "the VOW route is force-dynamic and session-gated");
+ok(/force-dynamic/.test(route) && /getSession\(\)/.test(route) && /canSeeVowRecords\(/.test(route), "the VOW route is force-dynamic and gates through canSeeVowRecords");
 
 // 7. The menu: price-change cards are the newest, and the card type has no prior price.
 const mega = code("src/lib/megaLive.ts");

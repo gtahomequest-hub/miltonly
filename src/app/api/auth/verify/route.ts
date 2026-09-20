@@ -7,13 +7,14 @@
 //
 // The response carries `redirect`, the same-origin path the caller passed through
 // safeRedirect(), so the form and the link page both land the person where they started.
-// Whether the person still has to acknowledge the VOW terms is the page's business: the
-// street island and /sold ask the server and render the card inline.
+// Whether the person still has to acknowledge the VOW terms or set a password (MP-002b) is
+// the page's business: the street island and /sold ask the server and render the card inline.
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { judgeCode, judgeToken, hashToken, normalizeEmail, safeRedirect } from "@/lib/portal/door";
+import { vowStepsLeft } from "@/lib/vow-access";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ const SECRET_SELECT = {
   verifyExpiry: true,
   verifyAttempts: true,
   vowAcknowledgedAt: true,
+  passwordHash: true,
 } as const;
 
 export async function POST(request: NextRequest) {
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
   const redirect = safeRedirect(typeof body.redirect === "string" ? body.redirect : null);
 
   try {
-    let user: { id: string; email: string; firstName: string | null; verified: boolean; vowAcknowledgedAt: Date | null } | null = null;
+    let user: { id: string; email: string; firstName: string | null; verified: boolean; vowAcknowledgedAt: Date | null; passwordHash: string | null } | null = null;
 
     if (typeof body.token === "string" && body.token.length > 0) {
       const stored = await prisma.user.findFirst({ where: { verifyTokenHash: hashToken(body.token) }, select: SECRET_SELECT });
@@ -89,7 +91,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       redirect,
-      needsAcknowledgement: !user.vowAcknowledgedAt,
+      // What the card still has to ask (MP-002b): the acknowledgement, the password.
+      ...vowStepsLeft(user),
       user: { id: user.id, email: user.email, firstName: user.firstName },
     });
   } catch (e) {

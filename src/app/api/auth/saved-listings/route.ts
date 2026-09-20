@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { isPublicListing } from "@/lib/listings/vow";
+import { canSeeVowRecords } from "@/lib/vow-access";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +34,9 @@ export async function GET(request: NextRequest) {
   });
 
   // MC-029: whether a saved listing sold or expired is a VOW-only fact. A signed-in person who
-  // has not acknowledged sees "active" or "unavailable", nothing finer; an acknowledged one
-  // sees the feed's status. The address and the price stay: the person saved them.
-  const canSeeStatus = !!user.vowAcknowledgedAt;
+  // may not see VOW records (src/lib/vow-access.ts) sees "active" or "unavailable", nothing
+  // finer; one who may sees the feed's status. The address and the price stay: the person saved them.
+  const canSeeStatus = canSeeVowRecords(user);
   const listings = rows.map(({ leaseStatus, transactionType, permAdvertise, ...l }) => ({
     ...l,
     status: canSeeStatus

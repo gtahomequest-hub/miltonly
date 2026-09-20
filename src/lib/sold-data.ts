@@ -8,6 +8,7 @@ import { neighbourhoodRows } from "@/lib/hubSets";
 import { getSoldDb, getAnalyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
 import { getSession } from "./auth";
+import { canSeeVowRecords } from "./vow-access";
 import { config } from "./config";
 import type {
   SoldRecord,
@@ -27,15 +28,14 @@ const MAX_CONSUMER_RECORDS = 100; // VOW rule — never exceed per consumer quer
  * Required conditions:
  *   - authenticated session
  *   - VOW bona-fide-interest acknowledgement recorded (Phase 2.5 gate)
+ *   - a password set (MP-002b, R-805(c)); src/lib/vow-access.ts is the one rule
  *
  * Aggregate fetchers (stats, counts, neighbourhood lists) do NOT call this —
  * those are always public by design.
  */
 async function canServeRecordsToThisRequest(): Promise<boolean> {
   const user = await getSession();
-  if (!user) return false;
-  if (!user.vowAcknowledgedAt) return false;
-  return true;
+  return canSeeVowRecords(user);
 }
 
 export interface PublicSaleStats {

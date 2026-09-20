@@ -2,15 +2,17 @@
 // THE WITHHELD FACTS, FOR THE CONSUMER WHO MAY SEE THEM (MC-029). The listing page is ISR and
 // never carries a VOW-only column (src/lib/listings/vow.ts). A signed-in, acknowledged session
 // reads them here, per listing, and the island on the page renders what comes back. The gate is
-// this route's own session check, the same one /api/streets/[slug]/sold-records runs; nothing
-// is decided in the browser.
+// canSeeVowRecords (src/lib/vow-access.ts, MP-002b: verified, acknowledged, password set), the
+// same rule /api/streets/[slug]/sold-records runs; nothing is decided in the browser.
 //
-// Anonymous: { canSee: false, needsAcknowledgement: false }. Signed in, not yet acknowledged:
-// needsAcknowledgement true, so the island shows the one-time card. Either way no field.
+// Anonymous: { canSee: false, needsAcknowledgement: false }. Signed in with a step still owed:
+// needsAcknowledgement true, so the island shows the card, which asks /api/auth/me which
+// step (the acknowledgement, the password, or both). Either way no field.
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,7 @@ export type ListingVowResponse =
 
 export async function GET(_req: NextRequest, { params }: { params: { mlsNumber: string } }) {
   const user = await getSession();
-  const canSee = !!(user && user.vowAcknowledgedAt);
+  const canSee = canSeeVowRecords(user);
   if (!canSee) {
     const body: ListingVowResponse = { canSee: false, needsAcknowledgement: !!user };
     return NextResponse.json(body, { headers: { "Cache-Control": "private, no-store" } });
