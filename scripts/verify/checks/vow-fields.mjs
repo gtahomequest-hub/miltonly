@@ -22,11 +22,14 @@
 //      status. /listings?status=sold answers a redirect to /sold, and the gated route answers
 //      canSee:false with no facts.
 //   2. AN ACKNOWLEDGED SESSION SEES THEM. The battery signs in through the real door (MP-002):
-//      it POSTs /api/auth/signup for the most recently acknowledged verified user in DB1, reads
-//      the six-digit code the door stored on that row, POSTs /api/auth/verify and keeps the
+//      with VERIFY_PORTAL_PASSWORD in the environment (.env.local, never the repo) it is the
+//      returning sign-in, POST /api/auth/login with the email and the password (MP-002b, the
+//      username-and-password TRREB asks for), no email sent; without it, it POSTs
+//      /api/auth/signup for the most recently acknowledged verified user in DB1, reads the
+//      six-digit code the door stored on that row, POSTs /api/auth/verify and keeps the
 //      session cookie. (JWT_SECRET is a sensitive Vercel secret and cannot be pulled, so a
 //      minted token was never an option; the door is the app's own path anyway.) One sign-in
-//      email reaches that address per run; the door allows three an hour per address. Then the
+//      email reaches that address per code sign-in; the door allows three an hour. Then the
 //      gated route must answer the facts, the grid's cards must carry them, and the listing
 //      page's island must render "Time on market" in a real browser.
 //   3. THE BROKERAGE IS AS PROMINENT AS THE PRICE (TRREB item 27). In the browser, on the grid,
@@ -144,6 +147,14 @@ async function signIn(base, app, email, userId) {
   const cached = await cachedSession(base, userId);
   if (cached) return cached;
   const headers = { 'content-type': 'application/json', origin: base, 'user-agent': UA };
+  const password = process.env.VERIFY_PORTAL_PASSWORD;
+  if (password) {
+    const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: JSON.stringify({ email, password }) });
+    const m = (login.headers.get('set-cookie') || '').match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+    if (login.status !== 200 || !m) throw new Error(`password sign-in refused: ${login.status} ${(await login.text()).slice(0, 120)}`);
+    try { fs.writeFileSync(sessionCachePath(base), m[1]); } catch { /* the cache is a convenience */ }
+    return m[1];
+  }
   const req = await fetch(`${base}/api/auth/signup`, { method: 'POST', headers, body: JSON.stringify({ email }) });
   if (req.status !== 200) throw new Error(`sign-in request refused: ${req.status} ${(await req.text()).slice(0, 120)}`);
   const rows = await app`SELECT "verifyCode" c FROM public."User" WHERE email = ${email}`;
