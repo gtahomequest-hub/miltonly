@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 // MC-017 (2026-09-13). Hub, condo, guide and listing pages are ISR (a day, tagged), not rendered
 // per request, so every write that changes what they show drops them here and the next visit
@@ -26,9 +26,22 @@ function purge(paths: string[], who: string): string[] {
   return done;
 }
 
+/** The Data Cache tag on the street render's Listing rows (MC-034, src/lib/street-data.ts
+ *  readStreetListings). Dropped here after every listing write, so a street page never shows a
+ *  listing the feed has closed for longer than the page's own hour; /api/revalidate accepts it
+ *  for the runners outside the app. */
+export const LISTING_ROWS_TAG = "listings";
+
 /** After a listing sync that created, updated or expired rows: every listing page, every condo
- *  page (its unit list), every hub (its active counts) and the three indexes. */
+ *  page (its unit list), every hub (its active counts), the three indexes, and the tag the
+ *  street render's Listing rows are cached under. */
 export function revalidateListingSurfaces(who: string): string[] {
+  try {
+    revalidateTag(LISTING_ROWS_TAG);
+    console.log(`[${who}] revalidated tag: ${LISTING_ROWS_TAG}`);
+  } catch (e) {
+    console.log(`[${who}] tag drop skipped for ${LISTING_ROWS_TAG} (no request scope): ${String((e as Error).message).slice(0, 90)}`);
+  }
   return purge(
     [
       "/listings/[mlsNumber]",
