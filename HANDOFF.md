@@ -2,9 +2,35 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-20 (MC-030, MC-029 on production): `main` is `c83fffb`, pushed and served (`/api/build` answers it; it is the head above merge `5994cc7`, docs only on top). Full production battery `FAIL · 21 checks · 644 pages · 910s` with every failing line one street the creation cron published at 02:01Z mid-crawl; purged and rerun `PASS · 4 checks · 645 pages · 596s`; `vow-fields` 15 of 15 on production. Record `scratchpad/reports/MC-030-vow-to-production.md`._
+_Last rewritten 2026-09-20 (MC-031, MP-002b the password on production): `main` is `1a5a24d`, pushed and served. `feat/portal @ 98d2cd7` merged as `c1caac8`; MC-029's three surfaces brought under `canSeeVowRecords` in the merge; the battery signs in with the password from `.env.local` `VERIFY_PORTAL_PASSWORD`. Production battery `PASS · 21 checks · 646 pages · 878s`. Record `scratchpad/reports/MC-031-portal-password.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `1a5a24d` AND PRODUCTION SERVES `1a5a24d`, MP-002b THE PASSWORD LIVE, ON NODE 22.**
+`feat/portal @ 98d2cd7` merged by SHA as `c1caac8` on `e087209` (the 2026-09-20 nightly audit):
+TRREB R-805(c), a username and a password per consumer. The email is the username; the card
+asks for a password (12+, bcrypt cost 12) with the acknowledgement; `POST /api/auth/login` is the
+returning sign-in with its own limiter and one 401 message for wrong, unknown and unset;
+`src/lib/vow-access.ts` `canSeeVowRecords` (verified, acknowledged, password set) is the one rule
+and the prebuild `test-portal-door.ts` reads ten files for the call. **Merge resolution, in the
+merge commit:** MC-029's `/api/listings/[mlsNumber]/vow`, `/listings` and `/api/auth/saved-listings`
+predate the rule and gated on a bare `vowAcknowledgedAt`; they now call `canSeeVowRecords`, so a
+session that came in by link and closed the card sees no VOW field on the listing page or the
+grid either. Full gate on Node 22 exit 0, 168/168, `P2024` 0, portal-door 126, vow-fields 67;
+`prisma migrate status` 31, up to date (`20260918120000_portal_password` was applied from the
+portal worktree). **The battery's signed-in half now uses the password** (`1a5a24d`): with
+`VERIFY_PORTAL_PASSWORD` in `.env.local` (never the repo; the desk row's passphrase, set through
+the live card on 2026-09-20) `vow-fields` POSTs `/api/auth/login`, no email and no signup limit
+spent; without it, the code door as before. Proofs on production, iPhone UA at 390
+(`scratchpad/mc003/mc031-proof.mjs card|login|row|reset-pw|delete-mc028`): an acknowledged row
+with no password gets the password-only card inline on the street ("Choose a password to
+finish", two password inputs, no name field) and 12 rows 1.6 s after saving; a returning sign-in
+from a fresh browser with email and password lands on `/streets/farmstead-drive-milton#sold-records`
+with 12 rows in 3.4 s. Purged tags and hubs, full production battery `PASS · 21 checks · 646
+pages · 878s`. `User` holds one row (the `+mc028` test row deleted). **The neon HTTP driver reads
+`timestamp` columns +4 h** (parsed as local); read them with `to_char` or trust Prisma. Record:
+`scratchpad/reports/MC-031-portal-password.md`, with the four URLs and the one-line TRREB
+sentence. The MC-030 and MC-029 paragraphs below stand.
 
 **MAIN IS `c83fffb` AND PRODUCTION SERVES `c83fffb`, MC-029 LIVE, ON NODE 22.** Production
 answered 200 again on 2026-09-19 evening (Vercel's pause lifted after about seven hours of 402),
