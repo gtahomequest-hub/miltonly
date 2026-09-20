@@ -58,7 +58,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Something went wrong. Try again in a minute." }, { status: 500 });
   }
   if (!result.ok || result.reason) {
-    console.warn("[auth/signup] refused or trapped", { reason: result.reason, status: result.status });
+    // `detail` is the refused User-Agent value (MP-002c), the one fact a silent refusal
+    // leaves behind; no address and no IP, the log is not a lead table.
+    console.warn("[auth/signup] refused or trapped", {
+      reason: result.reason,
+      status: result.status,
+      ...(result.ok && result.detail !== undefined ? { detail: result.detail } : {}),
+    });
   }
   return NextResponse.json(result.body, { status: result.status });
 }
