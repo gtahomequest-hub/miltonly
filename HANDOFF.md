@@ -2,9 +2,48 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-20 (MC-031, MP-002b the password on production): `main` is `1a5a24d`, pushed and served. `feat/portal @ 98d2cd7` merged as `c1caac8`; MC-029's three surfaces brought under `canSeeVowRecords` in the merge; the battery signs in with the password from `.env.local` `VERIFY_PORTAL_PASSWORD`. Production battery `PASS · 21 checks · 646 pages · 878s`. Record `scratchpad/reports/MC-031-portal-password.md`._
+_Last rewritten 2026-09-20 (MC-032 the lead bot gate on production, MC-033 the cost check): `main` is `2510466` plus this docs commit, pushed and served. `feat/leads @ 064c5b6` merged as `2510466`; production battery `PASS · 21 checks · 646 pages · 871s`. Cost: Vercel on-demand $156.76 at day 17 against $41.37 last cycle, build minutes the whole increase, 71% down since the branch rule; Neon DB1 egress 71.6 GB month-to-date against the 16 GB ceiling, free on the plan, half of it one query. Records `scratchpad/reports/MC-032-lead-bot-gate.md`, `MC-033-cost-check.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `2510466` AND PRODUCTION SERVES `2510466`, ML-005 THE BOT GATE LIVE, ON NODE 22.**
+`feat/leads @ 064c5b6` merged by SHA as `2510466` on `e5c7ca7`: the door's guard set on
+`/api/leads/create` (honeypot, origin, a user-agent guard refusing a missing or quoted
+`User-Agent` with 200 and nothing written or sent, the rate limit keyed on the collapsed inbox
+with a daily window), every write and send behind `IngestDeps`, prebuild `test-lead-bot-gate.ts`
+(100 bot submissions through the real path, 0 rows, 0 emails). Three resolutions in the merge
+commit: `package.json` unions the prebuild line; `test-lead-forms.ts` excludes neither
+`ListingsCardsClient` (gone since MC-029) nor `ListingDetailClient` (a real form with the
+honeypot now); `ListingDetailClient.tsx` keeps MC-029's imports and takes ML-005's honeypot.
+Gate exit 0, 168/168, `P2024` 0. Proven on production (`scratchpad/mc003/mc032-proof.mjs
+bot|normal|delete`): a quoted UA answers `200 {"ok":true}` and writes no row, no activity, no
+Resend send; a Chrome UA writes the row (`env production`), records two `email_sent` rows, and
+Resend reports both the confirmation and the ops alert delivered; the row was then deleted.
+Battery `PASS · 21 checks · 646 pages · 871s`. Record: `scratchpad/reports/MC-032-lead-bot-gate.md`.
+
+**MC-033, THE COST CHECK (NO CODE), IN ONE PARAGRAPH.** Vercel's real billing period is the 3rd
+07:00Z to the 3rd; team on-demand billed **$156.76 at day 17 against $41.37 for all of last
+cycle**, Build CPU Minutes 87% of it ($154.20 usage; miltonly $81.86 for about 780 billed minutes
+against $22.15 for 211; homesly $61.76). Infra fell from $12.91 a day to $4.15 a day after the
+branch rule (`65e9c90`, 09-14), still 2.5x last cycle's daily rate: the residual is deploy count
+(3.1 production a day, 9 of the last 25 docs-only; worktree CLI previews about $30 a cycle) at
+$0.105 a Turbo minute, about $0.32 a production build. The 37 ignore-rule skips this cycle cost
+nothing measurable. Projected cycle end: **about $210 on demand, about $260 invoiced**; the $200
+budget is crossed about 09-30. **Neon egress is free on Launch (500 GB a project included) but
+DB1 is 71.6 GB month-to-date against the 16 GB ceiling, projected 106 GB**, 3.29 GB a day since
+MC-016 against 3.90 before (16% down, not the cut). Half of it is one statement: the unselected
+full-row `Listing` `findMany` on every street render, twice a render (`generateMetadata` and the
+page, no memo), about 4.9 KB a row on the wire (photos and description in TOAST), about 1.5 GB
+a day; 80% of renders are standing traffic at `revalidate = 3600`, batteries a quarter. Neon's
+bill is compute: 323 CU-h month-to-date across three computes awake 19 to 22.6 h a day (DB1 124,
+DB2 103, **the integration project nothing reads 96**), about $34 now, about $53 at month end.
+One battery in `pg_stat_statements` (MC-031's): DB1 +231,834 calls, +431,444 rows; DB2 +123,451,
++111,658; the window carried a local battery from another worktree and Neon's own monitoring;
+the production run alone is about 0.08 to 0.14 GB. Evidence in `scratchpad/mc033/` (untracked).
+Record: `scratchpad/reports/MC-033-cost-check.md`. The three levers it points at, none taken:
+select columns on the street render's `Listing` pull (or memo it per request), suspend or delete
+the integration Neon project, and fewer docs-only production builds (a docs path in the ignore
+rule would need the CLAUDE.md sentence changed).
 
 **MAIN IS `1a5a24d` AND PRODUCTION SERVES `1a5a24d`, MP-002b THE PASSWORD LIVE, ON NODE 22.**
 `feat/portal @ 98d2cd7` merged by SHA as `c1caac8` on `e087209` (the 2026-09-20 nightly audit):
