@@ -2,9 +2,47 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-20 (MC-032 the lead bot gate on production, MC-033 the cost check): `main` is `2510466` plus this docs commit, pushed and served. `feat/leads @ 064c5b6` merged as `2510466`; production battery `PASS · 21 checks · 646 pages · 871s`. Cost: Vercel on-demand $156.76 at day 17 against $41.37 last cycle, build minutes the whole increase, 71% down since the branch rule; Neon DB1 egress 71.6 GB month-to-date against the 16 GB ceiling, free on the plan, half of it one query. Records `scratchpad/reports/MC-032-lead-bot-gate.md`, `MC-033-cost-check.md`._
+_Last rewritten 2026-09-20 (MC-034 on `fix/cost-2 @ 6ba561e`, previewed and NOT merged): the street render's Listing rows narrow, memoised and Data-Cached under the `listings` tag with a write stamp; the ignore rule skips docs-only pushes from the last successful deployment; the integration Neon project is inspectionly.ca's and stays; suspend timeouts already 300 s. Preview `miltonly-jm3fj4ug7` battery `PASS · 21 checks · 646 pages · 802s`. `main` is `5bd57e1`, production serves `2510466`. Record `scratchpad/reports/MC-034-cost-fixes.md`._
 
 ## READ THIS FIRST
+
+**`fix/cost-2 @ 6ba561e` IS PREVIEWED AND WAITS FOR THE MERGE (MC-034).** Three commits above
+`5bd57e1`: `f1291a4` the work, `a4c6eb4` the review's two fixes, `6ba561e` the rule under
+Vercel's 256-character `ignoreCommand` limit. Preview `miltonly-jm3fj4ug7` serves it; full
+battery there `PASS · 21 checks · 646 pages · 802s`; local gate exit 0, 168/168, `neon-egress`
+63. **What it does.** (1) `src/lib/street-data.ts`: `STREET_LISTING_SELECT` (fifteen columns, no
+photos, no description, no VOW-only column; the card's image is `photos[1]` of the active rows in
+one raw query), `getStreetPageData` under `perRequest` (React.cache, now exported from
+`hubSets.ts`) and the rows through `dataCached` keyed `["street-listings:v1",
+<count>:<max updatedAt>, ...siblingSlugs]`, revalidate 3600, tag `listings`
+(`LISTING_ROWS_TAG` in `revalidateSurfaces.ts`, dropped by `revalidateListingSurfaces` after
+every write by the three listing syncs, accepted by `/api/revalidate`). The stamp is in the key
+because `unstable_cache` serves a tag-dropped entry stale while it refreshes; a write changes the
+key. Measured on `main-street-milton`: production 4 full-row pulls a render (688 rows, 75 columns,
+about 3.4 MB); the preview 2 narrow pulls (344 rows, 15 columns) plus 2 stamp rows and 2 photo
+reads, and the next request within the hour 1 stamp row and no pull. The 4 pulls are the HTML and
+RSC passes of one regeneration; `cache()` alone halves them, the Data Cache zeroes the rest. A
+clean production window (21:34 to 21:44Z Sunday, nothing else on DB1): 16,118 calls, 95,159 rows,
+the full-row pull 26 calls, 233 rows; **the after-window is measured on production after the
+merge with `scratchpad/mc003/pgstat-window.mjs 600 mc034-after`, same hour.** (2)
+`vercel.json`: `if [ "$VERCEL_GIT_COMMIT_REF" != main ]; then exit 0; fi; B=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git cat-file -e $B^{commit} || exit 1; git diff --quiet $B HEAD -- docs/phase-4.1 || exit 1; git diff --quiet $B HEAD -- . ':!scratchpad' ':!docs' ':!*.md'`,
+proven on the real pushes (a merge under a docs commit builds; docs only and the nightly audit
+skip; a missing base builds); `docs/phase-4.1/` always builds because the generators read those
+prompt files at runtime; CLAUDE.md says the same. **After the merge, the first docs-only push
+to `main` is the proof: `npx vercel ls --prod` shows it CANCELED in a few seconds.** (3) Item 2
+was not done, correctly: the "unused" Neon project `lingering-sea-07597558` is inspectionly.ca's
+production database (MC-016 and MC-033 were wrong to call it idle; its $15.66 a month is
+inspectionly's line on the shared Vercel invoice); `suspend_timeout_seconds` 0 is Launch's 300 s
+default on every endpoint and Launch allows nothing between that and never; 0 hours saved.
+(4) Previews per worktree in the last 7 days and the one-preview-per-task rule are in the report;
+skips cost $0. **Battery note:** with the Data Cache on the rows, a local `next start` battery
+must drop the `db2`, `db3` and `listings` tags first (`purge-preview.mjs` pattern) or the on-disk
+cache serves yesterday's rows. **Review notes left for a later task:** the street card prints
+`address` regardless of `displayAddress` (pre-existing); `latitude`/`longitude` are 0/0 on every
+row and `townLat`/`townLng` are the coordinates the rows carry; the generation twin in
+`src/lib/ai/buildGeneratorInput.ts:168` still pulls full rows (cron-time, not per render); the
+3,700 to 5,100 narrow rows the other street queries read per render are the next egress lever.
+Record: `scratchpad/reports/MC-034-cost-fixes.md`; evidence in `scratchpad/mc034/` (untracked).
 
 **MAIN IS `2510466` AND PRODUCTION SERVES `2510466`, ML-005 THE BOT GATE LIVE, ON NODE 22.**
 `feat/leads @ 064c5b6` merged by SHA as `2510466` on `e5c7ca7`: the door's guard set on
