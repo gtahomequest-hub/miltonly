@@ -2,7 +2,8 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import AdsClient from "./AdsClient";
-import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
+import { PUBLIC_LEASE_WHERE } from "@/lib/listings/vow";
+import { getListingCards } from "@/lib/listingsV2Data";
 
 export const dynamic = 'force-dynamic';
 
@@ -70,8 +71,12 @@ export default async function RentalsAdsPage({
   // filter the listings + total count to that property type. Falls back to
   // unfiltered if the type pool is thinner than MIN_LISTINGS_FOR_GRID (12)
   // so the 3-clear + 9-locked grid always renders fully.
+  //
+  // MC-036: the twelve teaser rows come through getListingCards, the gated card mapper in
+  // src/lib/listingsV2Data.ts, never as whole Listing rows. AdsClient prints the address; a
+  // withheld listing arrives as "Address on request", and no VOW-only column is on a card.
   const typedWhere = buildListingsWhere(qType);
-  let listings = await prisma.listing.findMany({
+  let listings = await getListingCards({
     where: typedWhere,
     orderBy: { listedAt: "desc" },
     take: MIN_LISTINGS_FOR_GRID,
@@ -82,7 +87,7 @@ export default async function RentalsAdsPage({
     console.log(
       `[listings-fallback] type=${qType} returned ${listings.length} < ${MIN_LISTINGS_FOR_GRID} — broadening to all types`,
     );
-    listings = await prisma.listing.findMany({
+    listings = await getListingCards({
       where: ALWAYS_WHERE,
       orderBy: { listedAt: "desc" },
       take: MIN_LISTINGS_FOR_GRID,
@@ -111,8 +116,6 @@ export default async function RentalsAdsPage({
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const newThisWeek = allListed.filter((l) => new Date(l.listedAt) > weekAgo).length;
-  // MC-029: stripped of every VOW-only column before the client component sees it.
-  const serialized = JSON.parse(JSON.stringify(listings.map(stripVowFields)));
 
   // "Updated X min ago" — clamp to "RECENTLY" if unknown or > 60 minutes.
   let updatedMinAgo: number | null = null;
@@ -209,7 +212,7 @@ export default async function RentalsAdsPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <AdsClient
-        listings={serialized}
+        listings={listings}
         totalRentals={totalRentals}
         newThisWeek={newThisWeek}
         renterCount={renterCount}

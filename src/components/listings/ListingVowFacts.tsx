@@ -15,6 +15,13 @@ import VowAcknowledgementPrompt from "@/components/vow/VowAcknowledgementPrompt"
 import { formatDateProse, formatDays, formatMoneyWhole } from "@/lib/figureFormat";
 import type { ListingVowFacts as Facts, ListingVowResponse } from "@/app/api/listings/[mlsNumber]/vow/route";
 
+// The VOW consumer notice, the exact sentence MC-036 item 5 specifies from PropTx's VOW Best
+// Practices. It is printed in every state of the island, so the sentence is on the page from
+// the first byte: under the sign-in line for an anonymous reader and under the facts for an
+// acknowledged one. No Oxford comma: a battery check matches the string exactly.
+export const VOW_BONA_FIDE_NOTICE =
+  "The information provided herein must only be used by consumers that have a bona fide interest in the purchase, sale or lease of real estate and may not be used for any commercial purpose or any other purpose.";
+
 const STATUS_WORD: Record<string, string> = {
   active: "Active, for sale",
   sold: "Sold",
@@ -90,6 +97,7 @@ export default function ListingVowFacts({ mlsNumber, isRental }: { mlsNumber: st
           ))}
         </dl>
         <p className="mt-3 text-[12px] text-[#6b6f6a]">Shown to you under your VOW acknowledgement. Not for redistribution.</p>
+        <p className="mt-2 text-[11px] text-[#6b6f6a]" data-vow-notice>{VOW_BONA_FIDE_NOTICE}</p>
       </section>
     );
   }
@@ -101,8 +109,9 @@ export default function ListingVowFacts({ mlsNumber, isRental }: { mlsNumber: st
         <Link href={signinHref} className="font-bold text-[#017848] hover:underline">
           Sign in free
         </Link>{" "}
-        for this listing&rsquo;s time on market and price history. Your email is your username; no password.
+        for this listing&rsquo;s time on market and price history. Your email is your username; you choose a password.
       </p>
+      <p className="mt-2 text-[11px] text-[#6b6f6a]" data-vow-notice>{VOW_BONA_FIDE_NOTICE}</p>
     </section>
   );
 }

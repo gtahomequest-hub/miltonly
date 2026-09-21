@@ -4,12 +4,13 @@ import { config } from "@/lib/config";
 import RentalsClient from "../rentals/RentalsClient";
 import SiteChrome from "@/components/nav/SiteChrome";
 import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
+import { redactAddress } from "@/lib/listings/display-gate";
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Rentals â€” Find Your Perfect Rental Home in ${config.CITY_NAME} ${config.CITY_PROVINCE_CODE}`,
-  description: `Browse every active rental in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes â€” live TREB data, verified landlords, same-day showings guaranteed.`,
+  title: `${config.CITY_NAME} Rentals: Find Your Rental Home in ${config.CITY_NAME} ${config.CITY_PROVINCE_CODE}`,
+  description: `Browse active rentals in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes: live TREB data, verified landlords, same-day showings guaranteed.`,
   canonical: `${config.SITE_URL}/rent`,
 });
 
@@ -30,14 +31,23 @@ const rentCategories = [
 export default async function RentLandingPage() {
   // MC-029: available units only (src/lib/listings/vow.ts), stripped of every VOW-only column
   // before serialisation; "new this week" is counted here so the client holds no list date.
+  // MC-036: the columns RentalsClient renders and the display flag, as /rentals selects them;
+  // whole rows carried a withheld listing's street, postal code and rooftop into the payload.
   const listingRows = await prisma.listing.findMany({
     where: PUBLIC_LEASE_WHERE,
     orderBy: { listedAt: "desc" },
     take: 48,
+    select: {
+      mlsNumber: true, address: true, displayAddress: true, price: true, bedrooms: true, bathrooms: true,
+      parking: true, propertyType: true, photos: true, neighbourhood: true, description: true,
+      transactionType: true, petsAllowed: true, rentIncludes: true, laundryFeatures: true, cooling: true,
+      heatType: true, furnished: true, possessionDetails: true, minLeaseTerm: true, locker: true,
+      basement: true, listOfficeName: true, listedAt: true,
+    },
   });
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
   const newThisWeek = listingRows.filter((l) => l.listedAt >= weekAgo).length;
-  const listings = listingRows.map(stripVowFields);
+  const listings = listingRows.map((l) => redactAddress(stripVowFields(l)));
 
   const totalRentals = await prisma.listing.count({ where: PUBLIC_LEASE_WHERE });
 

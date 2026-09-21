@@ -8,8 +8,10 @@
 // strip, drops the session read from the grid page, or lets the battery's key list drift from
 // VOW_ONLY_FIELDS fails here rather than in a TRREB letter.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { VOW_ONLY_FIELDS, stripVowFields, isPublicListing } from "@/lib/listings/vow";
+import { validatePromptSafety } from "@/lib/ai/compliance";
 
 let assertions = 0;
 const failures: string[] = [];
@@ -81,13 +83,15 @@ for (const f of [
   "src/app/listings/[mlsNumber]/page.tsx",
   "src/app/rentals/page.tsx",
   "src/app/rent/page.tsx",
-  "src/app/rentals/ads/page.tsx",
-  "src/app/schools/[slug]/page.tsx",
-  "src/app/mosques/[slug]/page.tsx",
   "src/app/sales/ads/[mlsNumber]/page.tsx",
   "src/app/rentals/ads/[mlsNumber]/page.tsx",
 ]) {
   ok(/stripVowFields/.test(code(f)), `${f} strips VOW-only columns before serialising`);
+}
+// MC-036: the ads index and the place pages read cards through the gated mapper, which selects
+// no VOW-only column and redacts a withheld address; nothing is left to strip.
+for (const f of ["src/app/rentals/ads/page.tsx", "src/app/schools/[slug]/page.tsx", "src/app/mosques/[slug]/page.tsx"]) {
+  ok(/getListingCards\(/.test(code(f)), `${f} reads listing cards through the gated mapper`);
 }
 
 // 4. The grid: the sold mode is gone, the session is read on the page, the select is the gate.
@@ -131,6 +135,77 @@ for (const f of [
 ]) {
   const s = code(f);
   ok(/<ListingBrokerage\b/.test(s) && /data-price/.test(s), `${f} renders ListingBrokerage inside a data-price element`);
+}
+
+// ── MC-036: the display flags at every ingest, the withheld address off every surface ────
+
+// 9. Both syncs request both PropTx display flags and write both columns the same way.
+for (const f of ["src/app/api/sync/detect/route.ts", "src/lib/sync/treb-sync.ts"]) {
+  const sync = code(f);
+  ok(/"InternetEntireListingDisplayYN",\s*"InternetAddressDisplayYN"/.test(sync), `${f} selects both display flags`);
+  ok(/permAdvertise: item\.InternetEntireListingDisplayYN !== false/.test(sync), `${f} writes permAdvertise from the feed flag`);
+  ok(/displayAddress: item\.InternetAddressDisplayYN !== false/.test(sync), `${f} writes displayAddress from the feed flag`);
+}
+ok(!/address/.test(code("src/app/api/sync/expire/route.ts")), "the expire response carries no address");
+
+// 10. A withheld sold row keeps its count and loses its placement: no address, no street.
+const soldData = code("src/lib/sold-data.ts");
+const mapper = soldData.match(/function toListItem\([\s\S]*?\n\}/)?.[0] ?? "";
+ok(mapper.length > 0, "sold-data has toListItem");
+ok(/const withheld = !r\.display_address/.test(mapper), "toListItem reads display_address once");
+ok(/address: withheld \? "Address on request" : r\.address/.test(mapper), "toListItem withholds the address behind the site-wide placeholder");
+ok(/street_name: withheld \? "" : r\.street_name/.test(mapper), "toListItem blanks street_name for a withheld row");
+ok(/street_slug: withheld \? "" : r\.street_slug/.test(mapper), "toListItem blanks street_slug for a withheld row");
+ok(!/\b(lat|lng)\b/.test(mapper), "toListItem carries no coordinate");
+
+// 11. The brokerage cell on /sold computes the same as its sibling cells.
+const soldCss = read("src/app/sold/sold-theme.css");
+const brok = soldCss.match(/\.sold-v2 \.sv-rtable \.sv-brok \{([^}]*)\}/)?.[1] ?? "";
+ok(brok.length > 0 && !/font-size|color\s*:/.test(brok), ".sv-brok sets no font-size or color of its own");
+
+// 12. Aggregates policy: a withheld address stays inside counts; only permAdvertise gates a count.
+ok(!/displayAddress/.test(code("src/lib/marketWatch/edition.ts")), "the market watch count does not filter on displayAddress");
+const streetStats = code("src/app/api/street-stats/route.ts");
+ok((streetStats.match(/status: "active"/g) ?? []).length === 2, "/api/street-stats aggregates active rows only, street and city");
+
+// 13. The generator prompt carries no individual leased record and no address.
+const gen = code("src/lib/ai/buildGeneratorInput.ts");
+ok(!/recentRecords|rangeStats|leasesPerRow|RawLeaseRecord/.test(gen), "the generator input builds no recentRecords or rangeStats");
+ok(!/SELECT address/.test(gen), "the generator input selects no address from DB2");
+ok(!/redactAddressForPrompt\(/.test(gen.replace(/export function redactAddressForPrompt\(/, "")), "the generator input calls redactAddressForPrompt nowhere");
+const marketDoc = read("docs/phase-4.1/02b-market-prompt.md");
+ok(!/recentRecords|rangeStats|specific comps/.test(marketDoc), "the market prompt no longer asks for lease comps");
+
+// 14. The compliance choke refuses a house-number address that is not the prompt's subject.
+ok(!validatePromptSafety("A three-bedroom at 830 Megson Terrace rented at $3,200", { subjectAddress: null }).safe, "choke refuses a house-number address when the prompt has no subject");
+ok(!validatePromptSafety('{"address":"45 Main St"}\n{"address":"12 Bronte Street"}').safe, "choke refuses two distinct addresses with no declared subject");
+ok(!validatePromptSafety("1050 Main Street East. A unit at 480 Gordon Krantz Ave rented.", { subjectAddress: "1050 Main Street East" }).safe, "choke refuses an address that is not the declared subject");
+ok(validatePromptSafety("480 Gordon Krantz Avenue sells quietly. 480 Gordon Krantz Ave leased.", { subjectAddress: "480 Gordon Krantz Avenue" }).safe, "choke permits the subject in either spelling");
+ok(validatePromptSafety("480 Gordon Krantz Avenue sells quietly.").safe, "choke permits one address when no subject is declared");
+ok(validatePromptSafety("Homes on 5 Side Road and Main Street East", { subjectAddress: null }).safe, "choke permits a rural side road and a bare street name");
+ok(validatePromptSafety("12 sales on Bronte Street in Q3 2026", { subjectAddress: null }).safe, "choke permits a count before a street name");
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walk(full, out);
+    else out.push(full.replace(/\\/g, "/"));
+  }
+  return out;
+}
+
+// MC-036: agent-only fields (PropTx rule 8.23(b)) never leave the sold sync. PrivateRemarks was
+// purged in July; ShowingRequirements and ShowingAppointments follow it. No page, route, library
+// or email under src reads any of them, and the sync neither requests nor stores them.
+{
+  const vowSync = code("src/lib/vow-sync.ts");
+  const selectBlock = vowSync.slice(vowSync.indexOf("const SELECT_FIELDS"), vowSync.indexOf("];", vowSync.indexOf("const SELECT_FIELDS")));
+  const selected = (name: string) => new RegExp(`^\\s*[^/]*"${name}"`, "m").test(selectBlock);
+  for (const f of ["PrivateRemarks", "ShowingRequirements", "ShowingAppointments"]) ok(!selected(f), `the sold sync does not request ${f}`);
+  ok(/broker_remarks: null/.test(vowSync) && /showing_requirements: null/.test(vowSync) && /showing_appointments: null/.test(vowSync), "the sold sync hard-nulls broker_remarks, showing_requirements and showing_appointments");
+  ok(/delete copy\.PrivateRemarks;/.test(vowSync) && /delete copy\.ShowingRequirements;/.test(vowSync) && /delete copy\.ShowingAppointments;/.test(vowSync), "the raw_vow_data blob is stripped of the three keys");
+  const readers = walk("src").filter((f) => /\.(ts|tsx)$/.test(f) && !f.endsWith("vow-sync.ts")).filter((f) => /broker_remarks|showing_requirements|showing_appointments|PrivateRemarks|ShowingRequirements|ShowingAppointments|raw_vow_data/.test(code(f)));
+  ok(readers.length === 0, `no file under src reads an agent-only field (${readers.join(", ") || "none"})`);
 }
 
 if (failures.length) {

@@ -21,6 +21,17 @@
 // the neighbourhood dedup/title-case, and address redaction (applied here,
 // server-side, so a withheld address never ships to the client at all —
 // the live grid page didn't redact; the detail page's gate is the standard).
+//
+// MC-036: THE ADDRESS GATE IS THIS FILE. InternetAddressDisplayYN = N (Listing.displayAddress
+// false) means the address, street number, street name, unit, postal code and any map position
+// may not be displayed or mapped; the listing may still be counted. `toCard` is the one mapper
+// every card surface reads through (the grid, the homepage, the menu, the place pages, the
+// /rentals/ads teaser), and a withheld row leaves it as "Address on request" with no street;
+// the pin query excludes withheld rows outright, since a pin is a map position.
+//
+// MC-036, item 4: an anonymous visitor may not page through the inventory. The grid reaches
+// at most MAX_PAGES pages (72 listings) and the map at most MAP_PIN_CAP pins, whatever the
+// filter returns; street inventory is gated in street-data.ts.
 
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
@@ -40,16 +51,17 @@ import { resolveStreetName } from "@/lib/streetName";
 import { PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE, PUBLIC_LISTING_WHERE } from '@/lib/listings/vow';
 
 const PER_PAGE = 36;
-// The map shows every listing it has a validated rooftop for. The cap is a runaway guard, not a
-// product decision — it is set far above any plausible Milton active inventory (470 today) so it
-// never silently truncates.
-//
-// It was 400, from a design-handoff line reading "capped ~400": a round number chosen to stop the
-// map being limited to the 36-per-page grid, with no clustering, map library, or render
-// constraint behind it — MapPanel renders one <button> per pin over raster tiles. While every pin
-// sat at (0,0) the cap was invisible. The moment the pins became real it was hiding 70 live
-// homes, 15% of inventory, with nothing on screen to say so.
-const MAP_PIN_CAP = 1500;
+// THE 100-RESULT LINE (MC-036, item 4). A public search may show a consumer at most 100
+// listings for one query, so the pager stops at floor(100 / 36) = 2 pages: 72 listings are
+// reachable for any filter, and a `page` beyond that clamps to the last page. Before this the
+// grid paged through every row (469 sale rows over 14 pages, 1,200 lease rows over 34).
+const MAX_PAGES = Math.floor(100 / PER_PAGE);
+// The map pins are the same query with a coordinate, serialised into the same anonymous
+// response, so they sit under the same line: 100 pins, newest (or cheapest, dearest) first,
+// page-independent. It was 1,500, a runaway guard set above the whole inventory, which put
+// 860 lease pins into one /listings?status=rent payload with a price and an address on each.
+// MapPanel renders one <button> per pin; the count line beside it says how many are on the map.
+const MAP_PIN_CAP = 100;
 
 export const NEIGHBOURHOOD_FILTER_OPTIONS = [
   'Dempsey', 'Beaty', 'Willmott', 'Hawthorne Village', 'Timberlea', 'Old Milton',
@@ -92,7 +104,9 @@ export function parseListingsQuery(
     neighbourhood: get('neighbourhood'),
     q: get('q'),
     sort: sort === 'price_asc' || sort === 'price_desc' ? (sort as ListingsSort) : 'newest',
-    page: Math.max(1, num('page') ?? 1),
+    // Clamped to the 100-result line here as well as in the loader, so a ?page=999 URL is
+    // page 2 before any count is run.
+    page: Math.min(MAX_PAGES, Math.max(1, num('page') ?? 1)),
   };
 }
 
@@ -111,7 +125,8 @@ function buildWhere(query: ListingsQuery): Record<string, unknown> {
   if (query.neighbourhood) where.neighbourhood = { contains: query.neighbourhood, mode: 'insensitive' };
   if (query.q) {
     where.OR = [
-      { address: { contains: query.q, mode: 'insensitive' } },
+      // a withheld address cannot be the thing that finds a listing (MC-036)
+      { address: { contains: query.q, mode: 'insensitive' }, displayAddress: true },
       { neighbourhood: { contains: query.q, mode: 'insensitive' } },
       { mlsNumber: { contains: query.q, mode: 'insensitive' } },
       { description: { contains: query.q, mode: 'insensitive' } },
@@ -168,10 +183,14 @@ function vowOf(r: VowRow): ListingCardVow {
   };
 }
 
+/** The one placeholder for a withheld address. Every surface that prints a card's address
+ *  prints this string for a withheld row; the raw address is not on the card to print. */
+const ADDRESS_ON_REQUEST = 'Address on request';
+
 /** RECO/IDX address redaction, applied server-side so a withheld address
  *  never reaches the client (mirrors redactAddress in listings/display-gate). */
 function gateAddress(row: { address: string; displayAddress: boolean }): string {
-  return row.displayAddress ? row.address : 'Address withheld by seller';
+  return row.displayAddress ? row.address : ADDRESS_ON_REQUEST;
 }
 
 function toCard(row: CardRow): ListingCardData {
@@ -225,7 +244,8 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
   const activeBase = PUBLIC_SALE_WHERE;
 
   const totalCount = await prisma.listing.count({ where });
-  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  // totalCount is still the true count (an aggregate may be shown); the pager may not walk it.
+  const totalPages = Math.min(MAX_PAGES, Math.max(1, Math.ceil(totalCount / PER_PAGE)));
   const page = Math.min(query.page, totalPages);
   const skip = (page - 1) * PER_PAGE;
 
@@ -242,21 +262,26 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
     vow
       ? prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: { ...CARD_SELECT, ...VOW_SELECT } })
       : prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
-    // map pins: ALL filtered results (page-independent), lightweight select.
+    // map pins: the filtered results in the same order, page-independent, up to MAP_PIN_CAP,
+    // lightweight select.
     //
     // The coordinate requirement is in the WHERE, not a .filter() after the fact, because
     // `take` is applied by the database BEFORE any JS filtering: fetching 400 rows and then
     // dropping the uncoordinated ones cost 70 pinnable listings that were never fetched. The
     // cap has to count pins, not candidates.
+    //
+    // displayAddress is in the WHERE for the same reason, and for a stronger one: a pin is a
+    // map position, and a withheld listing may not be mapped, however its label reads. Before
+    // this a withheld rental sat on the map at its rooftop, labelled "Address on request".
     prisma.listing.findMany({
-      where: { ...where, townLat: { not: null }, townLng: { not: null } },
+      where: { ...where, displayAddress: true, townLat: { not: null }, townLng: { not: null } },
       orderBy,
       take: MAP_PIN_CAP,
       select: {
         mlsNumber: true, townLat: true, townLng: true, price: true,
         transactionType: true, propertyType: true,
         bedrooms: true, bathrooms: true, address: true, displayAddress: true,
-        photos: true,
+        photos: true, listOfficeName: true,
       },
     }),
     prisma.listing.aggregate({ where: activeBase, _avg: { price: true } }),
@@ -308,6 +333,7 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
       address: gateAddress(r),
       displayAddress: r.displayAddress,
       photo: r.photos[0] ?? null,
+      listOfficeName: r.listOfficeName,
     }));
 
   // ── dedup + title-case neighbourhood stats (ported verbatim) ──
@@ -403,10 +429,13 @@ export async function getNewestListingCards(take = 8): Promise<ListingCardData[]
 
 /**
  * THE SAME MAPPER FOR ANY SLICE OF THE FEED. The mega menu's rail items each show a slice
- * (listed in the last 24 hours, price changed this week, condos, freehold, rentals) and every
- * one of them must come through `toCard`, where the RECO/IDX address gate is applied. This is
- * the one exported way to run a custom `where` through that gate; there is no other, so a
- * caller cannot reach a raw address by writing its own query.
+ * (listed in the last 24 hours, price changed this week, condos, freehold, rentals), the school
+ * and mosque pages show the homes near a place, the /rentals/ads teaser shows the newest twelve
+ * leases over a price floor, and every one of them must come through `toCard`, where the
+ * RECO/IDX address gate is applied. This is the one exported way to run a custom `where`
+ * through that gate; there is no other, so a caller cannot reach a raw address by writing its
+ * own query. (MC-036: the place pages and the ads teaser serialised whole Listing rows, raw
+ * address included, and printed it.)
  *
  * The public predicate (`permAdvertise`, on the market, Milton) is ANDed in unconditionally.
  * A caller may narrow the set; it cannot widen it past what may be shown. The card select

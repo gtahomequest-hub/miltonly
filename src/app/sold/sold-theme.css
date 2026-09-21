@@ -247,10 +247,9 @@
   font-weight: 600;
   color: var(--sv-text-body);
 }
-/* VOW 6.3(c) — Listing Brokerage, same font family/size, just muted tone */
+/* VOW 6.3(c): the Listing Brokerage cell inherits the td font, size and colour; it sets
+   only its wrapping and width so the column computes the same as its siblings */
 .sold-v2 .sv-rtable .sv-brok {
-  color: var(--sv-text-muted);
-  font-size: 11.5px;
   white-space: normal;
   min-width: 160px;
 }

@@ -98,8 +98,12 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
       ? await prisma.listing.findMany({
           // MC-029: the public predicate, both sides (an available lease is status='rented',
           // leaseStatus='active'; `status: "active"` alone never matched a lease unit).
+          // MC-036: displayAddress too. A unit listed under the building's street number and
+          // name, with a link to its page, is placed at its address; a withheld one may not
+          // be. This list is not a count; the building's figures come from statsJson.
           where: {
             ...PUBLIC_LISTING_WHERE,
+            displayAddress: true,
             streetSlug: building.streetSlug,
             propertyType: "condo",
             address: { startsWith: `${building.streetNumber} ` },

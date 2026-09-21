@@ -88,8 +88,10 @@ export async function handleUnsubscribe(request: NextRequest): Promise<NextRespo
     console.log("[unsubscribe] disabled", { watchId: watch.id, kind: watch.kind });
   }
 
+  // An unsubscribe is an opt-out, not a deletion: the row keeps the address (above). The page
+  // says where a deletion is asked for, so the one is never mistaken for the other.
   return page(
     "You are unsubscribed",
-    `${esc(whatStops(watch.kind, watch.name))} will stop. Nothing else changes, and no other email was affected.`,
+    `${esc(whatStops(watch.kind, watch.name))} will stop. Nothing else changes, and no other email was affected. To have your personal information removed as well, <a href="${config.SITE_URL}/privacy/request">ask here</a>.`,
   );
 }

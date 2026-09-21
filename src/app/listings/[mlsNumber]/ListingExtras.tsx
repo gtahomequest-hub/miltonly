@@ -12,6 +12,7 @@ import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 import { REPLY_FINE_PRINT, VALUATION_FINE_PRINT } from "@/lib/lead/finePrint";
+import { contactSeparationLine } from "@/components/listings/ListingBrokerage";
 
 // Fires GA4 generate_lead with cold-cache polling (mirrors /rentals/thank-you).
 // Same event Google Ads imports as a conversion via the GA4↔Ads link, so listing-
@@ -193,14 +194,22 @@ function NearbyRow({ p, lat, lng, commute = false, coordsValid }: { p: POI; lat:
   );
 }
 
-export function WhatsNearby({ lat, lng, schools }: { lat: number; lng: number; schools: SchoolLite[] }) {
+/** `addressWithheld`: InternetAddressDisplayYN=N (MC-036, item 1). The page passes no rooftop
+ *  for such a row, so every branch below is the undistanced one; the prop only changes the
+ *  note, since "still syncing" would be a false reason. A distance to 0.1 km, or a directions
+ *  link from the house, is a map position, which the flag withholds along with the address. */
+export function WhatsNearby({ lat, lng, schools, addressWithheld = false }: { lat: number; lng: number; schools: SchoolLite[]; addressWithheld?: boolean }) {
   const [tab, setTab] = useState<"groceries" | "schools" | "community" | "commutes">("commutes");
-  const coordsValid = hasValidCoords(lat, lng);
+  const coordsValid = !addressWithheld && hasValidCoords(lat, lng);
 
   const unavailableNote = (
     <div className="bg-[#fffdfa] border border-[#dfe0dc] rounded-lg p-4 text-center">
       <p className="text-[13px] font-semibold text-[#3e423f]">Precise distances unavailable for this listing</p>
-      <p className="text-[11px] text-[#6b6f6a] mt-1">Coordinates are still syncing. See the Commutes tab for {config.CITY_NAME}-average drive times.</p>
+      <p className="text-[11px] text-[#6b6f6a] mt-1">
+        {addressWithheld
+          ? `The seller has asked that the address not be shown, so distances from the home are not given. See the Commutes tab for ${config.CITY_NAME}-average drive times.`
+          : `Coordinates are still syncing. See the Commutes tab for ${config.CITY_NAME}-average drive times.`}
+      </p>
     </div>
   );
 
@@ -579,7 +588,9 @@ export function AudienceCTA({ mls, isRental }: { mls: string; isRental: boolean 
 // ═══════════════════════════════════════════════════════════════
 // SIDEBAR — rental booking w/ pets + move-in
 // ═══════════════════════════════════════════════════════════════
-export function RentalBookingCard({ mls, address, price }: { mls: string; address: string; price: number }) {
+// The card carries no listing price (MC-036, TRREB item 8): a price belongs to the listing block
+// with its brokerage, not to our contact card. The first line says whose card this is.
+export function RentalBookingCard({ mls, address, listOfficeName }: { mls: string; address: string; listOfficeName: string | null }) {
   const [mode, setMode] = useState<"none" | "book" | "ask">("none");
   const [honey, setHoney] = useState("");
   const [name, setName] = useState("");
@@ -630,8 +641,9 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
 
   return (
     <div className="bg-[#073126] rounded-2xl p-6">
-      <p className="text-[22px] font-extrabold text-white">${price.toLocaleString()}<span className="text-[14px] font-normal text-white/60">/month</span></p>
-      <p className="text-[11px] text-white/60 mt-1 mb-5">Available now · {config.realtor.name.split(" ")[0]} usually replies within the hour</p>
+      <p className="text-[12px] text-[#fffdfa]/80 leading-snug mb-3" data-contact-separation>{contactSeparationLine(listOfficeName)}</p>
+      <h3 className="text-[16px] font-extrabold text-[#fffdfa] mb-1">Request a showing</h3>
+      <p className="text-[11px] text-white/60 mb-5">{config.realtor.name.split(" ")[0]} usually replies within the hour.</p>
 
       {mode === "none" && (
         <div className="space-y-2">
@@ -716,25 +728,24 @@ export function RentalBookingCard({ mls, address, price }: { mls: string; addres
 // ═══════════════════════════════════════════════════════════════
 // MOBILE BOTTOM BAR
 // ═══════════════════════════════════════════════════════════════
-export function MobileBottomBar({ price, isRental, onBook }: { price: number; isRental: boolean; onBook: () => void }) {
+// The bar is our contact card, so it carries the separation line and no listing price (MC-036,
+// TRREB item 8): the price paired with our phone number read as one offer from one office.
+export function MobileBottomBar({ isRental, listOfficeName, onBook }: { isRental: boolean; listOfficeName: string | null; onBook: () => void }) {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#073126] border-t border-white/10 px-4 py-3 md:hidden flex items-center gap-3"
+      className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#073126] border-t border-white/10 px-4 py-3 md:hidden"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="min-w-0 flex-shrink-0">
-        <p className="text-[14px] font-extrabold text-white leading-tight">
-          ${price.toLocaleString()}
-          {isRental && <span className="text-[11px] font-normal text-white/60">/mo</span>}
-        </p>
+      <p className="text-[12px] text-[#fffdfa]/80 leading-snug mb-2" data-contact-separation>{contactSeparationLine(listOfficeName)}</p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onBook}
+          className="flex-1 bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-2.5"
+        >
+          {isRental ? "Book showing" : "Request showing"}
+        </button>
+        <a href={`tel:${config.realtor.phoneE164}`} className="w-10 h-10 flex items-center justify-center border border-white/15 rounded-lg text-[#017848] text-[16px]">📞</a>
       </div>
-      <button
-        onClick={onBook}
-        className="flex-1 bg-[#00ff80] text-[#073126] text-[13px] font-extrabold rounded-lg py-2.5"
-      >
-        {isRental ? "Book showing" : "Request showing"}
-      </button>
-      <a href={`tel:${config.realtor.phoneE164}`} className="w-10 h-10 flex items-center justify-center border border-white/15 rounded-lg text-[#017848] text-[16px]">📞</a>
     </div>
   );
 }

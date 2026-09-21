@@ -7,7 +7,11 @@
 //
 // Compliance: only returns listings with permAdvertise=true and
 // displayAddress=true (IDX/DDF display rules). Sold listings, expired
-// listings, and non-displayable listings are excluded.
+// listings, and non-displayable listings are excluded. Every row carries
+// listOfficeName, because a post built from it is a listing view and the
+// listing brokerage goes with every view (VOW Best Practices item 7, MC-036).
+// listedAt is a VOW-only column (MC-029) and is not returned; `since` and the
+// ordering still use it server-side.
 //
 // Auth: Authorization: Bearer <CONTENT_ENGINE_API_TOKEN>
 //
@@ -19,6 +23,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveStreetName } from "@/lib/streetName";
+import { brokerageDisplayName } from "@/components/listings/ListingBrokerage";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +50,9 @@ type ContentListing = {
   heroPhoto: string | null;
   photos: string[];
   photoCount: number;
-  listedAt: string;
+  /** The listing brokerage as prose (the feed's ALL-CAPS name, display-cased by the one rule
+   *  every surface uses). A consumer prints it with the price, in the same style. */
+  listOfficeName: string | null;
   listingUrl: string;
   isOwnListing: boolean;
 };
@@ -102,7 +109,6 @@ export async function GET(req: NextRequest) {
         propertyType: true,
         transactionType: true,
         photos: true,
-        listedAt: true,
         listOfficeName: true,
       },
     });
@@ -124,7 +130,7 @@ export async function GET(req: NextRequest) {
       heroPhoto: r.photos[0] ?? null,
       photos: r.photos,
       photoCount: r.photos.length,
-      listedAt: r.listedAt.toISOString(),
+      listOfficeName: brokerageDisplayName(r.listOfficeName),
       listingUrl: `${SITE_ORIGIN}/listings/${r.mlsNumber}`,
       isOwnListing: OWN_OFFICE_NAME
         ? r.listOfficeName === OWN_OFFICE_NAME

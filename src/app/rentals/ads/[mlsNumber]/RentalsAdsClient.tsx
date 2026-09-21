@@ -308,8 +308,10 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
           <div className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between gap-1 lg:gap-4">
             <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-[#f8f9fb] leading-tight tracking-tight" data-price>
               {priceText}
-              <ListingBrokerage name={listing.listOfficeName} />
               <span className="text-[14px] sm:text-[16px] font-semibold text-[#94a3b8] ml-1">/month</span>
+              {/* After the unit, not before it (MC-036): the brokerage line is display:block, so
+                  "/month" was landing on a third line under "Listed by ...". */}
+              <ListingBrokerage name={listing.listOfficeName} />
             </div>
             <div className="text-[14px] sm:text-[15px] text-[#cbd5e1] font-medium">
               {streetAddr} · {listing.city}

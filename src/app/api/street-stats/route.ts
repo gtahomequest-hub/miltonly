@@ -1,8 +1,12 @@
 // GET /api/street-stats — public, ACTIVE-listing aggregates only (DB1).
 //
 // No sold, expired or leased record is read here: the query is Listing rows
-// with permAdvertise = TRUE, which are the live IDX inventory already shown on
-// /listings. Even so, an average over one listing IS that listing's price, and
+// with permAdvertise = TRUE and status = 'active', which are the live IDX
+// inventory already shown on /listings. MC-036: the status predicate was
+// missing, so the averages ran over every row ever synced for the street
+// (sold, expired and rented rows included) while this header said active only.
+// A lease row is status 'rented' for its whole life, so the figures are the
+// sale side. Even so, an average over one listing IS that listing's price, and
 // "no floor at all" is not a position held anywhere else on the site — so the
 // street-level figures now take K_ANON_PRICE, and below it the response falls
 // through to the city-wide average exactly as the zero-match case already did.
@@ -23,7 +27,7 @@ export async function GET(request: NextRequest) {
   // Build slug from street name
   const slug = street.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${config.SLUG_SUFFIX}`;
 
-  const where: Record<string, unknown> = { streetSlug: slug, permAdvertise: true };
+  const where: Record<string, unknown> = { streetSlug: slug, permAdvertise: true, status: "active" };
   if (type !== "all") {
     where.propertyType = type;
   }
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest) {
   // street-level"; suppressed distinguishes "too thin to publish" from
   // "nothing on this street".
   if (agg._count < K_ANON_PRICE) {
-    const cityWhere: Record<string, unknown> = { city: config.PRISMA_CITY_VALUE, permAdvertise: true };
+    const cityWhere: Record<string, unknown> = { city: config.PRISMA_CITY_VALUE, permAdvertise: true, status: "active" };
     if (type !== "all") cityWhere.propertyType = type;
 
     const cityAgg = await prisma.listing.aggregate({

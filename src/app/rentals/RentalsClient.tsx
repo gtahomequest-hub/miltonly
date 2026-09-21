@@ -60,7 +60,10 @@ const HomeTypeIcon = {
 
 interface Listing {
   mlsNumber: string;
+  /** Redacted server-side (rentals/page.tsx) when displayAddress is false; never the raw address then. */
   address: string;
+  /** false: print "Address on request", link no street (MC-036). */
+  displayAddress: boolean;
   price: number;
   bedrooms: number;
   bathrooms: number;
@@ -319,14 +322,14 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
       intent: "rent",
       name,
       phone,
-      property_address: bookingModal.listing.address,
+      property_address: addrLine(bookingModal.listing),
       mlsNumber: bookingModal.listing.mlsNumber,
     });
     if (ok) {
       setBookingMls(bookingModal.listing.mlsNumber);
       const msg = bookingModal.type === "1hr"
-        ? `⏱ 1-hour showing confirmed for ${bookingModal.listing.address.split(",")[0]}! We'll call you.`
-        : `✓ Showing request sent for ${bookingModal.listing.address.split(",")[0]}!`;
+        ? `⏱ 1-hour showing confirmed for ${addrLine(bookingModal.listing)}! We'll call you.`
+        : `✓ Showing request sent for ${addrLine(bookingModal.listing)}!`;
       showToast(msg);
       setBookingModal(null);
     }
@@ -401,10 +404,10 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
     }
     if (isListingSaved(mlsNumber)) {
       await unsaveListing(mlsNumber);
-      showToast(`♡ Removed ${addr.split(",")[0]}`);
+      showToast(`♡ Removed ${addr}`);
     } else {
       await saveListing(mlsNumber);
-      showToast(`♥ Saved ${addr.split(",")[0]}`);
+      showToast(`♥ Saved ${addr}`);
     }
   };
 
@@ -419,6 +422,9 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
   const streetOf = (addr: string) => addr.split(",")[0].replace(/^\d+[a-zA-Z]?\s+/, "").trim();
   const streetSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
   const hoodOf = (hood: string) => hood.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
+  // The first line of the address, or the placeholder for a withheld listing (MC-036). Every
+  // place this file prints an address goes through here: the card, the modal, the toasts.
+  const addrLine = (l: Listing) => (l.displayAddress ? l.address.split(",")[0] : "Address on request");
 
 
   return (
@@ -442,7 +448,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
               Showing {scope.name} only. <a href="/rentals" style={{ textDecoration: "underline" }}>All {config.CITY_NAME} rentals</a>
             </p>
           )}
-          <p className="hl-desc">Browse every active rental — condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
+          <p className="hl-desc">Browse active rentals: condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
 
           {/* Search box */}
           <div className="sbox" ref={searchRef}>
@@ -463,7 +469,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
               <div className="sdrop open">
                 <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "All"); setSearchQuery(""); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico am">🏠</div>
-                  <div><div className="sdi-main">See all {totalRentals} active {config.CITY_NAME} rentals</div><div className="sdi-sub">Condos, townhouses, detached — all listings</div></div>
+                  <div><div className="sdi-main">Browse active {config.CITY_NAME} rentals</div><div className="sdi-sub">Condos, townhouses, detached</div></div>
                 </div>
                 <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "Condo"); setSearchQuery(""); showToast("🏢 Showing condos only"); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico bl">🏢</div>
@@ -893,7 +899,9 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
           <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
             {filteredListings.map((l) => {
               const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
-              const cardStreet = streetOf(l.address);
+              // A withheld listing is not tied to its street (MC-036): no street link, and no
+              // street derived from the placeholder.
+              const cardStreet = l.displayAddress ? streetOf(l.address) : null;
               const cardHood = hoodOf(l.neighbourhood);
               return (
                 <div
@@ -915,10 +923,14 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
                           {propertyBadgeLabel(l.propertyType)}
                         </span>
                       </div>
-                      <div className="laddr">{titleCase(l.address.split(",")[0])}</div>
+                      <div className="laddr">{l.displayAddress ? titleCase(addrLine(l)) : addrLine(l)}</div>
                       <div className="lcard-links">
-                        <Link href={`/streets/${streetSlug(cardStreet)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardStreet)}</Link>
-                        <span className="sep">·</span>
+                        {cardStreet && (
+                          <>
+                            <Link href={`/streets/${streetSlug(cardStreet)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardStreet)}</Link>
+                            <span className="sep">·</span>
+                          </>
+                        )}
                         <Link href={`/listings?neighbourhood=${encodeURIComponent(cardHood)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardHood)}</Link>
                       </div>
                       <div className="lspecs">
@@ -973,7 +985,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
                     <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>See this today →</button>
                     <button
                       className="lbtn-save-mini"
-                      onClick={() => handleSaveListing(l.mlsNumber, l.address)}
+                      onClick={() => handleSaveListing(l.mlsNumber, addrLine(l))}
                       aria-label={isListingSaved(l.mlsNumber) ? "Unsave listing" : "Save listing"}
                       title={isListingSaved(l.mlsNumber) ? "Unsave listing" : "Save listing"}
                     >
@@ -1041,7 +1053,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
           <div className="bm-card" onClick={(e) => e.stopPropagation()}>
             <button className="bm-close" onClick={() => setBookingModal(null)}>✕</button>
             <div className="bm-title">{bookingModal.type === "1hr" ? "⏱ 1-Hour Showing" : "Book a Showing"}</div>
-            <div className="bm-addr">{bookingModal.listing.address.split(",")[0]}</div>
+            <div className="bm-addr">{addrLine(bookingModal.listing)}</div>
             <div className="bm-price">{formatPriceFull(bookingModal.listing.price)}/mo · {bookingModal.listing.bedrooms} bed · {bookingModal.listing.bathrooms} bath</div>
             <div className="bm-fields">
               <input className="bm-input" id="bm-name" required placeholder="Your name" />

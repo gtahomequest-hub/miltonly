@@ -24,6 +24,13 @@ function formatBeds(bedsMin: number, bedsMax: number) {
   return `${bedsMin} bed`;
 }
 
+// The source line every card carries (MC-036, VOW Best Practices item 9): an exclusive is the
+// same price/address/beds shape as an MLS card, and the badge alone does not say where it came
+// from. Rendered inside the price element so it inherits the price's font, size and colour,
+// the way ListingBrokerage does on the MLS surfaces.
+const SOURCE_LINE = `Not an MLS listing. Listed exclusively by ${config.brokerage.name.replace(", Brokerage", "")}.`;
+const SOURCE_STYLE = { display: "block", font: "inherit", color: "inherit", marginTop: "0.2em" } as const;
+
 export default async function ExclusivePage() {
   const listings = await prisma.exclusiveListing.findMany({
     where: { status: { in: ["active", "coming-soon"] } },
@@ -90,8 +97,9 @@ export default async function ExclusivePage() {
 
                     {/* Body */}
                     <div className="p-4 flex-1 flex flex-col">
-                      <p className="text-[22px] font-extrabold text-[#073126] tracking-[-0.02em]">
+                      <p className="text-[22px] font-extrabold text-[#073126] tracking-[-0.02em]" data-price>
                         {isComingSoon ? "Contact for price" : formatPrice(l.price, l.priceType)}
+                        <span data-brokerage style={SOURCE_STYLE}>{SOURCE_LINE}</span>
                       </p>
                       <p className="text-[13px] text-[#6b6f6a] mt-1">
                         {l.address}

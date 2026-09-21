@@ -16,6 +16,9 @@ import ListingBrokerage from "@/components/listings/ListingBrokerage";
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
+// The subset of ListingCardData (src/components/listings/v2/types.ts) this page reads. The rows
+// come from getListingCards, the gated card mapper (MC-036): `address` is already
+// "Address on request" for a withheld listing, and no VOW-only column is on a card.
 interface Listing {
   mlsNumber: string;
   address: string;
@@ -26,9 +29,7 @@ interface Listing {
   propertyType: string;
   photos: string[];
   listOfficeName?: string | null;
-  // No listedAt (MC-029): VOW-only, stripped before serialisation.
   neighbourhood: string;
-  possessionDetails: string | null;
 }
 
 interface Props {
@@ -285,9 +286,13 @@ function AdsClientInner({
                         {typeLabel}
                       </span>
                     )}
-                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 select-none">
+                    {/* The brokerage stays legible beside the placeholder price (item 27,
+                        MC-036): the card shows the listing's photo, type, beds and baths,
+                        so it shows the listing brokerage at the price's size too. */}
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 select-none" data-price>
                       <span className="blur-[6px]">$X,XXX</span>
                       <span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
+                      <ListingBrokerage name={l.listOfficeName} />
                     </div>
                     <div className="text-[13px] font-semibold text-[#cbd5e1] mb-2 line-clamp-1 blur-[5px] select-none">{streetAddr}</div>
                     <div className="flex gap-3 text-[12px] text-[#94a3b8] blur-[4px] select-none mb-3">
@@ -375,7 +380,7 @@ function AdsClientInner({
               },
               {
                 q: "Where do these listings come from?",
-                a: `Every rental you see is pulled live from TREB (Toronto Regional Real Estate Board) — the same MLS® data used by every licensed Realtor in ${config.CITY_PROVINCE}. Updated daily.`,
+                a: `The rentals shown here come from the Toronto Regional Real Estate Board (TRREB) MLS® feed through PropTx, the listings a brokerage in ${config.CITY_PROVINCE} is licensed to display. Updated daily.`,
               },
             ].map((item, i) => (
               // First question is the #1 unstated objection for cold rental

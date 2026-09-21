@@ -290,7 +290,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             // Anonymous — clean table gate (no records fetched, none in the HTML).
             <div className="sv-gate">
               <div className="sv-gate-k">TREB VOW · Registered access</div>
-              <div className="sv-gate-h">See every {config.CITY_NAME} sold price</div>
+              <div className="sv-gate-h">Recent {config.CITY_NAME} sold prices, last 90 days</div>
               <p className="sv-gate-p">
                 Free with a verified email — exact sold prices, days on market, and
                 sold-to-ask ratios, updated daily from TREB MLS<sup>®</sup> data.
@@ -308,7 +308,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             </b>
             <p>
               The information provided herein must only be used by consumers that have a
-              bona fide interest in the purchase, sale, or lease of real estate and may not
+              bona fide interest in the purchase, sale or lease of real estate and may not
               be used for any commercial purpose or any other purpose.
             </p>
             <p>Brokerage: RE/MAX Realty Specialists Inc.</p>
