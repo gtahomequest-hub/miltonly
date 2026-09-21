@@ -319,6 +319,7 @@ export interface CommuteGridProps {
 
 export interface ActiveListingCard {
   mlsNumber: string;
+  /** the feed's address, or "Address on request" where InternetAddressDisplayYN is N (MC-036) */
   address: string;
   price: number;
   bedrooms: number;
@@ -334,6 +335,8 @@ export interface ActiveListingCard {
 
 export interface ActiveInventoryProps {
   listings: ActiveListingCard[];
+  /** every active listing on the street, withheld addresses included; the cards omit those */
+  total: number;
   streetName: string;
   streetShort: string;
 }

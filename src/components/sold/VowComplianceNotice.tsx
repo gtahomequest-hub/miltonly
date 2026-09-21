@@ -14,7 +14,7 @@ export default function VowComplianceNotice({
       </p>
       <p className="mb-1">
         The information provided herein must only be used by consumers that
-        have a bona fide interest in the purchase, sale, or lease of real
+        have a bona fide interest in the purchase, sale or lease of real
         estate and may not be used for any commercial purpose or any other
         purpose.
       </p>

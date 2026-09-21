@@ -12,7 +12,8 @@
 //   - beds should become gte (live query is exact-match despite the "N+" label)
 //   - q gains a real input (the live page supports ?q= but had no search box)
 //   - mapPins should be ALL filtered results (capped ~400, page-independent) so
-//     the map isn't limited to the current page of 36.
+//     the map isn't limited to the current page of 36. (MC-036: the cap is 100,
+//     the public 100-result line, and the pager stops at 2 pages for the same reason.)
 
 // MC-029: there is no public 'sold' mode. A sold listing is VOW data in its entirety; /sold is
 // the gated surface, and /listings?status=sold redirects there (src/app/listings/page.tsx).
@@ -75,7 +76,10 @@ export interface ListingCardVow {
   priceChangedAt: string | null; // ISO
 }
 
-/** Lightweight pin for the map view — all filtered results, not just this page. */
+/** Lightweight pin for the map view: the filtered results up to the cap, not just this page.
+ *  A withheld listing (displayAddress false) is never a pin: a pin is a map position, and the
+ *  loader's pin query excludes it. The flag stays on the type so the panel's address line
+ *  cannot assume it. */
 export interface MapPin {
   mlsNumber: string;
   latitude: number;
@@ -88,6 +92,8 @@ export interface MapPin {
   address: string;
   displayAddress: boolean;
   photo: string | null;
+  /** The listing brokerage, rendered beside the price on the selected-pin card (item 27). */
+  listOfficeName: string | null;
 }
 
 export interface ListingsStats {

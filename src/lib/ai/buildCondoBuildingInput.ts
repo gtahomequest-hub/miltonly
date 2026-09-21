@@ -274,8 +274,11 @@ export async function buildCondoBuildingInput(
   const lease: CondoLeaseInfo = { leaseCount12mo: leaseCount, kAnonLevel: leaseKAnon };
   if (leaseCount >= K_ANON_PRICE) {
     const recs = await leaseRecordQuery(memberKeys);
+    // MC-036: every record names the building itself, never a member row's own spelling of the
+    // address, so the prompt carries one address, its subject, and the choke can hold it to that.
+    const buildingAddress = (b.buildingAddress ?? b.displayName ?? "").trim();
     lease.recentRecords = recs.map((r) => ({
-      address: `${r.street_number ?? ""} ${r.street_name ?? ""}`.trim(),
+      address: buildingAddress || `${r.street_number ?? ""} ${r.street_name ?? ""}`.trim(),
       rent: Math.round(num(r.rent) ?? 0),
       beds: r.beds ?? 0,
       daysOnMarket: r.days_on_market ?? 0,

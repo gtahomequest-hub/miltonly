@@ -181,7 +181,7 @@ export function mapStreetV2Data(
   generation: LoadedStreetGeneration | null,
 ): StreetV2Data {
   const hp = data.heroProps;
-  const activeCount = data.activeInventory.listings.length;
+  const activeCount = data.activeInventory.total;
   // No sale on record and nothing listed => a per-property claim in the prose has no source
   // anywhere. Only there do we suppress property detail that carries no number.
   //

@@ -9,16 +9,21 @@ import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import AgentContactSection from "@/components/AgentContactSection";
-import ListingBrokerage, { brokerageDisplayName } from "@/components/listings/ListingBrokerage";
+import ListingBrokerage, { brokerageDisplayName, contactSeparationLine } from "@/components/listings/ListingBrokerage";
 import {
   VOWTeaser, WhatsNearby, MortgageCalc, TypicalRentBlock, type ListingRentFigure,
   AudienceCTA, RentalBookingCard, SaveShareRow, MobileBottomBar,
 } from "./ListingExtras";
 
+// MC-036 item 1: for a row with displayAddress=false the page sends no street identity and no
+// rooftop (streetSlug, crossStreet and townLat/townLng arrive null, the remarks masked), and
+// this component names no street either way: the "Near", "Cross street" and Street
+// Intelligence surfaces are gated on displayAddress here as well, so a payload that slipped
+// through would still not be printed.
 interface Listing {
   mlsNumber: string; address: string; price: number; bedrooms: number; bathrooms: number;
   parking: number; propertyType: string; photos: string[];
-  neighbourhood: string; description: string | null; streetSlug: string; latitude: number;
+  neighbourhood: string; description: string | null; streetSlug: string | null; latitude: number;
   longitude: number;
   /** resolved municipal rooftop — null when the Town has no point for this address */
   townLat: number | null; townLng: number | null; sqft: number | null; basement: boolean; lotSize: string | null;
@@ -93,6 +98,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
 
   const isRental = l.transactionType === "For Lease";
   const displayAddr = l.displayAddress ? titleCase(l.address) : "Address on request";
+  const addressWithheld = !l.displayAddress;
   const priceLabel = isRental ? formatPriceFull(l.price) + "/mo" : formatPriceFull(l.price);
   const statusLabel = isRental ? "FOR RENT" : "FOR SALE";
   const statusColor = isRental ? "#017848" : "#16a34a";
@@ -192,7 +198,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-5 sm:px-11 py-6 pb-24 md:pb-6">
+      <div className="max-w-6xl mx-auto px-5 sm:px-11 py-6 pb-32 md:pb-6">
         {/* ═══ PHOTO GALLERY ═══ */}
         <div className="mb-6">
           {l.photos.length === 0 ? (
@@ -291,7 +297,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             <p className="text-[11px] text-[#6b6f6a] mb-6">
               Source: TREB MLS® {l.mlsNumber}
               {brokerage && ` · ${brokerage}`}
-              {l.crossStreet && ` · Near ${l.crossStreet}`}
+              {!addressWithheld && l.crossStreet && ` · Near ${l.crossStreet}`}
             </p>
 
             {vowFacts}
@@ -302,7 +308,11 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             {l.description && (
               <div className="mb-8" data-remarks>
                 <h2 className="text-[18px] font-extrabold text-[#073126] mb-1">Listing agent&apos;s remarks</h2>
-                <p className="text-[11px] text-[#6b6f6a] mb-3">As written by the listing brokerage, unedited.</p>
+                <p className="text-[11px] text-[#6b6f6a] mb-3">
+                  {addressWithheld
+                    ? "As written by the listing brokerage; the address is withheld at the seller's request."
+                    : "As written by the listing brokerage, unedited."}
+                </p>
                 <div className={`text-[13px] text-[#3e423f] leading-[1.8] ${showFullDesc ? "" : "line-clamp-4"}`}>
                   {l.description}
                 </div>
@@ -356,7 +366,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             </div>
 
             {/* What's nearby */}
-            <WhatsNearby lat={l.townLat ?? 0} lng={l.townLng ?? 0} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />
+            <WhatsNearby lat={addressWithheld ? 0 : l.townLat ?? 0} lng={addressWithheld ? 0 : l.townLng ?? 0} addressWithheld={addressWithheld} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />
 
             {/* Mortgage (sales only) */}
             {!isRental && <MortgageCalc price={l.price} taxAmount={l.taxAmount} propertyType={l.propertyType} />}
@@ -370,25 +380,30 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             {/* Audience CTA */}
             <AudienceCTA mls={l.mlsNumber} isRental={isRental} />
 
-            {/* Street link */}
-            <div className="mb-8">
-              <Link href={`/streets/${l.streetSlug}`} className="flex items-center justify-between bg-white rounded-xl border border-[#dfe0dc] p-5 hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-[14px] font-bold text-[#073126]">Street Intelligence</p>
-                  <p className="text-[12px] text-[#6b6f6a]">See sold prices, trends, and market data for this street</p>
-                </div>
-                <span className="text-[#017848] text-lg">→</span>
-              </Link>
-            </div>
+            {/* Street link. Absent for a withheld address: the link is the street name. */}
+            {!addressWithheld && l.streetSlug && (
+              <div className="mb-8">
+                <Link href={`/streets/${l.streetSlug}`} className="flex items-center justify-between bg-white rounded-xl border border-[#dfe0dc] p-5 hover:shadow-md transition-shadow">
+                  <div>
+                    <p className="text-[14px] font-bold text-[#073126]">Street Intelligence</p>
+                    <p className="text-[12px] text-[#6b6f6a]">See sold prices, trends, and market data for this street</p>
+                  </div>
+                  <span className="text-[#017848] text-lg">→</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* ═══ SIDEBAR ═══ */}
           <div className="space-y-4 self-start min-w-0">
             <div id="sidebar-cta" className="sticky top-[70px] space-y-4">
               {isRental ? (
-                <RentalBookingCard mls={l.mlsNumber} address={displayAddr} price={l.price} />
+                <RentalBookingCard mls={l.mlsNumber} address={displayAddr} listOfficeName={l.listOfficeName} />
               ) : (
                 <div className="bg-[#073126] rounded-2xl p-6">
+                  {/* Whose card this is, first and in the card's text size (MC-036, TRREB item 8):
+                      the card sits sticky beside another brokerage's listing. */}
+                  <p className="text-[12px] text-[#fffdfa]/80 leading-snug mb-3" data-contact-separation>{contactSeparationLine(l.listOfficeName)}</p>
                   <h3 className="text-[16px] font-extrabold text-[#fffdfa] mb-1">Request a showing</h3>
                   <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-5">Tour this home. No obligation, no pressure.</p>
                   {saleFormSent ? (
@@ -440,7 +455,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
                   { label: "Type", value: titleCase(l.propertyType) },
                   brokerage ? { label: "Brokerage", value: brokerage } : null,
                   l.directionFaces ? { label: "Faces", value: l.directionFaces } : null,
-                  l.crossStreet ? { label: "Cross street", value: l.crossStreet } : null,
+                  !addressWithheld && l.crossStreet ? { label: "Cross street", value: l.crossStreet } : null,
                   l.maintenanceFeeAmt ? { label: "Maintenance", value: `$${Math.round(l.maintenanceFeeAmt)}/mo` } : null,
                   l.taxAmount ? { label: "Annual tax", value: `$${Math.round(l.taxAmount).toLocaleString()}` } : null,
                 ].filter(Boolean).map((item) => (
@@ -454,7 +469,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
           </div>
         </div>
 
-        <AgentContactSection headline="Have questions about this property?" />
+        <AgentContactSection headline="Have questions about this property?" listing={{ listOfficeName: l.listOfficeName }} />
 
         {/* Similar */}
         {similar.length > 0 && (
@@ -483,7 +498,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
         </p>
       </div>
 
-      <MobileBottomBar price={l.price} isRental={isRental} onBook={scrollToCTA} />
+      <MobileBottomBar isRental={isRental} listOfficeName={l.listOfficeName} onBook={scrollToCTA} />
 
       {toast && (
         <div className="fixed bottom-20 right-5 z-50 bg-[#073126] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center gap-2 text-[13px] text-[#fffdfa] shadow-lg">

@@ -149,13 +149,14 @@ export async function buildEdition(weekOf?: string): Promise<BuiltEdition | null
     getMiltonSoldOverall(),
   ]);
 
-  // New listings, DB1, same week, same display gate every public count uses.
+  // New listings, DB1, same week, the same permAdvertise gate every other count uses.
+  // Aggregates policy: a withheld address (displayAddress=false) stays inside counts and
+  // typicals; it is the address fields that may not be displayed or mapped, not the row.
   const newListings = await prisma.listing.count({
     where: {
       city: config.PRISMA_CITY_VALUE,
       transactionType: "For Sale",
       permAdvertise: true,
-      displayAddress: true,
       listedAt: { gte: window.startUtc, lte: window.endUtc },
     },
   });

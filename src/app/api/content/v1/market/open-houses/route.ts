@@ -23,10 +23,15 @@
 //
 // Multi-day events are grouped: one record per property with a sessions[]
 // array, not one row per open-house sitting.
+//
+// Every record carries listOfficeName from the joined Listing row: a post built
+// from it is a listing view, and the listing brokerage goes with every view
+// (VOW Best Practices item 7, MC-036).
 
 import { NextRequest, NextResponse } from "next/server";
 import { DateTime } from "luxon";
 import { prisma } from "@/lib/prisma";
+import { brokerageDisplayName } from "@/components/listings/ListingBrokerage";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -177,7 +182,7 @@ export async function GET(req: NextRequest) {
       permAdvertise: true,
       displayAddress: true,
     },
-    select: { mlsNumber: true, neighbourhood: true, propertyType: true },
+    select: { mlsNumber: true, neighbourhood: true, propertyType: true, listOfficeName: true },
   });
   const gatedByKey = new Map(gated.map((l) => [l.mlsNumber, l]));
 
@@ -190,6 +195,7 @@ export async function GET(req: NextRequest) {
     propertySubType: string; // feed display type, e.g. "Condo Townhouse"
     neighbourhood: string;
     transactionType: string;
+    listOfficeName: string | null; // the listing brokerage, display-cased; printed with the price
     slug: string;
     url: string;
     sessions: Array<{
@@ -224,6 +230,7 @@ export async function GET(req: NextRequest) {
         propertySubType: (prop.PropertySubType ?? "").trim(),
         neighbourhood: local.neighbourhood,
         transactionType: prop.TransactionType ?? "For Sale",
+        listOfficeName: brokerageDisplayName(local.listOfficeName),
         slug: oh.ListingKey,
         url: `https://miltonly.com/listings/${oh.ListingKey}`,
         sessions: [],

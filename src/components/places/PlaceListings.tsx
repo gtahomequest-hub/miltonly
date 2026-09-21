@@ -4,6 +4,11 @@
 // Shared forest nearby-listings island for /mosques/[slug] + /schools/[slug]
 // (replaces the byte-identical MosqueListings + SchoolListings). Same data
 // contract + show-more behavior; forest styling.
+//
+// MC-036: the rows are cards from getListingCards (src/lib/listingsV2Data.ts), the gated
+// mapper, so `address` is already "Address on request" for a withheld listing and the raw
+// address is not in the payload to print. The interface below is the subset of
+// ListingCardData this island reads.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -13,6 +18,7 @@ import { config } from "@/lib/config";
 
 interface Listing {
   mlsNumber: string;
+  /** Gated server-side: the placeholder, never the raw address, for a withheld listing. */
   address: string;
   price: number;
   bedrooms: number | null;
@@ -20,7 +26,7 @@ interface Listing {
   propertyType: string;
   photos: string[];
   listOfficeName?: string | null;
-  // No listedAt (MC-029): the rows arrive stripped of every VOW-only column.
+  // No listedAt (MC-029): a card carries no VOW-only column.
 }
 
 export default function PlaceListings({

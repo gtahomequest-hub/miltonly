@@ -1,13 +1,22 @@
 import { config } from "@/lib/config";
+import { contactSeparationLine } from "@/components/listings/ListingBrokerage";
 
 interface Props {
   headline?: string;
+  /** Set on a listing page: the section then opens with the separation line, naming the listing
+   *  brokerage when the feed supplies one that is not ours (MC-036, TRREB item 8). The office
+   *  name may be null; the line still renders. Omitted on /about, /sell and /rentals, where no
+   *  single listing sits beside the card. */
+  listing?: { listOfficeName: string | null | undefined };
 }
 
-export default function AgentContactSection({ headline = "Your Milton Real Estate Expert" }: Props) {
+export default function AgentContactSection({ headline = "Your Milton Real Estate Expert", listing }: Props) {
   return (
     <section className="acs">
       <div className="acs-inner">
+        {listing && (
+          <p className="acs-bio" data-contact-separation>{contactSeparationLine(listing.listOfficeName)}</p>
+        )}
         <h2 className="acs-name">Aamir Yaqoob</h2>
         <p className="acs-brokerage">Sales Representative · RE/MAX Realty Specialists Inc.</p>
         <p className="acs-tagline">{headline}</p>
