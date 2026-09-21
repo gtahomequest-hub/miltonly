@@ -51,8 +51,9 @@ export default {
     };
   },
 
-  finish(rows, { record, slugs }) {
-    const zero = record.zeroSaleSet(slugs);
+  finish(rows, { record, slugs, crawled }) {
+    // scoped to the crawled pages: every published street in full mode, the sample otherwise
+    const zero = record.zeroSaleSet(crawled ?? slugs);
     const claimers = rows.filter((r) => r.claimsAbsence).map((r) => r.slug);
     const falseClaims = claimers.filter((s) => !zero.has(s));
     const silentZero = [...zero].filter((s) => !claimers.includes(s));

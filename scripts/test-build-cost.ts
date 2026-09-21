@@ -8,7 +8,7 @@
 //   (d) the three analytics jobs drop the db3 tag, so a page's DB3 reads follow the rows
 //   (e) the street page prerenders the top fifty and no more; the rest render on first visit
 import { readFileSync } from "node:fs";
-import { PRERENDER_STREET_LIMIT } from "../src/lib/streetPrerender";
+import { PRERENDER_STREET_LIMIT_PREVIEW, prerenderStreetLimit } from "../src/lib/streetPrerender";
 
 let assertions = 0;
 const failures: string[] = [];
@@ -68,10 +68,12 @@ for (const job of ["compute-sold-stats", "compute-board", "compute-geni"]) {
 }
 
 // (e)
-ok(PRERENDER_STREET_LIMIT === 50, `PRERENDER_STREET_LIMIT is 50 (${PRERENDER_STREET_LIMIT})`);
+ok(PRERENDER_STREET_LIMIT_PREVIEW === 50, `PRERENDER_STREET_LIMIT_PREVIEW is 50 (${PRERENDER_STREET_LIMIT_PREVIEW})`);
+ok(prerenderStreetLimit("production") === Number.POSITIVE_INFINITY, "production prerenders every published street (MC-035)");
+ok(prerenderStreetLimit("preview") === 50 && prerenderStreetLimit(undefined) === 50, "a preview and a bare build prerender fifty");
 const street = code("src/app/streets/[slug]/page.tsx");
 ok(/topStreetSlugsForPrerender\(\)/.test(street), "the street page prerenders through topStreetSlugsForPrerender");
-ok(!/streetContent\.findMany/.test(street), "the street page no longer prerenders every published street");
+ok(!/streetContent\.findMany/.test(street), "the street page prerenders through the helper, not its own query");
 ok(/export const dynamicParams = true;/.test(street) && /export const revalidate = 3600;/.test(street), "the other streets render on first visit under the hour's revalidate");
 
 if (failures.length > 0) {

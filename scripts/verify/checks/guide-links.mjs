@@ -91,7 +91,7 @@ export default {
     return { slug, ...audit(guideHrefs(raw), REQUIRED_STREET, streetIsCondoHeavy(raw)), hubs: sh.declared, hubNotLinked: sh.undeclaredLink };
   },
 
-  async finish(streetRows, { base, slugs }) {
+  async finish(streetRows, { base, slugs, crawled }) {
     const hubSlugs = await publishedHubSlugs(base);
     const hubRows = [];
     for (const slug of hubSlugs) {
@@ -136,7 +136,7 @@ export default {
 
     return {
       coverage: [
-        ['street pages read', `${streetRows.length} of ${slugs.length}`],
+        ['street pages read', `${streetRows.length} of ${(crawled ?? slugs).length}${crawled && crawled.length !== slugs.length ? ` (sample of ${slugs.length})` : ''}`],
         ['hub pages read', `${hubRows.length} of ${hubSlugs.length}`],
         ['guide anchors on street pages', streetAnchors],
         ['guide anchors on hubs', hubAnchors],
@@ -149,7 +149,7 @@ export default {
         ['street pages carrying the GO guide', streetRows.filter((r) => r.hrefs.includes(GO_GUIDE)).length],
       ],
       assertions: [
-        ['street pages read == live sitemap count', streetRows.length, slugs.length],
+        ['street pages read == crawl set', streetRows.length, (crawled ?? slugs).length],
         ['hub pages read == published hub count', hubRows.length, hubSlugs.length],
         // A parser that finds no ledger must fail on its own coverage, not read as "all fine".
         ['street pages rendering no guides ledger', streetNoBlock.length, 0],

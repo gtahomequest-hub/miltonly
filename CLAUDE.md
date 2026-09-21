@@ -42,6 +42,12 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
 - Local `DATABASE_URL` carries `connection_limit=10`. At 1 the build failed 5 to 17 prerenders on `P2024` pool timeouts and passed on identical code, so the gate could not be trusted.
 - Read schemas and files before writing code. Never guess a field name.
 - No merge to main without a Vercel preview URL and explicit approval.
+
+## Decisions
+
+- **DEC-MERGE-CORE-ONLY:** only Core (`D:\miltonly`, `main`) merges to `main`, by SHA, never by branch name, after confirming the SHA against the Builder's report.
+- **DEC-ONE-PREVIEW:** a task that changes code deploys one preview (`npx vercel deploy --yes` from its worktree, after the local gate and a local battery); a second needs a sentence in the report naming the check only Vercel can run; a task that changes no code deploys none and takes the production build as its proof.
+- **DEC-BATCH-MERGE (MC-035):** Core merges approved SHAs in batches of two or three: one battery, one production deploy per batch. Builders keep working in parallel; only the merge cadence changes. SHAs waiting for a batch are listed in `HANDOFF.md` under "held for the next batch". **The exception:** a fix for a live production defect merges and deploys immediately, alone. MA-007 measured why: seven production deploys in 24 hours, each wiping the street ISR entries, were most of the route's origin renders.
 - Prod verification is `npx vercel ls --prod` plus `BASE=https://miltonly.com node scripts/verify/run.mjs` with the expected SHA.
 - **Stop-on-failure** means: stop, diagnose, and continue only if the failure is isolated and pre-existing, saying so explicitly. Systemic failures halt the run.
 

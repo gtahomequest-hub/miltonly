@@ -88,7 +88,7 @@ export default {
     return { slug, cards: cards.length, identity, facts, attribution, unitInTiles, tiles: tiles.length };
   },
 
-  finish(rows, { slugs }) {
+  finish(rows, { slugs, crawled }) {
     const geometry = readGeometry();
     const wrongValue = [], extraFact = [], missingFact = [], noCardButRow = [], cardButNoRow = [], badIdentity = [], badAttribution = [], multiCard = [], unitLeak = [];
     let withCard = 0, factsChecked = 0, withRow = 0;
@@ -144,7 +144,7 @@ export default {
 
     return {
       coverage: [
-        ['street pages read', `${rows.length} of ${slugs.length}`],
+        ['street pages read', `${rows.length} of ${(crawled ?? slugs).length}${crawled && crawled.length !== slugs.length ? ` (sample of ${slugs.length})` : ''}`],
         ['pages rendering a road-facts card', withCard],
         ['cards matched to a layer row', withRow],
         ['facts compared to the layer', factsChecked],
@@ -153,7 +153,7 @@ export default {
         ['hero, glance and market tiles scanned for unit figures', rows.reduce((n, r) => n + r.tiles, 0)],
       ],
       assertions: [
-        ['street pages read == live sitemap count', rows.length, slugs.length],
+        ['street pages read == crawl set', rows.length, (crawled ?? slugs).length],
         // A parser that finds no card anywhere must fail on its own coverage, not read as "all fine".
         ['pages rendering a road-facts card > 0', withCard > 0, true],
         ['facts whose rendered value differs from the layer', wrongValue.length, 0],
