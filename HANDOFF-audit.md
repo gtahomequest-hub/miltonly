@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-18 (MA-006 addendum): every VOW-only field rendered to an anonymous visitor, listed by surface with file:line; MA-005 hub audit before it; the nightly ran unattended on the 17th and 18th._
+_Last rewritten 2026-09-21 (MA-007): why the street page is 9.6% cached, diagnosed on production; MA-006 addendum and MA-005 before it; Vercel is back (200)._
 
 ## What this worktree is
 
@@ -15,6 +15,19 @@ exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratc
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-007 IS DONE: THE STREET PAGE'S 9.6% CACHED SHARE, DIAGNOSED, NOT FIXED.** Record:
+`scratchpad/reports/MA-007-street-cache-share.md`. Not a render-tree bug: no cookies(), headers(),
+draftMode() or searchParams in the tree (the sold-records card is a client island), no header override, the
+middleware matches both routes and falls through, and six spaced GETs of `restivo-lane-milton` all `HIT`.
+The cause is cold cache: seven production deployments in 24 h, each dropping the 596 streets outside the
+50-slug prerender set (`src/lib/streetPrerender.ts:14`), followed each time by the 646-page production
+battery that renders them all again; about 2,800 of the route's 4,100 daily requests and 2,700 of its 3,700
+renders are the battery (four runs) and the nightly (about 240). The hub is 72% because it prerenders all
+22 and is re-warmed by `/api/jobs/warm-hubs`. The one-line fix for MC-035 is the prerender cap to the
+published count; `revalidate` is not the cause (expired entries are served `STALE`). Tooling:
+`scripts/audit/cache-states.mjs`. Vercel answered 200 again from the 20th; the pause paragraph below is
+history.
 
 **VERCEL IS PAUSED (2026-09-19, about seven hours from 17:00Z): EVERY DEPLOYMENT ANSWERS 402.** Until
 production answers 200 again: no `npx vercel` deploys; a gate is `pnpm build` then `next start` on a free
@@ -184,8 +197,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum on top; `origin/main` merged in at each start |
-| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); `e606d8b` on 2026-09-18 (MA-006 addendum); the nightly baseline 2026-09-13 |
+| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007 on top; `origin/main` merged in at each start |
+| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); `e606d8b` on 2026-09-18 (MA-006 addendum); `d068f84` on 2026-09-20/21 (MA-007); the nightly baseline 2026-09-13 |
 | pages edited | none |
-| waiting on Core | the MA-006 addendum list (the listing page rendering sold, expired and leased rows; "Sold for" over asking prices; the rent grid's "Leased" badge; the menu's prior prices); the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
+| waiting on Core | MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
 | next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |
