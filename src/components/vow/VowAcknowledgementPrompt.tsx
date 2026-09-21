@@ -175,13 +175,16 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
     );
   }
 
+  const onlyRegistrant = needsRegistrant && !needsAck && !askPassword;
   const heading = reconsent
     ? "The terms have changed"
     : firstAgreement
       ? "Sold prices are for registered consumers"
-      : needsRenewal
-        ? "Renew your password"
-        : "Choose a password to finish";
+      : onlyRegistrant
+        ? "One question before the sold prices"
+        : needsRenewal
+          ? "Renew your password"
+          : "Choose a password to finish";
   const kicker = reconsent ? "Please agree again" : firstAgreement ? "One-time acknowledgement" : "One-time setup";
 
   return (
@@ -201,6 +204,11 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
             interest in buying, selling or leasing. Registration is a username and a password: your username is your email
             {me?.email ? <>, <strong>{me.email}</strong></> : null}. Answer one question, tell us your name, choose a password,
             read the terms and agree once.
+          </>
+        ) : onlyRegistrant ? (
+          <>
+            Under TRREB&apos;s VOW rules the sold and leased records are for consumers, not for licensed real estate
+            registrants. One question, then the sold prices open as before.
           </>
         ) : needsRenewal ? (
           <>
@@ -357,9 +365,11 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
             ? "Save my answer"
             : needsAck
               ? "Agree and see sold prices"
-              : needsRenewal
-                ? "Renew and see sold prices"
-                : "Save password and see sold prices"}
+              : onlyRegistrant
+                ? "Save my answer and see sold prices"
+                : needsRenewal
+                  ? "Renew and see sold prices"
+                  : "Save password and see sold prices"}
       </button>
 
       <p className="vc-fine">
