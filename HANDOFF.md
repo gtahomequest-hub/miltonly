@@ -2,9 +2,51 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-21 (MC-035 merged): `main` is `7064c1a`, production serves it. Every published street prerenders on production (796 static pages, build 145 s), DEC-BATCH-MERGE is in CLAUDE.md, the battery has `--streets=sample` (default full) and a prerender-coverage check, the four waste bots are refused in robots and at the Vercel Firewall. Battery `PASS · 22 checks · 677 pages · 746s`. Held: MH-009 `7cfa4a2`. Record `scratchpad/reports/MC-035-fewer-deploys.md`._
+_Last rewritten 2026-09-21 (MC-036, the PropTx VOW display rules): `main` is `b814d99`, production serves it. The address flag is honoured on every surface, searches cap at 100, the bona fide notice is on every page, the brokerage sits in the listing's own typeface in every view, our contact cards say they are not the listing brokerage, /privacy/request exists, per-record lease comps left the prompts, ShowingRequirements left the sold sync. Open for Aamir: Archive Data (the two-year cut or the agreement), PropTx's copyright text, the reliability sentence, the ToU clauses (v) and (viii), purge 006. Record `scratchpad/reports/MC-036-vow-display-rules.md`; sources in `docs/compliance/`._
 
 ## READ THIS FIRST
+
+**MAIN IS `b814d99` AND PRODUCTION SERVES `b814d99`, MC-036 LIVE, ON NODE 22.** The PropTx VOW
+Best Practices (the PDF in `docs/compliance/`, indexed by its README with every R-8xx citation
+mapped to the live Article 8 rule; the rules PDF's cover says effective 2024-12-02) audited on
+thirteen display items and fixed where code could fix it. **What is now true on production.**
+(1) `Listing.displayAddress` (InternetAddressDisplayYN) gates every surface through one mapper and
+one placeholder, "Address on request": no card or ladder mark on the street page (the count
+keeps the row), no cross street, street link, coordinate, tour URL or remark-quoted address on
+the listing page, no map pin, redaction or 404 on the ads pages, the place pages and `/rent`
+through the gated mapper, the condo unit list, the alert email (a street watch never carries a
+withheld row), `/saved`, the sold surfaces (no street beside "Address withheld"), the generator
+prompt; `/api/sync` requests both flags. AMPRE exposes only two flags: `InternetEntireListingDisplayYN`
+("Distribute to Internet Portals", `permAdvertise`) and `InternetAddressDisplayYN`. (2) `/listings`
+reaches 72 results (2 pages of 36), map pins cap at 100, saved listings at 100. (3) The verbatim
+bona fide sentence is in the site footer, the street sold-records island and the listing island.
+(4) The brokerage sits in the listing's own size and colour on `/sold`, the street table, the
+map card, the teaser cards, the saved cards, the ladder's live mark; the content APIs return
+`listOfficeName` and no `listedAt`. (5) Every contact card on a listing page opens with "Contact
+Aamir Yaqoob, RE/MAX Realty Specialists Inc., not the listing brokerage (…)"; the listing price
+left our booking card and mobile bar. (6) Exclusives carry a fixed source line. (7) The
+full-access claims are reworded (stored FAQs generated before today may still carry "full MLS®
+access"). (8) `/privacy/request` records a removal request by two emails (desk, requester) with
+the standing PropTx and listing-brokerage instruction, production only. (9) The street prompt
+carries no per-record lease comps; the choke refuses a house-number address that is not the
+prompt's declared subject (the condo generator declares its building). (10) `ShowingRequirements`
+and `ShowingAppointments` left the sold sync's select, columns and blob as `PrivateRemarks` did
+in July; `migrations/sold/006_showing_fields_purge.sql` is PREPARED, NOT EXECUTED (8,649 and
+1,852 rows held); the prebuild guard fails a build that reads an agent-only field. **Battery:**
+two new checks, `vow-display` (the flag on every surface for every withheld row, the 100 cap,
+the notice on nine page types, the 2003 floor, the 26-hour refresh) and `agent-only` (DB2
+clean, nine surfaces and payloads free of the field names; the showing vocabulary in public
+remarks is reported, not failed). Before the fix `vow-display` found 20 leaks on 22 surfaces.
+**Open, Aamir's decisions:** Archive Data (1,105 DB2 rows older than two years render through
+the street fallback on 170 streets, the hub ladder, the hub and condo prose's 30-month trend:
+cut the windows to 24 months in `streetEnrichment.ts:74`, `hubStreetLadder.ts:135`,
+`buildHubInput.ts:41`, `buildCondoBuildingInput.ts:44` and regenerate, or apply for the Archive
+agreement); PropTx's copyright text (none on any page; nothing invented); the 8.25 "deemed
+reliable but not guaranteed accurate by PropTx" sentence (on no page); the ToU clauses (v)
+ownership and (viii) PropTx's access to verify, absent from `VOW_ACKNOWLEDGEMENT_TEXT`; `/privacy`
+does not say Personal Information may be shared with PropTx; no inactivity timeout, no per-access
+audit trail; the 37 stored descriptions naming a leased price by month, and the condo generator's
+per-record lease rents. Record: `scratchpad/reports/MC-036-vow-display-rules.md`.
 
 **MAIN IS `7064c1a` AND PRODUCTION SERVES `7064c1a`, MC-035 LIVE, ON NODE 22.** `fix/deploys @
 0318f35` merged as `722ad58` (its production build failed the prebuild: `prerenderStreetLimit

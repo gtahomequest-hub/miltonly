@@ -70,7 +70,10 @@ export default {
         if (addr && !url.startsWith('/streets/') && html.includes(addr)) leak(r.mls, url, `carries the civic address "${addr}"`);
         if (url.startsWith('/streets/') && addr && html.includes(`class="s-listing-a"`) && html.split('class="s-listing-a"').slice(1).some((seg) => seg.slice(0, 200).includes(addr))) leak(r.mls, url, `an inventory card prints "${addr}"`);
         if (url.startsWith('/listings/')) {
-          if (html.includes(`/streets/${r.slug}`)) leak(r.mls, url, `links /streets/${r.slug}`);
+          // the site chrome lists the busiest streets on every page; the listing's own tie to its
+          // street is what may not exist, so the link is judged inside <main> only
+          const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
+          if (main.includes(`/streets/${r.slug}`)) leak(r.mls, url, `links /streets/${r.slug} in the page body`);
           if (/"latitude"\s*:\s*-?\d/.test(html) || /"longitude"\s*:\s*-?\d/.test(html)) leak(r.mls, url, 'carries a map coordinate in the JSON-LD');
           if (/origin=\d+\.\d+,-?\d+\.\d+/.test(html)) leak(r.mls, url, 'carries a directions origin');
         }
@@ -102,7 +105,7 @@ export default {
     for (const url of ['/listings', '/listings?status=rent']) {
       const p = await get(`${base}${url}`);
       if (p.status !== 200) { capFindings.push(`${url} answered ${p.status}`); continue; }
-      const pages = [...p.body.matchAll(/[?&]page=(\d+)/g)].map((m) => Number(m[1]));
+      const pages = [...p.body.matchAll(/href="[^"]*[?&]page=(\d+)"/g)].map((m) => Number(m[1]));
       const last = pages.length ? Math.max(...pages) : 1;
       const perPage = (p.body.match(/class="lv-lcard"/g) || []).length;           // the cards on page one
       const pins = (p.body.match(/\\"latitude\\":-?\d/g) || []).length;       // the map pins in the flight payload
@@ -112,7 +115,7 @@ export default {
       if (pins > RESULT_CAP) capFindings.push(`${url}: ${pins} map pins in one response`);
       const deep = await get(`${base}${url}${url.includes('?') ? '&' : '?'}page=9`);
       const deepCards = (deep.body.match(/class="lv-lcard"/g) || []).length;
-      const deepLinks = [...deep.body.matchAll(/[?&]page=(\d+)/g)].map((m) => Number(m[1]));
+      const deepLinks = [...deep.body.matchAll(/href="[^"]*[?&]page=(\d+)"/g)].map((m) => Number(m[1]));
       if (deep.status === 200 && deepCards && deepLinks.some((n) => n >= 9)) capFindings.push(`${url} page=9 renders ${deepCards} cards and links page 9 or beyond`);
     }
     const soldRows = await sold`SELECT count(*)::int n FROM sold.sold_records WHERE perm_advertise AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW()`;

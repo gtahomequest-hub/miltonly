@@ -67,14 +67,17 @@ export default {
       ['/rentals', '/rentals'],
     ].filter(([, u]) => u);
     const token = process.env.CONTENT_ENGINE_API_TOKEN;
-    const hits = [];
+    const hits = [], vocab = [];
     let read = 0;
     for (const [name, url] of urls) {
       const p = await get(`${base}${url}`);
       if (p.status !== 200 && p.status !== 401 && p.status !== 403) { examples.push(`${name} ${url} answered ${p.status}`); continue; }
       read++;
       for (const f of FIELD_NAMES) if (p.body.includes(`"${f}"`) || p.body.includes(`\\"${f}\\"`)) hits.push(`${name} · field ${f}`);
-      for (const re of VOCABULARY) { const m = p.body.match(re); if (m) hits.push(`${name} · "${m[0]}"`); }
+      // the vocabulary is a heuristic on a page: a brokerage's public remarks may say "lockbox" and
+      // those are consumer-facing by the feed's own contract; on a page it is reported, on a JSON
+      // payload (where no remark is rendered) it is a finding
+      for (const re of VOCABULARY) { const m = p.body.match(re); if (m) (url.startsWith('/api/') ? hits : vocab).push(`${name} · "${m[0]}"`); }
     }
     if (token) {
       for (const url of ['/api/content/v1/listings/recent?limit=20', '/api/content/v1/market/open-houses']) {
@@ -87,6 +90,7 @@ export default {
       }
     } else notes.push('CONTENT_ENGINE_API_TOKEN unset here; the content API was not read');
     coverage.push(['surfaces and payloads read', read]);
+    coverage.push(['pages whose public remarks carry showing vocabulary (reported, the feed\'s own text)', vocab.length ? vocab.join(' · ') : 0]);
     assertions.push(['agent-only field names or showing vocabulary on a consumer surface', hits.length, 0]);
     examples.push(...hits.slice(0, 8));
     return { coverage, assertions, notes, examples };
