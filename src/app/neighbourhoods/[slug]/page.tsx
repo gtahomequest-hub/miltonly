@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { hubDrift } from "@/lib/hubDrift";
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getHubData } from "@/lib/hubData";
@@ -14,7 +16,31 @@ import {
 } from "@/lib/schema";
 import { projectHubSchema } from "@/lib/ai/hub/projectHubEntities";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
+// once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
+// the db3 tag (src/lib/db.ts), dropped by the sold sync and the analytics jobs; the DB1 rows are
+// dropped by path from the write paths (src/lib/revalidateSurfaces.ts). generateStaticParams
+// returns nothing, and it must exist: without it Next 14 treats a dynamic route as dynamic on
+// every request and never fills the route cache (the first MC-017 preview served every page
+// MISS, private, no-store). With it, nothing is prerendered at build and every page renders on
+// its first visit, then serves from the cache. A page whose Neon reads carry their own hour
+// revalidates on the hour: Next takes the smaller of the route's and a fetch's.
+export const revalidate = 86400;
+export const dynamicParams = true;
+// THE 22 HUBS PRERENDER AT BUILD (MC-027 item 2, MA-005 defect 5). MC-017 left this empty to
+// keep the build short; MA-005 then measured 21 of 22 hubs answering MISS at p50 2.9 s for their
+// first visitor after every deploy and every tag drop, and Googlebot is often that visitor.
+// Twenty-two renders at build is a minute; the tag drops are covered by /api/jobs/warm-hubs,
+// which walks the 22 paths after each sold and analytics job so the cache is warm before a
+// reader arrives. dynamicParams stays true: a hub published after the build renders on visit.
+export async function generateStaticParams() {
+  try {
+    const rows = await prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } });
+    return rows.map((r) => ({ slug: r.neighbourhoodSlug }));
+  } catch {
+    return [];
+  }
+}
 
 interface Props {
   params: { slug: string };
@@ -37,8 +63,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NeighbourhoodPage({ params }: Props) {
   const data = await getHubData(params.slug);
+  const drift = await hubDrift(params.slug);
   if (!data) notFound();
-  // The homepage's live link graph, on the hub too. FooterSection (the legacy navy footer)
+  // The site footer, on the hub too. The legacy navy footer it replaced (2026-09-11)
   // linked three neighbourhoods and two streets; this links every published hub.
   const footer = await getHubFooter();
 
@@ -78,7 +105,11 @@ export default async function NeighbourhoodPage({ params }: Props) {
       slug: data.slug,
       description: data.character || `Real estate data for ${data.name}, ${config.CITY_NAME}.`,
     }),
-    ...(data.faqs.length ? [generateFAQSchema(data.faqs)] : []),
+    // FAQPage only while the stored generation matches the live aggregate (MC-027, MA-005 defect
+    // 1): the June answers carried June figures into the SERP. A drifted hub keeps its FAQs on
+    // the page (dated prose beside live tiles is the regenerate cron's job) and hands Google
+    // nothing until it is regenerated.
+    ...(data.faqs.length && !drift.drifted ? [generateFAQSchema(data.faqs)] : []),
   ];
 
   return (

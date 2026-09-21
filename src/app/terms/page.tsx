@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 export const metadata = genMeta({
   title: "Terms of Use",
@@ -10,12 +11,13 @@ export const metadata = genMeta({
 
 export default function TermsPage() {
   return (
-    <main className="bg-white text-[#07111f] min-h-screen py-12 sm:py-16">
+    <SiteChrome>
+    <main className="bg-white text-[#073126] min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
-        <Link href="/" className="text-[13px] text-[#64748b] hover:text-[#07111f]">← Back to {config.SITE_NAME}</Link>
+        <Link href="/" className="text-[13px] text-[#6b6f6a] hover:text-[#073126]">← Back to {config.SITE_NAME}</Link>
 
         <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Terms of Use</h1>
-        <p className="text-[13px] text-[#64748b] mb-8">Last updated: April 23, 2026</p>
+        <p className="text-[13px] text-[#6b6f6a] mb-8">Last updated: April 23, 2026</p>
 
         <div className="space-y-6 text-[15px] leading-relaxed">
           <p>
@@ -50,6 +52,17 @@ export default function TermsPage() {
             rules and copyright law. You may not use this site to send spam, test security, or impersonate others.
           </p>
 
+          <h2 className="text-[22px] font-extrabold mt-8 mb-2">Signing in and sold data</h2>
+          <p>
+            Sold and leased MLS® records are shown only to registered consumers with a bona fide interest in buying,
+            selling or leasing, under TRREB&apos;s VOW rules (R-805). Registration is a username and a password: your
+            username is your verified email address, and you choose your password (twelve characters or more) at first
+            sign-in, after agreeing to the acknowledgement shown there. A one-time emailed link or code verifies your
+            email and stands in when you forget your password; no sold record is shown until your password is set. Each
+            sign-in lasts at most 90 days, after which you sign in again. The records of your registration are kept for
+            at least 180 days after a sign-in expires, as the VOW rules require.
+          </p>
+
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Limitation of liability</h2>
           <p>
             This site is provided &quot;as is.&quot; To the fullest extent permitted by law, {config.SITE_DOMAIN}, {config.realtor.name}, and
@@ -59,18 +72,19 @@ export default function TermsPage() {
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Privacy</h2>
           <p>
-            Your personal information is handled under our <Link href="/privacy" className="text-[#f59e0b] underline">Privacy Policy</Link>.
+            Your personal information is handled under our <Link href="/privacy" className="text-[#017848] underline">Privacy Policy</Link>.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Contact</h2>
           <p>
             <strong>{config.realtor.name}</strong>, {config.realtor.title}<br />
             {config.brokerage.name}<br />
-            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#f59e0b] underline">gtahomequest@gmail.com</a><br />
-            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#f59e0b] underline">{config.realtor.phone}</a>
+            Email: <a href="mailto:gtahomequest@gmail.com" className="text-[#017848] underline">gtahomequest@gmail.com</a><br />
+            Phone: <a href={`tel:${config.realtor.phoneE164}`} className="text-[#017848] underline">{config.realtor.phone}</a>
           </p>
         </div>
       </div>
     </main>
+    </SiteChrome>
   );
 }

@@ -64,7 +64,7 @@ async function main() {
       const siblings = await resolveSiblingSlugs(slug);
       const agg = (await sd`
         SELECT COUNT(*)::int AS n,
-               AVG(sold_price) AS avg_price,
+               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                AVG(days_on_market) AS avg_dom
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblings}::text[])

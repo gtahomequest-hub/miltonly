@@ -8,6 +8,6 @@ export const metadata = {
 
 export default function Page() { return <HubPage
       data={mockHubUrban}
-      footer={{ neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0 }}
+      footer={{ neighbourhoods: [], topStreets: [], neighbourhoodCount: 0, streetCount: 0, streetPageCount: 0, guides: [], schoolCount: 0, mosqueCount: 0, edition: null }}
       brand={{ rating: 5, reviewCount: 235, credentials: [], idx: '1809031', vow: '1848370' }}
     />; }

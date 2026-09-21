@@ -67,7 +67,7 @@ const LINK_FLOOR = 50;
 
 /** Each menu's index page (its panel's CTA) and the rail links each panel must carry in
  *  the served HTML. `/map` and `/book` left the rails on 2026-09-11: both were redirects. */
-const MENU_TRIGGERS = ['/listings', '/streets', '/sell'];
+const MENU_TRIGGERS = ['/listings', '/rentals', '/streets', '/sell'];
 const RAIL_SAMPLE = [
   '/rentals', '/sold', '/condos', '/freehold', '/potl', '/compare', '/exclusive',
   '/neighbourhoods', '/guides', '/schools', '/mosques', '/condos-guide', '/about', '/market-watch',
@@ -161,7 +161,7 @@ const FIG_SPECS = [
   { fig: 'menu-buy-active', source: 'onMarket', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-buy-new', source: 'newThisWeek', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-streets-pages', source: 'publishedStreetPages', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
-  { fig: 'menu-buy-rentals', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
+  { fig: 'menu-rent-now', source: 'rentalsAvailable', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   { fig: 'menu-sold-mtd', source: 'soldMonthToDate', expect: (v) => String(v), parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^\d{1,5}$/ },
   { fig: 'proof-sales-12mo', source: 'sold12mo', expect: int, parse: (t) => Number(t.replace(/[,\s]/g, '')), tol: 0, pattern: /^[\d,]{1,7}$/ },
   {
@@ -181,6 +181,38 @@ function ldNodes(html) {
     for (const n of Array.isArray(parsed) ? parsed : [parsed]) nodes.push(n);
   }
   return nodes;
+}
+
+/** The Next default favicon (the Vercel triangle) by size and SHA-256 prefix, so the check
+ *  names the file it refuses rather than any 25,931-byte ICO. */
+const DEFAULT_ICO = { bytes: 25931, sha256Prefix: '2b8ad2d33455a8f7' };
+
+async function fetchIcons(base) {
+  const notes = [];
+  let icoOk = false;
+  let svgOk = false;
+  try {
+    const r = await fetch(`${base}/favicon.ico`, { headers: { 'user-agent': 'miltonly-verify' }, redirect: 'manual' });
+    const buf = Buffer.from(await r.arrayBuffer());
+    const { createHash } = await import('node:crypto');
+    const sha = createHash('sha256').update(buf).digest('hex');
+    const isIco = buf.length > 6 && buf[0] === 0 && buf[1] === 0 && buf[2] === 1 && buf[3] === 0;
+    const isDefault = buf.length === DEFAULT_ICO.bytes && sha.startsWith(DEFAULT_ICO.sha256Prefix);
+    icoOk = r.status === 200 && isIco && !isDefault;
+    if (!icoOk) notes.push(`favicon.ico: status ${r.status}, ${buf.length} bytes, ico=${isIco}, default=${isDefault}`);
+  } catch (e) {
+    notes.push(`favicon.ico: ${e.message}`);
+  }
+  try {
+    const r = await fetch(`${base}/icon.svg`, { headers: { 'user-agent': 'miltonly-verify' }, redirect: 'manual' });
+    const body = r.status === 200 ? await r.text() : '';
+    const type = r.headers.get('content-type') || '';
+    svgOk = r.status === 200 && type.includes('svg') && body.includes('#073126') && /<path\b/.test(body) && !/<text\b/.test(body);
+    if (!svgOk) notes.push(`icon.svg: status ${r.status}, type ${type}, ground=${body.includes('#073126')}, path=${/<path\b/.test(body)}`);
+  } catch (e) {
+    notes.push(`icon.svg: ${e.message}`);
+  }
+  return { icoOk, svgOk, notes };
 }
 
 export default {
@@ -204,6 +236,31 @@ export default {
     const navLinks = internalLinks(nav);
     const figs = figures(html);
     const nodes = ldNodes(html);
+
+    // ── 1b. THE CHROME BEFORE HYDRATION, AND THE MAP (MH-006, MA-004) ────────────
+    // The homepage is the one page whose nav is composed by the page itself (buildMegaLive)
+    // and whose footer is fed by getHomepageData, so the contract every other page meets
+    // through SiteNavLive and SiteFooter is asserted here on this page's own render: the
+    // nav is labelled and carries a skip link, the bar search is a real GET to /search, the
+    // phone menu is a <details> whose compact menu is in the HTML, and the footer opens with
+    // an <h2>, has no <h4>, and carries both the search well and the brief form.
+    const chromeBad = [];
+    if (!/<nav\b[^>]*aria-label="/.test(nav)) chromeBad.push('<nav> has no aria-label');
+    if (!/class="sn-skip"/.test(nav)) chromeBad.push('no skip link');
+    if (!/<form\b[^>]*class="m-navsearch[^"]*"[^>]*action="\/search"[^>]*method="get"/.test(nav)) chromeBad.push('the bar search is not a GET form to /search');
+    if (!/<details\b[^>]*class="sn-mobile"[\s\S]*class="sn-compact"/.test(nav)) chromeBad.push('the phone menu is not a <details> with a compact menu in the HTML');
+    if (navLinks.has('/saved')) chromeBad.push('the nav links /saved, a sign-in wall');
+    const footerAt = html.indexOf('<footer');
+    const footer = footerAt === -1 ? '' : html.slice(footerAt, html.indexOf('</footer>', footerAt));
+    if (!footer) chromeBad.push('no <footer>');
+    else {
+      if (!/<h2\b/.test(footer)) chromeBad.push('the footer has no <h2>');
+      if (/<h4\b/.test(footer)) chromeBad.push('the footer still uses <h4>');
+      if (!/class="m-fsearch"/.test(footer)) chromeBad.push('the footer has no search well');
+      if (!/class="m-fbrief"/.test(footer)) chromeBad.push('the footer has no brief form');
+      for (const h of ['/privacy', '/terms', '/guides', '/schools', '/mosques', '/compare/freehold-vs-condo']) if (!internalLinks(footer).has(h)) chromeBad.push(`the footer does not link ${h}`);
+      if ((footer.match(/href="\/sold"/g) || []).length !== 1) chromeBad.push('the footer links /sold other than once');
+    }
 
     // ── 2. header anchors ────────────────────────────────────────────────
     // THE TRIGGER IS A <button> NOW (2026-09-11) and the panel's index page is the panel's
@@ -275,6 +332,12 @@ export default {
     const homeRentals = figs.find((f) => f.fig === 'rentals-available');
     const homeRentalsShown = homeRentals ? Number(homeRentals.text.replace(/[,\s]/g, '')) : null;
     const rentalsAgree = rentalsShown !== null && homeRentalsShown !== null && rentalsShown === homeRentalsShown;
+
+    // ── 3c'. THE ICON IS OURS (MH-005 pre-step) ─────────────────────────
+    // The site served the default Next favicon, a 25,931-byte ICO of the Vercel triangle,
+    // and no icon.svg. Both must answer 200, the ICO must be an ICO that is not that file, and
+    // the SVG must be the forest-ground M: it carries the ground colour and a path, no <text>.
+    const icon = await fetchIcons(base);
 
     // ── 3d. THE MENU IS A SURFACE TOO ────────────────────────────────────
     // The mega menu printed "$937,465.504", "27.829694323144103" and a ratio wearing a
@@ -370,6 +433,7 @@ export default {
         [`unique internal links >= ${LINK_FLOOR}`, links.size >= LINK_FLOOR, true],
         // A parser that reaches nothing must fail on its own coverage.
         ['neighbourhood price figures found', hoodFigs.length > 0, true],
+        ['chrome contract: labelled nav, skip link, GET search, <details> menu, map footer with the brief form', chromeBad.length, 0],
         ['menu triggers rendered as buttons', nonAnchorTriggers.length, 0],
         ['menu trigger hrefs in served nav markup', missingTriggers.length, 0],
         ['rail links in served nav markup', missingRail.length, 0],
@@ -378,6 +442,8 @@ export default {
         ['Milton-wide figures outside their source + tolerance', offSource.length, 0],
         ['street-page figure == the published page count', pagesMatch, true],
         ['/rentals returns 200', rentalsPage.status, 200],
+        ['/favicon.ico is a 200 ICO that is not the default triangle', icon.icoOk, true],
+        ['/icon.svg is a 200 SVG of the wordmark M on the forest ground', icon.svgOk, true],
         ['homepage rentals figure == the figure /rentals publishes', rentalsAgree, true],
         ['menu figure != the Board figure on the same page', menuMismatch.length, 0],
         ['any data-fig rendering a raw float', rawFloats.length, 0],
@@ -402,6 +468,7 @@ export default {
         ...absent, ...malformed, ...offSource,
         ...(pagesMatch ? [] : [`street-page figure shows ${pagesShown} vs ${homeRecord.publishedStreetPages} published pages`]),
         ...(rentalsAgree ? [] : [`rentals: homepage ${homeRentalsShown ?? 'absent'} vs /rentals ${rentalsShown ?? 'absent'}`]),
+        ...icon.notes,
         ...menuMismatch, ...rawFloats,
         ...emDashes.map((c) => `em-dash: ...${c}...`),
         ...enDashes.map((c) => `en-dash outside a numeric range: ...${c}...`),

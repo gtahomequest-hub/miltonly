@@ -62,8 +62,11 @@ const stripScripts = (raw) => raw.replace(/<script[\s\S]*?<\/script>/g, ' ');
 function guideHrefs(raw) {
   return [...stripScripts(raw).matchAll(/<a\b[^>]*class="g-up-link"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
 }
+// A pill is a link where its type section renders and a <span class="s-pill s-pill-static">
+// where it does not (MH-005, MA-001 change 7); the match is on the pill and its label, whichever
+// element carries them. The lease pill is typed condo too, but its label is "Lease".
 const streetIsCondoHeavy = (raw) =>
-  /<a class="s-pill" href="#type-condo"><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
+  /<(?:a|span) class="s-pill(?: s-pill-static)?"(?: href="#type-condo")?><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
 // Both the legacy hub markup (h-condos) and the 2026-09-11 rebuild (hh-sec hh-condos), so a
 // template rename cannot blind this the way it blinded hub-intents.mjs.
 const hubIsCondoHeavy = (raw) => /class="(h-condos|hh-sec hh-condos)"/.test(stripScripts(raw));
@@ -88,7 +91,7 @@ export default {
     return { slug, ...audit(guideHrefs(raw), REQUIRED_STREET, streetIsCondoHeavy(raw)), hubs: sh.declared, hubNotLinked: sh.undeclaredLink };
   },
 
-  async finish(streetRows, { base, slugs }) {
+  async finish(streetRows, { base, slugs, crawled }) {
     const hubSlugs = await publishedHubSlugs(base);
     const hubRows = [];
     for (const slug of hubSlugs) {
@@ -133,7 +136,7 @@ export default {
 
     return {
       coverage: [
-        ['street pages read', `${streetRows.length} of ${slugs.length}`],
+        ['street pages read', `${streetRows.length} of ${(crawled ?? slugs).length}${crawled && crawled.length !== slugs.length ? ` (sample of ${slugs.length})` : ''}`],
         ['hub pages read', `${hubRows.length} of ${hubSlugs.length}`],
         ['guide anchors on street pages', streetAnchors],
         ['guide anchors on hubs', hubAnchors],
@@ -146,7 +149,7 @@ export default {
         ['street pages carrying the GO guide', streetRows.filter((r) => r.hrefs.includes(GO_GUIDE)).length],
       ],
       assertions: [
-        ['street pages read == live sitemap count', streetRows.length, slugs.length],
+        ['street pages read == crawl set', streetRows.length, (crawled ?? slugs).length],
         ['hub pages read == published hub count', hubRows.length, hubSlugs.length],
         // A parser that finds no ledger must fail on its own coverage, not read as "all fine".
         ['street pages rendering no guides ledger', streetNoBlock.length, 0],

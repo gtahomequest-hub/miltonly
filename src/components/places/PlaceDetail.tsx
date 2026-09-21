@@ -6,7 +6,7 @@
 // are typed props, not hardcoded into the shell.
 import Link from "next/link";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { config } from "@/lib/config";
 import type { PlaceDetailProps } from "./types";
 import "./places-theme.css";
@@ -153,7 +153,7 @@ export default function PlaceDetail(props: PlaceDetailProps) {
         </div>
       </section>
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

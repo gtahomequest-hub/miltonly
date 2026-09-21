@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)scratchpad/audit/nightly'",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" != main ]; then exit 0; fi; B=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git cat-file -e $B^{commit} || exit 1; git diff --quiet $B HEAD -- docs/phase-4.1 || exit 1; git diff --quiet $B HEAD -- . ':!scratchpad' ':!docs' ':!*.md'",
   "crons": [
     {
       "path": "/api/sync/detect?secret=miltonly-cron-2026",
@@ -76,6 +76,26 @@
     {
       "path": "/api/digest/leads",
       "schedule": "0 12 * * 1"
+    },
+    {
+      "path": "/api/sync/regenerate-hubs",
+      "schedule": "45 12 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "12 11 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "42 11 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "12 12 * * *"
+    },
+    {
+      "path": "/api/jobs/warm-hubs",
+      "schedule": "55 12 * * *"
     }
   ]
 }

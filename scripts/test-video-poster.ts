@@ -44,14 +44,14 @@ expect("not an mp4", deriveVideoPoster(`${BASE}/streets/x-milton/clip.webm`), nu
     videoUrl: null,
     videoCapturedAt: null,
     nightVideoUrl: `${BASE}/streets/1st-line-milton/night.mp4`,
-    nightCapturedAt: new Date("2026-08-25T00:00:00Z"),
+    nightCapturedAt: new Date("2026-08-26T00:15:00Z"), // 8:15 pm on 25 August in Milton
   });
   if (!view?.night) failures.push("  night-only street: resolveStreetVideo returned no night clip");
   else {
     if (view.night.poster !== `${BASE}/streets/1st-line-milton/poster.webp`) {
       failures.push(`  night-only street: poster = ${view.night.poster}`);
     }
-    if (view.night.uploadDate !== "2026-08-25") {
+    if (view.night.uploadDate !== "2026-08-25T20:15:00-04:00") {
       failures.push(`  night-only street: uploadDate = ${view.night.uploadDate}`);
     }
     if (!/Overnight/.test(view.night.caption)) {

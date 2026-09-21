@@ -4,11 +4,12 @@
 // components only.
 
 import "server-only";
+import { neighbourhoodRows } from "@/lib/hubSets";
 import { getSoldDb, getAnalyticsDb } from "./db";
 import { cached, CACHE_TTL } from "./cache";
 import { getSession } from "./auth";
+import { canSeeVowRecords } from "./vow-access";
 import { config } from "./config";
-import { prisma } from "./prisma";
 import type {
   SoldRecord,
   StreetSoldStats,
@@ -27,15 +28,14 @@ const MAX_CONSUMER_RECORDS = 100; // VOW rule — never exceed per consumer quer
  * Required conditions:
  *   - authenticated session
  *   - VOW bona-fide-interest acknowledgement recorded (Phase 2.5 gate)
+ *   - a password set (MP-002b, R-805(c)); src/lib/vow-access.ts is the one rule
  *
  * Aggregate fetchers (stats, counts, neighbourhood lists) do NOT call this —
  * those are always public by design.
  */
 async function canServeRecordsToThisRequest(): Promise<boolean> {
   const user = await getSession();
-  if (!user) return false;
-  if (!user.vowAcknowledgedAt) return false;
-  return true;
+  return canSeeVowRecords(user);
 }
 
 export interface PublicSaleStats {
@@ -206,8 +206,8 @@ export async function getNeighbourhoodLeaseStats(neighbourhood: string): Promise
 export interface SoldListItem {
   mls_number: string;
   address: string;               // already redacted if display_address = false
-  street_name: string;
-  street_slug: string;
+  street_name: string;           // "" if display_address = false
+  street_slug: string;           // "" if display_address = false
   neighbourhood: string;
   sold_price: number;
   list_price: number;
@@ -225,11 +225,16 @@ export interface SoldListItem {
 }
 
 function toListItem(r: SoldRecord): SoldListItem {
+  // InternetAddressDisplayYN=N withholds the street as well as the number: a withheld row
+  // may be counted but not placed, so the street column and the street link go blank with
+  // the address. lat/lng never leave SoldRecord. The neighbourhood stays; it is not an
+  // address field.
+  const withheld = !r.display_address;
   return {
     mls_number: r.mls_number,
-    address: r.display_address ? r.address : "Address withheld",
-    street_name: r.street_name,
-    street_slug: r.street_slug,
+    address: withheld ? "Address on request" : r.address,
+    street_name: withheld ? "" : r.street_name,
+    street_slug: withheld ? "" : r.street_slug,
     neighbourhood: r.neighbourhood,
     sold_price: n(r.sold_price) ?? 0,
     list_price: n(r.list_price) ?? 0,
@@ -386,9 +391,7 @@ function slugifyRawNeighbourhood(raw: string): string {
 export async function getSoldNeighbourhoodOptions(): Promise<SoldNeighbourhoodOption[]> {
   const raws = await getDistinctSoldNeighbourhoods();
   if (raws.length === 0) return [];
-  const registry = await prisma.neighbourhood
-    .findMany({ select: { slug: true, name: true, rawStrings: true } })
-    .catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>);
+  const registry = await neighbourhoodRows().catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>);
   const byRaw = new Map<string, { slug: string; name: string }>();
   for (const n of registry) for (const r of n.rawStrings ?? []) byRaw.set(r, { slug: n.slug, name: n.name });
   return raws.map((raw) => {

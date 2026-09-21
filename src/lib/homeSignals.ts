@@ -20,7 +20,7 @@ import { getSoldDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
-import { deriveVideoPoster } from "@/lib/streetVideo";
+import { deriveVideoPoster, torontoWall } from "@/lib/streetVideo";
 
 const WEEK_MS = 7 * 86_400_000;
 const round5k = (n: number) => Math.round(n / 5000) * 5000;
@@ -142,14 +142,15 @@ export async function getStreetsWithVideo(limit = 12): Promise<StreetVideoCard[]
     if (!url) continue;
     const poster = deriveVideoPoster(url);
     if (!poster) continue; // no thumbnail, no card
-    const capturedAt = useDay ? r.videoCapturedAt : r.nightCapturedAt;
+    // the Toronto date of the instant, never its UTC date (a 9:40 pm capture is the next day in UTC)
+    const capturedAt = torontoWall(useDay ? r.videoCapturedAt : r.nightCapturedAt)?.date ?? null;
     cards.push({
       slug: r.streetSlug,
       // resolveStreetName is the only source of a street name on any surface.
       name: resolveStreetName(r.streetSlug, r.streetName).name,
       poster,
       variant: useDay ? "day" : "night",
-      capturedAt: capturedAt ? capturedAt.toISOString().slice(0, 10) : null,
+      capturedAt,
     });
   }
 
@@ -212,13 +213,14 @@ export async function getStreetsWithVideoForSlugs(slugs: string[], limit = 8): P
     if (!url) continue;
     const poster = deriveVideoPoster(url);
     if (!poster) continue;
-    const capturedAt = useDay ? r.videoCapturedAt : r.nightCapturedAt;
+    // the Toronto date of the instant, never its UTC date (a 9:40 pm capture is the next day in UTC)
+    const capturedAt = torontoWall(useDay ? r.videoCapturedAt : r.nightCapturedAt)?.date ?? null;
     cards.push({
       slug: r.streetSlug,
       name: resolveStreetName(r.streetSlug, r.streetName).name,
       poster,
       variant: useDay ? "day" : "night",
-      capturedAt: capturedAt ? capturedAt.toISOString().slice(0, 10) : null,
+      capturedAt,
     });
   }
   cards.sort((a, b) => (b.capturedAt ?? "").localeCompare(a.capturedAt ?? ""));

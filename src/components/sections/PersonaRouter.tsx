@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 
 type Persona = {
   emoji: string;
@@ -87,6 +88,8 @@ function PersonaCard({ persona }: { persona: Persona }) {
       phone: digits,
       name: "Persona Lead",
       notes: `Persona: ${persona.name}`,
+      consentText: REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setSubmitting(false);
@@ -155,6 +158,7 @@ function PersonaCard({ persona }: { persona: Persona }) {
         >
           {submitting ? "Sending…" : `Get my ${config.CITY_NAME} roadmap →`}
         </button>
+        <p className="mt-2 text-[11px] text-slate-400 leading-snug">{REPLY_FINE_PRINT}</p>
       </form>
     </div>
   );

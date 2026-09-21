@@ -4,21 +4,29 @@
 // Shared forest nearby-listings island for /mosques/[slug] + /schools/[slug]
 // (replaces the byte-identical MosqueListings + SchoolListings). Same data
 // contract + show-more behavior; forest styling.
+//
+// MC-036: the rows are cards from getListingCards (src/lib/listingsV2Data.ts), the gated
+// mapper, so `address` is already "Address on request" for a withheld listing and the raw
+// address is not in the payload to print. The interface below is the subset of
+// ListingCardData this island reads.
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 import { config } from "@/lib/config";
 
 interface Listing {
   mlsNumber: string;
+  /** Gated server-side: the placeholder, never the raw address, for a withheld listing. */
   address: string;
   price: number;
   bedrooms: number | null;
   bathrooms: number | null;
   propertyType: string;
   photos: string[];
-  listedAt: string;
+  listOfficeName?: string | null;
+  // No listedAt (MC-029): a card carries no VOW-only column.
 }
 
 export default function PlaceListings({
@@ -44,7 +52,6 @@ export default function PlaceListings({
     <>
       <div className="pl-lgrid">
         {visible.map((l) => {
-          const days = daysAgo(new Date(l.listedAt));
           return (
             <Link key={l.mlsNumber} href={`/listings/${l.mlsNumber}`} className="pl-lcard">
               <div className="pl-lphoto">
@@ -52,12 +59,12 @@ export default function PlaceListings({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={l.photos[0]} alt={l.address} loading="lazy" />
                 )}
-                <span className="pl-ltag">
-                  {days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d on market`}
-                </span>
               </div>
               <div className="pl-lbody">
-                <p className="pl-lprice">{formatPriceFull(l.price)}</p>
+                <p className="pl-lprice" data-price>
+                  {formatPriceFull(l.price)}
+                  <ListingBrokerage name={l.listOfficeName} />
+                </p>
                 <p className="pl-laddr">{l.address}</p>
                 <div className="pl-lspecs">
                   {l.bedrooms != null && <span>{l.bedrooms} bed</span>}

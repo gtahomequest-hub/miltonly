@@ -89,9 +89,51 @@ export interface SafeStreetStats {
   bestMonth: string;
 }
 
+// MC-036 (2026-09-21): a house number followed by a capitalised street name and a street suffix
+// is a property address, the token an individual sold or leased record carries. The abbreviated
+// forms are listed because DB2 street_name is abbreviated ("Gordon Krantz Ave"); each maps to its
+// full word so the same address in either spelling compares equal.
+const STREET_SUFFIXES: Record<string, string> = {
+  Drive: "drive", Dr: "drive", Street: "street", St: "street", Crescent: "crescent", Cres: "crescent",
+  Court: "court", Crt: "court", Ct: "court", Avenue: "avenue", Ave: "avenue", Road: "road", Rd: "road",
+  Boulevard: "boulevard", Blvd: "boulevard", Lane: "lane", Ln: "lane", Way: "way", Trail: "trail", Trl: "trail",
+  Gate: "gate", Terrace: "terrace", Terr: "terrace", Place: "place", Pl: "place", Circle: "circle", Cir: "circle",
+  Line: "line", Heights: "heights", Hts: "heights", Square: "square", Sq: "square", Grove: "grove", Path: "path",
+  Common: "common", Gardens: "gardens", Garden: "garden", Gdn: "garden", Landing: "landing", Ridge: "ridge", Hollow: "hollow", Manor: "manor",
+  Point: "point", Pt: "point", Crossing: "crossing", Xing: "crossing", Close: "close", Parkway: "parkway", Pkwy: "parkway",
+  Townline: "townline", Centre: "centre", Walk: "walk", Hill: "hill", Row: "row", Mews: "mews",
+};
+const HOUSE_ADDRESS_SOURCE =
+  `\\b(\\d{1,5})\\s+((?:[A-Z][A-Za-z'\\-]*\\s+){1,4})(${Object.keys(STREET_SUFFIXES).join("|")})\\b`;
+
+/** Every house-number address in the text, each reduced to one comparable key
+ *  ("480 gordon krantz avenue" for "480 Gordon Krantz Ave"). "N Side Road" is a rural street
+ *  name, not an address, and is left out. A fresh RegExp per call: a shared global one would
+ *  carry its lastIndex between texts. */
+function houseAddressKeys(text: string): string[] {
+  const keys: string[] = [];
+  const re = new RegExp(HOUSE_ADDRESS_SOURCE, "g");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const name = m[2].trim().replace(/\s+/g, " ");
+    if (/^Side$/i.test(name)) continue;
+    keys.push(`${m[1]} ${name.toLowerCase()} ${STREET_SUFFIXES[m[3]]}`);
+  }
+  return keys;
+}
+
+export interface PromptSafetyOptions {
+  /** The one house-number address a prompt may carry, its subject: a condo building page is
+   *  named by its address. A string permits that address alone; null permits none (the street
+   *  generator declares null, since a street prompt never names a house); undefined, for a
+   *  caller that declares nothing, permits at most one distinct address. Two distinct
+   *  addresses are records, and the prompt is refused. */
+  subjectAddress?: string | null;
+}
+
 /** Validates that no raw listing data leaks into a prompt */
 // Exported (GENI Phase 1): the area-finder input firewall runs this PII/leak check first.
-export function validatePromptSafety(text: string): { safe: boolean; reason?: string } {
+export function validatePromptSafety(text: string, opts: PromptSafetyOptions = {}): { safe: boolean; reason?: string } {
   // Check for MLS number patterns (e.g., W1234567, C1234567, N1234567)
   if (/\b[A-Z]\d{7,}\b/.test(text)) {
     return { safe: false, reason: "Prompt contains what appears to be an MLS number" };
@@ -106,6 +148,24 @@ export function validatePromptSafety(text: string): { safe: boolean; reason?: st
   // (Street names alone are OK since they're public knowledge)
   if (/\b\d+\s+\w+\s+\w+.*[A-Z]\d[A-Z]\s*\d[A-Z]\d/i.test(text)) {
     return { safe: false, reason: "Prompt contains a full property address with postal code" };
+  }
+
+  // MC-036: a house number with a street name is a record's address. The reason never quotes
+  // the token, since the address may be one the feed withholds.
+  const found = houseAddressKeys(text);
+  if (found.length > 0) {
+    const { subjectAddress } = opts;
+    if (subjectAddress === null) {
+      return { safe: false, reason: "Prompt contains a house-number address" };
+    }
+    if (typeof subjectAddress === "string") {
+      const subject = houseAddressKeys(subjectAddress)[0] ?? subjectAddress.trim().toLowerCase().replace(/\s+/g, " ");
+      if (found.some((k) => k !== subject)) {
+        return { safe: false, reason: "Prompt contains a house-number address that is not its subject" };
+      }
+    } else if (new Set(found).size > 1) {
+      return { safe: false, reason: "Prompt contains more than one house-number address" };
+    }
   }
 
   return { safe: true };
@@ -182,7 +242,7 @@ export async function generateStreetDescription(
   // Prompt-safety choke (shared, fail-closed) — the SAME gate as callClaude/callDeepSeek.
   // This legacy path calls anthropic.messages.create directly (not via callClaude), so it must
   // invoke the choke itself; assertPromptSafe scans both system + user messages.
-  assertPromptSafe(systemPrompt, userPrompt);
+  assertPromptSafe(systemPrompt, userPrompt, { subjectAddress: null });
 
   const anthropic = getClient();
 
@@ -376,6 +436,8 @@ interface CallDeepSeekOptions {
   responseFormat?: { type: 'json_object' };
   maxTokens?: number;
   temperature?: number;
+  /** See PromptSafetyOptions. */
+  subjectAddress?: string | null;
 }
 
 // Pricing per million tokens. These numbers are not decoration: costUsd is computed
@@ -407,19 +469,22 @@ interface CallClaudeOptions {
    *  prompt's schema instructions and a JSON-only reminder. */
   jsonOnly?: boolean;
   maxTokens?: number;
+  /** See PromptSafetyOptions. */
+  subjectAddress?: string | null;
 }
 
 /**
  * UNBYPASSABLE prompt-safety choke. EVERY external model call goes through callClaude or
  * callDeepSeek, and both run this at entry — so no prompt reaches any model without passing.
  * Fails CLOSED: a system or user message containing a PropTx MLS number, a TREB listing key,
- * or a full address+postal throws BEFORE any network call. This is the single enforcement point
+ * a full address+postal, or a house-number address that is not the prompt's subject (MC-036)
+ * throws BEFORE any network call. This is the single enforcement point
  * (Miltonly "no PropTx identifiers in prompts" rule + the PropTx data agreement); a future
  * generation path physically cannot skip it without bypassing the only two model-call functions.
  */
-export function assertPromptSafe(systemPrompt: string, userPrompt: string): void {
+export function assertPromptSafe(systemPrompt: string, userPrompt: string, opts: PromptSafetyOptions = {}): void {
   for (const [label, text] of [["system", systemPrompt], ["user", userPrompt]] as const) {
-    const safety = validatePromptSafety(text ?? "");
+    const safety = validatePromptSafety(text ?? "", opts);
     if (!safety.safe) {
       throw new Error(`AI compliance: prompt blocked at safety gate (${label} message) — ${safety.reason}`);
     }
@@ -432,8 +497,9 @@ export async function callClaude({
   userPrompt,
   jsonOnly = false,
   maxTokens = 3000,
+  subjectAddress,
 }: CallClaudeOptions): Promise<DeepSeekRawResponse> {
-  assertPromptSafe(systemPrompt, userPrompt); // choke — before any API work
+  assertPromptSafe(systemPrompt, userPrompt, { subjectAddress }); // choke — before any API work
   const anthropic = getClient();
   const model = CLAUDE_MODELS[modelKey];
   const finalSystem = jsonOnly
@@ -471,8 +537,9 @@ export async function callDeepSeek({
   responseFormat,
   maxTokens = 3000,
   temperature = 0.7,
+  subjectAddress,
 }: CallDeepSeekOptions): Promise<DeepSeekRawResponse> {
-  assertPromptSafe(systemPrompt, userPrompt); // choke — before any API work
+  assertPromptSafe(systemPrompt, userPrompt, { subjectAddress }); // choke — before any API work
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
 
@@ -881,7 +948,7 @@ export async function generateLongFormStreetDescription(
       userPrompt = `${POLISH_PROMPT_V2}\n\n--- DRAFT ---\n\n${lastText}`;
     }
 
-    const response = await callDeepSeek({ systemPrompt, userPrompt });
+    const response = await callDeepSeek({ systemPrompt, userPrompt, subjectAddress: null });
     const validation = validateLongFormContent(response.text, stats.streetName);
 
     passes.push({
@@ -1150,6 +1217,7 @@ async function judgeFairHousing(
       userPrompt: body,
       maxTokens: 800,
       temperature: 0,
+      subjectAddress: null,
     });
     return res.text;
   });
@@ -1319,6 +1387,7 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
           userPrompt,
           jsonOnly: true,
           maxTokens: 5000,
+          subjectAddress: null, // a street prompt never names a house (MC-036)
         })
       : await callDeepSeek({
           systemPrompt,
@@ -1326,6 +1395,7 @@ async function runHalfWithRetry(params: RunHalfParams): Promise<HalfResult> {
           responseFormat: { type: 'json_object' },
           maxTokens: 5000,
           temperature: 0.4,
+          subjectAddress: null,
         });
     const callMs = Date.now() - callStart;
     if (provider === "claude") {
@@ -1859,6 +1929,7 @@ Original draft below:`;
         responseFormat: { type: 'json_object' },
         maxTokens: 5000,
         temperature: 0.4,
+        subjectAddress: null,
       });
       pass2InputTokens = pass2Response.inputTokens;
       pass2OutputTokens = pass2Response.outputTokens;

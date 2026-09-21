@@ -166,8 +166,12 @@ export default {
     };
   },
 
-  async finish(rows, { base, hubRecord }) {
+  async finish(rows, { base, hubRecord, crawled, mode }) {
     const streetPage = new Map(rows.map((r) => [r.slug, r]));
+    // MC-035: in sample mode the crawl holds about fifty streets; a ladder row whose street is
+    // outside the sample is counted, not judged. Full mode judges every row, as before.
+    const crawledSet = new Set(crawled ?? rows.map((r) => r.slug));
+    let ladderOutsideSample = 0;
     const slugs = await publishedHubSlugs(base);
 
     const pages = new Map(); // path -> { status, ids }
@@ -242,6 +246,7 @@ export default {
       if (missing.length || extra.length) ladderSetOff.push(`${h.slug}: missing ${missing.slice(0, 3).join(', ') || 'none'}; extra ${extra.slice(0, 3).join(', ') || 'none'}`);
       for (const r of h.ladder) {
         const sp = streetPage.get(r.slug);
+        if (!sp && mode === 'sample' && !crawledSet.has(r.slug)) { ladderOutsideSample++; continue; }
         if (!sp) { ladderNot200.push(`${h.slug}: /streets/${r.slug} was not a 200 in the crawl`); continue; }
         const t = sp.typical;
         if (!t) { typicalOff.push(`${h.slug} ${r.slug}: street page has no Typical price tile`); continue; }
@@ -300,6 +305,7 @@ export default {
     return {
       coverage: [
         ['hub pages read', `${ok.length} of ${slugs.length}`],
+        ...(mode === 'sample' ? [['ladder rows outside the street sample (counted, not judged)', ladderOutsideSample]] : []),
         ['figures read (outside the site nav)', figCount],
         ['declared figure kinds', FIG_SPECS.length],
         ['ladder rows read', ok.reduce((n, h) => n + h.ladder.length, 0)],

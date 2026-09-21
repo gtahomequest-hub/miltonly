@@ -16,12 +16,14 @@
 //      - combined-validator failure → same fail-closed.
 //      - clean → HubGeneration.status=succeeded + dual-write HubContent (published).
 
-import crypto from "crypto";
+import { calcHubDataHash } from "@/lib/hubDataHash";
 import { prisma } from "@/lib/prisma";
 import { buildHubInput, buildMiltonWideContext } from "@/lib/ai/buildHubInput";
 import { routeHubGeneration } from "@/lib/ai/hub/hubFailClosed";
 import { HubGenerationError } from "@/lib/ai/hub/generateHubContent";
 import { buildHubMeta } from "@/lib/ai/hub/hubMeta";
+import { revalidateHubSurfaces } from "@/lib/revalidateSurfaces";
+import { dropHubSetCache } from "@/lib/hubSets";
 import {
   generateUrbanHubContent,
   type UrbanProviderOpts,
@@ -55,7 +57,8 @@ export async function generateUrbanHub(
   // Throws unless profile==='urban_hub' (guard lives in buildHubInput).
   const input = await buildHubInput(neighbourhoodSlug);
   const milton = await buildMiltonWideContext();
-  const inputHash = crypto.createHash("sha256").update(JSON.stringify(input)).digest("hex");
+  // the tolerance hash (src/lib/hubDrift.ts), the same rule the regenerate cron compares by
+  const inputHash = calcHubDataHash(input);
 
   // Atomic claim — insert-or-flip-to-generating (mirror generateRuralHub.ts).
   await prisma.$queryRaw`
@@ -185,6 +188,10 @@ export async function generateUrbanHub(
       attempts: attemptCount,
     },
   });
+
+  // MC-017: the hub page is ISR; the write drops it.
+  revalidateHubSurfaces(neighbourhoodSlug, "generateUrbanHub");
+  await dropHubSetCache(); // the published-hub set changed (MC-018)
 
   console.log(
     `[generateUrbanHub] ${neighbourhoodSlug}: PUBLISHED — ${totalWords} words, ` +

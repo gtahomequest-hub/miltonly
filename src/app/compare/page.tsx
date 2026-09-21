@@ -11,7 +11,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { COMPARISONS } from "@/lib/comparisonData";
 import SiteNavLive from "@/components/nav/SiteNavLive";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -78,7 +78,7 @@ export default function CompareIndexPage() {
           </div>
         </section>
       </div>
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

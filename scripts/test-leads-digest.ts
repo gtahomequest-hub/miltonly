@@ -152,7 +152,7 @@ async function main() {
   const recordFn = notifyRaw.slice(notifyRaw.indexOf("export async function recordDeliveries"));
   ok(/try \{[\s\S]*createMany[\s\S]*\} catch/.test(recordFn), "log: a write failure is caught, so the log cannot fail a lead");
   const ingest = stripComments(readFileSync(join("src", "lib", "lead", "ingest.ts"), "utf-8"));
-  ok(ingest.includes("recordDeliveries(leadId, [confirmation, alert])"), "log: the ingest path records both sends");
+  ok(ingest.includes("deps.deliveries(leadId, [confirmation, alert])") && /deliveries: recordDeliveries,/.test(ingest), "log: the ingest path records both sends (through deps since ML-005, live binding recordDeliveries)");
   ok(/kind: "confirmation", outcome: "failed"/.test(ingest) && /kind: "ops_alert", outcome: "failed"/.test(ingest), "log: a thrown send is a failed attempt, not a skipped one");
 
   // ── the route ───────────────────────────────────────────────────────────────────

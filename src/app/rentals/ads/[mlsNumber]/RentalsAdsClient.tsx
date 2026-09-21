@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Handshake, Landmark, Eye } from "lucide-react";
 import { config } from "@/lib/config";
-import { formatPriceFull, daysAgo, cleanNeighbourhoodName } from "@/lib/format";
+import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import PhotoLightbox from "@/components/landing/PhotoLightbox";
@@ -13,6 +13,7 @@ import LiveListingSlider from "@/components/landing/LiveListingSlider";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import { extractHighlights } from "@/lib/listing-highlights";
 import { extractKeyFacts } from "@/lib/listing-key-facts";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -38,8 +39,8 @@ interface Listing {
   photos: string[];
   description: string | null;
   neighbourhood: string;
-  listedAt: string;
-  daysOnMarket: number | null;
+  listOfficeName?: string | null;
+  // No listedAt, no daysOnMarket (MC-029): VOW-only, stripped before serialisation.
   schoolZone: string | null;
   goWalkMinutes: number | null;
   heatType: string | null;
@@ -94,7 +95,6 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
   const priceText = formatPriceFull(listing.price);
   const typeLabel = TYPE_DISPLAY_LABEL[listing.propertyType?.toLowerCase()] || listing.propertyType;
   const neighbourhoodClean = cleanNeighbourhoodName(listing.neighbourhood) || listing.neighbourhood || listing.city;
-  const days = daysAgo(new Date(listing.listedAt));
   const photos = listing.photos || [];
   const totalPhotos = photos.length;
 
@@ -234,11 +234,6 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-[60px] opacity-30">🏠</div>
               )}
-              {days >= 0 && days <= 14 && (
-                <span className="absolute top-3 left-3 bg-[#07111f]/90 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2.5 py-1 rounded">
-                  NEW · {days}d ago
-                </span>
-              )}
               {totalPhotos > 0 && (
                 <span className="absolute top-3 right-3 bg-[#07111f]/90 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-white px-2.5 py-1 rounded">
                   1 of {totalPhotos}
@@ -311,9 +306,12 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
       <section className="bg-[#07111f] border-b border-[#1e3a5f]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-8">
           <div className="flex flex-col lg:flex-row lg:items-baseline lg:justify-between gap-1 lg:gap-4">
-            <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-[#f8f9fb] leading-tight tracking-tight">
+            <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-[#f8f9fb] leading-tight tracking-tight" data-price>
               {priceText}
               <span className="text-[14px] sm:text-[16px] font-semibold text-[#94a3b8] ml-1">/month</span>
+              {/* After the unit, not before it (MC-036): the brokerage line is display:block, so
+                  "/month" was landing on a third line under "Listed by ...". */}
+              <ListingBrokerage name={listing.listOfficeName} />
             </div>
             <div className="text-[14px] sm:text-[15px] text-[#cbd5e1] font-medium">
               {streetAddr} · {listing.city}

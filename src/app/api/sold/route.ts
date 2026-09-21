@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { redis } from "@/lib/cache";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import {
   getStreetSoldList,
   getNeighbourhoodSoldList,
@@ -62,10 +63,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Sign in to view sold data" }, { status: 401 });
   }
 
-  // 2. VOW acknowledgement gate — 403 if user hasn't accepted the bona-fide-
-  // interest terms. Client handles by prompting; direct API consumers see a
-  // machine-readable flag.
-  if (!user.vowAcknowledgedAt) {
+  // 2. VOW gate — 403 until the bona-fide-interest acknowledgement is recorded AND a
+  // password is set (MP-002b, R-805(c)); one rule, src/lib/vow-access.ts. Client handles by
+  // prompting; direct API consumers see a machine-readable flag.
+  if (!canSeeVowRecords(user)) {
     return NextResponse.json(
       {
         error: "VOW acknowledgement required",

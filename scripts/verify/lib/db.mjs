@@ -38,12 +38,20 @@ export async function loadHubRecord() {
   if (!nbhds.length) throw new Error('DB1 returned no Neighbourhood rows — check the credential, not the data');
   if (!stored.length) throw new Error('DB1 returned no published HubContent rows');
 
-  const agg = new Map();
-  for (const r of await sold`SELECT neighbourhood, COUNT(*)::int n, AVG(sold_price) avg
-                             FROM sold.sold_records
-                             WHERE perm_advertise=TRUE AND transaction_type='For Sale'
-                               AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
-                             GROUP BY 1`) agg.set(r.neighbourhood, r);
+  // DEC-TYPICAL-MEDIAN (MC-027): a hub's typical is the median over the union of its raw
+  // strings, which no per-string figure can be folded into, so it is one query per hub over
+  // that union: the same shape as buildHubInput's saleAggQuery(rawStrings).
+  const hubAgg = new Map(); // slug -> { n, med }
+  for (const n of nbhds) {
+    const raws = Array.isArray(n.rawStrings) ? n.rawStrings : [];
+    if (!raws.length) { hubAgg.set(n.slug, { n: 0, med: null }); continue; }
+    const r = await sold`SELECT COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) med
+                         FROM sold.sold_records
+                         WHERE neighbourhood = ANY(${raws}::text[])
+                           AND perm_advertise=TRUE AND transaction_type='For Sale'
+                           AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`;
+    hubAgg.set(n.slug, { n: Number(r[0]?.n ?? 0), med: num(r[0]?.med ?? null) });
+  }
 
   // ── THE HUB PAGE'S OTHER FIGURES (hub-page.mjs), each re-derived from the record ──────────
   // Per raw string: 12-month sales by property type (the "share of sales" fact) and active
@@ -74,7 +82,7 @@ export async function loadHubRecord() {
   }
   // The Milton-wide typical the market section compares against: buildMiltonWideContext's
   // saleAggQuery(null), no city filter, k-gated then round5k, the same as every hub figure.
-  const miltonRows = await sold`SELECT COUNT(*)::int n, AVG(sold_price) avg FROM sold.sold_records
+  const miltonRows = await sold`SELECT COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) avg FROM sold.sold_records
                                 WHERE perm_advertise=TRUE AND transaction_type='For Sale'
                                   AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()`;
   const miltonN = Number(miltonRows[0]?.n ?? 0);
@@ -122,14 +130,11 @@ export async function loadHubRecord() {
     hub(slug) {
       const n = bySlug.get(slug);
       if (!n) return null;
-      let count = 0, total = 0;
-      for (const raw of n.rawStrings) {
-        const r = agg.get(raw);
-        if (r) { count += Number(r.n); total += Number(r.avg) * Number(r.n); }
-      }
+      const h = hubAgg.get(slug) ?? { n: 0, med: null };
+      const count = h.n;
       // k-gate first, THEN round — the same order the page must use. A price that
-      // exists only below the floor is null, never a rounded small-sample average.
-      const typical = count >= K_ANON_PRICE && total > 0 ? Math.round(total / count / 5000) * 5000 : null;
+      // exists only below the floor is null, never a rounded small-sample median.
+      const typical = count >= K_ANON_PRICE && h.med !== null && h.med > 0 ? Math.round(h.med / 5000) * 5000 : null;
       const s = storedBySlug.get(slug);
       return {
         profile: n.profile === 'urban_hub' ? 'urban' : 'rural',
@@ -149,19 +154,19 @@ export async function loadRecord() {
   const analytics = neon(process.env.ANALYTICS_DATABASE_URL);
 
   const sale12 = new Map(), saleFull = new Map(), lease12 = new Map(), stat = new Map();
-  for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, AVG(sold_price) avg,
+  for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) avg,
                                     MIN(sold_price) lo, MAX(sold_price) hi,
                                     AVG(days_on_market) dom, AVG(sold_to_ask_ratio) sta
                              FROM sold.sold_records
                              WHERE perm_advertise=TRUE AND transaction_type='For Sale'
                                AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()
                              GROUP BY 1`) sale12.set(r.s, r);
-  for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, AVG(sold_price) avg
+  for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) avg
                              FROM sold.sold_records
                              WHERE perm_advertise=TRUE AND transaction_type='For Sale'
                                AND sold_date <= NOW() AND sold_price IS NOT NULL
                              GROUP BY 1`) saleFull.set(r.s, r);
-  for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, AVG(sold_price) avg
+  for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) avg
                              FROM sold.sold_records
                              WHERE perm_advertise=TRUE AND transaction_type='For Lease'
                                AND sold_date >= NOW() - INTERVAL '12 months' AND sold_date <= NOW()

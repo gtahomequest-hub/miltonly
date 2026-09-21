@@ -92,22 +92,6 @@ interface RawLeaseByBed {
   typical: string | null;
 }
 
-// Per-row lease record for sample-based grounded content (Part 4, 2026-05-09).
-// Pulled from DB2 sold.sold_records; cap=10 most-recent in 12mo window.
-interface RawLeaseRecord {
-  address: string;
-  list_price: string | null;
-  sold_price: string | null;
-  beds: number | null;
-  baths: string | null;
-  sqft_range: string | null;
-  days_on_market: number | null;
-  property_type: string | null;
-  sold_date: Date;
-  lease_term: string | null;
-  furnished: string | null;
-}
-
 interface RawRangeRow {
   n: number;
   lo: string | null;
@@ -159,7 +143,6 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     soldSalesByType,
     soldLeasesByType,
     leasesByBed,
-    leasesPerRow,
     soldRangeRows,
     soldCoordsRows,
     soldNeighbourhoodRows,
@@ -183,7 +166,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawTypeAgg>(
       (db) => db`SELECT property_type,
                          COUNT(*)::int AS n,
-                         AVG(sold_price) AS avg_price,
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                          MIN(sold_price) AS min_price,
                          MAX(sold_price) AS max_price
                   FROM sold.sold_records
@@ -197,7 +180,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawTypeAgg>(
       (db) => db`SELECT property_type,
                          COUNT(*)::int AS n,
-                         AVG(sold_price) AS avg_price,
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                          MIN(sold_price) AS min_price,
                          MAX(sold_price) AS max_price
                   FROM sold.sold_records
@@ -211,7 +194,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     querySold<RawLeaseByBed>(
       (db) => db`SELECT COALESCE(beds, 0)::int AS bed,
                          COUNT(*)::int AS n,
-                         AVG(sold_price) AS typical
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
                   FROM sold.sold_records
                   WHERE street_slug = ANY(${siblingSlugs}::text[])
                     AND perm_advertise = TRUE
@@ -221,27 +204,13 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
                   GROUP BY bed
                   ORDER BY bed`
     ),
-    // Per-row recent lease records (Part 4, 2026-05-09). Cap=10 most-recent
-    // in 12mo window. Feeds buildLeaseSampleRecords which applies k-anon
-    // gating before exposing to the prompt input.
-    querySold<RawLeaseRecord>(
-      (db) => db`SELECT address, list_price, sold_price,
-                        beds, baths, sqft_range, days_on_market,
-                        property_type, sold_date, lease_term, furnished
-                  FROM sold.sold_records
-                  WHERE street_slug = ANY(${siblingSlugs}::text[])
-                    AND perm_advertise = TRUE
-                    AND transaction_type = 'For Lease'
-                    AND sold_date >= NOW() - INTERVAL '12 months'
-                    AND sold_date <= NOW() -- B13: future-dated rows never reach the prompt
-                  ORDER BY sold_date DESC
-                  LIMIT 10`
-    ),
+    // MC-036: no per-row lease query. The prompt carries the by-bed typicals only; an
+    // individual leased record (its address, rent, term, month) never leaves DB2 for a model.
     querySold<RawRangeRow>(
       (db) => db`SELECT COUNT(*)::int AS n,
                          MIN(sold_price) AS lo,
                          MAX(sold_price) AS hi,
-                         AVG(sold_price) AS avg_price,
+                         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                          AVG(days_on_market) AS avg_dom
                   FROM sold.sold_records
                   WHERE street_slug = ANY(${siblingSlugs}::text[])
@@ -321,7 +290,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
     ? await (__sd`
         SELECT street_slug,
                COUNT(*) FILTER (WHERE transaction_type='For Sale')::int AS n_sales,
-               AVG(sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
+               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) FILTER (WHERE transaction_type='For Sale') AS avg_sale,
                MIN(sold_price) FILTER (WHERE transaction_type='For Sale') AS min_sale,
                MAX(sold_price) FILTER (WHERE transaction_type='For Sale') AS max_sale,
                MODE() WITHIN GROUP (ORDER BY property_type) FILTER (WHERE transaction_type='For Sale') AS dominant_type
@@ -486,24 +455,15 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   if (!neighbourhoodComparable && kAnonLevel === "zero") {
     neighbourhoodComparable = await buildZeroTierAreaComparable(slug);
   }
-  // ─── leaseActivity.byBed (optional) ─────────────────────────────────
+  // ─── leaseActivity.byBed (optional; the whole of the lease-side input) ──
+  // MC-036 (2026-09-21): recentRecords and rangeStats are no longer built. Ten individual
+  // leased records per street (house number and street, rent, days on market, month, term,
+  // furnished state) went to the model whenever a street had five leases, and the market
+  // prompt told it to cite them. A per-record lease is a disclosure the VOW rules reserve for
+  // an acknowledged session; the by-bed typicals at k5 are the aggregate the page may carry.
+  // The two optional fields stay on the type (src/types/street-generator.ts); the validator
+  // reads them as absent.
   const leaseActivity = buildLeaseActivity(leasesByBed, leasesCount);
-
-  // ─── leaseActivity.recentRecords + rangeStats (Part 4, k-anon gated) ─
-  const sampleResult = buildLeaseSampleRecords(leasesPerRow, leasesCount);
-  if (leaseActivity && sampleResult?.recentRecords) {
-    leaseActivity.recentRecords = sampleResult.recentRecords;
-  }
-  if (leaseActivity && sampleResult?.rangeStats) {
-    leaseActivity.rangeStats = sampleResult.rangeStats;
-  }
-
-  // ─── Coverage instrumentation (Part 4 step 6.5) ─────────────────────
-  // Side-effect log for empirical k-anon coverage measurement. Failure to
-  // write here MUST NOT block generation — fire-and-forget try/catch.
-  void recordLeaseCoverage(slug, leasesCount, sampleResult).catch((e) =>
-    console.warn(`[lease-coverage-log] write failed for ${slug}: ${(e as Error).message}`),
-  );
 
   // ─── quarterlyTrend (optional; k-anon gated) ────────────────────────
   // Track 2 Pass 1 — DEC-PASS1-QUARTERTREND-FILTER (2026-05-27).
@@ -890,9 +850,11 @@ function buildLeaseActivity(
 }
 
 // ---------------------------------------------------------------------------
-// PII redaction for lease-record addresses passed to the prompt.
-// Strips trailing ", City, ON Postal" pattern + unit suffix. Keeps street
-// number + street name. Per Part 4 spec (2026-05-09).
+// Address trimming: strips trailing ", City, ON Postal" and a unit suffix,
+// keeps street number + street name. Written for the per-row lease records
+// (Part 4, 2026-05-09); since MC-036 this module sends no address to a
+// prompt at all, and a house number with a street name is refused at the
+// compliance choke (validatePromptSafety). Kept for its script importer.
 //
 // Examples:
 //   "830 Megson Terrace 622, Milton, ON L9T 9M7"  → "830 Megson Terrace"
@@ -915,105 +877,6 @@ export function redactAddressForPrompt(addr: string): string {
     return /[a-zA-Z]/.test(remaining) ? "" : match;
   });
   return segment.trim();
-}
-
-// ---------------------------------------------------------------------------
-// buildLeaseSampleRecords — assemble per-row records + range stats with
-// k-anon gating (Part 4, 2026-05-09).
-//
-// Three-tier gate:
-//   - count < 5  : return undefined (aggregation-only fallback preserves
-//     existing behavior on thin streets)
-//   - count 5-9  : return recentRecords only (no rangeStats; min/max
-//     requires k≥10 per existing K_ANON_RANGE discipline)
-//   - count ≥ 10 : return both recentRecords + rangeStats
-// ---------------------------------------------------------------------------
-function buildLeaseSampleRecords(
-  rows: RawLeaseRecord[],
-  leasesCount: number,
-): {
-  recentRecords?: NonNullable<StreetGeneratorInput["leaseActivity"]>["recentRecords"];
-  rangeStats?: { min: number; max: number };
-} | undefined {
-  if (leasesCount < K_ANON_PRICE) return undefined;
-  if (rows.length === 0) return undefined;
-
-  const records = rows
-    .map((r) => {
-      const listPrice = num(r.list_price);
-      const soldPrice = num(r.sold_price);
-      if (listPrice === null || soldPrice === null) return null;
-      const baths = num(r.baths);
-      const sd = r.sold_date instanceof Date ? r.sold_date : new Date(r.sold_date);
-      return {
-        // COMPLIANCE (feat/compliance-mls-leak): the PropTx MLS identifier is deliberately NOT
-        // assembled into the prompt payload — "no PropTx identifiers in prompts" (PropTx data
-        // agreement). It is not even SELECTed above. The prompt-safety choke in callDeepSeek/
-        // callClaude is the backstop if one ever sneaks back in.
-        address: redactAddressForPrompt(r.address),
-        listPrice,
-        soldPrice,
-        beds: r.beds ?? 0,
-        baths: baths ?? 0,
-        sqftRange: r.sqft_range,
-        daysOnMarket: r.days_on_market ?? 0,
-        propertyType: r.property_type ?? "Unknown",
-        soldMonth: `${sd.getUTCFullYear()}-${String(sd.getUTCMonth() + 1).padStart(2, "0")}`,
-        leaseTerm: r.lease_term,
-        furnished: r.furnished,
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r !== null);
-
-  if (records.length === 0) return undefined;
-
-  // rangeStats only when k≥10 (existing K_ANON_RANGE discipline applies).
-  let rangeStats: { min: number; max: number } | undefined;
-  if (leasesCount >= K_ANON_RANGE) {
-    const prices = records.map((r) => r.soldPrice).sort((a, b) => a - b);
-    if (prices.length > 0) {
-      rangeStats = { min: prices[0], max: prices[prices.length - 1] };
-    }
-  }
-
-  return { recentRecords: records, rangeStats };
-}
-
-// ---------------------------------------------------------------------------
-// Coverage instrumentation (Part 4 step 6.5).
-// Records per-street lease coverage as a side-effect of buildGeneratorInput
-// so we can empirically measure k-anon gate fire rates after Part 4 ships.
-// Table: analytics.street_lease_coverage_log — created via one-shot
-// migration script (scripts/migrate-create-lease-coverage-log.ts).
-//
-// Append-only: each generation run writes a new row with recorded_at
-// timestamp. Query latest state via DISTINCT ON (street_slug) ORDER BY
-// recorded_at DESC.
-// ---------------------------------------------------------------------------
-async function recordLeaseCoverage(
-  streetSlug: string,
-  leasesCount12mo: number,
-  sampleResult:
-    | {
-        recentRecords?: unknown;
-        rangeStats?: { min: number; max: number };
-      }
-    | undefined,
-): Promise<void> {
-  const ad = getAnalyticsDb();
-  if (!ad) return;
-  const hasRecentRecords = !!sampleResult?.recentRecords;
-  const hasRangeStats = !!sampleResult?.rangeStats;
-  const fallbackReason = hasRecentRecords
-    ? null
-    : leasesCount12mo < K_ANON_PRICE
-      ? "below_k5"
-      : "k_met_but_no_records"; // edge: k satisfied but per-row query returned 0
-  await ad`
-    INSERT INTO analytics.street_lease_coverage_log
-      (street_slug, lease_count_12mo, has_recent_records, has_range_stats, fallback_reason, recorded_at)
-    VALUES (${streetSlug}, ${leasesCount12mo}, ${hasRecentRecords}, ${hasRangeStats}, ${fallbackReason}, NOW())
-  `;
 }
 
 // ---------------------------------------------------------------------------

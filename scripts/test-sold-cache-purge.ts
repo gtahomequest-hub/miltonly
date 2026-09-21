@@ -67,7 +67,8 @@ ok(/revalidateTag\(tag\)/.test(reval) && /known\.includes\(tag\)/.test(reval), "
 ok(sample.includes("home:sold-mtd:*"), "the homepage month-to-date key is purged whole (every date suffix)");
 ok(sample.includes("street-sale-stats:pine-street-milton*"), "a written street's sale stats are purged");
 ok(sample.includes("sold-list:nbhd:Old Milton*"), "a written neighbourhood's sold list is purged");
-ok(soldPurgePatterns({ streetSlugs: [], neighbourhoods: [] }).length === 2, "a write with no slugs still purges the Milton-wide patterns and nothing per-street");
+ok(soldPurgePatterns({ streetSlugs: [], neighbourhoods: [] }).length === 3, "a write with no slugs still purges the Milton-wide patterns and nothing per-street");
+ok(sample.includes("home:lease-market:*"), "the Rent menu's lease-market key (MH-007) is purged whole (every date suffix)");
 
 if (failures.length > 0) {
   console.error(`[sold-cache-purge] FAIL: ${failures.length} of ${assertions} assertions:`);

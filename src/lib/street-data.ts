@@ -14,8 +14,10 @@
 //   and are only fetched from the page when canSeeRecords is true.
 
 import "server-only";
-import type { Listing } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
+import { dataCached } from "./dataCache";
+import { LISTING_ROWS_TAG } from "./revalidateSurfaces";
 // NAMING MOVED OUT (DEC-NAME-SOURCE Build 1). expandStreetName / shortNameFor / displayStreetName
 // used to live in this file, behind its `import "server-only"` — which is why
 // scripts/build-street-adjacency.ts had to grow a private copy that then drifted. They are now in
@@ -34,6 +36,7 @@ import { buildAddressLadder, addressLadderEnabledFor } from "./streetAddresses";
 import { schools } from "./schools";
 import { extractStreetName, ruralSideRoadName, deriveIdentity } from "./streetUtils";
 import { resolveStreetVideo } from "./streetVideo";
+import { publishedHubSlugs as publishedHubSlugList, neighbourhoodRows, perRequest } from "./hubSets";
 import { cleanNeighbourhoodName, roundPriceForProse, roundRentForProse } from "./format";
 import { formatCAD, formatCADShort } from "./charts/theme";
 import type {
@@ -63,7 +66,6 @@ import type {
 
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 const SITE_URL = config.SITE_URL;
-const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 /* ─────────────────────────────────────────────────────────────────────
    TYPE PEEKS — raw DB3 row shapes (loose; SQL is ad-hoc).
@@ -122,6 +124,8 @@ interface RawSale12mo {
   hi: string | null;
   dom: string | null;
   sta: string | null;
+  /** the most recent closed sale in the window; the page's honest "updated" date */
+  latest: string | Date | null;
 }
 interface RawLease12mo {
   n: number;
@@ -183,10 +187,101 @@ export async function resolveSiblingSlugs(slug: string): Promise<string[]> {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
+   THE STREET'S LISTING ROWS (MC-034)
+   ───────────────────────────────────────────────────────────────────── */
+
+// The columns the render reads, and nothing else. Before MC-034 this pull selected every column
+// (photos, description, the VOW-only facts) on every row of every street render, about 4.9 KB a
+// row on the wire against about 200 B here, and it was half of DB1's daily egress. Each column
+// below is read somewhere on the render: mlsNumber and address by the ladder and the inventory
+// card, streetName and address by the name fallback (allListings[0]), neighbourhood by the hero
+// and the schema, status by every active filter, permAdvertise by the ladder gate,
+// propertySubType and propertyType by the ladder's form and the housing mix, price by the
+// per-type list average and the card, bedrooms, bathrooms, parking and listOfficeName by the
+// card, latitude and longitude by computeCentroid. The VOW-only columns are never selected
+// (src/lib/listings/vow.ts); the card's photo is the first URL of the active rows only, read by
+// readStreetListings below, because photos is the widest column and the card shows one.
+// Sixteen columns since MC-036: displayAddress (InternetAddressDisplayYN) is read by the
+// inventory card, which prints "Address on request" in place of a withheld address, and by
+// the ladder, which skips a withheld row before deriving a house number from it. Without the
+// column nothing downstream could tell a withheld address from a shown one. One boolean a row.
+export const STREET_LISTING_SELECT = {
+  mlsNumber: true,
+  address: true,
+  streetName: true,
+  neighbourhood: true,
+  status: true,
+  permAdvertise: true,
+  displayAddress: true,
+  propertySubType: true,
+  propertyType: true,
+  price: true,
+  bedrooms: true,
+  bathrooms: true,
+  parking: true,
+  listOfficeName: true,
+  latitude: true,
+  longitude: true,
+} satisfies Prisma.ListingSelect;
+
+export type StreetListing = Prisma.ListingGetPayload<{ select: typeof STREET_LISTING_SELECT }> & {
+  /** the first photo URL, active rows only; null elsewhere */
+  photo: string | null;
+};
+
+/** One read of a street's rows: the narrow select, then the first photo of each active row. */
+async function readStreetListings(siblingSlugs: string[]): Promise<StreetListing[]> {
+  const rows = await prisma.listing.findMany({
+    where: { streetSlug: { in: siblingSlugs }, permAdvertise: true },
+    orderBy: { listedAt: "desc" },
+    select: STREET_LISTING_SELECT,
+  });
+  const activeMls = rows.filter((r) => r.status === "active").map((r) => r.mlsNumber);
+  const photos =
+    activeMls.length > 0
+      ? await prisma.$queryRaw<Array<{ mlsNumber: string; photo: string | null }>>`
+          SELECT "mlsNumber", photos[1] AS photo FROM "public"."Listing"
+          WHERE "mlsNumber" IN (${Prisma.join(activeMls)})`
+      : [];
+  const photoOf = new Map(photos.map((p) => [p.mlsNumber, p.photo]));
+  return rows.map((r) => ({ ...r, photo: photoOf.get(r.mlsNumber) ?? null }));
+}
+
+// Three layers, each measured (MC-034). The select above cuts the bytes a row costs. React's
+// cache() on getStreetPageData collapses generateMetadata and the page body into one read within
+// a render pass. This Data Cache entry carries the rows across passes (the HTML and the RSC
+// payload of one ISR revalidation are two passes) and across renders for up to an hour, the
+// page's own ISR window. Its key carries a write stamp, one indexed row (the row count and the
+// latest updatedAt of the street's rows, which every Prisma write bumps), so a listing sync
+// that touches the street changes the key and the next render misses: unstable_cache serves a
+// tag-dropped entry stale while it refreshes in the background, and a stamp in the key is what
+// keeps a regeneration from rendering the rows as they were before the sync. The tag
+// LISTING_ROWS_TAG is on the entry as well, and through it on every street page: dropped by
+// revalidateListingSurfaces (src/lib/revalidateSurfaces.ts, called by /api/sync,
+// /api/sync/detect and /api/sync/expire after a write) and by /api/revalidate { tag: "listings" },
+// so the pages regenerate on their next visit after a sync rather than at their hour. Outside a
+// Next server dataCached runs the read (a script sees live rows). Not the Upstash cached()
+// helper: that one skips Redis under a static render.
+async function streetListingsFor(siblingSlugs: string[]): Promise<StreetListing[]> {
+  const stamp = await prisma.listing.aggregate({
+    where: { streetSlug: { in: siblingSlugs }, permAdvertise: true },
+    _count: { _all: true },
+    _max: { updatedAt: true },
+  });
+  const written = `${stamp._count._all}:${stamp._max.updatedAt?.getTime() ?? 0}`;
+  return dataCached(() => readStreetListings(siblingSlugs), ["street-listings:v2", written, ...siblingSlugs], {
+    revalidate: 3600,
+    tags: [LISTING_ROWS_TAG],
+  })();
+}
+
+/* ─────────────────────────────────────────────────────────────────────
    MAIN EXPORT
    ───────────────────────────────────────────────────────────────────── */
 
-export async function getStreetPageData(slug: string): Promise<StreetPageData | null> {
+// Memoised per request (React.cache when it exists): generateMetadata and the page body both call
+// it in one render, and a render pass reads the street once.
+export const getStreetPageData = perRequest(async function getStreetPageData(slug: string): Promise<StreetPageData | null> {
   // Step 13m-1 — resolve sibling slugs that map to the same identity. The
   // slug-as-key model routed data under whichever slug MLS ingest produced
   // (usually the abbreviated form) while the render layer queried the
@@ -208,10 +303,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     soldCoordsRows,
     soldExistsRows,
   ] = await Promise.all([
-    prisma.listing.findMany({
-      where: { streetSlug: { in: siblingSlugs }, permAdvertise: true },
-      orderBy: { listedAt: "desc" },
-    }),
+    streetListingsFor(siblingSlugs),
     // DB3 street_sold_stats is pre-computed per slug. In practice only one
     // sibling carries the row; pick the one with the highest sold_count_12months
     // if multiple return (belt + suspenders against future DB3 drift).
@@ -233,7 +325,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       ? (sd`
           SELECT property_type,
                  COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg_price,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
                  MIN(sold_price) AS min_price,
                  MAX(sold_price) AS max_price,
                  AVG(days_on_market) AS avg_dom,
@@ -253,11 +345,12 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
                  MIN(sold_price) AS lo,
                  MAX(sold_price) AS hi,
                  AVG(days_on_market) AS dom,
-                 AVG(sold_to_ask_ratio) AS sta
+                 AVG(sold_to_ask_ratio) AS sta,
+                 MAX(sold_date) AS latest
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
@@ -271,7 +364,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
     sd
       ? (sd`
           SELECT COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg,
                  AVG(days_on_market) AS dom
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
@@ -287,7 +380,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
       ? (sd`
           SELECT LEAST(beds, 4)::int AS bed,
                  COUNT(*)::int AS n,
-                 AVG(sold_price) AS avg
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg
           FROM sold.sold_records
           WHERE street_slug = ANY(${siblingSlugs}::text[])
             AND perm_advertise = TRUE
@@ -474,6 +567,7 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
   // ─── Context cards ────────────────────────────────────────────────
   const contextCards = await buildContextCards({
     slug,
+    siblingSlugs,
     neighbourhoods,
     centroid,
   });
@@ -497,8 +591,10 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           mlsNumber: l.mlsNumber,
           status: l.status,
           permAdvertise: l.permAdvertise,
+          displayAddress: l.displayAddress,
           propertySubType: l.propertySubType,
           propertyType: l.propertyType,
+          listOfficeName: l.listOfficeName,
         })),
       })
     : null;
@@ -568,8 +664,23 @@ export async function getStreetPageData(slug: string): Promise<StreetPageData | 
           nightCapturedAt: streetContent.nightCapturedAt,
         })
       : null,
-    lastUpdated: new Date().toISOString(),
+    // THE UPDATED DATE IS A DATE SOMETHING HAPPENED (MH-005, MA-001 change 6). It was the
+    // render time, which is not a modification date and would have told Google every page
+    // changed every hour. It is the later of the profile's generation and the most recent
+    // closed sale in the 12-month sample: the two things that change what the page says.
+    lastUpdated: latestOf(streetContent?.generatedAt ?? null, sale12?.latest ?? null),
   };
+});
+
+function latestOf(...dates: Array<string | Date | null>): string {
+  let best: Date | null = null;
+  for (const d of dates) {
+    if (!d) continue;
+    const t = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(t.getTime())) continue;
+    if (!best || t > best) best = t;
+  }
+  return (best ?? new Date()).toISOString().slice(0, 10);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -594,7 +705,7 @@ function deslugify(slug: string): string {
 }
 
 
-function computeCentroid(listings: Listing[]): { lat: number; lng: number } | null {
+function computeCentroid(listings: StreetListing[]): { lat: number; lng: number } | null {
   const valid = listings.filter((l) => hasValidCoords(l.latitude, l.longitude));
   if (valid.length === 0) return null;
   const lat = valid.reduce((s, l) => s + l.latitude, 0) / valid.length;
@@ -661,7 +772,7 @@ interface HeroBuildInput {
   neighbourhoods: string[];
   stats: RawSoldStats | null;
   soldRange: { n: number; lo: string | null; hi: string | null } | null;
-  allListings: Listing[];
+  allListings: StreetListing[];
   streetContent: { description: string } | null;
   typeAggs: RawTypeAgg[];
   enrichment: StreetEnrichment;
@@ -715,7 +826,11 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   // publishing the placeholder. street.characterSummary is set from THIS value.
   const suppressedSummary =
     rawSummary && !(summaryClaimsAbsence && enrichment.hasAnySale) ? rawSummary : "";
-  const subtitle = suppressedSummary || `A street in ${CITY_PROVINCE_LABEL}.`;
+  // A PROGRAMME PAGE'S SUBTITLE IS A FACT OR NOTHING (MH-005, MA-001 defect 17). "A street in
+  // Milton Ontario." was the placeholder on every page with no surviving summary. The
+  // neighbourhood is a fact the page has; where it has none, the hero carries no subtitle.
+  const firstNbhd = neighbourhoods.map(cleanNeighbourhoodName).find(Boolean);
+  const subtitle = suppressedSummary || (firstNbhd ? `${streetName} is in ${firstNbhd}, ${config.CITY_NAME}.` : "");
 
   // Build stat tiles
   const heroStats: HeroStat[] = [];
@@ -796,7 +911,8 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
       // on 46 pages ($884K pill vs $875K card). Round once, at the point of publication, and
       // every surface that formats it lands on the same string.
       typicalPrice: publishable ? roundPriceForProse(typicalPrice!) : null,
-      priceLabel: publishable ? "typical" : "sample too small",
+      // the silence says what would end it (MA-001 defect 24): the count sits beside the label
+      priceLabel: publishable ? "typical" : `needs ${K_ANON_PRICE} sales`,
       anchor: `#type-${type}`,
     });
   }
@@ -848,7 +964,7 @@ function buildHero(input: HeroBuildInput): StreetHeroProps {
   };
 }
 
-function housingMix(typeAggs: RawTypeAgg[], allListings: Listing[]): { primary: string; description: string } {
+function housingMix(typeAggs: RawTypeAgg[], allListings: StreetListing[]): { primary: string; description: string } {
   const counts: Record<string, number> = {};
   for (const a of typeAggs) counts[a.property_type] = (counts[a.property_type] ?? 0) + a.n;
   // If no sold data, fall back to active listings.
@@ -889,7 +1005,7 @@ function buildProductTypeSections(input: {
   stats: RawSoldStats | null;
   monthlyRows: RawMonthly[];
   typeAggs: RawTypeAgg[];
-  activeListings: Listing[];
+  activeListings: StreetListing[];
 }): TypeSectionProps[] {
   const { streetName, shortName, typeAggs, activeListings, monthlyRows } = input;
 
@@ -1054,7 +1170,7 @@ function buildSidebar(input: {
   neighbourhoods: string[];
   enrichment: StreetEnrichment;
 }): DescriptionSidebarProps {
-  const { shortName, streetName, sale12, centroid, neighbourhoods, enrichment } = input;
+  const { streetName, sale12, centroid, neighbourhoods, enrichment } = input;
 
   const facts: Record<string, string> = {};
   const cleanNbhds = neighbourhoods.map(cleanNeighbourhoodName).filter(Boolean);
@@ -1089,12 +1205,13 @@ function buildSidebar(input: {
       .slice(0, 6)
       .map((p) => (isStreetSpecificCoord(centroid) ? p : { ...p, distance: null })),
     sidebarCTA: {
-      eyebrow: `For ${shortName} owners`,
+      eyebrow: `For ${streetName} owners`,
       headline: `What is yours worth today?`,
       body: `A short conversation grounded in every sale we have tracked on ${streetName}.`,
       actionLabel: "Request a valuation",
       actionHref: "/sell",
-      trustLine: "Complimentary · Response within one hour",
+      // "Response within one hour" was a service level nothing measures (MA-001 defect 9).
+      trustLine: "Complimentary. No obligation.",
     },
   };
 }
@@ -1156,7 +1273,7 @@ function buildGlanceTiles(input: {
   stats: RawSoldStats | null;
   sale12: RawSale12mo | null;
   lease12: RawLease12mo | null;
-  allListings: Listing[];
+  allListings: StreetListing[];
   typeAggs: RawTypeAgg[];
   enrichment: StreetEnrichment;
 }): GlanceTile[] {
@@ -1455,21 +1572,28 @@ function buildCommuteGrid(centroid: { lat: number; lng: number } | null): Commut
    ───────────────────────────────────────────────────────────────────── */
 
 function buildActiveInventory(input: {
-  listings: Listing[];
+  listings: StreetListing[];
   streetName: string;
   shortName: string;
 }): ActiveInventoryProps {
   return {
-    listings: input.listings.map((l) => ({
+    // A withheld address (InternetAddressDisplayYN = N) is counted on the street and never carded
+    // on it: a card under "Active listings on {street}" ties the listing to the street, which the
+    // rule forbids as much as printing the number. The count above the cards keeps the row.
+    total: input.listings.length,
+    listings: input.listings.filter((l) => l.displayAddress).map((l) => ({
       mlsNumber: l.mlsNumber,
-      address: l.address,
+      // InternetAddressDisplayYN = N (MC-036): the address is not shown on any surface. The
+      // row keeps its price, type, beds, baths, brokerage and link; only the address line
+      // changes, to the placeholder every other surface prints.
+      address: l.displayAddress ? l.address : "Address on request",
       price: l.price,
       bedrooms: l.bedrooms,
       bathrooms: l.bathrooms,
       parking: l.parking,
       propertyType: l.propertyType,
-      daysOnMarket: l.daysOnMarket ?? null,
-      photo: l.photos && l.photos.length > 0 ? l.photos[0] : undefined,
+      listOfficeName: l.listOfficeName ?? null,
+      photo: l.photo ?? undefined,
       href: `/listings/${l.mlsNumber}`,
     })),
     streetName: input.streetName,
@@ -1483,10 +1607,11 @@ function buildActiveInventory(input: {
 
 async function buildContextCards(input: {
   slug: string;
+  siblingSlugs: string[];
   neighbourhoods: string[];
   centroid: { lat: number; lng: number } | null;
 }): Promise<ContextCardsProps> {
-  const { slug, neighbourhoods } = input;
+  const { slug, siblingSlugs, neighbourhoods } = input;
 
   const similar = await prisma.listing.groupBy({
     by: ["streetSlug"],
@@ -1517,41 +1642,31 @@ async function buildContextCards(input: {
     })
   );
 
-  // RESOLVE the up-link through the Neighbourhood REGISTRY, then require a PUBLISHED hub — the slug
-  // was a slugified NAME-GUESS, never validated. That both 404'd (Walker's raw "1051 - Walker"
-  // name-guessed to /neighbourhoods/1051---walker; "Brookville/Haltonville" kept its slash) AND
-  // under-linked. Registry resolution maps every raw/name/slug variant to its canonical slug, so
-  // Walker/Brookville now link CORRECTLY; a neighbourhood with no published hub, or one that can't
-  // be resolved, emits NO link rather than a broken one.
-  const [pubHubRows, nbhdRows] = await Promise.all([
-    prisma.hubContent.findMany({ where: { status: "published" }, select: { neighbourhoodSlug: true } }),
-    prisma.neighbourhood.findMany({ select: { slug: true, name: true, rawStrings: true } }),
-  ]);
-  const publishedHubSlugs = new Set(pubHubRows.map((h) => h.neighbourhoodSlug));
-  const hubSlugify = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  const resolveMap = new Map<string, string>(); // normalized key -> canonical slug
-  const nameBySlug = new Map<string, string>();
-  for (const nb of nbhdRows) {
-    nameBySlug.set(nb.slug, nb.name);
-    for (const key of [nb.slug, nb.name, ...nb.rawStrings]) {
-      const k = hubSlugify(key);
-      if (k) resolveMap.set(k, nb.slug);
-    }
-  }
-  const seenHub = new Set<string>();
+  // THE UP-LINK IS THE REGISTRY'S HUB, AND ONLY THAT (MC-027 item 5, MA-005 defect 8). It used
+  // to be resolved from the sold records' neighbourhood strings on the street, while the hub's
+  // ladder is the registry (ResidentialStreet.neighbourhoodId): seven streets on five hubs
+  // linked up to a hub whose ladder did not list them, and two ladder leaders linked nowhere.
+  // One source now: the street's registry row (the first sibling slug that carries one), and
+  // only when that hub is published. A street the Town's polygons never placed gets no card,
+  // never a guess from a listing agent's string. scripts/hub-membership-reconcile.ts lists
+  // where the records and the registry disagree.
+  const [pubHubSlugList, nbhdRows] = await Promise.all([publishedHubSlugList(), neighbourhoodRows()]);
+  const publishedHubSlugs = new Set(pubHubSlugList);
+  const registryRows = await prisma.residentialStreet.findMany({
+    where: { slug: { in: siblingSlugs }, neighbourhoodId: { not: null } },
+    select: { slug: true, neighbourhood: { select: { slug: true, name: true } } },
+  });
+  const registryHub = [slug, ...siblingSlugs]
+    .map((sl) => registryRows.find((r) => r.slug === sl)?.neighbourhood ?? null)
+    .find((h): h is { slug: string; name: string } => h !== null && h !== undefined) ?? null;
   const neighbourhoodCards: Array<{ slug: string; name: string; summary: string }> = [];
-  for (const raw of neighbourhoods.map(cleanNeighbourhoodName)) {
-    if (!raw || raw.length === 0) continue;
-    const resolved = resolveMap.get(hubSlugify(raw));
-    if (!resolved || !publishedHubSlugs.has(resolved) || seenHub.has(resolved)) continue;
-    seenHub.add(resolved);
-    const name = nameBySlug.get(resolved) ?? raw;
+  if (registryHub && publishedHubSlugs.has(registryHub.slug)) {
+    const name = nbhdRows.find((nb) => nb.slug === registryHub.slug)?.name ?? registryHub.name;
     neighbourhoodCards.push({
-      slug: resolved,
+      slug: registryHub.slug,
       name,
       summary: `Explore the ${name} area of ${config.CITY_NAME}, its streets and comparable housing stock.`,
     });
-    if (neighbourhoodCards.length >= 2) break;
   }
 
   const schoolCards = schools
@@ -1581,19 +1696,26 @@ async function buildContextCards(input: {
    FINAL CTAs + CORNER WIDGET
    ───────────────────────────────────────────────────────────────────── */
 
+// THE RESOLVED NAME IN THE HEADINGS (MH-008). These read "Selling on Main" and "Buying on
+// Asleton": shortName is the prose form and never appears in a heading (CLAUDE.md, Names). The
+// alert body promised "access before they go public", which nothing on the site does; the
+// alert emails when a home on the street is listed for sale (StreetAlertCTA, street-alert):
+// /api/alerts/match reads new active listings and nothing else, so the card says listed, not
+// "listed or sold", until a sold alert exists (ML-004).
 function buildFinalCTAs(input: { streetName: string; shortName: string }): FinalCTAsProps {
+  void input.shortName;
   return {
     sellerCTA: {
       eyebrow: "For owners",
-      headline: `Selling on ${input.shortName}`,
+      headline: `Selling on ${input.streetName}`,
       body: `A thoughtful conversation grounded in every sale we have tracked on ${input.streetName}.`,
       actionLabel: "Request a valuation",
       actionHref: "/sell",
     },
     buyerCTA: {
       eyebrow: "For buyers",
-      headline: `Buying on ${input.shortName}`,
-      body: `Private access to new and upcoming listings before they go public.`,
+      headline: `Buying on ${input.streetName}`,
+      body: `An email when a home on ${input.streetName} is listed for sale. Nothing else, and no account.`,
       actionLabel: "Set an alert",
       actionHref: "/listings",
       secondary: true,
@@ -1621,14 +1743,14 @@ function buildCornerWidget(input: {
   const heroHeadline = [typicalText, txText].filter(Boolean).join(" · ");
 
   const sectionInsights: SectionInsight[] = [
-    { id: "s1", text: `Where you land on ${shortName} shapes what you are buying.` },
+    { id: "s1", text: `Where you land on ${streetName} shapes what you are buying.` },
     ...productTypes.map((p) => ({
       id: `type-${p.type}`,
       text: `${p.displayName}: ${p.typicalPrice ? formatCADShort(roundPriceForProse(p.typicalPrice)) + " typical" : "thin data"} · see details inline.`,
     })),
-    { id: "s5", text: `The fine details that distinguish ${shortName}.` },
-    { id: "s6", text: `What has actually been closing on ${shortName}, by the numbers.` },
-    { id: "s7", text: `Commute reach from ${shortName}.` },
+    { id: "s5", text: `The fine details that distinguish ${streetName}.` },
+    { id: "s6", text: `What has actually been closing on ${streetName}, by the numbers.` },
+    { id: "s7", text: `Commute reach from ${streetName}.` },
     { id: "s8", text: `Active inventory on ${streetName} right now.` },
     { id: "s9", text: `How ${streetName} compares to nearby streets and schools.` },
     { id: "s10", text: `Common questions about ${streetName}.` },

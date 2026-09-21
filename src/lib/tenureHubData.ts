@@ -105,7 +105,7 @@ async function freeholdSold(subTypes: string[]): Promise<SoldAgg> {
   try {
     const rows = (await db`
       SELECT COUNT(DISTINCT mls_number)::int AS n,
-             AVG(sold_price) AS avg_price,
+             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price,
              MIN(sold_price) AS lo, MAX(sold_price) AS hi,
              AVG(days_on_market) AS dom
       FROM sold.sold_records

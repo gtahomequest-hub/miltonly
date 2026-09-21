@@ -16,6 +16,8 @@ import {
 } from "@/lib/schema";
 import PlaceDetail from "@/components/places/PlaceDetail";
 import PlaceListings from "@/components/places/PlaceListings";
+import { PUBLIC_SALE_WHERE } from "@/lib/listings/vow";
+import { getListingCards } from "@/lib/listingsV2Data";
 import type { BadgeTone } from "@/components/places/types";
 import { resolveStreetName } from "@/lib/streetName";
 
@@ -53,13 +55,13 @@ export default async function MosqueDetailPage({ params }: Props) {
   const mosque = getMosqueBySlug(params.slug);
   if (!mosque) notFound();
 
-  const listings = await prisma.listing.findMany({
-    where: {
-      status: "active",
-      permAdvertise: true,
-      city: config.PRISMA_CITY_VALUE,
-      neighbourhood: { contains: mosque.neighbourhood, mode: "insensitive" },
-    },
+  // MC-036: through the gated card mapper (src/lib/listingsV2Data.ts), never a whole Listing
+  // row. PlaceListings prints the address, and this page serialised the raw one for a withheld
+  // listing; a card arrives with "Address on request" and no VOW-only column to strip. The
+  // sale side only, as before (a lease is status='rented' for life, so the old
+  // `status: "active"` never matched one).
+  const listings = await getListingCards({
+    where: { ...PUBLIC_SALE_WHERE, neighbourhood: { contains: mosque.neighbourhood, mode: "insensitive" } },
     orderBy: { price: "asc" },
     take: 30,
   });
@@ -124,7 +126,7 @@ export default async function MosqueDetailPage({ params }: Props) {
     },
     {
       question: `What is the average home price near ${mosque.name}?`,
-      answer: `The average asking price for homes near ${mosque.name} in ${mosque.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Register for full MLS® access to see detailed market data, including historical transaction records on individual street pages.`,
+      answer: `The average asking price for homes near ${mosque.name} in ${mosque.neighbourhood} is ${formatPriceFull(avgPrice)}. ${byType.length > 0 ? byType.map((t) => `${t.type.charAt(0).toUpperCase() + t.type.slice(1)} homes average ${formatPriceFull(t.avgPrice)}`).join(". ") + "." : ""} Sign in free to see recent closed sales on individual street pages.`,
     },
     {
       question: `Is ${mosque.neighbourhood} a good area for Muslim families in ${config.CITY_NAME}?`,
@@ -154,8 +156,6 @@ export default async function MosqueDetailPage({ params }: Props) {
     },
   ];
 
-  const serializedListings = JSON.parse(JSON.stringify(listings));
-
   return (
     <>
       <SchemaScript schemas={schemas} />
@@ -177,7 +177,7 @@ export default async function MosqueDetailPage({ params }: Props) {
         ]}
         byType={byType.map((t) => ({ type: t.type, count: t.count, avgPrice: formatPriceFull(t.avgPrice) }))}
         listingsHeading={`Homes for sale near ${mosque.name}`}
-        listings={<PlaceListings listings={serializedListings} placeName={mosque.name} />}
+        listings={<PlaceListings listings={listings} placeName={mosque.name} />}
         streetsHeading={`Streets near ${mosque.name}`}
         streets={streetDetails.map((s) => ({
           name: s.name,

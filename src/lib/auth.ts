@@ -8,17 +8,25 @@ const JWT_SECRET = new TextEncoder().encode(
 
 const COOKIE_NAME = "miltonly_session";
 
+// THE 90-DAY CEILING (MP-002). The TRREB VOW Policy lets a consumer's credential stand for up
+// to 90 days, after which it must be renewed or reconfirmed. The session is that credential's
+// life: a fixed expiry set at sign-in, never extended, never refreshed. At day 90 the cookie is
+// dead and the person signs in again, which reconfirms the email. Do not add a sliding window.
+export const SESSION_MAX_DAYS = 90;
+const SESSION_SECONDS = 60 * 60 * 24 * SESSION_MAX_DAYS;
+
 export async function createSession(userId: string) {
   const token = await new SignJWT({ userId })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("30d")
+    .setIssuedAt()
+    .setExpirationTime(`${SESSION_MAX_DAYS}d`)
     .sign(JWT_SECRET);
 
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: SESSION_SECONDS,
     path: "/",
   });
 
@@ -44,6 +52,3 @@ export async function destroySession() {
   cookies().set(COOKIE_NAME, "", { maxAge: 0, path: "/" });
 }
 
-export function generateVerifyCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}

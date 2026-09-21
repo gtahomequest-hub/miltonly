@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { config } from "@/lib/config";
+import { BLOCKED_BOTS } from "@/lib/bots";
 
 // THE ONLY robots source. public/robots.txt was deleted: with both present the ROUTE wins, so the
 // static file was dead code — and its `Disallow: /api/` was silently unenforced for as long as both
@@ -43,15 +44,22 @@ import { config } from "@/lib/config";
 //     because the block was preventing the very canonical it was meant to let consolidate.)
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: [
-        "/admin/",
-        "/api/",     // was only ever in the dead static file
-        "/rentals?",
-      ],
-    },
-    sitemap: `${config.SITE_URL}/sitemap.xml`,
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: [
+          "/admin/",
+          "/api/",     // was only ever in the dead static file
+          "/rentals?",
+          "/search",   // the search form's no-JS redirect endpoint (MH-006); a hop, never a page
+        ],
+      },
+      // the four waste bots (MC-035, src/lib/bots.ts); the firewall denies them as well
+      { userAgent: [...BLOCKED_BOTS], disallow: "/" },
+    ],
+    // /sitemap-index.xml (MC-015) lists /sitemap.xml and /sitemap-video.xml. Next's sitemap.ts
+    // emits one urlset and cannot name a sibling, so the index is its own route.
+    sitemap: `${config.SITE_URL}/sitemap-index.xml`,
   };
 }

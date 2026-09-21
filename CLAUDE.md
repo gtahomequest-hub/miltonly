@@ -42,6 +42,12 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
 - Local `DATABASE_URL` carries `connection_limit=10`. At 1 the build failed 5 to 17 prerenders on `P2024` pool timeouts and passed on identical code, so the gate could not be trusted.
 - Read schemas and files before writing code. Never guess a field name.
 - No merge to main without a Vercel preview URL and explicit approval.
+
+## Decisions
+
+- **DEC-MERGE-CORE-ONLY:** only Core (`D:\miltonly`, `main`) merges to `main`, by SHA, never by branch name, after confirming the SHA against the Builder's report.
+- **DEC-ONE-PREVIEW:** a task that changes code deploys one preview (`npx vercel deploy --yes` from its worktree, after the local gate and a local battery); a second needs a sentence in the report naming the check only Vercel can run; a task that changes no code deploys none and takes the production build as its proof.
+- **DEC-BATCH-MERGE (MC-035):** Core merges approved SHAs in batches of two or three: one battery, one production deploy per batch. Builders keep working in parallel; only the merge cadence changes. SHAs waiting for a batch are listed in `HANDOFF.md` under "held for the next batch". **The exception:** a fix for a live production defect merges and deploys immediately, alone. MA-007 measured why: seven production deploys in 24 hours, each wiping the street ISR entries, were most of the route's origin renders.
 - Prod verification is `npx vercel ls --prod` plus `BASE=https://miltonly.com node scripts/verify/run.mjs` with the expected SHA.
 - **Stop-on-failure** means: stop, diagnose, and continue only if the failure is isolated and pre-existing, saying so explicitly. Systemic failures halt the run.
 
@@ -60,15 +66,14 @@ No em-dashes. En-dash only between numerals. No superlatives. Say "typical", nev
   thing: write the file first, then paste it into the reply, so the two cannot drift.
 - The file is **tracked in git**. It is committed with the task's work, not left untracked.
 - Its first line is `# <TASK-ID>` and nothing else on that line.
-- Then run `code D:\miltonly <that path>` so it opens in the editor, in this repo's window. A worktree uses its own root: `D:\miltonly-home`, `D:\miltonly-leads`, `D:\miltonly-content`, `D:\miltonly-audit`.
-- The **last line of the reply** is `Report: <path>`.
+- The **last line of the reply** is `Report: <path>`. Nothing opens the editor.
 - **No clipboard writes from any session.**
 
 ## Worktrees and the nightly audit
 
 - `D:\miltonly` (main) is Core. `D:\miltonly-home`, `D:\miltonly-content`, `D:\miltonly-leads` own their tiers. `D:\miltonly-audit` (`feat/audit`) is Audit: it owns `scripts/audit/`, `.github/workflows/nightly-audit.yml` and `scratchpad/audit/nightly/`, reads production and previews, and never edits a page, a component, a library file or the schema.
 - The nightly audit runs on a GitHub runner at 03:00 Toronto and commits `scratchpad/audit/nightly/<date>.md` and `state.json` to `main` as `audit(nightly): <date>`. Pull before you branch or push; that commit lands without a human.
-- `vercel.json` `ignoreCommand` skips a build only when a commit touches nothing outside `scratchpad/audit/nightly/`. Never put anything else under that path, and never widen the exclude: a commit that touches any other file, docs included, builds.
+- `vercel.json` `ignoreCommand` lets a Git-triggered build run only on `main`, and on `main` only when the push changes something outside `scratchpad/`, `docs/` and `*.md` (MC-034) since the last successful deployment (`VERCEL_GIT_PREVIOUS_SHA`, so a docs commit on top of a merge still builds the merge); `docs/phase-4.1/` is the exception and always builds, because the generators read those prompt files at runtime. A push to any other branch is cancelled; a branch gets its preview from `npx vercel` in its worktree (CLI deploys do not run the command). A docs-only push (HANDOFF, QUEUE, a report, the nightly audit) does not build; a non-Markdown file under `src/`, `scripts/`, `prisma/`, `public/` or a config file does, and a `.md` anywhere skips unless it is under `docs/phase-4.1/`. Never put app input under `scratchpad/` or `docs/` outside `phase-4.1/`.
 - Audit secrets are repository Actions secrets `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, the `.env.local` values.
 
 ## Windows and PowerShell

@@ -25,18 +25,20 @@ import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import { formatPriceFull } from "@/lib/format";
 import { getNeighbourhoodCards } from "@/lib/neighbourhoodCards";
 import "@/components/directory/directory-theme.css";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request; see the detail page for the tags and the
+// write paths that drop it.
+export const revalidate = 86400;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Neighbourhoods — Prices, Schools & Market Data`,
-  description: `Explore every ${config.CITY_NAME} ${config.CITY_PROVINCE} neighbourhood. Compare average home prices, active listings, top streets, school zones and GO train access. Live TREB data.`,
+  description: `Explore every ${config.CITY_NAME} ${config.CITY_PROVINCE} neighbourhood. Compare average home prices, active listings, top streets, schools nearby and GO train access. Live TREB data.`,
   canonical: `${config.SITE_URL}/neighbourhoods`,
 });
 
@@ -154,7 +156,7 @@ export default async function NeighbourhoodsPage() {
         enableAZ={false}
       />
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

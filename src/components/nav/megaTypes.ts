@@ -18,7 +18,19 @@
 //    nothing renders the rails, each item's static blurb and its CTA, which is still a
 //    complete, crawlable menu. A panel is never padded with a placeholder.
 
-export type MenuKey = 'buy' | 'streets' | 'sell';
+/** Four menus (MH-007 added Rent). The order the bar shows them in is the nav's MENUS. */
+export type MenuKey = 'buy' | 'rent' | 'streets' | 'sell';
+
+/** THE PAGE THE NAV IS ON (MH-006, MA-004 change 6). A street page or a hub hands the nav
+ *  its subject, and the nav carries it: the bar CTA and the Sell panel CTA arrive at the
+ *  valuation with the street prefilled (or at the hub's own /value page), the brief form
+ *  records which street or hub the signup came from, and the Streets and Sell strips
+ *  (change 10) are that hub's streets rather than the same eight from every page. A page
+ *  with no subject passes nothing and gets the global chrome. */
+export interface NavContext {
+  street?: { slug: string; name: string };
+  hub?: { slug: string; name: string };
+}
 
 /** A sentence with live figures in it. Figure segments render as <b data-fig data-value>. */
 export interface LeadSegment {
@@ -33,16 +45,15 @@ export interface MegaListing {
   address: string;
   /** whole-dollar list price, formatted; rentals carry "/mo" */
   price: string;
-  /** the list price before the most recent change, formatted, when one was observed */
-  priorPrice?: string;
-  /** "down $100,000" / "up $76,000", when priorPrice is known */
-  change?: string;
+  /** the listing brokerage's office name as the feed carries it; the card renders it inside
+   *  the price at the price's size (TRREB item 27, MC-029) */
+  listOfficeName: string | null;
   /** first photo, or null when the feed carries none; the card says so rather than hiding */
   photo: string | null;
   beds: number;
   baths: number;
-  /** "12 days" or null when the feed has no count */
-  dom: string | null;
+  // NO DAY COUNT, NO PRIOR PRICE, NO CHANGE (MC-029). A menu card is an anonymous surface and
+  // those are VOW-only facts (src/lib/listings/vow.ts).
   /** the PUBLISHED hub's name, or null when the raw TREB string has no hub */
   hub: string | null;
 }
@@ -68,6 +79,8 @@ export interface MegaHub {
   name: string;
   /** live listing count across the hub's raw strings, formatted */
   active: string;
+  /** the link, when it is not the hub page: the Rent menu lists hubs as scoped /rentals */
+  href?: string;
 }
 
 export interface MegaVideo {
@@ -95,10 +108,20 @@ export interface MegaEdition {
 }
 
 export interface MegaItemContent {
+  /** the rail item's sub-label, one live fact under its name ("20 this week") */
+  sub?: string;
+  /** the item's CTA text with its count in it ("See all 460 for sale"); the ItemDef's static text otherwise */
+  cta?: string;
   lead?: LeadSegment[];
   figures?: MegaFigure[];
+  /** one sentence under the figures stating how they were measured, where two bases share a panel */
+  basis?: string;
   cards?: MegaListing[];
   hubs?: MegaHub[];
+  /** the hubs block's heading and figure key; "Neighbourhoods, with homes listed now" and
+   *  `menu-hub-active` when absent (the Streets menu's, which the battery counts per page) */
+  hubsLabel?: string;
+  hubsFig?: string;
   videos?: MegaVideo[];
   letters?: MegaLetter[];
   edition?: MegaEdition;

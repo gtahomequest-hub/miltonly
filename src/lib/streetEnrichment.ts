@@ -66,7 +66,7 @@ async function fullWindowAgg(siblingSlugs: string[], tx: "For Sale" | "For Lease
   const sd = getSoldDb();
   if (!sd) return { count: 0, avg: null };
   const rows = await (sd`
-    SELECT COUNT(*)::int AS n, AVG(sold_price) AS avg
+    SELECT COUNT(*)::int AS n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg
     FROM sold.sold_records
     WHERE street_slug = ANY(${siblingSlugs}::text[])
       AND perm_advertise = TRUE

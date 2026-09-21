@@ -2,6 +2,7 @@
 import type { CondoData, CondoListing, CondoBedRow } from './types';
 import { fullPrice } from './format';
 import { IconWallet, IconPaw, IconKeyR, IconCar, IconBuilding, IntentIcon } from './icons';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 
 export function CondoHero({ data }: { data: CondoData }) {
   const f = data.facts;
@@ -160,14 +161,18 @@ function Listing({ l }: { l: CondoListing }) {
       </span>
       <div className="c-lst-t">{l.title}</div>
       <div className="c-lst-m">{l.meta}</div>
-      <div className="c-lst-p">{l.price}</div>
+      <div className="c-lst-p" data-price>
+        {l.price}
+        <ListingBrokerage name={l.listOfficeName} />
+      </div>
     </a>
   );
 }
 
 export function CondoListings({ data }: { data: CondoData }) {
   return (
-    <section className="c-block">
+    // id="listings" is the target of the buy and rent intent squares above (MC-020: it was missing).
+    <section className="c-block" id="listings">
       <div className="c-wrap">
         <div className="c-sechead">
           <span className="c-eyebrow">Available now</span>

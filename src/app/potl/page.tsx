@@ -9,7 +9,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { getTenureHubData, POTL_CONFIG } from "@/lib/tenureHubData";
 import TenureHubPage from "@/components/tenure/TenureHubPage";
 import SchemaScript from "@/components/SchemaScript";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateLocalBusinessSchema, generateFAQSchema } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export default async function PotlPage() {
     <>
       <SchemaScript schemas={schemas} />
       {data && <TenureHubPage data={data} eyebrow={POTL_CONFIG.eyebrow} />}
-      <FooterSection />
+      <SiteFooter />
     </>
   );
 }

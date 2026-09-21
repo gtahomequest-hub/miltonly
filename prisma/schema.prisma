@@ -528,6 +528,12 @@ model StreetContent {
   videoCapturedAt DateTime?
   nightVideoUrl   String?
   nightCapturedAt DateTime?
+  // ── Capture instant (MC-015, 2026-09-14). *CapturedAt is the instant the clip was shot,
+  //    from the GPS row of its trace, and every surface renders it in America/Toronto, where
+  //    every clip is filmed. Rows written before this held UTC midnight of the shot date; the
+  //    backfill (scripts/backfill-video-captured.ts) rewrote them from each clip's meta.json.
+  //    Duration and coverage are NOT here: they live in src/data/streetVideoMeta.json, keyed
+  //    by R2 key (owner decision 2026-08-30).
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -643,7 +649,33 @@ model User {
   vowAcknowledgementIp        String?
   vowAcknowledgementUserAgent String?
 
+  // The door (MP-002).
+  //   verifyTokenHash  sha256 of the magic-link token the sign-in email carries. The raw
+  //                    token is in the email and nowhere else; the code and the link share
+  //                    one expiry (verifyExpiry) and one attempt counter.
+  //   verifyAttempts   wrong codes since the last code was issued. Five and the code is
+  //                    dead; a fresh code resets it. A 6-digit code with no counter is a
+  //                    million guesses in fifteen minutes.
+  //   consentText      the consent sentence the person saw on the acknowledgement card, and
+  //   consentTimestamp when they ticked it. Same pair Lead carries, same reason: the copy
+  //                    can change, the record of what was agreed cannot.
+  //   homeStreetSlug   the street the person said they live on, a ResidentialStreet slug
+  //                    (entity floor: the acknowledge route refuses a slug the registry
+  //                    does not know). The account page opens on it.
+  verifyTokenHash  String?
+  verifyAttempts   Int       @default(0)
+  consentText      String?
+  consentTimestamp DateTime?
+  homeStreetSlug   String?
+  // The password (MP-002b, TRREB R-805(c): a username and a password per consumer). bcrypt,
+  // cost 12, set on the acknowledgement card after the email is verified; null until then, and
+  // no VOW record is served while it is null. The username is `email`, unique above, so one
+  // address is one username. `passwordSetAt` is when it was last set.
+  passwordHash     String?
+  passwordSetAt    DateTime?
+
   @@index([email])
+  @@index([verifyTokenHash])
   @@schema("public")
 }
 

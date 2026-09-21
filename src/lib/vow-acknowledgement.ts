@@ -11,6 +11,10 @@
 // agreed to even after the text rotates. Do not rewrite the historical text
 // on existing users.
 
+// VERSION 2 (MP-002, 2026-09-17) added the sign-in sentence for a passwordless account.
+// VERSION 3 (MP-002b, 2026-09-18). The broker of record ruled under TRREB R-805(c): a username
+// and a password per consumer. The sentence now names both: the email is the username, the
+// password is the consumer's own, a sign-in lasts at most 90 days (src/lib/auth.ts).
 export const VOW_ACKNOWLEDGEMENT_TEXT =
   "I confirm I have a bona fide interest in the purchase, sale, or lease of " +
   "residential real estate in the markets served by this website. I acknowledge " +
@@ -18,4 +22,6 @@ export const VOW_ACKNOWLEDGEMENT_TEXT =
   "Salesperson, RE/MAX Realty Specialists Inc. (Membership #9541183), under the " +
   "Trust in Real Estate Services Act, 2002, for the sole purpose of accessing " +
   "MLS sold and leased data. I agree not to use this data for any commercial " +
-  "purpose or redistribute it in any form.";
+  "purpose or redistribute it in any form. My username is my email address and " +
+  "my password is mine alone; I will not share them. Each sign-in lasts at most " +
+  "90 days, after which I sign in again.";

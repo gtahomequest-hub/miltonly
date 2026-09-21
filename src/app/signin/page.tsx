@@ -1,6 +1,8 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import { Suspense } from "react";
 import SignInForm from "./SignInForm";
+import SiteChrome from "@/components/nav/SiteChrome";
 
 // noindex — an auth wall has no place in the index, and its redirect/intent/street param
 // permutations were the single biggest crawl-budget drain (see robots.ts).
@@ -17,21 +19,26 @@ import SignInForm from "./SignInForm";
 // the /listings and /sold facets.
 export const metadata = genMeta({
   title: `Sign In — ${config.SITE_NAME}`,
-  description: `Sign in to save listings and get alerts on ${config.CITY_NAME} real estate.`,
+  description: `Sign in to ${config.SITE_NAME}: your email and your password, or an emailed link.`,
   canonical: `${config.SITE_URL}/signin`,
   noIndex: true,
 });
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center px-5">
+    <SiteChrome>
+    <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-[400px]">
-        <div className="text-center mb-8">
-          <h1 className="text-[24px] font-extrabold text-[#07111f] tracking-[-0.02em] mb-2">Sign in to {config.SITE_NAME}</h1>
-          <p className="text-[13px] text-[#64748b]">Save listings and get personalized alerts</p>
+        <div className="text-center mb-7">
+          <h1 className="text-[24px] font-extrabold text-[#073126] tracking-[-0.02em] mb-2">Sign in to {config.SITE_NAME}</h1>
+          <p className="text-[13px] text-[#6b6f6a]">Sold prices, your streets, your alerts. Your email and your password.</p>
         </div>
-        <SignInForm />
+        {/* useSearchParams in the form needs a boundary on a static page (Next 14). */}
+        <Suspense fallback={<div className="bg-white rounded-2xl border border-[#dfe0dc] p-8 min-h-[220px]" />}>
+          <SignInForm />
+        </Suspense>
       </div>
     </div>
+    </SiteChrome>
   );
 }

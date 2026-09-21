@@ -166,8 +166,8 @@ async function sweepOne(p) {
     else f.push({ code: 'sitemap-redirect', sev: 2, key: '', detail: `sitemap URL answers ${rec.chain[0]}` });
   }
   if (r.html && r.status === 200) {
-    const voice = !p.startsWith('/listings/');
-    const res = pageFindings({ html: r.html, path: rec.final || p, base: BASE, voice });
+    const listing = p.startsWith('/listings/');
+    const res = pageFindings({ html: r.html, path: rec.final || p, base: BASE, listing });
     f.push(...res.findings);
     if (res.meta.robots && /noindex/i.test(res.meta.robots)) f.push({ code: 'noindex', sev: 2, key: '', detail: `robots ${res.meta.robots} on a sitemap URL` });
     pageIds[p] = res.ids;

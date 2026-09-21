@@ -5,7 +5,7 @@
 // data + labels; the alert form is passed in as a slot (client island).
 import Link from "next/link";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import PlaceGrid from "./PlaceGrid";
 import type { PlaceDirectoryProps } from "./types";
 import "./places-theme.css";
@@ -106,7 +106,7 @@ export default function PlaceDirectory(props: PlaceDirectoryProps) {
         </div>
       </section>
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

@@ -4,12 +4,37 @@ import { config } from "@/lib/config";
 import RentalsClient from "./RentalsClient";
 import { getRentalsAvailableCount } from "@/lib/rentalsAvailable";
 import { resolveRentalScope } from "@/lib/rentalScope";
+import SiteChrome from "@/components/nav/SiteChrome";
+import { cached } from "@/lib/cache";
+import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
+import { redactAddress } from "@/lib/listings/display-gate";
 
+// The page reads searchParams (the hub scope), so it is dynamic; `revalidate` was a no-op
+// beside force-dynamic and is gone. What it reads is cached instead (MC-018, below).
 export const dynamic = 'force-dynamic';
 
-export const revalidate = 3600;
+// MC-018 (2026-09-14). MC-016 measured one render of this page at 66,712 DB1 rows scanned: the
+// 48 newest leases, an available count, a town-wide average and nine category aggregates, each
+// its own query, on every request, with no cache. The bundle now sits in Upstash for
+// RENTALS_TTL per scope. Fifteen minutes, not the hour the other stats get, because nothing
+// purges it: the listing syncs purge by path and this page has no path cache. A lease that
+// lands between two syncs (10:00 and 11:30 UTC) is on the page within fifteen minutes.
+const RENTALS_TTL = 900;
 
 type SearchParams = { [key: string]: string | string[] | undefined };
+
+// MC-036: the columns RentalsClient renders (its Listing interface), the display flag, and
+// listedAt for the newThisWeek count, which is stripped again before the rows leave. The page
+// sent whole rows: the street name, the cross street, the postal code and the rooftop of a
+// withheld listing were in the payload whether or not a card printed them.
+const RENTAL_CARD_SELECT = {
+  mlsNumber: true, address: true, displayAddress: true, price: true, bedrooms: true, bathrooms: true,
+  parking: true, propertyType: true, photos: true, neighbourhood: true, description: true,
+  transactionType: true, petsAllowed: true, rentIncludes: true, laundryFeatures: true, cooling: true,
+  heatType: true, furnished: true, possessionDetails: true, minLeaseTerm: true, locker: true,
+  basement: true, listOfficeName: true,
+  listedAt: true,
+} as const;
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }) {
   const scope = await resolveRentalScope(searchParams?.neighbourhood);
@@ -18,7 +43,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     title: scope
       ? `${scope.name} Rentals, ${config.CITY_NAME}: Let ${config.SITE_NAME} Find Your Home`
       : `${config.CITY_NAME} Rentals: Let ${config.SITE_NAME} Find Your Home`,
-    description: `Browse every active rental in ${where}. Condos, townhouses, detached homes: live TREB data, verified landlords, same-day showings guaranteed.`,
+    description: `Browse active rentals in ${where}. Condos, townhouses, detached homes: live TREB data, verified landlords, same-day showings guaranteed.`,
     canonical: `${config.SITE_URL}/rentals`,
   });
 }
@@ -38,51 +63,73 @@ const rentCategories = [
 export default async function RentalsPage({ searchParams }: { searchParams: SearchParams }) {
   const scope = await resolveRentalScope(searchParams?.neighbourhood);
   const scopeWhere = scope ? { neighbourhood: { in: scope.rawStrings } } : {};
-  const listings = await prisma.listing.findMany({
-    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true, ...scopeWhere },
-    orderBy: { listedAt: "desc" },
-    take: 48,
-  });
 
-  // AVAILABLE, not "ever advertised". This counted every For Lease row regardless of
-  // leaseStatus and the page printed the result as "N active rentals" five times over. On
-  // 2026-09-10 that was 1,340, of which 224 were already leased: 1,116 were available. One
-  // shared function now answers this for /rentals and for the homepage's "available to rent"
-  // tile, so the two surfaces cannot disagree about the same word.
-  const totalRentals = scope
-    ? await prisma.listing.count({
-        where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true, leaseStatus: "active", ...scopeWhere },
+  // v3 (MC-036): the rows in the bundle changed shape (narrow select, displayAddress, redacted
+  // address). A v2 bundle served after the deploy would have no displayAddress on any row, and
+  // the client would print every card as withheld until the TTL ran out.
+  const { serialized, totalRentals, avgRentValue, rentAvgs, newThisWeek } = await cached(`rentals:${scope?.slug ?? "all"}:v3`, RENTALS_TTL, async () => {
+    // MC-029: the public lease predicate (src/lib/listings/vow.ts). This selected every For
+    // Lease row ever advertised, so leased units sat in the grid; and the whole row went to the
+    // client, VOW-only columns included. Now the set is available units only, ordered newest
+    // first on the server, and the rows are stripped before they are serialised.
+    const listingRows = await prisma.listing.findMany({
+      where: { ...PUBLIC_LEASE_WHERE, ...scopeWhere },
+      orderBy: { listedAt: "desc" },
+      take: 48,
+      select: RENTAL_CARD_SELECT,
+    });
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+    // An aggregate across the set, computed here so the client never sees a list date.
+    const newThisWeek = listingRows.filter((l) => l.listedAt >= weekAgo).length;
+    // MC-036: the address gate, server-side. A withheld listing (displayAddress false) leaves
+    // with the placeholder, never its address; the client prints "Address on request" for it
+    // and links no street. It stays in the grid and the counts: the rule is about the address.
+    const listings = listingRows.map((l) => redactAddress(stripVowFields(l)));
+
+    // AVAILABLE, not "ever advertised". This counted every For Lease row regardless of
+    // leaseStatus and the page printed the result as "N active rentals" five times over. On
+    // 2026-09-10 that was 1,340, of which 224 were already leased: 1,116 were available. One
+    // shared function now answers this for /rentals and for the homepage's "available to rent"
+    // tile, so the two surfaces cannot disagree about the same word.
+    const totalRentals = scope
+      ? await prisma.listing.count({
+          where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, permAdvertise: true, leaseStatus: "active", ...scopeWhere },
+        })
+      : await getRentalsAvailableCount();
+
+    const avgRent = await prisma.listing.aggregate({
+      where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true, ...scopeWhere },
+      _avg: { price: true },
+    });
+
+    const rentAvgs = await Promise.all(
+      rentCategories.map(async (cat) => {
+        const where: Record<string, unknown> = {
+          transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true, ...scopeWhere,
+        };
+        if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
+        const [agg, count] = await Promise.all([
+          prisma.listing.aggregate({ where, _avg: { price: true } }),
+          prisma.listing.count({ where }),
+        ]);
+        return { label: cat.label, type: cat.type, beds: cat.beds, avg: Math.round(agg._avg.price || 0), count };
       })
-    : await getRentalsAvailableCount();
+    );
 
-  const avgRent = await prisma.listing.aggregate({
-    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true, ...scopeWhere },
-    _avg: { price: true },
+    // JSON in, JSON out: the cache stores what the client component receives
+    return { serialized: JSON.parse(JSON.stringify(listings)) as Parameters<typeof RentalsClient>[0]["listings"], totalRentals, avgRentValue: avgRent._avg.price, rentAvgs, newThisWeek };
   });
-
-  const rentAvgs = await Promise.all(
-    rentCategories.map(async (cat) => {
-      const where: Record<string, unknown> = {
-        transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true, ...scopeWhere,
-      };
-      if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
-      const [agg, count] = await Promise.all([
-        prisma.listing.aggregate({ where, _avg: { price: true } }),
-        prisma.listing.count({ where }),
-      ]);
-      return { label: cat.label, type: cat.type, beds: cat.beds, avg: Math.round(agg._avg.price || 0), count };
-    })
-  );
-
-  const serialized = JSON.parse(JSON.stringify(listings));
 
   return (
+    <SiteChrome>
     <RentalsClient
       listings={serialized}
+      newThisWeek={newThisWeek}
       totalRentals={totalRentals}
-      avgRent={Math.round(avgRent._avg.price || 2419)}
+      avgRent={Math.round(avgRentValue || 2419)}
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}
       scope={scope ? { slug: scope.slug, name: scope.name } : null}
     />
+    </SiteChrome>
   );
 }

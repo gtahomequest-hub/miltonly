@@ -6,6 +6,7 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { dropSurfaceCache } from "@/lib/streetSurface";
 import { config } from "@/lib/config";
 import { getStreetStats } from "@/lib/streetDecision";
 import { deriveIdentity } from "@/lib/streetUtils";
@@ -242,7 +243,7 @@ function buildFaqJson(
   return JSON.stringify([
     {
       q: `What is the average home price on ${streetName} in Milton?`,
-      a: `The average list price on ${streetName} in Milton is ${formatPrice(stats.avgListPrice)}. Register for full MLS® access to see detailed market data for this street, including historical transaction records.`,
+      a: `The average list price on ${streetName} in Milton is ${formatPrice(stats.avgListPrice)}. Sign in free to see recent closed sales on this street.`,
     },
     {
       q: `How long do homes take to sell on ${streetName} Milton?`,
@@ -755,6 +756,8 @@ async function revalidateStreetSurfaces(
   rawNeighbourhood: string | null,
 ): Promise<string[]> {
   const paths = [`/streets/${streetSlug}`, "/streets"];
+  // the published set changed (MC-018): the cached slug sets go before the paths do
+  await dropSurfaceCache();
   try {
     if (rawNeighbourhood) {
       const hub = await prisma.neighbourhood.findFirst({

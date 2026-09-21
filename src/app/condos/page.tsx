@@ -19,13 +19,15 @@ import { prisma } from "@/lib/prisma";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import { formatPriceFull } from "@/lib/format";
 import "@/components/directory/directory-theme.css";
 
-export const dynamic = "force-dynamic";
+// MC-017 (2026-09-13): ISR, not a render per request; see the detail page for the tags and the
+// write paths that drop it.
+export const revalidate = 86400;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Condo Buildings — Prices, Units & Market Data`,
@@ -153,7 +155,7 @@ export default async function CondosIndexPage() {
         enableAZ={false}
       />
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

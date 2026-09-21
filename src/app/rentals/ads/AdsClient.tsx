@@ -4,17 +4,21 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Lock } from "lucide-react";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
 import { config } from "@/lib/config";
 import ComparisonTable from "./ComparisonTable";
 import UnlockModal from "./UnlockModal";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import TrustPillars from "@/components/landing/TrustPillars";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
+// The subset of ListingCardData (src/components/listings/v2/types.ts) this page reads. The rows
+// come from getListingCards, the gated card mapper (MC-036): `address` is already
+// "Address on request" for a withheld listing, and no VOW-only column is on a card.
 interface Listing {
   mlsNumber: string;
   address: string;
@@ -24,9 +28,8 @@ interface Listing {
   parking: number;
   propertyType: string;
   photos: string[];
-  listedAt: string;
+  listOfficeName?: string | null;
   neighbourhood: string;
-  possessionDetails: string | null;
 }
 
 interface Props {
@@ -217,7 +220,6 @@ function AdsClientInner({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {/* Real listings — full info visible, property-type badge below photo */}
             {teaserClear.map((l) => {
-              const days = daysAgo(new Date(l.listedAt));
               const streetAddr = l.address.split(",")[0];
               const typeLabel = TYPE_DISPLAY_LABEL[l.propertyType?.toLowerCase()] || l.propertyType;
               return (
@@ -233,9 +235,6 @@ function AdsClientInner({
                     {!l.photos[0] && (
                       <div className="absolute inset-0 flex items-center justify-center text-[40px]">🏠</div>
                     )}
-                    <span className="absolute top-2.5 left-2.5 bg-[#07111f]/85 backdrop-blur text-[10px] font-bold tracking-wider uppercase text-[#fbbf24] px-2 py-1 rounded">
-                      {days === 0 ? "New today" : days <= 7 ? `${days}d new` : `${days}d ago`}
-                    </span>
                   </div>
                   <div className="p-4">
                     {/* Property-type badge — branded amber pill, sits just above the price */}
@@ -244,8 +243,9 @@ function AdsClientInner({
                         {typeLabel}
                       </span>
                     )}
-                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1">
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1" data-price>
                       {formatPriceFull(l.price)}<span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
+                      <ListingBrokerage name={l.listOfficeName} />
                     </div>
                     <div className="text-[13px] font-semibold text-[#cbd5e1] mb-1 line-clamp-1">{streetAddr}</div>
                     <div className="flex gap-3 text-[12px] text-[#94a3b8]">
@@ -286,9 +286,13 @@ function AdsClientInner({
                         {typeLabel}
                       </span>
                     )}
-                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 select-none">
+                    {/* The brokerage stays legible beside the placeholder price (item 27,
+                        MC-036): the card shows the listing's photo, type, beds and baths,
+                        so it shows the listing brokerage at the price's size too. */}
+                    <div className="text-[20px] font-extrabold text-[#f8f9fb] mb-1 select-none" data-price>
                       <span className="blur-[6px]">$X,XXX</span>
                       <span className="text-[12px] font-semibold text-[#94a3b8]"> /mo</span>
+                      <ListingBrokerage name={l.listOfficeName} />
                     </div>
                     <div className="text-[13px] font-semibold text-[#cbd5e1] mb-2 line-clamp-1 blur-[5px] select-none">{streetAddr}</div>
                     <div className="flex gap-3 text-[12px] text-[#94a3b8] blur-[4px] select-none mb-3">
@@ -376,7 +380,7 @@ function AdsClientInner({
               },
               {
                 q: "Where do these listings come from?",
-                a: `Every rental you see is pulled live from TREB (Toronto Regional Real Estate Board) — the same MLS® data used by every licensed Realtor in ${config.CITY_PROVINCE}. Updated daily.`,
+                a: `The rentals shown here come from the Toronto Regional Real Estate Board (TRREB) MLS® feed through PropTx, the listings a brokerage in ${config.CITY_PROVINCE} is licensed to display. Updated daily.`,
               },
             ].map((item, i) => (
               // First question is the #1 unstated objection for cold rental

@@ -173,14 +173,14 @@ export function saleAggQuery(rawStrings: string[] | null) {
   return querySold<RawSaleAgg>((db) =>
     rawStrings
       ? db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
-                  AVG(sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
+                  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
            FROM sold.sold_records
            WHERE neighbourhood = ANY(${rawStrings}::text[])
              AND perm_advertise = TRUE AND transaction_type = 'For Sale'
              AND sold_date >= NOW() - INTERVAL '12 months'
              AND sold_date <= NOW()`
       : db`SELECT COUNT(*)::int AS n, MIN(sold_price) AS lo, MAX(sold_price) AS hi,
-                  AVG(sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
+                  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price, AVG(days_on_market) AS avg_dom
            FROM sold.sold_records
            WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
              AND sold_date >= NOW() - INTERVAL '12 months'
@@ -208,7 +208,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
     rawStrings
       ? db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
                   EXTRACT(QUARTER FROM sold_date)::int AS qtr,
-                  COUNT(*)::int AS cnt, AVG(sold_price) AS typical
+                  COUNT(*)::int AS cnt, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
            FROM sold.sold_records
            WHERE neighbourhood = ANY(${rawStrings}::text[])
              AND perm_advertise = TRUE AND transaction_type = 'For Sale'
@@ -217,7 +217,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
            GROUP BY yr, qtr ORDER BY yr, qtr`
       : db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
                   EXTRACT(QUARTER FROM sold_date)::int AS qtr,
-                  COUNT(*)::int AS cnt, AVG(sold_price) AS typical
+                  COUNT(*)::int AS cnt, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
            FROM sold.sold_records
            WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
              AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
@@ -229,7 +229,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
 export function byTypeQuery(rawStrings: string[]) {
   return querySold<RawTypeAgg>((db) =>
     db`SELECT property_type, COUNT(*)::int AS n,
-              AVG(sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
+              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS avg_price, MIN(sold_price) AS min_price, MAX(sold_price) AS max_price
        FROM sold.sold_records
        WHERE neighbourhood = ANY(${rawStrings}::text[])
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'

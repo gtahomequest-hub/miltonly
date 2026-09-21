@@ -22,6 +22,7 @@ export interface LeadSource {
 export const LIVE_SOURCES: readonly LeadSource[] = [
   // Street pages
   { source: "street-alert", where: "street page alert card" },
+  { source: "street-valuation", where: "street page, the one-field valuation under the hero" },
   // Condo buildings
   { source: "condo-building-alert", where: "condo building alerts" },
   { source: "condo-building-contact", where: "condo building contact" },
@@ -43,6 +44,7 @@ export const LIVE_SOURCES: readonly LeadSource[] = [
   { source: "homepage-persona-newcomer", where: "homepage persona router, newcomer" },
   { source: "homepage-persona-move-up", where: "homepage persona router, move-up" },
   { source: "daily-brief", where: "daily brief signup" },
+  { source: "landlord", where: "Rent menu, landlord listing request" },
   // Exclusive listings
   { source: "exclusive-listing", where: "exclusive listing inquiry" },
   // Listing pages

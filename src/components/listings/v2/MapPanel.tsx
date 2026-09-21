@@ -12,6 +12,7 @@ import Link from 'next/link';
 import type { MapPin } from './types';
 import { shortPrice, titleCase } from './format';
 import { CloseIcon, PinIcon } from './icons';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 
 const TILE = 256;
 const MIN_Z = 11;
@@ -141,9 +142,12 @@ export function MapPanel({ pins }: { pins: MapPin[] }) {
             </span>
           )}
           <div style={{ minWidth: 0 }}>
-            <div className="lv-mapcard-p">
+            {/* The brokerage sits inside the price element, in the price's face and size
+                (item 27, MC-036): the card is a view of the listing like any other. */}
+            <div className="lv-mapcard-p" data-price>
               {shortPrice(sel.price)}
               {sel.transactionType === 'For Lease' ? '/mo' : ''}
+              <ListingBrokerage name={sel.listOfficeName} />
             </div>
             <div className="lv-mapcard-a">
               <Link href={`/listings/${sel.mlsNumber}`}>

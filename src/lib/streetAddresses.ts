@@ -8,7 +8,13 @@
 //   fraction          position from the low-number end, 0-1, from the build-time projection
 //   cross street      the nearest placed junction, a street fact stated at street grain
 //   building form     ONLY where a DB1 listing for that exact address carries one
-//   active status     ONLY a status=active, permAdvertise listing, as a link to /listings/<mls>
+//   active status     ONLY a status=active, permAdvertise listing, as a link to /listings/<mls>,
+//                     with its listing brokerage beside the status word
+//
+// A row whose InternetAddressDisplayYN is N (displayAddress false) is not read at all (MC-036):
+// not for a form, not for a live mark, not even for the house number it would parse to. A mark
+// at that number that says "Semi-detached" or "Listed now" ties the withheld address to its
+// street number on a public surface, which is the thing the flag forbids.
 //
 // NEVER, AT ANY k: a sold price, a sold date, an owner, a historical listing, or a per-address
 // coordinate. A single address is a population of one, so no aggregate threshold can make a
@@ -27,8 +33,12 @@ export interface AddressLadderListing {
   mlsNumber: string;
   status: string | null;
   permAdvertise: boolean | null;
+  /** InternetAddressDisplayYN. false means the row is skipped entirely, see the header. */
+  displayAddress: boolean | null;
   propertySubType: string | null;
   propertyType: string | null;
+  /** the listing brokerage, carried onto a live mark and nowhere else */
+  listOfficeName: string | null;
 }
 
 export interface AddressMark {
@@ -40,8 +50,9 @@ export interface AddressMark {
   crossStreet: string | null;
   /** building form, only where a DB1 listing for this address carried one. */
   form: string | null;
-  /** a live, publicly advertisable listing at this address. No price, ever. */
-  active: { mlsNumber: string; href: string } | null;
+  /** a live, publicly advertisable listing at this address, with the brokerage that listed it
+   *  (the feed's raw office name; the render cases it). No price, ever. */
+  active: { mlsNumber: string; href: string; listOfficeName: string | null } | null;
 }
 
 export interface AddressCrossTick {
@@ -157,15 +168,22 @@ export function buildAddressLadder(input: {
   // DB1, joined by parsed house number AND street identity. A listing whose address parses to a
   // different street is not this street's address, whatever slug it was ingested under.
   const forms = new Map<number, string>();
-  const actives = new Map<number, { mlsNumber: string; href: string }>();
+  const actives = new Map<number, { mlsNumber: string; href: string; listOfficeName: string | null }>();
   for (const l of input.listings) {
+    // A withheld address is skipped before it is parsed: no house number is derived from it,
+    // so it can neither label a mark with a form nor light one as listed now (MC-036).
+    if (l.displayAddress === false) continue;
     const parsed = parseAddress(l.address);
     if (!parsed || parsed.identity.key !== identityKey) continue;
     const form = formLabel(l.propertySubType, l.propertyType);
     if (form && !forms.has(parsed.number)) forms.set(parsed.number, form);
     const isActive = String(l.status ?? "").toLowerCase() === "active" && l.permAdvertise !== false;
     if (isActive && !actives.has(parsed.number)) {
-      actives.set(parsed.number, { mlsNumber: l.mlsNumber, href: `/listings/${l.mlsNumber}` });
+      actives.set(parsed.number, {
+        mlsNumber: l.mlsNumber,
+        href: `/listings/${l.mlsNumber}`,
+        listOfficeName: l.listOfficeName ?? null,
+      });
     }
   }
 

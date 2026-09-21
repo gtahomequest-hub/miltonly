@@ -11,10 +11,16 @@
 // It also asserts the three retired routes are gone from disk, because a retired route left
 // in place is a route something will find again.
 //
+// ML-004 ADDED THE CONSENT RULE. Every submission carries `consentText`, and its value names a
+// fine-print constant the same file renders inside JSX, so the words the row records are the
+// words the visitor saw. A surface that posts without it, posts a string literal, posts a
+// payload the gate cannot read (a bare identifier), or names a constant it never renders,
+// fails the build by file. See src/lib/lead/finePrint.ts for why.
+//
 // Zero I/O beyond reading files. No database, no network, no env.
 
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative, sep, dirname } from "node:path";
 
 const SRC = "src";
 
@@ -59,10 +65,12 @@ const SURFACES = [
   "src/components/listings/v2/ResultsClient.tsx",
   "src/app/rentals/ads/UnlockModal.tsx",
   "src/app/rentals/RentalsClient.tsx",
-  "src/app/listings/ListingsCardsClient.tsx",
   "src/app/listings/[mlsNumber]/ListingDetailClient.tsx",
   "src/app/listings/[mlsNumber]/ListingExtras.tsx",
   "src/app/exclusive/[slug]/InquiryForm.tsx",
+  // The mega menu (MH-006, MH-007)
+  "src/components/nav/BriefSignup.tsx",
+  "src/components/nav/LandlordSignup.tsx",
 ];
 
 /** Surfaces whose lead capture renders inside a <form>. Those must carry the honeypot: a
@@ -72,8 +80,7 @@ const FORM_SURFACES = SURFACES.filter(
     // Every listed surface renders a form EXCEPT these, whose capture is a button reading
     // fields off the DOM or out of component state with no <form> element at all.
     ![
-      "src/app/listings/ListingsCardsClient.tsx",
-      "src/app/listings/[mlsNumber]/ListingDetailClient.tsx",
+      // ListingDetailClient renders a real <form> and carries the honeypot since ML-005.
       "src/components/listings/v2/ResultsClient.tsx",
       "src/app/listings/[mlsNumber]/ListingExtras.tsx",
       "src/components/condo/CondoCTAs.tsx",
@@ -107,10 +114,17 @@ function stripComments(src: string): string {
 }
 
 
+interface Payload {
+  text: string;
+  /** Character range of the whole object literal in the stripped source. */
+  start: number;
+  end: number;
+}
+
 /** Every object literal handed to the helper, by brace matching from the call site. Used so
  *  the vocabulary rule reads the SUBMISSION and not every `intent:` key in the file. */
-function leadPayloads(code: string): string[] {
-  const out: string[] = [];
+function leadPayloadSpans(code: string): Payload[] {
+  const out: Payload[] = [];
   const call = /\bpostLead(?:Detailed)?\s*\(\s*\{/g;
   let m: RegExpExecArray | null;
   while ((m = call.exec(code)) !== null) {
@@ -120,9 +134,95 @@ function leadPayloads(code: string): string[] {
       if (code[i] === "{") depth++;
       else if (code[i] === "}") depth--;
     }
-    out.push(code.slice(m.index + m[0].length, i - 1));
+    out.push({ text: code.slice(m.index + m[0].length, i - 1), start: m.index + m[0].length - 1, end: i });
   }
   return out;
+}
+
+function leadPayloads(code: string): string[] {
+  return leadPayloadSpans(code).map((p) => p.text);
+}
+
+/** A call to the helper whose argument is NOT an object literal: `postLeadDetailed(data)`.
+ *  The gate cannot read what such a call sends, so the call itself is the failure. */
+function opaqueCalls(code: string): string[] {
+  const out: string[] = [];
+  const call = /\bpostLead(?:Detailed)?\s*\(\s*([^{\s)][^)]*)\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = call.exec(code)) !== null) out.push(m[1].trim());
+  return out;
+}
+
+/** The value written after `consentText:` in a payload, up to the next top-level comma. */
+function consentValue(payload: string): string | null {
+  const at = payload.search(/\bconsentText\s*:/);
+  if (at < 0) return null;
+  let i = payload.indexOf(":", at) + 1;
+  let depth = 0;
+  let quote: string | null = null;
+  const start = i;
+  for (; i < payload.length; i++) {
+    const c = payload[i];
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") quote = c;
+    else if (c === "(" || c === "[" || c === "{") depth++;
+    else if (c === ")" || c === "]" || c === "}") depth--;
+    else if ((c === "," || c === "\n") && depth === 0) break;
+  }
+  return payload.slice(start, i).trim();
+}
+
+/** The fine-print constants a consent value names. Accepted shapes: `NAME`, or a ternary
+ *  `cond ? NAME_A : NAME_B` where a wrapper serves two kinds of form. Anything else (a string
+ *  literal, a member expression, a call) yields nothing and fails. */
+function consentIdents(value: string): string[] {
+  const one = /^([A-Z][A-Z0-9_]*)$/;
+  const two = /^[^?]+\?\s*([A-Z][A-Z0-9_]*)\s*:\s*([A-Z][A-Z0-9_]*)$/;
+  let m = value.match(one);
+  if (m) return [m[1]];
+  m = value.replace(/\s+/g, " ").match(two);
+  if (m) return [m[1], m[2]];
+  return [];
+}
+
+/** True when the file defines `NAME` as a string (a literal or a template), or imports it
+ *  from a module under src/ that exports it as one. The definition is what makes the rendered
+ *  words and the recorded words the same value. */
+function definedAsString(name: string, file: string, code: string): boolean {
+  const local = new RegExp(`\\bconst ${name}\\s*(?::\\s*string)?\\s*=\\s*(?:\\n\\s*)?["'\`]`);
+  if (local.test(code)) return true;
+  const imp = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*["']([^"']+)["']`);
+  const m = code.match(imp);
+  if (!m) return false;
+  const spec = m[1];
+  let target: string;
+  if (spec.startsWith("@/")) target = join("src", spec.slice(2));
+  else if (spec.startsWith(".")) target = join(dirname(file), spec);
+  else return false;
+  for (const ext of [".ts", ".tsx", "/index.ts", "/index.tsx"]) {
+    if (!existsSync(target + ext)) continue;
+    const mod = stripComments(readFileSync(target + ext, "utf-8"));
+    return new RegExp(`\\bexport const ${name}\\s*(?::\\s*string)?\\s*=\\s*(?:\\n\\s*)?["'\`]`).test(mod);
+  }
+  return false;
+}
+
+/** True when `NAME` is rendered inside a JSX expression container somewhere in the file
+ *  outside the submission payloads: `{NAME}`, or a ternary that resolves to it. */
+function rendered(name: string, code: string, payloads: Payload[]): boolean {
+  let view = code;
+  for (const p of [...payloads].sort((a, b) => b.start - a.start)) {
+    view = view.slice(0, p.start) + " ".repeat(p.end - p.start) + view.slice(p.end);
+  }
+  // An import clause is `{ NAME }` too, and is not a render.
+  view = view.replace(/\bimport\s*(?:type\s*)?\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, " ");
+  const plain = new RegExp(`\\{\\s*${name}\\s*\\}`);
+  const ternary = new RegExp(`\\{[^{}]*[?:]\\s*${name}\\s*[:}]`);
+  return plain.test(view) || ternary.test(view);
 }
 
 function main() {
@@ -173,6 +273,39 @@ function main() {
     }
   }
   ok(true, "no surface reaches a lead ingress except through the helper");
+
+  // ── the consent rule, on every file under src/ that calls the helper ───────────
+  let consentSites = 0;
+  for (const file of files) {
+    const rel = relative(".", file).split(sep).join("/");
+    if (rel === THE_HELPER.split(sep).join("/")) continue;
+    if (rel.includes("/retired/")) continue;
+    const code = stripComments(readFileSync(file, "utf-8"));
+    if (!/\bpostLead(?:Detailed)?\s*\(/.test(code)) continue;
+
+    for (const arg of opaqueCalls(code)) {
+      failures.push(`${rel}: postLead(${arg}) hands the helper something that is not an object literal, so the gate cannot read whether it carries consentText`);
+      assertions++;
+    }
+
+    const spans = leadPayloadSpans(code);
+    for (const p of spans) {
+      consentSites++;
+      const value = consentValue(p.text);
+      ok(value !== null, `${rel}: a submission posts without consentText`);
+      if (value === null) continue;
+      const idents = consentIdents(value);
+      ok(
+        idents.length > 0,
+        `${rel}: consentText is "${value.slice(0, 60)}", not a fine-print constant (a string literal here cannot be shown to match what the form displayed)`,
+      );
+      for (const name of idents) {
+        ok(definedAsString(name, file, code), `${rel}: ${name} is not defined as a string constant, here or in a module it imports`);
+        ok(rendered(name, code, spans), `${rel}: ${name} is sent as consentText but never rendered in this file's JSX, so the visitor did not see it`);
+      }
+    }
+  }
+  ok(consentSites >= 26, `the consent rule read ${consentSites} submissions, which looks like every surface (26 at ML-004)`);
 
   // ── the helper names the one path, once ───────────────────────────────────────
   const helper = readFileSync(THE_HELPER, "utf-8");
@@ -238,7 +371,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `[lead-forms] PASS — ${assertions} assertions. ${SURFACES.length} surfaces on one helper, one ingress, three retired routes gone.`,
+    `[lead-forms] PASS — ${assertions} assertions. ${SURFACES.length} surfaces on one helper, one ingress, three retired routes gone, every submission carries the fine print it showed.`,
   );
 }
 

@@ -17,7 +17,7 @@ import { Suspense } from "react";
 import SiteNav from "@/components/nav/SiteNav";
 import type { MegaLive } from "@/components/nav/megaTypes";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import { fullPrice } from "@/components/hub/format";
 import { config } from "@/lib/config";
 
@@ -98,7 +98,7 @@ export default function ValueLanding({ locationName, data, live }: ValueLandingP
         </div>
       </section>
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

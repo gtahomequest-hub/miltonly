@@ -3,19 +3,18 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 import AgentContactSection from "@/components/AgentContactSection";
 import { useUser } from "@/components/UserProvider";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, type PostLeadPayload } from "@/lib/postLeadClient";
+import { ALERT_FINE_PRINT, REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import { config } from "@/lib/config";
 import "./rentals.css";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
 
-const FOOTER_NEIGHBOURHOODS = ["Dempsey", "Beaty", "Willmott", "Hawthorne Village", "Timberlea", "Old Milton"];
-const toFooterSlug = (n: string) =>
-  n.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
 
 const svgProps = {
   width: 26,
@@ -61,15 +60,18 @@ const HomeTypeIcon = {
 
 interface Listing {
   mlsNumber: string;
+  /** Redacted server-side (rentals/page.tsx) when displayAddress is false; never the raw address then. */
   address: string;
+  /** false: print "Address on request", link no street (MC-036). */
+  displayAddress: boolean;
   price: number;
   bedrooms: number;
   bathrooms: number;
   parking: number;
   propertyType: string;
-  status: string;
   photos: string[];
-  listedAt: string;
+  // No listedAt and no status (MC-029): the rows arrive stripped of every VOW-only column,
+  // available units only, newest first.
   neighbourhood: string;
   description: string | null;
   transactionType: string | null;
@@ -116,6 +118,8 @@ interface RentAvg {
 
 interface Props {
   listings: Listing[];
+  /** computed on the server across the set; the client has no list dates to count */
+  newThisWeek: number;
   totalRentals: number;
   avgRent: number;
   rentAvgs: RentAvg[];
@@ -124,7 +128,7 @@ interface Props {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function RentalsClient({ listings, totalRentals, avgRent, rentAvgs, scope = null }: Props) {
+export default function RentalsClient({ listings, newThisWeek, totalRentals, avgRent, rentAvgs, scope = null }: Props) {
   // Every figure on a scoped page is the hub's; the town-wide badge the homepage gate reads by
   // data-fig="rentals-available" is emitted only on the unscoped page, so the two never disagree.
   const placeName = scope ? scope.name : config.CITY_NAME;
@@ -189,11 +193,20 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   // IT USED TO RETURN TRUE FOR A 429 AND A 500. Only a thrown network error reached the
   // catch, so every one of the five call sites below showed its confirmation toast over a
   // refused submission. The helper resolves false unless the row was written.
-  const submitLead = async (data: PostLeadPayload): Promise<boolean> => {
+  //
+  // Two kinds of submission share it: a request for a reply (bookings, the quiz) under
+  // REPLY_FINE_PRINT, and an alert signup under ALERT_FINE_PRINT. Each form renders the one it
+  // sends, and the row records it as consentText.
+  const submitLead = async (data: PostLeadPayload, kind: "reply" | "alert" = "reply"): Promise<boolean> => {
     // This file reads every field off the DOM by id, so the honeypot does too rather than
     // introducing a second pattern beside it. A missing node reads as empty, which passes.
     const honeypot = (document.getElementById("rc-honey") as HTMLInputElement | null)?.value ?? "";
-    const result = await postLeadDetailed({ ...data, honeypot });
+    const result = await postLeadDetailed({
+      ...data,
+      consentText: kind === "alert" ? ALERT_FINE_PRINT : REPLY_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
+      honeypot,
+    });
     if (!result.ok) showToast(result.error || "Could not submit. Please try again.");
     return result.ok;
   };
@@ -268,16 +281,14 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       return true;
     });
 
-    // Sort
+    // Sort. "Newest" is the server's order (listedAt desc, which the client does not hold).
     if (sortBy === "price_asc") result.sort((a, b) => a.price - b.price);
     else if (sortBy === "price_desc") result.sort((a, b) => b.price - a.price);
-    else result.sort((a, b) => new Date(b.listedAt).getTime() - new Date(a.listedAt).getTime());
 
     return result;
   }, [listings, searchQuery, typeFilter, filters, priceMin, priceMax, sortBy]);
 
   const progWidth = wizSuccess ? 100 : Math.round((wizStep / 3) * 100);
-  const newThisWeek = useMemo(() => listings.filter((l) => daysAgo(new Date(l.listedAt)) <= 7).length, [listings]);
   const typeIcons: Record<string, string> = { detached: "🏠", semi: "🏘", townhouse: "🏗", condo: "🏢", other: "🏠" };
 
   // ── SEARCH HANDLER ──
@@ -311,14 +322,14 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
       intent: "rent",
       name,
       phone,
-      property_address: bookingModal.listing.address,
+      property_address: addrLine(bookingModal.listing),
       mlsNumber: bookingModal.listing.mlsNumber,
     });
     if (ok) {
       setBookingMls(bookingModal.listing.mlsNumber);
       const msg = bookingModal.type === "1hr"
-        ? `⏱ 1-hour showing confirmed for ${bookingModal.listing.address.split(",")[0]}! We'll call you.`
-        : `✓ Showing request sent for ${bookingModal.listing.address.split(",")[0]}!`;
+        ? `⏱ 1-hour showing confirmed for ${addrLine(bookingModal.listing)}! We'll call you.`
+        : `✓ Showing request sent for ${addrLine(bookingModal.listing)}!`;
       showToast(msg);
       setBookingModal(null);
     }
@@ -393,10 +404,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
     }
     if (isListingSaved(mlsNumber)) {
       await unsaveListing(mlsNumber);
-      showToast(`♡ Removed ${addr.split(",")[0]}`);
+      showToast(`♡ Removed ${addr}`);
     } else {
       await saveListing(mlsNumber);
-      showToast(`♥ Saved ${addr.split(",")[0]}`);
+      showToast(`♥ Saved ${addr}`);
     }
   };
 
@@ -411,20 +422,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
   const streetOf = (addr: string) => addr.split(",")[0].replace(/^\d+[a-zA-Z]?\s+/, "").trim();
   const streetSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
   const hoodOf = (hood: string) => hood.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
+  // The first line of the address, or the placeholder for a withheld listing (MC-036). Every
+  // place this file prints an address goes through here: the card, the modal, the toasts.
+  const addrLine = (l: Listing) => (l.displayAddress ? l.address.split(",")[0] : "Address on request");
 
-  // Top streets by listing count (for footer)
-  const topStreets = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const l of listings) {
-      const s = streetOf(l.address);
-      if (!s) continue;
-      counts.set(s, (counts.get(s) || 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([name]) => ({ name, slug: streetSlug(name) }));
-  }, [listings]);
 
   return (
     <div className="rentals-page">
@@ -437,7 +438,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 "available to rent" tile equals the figure THIS page publishes. */}
             <div className="live-badge" data-fig={scope ? "rentals-available-in-hub" : "rentals-available"} data-value={totalRentals} data-scope={scope?.slug ?? undefined}><span className="live-dot" />{totalRentals} active rentals{scope ? ` in ${scope.name}` : ""} · live TREB data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
-            <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#f59e0b"}}>
+            <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#00ff80"}}>
               📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}
             </a>
           </div>
@@ -447,7 +448,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               Showing {scope.name} only. <a href="/rentals" style={{ textDecoration: "underline" }}>All {config.CITY_NAME} rentals</a>
             </p>
           )}
-          <p className="hl-desc">Browse every active rental — condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
+          <p className="hl-desc">Browse active rentals: condos, townhouses and detached homes. <strong>Same-day showings guaranteed.</strong></p>
 
           {/* Search box */}
           <div className="sbox" ref={searchRef}>
@@ -468,7 +469,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               <div className="sdrop open">
                 <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "All"); setSearchQuery(""); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico am">🏠</div>
-                  <div><div className="sdi-main">See all {totalRentals} active {config.CITY_NAME} rentals</div><div className="sdi-sub">Condos, townhouses, detached — all listings</div></div>
+                  <div><div className="sdi-main">Browse active {config.CITY_NAME} rentals</div><div className="sdi-sub">Condos, townhouses, detached</div></div>
                 </div>
                 <div className="sdi" onClick={() => { setSearchOpen(false); tglFilter("type", "Condo"); setSearchQuery(""); showToast("🏢 Showing condos only"); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }}>
                   <div className="sdi-ico bl">🏢</div>
@@ -530,7 +531,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               <div style={{ fontSize: 11, lineHeight: 1.4 }}>
                 {hasActivePending ? (
                   <>
-                    <span style={{ color: "#f59e0b", fontWeight: 700 }}>{pendingActiveLabels.length} filter{pendingActiveLabels.length === 1 ? "" : "s"} selected</span>
+                    <span style={{ color: "#017848", fontWeight: 700 }}>{pendingActiveLabels.length} filter{pendingActiveLabels.length === 1 ? "" : "s"} selected</span>
                     <span style={{ color: "var(--t4)" }}> — {pendingActiveLabels.join(", ")}</span>
                   </>
                 ) : (
@@ -566,7 +567,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         {/* ── MIDDLE — WIZARD ── */}
         <div className="hm">
           <div className="wiz-topbar">
-            <h1 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,color:"var(--pearl)",lineHeight:1.09,marginBottom:3}}>Answer 3 questions. Get matched.</h1>
+            {/* MC-020: the page has one H1, the hero's; the wizard heading is an H2. */}
+            <h2 style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:500,color:"var(--pearl)",lineHeight:1.09,marginBottom:3,marginTop:0}}>Answer 3 questions. Get matched.</h2>
             <div className="wiz-sub">3 quick questions · 30 seconds · no commitment</div>
             <div className="prog-track"><div className="prog-bar" style={{ width: `${progWidth}%` }} /></div>
           </div>
@@ -663,7 +665,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     }}>
                       Show me matching rentals →
                     </button>
-                    <div className="submit-note">{REALTOR_FIRST_NAME} usually replies within the hour · No spam</div>
+                    <div className="submit-note">{REALTOR_FIRST_NAME} usually replies within the hour. {REPLY_FINE_PRINT}</div>
                     <div className="back-lnk" onClick={() => setWizStep(2)}>← Back</div>
                   </div>
                 )}
@@ -682,9 +684,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     source: "new-match-alert", intent: "rent",
                     name: userName, email: quizContact.email, phone: quizContact.phone,
                     priceMin, priceMax,
-                  });
+                  }, "alert");
                   if (ok) showToast("🔔 Alert set. You'll hear from us first.");
                 }}>🔔 Alert me when new matches list</button>
+                <div className="submit-note">{ALERT_FINE_PRINT}</div>
               </div>
             )}
           </div>
@@ -696,7 +699,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
             <div className="bc-strip" />
             <div className="bc-head">
               <div className="bc-eyebrow">Book a showing</div>
-              <h2 className="bc-title" style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:800,lineHeight:1.09,margin:0}}>Usually confirmed within <span style={{color:"#f59e0b"}}>the hour</span></h2>
+              <h2 className="bc-title" style={{fontSize:"clamp(30px,2.8vw,44px)",fontWeight:500,lineHeight:1.09,margin:0}}>Usually confirmed within <span style={{color:"#00ff80"}}>the hour</span></h2>
               <div className="bc-sub">Name any {config.CITY_NAME} listing. {REALTOR_FIRST_NAME} typically confirms your showing within an hour during business hours.</div>
             </div>
             <div className="bc-form">
@@ -718,6 +721,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 }
               }}><em>⏱</em> Request my showing</button>
               <div className="bc-trust">No obligation · {REALTOR_FIRST_NAME} usually calls back within the hour</div>
+              <div className="bc-trust">{REPLY_FINE_PRINT}</div>
               <div className="bc-agent">{config.realtor.name} · {BROKERAGE_SHORT_NAME}</div>
             </div>
           </div>
@@ -790,7 +794,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <div className="fb-count">
             <em>{totalRentals}</em> {config.CITY_NAME} rentals
             {filteredListings.length !== totalRentals && (
-              <span style={{ fontSize: 11, color: "#f59e0b", marginLeft: 8 }}>· {filteredListings.length} match filters</span>
+              <span style={{ fontSize: 12, color: "#017848", marginLeft: 8 }}>· {filteredListings.length} match filters</span>
             )}
           </div>
           <div className="fb-right">
@@ -894,9 +898,10 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         ) : (
           <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
             {filteredListings.map((l) => {
-              const days = daysAgo(new Date(l.listedAt));
               const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
-              const cardStreet = streetOf(l.address);
+              // A withheld listing is not tied to its street (MC-036): no street link, and no
+              // street derived from the placeholder.
+              const cardStreet = l.displayAddress ? streetOf(l.address) : null;
               const cardHood = hoodOf(l.neighbourhood);
               return (
                 <div
@@ -906,30 +911,35 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                 >
                     <div className="lcard-img" style={{ background: l.photos[0] ? `url(${l.photos[0]}) center/cover` : "#e0f2fe" }}>
                       {!l.photos[0] && <span style={{ fontSize: 44 }}>{typeIcons[l.propertyType] || "🏠"}</span>}
-                      <span className="lbadge">{days === 0 ? "New today" : days <= 7 ? "New this week" : `${days}d ago`}</span>
                       <span className="avail-tag">{l.possessionDetails === "Vacant" || l.possessionDetails === "Immediate" ? "Available now" : l.possessionDetails || "Available"}</span>
                     </div>
                     <div className="lbody">
                       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:2}}>
-                        <div className="lprice" style={{marginBottom:0}}>{formatPriceFull(l.price)} <span>/ month</span></div>
-                        <span style={{background:"#07111f",color:"#cbd5e1",fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,flexShrink:0,alignSelf:"center"}}>
+                        <div className="lprice" style={{marginBottom:0}} data-price>
+                          {formatPriceFull(l.price)} <span>/ month</span>
+                          <ListingBrokerage name={l.listOfficeName} />
+                        </div>
+                        <span style={{background:"#073126",color:"rgba(255,255,255,.86)",fontSize:12,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",padding:"3px 8px",borderRadius:999,flexShrink:0,alignSelf:"center"}}>
                           {propertyBadgeLabel(l.propertyType)}
                         </span>
                       </div>
-                      <div className="laddr">{titleCase(l.address.split(",")[0])}</div>
+                      <div className="laddr">{l.displayAddress ? titleCase(addrLine(l)) : addrLine(l)}</div>
                       <div className="lcard-links">
-                        <Link href={`/streets/${streetSlug(cardStreet)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardStreet)}</Link>
-                        <span className="sep">·</span>
+                        {cardStreet && (
+                          <>
+                            <Link href={`/streets/${streetSlug(cardStreet)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardStreet)}</Link>
+                            <span className="sep">·</span>
+                          </>
+                        )}
                         <Link href={`/listings?neighbourhood=${encodeURIComponent(cardHood)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardHood)}</Link>
                       </div>
                       <div className="lspecs">
                         <span>🛏 {l.bedrooms} bed</span>
                         <span>🚿 {l.bathrooms} bath</span>
                         {l.parking > 0 && <span>🚗 {l.parking} park</span>}
-                        <span>⏱ {days}d on market</span>
                       </div>
                       <div style={{fontSize:11,color:"#94a3b8",marginTop:-4,marginBottom:8}}>
-                        {l.listOfficeName ? titleCase(l.listOfficeName) : "MLS®"} · {days === 0 ? "Listed today" : `${days}d on ${config.SITE_NAME}`}
+                        MLS® {l.mlsNumber}
                       </div>
 
                       {/* ── LIST VIEW EXTRAS — ALL REAL DATA ── */}
@@ -975,7 +985,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
                     <button className="lbtn lbtn-1h" onClick={() => handleOneHourShowing(l)}>See this today →</button>
                     <button
                       className="lbtn-save-mini"
-                      onClick={() => handleSaveListing(l.mlsNumber, l.address)}
+                      onClick={() => handleSaveListing(l.mlsNumber, addrLine(l))}
                       aria-label={isListingSaved(l.mlsNumber) ? "Unsave listing" : "Save listing"}
                       title={isListingSaved(l.mlsNumber) ? "Unsave listing" : "Save listing"}
                     >
@@ -1014,24 +1024,25 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               source: "alert", intent: "rent", email, name: "Alert Subscriber",
               priceMin, priceMax,
               homeType: typeFilter !== "All" ? typeFilter : undefined,
-            });
+            }, "alert");
             if (!ok) return;
             showToast("🔔 Alert saved. You'll hear from us first.");
             (document.getElementById("alert-email") as HTMLInputElement).value = "";
           }}>Save this search →</button>
         </div>
+        <p className="as-fine">{ALERT_FINE_PRINT}</p>
       </div>
 
       {/* ═══ EXCLUSIVE CROSS-LINK BANNER ═══ */}
       <Link
         href="/exclusive"
-        className="mx-5 sm:mx-11 my-4 bg-[#0c1e35] border border-[#1e3a5f] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#2d5a8e] transition-colors"
+        className="mx-5 sm:mx-11 my-4 bg-[#0b3d2e] border border-[#1c5a45] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#2a7a5c] transition-colors"
       >
         <div>
           <p className="text-[14px] font-semibold text-[#f8f9fb]">🏠 Looking for exclusive off-market rentals?</p>
           <p className="text-[12px] text-[#94a3b8] mt-0.5">{REALTOR_FIRST_NAME} has exclusive listings not on MLS</p>
         </div>
-        <span className="text-[13px] font-semibold text-[#f59e0b] shrink-0">View exclusive listings →</span>
+        <span className="text-[13px] font-semibold text-[#00ff80] shrink-0">View exclusive listings →</span>
       </Link>
 
       <AgentContactSection />
@@ -1042,7 +1053,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
           <div className="bm-card" onClick={(e) => e.stopPropagation()}>
             <button className="bm-close" onClick={() => setBookingModal(null)}>✕</button>
             <div className="bm-title">{bookingModal.type === "1hr" ? "⏱ 1-Hour Showing" : "Book a Showing"}</div>
-            <div className="bm-addr">{bookingModal.listing.address.split(",")[0]}</div>
+            <div className="bm-addr">{addrLine(bookingModal.listing)}</div>
             <div className="bm-price">{formatPriceFull(bookingModal.listing.price)}/mo · {bookingModal.listing.bedrooms} bed · {bookingModal.listing.bathrooms} bath</div>
             <div className="bm-fields">
               <input className="bm-input" id="bm-name" required placeholder="Your name" />
@@ -1052,6 +1063,7 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
               {bookingModal.type === "1hr" ? "⏱ Confirm 1-hour showing" : "Request showing"}
             </button>
             <div className="bm-note">We&apos;ll call you within {bookingModal.type === "1hr" ? "1 hour" : "15 minutes"} to confirm</div>
+            <div className="bm-note">{REPLY_FINE_PRINT}</div>
           </div>
         </div>
       )}
@@ -1062,43 +1074,8 @@ export default function RentalsClient({ listings, totalRentals, avgRent, rentAvg
         <span>{toast}</span>
       </div>
 
-      {/* ═══ RENTALS PAGE FOOTER ═══ */}
-      <footer className="rentals-footer">
-        <div className="rf-inner">
-          <div className="rf-col">
-            <h4>Popular {config.CITY_NAME} streets</h4>
-            <ul>
-              {topStreets.map((s) => (
-                <li key={s.slug}><Link href={`/streets/${s.slug}`}>{s.name}</Link></li>
-              ))}
-              {topStreets.length === 0 && (
-                <li><Link href="/streets">Browse all {config.CITY_NAME} streets →</Link></li>
-              )}
-            </ul>
-          </div>
-          <div className="rf-col">
-            <h4>{config.CITY_NAME} neighbourhoods</h4>
-            <ul>
-              {FOOTER_NEIGHBOURHOODS.map((n) => (
-                <li key={n}><Link href={`/neighbourhoods/${toFooterSlug(n)}`}>{n}</Link></li>
-              ))}
-            </ul>
-          </div>
-          <div className="rf-col">
-            <h4>Quick links</h4>
-            <ul>
-              <li><Link href="/listings">Buy in {config.CITY_NAME}</Link></li>
-              <li><Link href="/sell">Sell in {config.CITY_NAME}</Link></li>
-              <li><Link href="/schools">Schools</Link></li>
-              <li><Link href="/mosques">Mosques</Link></li>
-              <li><Link href="/about">About</Link></li>
-            </ul>
-          </div>
-        </div>
-        <div className="rf-bottom">
-          {config.realtor.name} · {BROKERAGE_SHORT_NAME} · {config.CITY_NAME} {config.CITY_PROVINCE} · <a href={`tel:${config.realtor.phoneE164}`}>{config.realtor.phone}</a>
-        </div>
-      </footer>
+      {/* The page footer that stood here is gone (MH-006): the site footer under this
+          component is the map, on this page as on every other. */}
 
       {/* ═══ MOBILE STICKY CTA (visible below 900px via CSS) ═══ */}
       <div className="mobile-cta">

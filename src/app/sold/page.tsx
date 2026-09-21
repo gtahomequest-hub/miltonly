@@ -5,7 +5,7 @@
 // 90-day/100-record caps, server-side address redaction, the GET-param filter
 // contract (type / ptype / nbhd), revalidate=0, and the VOW consumer notice +
 // TREB attribution are all unchanged. Only the shell is repainted forest, with
-// SiteNav + FooterSection (ChromeGate suppresses the navy Navbar on /sold).
+// SiteNav + SiteFooter (the site chrome; the navy Navbar is gone since MH-006).
 //
 // The pre-existing anon teaser (VowGate with no street/nbhd rendered "0 homes
 // sold on Milton" under a hero that already shows the real totals) is dropped
@@ -15,10 +15,13 @@
 // so records still never reach an anon/unacknowledged browser.
 
 import type { Metadata } from "next";
+import { publishedHubSlugs, neighbourhoodRows } from "@/lib/hubSets";
+import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import {
   getMiltonSoldTotals,
   getSoldNeighbourhoodOptions,
@@ -26,7 +29,7 @@ import {
 } from "@/lib/sold-data";
 import { getMiltonSoldAggregates, getMiltonSoldOverall } from "@/lib/soldAggregates";
 import SiteNavLive from "@/components/nav/SiteNavLive";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import SoldTableForest from "@/components/sold/SoldTableForest";
 import SoldAggregates from "@/components/sold/SoldAggregates";
 import SoldValuationCTA from "@/components/sold/SoldValuationCTA";
@@ -67,10 +70,13 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   // Milton-wide always clears k, but fall back to the 90-day count if suppressed.
   const typical = overall?.medianPrice ?? null;
   const count12 = overall?.count ?? 0;
-  const title =
-    typical != null
-      ? `${config.CITY_NAME} Sold Home Prices — Typically ${money(typical)} Across ${count12.toLocaleString("en-CA")} Sales`
-      : `${config.CITY_NAME} sold homes — ${totals.last90} recent real estate sales`;
+  // a hub's view names the hub (MC-027 item 3); the view is noindex either way
+  const hubName = searchParams?.nbhd ? NEIGHBOURHOOD_SEED.find((n) => n.slug === searchParams.nbhd)?.name ?? null : null;
+  const title = hubName
+    ? `${hubName} Sold Home Prices, ${config.CITY_NAME}`
+    : typical != null
+      ? `${config.CITY_NAME} Sold Home Prices: Typically ${money(typical)} Across ${count12.toLocaleString("en-CA")} Sales`
+      : `${config.CITY_NAME} sold homes: ${totals.last90} recent real estate sales`;
   const description =
     typical != null
       ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE} — typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from TREB MLS®.`
@@ -98,7 +104,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function SoldHubPage({ searchParams }: PageProps) {
   const user = await getSession();
   const authed = !!user;
-  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
+  const canSeeRecords = canSeeVowRecords(user);
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
   const nbhdParam = searchParams?.nbhd;
@@ -109,8 +115,20 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   // so no anon request ever touches sold.sold_records or its cache.
   // Resolve the neighbourhood param FIRST — the records query needs the raw MLS string, while the
   // URL only ever carries the slug. Accepts a raw string too, so existing inbound links still work.
-  const neighbourhoods = await getSoldNeighbourhoodOptions().catch(() => []);
-  const nbhdOpt = nbhdParam ? neighbourhoods.find((o) => o.slug === nbhdParam || o.raw === nbhdParam) : undefined;
+  const [soldOptions, publishedHubSlugList, nbhdRows] = await Promise.all([
+    getSoldNeighbourhoodOptions().catch(() => []),
+    publishedHubSlugs().catch(() => [] as string[]),
+    neighbourhoodRows().catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>),
+  ]);
+  const publishedHubSet = new Set(publishedHubSlugList);
+  // one option per published hub, in the seed's order; the raw string is the first the records
+  // carry for it, or the registry's first raw string when the window has none
+  const neighbourhoods = NEIGHBOURHOOD_SEED.filter((n) => publishedHubSet.has(n.slug)).map((n) => {
+    const sold = soldOptions.find((o) => o.slug === n.slug);
+    const reg = nbhdRows.find((r) => r.slug === n.slug);
+    return { slug: n.slug, name: reg?.name ?? n.name, raw: sold?.raw ?? reg?.rawStrings?.[0] ?? n.rawStrings[0] };
+  });
+  const nbhdOpt = nbhdParam ? neighbourhoods.find((o) => o.slug === nbhdParam || o.raw === nbhdParam) ?? soldOptions.find((o) => o.raw === nbhdParam) : undefined;
   const nbhdRaw = nbhdOpt?.raw;
 
   const [totals, aggregates, records] = await Promise.all([
@@ -127,13 +145,20 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   ]);
 
   const txnLabel = typeParam === "sale" ? "sold" : "leased";
-  const signinHref = `/signin?redirect=${encodeURIComponent("/sold")}`;
-
   // Filter-chip hrefs — the GET-param contract still works, but the URL now carries the SLUG.
   const nbhdSlug = nbhdOpt?.slug;
   const nbhdLabel = nbhdOpt?.name;
   const nbhdQ = nbhdSlug ? `&nbhd=${encodeURIComponent(nbhdSlug)}` : "";
   const ptypeQ = ptypeFilter ? `&ptype=${ptypeFilter}` : "";
+  // THE SIGN-IN RETURNS TO THIS VIEW (MC-027 item 3, MA-005 defect 2). The redirect was the bare
+  // /sold, so a reader who arrived from Timberlea's hub, signed in, and came back to all of
+  // Milton. The whole query travels: type, ptype and nbhd.
+  const returnTo = `/sold?type=${typeParam}${nbhdQ}${ptypeQ}`;
+  const signinHref = `/signin?redirect=${encodeURIComponent(returnTo)}`;
+  // THE CHIP ROW IS EVERY PUBLISHED HUB (MC-027 item 3). It was the first ten distinct sold
+  // strings, so twelve hubs, Timberlea among them, had no chip and no active state when the hub
+  // linked here with its own nbhd. Every published hub, in the registry's order.
+  const hubChips = neighbourhoods.filter((nb) => publishedHubSet.has(nb.slug));
 
   return (
     <div className="sold-v2">
@@ -146,11 +171,12 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             {config.CITY_NAME} · {config.CITY_PROVINCE} · Real estate
           </span>
           <h1>
-            {config.CITY_NAME} <em>sold</em> homes
+            {nbhdLabel ? <>{nbhdLabel} <em>sold</em> homes</> : <>{config.CITY_NAME} <em>sold</em> homes</>}
           </h1>
           <p className="sv-lede">
-            Real closed transactions from TREB MLS<sup>®</sup> — exact sold prices, days on
-            market, and sold-to-ask ratios across every {config.CITY_NAME} neighbourhood.
+            {nbhdLabel
+              ? <>Real closed transactions from TREB MLS<sup>®</sup> in {nbhdLabel}, {config.CITY_NAME}: exact sold prices, days on market, and sold-to-ask ratios, with the rest of {config.CITY_NAME} one chip away.</>
+              : <>Real closed transactions from TREB MLS<sup>®</sup>: exact sold prices, days on market, and sold-to-ask ratios across every {config.CITY_NAME} neighbourhood.</>}
           </p>
           <div className="sv-stats">
             <div className="sv-stat">
@@ -224,7 +250,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
               >
                 All
               </Link>
-              {neighbourhoods.slice(0, 10).map((nb) => (
+              {hubChips.map((nb) => (
                 <Link
                   key={nb.slug}
                   href={`/sold?type=${typeParam}&nbhd=${encodeURIComponent(nb.slug)}${ptypeQ}`}
@@ -264,7 +290,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             // Anonymous — clean table gate (no records fetched, none in the HTML).
             <div className="sv-gate">
               <div className="sv-gate-k">TREB VOW · Registered access</div>
-              <div className="sv-gate-h">See every {config.CITY_NAME} sold price</div>
+              <div className="sv-gate-h">Recent {config.CITY_NAME} sold prices, last 90 days</div>
               <p className="sv-gate-p">
                 Free with a verified email — exact sold prices, days on market, and
                 sold-to-ask ratios, updated daily from TREB MLS<sup>®</sup> data.
@@ -282,7 +308,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             </b>
             <p>
               The information provided herein must only be used by consumers that have a
-              bona fide interest in the purchase, sale, or lease of real estate and may not
+              bona fide interest in the purchase, sale or lease of real estate and may not
               be used for any commercial purpose or any other purpose.
             </p>
             <p>Brokerage: RE/MAX Realty Specialists Inc.</p>
@@ -290,7 +316,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

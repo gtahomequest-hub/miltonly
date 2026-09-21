@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { ALERT_FINE_PRINT } from "@/lib/lead/finePrint";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -31,6 +32,8 @@ export default function DailyBriefSignup({ className = "" }: { className?: strin
       intent: "buy",
       email,
       notes: `Daily brief signup`,
+      consentText: ALERT_FINE_PRINT,
+      consentTimestamp: new Date().toISOString(),
       honeypot: honey,
     });
     setStatus(ok ? "ok" : "error");
@@ -72,7 +75,7 @@ export default function DailyBriefSignup({ className = "" }: { className?: strin
               </label>
             </div>
             {status === "error" && <div className="s-alert-err">Something went wrong. Please try again.</div>}
-            <div className="s-alert-fine">Miltonly emails only. No account, unsubscribe anytime.</div>
+            <div className="s-alert-fine">{ALERT_FINE_PRINT}</div>
           </form>
         </>
       )}

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { config } from "@/lib/config";
+import { VALUATION_FINE_PRINT } from "@/lib/lead/finePrint";
 
 type Stats =
   | { found: false; name: string }
@@ -153,6 +154,8 @@ export default function SoldOnMyStreet() {
         name: "Sold Report Subscriber",
         property_address: selectedName ?? streetInput,
         notes,
+        consentText: VALUATION_FINE_PRINT,
+        consentTimestamp: new Date().toISOString(),
         honeypot: honey,
       });
       if (!result.ok) {
@@ -360,7 +363,7 @@ export default function SoldOnMyStreet() {
                 <button type="submit" disabled={submitting} className="w-full bg-[#f59e0b] text-[#07111f] text-[14px] font-extrabold py-3 rounded-xl hover:bg-[#fbbf24] transition-colors disabled:opacity-60">
                   {submitting ? "Sending…" : "Send my report →"}
                 </button>
-                <p className="mt-2 text-[11px] text-[#64748b] text-center">Free. No spam. CMA prepared by a licensed agent.</p>
+                <p className="mt-2 text-[11px] text-[#64748b] text-center">{VALUATION_FINE_PRINT}</p>
               </form>
             </div>
           )}

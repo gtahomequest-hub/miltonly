@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSMS } from "@/lib/smsAlert";
+import { revalidateListingSurfaces } from "@/lib/revalidateSurfaces";
 
 export const maxDuration = 60;
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       status: "active",
       syncedAt: { lt: cutoff },
     },
-    select: { id: true, mlsNumber: true, address: true, syncedAt: true },
+    select: { id: true, mlsNumber: true, syncedAt: true },
   });
 
   if (staleListings.length === 0) {
@@ -59,12 +60,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // MC-017: an expired listing must leave its ISR page, the condo unit list and the hub counts.
+  const revalidated = result.count > 0 ? revalidateListingSurfaces("sync/expire") : [];
+
   return NextResponse.json({
     expired: result.count,
+    revalidated,
     cutoff: cutoff.toISOString(),
+    // The MLS number identifies a stale row; the address is a display field that may be
+    // withheld (displayAddress=false) and does not belong in a response body.
     sample: staleListings.slice(0, 5).map((l) => ({
       mls: l.mlsNumber,
-      address: l.address,
       lastSeen: l.syncedAt,
     })),
   });

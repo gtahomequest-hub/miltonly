@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 import SiteNavLive from "@/components/nav/SiteNavLive";
 import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import AgentContactSection from "@/components/AgentContactSection";
-import FooterSection from "@/components/sections/FooterSection";
+import SiteFooter from "@/components/nav/SiteFooter";
 import DailyBriefSignup from "@/components/lead/DailyBriefSignup";
 import "./sell-theme.css";
 
@@ -179,7 +179,7 @@ export default function SellPage() {
         </div>
       </section>
 
-      <FooterSection />
+      <SiteFooter />
     </div>
   );
 }

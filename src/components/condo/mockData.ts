@@ -7,7 +7,7 @@ const intents = (slug: string): CondoData['intents'] => [
   { key: 'buy', label: "I'm buying", sub: 'See units for sale here', href: `/condos/${slug}#listings` },
   { key: 'sell', label: "I'm selling", sub: 'What my unit is worth', href: '/sell' },
   { key: 'rent', label: "I'm renting", sub: 'Lease listings in the building', href: `/condos/${slug}#listings` },
-  { key: 'invest', label: "I'm investing", sub: 'Yield & rental rules', href: '/#mls' },
+  { key: 'invest', label: "I'm investing", sub: 'Yield & rental rules', href: '/listings' },
 ];
 
 export const mockCondoRich: CondoData = {
@@ -36,8 +36,8 @@ export const mockCondoRich: CondoData = {
     'The location is the draw: a few minutes\u2019 walk to Main Street\u2019s restaurants and the Milton GO line, with the Mill Pond trails at the doorstep. It suits downsizers and professionals over investors, given the limited unit count.',
   ],
   listings: [
-    { title: 'Unit 304 · 1 bed + den', meta: '1 bed · 1 bath · 740 sqft', price: '$619,000', tenure: 'sale', href: '/listings/304-bronte-mill' },
-    { title: 'Unit 210 · 2 bed', meta: '2 bed · 2 bath · 980 sqft', price: '$2,750/mo', tenure: 'lease', href: '/listings/210-bronte-mill' },
+    { title: 'Unit 304 · 1 bed + den', meta: '1 bed · 1 bath · 740 sqft', price: '$619,000', listOfficeName: 'RE/MAX REALTY SPECIALISTS INC.', tenure: 'sale', href: '/listings/304-bronte-mill' },
+    { title: 'Unit 210 · 2 bed', meta: '2 bed · 2 bath · 980 sqft', price: '$2,750/mo', listOfficeName: 'RE/MAX REALTY SPECIALISTS INC.', tenure: 'lease', href: '/listings/210-bronte-mill' },
   ],
   amenities: ['Concierge (part-time)', 'Visitor parking', 'Rooftop terrace', 'Bike storage', 'Party room'],
   rules: {
