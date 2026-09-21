@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-21 (MA-007): why the street page is 9.6% cached, diagnosed on production; MA-006 addendum and MA-005 before it; Vercel is back (200)._
+_Last rewritten 2026-09-21 (MA-008): the morning report built and sent once by hand; MA-007 (street cache share) and the earlier audits before it._
 
 ## What this worktree is
 
@@ -15,6 +15,21 @@ exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratc
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-008 IS DONE: THE MORNING REPORT, SECTIONS 1 TO 4, RUN ONCE BY HAND AND EMAILED.** Record:
+`scratchpad/reports/MA-008-morning-report.md`. `scripts/audit/morning/run.mjs` with four sources (Vercel
+dollars through `vercel usage --json` over the real billing period plus `/v2/usage` and deployments; Neon
+per-project month-to-date compute and egress with every project labelled by its reader, `lingering-sea`
+as inspectionly.ca production; GSC through the service account; DB1 leads and DB2 streets without a page),
+`rules.json` for The One Thing, `config.json` for the facts about our accounts, small-sample floors in
+`lib.mjs`, and `.github/workflows/morning-report.yml` at 06:00 Toronto on a GitHub runner. First page
+`scratchpad/audit/morning/2026-09-21.md`, Resend `01a0c22b-4c51-72ef-b819-7f37b21acf84`, exit 0, 42 calls,
+40 s, no secret in log, report or email. Real figures: Vercel $160.63 cycle to date (cap crossed in 4.4 days
+at this rate), Neon DB1 127.8 CU-h, GSC 2026-09-18 12 clicks / 467 impressions, 1 lead yesterday. Web
+Analytics and the bot counts print "awaiting first data" until the script ships, which is expected.
+**Scheduling waits on Core**: merge `feat/audit` and add the seven Actions secrets named in the workflow
+header (the `.env.local` values; `GSC_SERVICE_ACCOUNT_JSON` is the key file's contents). Local runs:
+`node scripts/audit/morning/run.mjs [--no-email] [--out=<dir>]`; `--out` also moves `state.json`.
 
 **MA-007 IS DONE: THE STREET PAGE'S 9.6% CACHED SHARE, DIAGNOSED, NOT FIXED.** Record:
 `scratchpad/reports/MA-007-street-cache-share.md`. Not a render-tree bug: no cookies(), headers(),
@@ -150,6 +165,8 @@ left (32 of 308 tonight). The report's Summary and Budget sections say exactly w
 | `lighthouse.mjs` | MA-001: Lighthouse mobile + desktop per street; `LH_BIN` points at an installed CLI |
 | `inbound-links.mjs` | MA-001: crawls the sitemap and counts pages linking to each audit street |
 | `hubs.json`, `hub-sweep.mjs`, `hub-page.mjs`, `hub-intents.mjs`, `hub-lighthouse.mjs`, `hub-inbound.mjs`, `hub-bench.mjs` | MA-005: the hub page. `hub-sweep.mjs` reads all 22 hubs once (cache, TTFB, shape); the rest mirror the MA-001 set for `/neighbourhoods/<slug>`; `hub-intents.mjs` opens every intent square and CTA card destination at 390 |
+| `morning/run.mjs`, `morning/sources/*.mjs`, `morning/rules.json`, `morning/config.json` | MA-008: the 06:00 morning report (Money, Traffic, Conversion, The One Thing), one email a day; `--no-email --out=<dir>` for a dry run |
+| `cache-states.mjs` | MA-007: one GET per sitemap URL in a route family, recording the edge cache state, age and TTFB |
 | `bytes.mjs` | MA-001: bytes on the wire per resource type via CDP at 390 px; `--throttle` for slow 4G |
 | `cache-sweep.mjs` | one GET per published street: `x-vercel-cache`, `x-matched-path`, TTFB |
 | `crops.mjs` | per-section screenshots at 390 px for visual review |
@@ -197,8 +214,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007 on top; `origin/main` merged in at each start |
+| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007, MA-008 morning report on top; `origin/main` merged in at each start |
 | production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); `e606d8b` on 2026-09-18 (MA-006 addendum); `d068f84` on 2026-09-20/21 (MA-007); the nightly baseline 2026-09-13 |
 | pages edited | none |
-| waiting on Core | MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
+| waiting on Core | merge `feat/audit` and add the morning report's seven Actions secrets (MA-008); MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
 | next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |
