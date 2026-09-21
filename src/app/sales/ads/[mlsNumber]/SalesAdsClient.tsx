@@ -15,6 +15,7 @@ import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import { extractHighlights } from "@/lib/listing-highlights";
 import { extractKeyFacts } from "@/lib/listing-key-facts";
 import ListingBrokerage from "@/components/listings/ListingBrokerage";
+import { VOW_NOTICES } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -724,7 +725,7 @@ function SalesAdsInner({ listing, sliderListings }: Props) {
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
             © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name}<br />
             <span className="text-[#64748b]/80">
-              MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). Information deemed reliable but not guaranteed.
+              MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). <span data-vow-notice>{VOW_NOTICES}</span>
             </span>
           </div>
         </div>

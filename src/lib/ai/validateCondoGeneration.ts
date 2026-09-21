@@ -67,26 +67,9 @@ export function condoInputToStreetAdapter(input: CondoBuildingGeneratorInput): S
     quarterlyTrend: input.saleQuarterly
       .filter((q) => q.typical !== null)
       .map((q) => ({ quarter: q.quarter, typical: q.typical as number, count: q.count })),
-    // Lease records forwarded so the per-trade LEASE gate keys on k≥5 existence.
-    leaseActivity: input.lease.recentRecords
-      ? {
-          byBed: {},
-          recentRecords: input.lease.recentRecords.map((r) => ({
-            address: r.address,
-            listPrice: r.rent,
-            soldPrice: r.rent, // = monthly rent for For Lease records
-            beds: r.beds,
-            baths: 0,
-            sqftRange: null,
-            daysOnMarket: r.daysOnMarket,
-            propertyType: "condo",
-            soldMonth: r.soldMonth,
-            leaseTerm: null,
-            furnished: null,
-          })),
-          ...(input.lease.rangeStats ? { rangeStats: input.lease.rangeStats } : {}),
-        }
-      : undefined,
+    // MC-037: the lease side is the per-bedroom typicals only; with no records forwarded the
+    // per-trade lease gate fires on any per-trade lease claim, which is the rule.
+    leaseActivity: input.lease.byBed ? { byBed: input.lease.byBed } : undefined,
     nearby: {
       parks: [], schoolsPublic: [], schoolsCatholic: [], mosques: [], grocery: [],
     },

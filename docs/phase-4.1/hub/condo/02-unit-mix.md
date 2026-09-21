@@ -11,9 +11,9 @@ present (k≥5), the informational lease record set.
 ## What you may ground on
 
 - `input.saleByType[]`: per-type counts + typicalPrice/priceRange, each with its own `kFlag`.
-- `input.lease.recentRecords[]` (present only at k≥5): bedroom counts observed in recent leases,
-  used to describe the unit mix qualitatively (e.g. "recent activity has been concentrated in
-  one and two bedroom units"). Rents here are rents, never sale prices.
+- `input.lease.byBed` (present only at k≥5): the count and typical rent per bedroom count over
+  the last 12 months, used to describe the unit mix qualitatively (e.g. "recent activity has
+  been concentrated in one and two bedroom units"). Rents here are rents, never sale prices.
 
 ## BANNED claim-types
 

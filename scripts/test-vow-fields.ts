@@ -208,6 +208,34 @@ function walk(dir: string, out: string[] = []): string[] {
   ok(readers.length === 0, `no file under src reads an agent-only field (${readers.join(", ") || "none"})`);
 }
 
+// MC-037: the display window on sold records is one constant, and every read that publishes a
+// figure over the full record takes it; the battery's mirror carries the same number.
+{
+  const win = code("src/lib/vowWindow.ts");
+  const m = win.match(/export const VOW_DISPLAY_MONTHS: number \| null = (\d+|null);/);
+  ok(!!m, "vowWindow.ts declares VOW_DISPLAY_MONTHS");
+  const months = m && m[1] !== "null" ? Number(m[1]) : null;
+  const mirror = code("scripts/verify/lib/db.mjs").match(/export const DISPLAY_MONTHS = (\d+);/);
+  ok(!!mirror && months !== null && Number(mirror[1]) === months, `the battery mirror carries the same window (${mirror?.[1]} vs ${months})`);
+  const bound = /sold_date >= NOW\(\) - \(INTERVAL '1 month' \* \$\{DISPLAY_MONTHS\}\)/;
+  for (const f of ["src/lib/streetEnrichment.ts", "src/lib/hubStreetLadder.ts", "src/lib/heroIndex.ts", "scripts/verify/lib/db.mjs"]) {
+    ok(bound.test(code(f)), `${f} bounds its full-window read to the display window`);
+  }
+  const whole = /date_trunc\('quarter', NOW\(\) - \(INTERVAL '1 month' \* \$\{TREND_WINDOW_MONTHS\}\) \+ INTERVAL '3 months' - INTERVAL '1 day'\)/;
+  for (const f of ["src/lib/ai/buildHubInput.ts", "src/lib/ai/buildCondoBuildingInput.ts"]) {
+    ok(whole.test(code(f)) && /const TREND_WINDOW_MONTHS = DISPLAY_MONTHS;/.test(code(f)), `${f} starts its quarterly trend at the first whole quarter inside the window`);
+  }
+  ok(/inWindow\(r\)\)\.length/.test(code("src/lib/ai/buildBuildingAttributes.ts")), "the condo on-record count takes the window");
+  // the existence gates stay whole on purpose: they publish no figure, and bounding them makes a
+  // page vanish or claim a false absence (MC-037's blast radius)
+  const enrich = code("src/lib/streetEnrichment.ts");
+  const anySale = enrich.slice(enrich.indexOf("async function anySaleOnRecord"), enrich.indexOf("LIMIT 1", enrich.indexOf("async function anySaleOnRecord")));
+  ok(!/sold_date >=/.test(anySale), "anySaleOnRecord is not bounded");
+  const exist = code("src/lib/street-data.ts");
+  const probe = exist.slice(exist.indexOf("Existence-gate probe"), exist.indexOf("Existence gate", exist.indexOf("Existence-gate probe") + 10));
+  ok(!/sold_date >=/.test(probe), "the street existence probe is not bounded");
+}
+
 if (failures.length) {
   console.error(`[vow-fields] FAIL: ${failures.length} of ${assertions} assertions:`);
   for (const f of failures) console.error("  - " + f);

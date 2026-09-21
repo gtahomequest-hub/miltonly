@@ -12,6 +12,7 @@ import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import TrustPillars from "@/components/landing/TrustPillars";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import ListingBrokerage from "@/components/listings/ListingBrokerage";
+import { VOW_NOTICES } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
@@ -446,7 +447,7 @@ function AdsClientInner({
           </div>
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
             © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name} · {config.CITY_NAME}, {config.CITY_PROVINCE}<br />
-            <span className="text-[#64748b]/80">MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). Information deemed reliable but not guaranteed.</span>
+            <span className="text-[#64748b]/80">MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). <span data-vow-notice>{VOW_NOTICES}</span></span>
           </div>
         </div>
       </footer>

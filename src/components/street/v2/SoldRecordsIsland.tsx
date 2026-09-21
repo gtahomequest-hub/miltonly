@@ -17,6 +17,7 @@ import { usePathname } from 'next/navigation';
 import type { SoldTableRow } from '@/types/street';
 import VowAcknowledgementPrompt from '@/components/vow/VowAcknowledgementPrompt';
 import { shortPrice, pct } from './format';
+import { VOW_NOTICES } from "@/lib/vowNotice";
 
 // THE GATE IS IN THE SERVED HTML (MH-005, MA-001 change 5). The island used to render a
 // "Loading sold records…" row on every visit and show the gate only after the fetch answered:
@@ -59,13 +60,7 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
   // THE BONA FIDE SENTENCE IS UNDER THE CARD IN EVERY STATE (MC-036, PropTx item 5). It is
   // outside every branch below, so the server renders it into the HTML with the gate, and it
   // stays put through the acknowledgement card and the rows. Verbatim, not paraphrased.
-  const bonaFide = (
-    <p className="s-r-bona">
-      The information provided herein must only be used by consumers that have a bona fide
-      interest in the purchase, sale or lease of real estate and may not be used for any
-      commercial purpose or any other purpose.
-    </p>
-  );
+  const bonaFide = <p className="s-r-bona">{VOW_NOTICES}</p>;
 
   if (state === 'done' && needsAck) {
     return (

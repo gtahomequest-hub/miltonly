@@ -222,20 +222,15 @@ export interface CondoBuildingAttributes {
 }
 
 // LEASE side — informational only. NEVER feeds the sale market section or VIP.
-// recentRecords is populated only when leaseCount12mo ≥ K_ANON_PRICE (5): the
-// W2 lease-side coverage rule applied at building tier (DEC-WS4-5). Below k, the
-// per-trade lease gate fires on any per-trade lease claim.
+// MC-037 (PropTx s6.2(f), the street generator's MC-036 treatment): the ten individual leased
+// records and the min/max range are gone from the input. byBed is populated only when
+// leaseCount12mo ≥ K_ANON_PRICE (5) and carries, per bedroom count, the count and the typical
+// rent over the last 12 months, each bucket itself at k ≥ 5. Every per-trade lease claim is
+// fabrication; the validator's lease gate fires on any.
 export interface CondoLeaseInfo {
   leaseCount12mo: number;
   kAnonLevel: KAnonLevel;
-  recentRecords?: Array<{
-    address: string;       // PII-redacted: street# + streetName only
-    rent: number;          // monthly rent (For Lease sold_price)
-    beds: number;
-    daysOnMarket: number;
-    soldMonth: string;     // "YYYY-MM"
-  }>;
-  rangeStats?: { min: number; max: number };  // k ≥ 10
+  byBed?: Record<string, { count: number; typicalRent: number }>;
 }
 
 export interface CondoBuildingGeneratorInput {

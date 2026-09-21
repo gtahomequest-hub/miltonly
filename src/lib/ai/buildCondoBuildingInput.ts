@@ -41,8 +41,9 @@ import type {
 } from "@/types/hub-generator";
 
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
-const TREND_WINDOW_MONTHS = 30;
-const LEASE_RECORD_CAP = 10;
+import { DISPLAY_MONTHS } from "@/lib/vowWindow";
+// MC-037: the display window (src/lib/vowWindow.ts), whole quarters only; was 30 months.
+const TREND_WINDOW_MONTHS = DISPLAY_MONTHS;
 
 type SqlClient = NonNullable<ReturnType<typeof getSoldDb>>;
 
@@ -64,14 +65,6 @@ interface RawTypeAgg {
   avg_price: string | null;
   min_price: string | null;
   max_price: string | null;
-}
-interface RawLeaseRecord {
-  street_number: string | null;
-  street_name: string | null;
-  rent: string | null;
-  beds: number | null;
-  days_on_market: number | null;
-  sold_month: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,7 +130,7 @@ function saleQuarterlyQuery(keys: string[]) {
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Sale'
-         AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+         AND sold_date >= date_trunc('quarter', NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS}) + INTERVAL '3 months' - INTERVAL '1 day')
          AND sold_date <= NOW()
        GROUP BY yr, qtr ORDER BY yr, qtr`,
   );
@@ -147,19 +140,21 @@ function saleQuarterlyQuery(keys: string[]) {
 // address). Cap 10, most recent first. Fetched ONLY when the building's lease
 // count clears k (≥5); below that the per-trade lease gate fires (W2 lease-side
 // rule at building tier, DEC-WS4-5).
-function leaseRecordQuery(keys: string[]) {
-  return querySold<RawLeaseRecord>((db) =>
-    db`SELECT street_number, street_name, sold_price AS rent, beds, days_on_market,
-              to_char(sold_date, 'YYYY-MM') AS sold_month
+// MC-037: the lease side is an aggregate per bedroom count, never a record. Each bucket is
+// released at k ≥ 5 (the same floor the street generator's byBed uses).
+function leaseByBedQuery(keys: string[]) {
+  return querySold<{ beds: number | null; n: number; typical: string | null }>((db) =>
+    db`SELECT beds, COUNT(*)::int AS n,
+              PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
        FROM sold.sold_records
        WHERE property_type = 'condo'
          AND (street_number || '|' || street_slug) = ANY(${keys})
          AND perm_advertise = TRUE AND transaction_type = 'For Lease'
          AND sold_date >= NOW() - INTERVAL '12 months'
-         AND sold_date <= NOW() -- DEC-SOLD-UPPER-BOUND: and this one sorts DESC, so a
-                                -- future row would have led the list the model reads
-       ORDER BY sold_date DESC
-       LIMIT ${LEASE_RECORD_CAP}`,
+         AND sold_date <= NOW()
+         AND sold_price IS NOT NULL
+       GROUP BY beds
+       HAVING COUNT(*) >= ${K_ANON_PRICE}`,
   );
 }
 
@@ -267,28 +262,19 @@ export async function buildCondoBuildingInput(
   const saleByType = assembleSaleByType(saleByTypeRows);
   const saleQuarterly = assembleQuarterly(saleQuarterRows);
 
-  // LEASE side — informational. recentRecords only at k≥5 (gates the per-trade
-  // lease rule); rangeStats only at k≥10 (anti-fingerprinting).
+  // LEASE side — informational, an aggregate per bedroom count at k≥5 (MC-037; the ten
+  // individual records and the min/max range left the input, as they left the street's).
   const leaseKAnon: KAnonLevel =
     leaseCount === 0 ? "zero" : leaseCount >= K_ANON_PRICE ? "full" : "thin";
   const lease: CondoLeaseInfo = { leaseCount12mo: leaseCount, kAnonLevel: leaseKAnon };
   if (leaseCount >= K_ANON_PRICE) {
-    const recs = await leaseRecordQuery(memberKeys);
-    // MC-036: every record names the building itself, never a member row's own spelling of the
-    // address, so the prompt carries one address, its subject, and the choke can hold it to that.
-    const buildingAddress = (b.buildingAddress ?? b.displayName ?? "").trim();
-    lease.recentRecords = recs.map((r) => ({
-      address: buildingAddress || `${r.street_number ?? ""} ${r.street_name ?? ""}`.trim(),
-      rent: Math.round(num(r.rent) ?? 0),
-      beds: r.beds ?? 0,
-      daysOnMarket: r.days_on_market ?? 0,
-      soldMonth: r.sold_month ?? "",
-    }));
-    if (leaseCount >= K_ANON_RANGE) {
-      const lo = num(leaseRows[0]?.lo ?? null);
-      const hi = num(leaseRows[0]?.hi ?? null);
-      if (lo !== null && hi !== null) lease.rangeStats = { min: Math.round(lo), max: Math.round(hi) };
+    const byBed: Record<string, { count: number; typicalRent: number }> = {};
+    for (const r of await leaseByBedQuery(memberKeys)) {
+      const typical = num(r.typical);
+      if (r.beds === null || typical === null) continue;
+      byBed[String(r.beds)] = { count: r.n, typicalRent: Math.round(typical) };
     }
+    if (Object.keys(byBed).length > 0) lease.byBed = byBed;
   }
 
   // Fork (DEC-WS4-5). saleActive / leaseOnly are COMPLEMENTARY, keyed on the

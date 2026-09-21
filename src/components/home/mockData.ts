@@ -20,7 +20,7 @@ export const mockHomepageData: { hero: HeroContent } & Record<string, unknown> =
     // sentence set in Kaushan is decoration, not a heading.
     headline: 'What Milton homes actually sell for,',
     headlineAccent: 'street by street',
-    lede: 'Every published street. Recent sales. Plain answers.',
+    lede: 'Every street. Every school. Every answer.',
     // Street-first placeholder (V1). AskBar shows this as the resting placeholder;
     // askExamples animate over it as street/condo/neighbourhood prompts.
     askPlaceholder: 'Type any Milton street, condo, or neighbourhood',
