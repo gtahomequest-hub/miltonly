@@ -2,17 +2,18 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-21 (MC-037, the VOW follow-ups): `main` is `2411e8e` plus the two commits above it (this handoff and the median rule), production serves the merge and builds the follow-up. The display window on sold records is 24 months in one constant (`src/lib/vowWindow.ts`), DB2 keeps every row, purge 006 ran (8,650 rows, 0 remain), the 8.25 reliability sentence sits beside the bona fide sentence on every page type including the three ads pages, the homepage lede is "Every street. Every school. Every answer.", the condo generator sends no per-record rents, the 19 legacy FAQs are scrubbed, 22 hubs and 57 condos regenerated. Open for Aamir: the Archive Data question to PropTx (the cut is the reversible default), PropTx's copyright text, the ToU clauses (v) and (viii), the /privacy PropTx line, inactivity timeout, audit trail, "average" in hub and condo prose. Record `scratchpad/reports/MC-037-vow-window.md`._
+_Last rewritten 2026-09-21 (MC-037, the VOW follow-ups): `main` is `b4ebcd6` (the merge `2411e8e`, the median rule `ecc4524`, the docs), production serves it. The display window on sold records is 24 months in one constant (`src/lib/vowWindow.ts`), DB2 keeps every row, purge 006 ran (8,650 rows, 0 remain), the 8.25 reliability sentence sits beside the bona fide sentence on every page type including the three ads pages, the homepage lede is "Every street. Every school. Every answer.", the condo generator sends no per-record rents, the 19 legacy FAQs are scrubbed, 22 hubs and 57 condos regenerated. Open for Aamir: the Archive Data question to PropTx (the cut is the reversible default), PropTx's copyright text, the ToU clauses (v) and (viii), the /privacy PropTx line, inactivity timeout, audit trail, "average" in hub and condo prose. Record `scratchpad/reports/MC-037-vow-window.md`._
 
 ## READ THIS FIRST
 
-**MAIN IS `ecc4524` (MC-037 AND ITS FOLLOW-UP) AND PRODUCTION SERVES THE MERGE `2411e8e`, THEN BUILDS THE FOLLOW-UP.**
+**MAIN IS `b4ebcd6` AND PRODUCTION SERVES `b4ebcd6`, MC-037 LIVE, ON NODE 22.**
 `fix/vow-window @ 68f6662` merged by SHA as `2411e8e`; one build, one deploy; two local gates exit 0
 (578 s, 556 s; 810 static pages; zero `P2024`), prebuild 40 PASS (`vow-fields` 111), lint clean; full
 production battery **`PASS · 24 checks · 690 pages · 591s`** (`scratchpad/mc003/battery-mc037-prod-2411e8e-run2.log`). The
 commit above the merge carries the hub-tier "median" rule, the battery's aggregate rule and the
-regen loader fix (below); its production build is the proof for the validators, which no page
-render reads. **What is now true.** (1) `src/lib/vowWindow.ts` `VOW_DISPLAY_MONTHS = 24` (`null`
+regen loader fix (below); production built and serves `b4ebcd6` (the docs commit above it), and
+the full battery on that SHA is **`PASS · 24 checks · 690 pages · 560s`**
+(`scratchpad/mc003/battery-mc037-prod-b4ebcd6.log`, 690 of 690 streets PRERENDER). **What is now true.** (1) `src/lib/vowWindow.ts` `VOW_DISPLAY_MONTHS = 24` (`null`
 reverts it in one edit) bounds the street page's graduated fallback (`streetEnrichment.ts`
 `fullWindowAgg`), the hub ladder (`hubStreetLadder.ts` `rowsFull`), the hub and condo prose's
 quarterly trend (`TREND_WINDOW_MONTHS = DISPLAY_MONTHS`, whole quarters only: the trend starts at
@@ -549,8 +550,8 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`ecc4524`** (MC-037, the VOW follow-ups, and its follow-up commit above the merge `2411e8e`); production serves `2411e8e` and builds the follow-up |
-| battery on production | **`PASS · 24 checks · 690 pages · 591s`** at `2411e8e`, 2026-09-21 |
+| `main` | **`b4ebcd6`** (MC-037, the VOW follow-ups: the merge `2411e8e`, the fix `ecc4524`, the docs); production serves `b4ebcd6` |
+| battery on production | **`PASS · 24 checks · 690 pages · 560s`** at `b4ebcd6` (and 591s at `2411e8e`), 2026-09-21 |
 | `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
 | held for the next batch | `feat/web-analytics @ 7cfa4a2` (MH-009), DEC-BATCH-MERGE |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
