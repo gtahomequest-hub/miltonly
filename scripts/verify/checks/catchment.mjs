@@ -77,7 +77,7 @@ export default {
     return { url: `/streets/${slug}`, hits: catchmentHits(headFields(html)) };
   },
 
-  async finish(rows, { base }) {
+  async finish(rows, { base, crawled }) {
     // Every sitemap URL that is not a street page: fetched here, once, at the crawl's concurrency.
     const sm = await get(`${base}/sitemap.xml`);
     if (sm.status !== 200) throw new Error(`sitemap at ${base} returned ${sm.status}`);
@@ -85,7 +85,8 @@ export default {
     const others = [...new Set(
       [...sm.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(origin, '').replace(/\/$/, '') || '/'),
     )].filter((u) => !u.startsWith('/streets/'));
-    const streets = await publishedStreetSlugs(base);
+    // the crawled set: every published street in full mode, the sample otherwise (MC-035)
+    const streets = crawled ?? await publishedStreetSlugs(base);
 
     const fetched = [];
     let i = 0;

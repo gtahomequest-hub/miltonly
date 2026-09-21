@@ -2,9 +2,170 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-20 (MC-030, MC-029 on production): `main` is `c83fffb`, pushed and served (`/api/build` answers it; it is the head above merge `5994cc7`, docs only on top). Full production battery `FAIL · 21 checks · 644 pages · 910s` with every failing line one street the creation cron published at 02:01Z mid-crawl; purged and rerun `PASS · 4 checks · 645 pages · 596s`; `vow-fields` 15 of 15 on production. Record `scratchpad/reports/MC-030-vow-to-production.md`._
+_Last rewritten 2026-09-21 (MC-035 merged): `main` is `7064c1a`, production serves it. Every published street prerenders on production (796 static pages, build 145 s), DEC-BATCH-MERGE is in CLAUDE.md, the battery has `--streets=sample` (default full) and a prerender-coverage check, the four waste bots are refused in robots and at the Vercel Firewall. Battery `PASS · 22 checks · 677 pages · 746s`. Held: MH-009 `7cfa4a2`. Record `scratchpad/reports/MC-035-fewer-deploys.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `7064c1a` AND PRODUCTION SERVES `7064c1a`, MC-035 LIVE, ON NODE 22.** `fix/deploys @
+0318f35` merged as `722ad58` (its production build failed the prebuild: `prerenderStreetLimit
+(undefined)` reads `VERCEL_ENV`, which Vercel's build shell sets and the local prebuild does not),
+the fix `0b331ae` merged as `7064c1a`; four local gates exit 0, zero `P2024`, 794 then 796 static
+pages; production battery `PASS · 22 checks · 677 pages · 746s`. **What changed.** (A)
+`CLAUDE.md` "Decisions": DEC-MERGE-CORE-ONLY, DEC-ONE-PREVIEW, DEC-BATCH-MERGE (batches of two or
+three approved SHAs, one battery, one deploy; a live production defect deploys alone). Last week
+was 24 builds, 15 with code, 18 merges of 16 tasks; the rule gives 6 to 8 deploys a week. (B) The
+battery: `--streets=sample` (`scripts/verify/lib/sample.mjs`: one street per class the checks
+branch on, rotating by a run counter in the OS temp dir per host; the streets whose data changed
+since the last run here; a rotating fill to fifty), **default full** until Audit adds
+`node scripts/verify/run.mjs --streets=full` to the nightly (the nightly runs no battery today, so
+nothing would catch a sampled-out defect within 24 h; and after (C) the full crawl renders
+nothing anyway). The new check `prerender-coverage` sweeps every street BEFORE the crawl and fails
+production when a pre-build street answers MISS; `/api/build` answers `builtAt` (BUILD_AT from
+`next.config.mjs`) and `env`. **After a deploy, do not purge before the battery: the build is
+fresh, and a tag drop turns every prerendered page into a REVALIDATED render on its next request,
+which is what the sweep then reads (this run: HIT 1, REVALIDATED 676, MISS 0, because I purged
+first).** (C) `src/lib/streetPrerender.ts` keyed on `VERCEL_ENV`: every published street on
+production, fifty on a preview; `.env.local` carries `production`, so the local gate prerenders
+the corpus (8 to 11 minutes a build; run it detached with three workers on this 16 GB desk:
+`scratchpad/mc003/gate-build.ps1 <label>` writes `gate-<label>.txt` with the exit code, and the log
+comes out UTF-16). Build on Vercel 81 s to 145 s, 2 to 3 billed minutes. First request after a
+deploy: PRERENDER at 0.24 to 0.39 s (was a 2.3 s MISS). **No warm-streets job:** redundant for
+deploys; the street cache is emptied by tag drops (`listings`, `db2`, `db3`, `hubsets`, `surface`,
+3 to 6 a day), and a walker after each would be about 4,000 renders a day; the lever is the
+tags (drop `db3` only on a write; take `surface`, `hubsets` and `listings` off the page with a
+stamp key as MC-034 did for the rows), a follow-up. (D) `src/lib/bots.ts`, `robots.ts` and the
+Vercel Firewall rule "MC-035 waste bots" (PetalBot, SemrushBot, Amazonbot, AhrefsBot deny;
+proven 403, the welcome bots 200; the first rule this project has, applied through the API).
+Bytespider (11,379 requests in 7 days, more than the four together), tiktokspider,
+meta-externalagent and MJ12bot are unblocked and were not in scope. **The ignore rule cancels a
+redeploy of an already-built commit** (same SHA as the last successful deployment, no diff): a
+clean post-deploy sweep needs a real commit. Record: `scratchpad/reports/MC-035-fewer-deploys.md`;
+evidence `scratchpad/mc035/` (untracked).
+
+**HELD FOR THE NEXT BATCH (DEC-BATCH-MERGE, 2026-09-21):** `feat/web-analytics @ 7cfa4a2` (MH-009,
+Vercel Web Analytics, previewed, not merged; the Home worktree's head is its docs commit
+`3c133b8`). Merge it by SHA with the next batch, confirming the SHA against its report first.
+`fix/favicon @ 9144b35` and `feat/street-v3 @ 2553f2e` are already on `main` since MC-028
+(`ea81883`, `e078e91`); a request to merge them again is a stale report, not work.
+
+**MAIN IS `d068f84` AND PRODUCTION SERVES `d068f84`, MC-034 LIVE, ON NODE 22.** `fix/cost-2 @
+edae874` (the docs commit above the proven `6ba561e`) merged by SHA with `--no-ff` as `d068f84`
+on `5bd57e1`; no preview for the merge, the production build was the proof (`miltonly-cccss8tbn`,
+Ready, `/api/build` answers `d068f84`). Purged `db2`, `db3`, `listings` and the 22 hubs; full
+production battery **`PASS · 21 checks · 663 pages · 770s`**
+(`scratchpad/mc003/battery-mc034-prod-d068f84.log`; the creation cron had added 17 pages at
+00:01Z). **The after-window** (`pgstat-window.mjs 600 mc034-after`, 00:20 to 00:30Z, the first
+minutes after the deploy with every ISR page cold): DB1 47,728 calls, 212,510 rows; the street
+pull 324 calls, 4,631 rows, **0 full-row**, all narrow plus the stamps, over about 213 renders
+(the `StreetContent` reads); the before-window (21:34 to 21:44Z Sunday, a quiet hour): 26
+full-row calls, 233 rows over about 13 renders. Per render the pull moved about 88 KB before
+and about 4 KB after; a same-hour pair is still worth taking (21:34Z on a Sunday). **The first
+docs-only push after the merge is this one: `npx vercel ls --prod` should show it CANCELED in
+seconds; if it built, the rule is wrong and `vercel.json` is the first thing to read.** The
+paragraph below is the branch state as it was previewed.
+
+**`fix/cost-2 @ 6ba561e` WAS PREVIEWED AND MERGED (MC-034).** Three commits above
+`5bd57e1`: `f1291a4` the work, `a4c6eb4` the review's two fixes, `6ba561e` the rule under
+Vercel's 256-character `ignoreCommand` limit. Preview `miltonly-jm3fj4ug7` serves it; full
+battery there `PASS · 21 checks · 646 pages · 802s`; local gate exit 0, 168/168, `neon-egress`
+63. **What it does.** (1) `src/lib/street-data.ts`: `STREET_LISTING_SELECT` (fifteen columns, no
+photos, no description, no VOW-only column; the card's image is `photos[1]` of the active rows in
+one raw query), `getStreetPageData` under `perRequest` (React.cache, now exported from
+`hubSets.ts`) and the rows through `dataCached` keyed `["street-listings:v1",
+<count>:<max updatedAt>, ...siblingSlugs]`, revalidate 3600, tag `listings`
+(`LISTING_ROWS_TAG` in `revalidateSurfaces.ts`, dropped by `revalidateListingSurfaces` after
+every write by the three listing syncs, accepted by `/api/revalidate`). The stamp is in the key
+because `unstable_cache` serves a tag-dropped entry stale while it refreshes; a write changes the
+key. Measured on `main-street-milton`: production 4 full-row pulls a render (688 rows, 75 columns,
+about 3.4 MB); the preview 2 narrow pulls (344 rows, 15 columns) plus 2 stamp rows and 2 photo
+reads, and the next request within the hour 1 stamp row and no pull. The 4 pulls are the HTML and
+RSC passes of one regeneration; `cache()` alone halves them, the Data Cache zeroes the rest. A
+clean production window (21:34 to 21:44Z Sunday, nothing else on DB1): 16,118 calls, 95,159 rows,
+the full-row pull 26 calls, 233 rows; **the after-window is measured on production after the
+merge with `scratchpad/mc003/pgstat-window.mjs 600 mc034-after`, same hour.** (2)
+`vercel.json`: `if [ "$VERCEL_GIT_COMMIT_REF" != main ]; then exit 0; fi; B=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git cat-file -e $B^{commit} || exit 1; git diff --quiet $B HEAD -- docs/phase-4.1 || exit 1; git diff --quiet $B HEAD -- . ':!scratchpad' ':!docs' ':!*.md'`,
+proven on the real pushes (a merge under a docs commit builds; docs only and the nightly audit
+skip; a missing base builds); `docs/phase-4.1/` always builds because the generators read those
+prompt files at runtime; CLAUDE.md says the same. **After the merge, the first docs-only push
+to `main` is the proof: `npx vercel ls --prod` shows it CANCELED in a few seconds.** (3) Item 2
+was not done, correctly: the "unused" Neon project `lingering-sea-07597558` is inspectionly.ca's
+production database (MC-016 and MC-033 were wrong to call it idle; its $15.66 a month is
+inspectionly's line on the shared Vercel invoice); `suspend_timeout_seconds` 0 is Launch's 300 s
+default on every endpoint and Launch allows nothing between that and never; 0 hours saved.
+(4) Previews per worktree in the last 7 days and the one-preview-per-task rule are in the report;
+skips cost $0. **Battery note:** with the Data Cache on the rows, a local `next start` battery
+must drop the `db2`, `db3` and `listings` tags first (`purge-preview.mjs` pattern) or the on-disk
+cache serves yesterday's rows. **Review notes left for a later task:** the street card prints
+`address` regardless of `displayAddress` (pre-existing); `latitude`/`longitude` are 0/0 on every
+row and `townLat`/`townLng` are the coordinates the rows carry; the generation twin in
+`src/lib/ai/buildGeneratorInput.ts:168` still pulls full rows (cron-time, not per render); the
+3,700 to 5,100 narrow rows the other street queries read per render are the next egress lever.
+Record: `scratchpad/reports/MC-034-cost-fixes.md`; evidence in `scratchpad/mc034/` (untracked).
+
+**MAIN IS `2510466` AND PRODUCTION SERVES `2510466`, ML-005 THE BOT GATE LIVE, ON NODE 22.**
+`feat/leads @ 064c5b6` merged by SHA as `2510466` on `e5c7ca7`: the door's guard set on
+`/api/leads/create` (honeypot, origin, a user-agent guard refusing a missing or quoted
+`User-Agent` with 200 and nothing written or sent, the rate limit keyed on the collapsed inbox
+with a daily window), every write and send behind `IngestDeps`, prebuild `test-lead-bot-gate.ts`
+(100 bot submissions through the real path, 0 rows, 0 emails). Three resolutions in the merge
+commit: `package.json` unions the prebuild line; `test-lead-forms.ts` excludes neither
+`ListingsCardsClient` (gone since MC-029) nor `ListingDetailClient` (a real form with the
+honeypot now); `ListingDetailClient.tsx` keeps MC-029's imports and takes ML-005's honeypot.
+Gate exit 0, 168/168, `P2024` 0. Proven on production (`scratchpad/mc003/mc032-proof.mjs
+bot|normal|delete`): a quoted UA answers `200 {"ok":true}` and writes no row, no activity, no
+Resend send; a Chrome UA writes the row (`env production`), records two `email_sent` rows, and
+Resend reports both the confirmation and the ops alert delivered; the row was then deleted.
+Battery `PASS · 21 checks · 646 pages · 871s`. Record: `scratchpad/reports/MC-032-lead-bot-gate.md`.
+
+**MC-033, THE COST CHECK (NO CODE), IN ONE PARAGRAPH.** Vercel's real billing period is the 3rd
+07:00Z to the 3rd; team on-demand billed **$156.76 at day 17 against $41.37 for all of last
+cycle**, Build CPU Minutes 87% of it ($154.20 usage; miltonly $81.86 for about 780 billed minutes
+against $22.15 for 211; homesly $61.76). Infra fell from $12.91 a day to $4.15 a day after the
+branch rule (`65e9c90`, 09-14), still 2.5x last cycle's daily rate: the residual is deploy count
+(3.1 production a day, 9 of the last 25 docs-only; worktree CLI previews about $30 a cycle) at
+$0.105 a Turbo minute, about $0.32 a production build. The 37 ignore-rule skips this cycle cost
+nothing measurable. Projected cycle end: **about $210 on demand, about $260 invoiced**; the $200
+budget is crossed about 09-30. **Neon egress is free on Launch (500 GB a project included) but
+DB1 is 71.6 GB month-to-date against the 16 GB ceiling, projected 106 GB**, 3.29 GB a day since
+MC-016 against 3.90 before (16% down, not the cut). Half of it is one statement: the unselected
+full-row `Listing` `findMany` on every street render, twice a render (`generateMetadata` and the
+page, no memo), about 4.9 KB a row on the wire (photos and description in TOAST), about 1.5 GB
+a day; 80% of renders are standing traffic at `revalidate = 3600`, batteries a quarter. Neon's
+bill is compute: 323 CU-h month-to-date across three computes awake 19 to 22.6 h a day (DB1 124,
+DB2 103, **the integration project nothing reads 96**), about $34 now, about $53 at month end.
+One battery in `pg_stat_statements` (MC-031's): DB1 +231,834 calls, +431,444 rows; DB2 +123,451,
++111,658; the window carried a local battery from another worktree and Neon's own monitoring;
+the production run alone is about 0.08 to 0.14 GB. Evidence in `scratchpad/mc033/` (untracked).
+Record: `scratchpad/reports/MC-033-cost-check.md`. The three levers it points at, none taken:
+select columns on the street render's `Listing` pull (or memo it per request), suspend or delete
+the integration Neon project, and fewer docs-only production builds (a docs path in the ignore
+rule would need the CLAUDE.md sentence changed).
+
+**MAIN IS `1a5a24d` AND PRODUCTION SERVES `1a5a24d`, MP-002b THE PASSWORD LIVE, ON NODE 22.**
+`feat/portal @ 98d2cd7` merged by SHA as `c1caac8` on `e087209` (the 2026-09-20 nightly audit):
+TRREB R-805(c), a username and a password per consumer. The email is the username; the card
+asks for a password (12+, bcrypt cost 12) with the acknowledgement; `POST /api/auth/login` is the
+returning sign-in with its own limiter and one 401 message for wrong, unknown and unset;
+`src/lib/vow-access.ts` `canSeeVowRecords` (verified, acknowledged, password set) is the one rule
+and the prebuild `test-portal-door.ts` reads ten files for the call. **Merge resolution, in the
+merge commit:** MC-029's `/api/listings/[mlsNumber]/vow`, `/listings` and `/api/auth/saved-listings`
+predate the rule and gated on a bare `vowAcknowledgedAt`; they now call `canSeeVowRecords`, so a
+session that came in by link and closed the card sees no VOW field on the listing page or the
+grid either. Full gate on Node 22 exit 0, 168/168, `P2024` 0, portal-door 126, vow-fields 67;
+`prisma migrate status` 31, up to date (`20260918120000_portal_password` was applied from the
+portal worktree). **The battery's signed-in half now uses the password** (`1a5a24d`): with
+`VERIFY_PORTAL_PASSWORD` in `.env.local` (never the repo; the desk row's passphrase, set through
+the live card on 2026-09-20) `vow-fields` POSTs `/api/auth/login`, no email and no signup limit
+spent; without it, the code door as before. Proofs on production, iPhone UA at 390
+(`scratchpad/mc003/mc031-proof.mjs card|login|row|reset-pw|delete-mc028`): an acknowledged row
+with no password gets the password-only card inline on the street ("Choose a password to
+finish", two password inputs, no name field) and 12 rows 1.6 s after saving; a returning sign-in
+from a fresh browser with email and password lands on `/streets/farmstead-drive-milton#sold-records`
+with 12 rows in 3.4 s. Purged tags and hubs, full production battery `PASS · 21 checks · 646
+pages · 878s`. `User` holds one row (the `+mc028` test row deleted). **The neon HTTP driver reads
+`timestamp` columns +4 h** (parsed as local); read them with `to_char` or trust Prisma. Record:
+`scratchpad/reports/MC-031-portal-password.md`, with the four URLs and the one-line TRREB
+sentence. The MC-030 and MC-029 paragraphs below stand.
 
 **MAIN IS `c83fffb` AND PRODUCTION SERVES `c83fffb`, MC-029 LIVE, ON NODE 22.** Production
 answered 200 again on 2026-09-19 evening (Vercel's pause lifted after about seven hours of 402),

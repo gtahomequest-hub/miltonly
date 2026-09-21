@@ -15,7 +15,7 @@
 // reason, and it asserts only what holds of both. See the comment on that block.
 
 import { readFileSync, existsSync } from "node:fs";
-import { checkHoneypot, checkOrigin, checkRateLimit, hostAllowed, HONEYPOT_FIELD } from "@/lib/lead/guards";
+import { checkHoneypot, checkOrigin, checkRateLimit, checkUserAgent, emailLimitKey, hostAllowed, HONEYPOT_FIELD, RATE_LIMITS } from "@/lib/lead/guards";
 import { resolveLeadEnv, isCountable } from "@/lib/lead/env";
 import { normalizeIntent, isCanonicalIntent, leadValueFor } from "@/lib/lead/intent";
 import { kindForSource } from "@/lib/lead/savedSearch";
@@ -202,23 +202,49 @@ async function main() {
   const sender = readFileSync("src/app/api/alerts/match/route.ts", "utf-8");
   ok(sender.includes("resolveLeadEnv("), "sender: resolves the environment it is running in");
   ok(/findMany\(\{[\s\S]*?env,/.test(sender), "sender: matches only watches from its own environment");
+  const stripped = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^[ \t]*\/\/.*$/gm, " ");
   const ingestSrc = readFileSync("src/lib/lead/ingest.ts", "utf-8");
-  ok(/createWatchForLead\(\{[\s\S]*?env,/.test(ingestSrc), "wiring: ingest hands the env to the watch");
+  ok(/deps\.watch\(\{[\s\S]*?env,/.test(ingestSrc), "wiring: ingest hands the env to the watch");
 
   // ── structural: the guards are actually wired into the one path ───────────────
   const ingest = readFileSync("src/lib/lead/ingest.ts", "utf-8");
   ok(ingest.includes("checkHoneypot("), "wiring: ingest calls checkHoneypot");
   ok(ingest.includes("checkOrigin("), "wiring: ingest calls checkOrigin");
-  ok(ingest.includes("checkRateLimit("), "wiring: ingest calls checkRateLimit");
+  ok(ingest.includes("checkUserAgent("), "wiring: ingest calls checkUserAgent (ML-005)");
+  ok(ingest.includes("deps.rateLimit("), "wiring: ingest calls the rate limit through deps");
+  ok(/rateLimit: checkRateLimit,/.test(ingest), "wiring: the live rate limit is checkRateLimit");
   ok(ingest.includes("resolveLeadEnv("), "wiring: ingest resolves the env tag");
   ok(ingest.includes("env,"), "wiring: ingest writes the env tag onto the row");
 
-  // Every guard must run BEFORE the write, or a rejected submission still costs a row.
-  const writeAt = ingest.indexOf("prisma.lead.create");
-  ok(writeAt > 0, "wiring: ingest writes through prisma.lead.create");
-  for (const guard of ["checkHoneypot(", "checkOrigin(", "checkRateLimit("]) {
+  // Every guard must run BEFORE the write, or a rejected submission still costs a row. The
+  // write is deps.createLead (ML-005), whose live binding is prisma.lead.create.
+  const writeAt = ingest.indexOf("await deps.createLead(");
+  ok(writeAt > 0, "wiring: ingest writes through deps.createLead");
+  ok(/createLead: \(data\) => prisma\.lead\.create\(/.test(ingest), "wiring: the live createLead is prisma.lead.create");
+  for (const guard of ["checkHoneypot(", "checkOrigin(", "checkUserAgent(", "deps.rateLimit("]) {
     ok(ingest.indexOf(guard) < writeAt, `wiring: ${guard.slice(0, -1)} runs before the row is written`);
   }
+  // Every send goes through deps too, or the bot gate's counters would have a blind spot.
+  for (const live of ["sendLeadConfirmation(", "sendOpsAlert(", "notifyAamirBySMS(", "sendKvcoreParserEmail(", "sendCapiEvent(", "recordDeliveries(", "createWatchForLead("]) {
+    ok(!stripped(ingest).includes(live), `wiring: ingest never calls ${live.slice(0, -1)} directly; it goes through deps`);
+  }
+
+  // ── ML-005: the per-address key and the user-agent guard ──────────────────────
+  eq(emailLimitKey("A.b.C+tag@Gmail.com"), "abc@gmail.com", "email key: gmail dots and plus-tag collapse");
+  eq(emailLimitKey("a.b.c@googlemail.com"), "abc@gmail.com", "email key: googlemail is gmail");
+  eq(emailLimitKey("first.last+x@example.com"), "first.last@example.com", "email key: plus-tag collapses everywhere, dots only on gmail");
+  eq(emailLimitKey("  Plain@Example.com "), "plain@example.com", "email key: lowercased and trimmed");
+  eq(emailLimitKey(""), null, "email key: empty is null");
+  eq(emailLimitKey("r.o.b.i.nmjo.se.ph.2.2@gmail.com"), "robinmjoseph22@gmail.com", "email key: the bot's dotted alias collapses to its inbox");
+  ok(!checkUserAgent(null).ok && checkUserAgent(null).status === 200, "user agent: missing is refused at 200");
+  ok(!checkUserAgent('"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"').ok, "user agent: the bot's quoted string is refused");
+  ok(checkUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36").ok, "user agent: the same string unquoted passes");
+  ok(checkUserAgent("node").ok && checkUserAgent("curl/8.21.0").ok, "user agent: the proof scripts' agents pass");
+  ok(RATE_LIMITS.ipDay.tokens >= 10 && RATE_LIMITS.emailDay.tokens >= 5, "rate limit: the daily windows sit above what a household sends");
+  ok(RATE_LIMITS.ip.tokens < RATE_LIMITS.ipDay.tokens && RATE_LIMITS.email.tokens < RATE_LIMITS.emailDay.tokens, "rate limit: the burst window is tighter than the daily one");
+  const guardsSrc = readFileSync("src/lib/lead/guards.ts", "utf-8");
+  ok(/const key = emailLimitKey\(args\.email\)/.test(guardsSrc), "rate limit: the per-address limit keys on the collapsed address");
+  ok(!/emailLimitKey/.test(ingest), "rate limit: the collapsed key never reaches ingest, so the stored address is the typed one");
 
   const route = readFileSync("src/app/api/leads/create/route.ts", "utf-8");
   ok(route.includes("ingestLead("), "wiring: the route delegates to the one ingest path");

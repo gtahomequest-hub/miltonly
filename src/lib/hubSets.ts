@@ -17,7 +17,9 @@ import { revalidateTag } from "next/cache";
 import { dataCached } from "@/lib/dataCache";
 import { prisma } from "@/lib/prisma";
 
-const perRequest = <T>(fn: T): T => {
+/** React.cache when it exists (a server render), the bare function otherwise (a script). Shared
+ *  by the street render (MC-034: getStreetPageData is memoised per request with it). */
+export const perRequest = <T>(fn: T): T => {
   const c = (React as unknown as { cache?: (f: T) => T }).cache;
   return typeof c === "function" ? c(fn) : fn;
 };

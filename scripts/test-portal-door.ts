@@ -363,6 +363,9 @@ async function main() {
     "src/components/vow/VowGate.tsx",
     "src/app/sold/page.tsx",
     "src/components/street/NeighbourhoodSoldBlock.tsx",
+    "src/app/api/listings/[mlsNumber]/vow/route.ts",
+    "src/app/listings/page.tsx",
+    "src/app/api/auth/saved-listings/route.ts",
   ]) {
     const src = readFileSync(f, "utf8");
     ok(src.includes("canSeeVowRecords("), `${f} gates through canSeeVowRecords`);
