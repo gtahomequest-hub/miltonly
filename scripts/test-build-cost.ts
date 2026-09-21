@@ -70,7 +70,7 @@ for (const job of ["compute-sold-stats", "compute-board", "compute-geni"]) {
 // (e)
 ok(PRERENDER_STREET_LIMIT_PREVIEW === 50, `PRERENDER_STREET_LIMIT_PREVIEW is 50 (${PRERENDER_STREET_LIMIT_PREVIEW})`);
 ok(prerenderStreetLimit("production") === Number.POSITIVE_INFINITY, "production prerenders every published street (MC-035)");
-ok(prerenderStreetLimit("preview") === 50 && prerenderStreetLimit(undefined) === 50, "a preview and a bare build prerender fifty");
+ok(prerenderStreetLimit("preview") === 50 && prerenderStreetLimit("development") === 50 && prerenderStreetLimit("") === 50, "a preview, a development build and an unnamed environment prerender fifty");
 const street = code("src/app/streets/[slug]/page.tsx");
 ok(/topStreetSlugsForPrerender\(\)/.test(street), "the street page prerenders through topStreetSlugsForPrerender");
 ok(!/streetContent\.findMany/.test(street), "the street page prerenders through the helper, not its own query");
