@@ -2,9 +2,61 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-21 (MC-036, the PropTx VOW display rules): `main` is `b814d99`, production serves it. The address flag is honoured on every surface, searches cap at 100, the bona fide notice is on every page, the brokerage sits in the listing's own typeface in every view, our contact cards say they are not the listing brokerage, /privacy/request exists, per-record lease comps left the prompts, ShowingRequirements left the sold sync. Open for Aamir: Archive Data (the two-year cut or the agreement), PropTx's copyright text, the reliability sentence, the ToU clauses (v) and (viii), purge 006. Record `scratchpad/reports/MC-036-vow-display-rules.md`; sources in `docs/compliance/`._
+_Last rewritten 2026-09-21 (MC-037, the VOW follow-ups): `main` is `2411e8e` plus the two commits above it (this handoff and the median rule), production serves the merge and builds the follow-up. The display window on sold records is 24 months in one constant (`src/lib/vowWindow.ts`), DB2 keeps every row, purge 006 ran (8,650 rows, 0 remain), the 8.25 reliability sentence sits beside the bona fide sentence on every page type including the three ads pages, the homepage lede is "Every street. Every school. Every answer.", the condo generator sends no per-record rents, the 19 legacy FAQs are scrubbed, 22 hubs and 57 condos regenerated. Open for Aamir: the Archive Data question to PropTx (the cut is the reversible default), PropTx's copyright text, the ToU clauses (v) and (viii), the /privacy PropTx line, inactivity timeout, audit trail, "average" in hub and condo prose. Record `scratchpad/reports/MC-037-vow-window.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `ecc4524` (MC-037 AND ITS FOLLOW-UP) AND PRODUCTION SERVES THE MERGE `2411e8e`, THEN BUILDS THE FOLLOW-UP.**
+`fix/vow-window @ 68f6662` merged by SHA as `2411e8e`; one build, one deploy; two local gates exit 0
+(578 s, 556 s; 810 static pages; zero `P2024`), prebuild 40 PASS (`vow-fields` 111), lint clean; full
+production battery **`PASS · 24 checks · 690 pages · 591s`** (`scratchpad/mc003/battery-mc037-prod-2411e8e-run2.log`). The
+commit above the merge carries the hub-tier "median" rule, the battery's aggregate rule and the
+regen loader fix (below); its production build is the proof for the validators, which no page
+render reads. **What is now true.** (1) `src/lib/vowWindow.ts` `VOW_DISPLAY_MONTHS = 24` (`null`
+reverts it in one edit) bounds the street page's graduated fallback (`streetEnrichment.ts`
+`fullWindowAgg`), the hub ladder (`hubStreetLadder.ts` `rowsFull`), the hub and condo prose's
+quarterly trend (`TREND_WINDOW_MONTHS = DISPLAY_MONTHS`, whole quarters only: the trend starts at
+the first quarter boundary inside the window, Q4 2024 today, never a partial "Q3 2024" of a few
+sales), the condo "N trades on record" and the hero search's "N homes"; the battery's mirror
+`scripts/verify/lib/db.mjs` carries the same literal and `test-vow-fields` fails if the two diverge
+or a bound goes missing. **DB2 keeps every row.** The three existence gates stay whole on purpose
+and the test asserts it: bounding the street probe would 404 `walsh-avenue-milton`, bounding
+`anySaleOnRecord` would make 12 streets claim "No resales recorded yet", bounding
+`countRecordedTransactions` would stop 8 streets regenerating. Blast radius, measured before the
+cut (`scratchpad/mc037/journal-results.json`): 690 published streets, none vanish; 84 change tier;
+37 lose the sale typical and 24 the lease typical; the hub ladder keeps 133 of 170 typicals (37
+silent on 11 hubs); 303 hero counts shrink, 9 lose the suffix; 3 condos lose "N trades on record".
+All 22 hubs regenerated ($0.1125, three runs; cobban and willmott fail closed on
+`temporal_pairing` first) and 57 of 59 condos ($0.112; 158-mill-street and 174-bronte-street
+skipped by the zero-data guard, prose kept). (2) Purge 006 executed on DB2: 8,650 rows, 0 / 0 / 0
+remain, recorded in the file. (3) `src/lib/vowNotice.ts` `VOW_NOTICES` = the bona fide sentence +
+"The information is deemed reliable but is not guaranteed accurate by PropTx.", rendered by the
+footer, the sold-records island, the listing island, `VowComplianceNotice`, `/sold` and the three
+ads pages' own footer; `vow-display` asserts both on twelve page types. (4) Homepage lede "Every
+street. Every school. Every answer." (`mockData.ts`, the only surface). (5) The condo generator
+sends `byBed` lease typicals at k5, no records, no min/max; the three condo prompt docs ban a
+per-trade lease claim. (6) The 19 legacy "full MLS® access" FAQ answers scrubbed in place
+(`scripts/scrub-legacy-faq.ts --write`, 16 pages revalidated, 0 remain); those rows still carry
+the legacy "exact days-on-market per transaction is available to registered users" line,
+unrendered. **The battery's first run failed twice, both fixed on main above the merge, neither
+a page defect.** (a) `vow-fields` signs in as "the most recently acknowledged verified user", and
+the Portal builder's MP-006 test row (`gtahomequest+mp006@gmail.com`, acknowledged 19:30Z) had
+become that user, so the password sign-in answered 401: the check now prefers the row
+`VERIFY_PORTAL_EMAIL` names (`.env.local`, beside the password) and says so when the two do not
+match. (b) The regenerated hub prose said "a median of 92 days on market" on bronte-meadows and
+"median" on three more (old-milton, rural-milton-west, harrison): the voice rule is "typical",
+never "median", and nothing at hub tier refused it. `validateHubGeneration.ts` and
+`validateCondoGeneration.ts` now fail closed on the word (`methodology_leak`), the three hub-tier
+system prompts say so, the four hubs are regenerated ($0.0138) and revalidated, 0 of 22 say it.
+The check's bare-count rule is now "its own element or JSON string" (`>65 days on market`,
+`\"65 days on market\"`, `· 65 days on market`) instead of a list of six prefixes, because an
+aggregate can be introduced by any word ("Clarke's 81 days on market", "a whole: 69 days on
+market"); the JSON keys and "Listed N days ago" stay as they were. **Still on the prose, not
+fixed:** "average" appears in 15 hubs and 48 condos (the street prompt bans it, the hub-tier
+prompts do not; CLAUDE.md bans only "median"), a prompt-consistency decision for Aamir, about
+$0.25 to regenerate. `scripts/regen-condo-local.ts` reads a CRLF `.env.local` now and takes
+`REGEN_ORDER` as a file path. Record: `scratchpad/reports/MC-037-vow-window.md`; evidence
+`scratchpad/mc037/` (untracked).
 
 **MAIN IS `b814d99` AND PRODUCTION SERVES `b814d99`, MC-036 LIVE, ON NODE 22.** The PropTx VOW
 Best Practices (the PDF in `docs/compliance/`, indexed by its README with every R-8xx citation
@@ -497,10 +549,10 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`7196623`** (MC-028: the favicon set, Street Page v3, Portal slice 1, ML-004, on top of MC-027), production serves it |
-| battery on production | **`PASS · 20 checks · 609 pages · 713s`** at `7196623`, 2026-09-18 |
-| `prisma migrate status` | **clean**, 30 migrations (`20260917120000_portal_door` was already applied when merged) |
-| waiting on merge | nothing |
+| `main` | **`ecc4524`** (MC-037, the VOW follow-ups, and its follow-up commit above the merge `2411e8e`); production serves `2411e8e` and builds the follow-up |
+| battery on production | **`PASS · 24 checks · 690 pages · 591s`** at `2411e8e`, 2026-09-21 |
+| `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
+| held for the next batch | `feat/web-analytics @ 7cfa4a2` (MH-009), DEC-BATCH-MERGE |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -875,5 +927,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the 39 queued streets; Portal slices MP-003 (the account) and MP-004 (the loop back) on
-a prompt; the Node 24 runtime move before 2026-10-01; `barclay-circle` and `gordon-krantz-avenue` on a later pass.
+Whatever Aamir names. Held: MH-009 `7cfa4a2` for the next batch. Open from MC-036 and MC-037: the Archive
+Data question to PropTx (the 24-month cut is the reversible default, `VOW_DISPLAY_MONTHS`); PropTx's copyright
+text; the ToU clauses (v) and (viii); the `/privacy` PropTx line; inactivity timeout and audit trail; "average" in
+hub and condo prose; the legacy days-on-market FAQ line on 19 rows; the Node 24 runtime move before 2026-10-01.
