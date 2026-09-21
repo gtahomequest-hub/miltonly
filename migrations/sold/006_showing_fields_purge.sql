@@ -18,8 +18,11 @@
 --                $select, both columns hard-nulled in the column map, both keys stripped from
 --                the raw_vow_data blob, so this purge cannot refill.
 --
--- !!! NOT YET EXECUTED — data-destructive; runs on PROD only after the requester's gate. !!!
--- Order: the source-stop (vow-sync.ts) is deployed FIRST, then this migration runs once.
+-- EXECUTED 2026-09-21 (MC-037), on production DB2, after the source-stop shipped in b814d99 (MC-036):
+--   8,650 rows updated (showing_requirements 8,649, showing_appointments 1,852, raw_vow_data keys 8,650);
+--   confirmed after: 0 / 0 / 0. Nine of the 1,852 appointment strings carried an email or phone
+--   pattern; nothing was harvested, the requester's decision (the field is how to book, not a
+--   contact list).
 -- ============================================================================
 
 UPDATE sold.sold_records

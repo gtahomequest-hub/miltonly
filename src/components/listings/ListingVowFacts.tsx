@@ -19,8 +19,9 @@ import type { ListingVowFacts as Facts, ListingVowResponse } from "@/app/api/lis
 // Practices. It is printed in every state of the island, so the sentence is on the page from
 // the first byte: under the sign-in line for an anonymous reader and under the facts for an
 // acknowledged one. No Oxford comma: a battery check matches the string exactly.
-export const VOW_BONA_FIDE_NOTICE =
-  "The information provided herein must only be used by consumers that have a bona fide interest in the purchase, sale or lease of real estate and may not be used for any commercial purpose or any other purpose.";
+import { VOW_NOTICES } from "@/lib/vowNotice";
+// the two sentences live in src/lib/vowNotice.ts (MC-037); re-exported for the one importer
+export const VOW_BONA_FIDE_NOTICE = VOW_NOTICES;
 
 const STATUS_WORD: Record<string, string> = {
   active: "Active, for sale",

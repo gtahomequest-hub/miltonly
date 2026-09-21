@@ -20,6 +20,7 @@ import { FooterSearch } from './FooterSearch';
 import { BriefSignup } from '../nav/BriefSignup';
 import './footer.css';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
+import { VOW_NOTICES } from "@/lib/vowNotice";
 
 interface Props {
   footer: FooterData;
@@ -118,11 +119,7 @@ export function HomeFooter({ footer, brand, context }: Props) {
           {/* PropTx's consumer notice, verbatim (VOW Best Practices item 5; MC-036). The footer is
               the one element on every page type, so this is the one place the sentence cannot be
               missing from a surface that shows VOW data. */}
-          <span data-vow-notice>
-            The information provided herein must only be used by consumers that have a bona fide
-            interest in the purchase, sale or lease of real estate and may not be used for any
-            commercial purpose or any other purpose.
-          </span>
+          <span data-vow-notice>{VOW_NOTICES}</span>
           {" "}
           Information deemed reliable but not guaranteed. © Miltonly.
           {" "}

@@ -2,6 +2,8 @@
 // page that renders sold data per the VOW licensing agreement. Static
 // server component, no client-side JS.
 
+import { VOW_NOTICES } from "@/lib/vowNotice";
+
 export default function VowComplianceNotice({
   brokerageName = "RE/MAX Realty Specialists Inc.",
 }: {
@@ -12,12 +14,7 @@ export default function VowComplianceNotice({
       <p className="font-semibold text-[#07111f] mb-1">
         Source: TREB MLS<sup>®</sup>
       </p>
-      <p className="mb-1">
-        The information provided herein must only be used by consumers that
-        have a bona fide interest in the purchase, sale or lease of real
-        estate and may not be used for any commercial purpose or any other
-        purpose.
-      </p>
+      <p className="mb-1">{VOW_NOTICES}</p>
       <p className="text-[#94a3b8]">
         Brokerage: <span className="font-medium text-[#475569]">{brokerageName}</span>
       </p>

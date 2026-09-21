@@ -47,6 +47,7 @@
 import { getSoldDb } from "@/lib/db";
 import { roundPriceForProse } from "@/lib/format";
 import { deriveIdentity } from "@/lib/streetUtils";
+import { DISPLAY_MONTHS } from "@/lib/vowWindow";
 
 const K_TYPICAL = 5; // the price floor, mirrored from streetEnrichment.ts. Never dropped.
 
@@ -132,6 +133,7 @@ async function pooledAggregates(): Promise<{ twelve: Map<string, Agg>; full: Map
               array_agg(sold_price ORDER BY sold_price) AS prices
        FROM sold.sold_records
        WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
+         AND sold_date >= NOW() - (INTERVAL '1 month' * ${DISPLAY_MONTHS})
          AND sold_date <= NOW() AND sold_price IS NOT NULL
          AND street_slug IS NOT NULL
        GROUP BY 1` as unknown as Promise<Row[]>,

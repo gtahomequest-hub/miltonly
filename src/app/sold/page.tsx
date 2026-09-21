@@ -16,6 +16,7 @@
 
 import type { Metadata } from "next";
 import { publishedHubSlugs, neighbourhoodRows } from "@/lib/hubSets";
+import { VOW_NOTICES } from "@/lib/vowNotice";
 import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
@@ -306,11 +307,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             <b>
               Source: TREB MLS<sup>®</sup>
             </b>
-            <p>
-              The information provided herein must only be used by consumers that have a
-              bona fide interest in the purchase, sale or lease of real estate and may not
-              be used for any commercial purpose or any other purpose.
-            </p>
+            <p>{VOW_NOTICES}</p>
             <p>Brokerage: RE/MAX Realty Specialists Inc.</p>
           </div>
         </div>

@@ -23,6 +23,7 @@ import { saleAggQuery, assembleAggregates } from "@/lib/ai/buildHubInput";
 
 const K_TYPICAL = 5;   // price floor — NEVER dropped
 import { K_IDENTITY } from "@/lib/kAnon";  // below this on BOTH sides → identity-only
+import { DISPLAY_MONTHS } from "@/lib/vowWindow";
 
 export type PriceWindow = "12mo" | "full";
 
@@ -71,6 +72,7 @@ async function fullWindowAgg(siblingSlugs: string[], tx: "For Sale" | "For Lease
     WHERE street_slug = ANY(${siblingSlugs}::text[])
       AND perm_advertise = TRUE
       AND transaction_type = ${tx}
+      AND sold_date >= NOW() - (INTERVAL '1 month' * ${DISPLAY_MONTHS})
       AND sold_date <= NOW()
       AND sold_price IS NOT NULL
   ` as unknown as Promise<Array<{ n: number; avg: string | null }>>).catch(() => [] as Array<{ n: number; avg: string | null }>);

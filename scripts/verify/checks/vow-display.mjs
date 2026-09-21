@@ -22,6 +22,8 @@ import { get } from '../lib/http.mjs';
 import { loadEnv, requireEnv } from '../lib/env.mjs';
 
 export const BONA_FIDE = 'The information provided herein must only be used by consumers that have a bona fide interest in the purchase, sale or lease of real estate and may not be used for any commercial purpose or any other purpose.';
+// the second half of item 22 (MLS Rules 8.25), rendered beside the first everywhere it appears (MC-037)
+export const RELIABILITY = 'The information is deemed reliable but is not guaranteed accurate by PropTx.';
 const RESULT_CAP = 100;
 const REFRESH_HOURS = 26;
 
@@ -127,19 +129,25 @@ export default {
     const hubs = [...new Set([...(await get(`${base}/sitemap.xml`)).body.matchAll(/<loc>[^<]*\/neighbourhoods\/([a-z0-9-]+)<\/loc>/g)].map((m) => m[1]))];
     const condo = ((await get(`${base}/sitemap.xml`)).body.match(/<loc>[^<]*(\/condos\/[a-z0-9-]+)<\/loc>/) || [])[1];
     const sale = (await app`SELECT "mlsNumber" m FROM public."Listing" WHERE "permAdvertise" AND status = 'active' AND "transactionType" <> 'For Lease' AND "displayAddress" ORDER BY "listedAt" DESC LIMIT 1`)[0]?.m;
+    const lease = (await app`SELECT "mlsNumber" m FROM public."Listing" WHERE "permAdvertise" AND "leaseStatus" = 'active' AND "transactionType" = 'For Lease' AND "displayAddress" ORDER BY "listedAt" DESC LIMIT 1`)[0]?.m;
+    // the three ads landing pages mount no site chrome and carry the notices in their own footer
     const pageTypes = [
       ['homepage', '/'], ['street page', `/streets/${slugs[0]}`], ['listing page', sale ? `/listings/${sale}` : null], ['listings grid', '/listings'],
       ['rentals', '/rentals'], ['sold', '/sold'], ['hub', hubs[0] ? `/neighbourhoods/${hubs[0]}` : null], ['condo', condo || null], ['saved', '/saved'],
+      ['rentals ads index', '/rentals/ads'], ['rental ad', lease ? `/rentals/ads/${lease}` : null], ['sale ad', sale ? `/sales/ads/${sale}` : null],
     ].filter(([, u]) => u);
-    const missing = [];
+    const missing = [], missingReliability = [];
     for (const [name, url] of pageTypes) {
       const p = await get(`${base}${url}`);
       if (p.status !== 200) { missing.push(`${name} ${url} answered ${p.status}`); continue; }
-      if (!text(p.body).includes(BONA_FIDE)) missing.push(`${name} ${url}`);
+      const t = text(p.body);
+      if (!t.includes(BONA_FIDE)) missing.push(`${name} ${url}`);
+      if (!t.includes(RELIABILITY)) missingReliability.push(`${name} ${url}`);
     }
-    coverage.push(['page types read for the notice', pageTypes.length]);
+    coverage.push(['page types read for the notices', pageTypes.length]);
     assertions.push(['page types without the verbatim bona fide notice', missing.length, 0]);
-    examples.push(...missing.slice(0, 9));
+    assertions.push(['page types without the reliability notice (8.25)', missingReliability.length, 0]);
+    examples.push(...missing.slice(0, 6), ...missingReliability.slice(0, 6));
 
     // ── 4. the 2003 floor and the 24-hour refresh ─────────────────────────────────────
     const d1 = (await app`SELECT to_char(min("listedAt"), 'YYYY-MM-DD') listed, to_char(min("createdAt"), 'YYYY-MM-DD') created, to_char(max("syncedAt") FILTER (WHERE status = 'active'), 'YYYY-MM-DD HH24:MI') synced,

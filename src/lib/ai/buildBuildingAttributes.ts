@@ -33,6 +33,7 @@ function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
 // ── types ──────────────────────────────────────────────────────────────────
 // The public shape lives in a server-free module so the 'use client' render page can import it.
 import type { BuildingAttributes } from "./buildingAttributes.types";
+import { DISPLAY_MONTHS } from "@/lib/vowWindow";
 export type { AmenityCount, BuildingAttributes } from "./buildingAttributes.types";
 
 interface RawAttrRow {
@@ -303,8 +304,12 @@ export async function buildBuildingAttributes(buildingSlug: string): Promise<Bui
   // record counts
   const cutoff = Date.now() - 365 * 24 * 3600 * 1000;
   const recent = (r: RawAttrRow) => (r.sold_date ? Date.parse(r.sold_date) >= cutoff : false);
-  const saleAll = attrRows.filter((r) => r.transaction_type === "For Sale").length;
-  const leaseAll = attrRows.filter((r) => r.transaction_type === "For Lease").length;
+  // "N trades on record" is a displayed count and takes the display window (MC-037); the
+  // amenity and management folds below read every row: building facts, not sale records.
+  const windowCutoff = Date.now() - DISPLAY_MONTHS * 30.44 * 24 * 3600 * 1000;
+  const inWindow = (r: RawAttrRow) => (r.sold_date ? Date.parse(r.sold_date) >= windowCutoff : false);
+  const saleAll = attrRows.filter((r) => r.transaction_type === "For Sale" && inWindow(r)).length;
+  const leaseAll = attrRows.filter((r) => r.transaction_type === "For Lease" && inWindow(r)).length;
   const sale12mo = saleMed[0]?.n ?? attrRows.filter((r) => r.transaction_type === "For Sale" && recent(r)).length;
   const lease12mo = leaseMed[0]?.n ?? attrRows.filter((r) => r.transaction_type === "For Lease" && recent(r)).length;
 
