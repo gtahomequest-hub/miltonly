@@ -2,6 +2,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { DB_CACHE_TAG } from "@/lib/db";
 import { dropSurfaceCache } from "@/lib/streetSurface";
 import { dropHubSetCache } from "@/lib/hubSets";
+import { LISTING_ROWS_TAG } from "@/lib/revalidateSurfaces";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -17,9 +18,10 @@ export async function POST(request: NextRequest) {
   const tag = body?.tag as string | undefined;
 
   // MC-010: a sync that runs outside the app (the local runners) cannot reach Next's Data Cache
-  // directly; it posts the tag here. Only the database tags are accepted.
+  // directly; it posts the tag here. Only the database tags and the street render's listing
+  // rows tag (MC-034) are accepted.
   if (tag) {
-    const known = Object.values(DB_CACHE_TAG);
+    const known = [...Object.values(DB_CACHE_TAG), LISTING_ROWS_TAG];
     if (!known.includes(tag)) return NextResponse.json({ error: "unknown tag", known }, { status: 400 });
     revalidateTag(tag);
     return NextResponse.json({ revalidated: true, tag });
