@@ -190,7 +190,8 @@ export default async function VowGate({
       return <VowAcknowledgementPrompt />;
     }
     // The audit trail (MP-006): the gated children (a neighbourhood's or street's records) are
-    // about to render for this consumer.
+    // about to render for this consumer. VowGate is rendered nowhere in street v2 today
+    // (NeighbourhoodSoldBlock, its one importer, has none); the row is here for the day it is.
     const h = headers();
     await logVowAccess({
       userId: user.id,
@@ -200,6 +201,7 @@ export default async function VowGate({
       recordCount: 0,
       ip: clientIpFromHeaders(h),
       userAgent: h.get("user-agent"),
+      reviewFlag: user.reviewFlag,
     });
     return <>{children}</>;
   }

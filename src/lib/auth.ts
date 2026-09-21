@@ -50,12 +50,35 @@ function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
 
-async function sign(claims: SessionClaims): Promise<string> {
+/** The token, signed with this deployment's secret. Exported so the prebuild can round-trip
+ *  it through parseSessionToken() and hold the claims it carries. */
+export async function signSessionToken(claims: SessionClaims): Promise<string> {
   return new SignJWT({ userId: claims.userId, act: claims.act })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(claims.exp)
     .sign(JWT_SECRET);
+}
+
+/** The claims a token carries, or null when the signature fails or `exp` has passed (jose
+ *  refuses an expired token). `act` comes back as it was signed; judgeSession reads it. */
+export async function parseSessionToken(token: string, currentDate?: Date): Promise<SessionClaims | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET, currentDate ? { currentDate } : undefined);
+    return { userId: payload.userId as string, exp: payload.exp as number, act: payload.act as number };
+  } catch {
+    return null;
+  }
+}
+
+/** The claims a touch produces: `act` an hour from now, everything else as it was. */
+export function touchedClaims(claims: SessionClaims, now: number): SessionClaims {
+  return { ...claims, act: now + INACTIVITY_SECONDS };
+}
+
+/** The claims a sign-in produces: the ceiling from now, the hour from now. */
+export function freshClaims(userId: string, now: number): SessionClaims {
+  return { userId, exp: now + SESSION_SECONDS, act: now + INACTIVITY_SECONDS };
 }
 
 function setCookie(token: string, exp: number) {
@@ -71,9 +94,8 @@ function setCookie(token: string, exp: number) {
 }
 
 export async function createSession(userId: string) {
-  const now = nowSeconds();
-  const claims: SessionClaims = { userId, exp: now + SESSION_SECONDS, act: now + INACTIVITY_SECONDS };
-  const token = await sign(claims);
+  const claims = freshClaims(userId, nowSeconds());
+  const token = await signSessionToken(claims);
   setCookie(token, claims.exp);
   return token;
 }
@@ -81,12 +103,7 @@ export async function createSession(userId: string) {
 async function readClaims(): Promise<SessionClaims | null> {
   const cookie = cookies().get(COOKIE_NAME);
   if (!cookie?.value) return null;
-  try {
-    const { payload } = await jwtVerify(cookie.value, JWT_SECRET);
-    return { userId: payload.userId as string, exp: payload.exp as number, act: payload.act as number };
-  } catch {
-    return null;
-  }
+  return parseSessionToken(cookie.value);
 }
 
 /** The signed-in user, or null: no cookie, a bad signature, past the ceiling, or an hour
@@ -107,9 +124,9 @@ export async function touchSession(): Promise<boolean> {
   const claims = await readClaims();
   const now = nowSeconds();
   if (!claims || judgeSession(claims, now) !== "ok") return false;
-  const next: SessionClaims = { ...claims, act: now + INACTIVITY_SECONDS };
+  const next = touchedClaims(claims, now);
   try {
-    setCookie(await sign(next), next.exp);
+    setCookie(await signSessionToken(next), next.exp);
     return true;
   } catch {
     return false;

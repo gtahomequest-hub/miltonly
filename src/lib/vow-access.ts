@@ -7,9 +7,12 @@
 //   3. a password is set (R-805(c): a username and a password per consumer);
 //   4. the password is younger than 90 days (R-8.06; past that the card takes a renewal);
 //   5. the person has answered the registrant question (R-8.09(b)(i)) and the answer is no;
-//   6. no review flag stands that refuses ("registrant"). A "suspicious-access" flag does NOT
-//      refuse: it is a queue for Aamir, never an automatic wall (the task's rule: nothing refuses
-//      a real person without review).
+//   6. no "registrant" review flag stands (set by the person's own answer, or by Aamir by hand,
+//      and cleared only by a person). A "suspicious-access" flag does NOT refuse: it is a queue
+//      for Aamir, never an automatic wall (the task's rule: nothing refuses a real person
+//      without review).
+// A password with no passwordSetAt is treated as expired, not as eternal: every field here
+// fails closed when it is missing.
 // Every VOW surface (the fetchers in sold-data.ts, the record routes, VowGate, /sold,
 // NeighbourhoodSoldBlock, the listing VOW route) calls this and nothing else, so the rule cannot
 // drift between them. The prebuild test reads each file for the call.
@@ -51,9 +54,9 @@ export function vowStepsLeft(user: VowAccessFields, now: Date = new Date()): Vow
     needsAcknowledgement: !agreedCurrent,
     needsReconsent: !agreedCurrent && !!user.vowAcknowledgedAt,
     needsPassword: !user.passwordHash,
-    needsPasswordRenewal: !!user.passwordHash && passwordExpired(user.passwordSetAt ?? null, now),
+    needsPasswordRenewal: !!user.passwordHash && (!user.passwordSetAt || passwordExpired(user.passwordSetAt, now)),
     needsRegistrantAnswer: user.isRegistrant === null || user.isRegistrant === undefined,
-    registrant: user.isRegistrant === true,
+    registrant: user.isRegistrant === true || user.reviewFlag === "registrant",
   };
 }
 

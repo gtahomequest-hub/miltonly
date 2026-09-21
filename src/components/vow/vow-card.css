@@ -187,13 +187,18 @@ section[data-vow-ack] .vc-terms-head {
   color: #6b6f6a;
   margin: 0 0 8px;
 }
+/* Numbered, as the stored text is numbered (Tailwind's preflight sets ol to list-style none);
+   no scroll box, so the bold privacy clause is on the page, not below a fold inside a fold. */
 section[data-vow-ack] ol.vc-terms {
   margin: 0;
-  padding: 0 0 0 20px;
-  max-height: 260px;
-  overflow: auto;
+  padding: 0 0 0 22px;
+  list-style: decimal outside;
   font-size: 12px;
   line-height: 1.55;
+}
+section[data-vow-ack] ol.vc-terms li::marker {
+  font-weight: 600;
+  color: #6b6f6a;
 }
 section[data-vow-ack] ol.vc-terms li {
   margin: 0 0 8px;

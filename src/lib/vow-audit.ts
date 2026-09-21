@@ -26,22 +26,27 @@ export type VowAccessKind =
   | "sold-api"
   | "sold-stats"
   | "listing-vow"
+  | "listings-grid"
+  | "saved-listings"
   | "neighbourhood-records";
 
+// recordCount, per kind: street-records, sold-api, sold-page, listings-grid and saved-listings
+// count the rows served; listing-vow is 1 (one listing's facts); sold-stats is the 90-day sale
+// count the figures were computed over; neighbourhood-records (VowGate, rendered nowhere in
+// street v2 today) is 0 because the children fetch their own rows.
 export const VOW_ACCESS_KINDS: readonly VowAccessKind[] = [
   "street-records",
   "sold-page",
   "sold-api",
   "sold-stats",
   "listing-vow",
+  "listings-grid",
+  "saved-listings",
   "neighbourhood-records",
 ];
 
-/** A consumer reading records on more streets, neighbourhoods or listings than this in a day
- *  is a review item. A household comparing a few streets does not reach it; a scraper does. */
-export const SUSPICIOUS_SCOPES_PER_DAY = 40;
-/** And more rows than this in a day, regardless of scope: a script re-reading one street. */
-export const SUSPICIOUS_READS_PER_DAY = 400;
+export { SUSPICIOUS_SCOPES_PER_DAY, SUSPICIOUS_READS_PER_DAY, isSuspicious, csvCell } from "@/lib/vow-audit-rules";
+import { isSuspicious, csvCell, ACCESS_CSV_HEADER } from "@/lib/vow-audit-rules";
 
 export interface VowAccessInput {
   userId: string;
@@ -51,6 +56,8 @@ export interface VowAccessInput {
   recordCount?: number;
   ip?: string | null;
   userAgent?: string | null;
+  /** the row's reviewFlag as the caller already has it; a flagged person is not re-counted */
+  reviewFlag?: string | null;
 }
 
 export interface VowAccessRow {
@@ -102,6 +109,8 @@ export async function logVowAccess(input: VowAccessInput): Promise<void> {
     console.error("[vow-audit] write failed", { kind: row.kind, scope: row.scope, err });
     return;
   }
+  // A person already on the review list is not counted again on every read.
+  if (input.reviewFlag) return;
   try {
     await flagIfSuspicious(row.userId);
   } catch (err) {
@@ -109,16 +118,15 @@ export async function logVowAccess(input: VowAccessInput): Promise<void> {
   }
 }
 
-/** Counts the last 24 hours for one person; sets the review flag once, never clears it. */
+/** Counts the last 24 hours for one person (two aggregate queries, no rows loaded); sets the
+ *  review flag once, never clears it. */
 export async function flagIfSuspicious(userId: string, now: Date = new Date()): Promise<boolean> {
   const since = new Date(now.getTime() - DAY_MS);
-  const rows = await prisma.vowAccessLog.findMany({
-    where: { userId, at: { gte: since } },
-    select: { scope: true, kind: true },
-  });
-  const scopes = new Set(rows.map((r) => `${r.kind}:${r.scope ?? ""}`));
-  const suspicious = scopes.size > SUSPICIOUS_SCOPES_PER_DAY || rows.length > SUSPICIOUS_READS_PER_DAY;
-  if (!suspicious) return false;
+  const [reads, groups] = await Promise.all([
+    prisma.vowAccessLog.count({ where: { userId, at: { gte: since } } }),
+    prisma.vowAccessLog.groupBy({ by: ["kind", "scope"], where: { userId, at: { gte: since } } }),
+  ]);
+  if (!isSuspicious(groups.length, reads)) return false;
   await prisma.user.updateMany({
     where: { id: userId, reviewFlag: null },
     data: { reviewFlag: "suspicious-access", reviewFlaggedAt: now },
@@ -161,7 +169,7 @@ export async function suspiciousVowAccess(sinceDays = 1, now: Date = new Date())
   });
   const ids = new Set<string>(flagged.map((f) => f.id));
   byUser.forEach((v, id) => {
-    if (v.scopes.size > SUSPICIOUS_SCOPES_PER_DAY * sinceDays || v.reads > SUSPICIOUS_READS_PER_DAY * sinceDays) ids.add(id);
+    if (isSuspicious(v.scopes.size, v.reads, sinceDays)) ids.add(id);
   });
   if (ids.size === 0) return [];
   const users = await prisma.user.findMany({
@@ -185,11 +193,15 @@ export async function suspiciousVowAccess(sinceDays = 1, now: Date = new Date())
   });
 }
 
+/** An export window is at most a year: the trail is read for a request, not dumped whole. */
+export const EXPORT_MAX_DAYS = 366;
+
 /** The export PropTx would receive: every row in the window with the person's name and email
  *  beside it (Appendix B(b) names them as the record), oldest first. */
 export async function exportVowAccess(from: Date, to: Date) {
+  const cappedTo = to.getTime() - from.getTime() > EXPORT_MAX_DAYS * DAY_MS ? new Date(from.getTime() + EXPORT_MAX_DAYS * DAY_MS) : to;
   return prisma.vowAccessLog.findMany({
-    where: { at: { gte: from, lt: to } },
+    where: { at: { gte: from, lt: cappedTo } },
     orderBy: { at: "asc" },
     select: {
       id: true,
@@ -206,11 +218,8 @@ export async function exportVowAccess(from: Date, to: Date) {
 }
 
 export function accessCsv(rows: Awaited<ReturnType<typeof exportVowAccess>>): string {
-  const esc = (v: unknown) => {
-    const s = v === null || v === undefined ? "" : v instanceof Date ? v.toISOString() : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const head = ["at", "userId", "email", "name", "registrant", "reviewFlag", "kind", "scope", "path", "recordCount", "ip", "userAgent"];
+  const esc = csvCell;
+  const head = [...ACCESS_CSV_HEADER];
   const lines = rows.map((r) =>
     [r.at, r.user.id, r.user.email, r.user.firstName, r.user.isRegistrant, r.user.reviewFlag, r.kind, r.scope, r.path, r.recordCount, r.ip, r.userAgent]
       .map(esc)

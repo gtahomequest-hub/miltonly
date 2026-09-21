@@ -102,22 +102,26 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
   const askName = firstAgreement && !(me && me.firstName);
   const askPassword = needsPassword || needsRenewal;
 
+  const sayingYes = needsRegistrant && registrant === "yes";
+
   async function submit() {
     if (submitting) return;
-    if (needsAck && !agreed) return;
     if (needsRegistrant && registrant === null) {
       setError("Tell us whether you are a licensed real estate registrant.");
       return;
     }
-    if (askName && !firstName.trim()) {
+    // A registrant's "yes" is stored on its own: no tick, no name, no password (there will be
+    // no records to protect). The route records the answer and the row goes to review.
+    if (needsAck && !agreed && !sayingYes) return;
+    if (askName && !firstName.trim() && !sayingYes) {
       setError("Tell us your name.");
       return;
     }
-    if (firstAgreement && streetQuery.trim() && !street) {
+    if (firstAgreement && streetQuery.trim() && !street && !sayingYes) {
       setError("Pick your street from the list, or clear the field.");
       return;
     }
-    if (askPassword && registrant !== "yes") {
+    if (askPassword && !sayingYes) {
       if (password.length < MIN_PASSWORD_LENGTH) {
         setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
         return;
@@ -133,13 +137,17 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
       const res = await fetch("/api/auth/acknowledge-vow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(needsAck ? { consent: true } : {}),
-          ...(askName ? { firstName: firstName.trim() } : {}),
-          ...(firstAgreement && street ? { homeStreetSlug: street.slug } : {}),
-          ...(needsRegistrant && registrant ? { isRegistrant: registrant === "yes" } : {}),
-          ...(askPassword && registrant !== "yes" ? { password } : {}),
-        }),
+        body: JSON.stringify(
+          sayingYes
+            ? { isRegistrant: true, ...(firstName.trim() ? { firstName: firstName.trim() } : {}) }
+            : {
+                ...(needsAck ? { consent: true } : {}),
+                ...(askName ? { firstName: firstName.trim() } : {}),
+                ...(firstAgreement && street ? { homeStreetSlug: street.slug } : {}),
+                ...(needsRegistrant && registrant ? { isRegistrant: registrant === "yes" } : {}),
+                ...(askPassword ? { password } : {}),
+              },
+        ),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -184,7 +192,8 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         {reconsent ? (
           <>
             The terms of use for sold and leased MLS<sup>®</sup> records are now version {VOW_TERMS_VERSION}, with the
-            clauses TRREB and PropTx ask every VOW to carry. Read them and agree once more; nothing else changes.
+            clauses TRREB and PropTx ask every VOW to carry. Read them and agree once more
+            {needsRegistrant || askPassword ? ", and answer what is asked above the terms" : ""}.
           </>
         ) : firstAgreement ? (
           <>
@@ -195,8 +204,8 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
           </>
         ) : needsRenewal ? (
           <>
-            Under TRREB&apos;s VOW rules a password is valid for {PASSWORD_MAX_DAYS} days. Yours is {PASSWORD_MAX_DAYS} days
-            old: type it again to keep it, or choose a new one. Then the sold prices open as before.
+            Under TRREB&apos;s VOW rules a password is valid for {PASSWORD_MAX_DAYS} days. Yours is at least that old:
+            type it again to keep it, or choose a new one. Then the sold prices open as before.
           </>
         ) : (
           <>
@@ -282,7 +291,7 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         </div>
       )}
 
-      {askPassword && registrant !== "yes" && (
+      {askPassword && !sayingYes && (
         <div className="vc-fields" data-vow-password>
           <label className="vc-field">
             <span className="vc-label">
@@ -313,7 +322,7 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         </div>
       )}
 
-      {needsAck && (
+      {needsAck && !sayingYes && (
         <>
           <div className="vc-texts" data-vow-terms data-vow-terms-version={VOW_TERMS_VERSION}>
             <p className="vc-terms-head">Terms of use, version {VOW_TERMS_VERSION}</p>
@@ -341,10 +350,10 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
 
       {error && <p className="vc-error">{error}</p>}
 
-      <button type="button" className="vc-submit" onClick={submit} disabled={(needsAck && !agreed) || submitting}>
+      <button type="button" className="vc-submit" onClick={submit} disabled={(needsAck && !agreed && !sayingYes) || submitting}>
         {submitting
           ? "Saving…"
-          : registrant === "yes"
+          : sayingYes
             ? "Save my answer"
             : needsAck
               ? "Agree and see sold prices"

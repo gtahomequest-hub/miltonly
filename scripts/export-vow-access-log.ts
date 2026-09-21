@@ -10,6 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { isSuspicious, csvCell, ACCESS_CSV_HEADER } from "../src/lib/vow-audit-rules";
 
 function loadEnvLocal() {
   const f = path.join(process.cwd(), ".env.local");
@@ -48,7 +49,7 @@ async function main() {
       const v = by.get(f.id);
       console.log(`  ${f.email}  flag=${f.reviewFlag} since ${f.reviewFlaggedAt?.toISOString().slice(0, 10)}  reads=${v?.reads ?? 0} scopes=${v?.scopes.size ?? 0}`);
     }
-    const heavy = Array.from(by.entries()).filter(([, v]) => v.scopes.size > 40 * days || v.reads > 400 * days);
+    const heavy = Array.from(by.entries()).filter(([, v]) => isSuspicious(v.scopes.size, v.reads, days));
     for (const [id, v] of heavy) {
       if (flagged.some((f) => f.id === id)) continue;
       const u = await prisma.user.findUnique({ where: { id }, select: { email: true } });
@@ -66,11 +67,8 @@ async function main() {
     orderBy: { at: "asc" },
     include: { user: { select: { id: true, email: true, firstName: true, isRegistrant: true, reviewFlag: true } } },
   });
-  const esc = (v: unknown) => {
-    const s = v === null || v === undefined ? "" : v instanceof Date ? v.toISOString() : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const head = ["at", "userId", "email", "name", "registrant", "reviewFlag", "kind", "scope", "path", "recordCount", "ip", "userAgent"];
+  const esc = csvCell;
+  const head = [...ACCESS_CSV_HEADER];
   const csv =
     [head.join(","), ...rows.map((r) => [r.at, r.user.id, r.user.email, r.user.firstName, r.user.isRegistrant, r.user.reviewFlag, r.kind, r.scope, r.path, r.recordCount, r.ip, r.userAgent].map(esc).join(","))].join("\n") + "\n";
   const out = arg("out");

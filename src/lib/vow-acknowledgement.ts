@@ -39,12 +39,12 @@ export const VOW_TERMS_CLAUSES: readonly VowClause[] = [
       "information on this website (the VOW).",
   },
   {
-    key: "iii",
-    text: "I have a bona fide interest in the purchase, sale or lease of real estate of the type offered through this VOW.",
-  },
-  {
     key: "ii",
     text: "All MLS® data I obtain through this VOW is for my personal, non-commercial use only.",
+  },
+  {
+    key: "iii",
+    text: "I have a bona fide interest in the purchase, sale or lease of real estate of the type offered through this VOW.",
   },
   {
     key: "iv",

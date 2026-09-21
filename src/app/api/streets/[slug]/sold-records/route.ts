@@ -48,8 +48,9 @@ export async function GET(
     recordCount: records.length,
     ip: clientIpFromHeaders(req.headers),
     userAgent: req.headers.get("user-agent"),
+    reviewFlag: user!.reviewFlag,
   });
   await touchSession();
 
-  return NextResponse.json({ canSee: true, records });
+  return NextResponse.json({ canSee: true, records }, { headers: { "Cache-Control": "private, no-store" } });
 }

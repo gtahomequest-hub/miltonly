@@ -174,6 +174,7 @@ export async function GET(req: NextRequest) {
       recordCount: count90,
       ip: clientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
+      reviewFlag: user.reviewFlag,
     });
     await touchSession();
 

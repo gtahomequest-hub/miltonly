@@ -153,15 +153,19 @@ export async function GET(req: NextRequest) {
       recordCount: rows.length,
       ip: clientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
+      reviewFlag: user.reviewFlag,
     });
     await touchSession();
 
-    return NextResponse.json({
-      source: "TREB MLS®",
-      type,
-      records: rows,
-      count: rows.length,
-    });
+    return NextResponse.json(
+      {
+        source: "TREB MLS®",
+        type,
+        records: rows,
+        count: rows.length,
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (err) {
     console.error("[api/sold] read failed, serving graceful empty:", err);
     return NextResponse.json({

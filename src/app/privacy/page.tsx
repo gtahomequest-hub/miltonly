@@ -71,14 +71,14 @@ export default function PrivacyPage() {
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">How long we keep it</h2>
           <p>
             We retain inquiry information for as long as is reasonably necessary to provide the service you requested
-            and to meet record-keeping obligations under the Real Estate and Business Brokers Act (REBBA) — typically
+            and to meet record-keeping obligations under the Real Estate and Business Brokers Act (REBBA), typically
             up to 7 years. You can request earlier deletion at any time.
           </p>
           <p>
             VOW registration records (name, email, username, password record and the terms you agreed to) are kept for
             at least 180 days after your password expires, and the VOW access log for at least as long, because the VOW
-            rules require it; a deletion request within that window anonymises what it can and keeps the rest until
-            the window ends.
+            rules require it. A deletion request is handled by hand: write to the address below; inside that window
+            we keep what the VOW rules require and remove the rest.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Your rights</h2>

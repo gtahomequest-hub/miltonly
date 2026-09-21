@@ -309,7 +309,7 @@ async function main() {
   ok(SESSION_MAX_DAYS <= 90, `the session ceiling is ${SESSION_MAX_DAYS} days, at most 90`);
   const auth = readFileSync("src/lib/auth.ts", "utf8");
   ok(auth.includes("exp: now + SESSION_SECONDS") && auth.includes("setExpirationTime(claims.exp)"), "the JWT expiry is the ceiling");
-  ok(!/refresh|sliding|extend/i.test(auth.replace(/\/\/.*$/gm, "")), "auth.ts has no sliding window");
+  ok(!/exp: now \+ SESSION_SECONDS/.test(auth.split("export async function touchSession")[1] || "") && auth.includes("touchedClaims(claims, now)"), "auth.ts never slides exp: a touch moves act only");
 
   const terms = readFileSync("src/app/terms/page.tsx", "utf8");
 
@@ -379,8 +379,9 @@ async function main() {
   ok(login.includes("checkLoginRateLimit(") && login.includes("checkOrigin("), "login is rate limited and origin checked");
   ok((login.match(/MISMATCH/g) || []).length >= 2 && !/no account|not set|unknown address/i.test(login.replace(/\/\/.*$/gm, "")), "login answers one message for wrong, unknown and unset");
   const ackRoute = readFileSync("src/app/api/auth/acknowledge-vow/route.ts", "utf8");
-  ok(ackRoute.includes("judgePassword(body.password, user.email)") && ackRoute.includes("hashPassword("), "the card's route judges and hashes the password");
-  ok(ackRoute.indexOf("judgePassword(") < ackRoute.indexOf("hashPassword("), "the password is judged before it is hashed");
+  const ackPlan = readFileSync("src/lib/portal/acknowledge.ts", "utf8");
+  ok(ackPlan.includes("judgePassword(body.password, user.email)") && ackRoute.includes("hashPassword(plan.password.password)"), "the card's plan judges the password and the route hashes what the plan approved");
+  ok(ackRoute.includes("planAcknowledgement(") && ackRoute.indexOf("planAcknowledgement(") < ackRoute.indexOf("hashPassword("), "the password is judged (in the plan) before it is hashed");
 
   // ── the words ────────────────────────────────────────────────────────────────
   ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("90 days"), "the VOW text states the 90-day sign-in");

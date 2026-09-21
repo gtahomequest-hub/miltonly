@@ -83,6 +83,7 @@ export async function GET(req: NextRequest, { params }: { params: { mlsNumber: s
     recordCount: 1,
     ip: clientIpFromHeaders(req.headers),
     userAgent: req.headers.get("user-agent"),
+    reviewFlag: user!.reviewFlag,
   });
   await touchSession();
 

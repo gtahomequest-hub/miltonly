@@ -154,11 +154,14 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
     await logVowAccess({
       userId: user.id,
       kind: "sold-page",
-      scope: `${typeParam}${nbhdRaw ? `:${nbhdRaw}` : ""}${ptypeFilter ? `:${ptypeFilter}` : ""}`,
-      path: "/sold",
+      // The scope is the area, not the filter combination, so browsing the chips does not read as
+      // forty streets; the filters ride on the path.
+      scope: nbhdRaw ? `neighbourhood:${nbhdRaw}` : "milton",
+      path: `/sold?type=${typeParam}${nbhdParam ? `&nbhd=${nbhdParam}` : ""}${ptypeFilter ? `&ptype=${ptypeFilter}` : ""}`,
       recordCount: records.length,
       ip: clientIpFromHeaders(h),
       userAgent: h.get("user-agent"),
+      reviewFlag: user.reviewFlag,
     });
   }
 
