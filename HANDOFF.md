@@ -2,11 +2,33 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-20 (MC-034 on `fix/cost-2 @ 6ba561e`, previewed and NOT merged): the street render's Listing rows narrow, memoised and Data-Cached under the `listings` tag with a write stamp; the ignore rule skips docs-only pushes from the last successful deployment; the integration Neon project is inspectionly.ca's and stays; suspend timeouts already 300 s. Preview `miltonly-jm3fj4ug7` battery `PASS · 21 checks · 646 pages · 802s`. `main` is `5bd57e1`, production serves `2510466`. Record `scratchpad/reports/MC-034-cost-fixes.md`._
+_Last rewritten 2026-09-21 (MC-034 merged): `fix/cost-2 @ edae874` merged as **`d068f84`**, pushed, production serves it (`miltonly-cccss8tbn`), battery `PASS · 21 checks · 663 pages · 770s`. The street render's Listing pull is narrow, memoised and Data-Cached under the `listings` tag; the ignore rule skips docs-only pushes on `main`; this docs commit is its first proof. Record `scratchpad/reports/MC-034-cost-fixes.md`._
 
 ## READ THIS FIRST
 
-**`fix/cost-2 @ 6ba561e` IS PREVIEWED AND WAITS FOR THE MERGE (MC-034).** Three commits above
+**HELD FOR THE NEXT BATCH (DEC-BATCH-MERGE, 2026-09-21):** `feat/web-analytics @ 7cfa4a2` (MH-009,
+Vercel Web Analytics, previewed, not merged; the Home worktree's head is its docs commit
+`3c133b8`). Merge it by SHA with the next batch, confirming the SHA against its report first.
+`fix/favicon @ 9144b35` and `feat/street-v3 @ 2553f2e` are already on `main` since MC-028
+(`ea81883`, `e078e91`); a request to merge them again is a stale report, not work.
+
+**MAIN IS `d068f84` AND PRODUCTION SERVES `d068f84`, MC-034 LIVE, ON NODE 22.** `fix/cost-2 @
+edae874` (the docs commit above the proven `6ba561e`) merged by SHA with `--no-ff` as `d068f84`
+on `5bd57e1`; no preview for the merge, the production build was the proof (`miltonly-cccss8tbn`,
+Ready, `/api/build` answers `d068f84`). Purged `db2`, `db3`, `listings` and the 22 hubs; full
+production battery **`PASS · 21 checks · 663 pages · 770s`**
+(`scratchpad/mc003/battery-mc034-prod-d068f84.log`; the creation cron had added 17 pages at
+00:01Z). **The after-window** (`pgstat-window.mjs 600 mc034-after`, 00:20 to 00:30Z, the first
+minutes after the deploy with every ISR page cold): DB1 47,728 calls, 212,510 rows; the street
+pull 324 calls, 4,631 rows, **0 full-row**, all narrow plus the stamps, over about 213 renders
+(the `StreetContent` reads); the before-window (21:34 to 21:44Z Sunday, a quiet hour): 26
+full-row calls, 233 rows over about 13 renders. Per render the pull moved about 88 KB before
+and about 4 KB after; a same-hour pair is still worth taking (21:34Z on a Sunday). **The first
+docs-only push after the merge is this one: `npx vercel ls --prod` should show it CANCELED in
+seconds; if it built, the rule is wrong and `vercel.json` is the first thing to read.** The
+paragraph below is the branch state as it was previewed.
+
+**`fix/cost-2 @ 6ba561e` WAS PREVIEWED AND MERGED (MC-034).** Three commits above
 `5bd57e1`: `f1291a4` the work, `a4c6eb4` the review's two fixes, `6ba561e` the rule under
 Vercel's 256-character `ignoreCommand` limit. Preview `miltonly-jm3fj4ug7` serves it; full
 battery there `PASS · 21 checks · 646 pages · 802s`; local gate exit 0, 168/168, `neon-egress`
