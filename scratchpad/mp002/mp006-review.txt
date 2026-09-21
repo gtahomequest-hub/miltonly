@@ -1,0 +1,261 @@
+confirmed: 64 refuted: 2
+
+[0] should-fix | defect-in-commit | session | Soft navigation never winds the inactivity clock: an active consumer is refused at minute 61 while every read is logged
+    src/lib/auth.ts : 25
+    The comment at src/lib/auth.ts:24-25 and src/app/api/auth/me/route.ts:3 say /api/auth/me is called by every page on mount, but UserProvider (src/components/UserProvider.tsx:52-54) runs its fetch once per mount and is mounted in the single root layout (src/app/layout.tsx:144), which persists across next/link navigations. The /sold filter chips (src/app/sold/page.tsx:228-279) and the /listings pager (src/components/listings/v2/ResultsClient.tsx:214-230) are <Link> soft navigations rendered by server components that read the session (src/app/sold/page.tsx:107, src/app/listings/page.tsx:62) and cannot touch it. A person who clicks through /sold filters or /listings pages for more than 60 minutes
+
+[1] should-fix | defect-in-commit | session | The prod verification battery's VOW check fails after this deploys: its user owes re-consent and the registrant answer, and the battery has no path through the card
+    scripts/verify/checks/vow-fields.mjs : 119
+    vow-fields.mjs selects the sign-in user by vowAcknowledgedAt IS NOT NULL only (line 119) and asserts the gated route and grid answer VOW facts (lines 282, 286, 366). After this commit canSeeVowRecords also requires vowAcknowledgementVersion >= 4 and isRegistrant === false (src/lib/vow-access.ts:44-46, 55-56, 64), and the migration writes no data (migration.sql:1-2), so every existing row has both NULL. A read-only query of the configured DATABASE_URL shows the only verified, acknowledged user has vowAcknowledgementVersion null and isRegistrant null. The battery never POSTs /api/auth/acknowledge-vow (no match for 'acknowledge' outside comments), so `BASE=https://miltonly.com node scripts/veri
+
+[2] should-fix | defect-in-commit | session | VOW-only facts are served on the /listings grid and by /api/auth/saved-listings with no VowAccessLog row and no touch
+    src/app/listings/page.tsx : 62
+    The commit says the trail is written by all six VOW surfaces, but /listings reads the session and passes vow: true to the loader (src/app/listings/page.tsx:62-63), which attaches the VOW-only card facts (src/lib/listingsV2Data.ts:286); no logVowAccess call exists in that page or loader (grep: logVowAccess appears only in the six listed files plus vow-audit.ts). /api/auth/saved-listings likewise gates the sold/expired status through canSeeVowRecords (route.ts:39) and returns it with neither a trail row nor a touchSession call, although it is a route handler that could touch. The battery itself treats the grid as a VOW surface (vow-fields.mjs:286). The listing detail's /vow route logs the same
+
+[3] note | policy-question | session | Every pre-MP-006 session cookie is judged invalid at deploy and every consumer is signed out, then owes re-consent and the registrant answer; the commit does not say so
+    src/lib/auth.ts : 41
+    judgeSession returns 'invalid' when act is not a number (auth.ts:41), and touchSession will not revive it (auth.ts:109), so a token minted before this deploy is refused everywhere and the person must sign in again. The migration changes no data (migration.sql:2), so on that sign-in vowStepsLeft reports needsAcknowledgement, needsReconsent and needsRegistrantAnswer for every existing row. The prebuild codifies the token half (test-vow-best-practices.ts:85) but the commit message, HANDOFF.md and the (not yet written) report do not state the deploy-time effect. Whether a forced re-login plus re-consent is acceptable for a compliance change is a call for Aamir, not code; the DB currently holds o
+
+[4] note | defect-in-commit | session | The battery's cached session now lives 60 minutes, not 90 days, because it never stores the touched cookie
+    scripts/verify/checks/vow-fields.mjs : 124
+    The cache comment (lines 124-127) says a session lives 90 days so reruns stay inside the door's limits. signIn stores only the cookie from login or verify (lines 155, 167); cachedSession validates through /api/auth/me (line 133) but discards the Set-Cookie that touch returns, and fetchRaw never reads Set-Cookie. So the cached token's act is fixed at sign-in plus 60 minutes, and any run more than an hour after the sign-in that minted it re-enters the door. Within one run (about 900 s locally, battery-local-4.log) the token stays valid. The nightly runs once a day and the password login allows 10 per 15 minutes per email (src/lib/portal/password.ts:81-82), so the limits are not tripped; the ef
+
+[5] note | pre-existing | session | Three record routes send no Cache-Control header at all; only /me and the listing /vow route say no-store
+    src/app/api/streets/[slug]/sold-records/route.ts : 54
+    /api/auth/me is force-dynamic with Cache-Control: no-store on both branches (me/route.ts:12, 17, 35) and the listing /vow route sends private, no-store (vow/route.ts:43, 64, 90). The street sold-records route (line 54), /api/sold (route.ts:159) and /api/sold-stats (route.ts:185) return NextResponse.json with no headers, and Next 14.2.35 adds no Cache-Control for a dynamic route handler (base-server.js:1393 sendResponse with the handler's own headers; the ROUTE cache branch at 1725-1737 only applies to SSG). Nothing caches them today: no Last-Modified or ETag for heuristic freshness, no s-maxage for Vercel, and the touch adds Set-Cookie; but the guarantee is incidental, not declared. Pre-exis
+
+[6] note | pre-existing | session | Route handlers that read the session but do not wind the clock: save-listing, saved-listings, saved-searches
+    src/app/api/auth/saved-searches/route.ts : 6
+    These handlers call getSession (saved-searches/route.ts:6, 18, 45; save-listing/route.ts:6; saved-listings/route.ts:10) and could call touchSession, unlike a server component, but do not. A person managing saved searches or saving listings from a page mounted more than 60 minutes earlier is refused on the next save with a 401. The commit's rule ('the four gated record routes') is consistent with itself; whether saving a listing counts as VOW activity is a question of how R-8.13's 'inactivity' is read.
+
+[7] note | pre-existing | session | JWT_SECRET falls back to a literal dev secret; both clocks depend on the env var being set and nothing asserts it
+    src/lib/auth.ts : 6
+    The signing key is process.env.JWT_SECRET || 'miltonly-dev-secret-change-in-production'. With the variable unset (a preview or local build; .env.local carries none per HANDOFF.md:236-238) anyone can mint a token with any userId, act and exp, so neither the 60-minute nor the 90-day rule holds there. AI_PROVIDER throws when unset; JWT_SECRET does not, and no prebuild script reads it. Pre-existing; the commit adds the act claim on top of it.
+
+[8] note | policy-question | session | The 40-distinct-scopes flag counts every street page and every /sold filter combination as a scope
+    src/lib/vow-audit.ts : 42
+    SUSPICIOUS_SCOPES_PER_DAY is 40 (vow-audit.ts:42) and a scope is the street slug (sold-records route:46), the /sold filter string type:nbhd:ptype (sold/page.tsx:157) or the MLS number. A consumer who opens 41 street pages, or works through the /sold filter chips (2 types times PROPERTY_TYPES times the published hubs is more than 40 combinations), is flagged 'suspicious-access' within a day. The flag refuses nothing (vow-access.ts:10-12), so this is a review-queue noise question for Aamir, not a session defect.
+
+[9] should-fix | defect-in-commit | password-expiry | A registrant "yes" is refused with 400 whenever the row still owes a password (first agreement or renewal)
+    src/app/api/auth/acknowledge-vow/route.ts : 103
+    When steps.needsPassword or steps.needsPasswordRenewal is true and the person answers "yes" to the registrant question, the card sends no password (VowAcknowledgementPrompt.tsx line 141: `...(askPassword && registrant !== "yes" ? { password } : {})`, and the fields are hidden at line 285), but the route judges body.password before honouring the answer: line 103 `if (steps.needsPassword)` runs judgePassword(undefined) which returns {ok:false, error:"Choose a password."} (probe run), and line 107-109 returns 400 "Confirm your password, or choose a new one." for the renewal case. Nothing is written: isRegistrant, registrantAt and reviewFlag "registrant" are never stored, so the R-8.09(b)(i) con
+
+[10] should-fix | defect-in-commit | password-expiry | vow-access.ts treats a missing passwordSetAt as a password that never expires (fail-open)
+    src/lib/vow-access.ts : 25
+    This commit adds `passwordSetAt?: Date | null` as an optional field and line 54 computes `needsPasswordRenewal: !!user.passwordHash && passwordExpired(user.passwordSetAt ?? null, now)`. A row with a passwordHash and a null or omitted passwordSetAt yields needsPasswordRenewal false and canSeeVowRecords true. The other new fields fail closed on omission (line 55: an undefined isRegistrant is "unanswered"; line 45: an undefined version is 0 and owes re-consent), so this one is inconsistent with the rest of the rule. No live bypass today: all ten call sites pass the full row from getSession() (auth.ts:98, findUnique without select) or select the column (login/route.ts:65, verify/route.ts:33), an
+
+[11] note | defect-in-commit | password-expiry | The combined re-consent plus renewal card says "nothing else changes" while also asking for the password
+    src/components/vow/VowAcknowledgementPrompt.tsx : 187
+    When needsReconsent and needsPasswordRenewal are both true the heading is "The terms have changed" (line 171) and the lead ends "Read them and agree once more; nothing else changes." (line 187), yet the password fields render below it (line 285, label "Your password, or a new one", placeholder "Type it again to keep it") and the submit is refused client-side until they are filled (line 120-128). This is the expected state for every MP-002b row (vowAcknowledgementVersion null owes re-consent; passwordSetAt at or before 2026-09-21 expires on or after 2026-12-20) that returns after its password expires. The route handles the combination correctly (lines 91 and 107 both fire); only the prose is 
+
+[12] note | policy-question | password-expiry | An expired password can be replaced on a link-made session without the old password being proved
+    src/app/api/auth/acknowledge-vow/route.ts : 115
+    The renewal branch requires only getSession() (line 49). A session made by the emailed link or code (verify/route.ts:104, no password involved) reaches line 107 with needsPasswordRenewal true; a value that does not match the stored hash (line 111) is judged and hashed as the new password (lines 116-118) with no check of the old one. So renewal proves control of the email (the username) rather than the old credential. It is the only self-service replacement path in the codebase (no reset or change-password route exists under src/app/api/auth/) and it exists only while the password is expired; the same session made by password login (login/route.ts:72-82) has already proved the old one. No res
+
+[13] note | pre-existing | password-expiry | The sign-in form promises the link "asks you to set one", but a forgotten password that has not expired is never replaced
+    src/app/signin/SignInForm.tsx : 209
+    The form says "First time, or forgot your password? The link signs you in and asks you to set one." For a row with a passwordHash younger than 90 days, vowStepsLeft returns needsPassword false and needsPasswordRenewal false (vow-access.ts:53-54), the card renders no password fields (VowAcknowledgementPrompt.tsx:103,285) and the route ignores any password in the body (acknowledge-vow route: neither branch at 103 nor 107 fires, passwordData stays {}). The person can still see records on the link session, so it is not a lockout; the promise is simply not kept until day 90. This predates the commit (MP-002b wrote the same prose and the same `needsPassword = !user.passwordHash` rule); this commit
+
+[14] note | defect-in-commit | password-expiry | The renewal lead states the password is exactly 90 days old; the rule fires at 90 days or more
+    src/components/vow/VowAcknowledgementPrompt.tsx : 198
+    passwordExpired is `until.getTime() <= now.getTime()` (passwordRule.ts:33): true at exactly 90 x 24h and every moment after (probe: exactly 90d => true, 90d minus 1ms => false). The terms page ("expires 90 days after you set it", terms/page.tsx:63), the signin clause ("expires 90 days after I set it", vow-acknowledgement.ts:91) and the card's "valid for 90 days" (line 198) all agree with that boundary. The card's next sentence, "Yours is {PASSWORD_MAX_DAYS} days old", reads as an exact age and is shown unchanged to a password that is 200 days old; under the project's facts-only rule it should read as at least 90 days, or state the actual age from passwordExpiresAt (already returned by /api/a
+
+[15] should-fix | defect-in-commit | terms-and-reconsent | Re-consent overwrites the prior agreement on the User row and nothing backfills VowConsent, so today's version 1/2/3 agreements are lost on re-consent
+    src/app/api/auth/acknowledge-vow/route.ts : 142
+    For every row that agreed before this commit (vowAcknowledgementVersion null or 3, VowConsent empty), the first re-consent replaces vowAcknowledgedAt, vowAcknowledgementText, vowAcknowledgementIp and vowAcknowledgementUserAgent with the version 4 values and appends only the version 4 row to VowConsent; the text, timestamp, IP and user agent of the earlier agreement exist nowhere afterwards. The comments claiming otherwise are false for existing rows.
+
+[16] should-fix | defect-in-commit | terms-and-reconsent | The card's ordered list renders without numbers, so the stored numbered text is not what the consumer saw
+    src/components/vow/vow-card.css : 190
+    Tailwind preflight (@tailwind base in src/app/globals.css:1, preflight not disabled in tailwind.config.ts) sets ol {list-style:none}; the rule for ol.vc-terms sets margin, padding, max-height, overflow, font-size and line-height but never list-style, so the <ol> in VowAcknowledgementPrompt.tsx:320-326 shows ten unnumbered paragraphs with a 20px indent while VOW_ACKNOWLEDGEMENT_TEXT stores "1. ... 10. ..." (vow-acknowledgement.ts:97). The audit premise at vow-acknowledgement.ts:6 ("the literal text the user saw") does not hold.
+
+[17] should-fix | defect-in-commit | terms-and-reconsent | A first-time consumer (or one owing a renewal) who answers "Yes, I am a registrant" cannot submit: the card omits the password, the route demands it
+    src/components/vow/VowAcknowledgementPrompt.tsx : 141
+    With registrant === "yes" the card hides the password fields (line 285), skips password validation (line 120) and omits password from the body (line 141). The route still runs steps.needsPassword (route.ts:103-105): judgePassword(undefined) returns {ok:false, error:"Choose a password."} (src/lib/portal/password.ts:41-43), a 400. A row owing a renewal hits route.ts:108-110 ("Confirm your password, or choose a new one.") the same way. The error shows on a card with no password field; the only way through is to switch the answer to "No". So a new consumer's yes is never stored, never flagged, and the refusal in vow-access.ts never engages for them.
+
+[18] should-fix | defect-in-commit | terms-and-reconsent | The battery's vow-fields check signs in as a user who now owes re-consent and a registrant answer, so its acknowledged-session assertions fail against this commit
+    scripts/verify/checks/vow-fields.mjs : 119
+    The check picks the most recent verified user by "vowAcknowledgedAt" IS NOT NULL, signs in, and asserts canSee === true and facts present (lines 274-286). After this commit canSeeVowRecords is false for every existing row (vowAcknowledgementVersion null → termsCurrent false; isRegistrant null → needsRegistrantAnswer true) until a person completes the card as that user. The commit does not touch the check, and no battery log postdates the commit.
+
+[19] should-fix | defect-in-commit | terms-and-reconsent | A self-declared registrant can clear the "registrant" flag with one POST, against the schema comment and the card's own copy
+    src/app/api/auth/acknowledge-vow/route.ts : 134
+    The route takes the registrant answer "whenever it is owed or offered" (line 82-85) and an isRegistrant:false clears reviewFlag "registrant" and sets isRegistrant false (lines 134-135), after which canSeeVowRecords passes. The card wall says "email Aamir and he will put it right by hand" (VowAcknowledgementPrompt.tsx:164) and prisma/schema.prisma:685 says the flag is "cleared by a person, never by code"; schema.prisma:686 says "A flag never refuses on its own" while vow-access.ts:67 refuses on reviewFlag === "registrant". Which of the two rules is intended is not settled by the code.
+
+[20] note | defect-in-commit | terms-and-reconsent | Clause order puts (iii) before (ii), so the stored numbering is out of step with the Appendix B(c) numerals the keys carry
+    src/lib/vow-acknowledgement.ts : 41
+    VOW_TERMS_CLAUSES lists key "i", then "iii" (bona fide interest), then "ii" (personal, non-commercial use). VOW_ACKNOWLEDGEMENT_TEXT numbers by array position, so stored and displayed item 2 is Appendix (iii) and item 3 is Appendix (ii); items 4 to 9 match, item 10 is the house sign-in sentence. All nine elements are present; only the mapping is shifted.
+
+[21] note | policy-question | terms-and-reconsent | The bold privacy clause sits ninth of ten inside a 260px scroll box; the tick and submit are reachable without scrolling to it
+    src/components/vow/vow-card.css : 193
+    ol.vc-terms is max-height 260px, overflow auto, 12px text at line-height 1.55 (about 18.6px per line, 8px between items). Clauses 1 to 8 run well past 260px at card width, so clause ix (bold: true, VowAcknowledgementPrompt.tsx:323) is below the fold of the box while the checkbox (line 330) and button (line 344) are outside it. Whether "boldly informs" is met by a bold clause the consumer need not scroll to is for PropTx, not the code.
+
+[22] note | policy-question | terms-and-reconsent | Three clause wordings depart from the standard VOW terms and only the Appendix text can settle them
+    src/lib/vow-acknowledgement.ts : 58
+    (v) says PropTx "owns, and holds the copyright in" the database; the usual clause has the consumer acknowledge ownership "and the validity of the copyright". (iv) adds "except in connection with my consideration of the purchase, sale or lease of an individual property", an exception present in some VOW policies and absent in others. (i) names the salesperson and brokerage rather than "a Member". The elements the lens named (lawful, Member, otherwise use, screen scrape/database scrape/data mine, verify compliance and monitor the display, boldly and shared with PropTx for auditing and/or legal purposes) are all present. No test compares the clauses to the document; the Appendix B(c) text is no
+
+[23] note | defect-in-commit | terms-and-reconsent | The re-consent copy says "nothing else changes" but every existing row also gets the required registrant question
+    src/components/vow/VowAcknowledgementPrompt.tsx : 187
+    All rows that exist today have isRegistrant null (new column, migration.sql:4), so vowStepsLeft returns needsRegistrantAnswer true and the re-consent card renders the yes/no fieldset (line 209) and refuses submit without it (line 108-111), while the lead says "Read them and agree once more; nothing else changes." The comments at vow-access.ts:33 and VowAcknowledgementPrompt.tsx:12-13 ("the terms and the tick only") describe the same narrower card. Aamir's row does get the re-consent heading, not the first-agreement one (vow-access.ts:52; test lines 149-157).
+
+[24] note | policy-question | terms-and-reconsent | /privacy describes an anonymising deletion path that no route or script performs
+    src/app/privacy/page.tsx : 79
+    The new paragraph says "a deletion request within that window anonymises what it can and keeps the rest until the window ends" and passwordRule.ts:17 says "the account-deletion path (MP-003) anonymises instead". MP-003 is a proposed slice (QUEUE.md:578), and no file under src/app/api mentions anonymising. If this is a manual process the prose is a promise Aamir keeps by hand; if it is meant to be code it does not exist.
+
+[25] note | pre-existing | terms-and-reconsent | acknowledge-vow/route.ts holds a raw NUL byte, so git shows it as binary and the change cannot be reviewed as a diff
+    src/app/api/auth/acknowledge-vow/route.ts : 44
+    cleanName's regex is written with literal control characters (a NUL and a 0x1F) instead of \0 and \x1f escapes; git therefore prints "Bin 4971 -> 7601 bytes" in the stat and refuses a textual diff. The parent commit already had the NUL (offset 2171), so this predates MP-006, but this commit grew the file from 4971 to 7601 bytes unreviewable by git show.
+
+[26] note | pre-existing | terms-and-reconsent | /privacy retention paragraph adjacent to the new one carries an em-dash and cites REBBA while clause (i) cites TRESA
+    src/app/privacy/page.tsx : 74
+    Line 74 (unchanged by the commit) reads "under the Real Estate and Business Brokers Act (REBBA) — typically up to 7 years", an em-dash in user-facing text and the repealed statute, one paragraph above the new VOW retention text; /terms line 31 has an em-dash too. Nothing added by the commit contains U+2014, a superlative or "median".
+
+[27] blocker | defect-in-commit | audit-trail | /listings serves VOW-only fields to a gated consumer with no VowAccessLog row
+    src/app/listings/page.tsx : 68
+    The listings grid page gates on canSeeVowRecords (line 63) and then loads 36 cards per view with the VOW-only columns (listedAt, daysOnMarket, priorPrice, priceChangedAt) and renders them, and never calls logVowAccess. The trail therefore misses every VOW read on /listings, which contradicts the commit's claim that the trail is written by every VOW surface.
+
+[28] should-fix | defect-in-commit | audit-trail | /api/auth/saved-listings serves the VOW-only sold/expired status with no trail row
+    src/app/api/auth/saved-listings/route.ts : 42
+    A canSeeVowRecords user receives the feed's status (sold, expired, rented) for every saved listing, which the route's own comment calls a VOW-only fact, and no VowAccessLog row is written.
+
+[29] should-fix | defect-in-commit | audit-trail | flagIfSuspicious loads every row of the person's last 24 hours on every write, with no take and no short-circuit for an already flagged user
+    src/lib/vow-audit.ts : 115
+    It is not a count query: `findMany` with `select: { scope, kind }` and no `take` returns all of the user's rows in the window and builds a Set in JS, on every gated read, including the /sold server render. Cost per write grows with the user's daily reads (a scraper at N reads/day costs O(N^2) row reads per day), and it still runs after the flag is set because the guard (`reviewFlag: null`) is on the updateMany, not before the findMany, even though getSession already returns the full User row with reviewFlag.
+
+[30] should-fix | defect-in-commit | audit-trail | The CSV export does not neutralise formula prefixes in client-controlled cells
+    src/lib/vow-audit.ts : 211
+    accessCsv only quotes cells containing a comma, quote or newline. userAgent is a request header and the street-records scope is the URL slug, both chosen by the signed-in consumer, so a value beginning with =, +, -, @ or a tab lands verbatim in a CSV that Aamir opens in a spreadsheet and forwards to PropTx.
+
+[31] note | defect-in-commit | audit-trail | VowGate is dead code, so the sixth surface never writes and kind "neighbourhood-records" is never produced; if revived it writes twice per view with recordCount 0
+    src/components/vow/VowGate.tsx : 195
+    VowGate's only importer is NeighbourhoodSoldBlock, which has zero importers, so the commit's "six surfaces" is five in production. The write also reports recordCount 0 while its children carry up to 20 sale and 20 lease records, and NeighbourhoodSoldBlock mounts VowGate twice, so one page view would produce two identical rows.
+
+[32] note | defect-in-commit | audit-trail | The prebuild's surface coverage is a closed list, so an uncovered VOW surface passes
+    scripts/test-vow-best-practices.ts : 187
+    The assertion walks a hard-coded SURFACES array and checks each named file contains canSeeVowRecords before logVowAccess; it does not enumerate callers of canSeeVowRecords or VOW_SELECT, so /listings and saved-listings (findings above) pass with 140 green assertions.
+
+[33] note | defect-in-commit | audit-trail | recordCount means different things per kind: sold-stats stores the 90-day sale count, not rows served
+    src/app/api/sold-stats/route.ts : 174
+    street-records, sold-api, sold-page and listing-vow store the number of rows served; sold-stats stores count90 (the sample size behind one aggregate row). A reader of the export cannot sum or compare recordCount across kinds.
+
+[34] note | defect-in-commit | audit-trail | Ordinary /sold chip browsing can trip the 40-distinct-scope flag
+    src/app/sold/page.tsx : 157
+    The sold-page scope is the filter combination (type:nbhd:ptype). The chip row offers 2 transaction types, 5 property-type options and every published hub plus All, so a consumer clicking through filters reaches 41 distinct scopes in one sitting and is flagged "suspicious-access". The flag refuses nothing, but the review list will contain ordinary browsing.
+
+[35] note | policy-question | audit-trail | A failed trail insert is swallowed and the records still go out; the await adds pool-timeout latency first
+    src/lib/vow-audit.ts : 100
+    The write is awaited (so a serverless function cannot drop it) and a failure only console.errors, so the response proceeds with no row and no counter or alert. Under the P2024 pool timeouts this project has seen, the request first waits out the pool timeout and then serves records unlogged. Whether a best-effort trail satisfies VOW Policy 19 is not something the code settles.
+
+[36] note | policy-question | audit-trail | VowAccessLog and VowConsent cascade-delete with the User row
+    prisma/schema.prisma : 726
+    Deleting a User erases their audit trail and consent history. Today the only deleter is purge-bot-users.ts, whose filter (unverified, no password, no acknowledgement) cannot match a user who has trail rows, so nothing is lost now; any future deletion path (an erasure request, an admin cleanup) would remove the records the trail exists to keep.
+
+[37] note | pre-existing | audit-trail | The battery signs in as the most recently acknowledged real consumer and now writes listing-vow rows under that person's id
+    scripts/verify/checks/vow-fields.mjs : 117
+    vow-fields.mjs picks whichever verified user acknowledged most recently, signs in as them, and reads /api/listings/<mls>/vow with the cookie. Since this commit that read writes a VowAccessLog row attributed to that consumer with the runner's IP. The rows are distinguishable only by userAgent "miltonly-verify".
+
+[38] note | defect-in-commit | audit-trail | The export window is unbounded and the shell script duplicates the thresholds as literals
+    src/lib/vow-audit.ts : 191
+    exportVowAccess has no take and the admin route accepts any from/to, so ?from=2000-01-01 loads every row with its joined User into a serverless function's memory. scripts/export-vow-access-log.ts hard-codes 40 and 400 instead of importing SUSPICIOUS_SCOPES_PER_DAY and SUSPICIOUS_READS_PER_DAY, so the two review lists can drift.
+
+[39] should-fix | defect-in-commit | bona-fide-and-records | A first-time 'Yes, I am a registrant' is never stored or flagged: the route rejects it for a missing password
+    src/app/api/auth/acknowledge-vow/route.ts : 103
+    For every row that owes a password (every first-time consumer, and every renewal-owed row), a registrant yes ends in a 400 before any write, so isRegistrant, reviewFlag 'registrant', registrantAt and the VowConsent row are never recorded, and the card shows 'Choose a password.' while its password fields are hidden. The commit's claim that a yes is stored and flagged holds only for a row that already carries a password under 90 days old.
+
+[40] should-fix | defect-in-commit | bona-fide-and-records | A 'registrant' review flag is self-clearable by the flagged person with one POST, no review, no history
+    src/app/api/auth/acknowledge-vow/route.ts : 134
+    The route accepts isRegistrant whenever offered, not only when owed, and a false clears reviewFlag 'registrant' and reviewFlaggedAt immediately. A registrant who answered yes, or whom Aamir flagged by hand on a row whose isRegistrant is false, sends {isRegistrant:false} from their own session and canSeeVowRecords is true on the next request. registrantAt is overwritten and no history row is kept, and the person drops out of the review list. This contradicts the schema comment, the card's prose and the prebuild test's own scenario.
+
+[41] should-fix | defect-in-commit | bona-fide-and-records | A hand-flagged row (isRegistrant false, reviewFlag 'registrant') gets a dead card: 'Choose a password to finish' with no fields and a no-op button
+    src/components/vow/VowAcknowledgementPrompt.tsx : 170
+    The state the prebuild test models as supported is refused by vow-access.ts, but /me carries no reviewFlag and every step is false, so the card renders the password heading with no password fields, no terms, no question, and an enabled submit whose POST is an empty update that returns 200 and refetches the same card. The person is told to choose a password they cannot type.
+
+[42] note | defect-in-commit | bona-fide-and-records | /privacy and passwordRule.ts describe an account-deletion path that anonymises; no such path exists
+    src/app/privacy/page.tsx : 80
+    The new privacy paragraph promises that 'a deletion request within that window anonymises what it can and keeps the rest until the window ends', and passwordRule.ts attributes this to 'the account-deletion path (MP-003)'. There is no deletion or anonymisation code in src or scripts, and MP-003 is listed as not started.
+
+[43] note | defect-in-commit | bona-fide-and-records | 180-day retention is enforced only by the absence of a delete path; consent and access rows cascade-delete with the User
+    prisma/migrations/20260921120000_portal_vow_best_practices/migration.sql : 54
+    credentialRetainUntil() has no caller outside the prebuild test, so no code compares a date. Retention holds because the only User delete (the bot purge) excludes rows with a passwordHash. Both new tables are ON DELETE CASCADE, so any future User deletion (MP-003 or a hand SQL) removes the consent history and the audit trail with the row, which is the opposite of what Appendix B(b) and VOW Policy 19 want retained.
+
+[44] note | policy-question | bona-fide-and-records | The plaintext 'current password' question is stated honestly, nothing weakens security for it, but the pointer to 'the MP-006 report, item 3' is dangling
+    src/lib/portal/passwordRule.ts : 18
+    The password exists only as a bcrypt hash (cost 12); renewal reconfirms by comparing, never by storing; the admin export and the shell export carry no hash. The only written statement of the Appendix B(b) 'current password' question is a code comment pointing at a report file that is not in the tree at 77eea1d. Whether a bcrypt hash satisfies 'current password' in the record is PropTx's call, not code's.
+
+[45] note | policy-question | bona-fide-and-records | The registrant control is self-attestation only; a registrant who answers no is a consumer to every gate
+    src/lib/vow-access.ts : 55
+    needsRegistrantAnswer is null-vs-answered and registrant is isRegistrant === true; nothing cross-checks the answer against a registrant list, the email domain, or the brokerage. A registrant who answers no is served records and appears in the export as registrant false. Whether a self-declaration meets R-8.09(b)(i) is a question for PropTx.
+
+[46] note | policy-question | bona-fide-and-records | Suspicious-access tracking refuses nothing, alerts nobody, and counts a /sold filter combination as a scope
+    src/lib/vow-audit.ts : 120
+    Confirmed: the flag never refuses (only 'registrant' does) and is set once. But nothing notifies Aamir; a scraper past 40 scopes or 400 reads keeps receiving 20 records per street read and 60 per /sold read until someone opens ?view=suspicious. For a household, every street page, every SoldOnMyStreet lookup and every /sold type x neighbourhood x property-type combination is a distinct scope, so 40 in a day is reachable by a long browsing session, at the cost of a review row only. Whether tracking without an alert or a throttle meets R-8.09(b)(iii) is a policy question.
+
+[47] note | defect-in-commit | bona-fide-and-records | flagIfSuspicious loads every row of the person's last 24 hours on every write
+    src/lib/vow-audit.ts : 115
+    Each gated read runs a findMany over the person's rows since yesterday and builds a Set in memory, so the per-write cost grows with the volume of the very scraper it is meant to catch; a count plus a groupBy on (kind, scope) would bound it.
+
+[48] note | pre-existing | bona-fide-and-records | acknowledge-vow/route.ts is a binary file to git (raw 0x00 and 0x1F bytes in a regex), so this commit's diff of the route is unreviewable
+    src/app/api/auth/acknowledge-vow/route.ts : 44
+    cleanName's character class is written with literal NUL and unit-separator bytes instead of escapes, so `git show 77eea1d -- <file>` prints 'Bin 4971 -> 7601 bytes' and grep reports a binary match. The route that carries most of this commit's logic cannot be diffed. Pre-existing: the parent revision is binary too.
+
+[49] note | defect-in-commit | bona-fide-and-records | Reconsent card says 'nothing else changes' while it asks the new registrant question
+    src/components/vow/VowAcknowledgementPrompt.tsx : 187
+    Every pre-MP-006 consumer owes both the re-consent and the registrant answer (isRegistrant is NULL after the migration), and the card renders the question under a lead that says nothing else changes.
+
+[50] should-fix | defect-in-commit | test-honesty | Inactivity round trip never runs auth.ts's own token code
+    scripts/test-vow-best-practices.ts : 90
+    Lines 90 to 100 sign and re-sign a JWT with jose and a local secret ("test-secret") and read it back with jose; the only auth.ts function the test calls is judgeSession (import at line 17). sign(), createSession(), readClaims() and touchSession() (src/lib/auth.ts:53, 73, 81, 106) never execute. The assertions at 94, 95 and 98 check that jose returns what the test itself signed, and 99 to 100 repeat the judgeSession cases already covered at 79 to 81. A sign() that dropped `act` from the payload (auth.ts:54), a readClaims() that defaulted a missing act to a far-future number (auth.ts:86), or a touchSession() that re-issued exp would all pass this block; the only guard on those is the string ma
+
+[51] should-fix | defect-in-commit | test-honesty | Nine-clause regexes accept a clause reworded to say the opposite
+    scripts/test-vow-best-practices.ts : 127
+    The REQUIRED table checks presence of phrases only; no pattern includes the operative negation ("will not", "do not create", "impose no") or the object of the clause. A run of the exact patterns against nine rewordings that invert or thin each clause accepted all nine.
+
+[52] should-fix | defect-in-commit | test-honesty | A text change without a version bump passes the prebuild
+    scripts/test-vow-best-practices.ts : 126
+    The only version assertion is `eq(VOW_TERMS_VERSION, 4)`. Nothing binds the clause text to the version, so editing a clause (while keeping the required phrases) and leaving VOW_TERMS_VERSION at 4 passes; rows that agreed to the old text remain termsCurrent (vow-access.ts:45) and owe no re-consent, and VowConsent history for the new wording is never appended for them.
+
+[53] note | defect-in-commit | test-honesty | Clause (iii) is numbered 2 and clause (ii) is numbered 3; no order assertion
+    src/lib/vow-acknowledgement.ts : 41
+    VOW_TERMS_CLAUSES lists key "iii" (bona fide interest) before key "ii" (personal, non-commercial), so VOW_ACKNOWLEDGEMENT_TEXT and the card's ordered list number them 2 and 3 in the opposite order to the file's own Appendix B(c) keys. The test finds clauses by key (line 140) and never asserts the array order.
+
+[54] note | defect-in-commit | test-honesty | Two clause assertions are derived from the definition they test
+    scripts/test-vow-best-practices.ts : 143
+    Line 143 asserts VOW_ACKNOWLEDGEMENT_TEXT.includes(clause.text) for each of the ten clauses, and line 146 asserts the text splits into exactly VOW_TERMS_CLAUSES.length lines. VOW_ACKNOWLEDGEMENT_TEXT is defined as the numbered join of VOW_TERMS_CLAUSES (vow-acknowledgement.ts:97), so both can only fail if a clause text contains a newline; they add 11 assertions to the count of 140 without testing a behaviour.
+
+[55] should-fix | defect-in-commit | test-honesty | Trail write is proven by string index only; an unreachable or refused-branch write passes
+    scripts/test-vow-best-practices.ts : 197
+    For each of six files the test asserts the strings "canSeeVowRecords(", "logVowAccess(" and `kind: "..."` are present and that the first index of the gate string is lower than the first index of the write string. logVowAccess() is never executed. The check passes if the write is placed inside the `if (!canSee)` branch (logging refusals and never served reads), inside a comment, or after an early `return` on the served branch; it also cannot see that VowGate's write passes recordCount 0.
+
+[56] should-fix | defect-in-commit | test-honesty | Two gated VOW surfaces write no trail row: /listings and /api/auth/saved-listings
+    src/app/listings/page.tsx : 63
+    The commit says the trail is "written by all six VOW surfaces", but the door test's own list of files that gate through canSeeVowRecords has ten entries. src/app/listings/page.tsx:63 passes `vow` to getListingsV2Data, which attaches daysOnMarket, listedAt, priorPrice and priceChangedAt (all in VOW_ONLY_FIELDS) to every card (src/lib/listingsV2Data.ts:160 to 168, 286); src/app/api/auth/saved-listings/route.ts:39 to 47 serves the feed's sold/expired status, which its own comment calls "a VOW-only fact". Neither file calls logVowAccess. The trail test's SURFACES array (lines 187 to 194) is hand-maintained and cannot notice a gated surface that is missing from it.
+
+[57] should-fix | defect-in-commit | test-honesty | A first-time consumer cannot record a registrant "yes": the route demands a password the card hides
+    src/app/api/auth/acknowledge-vow/route.ts : 103
+    For a row with no passwordHash, steps.needsPassword is true and the route judges body.password before any write (lines 103 to 106); judgePassword(undefined) returns "Choose a password." (src/lib/portal/password.ts:41 to 43) and the route answers 400. The card, when the person selects "Yes, I am a registrant", hides the password fields (VowAcknowledgementPrompt.tsx:285 `askPassword && registrant !== "yes"`) and omits password from the body (line 141). So the first agreement with a yes answer is refused with an error about a field that is not shown; isRegistrant, registrantAt and the "registrant" review flag (route lines 126 to 137) are never written for that case. The string assertion at test
+
+[58] should-fix | defect-in-commit | test-honesty | Renewal and re-consent behaviour is asserted by string includes only
+    scripts/test-vow-best-practices.ts : 70
+    The renewal (same password reconfirms, different one is judged and hashed) is held by two includes checks at lines 70 to 71 ("steps.needsPasswordRenewal", "verifyPassword(body.password, user.passwordHash)", "passwordData = { passwordSetAt: now }"); the re-consent route behaviour is held by line 159 (three includes) and the card by line 162 (two includes); test-portal-door.ts:419 to 421 adds two more includes on the same route. No assertion runs the decision: that a reconfirm writes passwordSetAt without a new hash, that a replacement is judged before it is hashed on the renewal branch (the door test's indexOf at 421 compares the first judgePassword against the first hashPassword, both on the
+
+[59] note | defect-in-commit | test-honesty | Login "still signs in" is a negative regex that misses other refusal spellings
+    scripts/test-vow-best-practices.ts : 73
+    `!/passwordExpired\(/.test(login)` would still pass if the login route refused an expired password via `passwordExpiresAt(` (a different identifier that the regex does not match) or via `vowStepsLeft(user).needsPasswordRenewal`; the positive half (`passwordSetAt: true`) only checks that the column is selected.
+
+[60] note | defect-in-commit | test-honesty | Suspicious-activity thresholds are lower-bounded only and the count is untested
+    scripts/test-vow-best-practices.ts : 230
+    `SUSPICIOUS_SCOPES_PER_DAY >= 20 && SUSPICIOUS_READS_PER_DAY >= 100` passes with either constant set to 1e9, which disables the tracking. The counting rule (distinct `${kind}:${scope}` keys over 24 hours, strict `>` on both thresholds) lives inline in flagIfSuspicious (src/lib/vow-audit.ts:119 to 120) behind prisma and is never run; an `>=` or a scope-only key would pass.
+
+[61] note | defect-in-commit | test-honesty | Door test's "no sliding window" is a word ban that the new touchSession contradicts
+    scripts/test-portal-door.ts : 312
+    `!/refresh|sliding|extend/i.test(auth.replace(/\/\/.*$/gm, ""))` passes only because the word "extends" sits in a `//` comment (src/lib/auth.ts:23) and the JSDoc at 103 says "Re-issue". touchSession is a sliding window on `act` by design; the assertion neither proves exp is fixed nor fails when it is not. The commit updated the adjacent line 311 and left this label.
+
+[62] note | pre-existing | test-honesty | Raw control bytes make git treat the acknowledge route as binary, so this commit's central diff is unreviewable
+    src/app/api/auth/acknowledge-vow/route.ts : 44
+    cleanName's regex contains literal 0x00 and 0x1F bytes instead of the escapes `\x00-\x1f`; git prints "Bin 4971 -> 7601 bytes" for this file in `git show 77eea1d --stat` and no diff for the renewal, re-consent and registrant changes. readFileSync("utf8") in the tests still works. The bytes were already present in 98d2cd7 (MP-002b).
+
+[63] note | policy-question | test-honesty | The inactivity touch runs once per full page load, not per client navigation
+    src/components/UserProvider.tsx : 52
+    UserProvider fetches /api/auth/me in a mount effect with a stable callback dependency, so the touch happens on each full load and on the four record routes; App Router client navigations between non-record pages do not touch. A consumer browsing that way is timed out before 60 minutes of real activity. This refuses earlier than the rule requires, never later, so it is a usability point and not a compliance gap.
+
+-- refuted:
+  - note | test-honesty | VowGate logs recordCount 0 for every neighbourhood and street render
+  - note | test-honesty | A password hash with no passwordSetAt never expires
