@@ -1,0 +1,76 @@
+[regen-local] primaries {"AI_PROVIDER_MARKET":"","AI_PROVIDER_AHA":"","AI_PROVIDER_EVAL":""} -> all deepseek; fallback ENABLED (opus)
+[regen-local] 37 in set, 40 already done, 1 to run
+[Phase41] millside-drive-milton TIER 1 (full-data): totalListings=20
+[roundPrices] section=market '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=market '$785,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=market '$2,650' SKIPPED (within tolerance of input $1,905)
+[roundPrices] section=market '$595,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$586,250' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$515,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$425,000' → '$430,000' (sale, <$500K/$10K) (no input within tolerance)
+[Phase41/market] millside-drive-milton attempt 1: 0 violations (clean) | tokens 10091in/481out | $0.00155
+[roundPrices] section=homes '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=homes '$785,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/aha] millside-drive-milton attempt 1: 0 violations (clean) | tokens 6173in/549out | $0.00102
+[roundPrices] section=differentPriorities '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=differentPriorities '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$785,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $1,905)
+[roundPrices] faq[7] '$585,000' → '$575,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/eval] millside-drive-milton attempt 1: 1 violation (invented_cross_street@differentPriorities) | tokens 9345in/1292out | $0.00167
+[Phase41/eval] millside-drive-milton retry-feedback for attempt 2 (250 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invented_cross_street in section "differentPriorities": Dorset Park
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=differentPriorities '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$784,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $1,905)
+[Phase41/eval] millside-drive-milton attempt 2: 1 violation (invented_cross_street@differentPriorities) | tokens 9410in/1161out | $0.00164
+[Phase41/eval] millside-drive-milton retry-feedback for attempt 3 (250 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invented_cross_street in section "differentPriorities": Dorset Park
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=differentPriorities '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $1,905)
+[Phase41/eval] millside-drive-milton attempt 3: 2 violations (catchment_vocabulary@schools, invented_cross_street@differentPriorities) | tokens 9410in/1129out | $0.00163
+[Phase41/eval] millside-drive-milton retry-feedback for attempt 4 (436 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- catchment_vocabulary in section "schools": "boundaries": ...assignment should be confirmed directly with the boards, as boundaries are set by the boards and not by proximity alone....
+- invented_cross_street in section "differentPriorities": Dorset Park
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=differentPriorities '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=differentPriorities '$85,000' → '$90,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[0] '$489,000' → '$490,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $1,905)
+[Phase41/eval] millside-drive-milton attempt 4: 1 violation (invented_cross_street@differentPriorities) | tokens 9448in/1091out | $0.00163
+[Phase41/eval] millside-drive-milton retry-feedback for attempt 5 (250 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invented_cross_street in section "differentPriorities": Dorset Park
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] faq[6] '$2,650' SKIPPED (within tolerance of input $1,905)
+[Phase41/eval] millside-drive-milton attempt 5: 1 violation (invented_cross_street@differentPriorities) | tokens 9410in/1187out | $0.00165
+[Phase41] millside-drive-milton FALLBACK: 1 half(ves) failed primary pass — retrying with claude-opus-4-7: eval
+[Phase41/eval-fallback] millside-drive-milton: fallback threw — 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CfHAQkupWRUsSu2AAYVc7"}
+[Phase41/eval-fallback] millside-drive-milton: fallback failed entirely, keeping original violations
+[ 23/37] FAIL millside-drive-milton                att=- $0.01080 judge=n/a published 35s  threw:Phase41GenerationError
+
+[regen-local] complete. passed 0, failed 1, deepseek cost $0.0108
+[regen-local] revalidate /streets -> 200

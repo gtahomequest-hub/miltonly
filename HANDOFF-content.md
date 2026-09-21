@@ -2,19 +2,48 @@
 
 CONTENT · D:\miltonly-content · feat/content-2
 
-_Last rewritten 2026-09-13, after MCT-001 was re-issued: the two guides were already on
-main, so the branch was merged up to main and re-proven on a preview rather than rebuilt._
+_Last rewritten 2026-09-21, after MCT-002: the 37 street descriptions naming a leased price
+by month regenerated through the standing runner; 36 published, millside-drive fail-closed._
 
 ## READ THIS FIRST
 
 **This worktree owns the guides and everyday-life tier, and the Market Watch
 weekly edition.** Its own tables, its own routes, generation through
 `src/lib/ai/compliance.ts` under the cheap-first rule. **It never writes
-`StreetContent`, `HubContent` or `CondoContent` rows, never touches the header,
-footer or homepage.** Read the root `HANDOFF.md` for those tiers; it is the
+`StreetContent`, `HubContent` or `CondoContent` rows on its own initiative, never
+touches the header, footer or homepage.** MCT-002 was the one exception, by task:
+Core asked Content to run `scripts/regen-058-local.ts` over a named set. Read the root `HANDOFF.md` for those tiers; it is the
 authority on everything outside this scope.
 
 ## WHERE THIS BRANCH STANDS RIGHT NOW
+
+**MCT-002 IS DONE, 2026-09-21.** MC-036 found 37 of 691 published street descriptions
+naming a leased price tied to a month (its test: `D:\miltonly\scratchpad\mc036\q4.mjs`,
+`(rented|leased)[^.]{0,80}(in|during|this past|last) <Month>` over
+`StreetContent.description`). The branch was merged up to `origin/main` first (`4ee5f1f`,
+so the generator ran MC-036's prompt and input builder; `git diff origin/main -- src docs
+scripts prisma` is empty), the 37 were found by that test made repeatable
+(`scratchpad/mct002/find-lease-month.ts`, `before.txt`), and regenerated through
+`scripts/regen-058-local.ts` on DeepSeek with the validator and the judge as normal,
+`REGEN_CAP_USD=5`. **36 of 37 published, $0.3878 in all, three runs.** The test after:
+**1 of 691**, `millside-drive-milton`, which failed closed on `invented_cross_street`
+("Dorset Park", fifteen eval attempts, input neighbourhood `Old Milton`); the Opus fallback
+could not run because the **Anthropic account has no credit** (400 "credit balance is too
+low"). Its old row stands; render-time suppression keeps the two sentences off the page.
+Core decides: a hand scrub or a generator change. Record:
+`scratchpad/reports/MCT-002-regenerate-lease-month-streets.md`.
+
+**Eleven more carry the same defect in a shape the MC-036 regex misses** ("a two-bedroom
+condo at $2,150 in September 2026", no lease verb within 80 characters):
+bergamot-avenue, chretien-street, kennedy-circle, maple-avenue, ontario-street,
+raspberry-terrace, ruhl-drive, sycamore-garden, trudeau-drive, whitlock-avenue,
+woodley-crescent. `find-lease-month.ts --broad` lists them; the runner takes them with the
+same order-file shape for about $0.12. Not run: outside the 37 asked for. Needs a yes.
+
+**There is nothing on `feat/content-2` for Core to merge.** The branch is main plus this
+worktree's own handoff, queue lines, reports and `scratchpad/mct002/`. No code changed.
+
+## MCT-001 (2026-09-11, re-issued 2026-09-13)
 
 **MCT-001 IS ON MAIN AND ON PRODUCTION.** Core merged `5e7a3e3` as `94ddc49`; the up-links
 from every street page and hub to both guides, and the battery's `sources-fresh` check, came

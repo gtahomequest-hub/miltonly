@@ -1,0 +1,261 @@
+[
+ {
+  "n": 1,
+  "slug": "bellflower-court-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 2,
+  "slug": "boyd-lane-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 3,
+  "slug": "bronte-street-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 4,
+  "slug": "cavanagh-lane-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 5,
+  "slug": "clark-boulevard-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 6,
+  "slug": "costigan-road-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 7,
+  "slug": "derry-road-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 8,
+  "slug": "farmstead-drive-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 9,
+  "slug": "ferguson-drive-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 10,
+  "slug": "fourth-line-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 11,
+  "slug": "giddings-crescent-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 12,
+  "slug": "gleave-terrace-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 13,
+  "slug": "gordon-krantz-avenue-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 14,
+  "slug": "hampshire-way-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 15,
+  "slug": "holloway-terrace-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 16,
+  "slug": "laking-terrace-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 17,
+  "slug": "leger-way-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 18,
+  "slug": "locker-place-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 19,
+  "slug": "logan-drive-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 20,
+  "slug": "magnolia-terrace-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 21,
+  "slug": "main-street-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 22,
+  "slug": "melville-bonus-crescent-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 23,
+  "slug": "millside-drive-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 24,
+  "slug": "mockridge-terrace-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 25,
+  "slug": "moira-crescent-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 26,
+  "slug": "murlock-heights-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 27,
+  "slug": "murray-meadows-place-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 28,
+  "slug": "nadalin-heights-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 29,
+  "slug": "restivo-lane-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 30,
+  "slug": "riddell-crescent-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 31,
+  "slug": "sauve-street-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 32,
+  "slug": "savoline-boulevard-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 33,
+  "slug": "speyer-circle-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 34,
+  "slug": "stirling-todd-terrace-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 35,
+  "slug": "suitor-court-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 36,
+  "slug": "thames-circle-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ },
+ {
+  "n": 37,
+  "slug": "whitmer-street-milton",
+  "rules": [
+   "lease_price_by_month"
+  ]
+ }
+]
