@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // The build's own clock, inlined so /api/build can say when the deployment was built
+  // (MC-035: the battery's prerender-coverage check draws the pre-build street set from it).
+  env: { BUILD_AT: new Date().toISOString() },
   // LISTING PHOTOS THROUGH THE OPTIMISER (MH-005, MA-001 change 2). The feed's photo URLs are
   // signed imgproxy paths at rs:fit:3840:3840; the resize is inside the signature, so the only
   // way to serve a 700px tile is to resize the source ourselves. next/image does that once per

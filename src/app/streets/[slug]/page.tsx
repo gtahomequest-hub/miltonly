@@ -18,9 +18,10 @@ import { getStreetCompareContrast } from "@/lib/comparisonData";
 
 interface Props { params: { slug: string } }
 
-// MC-017: the build prerenders the top fifty (src/lib/streetPrerender.ts); every other published
-// street renders on its first visit under dynamicParams and the hour's revalidate below, and the
-// publish floor (an unpublished slug 404s) is unchanged.
+// MC-035: on production the build prerenders every published street (src/lib/streetPrerender.ts,
+// keyed on VERCEL_ENV); a preview prerenders the top fifty and the rest render on first visit
+// under dynamicParams and the hour's revalidate below. The publish floor (an unpublished slug
+// 404s) is unchanged.
 export async function generateStaticParams() {
   const slugs = await topStreetSlugsForPrerender();
   return slugs.map((slug) => ({ slug }));
