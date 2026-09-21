@@ -16,8 +16,10 @@
 // signals and conversion prompts rather than a blank wall.
 
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { getAnalyticsDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import type { PublicAggregateTeaser, MarketTemperature } from "@/lib/db-types";
@@ -187,6 +189,18 @@ export default async function VowGate({
       const { default: VowAcknowledgementPrompt } = await import("./VowAcknowledgementPrompt");
       return <VowAcknowledgementPrompt />;
     }
+    // The audit trail (MP-006): the gated children (a neighbourhood's or street's records) are
+    // about to render for this consumer.
+    const h = headers();
+    await logVowAccess({
+      userId: user.id,
+      kind: "neighbourhood-records",
+      scope: street ? `street:${street}` : neighbourhood ? `neighbourhood:${neighbourhood}` : null,
+      path: currentPath,
+      recordCount: 0,
+      ip: clientIpFromHeaders(h),
+      userAgent: h.get("user-agent"),
+    });
     return <>{children}</>;
   }
 

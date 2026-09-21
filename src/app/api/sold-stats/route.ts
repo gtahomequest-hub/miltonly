@@ -19,7 +19,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { getSession } from "@/lib/auth";
+import { getSession, touchSession } from "@/lib/auth";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
@@ -163,6 +164,18 @@ export async function GET(req: NextRequest) {
     if (count90 < K_ANON_PRICE) {
       return NextResponse.json({ found: true, sparse: true, name, slug: r.street_slug, count90, count12 });
     }
+
+    // The audit trail (MP-006): the gated street figures were served.
+    await logVowAccess({
+      userId: user.id,
+      kind: "sold-stats",
+      scope: r.street_slug,
+      path: `${req.nextUrl.pathname}?${req.nextUrl.searchParams.toString()}`,
+      recordCount: count90,
+      ip: clientIpFromHeaders(req.headers),
+      userAgent: req.headers.get("user-agent"),
+    });
+    await touchSession();
 
     // price_change_yoy is NOT released. It compares AVG(sold_price) over the
     // last 365 days against the 365 days before that; the row stores no count

@@ -177,3 +177,69 @@ section[data-vow-ack] p.vc-fine {
   color: #6b6f6a;
   margin: 16px 0 0;
 }
+
+/* MP-006: the numbered terms, the registrant question. */
+section[data-vow-ack] .vc-terms-head {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b6f6a;
+  margin: 0 0 8px;
+}
+section[data-vow-ack] ol.vc-terms {
+  margin: 0;
+  padding: 0 0 0 20px;
+  max-height: 260px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.55;
+}
+section[data-vow-ack] ol.vc-terms li {
+  margin: 0 0 8px;
+}
+section[data-vow-ack] ol.vc-terms li strong {
+  font-weight: 700;
+  color: #073126;
+}
+section[data-vow-ack] .vc-texts p.vc-consent {
+  margin-top: 12px;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.55;
+}
+section[data-vow-ack] fieldset.vc-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 16px;
+  min-width: 0;
+}
+section[data-vow-ack] fieldset.vc-fieldset legend.vc-label {
+  padding: 0;
+  margin: 0 0 8px;
+}
+section[data-vow-ack] .vc-radios {
+  display: grid;
+  gap: 8px;
+}
+section[data-vow-ack] label.vc-radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1px solid #dfe0dc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+section[data-vow-ack] label.vc-radio input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  accent-color: #017848;
+}
+section[data-vow-ack][data-vow-registrant] {
+  background: #fff;
+}

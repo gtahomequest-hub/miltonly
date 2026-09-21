@@ -34,7 +34,7 @@ import { HONEYPOT_FIELD, type GuardVerdict } from "@/lib/lead/guards";
 import { SESSION_MAX_DAYS } from "@/lib/auth";
 import { judgePassword, hashPassword, verifyPassword, MIN_PASSWORD_LENGTH, BCRYPT_COST } from "@/lib/portal/password";
 import { canSeeVowRecords, vowStepsLeft } from "@/lib/vow-access";
-import { VOW_ACKNOWLEDGEMENT_TEXT } from "@/lib/vow-acknowledgement";
+import { VOW_ACKNOWLEDGEMENT_TEXT, VOW_TERMS_VERSION } from "@/lib/vow-acknowledgement";
 import { PORTAL_CONSENT_TEXT } from "@/lib/portal/consent";
 
 let assertions = 0;
@@ -308,7 +308,7 @@ async function main() {
   // ── the ceiling ──────────────────────────────────────────────────────────────
   ok(SESSION_MAX_DAYS <= 90, `the session ceiling is ${SESSION_MAX_DAYS} days, at most 90`);
   const auth = readFileSync("src/lib/auth.ts", "utf8");
-  ok(auth.includes("setExpirationTime(`${SESSION_MAX_DAYS}d`)"), "the JWT expiry is the ceiling");
+  ok(auth.includes("exp: now + SESSION_SECONDS") && auth.includes("setExpirationTime(claims.exp)"), "the JWT expiry is the ceiling");
   ok(!/refresh|sliding|extend/i.test(auth.replace(/\/\/.*$/gm, "")), "auth.ts has no sliding window");
 
   const terms = readFileSync("src/app/terms/page.tsx", "utf8");
@@ -346,13 +346,16 @@ async function main() {
 
   // ── the gate: acknowledgement AND password ───────────────────────────────────
   const acked = new Date();
-  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: acked, passwordHash: "$2a$12$x" }), true, "verified + acknowledged + password sees records");
-  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: acked, passwordHash: null }), false, "no password: no records, even acknowledged");
-  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: null, passwordHash: "$2a$12$x" }), false, "no acknowledgement: no records, even with a password");
-  eq(canSeeVowRecords({ verified: false, vowAcknowledgedAt: acked, passwordHash: "$2a$12$x" }), false, "unverified: no records");
+  // MP-006 widened the gate: the agreement must be at the current version, the password
+  // younger than 90 days, the registrant question answered no. A row that meets all of it:
+  const whole = { verified: true, vowAcknowledgedAt: acked, vowAcknowledgementVersion: VOW_TERMS_VERSION, passwordHash: "$2a$12$x", passwordSetAt: acked, isRegistrant: false, reviewFlag: null };
+  eq(canSeeVowRecords(whole), true, "verified + agreed (current) + password + not a registrant sees records");
+  eq(canSeeVowRecords({ ...whole, passwordHash: null }), false, "no password: no records, even acknowledged");
+  eq(canSeeVowRecords({ ...whole, vowAcknowledgedAt: null }), false, "no acknowledgement: no records, even with a password");
+  eq(canSeeVowRecords({ ...whole, verified: false }), false, "unverified: no records");
   eq(canSeeVowRecords(null), false, "no session: no records");
   {
-    const steps = vowStepsLeft({ verified: true, vowAcknowledgedAt: acked, passwordHash: null });
+    const steps = vowStepsLeft({ ...whole, passwordHash: null });
     ok(!steps.needsAcknowledgement && steps.needsPassword, "an acknowledged row without a password owes only the password");
   }
   for (const f of [
@@ -381,7 +384,7 @@ async function main() {
 
   // ── the words ────────────────────────────────────────────────────────────────
   ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("90 days"), "the VOW text states the 90-day sign-in");
-  ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("username is my email address") && VOW_ACKNOWLEDGEMENT_TEXT.includes("my password is mine alone"), "the VOW text (v3) names username and password");
+  ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("username is my email address") && VOW_ACKNOWLEDGEMENT_TEXT.includes("password is mine alone"), "the VOW text names username and password");
   ok(terms.includes("username") && terms.includes("password") && terms.includes("R-805"), "/terms names the username, the password and R-805");
   ok(!/—/.test(VOW_ACKNOWLEDGEMENT_TEXT + PORTAL_CONSENT_TEXT), "no em-dash in the texts");
   ok(PORTAL_CONSENT_TEXT.includes("unsubscribe"), "the consent sentence promises an unsubscribe");
@@ -412,7 +415,7 @@ async function main() {
   ok(ack.includes("residentialStreet.findUnique"), "acknowledge route checks the street against the registry");
   const prompt = readFileSync("src/components/vow/VowAcknowledgementPrompt.tsx", "utf8");
   ok(prompt.includes("/api/autocomplete?type=street"), "the card's street field is the registry autocomplete");
-  ok(prompt.includes("VOW_ACKNOWLEDGEMENT_TEXT") && prompt.includes("PORTAL_CONSENT_TEXT"), "the card shows both texts");
+  ok(prompt.includes("VOW_TERMS_CLAUSES") && prompt.includes("PORTAL_CONSENT_TEXT"), "the card shows the terms and the consent sentence");
   const island = readFileSync("src/components/street/v2/SoldRecordsIsland.tsx", "utf8");
   ok(island.includes("VowAcknowledgementPrompt"), "the street island renders the card for a signed-in, unacknowledged person");
   ok(island.includes("#sold-records") && island.includes('id="sold-records"'), "the street island's sign-in link returns to its own anchor");

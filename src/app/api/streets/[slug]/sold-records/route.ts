@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { getStreetSoldList } from "@/lib/sold-data";
 import type { SoldTableRow } from "@/types/street";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   const user = await getSession();
@@ -37,6 +38,18 @@ export async function GET(
     transaction_type: r.transaction_type,
     list_office_name: r.list_office_name,
   }));
+
+  // The audit trail (MP-006): one row per gated read, before the records go out.
+  await logVowAccess({
+    userId: user!.id,
+    kind: "street-records",
+    scope: params.slug,
+    path: req.nextUrl.pathname,
+    recordCount: records.length,
+    ip: clientIpFromHeaders(req.headers),
+    userAgent: req.headers.get("user-agent"),
+  });
+  await touchSession();
 
   return NextResponse.json({ canSee: true, records });
 }

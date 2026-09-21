@@ -20,8 +20,10 @@ import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
+import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import {
   getMiltonSoldTotals,
   getSoldNeighbourhoodOptions,
@@ -143,6 +145,22 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
         }).catch(() => [])
       : Promise.resolve([]),
   ]);
+
+  // The audit trail (MP-006): the city-wide records were served to this consumer. A server
+  // component can write a row, not a cookie, so the inactivity clock is wound by /api/auth/me
+  // when the page mounts.
+  if (canSeeRecords && user) {
+    const h = headers();
+    await logVowAccess({
+      userId: user.id,
+      kind: "sold-page",
+      scope: `${typeParam}${nbhdRaw ? `:${nbhdRaw}` : ""}${ptypeFilter ? `:${ptypeFilter}` : ""}`,
+      path: "/sold",
+      recordCount: records.length,
+      ip: clientIpFromHeaders(h),
+      userAgent: h.get("user-agent"),
+    });
+  }
 
   const txnLabel = typeParam === "sale" ? "sold" : "leased";
   // Filter-chip hrefs — the GET-param contract still works, but the URL now carries the SLUG.
