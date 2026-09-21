@@ -38,6 +38,7 @@ is the ONE exception.
 ## Prohibitions (every section — inherited verbatim)
 
 - **No em-dashes. Ever.** Commas, semicolons, periods, parentheses.
+- **No "median".** Say "typical"; the validator refuses the word anywhere in prose or an answer.
 - **No challenge-inviting superlatives** ("best", "premier", "finest", "most desirable", etc.).
 - **No realtor clichés** ("welcome to", "nestled in", "tucked away", "hidden gem", "boasts").
 - **No invented facts.** Every concrete claim traces to a field in `HubGeneratorInput`. If the

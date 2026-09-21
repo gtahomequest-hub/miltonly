@@ -40,6 +40,7 @@ invitations, no promotional service language. The buy/sell CTA section is the ON
 ## Prohibitions (every section — inherited verbatim)
 
 - **No em-dashes. Ever.**
+- **No "median".** Say "typical"; the validator refuses the word anywhere in prose or an answer.
 - **No challenge-inviting superlatives** and **no realtor clichés** (see the urban header list).
 - **No invented facts.** Every concrete claim traces to a field in `CondoBuildingGeneratorInput`.
   Building attributes (`totalUnits`, `legalStories`, `managementCo`, `avgMaintenanceFee`,

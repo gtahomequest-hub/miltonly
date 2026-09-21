@@ -259,6 +259,14 @@ export function hubInputToStreetAdapter(input: HubGeneratorInput): StreetGenerat
 // re-pointed W2 aggregate gates (per-trade, numeric, temporal) on liveMarket.
 // ---------------------------------------------------------------------------
 
+/** The word "median" anywhere in prose or an answer, with its window. The voice rule is
+ *  "typical", never "median"; the number is the same, the reader must not see the machinery. */
+function findMedian(text: string): string | null {
+  const m = /\bmedian\b/i.exec(text);
+  if (!m) return null;
+  return `"median": ${text.slice(Math.max(0, m.index - 40), m.index + 46).replace(/\s+/g, " ")}`;
+}
+
 export function validateHubSectionsSubset(
   sections: HubSection[],
   input: HubGeneratorInput,
@@ -280,6 +288,14 @@ export function validateHubSectionsSubset(
         excerpt: `"${catchment.matched}": ${catchment.excerpt}`,
         severity: "hard",
       });
+    }
+
+    // The voice rule: "typical", never "median" (CLAUDE.md; the street prompt's methodology
+    // list). MC-037's regeneration wrote "a median of 92 days on market" into four hubs and
+    // nothing here refused it.
+    const median = findMedian(text);
+    if (median) {
+      violations.push({ rule: "methodology_leak", excerpt: median, severity: "hard" });
     }
 
     // liveMarket / inventorySnapshot: aggregate sections. Per-trade claims are
@@ -369,6 +385,10 @@ export function validateHubFaq(
         excerpt: `FAQ "${q}": "${catchment.matched}": ${catchment.excerpt}`,
         severity: "hard",
       });
+    }
+    const median = findMedian(`${item.question} ${item.answer}`);
+    if (median) {
+      violations.push({ rule: "methodology_leak", excerpt: `FAQ "${q}": ${median}`, severity: "hard" });
     }
 
     // Per-trade fabrication is banned in any answer (input has no per-trade rows).

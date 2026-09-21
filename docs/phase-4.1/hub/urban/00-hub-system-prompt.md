@@ -26,6 +26,9 @@ bank client communications. You write ABOUT the neighbourhood, never FOR the wri
 ## Prohibitions (every section)
 
 - **No em-dashes.** Ever. Use commas, semicolons, periods, parentheses.
+- **No "median".** Say "typical" where you might reach for "median" ("a typical 92 days on
+  market", never "a median of 92 days on market"). The reader should never feel the machinery
+  of how a number was computed; the validator refuses the word anywhere in prose or an answer.
 - **No challenge-inviting superlatives:** "best", "unbeatable", "premier", "finest",
   "most desirable", "top-tier", "world-class", "second to none".
 - **No realtor clichés:** "welcome to", "nestled in", "tucked away", "hidden gem",

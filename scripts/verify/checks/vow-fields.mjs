@@ -25,7 +25,9 @@
 //      with VERIFY_PORTAL_PASSWORD in the environment (.env.local, never the repo) it is the
 //      returning sign-in, POST /api/auth/login with the email and the password (MP-002b, the
 //      username-and-password TRREB asks for), no email sent; without it, it POSTs
-//      /api/auth/signup for the most recently acknowledged verified user in DB1, reads the
+//      /api/auth/signup for the acknowledged verified user in DB1 (the one VERIFY_PORTAL_EMAIL
+//      names, the password's own account, else the most recently acknowledged: another tier's
+//      test row must not become the account the battery tries the password on), reads the
 //      six-digit code the door stored on that row, POSTs /api/auth/verify and keeps the
 //      session cookie. (JWT_SECRET is a sensitive Vercel secret and cannot be pulled, so a
 //      minted token was never an option; the door is the app's own path anyway.) One sign-in
@@ -42,8 +44,9 @@
 //      active on the lease side).
 //
 // Aggregates are allowed and are not what these patterns match: "sell in an average of 18 days
-// on market", "after 88 days on market" and a "Time on market" cell are market figures; the
-// patterns below match a per-listing count ("65d on market", a bare "65 days on market" on a
+// on market", "after 88 days on market", "a median of 92 days on market" (hub prose, MC-037)
+// and a "Time on market" cell are market figures; the patterns below match a per-listing count
+// ("65d on market", a bare "65 days on market" that is its own element or JSON string on a
 // card, "Listed 65 days ago") and the field names as JSON keys.
 import { neon } from '@neondatabase/serverless';
 import fs from 'node:fs';
@@ -63,8 +66,10 @@ const keyPattern = (k) => new RegExp(`"${k}\\\\?":`);
 /** Per-listing renderings of the same facts. */
 const TEXT_PATTERNS = [
   [/\b\d+ ?d on market\b/, 'a day count on market'],
-  // a bare count on a card; an aggregate sentence introduces its figure ("average of", "after")
-  [/(?<!average of |after |around |about |typically |typical of )\b\d+ days on market\b/, 'a day count on market'],
+  // a bare count on a card is its own element or JSON string (">65 days on market",
+  // "\"65 days on market\"", "· 65 days on market"); an aggregate sits inside a sentence,
+  // whatever word introduces it ("a median of 92 days", "Clarke's 81 days", "a whole: 69 days")
+  [/(?<=(?:^|[>"'`·|•])\s*)\d+ days on market\b/m, 'a day count on market'],
   [/\bListed \d+ days? ago\b/, '"Listed N days ago"'],
   [/\bListed today\b/, '"Listed today"'],
   [/\b\d+d ago\b/, '"Nd ago"'],
@@ -115,7 +120,7 @@ async function db1() {
     one(app`SELECT "mlsNumber" m FROM public."Listing" WHERE city='Milton' AND "permAdvertise" AND status='sold' ORDER BY "updatedAt" DESC LIMIT 1`),
     one(app`SELECT "mlsNumber" m FROM public."Listing" WHERE city='Milton' AND "permAdvertise" AND status='expired' ORDER BY "updatedAt" DESC LIMIT 1`),
     one(app`SELECT "mlsNumber" m FROM public."Listing" WHERE city='Milton' AND "permAdvertise" AND "transactionType"='For Lease' AND "leaseStatus"='leased' ORDER BY "updatedAt" DESC LIMIT 1`),
-    app`SELECT id, email FROM public."User" WHERE verified AND "vowAcknowledgedAt" IS NOT NULL ORDER BY "vowAcknowledgedAt" DESC LIMIT 1`,
+    app`SELECT id, email FROM public."User" WHERE verified AND "vowAcknowledgedAt" IS NOT NULL ORDER BY (email = ${process.env.VERIFY_PORTAL_EMAIL || ''}) DESC, "vowAcknowledgedAt" DESC LIMIT 1`,
   ]);
   if (!sale || !lease) throw new Error('DB1 has no active sale or available lease listing — check the credential, not the data');
   if (!users.length) throw new Error('DB1 has no verified, VOW-acknowledged user to sign in as');
@@ -148,6 +153,8 @@ async function signIn(base, app, email, userId) {
   if (cached) return cached;
   const headers = { 'content-type': 'application/json', origin: base, 'user-agent': UA };
   const password = process.env.VERIFY_PORTAL_PASSWORD;
+  const pinned = process.env.VERIFY_PORTAL_EMAIL;
+  if (password && pinned && email !== pinned) throw new Error(`VERIFY_PORTAL_EMAIL ${pinned} is not a verified, acknowledged user in DB1; the password belongs to it, not to ${email}`);
   if (password) {
     const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: JSON.stringify({ email, password }) });
     const m = (login.headers.get('set-cookie') || '').match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
