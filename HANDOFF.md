@@ -2,9 +2,45 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-21 (MC-034 merged): `fix/cost-2 @ edae874` merged as **`d068f84`**, pushed, production serves it (`miltonly-cccss8tbn`), battery `PASS · 21 checks · 663 pages · 770s`. The street render's Listing pull is narrow, memoised and Data-Cached under the `listings` tag; the ignore rule skips docs-only pushes on `main`; this docs commit is its first proof. Record `scratchpad/reports/MC-034-cost-fixes.md`._
+_Last rewritten 2026-09-21 (MC-035 merged): `main` is `7064c1a`, production serves it. Every published street prerenders on production (796 static pages, build 145 s), DEC-BATCH-MERGE is in CLAUDE.md, the battery has `--streets=sample` (default full) and a prerender-coverage check, the four waste bots are refused in robots and at the Vercel Firewall. Battery `PASS · 22 checks · 677 pages · 746s`. Held: MH-009 `7cfa4a2`. Record `scratchpad/reports/MC-035-fewer-deploys.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `7064c1a` AND PRODUCTION SERVES `7064c1a`, MC-035 LIVE, ON NODE 22.** `fix/deploys @
+0318f35` merged as `722ad58` (its production build failed the prebuild: `prerenderStreetLimit
+(undefined)` reads `VERCEL_ENV`, which Vercel's build shell sets and the local prebuild does not),
+the fix `0b331ae` merged as `7064c1a`; four local gates exit 0, zero `P2024`, 794 then 796 static
+pages; production battery `PASS · 22 checks · 677 pages · 746s`. **What changed.** (A)
+`CLAUDE.md` "Decisions": DEC-MERGE-CORE-ONLY, DEC-ONE-PREVIEW, DEC-BATCH-MERGE (batches of two or
+three approved SHAs, one battery, one deploy; a live production defect deploys alone). Last week
+was 24 builds, 15 with code, 18 merges of 16 tasks; the rule gives 6 to 8 deploys a week. (B) The
+battery: `--streets=sample` (`scripts/verify/lib/sample.mjs`: one street per class the checks
+branch on, rotating by a run counter in the OS temp dir per host; the streets whose data changed
+since the last run here; a rotating fill to fifty), **default full** until Audit adds
+`node scripts/verify/run.mjs --streets=full` to the nightly (the nightly runs no battery today, so
+nothing would catch a sampled-out defect within 24 h; and after (C) the full crawl renders
+nothing anyway). The new check `prerender-coverage` sweeps every street BEFORE the crawl and fails
+production when a pre-build street answers MISS; `/api/build` answers `builtAt` (BUILD_AT from
+`next.config.mjs`) and `env`. **After a deploy, do not purge before the battery: the build is
+fresh, and a tag drop turns every prerendered page into a REVALIDATED render on its next request,
+which is what the sweep then reads (this run: HIT 1, REVALIDATED 676, MISS 0, because I purged
+first).** (C) `src/lib/streetPrerender.ts` keyed on `VERCEL_ENV`: every published street on
+production, fifty on a preview; `.env.local` carries `production`, so the local gate prerenders
+the corpus (8 to 11 minutes a build; run it detached with three workers on this 16 GB desk:
+`scratchpad/mc003/gate-build.ps1 <label>` writes `gate-<label>.txt` with the exit code, and the log
+comes out UTF-16). Build on Vercel 81 s to 145 s, 2 to 3 billed minutes. First request after a
+deploy: PRERENDER at 0.24 to 0.39 s (was a 2.3 s MISS). **No warm-streets job:** redundant for
+deploys; the street cache is emptied by tag drops (`listings`, `db2`, `db3`, `hubsets`, `surface`,
+3 to 6 a day), and a walker after each would be about 4,000 renders a day; the lever is the
+tags (drop `db3` only on a write; take `surface`, `hubsets` and `listings` off the page with a
+stamp key as MC-034 did for the rows), a follow-up. (D) `src/lib/bots.ts`, `robots.ts` and the
+Vercel Firewall rule "MC-035 waste bots" (PetalBot, SemrushBot, Amazonbot, AhrefsBot deny;
+proven 403, the welcome bots 200; the first rule this project has, applied through the API).
+Bytespider (11,379 requests in 7 days, more than the four together), tiktokspider,
+meta-externalagent and MJ12bot are unblocked and were not in scope. **The ignore rule cancels a
+redeploy of an already-built commit** (same SHA as the last successful deployment, no diff): a
+clean post-deploy sweep needs a real commit. Record: `scratchpad/reports/MC-035-fewer-deploys.md`;
+evidence `scratchpad/mc035/` (untracked).
 
 **HELD FOR THE NEXT BATCH (DEC-BATCH-MERGE, 2026-09-21):** `feat/web-analytics @ 7cfa4a2` (MH-009,
 Vercel Web Analytics, previewed, not merged; the Home worktree's head is its docs commit
