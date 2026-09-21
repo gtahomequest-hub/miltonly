@@ -1,31 +1,53 @@
-HOME · D:\miltonly-home · feat/rent-menu
+HOME · D:\miltonly-home · feat/web-analytics
 
 # Handoff, homepage worktree
 
-_Last rewritten 2026-09-14, MH-007: the Rent menu, on `feat/rent-menu`, previewed, NOT merged._
+_Last rewritten 2026-09-20, MH-009: Vercel Web Analytics, on `feat/web-analytics`, previewed, NOT merged._
 
 ## READ THIS FIRST
 
-**BOTH BRANCHES ARE MERGED BY CORE: `feat/nav-v3 @ 3b56020` as `6aac9c9` (2026-09-14, MC-022) and `feat/rent-menu @ 91f8ef0` as the MC-024 merge (2026-09-16); the rest of this file is the pre-merge state.**
+**ONE BRANCH IS PREVIEWED AND NOT MERGED. Core merges by SHA on approval.**
 
-**TWO BRANCHES ARE PREVIEWED AND NOT MERGED. Core merges by SHA on approval.**
+- **`feat/web-analytics @ 7cfa4a2faaebd30709ab045b7a883fdc841d86d7` (MH-009, Vercel Web Analytics).**
+  Cut from `origin/main @ d068f84` (the MC-034 merge). Preview
+  `https://miltonly-l47j2kpf5-gtahomequest-hubs-projects.vercel.app`, `--only=homepage,nav`
+  `PASS · 2 checks · 646 pages · 172s`; `pnpm build` on Node 22 exit 0 twice, zero `P2024`;
+  `tsc --noEmit` exit 0. It adds one dependency (`@vercel/analytics 2.0.1`), so `package.json`
+  and `pnpm-lock.yaml` change; expect a lockfile merge. Record in
+  `scratchpad/reports/MH-009-web-analytics.md`.
 
-- **`feat/rent-menu@b1a2bc3be2876019995697a746d50a02ae549e92` (MH-007, the Rent menu).** Preview
-  `https://miltonly-lq7sb2evu-gtahomequest-hubs-projects.vercel.app`, `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 289s`. It branches from `feat/nav-v3@3b56020` with `origin/main@60780ca`
-  merged in, so it CONTAINS the chrome: merging it merges MH-006 too. Record in
-  `scratchpad/reports/MH-007-rent-menu.md`.
-- **`feat/nav-v3@3b56020c524525acf666906b670d0e85397b2c06` (MH-006, the chrome).** Merged up to
-  `origin/main@1900c46`; preview `miltonly-iskzekw24` (CLI deploy), `--only=nav,homepage,hub-meta`
-  `PASS · 3 checks · 529 pages · 229s`; the full battery on the earlier Git preview of the same
-  SHA was `PASS · 18 checks · 529 pages · 801s`. Record in `scratchpad/reports/MH-006-chrome.md`.
-  The brief for MH-007 said "from origin/main after MC-022 lands"; MC-022 had not landed, so the
-  rent branch sits on nav-v3 instead (report, first bullet).
+**EVERY EARLIER HOME BRANCH IS MERGED:** `feat/nav-v3 @ 3b56020` as `6aac9c9` (MH-006),
+`feat/rent-menu @ 91f8ef0` as `1b2d7d8` (MH-007), `feat/mobile-fixes @ dd1118f` as `0480e15`
+(MH-008), `feat/street-v3 @ 2553f2e` as `e078e91` (MH-005, MC-028). Do not add commits to any of
+them.
 
-**PREVIEWS COME FROM THE CLI NOW.** `vercel.json` cancels Git-triggered builds on every branch but
+**WEB ANALYTICS (MH-009).** `src/components/VercelAnalytics.tsx` is the one mount, rendered in
+`src/app/layout.tsx` inside `<body>`, `"use client"` because it owns the `beforeSend` handler.
+Nothing renders unless `NODE_ENV` is `production`, so `next dev` injects no script and spends no
+events (probed: zero tags, zero requests). The redactor: a URL on `/signin/link`, `/api/auth/`,
+`/api/unsubscribe` or `/api/brief/unsubscribe` loses its whole query; anywhere else the value of
+`t`, `w`, `token`, `code`, `secret`, `key`, `preview`, the Vercel bypass keys, and any key
+containing `token`, `secret`, `passw`, `bypass`, `session` or `apikey` becomes `redacted`; an
+unparseable URL is dropped. The three flows that mint auth material in a query string are the
+magic link (`src/lib/portal/door.ts:95`), the one-click unsubscribe (`src/lib/email/unsubscribe.ts:74`,
+both mounts) and the middleware preview gate (`src/middleware.ts:31`). Adding a fourth means
+adding its key or path to the component. Vercel's script ignores `navigator.webdriver` and a
+`Headless` UA, so the battery records nothing; `scratchpad/mh009/probe-views.mjs` masks both and
+prints each `view` POST's recorded URL, the proof to rerun after any change to the redactor.
+`scratchpad/mh009/redact-test.ts` is the unit test (`npx tsx`, exit 0).
+
+**PREVIEWS COME FROM THE CLI.** `vercel.json` cancels Git-triggered builds on every branch but
 `main` (MC-017). `npx vercel deploy --yes --env VERCEL_GIT_COMMIT_SHA=<sha> --build-env VERCEL_GIT_COMMIT_SHA=<sha>`
 from the worktree; without the env, `/api/build` says `unknown` and the battery aborts. The URL is
-the last `https://miltonly-...vercel.app` line of the CLI's output.
+the `Preview` line of the CLI's output. One preview per code task (DEC-ONE-PREVIEW, 2026-09-20);
+a second needs a sentence naming the check only Vercel can run.
+
+**LOCAL BUILDS RUN ON NODE 22** through its own corepack (`N=C:/Users/amazo/AppData/Local/nvm/v22.23.2;
+"$N/node.exe" "$N/node_modules/corepack/dist/pnpm.js" build`), because the `pnpm` shim on PATH runs
+Node 20. After a `pnpm add`, run `npx prisma generate` before `tsc`: the relink leaves a stale
+client and `tsc` reports Portal fields as missing. `next dev` overwrites `.next`, so a local
+`next start` needs a fresh build after it. Puppeteer's cached Chrome download is incomplete;
+the probes launch `C:/Program Files/Google/Chrome/Application/chrome.exe`.
 
 **RENT IS THE FOURTH MENU (MH-007).** Buy · Rent · Streets · Sell, one rail-and-panel shape.
 `composeRent()` in `megaLive.ts` builds it from `MegaExtras.rent` (`MegaRent`: available now,

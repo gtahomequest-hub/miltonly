@@ -1,0 +1,16 @@
+import puppeteer from "puppeteer";
+const base = process.env.BASE, path = process.env.PATHNAME || "/";
+const browser = await puppeteer.launch({ headless: true, executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe" });
+const page = await browser.newPage();
+const logs = [], hits = [];
+page.on("console", (m) => { if (/Vercel|analytics|insights/i.test(m.text())) logs.push(m.text()); });
+page.on("request", (r) => { if (/_vercel\/insights|va\.vercel-scripts/.test(r.url())) hits.push(`${r.method()} ${r.url()} ${r.postData() ? "body=" + r.postData().slice(0, 400) : ""}`); });
+page.on("response", (r) => { if (/_vercel\/insights/.test(r.url())) hits.push(`   <- ${r.status()} ${r.url()}`); });
+await page.goto(base + path, { waitUntil: "networkidle0", timeout: 90000 });
+await new Promise((r) => setTimeout(r, 4000));
+const state = await page.evaluate(() => ({ va: typeof window.va, vam: window.vam, vai: window.vai, vaq: window.vaq?.length, tags: [...document.querySelectorAll('script[src*="insights"],script[src*="vercel-scripts"]')].map((s) => s.src) }));
+console.log("URL:", base + path);
+console.log("window state:", JSON.stringify(state));
+console.log("console:", logs);
+console.log("requests:", hits.length); for (const h of hits) console.log("  ", h);
+await browser.close();
