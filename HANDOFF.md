@@ -6,6 +6,12 @@ _Last rewritten 2026-09-21 (MC-034 merged): `fix/cost-2 @ edae874` merged as **`
 
 ## READ THIS FIRST
 
+**HELD FOR THE NEXT BATCH (DEC-BATCH-MERGE, 2026-09-21):** `feat/web-analytics @ 7cfa4a2` (MH-009,
+Vercel Web Analytics, previewed, not merged; the Home worktree's head is its docs commit
+`3c133b8`). Merge it by SHA with the next batch, confirming the SHA against its report first.
+`fix/favicon @ 9144b35` and `feat/street-v3 @ 2553f2e` are already on `main` since MC-028
+(`ea81883`, `e078e91`); a request to merge them again is a stale report, not work.
+
 **MAIN IS `d068f84` AND PRODUCTION SERVES `d068f84`, MC-034 LIVE, ON NODE 22.** `fix/cost-2 @
 edae874` (the docs commit above the proven `6ba561e`) merged by SHA with `--no-ff` as `d068f84`
 on `5bd57e1`; no preview for the merge, the production build was the proof (`miltonly-cccss8tbn`,
