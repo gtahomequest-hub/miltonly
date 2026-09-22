@@ -1,0 +1,41 @@
+{
+  "$comment": "MA-008, section 4. The One Thing: each rule reads one list from the gathered facts, keeps the rows that pass every `where` clause, picks one by `pick` (max or min of a field), and says it with `say` (fields in braces). `rank` orders the survivors; the report prints the top three. Ops: gte, gt, lte, lt, eq, ne, between. A rule with `needs` skips itself, silently, when that source did not answer.",
+  "rules": [
+    {
+      "id": "cost-jump",
+      "rank": 0,
+      "source": "money.lines",
+      "needs": "vercel",
+      "where": { "todayUsd": { "gte": 1 }, "dayOverDayPct": { "gt": 20 } },
+      "pick": { "max": "dayOverDayPct" },
+      "say": "Cost line moved: {name} {todayUsd} yesterday, {dayOverDayPct}% over the day before. Find what ran."
+    },
+    {
+      "id": "zero-lead-traffic",
+      "rank": 1,
+      "source": "conversion.pages28",
+      "needs": "gsc",
+      "where": { "clicks": { "gte": 10 }, "leads": { "eq": 0 } },
+      "pick": { "max": "clicks" },
+      "say": "{page} took {clicks} clicks in 28 days and produced no lead. Put a capture on it."
+    },
+    {
+      "id": "page-two-query",
+      "rank": 2,
+      "source": "traffic.queries28",
+      "needs": "gsc",
+      "where": { "position": { "between": [11, 20] }, "impressions": { "gte": 40 } },
+      "pick": { "max": "impressions" },
+      "say": "\"{query}\" sits at position {position} with {impressions} impressions in 28 days: one push from page one. Best page: {page}."
+    },
+    {
+      "id": "street-no-page",
+      "rank": 3,
+      "source": "content.streetsWithoutPage",
+      "needs": "db",
+      "where": { "sales90": { "gte": 3 } },
+      "pick": { "max": "sales90" },
+      "say": "{street} had {sales90} sales in 90 days and has no published page. Publish it."
+    }
+  ]
+}

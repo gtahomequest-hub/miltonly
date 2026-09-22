@@ -1,0 +1,44 @@
+{
+  "$comment": "MA-008. Everything the report treats as a fact about our own accounts, editable without touching code. Prices marked assumed are not read from an API and must be checked against the invoice.",
+  "desk": "gtahomequest@gmail.com",
+  "site": "miltonly.com",
+  "gscProperty": "sc-domain:miltonly.com",
+  "vercel": {
+    "teamSlug": "gtahomequest-hubs-projects",
+    "teamCapUsd": 200,
+    "projects": ["miltonly", "homesly"],
+    "buildCpuMinutesPerBilledMinute": 30,
+    "$comment": "teamCapUsd is the spend-management cap the operator set; the cycle and the on-demand dollars come from `vercel usage`, which is the same source as the dashboard."
+  },
+  "neon": {
+    "launchIncludedComputeHours": 300,
+    "launchBaseUsd": 19,
+    "computeUsdPerHourBeyond": 0.16,
+    "egressAllowanceGbPerProject": 500,
+    "$comment": "Pricing is assumed from the Launch plan page; the API on this plan exposes month-to-date usage, not dollars. Labels say what READS each project; a project with no reader here is not unused, it is unknown, and is never to be deleted on the strength of this report.",
+    "labels": {
+      "fancy-bread-13256110": "Miltonly DB1 (operational, DATABASE_URL, Prisma)",
+      "winter-leaf-52425555": "Miltonly DB2 + DB3 (sold VOW and analytics, SOLD_DATABASE_URL and ANALYTICS_DATABASE_URL)",
+      "lingering-sea-07597558": "inspectionly.ca PRODUCTION database (Vercel Marketplace integration, not Miltonly's, never touch)",
+      "snowy-morning-95239072": "Homesly production",
+      "tiny-tree-26988255": "contentengine (Vercel project contentengine)",
+      "small-truth-21911860": "AntiFragile (Vercel project antifragile)",
+      "wispy-grass-52233942": "Powerhouse (Vercel project powerhouse-farm)",
+      "old-hill-58721761": "MyLostKey (no Miltonly reader; owner unknown to this report)"
+    }
+  },
+  "analytics": {
+    "$comment": "Vercel Web Analytics has no documented REST endpoint and the script is not on the site yet (Home is building it). The source below is tried and, until it answers, the section says awaiting first data.",
+    "aiReferrerHosts": ["chatgpt.com", "chat.openai.com", "openai.com", "perplexity.ai", "copilot.microsoft.com", "bing.com/chat", "gemini.google.com", "claude.ai", "you.com", "phind.com", "search.brave.com/ai"]
+  },
+  "sampleFloor": {
+    "$comment": "rateDenominator: a rate is not printed under this many in the denominator. countForTrend: a day-over-day or week-over-week claim needs both sides at or above this.",
+    "rateDenominator": 30,
+    "countForTrend": 20
+  },
+  "runnerCost": {
+    "$comment": "GitHub-hosted ubuntu minutes on a private repository, beyond the free 2,000 a month.",
+    "usdPerMinute": 0.008,
+    "freeMinutesPerMonth": 2000
+  }
+}
