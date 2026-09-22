@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-21 (MA-008): the morning report built and sent once by hand; MA-007 (street cache share) and the earlier audits before it._
+_Last rewritten 2026-09-22 (MA-009): the three Lighthouse regressions re-measured and found to be runner noise; MA-008 the morning report before it._
 
 ## What this worktree is
 
@@ -15,6 +15,22 @@ exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratc
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-009: THE 2026-09-22 LIGHTHOUSE REGRESSIONS ARE RUNNER NOISE, NOT A CODE CHANGE.** Record:
+`scratchpad/reports/MA-009-lighthouse-regressions.md`. Re-run three times each with the nightly's flags:
+Timberlea **94, 94, 95** (the nightly said 42), woodward **90, 94, 92** (said 78), the homepage **85, 89, 91**
+(said 68), with bytes, scripts and DOM identical run to run. Neither named change moved a resource: the
+Vercel Analytics script **never fires** (zero `/_vercel/insights` requests on all three pages, 0 ms
+third-party blocking; the +5 to +6 KB is bundle code and landed uniformly on all twelve pages, five of which
+did not regress), and Timberlea's prose **shrank** 872 to 772 words (the page grew 388 px from five new
+ladder rows). What moved is TBT, 56 to 3,304 ms on a 489 to 495 KB page. The noise has a shape: the first
+three Lighthouse runs of each night carry 2.6x to 16.3x the blocking time of runs 4 to 12, and by
+`run.mjs:47` those three slots are exactly `/`, `/neighbourhoods/timberlea` and `woodward-avenue-milton`.
+Timberlea's own history on this harness: 78, 70, 92, 66, 93, 42, including +27 overnight with no change.
+Two follow-ups named and NOT done (the task forbade fixing): the analytics script is deployed but not
+injecting, so the morning report's Traffic section stays "awaiting first data" and no sessions are being
+collected (Core or Home); and the nightly records no `benchmarkIndex` and no warm-up run, which is why it
+raised three S3s it could have answered itself.
 
 **MA-008 IS DONE: THE MORNING REPORT, SECTIONS 1 TO 4, RUN ONCE BY HAND AND EMAILED.** Record:
 `scratchpad/reports/MA-008-morning-report.md`. `scripts/audit/morning/run.mjs` with four sources (Vercel
@@ -168,6 +184,7 @@ left (32 of 308 tonight). The report's Summary and Budget sections say exactly w
 | `inbound-links.mjs` | MA-001: crawls the sitemap and counts pages linking to each audit street |
 | `hubs.json`, `hub-sweep.mjs`, `hub-page.mjs`, `hub-intents.mjs`, `hub-lighthouse.mjs`, `hub-inbound.mjs`, `hub-bench.mjs` | MA-005: the hub page. `hub-sweep.mjs` reads all 22 hubs once (cache, TTFB, shape); the rest mirror the MA-001 set for `/neighbourhoods/<slug>`; `hub-intents.mjs` opens every intent square and CTA card destination at 390 |
 | `morning/run.mjs`, `morning/sources/*.mjs`, `morning/rules.json`, `morning/config.json` | MA-008: the 06:00 morning report (Money, Traffic, Conversion, The One Thing), one email a day; `--no-email --out=<dir>` for a dry run |
+| `lh-repeat.mjs` | MA-009: Lighthouse N times over given pages with the nightly's flags, printing min, median, max and range; paths without a leading slash |
 | `cache-states.mjs` | MA-007: one GET per sitemap URL in a route family, recording the edge cache state, age and TTFB |
 | `bytes.mjs` | MA-001: bytes on the wire per resource type via CDP at 390 px; `--throttle` for slow 4G |
 | `cache-sweep.mjs` | one GET per published street: `x-vercel-cache`, `x-matched-path`, TTFB |
@@ -217,7 +234,7 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 | | |
 |---|---|
 | `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007, MA-008 morning report on top; `origin/main` merged in at each start |
-| production audited | `f01a96a` on 2026-09-12 (MA-001) and 2026-09-13 (MA-004); `1b2d7d8` on 2026-09-16 (MA-005); `e606d8b` on 2026-09-18 (MA-006 addendum); `d068f84` on 2026-09-20/21 (MA-007); the nightly baseline 2026-09-13 |
+| production audited | `f01a96a` 2026-09-12 (MA-001) and 09-13 (MA-004); `1b2d7d8` 09-16 (MA-005); `e606d8b` 09-18 (MA-006); `d068f84` 09-20/21 (MA-007); `c1565b7` 09-22 (MA-009); the nightly baseline 09-13 |
 | pages edited | none |
 | waiting on Core | merge `feat/audit` and add the morning report's seven Actions secrets (MA-008); MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
 | next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |
