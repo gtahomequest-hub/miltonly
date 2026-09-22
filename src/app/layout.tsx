@@ -6,6 +6,7 @@ import UserProvider from "@/components/UserProvider";
 import ConsentBanner from "@/components/consent/ConsentBanner";
 import ChromeGate from "@/components/ChromeGate";
 import AttributionCapture from "@/components/AttributionCapture";
+import VercelAnalytics from "@/components/VercelAnalytics";
 import { config } from "@/lib/config";
 import "./globals.css";
 
@@ -141,6 +142,8 @@ export default function RootLayout({
         <TagStubs />
         <DeferredTagLoader />
         <AttributionCapture />
+        {/* Vercel Web Analytics, production only, auth tokens redacted before send (MH-009) */}
+        <VercelAnalytics />
         <UserProvider>
           {children}
           <ChromeGate>
