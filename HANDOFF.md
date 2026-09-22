@@ -2,9 +2,49 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-21 (MC-037, the VOW follow-ups): `main` is `b4ebcd6` (the merge `2411e8e`, the median rule `ecc4524`, the docs), production serves it. The display window on sold records is 24 months in one constant (`src/lib/vowWindow.ts`), DB2 keeps every row, purge 006 ran (8,650 rows, 0 remain), the 8.25 reliability sentence sits beside the bona fide sentence on every page type including the three ads pages, the homepage lede is "Every street. Every school. Every answer.", the condo generator sends no per-record rents, the 19 legacy FAQs are scrubbed, 22 hubs and 57 condos regenerated. Open for Aamir: the Archive Data question to PropTx (the cut is the reversible default), PropTx's copyright text, the ToU clauses (v) and (viii), the /privacy PropTx line, inactivity timeout, audit trail, "average" in hub and condo prose. Record `scratchpad/reports/MC-037-vow-window.md`._
+_Last rewritten 2026-09-22 (MC-038, the batch: MA-008 and MH-009): `main` is `31da4b9` plus this docs commit, production serves `31da4b9`. The morning report is live on GitHub Actions and ran once by hand from `main`; Vercel Web Analytics is on production with auth tokens redacted; the hub tier refuses "average" as it refuses "median" and 15 hubs and 48 condos are clean; millside-drive-milton is hand-scrubbed. Open for Aamir: the Archive Data question to PropTx, `REPORT_EMAIL_TO`, the build-minute burn the morning report names ($139.69 of $165.55 this cycle, cap crossed in 4 days at this rate). Record `scratchpad/reports/MC-038-batch-audit-analytics.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `31da4b9` AND PRODUCTION SERVES `31da4b9`, MC-038 LIVE, ON NODE 22.** The batch under
+DEC-BATCH-MERGE: `feat/audit @ 6e99a86` merged as `6d19346` (MA-008, the morning report; its report
+names no SHA because it is committed with the work, and `6e99a86` is the only commit carrying it),
+`feat/web-analytics @ 7cfa4a2` as `f1d4080` (MH-009), then `1fee7f7` (the "average" rule) on top;
+the lockfile merged clean because `main`'s had not moved since `d068f84`. Local gate exit 0 (822 s,
+829 static pages, zero `P2024`), prebuild 40 PASS, lint clean, `pnpm install --frozen-lockfile`
+exit 0; full production battery **`PASS · 24 checks · 708 pages · 525s`**
+(`scratchpad/mc003/battery-mc038-prod-31da4b9.log`, 708 of 708 streets PRERENDER; the creation
+cron has published 18 streets since the 690 bar). **The morning report** (`.github/workflows/
+morning-report.yml`, crons 10:00, 11:00 and 12:00 UTC with a Toronto-06:00 gate, `workflow_dispatch`)
+ran once by hand from `main`: run `35681404348`, both jobs `success`, 54 s, email
+`01a0c70d-8deb-75c9-9a7d-a020662c314f` to the desk, and it committed `report(morning): 2026-09-21`
+(`31da4b9`, `scratchpad/audit/morning/` only). Dispatch it through the API with git's own token
+(`printf 'protocol=https\nhost=github.com\n' | git credential fill`, scopes `repo, workflow`;
+`POST /repos/gtahomequest-hub/miltonly/actions/workflows/morning-report.yml/dispatches {"ref":"main"}`
+answers 204); `gh` is not installed. `REPORT_EMAIL_TO` is not among the seven secrets and the script
+falls back to the desk address. **Its commit lands without a human, like the nightly, and it cost a
+second production build today:** I dispatched it 24 s after the batch push, its commit landed 90 s
+later, and the ignore rule diffs against the last *successful* deployment, which was still the
+previous one, so the batch built twice (`miltonly-gktwx3ok6` at `1fee7f7`, then `miltonly-ornbkrkke`
+at `31da4b9`, identical code). **Dispatch the morning report, or anything else that commits to
+`main` by itself, only after the batch's build shows Ready.** **Web Analytics on production:**
+Vercel serves the script from an obfuscated base path (`/35ca55a203cd90db/script.js`, set by
+`NEXT_PUBLIC_VERCEL_OBSERVABILITY_BASEPATH` at build), not `/_vercel/insights/`, and the script
+ignores a browser with `navigator.webdriver`; probe with `--disable-blink-features=AutomationControlled`
+and the flag overridden, and match the beacon path on `/view`, not on "insights". Proven: the magic
+link records as `/signin/link` with no query, `?w=` as `w=redacted`, the hub as its route. **The
+"average" rule:** `findMedian` in the hub and condo validators fails closed on `median`, `average`,
+`averages`, `averaged`, `on average` (`methodology_leak`), the three hub-tier system prompts say so;
+15 hubs ($0.0592) and 47 condos ($0.0972) regenerated, 158 Mill Street (zero-data, guard-skipped)
+hand-scrubbed; 0 of 22 hubs and 0 of 59 condos carry a banned word. **millside-drive-milton:** the
+three rental sentences (two lease-by-month, one on two records) replaced in `StreetContent.description`
+AND `StreetGeneration.sectionsJson` (the rendered source; a failed generation does not overwrite it)
+by one figure-free sentence; the page never rendered them anyway, because the street page suppresses
+every numeric sentence at render (`streetV2Data.ts` `stripNumericParagraphs`); nothing queues it
+again. Record: `scratchpad/reports/MC-038-batch-audit-analytics.md`; evidence `scratchpad/mc038/`
+(untracked).
+
+**HELD FOR THE NEXT BATCH:** nothing. MH-009 `7cfa4a2` is merged (above).
 
 **MAIN IS `b4ebcd6` AND PRODUCTION SERVES `b4ebcd6`, MC-037 LIVE, ON NODE 22.**
 `fix/vow-window @ 68f6662` merged by SHA as `2411e8e`; one build, one deploy; two local gates exit 0
@@ -137,11 +177,9 @@ redeploy of an already-built commit** (same SHA as the last successful deploymen
 clean post-deploy sweep needs a real commit. Record: `scratchpad/reports/MC-035-fewer-deploys.md`;
 evidence `scratchpad/mc035/` (untracked).
 
-**HELD FOR THE NEXT BATCH (DEC-BATCH-MERGE, 2026-09-21):** `feat/web-analytics @ 7cfa4a2` (MH-009,
-Vercel Web Analytics, previewed, not merged; the Home worktree's head is its docs commit
-`3c133b8`). Merge it by SHA with the next batch, confirming the SHA against its report first.
-`fix/favicon @ 9144b35` and `feat/street-v3 @ 2553f2e` are already on `main` since MC-028
-(`ea81883`, `e078e91`); a request to merge them again is a stale report, not work.
+**(2026-09-21, superseded by MC-038 above)** `feat/web-analytics @ 7cfa4a2` (MH-009) was held for
+the next batch and is now merged. `fix/favicon @ 9144b35` and `feat/street-v3 @ 2553f2e` are already
+on `main` since MC-028 (`ea81883`, `e078e91`); a request to merge them again is a stale report, not work.
 
 **MAIN IS `d068f84` AND PRODUCTION SERVES `d068f84`, MC-034 LIVE, ON NODE 22.** `fix/cost-2 @
 edae874` (the docs commit above the proven `6ba561e`) merged by SHA with `--no-ff` as `d068f84`
@@ -550,15 +588,15 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`b4ebcd6`** (MC-037, the VOW follow-ups: the merge `2411e8e`, the fix `ecc4524`, the docs); production serves `b4ebcd6` |
-| battery on production | **`PASS · 24 checks · 690 pages · 560s`** at `b4ebcd6` (and 591s at `2411e8e`), 2026-09-21 |
+| `main` | **`31da4b9`** (MC-038: MA-008 `6d19346`, MH-009 `f1d4080`, the "average" rule `1fee7f7`, the first morning report) plus this docs commit; production serves `31da4b9` |
+| battery on production | **`PASS · 24 checks · 708 pages · 525s`** at `31da4b9`, 2026-09-22 |
 | `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
-| held for the next batch | `feat/web-analytics @ 7cfa4a2` (MH-009), DEC-BATCH-MERGE |
+| held for the next batch | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
-| nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
+| nightly audit, morning report | nightly **live** 03:00 Toronto (run `34769017742` by hand 2026-09-13); morning report **live** 06:00 Toronto (run `35681404348` by hand 2026-09-22, email `01a0c70d…`) |
 | open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
@@ -928,7 +966,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Held: MH-009 `7cfa4a2` for the next batch. Open from MC-036 and MC-037: the Archive
-Data question to PropTx (the 24-month cut is the reversible default, `VOW_DISPLAY_MONTHS`); PropTx's copyright
-text; the ToU clauses (v) and (viii); the `/privacy` PropTx line; inactivity timeout and audit trail; "average" in
-hub and condo prose; the legacy days-on-market FAQ line on 19 rows; the Node 24 runtime move before 2026-10-01.
+Whatever Aamir names. Held: nothing. Open from MC-036 to MC-038: the Archive Data question to PropTx (the
+24-month cut is the reversible default, `VOW_DISPLAY_MONTHS`); PropTx's copyright text; the ToU clauses (v) and
+(viii); the `/privacy` PropTx line; inactivity timeout and audit trail; the legacy days-on-market FAQ line on 19
+rows; `REPORT_EMAIL_TO`; the build-minute burn the morning report names; the Node 24 runtime move before 2026-10-01.
