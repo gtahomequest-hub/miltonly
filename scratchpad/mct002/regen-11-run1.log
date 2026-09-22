@@ -1,0 +1,432 @@
+[regen-local] primaries {"AI_PROVIDER_MARKET":"","AI_PROVIDER_AHA":"","AI_PROVIDER_EVAL":""} -> all deepseek; fallback disabled
+[regen-local] 10 in set, 4 already done, 10 to run
+[Phase41] bergamot-avenue-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] bergamot-avenue-milton TIER 2 (thin-data): totalListings=15 (active=1 sold=4 leased=10) — market prompt prepended with no-numerics instruction
+[roundPrices] section=homes '$1,060,000' → '$1,050,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/aha] bergamot-avenue-milton attempt 1: 1 violation (catchment_vocabulary@amenities) | tokens 5995in/569out | $0.00100
+[Phase41/aha] bergamot-avenue-milton retry-feedback for attempt 2 (390 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- catchment_vocabulary in section "amenities": "serving the area": ...rhood Park each sit about five minutes away by car. Schools serving the area include P.L. Robertson PS and Anne J. MacArthur PS on the p...
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=market '$3,550' SKIPPED (within tolerance of input $2,075)
+[roundPrices] section=market '$2,075' → '$2,100' (rent, <$2.5K/$50) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$1.06M' → '$1.05M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/market] bergamot-avenue-milton attempt 1: 0 violations (clean) | tokens 10394in/539out | $0.00161
+[roundPrices] faq[0] '$1,060,000' → '$1,050,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[5] '$3,550' SKIPPED (within tolerance of input $2,075)
+[roundPrices] faq[5] '$2,075' → '$2,100' (rent, <$2.5K/$50) (no input within tolerance)
+[Phase41/eval] bergamot-avenue-milton attempt 1: 1 violation (fair_housing_register) | tokens 7413in/845out | $0.00127
+[Phase41/eval] bergamot-avenue-milton retry-feedback for attempt 2 (295 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- fair_housing_register: FAQ "owner-occupied": ...ests a steady rental presence alongside owner-occupied homes....
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=homes '$1,061,000' → '$1,050,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/aha] bergamot-avenue-milton attempt 2: 0 violations (clean) | tokens 6093in/550out | $0.00101
+[roundPrices] faq[0] '$1.06M' → '$1.05M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[6] '$3,550' SKIPPED (within tolerance of input $2,075)
+[Phase41/eval] bergamot-avenue-milton attempt 2: 0 violations (clean) | tokens 7486in/896out | $0.00130
+[roundPrices] section=market '$3,550' SKIPPED (within tolerance of input $2,075)
+[roundPrices] faq[6] '$3,550' SKIPPED (within tolerance of input $2,075)
+[Phase41] bergamot-avenue-milton combined: 982 words, aha=2+market=1+eval=2 attempts, total $0.00619, PASS
+[Phase41/judge] bergamot-avenue-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/bergamot-avenue-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/bergamot-avenue-milt
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/walker (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/walker
+[generateStreetContent] revalidated: /streets/bergamot-avenue-milton, /streets, /neighbourhoods/walker
+[  1/10] PASS bergamot-avenue-milton               att=2 $0.00620 judge=PASS published 21s
+[Phase41] chretien-street-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] chretien-street-milton TIER 2 (thin-data): totalListings=12 (active=0 sold=4 leased=8) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$3,150' → '$3,200' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/market] chretien-street-milton attempt 1: 1 violation (invalid_json_shape) | tokens 10431in/318out | $0.00155
+[Phase41/market] chretien-street-milton retry-feedback for attempt 2 (234 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: sections length = 1, expected 2
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/aha] chretien-street-milton attempt 1: 0 violations (clean) | tokens 6032in/531out | $0.00099
+[roundPrices] faq[0] '$1,045,000' → '$1,050,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[6] '$3,150' → '$3,200' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/eval] chretien-street-milton attempt 1: 0 violations (clean) | tokens 7450in/881out | $0.00129
+[roundPrices] section=market '$3,150' → '$3,200' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/market] chretien-street-milton attempt 2: 0 violations (clean) | tokens 10494in/405out | $0.00158
+[Phase41] chretien-street-milton combined: 829 words, aha=1+market=2+eval=1 attempts, total $0.00541, PASS
+[Phase41/judge] chretien-street-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/chretien-street-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/chretien-street-milt
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/ford (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/ford
+[generateStreetContent] revalidated: /streets/chretien-street-milton, /streets, /neighbourhoods/ford
+[  2/10] PASS chretien-street-milton               att=2 $0.00540 judge=PASS published 14s
+[Phase41] kennedy-circle-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] kennedy-circle-milton TIER 1 (full-data): totalListings=23
+[roundPrices] section=market '$1,185,000' SKIPPED (within tolerance of input $1,140,000)
+[roundPrices] section=market '$710,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$1,325,000' → '$1,350,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.04M' → '$1.05M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.285M' → '$1.3M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.24M' → '$1.25M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$995,000' → '$1,000,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$3,550' SKIPPED (within tolerance of input $1,775)
+[roundPrices] section=neighbourhoodComparable '$1.24M' → '$1.25M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/market] kennedy-circle-milton attempt 1: 0 violations (clean) | tokens 10121in/572out | $0.00158
+[Phase41/aha] kennedy-circle-milton attempt 1: 0 violations (clean) | tokens 6203in/614out | $0.00104
+[roundPrices] faq[0] '$1.14M' → '$1.15M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[0] '$1.19M' → '$1.2M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[7] '$3,550' SKIPPED (within tolerance of input $1,775)
+[roundPrices] faq[7] '$1,775' → '$1,800' (rent, <$2.5K/$50) (no input within tolerance)
+[Phase41/eval] kennedy-circle-milton attempt 1: 0 violations (clean) | tokens 7621in/874out | $0.00131
+[roundPrices] section=market '$1,185,000' SKIPPED (within tolerance of input $1,140,000)
+[roundPrices] section=market '$3,550' SKIPPED (within tolerance of input $1,775)
+[roundPrices] faq[7] '$3,550' SKIPPED (within tolerance of input $1,775)
+[Phase41] kennedy-circle-milton combined: 996 words, aha=1+market=1+eval=1 attempts, total $0.00393, PASS
+[Phase41/judge] kennedy-circle-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/kennedy-circle-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/kennedy-circle-milto
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/beaty (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/beaty
+[generateStreetContent] revalidated: /streets/kennedy-circle-milton, /streets, /neighbourhoods/beaty
+[  3/10] PASS kennedy-circle-milton                att=1 $0.00390 judge=PASS published 12s
+[Phase41] maple-avenue-milton TIER 1 (full-data): totalListings=24
+[roundPrices] section=market '$475,000' → '$480,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=market '$660,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$767,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$591,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$510,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] maple-avenue-milton attempt 1: 1 violation (temporal_pairing@market) | tokens 10099in/558out | $0.00157
+[Phase41/market] maple-avenue-milton retry-feedback for attempt 2 (443 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- temporal_pairing in section "market": price_mismatch: Q1 2025 paired with $775,000 (775,000) but input typical is $650,000 (tolerance ±$32,500); ctx: 000 in Q4 2024 to $650,000 in Q1 2025, climbed to $775,000 by Q3 2025, then fell back to $600,000 in Q4 2025 a
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/aha] maple-avenue-milton attempt 1: 0 violations (clean) | tokens 6181in/597out | $0.00103
+[roundPrices] faq[0] '$535,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/eval] maple-avenue-milton attempt 1: 1 violation (catchment_vocabulary@schools) | tokens 9353in/1089out | $0.00161
+[Phase41/eval] maple-avenue-milton retry-feedback for attempt 2 (340 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- catchment_vocabulary in section "schools": "boundaries": ...firmed directly with the boards, as proximity and enrolment boundaries are separate questions....
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/market] maple-avenue-milton attempt 2: invalid_json_shape ({"sections":[{"id":"market","heading":"Trade patterns","paragraphs":["Maple Aven) | tokens 10245in/485out | $0.00157 — RETRY
+[Phase41/market] maple-avenue-milton retry-feedback for attempt 3 (283 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: {"sections":[{"id":"market","heading":"Trade patterns","paragraphs":["Maple Aven
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=market '$535,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$475,000' → '$480,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=market '$660,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$767,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$591,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$510,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] maple-avenue-milton attempt 3: 0 violations (clean) | tokens 10175in/487out | $0.00156
+[roundPrices] faq[0] '$535,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[1] '$475,000' → '$480,000' (sale, <$500K/$10K) (no input within tolerance)
+[Phase41/eval] maple-avenue-milton attempt 2: 0 violations (clean) | tokens 9433in/1143out | $0.00164
+[Phase41] maple-avenue-milton combined: 1045 words, aha=1+market=3+eval=2 attempts, total $0.00899, PASS
+[Phase41/judge] maple-avenue-milton round=1 FAIL findings="It is not a figure that suggests a heavily rental-weighted street."[tenure characterization]
+[Phase41/judge] maple-avenue-milton retrying full generation with judge feedback
+[Phase41] maple-avenue-milton TIER 1 (full-data): totalListings=24
+[roundPrices] section=market '$535,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$475,000' → '$480,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=market '$660,000' → '$650,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$767,000' → '$775,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$591,000' → '$600,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$405,000' → '$410,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$510,000' → '$500,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] maple-avenue-milton attempt 1: 0 violations (clean) | tokens 10187in/483out | $0.00156
+[roundPrices] section=homes '$475,000' → '$480,000' (sale, <$500K/$10K) (no input within tolerance)
+[Phase41/aha] maple-avenue-milton attempt 1: 0 violations (clean) | tokens 6269in/624out | $0.00105
+[roundPrices] faq[0] '$535,000' → '$525,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$475,000' → '$480,000' (sale, <$500K/$10K) (no input within tolerance)
+[Phase41/eval] maple-avenue-milton attempt 1: 0 violations (clean) | tokens 9441in/1200out | $0.00166
+[Phase41] maple-avenue-milton combined: 1075 words, aha=1+market=1+eval=1 attempts, total $0.00427, PASS
+[Phase41/judge] maple-avenue-milton round=2 FAIL findings="Those who want a lower entry point and a shorter walk to the GO station may find the condo tier here does that work already."[buyer-class suitability]
+[generateStreetContent] maple-avenue-milton: FAIL-CLOSED — StreetContent upsert skipped. Failure recorded in StreetGeneration (status=failed) + StreetGenerationReview (violations). Prior published StreetContent row (if any) preserved unchanged.
+[  4/10] FAIL maple-avenue-milton                  att=1 $0.01330 judge=FAIL published 30s  rules:fair_housing_register
+[Phase41] ontario-street-milton TIER 1 (full-data): totalListings=35
+[roundPrices] section=market '$812,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$780,000' SKIPPED (within tolerance of input $812,333.333)
+[roundPrices] section=market '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$540,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$890,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$840,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$758,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] ontario-street-milton attempt 1: 1 violation (invalid_json_shape) | tokens 10210in/357out | $0.00153
+[Phase41/market] ontario-street-milton retry-feedback for attempt 2 (234 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: sections length = 1, expected 2
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=homes '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/aha] ontario-street-milton attempt 1: 0 violations (clean) | tokens 6292in/538out | $0.00103
+[roundPrices] section=differentPriorities '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] faq[0] '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/eval] ontario-street-milton attempt 1: 0 violations (clean) | tokens 9464in/1073out | $0.00163
+[roundPrices] section=market '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$540,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$890,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$812,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$780,000' SKIPPED (within tolerance of input $812,333.333)
+[roundPrices] section=market '$840,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$758,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$105,000' → '$110,000' (sale, <$500K/$10K) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$665,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] ontario-street-milton attempt 2: 2 violations (numeric_ungrounded@market, numeric_ungrounded@market) | tokens 10273in/605out | $0.00161
+[Phase41/market] ontario-street-milton retry-feedback for attempt 3 (398 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- numeric_ungrounded in section "market": "$110,000" (dollar) — 110000 not in input rents (tolerance ±max($15K, 4%)); ctx: ly typicals narrowing from roughly $110,000 to under $60,000. On the rental si (and 1 similar)
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=market '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$540,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$890,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$810,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$780,000' SKIPPED (within tolerance of input $812,333.333)
+[roundPrices] section=market '$840,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$760,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] ontario-street-milton attempt 3: 1 violation (invalid_json_shape) | tokens 10327in/362out | $0.00155
+[Phase41/market] ontario-street-milton retry-feedback for attempt 4 (234 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: sections length = 1, expected 2
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=market '$812,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$812,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$780,000' SKIPPED (within tolerance of input $812,333.333)
+[roundPrices] section=market '$705,000' → '$700,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$540,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$890,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$840,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$840,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$735,000' → '$725,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$758,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$882,000' → '$875,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$540,000' → '$550,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$2,675' → '$2,700' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$665,000' → '$675,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] ontario-street-milton attempt 4: 0 violations (clean) | tokens 10273in/544out | $0.00159
+[roundPrices] section=market '$812,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$812,000' SKIPPED (within tolerance of input $839,900)
+[roundPrices] section=market '$780,000' SKIPPED (within tolerance of input $812,333.333)
+[Phase41] ontario-street-milton combined: 1025 words, aha=1+market=4+eval=1 attempts, total $0.00893, PASS
+[Phase41/judge] ontario-street-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/ontario-street-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/ontario-street-milto
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/timberlea (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/timberlea
+[generateStreetContent] revalidated: /streets/ontario-street-milton, /streets, /neighbourhoods/timberlea
+[  5/10] PASS ontario-street-milton                att=4 $0.00890 judge=PASS published 24s
+[Phase41] raspberry-terrace-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] raspberry-terrace-milton TIER 2 (thin-data): totalListings=14 (active=2 sold=7 leased=5) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$1.375M' → '$1.4M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.375M' → '$1.4M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.125M' → '$1.15M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.555M' → '$1.55M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$3,950' → '$4,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/market] raspberry-terrace-milton attempt 1: 0 violations (clean) | tokens 10476in/495out | $0.00161
+[Phase41/aha] raspberry-terrace-milton attempt 1: 0 violations (clean) | tokens 6077in/689out | $0.00104
+[roundPrices] faq[7] '$3,950' → '$4,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/eval] raspberry-terrace-milton attempt 1: 0 violations (clean) | tokens 7495in/900out | $0.00130
+[Phase41] raspberry-terrace-milton combined: 1007 words, aha=1+market=1+eval=1 attempts, total $0.00395, PASS
+[Phase41/judge] raspberry-terrace-milton round=1 FAIL findings="For buyers and sellers alike, the street's low turnover means each listing carries outsized weight in setting expectations."[buyer-class suitability]
+[Phase41/judge] raspberry-terrace-milton retrying full generation with judge feedback
+[Phase41] raspberry-terrace-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] raspberry-terrace-milton TIER 2 (thin-data): totalListings=14 (active=2 sold=7 leased=5) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$1.375M' → '$1.4M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.485M' → '$1.5M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.375M' → '$1.4M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.125M' → '$1.15M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$3,950' → '$4,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/market] raspberry-terrace-milton attempt 1: 0 violations (clean) | tokens 10574in/536out | $0.00163
+[Phase41/aha] raspberry-terrace-milton attempt 1: 0 violations (clean) | tokens 6175in/599out | $0.00103
+[roundPrices] faq[7] '$3,950' → '$4,000' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/eval] raspberry-terrace-milton attempt 1: 0 violations (clean) | tokens 7593in/902out | $0.00132
+[Phase41] raspberry-terrace-milton combined: 957 words, aha=1+market=1+eval=1 attempts, total $0.00398, PASS
+[Phase41/judge] raspberry-terrace-milton round=2 FAIL findings="For families with school-age children, several public and Catholic elementary schools are within a five-to-nine-minute drive"[family status]
+[generateStreetContent] raspberry-terrace-milton: FAIL-CLOSED — StreetContent upsert skipped. Failure recorded in StreetGeneration (status=failed) + StreetGenerationReview (violations). Prior published StreetContent row (if any) preserved unchanged.
+[  6/10] FAIL raspberry-terrace-milton             att=1 $0.00790 judge=FAIL published 18s  rules:fair_housing_register
+[Phase41] ruhl-drive-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] ruhl-drive-milton TIER 2 (thin-data): totalListings=9 (active=0 sold=1 leased=8) — market prompt prepended with no-numerics instruction
+[roundPrices] section=homes '$1,078,000' → '$1,100,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/aha] ruhl-drive-milton attempt 1: 0 violations (clean) | tokens 5935in/546out | $0.00098
+[roundPrices] section=market '$3,450' → '$3,500' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/market] ruhl-drive-milton attempt 1: 0 violations (clean) | tokens 10334in/519out | $0.00159
+[roundPrices] faq[0] '$1.08M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[6] '$3,450' → '$3,500' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/eval] ruhl-drive-milton attempt 1: 0 violations (clean) | tokens 7353in/804out | $0.00125
+[Phase41] ruhl-drive-milton combined: 909 words, aha=1+market=1+eval=1 attempts, total $0.00383, PASS
+[Phase41/judge] ruhl-drive-milton round=1 FAIL findings="For a household oriented toward Milton's west end, the address places daily errands and the GO Station within a few minutes by car."[buyer-class suitability]
+[Phase41/judge] ruhl-drive-milton retrying full generation with judge feedback
+[Phase41] ruhl-drive-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] ruhl-drive-milton TIER 2 (thin-data): totalListings=9 (active=0 sold=1 leased=8) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$3,450' → '$3,500' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/market] ruhl-drive-milton attempt 1: 1 violation (numeric_ungrounded@market) | tokens 10437in/464out | $0.00159
+[Phase41/market] ruhl-drive-milton retry-feedback for attempt 2 (357 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- numeric_ungrounded in section "market": "88 days" (days) — DOM 88 ≠ input 0 (tolerance ±5); ctx: ble detached homes clear in around 88 days. Ruhl Drive's own pace cannot be s
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=homes '$1,080,000' → '$1,100,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/aha] ruhl-drive-milton attempt 1: 1 violation (superlative@homes) | tokens 6038in/520out | $0.00099
+[Phase41/aha] ruhl-drive-milton retry-feedback for attempt 2 (305 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- superlative in section "homes": ...range is not published, so the stock is best described by form rather than figure. A...
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] faq[0] '$1.08M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] faq[6] '$3,450' → '$3,500' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[Phase41/eval] ruhl-drive-milton attempt 1: 0 violations (clean) | tokens 7456in/952out | $0.00131
+[roundPrices] section=market '$1.08M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$3,450' → '$3,500' (rent, $2.5K-$4K/$100) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$1.08M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/market] ruhl-drive-milton attempt 2: 0 violations (clean) | tokens 10538in/469out | $0.00161
+[roundPrices] section=homes '$1,078,000' → '$1,100,000' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/aha] ruhl-drive-milton attempt 2: 0 violations (clean) | tokens 6115in/597out | $0.00102
+[Phase41] ruhl-drive-milton combined: 995 words, aha=2+market=2+eval=1 attempts, total $0.00652, PASS
+[Phase41/judge] ruhl-drive-milton round=2 FAIL findings="The street's character is therefore one of established detached housing"[tenure characterization]
+[generateStreetContent] ruhl-drive-milton: FAIL-CLOSED — StreetContent upsert skipped. Failure recorded in StreetGeneration (status=failed) + StreetGenerationReview (violations). Prior published StreetContent row (if any) preserved unchanged.
+[  7/10] FAIL ruhl-drive-milton                    att=2 $0.01040 judge=FAIL published 22s  rules:fair_housing_register
+[Phase41] trudeau-drive-milton TIER 2 (thin-data): totalListings=19 (active=4 sold=8 leased=7) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$3,450' SKIPPED (within tolerance of input $3,300)
+[roundPrices] section=market '$1.03M' → '$1.05M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.08M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$988,000' → '$1,000,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$1.09M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/market] trudeau-drive-milton attempt 1: 0 violations (clean) | tokens 10562in/503out | $0.00162
+[Phase41/aha] trudeau-drive-milton attempt 1: 0 violations (clean) | tokens 6163in/623out | $0.00104
+[roundPrices] faq[6] '$3,450' SKIPPED (within tolerance of input $3,300)
+[Phase41/eval] trudeau-drive-milton attempt 1: 0 violations (clean) | tokens 9335in/1108out | $0.00162
+[roundPrices] section=market '$3,450' SKIPPED (within tolerance of input $3,300)
+[roundPrices] faq[6] '$3,450' SKIPPED (within tolerance of input $3,300)
+[Phase41] trudeau-drive-milton combined: 1057 words, aha=1+market=1+eval=1 attempts, total $0.00427, PASS
+[Phase41/judge] trudeau-drive-milton round=1 FAIL findings="For families, the school cluster is dense."[family status]
+[Phase41/judge] trudeau-drive-milton retrying full generation with judge feedback
+[Phase41] trudeau-drive-milton TIER 2 (thin-data): totalListings=19 (active=4 sold=8 leased=7) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$1.03M' → '$1.05M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$1.08M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$988,000' → '$1,000,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$1.09M' → '$1.1M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$3,450' SKIPPED (within tolerance of input $3,300)
+[Phase41/market] trudeau-drive-milton attempt 1: 0 violations (clean) | tokens 10645in/479out | $0.00162
+[roundPrices] section=homes '$1.03M' → '$1.05M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[Phase41/aha] trudeau-drive-milton attempt 1: 0 violations (clean) | tokens 6246in/528out | $0.00102
+[Phase41/eval] trudeau-drive-milton attempt 1: 0 violations (clean) | tokens 9418in/1085out | $0.00162
+[roundPrices] section=market '$3,450' SKIPPED (within tolerance of input $3,300)
+[Phase41] trudeau-drive-milton combined: 960 words, aha=1+market=1+eval=1 attempts, total $0.00427, PASS
+[Phase41/judge] trudeau-drive-milton round=2 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/trudeau-drive-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/trudeau-drive-milton
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/bowes (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/bowes
+[generateStreetContent] revalidated: /streets/trudeau-drive-milton, /streets, /neighbourhoods/bowes
+[  8/10] PASS trudeau-drive-milton                 att=1 $0.00850 judge=PASS published 24s
+[Phase41] whitlock-avenue-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=false - suppression preamble prepended
+[Phase41] whitlock-avenue-milton TIER 2 (thin-data): totalListings=176 (active=5 sold=5 leased=166) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$1.225M' → '$1.25M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$847,000' → '$850,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$906,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$2,650' SKIPPED (within tolerance of input $1,950)
+[roundPrices] section=market '$3,275' SKIPPED (within tolerance of input $1,950)
+[Phase41/market] whitlock-avenue-milton attempt 1: 0 violations (clean) | tokens 10603in/445out | $0.00161
+[Phase41/aha] whitlock-avenue-milton attempt 1: 1 violation (superlative@homes) | tokens 6204in/597out | $0.00104
+[Phase41/aha] whitlock-avenue-milton retry-feedback for attempt 2 (305 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- superlative in section "homes": ...price tier is stated here; the stock is best described by type rather than by figure...
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] faq[7] '$2,650' SKIPPED (within tolerance of input $1,950)
+[Phase41/eval] whitlock-avenue-milton attempt 1: 0 violations (clean) | tokens 7622in/1018out | $0.00135
+[Phase41/aha] whitlock-avenue-milton attempt 2: 0 violations (clean) | tokens 6280in/600out | $0.00105
+[roundPrices] section=market '$2,650' SKIPPED (within tolerance of input $1,950)
+[roundPrices] section=market '$3,275' SKIPPED (within tolerance of input $1,950)
+[roundPrices] faq[7] '$2,650' SKIPPED (within tolerance of input $1,950)
+[Phase41] whitlock-avenue-milton combined: 957 words, aha=2+market=1+eval=1 attempts, total $0.00504, PASS
+[Phase41/judge] whitlock-avenue-milton round=1 FAIL findings="The condo concentration shapes everything about how the street trades and who lists here."[buyer characterization]
+[Phase41/judge] whitlock-avenue-milton retrying full generation with judge feedback
+[Phase41] whitlock-avenue-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=false - suppression preamble prepended
+[Phase41] whitlock-avenue-milton TIER 2 (thin-data): totalListings=176 (active=5 sold=5 leased=166) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$1.225M' → '$1.25M' (sale, $1M-$2M/$50K) (no input within tolerance)
+[roundPrices] section=market '$905,000' → '$900,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=market '$2,650' SKIPPED (within tolerance of input $1,950)
+[roundPrices] section=market '$3,275' SKIPPED (within tolerance of input $1,950)
+[Phase41/market] whitlock-avenue-milton attempt 1: 0 violations (clean) | tokens 10693in/412out | $0.00161
+[Phase41/aha] whitlock-avenue-milton attempt 1: 1 violation (spatial_precision_claim@amenities) | tokens 6294in/598out | $0.00105
+[Phase41/aha] whitlock-avenue-milton retry-feedback for attempt 2 (410 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- spatial_precision_claim in section "amenities": "at the doorstep": A cluster of larger parks, including Barclay Park and the two Beaty Neighbourhood Park sites, sits roughly five minutes away by car, giving the street access to
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/eval] whitlock-avenue-milton attempt 1: 0 violations (clean) | tokens 7712in/756out | $0.00129
+[Phase41/aha] whitlock-avenue-milton attempt 2: 2 violations (catchment_vocabulary@about, superlative@homes) | tokens 6394in/623out | $0.00107
+[Phase41/aha] whitlock-avenue-milton retry-feedback for attempt 3 (503 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- catchment_vocabulary in section "about": "feeding into": ...surrounding grid is suburban in scale, with collector roads feeding into the broader Milton network. Highway 401 at James Snow Parkw...
+- superlative in section "homes": ...rs are not published here; the stock is best understood by type and tenure rather th...
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/aha] whitlock-avenue-milton attempt 3: 0 violations (clean) | tokens 6413in/659out | $0.00108
+[roundPrices] section=market '$2,650' SKIPPED (within tolerance of input $1,950)
+[roundPrices] section=market '$3,275' SKIPPED (within tolerance of input $1,950)
+[Phase41] whitlock-avenue-milton combined: 912 words, aha=3+market=1+eval=1 attempts, total $0.00610, PASS
+[Phase41/judge] whitlock-avenue-milton round=2 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/whitlock-avenue-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/whitlock-avenue-milt
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/cobban (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/cobban
+[generateStreetContent] revalidated: /streets/whitlock-avenue-milton, /streets, /neighbourhoods/cobban
+[  9/10] PASS whitlock-avenue-milton               att=3 $0.01110 judge=PASS published 34s
+[Phase41] woodley-crescent-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] woodley-crescent-milton TIER 2 (thin-data): totalListings=8 (active=0 sold=3 leased=5) — market prompt prepended with no-numerics instruction
+[roundPrices] section=neighbourhoodComparable '$810,000' → '$800,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] woodley-crescent-milton attempt 1: 0 violations (clean) | tokens 10332in/434out | $0.00157
+[roundPrices] section=homes '$810,000' → '$800,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/aha] woodley-crescent-milton attempt 1: 0 violations (clean) | tokens 5933in/564out | $0.00099
+[roundPrices] faq[0] '$810,000' → '$800,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/eval] woodley-crescent-milton attempt 1: 0 violations (clean) | tokens 7351in/914out | $0.00129
+[Phase41] woodley-crescent-milton combined: 954 words, aha=1+market=1+eval=1 attempts, total $0.00384, PASS
+[Phase41/judge] woodley-crescent-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/woodley-crescent-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/woodley-crescent-mil
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/willmott (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/willmott
+[generateStreetContent] revalidated: /streets/woodley-crescent-milton, /streets, /neighbourhoods/willmott
+[ 10/10] PASS woodley-crescent-milton              att=1 $0.00380 judge=PASS published 14s
+
+[regen-local] complete. passed 7, failed 3, deepseek cost $0.0794
+[regen-local] revalidate /streets -> 200

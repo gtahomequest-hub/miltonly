@@ -1,0 +1,72 @@
+[
+ {
+  "n": 1,
+  "slug": "bergamot-avenue-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 2,
+  "slug": "chretien-street-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 3,
+  "slug": "kennedy-circle-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 4,
+  "slug": "maple-avenue-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 5,
+  "slug": "ontario-street-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 6,
+  "slug": "raspberry-terrace-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 7,
+  "slug": "ruhl-drive-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 8,
+  "slug": "trudeau-drive-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 9,
+  "slug": "whitlock-avenue-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ },
+ {
+  "n": 10,
+  "slug": "woodley-crescent-milton",
+  "rules": [
+   "lease_price_by_month_broad"
+  ]
+ }
+]

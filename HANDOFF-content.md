@@ -2,8 +2,8 @@
 
 CONTENT · D:\miltonly-content · feat/content-2
 
-_Last rewritten 2026-09-21, after MCT-002: the 37 street descriptions naming a leased price
-by month regenerated through the standing runner; 36 published, millside-drive fail-closed._
+_Last rewritten 2026-09-22, after MCT-002's second run: 47 street descriptions naming a
+leased price by month regenerated through the standing runner; both tests read zero of 710._
 
 ## READ THIS FIRST
 
@@ -33,12 +33,16 @@ low"). Its old row stands; render-time suppression keeps the two sentences off t
 Core decides: a hand scrub or a generator change. Record:
 `scratchpad/reports/MCT-002-regenerate-lease-month-streets.md`.
 
-**Eleven more carry the same defect in a shape the MC-036 regex misses** ("a two-bedroom
-condo at $2,150 in September 2026", no lease verb within 80 characters):
-bergamot-avenue, chretien-street, kennedy-circle, maple-avenue, ontario-street,
-raspberry-terrace, ruhl-drive, sycamore-garden, trudeau-drive, whitlock-avenue,
-woodley-crescent. `find-lease-month.ts --broad` lists them; the runner takes them with the
-same order-file shape for about $0.12. Not run: outside the 37 asked for. Needs a yes.
+**THE SECOND RUN, 2026-09-21 on Aamir's yes.** The 11 the broader check named were 10 by
+the time it ran (sycamore-garden was regenerated outside this session at 2026-09-22T00:01Z,
+and the published count had moved from 691 to 710). All 10 published through the same runner
+with no escalation (bergamot-avenue, chretien-street, kennedy-circle, maple-avenue,
+ontario-street, raspberry-terrace, ruhl-drive, trudeau-drive, whitlock-avenue,
+woodley-crescent), three on the one DeepSeek retry allowed, $0.0980. **MCT-002 in all:
+$0.4858, 47 pages.** millside-drive's old row was scrubbed by hand outside this session
+(`generatedAt` still 2026-09-13, the two sentences gone). **Both tests now read 0 of 710**
+(`scratchpad/mct002/broad-after.txt`). The Opus fallback is dead: the Anthropic API credit is
+exhausted; do not escalate, leave a page DeepSeek fails twice and name it.
 
 **There is nothing on `feat/content-2` for Core to merge.** The branch is main plus this
 worktree's own handoff, queue lines, reports and `scratchpad/mct002/`. No code changed.

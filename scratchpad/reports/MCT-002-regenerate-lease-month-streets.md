@@ -19,3 +19,21 @@ CONTENT · D:\miltonly-content · feat/content-2
 8. **No code changed.** The branch is main plus this task's records: `scratchpad/mct002/` (finder, spot-check script, order file, before and after lists, the three run logs and both JSONL logs), this report, `HANDOFF-content.md`, `QUEUE.md`. Condos untouched, as instructed (MC-037). No preview: nothing to build.
 
 Report: scratchpad/reports/MCT-002-regenerate-lease-month-streets.md
+
+---
+
+## MCT-002, the 11 from item 7, run on the yes of 2026-09-21
+
+CONTENT · D:\miltonly-content · feat/content-2
+
+1. **`find-lease-month.ts --broad` returned 10, not 11.** `sycamore-garden-milton` was regenerated at `2026-09-22T00:01Z` by something outside this session (its row is on MC-036's prompt and clean), and the published count had moved from 691 to 710 in the meantime. The 10: bergamot-avenue, chretien-street, kennedy-circle, maple-avenue, ontario-street, raspberry-terrace, ruhl-drive, trudeau-drive, whitlock-avenue, woodley-crescent (`scratchpad/mct002/order-11.json`, `broad-before.txt`).
+
+2. **Same runner, same gates, no escalation.** `REGEN_FALLBACK` unset (the runner deletes `AI_PROVIDER_FALLBACK`, so a half that exhausts its budget fails closed), `REGEN_CAP_USD=2`. Run 1: 7 passed, 3 refused by the fair-housing judge (maple-avenue, raspberry-terrace, ruhl-drive; 9 refusals in all across the two runs, every one family status, tenure or buyer class). Run 2, the one DeepSeek retry allowed: all 3 passed. **10 of 10 published, none left fail-closed.** Every pass revalidated its page (200) and `/streets`.
+
+3. **Cost $0.0980** ($0.0794 + $0.0186). With the first set, **MCT-002 in all: $0.4858 for 47 pages regenerated, 46 published by this session**, DeepSeek only.
+
+4. **Proof.** The finder after: **MC-036's test 0 of 710, the broader test 0 of 710** (`scratchpad/mct002/broad-after.txt`). The MC-036 zero includes `millside-drive-milton`, which this session never republished: its row still says `generatedAt 2026-09-13` and the two lease-by-month sentences are gone, so it was scrubbed by hand outside this session. Nothing in the corpus now names a leased price tied to a month.
+
+5. **No code changed.** Records added under `scratchpad/mct002/` (`order-11.json`, `broad-before.txt`, `broad-after.txt`, `regen-11.jsonl`, `regen-11-run1.jsonl`, the two run logs); `HANDOFF-content.md` and `QUEUE.md` updated. Condos untouched.
+
+Report: scratchpad/reports/MCT-002-regenerate-lease-month-streets.md
