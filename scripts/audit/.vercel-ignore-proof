@@ -1,1 +1,0 @@
-MC-040 proof: an audit-only push must not build production. Removed in the next commit.
