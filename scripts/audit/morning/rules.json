@@ -35,7 +35,7 @@
       "needs": "db",
       "where": { "sales90": { "gte": 3 } },
       "pick": { "max": "sales90" },
-      "say": "{street} had {sales90} sales in 90 days and has no published page. Publish it."
+      "say": "{street} had {sales90} sales in 90 days and has no published page: the top of the backlog listed in section 3. Publish it."
     }
   ]
 }

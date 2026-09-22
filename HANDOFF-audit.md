@@ -27,8 +27,10 @@ as inspectionly.ca production; GSC through the service account; DB1 leads and DB
 40 s, no secret in log, report or email. Real figures: Vercel $160.63 cycle to date (cap crossed in 4.4 days
 at this rate), Neon DB1 127.8 CU-h, GSC 2026-09-18 12 clicks / 467 impressions, 1 lead yesterday. Web
 Analytics and the bot counts print "awaiting first data" until the script ships, which is expected.
-**Scheduling waits on Core**: merge `feat/audit` and add the seven Actions secrets named in the workflow
-header (the `.env.local` values; `GSC_SERVICE_ACCOUNT_JSON` is the key file's contents). Local runs:
+**The schedule is live** (Core merged, added the secrets and dispatched once, `31da4b9`). Two fixes the same
+evening, on `feat/audit` and waiting for Core's next merge to reach the runner: the cap is $300 and the
+projection is spend plus the last seven days' rate times the days left (no cap risk this cycle, $213.95
+projected); section 3 lists every street with a sale in 90 days and no page (32 today), not one a day. Local runs:
 `node scripts/audit/morning/run.mjs [--no-email] [--out=<dir>]`; `--out` also moves `state.json`.
 
 **MA-007 IS DONE: THE STREET PAGE'S 9.6% CACHED SHARE, DIAGNOSED, NOT FIXED.** Record:
