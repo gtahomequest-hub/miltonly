@@ -105,3 +105,22 @@ week; `/streets/zilio-terrace-milton` took the most clicks of any page in 28 day
   and `state.json`, tracked.
 - `HANDOFF-audit.md` rewritten, `QUEUE.md` marked. No page, component, library file, route or schema
   was edited.
+
+## Addendum, 2026-09-21 evening: two fixes after the first scheduled run
+
+Core merged `feat/audit`, added the secrets and dispatched the workflow by hand (`31da4b9`, the 22:59
+Toronto rerun, Resend `01a0c70d-8deb-75c9-9a7d-a020662c314f`), so the schedule is live.
+
+1. **The cap.** `config.json` `teamCapUsd` 200 to 300 (raised 2026-09-21). The projection no longer
+   straight-lines the cycle's average, which the first heavy week dragged for a month; it is spend so far
+   plus the last seven full days' daily rate times the days left (`sources/vercel.mjs:62-69`), and the cap
+   line says "no cap risk this cycle" unless the days to the cap fall inside the cycle (`run.mjs:85-86`).
+   Dry run: $165.55 so far plus $4.34 a day for 11.2 days, **$213.95 projected, headroom $134.45, 31 days
+   to the cap, no risk**.
+2. **The backlog, not a drip.** `sources/db.mjs` returns every registry street with a sale in 90 days and
+   no published page, ordered by count, and section 3 prints the full list with counts
+   (`run.mjs:121`). Dry run: **32 streets**, Clarriage Crt E 4, Dredge Crt N 4, then seven at 2 and 23 at
+   1. The rule still names the top one and now points at the list.
+
+Dry run exit 0, 42 calls, 39 s; no email sent for the fix (the corrected page goes out at 06:00). The
+runner reads `main`, so the fixes reach it when Core merges `feat/audit` again.

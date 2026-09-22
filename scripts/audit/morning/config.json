@@ -5,10 +5,10 @@
   "gscProperty": "sc-domain:miltonly.com",
   "vercel": {
     "teamSlug": "gtahomequest-hubs-projects",
-    "teamCapUsd": 200,
+    "teamCapUsd": 300,
     "projects": ["miltonly", "homesly"],
     "buildCpuMinutesPerBilledMinute": 30,
-    "$comment": "teamCapUsd is the spend-management cap the operator set; the cycle and the on-demand dollars come from `vercel usage`, which is the same source as the dashboard."
+    "$comment": "teamCapUsd is the spend-management cap the operator set ($300 since 2026-09-21, $200 before); the cycle and the on-demand dollars come from `vercel usage`, which is the same source as the dashboard."
   },
   "neon": {
     "launchIncludedComputeHours": 300,

@@ -30,8 +30,8 @@ export async function gatherDb() {
     let streetsWithoutPage = [];
     if (sold) {
       const db2 = counted(neon(sold));
-      const rows = await db2`SELECT street_slug AS slug, COUNT(*)::int AS sales90 FROM sold.sold_records WHERE perm_advertise = TRUE AND transaction_type = 'For Sale' AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW() AND street_slug IS NOT NULL GROUP BY 1 HAVING COUNT(*) >= 2 ORDER BY 2 DESC LIMIT 200`;
-      streetsWithoutPage = rows.filter((r) => registry.has(r.slug) && !published.has(r.slug)).map((r) => ({ slug: r.slug, street: registry.get(r.slug), sales90: r.sales90 })).slice(0, 10);
+      const rows = await db2`SELECT street_slug AS slug, COUNT(*)::int AS sales90 FROM sold.sold_records WHERE perm_advertise = TRUE AND transaction_type = 'For Sale' AND sold_date >= NOW() - INTERVAL '90 days' AND sold_date <= NOW() AND street_slug IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`;
+      streetsWithoutPage = rows.filter((r) => registry.has(r.slug) && !published.has(r.slug)).map((r) => ({ slug: r.slug, street: registry.get(r.slug), sales90: r.sales90 }));
     }
     const normalise = (u) => { try { const x = new URL(u, 'https://miltonly.com'); return x.pathname.replace(/\/$/, '') || '/'; } catch { return String(u || ''); } };
     return { ok: true, leadsYesterday: leadsYesterday.map((r) => ({ source: r.source, landing: normalise(r.landing), intent: r.intent, n: r.n })), leadsYesterdayTotal: leadsYesterday.reduce((a, r) => a + r.n, 0), leads7: leads7[0].n, leadsMtd: leadsMtd[0].n, leads28ByPath: Object.fromEntries(leads28ByPage.map((r) => [normalise(r.landing), r.n])), leads28: leads28ByPage.reduce((a, r) => a + r.n, 0), leads28Unpaid: leads28Unpaid[0].n, publishedStreets: published.size, streetsWithoutPage, soldRead: !!sold };

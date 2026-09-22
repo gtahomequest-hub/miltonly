@@ -59,11 +59,14 @@ export async function gatherVercel() {
     const dayBefore = perDay[perDay.length - 3] ?? null;
     const lines = yesterday ? Object.entries(yesterday.services).map(([name, usd]) => { const prev = dayBefore?.services[name] ?? 0; const a = +usd.toFixed(2), b = +prev.toFixed(2); return { name, todayUsd: a, prevUsd: b, dayOverDayPct: b > 0 ? Math.round(((a - b) / b) * 100) : (a > 0 ? 100 : 0) }; }).sort((a, b) => b.todayUsd - a.todayUsd) : [];
 
-    // Projection: the cycle's daily rate so far, straight-lined.
-    const rate = dayOfCycle ? spend / dayOfCycle : null;
-    const projected = rate != null && cycleDays ? rate * cycleDays : null;
+    // Projection: what is spent plus the recent daily rate (the last seven full days, not the cycle's
+    // average, which the first heavy week would drag for a month) times the days left in the cycle.
+    const recent = perDay.slice(0, -1).slice(-7);
+    const dailyRate = recent.length ? recent.reduce((a, d) => a + d.total, 0) / recent.length : (dayOfCycle ? spend / dayOfCycle : null);
+    const daysLeft = period ? Math.max(0, (period.end - now) / 86400e3) : null;
+    const projected = dailyRate != null && daysLeft != null ? spend + dailyRate * daysLeft : null;
     const cap = CONFIG.vercel.teamCapUsd;
-    const daysToCap = rate ? (spend >= cap ? 0 : (cap - spend) / rate) : null;
+    const daysToCap = dailyRate ? (spend >= cap ? 0 : (cap - spend) / dailyRate) : null;
 
     // Projects: dollars per project this cycle.
     const projectRows = (byProject.groupBy?.data || []).map((g) => ({ name: g.name || '?', usd: +onDemand(g).toFixed(2) })).sort((a, b) => b.usd - a.usd);
@@ -88,7 +91,7 @@ export async function gatherVercel() {
     for (const d of deps) { const k = d.name; deployments[k] = deployments[k] || { total: 0, ready: 0, canceled: 0, error: 0, production: 0, buildMinutes: 0 }; deployments[k].total++; if (d.readyState === 'READY') deployments[k].ready++; if (d.readyState === 'CANCELED') deployments[k].canceled++; if (d.readyState === 'ERROR') deployments[k].error++; if (d.target === 'production') deployments[k].production++; if (d.buildingAt && d.ready) deployments[k].buildMinutes += (d.ready - d.buildingAt) / 60000; }
     for (const v of Object.values(deployments)) v.buildMinutes = +v.buildMinutes.toFixed(1);
 
-    return { ok: true, team: team.slug, period: period ? { start: period.start.toISOString().slice(0, 10), end: period.end.toISOString().slice(0, 10), day: dayOfCycle, days: cycleDays } : null, spend: +spend.toFixed(2), listPrice: +listPrice.toFixed(2), spendLastCycleSameDay: spendLastCycleSameDay != null ? +spendLastCycleSameDay.toFixed(2) : null, lastCycleError: lastCycleSameDay?.error ?? null, projected: projected != null ? +projected.toFixed(2) : null, cap, headroom: +(cap - spend).toFixed(2), daysToCap: daysToCap != null ? +daysToCap.toFixed(1) : null, services, lines, yesterday: yesterday ? { date: yesterday.date, total: +yesterday.total.toFixed(2) } : null, dayBefore: dayBefore ? { date: dayBefore.date, total: +dayBefore.total.toFixed(2) } : null, projectRows, traffic, deployments };
+    return { ok: true, team: team.slug, period: period ? { start: period.start.toISOString().slice(0, 10), end: period.end.toISOString().slice(0, 10), day: dayOfCycle, days: cycleDays } : null, spend: +spend.toFixed(2), listPrice: +listPrice.toFixed(2), spendLastCycleSameDay: spendLastCycleSameDay != null ? +spendLastCycleSameDay.toFixed(2) : null, lastCycleError: lastCycleSameDay?.error ?? null, projected: projected != null ? +projected.toFixed(2) : null, dailyRate: dailyRate != null ? +dailyRate.toFixed(2) : null, daysLeft: daysLeft != null ? +daysLeft.toFixed(1) : null, cap, headroom: +(cap - spend).toFixed(2), daysToCap: daysToCap != null ? +daysToCap.toFixed(1) : null, services, lines, yesterday: yesterday ? { date: yesterday.date, total: +yesterday.total.toFixed(2) } : null, dayBefore: dayBefore ? { date: dayBefore.date, total: +dayBefore.total.toFixed(2) } : null, projectRows, traffic, deployments };
   } catch (e) {
     return { ok: false, error: redact(e.message) };
   }

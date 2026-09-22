@@ -82,7 +82,8 @@ L.push('## 1 · Money');
 if (vercel.ok) {
   const v = vercel; const pv = prev?.vercel;
   L.push(`- **Vercel on-demand, cycle to date: ${usd(v.spend)}** (list ${usd(v.listPrice)}), day ${v.period?.day} of ${v.period?.days} (${v.period?.start} to ${v.period?.end}); ${pv ? `${delta(v.spend, pv.spend, { pct: false })} since yesterday's report; ` : ''}same day last cycle ${v.spendLastCycleSameDay != null ? usd(v.spendLastCycleSameDay) : 'n/a'}.`);
-  L.push(`- Projected month end **${usd(v.projected)}**; headroom ${usd(v.headroom)} against the ${usd(v.cap, 0)} cap; at this rate the cap is crossed in **${v.daysToCap != null ? (v.daysToCap === 0 ? 'already crossed' : `${v.daysToCap} days`) : 'n/a'}**${v.period?.days && v.daysToCap != null && v.daysToCap > v.period.days - v.period.day ? ' (after the cycle ends)' : ''}.`);
+  const capRisk = v.daysToCap != null && v.daysLeft != null && v.daysToCap <= v.daysLeft;
+  L.push(`- Projected month end **${usd(v.projected)}** (${usd(v.spend)} so far plus ${usd(v.dailyRate)} a day, the last seven days' rate, for ${v.daysLeft} more days); headroom ${usd(v.headroom)} against the ${usd(v.cap, 0)} cap; ${capRisk ? `**at this rate the cap is crossed in ${v.daysToCap === 0 ? 'already crossed' : `${v.daysToCap} days`}, inside the cycle**` : `no cap risk this cycle (${v.daysToCap != null ? `${v.daysToCap} days to the cap at this rate, ${v.daysLeft} left` : 'rate unknown'})`}.`);
   const top = v.services[0]; const topLine = v.lines.find((l) => l.name === top?.name);
   if (top) L.push(`- Biggest driver: **${top.name} ${usd(top.usd)}** this cycle${topLine ? `; yesterday ${usd(topLine.todayUsd)} vs ${usd(topLine.prevUsd)} the day before (${delta(topLine.todayUsd, topLine.prevUsd)})` : ''}. Yesterday's total ${v.yesterday ? usd(v.yesterday.total) : 'n/a'}${v.dayBefore ? ` vs ${usd(v.dayBefore.total)}` : ''}.`);
   L.push(`- By project: ${v.projectRows.map((p) => `${p.name} ${usd(p.usd)}`).join(' · ')}.`);
@@ -116,6 +117,8 @@ if (db.ok) {
   L.push(`- **Leads yesterday: ${db.leadsYesterdayTotal}**${db.leadsYesterday.length ? ` · ${db.leadsYesterday.map((l) => `${l.n} ${l.source} (${l.intent}) from ${l.landing || 'no landing page'}`).join(' · ')}` : ''}. Last 7 days ${db.leads7}; month to date ${db.leadsMtd}.`);
   const expected = gsc.ok && gsc.avg7 ? gsc.avg7.clicks * 0.02 : null;
   L.push(`- Clicks → leads, 28 d, ad-attributed leads excluded: ${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}. At ~${gsc.ok && gsc.avg7 ? gsc.avg7.clicks.toFixed(0) : '?'} clicks a day and a 1 to 3% rate the expected daily count is ${expected != null ? `${(expected / 2).toFixed(1)} to ${(expected * 1.5).toFixed(1)}` : '?'}, so a zero day is the normal result, not a fault.`);
+  const backlog = db.streetsWithoutPage;
+  L.push(`- **Streets with sales in 90 days and no published page: ${backlog.length}**${db.soldRead ? '' : ' (DB2 not read)'}${backlog.length ? `, by sales: ${backlog.map((s) => `${s.street} ${s.sales90}`).join(' · ')}` : ''}. Each is a page the sold record already justifies.`);
   const zero = facts.conversion.pages28.filter((p) => p.leads === 0)[0];
   L.push(`- Highest-traffic page with zero leads, 28 d: ${zero ? `**${zero.page}** (${zero.clicks} clicks, ${int(zero.impressions)} impressions)` : 'none, or no GSC page table'}.`);
 } else L.push(`- DB1: source failed (${db.error}).`);
