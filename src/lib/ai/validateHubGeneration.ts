@@ -259,12 +259,14 @@ export function hubInputToStreetAdapter(input: HubGeneratorInput): StreetGenerat
 // re-pointed W2 aggregate gates (per-trade, numeric, temporal) on liveMarket.
 // ---------------------------------------------------------------------------
 
-/** The word "median" anywhere in prose or an answer, with its window. The voice rule is
- *  "typical", never "median"; the number is the same, the reader must not see the machinery. */
+/** The words "median" and "average" (averaged, averages, on average) anywhere in prose or an
+ *  answer, with the window around the first. The voice rule is "typical", never "median";
+ *  "average" is banned the same way (MC-038) because the typical price IS a median
+ *  (PERCENTILE_CONT 0.5), so a page calling it an average is wrong, not just off-voice. */
 function findMedian(text: string): string | null {
-  const m = /\bmedian\b/i.exec(text);
+  const m = /\b(median|averages?|averaged|on average)\b/i.exec(text);
   if (!m) return null;
-  return `"median": ${text.slice(Math.max(0, m.index - 40), m.index + 46).replace(/\s+/g, " ")}`;
+  return `"${m[1]}": ${text.slice(Math.max(0, m.index - 40), m.index + 46).replace(/\s+/g, " ")}`;
 }
 
 export function validateHubSectionsSubset(
