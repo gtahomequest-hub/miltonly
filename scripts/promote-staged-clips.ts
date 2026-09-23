@@ -171,9 +171,17 @@ async function main() {
       for (const k of ["score", "blur_signed_at", "blur_reviewer", "clipKey", "blur_generation", "exposureClass", "meanY", "darkRatio", "drive_s", "durationS", "captured_end", "captured_at_source", "captured_at_filename", "coverageFrom", "coverageTo", "capturedMetres", "streetMetres", "coverage_source", "relabelled", "staged_at", "registry", "supersedes_captured_at", "supersedes_r2_key", "match_status", "uploaded_at", "rekeyed_at", "retired_at"]) {
         if (meta[k] !== undefined) carried[k] = meta[k];
       }
+      // program and dirKey are written on EVERY row (MC-041). They were on none of the 173, which
+      // is why D:/dashcam/work/upload-r2.js counted `r.program !== "homesly"` as 173 Milton rows
+      // and 0 Homesly, and why its row patcher (`r.program === "homesly" && r.dirKey === p.dirKey`)
+      // could not find a row to patch. meta.program is the authority; the slug shape
+      // (<citySlug>--<streetSlug>) is the fallback for a meta written before the field existed.
+      const program = typeof meta.program === "string" ? meta.program : (slug.includes("--") ? "homesly" : "milton");
       streets.push({
         ...prior,
         slug,
+        program,
+        dirKey: slug,
         status,
         captured_at: meta.captured_at,
         night: meta.night === true,
@@ -186,7 +194,7 @@ async function main() {
     }
   }
   streets.sort((a, b) => String(a.slug).localeCompare(String(b.slug)) || String(a.captured_at).localeCompare(String(b.captured_at)));
-  const isHomesly = (r: Record<string, unknown>) => String(r.slug).includes("--");
+  const isHomesly = (r: Record<string, unknown>) => r.program === "homesly";
   const oldCounts = (old.counts ?? {}) as Record<string, unknown>;
   const blurGen: Record<string, number> = {};
   for (const r of streets) if (r.blur_generation !== undefined) blurGen[String(r.blur_generation)] = (blurGen[String(r.blur_generation)] ?? 0) + 1;

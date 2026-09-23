@@ -2,9 +2,53 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-22 (MC-038, the batch: MA-008 and MH-009): `main` is `31da4b9` plus this docs commit, production serves `31da4b9`. The morning report is live on GitHub Actions and ran once by hand from `main`; Vercel Web Analytics is on production with auth tokens redacted; the hub tier refuses "average" as it refuses "median" and 15 hubs and 48 condos are clean; millside-drive-milton is hand-scrubbed. Open for Aamir: the Archive Data question to PropTx, `REPORT_EMAIL_TO`, the build-minute burn the morning report names ($139.69 of $165.55 this cycle, cap crossed in 4 days at this rate). Record `scratchpad/reports/MC-038-batch-audit-analytics.md`._
+_Last rewritten 2026-09-22 (MC-040, the ignore rule in a file): `main` is `bfc389b` plus this docs commit, production serves `bfc389b`. `vercel.json` now says `"ignoreCommand": "bash scripts/vercel-ignore.sh"`; the rule reads, runs by hand and is tested (`scripts/test-vercel-ignore.ts`, 12 assertions, in the prebuild chain), and an audit-only push no longer builds production. MC-039 before it merged the MA-008 addendum ($300 cap, the recent-rate projection, the whole street backlog), live for the 06:00 run. Open for Aamir: the Archive Data question to PropTx, `REPORT_EMAIL_TO`, the build-minute burn, the 32-street backlog. Record `scratchpad/reports/MC-040-ignore-rule-in-a-file.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `bfc389b` AND PRODUCTION SERVES `bfc389b`, MC-040 LIVE, ON NODE 22.** The ignore rule is
+out of `vercel.json` and into **`scripts/vercel-ignore.sh`**; `vercel.json` carries
+`"ignoreCommand": "bash scripts/vercel-ignore.sh"` (29 characters, from 250 against Vercel's 256
+limit). **The decision, unchanged except for one new exclusion:** skip only when the range touches
+nothing but `scratchpad/`, `docs/`, `*.md` or **`scripts/audit/`** (new, MC-040); `docs/phase-4.1/`
+is checked first and ALWAYS builds, because the generators read those prompt files at runtime; the
+range is `VERCEL_GIT_PREVIOUS_SHA`, falling back to `HEAD^` when absent or set-but-empty, never the
+tip commit alone. **Everything uncertain BUILDS:** no git, no repository, a base or head the clone
+does not carry, a diff that errors. That asymmetry is the whole point, and it is written into the
+file: a rule that builds too often costs minutes, a rule that skips a build it should have run
+ships nothing and nobody notices. **Run it by hand before you push:**
+`bash scripts/vercel-ignore.sh <base> <head>; echo $?` — 0 means it will skip, 1 means it will
+build, and it prints its reason. **`scripts/test-vercel-ignore.ts` (12 assertions, last in the
+prebuild chain)** holds your seven cases on real SHAs plus both halves of the MC-034 regression
+(`b4ebcd6~1..b4ebcd6` skips, `1cb431e..b4ebcd6` builds), an unreachable head, and the branch gate.
+**A fixture the clone does not carry is reported, not failed**, so Vercel's shallow clone runs
+eight of twelve and the build passes. **Proven on Vercel, rule live:** `ad8ae77` (the rule)
+→ `miltonly-a9a4yw0ow` Ready; `886249e` (one marker file under `scripts/audit/`)
+→ `miltonly-4w5ocqrfw` **Canceled**, the log reading `[vercel-ignore] SKIP: …`; `bfc389b`
+(`package.json`, the next real code push) → `miltonly-mk82xhesq` Ready, so a skip does not poison
+the next build (Vercel's previous-SHA stays at the last SUCCESSFUL deployment). The marker went in
+and out in those two commits: `scripts/audit/` is byte-identical to `9603468`. **Still builds, on
+purpose:** a push touching only `.github/workflows/`, and any non-main branch still skips (a
+worktree takes its preview from `npx vercel`). Record:
+`scratchpad/reports/MC-040-ignore-rule-in-a-file.md`.
+
+**MAIN IS `c1565b7` AND PRODUCTION SERVES `c1565b7`, MC-039 LIVE, ON NODE 22.** `feat/audit @
+9603468` (the MA-008 addendum) merged by SHA as `c1565b7`: seven files, all under
+`scripts/audit/morning/`, `scratchpad/` and `HANDOFF-audit.md`, nothing under `src/` or `prisma/`,
+so no local build and no battery were run (the app tree is byte-identical to the one
+`PASS · 24 checks · 708 pages` verified at `31da4b9`). The morning report now reads the **$300**
+cap, projects **spend so far plus the last seven FULL days' rate times the days left** (the cycle
+average straight-lined a heavy first week), flags cap risk only when `daysToCap <= daysLeft`, and
+prints the **whole** street-without-page backlog instead of the top ten. Tomorrow's 06:00 Toronto
+run is the proof; today's had already fired on the old code (`f50bfba`, projected $250.75 against
+the $200 cap). **THE IGNORE RULE DOES NOT SKIP AN AUDIT-ONLY PUSH.** It excludes `scratchpad/`,
+`docs/` and `*.md` and nothing else, so any change under `scripts/` builds production: this merge
+built `miltonly-gepjcuv36` (Ready, identical app code, two or three billed minutes). Test it before
+pushing with the rule's own command, `git diff --quiet <served SHA> HEAD -- . ':!scratchpad'
+':!docs' ':!*.md'` (exit 1 means it builds). **Adding `':!scripts/audit'` does not fit**: the
+`ignoreCommand` is 250 characters and Vercel's limit is 256, so the fix is to move the logic into a
+repo file and set `"ignoreCommand": "bash scripts/vercel-ignore.sh"`, a small task nobody has taken.
+Record: `scratchpad/reports/MC-039-audit-addendum-merge.md`.
 
 **MAIN IS `31da4b9` AND PRODUCTION SERVES `31da4b9`, MC-038 LIVE, ON NODE 22.** The batch under
 DEC-BATCH-MERGE: `feat/audit @ 6e99a86` merged as `6d19346` (MA-008, the morning report; its report
@@ -588,15 +632,15 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`31da4b9`** (MC-038: MA-008 `6d19346`, MH-009 `f1d4080`, the "average" rule `1fee7f7`, the first morning report) plus this docs commit; production serves `31da4b9` |
-| battery on production | **`PASS · 24 checks · 708 pages · 525s`** at `31da4b9`, 2026-09-22 |
+| `main` | **`bfc389b`** (MC-040, the ignore rule in a file, on MC-039 `c1565b7` and MC-038) plus this docs commit; production serves `bfc389b` |
+| battery on production | **`PASS · 24 checks · 708 pages · 525s`** at `31da4b9`, 2026-09-22; `c1565b7` and `bfc389b` change no app code |
 | `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
 | held for the next batch | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **running**, cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
-| nightly audit, morning report | nightly **live** 03:00 Toronto (run `34769017742` by hand 2026-09-13); morning report **live** 06:00 Toronto (run `35681404348` by hand 2026-09-22, email `01a0c70d…`) |
+| nightly audit, morning report | nightly **live** 03:00 Toronto; morning report **live** 06:00 Toronto, first scheduled run 2026-09-22 (`f50bfba`), first on the addendum due 2026-09-23 |
 | open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
@@ -966,7 +1010,8 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Held: nothing. Open from MC-036 to MC-038: the Archive Data question to PropTx (the
+Whatever Aamir names. Held: nothing. Open from MC-036 to MC-039: the Archive Data question to PropTx (the
 24-month cut is the reversible default, `VOW_DISPLAY_MONTHS`); PropTx's copyright text; the ToU clauses (v) and
 (viii); the `/privacy` PropTx line; inactivity timeout and audit trail; the legacy days-on-market FAQ line on 19
-rows; `REPORT_EMAIL_TO`; the build-minute burn the morning report names; the Node 24 runtime move before 2026-10-01.
+rows; `REPORT_EMAIL_TO`; the build-minute burn the morning report names; the 32-street backlog the morning
+report now prints; the Node 24 runtime move before 2026-10-01. (The ignore rule as a repo script is done, MC-040.)
