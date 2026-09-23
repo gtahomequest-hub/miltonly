@@ -1,6 +1,6 @@
 {
   "generator": "scripts/backfill-video-captured.ts",
-  "builtAt": "2026-09-14T22:43:04.802Z",
+  "builtAt": "2026-09-23T19:46:06.101Z",
   "clips": {
     "streets/anne-boulevard-milton/20260907/day.mp4": {
       "durationS": 45,
@@ -8,6 +8,27 @@
       "coverageTo": null,
       "capturedMetres": 400,
       "streetMetres": 570
+    },
+    "streets/apple-terrace-milton/20260915/day.mp4": {
+      "durationS": 46,
+      "coverageFrom": "Logan Drive",
+      "coverageTo": "Kennedy Circle West",
+      "capturedMetres": 393,
+      "streetMetres": 701
+    },
+    "streets/argall-court-milton/20260914/day.mp4": {
+      "durationS": 27,
+      "coverageFrom": "Raspberry Terrace",
+      "coverageTo": "Whitlock Avenue",
+      "capturedMetres": 223,
+      "streetMetres": 233
+    },
+    "streets/aspen-terrace-milton/20260915/day.mp4": {
+      "durationS": 23,
+      "coverageFrom": null,
+      "coverageTo": "Yates Drive",
+      "capturedMetres": 192,
+      "streetMetres": 601
     },
     "streets/attenborough-terrace-milton/20260901/day.mp4": {
       "durationS": 55,
@@ -30,6 +51,20 @@
       "capturedMetres": 160,
       "streetMetres": 160
     },
+    "streets/bennett-boulevard-milton/20260914/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": null,
+      "coverageTo": "Kennedy Circle",
+      "capturedMetres": 523,
+      "streetMetres": 1537
+    },
+    "streets/bolingbroke-drive-milton/20260914/day.mp4": {
+      "durationS": 26,
+      "coverageFrom": "Vickerman Way",
+      "coverageTo": "Yates Drive",
+      "capturedMetres": 215,
+      "streetMetres": 439
+    },
     "streets/britannia-road-milton/20260829/day.mp4": {
       "durationS": 40,
       "coverageFrom": null,
@@ -43,6 +78,13 @@
       "coverageTo": null,
       "capturedMetres": 990,
       "streetMetres": 6330
+    },
+    "streets/brush-road-milton/20260920/day.mp4": {
+      "durationS": 23,
+      "coverageFrom": "Dixon Drive",
+      "coverageTo": "Maple Avenue",
+      "capturedMetres": 198,
+      "streetMetres": 212
     },
     "streets/cavanagh-lane-milton/20260901/day.mp4": {
       "durationS": 46,
@@ -72,12 +114,26 @@
       "capturedMetres": 490,
       "streetMetres": 1030
     },
+    "streets/clarkson-gate-milton/20260913/day.mp4": {
+      "durationS": 31,
+      "coverageFrom": "Orr Terrace",
+      "coverageTo": "Whitney Terrace",
+      "capturedMetres": 252,
+      "streetMetres": 278
+    },
     "streets/clifford-point-milton/20260825/day.mp4": {
       "durationS": 19,
       "coverageFrom": "Locker Place",
       "coverageTo": "Whitlock Avenue",
       "capturedMetres": 160,
       "streetMetres": 160
+    },
+    "streets/cobban-road-milton/20260920/day.mp4": {
+      "durationS": 22,
+      "coverageFrom": "Dixon Drive",
+      "coverageTo": "Knight Trail",
+      "capturedMetres": 187,
+      "streetMetres": 197
     },
     "streets/commercial-street-milton/20260907/day.mp4": {
       "durationS": 47,
@@ -86,12 +142,26 @@
       "capturedMetres": 380,
       "streetMetres": 1910
     },
+    "streets/connaught-terrace-milton/20260913/day.mp4": {
+      "durationS": 40,
+      "coverageFrom": "Whitney Terrace",
+      "coverageTo": "Etheridge Avenue",
+      "capturedMetres": 336,
+      "streetMetres": 354
+    },
     "streets/costigan-road-milton/20260827/day.mp4": {
       "durationS": 44,
       "coverageFrom": "Miller Way",
       "coverageTo": "Gorham Way",
       "capturedMetres": 360,
       "streetMetres": 1260
+    },
+    "streets/croft-avenue-milton/20260920/day.mp4": {
+      "durationS": 24,
+      "coverageFrom": "Cedar Hedge Road",
+      "coverageTo": "Trudeau Drive",
+      "capturedMetres": 207,
+      "streetMetres": 234
     },
     "streets/dalhousie-gate-milton/20260901/day.mp4": {
       "durationS": 22,
@@ -100,6 +170,20 @@
       "capturedMetres": 180,
       "streetMetres": 180
     },
+    "streets/davis-lane-milton/20260920/day.mp4": {
+      "durationS": 40,
+      "coverageFrom": "Robarts Drive",
+      "coverageTo": "Pearson Way",
+      "capturedMetres": 323,
+      "streetMetres": 335
+    },
+    "streets/deacon-drive-milton/20260914/day.mp4": {
+      "durationS": 46,
+      "coverageFrom": "Kennedy Circle",
+      "coverageTo": "Freeman Trail",
+      "capturedMetres": 454,
+      "streetMetres": 466
+    },
     "streets/diefenbaker-street-milton/20260901/day.mp4": {
       "durationS": 19,
       "coverageFrom": "Nadalin Heights",
@@ -107,12 +191,26 @@
       "capturedMetres": 160,
       "streetMetres": 260
     },
+    "streets/dixon-drive-milton/20260920/day.mp4": {
+      "durationS": 24,
+      "coverageFrom": "Cobban Road",
+      "coverageTo": "Brush Road",
+      "capturedMetres": 182,
+      "streetMetres": 1100
+    },
     "streets/duignan-crescent-milton/20260901/day.mp4": {
       "durationS": 37,
       "coverageFrom": "Farmstead Drive",
       "coverageTo": "Gillett Point",
       "capturedMetres": 310,
       "streetMetres": 470
+    },
+    "streets/edwards-avenue-milton/20260915/day.mp4": {
+      "durationS": 45,
+      "coverageFrom": null,
+      "coverageTo": null,
+      "capturedMetres": 377,
+      "streetMetres": 665
     },
     "streets/etheridge-avenue-milton/20260901/day.mp4": {
       "durationS": 45,
@@ -128,12 +226,33 @@
       "capturedMetres": 480,
       "streetMetres": 3540
     },
+    "streets/ferguson-drive-milton/20260915/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": "Christie Circle",
+      "coverageTo": null,
+      "capturedMetres": 609,
+      "streetMetres": 2535
+    },
     "streets/first-line-milton/20260825/day.mp4": {
       "durationS": 59,
       "coverageFrom": null,
       "coverageTo": null,
       "capturedMetres": 1350,
       "streetMetres": 3070
+    },
+    "streets/fox-crescent-milton/20260920/day.mp4": {
+      "durationS": 41,
+      "coverageFrom": "Maple Avenue",
+      "coverageTo": "Dixon Drive",
+      "capturedMetres": 343,
+      "streetMetres": 358
+    },
+    "streets/freeman-trail-milton/20260914/day.mp4": {
+      "durationS": 35,
+      "coverageFrom": "Mara Circle",
+      "coverageTo": "Louis St Laurent Avenue",
+      "capturedMetres": 328,
+      "streetMetres": 340
     },
     "streets/frost-court-milton/20260825/day.mp4": {
       "durationS": 27,
@@ -156,12 +275,19 @@
       "capturedMetres": 130,
       "streetMetres": 140
     },
-    "streets/hamman-way-milton/20260901/day.mp4": {
-      "durationS": 22,
-      "coverageFrom": "Beam Court",
-      "coverageTo": "Britton Crescent",
-      "capturedMetres": 180,
-      "streetMetres": 980
+    "streets/hamilton-crescent-milton/20260915/day.mp4": {
+      "durationS": 49,
+      "coverageFrom": "Edwards Avenue",
+      "coverageTo": null,
+      "capturedMetres": 405,
+      "streetMetres": 420
+    },
+    "streets/hamman-way-milton/20260913/day.mp4": {
+      "durationS": 53,
+      "coverageFrom": "Louis St Laurent Avenue",
+      "coverageTo": "Whitlock Avenue",
+      "capturedMetres": 491,
+      "streetMetres": 988
     },
     "streets/haxton-heights-milton/20260901/day.mp4": {
       "durationS": 15,
@@ -191,6 +317,34 @@
       "capturedMetres": 420,
       "streetMetres": 680
     },
+    "streets/kennedy-circle-milton/20260914/day.mp4": {
+      "durationS": 27,
+      "coverageFrom": "Louis St Laurent Avenue",
+      "coverageTo": "Bennett Boulevard",
+      "capturedMetres": 214,
+      "streetMetres": 948
+    },
+    "streets/knight-trail-milton/20260920/day.mp4": {
+      "durationS": 38,
+      "coverageFrom": "Maple Avenue",
+      "coverageTo": "Dixon Drive",
+      "capturedMetres": 296,
+      "streetMetres": 341
+    },
+    "streets/landsborough-avenue-milton/20260914/day.mp4": {
+      "durationS": 35,
+      "coverageFrom": "Tremaine Road",
+      "coverageTo": "Tilt Point",
+      "capturedMetres": 353,
+      "streetMetres": 861
+    },
+    "streets/laurier-avenue-milton/20260920/day.mp4": {
+      "durationS": 35,
+      "coverageFrom": "Bronte Street",
+      "coverageTo": "Vanier Drive",
+      "capturedMetres": 288,
+      "streetMetres": 4382
+    },
     "streets/leger-way-milton/20260827/day.mp4": {
       "durationS": 34,
       "coverageFrom": "Louis St Laurent Avenue",
@@ -198,12 +352,12 @@
       "capturedMetres": 340,
       "streetMetres": 1800
     },
-    "streets/lemieux-court-milton/20260901/day.mp4": {
-      "durationS": 39,
+    "streets/lemieux-court-milton/20260917/day.mp4": {
+      "durationS": 27,
       "coverageFrom": "Mulroney Heights",
-      "coverageTo": null,
-      "capturedMetres": 330,
-      "streetMetres": 340
+      "coverageTo": "Locker Place",
+      "capturedMetres": 226,
+      "streetMetres": 341
     },
     "streets/little-crescent-milton/20260904/day.mp4": {
       "durationS": 23,
@@ -212,12 +366,47 @@
       "capturedMetres": 200,
       "streetMetres": 210
     },
-    "streets/locker-place-milton/20260910/day.mp4": {
+    "streets/locker-place-milton/20260917/day.mp4": {
       "durationS": 28,
-      "coverageFrom": "Leger Way",
-      "coverageTo": "Lemieux Court",
-      "capturedMetres": 260,
+      "coverageFrom": "Lemieux Court",
+      "coverageTo": "Leger Way",
+      "capturedMetres": 247,
       "streetMetres": 280
+    },
+    "streets/logan-drive-milton/20260915/day.mp4": {
+      "durationS": 49,
+      "coverageFrom": "Thompson Road",
+      "coverageTo": "Apple Terrace",
+      "capturedMetres": 408,
+      "streetMetres": 449
+    },
+    "streets/magnolia-terrace-milton/20260915/day.mp4": {
+      "durationS": 46,
+      "coverageFrom": "Buckthorn Garden",
+      "coverageTo": "Kennedy Circle West",
+      "capturedMetres": 390,
+      "streetMetres": 554
+    },
+    "streets/main-street-milton/20260920/day.mp4": {
+      "durationS": 57,
+      "coverageFrom": "Martin Street",
+      "coverageTo": null,
+      "capturedMetres": 580,
+      "streetMetres": 8593
+    },
+    "streets/maple-avenue-milton/20260916/day.mp4": {
+      "durationS": 41,
+      "coverageFrom": "Fitzgerald Crescent",
+      "coverageTo": "Galbraith Boulevard",
+      "capturedMetres": 431,
+      "streetMetres": 2250
+    },
+    "streets/mara-circle-milton/20260914/day.mp4": {
+      "durationS": 32,
+      "coverageFrom": "Meighen Way",
+      "coverageTo": null,
+      "capturedMetres": 273,
+      "streetMetres": 292
     },
     "streets/martin-street-milton/20260907/day.mp4": {
       "durationS": 50,
@@ -240,6 +429,13 @@
       "capturedMetres": 250,
       "streetMetres": 330
     },
+    "streets/mowat-lane-milton/20260920/day.mp4": {
+      "durationS": 51,
+      "coverageFrom": "Pearson Way",
+      "coverageTo": null,
+      "capturedMetres": 429,
+      "streetMetres": 516
+    },
     "streets/mulroney-heights-milton/20260827/day.mp4": {
       "durationS": 9,
       "coverageFrom": "Whitlock Avenue",
@@ -261,12 +457,26 @@
       "capturedMetres": 150,
       "streetMetres": 420
     },
+    "streets/newell-street-milton/20260920/day.mp4": {
+      "durationS": 36,
+      "coverageFrom": "Mowat Lane",
+      "coverageTo": "Coates Drive",
+      "capturedMetres": 282,
+      "streetMetres": 356
+    },
     "streets/nipissing-road-milton/20260910/day.mp4": {
       "durationS": 22,
       "coverageFrom": "Childs Drive",
       "coverageTo": null,
       "capturedMetres": 130,
       "streetMetres": 1370
+    },
+    "streets/orr-terrace-milton/20260913/day.mp4": {
+      "durationS": 32,
+      "coverageFrom": "Clarkson Gate",
+      "coverageTo": null,
+      "capturedMetres": 263,
+      "streetMetres": 416
     },
     "streets/parent-place-milton/20260902/day.mp4": {
       "durationS": 30,
@@ -281,6 +491,34 @@
       "coverageTo": "Attenborough Terrace",
       "capturedMetres": 130,
       "streetMetres": 150
+    },
+    "streets/pine-street-milton/20260913/day.mp4": {
+      "durationS": 30,
+      "coverageFrom": "Commercial Street",
+      "coverageTo": "Prince Street",
+      "capturedMetres": 331,
+      "streetMetres": 647
+    },
+    "streets/raspberry-terrace-milton/20260914/day.mp4": {
+      "durationS": 20,
+      "coverageFrom": "Hamman Way",
+      "coverageTo": null,
+      "capturedMetres": 175,
+      "streetMetres": 748
+    },
+    "streets/restivo-lane-milton/20260914/day.mp4": {
+      "durationS": 21,
+      "coverageFrom": "Lloyd Landing",
+      "coverageTo": "Sheaffe Place",
+      "capturedMetres": 168,
+      "streetMetres": 744
+    },
+    "streets/robarts-drive-milton/20260920/day.mp4": {
+      "durationS": 34,
+      "coverageFrom": "Woodward Avenue",
+      "coverageTo": "Sprucedale Lane",
+      "capturedMetres": 316,
+      "streetMetres": 601
     },
     "streets/scott-boulevard-milton/20260902/day.mp4": {
       "durationS": 59,
@@ -303,6 +541,20 @@
       "capturedMetres": 290,
       "streetMetres": 420
     },
+    "streets/sumac-crescent-milton/20260915/day.mp4": {
+      "durationS": 21,
+      "coverageFrom": "Hazel Way",
+      "coverageTo": "Ash Gate",
+      "capturedMetres": 171,
+      "streetMetres": 397
+    },
+    "streets/sycamore-garden-milton/20260915/day.mp4": {
+      "durationS": 27,
+      "coverageFrom": "Balsam Court",
+      "coverageTo": "Cherry Court",
+      "capturedMetres": 302,
+      "streetMetres": 612
+    },
     "streets/tasker-court-milton/20260830/day.mp4": {
       "durationS": 22,
       "coverageFrom": "Bronte Street",
@@ -324,12 +576,40 @@
       "capturedMetres": 140,
       "streetMetres": 140
     },
+    "streets/trudeau-drive-milton/20260920/day.mp4": {
+      "durationS": 59,
+      "coverageFrom": null,
+      "coverageTo": "Elsworthy Crossing",
+      "capturedMetres": 561,
+      "streetMetres": 3542
+    },
+    "streets/vickerman-way-milton/20260914/day.mp4": {
+      "durationS": 37,
+      "coverageFrom": "Louis St Laurent Avenue",
+      "coverageTo": "Hepburn Road",
+      "capturedMetres": 381,
+      "streetMetres": 607
+    },
     "streets/whitlock-avenue-milton/20260830/day.mp4": {
       "durationS": 24,
       "coverageFrom": "Mulroney Heights",
       "coverageTo": "Bronte Street",
       "capturedMetres": 190,
       "streetMetres": 4230
+    },
+    "streets/woodward-avenue-milton/20260920/day.mp4": {
+      "durationS": 38,
+      "coverageFrom": "Maple Avenue",
+      "coverageTo": "Matheson Gate",
+      "capturedMetres": 381,
+      "streetMetres": 2975
+    },
+    "streets/yates-drive-milton/20260914/day.mp4": {
+      "durationS": 49,
+      "coverageFrom": null,
+      "coverageTo": "Bennett Boulevard",
+      "capturedMetres": 462,
+      "streetMetres": 2751
     }
   }
 }
