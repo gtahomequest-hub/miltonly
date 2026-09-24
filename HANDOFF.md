@@ -2,9 +2,45 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-22 (MC-040, the ignore rule in a file): `main` is `bfc389b` plus this docs commit, production serves `bfc389b`. `vercel.json` now says `"ignoreCommand": "bash scripts/vercel-ignore.sh"`; the rule reads, runs by hand and is tested (`scripts/test-vercel-ignore.ts`, 12 assertions, in the prebuild chain), and an audit-only push no longer builds production. MC-039 before it merged the MA-008 addendum ($300 cap, the recent-rate projection, the whole street backlog), live for the 06:00 run. Open for Aamir: the Archive Data question to PropTx, `REPORT_EMAIL_TO`, the build-minute burn, the 32-street backlog. Record `scratchpad/reports/MC-040-ignore-rule-in-a-file.md`._
+_Last rewritten 2026-09-23 (MC-042, three street pages): `main` is `bfb6e74` (MC-041) plus this docs commit, production serves `bfb6e74`. Gowland Crescent, Ennisclare Drive and Jempson Path were generated ($0.0310, DeepSeek), published, passed 73 of 73 VOW assertions and the full battery, and then went back to draft, because a fabrication review found invented detail served on all three. Production is as it was before the task. Open for Aamir: republish the three as generated or fix the pipeline's qualitative grounding first; MC-041 has no report; the `/rentals` 404 links; the Archive Data question to PropTx; `REPORT_EMAIL_TO`; the build-minute burn. Record `scratchpad/mc042/MC-042-three-street-pages.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `bfb6e74` AND PRODUCTION SERVES `bfb6e74` (MC-041). MC-042 PUBLISHED THREE STREETS AND TOOK THEM BACK
+TO DRAFT; NET PRODUCTION CHANGE NONE.**
+- **What ran:** `gowland-crescent-milton` through `regen-058-local.ts` (an April draft row already
+  existed), `ennisclare-drive-milton` and `jempson-path-milton` through `create-street-pages-local.ts`.
+  Each has its own order file and log under `scratchpad/mc042/`, DeepSeek only, fallback off, a cap.
+  Registry and Town geometry were real for all three.
+- **Cost $0.0310.** Gowland failed closed once ($0.0121) and passed on the second run.
+- **While published:** 73 of 73 production assertions passed (`scratchpad/mc042/assert-prod.mjs`: both
+  VOW sentences at both sites, the 24-month window, withheld addresses, the 100 cap). The battery read
+  `PASS · 24 checks · 722 pages · 482s`. The audit's own runner, uncapped, no longer found the three.
+- **Why they came down:** the fabrication review (`scratchpad/mc042/fabrication-review.md`) found 32
+  served claims with no ground in `inputJson`. Examples:
+  - Gowland in "west Milton"; it is east of downtown.
+  - Ennisclare "well north" of town; it is about 15 km west.
+  - Jempson's hero line says "townhouse rows and detached homes"; its own FAQ says townhouse only.
+  - Every page's FAQ says "established", with no build-era input.
+- **How they came down:** `scratchpad/mc042/unpublish.mjs`, the 058 convention (`draft`, `publishedAt`
+  null, `needsReview` true, `reviewNotes` says why), then purges. **To republish**, use the one UPDATE
+  in that script's header, then purge the seven paths. The prose is still in `StreetGeneration`.
+- **The mechanism, which probably reaches the other 719 pages (not measured):** validators ground
+  numbers, and `stripNumericParagraphs` cuts every numeric sentence at render. So the served profile is
+  the qualitative remainder, which nothing checks. The FAQ bank also asks "new construction or
+  established?" of every street.
+- **The street runners' `loadEnvLocal` cannot read `.env.local` any more.** CRLF lines fail its regex:
+  2 of 83 assignments parse, and the runner throws "DEEPSEEK_API_KEY unset". Run
+  `npx tsx --env-file=.env.local --tsconfig tsconfig.test.json <runner>` until the loaders are fixed.
+- **MC-041 (`bfb6e74`, clips at dated keys) is live but undocumented.** It has no report, no QUEUE mark
+  and no entry here. Its own prod battery log stops partway with no EXIT line. MC-042's two full
+  batteries on `bfb6e74` are the first complete ones.
+- **Found and not touched:**
+  - `/rentals` links to 29 malformed street slugs such as `/streets/costigan-road-103`, and all 29
+    return 404.
+  - The audit's D1: a finding whose target joins the sitemap is never re-checked, so it is carried on
+    every run (19 of the 47 are that). This one is Audit's to fix.
+Record: `scratchpad/mc042/MC-042-three-street-pages.md`.
 
 **MAIN IS `bfc389b` AND PRODUCTION SERVES `bfc389b`, MC-040 LIVE, ON NODE 22.** The ignore rule is
 out of `vercel.json` and into **`scripts/vercel-ignore.sh`**; `vercel.json` carries
@@ -632,16 +668,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`bfc389b`** (MC-040, the ignore rule in a file, on MC-039 `c1565b7` and MC-038) plus this docs commit; production serves `bfc389b` |
-| battery on production | **`PASS · 24 checks · 708 pages · 525s`** at `31da4b9`, 2026-09-22; `c1565b7` and `bfc389b` change no app code |
+| `main` | **`bfb6e74`** (MC-041, clips at dated keys, on MC-040 `bfc389b`) plus MC-042's docs commit; production serves `bfb6e74` |
+| battery on production | **`PASS · 24 checks · 722 pages · 482s`** at `bfb6e74`, 2026-09-23, with MC-042's three streets published; **`PASS · 24 checks · 719 pages · 830s`** after they went back to draft (the served state) |
 | `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
 | held for the next batch | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
-| creation programme | **running**, cap 20 per UTC day, DeepSeek first |
+| creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit, morning report | nightly **live** 03:00 Toronto; morning report **live** 06:00 Toronto, first scheduled run 2026-09-22 (`f50bfba`), first on the addendum due 2026-09-23 |
-| open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
+| open tasks | **MC-042's decision** (republish the three, or ground the qualitative prose first); MC-041's docs; the `/rentals` 404 links; the runners' CRLF env loader; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -1010,7 +1046,12 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Held: nothing. Open from MC-036 to MC-039: the Archive Data question to PropTx (the
+Whatever Aamir names. Held: nothing. **First, MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
+for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
+established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say
+whether the corpus carries the same claims. Also open: MC-041's report, the 29 `/rentals` links that 404, the
+street runners' CRLF `loadEnvLocal`, and D1 to Audit. Open from MC-036 to MC-039: the Archive Data question to PropTx (the
 24-month cut is the reversible default, `VOW_DISPLAY_MONTHS`); PropTx's copyright text; the ToU clauses (v) and
 (viii); the `/privacy` PropTx line; inactivity timeout and audit trail; the legacy days-on-market FAQ line on 19
 rows; `REPORT_EMAIL_TO`; the build-minute burn the morning report names; the 32-street backlog the morning

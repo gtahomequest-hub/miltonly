@@ -1,0 +1,51 @@
+[regen-local] primaries {"AI_PROVIDER_MARKET":"","AI_PROVIDER_AHA":"","AI_PROVIDER_EVAL":""} -> all deepseek; fallback disabled
+[regen-local] 1 in set, 4 already done, 1 to run
+[Phase41] gowland-crescent-milton TIER 2 (thin-data): totalListings=7 (active=1 sold=3 leased=3) — market prompt prepended with no-numerics instruction
+[Phase41/market] gowland-crescent-milton attempt 1: 1 violation (superlative@market) | tokens 10359in/476out | $0.00158
+[Phase41/market] gowland-crescent-milton retry-feedback for attempt 2 (306 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- superlative in section "market": ...t this quiet, suitability is a question best answered by the homes themselves and th...
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/aha] gowland-crescent-milton attempt 1: 0 violations (clean) | tokens 5960in/559out | $0.00099
+[Phase41/eval] gowland-crescent-milton attempt 1: 1 violation (zero_price_faq_question) | tokens 9132in/1128out | $0.00159
+[Phase41/eval] gowland-crescent-milton retry-feedback for attempt 2 (491 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- zero_price_faq_question: FAQ asks "How many homes on Gowland Crescent were leased in the last year?", which is withdrawn from the bank for this street: it needs a figure this input does not carry - either this street's own price, or enough priced comparators to answer it. Do not ask it and do not reword it.
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/market] gowland-crescent-milton attempt 2: invalid_json_shape ({"sections":[{"id":"market","heading":"Trade patterns","paragraphs":["Gowland Cr) | tokens 10433in/302out | $0.00155 — RETRY
+[Phase41/market] gowland-crescent-milton retry-feedback for attempt 3 (283 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: {"sections":[{"id":"market","heading":"Trade patterns","paragraphs":["Gowland Cr
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/market] gowland-crescent-milton attempt 3: 1 violation (numeric_ungrounded@market) | tokens 10435in/504out | $0.00160
+[Phase41/market] gowland-crescent-milton retry-feedback for attempt 4 (357 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- numeric_ungrounded in section "market": "89 days" (days) — DOM 89 ≠ input 0 (tolerance ±5); ctx: omes have been clearing in roughly 89 days, and sold-to-ask sits just under p
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/eval] gowland-crescent-milton attempt 2: 0 violations (clean) | tokens 9253in/1135out | $0.00161
+[Phase41/market] gowland-crescent-milton attempt 4: 1 violation (invalid_json_shape) | tokens 10461in/291out | $0.00155
+[Phase41/market] gowland-crescent-milton retry-feedback for attempt 5 (234 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: sections length = 1, expected 2
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/market] gowland-crescent-milton attempt 5: 1 violation (superlative@market) | tokens 10422in/484out | $0.00159
+[  1/1] FAIL gowland-crescent-milton              att=- $0.01210 judge=n/a draft 18s  threw:Phase41GenerationError
+
+[regen-local] complete. passed 0, failed 1, deepseek cost $0.0121
+[regen-local] revalidate /streets -> 200
+EXIT 0
