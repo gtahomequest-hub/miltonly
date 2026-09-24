@@ -1,0 +1,48 @@
+{
+ "hub": {
+  "labelled": 148,
+  "precision": 1,
+  "ci": [
+   0.975,
+   1
+  ],
+  "aboutSubject": 0.98,
+  "confirmedPages": 17,
+  "confirmedPagesAboutSubject": 17,
+  "heroPagesAboutSubject": 16
+ },
+ "condo": {
+  "labelled": 79,
+  "precision": 0.899,
+  "ci": [
+   0.813,
+   0.948
+  ],
+  "aboutSubject": 0.886,
+  "confirmedPages": 40,
+  "confirmedPagesAboutSubject": 40,
+  "heroPagesAboutSubject": 18
+ },
+ "hubWrong": [
+  {
+   "i": 0,
+   "refuted": false,
+   "reason": "The parser read wid 0 correctly. The served sentence on the Dempsey hub is: \"Its position within Milton places it close to the town's core, which shapes daily l"
+  },
+  {
+   "i": 0,
+   "refuted": false,
+   "reason": "The reading holds. Entry wid 0 (slug \"dempsey\") is a sentence served on the Dempsey hub page: \"Its position within Milton places it close to the town's core, wh"
+  },
+  {
+   "i": 1,
+   "refuted": false,
+   "reason": "The parser read the sentence correctly. Wid 1 (harrison) says \"Within Milton's broader geography, Harrison sits as a central, well-connected pocket, neither on "
+  },
+  {
+   "i": 1,
+   "refuted": false,
+   "reason": "The parser read wid 1 correctly. The sentence is \"Within Milton's broader geography, Harrison sits as a central, well-connected pocket, neither on the outer gro"
+  }
+ ]
+}

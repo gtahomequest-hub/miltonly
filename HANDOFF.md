@@ -2,9 +2,36 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-24 (MC-043, MA-010's compliance fixes): `main` is `5f8cdb0` plus this docs commit, production serves `5f8cdb0` (`miltonly-6rj2rcp7y`), battery `PASS · 24 checks · 719 pages · 531s`. The /about captions are two cards, the "only" claim is gone from its three sources, the registered brokerage name renders in full everywhere the brokerage names itself, the hidden homepage FAQPage is removed, and MA-010 is merged by SHA (`794ef5a` as `60295f2`). Open for Aamir: the award list outside /about, MC-042's republish decision, MC-041's report, the `/rentals` 404 links, the Archive Data question to PropTx, `REPORT_EMAIL_TO`. Record `scratchpad/mc043/MC-043-ma010-compliance-fixes.md`._
+_Last rewritten 2026-09-24 (MC-045, measuring the fabrication): `main` is `be6c5bc` plus this docs commit, production serves `5f8cdb0`, unchanged. Measured on the served HTML of all 719 street pages: build-era claims on 521 of 707 pages with generated text (1,173 sentences, precision 89.9%, recall 84.1%), compass claims plainly WRONG on 56 pages, self-contradictions on 38 (a floor); 543 pages carry at least one and hold 63% of street clicks. Hubs (17 of 22) and condos (40 of 56) share it. Held for the next batch: `fix/env-loader-crlf @ 4cf16e4`. Open for Aamir: the response to the measurement, and rotating the GSC service-account key. Record `scratchpad/mc045/MC-045-fabrication-measure.md`._
 
 ## READ THIS FIRST
+
+**MC-045 MEASURED THE FABRICATION ON THE 719 SERVED STREET PAGES. NOTHING WAS CHANGED; PRODUCTION SERVES `5f8cdb0`.**
+- **Numbers** (method and every flagged sentence in `scratchpad/mc045/`):
+  - Build-era claims on 521 of the 707 pages with generated text, 1,173 sentences (precision 89.9%, recall 84.1%).
+    The FAQ question "new construction or established?" is served on 179 pages and answers "established" on 168.
+  - Compass/position claims WRONG on 56 pages (60 claims), all vertices at least 700 m on the wrong side in both the
+    true and the Town-grid frame, each reading confirmed by two skeptics. MISPLACED on 107 more.
+  - Self-contradictions on 38 pages, mostly FAQ answers against the page's own tiles; 38 is a floor.
+  - 543 pages carry at least one class: 64 of 101 street clicks and 3,872 of 5,796 impressions over 28 days.
+  - Hubs (17 of 22) and condos (40 of 56) share the defect. Neither strips at render, and their prompts ask for era
+    and position framing.
+- **Why:** the validators ground numbers only; `stripNumericParagraphs` then serves the qualitative remainder; the
+  prompts seed era framing (`01-system-prompt.md:136`, `03-evaluative-prompt.md:147-150`); and the FAQ bank's
+  build-era question (`validateStreetGeneration.ts:2409`) is never withdrawn.
+- **The reproducible method** is `scratchpad/mc045/method/`: crawl, extract, units, class1, class2-candidates/verdict,
+  class3, the review processors, gsc28, summarize. The agent review outputs it consumed are summarised in
+  `scratchpad/mc045/out/review-round*.json`.
+- **Held for the next batch: `fix/env-loader-crlf @ 4cf16e4`** (preview `miltonly-iay9zu9eo` READY, prebuild PASS on Vercel).
+  - The CRLF `loadEnvLocal` regex is fixed in 59 tracked scripts: 2 of 83 assignments become 83 of 83.
+  - `scripts/test-env-loaders-crlf.ts` is added to prebuild.
+  - MC-040's `test-vercel-ignore.ts` no longer inherits the build's branch ref. Without that fix, **every preview from a
+    branch carrying it fails prebuild**, so merge this before the next worktree preview. Until it merges, run the
+    runners with `npx tsx --env-file=.env.local`.
+  - Record: `scratchpad/mc045/MC-045-env-loader-fix.md`.
+- **Rotate the GSC service-account key** (`ih-gsc-reader@homesly-490018`). A mis-branched check in this session printed
+  it into the transcript; it is in no file or commit.
+Record: `scratchpad/mc045/MC-045-fabrication-measure.md`.
 
 **MAIN IS `5f8cdb0` AND PRODUCTION SERVES `5f8cdb0` (MC-043 plus MA-010, one build, `miltonly-6rj2rcp7y`).**
 - **Gates, in order:**
@@ -706,13 +733,13 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 | `main` | **`5f8cdb0`** (MC-043 on the MA-010 merge `60295f2`) plus MC-043's docs commit; production serves `5f8cdb0` (`miltonly-6rj2rcp7y`) |
 | battery on production | **`PASS · 24 checks · 719 pages · 531s`** at `5f8cdb0`, 2026-09-24 (preview `miltonly-1bax8jetq` 650s, local 495s) |
 | `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
-| held for the next batch | nothing |
+| held for the next batch | **`fix/env-loader-crlf @ 4cf16e4`** (MC-045: the CRLF env loaders, and the ignore test's branch leak that fails every branch preview); preview `miltonly-iay9zu9eo` READY |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit, morning report | nightly **live** 03:00 Toronto; morning report **live** 06:00 Toronto, first scheduled run 2026-09-22 (`f50bfba`), first on the addendum due 2026-09-23 |
-| open tasks | **the award list outside /about** (MC-043); **MC-042's decision** (republish the three, or ground the qualitative prose first); MC-041's docs; JSON-LD catchment and "only" rules for Audit; the `/rentals` 404 links; the runners' CRLF env loader; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
+| open tasks | **MC-045: the response to the fabrication measurement** (521 build-era pages, 56 wrong-compass, 38 self-contradicting; hubs and condos too); rotate the GSC key; **the award list outside /about** (MC-043); **MC-042's decision** (republish the three, or ground the qualitative prose first); MC-041's docs; JSON-LD catchment and "only" rules for Audit; the `/rentals` 404 links; the runners' CRLF env loader; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -1081,7 +1108,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Held: nothing. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Held: `fix/env-loader-crlf @ 4cf16e4`; merge it before any worktree preview. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say

@@ -1,0 +1,49 @@
+{
+ "pagesPublished": 56,
+ "pagesWithGeneratedText": 56,
+ "pages": 44,
+ "byTemplate": {
+  "condo": 44
+ },
+ "sentences": 79,
+ "faqSentences": 14,
+ "faqShareOfSentences": 0.177,
+ "pagesWhereFaqIsTheOnlyCarrier": 1,
+ "pagesWithClaimInHeroOrLd": 18,
+ "pagesWithClaimInsideMeta": 0,
+ "hiddenOnlyPages": 0,
+ "sentencesAboutElsewhere": 4,
+ "bySurface": {
+  "hero": 18,
+  "profile": 65,
+  "faq": 14
+ },
+ "byTerm": {
+  "I1 established": 41,
+  "I7b older-comma": 1,
+  "I10 settled-history": 15,
+  "I3 newer": 9,
+  "I2 mature": 3,
+  "I7 older": 3,
+  "I11 growth-history": 4,
+  "I4 new-build": 1,
+  "I8 historic/original": 8,
+  "I9 age words": 2,
+  "I12 stock-age": 1,
+  "I13 infill/builder-history": 2
+ },
+ "buckets": {
+  "1L": 0,
+  "1G": 0,
+  "excluded": 6
+ },
+ "exclusionsApplied": {
+  "X5": 6
+ },
+ "buildEraFaq": {
+  "served": 0,
+  "kinds": {},
+  "pagesAssertingEstablished": 0
+ },
+ "repeated": []
+}
