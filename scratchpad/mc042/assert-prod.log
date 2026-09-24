@@ -1,0 +1,92 @@
+MC-042 prod assertions · https://miltonly.com · 2026-09-23T21:12:26.772Z
+VOW_DISPLAY_MONTHS = 24 (src/lib/vowWindow.ts), battery mirror 24; cutoff 2024-09-23
+   PASS  the display window is 24 months in the app and in the battery
+served bfb6e74b0105b2c4bdf2830af8884588d3161b17 built 2026-09-23T19:47:39.814Z
+sitemap: 1346 URLs, 722 streets
+signed-in session: valid (cached battery cookie)
+
+── /streets/gowland-crescent-milton
+   PASS  status 200 · 200, x-vercel-cache HIT
+   PASS  StreetContent published, needsReview false · published · needsReview false · standard · publishedAt 2026-09-23 20:53Z
+   PASS  StreetGeneration succeeded · succeeded
+   PASS  on the sitemap
+   PASS  robots index, follow
+   PASS  self canonical
+   PASS  h1 carries the registry name · "Gowland Crescent"
+   PASS  the written profile renders (no placeholder)
+   PASS  every rendered profile sentence is a stored generated sentence of its section · 9 rendered of 57 stored (48 cut at render by stripNumericParagraphs) in 3 sections
+   PASS  bona fide notice AND the PropTx reliability sentence in the page text · bona fide ×2, PropTx ×2
+   PASS  both sentences at both sites: the sold-records island and the footer · island true, footer true
+   PASS  logged out, the sold table renders no rows (no individual sold record unauthenticated)
+   PASS  every machine date on the page is on or after 2024-09-23 · 2026-09-14, 2026-09-23
+   PASS  no month-year in the page text before the window · September 2026
+   info  four-digit years in the page text: 2026
+   info  DB2 slugs gowland-crescent-milton · resales in 12 months 3, in 24 months 7
+   PASS  the "~2 years" typical counts exactly the 24-month window and clears k5 · page 7 · DB2 7
+   PASS  no out-of-window record (older than 2024-09-23) on the page by MLS number or date · 1 such rows on record: 2024-08-01 For Lease
+   PASS  no withheld row is linked, carded or placed on the ladder · withheld on record: DB1 0, DB2 0
+   PASS  no /listings/ link anywhere on the page points at a withheld listing · 13 listing links checked
+   PASS  inventory cards at or under 100 · 1
+   PASS  signed in, the sold records are served (canSee true)
+   PASS  signed in, every record is inside the window · 2 records: 2026-09-01, 2026-07-02
+   PASS  signed in, the record list is at or under 100 · 2
+   PASS  signed in, a withheld record reads "Address on request" · 0 withheld among 2
+   PASS  logged out, the record API serves no records
+
+── /streets/ennisclare-drive-milton
+   PASS  status 200 · 200, x-vercel-cache HIT
+   PASS  StreetContent published, needsReview false · published · needsReview false · standard · publishedAt 2026-09-23 20:52Z
+   PASS  StreetGeneration succeeded · succeeded
+   PASS  on the sitemap
+   PASS  robots index, follow
+   PASS  self canonical
+   PASS  h1 carries the registry name · "Ennisclare Drive"
+   PASS  the written profile renders (no placeholder)
+   PASS  every rendered profile sentence is a stored generated sentence of its section · 15 rendered of 51 stored (36 cut at render by stripNumericParagraphs) in 4 sections
+   PASS  bona fide notice AND the PropTx reliability sentence in the page text · bona fide ×2, PropTx ×2
+   PASS  both sentences at both sites: the sold-records island and the footer · island true, footer true
+   PASS  logged out, the sold table renders no rows (no individual sold record unauthenticated)
+   PASS  every machine date on the page is on or after 2024-09-23 · 2026-09-14, 2026-09-23
+   PASS  no month-year in the page text before the window · September 2026
+   info  four-digit years in the page text: 2026
+   info  DB2 slugs ennisclare-drive-milton · resales in 12 months 1, in 24 months 2
+   PASS  no "~2 years" typical: correctly absent (12-month count clears k5, or the 24-month count is under k5) · 12mo 1, 24mo 2
+   PASS  no out-of-window record (older than 2024-09-23) on the page by MLS number or date · 0 such rows on record
+   PASS  no withheld row is linked, carded or placed on the ladder · withheld on record: DB1 0, DB2 0
+   PASS  no /listings/ link anywhere on the page points at a withheld listing · 13 listing links checked
+   PASS  inventory cards at or under 100 · 1
+   PASS  signed in, the sold records are served (canSee true)
+   PASS  signed in, every record is inside the window · 1 records: 2026-09-01
+   PASS  signed in, the record list is at or under 100 · 1
+   PASS  signed in, a withheld record reads "Address on request" · 0 withheld among 1
+   PASS  logged out, the record API serves no records
+
+── /streets/jempson-path-milton
+   PASS  status 200 · 200, x-vercel-cache HIT
+   PASS  StreetContent published, needsReview false · published · needsReview false · standard · publishedAt 2026-09-23 20:52Z
+   PASS  StreetGeneration succeeded · succeeded
+   PASS  on the sitemap
+   PASS  robots index, follow
+   PASS  self canonical
+   PASS  h1 carries the registry name · "Jempson Path"
+   PASS  the written profile renders (no placeholder)
+   PASS  every rendered profile sentence is a stored generated sentence of its section · 11 rendered of 45 stored (34 cut at render by stripNumericParagraphs) in 4 sections
+   PASS  bona fide notice AND the PropTx reliability sentence in the page text · bona fide ×2, PropTx ×2
+   PASS  both sentences at both sites: the sold-records island and the footer · island true, footer true
+   PASS  logged out, the sold table renders no rows (no individual sold record unauthenticated)
+   PASS  every machine date on the page is on or after 2024-09-23 · 2026-09-14, 2026-09-23
+   PASS  no month-year in the page text before the window · September 2026
+   info  four-digit years in the page text: 2026
+   info  DB2 slugs jempson-path-milton · resales in 12 months 1, in 24 months 3
+   PASS  no "~2 years" typical: correctly absent (12-month count clears k5, or the 24-month count is under k5) · 12mo 1, 24mo 3
+   PASS  no out-of-window record (older than 2024-09-23) on the page by MLS number or date · 1 such rows on record: 2024-08-23 For Sale
+   PASS  no withheld row is linked, carded or placed on the ladder · withheld on record: DB1 0, DB2 0
+   PASS  no /listings/ link anywhere on the page points at a withheld listing · 13 listing links checked
+   PASS  inventory cards at or under 100 · 1
+   PASS  signed in, the sold records are served (canSee true)
+   PASS  signed in, every record is inside the window · 1 records: 2026-09-08
+   PASS  signed in, the record list is at or under 100 · 1
+   PASS  signed in, a withheld record reads "Address on request" · 0 withheld among 1
+   PASS  logged out, the record API serves no records
+
+PASS · 0 failing assertion(s)

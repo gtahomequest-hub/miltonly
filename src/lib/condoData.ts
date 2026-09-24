@@ -11,6 +11,7 @@ import { compactPrice } from "@/components/condo/format";
 import type { CondoData, CondoListing, CondoNearby } from "@/components/condo/types";
 import { resolveCondoName, condoDisplayName } from "@/lib/condoName";
 import type { CondoSection } from "@/types/hub-generator";
+import { PUBLIC_LISTING_WHERE } from "@/lib/listings/vow";
 
 function hoodSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
@@ -95,11 +96,16 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
   const liveRows =
     building.streetNumber && building.streetSlug
       ? await prisma.listing.findMany({
+          // MC-029: the public predicate, both sides (an available lease is status='rented',
+          // leaseStatus='active'; `status: "active"` alone never matched a lease unit).
+          // MC-036: displayAddress too. A unit listed under the building's street number and
+          // name, with a link to its page, is placed at its address; a withheld one may not
+          // be. This list is not a count; the building's figures come from statsJson.
           where: {
+            ...PUBLIC_LISTING_WHERE,
+            displayAddress: true,
             streetSlug: building.streetSlug,
             propertyType: "condo",
-            status: "active",
-            permAdvertise: true,
             address: { startsWith: `${building.streetNumber} ` },
           },
           orderBy: { listedAt: "desc" },
@@ -113,6 +119,7 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
       title: `${l.bedrooms} bed${sqft ? ` · ${sqft}` : ""}`,
       meta: [`${l.bedrooms} bed`, `${l.bathrooms} bath`, sqft].filter(Boolean).join(" · "),
       price: lease ? `$${l.price.toLocaleString("en-CA")}/mo` : `$${l.price.toLocaleString("en-CA")}`,
+      listOfficeName: l.listOfficeName,
       tenure: lease ? "lease" : "sale",
       href: `/listings/${l.mlsNumber}`,
     };

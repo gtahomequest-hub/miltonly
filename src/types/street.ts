@@ -319,19 +319,24 @@ export interface CommuteGridProps {
 
 export interface ActiveListingCard {
   mlsNumber: string;
+  /** the feed's address, or "Address on request" where InternetAddressDisplayYN is N (MC-036) */
   address: string;
   price: number;
   bedrooms: number;
   bathrooms: number;
   parking: number;
   propertyType: string;
-  daysOnMarket: number | null;
+  /** the listing brokerage, rendered inside the price at its size (TRREB item 27, MC-029) */
+  listOfficeName: string | null;
+  // No daysOnMarket (MC-029): a day count on a card is a VOW-only fact, src/lib/listings/vow.ts.
   photo?: string;
   href: string;
 }
 
 export interface ActiveInventoryProps {
   listings: ActiveListingCard[];
+  /** every active listing on the street, withheld addresses included; the cards omit those */
+  total: number;
   streetName: string;
   streetShort: string;
 }

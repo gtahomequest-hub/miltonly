@@ -1,0 +1,2785 @@
+{
+ "summary": {
+  "mode": "light",
+  "at": "2026-09-24T01:00:19.013Z",
+  "seconds": 53,
+  "fetches": 272,
+  "sitemapUrls": 1343,
+  "referrersSwept": 61,
+  "discoveredOffSitemap": 164,
+  "checked": 175,
+  "focus": {
+   "/streets/gowland-crescent-milton": {
+    "onSitemap": false,
+    "linkedFromSweptReferrers": [
+     "/listings/W13800198",
+     "/schools/sam-sherratt-ps",
+     "/schools/wi-dick-middle-school",
+     "/schools/ew-foster-ps",
+     "/streets"
+    ],
+    "check": {
+     "onSitemap": false,
+     "discovered": true,
+     "refs": 5,
+     "from": [
+      "/listings/W13800198",
+      "/schools/sam-sherratt-ps",
+      "/schools/wi-dick-middle-school",
+      "/schools/ew-foster-ps",
+      "/streets"
+     ],
+     "status": 200,
+     "finding": {
+      "code": "link-unpublished",
+      "sev": 3,
+      "detail": "200, renders but is not on the sitemap"
+     }
+    }
+   },
+   "/streets/ennisclare-drive-milton": {
+    "onSitemap": false,
+    "linkedFromSweptReferrers": [
+     "/listings/W13698120",
+     "/streets"
+    ],
+    "check": {
+     "onSitemap": false,
+     "discovered": true,
+     "refs": 2,
+     "from": [
+      "/listings/W13698120",
+      "/streets"
+     ],
+     "status": 200,
+     "finding": {
+      "code": "link-unpublished",
+      "sev": 3,
+      "detail": "200, renders but is not on the sitemap"
+     }
+    }
+   },
+   "/streets/jempson-path-milton": {
+    "onSitemap": false,
+    "linkedFromSweptReferrers": [
+     "/listings/W13806408",
+     "/streets"
+    ],
+    "check": {
+     "onSitemap": false,
+     "discovered": true,
+     "refs": 2,
+     "from": [
+      "/listings/W13806408",
+      "/streets"
+     ],
+     "status": 200,
+     "finding": {
+      "code": "link-unpublished",
+      "sev": 3,
+      "detail": "200, renders but is not on the sitemap"
+     }
+    }
+   }
+  },
+  "priorOpenLinkUnpublished": 47,
+  "priorOpenNowOnSitemap": [
+   "/streets/15-side-road-milton",
+   "/streets/20-side-road-milton",
+   "/streets/30-side-road-milton",
+   "/streets/5-side-road-milton",
+   "/streets/banks-crescent-milton",
+   "/streets/bronson-terrace-milton",
+   "/streets/bundy-drive-milton",
+   "/streets/burrows-gate-milton",
+   "/streets/casson-point-milton",
+   "/streets/copeland-circle-milton",
+   "/streets/dolby-crescent-milton",
+   "/streets/fifth-line-milton",
+   "/streets/hearns-place-milton",
+   "/streets/holmes-crescent-milton",
+   "/streets/livingston-road-milton",
+   "/streets/mccandless-court-milton",
+   "/streets/mortimer-crescent-milton",
+   "/streets/mowat-lane-milton",
+   "/streets/thames-circle-milton"
+  ],
+  "linkUnpublishedNow": 119,
+  "linkUnpublishedNowTargets": [
+   "/streets/15-side-road-side-road-milton",
+   "/streets/15th-side-road-milton",
+   "/streets/2-side-road-milton",
+   "/streets/2nd-line-milton",
+   "/streets/3rd-side-road-milton",
+   "/streets/5th-line-nassagaweya-n-a-milton",
+   "/streets/6th-nassagaweya-line-milton",
+   "/streets/allan-crescent-milton",
+   "/streets/allport-gate-milton",
+   "/streets/apple-basement-terrace-milton",
+   "/streets/barnard-drive-milton",
+   "/streets/bartleman-terrace-n-a-milton",
+   "/streets/bell-school-line-milton",
+   "/streets/bessy-trail-bsmt-trail-milton",
+   "/streets/best-road-milton",
+   "/streets/biason-circle-milton",
+   "/streets/bronte-upper-only-street-milton",
+   "/streets/cactus-point-milton",
+   "/streets/canyon-road-milton",
+   "/streets/casarin-crescent-milton",
+   "/streets/cherry-court-milton",
+   "/streets/clarriage-court-milton",
+   "/streets/clarriagea-court-milton",
+   "/streets/con-5-pt-lot-17-milton",
+   "/streets/crewsons-line-milton",
+   "/streets/denison-place-milton",
+   "/streets/derry-road-n-a-milton",
+   "/streets/dias-landing-milton",
+   "/streets/downes-jackson-bsmnt-heights-milton",
+   "/streets/dredge-court-milton",
+   "/streets/dregde-court-milton",
+   "/streets/duignan-lower-crescent-milton",
+   "/streets/eager-road-milton",
+   "/streets/easterbrook-crescent-milton",
+   "/streets/ennisclare-drive-milton",
+   "/streets/evans-terrace-milton",
+   "/streets/farmstead-bsmt-drive-milton",
+   "/streets/fifth-line-nassagaweya-n-a-milton",
+   "/streets/fourth-line-n-a-milton",
+   "/streets/gazley-circle-milton",
+   "/streets/george-street-milton",
+   "/streets/gordon-krantz-boulevard-milton",
+   "/streets/gordon-krantz-n-a-milton",
+   "/streets/gordon-krantz-unit-102-avenue-milton",
+   "/streets/gowland-crescent-milton",
+   "/streets/grenke-place-milton",
+   "/streets/heslop-street-milton",
+   "/streets/hinton-lower-terrace-milton",
+   "/streets/hollinger-acres-milton",
+   "/streets/jasper-street-milton",
+   "/streets/jean-landing-n-a-milton",
+   "/streets/jean-landing-street-milton",
+   "/streets/jempson-path-milton",
+   "/streets/job-crescent-milton",
+   "/streets/juneberry-court-milton",
+   "/streets/kelman-court-milton",
+   "/streets/kincardine-terrace-milton",
+   "/streets/laking-terrace-n-a-milton",
+   "/streets/leblanc-court-milton",
+   "/streets/lerchie-way-milton",
+   "/streets/lower-base-line-n-a-milton",
+   "/streets/macarthur-drive-milton",
+   "/streets/macdonald-crescent-milton",
+   "/streets/mary-street-milton",
+   "/streets/mccandles-court-milton",
+   "/streets/mcdougall-cross-n-a-milton",
+   "/streets/mcdougall-crossing-crescent-milton",
+   "/streets/mcdougall-crossing-n-a-milton",
+   "/streets/mcdowell-crescent-milton",
+   "/streets/mckay-crescent-milton",
+   "/streets/mcniven-road-milton",
+   "/streets/mctrach-crescent-milton",
+   "/streets/milburough-line-milton",
+   "/streets/mohawk-trail-milton",
+   "/streets/munch-place-milton",
+   "/streets/nadalin-heights-n-a-milton",
+   "/streets/nipising-road-milton",
+   "/streets/nipissing-street-milton",
+   "/streets/nippissing-road-milton",
+   "/streets/ontario-street-s-street-milton",
+   "/streets/peru-road-milton",
+   "/streets/rayner-court-milton",
+   "/streets/reginal-road-25-n-a-milton",
+   "/streets/regional-rd-25-n-a-milton",
+   "/streets/regional-rd-25-road-milton",
+   "/streets/regional-road-25-n-a-milton",
+   "/streets/regional-road-25-road-milton",
+   "/streets/regional-road-milton",
+   "/streets/robert-street-milton",
+   "/streets/rothbury-crescent-milton",
+   "/streets/second-line-nassagaweya-line-milton",
+   "/streets/second-line-nassagaweya-n-a-milton",
+   "/streets/sixth-line-nassagaweya-line-milton",
+   "/streets/sommerville-terrace-milton",
+   "/streets/steeles-avenue-milton",
+   "/streets/sumac-gardens-milton",
+   "/streets/symons-cross-n-a-milton",
+   "/streets/symons-crossing-mill-n-a-milton",
+   "/streets/tamarck-point-milton",
+   "/streets/tea-landing-n-a-milton",
+   "/streets/thornborrow-2-bed-walkout-bsmt-apt-court-milton",
+   "/streets/toletza-landing-milton",
+   "/streets/toletza-landing-n-a-milton",
+   "/streets/trudeau-basement-drive-milton",
+   "/streets/trudeau-upstairs-drive-milton",
+   "/streets/turner-drive-milton",
+   "/streets/turrell-crescent-milton",
+   "/streets/twenty-side-road-milton",
+   "/streets/tyrone-cres-n-a-milton",
+   "/streets/upper-whitney-terrace-milton",
+   "/streets/van-fleet-terr-n-a-milton",
+   "/streets/whaley-way-bsmt-way-milton",
+   "/streets/whewell-trail-milton",
+   "/streets/whithlock-avenue-milton",
+   "/streets/willett-terrace-milton",
+   "/streets/willow-basement-avenue-milton",
+   "/streets/wood-close-milton",
+   "/streets/wood-close-n-a-milton",
+   "/streets/wood-ward-avenue-milton"
+  ]
+ },
+ "results": {
+  "/streets/gowland-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 5,
+   "from": [
+    "/listings/W13800198",
+    "/schools/sam-sherratt-ps",
+    "/schools/wi-dick-middle-school",
+    "/schools/ew-foster-ps",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/listings/W13814890": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 60,
+   "from": [
+    "/listings/W13800198",
+    "/listings/W13804534",
+    "/listings/W13806174",
+    "/listings/W13679086",
+    "/listings/W13694998"
+   ],
+   "status": 200,
+   "finding": null
+  },
+  "/listings/W13815496": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 60,
+   "from": [
+    "/listings/W13800198",
+    "/listings/W13804534",
+    "/listings/W13806174",
+    "/listings/W13679086",
+    "/listings/W13694998"
+   ],
+   "status": 200,
+   "finding": null
+  },
+  "/listings/W13816970": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 60,
+   "from": [
+    "/listings/W13800198",
+    "/listings/W13804534",
+    "/listings/W13806174",
+    "/listings/W13679086",
+    "/listings/W13694998"
+   ],
+   "status": 200,
+   "finding": null
+  },
+  "/listings/W13815440": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 60,
+   "from": [
+    "/listings/W13800198",
+    "/listings/W13804534",
+    "/listings/W13806174",
+    "/listings/W13679086",
+    "/listings/W13694998"
+   ],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/rothbury-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 4,
+   "from": [
+    "/streets/zilio-terrace-milton",
+    "/streets/richardson-way-milton",
+    "/streets/farrell-court-milton",
+    "/streets/melville-bonus-crescent-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/denison-place-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 5,
+   "from": [
+    "/streets/zilio-terrace-milton",
+    "/streets",
+    "/streets/richardson-way-milton",
+    "/streets/farrell-court-milton",
+    "/streets/melville-bonus-crescent-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/dredge-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 4,
+   "from": [
+    "/listings/W13805370",
+    "/streets/santa-maria-boulevard-milton",
+    "/streets",
+    "/streets/rigo-crossing-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/con-5-pt-lot-17-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 7,
+   "from": [
+    "/streets/nassagaweya-esquesing-townline-milton",
+    "/streets/sixth-line-nassagaweya-milton",
+    "/streets/random-acres-road-milton",
+    "/streets/fifth-line-nassagaweya-milton",
+    "/streets/fourth-line-nassagaweya-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/canyon-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 3,
+   "from": [
+    "/streets",
+    "/streets/nassagaweya-puslinch-townline-milton",
+    "/streets/pine-view-trail-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/clarriage-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 3,
+   "from": [
+    "/streets",
+    "/listings/W13493382",
+    "/streets/lloyd-landing-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/bell-school-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 7,
+   "from": [
+    "/listings/W13679086",
+    "/streets/guelph-line-milton",
+    "/streets",
+    "/streets/30-side-road-milton",
+    "/streets/nassagaweya-puslinch-townline-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/leblanc-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 3,
+   "from": [
+    "/streets",
+    "/listings/W13780524",
+    "/streets/lloyd-landing-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/eager-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 3,
+   "from": [
+    "/listings/W13804534",
+    "/listings/W13806174",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/2nd-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 3,
+   "from": [
+    "/listings/W13810016",
+    "/listings/W13479372",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mcniven-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 3,
+   "from": [
+    "/streets",
+    "/streets/nassagaweya-puslinch-townline-milton",
+    "/streets/pine-view-trail-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/ennisclare-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13698120",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/15-side-road-side-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/listings/W13619144"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/jempson-path-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13806408",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/5th-line-nassagaweya-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/listings/W13783606"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/15th-side-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13688720",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/bartleman-terrace-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/listings/W13782940"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/casarin-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/listings/W13781824"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/3rd-side-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13719638",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/barnard-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13694998",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/4th-line-nassagaweya-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/fourth-line-nassagaweya-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/fourth-line-nassagaweya-milton"
+   }
+  },
+  "/streets/crewsons-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13678334",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/evans-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/streets/denyes-way-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/easterbrook-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/listings/W13659054"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/kelman-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13800618",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mckay-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/streets",
+    "/streets/french-garden-milton"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/allan-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/macarthur-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 2,
+   "from": [
+    "/listings/W13684984",
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/6th-nassagaweya-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/bessy-trail-bsmt-trail-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/2-side-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/apple-basement-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/1-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/first-line-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/first-line-milton"
+   }
+  },
+  "/streets/allport-gate-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/best-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/bessy-trail-trail-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/bessy-trail-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/bessy-trail-milton"
+   }
+  },
+  "/streets/biason-circle-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/bronte-upper-only-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/burgess-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/burgess-garden-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/burgess-garden-milton"
+   }
+  },
+  "/streets/clarriagea-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/cactus-point-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/centennial-forest-dr-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/centennial-forest-drive-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/centennial-forest-drive-milton"
+   }
+  },
+  "/streets/dalgleish-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/dalgleish-garden-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/dalgleish-garden-milton"
+   }
+  },
+  "/streets/derry-road-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/cherry-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/first-line-nassagaweya-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/first-line-nassagaweya-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/first-line-nassagaweya-milton"
+   }
+  },
+  "/streets/fourth-line-nassagaweya-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/fourth-line-nassagaweya-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/fourth-line-nassagaweya-milton"
+   }
+  },
+  "/streets/french-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/french-garden-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/french-garden-milton"
+   }
+  },
+  "/streets/derry-rd-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/derry-road-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/derry-road-milton"
+   }
+  },
+  "/streets/downes-jackson-bsmnt-heights-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/dias-landing-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/dregde-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/duignan-lower-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/farmstead-bsmt-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/fifth-line-nassagaweya-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/first-line-nassagaweya-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/first-line-nassagaweya-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/first-line-nassagaweya-milton"
+   }
+  },
+  "/streets/fourth-line-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/gazley-circle-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/hwy-7-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/highway-7-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/highway-7-milton"
+   }
+  },
+  "/streets/gordon-krantz-boulevard-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/gordon-krantz-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/george-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/gordon-krantz-unit-102-avenue-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/hinton-lower-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/heslop-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/grenke-place-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/huffman-cres-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/huffman-crescent-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/huffman-crescent-milton"
+   }
+  },
+  "/streets/hollinger-acres-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/lloyd-landing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/lloyd-landing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/lloyd-landing-milton"
+   }
+  },
+  "/streets/jean-landing-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/jean-landing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/jarrett-cross-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/jarrett-crossing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/jarrett-crossing-milton"
+   }
+  },
+  "/streets/jasper-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/lerchie-way-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/juneberry-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/laking-terrace-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/job-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/kincardine-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/lower-base-line-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/macdonald-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mccandles-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mcdougall-cross-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/mcdougall-crossing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/mcdougall-crossing-milton"
+   }
+  },
+  "/streets/mary-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mcdougall-cross-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mcdougall-crossing-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mcdougall-crossing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/nassagaweya-puslinch-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/nassagaweya-puslinch-townline-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/nassagaweya-puslinch-townline-milton"
+   }
+  },
+  "/streets/nipissing-rd-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/nipissing-road-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/nipissing-road-milton"
+   }
+  },
+  "/streets/mctrach-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/nippising-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/nipissing-road-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/nipissing-road-milton"
+   }
+  },
+  "/streets/mcdowell-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/milburough-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/mohawk-trail-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/miltonbrock-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/miltonbrook-crescent-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/miltonbrook-crescent-milton"
+   }
+  },
+  "/streets/pineview-trail-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/pine-view-trail-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/pine-view-trail-milton"
+   }
+  },
+  "/streets/nadalin-heights-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/munch-place-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/nipising-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/nipissing-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/nippissing-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/ontario-street-s-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/peru-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/redbud-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/redbud-garden-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/redbud-garden-milton"
+   }
+  },
+  "/streets/nipissing-rd-milton-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/nipissing-road-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/nipissing-road-milton"
+   }
+  },
+  "/streets/rigo-crossing-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/rigo-crossing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/rigo-crossing-milton"
+   }
+  },
+  "/streets/regional-rd-25-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/reginal-road-25-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/rayner-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/sixth-line-nassagaweya-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/sixth-line-nassagaweya-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/sixth-line-nassagaweya-milton"
+   }
+  },
+  "/streets/regional-road-25-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/regional-rd-25-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/regional-road-25-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/robert-street-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/regional-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/restivo-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/restivo-lane-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/restivo-lane-milton"
+   }
+  },
+  "/streets/sixth-line-nassagaweya-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/sommerville-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/tamarck-point-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/second-line-nassagaweya-line-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/second-line-nassagaweya-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/stagg-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/stagg-garden-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/stagg-garden-milton"
+   }
+  },
+  "/streets/sumac-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/sumac-garden-milton"
+   ],
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200 via 301 /streets/sumac-garden-milton, renders but is not on the sitemap"
+   }
+  },
+  "/streets/sycamore-gardens-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "301 /streets/sycamore-garden-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "301 /streets/sycamore-garden-milton"
+   }
+  },
+  "/streets/steeles-avenue-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/symons-cross-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/symons-crossing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/symons-crossing-milton"
+   }
+  },
+  "/streets/thornborrow-2-bed-walkout-bsmt-apt-court-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/symons-crossing-mill-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/toletza-landing-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/symons-cross-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/tea-landing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/toletza-landing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/trudeau-basement-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/trudeau-upstairs-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/turner-drive-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/twenty-side-road-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/turrell-crescent-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/tyrone-cres-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/upper-whitney-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/van-fleet-terr-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/watercres-way-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/watercress-way-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/watercress-way-milton"
+   }
+  },
+  "/streets/weller-cross-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/weller-crossing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/weller-crossing-milton"
+   }
+  },
+  "/streets/wood-close-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/wood-close-milton"
+   ],
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200 via 308 /streets/wood-close-milton, renders but is not on the sitemap"
+   }
+  },
+  "/streets/wetenhall-landing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/wetenhall-landing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/wetenhall-landing-milton"
+   }
+  },
+  "/streets/whaley-way-bsmt-way-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/willett-terrace-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/whithlock-avenue-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/whewell-trail-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/willow-basement-avenue-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/wood-close-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/wise-crossing-n-a-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "chain": [
+    "308 /streets/wise-crossing-milton"
+   ],
+   "finding": {
+    "code": "link-redirect",
+    "sev": 3,
+    "detail": "308 /streets/wise-crossing-milton"
+   }
+  },
+  "/streets/wood-ward-avenue-milton": {
+   "onSitemap": false,
+   "discovered": true,
+   "refs": 1,
+   "from": [
+    "/streets"
+   ],
+   "status": 200,
+   "finding": {
+    "code": "link-unpublished",
+    "sev": 3,
+    "detail": "200, renders but is not on the sitemap"
+   }
+  },
+  "/streets/banks-crescent-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/casson-point-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/15-side-road-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/5-side-road-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/30-side-road-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/copeland-circle-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/livingston-road-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/holmes-crescent-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/bronson-terrace-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/thames-circle-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/dolby-crescent-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/hearns-place-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/bundy-drive-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/fifth-line-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/20-side-road-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/burrows-gate-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/mccandless-court-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/mortimer-crescent-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  },
+  "/streets/mowat-lane-milton": {
+   "onSitemap": true,
+   "discovered": false,
+   "refs": 0,
+   "from": [],
+   "status": 200,
+   "finding": null
+  }
+ },
+ "refStatus": {
+  "/listings/W13800198": 200,
+  "/listings/W13804534": 200,
+  "/listings/W13806174": 200,
+  "/listings/W13679086": 200,
+  "/listings/W13694998": 200,
+  "/listings/W13688720": 200,
+  "/listings/W13719638": 200,
+  "/schools/sam-sherratt-ps": 200,
+  "/listings/W13805370": 200,
+  "/listings/W13678334": 200,
+  "/listings/W13698120": 200,
+  "/listings/W13800618": 200,
+  "/listings/W13684984": 200,
+  "/streets/guelph-line-milton": 200,
+  "/streets/zilio-terrace-milton": 200,
+  "/schools/wi-dick-middle-school": 200,
+  "/schools/ew-foster-ps": 200,
+  "/streets/santa-maria-boulevard-milton": 200,
+  "/listings/W13806408": 200,
+  "/listings/W13810016": 200,
+  "/listings/W13479372": 200,
+  "/streets": 200,
+  "/streets/nassagaweya-esquesing-townline-milton": 200,
+  "/listings/W13619144": 200,
+  "/listings/W13493382": 200,
+  "/streets/richardson-way-milton": 200,
+  "/streets/30-side-road-milton": 200,
+  "/streets/sixth-line-nassagaweya-milton": 200,
+  "/listings/W13783606": 200,
+  "/listings/W13780524": 200,
+  "/listings/W13659054": 200,
+  "/listings/W13782940": 200,
+  "/listings/W13781824": 200,
+  "/listings/W13784894": 200,
+  "/listings/W13802338": 200,
+  "/listings/W13708042": 200,
+  "/listings/W13697148": 200,
+  "/streets/nassagaweya-puslinch-townline-milton": 200,
+  "/streets/15-side-road-milton": 200,
+  "/streets/pine-view-trail-milton": 200,
+  "/listings/W13756642": 200,
+  "/listings/W13760256": 200,
+  "/listings/W13804176": 200,
+  "/listings/W13669028": 200,
+  "/streets/rigo-crossing-milton": 200,
+  "/streets/farrell-court-milton": 200,
+  "/listings/W13740758": 200,
+  "/listings/W13802104": 200,
+  "/listings/W13761182": 200,
+  "/streets/melville-bonus-crescent-milton": 200,
+  "/listings/W13744454": 200,
+  "/streets/random-acres-road-milton": 200,
+  "/listings/W13714824": 200,
+  "/streets/lloyd-landing-milton": 200,
+  "/streets/dewar-court-milton": 200,
+  "/streets/fifth-line-nassagaweya-milton": 200,
+  "/streets/fourth-line-nassagaweya-milton": 200,
+  "/streets/highway-7-milton": 200,
+  "/streets/donaldson-lane-milton": 200,
+  "/streets/french-garden-milton": 200,
+  "/streets/denyes-way-milton": 200
+ }
+}

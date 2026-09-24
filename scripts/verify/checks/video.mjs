@@ -94,7 +94,7 @@ export default {
     return { url: `/streets/${slug}`, slug, ...videoFacts(html) };
   },
 
-  async finish(rows, { base }) {
+  async finish(rows, { base, crawled, mode }) {
     const pages = rows.filter((r) => r.hasVideo);
     const clips = pages.flatMap((p) => p.clips.map((c) => ({ ...c, url: p.url })));
 
@@ -133,7 +133,9 @@ export default {
     const origin = [...listed.keys()][0] ? new URL([...listed.keys()][0]).origin : base;
     const pageSet = new Set(pages.map((p) => `${origin}${p.url}`));
     const notListed = pages.filter((p) => !listed.has(`${origin}${p.url}`));
-    const extraListed = [...listed.keys()].filter((loc) => !pageSet.has(loc));
+    // MC-035: in sample mode only the crawled pages can be checked against the video sitemap
+    const crawledLocs = mode === 'sample' && crawled ? new Set(crawled.map((s) => `${origin}/streets/${s}`)) : null;
+    const extraListed = [...listed.keys()].filter((loc) => !pageSet.has(loc) && (!crawledLocs || crawledLocs.has(loc)));
     const clipMismatch = pages.filter((p) => {
       const l = listed.get(`${origin}${p.url}`);
       if (!l) return false;

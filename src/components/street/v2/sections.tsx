@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { StreetSoldRecords } from './SoldRecordsIsland';
 import StreetAlertCTA from './StreetAlertCTA';
 import StreetCapture from './StreetCapture';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 
 /** Every link to /sell from a street page carries the street (MA-001 defect 4): the valuation
  *  form prefills its address from ?street=, and four of the five links dropped it. */
@@ -148,11 +149,13 @@ export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; sold
         )}
         {/* THE SOLD RECORD, SOLD FROM THE TOP (MA-001 change 5): the gate sat at screen 4 to 9
             with no mention above it. One line in the hero, anchored to the table, whenever the
-            page has a closed sale to show and a table to show it in. */}
+            page has a closed sale to show and a table to show it in. The count is the 12-month
+            figure; the table it lands on is the last 90 days, so the call to action promises
+            the recent ones and not every one (MC-036, item 10). */}
         {soldGateLine && (
           <a className="s-hero-gate" href="#sold-records">
-            <span className="s-hero-gate-n">{soldGateLine.count}</span> closed {soldGateLine.count === 1 ? 'sale' : 'sales'} in the last 12 months
-            <span className="s-hero-gate-cta">see every one, free →</span>
+            <span className="s-hero-gate-n">{soldGateLine.count}</span> closed {soldGateLine.count === 1 ? 'sale' : 'sales'} in the last 12 months.
+            <span className="s-hero-gate-cta">Sign in free for the recent ones →</span>
           </a>
         )}
         <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board&rsquo;s closed records; listings live.</p>
@@ -608,10 +611,14 @@ function ListingTile({ l, index }: { l: ListingCard; index: number }) {
             className="s-listing-img"
           />
         ) : null}
-        {l.daysOnMarket !== null && <span className="s-listing-dom">{l.daysOnMarket}d on market</span>}
       </div>
       <div className="s-listing-body">
-        <div className="s-listing-p">{shortPrice(l.price)}</div>
+        {/* The brokerage inside the price, at its size (TRREB item 27, MC-029). No day count on
+            a tile: it is a VOW-only fact (src/lib/listings/vow.ts). */}
+        <div className="s-listing-p" data-price>
+          {shortPrice(l.price)}
+          <ListingBrokerage name={l.listOfficeName} />
+        </div>
         <div className="s-listing-a">{l.address}</div>
         <div className="s-listing-m">
           <span>{l.bedrooms} bd</span>

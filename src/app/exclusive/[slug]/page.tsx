@@ -33,6 +33,11 @@ function formatBedsLong(bedsMin: number, bedsMax: number) {
   return `${bedsMin}`;
 }
 
+// The source line under the price (MC-036, VOW Best Practices item 9), the same words the
+// /exclusive card carries. Inside the price element so it inherits the price's font and colour.
+const SOURCE_LINE = `Not an MLS listing. Listed exclusively by ${config.brokerage.name}.`;
+const SOURCE_STYLE = { display: "block", font: "inherit", color: "inherit", marginTop: "0.2em" } as const;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await prisma.exclusiveListing.findUnique({ where: { slug: params.slug } });
   if (!listing) return { title: "Listing not found" };
@@ -121,11 +126,12 @@ export default async function ExclusiveDetailPage({ params }: Props) {
             <span className="inline-block bg-[#00ff80] text-[#04160f] text-[12px] font-bold px-3 py-1 rounded-full tracking-wider uppercase">
               {listing.badge}
             </span>
-            <p className="text-[36px] sm:text-[42px] font-extrabold text-[#073126] tracking-[-0.02em] leading-[1.1] mt-3">
+            <p className="text-[36px] sm:text-[42px] font-extrabold text-[#073126] tracking-[-0.02em] leading-[1.1] mt-3" data-price>
               {formatPrice(listing.price, listing.priceType)}
               {priceSuffix && (
                 <span className="text-[20px] font-semibold text-[#6b6f6a]"> {priceSuffix.trim()}</span>
               )}
+              <span data-brokerage style={SOURCE_STYLE}>{SOURCE_LINE}</span>
             </p>
             <p className="text-[18px] font-semibold text-[#073126] mt-2">{listing.address}</p>
             {listing.city && <p className="text-[14px] text-[#6b6f6a] mt-0.5">{listing.city}</p>}

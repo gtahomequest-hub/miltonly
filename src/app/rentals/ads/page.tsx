@@ -2,6 +2,8 @@
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import AdsClient from "./AdsClient";
+import { PUBLIC_LEASE_WHERE } from "@/lib/listings/vow";
+import { getListingCards } from "@/lib/listingsV2Data";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +30,7 @@ const str = (sp: SP, k: string) => {
 // data artifacts on this paid-traffic LP. Listings under $2K stay in the DB
 // and still appear on /listings + /rentals — only filtered on /rentals/ads.
 const ALWAYS_WHERE = {
-  transactionType: "For Lease" as const,
-  city: config.PRISMA_CITY_VALUE,
-  permAdvertise: true,
+  ...PUBLIC_LEASE_WHERE, // MC-029: available units only; this carried no leaseStatus
   price: { gte: 2000 },
 };
 
@@ -71,8 +71,12 @@ export default async function RentalsAdsPage({
   // filter the listings + total count to that property type. Falls back to
   // unfiltered if the type pool is thinner than MIN_LISTINGS_FOR_GRID (12)
   // so the 3-clear + 9-locked grid always renders fully.
+  //
+  // MC-036: the twelve teaser rows come through getListingCards, the gated card mapper in
+  // src/lib/listingsV2Data.ts, never as whole Listing rows. AdsClient prints the address; a
+  // withheld listing arrives as "Address on request", and no VOW-only column is on a card.
   const typedWhere = buildListingsWhere(qType);
-  let listings = await prisma.listing.findMany({
+  let listings = await getListingCards({
     where: typedWhere,
     orderBy: { listedAt: "desc" },
     take: MIN_LISTINGS_FOR_GRID,
@@ -83,7 +87,7 @@ export default async function RentalsAdsPage({
     console.log(
       `[listings-fallback] type=${qType} returned ${listings.length} < ${MIN_LISTINGS_FOR_GRID} — broadening to all types`,
     );
-    listings = await prisma.listing.findMany({
+    listings = await getListingCards({
       where: ALWAYS_WHERE,
       orderBy: { listedAt: "desc" },
       take: MIN_LISTINGS_FOR_GRID,
@@ -112,7 +116,6 @@ export default async function RentalsAdsPage({
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const newThisWeek = allListed.filter((l) => new Date(l.listedAt) > weekAgo).length;
-  const serialized = JSON.parse(JSON.stringify(listings));
 
   // "Updated X min ago" — clamp to "RECENTLY" if unknown or > 60 minutes.
   let updatedMinAgo: number | null = null;
@@ -137,7 +140,6 @@ export default async function RentalsAdsPage({
   // Schema.org JSON-LD for /rentals/ads — RealEstateAgent + LocalBusiness + WebPage.
   // Public Mega ${CITY_NAME} GBP address used for LocalBusiness; authorized by agent.
   const realtorFirstName = config.realtor.name.split(" ")[0].toLowerCase();
-  const brokerageShort = config.brokerage.name.replace(", Brokerage", "");
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -148,7 +150,7 @@ export default async function RentalsAdsPage({
         jobTitle: config.realtor.title,
         worksFor: {
           "@type": "RealEstateAgent",
-          name: brokerageShort,
+          name: config.brokerage.name,
         },
         telephone: config.realtor.phoneE164,
         url: config.SITE_URL,
@@ -209,7 +211,7 @@ export default async function RentalsAdsPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <AdsClient
-        listings={serialized}
+        listings={listings}
         totalRentals={totalRentals}
         newThisWeek={newThisWeek}
         renterCount={renterCount}

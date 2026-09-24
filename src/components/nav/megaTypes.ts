@@ -45,16 +45,15 @@ export interface MegaListing {
   address: string;
   /** whole-dollar list price, formatted; rentals carry "/mo" */
   price: string;
-  /** the list price before the most recent change, formatted, when one was observed */
-  priorPrice?: string;
-  /** "down $100,000" / "up $76,000", when priorPrice is known */
-  change?: string;
+  /** the listing brokerage's office name as the feed carries it; the card renders it inside
+   *  the price at the price's size (TRREB item 27, MC-029) */
+  listOfficeName: string | null;
   /** first photo, or null when the feed carries none; the card says so rather than hiding */
   photo: string | null;
   beds: number;
   baths: number;
-  /** "12 days" or null when the feed has no count */
-  dom: string | null;
+  // NO DAY COUNT, NO PRIOR PRICE, NO CHANGE (MC-029). A menu card is an anonymous surface and
+  // those are VOW-only facts (src/lib/listings/vow.ts).
   /** the PUBLISHED hub's name, or null when the raw TREB string has no hub */
   hub: string | null;
 }

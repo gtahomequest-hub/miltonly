@@ -17,6 +17,7 @@
 
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import { getAnalyticsDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import type { PublicAggregateTeaser, MarketTemperature } from "@/lib/db-types";
@@ -178,10 +179,11 @@ export default async function VowGate({
 
   // Three gate states:
   //   1) Anon                       → aggregate teaser (existing behaviour)
-  //   2) Authed, not yet acknowledged → inline VowAcknowledgementPrompt
-  //   3) Authed + acknowledged      → render the full VOW children
+  //   2) Authed, card not finished → inline VowAcknowledgementPrompt (acknowledgement,
+  //      password; src/lib/vow-access.ts is the rule)
+  //   3) Authed + finished          → render the full VOW children
   if (user) {
-    if (!user.vowAcknowledgedAt) {
+    if (!canSeeVowRecords(user)) {
       const { default: VowAcknowledgementPrompt } = await import("./VowAcknowledgementPrompt");
       return <VowAcknowledgementPrompt />;
     }

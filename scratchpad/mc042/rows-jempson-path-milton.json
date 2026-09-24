@@ -1,0 +1,316 @@
+{
+  "streetContent": {
+    "streetSlug": "jempson-path-milton",
+    "streetName": "Jempson Path",
+    "status": "published",
+    "template": "standard",
+    "needsReview": false,
+    "publishedAt": "2026-09-24T00:52:23.531Z",
+    "createdAt": "2026-09-24T00:52:23.532Z",
+    "generatedAt": "2026-09-24T00:52:23.531Z",
+    "metaTitle": "Jempson Path Milton Real Estate | Homes, Prices & Market Data",
+    "metaDescription": "1 home sold on Jempson Path in the past year. Jempson Path street guide: homes, prices, and sales history in Milton.",
+    "description": "Jempson Path is a residential street in Milton's Harrison area, a pocket of the town that has filled in around a mix of townhouse rows and detached homes. The street sits within the Harrison neighbourhood, with Optimist Park and Gastle Park both a short walk away. This is a quieter, low-turnover address rather than a through-route, and its position puts daily errands, schools, and the wider town within a few minutes by car. The street's housing is predominantly townhouse in form, and it reads as part of the established residential fabric that defines this part of Milton.\n\nJempson Path is a townhouse street. The recorded stock is townhouse in form, and that is the type that defines the address. There is no recent sale price published for the street itself, so no figure can be attached to it. Across the wider Harrison area, townhomes typically trade around $750,000, which gives a sense of the neighbourhood tier without speaking to this street specifically. One active listing is present, and the street carries a single recorded sale, so the picture here is one of thin, occasional turnover rather than a busy market.\n\nOptimist Park is about a two-minute walk from Jempson Path, and Gastle Park is roughly four minutes on foot, so green space is genuinely close. P.L. Robertson Public School is a three-minute walk, and St. Scholastica Catholic Elementary is about four minutes away. Elsie MacGill Secondary and Milton District High School are each around five to six minutes by car, as is Tiger Jeet Singh Public School. For groceries, Canadian Superstore and Sobeys Milton are both about seven minutes by car, with Walmart and FreshCo a minute or so further. Milton District Hospital and the Milton GO Station sit roughly eight minutes away by car, and the Highway 401 onramp at Regional Road 25 is about the same distance. The Halton Islamic Community Centre and the Milton Muslim Community Centre are each around eight minutes by car. Commuting from here, downtown Toronto is about 68 minutes by GO and TTC with a drive to the station, Pearson is roughly 32 minutes by car, and Mississauga, Oakville, and Burlington are all within about 20 to 24 minutes by car.\n\nJempson Path trades rarely. Over the past year the street recorded a single resale and a single lease, and with activity that thin no typical price can be published for it. That absence is itself the read: this is a street where homes change hands infrequently, and any pricing question is answered by looking outward to the surrounding neighbourhood rather than at the street's own record. The housing stock is townhouse, and the one active listing currently on the street sits within that same form. No days-on-market figure is publishable either, since a pace cannot be drawn from a single trade. What can be said is that the street's position inside Harrison places it among established Milton townhouse stock, and the wider neighbourhood is where the pricing reference lives. For orientation, homes across Harrison typically trade around $750,000, a figure that describes the neighbourhood rather than this street. The rental side is equally quiet, with one lease recorded over the past year, too few to establish a typical rent by bedroom count. Supply on the street is effectively a single active listing, which is tight in the literal sense but says little about pace when the underlying turnover is this low. Readers weighing Jempson Path against other Milton streets should treat the neighbourhood comparable as the working reference and the street's own record as a blank.\n\nAcross Harrison, comparable townhouse homes have sold at broadly consistent levels over the past year. The typical sold price for townhouse stock in the neighbourhood sits near $750,000, drawn from a full sample of recent sales rather than a handful of trades. Sold-to-ask behaviour points to modest negotiation room, with buyers generally closing a little below the asking figure rather than at or above it. Pace across the neighbourhood runs at a moderate tempo, with comparable homes typically clearing in around 86 days, a cadence that reflects a market where well-prepared listings move and others wait. Year-over-year direction is not published for this comparable set, so no trend read is offered here. Taken together, the neighbourhood picture is one of steady, unspectacular trade in townhouse stock, and it is that wider pattern, not the street's own sparse record, that gives a reader the clearest sense of where values sit for homes of this type in Harrison.\n\nJempson Path sits in Harrison, a position that makes the GO train the realistic route into Toronto; Milton GO Station is an eight-minute drive, and the run downtown lands around 68 minutes door to door. The 401 onramp at Regional Rd 25 is the same eight minutes by car, which puts Mississauga within about 22 minutes and Pearson around 32. Oakville and Burlington sit 24 and 20 minutes out respectively, both westbound runs that rarely demand the highway. For a street this size, the reach is broader than the address suggests: one short drive covers the train, the highway and the airport.\n\nP.L. Robertson PS is the closest Halton District School Board elementary, three minutes by car, with Tiger Jeet Singh PS a further six. On the Catholic side, St. Scholastica Catholic ES is four minutes away and Our Lady of Fatima Catholic ES seven. Elsie MacGill Secondary School is the nearest secondary option at five minutes, with Milton District High School six. Optimist Park is a two-minute walk and Gastle Park four. Confirm current school assignment with the boards directly.",
+    "faqJson": "[{\"question\":\"How fast do homes sell on Jempson Path?\",\"answer\":\"There is not enough recent activity on Jempson Path to give a meaningful figure for the street itself. Across the wider Harrison area, comparable townhomes typically find buyers in around three months.\"},{\"question\":\"How has the market been moving on Jempson Path recently?\",\"answer\":\"With only a single sale recorded, there is no street-level trend to describe. The broader Harrison market for townhomes has been steady, with homes typically settling just under asking.\"},{\"question\":\"What kinds of homes are on Jempson Path?\",\"answer\":\"The street is townhouse in form, and that is the only housing type recorded here. The mix is uniform rather than varied.\"},{\"question\":\"Which schools are close to Jempson Path?\",\"answer\":\"P.L. Robertson PS and St. Scholastica Catholic ES are both within a five-minute drive, and Elsie MacGill Secondary School is the closest secondary option at five minutes. Confirm current school assignment with the boards directly.\"},{\"question\":\"How far is Jempson Path from Toronto?\",\"answer\":\"The realistic route is the GO train from Milton GO Station, an eight-minute drive from the street, with the full run downtown landing around 68 minutes.\"},{\"question\":\"What's the commute from Jempson Path to Pearson?\",\"answer\":\"Pearson is about a 32-minute drive, reached via the 401 onramp at Regional Rd 25, which is eight minutes from the street.\"},{\"question\":\"Is Jempson Path close to the 401 or 407?\",\"answer\":\"The 401 onramp at Regional Rd 25 is an eight-minute drive from the street. The 407 is not the natural approach from this position.\"},{\"question\":\"Is Jempson Path new construction or established?\",\"answer\":\"The street is established, with the surrounding Harrison area built out rather than still under development. Only one sale has been recorded here recently.\"}]"
+  },
+  "streetGeneration": {
+    "streetSlug": "jempson-path-milton",
+    "status": "succeeded",
+    "attemptCount": 2,
+    "tokensIn": 45021,
+    "tokensOut": 3208,
+    "costUsd": "0.0072",
+    "totalWords": 931,
+    "wordCounts": {
+      "about": 97,
+      "homes": 93,
+      "market": 226,
+      "schools": 79,
+      "amenities": 178,
+      "gettingAround": 102,
+      "neighbourhoodComparable": 156
+    },
+    "generatedAt": "2026-09-24T00:52:23.307Z",
+    "inputHash": "8bda2a7e07704db34e2f7644ceae802d46500565579f4704fcbb8056f3417e22",
+    "sectionsJson": [
+      {
+        "id": "about",
+        "heading": "About Jempson Path",
+        "paragraphs": [
+          "Jempson Path is a residential street in Milton's Harrison area, a pocket of the town that has filled in around a mix of townhouse rows and detached homes. The street sits within the Harrison neighbourhood, with Optimist Park and Gastle Park both a short walk away. This is a quieter, low-turnover address rather than a through-route, and its position puts daily errands, schools, and the wider town within a few minutes by car. The street's housing is predominantly townhouse in form, and it reads as part of the established residential fabric that defines this part of Milton."
+        ]
+      },
+      {
+        "id": "homes",
+        "heading": "The homes here",
+        "paragraphs": [
+          "Jempson Path is a townhouse street. The recorded stock is townhouse in form, and that is the type that defines the address. There is no recent sale price published for the street itself, so no figure can be attached to it. Across the wider Harrison area, townhomes typically trade around $750,000, which gives a sense of the neighbourhood tier without speaking to this street specifically. One active listing is present, and the street carries a single recorded sale, so the picture here is one of thin, occasional turnover rather than a busy market."
+        ]
+      },
+      {
+        "id": "amenities",
+        "heading": "What's nearby",
+        "paragraphs": [
+          "Optimist Park is about a two-minute walk from Jempson Path, and Gastle Park is roughly four minutes on foot, so green space is genuinely close. P.L. Robertson Public School is a three-minute walk, and St. Scholastica Catholic Elementary is about four minutes away. Elsie MacGill Secondary and Milton District High School are each around five to six minutes by car, as is Tiger Jeet Singh Public School. For groceries, Canadian Superstore and Sobeys Milton are both about seven minutes by car, with Walmart and FreshCo a minute or so further. Milton District Hospital and the Milton GO Station sit roughly eight minutes away by car, and the Highway 401 onramp at Regional Road 25 is about the same distance. The Halton Islamic Community Centre and the Milton Muslim Community Centre are each around eight minutes by car. Commuting from here, downtown Toronto is about 68 minutes by GO and TTC with a drive to the station, Pearson is roughly 32 minutes by car, and Mississauga, Oakville, and Burlington are all within about 20 to 24 minutes by car."
+        ]
+      },
+      {
+        "id": "market",
+        "heading": "Trade patterns",
+        "paragraphs": [
+          "Jempson Path trades rarely. Over the past year the street recorded a single resale and a single lease, and with activity that thin no typical price can be published for it. That absence is itself the read: this is a street where homes change hands infrequently, and any pricing question is answered by looking outward to the surrounding neighbourhood rather than at the street's own record. The housing stock is townhouse, and the one active listing currently on the street sits within that same form. No days-on-market figure is publishable either, since a pace cannot be drawn from a single trade. What can be said is that the street's position inside Harrison places it among established Milton townhouse stock, and the wider neighbourhood is where the pricing reference lives. For orientation, homes across Harrison typically trade around $750,000, a figure that describes the neighbourhood rather than this street. The rental side is equally quiet, with one lease recorded over the past year, too few to establish a typical rent by bedroom count. Supply on the street is effectively a single active listing, which is tight in the literal sense but says little about pace when the underlying turnover is this low. Readers weighing Jempson Path against other Milton streets should treat the neighbourhood comparable as the working reference and the street's own record as a blank."
+        ]
+      },
+      {
+        "id": "neighbourhoodComparable",
+        "heading": "Comparable homes nearby",
+        "paragraphs": [
+          "Across Harrison, comparable townhouse homes have sold at broadly consistent levels over the past year. The typical sold price for townhouse stock in the neighbourhood sits near $750,000, drawn from a full sample of recent sales rather than a handful of trades. Sold-to-ask behaviour points to modest negotiation room, with buyers generally closing a little below the asking figure rather than at or above it. Pace across the neighbourhood runs at a moderate tempo, with comparable homes typically clearing in around 86 days, a cadence that reflects a market where well-prepared listings move and others wait. Year-over-year direction is not published for this comparable set, so no trend read is offered here. Taken together, the neighbourhood picture is one of steady, unspectacular trade in townhouse stock, and it is that wider pattern, not the street's own sparse record, that gives a reader the clearest sense of where values sit for homes of this type in Harrison."
+        ]
+      },
+      {
+        "id": "gettingAround",
+        "heading": "Getting around",
+        "paragraphs": [
+          "Jempson Path sits in Harrison, a position that makes the GO train the realistic route into Toronto; Milton GO Station is an eight-minute drive, and the run downtown lands around 68 minutes door to door. The 401 onramp at Regional Rd 25 is the same eight minutes by car, which puts Mississauga within about 22 minutes and Pearson around 32. Oakville and Burlington sit 24 and 20 minutes out respectively, both westbound runs that rarely demand the highway. For a street this size, the reach is broader than the address suggests: one short drive covers the train, the highway and the airport."
+        ]
+      },
+      {
+        "id": "schools",
+        "heading": "Schools nearby",
+        "paragraphs": [
+          "P.L. Robertson PS is the closest Halton District School Board elementary, three minutes by car, with Tiger Jeet Singh PS a further six. On the Catholic side, St. Scholastica Catholic ES is four minutes away and Our Lady of Fatima Catholic ES seven. Elsie MacGill Secondary School is the nearest secondary option at five minutes, with Milton District High School six. Optimist Park is a two-minute walk and Gastle Park four. Confirm current school assignment with the boards directly."
+        ]
+      }
+    ],
+    "faqJson": [
+      {
+        "answer": "There is not enough recent activity on Jempson Path to give a meaningful figure for the street itself. Across the wider Harrison area, comparable townhomes typically find buyers in around three months.",
+        "question": "How fast do homes sell on Jempson Path?"
+      },
+      {
+        "answer": "With only a single sale recorded, there is no street-level trend to describe. The broader Harrison market for townhomes has been steady, with homes typically settling just under asking.",
+        "question": "How has the market been moving on Jempson Path recently?"
+      },
+      {
+        "answer": "The street is townhouse in form, and that is the only housing type recorded here. The mix is uniform rather than varied.",
+        "question": "What kinds of homes are on Jempson Path?"
+      },
+      {
+        "answer": "P.L. Robertson PS and St. Scholastica Catholic ES are both within a five-minute drive, and Elsie MacGill Secondary School is the closest secondary option at five minutes. Confirm current school assignment with the boards directly.",
+        "question": "Which schools are close to Jempson Path?"
+      },
+      {
+        "answer": "The realistic route is the GO train from Milton GO Station, an eight-minute drive from the street, with the full run downtown landing around 68 minutes.",
+        "question": "How far is Jempson Path from Toronto?"
+      },
+      {
+        "answer": "Pearson is about a 32-minute drive, reached via the 401 onramp at Regional Rd 25, which is eight minutes from the street.",
+        "question": "What's the commute from Jempson Path to Pearson?"
+      },
+      {
+        "answer": "The 401 onramp at Regional Rd 25 is an eight-minute drive from the street. The 407 is not the natural approach from this position.",
+        "question": "Is Jempson Path close to the 401 or 407?"
+      },
+      {
+        "answer": "The street is established, with the surrounding Harrison area built out rather than still under development. Only one sale has been recorded here recently.",
+        "question": "Is Jempson Path new construction or established?"
+      }
+    ],
+    "inputJson": {
+      "byType": {
+        "townhouse": {
+          "count": 1,
+          "kFlag": "thin",
+          "priceRange": null,
+          "typicalPrice": null
+        }
+      },
+      "nearby": {
+        "parks": [
+          {
+            "name": "Optimist Park",
+            "walkable": true,
+            "distanceMin": 2
+          },
+          {
+            "name": "Gastle Park",
+            "walkable": true,
+            "distanceMin": 4
+          },
+          {
+            "name": "Benjamin Chee Chee Park",
+            "walkable": false,
+            "distanceMin": 5
+          },
+          {
+            "name": "Bronson Park",
+            "walkable": false,
+            "distanceMin": 5
+          },
+          {
+            "name": "Bronte Meadows Park",
+            "walkable": false,
+            "distanceMin": 5
+          }
+        ],
+        "grocery": [
+          {
+            "name": "Canadian Superstore",
+            "distanceMin": 7
+          },
+          {
+            "name": "Sobeys Milton",
+            "distanceMin": 7
+          },
+          {
+            "name": "Walmart Milton",
+            "distanceMin": 8
+          },
+          {
+            "name": "FreshCo Milton",
+            "distanceMin": 8
+          }
+        ],
+        "highway": {
+          "name": "Highway 401 at Regional Rd 25",
+          "onrampDistanceMin": 8
+        },
+        "mosques": [
+          {
+            "name": "Halton Islamic Community Centre",
+            "distanceMin": 8
+          },
+          {
+            "name": "Milton Muslim Community Centre",
+            "distanceMin": 8
+          },
+          {
+            "name": "Islamic Community Centre of Milton",
+            "distanceMin": 14
+          }
+        ],
+        "hospital": {
+          "name": "Milton District Hospital",
+          "distanceMin": 8
+        },
+        "goStation": {
+          "name": "Milton GO Station",
+          "distanceMin": 8
+        },
+        "schoolsPublic": [
+          {
+            "name": "P.L. Robertson PS",
+            "board": "Halton District School Board",
+            "level": "elementary",
+            "distanceMin": 3
+          },
+          {
+            "name": "Elsie MacGill Secondary School",
+            "board": "Halton District School Board",
+            "level": "secondary",
+            "distanceMin": 5
+          },
+          {
+            "name": "Tiger Jeet Singh PS",
+            "board": "Halton District School Board",
+            "level": "elementary",
+            "distanceMin": 6
+          },
+          {
+            "name": "Milton District High School",
+            "board": "Halton District School Board",
+            "level": "secondary",
+            "distanceMin": 6
+          }
+        ],
+        "schoolsCatholic": [
+          {
+            "name": "St. Scholastica Catholic ES",
+            "board": "Halton Catholic District School Board",
+            "level": "elementary",
+            "distanceMin": 4
+          },
+          {
+            "name": "Our Lady of Fatima Catholic ES",
+            "board": "Halton Catholic District School Board",
+            "level": "elementary",
+            "distanceMin": 7
+          },
+          {
+            "name": "Holy Rosary Catholic ES",
+            "board": "Halton Catholic District School Board",
+            "level": "elementary",
+            "distanceMin": 8
+          },
+          {
+            "name": "Guardian Angels Catholic ES",
+            "board": "Halton Catholic District School Board",
+            "level": "elementary",
+            "distanceMin": 9
+          }
+        ]
+      },
+      "street": {
+        "name": "Jempson Path",
+        "slug": "jempson-path-milton",
+        "type": "street",
+        "direction": "",
+        "identityKey": "jempson||path",
+        "siblingSlugs": [
+          "jempson-path-milton"
+        ]
+      },
+      "commute": {
+        "toPearson": {
+          "method": "drive",
+          "minutes": 32
+        },
+        "toOakville": {
+          "method": "drive",
+          "minutes": 24
+        },
+        "toBurlington": {
+          "method": "drive",
+          "minutes": 20
+        },
+        "toMississauga": {
+          "method": "drive",
+          "minutes": 22
+        },
+        "toTorontoDowntown": {
+          "method": "GO+TTC (drive to GO)",
+          "minutes": 68
+        }
+      },
+      "aggregates": {
+        "kAnonLevel": "thin",
+        "priceRange": null,
+        "salesCount": 1,
+        "leasesCount": 1,
+        "daysOnMarket": null,
+        "typicalPrice": null
+      },
+      "crossStreets": [],
+      "neighbourhoods": [
+        "Harrison"
+      ],
+      "activeListingsCount": 1,
+      "neighbourhoodComparable": {
+        "soldToAsk": 0.9838759718370262,
+        "kAnonLevel": "full",
+        "priceRange": null,
+        "sampleSize": 65,
+        "daysOnMarket": 86,
+        "windowMonths": 12,
+        "neighbourhood": "Harrison",
+        "priceChangeYoy": null,
+        "fallbackApplied": "type-only",
+        "mostRecentSoldAt": null,
+        "typicalSoldPrice": 752000,
+        "filterByBedroomCount": null,
+        "filterByPropertyType": "townhouse"
+      }
+    }
+  }
+}

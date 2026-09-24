@@ -16,11 +16,13 @@
 
 import type { Metadata } from "next";
 import { publishedHubSlugs, neighbourhoodRows } from "@/lib/hubSets";
+import { VOW_NOTICES } from "@/lib/vowNotice";
 import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import {
   getMiltonSoldTotals,
   getSoldNeighbourhoodOptions,
@@ -103,7 +105,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function SoldHubPage({ searchParams }: PageProps) {
   const user = await getSession();
   const authed = !!user;
-  const canSeeRecords = authed && !!user?.vowAcknowledgedAt;
+  const canSeeRecords = canSeeVowRecords(user);
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
   const nbhdParam = searchParams?.nbhd;
@@ -289,7 +291,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             // Anonymous — clean table gate (no records fetched, none in the HTML).
             <div className="sv-gate">
               <div className="sv-gate-k">TREB VOW · Registered access</div>
-              <div className="sv-gate-h">See every {config.CITY_NAME} sold price</div>
+              <div className="sv-gate-h">Recent {config.CITY_NAME} sold prices, last 90 days</div>
               <p className="sv-gate-p">
                 Free with a verified email — exact sold prices, days on market, and
                 sold-to-ask ratios, updated daily from TREB MLS<sup>®</sup> data.
@@ -305,12 +307,8 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             <b>
               Source: TREB MLS<sup>®</sup>
             </b>
-            <p>
-              The information provided herein must only be used by consumers that have a
-              bona fide interest in the purchase, sale, or lease of real estate and may not
-              be used for any commercial purpose or any other purpose.
-            </p>
-            <p>Brokerage: RE/MAX Realty Specialists Inc.</p>
+            <p>{VOW_NOTICES}</p>
+            <p>{config.brokerage.name}</p>
           </div>
         </div>
       </section>

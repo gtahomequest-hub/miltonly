@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +11,10 @@ import type { ListingRentFigure } from "./ListingExtras";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
+import { isPublicListing, stripVowFields, PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE } from "@/lib/listings/vow";
+import ListingVowFacts from "@/components/listings/ListingVowFacts";
 import { resolvePublishedHubSlug } from "@/lib/hubResolve";
+import { isOurBrokerage } from "@/components/listings/ListingBrokerage";
 
 // MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
 // once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
@@ -41,10 +44,74 @@ function titleCase(s: string | null | undefined): string {
 }
 const cleanHood = (h: string) => titleCase(h.replace(/^\d+\s*-\s*\w+\s+/, "").trim());
 
+// MC-036 item 1: InternetAddressDisplayYN=N (Listing.displayAddress=false) withholds the
+// address, the street name, the unit, the postal code and any map position, not only the
+// address line. redactAddress (display-gate.ts) blanks the address; this view takes the rest
+// off the row before anything reads it, so the client payload carries no street identity
+// (streetSlug, streetName, crossStreet) and no rooftop (townLat, townLng), the schema emits no
+// coordinate, and nothing downstream can name the street or place the home. The row still
+// counts wherever it is counted; on this surface it is not placed, mapped, addressed or tied to
+// its street.
+type WithheldFields = {
+  streetSlug: string | null; streetName: string | null; crossStreet: string | null;
+  townLat: number | null; townLng: number | null; latitude: number; longitude: number;
+  virtualTourUrl: string | null; description: string | null;
+};
+function withheldView<T extends WithheldFields & { displayAddress: boolean; address: string }>(
+  row: T,
+): Omit<T, keyof WithheldFields> & WithheldFields {
+  if (row.displayAddress) return row;
+  return {
+    ...row,
+    streetSlug: null, streetName: null, crossStreet: null, townLat: null, townLng: null,
+    // the feed's own coordinate columns (0/0 today, a rooftop if the feed ever sends one) and the
+    // tour URL, whose path names the civic address
+    latitude: 0, longitude: 0, virtualTourUrl: null,
+    description: redactRemarks(row.description, row.address, row.streetName),
+  };
+}
+
+// The listing brokerage sometimes writes the address into its own remarks ("Welcome to 120
+// Hanson Crescent"), which is how a withheld page carried the address beside "Address on
+// request". For a withheld row the remarks are masked where they name the house or the street:
+// the house number with the street's name, the street's name with its suffix, and a postal
+// code. The rest stays the brokerage's words, and the client labels the block as masked.
+const STREET_SUFFIX =
+  "(?:Avenue|Ave|Boulevard|Blvd|Circle|Cir|Close|Common|Court|Crt|Ct|Crescent|Cres|Drive|Dr|Gate|Grove|Grv|Heights|Hts|Hollow|Hllw|Lane|Ln|Line|Mews|Path|Place|Pl|Road|Rd|Row|Square|Sq|Street|St|Terrace|Terr|Ter|Trail|Trl|Way)\\.?";
+const SUFFIX_WORD = new RegExp(`^${STREET_SUFFIX}$`, "i");
+const DIRECTION_WORD = /^(?:N|S|E|W|North|South|East|West)$/i;
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function redactRemarks(description: string | null, address: string, streetName: string | null): string | null {
+  if (!description) return description;
+  // The street segment of the feed's address, the unit prefixes and parentheticals dropped:
+  // "120 Hanson Crescent", "480 Gordon Krantz Avenue 314", "1204-38 Main Street" -> "38 Main Street".
+  const street = address.split(",")[0]
+    .replace(/\s*\([^)]*\)\s*/g, " ")
+    .replace(/^(?:unit|suite|apt|apartment|ph|penthouse|#)\s*\w+\s*[-–]\s*/i, "")
+    .replace(/^\d{1,6}-/, "")
+    .trim();
+  const number = street.match(/^(\d+[A-Za-z]?)\s/)?.[1] ?? null;
+  // The street's name without its suffix or direction: Listing.streetName ("Hanson Cres") when
+  // the row has one, else the address segment less its number and any trailing unit number.
+  const words = (streetName ?? street.replace(/^\d+[A-Za-z]?\s+/, "")).replace(/\s+\d+$/, "").split(/\s+/).filter(Boolean);
+  if (words.length > 1 && DIRECTION_WORD.test(words[words.length - 1])) words.pop();
+  if (words.length > 1 && SUFFIX_WORD.test(words[words.length - 1])) words.pop();
+  const name = words.map(escapeRe).join("\\s+");
+  const patterns: RegExp[] = [];
+  if (name) {
+    if (number) patterns.push(new RegExp(`\\b${number}\\s*[-–]?\\s*${name}\\b(?:\\s+${STREET_SUFFIX})?`, "gi"));
+    patterns.push(new RegExp(`\\b${name}\\s+${STREET_SUFFIX}(?![A-Za-z])`, "gi"));
+  }
+  patterns.push(/\b[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d\b/g);
+  return patterns.reduce((s, re) => s.replace(re, "[address withheld]"), description);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = await prisma.listing.findUnique({ where: { mlsNumber: params.mlsNumber } });
   if (!l) return { title: "Listing Not Found" };
-  if (!l.permAdvertise) return { title: "Listing Not Available", robots: { index: false, follow: false } };
+  // MC-029: a listing that is not advertised, or not on the market, has no public page and no
+  // index entry. "Not available" says nothing about which, on purpose.
+  if (!isPublicListing(l)) return { title: "Listing Not Available", robots: { index: false, follow: false } };
 
   const isRental = l.transactionType === "For Lease";
   const hood = cleanHood(l.neighbourhood);
@@ -56,11 +123,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${addr}: ${l.bedrooms}bd ${typeLabel} for rent in ${hood} ${config.CITY_NAME} | ${priceStr}`
     : `${addr}: ${l.bedrooms}bd ${l.bathrooms}ba ${typeLabel} for sale in ${hood} ${config.CITY_NAME} | ${priceStr}`;
 
-  const days = Math.floor((Date.now() - new Date(l.listedAt).getTime()) / 86400000);
+  // MC-029: the description no longer says "Listed N days ago". Days since the list date is the
+  // listing's time on market, a VOW-only fact, and a meta description is public.
   const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
-    ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName}, usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Listed ${days === 0 ? "today" : `${days} days ago`}. Book a showing with ${firstName}, usually confirmed within the hour.`;
+    ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`;
 
   return {
     title,
@@ -79,8 +147,11 @@ export default async function ListingDetailPage({ params }: Props) {
   if (!listingRaw) notFound();
 
   // â”€â”€â”€ COMPLIANCE GATE â”€â”€â”€
-  // If permAdvertise = false, do not render the listing publicly.
-  if (!listingRaw.permAdvertise) {
+  // If permAdvertise = false, do not render the listing publicly. MC-029 widened the gate to
+  // the whole public predicate: a sold, expired or leased listing is VOW data in its entirety
+  // (its page says what happened to it), so it gets the same shell, with the same words, and
+  // generateMetadata above marks it noindex. The shell never says which condition failed.
+  if (!isPublicListing(listingRaw)) {
     return (
       <div className="min-h-screen bg-[#fffdfa] flex items-center justify-center px-5 py-20">
         <div className="max-w-md text-center">
@@ -93,8 +164,9 @@ export default async function ListingDetailPage({ params }: Props) {
     );
   }
 
-  // Redact address if displayAddress = false (keeps MLS + brokerage per RECO)
-  const listing = redactAddress(listingRaw);
+  // Redact address if displayAddress = false (keeps MLS + brokerage per RECO), and with it the
+  // street identity, the rooftop and the address inside the remarks (withheldView above).
+  const listing = redactAddress(withheldView(listingRaw));
 
   // Parallel queries.
   // Phase 2.6: the two sold-count queries (by streetSlug + soldDate, and by
@@ -104,11 +176,11 @@ export default async function ListingDetailPage({ params }: Props) {
   const [similarRaw, leaseMarket] = await Promise.all([
     prisma.listing.findMany({
       where: {
+        // MC-029: the same public predicate as the grid. This selected by permAdvertise alone,
+        // so a sold or expired listing could sit in "similar homes" with its status in the payload.
+        ...(listing.transactionType === "For Lease" ? PUBLIC_LEASE_WHERE : PUBLIC_SALE_WHERE),
         propertyType: listing.propertyType,
-        transactionType: listing.transactionType,
         mlsNumber: { not: listing.mlsNumber },
-        city: config.PRISMA_CITY_VALUE,
-        permAdvertise: true,
       },
       orderBy: { listedAt: "desc" },
       take: 4,
@@ -121,7 +193,7 @@ export default async function ListingDetailPage({ params }: Props) {
   const soldCountOnStreet = 0; // deprecated — see StreetSoldBlock on street page
   const soldCountInHood = 0; // deprecated — see NeighbourhoodSoldBlock
 
-  const similar = similarRaw.map(redactAddress);
+  const similar = similarRaw.map((s) => redactAddress(withheldView(s)));
   const rentFigure = ((): ListingRentFigure | null => {
     const type = listing.propertyType as RentType;
     const f = leaseMarket?.byType.find((t) => t.type === type);
@@ -137,16 +209,17 @@ export default async function ListingDetailPage({ params }: Props) {
     };
   })();
 
-  const serialized = JSON.parse(JSON.stringify(listing));
-  const serializedSimilar = JSON.parse(JSON.stringify(similar));
+  // MC-029: the row is stripped of every VOW-only column BEFORE it is serialised for the client
+  // component, so the RSC payload never carries a day count, a list date, a prior price or a
+  // sold price. The island below fetches those for an acknowledged session.
+  const serialized = JSON.parse(JSON.stringify(stripVowFields(listing)));
+  const serializedSimilar = JSON.parse(JSON.stringify(similar.map(stripVowFields)));
 
   // Match schools by neighbourhood (no lat/lng on schools data)
   const schoolsLite = schools.map((s) => ({
     slug: s.slug, name: s.name, board: s.board as string, level: s.level as string,
     grades: s.grades, fraserScore: s.fraserScore, neighbourhood: s.neighbourhood,
   }));
-
-  const domDays = Math.floor((Date.now() - new Date(listing.listedAt).getTime()) / 86400000);
 
   // â”€â”€â”€ SCHEMA MARKUP â”€â”€â”€
   const isRental = listing.transactionType === "For Lease";
@@ -176,9 +249,12 @@ export default async function ListingDetailPage({ params }: Props) {
     // SCHEMA IS A PUBLISHED SURFACE. This emitted the legacy feed coordinate — 0 on every row —
     // so the structured data told Google that every home in Milton is in the Gulf of Guinea.
     // The resolved municipal rooftop, and the property is OMITTED rather than zeroed when the
-    // Town has no point for the address: absent is a fact, (0,0) is a false one.
-    latitude: listing.townLat ?? undefined,
-    longitude: listing.townLng ?? undefined,
+    // Town has no point for the address: absent is a fact, (0,0) is a false one. Omitted too
+    // when the address is withheld (MC-036 item 1): the rooftop of a withheld house is its
+    // address as a coordinate. withheldView already nulled it; the gate is stated here as well
+    // because the schema is a published surface.
+    latitude: listing.displayAddress ? listing.townLat ?? undefined : undefined,
+    longitude: listing.displayAddress ? listing.townLng ?? undefined : undefined,
   };
   const offerSchema = {
     "@context": "https://schema.org",
@@ -192,7 +268,8 @@ export default async function ListingDetailPage({ params }: Props) {
       unitText: "MONTH",
     } : undefined,
     availability: "https://schema.org/InStock",
-    seller: { "@type": "Organization", name: listing.listOfficeName || "TREB MLS" },
+    // our own office by its registered name (MC-043); every other office as the feed names it
+    seller: { "@type": "Organization", name: isOurBrokerage(listing.listOfficeName) ? config.brokerage.name : listing.listOfficeName || "TREB MLS" },
   };
   const crumbs: Array<{ name: string; item: string }> = [
     { name: config.SITE_NAME, item: config.SITE_URL },
@@ -240,8 +317,8 @@ export default async function ListingDetailPage({ params }: Props) {
           hoodName,
           rent: rentFigure,
           schools: schoolsLite,
-          domDays,
         }}
+        vowFacts={<ListingVowFacts mlsNumber={listing.mlsNumber} isRental={isRental} />}
       />
     </div>
     </SiteChrome>

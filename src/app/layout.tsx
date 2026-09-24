@@ -6,12 +6,13 @@ import UserProvider from "@/components/UserProvider";
 import ConsentBanner from "@/components/consent/ConsentBanner";
 import ChromeGate from "@/components/ChromeGate";
 import AttributionCapture from "@/components/AttributionCapture";
+import VercelAnalytics from "@/components/VercelAnalytics";
 import { config } from "@/lib/config";
 import "./globals.css";
 
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
 const ENCYCLOPEDIA_LABEL = `${config.CITY_NAME} Real Estate Encyclopedia`;
-const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL} — the only real estate platform built exclusively for ${config.CITY_NAME} ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live TREB listings.`;
+const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL}. Built exclusively for ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live TREB listings.`;
 
 // FONTS (MH-005, MA-001 change 3). Geist Sans and Geist Mono, two 66 KB `.woff` files, were
 // preloaded on every route and used by nothing the site designs in: Tailwind's `font-sans`
@@ -141,6 +142,8 @@ export default function RootLayout({
         <TagStubs />
         <DeferredTagLoader />
         <AttributionCapture />
+        {/* Vercel Web Analytics, production only, auth tokens redacted before send (MH-009) */}
+        <VercelAnalytics />
         <UserProvider>
           {children}
           <ChromeGate>

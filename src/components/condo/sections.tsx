@@ -2,6 +2,7 @@
 import type { CondoData, CondoListing, CondoBedRow } from './types';
 import { fullPrice } from './format';
 import { IconWallet, IconPaw, IconKeyR, IconCar, IconBuilding, IntentIcon } from './icons';
+import ListingBrokerage from '@/components/listings/ListingBrokerage';
 
 export function CondoHero({ data }: { data: CondoData }) {
   const f = data.facts;
@@ -160,7 +161,10 @@ function Listing({ l }: { l: CondoListing }) {
       </span>
       <div className="c-lst-t">{l.title}</div>
       <div className="c-lst-m">{l.meta}</div>
-      <div className="c-lst-p">{l.price}</div>
+      <div className="c-lst-p" data-price>
+        {l.price}
+        <ListingBrokerage name={l.listOfficeName} />
+      </div>
     </a>
   );
 }

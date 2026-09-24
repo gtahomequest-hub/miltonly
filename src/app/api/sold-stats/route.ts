@@ -20,6 +20,7 @@ import { neon } from "@neondatabase/serverless";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getSession } from "@/lib/auth";
+import { canSeeVowRecords } from "@/lib/vow-access";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
 import { titleCaseOfficial } from "@/lib/streetName";
@@ -56,8 +57,8 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-    // 2. VOW acknowledgement gate — bona-fide interest, machine-readable flag.
-    if (!user.vowAcknowledgedAt) {
+    // 2. VOW gate — acknowledgement and password (src/lib/vow-access.ts), machine-readable flag.
+    if (!canSeeVowRecords(user)) {
       return NextResponse.json(
         { error: "VOW acknowledgement required", acknowledgementRequired: true },
         { status: 403 }

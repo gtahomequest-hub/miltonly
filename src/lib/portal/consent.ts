@@ -7,4 +7,5 @@
 export const PORTAL_CONSENT_TEXT =
   "I agree that Miltonly (Aamir Yaqoob, RE/MAX Realty Specialists Inc., Brokerage) may hold my " +
   "name, email and street to run my account and email me about it. Every email has an " +
-  "unsubscribe link and I can delete the account at any time.";
+  "unsubscribe link and I can ask for the account and my information to be removed at any " +
+  "time at miltonly.com/privacy/request.";

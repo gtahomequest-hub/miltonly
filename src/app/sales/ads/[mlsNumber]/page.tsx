@@ -4,6 +4,15 @@
 // never waste ad spend on dead URLs. Pulls a smart-blend slate of up to 10
 // same-property-type sale listings (LiveListingSlider) and renders the
 // client wrapper.
+//
+// MC-036: A WITHHELD ADDRESS IS AN INVALID CASE. InternetAddressDisplayYN = N
+// (Listing.displayAddress false) means the address, street, unit, postal code
+// and map position may not be shown. This page is one home at one address:
+// the title, the H1, the photo alts, the SMS body, the cross street in Key
+// Facts and the whole row in the client payload all carry it. There is no
+// landing page to make of it, so a withheld row takes the invalid-case
+// path, and the slider pool excludes withheld rows because their card would
+// link here.
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -11,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import SalesAdsClient from "./SalesAdsClient";
+import { isPublicListing, stripVowFields } from "@/lib/listings/vow";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +53,8 @@ async function fetchListingForRender(mlsNumber: string) {
   if (!row) return null;
   if (row.status !== ACTIVE_STATUS) return null;
   if (row.transactionType !== SALE_TX_TYPE) return null;
+  if (!isPublicListing(row)) return null; // MC-029: the display flag was never checked here
+  if (!row.displayAddress) return null; // MC-036: no landing page for a withheld address
   return row;
 }
 
@@ -93,6 +105,8 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
   if (!listing) redirect("/rentals");
   if (listing.status !== ACTIVE_STATUS) redirect("/rentals");
   if (listing.transactionType !== SALE_TX_TYPE) redirect("/rentals");
+  if (!isPublicListing(listing)) redirect("/rentals");
+  if (!listing.displayAddress) redirect("/rentals"); // MC-036, see the header
 
   // Slider pool — top 80 active Milton sale listings across all property
   // types, ordered by recency. The slider component filters client-side
@@ -106,6 +120,9 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
       city: listing.city,
       mlsNumber: { not: listing.mlsNumber },
       permAdvertise: true,
+      // MC-036: a withheld row has no ads page to land on, and its address may not be
+      // printed on a card; it is not in the pool.
+      displayAddress: true,
     },
     orderBy: { listedAt: "desc" },
     take: SLIDER_LIMIT,
@@ -117,7 +134,7 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
       bathrooms: true,
       sqft: true,
       photos: true,
-      listedAt: true,
+      listOfficeName: true,
       propertyType: true,
       // 4l-fix: similar-listings matcher uses architecturalStyle as the
       // TRREB-native storeys signal (2-Storey vs Bungalow vs Backsplit 3 etc.)
@@ -131,7 +148,8 @@ export default async function SalesAdsListingPage({ params }: PageProps) {
   // Prisma Decimal/Date fields don't serialize through to a Client
   // Component cleanly — JSON.parse(JSON.stringify(...)) is the cheap fix
   // matching the existing /rentals/ads pattern.
-  const listingSerialized = JSON.parse(JSON.stringify(listing));
+  // MC-029: stripped of every VOW-only column before the client component sees it.
+  const listingSerialized = JSON.parse(JSON.stringify(stripVowFields(listing)));
   const sliderListingsSerialized = JSON.parse(JSON.stringify(sliderListings));
 
   return (

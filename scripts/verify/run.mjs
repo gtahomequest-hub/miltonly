@@ -7,6 +7,7 @@
 // Exits 0 when every assertion holds, 1 otherwise, so it can gate a deploy.
 // See ./README.md for the rules these checks encode.
 import { publishedStreetSlugs, crawl } from './lib/http.mjs';
+import { streetMode, sampleStreets, readState, writeState } from './lib/sample.mjs';
 import { loadRecord, loadHubRecord, loadHomeRecord } from './lib/db.mjs';
 
 import denials from './checks/denials.mjs';
@@ -29,10 +30,14 @@ import footer from './checks/footer.mjs';
 import catchment from './checks/catchment.mjs';
 import video from './checks/video.mjs';
 import phone390 from './checks/phone-390.mjs';
+import vowFields from './checks/vow-fields.mjs';
+import prerenderCoverage from './checks/prerender-coverage.mjs';
+import vowDisplay from './checks/vow-display.mjs';
+import agentOnly from './checks/agent-only.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390, vowFields, prerenderCoverage, vowDisplay, agentOnly];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {
@@ -46,6 +51,10 @@ if (only.length && checks.length !== only.length) {
   process.exit(2);
 }
 const CONCURRENCY = Number(process.env.CONC || 8);
+// MC-035: --streets=full (every published street, the default) or --streets=sample (about fifty:
+// the fixed edge-case set, the streets whose data changed since the last run here, a rotating
+// fill). Whole-corpus checks are unaffected; only the per-page crawl shrinks.
+const STREET_MODE = streetMode();
 
 const t0 = Date.now();
 console.log(`\n═══ MILTONLY STREET VERIFICATION ═══`);
@@ -85,6 +94,18 @@ console.log(`build       ${servedSha.slice(0, 7)} served == expected`);
 const slugs = await publishedStreetSlugs(BASE);
 console.log(`sitemap     ${slugs.length} published street pages (derived, not a literal)`);
 
+// ── the crawl set: every street, or the sample (MC-035) ─────────────────────────────────────
+const state = readState(BASE);
+let crawlSlugs = slugs;
+if (STREET_MODE === 'sample') {
+  const s = await sampleStreets(BASE, slugs, { since: state.lastRunAt, runs: state.runs });
+  crawlSlugs = s.crawl;
+  console.log(`sample      ${s.crawl.length} streets: ${Object.keys(s.fixed).length} class picks (${s.classes} classes, run ${s.runs}), ${s.touched.length} data-touched since ${state.lastRunAt || 'never'}${s.touchedDropped ? ` (${s.touchedDropped} more touched, beyond the cap)` : ''}, ${s.rotating.length} rotating`);
+  console.log(`            picks: ${Object.entries(s.fixed).filter(([k]) => !k.startsWith('hub:')).map(([k, v]) => `${k}=${v}`).join(' ')}`);
+} else {
+  console.log(`streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)`);
+}
+
 // ── the record, derived — only if a selected check needs it ──────────────────────────────────
 const record = checks.some((c) => c.needsRecord) ? await loadRecord() : null;
 if (record) console.log(`record      DB2 + analytics aggregates loaded`);
@@ -97,7 +118,12 @@ const homeRecord = checks.some((c) => c.needsHomeRecord) ? await loadHomeRecord(
 if (homeRecord) console.log(`home record ${homeRecord.publishedStreetPages} published street pages + Milton-wide figures loaded`);
 
 // ── ONE crawl, every check ───────────────────────────────────────────────────────────────────
-const ctx = { base: BASE, slugs, record, hubRecord, homeRecord };
+const ctx = { base: BASE, slugs, crawled: crawlSlugs, mode: STREET_MODE, record, hubRecord, homeRecord };
+
+// A check that must read the corpus BEFORE the crawl (prerender-coverage: a crawl turns a MISS
+// into a HIT) runs its sweep here and finds the result on ctx.sweep.
+for (const c of checks) if (typeof c.beforeCrawl === 'function') ctx.sweep = await c.beforeCrawl(ctx);
+if (ctx.sweep) console.log(`sweep       ${ctx.sweep.states.length} streets read for the cache split before the crawl`);
 const rowsByCheck = new Map(checks.map((c) => [c.id, []]));
 const failures = [];
 
@@ -106,7 +132,7 @@ const failures = [];
 // unchanged: any per-page check present puts the crawl back.
 const needsCrawl = checks.some((c) => !c.wholeCorpusOnly);
 const statuses = needsCrawl
-  ? await crawl(BASE, slugs, (slug, html) => {
+  ? await crawl(BASE, crawlSlugs, (slug, html) => {
       if (html === null) return;                   // non-200s are counted below, not parsed
       for (const c of checks) {
         if (c.wholeCorpusOnly) continue;
@@ -120,10 +146,11 @@ if (statuses) {
   console.log(`crawled     ${statuses.length} pages · ${fetched} × 200 · ${statuses.length - fetched} other`);
 
   // The count is asserted against the set it was derived from, never against a remembered number.
-  const iteratedOk = statuses.length === slugs.length && fetched === slugs.length;
-  console.log(`\nASSERT iterated == live sitemap count (${slugs.length}) : ${iteratedOk ? 'PASS' : 'FAIL'}`);
+  const iteratedOk = statuses.length === crawlSlugs.length && fetched === crawlSlugs.length;
+  const crawlLabel = STREET_MODE === 'sample' ? 'sample size' : 'live sitemap count';
+  console.log(`\nASSERT iterated == ${crawlLabel} (${crawlSlugs.length}) : ${iteratedOk ? 'PASS' : 'FAIL'}`);
   if (!iteratedOk) {
-    failures.push(['crawl', 'iterated == live sitemap count', statuses.length, slugs.length]);
+    failures.push(['crawl', `iterated == ${crawlLabel}`, statuses.length, crawlSlugs.length]);
     statuses.filter((s) => s.status !== 200).slice(0, 8).forEach((s) => console.log(`   ${s.slug} -> ${s.status}`));
   }
 } else {
@@ -151,7 +178,8 @@ for (const c of checks) {
 
 // ── summary ──────────────────────────────────────────────────────────────────────────────────
 const secs = ((Date.now() - t0) / 1000).toFixed(0);
-console.log(`\n═══ ${failures.length === 0 ? 'PASS' : 'FAIL'} · ${checks.length} checks · ${slugs.length} pages · ${secs}s ═══`);
+console.log(`\n═══ ${failures.length === 0 ? 'PASS' : 'FAIL'} · ${checks.length} checks · ${STREET_MODE === 'sample' ? `${crawlSlugs.length} of ${slugs.length} pages (sample)` : `${slugs.length} pages`} · ${secs}s ═══`);
+writeState(BASE, { runs: (state.runs || 0) + 1, lastRunAt: new Date(t0).toISOString(), mode: STREET_MODE });
 if (failures.length) {
   console.log(`${failures.length} assertion(s) failed:`);
   for (const [id, label, actual, expected] of failures) console.log(`   [${id}] ${label}: ${actual}, expected ${expected}`);

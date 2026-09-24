@@ -19,7 +19,8 @@ const [, , mode, ...args] = process.argv;
 const OUT = "scratchpad/mp002/shots";
 fs.mkdirSync(OUT, { recursive: true });
 
-const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+const CHROME = process.env.CHROME_PATH || "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const browser = await puppeteer.launch({ headless: true, executablePath: CHROME, args: ["--no-sandbox"] });
 const page = await browser.newPage();
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 await page.setUserAgent(
@@ -45,9 +46,9 @@ try {
     await page.waitForSelector("#signin-email", { timeout: 30000 });
     await page.type("#signin-email", email);
     await shot("02-signin-email");
-    await page.click('button[type="submit"]');
+    await page.$eval("#signin-email", (el) => el.form.querySelector('button[type="submit"]').click());
     await page.waitForSelector("#signin-code", { timeout: 30000 });
-    const msg = await page.$eval("form", (f) => f.innerText.split("\n").slice(0, 3).join(" | "));
+    const msg = await page.$eval("#signin-code", (el) => el.form.innerText.split("\n").slice(0, 3).join(" | "));
     mark(`code step shown: ${msg}`);
     await shot("03-signin-code-step");
   } else if (mode === "link") {

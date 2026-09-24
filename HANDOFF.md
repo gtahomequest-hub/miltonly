@@ -2,9 +2,510 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-18 (MC-028 merged): four merges by SHA in order, the favicon set, Street Page v3 (MH-005), Portal slice 1 (MP-002, the door) and ML-004 (the CASL footer), each behind a full local gate; production serves `7196623` and the battery passed. Nothing waits on a merge._
+_Last rewritten 2026-09-24 (MC-043, MA-010's compliance fixes): `main` is `5f8cdb0` plus this docs commit, production serves `5f8cdb0` (`miltonly-6rj2rcp7y`), battery `PASS · 24 checks · 719 pages · 531s`. The /about captions are two cards, the "only" claim is gone from its three sources, the registered brokerage name renders in full everywhere the brokerage names itself, the hidden homepage FAQPage is removed, and MA-010 is merged by SHA (`794ef5a` as `60295f2`). Open for Aamir: the award list outside /about, MC-042's republish decision, MC-041's report, the `/rentals` 404 links, the Archive Data question to PropTx, `REPORT_EMAIL_TO`. Record `scratchpad/mc043/MC-043-ma010-compliance-fixes.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `5f8cdb0` AND PRODUCTION SERVES `5f8cdb0` (MC-043 plus MA-010, one build, `miltonly-6rj2rcp7y`).**
+- **Gates, in order:**
+  - local gate exit 0 on `30d808d` (867 s) and on `5f8cdb0` (615 s, 841 of 841 pages, 0 `P2024`);
+  - local battery `PASS · 24 checks · 719 pages · 495s` (`next start` on 3100);
+  - one preview, `miltonly-1bax8jetq`, `PASS · 24 checks · 719 pages · 650s`;
+  - production `PASS · 24 checks · 719 pages · 531s`. Logs are in `scratchpad/mc043/`.
+- **What changed:**
+  - `/about` shows two cards, "RE/MAX Hall of Fame" and "Serving Milton Since 2011". The 100% Club and
+    Executive Award cards are gone.
+  - The "only" claim is replaced by "Built exclusively for Milton, Ontario" in `config.ts:109`,
+    `layout.tsx:15` and `schema.ts:11`.
+  - "RE/MAX Realty Specialists Inc., Brokerage" renders in full at every self-naming site, including
+    our own office's "Listed by" lines. `brokerageDisplayName` returns `config.brokerage.name` when
+    `isOurBrokerage`. The comparison key drops the descriptor, because the feed omits it.
+  - The homepage FAQPage is removed. All six of its questions were schema-only.
+- **The separation line now reads:**
+  - own listing: "Contact Aamir Yaqoob of the listing brokerage, RE/MAX Realty Specialists Inc., Brokerage";
+  - other listings: "Contact Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage), not the listing brokerage (…)".
+- **MA-010:**
+  - `794ef5a` merged by SHA as `60295f2`, carrying MA-009 `846f187`.
+  - The `feat/audit` tip `eb9089e` (MA-010's docs) is NOT merged; Audit lands it.
+  - The nightly runs `scripts/audit/nightly/test-voice-rules.mjs` (1,032 assertions) from tonight.
+- **Left, and why:**
+  - `vow-acknowledgement.ts:22` still prints the short name. MP-006 (`feat/portal @ e622c96`) versions
+    it as terms VERSION 4.
+  - `sold/page.tsx:311` changed next to MP-006's `:310`. Expect a conflict when Portal merges; keep both.
+  - `AgentContactSection.tsx:27-29` still lists all three awards on /about and about 481 pages. So do
+    `AdsClient.tsx:330-332`, the `/rentals/ads` JSON-LD `award`, `AgentSidebar.tsx:20-22` and `/sell`
+    (`:108-109`). That is Aamir's call; the task named `about/page.tsx` only.
+- **The shell here collapses a doubled backslash in a Bash command before it runs.** A Python edit
+  meant to write a two-backslash JS string literal (the vCard comma escape) wrote one, which JS reads
+  as a plain comma. Build backslashes with `chr(92)` or use the Edit tool, and execute the edited line
+  to prove it.
+Record: `scratchpad/mc043/MC-043-ma010-compliance-fixes.md`.
+
+**MAIN IS `bfb6e74` AND PRODUCTION SERVES `bfb6e74` (MC-041). MC-042 PUBLISHED THREE STREETS AND TOOK THEM BACK
+TO DRAFT; NET PRODUCTION CHANGE NONE.**
+- **What ran:** `gowland-crescent-milton` through `regen-058-local.ts` (an April draft row already
+  existed), `ennisclare-drive-milton` and `jempson-path-milton` through `create-street-pages-local.ts`.
+  Each has its own order file and log under `scratchpad/mc042/`, DeepSeek only, fallback off, a cap.
+  Registry and Town geometry were real for all three.
+- **Cost $0.0310.** Gowland failed closed once ($0.0121) and passed on the second run.
+- **While published:** 73 of 73 production assertions passed (`scratchpad/mc042/assert-prod.mjs`: both
+  VOW sentences at both sites, the 24-month window, withheld addresses, the 100 cap). The battery read
+  `PASS · 24 checks · 722 pages · 482s`. The audit's own runner, uncapped, no longer found the three.
+- **Why they came down:** the fabrication review (`scratchpad/mc042/fabrication-review.md`) found 32
+  served claims with no ground in `inputJson`. Examples:
+  - Gowland in "west Milton"; it is east of downtown.
+  - Ennisclare "well north" of town; it is about 15 km west.
+  - Jempson's hero line says "townhouse rows and detached homes"; its own FAQ says townhouse only.
+  - Every page's FAQ says "established", with no build-era input.
+- **How they came down:** `scratchpad/mc042/unpublish.mjs`, the 058 convention (`draft`, `publishedAt`
+  null, `needsReview` true, `reviewNotes` says why), then purges. **To republish**, use the one UPDATE
+  in that script's header, then purge the seven paths. The prose is still in `StreetGeneration`.
+- **The mechanism, which probably reaches the other 719 pages (not measured):** validators ground
+  numbers, and `stripNumericParagraphs` cuts every numeric sentence at render. So the served profile is
+  the qualitative remainder, which nothing checks. The FAQ bank also asks "new construction or
+  established?" of every street.
+- **The street runners' `loadEnvLocal` cannot read `.env.local` any more.** CRLF lines fail its regex:
+  2 of 83 assignments parse, and the runner throws "DEEPSEEK_API_KEY unset". Run
+  `npx tsx --env-file=.env.local --tsconfig tsconfig.test.json <runner>` until the loaders are fixed.
+- **MC-041 (`bfb6e74`, clips at dated keys) is live but undocumented.** It has no report, no QUEUE mark
+  and no entry here. Its own prod battery log stops partway with no EXIT line. MC-042's two full
+  batteries on `bfb6e74` are the first complete ones.
+- **Found and not touched:**
+  - `/rentals` links to 29 malformed street slugs such as `/streets/costigan-road-103`, and all 29
+    return 404.
+  - The audit's D1: a finding whose target joins the sitemap is never re-checked, so it is carried on
+    every run (19 of the 47 are that). This one is Audit's to fix.
+Record: `scratchpad/mc042/MC-042-three-street-pages.md`.
+
+**MAIN IS `bfc389b` AND PRODUCTION SERVES `bfc389b`, MC-040 LIVE, ON NODE 22.** The ignore rule is
+out of `vercel.json` and into **`scripts/vercel-ignore.sh`**; `vercel.json` carries
+`"ignoreCommand": "bash scripts/vercel-ignore.sh"` (29 characters, from 250 against Vercel's 256
+limit). **The decision, unchanged except for one new exclusion:** skip only when the range touches
+nothing but `scratchpad/`, `docs/`, `*.md` or **`scripts/audit/`** (new, MC-040); `docs/phase-4.1/`
+is checked first and ALWAYS builds, because the generators read those prompt files at runtime; the
+range is `VERCEL_GIT_PREVIOUS_SHA`, falling back to `HEAD^` when absent or set-but-empty, never the
+tip commit alone. **Everything uncertain BUILDS:** no git, no repository, a base or head the clone
+does not carry, a diff that errors. That asymmetry is the whole point, and it is written into the
+file: a rule that builds too often costs minutes, a rule that skips a build it should have run
+ships nothing and nobody notices. **Run it by hand before you push:**
+`bash scripts/vercel-ignore.sh <base> <head>; echo $?` — 0 means it will skip, 1 means it will
+build, and it prints its reason. **`scripts/test-vercel-ignore.ts` (12 assertions, last in the
+prebuild chain)** holds your seven cases on real SHAs plus both halves of the MC-034 regression
+(`b4ebcd6~1..b4ebcd6` skips, `1cb431e..b4ebcd6` builds), an unreachable head, and the branch gate.
+**A fixture the clone does not carry is reported, not failed**, so Vercel's shallow clone runs
+eight of twelve and the build passes. **Proven on Vercel, rule live:** `ad8ae77` (the rule)
+→ `miltonly-a9a4yw0ow` Ready; `886249e` (one marker file under `scripts/audit/`)
+→ `miltonly-4w5ocqrfw` **Canceled**, the log reading `[vercel-ignore] SKIP: …`; `bfc389b`
+(`package.json`, the next real code push) → `miltonly-mk82xhesq` Ready, so a skip does not poison
+the next build (Vercel's previous-SHA stays at the last SUCCESSFUL deployment). The marker went in
+and out in those two commits: `scripts/audit/` is byte-identical to `9603468`. **Still builds, on
+purpose:** a push touching only `.github/workflows/`, and any non-main branch still skips (a
+worktree takes its preview from `npx vercel`). Record:
+`scratchpad/reports/MC-040-ignore-rule-in-a-file.md`.
+
+**MAIN IS `c1565b7` AND PRODUCTION SERVES `c1565b7`, MC-039 LIVE, ON NODE 22.** `feat/audit @
+9603468` (the MA-008 addendum) merged by SHA as `c1565b7`: seven files, all under
+`scripts/audit/morning/`, `scratchpad/` and `HANDOFF-audit.md`, nothing under `src/` or `prisma/`,
+so no local build and no battery were run (the app tree is byte-identical to the one
+`PASS · 24 checks · 708 pages` verified at `31da4b9`). The morning report now reads the **$300**
+cap, projects **spend so far plus the last seven FULL days' rate times the days left** (the cycle
+average straight-lined a heavy first week), flags cap risk only when `daysToCap <= daysLeft`, and
+prints the **whole** street-without-page backlog instead of the top ten. Tomorrow's 06:00 Toronto
+run is the proof; today's had already fired on the old code (`f50bfba`, projected $250.75 against
+the $200 cap). **THE IGNORE RULE DOES NOT SKIP AN AUDIT-ONLY PUSH.** It excludes `scratchpad/`,
+`docs/` and `*.md` and nothing else, so any change under `scripts/` builds production: this merge
+built `miltonly-gepjcuv36` (Ready, identical app code, two or three billed minutes). Test it before
+pushing with the rule's own command, `git diff --quiet <served SHA> HEAD -- . ':!scratchpad'
+':!docs' ':!*.md'` (exit 1 means it builds). **Adding `':!scripts/audit'` does not fit**: the
+`ignoreCommand` is 250 characters and Vercel's limit is 256, so the fix is to move the logic into a
+repo file and set `"ignoreCommand": "bash scripts/vercel-ignore.sh"`, a small task nobody has taken.
+Record: `scratchpad/reports/MC-039-audit-addendum-merge.md`.
+
+**MAIN IS `31da4b9` AND PRODUCTION SERVES `31da4b9`, MC-038 LIVE, ON NODE 22.** The batch under
+DEC-BATCH-MERGE: `feat/audit @ 6e99a86` merged as `6d19346` (MA-008, the morning report; its report
+names no SHA because it is committed with the work, and `6e99a86` is the only commit carrying it),
+`feat/web-analytics @ 7cfa4a2` as `f1d4080` (MH-009), then `1fee7f7` (the "average" rule) on top;
+the lockfile merged clean because `main`'s had not moved since `d068f84`. Local gate exit 0 (822 s,
+829 static pages, zero `P2024`), prebuild 40 PASS, lint clean, `pnpm install --frozen-lockfile`
+exit 0; full production battery **`PASS · 24 checks · 708 pages · 525s`**
+(`scratchpad/mc003/battery-mc038-prod-31da4b9.log`, 708 of 708 streets PRERENDER; the creation
+cron has published 18 streets since the 690 bar). **The morning report** (`.github/workflows/
+morning-report.yml`, crons 10:00, 11:00 and 12:00 UTC with a Toronto-06:00 gate, `workflow_dispatch`)
+ran once by hand from `main`: run `35681404348`, both jobs `success`, 54 s, email
+`01a0c70d-8deb-75c9-9a7d-a020662c314f` to the desk, and it committed `report(morning): 2026-09-21`
+(`31da4b9`, `scratchpad/audit/morning/` only). Dispatch it through the API with git's own token
+(`printf 'protocol=https\nhost=github.com\n' | git credential fill`, scopes `repo, workflow`;
+`POST /repos/gtahomequest-hub/miltonly/actions/workflows/morning-report.yml/dispatches {"ref":"main"}`
+answers 204); `gh` is not installed. `REPORT_EMAIL_TO` is not among the seven secrets and the script
+falls back to the desk address. **Its commit lands without a human, like the nightly, and it cost a
+second production build today:** I dispatched it 24 s after the batch push, its commit landed 90 s
+later, and the ignore rule diffs against the last *successful* deployment, which was still the
+previous one, so the batch built twice (`miltonly-gktwx3ok6` at `1fee7f7`, then `miltonly-ornbkrkke`
+at `31da4b9`, identical code). **Dispatch the morning report, or anything else that commits to
+`main` by itself, only after the batch's build shows Ready.** **Web Analytics on production:**
+Vercel serves the script from an obfuscated base path (`/35ca55a203cd90db/script.js`, set by
+`NEXT_PUBLIC_VERCEL_OBSERVABILITY_BASEPATH` at build), not `/_vercel/insights/`, and the script
+ignores a browser with `navigator.webdriver`; probe with `--disable-blink-features=AutomationControlled`
+and the flag overridden, and match the beacon path on `/view`, not on "insights". Proven: the magic
+link records as `/signin/link` with no query, `?w=` as `w=redacted`, the hub as its route. **The
+"average" rule:** `findMedian` in the hub and condo validators fails closed on `median`, `average`,
+`averages`, `averaged`, `on average` (`methodology_leak`), the three hub-tier system prompts say so;
+15 hubs ($0.0592) and 47 condos ($0.0972) regenerated, 158 Mill Street (zero-data, guard-skipped)
+hand-scrubbed; 0 of 22 hubs and 0 of 59 condos carry a banned word. **millside-drive-milton:** the
+three rental sentences (two lease-by-month, one on two records) replaced in `StreetContent.description`
+AND `StreetGeneration.sectionsJson` (the rendered source; a failed generation does not overwrite it)
+by one figure-free sentence; the page never rendered them anyway, because the street page suppresses
+every numeric sentence at render (`streetV2Data.ts` `stripNumericParagraphs`); nothing queues it
+again. Record: `scratchpad/reports/MC-038-batch-audit-analytics.md`; evidence `scratchpad/mc038/`
+(untracked).
+
+**HELD FOR THE NEXT BATCH:** nothing. MH-009 `7cfa4a2` is merged (above).
+
+**MAIN IS `b4ebcd6` AND PRODUCTION SERVES `b4ebcd6`, MC-037 LIVE, ON NODE 22.**
+`fix/vow-window @ 68f6662` merged by SHA as `2411e8e`; one build, one deploy; two local gates exit 0
+(578 s, 556 s; 810 static pages; zero `P2024`), prebuild 40 PASS (`vow-fields` 111), lint clean; full
+production battery **`PASS · 24 checks · 690 pages · 591s`** (`scratchpad/mc003/battery-mc037-prod-2411e8e-run2.log`). The
+commit above the merge carries the hub-tier "median" rule, the battery's aggregate rule and the
+regen loader fix (below); production built and serves `b4ebcd6` (the docs commit above it), and
+the full battery on that SHA is **`PASS · 24 checks · 690 pages · 560s`**
+(`scratchpad/mc003/battery-mc037-prod-b4ebcd6.log`, 690 of 690 streets PRERENDER). **What is now true.** (1) `src/lib/vowWindow.ts` `VOW_DISPLAY_MONTHS = 24` (`null`
+reverts it in one edit) bounds the street page's graduated fallback (`streetEnrichment.ts`
+`fullWindowAgg`), the hub ladder (`hubStreetLadder.ts` `rowsFull`), the hub and condo prose's
+quarterly trend (`TREND_WINDOW_MONTHS = DISPLAY_MONTHS`, whole quarters only: the trend starts at
+the first quarter boundary inside the window, Q4 2024 today, never a partial "Q3 2024" of a few
+sales), the condo "N trades on record" and the hero search's "N homes"; the battery's mirror
+`scripts/verify/lib/db.mjs` carries the same literal and `test-vow-fields` fails if the two diverge
+or a bound goes missing. **DB2 keeps every row.** The three existence gates stay whole on purpose
+and the test asserts it: bounding the street probe would 404 `walsh-avenue-milton`, bounding
+`anySaleOnRecord` would make 12 streets claim "No resales recorded yet", bounding
+`countRecordedTransactions` would stop 8 streets regenerating. Blast radius, measured before the
+cut (`scratchpad/mc037/journal-results.json`): 690 published streets, none vanish; 84 change tier;
+37 lose the sale typical and 24 the lease typical; the hub ladder keeps 133 of 170 typicals (37
+silent on 11 hubs); 303 hero counts shrink, 9 lose the suffix; 3 condos lose "N trades on record".
+All 22 hubs regenerated ($0.1125, three runs; cobban and willmott fail closed on
+`temporal_pairing` first) and 57 of 59 condos ($0.112; 158-mill-street and 174-bronte-street
+skipped by the zero-data guard, prose kept). (2) Purge 006 executed on DB2: 8,650 rows, 0 / 0 / 0
+remain, recorded in the file. (3) `src/lib/vowNotice.ts` `VOW_NOTICES` = the bona fide sentence +
+"The information is deemed reliable but is not guaranteed accurate by PropTx.", rendered by the
+footer, the sold-records island, the listing island, `VowComplianceNotice`, `/sold` and the three
+ads pages' own footer; `vow-display` asserts both on twelve page types. (4) Homepage lede "Every
+street. Every school. Every answer." (`mockData.ts`, the only surface). (5) The condo generator
+sends `byBed` lease typicals at k5, no records, no min/max; the three condo prompt docs ban a
+per-trade lease claim. (6) The 19 legacy "full MLS® access" FAQ answers scrubbed in place
+(`scripts/scrub-legacy-faq.ts --write`, 16 pages revalidated, 0 remain); those rows still carry
+the legacy "exact days-on-market per transaction is available to registered users" line,
+unrendered. **The battery's first run failed twice, both fixed on main above the merge, neither
+a page defect.** (a) `vow-fields` signs in as "the most recently acknowledged verified user", and
+the Portal builder's MP-006 test row (`gtahomequest+mp006@gmail.com`, acknowledged 19:30Z) had
+become that user, so the password sign-in answered 401: the check now prefers the row
+`VERIFY_PORTAL_EMAIL` names (`.env.local`, beside the password) and says so when the two do not
+match. (b) The regenerated hub prose said "a median of 92 days on market" on bronte-meadows and
+"median" on three more (old-milton, rural-milton-west, harrison): the voice rule is "typical",
+never "median", and nothing at hub tier refused it. `validateHubGeneration.ts` and
+`validateCondoGeneration.ts` now fail closed on the word (`methodology_leak`), the three hub-tier
+system prompts say so, the four hubs are regenerated ($0.0138) and revalidated, 0 of 22 say it.
+The check's bare-count rule is now "its own element or JSON string" (`>65 days on market`,
+`\"65 days on market\"`, `· 65 days on market`) instead of a list of six prefixes, because an
+aggregate can be introduced by any word ("Clarke's 81 days on market", "a whole: 69 days on
+market"); the JSON keys and "Listed N days ago" stay as they were. **Still on the prose, not
+fixed:** "average" appears in 15 hubs and 48 condos (the street prompt bans it, the hub-tier
+prompts do not; CLAUDE.md bans only "median"), a prompt-consistency decision for Aamir, about
+$0.25 to regenerate. `scripts/regen-condo-local.ts` reads a CRLF `.env.local` now and takes
+`REGEN_ORDER` as a file path. Record: `scratchpad/reports/MC-037-vow-window.md`; evidence
+`scratchpad/mc037/` (untracked).
+
+**MAIN IS `b814d99` AND PRODUCTION SERVES `b814d99`, MC-036 LIVE, ON NODE 22.** The PropTx VOW
+Best Practices (the PDF in `docs/compliance/`, indexed by its README with every R-8xx citation
+mapped to the live Article 8 rule; the rules PDF's cover says effective 2024-12-02) audited on
+thirteen display items and fixed where code could fix it. **What is now true on production.**
+(1) `Listing.displayAddress` (InternetAddressDisplayYN) gates every surface through one mapper and
+one placeholder, "Address on request": no card or ladder mark on the street page (the count
+keeps the row), no cross street, street link, coordinate, tour URL or remark-quoted address on
+the listing page, no map pin, redaction or 404 on the ads pages, the place pages and `/rent`
+through the gated mapper, the condo unit list, the alert email (a street watch never carries a
+withheld row), `/saved`, the sold surfaces (no street beside "Address withheld"), the generator
+prompt; `/api/sync` requests both flags. AMPRE exposes only two flags: `InternetEntireListingDisplayYN`
+("Distribute to Internet Portals", `permAdvertise`) and `InternetAddressDisplayYN`. (2) `/listings`
+reaches 72 results (2 pages of 36), map pins cap at 100, saved listings at 100. (3) The verbatim
+bona fide sentence is in the site footer, the street sold-records island and the listing island.
+(4) The brokerage sits in the listing's own size and colour on `/sold`, the street table, the
+map card, the teaser cards, the saved cards, the ladder's live mark; the content APIs return
+`listOfficeName` and no `listedAt`. (5) Every contact card on a listing page opens with "Contact
+Aamir Yaqoob, RE/MAX Realty Specialists Inc., not the listing brokerage (…)"; the listing price
+left our booking card and mobile bar. (6) Exclusives carry a fixed source line. (7) The
+full-access claims are reworded (stored FAQs generated before today may still carry "full MLS®
+access"). (8) `/privacy/request` records a removal request by two emails (desk, requester) with
+the standing PropTx and listing-brokerage instruction, production only. (9) The street prompt
+carries no per-record lease comps; the choke refuses a house-number address that is not the
+prompt's declared subject (the condo generator declares its building). (10) `ShowingRequirements`
+and `ShowingAppointments` left the sold sync's select, columns and blob as `PrivateRemarks` did
+in July; `migrations/sold/006_showing_fields_purge.sql` is PREPARED, NOT EXECUTED (8,649 and
+1,852 rows held); the prebuild guard fails a build that reads an agent-only field. **Battery:**
+two new checks, `vow-display` (the flag on every surface for every withheld row, the 100 cap,
+the notice on nine page types, the 2003 floor, the 26-hour refresh) and `agent-only` (DB2
+clean, nine surfaces and payloads free of the field names; the showing vocabulary in public
+remarks is reported, not failed). Before the fix `vow-display` found 20 leaks on 22 surfaces.
+**Open, Aamir's decisions:** Archive Data (1,105 DB2 rows older than two years render through
+the street fallback on 170 streets, the hub ladder, the hub and condo prose's 30-month trend:
+cut the windows to 24 months in `streetEnrichment.ts:74`, `hubStreetLadder.ts:135`,
+`buildHubInput.ts:41`, `buildCondoBuildingInput.ts:44` and regenerate, or apply for the Archive
+agreement); PropTx's copyright text (none on any page; nothing invented); the 8.25 "deemed
+reliable but not guaranteed accurate by PropTx" sentence (on no page); the ToU clauses (v)
+ownership and (viii) PropTx's access to verify, absent from `VOW_ACKNOWLEDGEMENT_TEXT`; `/privacy`
+does not say Personal Information may be shared with PropTx; no inactivity timeout, no per-access
+audit trail; the 37 stored descriptions naming a leased price by month, and the condo generator's
+per-record lease rents. Record: `scratchpad/reports/MC-036-vow-display-rules.md`.
+
+**MAIN IS `7064c1a` AND PRODUCTION SERVES `7064c1a`, MC-035 LIVE, ON NODE 22.** `fix/deploys @
+0318f35` merged as `722ad58` (its production build failed the prebuild: `prerenderStreetLimit
+(undefined)` reads `VERCEL_ENV`, which Vercel's build shell sets and the local prebuild does not),
+the fix `0b331ae` merged as `7064c1a`; four local gates exit 0, zero `P2024`, 794 then 796 static
+pages; production battery `PASS · 22 checks · 677 pages · 746s`. **What changed.** (A)
+`CLAUDE.md` "Decisions": DEC-MERGE-CORE-ONLY, DEC-ONE-PREVIEW, DEC-BATCH-MERGE (batches of two or
+three approved SHAs, one battery, one deploy; a live production defect deploys alone). Last week
+was 24 builds, 15 with code, 18 merges of 16 tasks; the rule gives 6 to 8 deploys a week. (B) The
+battery: `--streets=sample` (`scripts/verify/lib/sample.mjs`: one street per class the checks
+branch on, rotating by a run counter in the OS temp dir per host; the streets whose data changed
+since the last run here; a rotating fill to fifty), **default full** until Audit adds
+`node scripts/verify/run.mjs --streets=full` to the nightly (the nightly runs no battery today, so
+nothing would catch a sampled-out defect within 24 h; and after (C) the full crawl renders
+nothing anyway). The new check `prerender-coverage` sweeps every street BEFORE the crawl and fails
+production when a pre-build street answers MISS; `/api/build` answers `builtAt` (BUILD_AT from
+`next.config.mjs`) and `env`. **After a deploy, do not purge before the battery: the build is
+fresh, and a tag drop turns every prerendered page into a REVALIDATED render on its next request,
+which is what the sweep then reads (this run: HIT 1, REVALIDATED 676, MISS 0, because I purged
+first).** (C) `src/lib/streetPrerender.ts` keyed on `VERCEL_ENV`: every published street on
+production, fifty on a preview; `.env.local` carries `production`, so the local gate prerenders
+the corpus (8 to 11 minutes a build; run it detached with three workers on this 16 GB desk:
+`scratchpad/mc003/gate-build.ps1 <label>` writes `gate-<label>.txt` with the exit code, and the log
+comes out UTF-16). Build on Vercel 81 s to 145 s, 2 to 3 billed minutes. First request after a
+deploy: PRERENDER at 0.24 to 0.39 s (was a 2.3 s MISS). **No warm-streets job:** redundant for
+deploys; the street cache is emptied by tag drops (`listings`, `db2`, `db3`, `hubsets`, `surface`,
+3 to 6 a day), and a walker after each would be about 4,000 renders a day; the lever is the
+tags (drop `db3` only on a write; take `surface`, `hubsets` and `listings` off the page with a
+stamp key as MC-034 did for the rows), a follow-up. (D) `src/lib/bots.ts`, `robots.ts` and the
+Vercel Firewall rule "MC-035 waste bots" (PetalBot, SemrushBot, Amazonbot, AhrefsBot deny;
+proven 403, the welcome bots 200; the first rule this project has, applied through the API).
+Bytespider (11,379 requests in 7 days, more than the four together), tiktokspider,
+meta-externalagent and MJ12bot are unblocked and were not in scope. **The ignore rule cancels a
+redeploy of an already-built commit** (same SHA as the last successful deployment, no diff): a
+clean post-deploy sweep needs a real commit. Record: `scratchpad/reports/MC-035-fewer-deploys.md`;
+evidence `scratchpad/mc035/` (untracked).
+
+**(2026-09-21, superseded by MC-038 above)** `feat/web-analytics @ 7cfa4a2` (MH-009) was held for
+the next batch and is now merged. `fix/favicon @ 9144b35` and `feat/street-v3 @ 2553f2e` are already
+on `main` since MC-028 (`ea81883`, `e078e91`); a request to merge them again is a stale report, not work.
+
+**MAIN IS `d068f84` AND PRODUCTION SERVES `d068f84`, MC-034 LIVE, ON NODE 22.** `fix/cost-2 @
+edae874` (the docs commit above the proven `6ba561e`) merged by SHA with `--no-ff` as `d068f84`
+on `5bd57e1`; no preview for the merge, the production build was the proof (`miltonly-cccss8tbn`,
+Ready, `/api/build` answers `d068f84`). Purged `db2`, `db3`, `listings` and the 22 hubs; full
+production battery **`PASS · 21 checks · 663 pages · 770s`**
+(`scratchpad/mc003/battery-mc034-prod-d068f84.log`; the creation cron had added 17 pages at
+00:01Z). **The after-window** (`pgstat-window.mjs 600 mc034-after`, 00:20 to 00:30Z, the first
+minutes after the deploy with every ISR page cold): DB1 47,728 calls, 212,510 rows; the street
+pull 324 calls, 4,631 rows, **0 full-row**, all narrow plus the stamps, over about 213 renders
+(the `StreetContent` reads); the before-window (21:34 to 21:44Z Sunday, a quiet hour): 26
+full-row calls, 233 rows over about 13 renders. Per render the pull moved about 88 KB before
+and about 4 KB after; a same-hour pair is still worth taking (21:34Z on a Sunday). **The first
+docs-only push after the merge is this one: `npx vercel ls --prod` should show it CANCELED in
+seconds; if it built, the rule is wrong and `vercel.json` is the first thing to read.** The
+paragraph below is the branch state as it was previewed.
+
+**`fix/cost-2 @ 6ba561e` WAS PREVIEWED AND MERGED (MC-034).** Three commits above
+`5bd57e1`: `f1291a4` the work, `a4c6eb4` the review's two fixes, `6ba561e` the rule under
+Vercel's 256-character `ignoreCommand` limit. Preview `miltonly-jm3fj4ug7` serves it; full
+battery there `PASS · 21 checks · 646 pages · 802s`; local gate exit 0, 168/168, `neon-egress`
+63. **What it does.** (1) `src/lib/street-data.ts`: `STREET_LISTING_SELECT` (fifteen columns, no
+photos, no description, no VOW-only column; the card's image is `photos[1]` of the active rows in
+one raw query), `getStreetPageData` under `perRequest` (React.cache, now exported from
+`hubSets.ts`) and the rows through `dataCached` keyed `["street-listings:v1",
+<count>:<max updatedAt>, ...siblingSlugs]`, revalidate 3600, tag `listings`
+(`LISTING_ROWS_TAG` in `revalidateSurfaces.ts`, dropped by `revalidateListingSurfaces` after
+every write by the three listing syncs, accepted by `/api/revalidate`). The stamp is in the key
+because `unstable_cache` serves a tag-dropped entry stale while it refreshes; a write changes the
+key. Measured on `main-street-milton`: production 4 full-row pulls a render (688 rows, 75 columns,
+about 3.4 MB); the preview 2 narrow pulls (344 rows, 15 columns) plus 2 stamp rows and 2 photo
+reads, and the next request within the hour 1 stamp row and no pull. The 4 pulls are the HTML and
+RSC passes of one regeneration; `cache()` alone halves them, the Data Cache zeroes the rest. A
+clean production window (21:34 to 21:44Z Sunday, nothing else on DB1): 16,118 calls, 95,159 rows,
+the full-row pull 26 calls, 233 rows; **the after-window is measured on production after the
+merge with `scratchpad/mc003/pgstat-window.mjs 600 mc034-after`, same hour.** (2)
+`vercel.json`: `if [ "$VERCEL_GIT_COMMIT_REF" != main ]; then exit 0; fi; B=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git cat-file -e $B^{commit} || exit 1; git diff --quiet $B HEAD -- docs/phase-4.1 || exit 1; git diff --quiet $B HEAD -- . ':!scratchpad' ':!docs' ':!*.md'`,
+proven on the real pushes (a merge under a docs commit builds; docs only and the nightly audit
+skip; a missing base builds); `docs/phase-4.1/` always builds because the generators read those
+prompt files at runtime; CLAUDE.md says the same. **After the merge, the first docs-only push
+to `main` is the proof: `npx vercel ls --prod` shows it CANCELED in a few seconds.** (3) Item 2
+was not done, correctly: the "unused" Neon project `lingering-sea-07597558` is inspectionly.ca's
+production database (MC-016 and MC-033 were wrong to call it idle; its $15.66 a month is
+inspectionly's line on the shared Vercel invoice); `suspend_timeout_seconds` 0 is Launch's 300 s
+default on every endpoint and Launch allows nothing between that and never; 0 hours saved.
+(4) Previews per worktree in the last 7 days and the one-preview-per-task rule are in the report;
+skips cost $0. **Battery note:** with the Data Cache on the rows, a local `next start` battery
+must drop the `db2`, `db3` and `listings` tags first (`purge-preview.mjs` pattern) or the on-disk
+cache serves yesterday's rows. **Review notes left for a later task:** the street card prints
+`address` regardless of `displayAddress` (pre-existing); `latitude`/`longitude` are 0/0 on every
+row and `townLat`/`townLng` are the coordinates the rows carry; the generation twin in
+`src/lib/ai/buildGeneratorInput.ts:168` still pulls full rows (cron-time, not per render); the
+3,700 to 5,100 narrow rows the other street queries read per render are the next egress lever.
+Record: `scratchpad/reports/MC-034-cost-fixes.md`; evidence in `scratchpad/mc034/` (untracked).
+
+**MAIN IS `2510466` AND PRODUCTION SERVES `2510466`, ML-005 THE BOT GATE LIVE, ON NODE 22.**
+`feat/leads @ 064c5b6` merged by SHA as `2510466` on `e5c7ca7`: the door's guard set on
+`/api/leads/create` (honeypot, origin, a user-agent guard refusing a missing or quoted
+`User-Agent` with 200 and nothing written or sent, the rate limit keyed on the collapsed inbox
+with a daily window), every write and send behind `IngestDeps`, prebuild `test-lead-bot-gate.ts`
+(100 bot submissions through the real path, 0 rows, 0 emails). Three resolutions in the merge
+commit: `package.json` unions the prebuild line; `test-lead-forms.ts` excludes neither
+`ListingsCardsClient` (gone since MC-029) nor `ListingDetailClient` (a real form with the
+honeypot now); `ListingDetailClient.tsx` keeps MC-029's imports and takes ML-005's honeypot.
+Gate exit 0, 168/168, `P2024` 0. Proven on production (`scratchpad/mc003/mc032-proof.mjs
+bot|normal|delete`): a quoted UA answers `200 {"ok":true}` and writes no row, no activity, no
+Resend send; a Chrome UA writes the row (`env production`), records two `email_sent` rows, and
+Resend reports both the confirmation and the ops alert delivered; the row was then deleted.
+Battery `PASS · 21 checks · 646 pages · 871s`. Record: `scratchpad/reports/MC-032-lead-bot-gate.md`.
+
+**MC-033, THE COST CHECK (NO CODE), IN ONE PARAGRAPH.** Vercel's real billing period is the 3rd
+07:00Z to the 3rd; team on-demand billed **$156.76 at day 17 against $41.37 for all of last
+cycle**, Build CPU Minutes 87% of it ($154.20 usage; miltonly $81.86 for about 780 billed minutes
+against $22.15 for 211; homesly $61.76). Infra fell from $12.91 a day to $4.15 a day after the
+branch rule (`65e9c90`, 09-14), still 2.5x last cycle's daily rate: the residual is deploy count
+(3.1 production a day, 9 of the last 25 docs-only; worktree CLI previews about $30 a cycle) at
+$0.105 a Turbo minute, about $0.32 a production build. The 37 ignore-rule skips this cycle cost
+nothing measurable. Projected cycle end: **about $210 on demand, about $260 invoiced**; the $200
+budget is crossed about 09-30. **Neon egress is free on Launch (500 GB a project included) but
+DB1 is 71.6 GB month-to-date against the 16 GB ceiling, projected 106 GB**, 3.29 GB a day since
+MC-016 against 3.90 before (16% down, not the cut). Half of it is one statement: the unselected
+full-row `Listing` `findMany` on every street render, twice a render (`generateMetadata` and the
+page, no memo), about 4.9 KB a row on the wire (photos and description in TOAST), about 1.5 GB
+a day; 80% of renders are standing traffic at `revalidate = 3600`, batteries a quarter. Neon's
+bill is compute: 323 CU-h month-to-date across three computes awake 19 to 22.6 h a day (DB1 124,
+DB2 103, **the integration project nothing reads 96**), about $34 now, about $53 at month end.
+One battery in `pg_stat_statements` (MC-031's): DB1 +231,834 calls, +431,444 rows; DB2 +123,451,
++111,658; the window carried a local battery from another worktree and Neon's own monitoring;
+the production run alone is about 0.08 to 0.14 GB. Evidence in `scratchpad/mc033/` (untracked).
+Record: `scratchpad/reports/MC-033-cost-check.md`. The three levers it points at, none taken:
+select columns on the street render's `Listing` pull (or memo it per request), suspend or delete
+the integration Neon project, and fewer docs-only production builds (a docs path in the ignore
+rule would need the CLAUDE.md sentence changed).
+
+**MAIN IS `1a5a24d` AND PRODUCTION SERVES `1a5a24d`, MP-002b THE PASSWORD LIVE, ON NODE 22.**
+`feat/portal @ 98d2cd7` merged by SHA as `c1caac8` on `e087209` (the 2026-09-20 nightly audit):
+TRREB R-805(c), a username and a password per consumer. The email is the username; the card
+asks for a password (12+, bcrypt cost 12) with the acknowledgement; `POST /api/auth/login` is the
+returning sign-in with its own limiter and one 401 message for wrong, unknown and unset;
+`src/lib/vow-access.ts` `canSeeVowRecords` (verified, acknowledged, password set) is the one rule
+and the prebuild `test-portal-door.ts` reads ten files for the call. **Merge resolution, in the
+merge commit:** MC-029's `/api/listings/[mlsNumber]/vow`, `/listings` and `/api/auth/saved-listings`
+predate the rule and gated on a bare `vowAcknowledgedAt`; they now call `canSeeVowRecords`, so a
+session that came in by link and closed the card sees no VOW field on the listing page or the
+grid either. Full gate on Node 22 exit 0, 168/168, `P2024` 0, portal-door 126, vow-fields 67;
+`prisma migrate status` 31, up to date (`20260918120000_portal_password` was applied from the
+portal worktree). **The battery's signed-in half now uses the password** (`1a5a24d`): with
+`VERIFY_PORTAL_PASSWORD` in `.env.local` (never the repo; the desk row's passphrase, set through
+the live card on 2026-09-20) `vow-fields` POSTs `/api/auth/login`, no email and no signup limit
+spent; without it, the code door as before. Proofs on production, iPhone UA at 390
+(`scratchpad/mc003/mc031-proof.mjs card|login|row|reset-pw|delete-mc028`): an acknowledged row
+with no password gets the password-only card inline on the street ("Choose a password to
+finish", two password inputs, no name field) and 12 rows 1.6 s after saving; a returning sign-in
+from a fresh browser with email and password lands on `/streets/farmstead-drive-milton#sold-records`
+with 12 rows in 3.4 s. Purged tags and hubs, full production battery `PASS · 21 checks · 646
+pages · 878s`. `User` holds one row (the `+mc028` test row deleted). **The neon HTTP driver reads
+`timestamp` columns +4 h** (parsed as local); read them with `to_char` or trust Prisma. Record:
+`scratchpad/reports/MC-031-portal-password.md`, with the four URLs and the one-line TRREB
+sentence. The MC-030 and MC-029 paragraphs below stand.
+
+**MAIN IS `c83fffb` AND PRODUCTION SERVES `c83fffb`, MC-029 LIVE, ON NODE 22.** Production
+answered 200 again on 2026-09-19 evening (Vercel's pause lifted after about seven hours of 402),
+`main` was pushed (`e606d8b..c83fffb`: the merge `5994cc7` of `fix/vow-compliance @ de199c2`
+plus two docs commits), deployment `miltonly-82uy36xiw` built to Ready in 2m and `/api/build`
+answers `c83fffb5c642143f08befa75c89d8790fef5a79c`. **The battery expects the served head, not
+the merge SHA:** Vercel builds the pushed commit, so `EXPECT_SHA` is `c83fffb…` even though the
+code is `5994cc7`'s. The `db2`/`db3` tags and the 22 hubs were purged through `/api/revalidate`
+(a session-scratch `purge-prod.mjs` modelled on `scratchpad/mc003/purge.mjs`: tags first, then
+every `/neighbourhoods/<slug>` in the sitemap), then the full battery ran: `FAIL · 21 checks ·
+644 pages · 910s` (`scratchpad/mc003/battery-mc030-prod-c83fffb.log`) with seven failing lines
+that are all one street, `dinsmore-drive-milton`, published by the creation cron at 02:01Z one
+minute after the crawl read a 644-page sitemap (645 `StreetContent` rows by the end, 1259 of
+1260 sitemap URLs read, Beaty's ladder 68 vs 67, the home and menu page counts 645 vs 644).
+That is the creation-cron hour named below, isolated and pre-existing in kind; purged again
+(tags, hubs, `/`, `/streets`) and rerun `--only=homepage,hub-page,hub-meta,catchment`: `PASS · 4
+checks · 645 pages · 596s` (`-rerun.log`). The other 17 checks passed in the full run;
+`vow-fields` 15 of 15 on production: 16 of 16 anonymous surfaces carry no VOW-only field, the
+gated route answers no facts anonymously and the facts to the acknowledged session, the grid
+cards and the listing page island render them for that session, 474 listing URLs checked against
+DB1 with 0 off market or lacking `permAdvertise`, 5 of 5 surfaces measured with 0 brokerage
+elements differing from their price. An independent curl of `/listings/W13800708` (MISS) carries
+zero of the seven keys; its only "days on market" and "price history" text is the sign-in line
+and the market edition's aggregate. **Do not start a battery at :00 local**: the creation cron
+runs at :01Z every hour and a page published mid-crawl fails four checks by one street.
+Record: `scratchpad/reports/MC-030-vow-to-production.md`. The MC-029 paragraphs below stand.
+
+**HOW MC-029 REACHED MAIN (2026-09-19, UNDER THE PAUSE).** Vercel was paused for about seven
+hours from the evening of 2026-09-18 (every deployment answered 402). On that basis the merge
+was prepared and not pushed: `git merge --no-ff de199c2` (the branch head; code head `6c23bdc`)
+landed as `5994cc7` on `e606d8b`. Gated locally: `pnpm build` on Node 22 exit 0, 168/168; then
+`next start` on port 3100 (`scratchpad/mc003/run-start22.sh <port> <sha> <log>` sets
+`VERCEL_GIT_COMMIT_SHA` so `/api/build` answers the SHA the battery expects) and the full battery
+with `BASE=http://localhost:3100`: `FAIL · 21 checks · 626 pages · 749s` with four `hub-page`
+drifts and nothing else, then `PASS · 2 checks` on `hub-page,hub-meta` after purging the db2/db3
+tags, the 22 hubs and the street through `/api/revalidate` (the window-edge lie: gordon-krantz
+has a sale dated 2025-09-18, and Harrison's stock share moved with the feed; no MC-029 file
+touches a hub figure). `vow-fields` 15 of 15 locally. Before the pause, preview `czlzy3wc7`
+served `6c23bdc` and the full battery passed there (`PASS · 21 checks · 609 pages · 769s`).
+Record: `scratchpad/reports/MC-029-vow-compliance.md`, which carries the URL list for the TRREB
+reply and reconciles the audit's checklist (`MA-006-vow-fields-addendum.md` on `feat/audit`,
+every file:line) against the branch. The sitemap grew from 609 to 626 street pages overnight
+and stands at 645 (the creation cron).
+
+**WHAT MC-029 IS, IN ONE PARAGRAPH.** `src/lib/listings/vow.ts` names the seven VOW-only
+columns (`daysOnMarket`, `listedAt`, `priorPrice`, `priceChangedAt`, `lastPriceChangeAt`,
+`soldPrice`, `soldDate`), the public predicate (`permAdvertise` AND on the market: sale by
+`status='active'`, lease by `leaseStatus='active'`, as `PUBLIC_SALE_WHERE`, `PUBLIC_LEASE_WHERE`,
+`PUBLIC_LISTING_WHERE`, `isPublicListing`) and `stripVowFields`, which every page runs on a
+Prisma row before `JSON.parse(JSON.stringify(...))` hands it to a client component (it also drops
+`status` and `leaseStatus`, redundant on a public row). The listing page (ISR) never carries a
+VOW column; `/api/listings/[mls]/vow` (force-dynamic, `getSession` + `vowAcknowledgedAt`) answers
+them to an acknowledged session and `ListingVowFacts` renders them, with the sign-in line as the
+server default and MP-002's card for a signed-in, unacknowledged person. `/listings` is
+force-dynamic, reads the session on the server and passes `{ vow }` to `getListingsV2Data`, whose
+`CARD_SELECT` names no VOW column; the VOW columns join the select only then and land under
+`card.vow`. `/listings?status=sold` redirects to `/sold`; a sold, expired or leased listing page
+answers the display-flag shell ("This listing is not available for display", noindex, the same
+words for every reason). `/rentals`, `/rent`, `/rentals/ads`, the ad landing pages and the condo
+page use the public predicates (they selected leased units before). The Buy menu's "Price
+changes" panel keeps the count and shows the newest four homes, not the changed ones. The
+listing brokerage renders through one component, `src/components/listings/ListingBrokerage.tsx`,
+placed INSIDE the `[data-price]` element on every card and the detail page so it inherits the
+price's face, size, weight and colour (TRREB item 27), and beside the price in the alert email.
+Deleted: `/listings-v2-preview` and its mock fixtures (a public route rendering fabricated sold
+cards), `ListingsCardsClient.tsx`, `ListingsGrid.tsx`, `street/ActiveInventory.tsx` (dead).
+
+**THE BATTERY SIGNS IN THROUGH THE DOOR, AND THE DOOR HAS LIMITS.** `JWT_SECRET` is a sensitive
+Vercel secret: `vercel env pull` writes `[SENSITIVE]`, so a minted token was never an option and
+`.env.local` carries no `JWT_SECRET`. `vow-fields` POSTs `/api/auth/signup` for the most recently
+acknowledged verified user in DB1 (`gtahomequest@gmail.com`), reads `verifyCode` off the row,
+POSTs `/api/auth/verify`, keeps the cookie in the OS temp dir per host and checks it against
+`/api/auth/me` before reuse. One real sign-in email reaches that inbox per fresh sign-in. The
+limiter is shared by every lead form: three requests an hour per address, five per IP in ten
+minutes; a 429 fails the check by name (it did once tonight, running production straight after
+the preview). The Upstash keys are shared between preview and production.
+
+**AGGREGATES LEFT AS THEY WERE, ON PURPOSE.** A street's typical days on market (k5, DB3), the
+hub's and the homepage's days on market, the market edition's "after 88 days on market", the
+menu's "N price changes in the last week" and "N listed in the last 24 hours", `/rentals` "N new
+this week" (now counted on the server), `/api/street-stats` (k-floored DB1 averages, no caller),
+`/api/listings/count`. The `/api/content/v1/*` routes still return `listedAt` per listing to the
+bearer-token content engine; they are not public. The daily brief names streets with a closing,
+never a listing.
+
+**LEFT ON PRODUCTION BY THE PROOFS.** The desk's user `cmu66lk3y0000lhuz6ye554f3` has a fresh
+`verifyCode` cleared by the verify, and three sign-in emails in its inbox (preview, production,
+localhost). Nothing else. A `next start` battery signs in against localhost like any other host.
+
+**BEFORE MC-029: MAIN WAS `7196623` AND PRODUCTION SERVES `895962b`** (MC-028's docs commit;
+`e606d8b` is the nightly audit on top), `PASS · 20 checks · 609 pages · 713s`, ON NODE 22. The
+MC-028 paragraphs below stand.
 
 **MAIN IS `7196623` AND PRODUCTION SERVES `7196623`, `PASS · 20 checks · 609 pages · 713s`, ON
 NODE 22.** MC-028 merged four commits by SHA, in order, each followed by the full local gate
@@ -202,16 +703,16 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`7196623`** (MC-028: the favicon set, Street Page v3, Portal slice 1, ML-004, on top of MC-027), production serves it |
-| battery on production | **`PASS · 20 checks · 609 pages · 713s`** at `7196623`, 2026-09-18 |
-| `prisma migrate status` | **clean**, 30 migrations (`20260917120000_portal_door` was already applied when merged) |
-| waiting on merge | nothing |
+| `main` | **`5f8cdb0`** (MC-043 on the MA-010 merge `60295f2`) plus MC-043's docs commit; production serves `5f8cdb0` (`miltonly-6rj2rcp7y`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 531s`** at `5f8cdb0`, 2026-09-24 (preview `miltonly-1bax8jetq` 650s, local 495s) |
+| `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
+| held for the next batch | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
-| creation programme | **running**, cap 20 per UTC day, DeepSeek first |
+| creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
-| nightly audit | **live**, 03:00 Toronto, run `34769017742` by hand 2026-09-13, first email `f97ac935…` |
-| open tasks | watch the 39 queued streets land; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
+| nightly audit, morning report | nightly **live** 03:00 Toronto; morning report **live** 06:00 Toronto, first scheduled run 2026-09-22 (`f50bfba`), first on the addendum due 2026-09-23 |
+| open tasks | **the award list outside /about** (MC-043); **MC-042's decision** (republish the three, or ground the qualitative prose first); MC-041's docs; JSON-LD catchment and "only" rules for Audit; the `/rentals` 404 links; the runners' CRLF env loader; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -580,5 +1081,13 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Open: the 39 queued streets; Portal slices MP-003 (the account) and MP-004 (the loop back) on
-a prompt; the Node 24 runtime move before 2026-10-01; `barclay-circle` and `gordon-krantz-avenue` on a later pass.
+Whatever Aamir names. Held: nothing. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
+for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
+established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say
+whether the corpus carries the same claims. Also open: MC-041's report, the 29 `/rentals` links that 404, the
+street runners' CRLF `loadEnvLocal`, and D1 to Audit. Open from MC-036 to MC-039: the Archive Data question to PropTx (the
+24-month cut is the reversible default, `VOW_DISPLAY_MONTHS`); PropTx's copyright text; the ToU clauses (v) and
+(viii); the `/privacy` PropTx line; inactivity timeout and audit trail; the legacy days-on-market FAQ line on 19
+rows; `REPORT_EMAIL_TO`; the build-minute burn the morning report names; the 32-street backlog the morning
+report now prints; the Node 24 runtime move before 2026-10-01. (The ignore rule as a repo script is done, MC-040.)

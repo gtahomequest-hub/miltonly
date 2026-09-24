@@ -1,0 +1,26 @@
+[regen-local] primaries {"AI_PROVIDER_MARKET":"","AI_PROVIDER_AHA":"","AI_PROVIDER_EVAL":""} -> all deepseek; fallback disabled
+[regen-local] 1 in set, 4 already done, 1 to run
+[Phase41] gowland-crescent-milton TIER 2 (thin-data): totalListings=7 (active=1 sold=3 leased=3) — market prompt prepended with no-numerics instruction
+[Phase41/aha] gowland-crescent-milton attempt 1: 0 violations (clean) | tokens 5960in/611out | $0.00101
+[Phase41/market] gowland-crescent-milton attempt 1: invalid_json_shape ({"sections":[{"id":"market","heading":"Trade patterns","paragraphs":["Gowland Cr) | tokens 10359in/539out | $0.00160 — RETRY
+[Phase41/market] gowland-crescent-milton retry-feedback for attempt 2 (283 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- invalid_json_shape: {"sections":[{"id":"market","heading":"Trade patterns","paragraphs":["Gowland Cr
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/eval] gowland-crescent-milton attempt 1: 0 violations (clean) | tokens 9132in/1138out | $0.00160
+[Phase41/market] gowland-crescent-milton attempt 2: 0 violations (clean) | tokens 10435in/510out | $0.00160
+[Phase41] gowland-crescent-milton combined: 1104 words, aha=1+market=2+eval=1 attempts, total $0.00581, PASS
+[Phase41/judge] gowland-crescent-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/gowland-crescent-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/gowland-crescent-mil
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/timberlea (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/timberlea
+[generateStreetContent] revalidated: /streets/gowland-crescent-milton, /streets, /neighbourhoods/timberlea
+[  1/1] PASS gowland-crescent-milton              att=2 $0.00580 judge=PASS published 14s
+
+[regen-local] complete. passed 1, failed 0, deepseek cost $0.0058
+[regen-local] revalidate /streets -> 200
+EXIT 0

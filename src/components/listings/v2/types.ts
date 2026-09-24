@@ -12,9 +12,12 @@
 //   - beds should become gte (live query is exact-match despite the "N+" label)
 //   - q gains a real input (the live page supports ?q= but had no search box)
 //   - mapPins should be ALL filtered results (capped ~400, page-independent) so
-//     the map isn't limited to the current page of 36.
+//     the map isn't limited to the current page of 36. (MC-036: the cap is 100,
+//     the public 100-result line, and the pager stops at 2 pages for the same reason.)
 
-export type ListingsStatus = 'active' | 'rent' | 'sold';
+// MC-029: there is no public 'sold' mode. A sold listing is VOW data in its entirety; /sold is
+// the gated surface, and /listings?status=sold redirects there (src/app/listings/page.tsx).
+export type ListingsStatus = 'active' | 'rent';
 export type ListingsType = 'all' | 'detached' | 'semi' | 'townhouse' | 'condo';
 export type ListingsSort = 'newest' | 'price_asc' | 'price_desc';
 
@@ -40,10 +43,6 @@ export interface ListingCardData {
   /** raw TREB form, e.g. "1035 - OM Old Milton" — card cleans it */
   neighbourhood: string;
   price: number;
-  /** present on sold records; card renders the sold treatment */
-  soldPrice: number | null;
-  soldDate: string | null; // ISO
-  status: 'active' | 'sold' | 'rented';
   transactionType: 'For Sale' | 'For Lease';
   propertyType: 'detached' | 'semi' | 'townhouse' | 'condo';
   bedrooms: number;
@@ -52,12 +51,12 @@ export interface ListingCardData {
   sqft: number | null;
   parking: number;
   photos: string[];
-  listedAt: string; // ISO
-  daysOnMarket: number | null;
-  /** DEC-PRICE-HISTORY: the list price before the most recent observed change, and when.
-   *  Present only on cards from getListingCards; the grid's own queries do not select them. */
-  priorPrice?: number | null;
-  priceChangedAt?: string | null;
+  // NO VOW-ONLY COLUMN ON THE CARD (MC-029, src/lib/listings/vow.ts). listedAt, daysOnMarket,
+  // priorPrice, priceChangedAt, soldPrice, soldDate and status are gone from the type, so no
+  // surface can serialise them by accident. Every card is an active, advertised listing.
+  /** The withheld facts, present ONLY when the loader was told the session is an acknowledged
+   *  VOW consumer (getListingsV2Data(query, { vow: true })); absent otherwise. */
+  vow?: ListingCardVow;
   listOfficeName: string | null;
   // NO COORDINATE ON THE CARD. It carried the legacy feed value — 0 on every row — and no
   // component ever read it, so each page shipped 36 sentinels to the client waiting for someone
@@ -69,20 +68,32 @@ export interface ListingCardData {
   displayAddress: boolean;
 }
 
-/** Lightweight pin for the map view — all filtered results, not just this page. */
+/** Per-listing facts an acknowledged VOW consumer may see on a card. Server-decided. */
+export interface ListingCardVow {
+  daysOnMarket: number;
+  listedAt: string; // ISO
+  priorPrice: number | null;
+  priceChangedAt: string | null; // ISO
+}
+
+/** Lightweight pin for the map view: the filtered results up to the cap, not just this page.
+ *  A withheld listing (displayAddress false) is never a pin: a pin is a map position, and the
+ *  loader's pin query excludes it. The flag stays on the type so the panel's address line
+ *  cannot assume it. */
 export interface MapPin {
   mlsNumber: string;
   latitude: number;
   longitude: number;
   price: number;
   transactionType: 'For Sale' | 'For Lease';
-  status: 'active' | 'sold' | 'rented';
   propertyType: string;
   bedrooms: number;
   bathrooms: number;
   address: string;
   displayAddress: boolean;
   photo: string | null;
+  /** The listing brokerage, rendered beside the price on the selected-pin card (item 27). */
+  listOfficeName: string | null;
 }
 
 export interface ListingsStats {

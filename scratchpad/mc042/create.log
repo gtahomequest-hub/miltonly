@@ -1,0 +1,64 @@
+[create-bulk] primaries -> deepseek; fallback disabled
+[create-bulk] 2 in set, 0 already done, 2 to run, cap $0.25
+[Phase41] ennisclare-drive-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] ennisclare-drive-milton ZERO-PRICE: kAnonLevel=thin noPriceAtAnyGrain=true - all three prompts prepended with the no-price-exists instruction
+[Phase41] ennisclare-drive-milton TIER 2 (thin-data): totalListings=2 (active=1 sold=1 leased=0) — market prompt prepended with no-numerics instruction
+[Phase41/market] ennisclare-drive-milton attempt 1: 1 violation (zero_tier_price@neighbourhoodComparable) | tokens 11115in/487out | $0.00169
+[Phase41/market] ennisclare-drive-milton retry-feedback for attempt 2 (621 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- zero_tier_price in section "neighbourhoodComparable": "$1.55M" - matches neighbourhoodComparable.typicalSoldPrice (1,550,000) but does not name "Rural Nassagaweya" nearby. This street has no price of its own, so an unattributed figure reads as its price. Name the entity the figure belongs to, or drop it.; ctx: pical sold price for detached homes in the area sits around $1.55M, drawn from a sample large enough to stand on its own. Dire
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[Phase41/aha] ennisclare-drive-milton attempt 1: 0 violations (clean) | tokens 6716in/591out | $0.00111
+[Phase41/eval] ennisclare-drive-milton attempt 1: 0 violations (clean) | tokens 8066in/897out | $0.00138
+[Phase41/market] ennisclare-drive-milton attempt 2: 0 violations (clean) | tokens 11278in/485out | $0.00171
+[Phase41] ennisclare-drive-milton combined: 959 words, aha=1+market=2+eval=1 attempts, total $0.00589, PASS
+[Phase41/judge] ennisclare-drive-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/ennisclare-drive-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/ennisclare-drive-mil
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/nassagaweya (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/nassagaweya
+[generateStreetContent] revalidated: /streets/ennisclare-drive-milton, /streets, /neighbourhoods/nassagaweya
+[  1/2] PASS ennisclare-drive-milton              published $0.0059 cum $0.0059 11s
+[Phase41] jempson-path-milton SECTIONS: pricedCrossStreets=0 neighbourhoodComparable=true - suppression preamble prepended
+[Phase41] jempson-path-milton ZERO-PRICE: kAnonLevel=thin noPriceAtAnyGrain=true - all three prompts prepended with the no-price-exists instruction
+[Phase41] jempson-path-milton TIER 2 (thin-data): totalListings=3 (active=1 sold=1 leased=1) — market prompt prepended with no-numerics instruction
+[roundPrices] section=market '$752,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[roundPrices] section=neighbourhoodComparable '$752,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] jempson-path-milton attempt 1: 1 violation (zero_tier_price@neighbourhoodComparable) | tokens 11058in/481out | $0.00168
+[Phase41/market] jempson-path-milton retry-feedback for attempt 2 (614 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- zero_tier_price in section "neighbourhoodComparable": "$750,000" - matches neighbourhoodComparable.typicalSoldPrice (752,000) but does not name "Harrison" nearby. This street has no price of its own, so an unattributed figure reads as its price. Name the entity the figure belongs to, or drop it.; ctx: ld price for townhouse stock in the neighbourhood sits near $750,000. Sold-to-ask behaviour points to modest negotiation room ra
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=homes '$752,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/aha] jempson-path-milton attempt 1: 0 violations (clean) | tokens 6659in/567out | $0.00109
+[Phase41/eval] jempson-path-milton attempt 1: 1 violation (heading_out_of_bank@schools) | tokens 8009in/957out | $0.00139
+[Phase41/eval] jempson-path-milton retry-feedback for attempt 2 (303 chars):
+--- BEGIN RETRY FEEDBACK ---
+Your previous output failed validation. Revise and return a new complete output addressing:
+- heading_out_of_bank in section "schools": got "Schools nearby.", expected one of: Schools nearby | Education and schools
+
+Return the complete revised JSON. Do not include any prose commentary outside the JSON.
+--- END RETRY FEEDBACK ---
+[roundPrices] section=market '$752,000' → '$750,000' (sale, $500K-$999K/$25K) (no input within tolerance)
+[Phase41/market] jempson-path-milton attempt 2: 0 violations (clean) | tokens 11210in/528out | $0.00172
+[Phase41/eval] jempson-path-milton attempt 2: 0 violations (clean) | tokens 8085in/675out | $0.00132
+[Phase41] jempson-path-milton combined: 931 words, aha=1+market=2+eval=2 attempts, total $0.00720, PASS
+[Phase41/judge] jempson-path-milton round=1 PASS
+[streetSurface] tag drop skipped (no request scope): Invariant: static generation store missing in revalidateTag surface
+[generateStreetContent] revalidate skipped for /streets/jempson-path-milton (no request scope): Invariant: static generation store missing in revalidatePath /streets/jempson-path-milton
+[generateStreetContent] revalidate skipped for /streets (no request scope): Invariant: static generation store missing in revalidatePath /streets
+[generateStreetContent] revalidate skipped for /neighbourhoods/harrison (no request scope): Invariant: static generation store missing in revalidatePath /neighbourhoods/harrison
+[generateStreetContent] revalidated: /streets/jempson-path-milton, /streets, /neighbourhoods/harrison
+[  2/2] PASS jempson-path-milton                  published $0.0072 cum $0.0131 12s
+
+[create-bulk] ran 2, passed 2, failed 0, refused 0, $0.0131
+[create-bulk] published: 2
+  https://miltonly.com/streets/ennisclare-drive-milton
+  https://miltonly.com/streets/jempson-path-milton
+EXIT 0

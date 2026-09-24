@@ -3,6 +3,7 @@
 import { useUser } from "@/components/UserProvider";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ListingBrokerage from "@/components/listings/ListingBrokerage";
 
 interface SavedSearchData {
   id: string;
@@ -21,15 +22,19 @@ interface SavedSearchData {
   createdAt: string;
 }
 
+// What /api/auth/saved-listings returns per row: the address is redacted there when the seller
+// withheld it (MC-036), and the card prints "Address on request" for that row; listOfficeName
+// is the brokerage line beside the price.
 interface ListingPreview {
   mlsNumber: string;
   address: string;
+  displayAddress: boolean;
   price: number;
   propertyType: string;
   status: string;
-  streetSlug: string;
   bedrooms: number | null;
   bathrooms: number | null;
+  listOfficeName: string | null;
 }
 
 type Tab = "listings" | "searches";
@@ -210,8 +215,11 @@ export default function SavedDashboard() {
                       &times;
                     </button>
                     <Link href={`/listings/${listing.mlsNumber}`}>
-                      <p className="text-[14px] font-bold text-[#073126] mb-1">{listing.address}</p>
-                      <p className="text-[20px] font-extrabold text-[#073126]">${listing.price.toLocaleString()}</p>
+                      <p className="text-[14px] font-bold text-[#073126] mb-1">{listing.displayAddress ? listing.address : "Address on request"}</p>
+                      <p className="text-[20px] font-extrabold text-[#073126]" data-price>
+                        ${listing.price.toLocaleString()}
+                        <ListingBrokerage name={listing.listOfficeName} />
+                      </p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-[12px] text-[#6b6f6a]">{listing.propertyType}</span>
                         {listing.bedrooms && <span className="text-[12px] text-[#6b6f6a]">{listing.bedrooms} bed</span>}

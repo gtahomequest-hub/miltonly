@@ -1,23 +1,29 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { formatArchitecturalStyle } from "@/lib/listingStyle";
-import { formatPriceFull, daysAgo } from "@/lib/format";
+import { formatPriceFull } from "@/lib/format";
 import { postLeadDetailed, honeypotInputProps, HONEYPOT_WRAPPER_STYLE, HONEYPOT_FIELD, type PostLeadPayload } from "@/lib/postLeadClient";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
 import { REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
 import AgentContactSection from "@/components/AgentContactSection";
+import ListingBrokerage, { brokerageDisplayName, contactSeparationLine } from "@/components/listings/ListingBrokerage";
 import {
-  UrgencyBanner, VOWTeaser, WhatsNearby, MortgageCalc, TypicalRentBlock, type ListingRentFigure,
+  VOWTeaser, WhatsNearby, MortgageCalc, TypicalRentBlock, type ListingRentFigure,
   AudienceCTA, RentalBookingCard, SaveShareRow, MobileBottomBar,
 } from "./ListingExtras";
 
+// MC-036 item 1: for a row with displayAddress=false the page sends no street identity and no
+// rooftop (streetSlug, crossStreet and townLat/townLng arrive null, the remarks masked), and
+// this component names no street either way: the "Near", "Cross street" and Street
+// Intelligence surfaces are gated on displayAddress here as well, so a payload that slipped
+// through would still not be printed.
 interface Listing {
   mlsNumber: string; address: string; price: number; bedrooms: number; bathrooms: number;
-  parking: number; propertyType: string; status: string; photos: string[]; listedAt: string;
-  neighbourhood: string; description: string | null; streetSlug: string; latitude: number;
+  parking: number; propertyType: string; photos: string[];
+  neighbourhood: string; description: string | null; streetSlug: string | null; latitude: number;
   longitude: number;
   /** resolved municipal rooftop — null when the Town has no point for this address */
   townLat: number | null; townLng: number | null; sqft: number | null; basement: boolean; lotSize: string | null;
@@ -47,10 +53,13 @@ interface Extras {
   /** the Board's k-gated lease figure for this home type; null below the floor */
   rent: ListingRentFigure | null;
   schools: SchoolLite[];
-  domDays: number;
 }
 
-interface Props { listing: Listing; similar: Listing[]; extras: Extras }
+// MC-029: `listing` arrives without any VOW-only column (src/lib/listings/vow.ts) and is always
+// an active, advertised listing: the page returns the not-available shell for anything else.
+// `vowFacts` is the server-rendered island that fetches the withheld facts for an acknowledged
+// session (ListingVowFacts); this component only places it.
+interface Props { listing: Listing; similar: Listing[]; extras: Extras; vowFacts?: ReactNode }
 
 const TC_SMALL = new Set(["of", "at", "the", "in", "and", "on", "for", "by", "to"]);
 const TC_FIXUPS: Record<string, string> = { Remax: "RE/MAX", "Re/Max": "RE/MAX", Mls: "MLS", Ltd: "Ltd.", Inc: "Inc.", Re: "RE" };
@@ -64,13 +73,8 @@ function titleCase(s: string | null | undefined): string {
   return Object.entries(TC_FIXUPS).reduce((acc, [f, t]) => acc.replace(new RegExp(`\\b${f}\\b`, "g"), t), out);
 }
 
-function domColor(d: number): string {
-  if (d <= 14) return "text-[#15803d] bg-[#f0fdf4] border-[#bbf7d0]";
-  if (d <= 30) return "text-[#0b5c3a] bg-[#e6f4ec] border-[#bfe6d0]";
-  return "text-[#991b1b] bg-[#fef2f2] border-[#fecaca]";
-}
 
-export default function ListingDetailClient({ listing: l, similar, extras }: Props) {
+export default function ListingDetailClient({ listing: l, similar, extras, vowFacts }: Props) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [toast, setToast] = useState("");
@@ -94,10 +98,11 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
   const isRental = l.transactionType === "For Lease";
   const displayAddr = l.displayAddress ? titleCase(l.address) : "Address on request";
+  const addressWithheld = !l.displayAddress;
   const priceLabel = isRental ? formatPriceFull(l.price) + "/mo" : formatPriceFull(l.price);
-  const statusLabel = isRental ? "FOR RENT" : l.status === "sold" ? "SOLD" : "FOR SALE";
-  const statusColor = isRental ? "#017848" : l.status === "sold" ? "#ef4444" : "#16a34a";
-  const brokerage = l.listOfficeName ? titleCase(l.listOfficeName) : null;
+  const statusLabel = isRental ? "FOR RENT" : "FOR SALE";
+  const statusColor = isRental ? "#017848" : "#16a34a";
+  const brokerage = brokerageDisplayName(l.listOfficeName);
   const pricePerSqft = l.sqft && !isRental ? Math.round(l.price / l.sqft) : null;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 4000); };
@@ -193,7 +198,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-5 sm:px-11 py-6 pb-24 md:pb-6">
+      <div className="max-w-6xl mx-auto px-5 sm:px-11 py-6 pb-32 md:pb-6">
         {/* ═══ PHOTO GALLERY ═══ */}
         <div className="mb-6">
           {l.photos.length === 0 ? (
@@ -237,11 +242,14 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span className="text-[10px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 rounded-full" style={{ background: statusColor + "15", color: statusColor }}>{statusLabel}</span>
-                  <span className={`text-[10px] font-bold uppercase tracking-[0.08em] px-2.5 py-1 rounded-full border ${domColor(extras.domDays)}`}>
-                    {extras.domDays === 0 ? "Listed today" : `${extras.domDays}d on market`}
-                  </span>
                 </div>
-                <h1 className="text-[32px] font-extrabold text-[#073126] tracking-[-0.5px]">{priceLabel}</h1>
+                {/* The price and the brokerage share one styled wrapper, so the brokerage inherits
+                    the price's size, weight and colour (TRREB item 27, MC-029); the h1 stays the
+                    price alone. */}
+                <div className="text-[32px] font-extrabold text-[#073126] tracking-[-0.5px]" data-price>
+                  <h1>{priceLabel}</h1>
+                  <ListingBrokerage name={l.listOfficeName} />
+                </div>
                 {pricePerSqft && (
                   <p className="text-[12px] text-[#6b6f6a] mt-0.5">${pricePerSqft.toLocaleString()}/sqft</p>
                 )}
@@ -249,8 +257,6 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                 <p className="text-[14px] text-[#073126] font-medium mt-1">{displayAddr}</p>
               </div>
             </div>
-
-            <UrgencyBanner domDays={extras.domDays} isRental={isRental} />
 
             {/* Virtual tour prominent CTA */}
             {l.virtualTourUrl && (
@@ -289,10 +295,12 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
 
             {/* Listing info */}
             <p className="text-[11px] text-[#6b6f6a] mb-6">
-              Listed {daysAgo(new Date(l.listedAt)) === 0 ? "today" : `${daysAgo(new Date(l.listedAt))} days ago`} · Source: TREB MLS® {l.mlsNumber}
+              Source: TREB MLS® {l.mlsNumber}
               {brokerage && ` · ${brokerage}`}
-              {l.crossStreet && ` · Near ${l.crossStreet}`}
+              {!addressWithheld && l.crossStreet && ` · Near ${l.crossStreet}`}
             </p>
+
+            {vowFacts}
 
             {/* The public remarks, the listing brokerage's words verbatim. data-remarks marks the
                 block so the nightly audit reads it as third-party text and holds the rest of the
@@ -300,7 +308,11 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             {l.description && (
               <div className="mb-8" data-remarks>
                 <h2 className="text-[18px] font-extrabold text-[#073126] mb-1">Listing agent&apos;s remarks</h2>
-                <p className="text-[11px] text-[#6b6f6a] mb-3">As written by the listing brokerage, unedited.</p>
+                <p className="text-[11px] text-[#6b6f6a] mb-3">
+                  {addressWithheld
+                    ? "As written by the listing brokerage; the address is withheld at the seller's request."
+                    : "As written by the listing brokerage, unedited."}
+                </p>
                 <div className={`text-[13px] text-[#3e423f] leading-[1.8] ${showFullDesc ? "" : "line-clamp-4"}`}>
                   {l.description}
                 </div>
@@ -354,7 +366,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             </div>
 
             {/* What's nearby */}
-            <WhatsNearby lat={l.townLat ?? 0} lng={l.townLng ?? 0} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />
+            <WhatsNearby lat={addressWithheld ? 0 : l.townLat ?? 0} lng={addressWithheld ? 0 : l.townLng ?? 0} addressWithheld={addressWithheld} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />
 
             {/* Mortgage (sales only) */}
             {!isRental && <MortgageCalc price={l.price} taxAmount={l.taxAmount} propertyType={l.propertyType} />}
@@ -368,25 +380,30 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
             {/* Audience CTA */}
             <AudienceCTA mls={l.mlsNumber} isRental={isRental} />
 
-            {/* Street link */}
-            <div className="mb-8">
-              <Link href={`/streets/${l.streetSlug}`} className="flex items-center justify-between bg-white rounded-xl border border-[#dfe0dc] p-5 hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-[14px] font-bold text-[#073126]">Street Intelligence</p>
-                  <p className="text-[12px] text-[#6b6f6a]">See sold prices, trends, and market data for this street</p>
-                </div>
-                <span className="text-[#017848] text-lg">→</span>
-              </Link>
-            </div>
+            {/* Street link. Absent for a withheld address: the link is the street name. */}
+            {!addressWithheld && l.streetSlug && (
+              <div className="mb-8">
+                <Link href={`/streets/${l.streetSlug}`} className="flex items-center justify-between bg-white rounded-xl border border-[#dfe0dc] p-5 hover:shadow-md transition-shadow">
+                  <div>
+                    <p className="text-[14px] font-bold text-[#073126]">Street Intelligence</p>
+                    <p className="text-[12px] text-[#6b6f6a]">See sold prices, trends, and market data for this street</p>
+                  </div>
+                  <span className="text-[#017848] text-lg">→</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* ═══ SIDEBAR ═══ */}
           <div className="space-y-4 self-start min-w-0">
             <div id="sidebar-cta" className="sticky top-[70px] space-y-4">
               {isRental ? (
-                <RentalBookingCard mls={l.mlsNumber} address={displayAddr} price={l.price} />
+                <RentalBookingCard mls={l.mlsNumber} address={displayAddr} listOfficeName={l.listOfficeName} />
               ) : (
                 <div className="bg-[#073126] rounded-2xl p-6">
+                  {/* Whose card this is, first and in the card's text size (MC-036, TRREB item 8):
+                      the card sits sticky beside another brokerage's listing. */}
+                  <p className="text-[12px] text-[#fffdfa]/80 leading-snug mb-3" data-contact-separation>{contactSeparationLine(l.listOfficeName)}</p>
                   <h3 className="text-[16px] font-extrabold text-[#fffdfa] mb-1">Request a showing</h3>
                   <p className="text-[11px] text-[rgba(248,249,251,0.5)] mb-5">Tour this home. No obligation, no pressure.</p>
                   {saleFormSent ? (
@@ -418,7 +435,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                       <p className="text-[10px] text-white/60 leading-snug">{REPLY_FINE_PRINT}</p>
                     </form>
                   )}
-                  <p className="text-[10px] text-white/60 text-center mt-3">{config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")}</p>
+                  <p className="text-[10px] text-white/60 text-center mt-3">{config.realtor.name} · {config.brokerage.name}</p>
                   <div className="flex gap-2 mt-2">
                     <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#00ff80] border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80] transition-colors">📞 {config.realtor.phone}</a>
                     <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-white/60 border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80] hover:text-[#00ff80] transition-colors">💬 WhatsApp</a>
@@ -435,12 +452,10 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
               <div className="space-y-2.5">
                 {[
                   { label: "MLS®", value: l.mlsNumber },
-                  { label: "Status", value: l.status },
                   { label: "Type", value: titleCase(l.propertyType) },
-                  { label: "Listed", value: daysAgo(new Date(l.listedAt)) === 0 ? "Today" : `${daysAgo(new Date(l.listedAt))} days ago` },
                   brokerage ? { label: "Brokerage", value: brokerage } : null,
                   l.directionFaces ? { label: "Faces", value: l.directionFaces } : null,
-                  l.crossStreet ? { label: "Cross street", value: l.crossStreet } : null,
+                  !addressWithheld && l.crossStreet ? { label: "Cross street", value: l.crossStreet } : null,
                   l.maintenanceFeeAmt ? { label: "Maintenance", value: `$${Math.round(l.maintenanceFeeAmt)}/mo` } : null,
                   l.taxAmount ? { label: "Annual tax", value: `$${Math.round(l.taxAmount).toLocaleString()}` } : null,
                 ].filter(Boolean).map((item) => (
@@ -454,7 +469,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
           </div>
         </div>
 
-        <AgentContactSection headline="Have questions about this property?" />
+        <AgentContactSection headline="Have questions about this property?" listing={{ listOfficeName: l.listOfficeName }} />
 
         {/* Similar */}
         {similar.length > 0 && (
@@ -465,7 +480,10 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
                 <Link key={s.mlsNumber} href={`/listings/${s.mlsNumber}`} className="bg-white rounded-xl border border-[#dfe0dc] overflow-hidden hover:shadow-md transition-shadow">
                   <div className="h-[120px] relative" style={{ background: s.photos[0] ? `url(${s.photos[0]}) center/cover` : "#e6f4ec" }} />
                   <div className="p-3">
-                    <p className="text-[16px] font-extrabold text-[#073126]">{formatPriceFull(s.price)}{s.transactionType === "For Lease" ? "/mo" : ""}</p>
+                    <p className="text-[16px] font-extrabold text-[#073126]" data-price>
+                      {formatPriceFull(s.price)}{s.transactionType === "For Lease" ? "/mo" : ""}
+                      <ListingBrokerage name={s.listOfficeName} />
+                    </p>
                     <p className="text-[11px] text-[#6b6f6a] truncate mt-0.5">{s.displayAddress ? titleCase(s.address.split(",")[0]) : "Address on request"}</p>
                     <p className="text-[10px] text-[#6b6f6a] mt-1">{s.bedrooms}bd · {s.bathrooms}ba · {titleCase(s.propertyType)}</p>
                   </div>
@@ -480,7 +498,7 @@ export default function ListingDetailClient({ listing: l, similar, extras }: Pro
         </p>
       </div>
 
-      <MobileBottomBar price={l.price} isRental={isRental} onBook={scrollToCTA} />
+      <MobileBottomBar isRental={isRental} listOfficeName={l.listOfficeName} onBook={scrollToCTA} />
 
       {toast && (
         <div className="fixed bottom-20 right-5 z-50 bg-[#073126] border border-[#22c55e] rounded-xl px-4 py-3 flex items-center gap-2 text-[13px] text-[#fffdfa] shadow-lg">

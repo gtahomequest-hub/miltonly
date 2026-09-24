@@ -17,6 +17,7 @@ import { usePathname } from 'next/navigation';
 import type { SoldTableRow } from '@/types/street';
 import VowAcknowledgementPrompt from '@/components/vow/VowAcknowledgementPrompt';
 import { shortPrice, pct } from './format';
+import { VOW_NOTICES } from "@/lib/vowNotice";
 
 // THE GATE IS IN THE SERVED HTML (MH-005, MA-001 change 5). The island used to render a
 // "Loading sold records…" row on every visit and show the gate only after the fetch answered:
@@ -56,60 +57,72 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
   // renders. MP-002's ack card takes over only once the fetch says the person is signed in.
   const gated = !canSee && !needsAck;
 
+  // THE BONA FIDE SENTENCE IS UNDER THE CARD IN EVERY STATE (MC-036, PropTx item 5). It is
+  // outside every branch below, so the server renders it into the HTML with the gate, and it
+  // stays put through the acknowledgement card and the rows. Verbatim, not paraphrased.
+  const bonaFide = <p className="s-r-bona">{VOW_NOTICES}</p>;
+
   if (state === 'done' && needsAck) {
     return (
-      <div className="s-records" id="sold-records">
-        <div className="s-records-cap">Recent closed sales, {streetName}</div>
-        <VowAcknowledgementPrompt onDone={refetch} />
-      </div>
+      <>
+        <div className="s-records" id="sold-records">
+          <div className="s-records-cap">Recent closed sales, {streetName}</div>
+          <VowAcknowledgementPrompt onDone={refetch} />
+        </div>
+        {bonaFide}
+      </>
     );
   }
 
   return (
-    <div className={`s-records${gated ? ' s-gated' : ''}`} id="sold-records">
-      <div className="s-records-cap">Recent closed sales, {streetName}</div>
-      <table className="s-rtable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Address</th>
-            <th>Beds</th>
-            <th>Sold</th>
-            <th>vs Ask</th>
-            <th>DOM</th>
-            <th>Listing brokerage</th>
-          </tr>
-        </thead>
-        <tbody>
-          {state === 'done' && rows.length === 0 && canSee ? (
+    <>
+      <div className={`s-records${gated ? ' s-gated' : ''}`} id="sold-records">
+        <div className="s-records-cap">Recent closed sales, {streetName}</div>
+        <table className="s-rtable">
+          <thead>
             <tr>
-              <td colSpan={7} style={{ textAlign: 'center', color: 'var(--s-text-muted)', padding: 28 }}>
-                No recent sales on record.
-              </td>
+              <th>Date</th>
+              <th>Address</th>
+              <th>Beds</th>
+              <th>Sold</th>
+              <th>vs Ask</th>
+              <th>DOM</th>
+              <th>Listing brokerage</th>
             </tr>
-          ) : (
-            rows.map((r) => (
-              <tr key={r.mls_number}>
-                <td>{r.sold_date.slice(0, 10)}</td>
-                <td>{r.address}</td>
-                <td>{r.beds ?? '—'}</td>
-                <td>{shortPrice(r.sold_price)}</td>
-                <td>{pct(r.sold_to_ask_ratio)}</td>
-                <td>{r.days_on_market}d</td>
-                <td className="s-r-brok">{r.list_office_name ?? '—'}</td>
+          </thead>
+          <tbody>
+            {state === 'done' && rows.length === 0 && canSee ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', color: 'var(--s-text-muted)', padding: 28 }}>
+                  No recent sales on record.
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      <div className="s-gate">
-        <div className="s-gate-k">TREB VOW · Registered access</div>
-        <div className="s-gate-h">See every closed sale on {streetName}</div>
-        <div className="s-gate-p">Free with a verified email, exact sold prices, days on market, and sold-to-ask ratios.</div>
-        <Link className="s-gate-btn" href={signinHref} rel="nofollow">
-          Sign in free to unlock →
-        </Link>
+            ) : (
+              rows.map((r) => (
+                <tr key={r.mls_number}>
+                  <td>{r.sold_date.slice(0, 10)}</td>
+                  <td>{r.address}</td>
+                  <td>{r.beds ?? '—'}</td>
+                  <td>{shortPrice(r.sold_price)}</td>
+                  <td>{pct(r.sold_to_ask_ratio)}</td>
+                  <td>{r.days_on_market}d</td>
+                  <td className="s-r-brok">{r.list_office_name ?? '—'}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <div className="s-gate">
+          <div className="s-gate-k">TREB VOW · Registered access</div>
+          {/* a bounded claim (MC-036, item 10): the table is the last 90 days, twenty rows at most */}
+          <div className="s-gate-h">Recent closed sales on {streetName}, last 90 days</div>
+          <div className="s-gate-p">Free with a verified email, exact sold prices, days on market, and sold-to-ask ratios.</div>
+          <Link className="s-gate-btn" href={signinHref} rel="nofollow">
+            Sign in free to unlock →
+          </Link>
+        </div>
       </div>
-    </div>
+      {bonaFide}
+    </>
   );
 }

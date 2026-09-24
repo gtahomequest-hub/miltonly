@@ -17,11 +17,17 @@
 //   5. the two TTLs are an hour, the Neon reads' own (MC-017): a shorter one would cut every
 //      ISR page's revalidate to it. The Data Cache, not Upstash: `cached()` is bypassed under a
 //      static render, which since MC-017 is nearly every page's first render.
+//   6. (MC-034) the street render's Listing rows: a select naming only the columns the render
+//      reads (no photos, no description, no VOW-only column), read once per request
+//      (getStreetPageData under perRequest) and once per hour across passes (dataCached under
+//      LISTING_ROWS_TAG), and every listing sync drops the tag after a write.
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SURFACE_KEYS, SURFACE_TTL, SURFACE_TAG } from "../src/lib/streetSurface";
 import { HUB_SET_KEYS, HUB_SET_TTL, HUB_SET_TAG } from "../src/lib/hubSets";
+import { LISTING_ROWS_TAG } from "../src/lib/revalidateSurfaces";
+import { VOW_ONLY_FIELDS } from "../src/lib/listings/vow";
 
 const ROOT = resolve(__dirname, "..");
 const code = (p: string) => readFileSync(resolve(ROOT, p), "utf8");
@@ -83,9 +89,40 @@ function ok(cond: boolean, label: string) {
 // ── 4. /rentals ──────────────────────────────────────────────────────────────────────
 {
   const s = code("src/app/rentals/page.tsx");
-  ok(/cached\(`rentals:\$\{scope\?\.slug \?\? "all"\}:v1`, RENTALS_TTL/.test(s), "/rentals caches its bundle per scope");
+  // the key's version suffix moves when the bundle's shape changes (v2: MC-029 added newThisWeek)
+  ok(/cached\(`rentals:\$\{scope\?\.slug \?\? "all"\}:v\d+`, RENTALS_TTL/.test(s), "/rentals caches its bundle per scope");
   ok(!/export const revalidate/.test(s), "/rentals no longer declares a revalidate beside force-dynamic");
   ok(/const RENTALS_TTL = 900/.test(s), "/rentals TTL is fifteen minutes");
+}
+
+// ── 6. the street render's Listing rows (MC-034) ─────────────────────────────────────
+{
+  const street = code("src/lib/street-data.ts");
+  const sel = street.match(/export const STREET_LISTING_SELECT = \{([\s\S]*?)\} satisfies Prisma\.ListingSelect;/);
+  ok(!!sel, "street-data.ts exports STREET_LISTING_SELECT as a Prisma.ListingSelect");
+  const selected = sel ? [...sel[1].matchAll(/(\w+)\s*:\s*true\b/g)].map((m) => m[1]) : [];
+  ok(selected.length === 16, `the street select names sixteen columns (got ${selected.length})`);
+  for (const c of ["photos", "description", ...VOW_ONLY_FIELDS]) ok(!selected.includes(c), `the street select does not name ${c}`);
+  for (const c of ["mlsNumber", "address", "status", "permAdvertise", "propertyType", "price", "listOfficeName"]) ok(selected.includes(c), `the street select names ${c}`);
+  ok(/streetSlug: \{ in: siblingSlugs \}, permAdvertise: true \},\s*orderBy: \{ listedAt: "desc" \},\s*select: STREET_LISTING_SELECT,/.test(street), "the street's listing pull carries the select");
+  const pulls = street.split("prisma.listing.findMany(").slice(1).map((seg) => seg.slice(0, seg.indexOf("})") + 2));
+  ok(pulls.length > 0 && pulls.every((seg) => /\bselect:/.test(seg)), `every prisma.listing.findMany in street-data.ts carries a select (${pulls.filter((seg) => !/\bselect:/.test(seg)).length} without)`);
+  ok(/photos\[1\] AS photo/.test(street) && /r\.status === "active"/.test(street), "the card's photo is the first URL of the active rows, read separately");
+  ok(/dataCached\(\(\) => readStreetListings\(siblingSlugs\), \["street-listings:v2", written, \.\.\.siblingSlugs\],\s*\{\s*revalidate: 3600,\s*tags: \[LISTING_ROWS_TAG\],?/.test(street), "the rows read through dataCached for an hour under LISTING_ROWS_TAG, keyed by the write stamp");
+  ok(/_max: \{ updatedAt: true \}/.test(street) && /_count: \{ _all: true \}/.test(street), "the write stamp is the row count and the latest updatedAt");
+  ok(/export const getStreetPageData = perRequest\(async function getStreetPageData\(/.test(street), "getStreetPageData is memoised per request");
+  ok(!/from "(\.\/|@\/lib\/)cache"/.test(street), "street-data.ts does not import the Upstash cached() helper");
+  const surfaces = code("src/lib/revalidateSurfaces.ts");
+  ok(/export function revalidateListingSurfaces\(who: string\): string\[\] \{\s*try \{\s*revalidateTag\(LISTING_ROWS_TAG\);/.test(surfaces), "revalidateListingSurfaces drops LISTING_ROWS_TAG first");
+  for (const [file, label] of [
+    ["src/app/api/sync/route.ts", "/api/sync"],
+    ["src/app/api/sync/detect/route.ts", "/api/sync/detect"],
+    ["src/app/api/sync/expire/route.ts", "/api/sync/expire"],
+  ] as const) {
+    ok(/revalidateListingSurfaces\(/.test(code(file)), `${label} calls revalidateListingSurfaces after a write`);
+  }
+  ok(/LISTING_ROWS_TAG\]/.test(code("src/app/api/revalidate/route.ts")), "/api/revalidate accepts the listings tag for the runners outside the app");
+  ok(LISTING_ROWS_TAG === "listings", `LISTING_ROWS_TAG is "listings" (got ${LISTING_ROWS_TAG})`);
 }
 
 // ── 5. the TTLs: an hour, the Neon reads' own, so no ISR page is cut shorter by them ──
@@ -98,4 +135,4 @@ if (failures.length) {
   for (const f of failures) console.error(f);
   process.exit(1);
 }
-console.log(`[neon-egress] PASS: ${n} assertions; the slug sets, the hub sets, /streets on ISR with DISTINCT ON, /rentals cached per scope.`);
+console.log(`[neon-egress] PASS: ${n} assertions; the slug sets, the hub sets, /streets on ISR with DISTINCT ON, /rentals cached per scope, the street rows narrow, memoised and tagged.`);

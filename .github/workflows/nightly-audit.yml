@@ -64,6 +64,12 @@ jobs:
         with:
           node-version: 22
 
+      # MA-010. The voice rules' fixtures, before anything is fetched: a superlative rule that has
+      # stopped seeing a claim, or an em-dash rule that has started counting nav labels again, fails
+      # the night here instead of writing a report.
+      - name: Voice rule fixtures
+        run: node scripts/audit/nightly/test-voice-rules.mjs
+
       # A lean install: puppeteer-core and lighthouse only, not the app. Chrome is the runner's.
       - name: Audit dependencies
         run: |

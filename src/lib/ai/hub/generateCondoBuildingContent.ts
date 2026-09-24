@@ -215,8 +215,9 @@ async function runCondoHalfWithRetry(params: RunCondoHalfParams): Promise<CondoH
     }
 
     const response = provider === "claude"
-      ? await callClaude({ modelKey: claudeModel, systemPrompt, userPrompt, jsonOnly: true, maxTokens: 5000 })
-      : await callDeepSeek({ systemPrompt, userPrompt, responseFormat: { type: "json_object" }, maxTokens: 5000, temperature: 0.4 });
+      // the building is the one house-number address a condo prompt may carry (MC-036)
+      ? await callClaude({ modelKey: claudeModel, systemPrompt, userPrompt, jsonOnly: true, maxTokens: 5000, subjectAddress: input.building.buildingAddress ?? input.building.displayName })
+      : await callDeepSeek({ systemPrompt, userPrompt, responseFormat: { type: "json_object" }, maxTokens: 5000, temperature: 0.4, subjectAddress: input.building.buildingAddress ?? input.building.displayName });
     totalIn += response.inputTokens;
     totalOut += response.outputTokens;
     totalCost += response.costUsd;

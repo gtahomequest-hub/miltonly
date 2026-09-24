@@ -1,0 +1,74 @@
+{
+ "date": "2026-09-24",
+ "vercel": {
+  "spend": 173.82,
+  "projected": 206.22,
+  "yesterday": {
+   "date": "2026-09-23",
+   "total": 3.14
+  }
+ },
+ "neon": {
+  "projects": [
+   {
+    "id": "snowy-morning-95239072",
+    "computeHours": 326.1,
+    "egressBytes": 202237099998
+   },
+   {
+    "id": "fancy-bread-13256110",
+    "computeHours": 148.8,
+    "egressBytes": 77954580375
+   },
+   {
+    "id": "winter-leaf-52425555",
+    "computeHours": 125.1,
+    "egressBytes": 2766774554
+   },
+   {
+    "id": "lingering-sea-07597558",
+    "computeHours": 118,
+    "egressBytes": 1678233551
+   },
+   {
+    "id": "small-truth-21911860",
+    "computeHours": 0.6,
+    "egressBytes": 8268
+   },
+   {
+    "id": "tiny-tree-26988255",
+    "computeHours": 0.6,
+    "egressBytes": 177953
+   },
+   {
+    "id": "wispy-grass-52233942",
+    "computeHours": 0,
+    "egressBytes": 0
+   },
+   {
+    "id": "old-hill-58721761",
+    "computeHours": 0,
+    "egressBytes": 0
+   }
+  ]
+ },
+ "gsc": {
+  "latest": {
+   "date": "2026-09-21",
+   "clicks": 11,
+   "impressions": 478,
+   "ctr": 0.02301255230125523,
+   "position": 8.069037656903767,
+   "weekday": "Mon"
+  }
+ },
+ "leads": {
+  "yesterday": 0,
+  "mtd": 32
+ },
+ "actions": [
+  "zero-lead-traffic",
+  "page-two-query",
+  "street-no-page"
+ ]
+}

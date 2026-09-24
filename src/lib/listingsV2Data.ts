@@ -21,6 +21,17 @@
 // the neighbourhood dedup/title-case, and address redaction (applied here,
 // server-side, so a withheld address never ships to the client at all —
 // the live grid page didn't redact; the detail page's gate is the standard).
+//
+// MC-036: THE ADDRESS GATE IS THIS FILE. InternetAddressDisplayYN = N (Listing.displayAddress
+// false) means the address, street number, street name, unit, postal code and any map position
+// may not be displayed or mapped; the listing may still be counted. `toCard` is the one mapper
+// every card surface reads through (the grid, the homepage, the menu, the place pages, the
+// /rentals/ads teaser), and a withheld row leaves it as "Address on request" with no street;
+// the pin query excludes withheld rows outright, since a pin is a map position.
+//
+// MC-036, item 4: an anonymous visitor may not page through the inventory. The grid reaches
+// at most MAX_PAGES pages (72 listings) and the map at most MAP_PIN_CAP pins, whatever the
+// filter returns; street inventory is gated in street-data.ts.
 
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
@@ -28,27 +39,29 @@ import { config } from '@/lib/config';
 import { hasValidCoords } from '@/lib/geo';
 import type {
   ListingCardData,
+  ListingCardVow,
   ListingsQuery,
   ListingsSort,
-  ListingsStatus,
   ListingsType,
   ListingsV2Data,
   MapPin,
 } from '@/components/listings/v2/types';
 import { formatPriceFull } from '@/lib/format';
 import { resolveStreetName } from "@/lib/streetName";
+import { PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE, PUBLIC_LISTING_WHERE } from '@/lib/listings/vow';
 
 const PER_PAGE = 36;
-// The map shows every listing it has a validated rooftop for. The cap is a runaway guard, not a
-// product decision — it is set far above any plausible Milton active inventory (470 today) so it
-// never silently truncates.
-//
-// It was 400, from a design-handoff line reading "capped ~400": a round number chosen to stop the
-// map being limited to the 36-per-page grid, with no clustering, map library, or render
-// constraint behind it — MapPanel renders one <button> per pin over raster tiles. While every pin
-// sat at (0,0) the cap was invisible. The moment the pins became real it was hiding 70 live
-// homes, 15% of inventory, with nothing on screen to say so.
-const MAP_PIN_CAP = 1500;
+// THE 100-RESULT LINE (MC-036, item 4). A public search may show a consumer at most 100
+// listings for one query, so the pager stops at floor(100 / 36) = 2 pages: 72 listings are
+// reachable for any filter, and a `page` beyond that clamps to the last page. Before this the
+// grid paged through every row (469 sale rows over 14 pages, 1,200 lease rows over 34).
+const MAX_PAGES = Math.floor(100 / PER_PAGE);
+// The map pins are the same query with a coordinate, serialised into the same anonymous
+// response, so they sit under the same line: 100 pins, newest (or cheapest, dearest) first,
+// page-independent. It was 1,500, a runaway guard set above the whole inventory, which put
+// 860 lease pins into one /listings?status=rent payload with a price and an address on each.
+// MapPanel renders one <button> per pin; the count line beside it says how many are on the map.
+const MAP_PIN_CAP = 100;
 
 export const NEIGHBOURHOOD_FILTER_OPTIONS = [
   'Dempsey', 'Beaty', 'Willmott', 'Hawthorne Village', 'Timberlea', 'Old Milton',
@@ -81,7 +94,8 @@ export function parseListingsQuery(
   const type = get('type');
   const sort = get('sort');
   return {
-    status: status === 'rent' || status === 'sold' ? (status as ListingsStatus) : 'active',
+    // MC-029: 'sold' is not a public mode; the page redirects it to /sold before this runs.
+    status: status === 'rent' ? 'rent' : 'active',
     type: ['detached', 'semi', 'townhouse', 'condo'].includes(type ?? '') ? (type as ListingsType) : 'all',
     min: num('min'),
     max: num('max') ?? num('maxPrice'),
@@ -90,20 +104,20 @@ export function parseListingsQuery(
     neighbourhood: get('neighbourhood'),
     q: get('q'),
     sort: sort === 'price_asc' || sort === 'price_desc' ? (sort as ListingsSort) : 'newest',
-    page: Math.max(1, num('page') ?? 1),
+    // Clamped to the 100-result line here as well as in the loader, so a ?page=999 URL is
+    // page 2 before any count is run.
+    page: Math.min(MAX_PAGES, Math.max(1, num('page') ?? 1)),
   };
 }
 
 /** The live page's where-builder, verbatim (beds gte is the one semantic change). */
 function buildWhere(query: ListingsQuery): Record<string, unknown> {
+  // MC-029: the public predicate from src/lib/listings/vow.ts. The rent mode used to select
+  // every For Lease row ever advertised, leased ones included, and rendered them "Leased".
   const where: Record<string, unknown> = {
-    city: config.PRISMA_CITY_VALUE,
-    permAdvertise: true,
+    ...(query.status === 'rent' ? PUBLIC_LEASE_WHERE : PUBLIC_SALE_WHERE),
   };
   if (query.type !== 'all') where.propertyType = query.type;
-  if (query.status === 'rent') where.transactionType = 'For Lease';
-  else if (query.status === 'sold') where.status = 'sold';
-  else where.status = 'active';
   if (query.min != null) where.price = { ...(where.price as object || {}), gte: query.min };
   if (query.max != null) where.price = { ...(where.price as object || {}), lte: query.max };
   if (query.beds != null) where.bedrooms = { gte: query.beds };
@@ -111,7 +125,8 @@ function buildWhere(query: ListingsQuery): Record<string, unknown> {
   if (query.neighbourhood) where.neighbourhood = { contains: query.neighbourhood, mode: 'insensitive' };
   if (query.q) {
     where.OR = [
-      { address: { contains: query.q, mode: 'insensitive' } },
+      // a withheld address cannot be the thing that finds a listing (MC-036)
+      { address: { contains: query.q, mode: 'insensitive' }, displayAddress: true },
       { neighbourhood: { contains: query.q, mode: 'insensitive' } },
       { mlsNumber: { contains: query.q, mode: 'insensitive' } },
       { description: { contains: query.q, mode: 'insensitive' } },
@@ -125,9 +140,6 @@ interface CardRow {
   address: string;
   neighbourhood: string;
   price: number;
-  soldPrice: number | null;
-  soldDate: Date | null;
-  status: string;
   transactionType: string | null;
   propertyType: string;
   bedrooms: number;
@@ -135,27 +147,50 @@ interface CardRow {
   sqft: number | null;
   parking: number;
   photos: string[];
-  listedAt: Date;
-  daysOnMarket: number | null;
   listOfficeName: string | null;
   maintenanceFeeAmt: number | null;
   virtualTourUrl: string | null;
   displayAddress: boolean;
 }
 
+/** The VOW-only columns, selected only for an acknowledged session (VOW_SELECT below). */
+interface VowRow {
+  listedAt: Date;
+  daysOnMarket: number | null;
+  priorPrice: number | null;
+  priceChangedAt: Date | null;
+}
+
+// THE SELECT IS THE GATE (MC-029). The public card select names no VOW-only column, so a row
+// read through it cannot carry one; the VOW columns are added to the select only when the
+// caller has established the session may see them, and the mapper puts them under `vow`.
 const CARD_SELECT = {
   mlsNumber: true, address: true, neighbourhood: true, price: true,
-  soldPrice: true, soldDate: true, status: true, transactionType: true,
+  transactionType: true,
   propertyType: true, bedrooms: true, bathrooms: true, sqft: true,
-  parking: true, photos: true, listedAt: true, daysOnMarket: true,
+  parking: true, photos: true,
   listOfficeName: true, maintenanceFeeAmt: true, virtualTourUrl: true,
   displayAddress: true,
 } as const;
+const VOW_SELECT = { listedAt: true, daysOnMarket: true, priorPrice: true, priceChangedAt: true } as const;
+
+function vowOf(r: VowRow): ListingCardVow {
+  return {
+    daysOnMarket: r.daysOnMarket ?? Math.max(0, Math.floor((Date.now() - r.listedAt.getTime()) / 86_400_000)),
+    listedAt: r.listedAt.toISOString(),
+    priorPrice: r.priorPrice,
+    priceChangedAt: r.priceChangedAt ? r.priceChangedAt.toISOString() : null,
+  };
+}
+
+/** The one placeholder for a withheld address. Every surface that prints a card's address
+ *  prints this string for a withheld row; the raw address is not on the card to print. */
+const ADDRESS_ON_REQUEST = 'Address on request';
 
 /** RECO/IDX address redaction, applied server-side so a withheld address
  *  never reaches the client (mirrors redactAddress in listings/display-gate). */
 function gateAddress(row: { address: string; displayAddress: boolean }): string {
-  return row.displayAddress ? row.address : 'Address withheld by seller';
+  return row.displayAddress ? row.address : ADDRESS_ON_REQUEST;
 }
 
 function toCard(row: CardRow): ListingCardData {
@@ -164,9 +199,6 @@ function toCard(row: CardRow): ListingCardData {
     address: gateAddress(row),
     neighbourhood: row.neighbourhood,
     price: row.price,
-    soldPrice: row.soldPrice,
-    soldDate: row.soldDate ? row.soldDate.toISOString() : null,
-    status: row.status === 'sold' ? 'sold' : row.status === 'rented' ? 'rented' : 'active',
     transactionType: row.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
     propertyType: (['detached', 'semi', 'townhouse', 'condo'].includes(row.propertyType)
       ? row.propertyType
@@ -176,8 +208,6 @@ function toCard(row: CardRow): ListingCardData {
     sqft: row.sqft,
     parking: row.parking,
     photos: row.photos,
-    listedAt: row.listedAt.toISOString(),
-    daysOnMarket: row.daysOnMarket,
     listOfficeName: row.listOfficeName,
     maintenanceFeeAmt: row.maintenanceFeeAmt,
     virtualTourUrl: row.virtualTourUrl,
@@ -196,8 +226,14 @@ function titleCaseHood(h: string): string {
     .join(' ');
 }
 
-export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV2Data> {
+/**
+ * @param opts.vow true when the request's session is a signed-in, acknowledged VOW consumer
+ *   (the page decides that with getSession; this loader never reads a cookie). The cards then
+ *   carry `vow`. Default false: nothing VOW-only is selected, let alone serialised.
+ */
+export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: boolean } = {}): Promise<ListingsV2Data> {
   const where = buildWhere(query);
+  const vow = opts.vow === true;
 
   let orderBy: Record<string, string> = { listedAt: 'desc' };
   if (query.sort === 'price_asc') orderBy = { price: 'asc' };
@@ -205,14 +241,11 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const activeBase = {
-    status: 'active',
-    city: config.PRISMA_CITY_VALUE,
-    permAdvertise: true,
-  } as const;
+  const activeBase = PUBLIC_SALE_WHERE;
 
   const totalCount = await prisma.listing.count({ where });
-  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  // totalCount is still the true count (an aggregate may be shown); the pager may not walk it.
+  const totalPages = Math.min(MAX_PAGES, Math.max(1, Math.ceil(totalCount / PER_PAGE)));
   const page = Math.min(query.page, totalPages);
   const skip = (page - 1) * PER_PAGE;
 
@@ -226,22 +259,29 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     neighbourhoodStats,
     topStreets,
   ] = await Promise.all([
-    prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
-    // map pins: ALL filtered results (page-independent), lightweight select.
+    vow
+      ? prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: { ...CARD_SELECT, ...VOW_SELECT } })
+      : prisma.listing.findMany({ where, orderBy, skip, take: PER_PAGE, select: CARD_SELECT }),
+    // map pins: the filtered results in the same order, page-independent, up to MAP_PIN_CAP,
+    // lightweight select.
     //
     // The coordinate requirement is in the WHERE, not a .filter() after the fact, because
     // `take` is applied by the database BEFORE any JS filtering: fetching 400 rows and then
     // dropping the uncoordinated ones cost 70 pinnable listings that were never fetched. The
     // cap has to count pins, not candidates.
+    //
+    // displayAddress is in the WHERE for the same reason, and for a stronger one: a pin is a
+    // map position, and a withheld listing may not be mapped, however its label reads. Before
+    // this a withheld rental sat on the map at its rooftop, labelled "Address on request".
     prisma.listing.findMany({
-      where: { ...where, townLat: { not: null }, townLng: { not: null } },
+      where: { ...where, displayAddress: true, townLat: { not: null }, townLng: { not: null } },
       orderBy,
       take: MAP_PIN_CAP,
       select: {
         mlsNumber: true, townLat: true, townLng: true, price: true,
-        transactionType: true, status: true, propertyType: true,
+        transactionType: true, propertyType: true,
         bedrooms: true, bathrooms: true, address: true, displayAddress: true,
-        photos: true,
+        photos: true, listOfficeName: true,
       },
     }),
     prisma.listing.aggregate({ where: activeBase, _avg: { price: true } }),
@@ -268,7 +308,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     }),
   ]);
 
-  const listings = rows.map(toCard);
+  const listings = rows.map((r) => (vow && 'listedAt' in r ? { ...toCard(r), vow: vowOf(r as CardRow & VowRow) } : toCard(r)));
 
   // A PIN IS A CLAIM ABOUT WHERE A HOUSE IS. It renders only from a validated coordinate.
   //
@@ -287,13 +327,13 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
       longitude: r.townLng as number,
       price: r.price,
       transactionType: r.transactionType === 'For Lease' ? 'For Lease' : 'For Sale',
-      status: r.status === 'sold' ? 'sold' : r.status === 'rented' ? 'rented' : 'active',
       propertyType: r.propertyType,
       bedrooms: r.bedrooms,
       bathrooms: r.bathrooms,
       address: gateAddress(r),
       displayAddress: r.displayAddress,
       photo: r.photos[0] ?? null,
+      listOfficeName: r.listOfficeName,
     }));
 
   // ── dedup + title-case neighbourhood stats (ported verbatim) ──
@@ -329,8 +369,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
 
   const avg = Math.round(avgPriceAgg._avg.price || 0);
   const avgDom = Math.round(domAgg._avg.daysOnMarket || 0);
-  const statusLabel =
-    query.status === 'rent' ? 'for rent' : query.status === 'sold' ? 'sold' : 'for sale';
+  const statusLabel = query.status === 'rent' ? 'for rent' : 'for sale';
 
   // FAQs ported from the live page — built from the same real aggregates.
   const faqs = [
@@ -348,7 +387,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
     },
     {
       question: `How do I book a showing for a ${config.CITY_NAME} home?`,
-      answer: `Click "Book a showing" on any listing card and ${config.realtor.name} — a licensed ${config.brokerage.name.replace(', Brokerage', '')} agent based in ${config.CITY_NAME} — will confirm your appointment within the hour. No obligation, no pressure.`,
+      answer: `Click "Book a showing" on any listing card and ${config.realtor.name}, a licensed agent based in ${config.CITY_NAME} (${config.brokerage.name}), will confirm your appointment within the hour. No obligation, no pressure.`,
     },
   ];
 
@@ -380,12 +419,7 @@ export async function getListingsV2Data(query: ListingsQuery): Promise<ListingsV
  */
 export async function getNewestListingCards(take = 8): Promise<ListingCardData[]> {
   const rows = await prisma.listing.findMany({
-    where: {
-      status: 'active',
-      permAdvertise: true,
-      city: config.PRISMA_CITY_VALUE,
-      transactionType: { not: 'For Lease' },
-    },
+    where: PUBLIC_SALE_WHERE,
     orderBy: { listedAt: 'desc' },
     take,
     select: CARD_SELECT,
@@ -395,13 +429,18 @@ export async function getNewestListingCards(take = 8): Promise<ListingCardData[]
 
 /**
  * THE SAME MAPPER FOR ANY SLICE OF THE FEED. The mega menu's rail items each show a slice
- * (listed in the last 24 hours, price changed this week, condos, freehold, rentals) and every
- * one of them must come through `toCard`, where the RECO/IDX address gate is applied. This is
- * the one exported way to run a custom `where` through that gate; there is no other, so a
- * caller cannot reach a raw address by writing its own query.
+ * (listed in the last 24 hours, price changed this week, condos, freehold, rentals), the school
+ * and mosque pages show the homes near a place, the /rentals/ads teaser shows the newest twelve
+ * leases over a price floor, and every one of them must come through `toCard`, where the
+ * RECO/IDX address gate is applied. This is the one exported way to run a custom `where`
+ * through that gate; there is no other, so a caller cannot reach a raw address by writing its
+ * own query. (MC-036: the place pages and the ads teaser serialised whole Listing rows, raw
+ * address included, and printed it.)
  *
- * `permAdvertise: true` is ANDed in unconditionally. A caller may narrow the set; it cannot
- * widen it past what may be shown.
+ * The public predicate (`permAdvertise`, on the market, Milton) is ANDed in unconditionally.
+ * A caller may narrow the set; it cannot widen it past what may be shown. The card select
+ * names no VOW-only column (MC-029): a caller that orders by `lastPriceChangeAt` gets the
+ * listings, never the prior price.
  */
 export async function getListingCards(opts: {
   where: Prisma.ListingWhereInput;
@@ -409,10 +448,10 @@ export async function getListingCards(opts: {
   take?: number;
 }): Promise<ListingCardData[]> {
   const rows = await prisma.listing.findMany({
-    where: { AND: [opts.where, { permAdvertise: true, city: config.PRISMA_CITY_VALUE }] },
+    where: { AND: [opts.where, PUBLIC_LISTING_WHERE] },
     orderBy: opts.orderBy ?? { listedAt: 'desc' },
     take: opts.take ?? 4,
-    select: { ...CARD_SELECT, priorPrice: true, priceChangedAt: true },
+    select: CARD_SELECT,
   });
-  return rows.map((r) => ({ ...toCard(r), priorPrice: r.priorPrice, priceChangedAt: r.priceChangedAt ? r.priceChangedAt.toISOString() : null }));
+  return rows.map(toCard);
 }

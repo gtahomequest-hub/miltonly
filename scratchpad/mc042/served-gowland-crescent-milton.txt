@@ -1,0 +1,18 @@
+# served on https://miltonly.com/streets/gowland-crescent-milton while published (fetched 2026-09-23 ~20:53 local, build bfb6e74)
+
+meta description: Gowland Crescent, Milton: homes typically $1,300,000 across 7 sales in the last ~2 years. Gowland Crescent is a residential curve in Milton's Timberlea.
+JSON-LD Place.description: Gowland Crescent is a residential curve in Milton's Timberlea neighbourhood, the kind of street that bends back on itself and keeps its traffic local.
+
+## profile (rendered sentences)
+[about]
+  Gowland Crescent is a residential curve in Milton's Timberlea neighbourhood, the kind of street that bends back on itself and keeps its traffic local. It sits within a mature pocket of west Milton, framed by the parks and school grounds that give this part of town its shape. The crescent's position puts it within easy reach of the grocery and retail cluster along the main commercial corridors, while keeping the immediate surroundings residential. For anyone learning the geography of Timberlea, Gowland is a small but representative piece of it.
+[neighbourhoodComparable] Comparable homes nearby
+  Sold-to-ask sits just below parity, which implies a market where modest negotiation is normal and buyers are not routinely paying above asking. Year-over-year direction is not published for this scope, so no trend claim is made here. Taken together, the neighbourhood picture is one of steady, unhurried trade at a level that anchors what a detached home in this part of Milton has been worth.
+[differentPriorities] If different priorities matter more
+  If the priorities sit elsewhere, two nearby streets frame the alternatives. A buyer weighing lot size against finished square footage will find the tradeoffs land differently on each.
+
+## FAQ (FAQPage JSON-LD, as served)
+Q: What kinds of homes are on Gowland Crescent?
+A: The street is detached housing, and that is the only type represented in recent activity. There is no townhouse or semi-detached product mixed in. The detached profile is consistent across the crescent.
+Q: What's the rental market like on Gowland Crescent?
+A: Leasing activity is modest, with a small number of leases recorded over the past year. The rental profile tracks the detached stock rather than a condo market.
