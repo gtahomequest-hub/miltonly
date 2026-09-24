@@ -1,0 +1,478 @@
+{
+ "gscWindow": "2026-08-26..2026-09-22",
+ "property": "sc-domain:miltonly.com",
+ "allPublishedStreets": {
+  "pages": 719,
+  "pagesWithGscRows": 376,
+  "pagesWithClicks": 72,
+  "clicks28": 101,
+  "impressions28": 5796,
+  "clicksSinceGeneration": 61,
+  "impressionsSinceGeneration": 3021
+ },
+ "class1": {
+  "pages": 521,
+  "pagesWithGscRows": 271,
+  "pagesWithClicks": 45,
+  "clicks28": 58,
+  "impressions28": 3681,
+  "clicksSinceGeneration": 39,
+  "impressionsSinceGeneration": 2006
+ },
+ "class2Wrong": {
+  "pages": 56,
+  "pagesWithGscRows": 30,
+  "pagesWithClicks": 5,
+  "clicks28": 6,
+  "impressions28": 328,
+  "clicksSinceGeneration": 2,
+  "impressionsSinceGeneration": 207
+ },
+ "class2MisplacedOnly": {
+  "pages": 107,
+  "pagesWithGscRows": 62,
+  "pagesWithClicks": 14,
+  "clicks28": 18,
+  "impressions28": 976,
+  "clicksSinceGeneration": 6,
+  "impressionsSinceGeneration": 464
+ },
+ "class3": {
+  "pages": 38,
+  "pagesWithGscRows": 23,
+  "pagesWithClicks": 4,
+  "clicks28": 4,
+  "impressions28": 394,
+  "clicksSinceGeneration": 2,
+  "impressionsSinceGeneration": 222
+ },
+ "anyClass": {
+  "pages": 543,
+  "pagesWithGscRows": 286,
+  "pagesWithClicks": 50,
+  "clicks28": 64,
+  "impressions28": 3872,
+  "clicksSinceGeneration": 41,
+  "impressionsSinceGeneration": 2099
+ },
+ "overlap": {
+  "pagesWithMoreThanOneClass": 67,
+  "byCombination": {
+   "1": 454,
+   "2": 15,
+   "3": 7,
+   "1+2": 36,
+   "1+3": 26,
+   "1+2+3": 5
+  }
+ },
+ "unattributedStreetPaths": {
+  "paths": 87,
+  "clicks": 10,
+  "impressions": 887
+ },
+ "topByImpressions": [
+  {
+   "slug": "etheridge-avenue-milton",
+   "classes": "1",
+   "misplaced": true,
+   "genDate": "2026-09-11",
+   "clicks28": 2,
+   "impr28": 143,
+   "clicksSinceGen": 2,
+   "imprSinceGen": 121
+  },
+  {
+   "slug": "nairn-circle-milton",
+   "classes": "1+3",
+   "misplaced": false,
+   "genDate": "2026-09-06",
+   "clicks28": 1,
+   "impr28": 93,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 69
+  },
+  {
+   "slug": "dent-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-05-26",
+   "clicks28": 4,
+   "impr28": 85,
+   "clicksSinceGen": 4,
+   "imprSinceGen": 85
+  },
+  {
+   "slug": "jelinik-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 1,
+   "impr28": 78,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 59
+  },
+  {
+   "slug": "marigold-court-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 0,
+   "impr28": 62,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 24
+  },
+  {
+   "slug": "magnolia-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-21",
+   "clicks28": 1,
+   "impr28": 61,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 10
+  },
+  {
+   "slug": "brandon-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 1,
+   "impr28": 59,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 46
+  },
+  {
+   "slug": "parent-place-milton",
+   "classes": "1+3",
+   "misplaced": false,
+   "genDate": "2026-09-06",
+   "clicks28": 1,
+   "impr28": 59,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 37
+  },
+  {
+   "slug": "prosser-circle-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 0,
+   "impr28": 59,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 19
+  },
+  {
+   "slug": "challinor-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 1,
+   "impr28": 58,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 37
+  },
+  {
+   "slug": "celandine-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 1,
+   "impr28": 53,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 21
+  },
+  {
+   "slug": "syer-drive-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 2,
+   "impr28": 51,
+   "clicksSinceGen": 2,
+   "imprSinceGen": 37
+  },
+  {
+   "slug": "marshall-crescent-milton",
+   "classes": "1",
+   "misplaced": true,
+   "genDate": "2026-09-13",
+   "clicks28": 0,
+   "impr28": 47,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 32
+  },
+  {
+   "slug": "bessy-trail-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 0,
+   "impr28": 46,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 20
+  },
+  {
+   "slug": "chilver-heights-milton",
+   "classes": "1+2",
+   "misplaced": false,
+   "genDate": "2026-09-12",
+   "clicks28": 0,
+   "impr28": 45,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 45
+  },
+  {
+   "slug": "holdsworth-crescent-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 3,
+   "impr28": 44,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 20
+  },
+  {
+   "slug": "gooch-crescent-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-05-27",
+   "clicks28": 1,
+   "impr28": 44,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 44
+  },
+  {
+   "slug": "campbellville-road-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 0,
+   "impr28": 44,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 15
+  },
+  {
+   "slug": "hobbs-crescent-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 4,
+   "impr28": 41,
+   "clicksSinceGen": 4,
+   "imprSinceGen": 41
+  },
+  {
+   "slug": "stokes-trail-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 1,
+   "impr28": 40,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 29
+  },
+  {
+   "slug": "20-side-road-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-20",
+   "clicks28": 0,
+   "impr28": 38,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 2
+  },
+  {
+   "slug": "centennial-forest-drive-milton",
+   "classes": "1+3",
+   "misplaced": false,
+   "genDate": "2026-09-06",
+   "clicks28": 0,
+   "impr28": 38,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 23
+  },
+  {
+   "slug": "baverstock-crescent-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-06-01",
+   "clicks28": 1,
+   "impr28": 37,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 37
+  },
+  {
+   "slug": "coulson-avenue-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 0,
+   "impr28": 36,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 8
+  },
+  {
+   "slug": "martin-street-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-11",
+   "clicks28": 0,
+   "impr28": 35,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 35
+  }
+ ],
+ "topByClicks": [
+  {
+   "slug": "dent-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-05-26",
+   "clicks28": 4,
+   "impr28": 85,
+   "clicksSinceGen": 4,
+   "imprSinceGen": 85
+  },
+  {
+   "slug": "hobbs-crescent-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 4,
+   "impr28": 41,
+   "clicksSinceGen": 4,
+   "imprSinceGen": 41
+  },
+  {
+   "slug": "holdsworth-crescent-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 3,
+   "impr28": 44,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 20
+  },
+  {
+   "slug": "etheridge-avenue-milton",
+   "classes": "1",
+   "misplaced": true,
+   "genDate": "2026-09-11",
+   "clicks28": 2,
+   "impr28": 143,
+   "clicksSinceGen": 2,
+   "imprSinceGen": 121
+  },
+  {
+   "slug": "syer-drive-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 2,
+   "impr28": 51,
+   "clicksSinceGen": 2,
+   "imprSinceGen": 37
+  },
+  {
+   "slug": "attenborough-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-04",
+   "clicks28": 2,
+   "impr28": 30,
+   "clicksSinceGen": 2,
+   "imprSinceGen": 29
+  },
+  {
+   "slug": "sideroad-10-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-22",
+   "clicks28": 2,
+   "impr28": 29,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 0
+  },
+  {
+   "slug": "fourth-line-milton",
+   "classes": "2",
+   "misplaced": false,
+   "genDate": "2026-09-21",
+   "clicks28": 2,
+   "impr28": 20,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 1
+  },
+  {
+   "slug": "ridge-drive-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-05-10",
+   "clicks28": 2,
+   "impr28": 11,
+   "clicksSinceGen": 2,
+   "imprSinceGen": 11
+  },
+  {
+   "slug": "nairn-circle-milton",
+   "classes": "1+3",
+   "misplaced": false,
+   "genDate": "2026-09-06",
+   "clicks28": 1,
+   "impr28": 93,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 69
+  },
+  {
+   "slug": "jelinik-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-05",
+   "clicks28": 1,
+   "impr28": 78,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 59
+  },
+  {
+   "slug": "magnolia-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-21",
+   "clicks28": 1,
+   "impr28": 61,
+   "clicksSinceGen": 0,
+   "imprSinceGen": 10
+  },
+  {
+   "slug": "brandon-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 1,
+   "impr28": 59,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 46
+  },
+  {
+   "slug": "parent-place-milton",
+   "classes": "1+3",
+   "misplaced": false,
+   "genDate": "2026-09-06",
+   "clicks28": 1,
+   "impr28": 59,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 37
+  },
+  {
+   "slug": "challinor-terrace-milton",
+   "classes": "1",
+   "misplaced": false,
+   "genDate": "2026-09-13",
+   "clicks28": 1,
+   "impr28": 58,
+   "clicksSinceGen": 1,
+   "imprSinceGen": 37
+  }
+ ]
+}

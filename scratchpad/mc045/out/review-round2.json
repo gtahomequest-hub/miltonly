@@ -1,0 +1,163 @@
+{
+ "class1": {
+  "v2Rows": 1173,
+  "v1Rows": 1060,
+  "addedByV2": 113,
+  "precisionV1Sample": {
+   "n": 120,
+   "p": 0.892,
+   "ci95": [
+    0.823,
+    0.936
+   ]
+  },
+  "precisionV2Added": {
+   "n": 113,
+   "p": 0.965,
+   "ci95": [
+    0.913,
+    0.986
+   ],
+   "aboutThisStreetOrArea": 0.965
+  },
+  "precisionBlended": 0.899,
+  "precisionAboutBlended": 0.809,
+  "recallV2Fresh": {
+   "pages": 40,
+   "agentListed": 69,
+   "found": 58,
+   "recall": 0.841,
+   "ci95": [
+    0.737,
+    0.909
+   ],
+   "pageLevel": {
+    "pagesWhereAgentFoundAClaim": 30,
+    "ofThoseFlaggedBySweep": 28
+   },
+   "missed": [
+    {
+     "slug": "20-side-road-milton",
+     "text": "Lot sizes and build eras vary across the road."
+    },
+    {
+     "slug": "hop-place-milton",
+     "text": "Hop Place occupies a small pocket within that build, and its position puts the wider south-Milton grid within easy reach by car."
+    },
+    {
+     "slug": "connaught-terrace-milton",
+     "text": "Connaught Terrace is a short residential street in Milton's Ford neighbourhood, a pocket of the town that sits west of the escarpment and well within the built-up area."
+    },
+    {
+     "slug": "drysdale-crescent-milton",
+     "text": "Drysdale Crescent is a residential crescent in Milton's Willmott district, a pocket of the town that grew outward from the older core as the community pushed east and south."
+    },
+    {
+     "slug": "lamont-crescent-milton",
+     "text": "Buyers weighing a larger lot or a different era of construction will find those options in other pockets of Milton."
+    },
+    {
+     "slug": "pears-court-milton",
+     "text": "Each pocket carries its own trade-off between lot size, home age, and proximity to the highway, so the choice comes down to which priority weighs more heavily."
+    },
+    {
+     "slug": "wettlaufer-terrace-milton",
+     "text": "Wettlaufer Terrace offers a settled, unassuming presence in a town that continues to grow around it."
+    },
+    {
+     "slug": "hawthorne-crescent-milton",
+     "text": "What the street does show is a settled, single-form profile."
+    },
+    {
+     "slug": "commercial-street-milton",
+     "text": "The street sits close to the historic core, where the grid narrows and the pace slows."
+    },
+    {
+     "slug": "commercial-street-milton",
+     "text": "Commercial Street is the kind of address that feels central without being busy, a quiet lane in the middle of the town's beginnings."
+    },
+    {
+     "slug": "commercial-street-milton",
+     "text": "For buyers seeking a traditional detached house in a central Old Milton location, Commercial Street offers a narrow but genuine slice of that market."
+    }
+   ]
+  }
+ },
+ "class2NetRecallFresh": {
+  "agentListed": 43,
+  "inNet": 36,
+  "recall": 0.837,
+  "ci95": [
+   0.7,
+   0.919
+  ],
+  "missed": [
+   {
+    "slug": "drysdale-crescent-milton",
+    "text": "The street's geography keeps the highway within easy reach without the noise of living against it."
+   },
+   {
+    "slug": "ellis-crescent-milton",
+    "text": "For anyone learning the town's geography, Ellis Crescent belongs to the settled middle of Milton rather than its newer edges."
+   },
+   {
+    "slug": "mowat-lane-milton",
+    "text": "For anyone mapping Milton by its neighbourhoods, Mowat Lane sits squarely within Dempsey's residential core."
+   },
+   {
+    "slug": "commercial-street-milton",
+    "text": "Commercial Street runs through the heart of Old Milton, one of the town's earliest settled pockets."
+   },
+   {
+    "slug": "lear-gate-milton",
+    "text": "Nothing here requires crossing Milton to reach either one."
+   },
+   {
+    "slug": "ezard-crescent-milton",
+    "text": "For a street this far into Milton, the highway reach is the defining convenience; the trade is that the train requires a deliberate drive rather than a walk."
+   },
+   {
+    "slug": "ezard-crescent-milton",
+    "text": "Clarke frames the street on every side, and the wider grid of Milton surrounds it."
+   }
+  ]
+ },
+ "class3": {
+  "findings": 148,
+  "byVerdict": {
+   "split": 32,
+   "refuted": 74,
+   "confirmed": 42
+  },
+  "confirmedPages": 39,
+  "confirmedByType": {
+   "T5-neighbourhood": 2,
+   "T3-sales-absence-vs-count": 6,
+   "OTHER": 12,
+   "T2-exclusivity-vs-data": 9,
+   "T7-opposite-compass": 1,
+   "T1-housing-type": 3,
+   "T4-listings": 3,
+   "T10-activity-vs-displayed-zero": 1,
+   "T6-terminus": 2,
+   "T9-price-or-rent-vs-data": 3
+  },
+  "confirmedByField": {
+   "faq": 34,
+   "hero/place-description": 4,
+   "meta-template-lead": 3,
+   "meta-generated-tail": 1
+  },
+  "generatedConfirmedPages": 37
+ },
+ "class2Verification": {
+  "wrongClaims": 56,
+  "readingConfirmed": 53,
+  "split": 1,
+  "refuted": 2,
+  "tieClaims": 7,
+  "tieConfirmed": 7,
+  "finalWrongClaims": 60,
+  "finalWrongPages": 56
+ }
+}

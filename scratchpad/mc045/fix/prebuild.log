@@ -1,0 +1,68 @@
+
+> miltonly@0.1.0 prebuild D:\miltonly
+> tsx scripts/test-canonicalization-regression.ts && tsx scripts/test-condo-identity.ts && tsx scripts/test-faq-sentence-count.ts && tsx scripts/test-no-anthropic-temperature.ts && tsx scripts/test-sms-format.ts && tsx --require ./scripts/_server-only-shim.cjs scripts/test-street-name-repair.ts && tsx scripts/test-index-copy-parity.ts && tsx --require ./scripts/_server-only-shim.cjs scripts/test-ai-provider-failclosed.ts && tsx scripts/test-name-prose.ts && tsx --require ./scripts/_server-only-shim.cjs scripts/test-zero-sales-tier.ts && tsx --tsconfig tsconfig.test.json scripts/test-grounding-zero.ts && tsx --tsconfig tsconfig.test.json scripts/test-video-poster.ts && tsx scripts/test-input-snapshot.ts && tsx --tsconfig tsconfig.test.json scripts/test-zero-price-prompt.ts && tsx --tsconfig tsconfig.test.json scripts/test-zero-price-priorities.ts && tsx --tsconfig tsconfig.test.json scripts/test-zero-price-faq.ts && tsx --tsconfig tsconfig.test.json scripts/test-market-section-shape.ts && tsx --tsconfig tsconfig.jsx-test.json scripts/test-address-anchors.ts && tsx --tsconfig tsconfig.jsx-test.json scripts/test-condo-name.ts && tsx --tsconfig tsconfig.test.json scripts/test-content-validator.ts && tsx --tsconfig tsconfig.test.json scripts/test-lead-guards.ts && tsx --tsconfig tsconfig.test.json scripts/test-lead-forms.ts && tsx --require ./scripts/_server-only-shim.cjs scripts/test-sold-date-not-future.ts && tsx scripts/test-fee-column.ts && tsx --tsconfig tsconfig.test.json scripts/test-geometry-boundary.ts && tsx --tsconfig tsconfig.test.json scripts/test-eval-prompt-shape.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-judge-verdict.ts && tsx --tsconfig tsconfig.test.json scripts/test-comparator-park-mask.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-judge-rulings.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-core-batch-3.ts && tsx --tsconfig tsconfig.test.json scripts/test-sold-cache-purge.ts && tsx --tsconfig tsconfig.test.json scripts/test-leads-digest.ts && tsx --tsconfig tsconfig.test.json scripts/test-content-guides.ts && tsx --tsconfig tsconfig.test.json scripts/test-audit-night-1.ts && tsx --tsconfig tsconfig.test.json scripts/test-build-cost.ts && tsx --tsconfig tsconfig.test.json scripts/test-video-playbook.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-neon-egress.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-hub-truth.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-portal-door.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-vow-fields.ts && tsx --tsconfig tsconfig.test.json --require ./scripts/_server-only-shim.cjs scripts/test-lead-bot-gate.ts && tsx scripts/test-vercel-ignore.ts && tsx scripts/test-env-loaders-crlf.ts
+
+[canonicalization-regression] PASS — 1 allowed abbreviated row(s) present, no regressions.
+[condo-identity] PASS — 32 cases green.
+[faq-sentence-count] PASS — 9/9 cases
+[temperature-regression] PASS — scanned 30 files under src/lib/ai, no Anthropic calls pass `temperature:`
+[sms-format] PASS — 3/3 cases
+[street-name-repair] PASS — 944 registry slugs resolve to their official name, plus 26 override/artifact/neighbourhood cases.
+[index-copy-parity] PASS — 7 invariants hold across 3 files.
+[ai-provider-failclosed] PASS — 6 refusals (empty, whitespace, unset, 2 typos, wrong case) + 4 valid values.
+[name-prose] PASS — 34 street-prose files carry no U+2014/U+2013, and no shortName reaches a prompt builder.
+test-zero-sales-tier: PASS (9 assertions)
+test-grounding-zero: PASS (30 assertions)
+test-video-poster: PASS (11 assertions)
+test-input-snapshot: PASS (10 inputHash write sites paired across 2 paths, 2 invariants)
+test-zero-price-prompt: PASS (15 assertions across the gate and the prompt text)
+test-zero-price-priorities: PASS (comparator gate, layout, suppression, rejection)
+test-zero-price-faq: PASS (withdrawal, floor, rejection and prompt; 10 questions survive)
+test-market-section-shape: PASS (comparable gate, input-determined layout, rejection)
+test-address-anchors PASS · 52 assertions · 35 addresses on Pine Street
+test-condo-name PASS · 112 assertions · 10 buildings
+test-content-validator: PASS (55 assertions)
+[cache] Upstash env vars not set — cache disabled
+[lead-guards] PASS — 234 assertions across honeypot, origin, rate limit, env tag, intent, watches and wiring.
+[lead-forms] PASS — 222 assertions. 25 surfaces on one helper, one ingress, three retired routes gone, every submission carries the fine print it showed.
+[cache] Upstash env vars not set — cache disabled
+DEC-SOLD-DATE-NOT-FUTURE
+  ok   past close is used verbatim
+  ok   close today is used, not deferred
+  ok   future close falls back to the contract date
+  ok   near-future close (tomorrow) also falls back
+  ok   future close with no contract date returns null
+  ok   future close with a future contract date returns null
+  ok   no dates at all returns null
+  ok   unparseable close with a good contract date falls back
+  ok   unparseable everything returns null
+  ok   no input produces a future sold_date (6 combinations)
+DEC-SOLD-DATE-NOT-FUTURE: pass
+[fee-column] PASS — 535 files under src/ carry no read of the dead `maintenanceFee` column.
+[geometry-boundary] PASS: 58 assertions; no geometry field on the input, no geometry import under src/lib/ai, unit_figure fires on 7 and is quiet on 9.
+[eval-prompt-shape] PASS: 25 assertions; the shaped prompt agrees with the gate on three fixtures and the full-data prompt is untouched.
+[judge-verdict] PASS: 18 assertions; buildJudgeVerdict on four run shapes, the column, its migration, and three terminal writes.
+[comparator-park-mask] PASS: 6 assertions; a grounded park name no longer reads as a comparator placement claim, and a real one still does.
+[judge-rulings] PASS: 24 assertions; the investor question is out and the K-gated lease count in, both prompts describe the option not the resident, and the judge retries once on an unparseable reply.
+[cache] Upstash env vars not set — cache disabled
+[core-batch-3] PASS: 57 assertions across the seven MC-012 changes.
+[cache] Upstash env vars not set — cache disabled
+[sold-cache-purge] PASS: 28 assertions; 16 sold-derived cache keys all covered by the sync's purge, which runs on the write path only.
+[leads-digest] PASS — 236 assertions across window, slot, sources, compose, delivery log and route.
+[cache] Upstash env vars not set — cache disabled
+content-guides: 429 surfaces validated (162 parking, 267 go), 1313 assertions
+content-guides: PASS
+[audit-night-1] PASS: 57 assertions.
+[build-cost] PASS: 44 assertions.
+test-video-playbook: PASS (50 assertions)
+[neon-egress] PASS: 63 assertions; the slug sets, the hub sets, /streets on ISR with DISTINCT ON, /rentals cached per scope, the street rows narrow, memoised and tagged.
+[hub-truth] PASS: 44 assertions; drift, prerender, the median, the registry, the up-link.
+[cache] Upstash env vars not set — cache disabled
+[portal-door] PASS: 126 assertions. 100 honeypot signups sent 0 emails; 100 no-origin signups sent 0.
+[vow-fields] PASS: 111 assertions.
+[cache] Upstash env vars not set — cache disabled
+[lead-bot-gate] PASS — 21 assertions. 100 bot submissions wrote 0 rows and sent 0 emails; the drip and the burst stop at the household's allowance.
+[vercel-ignore] PASS: 12 assertions.
+[env-loaders] static: 822 files scanned, 0 with the old regex
+[env-loaders] executed: 106 named loaders run against a CRLF/LF fixture
+[env-loaders] PASS
