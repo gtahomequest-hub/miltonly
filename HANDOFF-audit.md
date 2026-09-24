@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-22 (MA-009): the three Lighthouse regressions re-measured and found to be runner noise; MA-008 the morning report before it._
+_Last rewritten 2026-09-23 (MA-010): the em-dash rule reads prose only, the superlative rule fails closed with a standing fixture test, and the true open count is 1,526; MA-009 the Lighthouse noise before it._
 
 ## What this worktree is
 
@@ -15,6 +15,37 @@ exist: `.github/workflows/nightly-audit.yml` (new), `.gitignore` (tracks `scratc
 and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a Vercel build).
 
 ## READ THIS FIRST
+
+**MA-010: THE EM-DASH AND SUPERLATIVE RULES NARROWED; THE TRUE OPEN COUNT IS 1,526, NOT 2,442.** Record:
+`scratchpad/reports/MA-010-voice-rules.md` (copy and evidence in `scratchpad/ma010/`). Code `794ef5a`,
+merged with `origin/main` as `5b54347`, **not merged to main; Core takes it by SHA in the next batch** (the
+`.github/workflows/` change spends one build under the ignore rule).
+
+- **Premise:** em-dash 1,368 + superlative 306 = 1,674 of 2,442, not ~1,800. On the same bytes about 1,125
+  were noise and 576 real; 479 of the real ones are one sentence, `AgentContactSection.tsx:24`.
+- **Em-dash** counts a dash only when there is content on each side, read through inline tags. Out of
+  scope: `nav`, `[role=navigation]`, breadcrumbs, `option` and ARIA control roles, `label`, `legend`, `th`,
+  value placeholders ("—", "—/mo", "$—", a dash opening its own chip), link-row separators. Sentences
+  inside a nav or label (8+ words) stay in. An independent DOM implementation agrees on all 1,343
+  production pages (743 = 743). 1,368 become 574.
+- **Superlative** is fail-closed: the unchanged `SUPERLATIVE_PHRASES` vocabulary fires unless the hit is
+  proper, adverb, fit, source, question or idiom, and those exemptions are void when the sentence names
+  the registrant. Registered names (Best Road, Brian Best Park) are read from `src/data` at run time.
+  New readers: share cards, JSON-LD text not on the page, alt, `aria-label`, and the remarks of
+  RE/MAX Realty Specialists Inc. listings. 333 become 7.
+- **Standing test:** `node scripts/audit/nightly/test-voice-rules.mjs`, 1,032 assertions (333
+  violations, 339 legitimate uses, 88 page cases, 265 em-dash cases). The nightly runs it first. A rule
+  change without a fixture that pins it is not done. Four red-team rounds, 2,433 attacks and 999 mutants
+  went into it.
+- **Buried, for Core, Home and Leads:** /about award captions ("top-tier", "Highest career achievement",
+  S1 compliance); superlatives in 4 own-brokerage listing remarks (Aamir's call); the "only dedicated
+  real estate platform" claim on 537 share cards; rentals card street links that 404 (115 across four
+views); the rentals
+  card specs at 1.0:1 contrast since `aaff821`; `/listings` linking a school slug that 404s; the homepage's
+  schema-only "best neighbourhoods" FAQ; all 478 listing titles over 65 characters. Full list in the record.
+- **Not done:** the vocabulary still lacks "highest", "only", "#1", "top producer" and "leading" (a
+  lockstep change with the generator's list). Checking more link targets would surface 29 live 404s the
+  nightly misses, but it moves the link-unpublished counts that MC-042 used, so it waits for Core.
 
 **MA-009: THE 2026-09-22 LIGHTHOUSE REGRESSIONS ARE RUNNER NOISE, NOT A CODE CHANGE.** Record:
 `scratchpad/reports/MA-009-lighthouse-regressions.md`. Re-run three times each with the nightly's flags:
@@ -176,6 +207,7 @@ left (32 of 308 tonight). The report's Summary and Budget sections say exactly w
 |---|---|
 | `nightly/run.mjs` | the nightly: `BASE=https://miltonly.com AUDIT_DEPS=<dir> node scripts/audit/nightly/run.mjs [--no-email] [--no-lh] [--out=dir] [--budget=600] [--deadline=285] [--sample=40] [--lh=12]` |
 | `nightly/checks.mjs` | raw-HTML checks: title, H1, meta, canonical, JSON-LD, host leak, em-dash, superlatives, catchment, TREB strings, alt, dead anchors, links out |
+| `nightly/test-voice-rules.mjs` | MA-010: the standing fixture test for the em-dash and superlative rules, 1,032 assertions, no network; exports its fixtures for reuse. The nightly workflow runs it before it fetches anything |
 | `nightly/browser.mjs` | Chrome at 390 px (fonts under 12 px, overflow, DOM ids) and the Lighthouse CLI wrapper |
 | `streets.json` | the ten audit streets and their shapes; the nightly's fixed Lighthouse set |
 | `pick-streets.mjs` | picks shapes from the record (DB1 + DB2), for re-selecting the sample |
@@ -221,6 +253,18 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
   label "Listing agent's remarks" (S2 `remarks-unlabelled` otherwise). A listing page without the
   block is S3 `remarks-unmarked` and its body keeps the third-party exemption. Titles and
   descriptions are always checked. Board attribution ("TRREB", the MLS mark) is not a TREB string.
+- **Em-dash (MA-010)** counts a dash only when it punctuates prose: content on each side, read through
+  inline tags. `nav`, `[role=navigation]`, breadcrumbs, `option` and ARIA control roles, `label`,
+  `legend` and `th` are out, except a sentence of 8+ words inside them; value placeholders and
+  link-row separators are out. The `<title>` and the meta are counted whole. The excerpt quotes the
+  first counted dash.
+- **Superlative (MA-010)** fires on every `SUPERLATIVE_PHRASES` hit unless it is proper (a registered
+  name from `src/data`, a feed brokerage, the Premier's office), adverb ("best confirmed"), fit ("fits a
+  buyer best"), source ("your best guide to what you'd pay"), question (a choice the reader makes) or
+  idiom ("at best"). Every exemption but proper and the free idioms is void when the sentence names the
+  registrant. It reads the body, title, meta, share cards, JSON-LD text not on the page, alt,
+  `aria-label` and the remarks of RE/MAX Realty Specialists Inc. listings. An unknown construction
+  fires. Change it only with a fixture in `test-voice-rules.mjs`.
 - **Lighthouse moves** in the email: a category down 10 (perf) or 5 (seo, a11y, bp), LCP moved a
   quarter and 500 ms, an audit newly failing.
 - **The email.** Baseline night: every open finding by severity, capped at 80. A night with change:
@@ -233,8 +277,8 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007, MA-008 morning report on top; `origin/main` merged in at each start |
-| production audited | `f01a96a` 2026-09-12 (MA-001) and 09-13 (MA-004); `1b2d7d8` 09-16 (MA-005); `e606d8b` 09-18 (MA-006); `d068f84` 09-20/21 (MA-007); `c1565b7` 09-22 (MA-009); the nightly baseline 09-13 |
+| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007, MA-008 morning report, MA-010 voice rules (`794ef5a`) on top; `origin/main` merged in at each start |
+| production audited | `f01a96a` 2026-09-12 (MA-001) and 09-13 (MA-004); `1b2d7d8` 09-16 (MA-005); `e606d8b` 09-18 (MA-006); `d068f84` 09-20/21 (MA-007); `c1565b7` 09-22 (MA-009); `bfb6e74` 09-23 (MA-010, full re-run: 1,526 open, S2 30, S3 1,496); the nightly baseline 09-13 |
 | pages edited | none |
-| waiting on Core | merge `feat/audit` and add the morning report's seven Actions secrets (MA-008); MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
+| waiting on Core | merge MA-010 (`794ef5a` and the docs commit on it) in the next batch; the MA-010 top ten; merge `feat/audit` and add the morning report's seven Actions secrets (MA-008); MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
 | next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |
