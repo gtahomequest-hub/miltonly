@@ -2,9 +2,44 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-23 (MC-042, three street pages): `main` is `bfb6e74` (MC-041) plus this docs commit, production serves `bfb6e74`. Gowland Crescent, Ennisclare Drive and Jempson Path were generated ($0.0310, DeepSeek), published, passed 73 of 73 VOW assertions and the full battery, and then went back to draft, because a fabrication review found invented detail served on all three. Production is as it was before the task. Open for Aamir: republish the three as generated or fix the pipeline's qualitative grounding first; MC-041 has no report; the `/rentals` 404 links; the Archive Data question to PropTx; `REPORT_EMAIL_TO`; the build-minute burn. Record `scratchpad/mc042/MC-042-three-street-pages.md`._
+_Last rewritten 2026-09-24 (MC-043, MA-010's compliance fixes): `main` is `5f8cdb0` plus this docs commit, production serves `5f8cdb0` (`miltonly-6rj2rcp7y`), battery `PASS · 24 checks · 719 pages · 531s`. The /about captions are two cards, the "only" claim is gone from its three sources, the registered brokerage name renders in full everywhere the brokerage names itself, the hidden homepage FAQPage is removed, and MA-010 is merged by SHA (`794ef5a` as `60295f2`). Open for Aamir: the award list outside /about, MC-042's republish decision, MC-041's report, the `/rentals` 404 links, the Archive Data question to PropTx, `REPORT_EMAIL_TO`. Record `scratchpad/mc043/MC-043-ma010-compliance-fixes.md`._
 
 ## READ THIS FIRST
+
+**MAIN IS `5f8cdb0` AND PRODUCTION SERVES `5f8cdb0` (MC-043 plus MA-010, one build, `miltonly-6rj2rcp7y`).**
+- **Gates, in order:**
+  - local gate exit 0 on `30d808d` (867 s) and on `5f8cdb0` (615 s, 841 of 841 pages, 0 `P2024`);
+  - local battery `PASS · 24 checks · 719 pages · 495s` (`next start` on 3100);
+  - one preview, `miltonly-1bax8jetq`, `PASS · 24 checks · 719 pages · 650s`;
+  - production `PASS · 24 checks · 719 pages · 531s`. Logs are in `scratchpad/mc043/`.
+- **What changed:**
+  - `/about` shows two cards, "RE/MAX Hall of Fame" and "Serving Milton Since 2011". The 100% Club and
+    Executive Award cards are gone.
+  - The "only" claim is replaced by "Built exclusively for Milton, Ontario" in `config.ts:109`,
+    `layout.tsx:15` and `schema.ts:11`.
+  - "RE/MAX Realty Specialists Inc., Brokerage" renders in full at every self-naming site, including
+    our own office's "Listed by" lines. `brokerageDisplayName` returns `config.brokerage.name` when
+    `isOurBrokerage`. The comparison key drops the descriptor, because the feed omits it.
+  - The homepage FAQPage is removed. All six of its questions were schema-only.
+- **The separation line now reads:**
+  - own listing: "Contact Aamir Yaqoob of the listing brokerage, RE/MAX Realty Specialists Inc., Brokerage";
+  - other listings: "Contact Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage), not the listing brokerage (…)".
+- **MA-010:**
+  - `794ef5a` merged by SHA as `60295f2`, carrying MA-009 `846f187`.
+  - The `feat/audit` tip `eb9089e` (MA-010's docs) is NOT merged; Audit lands it.
+  - The nightly runs `scripts/audit/nightly/test-voice-rules.mjs` (1,032 assertions) from tonight.
+- **Left, and why:**
+  - `vow-acknowledgement.ts:22` still prints the short name. MP-006 (`feat/portal @ e622c96`) versions
+    it as terms VERSION 4.
+  - `sold/page.tsx:311` changed next to MP-006's `:310`. Expect a conflict when Portal merges; keep both.
+  - `AgentContactSection.tsx:27-29` still lists all three awards on /about and about 481 pages. So do
+    `AdsClient.tsx:330-332`, the `/rentals/ads` JSON-LD `award`, `AgentSidebar.tsx:20-22` and `/sell`
+    (`:108-109`). That is Aamir's call; the task named `about/page.tsx` only.
+- **The shell here collapses a doubled backslash in a Bash command before it runs.** A Python edit
+  meant to write a two-backslash JS string literal (the vCard comma escape) wrote one, which JS reads
+  as a plain comma. Build backslashes with `chr(92)` or use the Edit tool, and execute the edited line
+  to prove it.
+Record: `scratchpad/mc043/MC-043-ma010-compliance-fixes.md`.
 
 **MAIN IS `bfb6e74` AND PRODUCTION SERVES `bfb6e74` (MC-041). MC-042 PUBLISHED THREE STREETS AND TOOK THEM BACK
 TO DRAFT; NET PRODUCTION CHANGE NONE.**
@@ -668,8 +703,8 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`bfb6e74`** (MC-041, clips at dated keys, on MC-040 `bfc389b`) plus MC-042's docs commit; production serves `bfb6e74` |
-| battery on production | **`PASS · 24 checks · 722 pages · 482s`** at `bfb6e74`, 2026-09-23, with MC-042's three streets published; **`PASS · 24 checks · 719 pages · 830s`** after they went back to draft (the served state) |
+| `main` | **`5f8cdb0`** (MC-043 on the MA-010 merge `60295f2`) plus MC-043's docs commit; production serves `5f8cdb0` (`miltonly-6rj2rcp7y`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 531s`** at `5f8cdb0`, 2026-09-24 (preview `miltonly-1bax8jetq` 650s, local 495s) |
 | `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
 | held for the next batch | nothing |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
@@ -677,7 +712,7 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
 | Neon | DB1 46.4 GB month-to-date, ≈ 0.15 GB per battery run; `pg_stat_statements` on DB1 and DB2 |
 | nightly audit, morning report | nightly **live** 03:00 Toronto; morning report **live** 06:00 Toronto, first scheduled run 2026-09-22 (`f50bfba`), first on the addendum due 2026-09-23 |
-| open tasks | **MC-042's decision** (republish the three, or ground the qualitative prose first); MC-041's docs; the `/rentals` 404 links; the runners' CRLF env loader; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
+| open tasks | **the award list outside /about** (MC-043); **MC-042's decision** (republish the three, or ground the qualitative prose first); MC-041's docs; JSON-LD catchment and "only" rules for Audit; the `/rentals` 404 links; the runners' CRLF env loader; Search Console for `sitemap-index.xml`; the Vercel Node setting; Portal slices MP-003 and MP-004 wait on a prompt |
 
 ## What happened 2026-09-10 (final) — three merges
 
@@ -1046,7 +1081,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Held: nothing. **First, MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Held: nothing. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say
