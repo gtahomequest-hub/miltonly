@@ -13,7 +13,7 @@ import { config } from "@/lib/config";
 import "./rentals.css";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
+const BROKERAGE_NAME = config.brokerage.name;
 
 
 const svgProps = {
@@ -722,7 +722,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
               }}><em>⏱</em> Request my showing</button>
               <div className="bc-trust">No obligation · {REALTOR_FIRST_NAME} usually calls back within the hour</div>
               <div className="bc-trust">{REPLY_FINE_PRINT}</div>
-              <div className="bc-agent">{config.realtor.name} · {BROKERAGE_SHORT_NAME}</div>
+              <div className="bc-agent">{config.realtor.name} · {BROKERAGE_NAME}</div>
             </div>
           </div>
           <div className="micro-grid">

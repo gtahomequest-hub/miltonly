@@ -435,7 +435,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
                       <p className="text-[10px] text-white/60 leading-snug">{REPLY_FINE_PRINT}</p>
                     </form>
                   )}
-                  <p className="text-[10px] text-white/60 text-center mt-3">{config.realtor.name} · {config.brokerage.name.replace(", Brokerage", "")}</p>
+                  <p className="text-[10px] text-white/60 text-center mt-3">{config.realtor.name} · {config.brokerage.name}</p>
                   <div className="flex gap-2 mt-2">
                     <a href={`tel:${config.realtor.phoneE164}`} className="flex-1 text-center text-[11px] font-bold text-[#00ff80] border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80] transition-colors">📞 {config.realtor.phone}</a>
                     <a href="https://wa.me/16478399090" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-[11px] font-bold text-white/60 border border-[#1a5a47] rounded-lg py-2 hover:border-[#00ff80] hover:text-[#00ff80] transition-colors">💬 WhatsApp</a>

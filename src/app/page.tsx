@@ -3,10 +3,8 @@ import {
   generateLocalBusinessSchema,
   generateOrganizationSchema,
   generateWebSiteSchema,
-  generateFAQSchema,
   generateBreadcrumbSchema,
 } from "@/lib/schema";
-import { homepageFAQs } from "@/lib/faqs";
 import { config } from "@/lib/config";
 import { getHomepageData } from "@/lib/homepageData";
 import { buildMegaLive, getMegaExtras } from "@/lib/megaLive";
@@ -40,7 +38,9 @@ export default async function Page() {
     generateOrganizationSchema(),
     generateLocalBusinessSchema(),
     generateWebSiteSchema(),
-    generateFAQSchema(homepageFAQs),
+    // No FAQPage here (MC-043). Its six questions were in the schema and on no part of the page,
+    // which Google's structured-data policy does not allow, and their copy named features the site
+    // does not have and figures the page contradicts. A FAQ returns only with a visible twin.
     generateBreadcrumbSchema([{ name: `${config.CITY_NAME} Real Estate`, url: config.SITE_URL }]),
   ];
 

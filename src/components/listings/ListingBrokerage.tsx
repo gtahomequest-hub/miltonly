@@ -41,13 +41,15 @@ export function brokerageDisplayName(raw: string | null | undefined): string | n
   return Object.entries(FIXUPS).reduce((acc, [from, to]) => acc.replace(new RegExp(`\\b${from}\\b`, "g"), to), cased).replace(/\.\./g, ".");
 }
 
-/** Our own office, as the site names it: the feed's "RE/MAX REALTY SPECIALISTS INC." and the
- *  config's "RE/MAX Realty Specialists Inc." are the same office, so the comparison drops case
- *  and punctuation. */
-const OUR_OFFICE = config.brokerage.name.replace(", Brokerage", "");
-const officeKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+/** Our own office, for COMPARISON only. The feed spells it "RE/MAX REALTY SPECIALISTS INC." with no
+ *  registration descriptor, and the config carries the registered name "RE/MAX Realty Specialists
+ *  Inc., Brokerage": the key drops a trailing "Brokerage", case and punctuation, so both sides are
+ *  the same office whichever way either is spelled. What the site PRINTS is always the registered
+ *  name in full, config.brokerage.name (MC-043: Ontario requires it; the key never renders). */
+const officeKey = (s: string) => s.toLowerCase().replace(/,?\s*brokerage\s*$/, "").replace(/[^a-z0-9]+/g, "");
+const OUR_OFFICE_KEY = officeKey(config.brokerage.name);
 export function isOurBrokerage(raw: string | null | undefined): boolean {
-  return !!raw && officeKey(raw) === officeKey(OUR_OFFICE);
+  return !!raw && officeKey(raw) === OUR_OFFICE_KEY;
 }
 
 /**
@@ -57,7 +59,7 @@ export function isOurBrokerage(raw: string | null | undefined): boolean {
  * footnote. Names the listing brokerage when the feed supplies one that is not ours.
  */
 export function contactSeparationLine(listOfficeName: string | null | undefined): string {
-  const ours = `Contact ${config.realtor.name}, ${OUR_OFFICE}`;
+  const ours = `Contact ${config.realtor.name} (${config.brokerage.name})`;
   if (isOurBrokerage(listOfficeName)) return `${ours}, the listing brokerage`;
   const label = brokerageDisplayName(listOfficeName);
   return `${ours}, not the listing brokerage${label ? ` (${label})` : ""}`;

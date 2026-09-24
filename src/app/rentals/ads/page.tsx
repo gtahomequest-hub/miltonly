@@ -140,7 +140,6 @@ export default async function RentalsAdsPage({
   // Schema.org JSON-LD for /rentals/ads — RealEstateAgent + LocalBusiness + WebPage.
   // Public Mega ${CITY_NAME} GBP address used for LocalBusiness; authorized by agent.
   const realtorFirstName = config.realtor.name.split(" ")[0].toLowerCase();
-  const brokerageShort = config.brokerage.name.replace(", Brokerage", "");
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -151,7 +150,7 @@ export default async function RentalsAdsPage({
         jobTitle: config.realtor.title,
         worksFor: {
           "@type": "RealEstateAgent",
-          name: brokerageShort,
+          name: config.brokerage.name,
         },
         telephone: config.realtor.phoneE164,
         url: config.SITE_URL,

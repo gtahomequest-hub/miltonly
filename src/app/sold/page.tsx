@@ -308,7 +308,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
               Source: TREB MLS<sup>®</sup>
             </b>
             <p>{VOW_NOTICES}</p>
-            <p>Brokerage: RE/MAX Realty Specialists Inc.</p>
+            <p>{config.brokerage.name}</p>
           </div>
         </div>
       </section>

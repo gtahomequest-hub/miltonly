@@ -18,7 +18,7 @@ export default function AgentContactSection({ headline = "Your Milton Real Estat
           <p className="acs-bio" data-contact-separation>{contactSeparationLine(listing.listOfficeName)}</p>
         )}
         <h2 className="acs-name">Aamir Yaqoob</h2>
-        <p className="acs-brokerage">Sales Representative · RE/MAX Realty Specialists Inc.</p>
+        <p className="acs-brokerage">{config.realtor.title} · {config.brokerage.name}</p>
         <p className="acs-tagline">{headline}</p>
         <p className="acs-bio">
           With {config.realtor.yearsExperience} years of full-time experience, Aamir knows that real estate is about far more than price — it is about finding the right fit, the right protection, and the right outcome. Whether you are a tenant, a landlord, or ready to buy or sell, Aamir represents your interests completely.
