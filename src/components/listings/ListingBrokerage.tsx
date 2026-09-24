@@ -26,9 +26,23 @@ const FIXUPS: Record<string, string> = {
   Exp: "eXp",
 };
 
-/** The feed's ALL-CAPS office name as prose. One rule for every surface. */
+/** Our own office, for COMPARISON only. The feed spells it "RE/MAX REALTY SPECIALISTS INC." with no
+ *  registration descriptor, and the config carries the registered name "RE/MAX Realty Specialists
+ *  Inc., Brokerage": the key drops a trailing "Brokerage", case and punctuation, so both sides are
+ *  the same office whichever way either is spelled. The key itself never renders. */
+const officeKey = (s: string) => s.toLowerCase().replace(/,?\s*brokerage\s*$/, "").replace(/[^a-z0-9]+/g, "");
+const OUR_OFFICE_KEY = officeKey(config.brokerage.name);
+export function isOurBrokerage(raw: string | null | undefined): boolean {
+  return !!raw && officeKey(raw) === OUR_OFFICE_KEY;
+}
+
+/** The feed's ALL-CAPS office name as prose. One rule for every surface. Our own office prints its
+ *  registered name in full instead, config.brokerage.name: the feed carries it without ", Brokerage"
+ *  and Ontario requires the registered name wherever the brokerage names itself (MC-043). Every
+ *  other office keeps the feed's name, cased. */
 export function brokerageDisplayName(raw: string | null | undefined): string | null {
   if (!raw || !raw.trim()) return null;
+  if (isOurBrokerage(raw)) return config.brokerage.name;
   const cased = raw
     .toLowerCase()
     .split(/(\s+|-|\/)/)
@@ -41,17 +55,6 @@ export function brokerageDisplayName(raw: string | null | undefined): string | n
   return Object.entries(FIXUPS).reduce((acc, [from, to]) => acc.replace(new RegExp(`\\b${from}\\b`, "g"), to), cased).replace(/\.\./g, ".");
 }
 
-/** Our own office, for COMPARISON only. The feed spells it "RE/MAX REALTY SPECIALISTS INC." with no
- *  registration descriptor, and the config carries the registered name "RE/MAX Realty Specialists
- *  Inc., Brokerage": the key drops a trailing "Brokerage", case and punctuation, so both sides are
- *  the same office whichever way either is spelled. What the site PRINTS is always the registered
- *  name in full, config.brokerage.name (MC-043: Ontario requires it; the key never renders). */
-const officeKey = (s: string) => s.toLowerCase().replace(/,?\s*brokerage\s*$/, "").replace(/[^a-z0-9]+/g, "");
-const OUR_OFFICE_KEY = officeKey(config.brokerage.name);
-export function isOurBrokerage(raw: string | null | undefined): boolean {
-  return !!raw && officeKey(raw) === OUR_OFFICE_KEY;
-}
-
 /**
  * THE SEPARATION LINE (MC-036, TRREB VOW rules item 8). Our contact card sits beside a listing
  * held by another brokerage, so the card says whose it is before it asks for a name: the first
@@ -59,10 +62,10 @@ export function isOurBrokerage(raw: string | null | undefined): boolean {
  * footnote. Names the listing brokerage when the feed supplies one that is not ours.
  */
 export function contactSeparationLine(listOfficeName: string | null | undefined): string {
-  const ours = `Contact ${config.realtor.name} (${config.brokerage.name})`;
-  if (isOurBrokerage(listOfficeName)) return `${ours}, the listing brokerage`;
+  // On our own listing the appositive names the brokerage, never the salesperson (MC-043).
+  if (isOurBrokerage(listOfficeName)) return `Contact ${config.realtor.name} of the listing brokerage, ${config.brokerage.name}`;
   const label = brokerageDisplayName(listOfficeName);
-  return `${ours}, not the listing brokerage${label ? ` (${label})` : ""}`;
+  return `Contact ${config.realtor.name} (${config.brokerage.name}), not the listing brokerage${label ? ` (${label})` : ""}`;
 }
 
 /** What the brokerage line says when the feed carries no office name: a price never stands

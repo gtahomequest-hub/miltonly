@@ -31,13 +31,13 @@ export default function AboutPage() {
         <h2 className="text-[20px] font-extrabold text-[#073126] mb-8 tracking-[-0.02em]">Awards &amp; Recognition</h2>
         {/* Two facts, stated plainly (MC-043): the award by its name, the tenure by its year. No
             ranking words, and the year stays a year, never a duration. Grid items stretch, so the
-            pair sits level side by side from 640px and stacks below it. */}
+            pair sits level side by side from 640px and stacks below it, one height either way. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-white rounded-xl border border-[#dfe0dc] p-4 flex items-center justify-center gap-3">
+          <div className="bg-white rounded-xl border border-[#dfe0dc] p-4 min-h-[72px] flex items-center justify-center gap-3">
             <span className="text-[24px]">🏆</span>
             <p className="text-[14px] font-bold text-[#073126]">RE/MAX Hall of Fame</p>
           </div>
-          <div className="bg-white rounded-xl border border-[#dfe0dc] p-4 flex items-center justify-center">
+          <div className="bg-white rounded-xl border border-[#dfe0dc] p-4 min-h-[72px] flex items-center justify-center">
             <p className="text-[14px] font-bold text-[#073126]">Serving {config.CITY_NAME} Since 2011</p>
           </div>
         </div>
