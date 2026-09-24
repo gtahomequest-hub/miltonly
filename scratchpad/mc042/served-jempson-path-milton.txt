@@ -1,0 +1,22 @@
+# served on https://miltonly.com/streets/jempson-path-milton while published (fetched 2026-09-23 ~20:53 local, build bfb6e74)
+
+meta description: Jempson Path, Milton: 1 sale in the last 12 months on record, current listings, and the full street read. Jempson Path is a residential street in Milton's.
+JSON-LD Place.description: Jempson Path is a residential street in Milton's Harrison area, a pocket of the town that has filled in around a mix of townhouse rows and detached homes.
+
+## profile (rendered sentences)
+[about]
+  Jempson Path is a residential street in Milton's Harrison area, a pocket of the town that has filled in around a mix of townhouse rows and detached homes. The street's housing is predominantly townhouse in form, and it reads as part of the established residential fabric that defines this part of Milton.
+[homes] The homes here
+  Jempson Path is a townhouse street. The recorded stock is townhouse in form, and that is the type that defines the address. There is no recent sale price published for the street itself, so no figure can be attached to it.
+[market] Trade patterns
+  Jempson Path trades rarely. What can be said is that the street's position inside Harrison places it among established Milton townhouse stock, and the wider neighbourhood is where the pricing reference lives. Readers weighing Jempson Path against other Milton streets should treat the neighbourhood comparable as the working reference and the street's own record as a blank.
+[neighbourhoodComparable] Comparable homes nearby
+  Sold-to-ask behaviour points to modest negotiation room, with buyers generally closing a little below the asking figure rather than at or above it. Year-over-year direction is not published for this comparable set, so no trend read is offered here. Taken together, the neighbourhood picture is one of steady, unspectacular trade in townhouse stock, and it is that wider pattern, not the street's own sparse record, that gives a reader the clearest sense of where values sit for homes of this type in Harrison.
+
+## FAQ (FAQPage JSON-LD, as served)
+Q: How fast do homes sell on Jempson Path?
+A: There is not enough recent activity on Jempson Path to give a meaningful figure for the street itself.
+Q: What kinds of homes are on Jempson Path?
+A: The street is townhouse in form, and that is the only housing type recorded here. The mix is uniform rather than varied.
+Q: Is Jempson Path new construction or established?
+A: The street is established, with the surrounding Harrison area built out rather than still under development.
