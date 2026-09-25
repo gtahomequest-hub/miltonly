@@ -1,2 +1,5 @@
 * text=auto
 *.sql text eol=lf
+# Shell scripts are LF in every working copy: `npx vercel` uploads a worktree as it is, and bash on
+# Vercel's builder cannot run a CRLF script (MC-044; found by ML-012, HANDOFF-leads.md).
+*.sh text eol=lf
