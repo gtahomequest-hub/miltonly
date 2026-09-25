@@ -31,12 +31,16 @@ function have(rev: string): boolean {
   }
 }
 
-/** Run the rule and return its exit code, the way Vercel runs it. */
+/** Run the rule and return its exit code, the way Vercel runs it.
+ *  Judged as main unless a case names a branch (MC-045): this test runs in `prebuild`, and a build
+ *  on Vercel carries its own VERCEL_GIT_COMMIT_REF. A preview deployed with `npx vercel` from a
+ *  worktree branch (DEC-ONE-PREVIEW) inherited that branch, the rule's branch gate skipped before the
+ *  range logic under test ever ran, and "an unreachable base/head must BUILD" failed the build. */
 function decide(args: string[], env: NodeJS.ProcessEnv = {}): number {
   try {
     execFileSync("bash", ["scripts/vercel-ignore.sh", ...args], {
       stdio: "pipe",
-      env: { ...process.env, ...env },
+      env: { ...process.env, VERCEL_GIT_COMMIT_REF: "main", ...env },
     });
     return 0;
   } catch (e) {
