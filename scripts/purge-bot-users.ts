@@ -31,10 +31,14 @@ async function main() {
   const prisma = new PrismaClient();
   const apply = process.argv.includes("--apply");
 
+  // MP-006, Appendix B(b): a row with a password is a credential record and is never
+  // hard-deleted here, whatever else is true of it (credentialRetainUntil in
+  // src/lib/portal/passwordRule.ts). An unverified bot row never has one.
   const where = {
     verified: false,
     lastLoginAt: null,
     vowAcknowledgedAt: null,
+    passwordHash: null,
     savedSearches: { none: {} },
   } as const;
 

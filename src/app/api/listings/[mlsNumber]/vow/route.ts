@@ -11,8 +11,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export type ListingVowResponse =
   | { canSee: false; needsAcknowledgement: boolean }
   | { canSee: true; facts: ListingVowFacts | null };
 
-export async function GET(_req: NextRequest, { params }: { params: { mlsNumber: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { mlsNumber: string } }) {
   const user = await getSession();
   const canSee = canSeeVowRecords(user);
   if (!canSee) {
@@ -73,6 +74,19 @@ export async function GET(_req: NextRequest, { params }: { params: { mlsNumber: 
     soldPrice: l.soldPrice,
     soldDate: l.soldDate ? l.soldDate.toISOString() : null,
   };
+  // The audit trail (MP-006): the VOW-only fields of one listing were served.
+  await logVowAccess({
+    userId: user!.id,
+    kind: "listing-vow",
+    scope: params.mlsNumber,
+    path: req.nextUrl.pathname,
+    recordCount: 1,
+    ip: clientIpFromHeaders(req.headers),
+    userAgent: req.headers.get("user-agent"),
+    reviewFlag: user!.reviewFlag,
+  });
+  await touchSession();
+
   const body: ListingVowResponse = { canSee: true, facts };
   return NextResponse.json(body, { headers: { "Cache-Control": "private, no-store" } });
 }

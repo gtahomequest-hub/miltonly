@@ -1,4 +1,5 @@
-import { getSession } from "@/lib/auth";
+import { getSession, touchSession } from "@/lib/auth";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { isPublicListing } from "@/lib/listings/vow";
@@ -58,6 +59,21 @@ export async function GET(request: NextRequest) {
         ? "active"
         : "unavailable",
   }));
+
+  // The audit trail (MP-006): a saved listing's sold or expired status is a VOW-only fact.
+  if (canSeeStatus) {
+    await logVowAccess({
+      userId: user.id,
+      kind: "saved-listings",
+      scope: mlsNumbers.slice(0, 20).join(","),
+      path: request.nextUrl.pathname,
+      recordCount: listings.length,
+      ip: clientIpFromHeaders(request.headers),
+      userAgent: request.headers.get("user-agent"),
+      reviewFlag: user.reviewFlag,
+    });
+  }
+  await touchSession();
 
   return NextResponse.json({ listings }, { headers: { "Cache-Control": "private, no-store" } });
 }

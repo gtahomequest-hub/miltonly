@@ -24,6 +24,17 @@ import { MIN_PASSWORD_LENGTH } from "@/lib/portal/passwordRule";
 export const MAX_PASSWORD_LENGTH = 200;
 export const BCRYPT_COST = 12;
 
+// The 90-day password clock and the 180-day credential retention live in passwordRule.ts (no
+// imports, so vow-access.ts and the card can read them); re-exported here for callers that
+// already import this file.
+export {
+  PASSWORD_MAX_DAYS,
+  CREDENTIAL_RETENTION_DAYS,
+  passwordExpiresAt,
+  passwordExpired,
+  credentialRetainUntil,
+} from "@/lib/portal/passwordRule";
+
 export type PasswordVerdict = { ok: true } | { ok: false; error: string; reason: "short" | "long" | "email" | "type" };
 
 export function judgePassword(password: unknown, email: string): PasswordVerdict {

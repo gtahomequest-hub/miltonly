@@ -1,6 +1,7 @@
-// Prebuild test for the door (MP-002): the sign-in request, the code and the link; and
-// (MP-002b) the password: the rule, the hash, the login route, and the one VOW gate that
-// requires it on every surface.
+// Prebuild test for the door (MP-002): the sign-in request, the code and the link; (MP-002b)
+// the password: the rule, the hash, the login route, and the one VOW gate that requires it on
+// every surface; and (MP-002c) the User-Agent guard from src/lib/lead/guards.ts, refusing a
+// missing or quoted User-Agent the honeypot's way, before the origin check.
 //
 // The headline assertion is the one the task set: a run of 100 bot signups sends zero emails.
 // It runs the real requestSignIn() with the database and the sender replaced by counters, so
@@ -33,7 +34,7 @@ import { HONEYPOT_FIELD, type GuardVerdict } from "@/lib/lead/guards";
 import { SESSION_MAX_DAYS } from "@/lib/auth";
 import { judgePassword, hashPassword, verifyPassword, MIN_PASSWORD_LENGTH, BCRYPT_COST } from "@/lib/portal/password";
 import { canSeeVowRecords, vowStepsLeft } from "@/lib/vow-access";
-import { VOW_ACKNOWLEDGEMENT_TEXT } from "@/lib/vow-acknowledgement";
+import { VOW_ACKNOWLEDGEMENT_TEXT, VOW_TERMS_VERSION } from "@/lib/vow-acknowledgement";
 import { PORTAL_CONSENT_TEXT } from "@/lib/portal/consent";
 
 let assertions = 0;
@@ -64,10 +65,19 @@ function counters() {
   };
 }
 
+const SENT_WORDS = "Check your email. Tap the link, or type the code. It works for 15 minutes.";
+const BROWSER_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+// The header the sale-detail Lead rows carried (ML-005), a Chrome string wrapped in double
+// quotes; the same addresses made the 162 User rows within seconds of each row (MP-001), so it
+// is taken as the sign-in bot's, by inference. The guard refuses any quote character, so the
+// bytes inside the quotes do not change the verdict.
+const BOT_UA = '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"';
+
 function req(over: Partial<SignInRequest> & { body?: Record<string, unknown> }): SignInRequest {
   return {
     body: { email: "person@example.com", redirect: "/streets/pine-street-milton#sold-records" },
     ip: "203.0.113.7",
+    userAgent: BROWSER_UA,
     origin: "https://miltonly.com",
     referer: null,
     host: "miltonly.com",
@@ -98,16 +108,19 @@ async function main() {
   {
     const c = counters();
     let twoHundreds = 0;
+    let sameWords = 0;
     for (let i = 0; i < 100; i++) {
       const r = await requestSignIn(
         req({ body: { email: `b.o.t.${i}@gmail.com`, [HONEYPOT_FIELD]: "http://spam.example" }, ip: `198.51.100.${i % 20}` }),
         { ...c.deps, rateLimit: fakeLimiter() },
       );
       if (r.status === 200) twoHundreds++;
+      if (r.ok && r.body.message === SENT_WORDS && r.sent === false) sameWords++;
     }
     eq(c.sent.length, 0, "100 honeypot signups: emails sent");
     eq(c.persisted.length, 0, "100 honeypot signups: rows written");
     eq(twoHundreds, 100, "100 honeypot signups: every one answered 200 so the bot learns nothing");
+    eq(sameWords, 100, "100 honeypot signups: every one got the success words and sent nothing");
   }
   {
     const c = counters();
@@ -145,6 +158,75 @@ async function main() {
     const r = await requestSignIn(req({ body: { email: "not an email" } }), { ...c.deps, rateLimit: fakeLimiter() });
     eq(r.status, 400, "a bad address is refused before the limiter");
     eq(c.sent.length, 0, "a bad address sends nothing");
+  }
+
+  // ── the User-Agent guard (MP-002c): missing or quoted, the honeypot's way ────
+  {
+    const c = counters();
+    let twoHundreds = 0;
+    let sameWords = 0;
+    let limiterCalls = 0;
+    const counting = fakeLimiter();
+    const limiter = async (a: { ip: string; email?: string }) => {
+      limiterCalls++;
+      return counting(a);
+    };
+    for (let i = 0; i < 100; i++) {
+      const r = await requestSignIn(
+        req({ body: { email: `s.i.l.e.n.t.${i}@gmail.com` }, ip: `198.51.100.${i % 20}`, userAgent: i % 2 ? BOT_UA : null }),
+        { ...c.deps, rateLimit: limiter },
+      );
+      if (r.status === 200) twoHundreds++;
+      if (r.ok && r.body.message === SENT_WORDS && r.sent === false) sameWords++;
+    }
+    eq(c.sent.length, 0, "100 signups with a missing or quoted User-Agent: emails sent");
+    eq(c.persisted.length, 0, "100 signups with a missing or quoted User-Agent: rows written");
+    eq(twoHundreds, 100, "100 signups with a missing or quoted User-Agent: every one answered 200");
+    eq(sameWords, 100, "100 signups with a missing or quoted User-Agent: every one got the success words and sent nothing");
+    eq(limiterCalls, 0, "a missing or quoted User-Agent never reaches the limiter, so it spends nothing");
+  }
+  for (const [ua, label, reason] of [
+    [null, "no header", "no user agent"],
+    ["", "empty header", "no user agent"],
+    ["   ", "whitespace header", "no user agent"],
+    [BOT_UA, "the bot's double-quoted Chrome string", "quoted user agent"],
+    ["'Mozilla/5.0'", "a single-quoted string", "quoted user agent"],
+    ['Mozilla/5.0 "x"', "a quote anywhere in the value", "quoted user agent"],
+  ] as const) {
+    const c = counters();
+    const r = await requestSignIn(req({ userAgent: ua }), { ...c.deps, rateLimit: fakeLimiter() });
+    ok(r.ok && r.status === 200 && r.sent === false && r.body.message === SENT_WORDS && c.sent.length === 0 && c.persisted.length === 0, `User-Agent ${label}: 200, the success words, nothing sent, nothing written`);
+    eq(r.ok ? r.reason : `refused ${r.status}`, reason, `User-Agent ${label}: the reason`);
+    eq(r.ok ? r.detail : undefined, (ua ?? "").slice(0, 200), `User-Agent ${label}: the refused value rides on detail for the log`);
+  }
+  for (const [ua, label] of [
+    [BROWSER_UA, "an iPhone Safari string"],
+    ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36", "a desktop Chrome string"],
+    ["curl/8.4.0", "curl, which the proofs use"],
+    ["node", "node, which the battery uses"],
+  ] as const) {
+    const c = counters();
+    const r = await requestSignIn(req({ userAgent: ua }), { ...c.deps, rateLimit: fakeLimiter() });
+    ok(r.ok && r.sent === true && c.sent.length === 1, `User-Agent ${label}: passes and sends`);
+  }
+  {
+    // The order: a request with a quoted User-Agent AND no origin answers 200, not 403. The
+    // silent refusal comes before the one that speaks.
+    const c = counters();
+    const r = await requestSignIn(req({ userAgent: BOT_UA, origin: null, referer: null }), { ...c.deps, rateLimit: fakeLimiter() });
+    eq(r.status, 200, "quoted User-Agent with no origin: 200 (the silent guard runs before the origin check)");
+    eq(c.sent.length, 0, "quoted User-Agent with no origin: nothing sent");
+  }
+  {
+    // And the honeypot still comes first: a trapped body WITH the bot's User-Agent is refused
+    // for the honeypot, so a swap of the two guards would show up here as "quoted user agent".
+    const c = counters();
+    const r = await requestSignIn(req({ body: { email: "person@example.com", [HONEYPOT_FIELD]: "x" }, userAgent: BOT_UA }), { ...c.deps, rateLimit: fakeLimiter() });
+    eq(r.ok ? r.reason : `refused ${r.status}`, "honeypot", "honeypot before User-Agent (a trapped body with the bot's header is the honeypot's refusal)");
+  }
+  {
+    const signupSrc = readFileSync("src/app/api/auth/signup/route.ts", "utf8");
+    ok(signupSrc.includes("detail: result.detail"), "signup route logs the refused User-Agent value");
   }
 
   // ── one real request: the shape of what is sent ──────────────────────────────
@@ -226,8 +308,8 @@ async function main() {
   // ── the ceiling ──────────────────────────────────────────────────────────────
   ok(SESSION_MAX_DAYS <= 90, `the session ceiling is ${SESSION_MAX_DAYS} days, at most 90`);
   const auth = readFileSync("src/lib/auth.ts", "utf8");
-  ok(auth.includes("setExpirationTime(`${SESSION_MAX_DAYS}d`)"), "the JWT expiry is the ceiling");
-  ok(!/refresh|sliding|extend/i.test(auth.replace(/\/\/.*$/gm, "")), "auth.ts has no sliding window");
+  ok(auth.includes("exp: now + SESSION_SECONDS") && auth.includes("setExpirationTime(claims.exp)"), "the JWT expiry is the ceiling");
+  ok(!/exp: now \+ SESSION_SECONDS/.test(auth.split("export async function touchSession")[1] || "") && auth.includes("touchedClaims(claims, now)"), "auth.ts never slides exp: a touch moves act only");
 
   const terms = readFileSync("src/app/terms/page.tsx", "utf8");
 
@@ -264,13 +346,16 @@ async function main() {
 
   // ── the gate: acknowledgement AND password ───────────────────────────────────
   const acked = new Date();
-  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: acked, passwordHash: "$2a$12$x" }), true, "verified + acknowledged + password sees records");
-  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: acked, passwordHash: null }), false, "no password: no records, even acknowledged");
-  eq(canSeeVowRecords({ verified: true, vowAcknowledgedAt: null, passwordHash: "$2a$12$x" }), false, "no acknowledgement: no records, even with a password");
-  eq(canSeeVowRecords({ verified: false, vowAcknowledgedAt: acked, passwordHash: "$2a$12$x" }), false, "unverified: no records");
+  // MP-006 widened the gate: the agreement must be at the current version, the password
+  // younger than 90 days, the registrant question answered no. A row that meets all of it:
+  const whole = { verified: true, vowAcknowledgedAt: acked, vowAcknowledgementVersion: VOW_TERMS_VERSION, passwordHash: "$2a$12$x", passwordSetAt: acked, isRegistrant: false, reviewFlag: null };
+  eq(canSeeVowRecords(whole), true, "verified + agreed (current) + password + not a registrant sees records");
+  eq(canSeeVowRecords({ ...whole, passwordHash: null }), false, "no password: no records, even acknowledged");
+  eq(canSeeVowRecords({ ...whole, vowAcknowledgedAt: null }), false, "no acknowledgement: no records, even with a password");
+  eq(canSeeVowRecords({ ...whole, verified: false }), false, "unverified: no records");
   eq(canSeeVowRecords(null), false, "no session: no records");
   {
-    const steps = vowStepsLeft({ verified: true, vowAcknowledgedAt: acked, passwordHash: null });
+    const steps = vowStepsLeft({ ...whole, passwordHash: null });
     ok(!steps.needsAcknowledgement && steps.needsPassword, "an acknowledged row without a password owes only the password");
   }
   for (const f of [
@@ -294,12 +379,13 @@ async function main() {
   ok(login.includes("checkLoginRateLimit(") && login.includes("checkOrigin("), "login is rate limited and origin checked");
   ok((login.match(/MISMATCH/g) || []).length >= 2 && !/no account|not set|unknown address/i.test(login.replace(/\/\/.*$/gm, "")), "login answers one message for wrong, unknown and unset");
   const ackRoute = readFileSync("src/app/api/auth/acknowledge-vow/route.ts", "utf8");
-  ok(ackRoute.includes("judgePassword(body.password, user.email)") && ackRoute.includes("hashPassword("), "the card's route judges and hashes the password");
-  ok(ackRoute.indexOf("judgePassword(") < ackRoute.indexOf("hashPassword("), "the password is judged before it is hashed");
+  const ackPlan = readFileSync("src/lib/portal/acknowledge.ts", "utf8");
+  ok(ackPlan.includes("judgePassword(body.password, user.email)") && ackRoute.includes("hashPassword(plan.password.password)"), "the card's plan judges the password and the route hashes what the plan approved");
+  ok(ackRoute.includes("planAcknowledgement(") && ackRoute.indexOf("planAcknowledgement(") < ackRoute.indexOf("hashPassword("), "the password is judged (in the plan) before it is hashed");
 
   // ── the words ────────────────────────────────────────────────────────────────
   ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("90 days"), "the VOW text states the 90-day sign-in");
-  ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("username is my email address") && VOW_ACKNOWLEDGEMENT_TEXT.includes("my password is mine alone"), "the VOW text (v3) names username and password");
+  ok(VOW_ACKNOWLEDGEMENT_TEXT.includes("username is my email address") && VOW_ACKNOWLEDGEMENT_TEXT.includes("password is mine alone"), "the VOW text names username and password");
   ok(terms.includes("username") && terms.includes("password") && terms.includes("R-805"), "/terms names the username, the password and R-805");
   ok(!/—/.test(VOW_ACKNOWLEDGEMENT_TEXT + PORTAL_CONSENT_TEXT), "no em-dash in the texts");
   ok(PORTAL_CONSENT_TEXT.includes("unsubscribe"), "the consent sentence promises an unsubscribe");
@@ -315,13 +401,22 @@ async function main() {
   ok(!/user\.verifyCode !== code|=== code/.test(verify), "verify route has no plain string compare");
   const door = readFileSync("src/lib/portal/door.ts", "utf8");
   ok(door.includes("timingSafeEqual"), "the compare is constant-time");
-  ok(door.indexOf("checkHoneypot(") < door.indexOf("checkOrigin(") && door.indexOf("checkOrigin(") < door.indexOf("checkRateLimit)"), "guards run honeypot, origin, rate limit, in that order");
+  ok(
+    door.indexOf("checkHoneypot(") < door.indexOf("checkUserAgent(") &&
+      door.indexOf("checkUserAgent(") < door.indexOf("checkOrigin(") &&
+      door.indexOf("checkOrigin(") < door.indexOf("checkRateLimit)"),
+    "guards run honeypot, user agent, origin, rate limit, in that order",
+  );
+  ok(door.includes('from "@/lib/lead/guards"') && /import \{[^}]*checkUserAgent[^}]*\} from "@\/lib\/lead\/guards"/.test(door), "checkUserAgent is the lead layer's, imported from guards.ts, not a copy");
+  ok(signup.includes('userAgent: request.headers.get("user-agent")'), "signup route passes the User-Agent header to the door");
+  const guards = readFileSync("src/lib/lead/guards.ts", "utf8");
+  ok(guards.includes("export function checkUserAgent("), "guards.ts exports checkUserAgent");
   const ack = readFileSync("src/app/api/auth/acknowledge-vow/route.ts", "utf8");
   ok(ack.includes("consentText: PORTAL_CONSENT_TEXT") && ack.includes("consentTimestamp: now"), "acknowledge route stores the consent pair");
   ok(ack.includes("residentialStreet.findUnique"), "acknowledge route checks the street against the registry");
   const prompt = readFileSync("src/components/vow/VowAcknowledgementPrompt.tsx", "utf8");
   ok(prompt.includes("/api/autocomplete?type=street"), "the card's street field is the registry autocomplete");
-  ok(prompt.includes("VOW_ACKNOWLEDGEMENT_TEXT") && prompt.includes("PORTAL_CONSENT_TEXT"), "the card shows both texts");
+  ok(prompt.includes("VOW_TERMS_CLAUSES") && prompt.includes("PORTAL_CONSENT_TEXT"), "the card shows the terms and the consent sentence");
   const island = readFileSync("src/components/street/v2/SoldRecordsIsland.tsx", "utf8");
   ok(island.includes("VowAcknowledgementPrompt"), "the street island renders the card for a signed-in, unacknowledged person");
   ok(island.includes("#sold-records") && island.includes('id="sold-records"'), "the street island's sign-in link returns to its own anchor");
@@ -342,7 +437,7 @@ async function main() {
     for (const f of failures) console.error("  - " + f);
     process.exit(1);
   }
-  console.log(`[portal-door] PASS: ${assertions} assertions. 100 honeypot signups sent 0 emails; 100 no-origin signups sent 0.`);
+  console.log(`[portal-door] PASS: ${assertions} assertions. 100 honeypot signups sent 0 emails; 100 no-origin signups sent 0; 100 missing-or-quoted-User-Agent signups sent 0.`);
 }
 
 main().catch((err) => {
