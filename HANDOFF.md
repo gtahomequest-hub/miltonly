@@ -2,9 +2,46 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-24 (MC-045, measuring the fabrication): `main` is `be6c5bc` plus this docs commit, production serves `5f8cdb0`, unchanged. Measured on the served HTML of all 719 street pages: build-era claims on 521 of 707 pages with generated text (1,173 sentences, precision 89.9%, recall 84.1%), compass claims plainly WRONG on 56 pages, self-contradictions on 38 (a floor); 543 pages carry at least one and hold 63% of street clicks. Hubs (17 of 22) and condos (40 of 56) share it. Held for the next batch: `fix/env-loader-crlf @ 4cf16e4`. Open for Aamir: the response to the measurement, and rotating the GSC service-account key. Record `scratchpad/mc045/MC-045-fabrication-measure.md`._
+_Last rewritten 2026-09-25 (MC-044, the batch): `main` is `b60aa11` plus this docs commit and the morning report's `4f2df7b`; production serves `b60aa11` (`miltonly-f1bjm1gup`), battery `PASS · 24 checks · 719 pages · 559s`. Merged by SHA: `feat/portal @ fd65058` (MP-006) as `601c64a`, `fix/env-loader-crlf @ 4cf16e4` (MC-045) as `6b2cfe7`, `feat/leads @ a001c43` (ML-012) as `6e14465`; MH-009 `7cfa4a2` was already on `main` (MC-038). Two Core fixes on top: `be8e127` (one deletion channel on /privacy; the battery carries the session /me re-issues) and `b60aa11` (`*.sh` LF in every worktree, without which no worktree preview passes prebuild). Held for the next batch: nothing. Record `scratchpad/mc044/MC-044-batch-merge.md`._
 
 ## READ THIS FIRST
+
+**MC-044 LANDED THE BATCH IN ONE PRODUCTION BUILD. PRODUCTION SERVES `b60aa11`; THE VOW BEST PRACTICES (MP-006) ARE LIVE.**
+- **The merges, by SHA, in the order named:**
+  - `fd65058` as `601c64a`: MP-006. Conflicts in `package.json` prebuild (the union) and `/privacy` (main's statute name, the portal's comma).
+  - `4cf16e4` as `6b2cfe7`: MC-045. `package.json`, the union, 44 prebuild tests.
+  - `7cfa4a2`: already an ancestor of `main` since MC-038. Nothing to merge, and `pnpm-lock.yaml` did not change.
+  - `a001c43` as `6e14465`: ML-012, clean.
+  - The migration `portal_vow_best_practices` was already applied: `prisma migrate status` shows 32, up to date.
+- **Two Core fixes on top:**
+  - `be8e127`: one deletion channel on `/privacy`, and `vow-fields` now carries the token `/api/auth/me` re-issues. MP-006 winds the 60-minute `act` only in that new cookie.
+  - `b60aa11`: `*.sh text eol=lf` in `.gitattributes`.
+- **Proven on production** (logs in `scratchpad/mc044/`):
+  - **Portal:** ten numbered clauses at v4, clause ix the only bold one, drawn by production's bundle. A real password sign-in wrote `street-records farmstead-drive-milton n=12` to `VowAccessLog`. `/api/admin/vow-access` answers 401 without the admin cookie, CSV with it.
+  - **Web Analytics:** a headed, non-webdriver Chrome fired `POST /35ca55a203cd90db/view` (200), and the Query API counted it 37 s later. The store holds 235 page views and 70 visitors since 09-22, including chatgpt.com 2.
+  - **Rentals:** the four card fields measure 4.89:1 (1.0:1 before). 0 links 404 across `/rentals`, `/rent`, Timberlea and Harrison.
+  - **A worktree-branch preview passes prebuild:** `miltonly-knzmybnxv`, `gitCommitRef preview/mc044`.
+- **Worktree previews had a second cause, which MC-045 missed.** `core.autocrlf` writes `scripts/vercel-ignore.sh` CRLF in every worktree, `npx vercel` uploads it as it is, and bash on Vercel then fails `test-vercel-ignore` ("FAIL: 3 of 5").
+  - MC-045's preview passed only because `D:\miltonly`'s copy happens to be LF.
+  - `b60aa11` pins `*.sh` to LF and touches the script, so a tier that merges `main` gets it rewritten LF with no manual step (reproduced in `scratchpad/mc044/evidence-eol.txt`).
+  - **Audit and Leads still carry the CRLF copy:** merge `main` before their next CLI preview.
+- **The 60-minute inactivity timeout is proven on production in real time:** an untouched token was refused at +61 minutes, and a token touched at +30 was still live (`scratchpad/mc044/inactivity-prod-b60aa11.log`).
+- **Every pre-deploy session was refused**, and the battery signed in afresh. Both desk rows were already current (v4, registrant no). **The desk's password expires 2026-12-19T13:22:40Z**, and the battery cannot renew it.
+- **The morning report's "awaiting first data" is its own 404.** `scripts/audit/morning/sources/analytics.mjs` queries `vercel.com/api/web-analytics/stats`, which does not exist. The documented API is `api.vercel.com/v1/query/web-analytics/visits/{count,aggregate}` (OData `filter`, `by=day|hour|requestPath|referrerHostname`). This is for Audit.
+- **Open for Portal:**
+  - Query-only navigations (`/sold` chips, `/listings` filters) never wind the 60-minute clock, because `UserProvider` keys `/me` on `usePathname()`.
+  - The renewal card says "One-time setup".
+  - The registrant wall says "email Aamir" with no address.
+  - The docs commit `e622c96` is unmerged.
+- **Open for Aamir:** the removal desk email (`src/lib/privacy/request.ts:28`) says to remove at once with no VOW exception, while `VowAccessLog` and `VowConsent` cascade on a `User` delete.
+- **Traps:**
+  - This desk's clock runs 12.4 s ahead of Neon and Vercel, so take proof times from the server.
+  - The Neon serverless driver reads Prisma's zone-less `timestamp(3)` as local time (+4 h), so cast `AT TIME ZONE 'UTC'`.
+  - The first local build after a day can bake in day-old fetch-cache data, which failed `tiles` and `hub-page` locally at `6e14465` while production passed. A second build cleared it.
+  - MC-045's runner change was watched on `recon-condo-names.ts`. It now takes the pooled URL (`connection_limit=10`, `pgbouncer=true`), with identical output and 0 pool errors.
+    That was one light read, so watch the first write or `$transaction` runner (`create-street-page`, `requeue-creation-programme`, `cleanup-canonicalization`).
+    **`mail-unnotified-leads.ts --send` now really delivers**, where it used to throw "RESEND_API_KEY unset". No fixed runner reaches a `VERCEL_ENV` reader.
+Record: `scratchpad/mc044/MC-044-batch-merge.md`.
 
 **MC-045 MEASURED THE FABRICATION ON THE 719 SERVED STREET PAGES. NOTHING WAS CHANGED; PRODUCTION SERVES `5f8cdb0`.**
 - **Numbers** (method and every flagged sentence in `scratchpad/mc045/`):
@@ -22,7 +59,7 @@ _Last rewritten 2026-09-24 (MC-045, measuring the fabrication): `main` is `be6c5
 - **The reproducible method** is `scratchpad/mc045/method/`: crawl, extract, units, class1, class2-candidates/verdict,
   class3, the review processors, gsc28, summarize. The agent review outputs it consumed are summarised in
   `scratchpad/mc045/out/review-round*.json`.
-- **Held for the next batch: `fix/env-loader-crlf @ 4cf16e4`** (preview `miltonly-iay9zu9eo` READY, prebuild PASS on Vercel).
+- **`fix/env-loader-crlf @ 4cf16e4`, merged in MC-044 as `6b2cfe7`** (preview `miltonly-iay9zu9eo` READY, prebuild PASS on Vercel).
   - The CRLF `loadEnvLocal` regex is fixed in 59 tracked scripts: 2 of 83 assignments become 83 of 83.
   - `scripts/test-env-loaders-crlf.ts` is added to prebuild.
   - MC-040's `test-vercel-ignore.ts` no longer inherits the build's branch ref. Without that fix, **every preview from a
@@ -730,10 +767,10 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`5f8cdb0`** (MC-043 on the MA-010 merge `60295f2`) plus MC-043's docs commit; production serves `5f8cdb0` (`miltonly-6rj2rcp7y`) |
-| battery on production | **`PASS · 24 checks · 719 pages · 531s`** at `5f8cdb0`, 2026-09-24 (preview `miltonly-1bax8jetq` 650s, local 495s) |
-| `prisma migrate status` | **clean**, 31 migrations (`20260918120000_portal_password` was already applied when merged, MC-031) |
-| held for the next batch | **`fix/env-loader-crlf @ 4cf16e4`** (MC-045: the CRLF env loaders, and the ignore test's branch leak that fails every branch preview); preview `miltonly-iay9zu9eo` READY |
+| `main` | **`b60aa11`** (MC-044: the batch, MP-006 + MC-045 + ML-012 by SHA, two Core fixes) plus the morning report `4f2df7b` and MC-044's docs commit; production serves `b60aa11` (`miltonly-f1bjm1gup`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 559s`** at `b60aa11`, 2026-09-25 (local at `be8e127` 429s; preview `miltonly-knzmybnxv` Ready, not batteried) |
+| `prisma migrate status` | **clean**, 32 migrations (`20260921120000_portal_vow_best_practices` was already applied when merged, MC-044) |
+| held for the next batch | **nothing** (MC-044 merged `fix/env-loader-crlf`, `feat/portal @ fd65058` and `feat/leads @ a001c43`; `feat/portal`'s docs tip `e622c96` is Portal's to land) |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -1108,7 +1145,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Held: `fix/env-loader-crlf @ 4cf16e4`; merge it before any worktree preview. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Nothing is held (MC-044). **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say

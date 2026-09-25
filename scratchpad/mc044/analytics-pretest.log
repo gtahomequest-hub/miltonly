@@ -1,0 +1,8 @@
+[2026-09-25T14:12:47.648Z] before: /streets/farmstead-drive-milton by hour (last 6 h, production): []
+[2026-09-25T14:12:55.777Z] browser: headed, navigator.webdriver=false, "Headless" in UA=false, UA=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36
+[2026-09-25T14:12:55.777Z] request: GET /35ca55a203cd90db/script.js -> 200
+[2026-09-25T14:12:55.777Z] request: POST /35ca55a203cd90db/view -> 200
+[2026-09-25T14:12:55.777Z] beacon FIRED: POST /35ca55a203cd90db/view answered 200
+[2026-09-25T14:12:56.016Z] visit at 2026-09-25T14:12:48.243Z (hour bucket 2026-09-25T14:00:00.000Z); count in that bucket before: 0
+[2026-09-25T14:13:26.522Z] RECORDED: /streets/farmstead-drive-milton 2026-09-25T14:00:00.000Z pageviews 0 -> 1, visible in the Query API 38 s after the visit
+EXIT 0

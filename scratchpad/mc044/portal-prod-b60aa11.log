@@ -1,0 +1,30 @@
+[2026-09-25T15:00:13.741Z] card heading "The terms have changed", terms head "Terms of use, version 4", data-vow-terms-version=4, ol list-style-type=decimal
+[2026-09-25T15:00:13.742Z]   1. [i] display=list-item weight=400 "I am entering into a lawful broker-consumer relationship with Aamir Ya…"
+[2026-09-25T15:00:13.742Z]   2. [ii] display=list-item weight=400 "All MLS® data I obtain through this VOW is for my personal, non-commer…"
+[2026-09-25T15:00:13.742Z]   3. [iii] display=list-item weight=400 "I have a bona fide interest in the purchase, sale or lease of real est…"
+[2026-09-25T15:00:13.742Z]   4. [iv] display=list-item weight=400 "I will not copy, redistribute, retransmit or otherwise use any of the …"
+[2026-09-25T15:00:13.742Z]   5. [v] display=list-item weight=400 "I acknowledge that PropTx Innovations Inc. (PropTx) owns, and holds th…"
+[2026-09-25T15:00:13.742Z]   6. [vi] display=list-item weight=400 "I will not display, post, disseminate, distribute, publish, broadcast,…"
+[2026-09-25T15:00:13.743Z]   7. [vii] display=list-item weight=400 "My agreement here, by a mouse click or a tap, is sufficient to acknowl…"
+[2026-09-25T15:00:13.743Z]   8. [viii] display=list-item weight=400 "I expressly authorize PropTx and other PropTx Members to access this V…"
+[2026-09-25T15:00:13.743Z]   9. [ix] display=list-item weight=700 <strong> "I have read the privacy policy at miltonly.com/privacy and I consent t…"
+[2026-09-25T15:00:13.743Z]   10. [signin] display=list-item weight=400 "My username is my email address and my password is mine alone; I will …"
+[2026-09-25T15:00:13.743Z] PASS terms version 4 on the card
+[2026-09-25T15:00:13.743Z] PASS ten clauses (10)
+[2026-09-25T15:00:13.743Z] PASS numbered: ol decimal, every li a list-item
+[2026-09-25T15:00:13.743Z] PASS clause 9 (ix) is the only bold clause (ix)
+[2026-09-25T15:00:14.410Z] sign-in row gta…@gmail.com: terms v4, registrant false, password set 2026-09-20T13:22:40.093Z
+[2026-09-25T15:00:18.327Z] signed in, landed /streets/farmstead-drive-milton; card shown: false; sold rows served: 12
+[2026-09-25T15:00:18.327Z] /api/auth/me: termsVersion=4 needsAcknowledgement=false needsReconsent=false needsPassword=false needsPasswordRenewal=false needsRegistrantAnswer=false passwordExpiresAt=2026-12-19T13:22:40.093Z
+[2026-09-25T15:00:18.327Z] PASS a current row reads the street's sold records with no card
+[2026-09-25T15:00:20.860Z]   trail row: 2026-09-25T15:00:04.948Z street-records farmstead-drive-milton path=/api/streets/farmstead-drive-milton/sold-records n=12 ip=99.246.x.x ua=Mozilla/5.0 (Windows NT 10.0; Win64; x64…
+[2026-09-25T15:00:20.860Z] PASS a street-records row for farmstead-drive-milton written by the read (15 -> 16 rows for this user)
+[2026-09-25T15:00:21.046Z] without the admin cookie: 401 application/json
+[2026-09-25T15:00:21.046Z] PASS 401 without the admin cookie
+[2026-09-25T15:00:21.283Z] admin sign-in: 200, cookie issued
+[2026-09-25T15:00:21.457Z] with the admin cookie: 200 text/csv; charset=utf-8; attachment; filename="vow-access-2026-09-25-to-2026-09-26.csv"; cache-control no-store
+[2026-09-25T15:00:21.458Z]   header: at,userId,email,name,registrant,reviewFlag,kind,scope,path,recordCount,ip,userAgent
+[2026-09-25T15:00:21.458Z]   12 data rows for 2026-09-25; rows naming farmstead-drive-milton: 3
+[2026-09-25T15:00:21.458Z] PASS CSV with the admin cookie, carrying today's read
+[2026-09-25T15:00:21.622Z] PORTAL PROOF: ALL PASS
+EXIT 0

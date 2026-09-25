@@ -1,0 +1,15 @@
+read at 2026-09-25T15:23:28Z (database clock)
+
+== every User row with a VOW agreement or a password (all rows in the table):
+  gta…+mp006@gmail.com: terms v4, registrant false (answered 2026-09-21T19:27:42Z), reviewFlag null, agreed 2026-09-21T19:30:04.041Z, password set 2026-09-21T19:30:12.318Z
+  gta…@gmail.com: terms v4, registrant false (answered 2026-09-21T18:30:58Z), reviewFlag null, agreed 2026-09-21T18:30:58.652Z, password set 2026-09-20T13:22:40.093Z
+  (2 User rows in all)
+
+== copeland-circle-milton: For Sale records near the 12-month edge, and the stats row
+  12-month edge now: 2025-09-25T15:23:28Z
+  sold_date 2025-09-25 00:00:00+00 in the 12-month window: false
+  sold_date 2025-09-25 00:00:00+00 in the 12-month window: false
+  sold_date 2025-10-30 00:00:00+00 in the 12-month window: true
+  sold_date 2026-01-16 00:00:00+00 in the 12-month window: true
+  sold_date 2026-08-21 00:00:00+00 in the 12-month window: true
+  analytics.street_sold_stats: sold_count_12months 3, last_updated 2026-09-25T11:31:09Z (a timestamptz)

@@ -1,0 +1,277 @@
+{
+ "workflow": "mc044-merge-review (7 agents: 4 reviewers, 3 verifiers; the leakage lens raised nothing, so it had no verifier)",
+ "range": "5b9da69..6e14465",
+ "lenses": [
+  {
+   "lens": "semantic-conflicts",
+   "findings": [
+    {
+     "title": "/privacy now gives two contradictory ways to ask for deletion",
+     "file": "src/app/privacy/page.tsx",
+     "line": 80,
+     "severity": "minor",
+     "evidence": "`git show 6e14465:src/app/privacy/page.tsx | sed -n 75,98p`. At line 80 the portal paragraph (under 'How long we keep it') reads: \"A deletion request is handled by hand: write to the address below; inside that window we keep what the VOW rules require and remove the rest.\" A few lines below, at 93-97, main's MC-036 paragraph (under 'Your rights') reads: \"To have your personal information removed, use the <Link href=\\\"/privacy/request\\\">removal request form</Link>. You get a reference by email at once... For access, a correction, or anything else, email gtahomequest@gmail.com\". So the address below is now the channel for everything except removal, and removal goes through the form.",
+     "failure_scenario": "A registered VOW consumer reads /privacy to delete their account. One paragraph tells them to email the address below and says a person will handle it. The next paragraph sends removal to /privacy/request and keeps the email for access and corrections only. The policy page describes two procedures, and a TRREB or PropTx reviewer reading it sees inconsistent handling on the page the Terms clause ix makes the consumer agree to.",
+     "introduced_by": "601c64a (the portal merge, hand-resolved privacy page). The portal paragraph was written on base 2166975, before main's MC-036 removal-request form existed. Main's paragraph is not on the portal branch. The resolution kept both hunks and did not reconcile them. Neither 5b9da69 nor fd65058 has both sentences.",
+     "verdict": {
+      "title": "/privacy now gives two contradictory ways to ask for deletion",
+      "real": true,
+      "severity": "minor",
+      "reason": "Confirmed at 6e14465:src/app/privacy/page.tsx:78-81 and :93-97. The portal paragraph says \"A deletion request is handled by hand: write to the address below; inside that window we keep what the VOW rules require and remove the rest.\" The MC-036 paragraph under it sends removal to the /privacy/request form and keeps the email for \"access, a correction, or anything else\". Neither parent has both texts. At fd65058 the rights paragraph read \"To exercise any of these rights, email ...\", so \"the address below\" was consistent there. 5b9da69 has no portal paragraph. The hand-resolved merge in 601c64a created the contradiction. The form's confirmation email (src/lib/privacy/request.ts:127-131) also names only the TRESA retention exception, not the VOW 180-day one this paragraph promises. The email channel still works (it is FALLBACK_EMAIL), so this is inconsistent compliance copy, not a broken flow. Minor."
+     }
+    },
+    {
+     "title": "Removal-request flow tells the desk to remove data at once with no VOW-retention exception; deleting the User row cascades and wipes VowAccessLog and VowConsent",
+     "file": "src/lib/privacy/request.ts",
+     "line": 28,
+     "severity": "major",
+     "evidence": "`git show 6e14465:src/lib/privacy/request.ts | sed -n 28,31p`: DESK_INSTRUCTION = \"On a consumer request to remove personal information, remove it from Miltonly's systems and advise PropTx and the listing brokerage of the request at once...\". This is printed on every desk email. The confirmation email (line 129) says \"will remove it from Miltonly's systems\", and its only exception is TRESA. src/lib/portal/consent.ts:10 (main): \"I can ask for the account and my information to be removed at any time at miltonly.com/privacy/request\". This text is stored as consentText and shown on the VOW card at VowAcknowledgementPrompt.tsx:344, next to the portal's line at :377: \"Registration records are kept for at least 180 days after a password expires.\" prisma/schema.prisma:708 and :726 (portal): VowConsent.user and VowAccessLog.user both use `onDelete: Cascade`. privacy/page.tsx:78-80 and terms promise the access log and consent records are kept at least 180 days after password expiry.",
+     "failure_scenario": "A VOW consumer submits /privacy/request asking for their account to be removed. The desk email tells the operator to remove it from Miltonly's systems at once, so the operator deletes the User row. Postgres cascades the delete to every VowAccessLog row and every VowConsent row for that person. The VOW Policy 19 audit trail and the consent history are gone inside the 180-day window that /privacy, /terms and the card promise. PropTx asks for that consumer's access trail, and /api/admin/vow-access returns nothing for them.",
+     "introduced_by": "The portal merge 601c64a met main's MC-036 (b09b893). On 5b9da69 the desk instruction could only destroy credential columns on User. The portal adds VowAccessLog and VowConsent with cascade FKs and a written 180-day retention promise. Nobody reconciled either side with the other's removal or retention rule, so the merge makes the pre-existing credential conflict worse by putting the audit trail in the blast radius.",
+     "verdict": {
+      "title": "Removal-request flow tells the desk to remove data at once with no VOW-retention exception; deleting the User row cascades and wipes VowAccessLog and VowConsent",
+      "real": false,
+      "severity": "none",
+      "reason": "No code path reaches this. The only user-delete code is scripts/purge-bot-users.ts:61. At 6e14465 it excludes any row with passwordHash, vowAcknowledgedAt or lastLoginAt, so it cannot touch a consumer who has VowConsent or VowAccessLog rows. The scenario depends on the operator hard-deleting a User row by hand. The retention conflict is also pre-existing. At 5b9da69, terms/page.tsx:63 and VowAcknowledgementPrompt.tsx:272 already promised to keep registration records for 180 days, and DESK_INSTRUCTION and the TRESA-only confirmation email already ignored that promise. The merge adds more data under the cascade, but the defect is still a human-process text gap, not something the merged code can trigger. The copy inconsistency the merge actually introduced is covered by the privacy-page finding."
+     }
+    },
+    {
+     "title": "The battery's cached session assumes a 90-day life; after MP-006 a cached token can pass the /me check and then go inactive mid-check",
+     "file": "scripts/verify/checks/vow-fields.mjs",
+     "line": 130,
+     "severity": "minor",
+     "evidence": "`git show 6e14465:scripts/verify/checks/vow-fields.mjs | sed -n 130,147p`. Comment: \"A session lives 90 days (src/lib/auth.ts); reusing it keeps reruns inside the door's limits\". cachedSession() checks the cached token with GET /api/auth/me and returns that same token. fetchRaw discards the Set-Cookie that /me now sends. src/lib/auth.ts (portal): getSession() refuses a token once `act` has passed (`judgeSession ... if (claims.act <= nowSeconds) return \"inactive\"`). touchSession() moves `act` only in a new response cookie, 60 minutes out. The battery keeps using the stale token for the gated route, the grid, and later the browser island (page.setCookie({ name: COOKIE_NAME, value: token }) at line 353). The island runs after five networkidle2 page loads, each with a timeout of up to 90 s.",
+     "failure_scenario": "The post-merge prod battery reruns within about an hour of an earlier run against the same host. The cached token is, say, 58 minutes old. /api/auth/me accepts it, and the gated-route and grid assertions pass. A minute or two later the island request presents the same token past `act`, so getSession returns null and the listing page shows the card instead of the facts. The check reports 'listing page island renders the facts' as no. That is a flaky one-way failure that is easy to blame on the desk row's terms state.",
+     "introduced_by": "The portal merge 601c64a (MP-006's 60-minute `act` claim). The battery's session cache predates base 2166975 and was correct under the fixed 90-day session. The portal's test-vow-best-practices.ts:168 checks the cookie name the battery uses but not its lifetime, so the cache's premise broke without a matching change.",
+     "verdict": {
+      "title": "The battery's cached session assumes a 90-day life; after MP-006 a cached token can pass the /me check and then go inactive mid-check",
+      "real": true,
+      "severity": "minor",
+      "reason": "Confirmed. At 6e14465:scripts/verify/checks/vow-fields.mjs:130-147, cachedSession() checks the token against /api/auth/me and returns that same token. fetchRaw (line 178) drops the Set-Cookie that /me now sends after touchSession() (src/app/api/auth/me/route.ts:19). The cache file is written only at sign-in, so the cached token's `act` stays at sign-in plus 60 minutes. src/lib/auth.ts:45 judgeSession returns \"inactive\" once `act` passes, and getSession then returns null. A rerun that starts shortly before that hour is up passes /me and the early assertions, then presents a dead token when the island loads (setCookie at line ~353, after several networkidle2 loads with a 90 s timeout each). The island reports 'no', which is easy to blame on the desk row's terms state. scripts/verify is unchanged in this batch, so the 90-day premise in the comment went stale when the portal landed. The window is narrow (only the check's own duration before the hour is up), and after the hour /me rejects the token and the check signs in fresh. So this is an occasional false failure in the verification tool. Minor."
+     }
+    },
+    {
+     "title": "The inactivity clock is not wound on query-only navigations (/sold chips, /listings filters), despite the comment",
+     "file": "src/components/UserProvider.tsx",
+     "line": 57,
+     "severity": "minor",
+     "evidence": "`git show 6e14465:src/components/UserProvider.tsx | sed -n 53,60p`: \"a person clicking through the /sold chips or the /listings pages under this one root layout is active\" ... `const pathname = usePathname(); useEffect(() => { refresh(); }, [refresh, pathname]);`. usePathname() excludes the query string. Every /sold chip is `<Link href={`/sold?type=${typeParam}&nbhd=...`}>` (src/app/sold/page.tsx:278 and the rows above it), so the pathname stays '/sold'. The /sold server component can't set a cookie (its own comment says so), so nothing touches the session on those navigations.",
+     "failure_scenario": "A signed-in, acknowledged consumer lands on /sold and then only clicks chips or changes type, ptype or nbhd (or pages and filters on /listings). None of these navigations calls /api/auth/me or any touching route. Sixty minutes after the last touch, the next chip click renders /sold with getSession() returning null. The records vanish and the anonymous gate appears mid-visit even though the person was active the whole time.",
+     "introduced_by": "The portal merge 601c64a (MP-006 UserProvider change). This is portal-internal, not a cross-branch conflict. It is new to main with this batch.",
+     "verdict": {
+      "title": "The inactivity clock is not wound on query-only navigations (/sold chips, /listings filters), despite the comment",
+      "real": true,
+      "severity": "minor",
+      "reason": "Confirmed. At 6e14465:src/components/UserProvider.tsx:57-60 the /api/auth/me refresh depends on usePathname(), which leaves out the query string. The /sold chips are next/link hrefs that change only the query (src/app/sold/page.tsx:233-278). The /listings FiltersBar uses router.push to the same basePath with new params (src/components/listings/v2/FiltersBar.tsx:78). Neither page renders a client fetch to a touching route: /sold is fully server-rendered, and sold/page.tsx:150-152 and listings/page.tsx:73-74 say themselves that only /api/auth/me winds the clock. Scenario: a consumer loads /sold at T0, idles, then clicks chips at T0+50 and T0+55. At T0+61 the next chip click renders with getSession() null and shows the gate, even though they were active 6 minutes earlier. The comment claims the /sold chip case is covered. This is new to main with 601c64a (the diff against 5b9da69 adds the pathname dependency). It fails on the strict side, so it is not a compliance breach, but it is a real UX defect. Minor."
+     }
+    }
+   ],
+   "checked": [
+    "Intersection of `git diff --name-only 2166975 fd65058` and `2166975 5b9da69`: package.json, QUEUE.md, src/app/api/auth/saved-listings/route.ts, src/app/api/auth/save-listing/route.ts, src/app/privacy/page.tsx, src/app/sold/page.tsx. Each merged result was read at 6e14465.",
+    "package.json prebuild: the full command set at 6e14465 equals the union of 5b9da69, fd65058, 4cf16e4 and a001c43. There are 44 tests, no duplicates, and no dropped test or flag (comm over the split commands is empty). No other package.json change in 5b9da69..6e14465, and pnpm-lock is untouched by the batch.",
+    "src/app/sold/page.tsx: VOW_NOTICES imported once and rendered once in sv-notice. config.brokerage.name (MC-043) is kept. The gate heading 'Recent Milton sold prices, last 90 days' is kept. The portal's headers() and logVowAccess imports appear once each. The trail write is under `if (canSeeRecords && user)`, after the records fetch. No second notice is rendered by the card.",
+    "saved-listings/save-listing: main's MC-036 session-list lookup, the 100 cap, redactAddress and the listOfficeName select are all kept. The portal's logVowAccess (scope from the session-derived mlsNumbers), touchSession and no-store sit on the served branch.",
+    "Privacy page hand resolution: main's statute name plus the portal's comma replacing the em-dash is kept faithfully. The '(REBBA)' acronym after the TRESA name is pre-existing on 5b9da69. The contradiction with main's removal paragraph is reported.",
+    "MC-043 brokerage naming in portal files: clause (i) carries 'RE/MAX Realty Specialists Inc., Brokerage'. terms, privacy and sold use config.brokerage.name, which is the full registered name. PORTAL_CONSENT_TEXT (main-changed) carries the full name.",
+    "Voice in the portal's added consumer copy (privacy, terms, vow card, clauses): no em-dash, no 'median' or 'average', no superlatives.",
+    "Every src file calling canSeeVowRecords( at 6e14465 writes logVowAccess, except the portal test's exempt set (vow-access, sold-data, NeighbourhoodSoldBlock). Main added no new gated file since 2166975, so the test-vow-best-practices walk and SURFACES=8 hold.",
+    "Main-changed consumers of portal modules: SoldRecordsIsland and ListingVowFacts render VowAcknowledgementPrompt with onDone, which the prop still accepts. SavedDashboard, ListingExtras, ResultsClient and RentalsClient use useUser, whose shape is unchanged. layout.tsx mounts UserProvider once.",
+    "Portal route handlers vs main caching and egress: /api/sold, /api/sold-stats, /api/streets/[slug]/sold-records, /api/listings/[mls]/vow and saved-listings are all force-dynamic and private/no-store, so a Set-Cookie from touchSession can't be cached. /sold (revalidate 0) and /listings (dynamic) call headers(). VowGate and NeighbourhoodSoldBlock are unrendered, so no ISR page picks up cookies() or headers().",
+    "listingsV2Data (main MC-036 caps and address gate) vs the portal's listings-grid trail: data.listings, query.status, query.type and query.neighbourhood all still exist.",
+    "Portal test structural reads against main-changed files (SoldRecordsIsland includes VowAcknowledgementPrompt, #sold-records and id=\"sold-records\"; PORTAL_CONSENT_TEXT includes 'unsubscribe' and has no em-dash; save-listing has await touchSession()): consistent at 6e14465.",
+    "No session JWT is minted outside auth.ts. The battery signs in through /api/auth/login or verify, so tokens carry `act`. A pre-deploy token without `act` is judged invalid and triggers a fresh sign-in.",
+    "Env-loader merge vs portal scripts: export-vow-access-log.ts and purge-bot-users.ts loaders use /^\\s*([A-Z0-9_]+)\\s*=\\s*(.*?)\\s*$/, which is CRLF-safe and passes test-env-loaders-crlf's static and executed checks. MC-045 touched no portal file.",
+    "ML-012 (rentals, rent, rentalStreetPage.ts, rentals.css) vs portal and env: no shared files, no VOW gate, no session use. The leads branch's merge-base is c636e20, so it already saw all of main.",
+    "VercelAnalytics redaction still covers the portal's /signin/link?t= and /api/auth/ paths. Only the comment's line reference (door.ts:95, now :100) drifted, which is harmless.",
+    "/api/admin/vow-access uses the existing verifyAdminCookieValue on the miltonly_admin cookie (src/lib/adminAuth.ts:35).",
+    "No conflict markers anywhere in the tree outside scratchpad/."
+   ]
+  },
+  {
+   "lens": "voice-compliance",
+   "findings": [
+    {
+     "title": "/privacy now gives a VOW registrant two different ways to ask for deletion, and they contradict each other",
+     "file": "src/app/privacy/page.tsx",
+     "line": 80,
+     "severity": "minor",
+     "evidence": "Line 80 (portal): \"A deletion request is handled by hand: write to the address below; inside that window we keep what the VOW rules require and remove the rest.\" Lines 93-96 (main, MC-036 b09b893): \"To have your personal information removed, use the removal request form. You get a reference by email at once, and a reply when it is done\". Commands: `git show 2166975:src/app/privacy/page.tsx | grep -n 'removal request form'` finds nothing. `git log -S\"removal request form\" -- src/app/privacy/page.tsx` shows b09b893 (MC-036, main only). `sed -n 76,96p src/app/privacy/page.tsx` on the merged tree shows both paragraphs.",
+     "failure_scenario": "A registered VOW consumer wants their account removed. The retention paragraph says a request is handled by hand and to write to \"the address below\". The first thing below it is the \"Your rights\" section, which says to use the automated form and promises a reference by email at once. The /privacy/request form describes itself as covering \"an account\" and says nothing about the 180-day VOW retention. So the consumer gets two procedures and two promises for the same request, and the form never tells them that part of their record must stay.",
+     "introduced_by": "The portal merge (601c64a). The portal wrote its paragraph against base 2166975, where \"the address below\" could only mean the Contact email. Main added the removal-form paragraph afterwards in MC-036, and the auto-merge put the two side by side. Neither parent has both.",
+     "verdict": {
+      "title": "/privacy now gives a VOW registrant two different ways to ask for deletion, and they contradict each other",
+      "real": true,
+      "severity": "minor",
+      "reason": "Confirmed at src/app/privacy/page.tsx:76-81 and 91-96 on 6e14465. The portal's retention paragraph says a deletion request is 'handled by hand: write to the address below'. The next paragraph, added on main by MC-036 (b09b893), sends removal to the /privacy/request form and keeps the email for 'access, a correction, or anything else'. Neither 5b9da69 nor 2166975 has both paragraphs, so the merge created the stale cross-reference. The consumer impact is small. Both routes reach the same desk (FALLBACK_EMAIL is the address below, and the form's desk email is also handled by hand), so no request is lost. The flaw is inconsistent instructions in a compliance document, not a broken process."
+     }
+    },
+    {
+     "title": "The /terms 'Last updated' date is still April 23, 2026, although v4 adds new obligations",
+     "file": "src/app/terms/page.tsx",
+     "line": 20,
+     "severity": "minor",
+     "evidence": "Line 20: `<p className=\"text-[13px] text-[#6b6f6a] mb-8\">Last updated: April 23, 2026</p>`. `git diff 5b9da69 6e14465 -- src/app/terms/page.tsx` changes only lines 60-67, which now add a 90-day password expiry, a 60-minute inactivity sign-out, a bar on registrants, and access logging that may go to PropTx. The date line is untouched.",
+     "failure_scenario": "A consumer, or a TRREB/PropTx auditor checking the VOW after the homesly.ca flag, opens /terms on production after this deploy. The page dates its terms to April 23, 2026, but it now binds the consumer to rules that took effect on 2026-09-25. Nothing tells the reader the terms changed, while the card's re-consent says \"The terms have changed\".",
+     "introduced_by": "The portal merge (601c64a). The date was already stale on 5b9da69, after the MP-002 and MP-002b edits. MP-006 makes it worse by adding four new consumer obligations and a disclosure without updating the date. /privacy, by contrast, carries September 21, 2026.",
+     "verdict": {
+      "title": "The /terms 'Last updated' date is still April 23, 2026, although v4 adds new obligations",
+      "real": false,
+      "severity": "none",
+      "reason": "Pre-existing. MP-002 (9961ec9, 2026-09-17) and MP-002b (98d2cd7, 2026-09-18) both rewrote the /terms VOW paragraph without touching line 20, so on 5b9da69 the date was already stale by the same line and the same kind of fault. The merge does not change line 20. /terms also has no 'Changes' section promising that the date reflects the latest edit (that promise is on /privacy). The staleness is the same defect that already existed, not a new one."
+     }
+    },
+    {
+     "title": "/terms says the terms of use are 'the nine clauses', but the card shows ten numbered clauses",
+     "file": "src/app/terms/page.tsx",
+     "line": 60,
+     "severity": "minor",
+     "evidence": "terms/page.tsx:60 reads \"after agreeing to the terms of use shown there (the nine clauses PropTx requires, ...)\". VowAcknowledgementPrompt.tsx:336-340 renders \"Terms of use, version 4\" as an `<ol>` over VOW_TERMS_CLAUSES. There are 10 entries (i..ix plus \"signin\"), confirmed by the extractor script in %TEMP% (`clauses extracted: 10`), and the stored VOW_ACKNOWLEDGEMENT_TEXT numbers them 1-10.",
+     "failure_scenario": "A consumer reads /terms and is told the terms are nine clauses. The card then shows a list numbered 1 to 10, and the text stored on their row is numbered 1-10. The public description of what they agreed to no longer matches the agreement recorded for audit. The MC-044 proof itself expects \"ten numbered Terms clauses\".",
+     "introduced_by": "The portal merge (601c64a). The sentence is new in MP-006 (git diff 2166975 fd65058 -- src/app/terms/page.tsx).",
+     "verdict": {
+      "title": "/terms says the terms of use are 'the nine clauses', but the card shows ten numbered clauses",
+      "real": false,
+      "severity": "none",
+      "reason": "The sentence at terms/page.tsx:60 says 'the nine clauses PropTx requires', and that is accurate. VOW_TERMS_CLAUSES holds the nine Appendix B(c) clauses i..ix plus one house 'signin' sentence (src/lib/vow-acknowledgement.ts:26, 86-93). The same /terms paragraph describes that tenth sentence separately (90-day password expiry, 60-minute inactivity). This is imprecise wording at most, with no mismatch in substance between the public description and the stored agreement."
+     }
+    },
+    {
+     "title": "The 90-day password renewal card is labelled 'One-time setup'",
+     "file": "src/components/vow/VowAcknowledgementPrompt.tsx",
+     "line": 188,
+     "severity": "minor",
+     "evidence": "Line 188: `const kicker = reconsent ? \"Please agree again\" : firstAgreement ? \"One-time acknowledgement\" : \"One-time setup\";`. When needsRenewal is true and it is neither a re-consent nor a first agreement, the card shows kicker \"One-time setup\" above the heading \"Renew your password\". The lead says \"a password is valid for 90 days. Yours is at least that old\".",
+     "failure_scenario": "Every 90 days each consumer sees \"One-time setup\" over a renewal they will see again in another 90 days. The copy says the step will not come back, while the rule it enforces (R-8.06) makes sure it does.",
+     "introduced_by": "The portal merge (601c64a). The renewal branch and the kicker ternary are both new in MP-006. Before, the kicker was chosen only between \"One-time acknowledgement\" and \"One-time setup\" for first-time steps.",
+     "verdict": {
+      "title": "The 90-day password renewal card is labelled 'One-time setup'",
+      "real": true,
+      "severity": "minor",
+      "reason": "Confirmed at src/components/vow/VowAcknowledgementPrompt.tsx:188. The kicker ternary covers only reconsent and firstAgreement, so a consumer who is current on terms and has needsPasswordRenewal=true (line 99) sees 'One-time setup' above 'Renew your password'. The lead text says the password is valid for 90 days and this one has expired. In steady state this recurs every 90 days, so the label contradicts the rule it enforces. Before the merge (5b9da69:138) the kicker was only 'One-time acknowledgement'/'One-time setup' and there was no renewal path. MP-006 added the renewal path without a matching kicker."
+     }
+    },
+    {
+     "title": "The registrant 'yes' ends in 'email Aamir' with no address or link, and the answer cannot be undone",
+     "file": "src/components/vow/VowAcknowledgementPrompt.tsx",
+     "line": 172,
+     "severity": "minor",
+     "evidence": "Line 172: \"If that answer was a mistake, email Aamir and he will put it right by hand.\" src/lib/portal/acknowledge.ts:108: `error: \"This VOW is for consumers. Email Aamir if your answer was a mistake.\"`. Neither shows an address or a mailto link, though config.realtor.email and the /privacy contact address exist. The isRegistrant branch (lines 163-175) returns only this section, with no control to change the answer.",
+     "failure_scenario": "A consumer misreads the radio question and taps \"Yes, I am a registrant\", then \"Save my answer\". From then on every VOW surface (/sold, the street island) shows only this section, which tells them to email Aamir without giving an address. The 403 error text for the same state is just as bare. A lead who needs the sold prices has no way forward from the card itself.",
+     "introduced_by": "The portal merge (601c64a). The registrant question, its terminal screen and the 403 string are all new in MP-006.",
+     "verdict": {
+      "title": "The registrant 'yes' ends in 'email Aamir' with no address or link, and the answer cannot be undone",
+      "real": true,
+      "severity": "minor",
+      "reason": "Confirmed at VowAcknowledgementPrompt.tsx:163-175 and src/lib/portal/acknowledge.ts:107-108. Once reviewFlag='registrant' is set, every VOW surface shows only this section, and the API returns the bare 'Email Aamir' 403. Neither gives an address, a mailto link or a phone number. Other components that name Aamir include config.realtor.phone (ExclusiveStrip.tsx:48, MortgageCalculator.tsx:149). The site footer does not render the email; only AgentContactSection and the landing cards do. A consumer who mis-taps reaches a dead end with no contact route on the card. The operator could still find the flagged row in the access CSV, which is why this stays minor. It is new in MP-006."
+     }
+    },
+    {
+     "title": "Clause 9 has the consumer confirm they read the privacy policy, but the card does not link to it",
+     "file": "src/components/vow/VowAcknowledgementPrompt.tsx",
+     "line": 340,
+     "severity": "minor",
+     "evidence": "src/lib/vow-acknowledgement.ts:83: \"I have read the privacy policy at miltonly.com/privacy and I consent to the collection, use and disclosure of my personal information as it describes...\". VowAcknowledgementPrompt.tsx:340 renders it as `<strong>{c.text}</strong>`, which is plain text with no anchor. Nothing else in the card links to /privacy.",
+     "failure_scenario": "The card sits inline on /sold and in the street island, blocking the records. A consumer who ticks the box affirms, in the bold clause the Appendix B(c)(ix) notice relies on, that they read a policy the card gives them no way to open. The consent is recorded as informed, and v4 adds the PropTx audit-sharing disclosure to that same policy.",
+     "introduced_by": "The portal merge (601c64a). Clause ix is new in VOW_TERMS_VERSION 4. The v3 text had no privacy clause.",
+     "verdict": {
+      "title": "Clause 9 has the consumer confirm they read the privacy policy, but the card does not link to it",
+      "real": false,
+      "severity": "none",
+      "reason": "The clause text itself names the location, 'miltonly.com/privacy' (src/lib/vow-acknowledgement.ts:83). Every page that hosts the card (/sold, the street island, listing facts, VowGate) renders inside the site chrome, and SiteFooter/HomeFooter links /privacy. So the claim that the consumer has 'no way to open' the policy is wrong. A hyperlink inside the clause would be a UX improvement, but its absence is not a defect under the project rules. The stored agreement text is plain text in any case."
+     }
+    }
+   ],
+   "checked": [
+    "Em-dash, en-dash, superlative and 'median' scan of every added non-comment line in the portal diff (git diff 2166975 fd65058 -- src) and in ML-012 (git diff 5b9da69 6e14465 -- src/app/rentals src/app/rent src/lib/rentalStreetPage.ts): no U+2014, no U+2013, no superlative, no 'median'. The only near-hits are 'Registered consumers only' and 'non-commercial use only', which make no claim.",
+    "The ten VOW_TERMS_CLAUSES, pulled from src/lib/vow-acknowledgement.ts, plus PORTAL_CONSENT_TEXT, the new /terms paragraph, the three new or changed /privacy paragraphs, every card lead, heading, kicker, legend, button, fine print and error string (27 strings in all), run through the nightly's own vocabularyFindings and superlativeHits from scripts/audit/nightly/checks.mjs with a script in %TEMP%. Result: 0 hits. Also run through pageFindings as one page: 0 em-dash or superlative findings.",
+    "scripts/audit/nightly/test-voice-rules.mjs passes on the merged tree: 1032 assertions, 333/333 violations fire, 339/339 exemptions, 265/265 em-dash page cases.",
+    "What tonight's nightly would flag: nothing from this batch. /terms, /privacy and /rent are not in src/app/sitemap.ts and not in FIXED (run.mjs:47), so they are never swept; a discovered link is fetched with body:false, a status check only. The VOW card is client-rendered for signed-in users only, and the nightly crawls anonymously, so /sold and street pages serve it no new copy. The /sold diff adds only the logVowAccess call. The rule module has no 'median' check and no brokerage-name check, so it would not catch those either way. If /terms were swept, the only finding would be the pre-existing em-dash at terms/page.tsx:31 ('material consequences — consult'), which is identical on 5b9da69.",
+    "Brokerage name: clause 1 now reads 'RE/MAX Realty Specialists Inc., Brokerage' in full (v3 said 'RE/MAX Realty Specialists Inc.', so the portal fixed it), and so does PORTAL_CONSENT_TEXT. /terms and /privacy use config.brokerage.name ('RE/MAX Realty Specialists Inc., Brokerage'). MC-043's fixes survived the merges: sold/page.tsx:332 `{config.brokerage.name}`, RentalsClient.tsx:16/728 BROKERAGE_NAME.",
+    "/privacy conflict resolution: the merged line reads 'Trust in Real Estate Services Act, 2002 (REBBA), typically', with the em-dash gone and no other em-dash on the page. The '(REBBA)' acronym under TRESA's name is pre-existing on 5b9da69, so it is not reported.",
+    "Card copy consistency against the code: 60-minute inactivity (auth.ts INACTIVITY_MINUTES=60), 90-day password (PASSWORD_MAX_DAYS=90), 180-day retention (CREDENTIAL_RETENTION_DAYS=180) and 12-character minimum all match what /terms, the card and clause 10 say.",
+    "'Source: TREB MLS® VOW' in the card fine print, 'Salesperson' in clause 1 and 'To the fullest extent permitted by law' on /terms are pre-existing and unchanged by the merge, so they are not reported.",
+    "ML-012 copy: no new user-visible strings. The card's street link text now comes from resolveStreetName over StreetContent.streetName (rentalStreetPage.ts:79), in line with the Names rule. The rentals.css changes are colour tokens only, with no content: strings. The new vow-card.css has no content: strings.",
+    "API routes the portal touched (sold, sold-stats, sold-records, listings vow, me, saved-listings, save-listing, login, signup, verify, admin/vow-access): no new consumer-visible strings beyond 'Unauthorized' on the admin route. acknowledge-vow/route.ts was stored as binary at 2166975 ('data') and is now plain ASCII at fd65058/6e14465. Its UI error strings come from src/lib/portal/acknowledge.ts and were read in full."
+   ]
+  },
+  {
+   "lens": "battery-readiness",
+   "findings": [
+    {
+     "title": "vow-fields reuses its cached session token and throws away the refreshed cookie, so a rerun that crosses the 60-minute `act` limit passes the /me check and then fails partway through",
+     "file": "scripts/verify/checks/vow-fields.mjs",
+     "line": 137,
+     "severity": "minor",
+     "evidence": "vow-fields.mjs:137-146 `async function cachedSession(base, userId) { const token = fs.readFileSync(sessionCachePath(base)...); const me = await fetchRaw(`${base}/api/auth/me`, token); ... return j.user && j.user.id === userId ? token : null; }` returns the ORIGINAL token and ignores the Set-Cookie that /me now sends (src/app/api/auth/me/route.ts:19 `await touchSession();`). The comment above it (about line 131) still says \"A session lives 90 days (src/lib/auth.ts); reusing it keeps reruns inside the door's limits\". At 6e14465, src/lib/auth.ts:26 `INACTIVITY_MINUTES = 60` and :114 `if (judgeSession(claims, nowSeconds()) !== \"ok\" ...) return null` refuse a token once its signed `act` has passed. The token's `act` is fixed at login time + 60 min and never moves because the battery never stores a reissued token. Shown by: git show 6e14465:src/lib/auth.ts | sed -n 26,47p; sed -n 128,155p scripts/verify/checks/vow-fields.mjs",
+     "failure_scenario": "The first prod battery after the deploy is fine: the Sep 20 cache file (%TEMP%/miltonly-verify-session-miltonly.com.txt) holds a token without `act`, so /me answers user:null, the check signs in by password and caches the new token at T0. vow-fields is check 21 of 24 and starts about 11 minutes into a run. Now suppose a second run starts about 47 minutes later, e.g. rerunning after a flaky check. Its vow-fields finish reaches cachedSession at about T0+58m. /me still answers the user, so the cached token is trusted. The gated route passes at T0+58m. The browser then spends 1 to 3 minutes on the five prominence pages, and at T0+60m+ the island's /api/listings/<mls>/vow gets getSession()=null. 'listing page island renders the facts for an acknowledged session' then fails (and so does the grid if it lands after the limit too). That looks like a portal regression or the 'desk row is behind' case the user described, but the real cause is the harness. The window is a few minutes per hour after each cached login. Fix: in cachedSession, adopt and persist the miltonly_session value from /me's Set-Cookie, or decode the JWT's `act` and skip the cache when fewer than about 15 minutes remain.",
+     "introduced_by": "portal (MP-006 @ fd65058) adds the 60-minute `act` claim in src/lib/auth.ts. On 5b9da69 a session was a fixed 90-day token, so the cache's assumption held and reuse was safe. The check itself is unchanged in this batch (git diff 5b9da69 6e14465 -- scripts/verify is empty), so the merge breaks its assumption.",
+     "verdict": {
+      "title": "vow-fields reuses its cached session token and throws away the refreshed cookie, so a rerun that crosses the 60-minute `act` limit passes the /me check and then fails partway through",
+      "real": true,
+      "severity": "minor",
+      "reason": "I confirmed this in the merged tree. At 5b9da69, src/lib/auth.ts had no `act` claim and no touchSession, so a session lasted a fixed 90 days. At 6e14465 it has both: auth.ts:26 sets INACTIVITY_MINUTES=60, and getSession at :114 refuses a token once its signed `act` has passed. touchSession re-issues the token only through Set-Cookie. scripts/verify is unchanged by the batch (the diff is empty). In vow-fields.mjs, cachedSession (137-146) validates the cached token through /api/auth/me but returns the ORIGINAL token and ignores the refreshed cookie. The password path (160-162) caches the token once, with act = login + 60 min, and nothing ever moves that time. The token is used by the gated route (283), the grid (291) and, after the five anonymous prominence page loads, the island: page.setCookie(token) at 353. The prominence loop uses networkidle2 with 90 s timeouts, so a cachedSession check in the last minute or two before T0+60m can pass while the island request arrives after `act`. The island then shows the card and 'listing page island renders the facts' fails. This is reachable in practice. run.mjs supports --only=vow-fields, and the user's own workflow (the check fails, bring the row current, rerun) makes a rerun within the hour likely. The window is narrow and the result is a false, flaky battery failure, not a product defect, so the severity is minor. The comment at 130-133 ('A session lives 90 days... reusing it keeps reruns inside the door's limits') is now stale for the same reason."
+     }
+    },
+    {
+     "title": "vow-fields depends on the desk's real row, whose password expires on 2026-12-19; the only record of that date is on the unmerged MP-006 docs commit, and main's HANDOFF-portal.md still says terms version 3",
+     "file": "src/lib/vow-access.ts",
+     "line": 57,
+     "severity": "minor",
+     "evidence": "src/lib/vow-access.ts:57 `needsPasswordRenewal: !!user.passwordHash && (!user.passwordSetAt || passwordExpired(user.passwordSetAt, now))` and :67 refuse records once the password is 90 days old (src/lib/portal/passwordRule.ts:12 `PASSWORD_MAX_DAYS = 90`). vow-fields.mjs db1() picks the row by `ORDER BY (email = VERIFY_PORTAL_EMAIL) DESC`, and VERIFY_PORTAL_EMAIL in .env.local is the desk's primary address (classified without printing it). The MP-006 report (D:/miltonly-portal/scratchpad/reports/MP-006-vow-best-practices.md:61 and :83, on docs commit e622c96) says the row's 'password expires 2026-12-19, and the battery cannot renew it'. e622c96 is NOT in main, because the batch merged fd65058. `git grep -n \"2026-12-19\" 6e14465 -- HANDOFF.md HANDOFF-portal.md QUEUE.md` finds nothing, and main's HANDOFF-portal.md:47 still reads '**THE VOW TEXT IS VERSION 3**'.",
+     "failure_scenario": "On or after 2026-12-19, and after any future VOW_TERMS_VERSION bump, every prod battery fails vow-fields three ways: the gated route returns {canSee:false, needsAcknowledgement:true}, the grid has no data-vow-facts, and the island shows the card. Nothing in main tells the operator the date or the cause. The check emits no warning as the row approaches expiry, because db1() selects only id and email, not passwordSetAt, vowAcknowledgementVersion or isRegistrant. Today (2026-09-25) the row is current, so the battery passes.",
+     "introduced_by": "portal (MP-006) introduces password expiry and versioned re-consent. Before this merge the row needed only an acknowledgement and a password and could not lapse. The batch took the app SHA fd65058 without the docs commit e622c96, so main's portal handoff describes the pre-MP-006 state.",
+     "verdict": {
+      "title": "vow-fields depends on the desk's real row, whose password expires on 2026-12-19; the only record of that date is on the unmerged MP-006 docs commit, and main's HANDOFF-portal.md still says terms version 3",
+      "real": false,
+      "severity": "none",
+      "reason": "There is no code defect here. The cited line, src/lib/vow-access.ts:57, is the intended 90-day password rule (passwordRule.ts:12, MLS R-8.06). When the desk row lapses, the check fails because the row genuinely cannot see records, which is the check doing its job. The user's own instruction covers this: 'If it fails three ways, that row is why; bring it current by link, never weaken the check.' So the cause and the remedy are already known to the operator. The expiry date can also be found at runtime: /api/auth/me returns passwordExpiresAt (me/route.ts). The facts in the claim hold: e622c96 is not an ancestor of 6e14465, and HANDOFF-portal.md:47 at 6e14465 still reads 'VERSION 3'. But both are a documentation gap that comes from the normal practice of merging the app SHA separately from the branch's later docs commit, and the Core task's closing HANDOFF rewrite is where that gets fixed. None of it breaks the merged code or the battery today (the row is current on v4 as of 2026-09-21)."
+     }
+    }
+   ],
+   "checked": [
+    "Traced vow-fields' sign-in path at 6e14465. It pins VERIFY_PORTAL_EMAIL (the desk's primary row; the key exists in .env.local, value not printed). With VERIFY_PORTAL_PASSWORD set it takes POST /api/auth/login. The login route (src/app/api/auth/login/route.ts:56-89) selects the new MP-006 columns, runs bcrypt, and calls createSession, which signs {userId, act=now+3600} with exp=now+90d. It does not run the UA guard, and origin is checked with the battery's own origin header. The cookie is read from Set-Cookie exactly as before.",
+    "The pre-deploy cached prod token (%TEMP% file dated Sep 20) has no `act`. parseSessionToken returns act undefined, judgeSession gives 'invalid', getSession gives null, and /api/auth/me gives {user:null}, so cachedSession returns null and the check falls back to a fresh password login. The session invalidation at deploy is therefore handled correctly.",
+    "canSeeVowRecords at 6e14465 needs: verified; vowAcknowledgementVersion >= 4; passwordHash set; passwordSetAt under 90 days; isRegistrant === false; reviewFlag not 'registrant'. A 'suspicious-access' flag refuses nothing (vow-access.ts:67-70). The MP-006 report states the desk row is at version 4 with registrant 'no' as of 2026-09-21 18:30 UTC, password expiring 2026-12-19. On that basis the gated route, grid and island assertions pass. A three-way failure means that row, as the user predicted.",
+    "The migration 20260921120000_portal_vow_best_practices is not run by the Vercel build (build = prisma generate && next build). It was applied through the shared DB: the portal's local and preview proofs, and the desk row's v4, can only exist if those columns exist. Anonymous getSession returns before any Prisma call, so anonymous pages would not depend on it either way.",
+    "The gated route /api/listings/[mls]/vow awaits logVowAccess (which never throws) and then touchSession. The anonymous branch is unchanged ({canSee:false, needsAcknowledgement:false}, no facts), so 'gated route answers canSee:false anonymously' passes.",
+    "/listings, /sold and VowGate add headers() and logVowAccess only inside the signed-in, can-see branch. Both pages were already dynamic through getSession, and the local build route table shows /listings, /sold, /rent and /rentals as ƒ, and /terms, /privacy and /saved as ○, with /streets/[slug] still ● SSG.",
+    "Every caller of canSeeVowRecords and vowStepsLeft passes either getSession()'s full row or a select that includes the new fields (verify SECRET_SELECT, login select, acknowledge-vow's re-read). The optional MP-006 fields cannot fail silently through a narrow select.",
+    "The suspicious-access thresholds (40 scopes or 400 reads a day) cannot be tripped by the battery, which writes about 3 VowAccessLog rows per run (listing-vow twice, listings-grid once). The flag refuses nothing in any case.",
+    "vow-display: every surface it reads is anonymous. /sold and /listings anonymous render is unchanged; bona fide and reliability notices are untouched. /rentals and /rent now resolve streetPage on the server and drop streetSlug and streetName from each row. A withheld row (displayAddress false) gets streetPage null, so the address flag holds more strictly than before.",
+    "vow-fields prominence on /rentals: the price element is .lprice with color var(--t1), unchanged. ListingBrokerage's inline style `font: inherit; color: inherit` overrides `.lprice span`, so ML-012's --t3/--t4/--t5 ramp changes cannot make brokerage and price differ.",
+    "footer: /terms and /privacy only gain paragraphs (no new footer, header or nav elements). The voice scan found no new em-dashes: the privacy one was removed, and the one in /terms line 31 was already there. The ten numbered clauses at v4 have clause 9 (key ix) bold, as in the user's proof list.",
+    "agent-only: anonymous /api/sold, /api/sold-stats and /api/streets/[slug]/sold-records changed only on the signed-in success path, so anonymous status and body are unchanged.",
+    "prerender-coverage: the batch changes no street route, street lib or layout file. src/lib/rentalStreetPage.ts is imported only by /rent and /rentals. The local build keeps /streets/[slug] as SSG. UserProvider's new usePathname dependency does not force dynamic rendering in Next 14.2.35.",
+    "phone-390: on /rentals only colours change, plus the street link's anchor text (now the page heading name), which sits in .lcard-links with flex-wrap:wrap. The listing, home, street, hub and guide pages are untouched.",
+    "hub-intents 'no console error': /api/auth/me answers 200 {user:null} anonymously on every pathname change, so it raises no error.",
+    "Prebuild and build: the local build.log ends 'EXIT 0'. The prebuild includes [vow-best-practices] PASS 202, [portal-door] PASS 161, [vow-fields] PASS 111, [vercel-ignore] PASS 12, and [env-loaders] PASS: 829 files scanned, 0 with the old regex, 107 loaders executed. The old CRLF-blind regex appears nowhere in scripts/ or src/ at 6e14465 (git grep). The portal's new scripts/export-vow-access-log.ts loader uses `(.*?)\\s*$`, which is CRLF-safe.",
+    "src/app/api/auth/acknowledge-vow/route.ts shows as 'Bin' in the diffstat only because the OLD file had a raw NUL byte in a regex. The merged file is clean ASCII; the merge fixed this, it did not introduce it.",
+    "MC-045's loader change does not reach the battery: scripts/verify/lib/env.mjs is unchanged and already trimmed \\r. Note that .env.local carries VERCEL_ENV=\"production\" (classified, not printed), which operator runners will now load. Readers of it are src/lib/lead/env.ts, src/lib/streetPrerender.ts, /api/content/market-watch and /api/build. The battery does not run any of those runners.",
+    "/api/admin/vow-access returns 401 before any DB read when the miltonly_admin cookie fails verifyAdminCookieValue, and CSV when it passes. The middleware matcher covers only /streets and /neighbourhoods, so nothing intercepts the route.",
+    "MH-009 (feat/web-analytics 7cfa4a2) was already on main before this batch, merged as f1d4080 and an ancestor of 5b9da69. It is not part of these three merges."
+   ]
+  },
+  {
+   "lens": "vow-leakage-caching",
+   "findings": [],
+   "checked": [
+    "src/lib/vow-access.ts @6e14465: canSeeVowRecords checks verified, terms at VOW_TERMS_VERSION=4 (a null version counts as out of date), password set, password under 90 days (a missing passwordSetAt counts as expired), registrant answered and no, and no 'registrant' flag. Every missing field fails closed. Every VOW surface calls it with the full User row from getSession(), and grep finds no direct vowAcknowledgedAt gate left anywhere, including the MC-036..MC-043 code the portal had not seen. login/verify pass explicit selects that include every new field.",
+    "src/app/api/streets/[slug]/sold-records/route.ts: the refusal returns records [] and writes no audit row. The allowed path is force-dynamic with 'private, no-store'. logVowAccess and touchSession come after the gate, and the gated fetcher getStreetSoldList re-gates before any Redis or DB read.",
+    "src/app/api/sold/route.ts: 401 for anonymous, 403 for a session that has not finished consent, both before the rate limiter and the DB. The records response is 'private, no-store'. The audit and touch sit inside the try, and neither can throw. The catch branch serves an empty set.",
+    "src/app/api/sold-stats/route.ts: 401/403 before any analytics read. The k-anon floor (K_ANON_PRICE on count90) comes before the audit row. The success response has no explicit Cache-Control, but the route is force-dynamic, carries Set-Cookie and has no s-maxage, so neither the Vercel CDN nor a revalidating cache can replay it. That is inconsistent with the other routes, not a leak.",
+    "src/app/api/listings/[mlsNumber]/vow/route.ts: every branch is 'private, no-store'. canSee false returns no fields. A listing with permAdvertise false returns facts null. Audit and touch happen only on the served branch.",
+    "src/app/api/auth/saved-listings/route.ts: main's MC-036 lookup (the session's own list, capped at 100) survived the auto-merge. The audit row is written only when canSeeStatus. The response is 'private, no-store'. A person who has not finished consent gets only active/unavailable. The price and permAdvertise behaviour is as it was on 5b9da69, not introduced here.",
+    "src/app/listings/page.tsx and src/app/sold/page.tsx: both are per-request renders (force-dynamic; revalidate=0 plus cookies() via getSession, not wrapped in a catch that could hide the dynamic bailout). getListingsV2Data has no cache keyed without the vow flag, and getRecentSoldList re-gates before Redis. headers() and logVowAccess run only inside 'vow && user' or 'canSeeRecords && user'. Neither page sets a cookie.",
+    "src/components/vow/VowGate.tsx: the audit runs only after canSeeVowRecords is true. The anonymous branch is unchanged and shows the k-anon teaser only. VowGate's one importer, NeighbourhoodSoldBlock, is itself imported by nothing, so VowGate renders nowhere.",
+    "src/lib/vow-audit.ts logVowAccess: buildAccessRow, the create and flagIfSuspicious each have their own try/catch, so it never throws into a page or route. It is called only after the gate, and never inside a cached() compute callback, so a Redis hit cannot skip the audit row. A 'suspicious-access' flag refuses nothing, as designed.",
+    "src/lib/auth.ts: touchSession is called only from route handlers (me, sold, sold-records, sold-stats, listing vow, saved-listings, save-listing, acknowledge-vow). All are force-dynamic GET/POST routes with no s-maxage, so no Set-Cookie rides on a CDN-cacheable response. setCookie sits inside a try, so a call from a server component would fail softly. Tokens with no act claim, including every pre-merge session, are 'invalid'. exp keeps its original value and is never slid forward.",
+    "Logout race: a gated fetch still in flight when the user signs out could land its touchSession Set-Cookie after the logout clear and revive the session. The only sign-out button (/saved) reloads the page at once, which aborts in-flight fetches, so the window is negligible. Not reported.",
+    "No next.config/vercel.json/middleware header adds caching to /api or VOW pages. The middleware matcher covers /streets and /neighbourhoods only. The s-maxage routes in the codebase (hero-index, street card, sitemaps, og.png) were not touched by this batch.",
+    "src/app/api/admin/vow-access/route.ts: isAdmin (a signed HMAC cookie with 24h expiry, failing closed when ADMIN_PASSWORD is unset) is checked before any branch, including view=suspicious and format=csv. Every success response is no-store.",
+    "src/lib/vow-audit-rules.ts csvCell, run against edge cases with tsx from the scratchpad: a leading = + - @ TAB or CR gets an apostrophe prefix, and quotes, commas and newlines are escaped. The export script and the route share it. firstName is control-stripped by cleanName.",
+    "src/lib/rentalStreetPage.ts with src/app/rentals/page.tsx and src/app/rent/page.tsx (ML-012): rows come only from PUBLIC_LEASE_WHERE (permAdvertise true, leaseStatus active). stripVowFields and redactAddress run first. A row with displayAddress false gets streetPage null. streetSlug and streetName are destructured out of every row before serialisation. The card select has no lat/lng. The rentals Redis bundle is keyed by public scope with v4, and nothing in it depends on the session.",
+    "Schema and migration 20260921120000: additive only, with no backfill of vowAcknowledgementVersion, so every existing acknowledger owes re-consent. VowAccessLog cascades on User delete, but the only hard-delete path (purge-bot-users) now excludes rows with a password, which every VOW reader has."
+   ]
+  }
+ ]
+}

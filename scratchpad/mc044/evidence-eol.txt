@@ -1,0 +1,12 @@
+== a fresh worktree at 6e14465 (the batch before b60aa11), throwaway branch eol/mc044
+  after checkout:        i/lf w/crlf attr/text=auto
+  after merging b60aa11: i/lf w/lf attr/text  (no manual step)
+  (worktree and branch removed)
+
+== each tier worktree's scripts/vercel-ignore.sh today (w/crlf fails a CLI preview's prebuild until it merges main at b60aa11 or later)
+  /d/miltonly            main                     w/lf, carries b60aa11
+  /d/miltonly-audit      feat/audit               w/crlf, does not carry b60aa11
+  /d/miltonly-content    feat/content-2           no such file, does not carry b60aa11
+  /d/miltonly-home       feat/web-analytics       no such file, does not carry b60aa11
+  /d/miltonly-leads      feat/leads               w/crlf, does not carry b60aa11
+  /d/miltonly-portal     feat/portal              no such file, does not carry b60aa11

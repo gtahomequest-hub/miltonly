@@ -1,0 +1,8 @@
+[2026-09-25T15:08:22.166Z] before: /neighbourhoods/moffat by hour (last 6 h, production): [{"hour":"2026-09-25T15:00:00.000Z","pageviews":1,"visitors":1}]
+[2026-09-25T15:08:29.611Z] browser: headed, navigator.webdriver=false, "Headless" in UA=false, UA=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36
+[2026-09-25T15:08:29.612Z] request: GET /35ca55a203cd90db/script.js -> 200
+[2026-09-25T15:08:29.612Z] request: POST /35ca55a203cd90db/view -> 200
+[2026-09-25T15:08:29.612Z] beacon FIRED: POST /35ca55a203cd90db/view answered 200
+[2026-09-25T15:08:29.773Z] visit at 2026-09-25T15:08:10.000Z (hour bucket 2026-09-25T15:00:00.000Z); count from that bucket on, before: 1
+[2026-09-25T15:09:00.201Z] RECORDED: /neighbourhoods/moffat page views from 2026-09-25T15:00:00.000Z on 1 -> 2, visible in the Query API 37 s after the visit
+EXIT 0

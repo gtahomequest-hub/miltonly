@@ -1,0 +1,31 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      https://miltonly.com
+build       5f8cdb0 served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+record      DB2 + analytics aggregates loaded
+crawled     719 pages · 719 × 200 · 0 other
+
+ASSERT iterated == live sitemap count (719) : PASS
+
+── Every published figure is floored against its own sample
+   · pages rendering a hero price: 219
+   · pages entitled to a price at all: 219
+   · pages with a 90-day sample below threshold: 317
+   · pages stating a street-level sample: 219
+   · distinct sample windows seen: ~2 years, 12 months
+   PASS  prices rendered with NO entitled basis: 0
+   PASS  prices that are the sub-k 90-day figure: 0
+   PASS  sidebar DOM published with n12 < 5: 0
+   PASS  glance DOM published with n12 < 5: 0
+   PASS  glance sold-to-ask published with n12 < 5: 0
+   PASS  glance Trend published (YoY, no countable sample): 0
+   PASS  glance Market state with a sub-k 90-day sample: 0
+   PASS  hero basis line malformed: 0
+   PASS  page states two different samples for one window: 0
+   PASS  hero basis names a sample the page states nowhere else: 0
+   PASS  hero price sits on a sub-k sample by the page's own account: 0
+   NOTE  0 page(s) state a sample that differs from the record right now — ISR lag, not a defect: street pages are prerendered and the sold-stats cron moves the record under them. Reported so a genuine drift is still visible; not gated, because the page is correctly serving what it was built from.
+
+═══ PASS · 1 checks · 719 pages · 238s ═══

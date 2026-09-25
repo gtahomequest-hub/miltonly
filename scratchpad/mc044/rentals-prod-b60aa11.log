@@ -1,0 +1,40 @@
+served commit: b60aa11f37a7c1ac5c07db2b1bd73d0efc789a4e
+contrast fields: {"beds":{"color":"rgb(110, 114, 109)","fg":"#6e726d","bg":"#ffffff","ratio":4.89,"fontSize":"11px","overImage":false,"text":"🛏 4 bed"},"baths":{"color":"rgb(110, 114, 109)","fg":"#6e726d","bg":"#ffffff","ratio":4.89,"fontSize":"11px","overImage":false,"text":"🚿 3 bath"},"parking":{"color":"rgb(110, 114, 109)","fg":"#6e726d","bg":"#ffffff","ratio":4.89,"fontSize":"11px","overImage":false,"text":"🚗 3 park"},"month":{"color":"rgb(110, 114, 109)","fg":"#6e726d","bg":"#ffffff","ratio":4.89,"fontSize":"12px","overImage":false,"text":"/ month"},"sep":{"color":"rgb(110, 114, 109)","fg":"#6e726d","bg":"#ffffff","ratio":4.89,"fontSize":"12px","overImage":false,"text":"·"}}
+extras:
+  q-of (wizard step 1): 6.04:1  #9cada8 on #073126  "Question 1 of 3"
+  ra-label: 7.53:1  #bcc7c4 on #0e372d  "1 Bed Condo →"
+  ra-count: 5.72:1  #9fafab on #0e372d  "124 listings"
+  bc-sub: 5.43:1  #9db1ab on #0b3d2e  "Name any Milton listing. Aamir typically"
+  bc-trust: 5.43:1  #9db1ab on #0b3d2e  "No obligation · Aamir usually calls back"
+  as-fine: 5.43:1  #9db1ab on #0b3d2e  "Miltonly emails only, from Aamir Yaqoob "
+  sinput placeholder: 5.43:1  #9db1ab on #073126  "Street, neighbourhood or MLS #..."
+  mls line: 4.89:1  #6e726d on #ffffff  "MLS® W13826732"
+  back-lnk (wizard step 2): 6.04:1  #9cada8 on #073126  "← Back"
+  submit-note (wizard step 3): 8.04:1  #bac5c2 on #073126  "Aamir usually replies within the hour. B"
+  back-lnk (wizard step 3): 6.04:1  #9cada8 on #073126  "← Back"
+sweep (<4.5:1, visible on first render): 15 groups
+  1.72:1  #017848 on #065034  10px  x1  q-badge < q-meta < wiz-step < wiz-body  "1"
+  1.97:1  #017848 on #06462f  14px  x3  ra-card < ra-scroll < ra-scroll-wrap < rent-avgs  "View all 1233 →"
+  2.2:1  #017848 on #0b3d2e  18px  x8  mc-v < mc < micro-grid < hr  "🏡"
+  2.28:1  #0a8f57 on #0a5036  13px  x1  vtab < view-toggle < fb-right < fb-top  "⊞"
+  2.35:1  #017848 on #0e372d  11px  x9  ra-view < ra-card < ra-scroll < ra-scroll-wrap  "View →"
+  2.56:1  #017848 on #073126  35.84px  x1  hl < hero  "Milton"
+  2.56:1  #073126 on #017848  13px  x1  sbtn < srow < sbox < hl  "Search →"
+  2.56:1  #017848 on #073126  10px  x1  ra-eyebrow < ra-header < rent-avgs  "Rental Market"
+  2.56:1  #017848 on #073126  18px  x3  trust-why-ico < trust-why-item < trust-why-inner < trust-why  "✓"
+  2.56:1  #073126 on #017848  13px  x1  as-btn < as-form < alert-strip  "Save this search →"
+  3.98:1  #64748b on #07111f  12px  x1  acs-email < acs-inner < acs  "gtahomequest@gmail.com"
+  4.32:1  #8a8f8a on #073126  12px  x3  new-this-week < live-row < hl < hero  "· 48 new this week"
+  4.32:1  #8a8f8a on #073126  12px  x4  trust-row < hl < hero  "15 Years Full-Time Experience · Tenants "
+  4.32:1  #8a8f8a on #073126  11px  x1  wiz-sub < wiz-topbar < hm < hero  "3 quick questions · 30 seconds · no comm"
+  4.32:1  #8a8f8a on #073126  12px  x3  ra-subtitle < ra-titles < ra-header < rent-avgs  "Live data from 1233 active listings · Cl"
+/rentals: HTTP 200, cards 46, with street link 42, without 4 (withheld 0, plain street text 0); links 404 0, 3xx 0, 200 42
+/rent: HTTP 200, cards 46, with street link 42, without 4 (withheld 0, plain street text 0); links 404 0, 3xx 0, 200 42
+/rentals?neighbourhood=timberlea: HTTP 200, cards 47, with street link 46, without 1 (withheld 0, plain street text 0); links 404 0, 3xx 0, 200 46
+/rentals?neighbourhood=harrison: HTTP 200, cards 43, with street link 39, without 4 (withheld 0, plain street text 0); links 404 0, 3xx 0, 200 39
+distinct links fetched (card street links plus every internal link on the four views): 202
+/rentals: every internal link: 178, 404 0; non-2xx 0
+/rent: every internal link: 178, 404 0; non-2xx 0
+/rentals?neighbourhood=timberlea: every internal link: 144, 404 0; non-2xx 0
+/rentals?neighbourhood=harrison: every internal link: 167, 404 0; non-2xx 0
+EXIT 0

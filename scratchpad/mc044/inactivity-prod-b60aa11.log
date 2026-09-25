@@ -1,0 +1,11 @@
+[local 2026-09-25T15:22:33.313Z] A: signed in at server Fri, 25 Sep 2026 15:22:20 GMT; claims {"iat":"2026-09-25T15:22:20.000Z","act":"2026-09-25T16:22:20.000Z","exp":"2026-12-24T15:22:20.000Z"}
+[local 2026-09-25T15:22:33.999Z] B: signed in at server Fri, 25 Sep 2026 15:22:21 GMT; claims {"iat":"2026-09-25T15:22:21.000Z","act":"2026-09-25T16:22:21.000Z","exp":"2026-12-24T15:22:21.000Z"}
+[local 2026-09-25T15:52:35.035Z] B at +30 min: /api/auth/me at server Fri, 25 Sep 2026 15:52:22 GMT: user present; re-issued {"iat":"2026-09-25T15:52:22.000Z","act":"2026-09-25T16:52:22.000Z","exp":"2026-12-24T15:22:21.000Z"}
+[local 2026-09-25T15:52:35.035Z] PASS B is live at +30 min and /me re-issues it
+[local 2026-09-25T15:52:35.035Z] PASS B's ceiling (exp) is unchanged by the touch
+[local 2026-09-25T16:23:35.962Z] A at +61 min, never touched: /api/auth/me at server Fri, 25 Sep 2026 16:23:23 GMT: user null; re-issued nothing
+[local 2026-09-25T16:23:35.962Z] PASS A is refused after 60 minutes without activity
+[local 2026-09-25T16:23:36.382Z] B at +61 min, touched at +30: /api/auth/me at server Fri, 25 Sep 2026 16:23:23 GMT: user present; re-issued {"iat":"2026-09-25T16:23:23.000Z","act":"2026-09-25T17:23:23.000Z","exp":"2026-12-24T15:22:21.000Z"}
+[local 2026-09-25T16:23:36.382Z] PASS B, touched at +30 min, is still live at +61 min
+[local 2026-09-25T16:23:36.382Z] INACTIVITY PROOF: ALL PASS
+EXIT 0

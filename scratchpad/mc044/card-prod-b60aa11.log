@@ -1,0 +1,17 @@
+[2026-09-25T15:23:09.866Z] card heading "The terms have changed", terms head "Terms of use, version 4", data-vow-terms-version=4, ol list-style-type=decimal
+[2026-09-25T15:23:09.867Z]   1. [i] display=list-item weight=400 "I am entering into a lawful broker-consumer relationship with Aamir Ya…"
+[2026-09-25T15:23:09.867Z]   2. [ii] display=list-item weight=400 "All MLS® data I obtain through this VOW is for my personal, non-commer…"
+[2026-09-25T15:23:09.867Z]   3. [iii] display=list-item weight=400 "I have a bona fide interest in the purchase, sale or lease of real est…"
+[2026-09-25T15:23:09.867Z]   4. [iv] display=list-item weight=400 "I will not copy, redistribute, retransmit or otherwise use any of the …"
+[2026-09-25T15:23:09.868Z]   5. [v] display=list-item weight=400 "I acknowledge that PropTx Innovations Inc. (PropTx) owns, and holds th…"
+[2026-09-25T15:23:09.868Z]   6. [vi] display=list-item weight=400 "I will not display, post, disseminate, distribute, publish, broadcast,…"
+[2026-09-25T15:23:09.868Z]   7. [vii] display=list-item weight=400 "My agreement here, by a mouse click or a tap, is sufficient to acknowl…"
+[2026-09-25T15:23:09.868Z]   8. [viii] display=list-item weight=400 "I expressly authorize PropTx and other PropTx Members to access this V…"
+[2026-09-25T15:23:09.868Z]   9. [ix] display=list-item weight=700 <strong> "I have read the privacy policy at miltonly.com/privacy and I consent t…"
+[2026-09-25T15:23:09.868Z]   10. [signin] display=list-item weight=400 "My username is my email address and my password is mine alone; I will …"
+[2026-09-25T15:23:09.868Z] PASS terms version 4 on the card
+[2026-09-25T15:23:09.868Z] PASS ten clauses (10)
+[2026-09-25T15:23:09.868Z] PASS numbered: ol decimal, every li a list-item
+[2026-09-25T15:23:09.868Z] PASS clause 9 (ix) is the only bold clause (ix)
+[2026-09-25T15:23:10.336Z] CARD: ALL PASS
+EXIT 0
