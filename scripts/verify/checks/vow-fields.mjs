@@ -128,9 +128,12 @@ async function db1() {
 }
 
 /** The cookie from the last run against this host, in the OS temp dir (never the repo). A
- *  session lives 90 days (src/lib/auth.ts); reusing it keeps reruns inside the door's limits
- *  (three sign-in requests an hour per address, five per IP in ten minutes, shared by every
- *  lead form) and spares the inbox. It is checked against /api/auth/me before it is trusted. */
+ *  session lives 90 days and goes inactive 60 minutes after its last touch (src/lib/auth.ts,
+ *  MP-006); reusing it keeps reruns inside the door's limits (three sign-in requests an hour per
+ *  address, five per IP in ten minutes, shared by every lead form) and spares the inbox. It is
+ *  checked against /api/auth/me before it is trusted, and the cookie /me re-issues replaces it:
+ *  the inactivity clock (`act`) is wound only in that new token, so a cached token 59 minutes
+ *  old would pass here and go inactive halfway through the check. */
 function sessionCachePath(base) {
   return path.join(os.tmpdir(), `miltonly-verify-session-${new URL(base).host}.txt`);
 }
@@ -138,9 +141,13 @@ async function cachedSession(base, userId) {
   try {
     const token = fs.readFileSync(sessionCachePath(base), 'utf8').trim();
     if (!token) return null;
-    const me = await fetchRaw(`${base}/api/auth/me`, token);
-    const j = JSON.parse(me.body || '{}');
-    return j.user && j.user.id === userId ? token : null;
+    const me = await fetch(`${base}/api/auth/me`, { headers: { 'user-agent': UA, cookie: `${COOKIE_NAME}=${token}` }, redirect: 'manual' });
+    const j = me.status === 200 ? await me.json().catch(() => ({})) : {};
+    if (!(j.user && j.user.id === userId)) return null;
+    const fresh = (me.headers.get('set-cookie') || '').match(new RegExp(`${COOKIE_NAME}=([^;]+)`))?.[1];
+    if (!fresh) return token; // a host without the inactivity clock re-issues nothing
+    try { fs.writeFileSync(sessionCachePath(base), fresh); } catch { /* the cache is a convenience */ }
+    return fresh;
   } catch {
     return null;
   }

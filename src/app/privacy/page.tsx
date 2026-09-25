@@ -77,8 +77,8 @@ export default function PrivacyPage() {
           <p>
             VOW registration records (name, email, username, password record and the terms you agreed to) are kept for
             at least 180 days after your password expires, and the VOW access log for at least as long, because the VOW
-            rules require it. A deletion request is handled by hand: write to the address below; inside that window
-            we keep what the VOW rules require and remove the rest.
+            rules require it. A deletion request goes through the removal request form below and is handled by hand;
+            inside that window we keep what the VOW rules require and remove the rest.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Your rights</h2>
