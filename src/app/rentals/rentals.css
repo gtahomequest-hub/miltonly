@@ -2,7 +2,23 @@
    its own variable names; the names stay so 380 lines of rules need no rewrite, the values
    are Miltonly's. --amber is the accent where it sits on a light ground (#017848) and the
    signal green where a rule paints it on the deep ground; those rules are overridden below. */
-.rentals-page{--navy:#073126;--mid:#0b3d2e;--nb:#1c5a45;--amber:#017848;--ambl:#0a8f57;--ambbg:#e9f7ef;--ambbr:#bfe6cf;--pearl:#fffdfa;--t1:#073126;--t2:#292b29;--t3:#6b6f6a;--t4:rgba(255,255,255,.72);--t5:rgba(255,255,255,.86);--border:#dfe0dc;--surf:#f6f6f3;--green:#00ff80;--gbg:#e9f7ef;--gbr:#bfe6cf;--cta:#00ff80;--ctaon:#5cffa8;--dark:#04160f;font-family:'Inter',system-ui,sans-serif;}
+.rentals-page{--navy:#073126;--mid:#0b3d2e;--nb:#1c5a45;--amber:#017848;--ambl:#0a8f57;--ambbg:#e9f7ef;--ambbr:#bfe6cf;--pearl:#fffdfa;--t1:#073126;--t2:#292b29;--t3:rgba(255,255,255,.6);--t4:rgba(255,255,255,.72);--t5:rgba(255,255,255,.86);--border:#dfe0dc;--surf:#f6f6f3;--green:#00ff80;--gbg:#e9f7ef;--gbr:#bfe6cf;--cta:#00ff80;--ctaon:#5cffa8;--dark:#04160f;font-family:'Inter',system-ui,sans-serif;}
+/* THE MUTED RAMP HAS A GROUND (ML-012). --t3, --t4 and --t5 are the three muted-text steps, from the
+   least to the most light. Before aaff821 they were one grey ramp (#64748b, #94a3b8, #cbd5e1) that
+   read on the navy and, poorly, on white. aaff821 moved --t4 and --t5 to white at 72% and 86%, right
+   on the deep ground and invisible (1.0:1) on the white listing card, and moved --t3 to #6b6f6a, right
+   on the card and 2.4:1 on the deep ground. --t4 is read at 29 sites, eight of them selectors with no
+   markup left; of the 21 live, 16 sit on the deep ground (hero, wizard, filter bar, booking card),
+   four on the white card (beds, baths and parking, "/ month", the separator, the MLS line) and one,
+   .fs-reset, on both. --t3 has 17 live reads, 11 deep and 6 light. The value was never wrong for a
+   ground; the token had no ground. So the root declares the deep-ground ramp, because this is a
+   deep-ground page, and the two light islands, the listings section and the search dropdown,
+   redeclare it for a light ground. #6e726d clears 4.5:1 on white, on --surf and on --pearl (4.52:1 on
+   --surf); a paler grey does not, so the light ramp ends there and its --t5 repeats it. A rule picks
+   a step; the ground it sits on picks the value. Never patch a consumer with a literal: .q-of,
+   .back-lnk, .submit-note, .ra-count and .ra-label were literals aaff821 left at 1.0:1 to 4.0:1 on
+   the deep ground, and now read the ramp. */
+.rentals-page .listings-sec,.rentals-page .sdrop{--t3:#6b6f6a;--t4:#6e726d;--t5:#6e726d;}
 /* on the deep ground the accent is the signal green: text, borders and the buttons that were amber on navy */
 .rentals-page .hero-phone-link,.rentals-page .hl h1 em,.rentals-page .wiz-brand em,.rentals-page .q-badge,.rentals-page .next-btn em,.rentals-page .ch-num,.rentals-page .bc-title em,.rentals-page .bc-btn em,.rentals-page .mc-v em,.rentals-page .ra-eyebrow,.rentals-page .fb-count em,.rentals-page .lbadge,.rentals-page .trust-why-ico{color:var(--cta);}
 .rentals-page .hero-phone-link:hover{color:var(--ctaon);}
@@ -63,7 +79,7 @@
 .rentals-page .wiz-step{display:none;}.rentals-page .wiz-step.active{display:block;animation:fadeUp .32s ease;}
 .rentals-page .q-meta{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 .rentals-page .q-badge{width:22px;height:22px;border-radius:50%;background:rgba(0,255,128,.15);border:1.5px solid rgba(0,255,128,.3);color:var(--amber);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.rentals-page .q-of{font-size:12px;font-weight:700;color:#292b29;letter-spacing:.06em;text-transform:uppercase;}
+.rentals-page .q-of{font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;}
 .rentals-page .q-text{font-size:16px;font-weight:800;color:var(--pearl);line-height:1.22;margin-bottom:16px;}
 .rentals-page .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px;}
 .rentals-page .opt-tile{background:var(--mid);border:1.5px solid var(--nb);border-radius:11px;padding:13px 8px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
@@ -110,9 +126,9 @@
 .rentals-page .next-btn.amber:hover{background:var(--ambl);transform:translateY(-1px);}
 .rentals-page .next-btn em{color:var(--amber);font-style:normal;}
 .rentals-page .next-btn.amber em{color:var(--navy);}
-.rentals-page .back-lnk{text-align:center;margin-top:9px;font-size:11px;color:#292b29;cursor:pointer;}
-.rentals-page .back-lnk:hover{color:var(--t3);}
-.rentals-page .submit-note{font-size:10px;color:#292b29;text-align:center;margin-top:8px;line-height:1.7;}
+.rentals-page .back-lnk{text-align:center;margin-top:9px;font-size:11px;color:var(--t3);cursor:pointer;}
+.rentals-page .back-lnk:hover{color:var(--pearl);}
+.rentals-page .submit-note{font-size:10px;color:var(--t4);text-align:center;margin-top:8px;line-height:1.7;}
 .rentals-page .contact-hdr{background:var(--mid);border:1px solid var(--nb);border-radius:11px;padding:15px 17px;margin-bottom:14px;}
 .rentals-page .ch-num{font-size:28px;font-weight:800;color:var(--amber);margin-bottom:2px;}
 .rentals-page .ch-lbl{font-size:12px;color:var(--t4);}
@@ -171,9 +187,9 @@
 .rentals-page .ra-card:hover .ra-price{color:var(--amber);}
 .rentals-page .ra-card:hover .ra-arrow{opacity:1;}
 .rentals-page .ra-price{display:block;font-size:18px;font-weight:800;color:#fffdfa;letter-spacing:-.02em;line-height:1.2;transition:color .15s;}
-.rentals-page .ra-label{display:block;font-size:12px;font-weight:600;color:#8a8f8a;margin-top:3px;letter-spacing:.02em;white-space:nowrap;}
+.rentals-page .ra-label{display:block;font-size:12px;font-weight:600;color:var(--t4);margin-top:3px;letter-spacing:.02em;white-space:nowrap;}
 .rentals-page .ra-arrow{color:var(--amber);opacity:0;transition:opacity .15s;margin-left:3px;font-weight:700;}
-.rentals-page .ra-count{display:block;font-size:11px;font-weight:500;color:#6b6f6a;margin-top:4px;}
+.rentals-page .ra-count{display:block;font-size:11px;font-weight:500;color:var(--t3);margin-top:4px;}
 .rentals-page .ra-view{display:inline-block;font-size:11px;font-weight:600;color:var(--amber);margin-top:6px;cursor:pointer;text-decoration:none;background:none;border:none;padding:2px 0;}
 .rentals-page .ra-view:hover{text-decoration:underline;}
 .rentals-page .ra-card.ra-total{background:rgba(0,255,128,0.1);border-color:rgba(0,255,128,0.45);min-width:180px;display:flex;align-items:center;justify-content:center;color:var(--amber);font-size:14px;font-weight:700;padding:12px 18px;}

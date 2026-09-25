@@ -64,6 +64,10 @@ interface Listing {
   address: string;
   /** false: print "Address on request", link no street (MC-036). */
   displayAddress: boolean;
+  /** ML-012: the published street page this rental links to, resolved on the server from the
+   *  row's streetSlug against the published set (src/lib/rentalStreetPage.ts); null when the
+   *  street has no page or the address is withheld. The client builds no street URL from text. */
+  streetPage: { slug: string; name: string } | null;
   price: number;
   bedrooms: number;
   bathrooms: number;
@@ -418,9 +422,8 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
     el.scrollBy({ left: dir === "left" ? -240 : 240, behavior: "smooth" });
   };
 
-  // Street-slug helper for listing cards + footer
-  const streetOf = (addr: string) => addr.split(",")[0].replace(/^\d+[a-zA-Z]?\s+/, "").trim();
-  const streetSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+  // The street link is l.streetPage, resolved on the server (ML-012). The helpers that once
+  // sliced a slug out of the address text put the unit in the URL and 404'd on every suffix.
   const hoodOf = (hood: string) => hood.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
   // The first line of the address, or the placeholder for a withheld listing (MC-036). Every
   // place this file prints an address goes through here: the card, the modal, the toasts.
@@ -899,9 +902,8 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
           <div className={`lgrid${viewMode === "list" ? " list-view" : ""}`}>
             {filteredListings.map((l) => {
               const descPreview = l.description ? l.description.slice(0, 160).replace(/\s+\S*$/, "") + "…" : null;
-              // A withheld listing is not tied to its street (MC-036): no street link, and no
-              // street derived from the placeholder.
-              const cardStreet = l.displayAddress ? streetOf(l.address) : null;
+              // A withheld listing is not tied to its street (MC-036), and a street with no
+              // published page gets no link (ML-012): both arrive as streetPage null.
               const cardHood = hoodOf(l.neighbourhood);
               return (
                 <div
@@ -925,9 +927,9 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
                       </div>
                       <div className="laddr">{l.displayAddress ? titleCase(addrLine(l)) : addrLine(l)}</div>
                       <div className="lcard-links">
-                        {cardStreet && (
+                        {l.streetPage && (
                           <>
-                            <Link href={`/streets/${streetSlug(cardStreet)}`} onClick={(e) => e.stopPropagation()}>{titleCase(cardStreet)}</Link>
+                            <Link href={`/streets/${l.streetPage.slug}`} onClick={(e) => e.stopPropagation()}>{l.streetPage.name}</Link>
                             <span className="sep">·</span>
                           </>
                         )}
@@ -938,7 +940,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
                         <span>🚿 {l.bathrooms} bath</span>
                         {l.parking > 0 && <span>🚗 {l.parking} park</span>}
                       </div>
-                      <div style={{fontSize:11,color:"#94a3b8",marginTop:-4,marginBottom:8}}>
+                      <div style={{fontSize:11,color:"var(--t4)",marginTop:-4,marginBottom:8}}>
                         MLS® {l.mlsNumber}
                       </div>
 

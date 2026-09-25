@@ -8,6 +8,7 @@ import SiteChrome from "@/components/nav/SiteChrome";
 import { cached } from "@/lib/cache";
 import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
 import { redactAddress } from "@/lib/listings/display-gate";
+import { withRentalStreetPages } from "@/lib/rentalStreetPage";
 
 // The page reads searchParams (the hub scope), so it is dynamic; `revalidate` was a no-op
 // beside force-dynamic and is gone. What it reads is cached instead (MC-018, below).
@@ -34,6 +35,9 @@ const RENTAL_CARD_SELECT = {
   heatType: true, furnished: true, possessionDetails: true, minLeaseTerm: true, locker: true,
   basement: true, listOfficeName: true,
   listedAt: true,
+  // ML-012: the street columns resolve to the published page a card may link to, then leave
+  // the row (src/lib/rentalStreetPage.ts). The client no longer builds a slug from the address.
+  streetSlug: true, streetName: true,
 } as const;
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }) {
@@ -67,7 +71,8 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
   // v3 (MC-036): the rows in the bundle changed shape (narrow select, displayAddress, redacted
   // address). A v2 bundle served after the deploy would have no displayAddress on any row, and
   // the client would print every card as withheld until the TTL ran out.
-  const { serialized, totalRentals, avgRentValue, rentAvgs, newThisWeek } = await cached(`rentals:${scope?.slug ?? "all"}:v3`, RENTALS_TTL, async () => {
+  // v4 (ML-012): each row carries streetPage; a v3 bundle would link no street on any card.
+  const { serialized, totalRentals, avgRentValue, rentAvgs, newThisWeek } = await cached(`rentals:${scope?.slug ?? "all"}:v4`, RENTALS_TTL, async () => {
     // MC-029: the public lease predicate (src/lib/listings/vow.ts). This selected every For
     // Lease row ever advertised, so leased units sat in the grid; and the whole row went to the
     // client, VOW-only columns included. Now the set is available units only, ordered newest
@@ -84,7 +89,8 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
     // MC-036: the address gate, server-side. A withheld listing (displayAddress false) leaves
     // with the placeholder, never its address; the client prints "Address on request" for it
     // and links no street. It stays in the grid and the counts: the rule is about the address.
-    const listings = listingRows.map((l) => redactAddress(stripVowFields(l)));
+    // ML-012: the street link is the published page the row's streetSlug names, or null.
+    const listings = await withRentalStreetPages(listingRows.map((l) => redactAddress(stripVowFields(l))));
 
     // AVAILABLE, not "ever advertised". This counted every For Lease row regardless of
     // leaseStatus and the page printed the result as "N active rentals" five times over. On
