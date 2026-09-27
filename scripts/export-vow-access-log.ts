@@ -4,13 +4,18 @@
 //
 //   pnpm tsx scripts/export-vow-access-log.ts --from 2026-09-01 --to 2026-10-01 --out vow.csv
 //   pnpm tsx scripts/export-vow-access-log.ts --suspicious --days 7
+//   pnpm tsx scripts/export-vow-access-log.ts --consumer someone@example.com --out one.csv
 //
 // `--to` is exclusive. Without `--out` the CSV goes to stdout. `--suspicious` prints the review
 // list instead (R-8.09(b)(iii)): people past a threshold in the window, or carrying a flag.
+// `--consumer <email|userId>` prints the per-consumer record and trail (MP-007, Appendix B(b)),
+// in the same column format as /api/admin/vow-access?consumer=… and as Homesly's audit report,
+// so PropTx gets one format from both the site and the shell.
 
 import fs from "node:fs";
 import path from "node:path";
 import { isSuspicious, csvCell, ACCESS_CSV_HEADER } from "../src/lib/vow-audit-rules";
+import { buildConsumerReport, consumerReportCsv, CONSUMER_ROW_SELECT } from "../src/lib/vow/consumer-report";
 
 function loadEnvLocal() {
   const f = path.join(process.cwd(), ".env.local");
@@ -56,6 +61,36 @@ async function main() {
       console.log(`  ${u?.email ?? id}  over threshold  reads=${v.reads} scopes=${v.scopes.size}`);
     }
     if (flagged.length === 0 && heavy.length === 0) console.log("  nobody");
+    await prisma.$disconnect();
+    return;
+  }
+
+  // The per-consumer record and trail (MP-007), aligned to Homesly's shape via the pure
+  // buildConsumerReport — the same builder the site uses, so the two CSVs cannot drift.
+  const consumer = arg("consumer");
+  if (consumer) {
+    const user = await prisma.user.findUnique({
+      where: consumer.includes("@") ? { email: consumer.toLowerCase() } : { id: consumer },
+      select: CONSUMER_ROW_SELECT,
+    });
+    if (!user) {
+      console.error(`[vow-access] no such consumer: ${consumer}`);
+      await prisma.$disconnect();
+      process.exit(1);
+    }
+    const [access, consents, throttles] = await Promise.all([
+      prisma.vowAccessLog.findMany({ where: { userId: user.id }, select: { at: true, kind: true, scope: true, path: true, recordCount: true, ip: true, userAgent: true }, orderBy: { at: "asc" } }),
+      prisma.vowConsent.findMany({ where: { userId: user.id }, select: { at: true, version: true, ip: true, userAgent: true }, orderBy: { at: "asc" } }),
+      prisma.vowThrottle.findMany({ where: { userId: user.id }, select: { at: true, limit: true, count: true, max: true, ip: true }, orderBy: { at: "asc" } }),
+    ]);
+    const csv = consumerReportCsv(buildConsumerReport(user, { access, consents, throttles }));
+    const out = arg("out");
+    if (out) {
+      fs.writeFileSync(out, csv, "utf8");
+      console.log(`[vow-access] consumer ${user.email}: ${access.length} reads, ${consents.length} agreements, ${throttles.length} throttles, written to ${out}`);
+    } else {
+      process.stdout.write(csv);
+    }
     await prisma.$disconnect();
     return;
   }

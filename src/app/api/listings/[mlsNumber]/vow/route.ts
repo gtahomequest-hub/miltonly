@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,15 @@ export async function GET(req: NextRequest, { params }: { params: { mlsNumber: s
   if (!canSee) {
     const body: ListingVowResponse = { canSee: false, needsAcknowledgement: !!user };
     return NextResponse.json(body, { headers: { "Cache-Control": "private, no-store" } });
+  }
+
+  // The hard throttle (MP-007, R-8.13). Over the ceiling, 429 and no trail row.
+  const throttle = await enforceVowThrottle({ userId: user!.id, ip: clientIpFromHeaders(req.headers) });
+  if (!throttle.ok) {
+    return NextResponse.json(
+      { canSee: true, throttled: true, limit: throttle.limit, facts: null },
+      { status: 429, headers: { "Retry-After": "3600", "Cache-Control": "private, no-store" } },
+    );
   }
 
   const l = await prisma.listing.findUnique({

@@ -18,12 +18,22 @@
 // VERSION 4 (MP-006, 2026-09-21): the nine Appendix B(c) clauses, each its own numbered
 // paragraph, the privacy clause in bold on the card, and the sign-in sentence carrying the
 // 90-day password and the 60-minute inactivity limit (R-8.06, R-8.13).
+// VERSION 5 (MP-007, 2026-09-27): the nine clauses read word-for-word against Appendix B(c) in
+// the PropTx PDF and corrected where they departed — clause (iv) says "Listing Information",
+// clause (v) adds "the validity of PropTx's proprietary rights", clause (vi) adds "directly or
+// indirectly" and "to another individual or entity", clause (viii) adds "or their duly
+// authorized representatives". Clauses (iv) and (vi) carry the two Rule 8.09(d) and (e) "for
+// greater certainty" AI sentences (no use of the data to train or feed AI, no automated
+// extraction). Two clauses are added: Rule 8.09(g), the ownership of TRREB and PropTx, and the
+// account-sharing prohibition (VOW Best Practices item 39). The clause-by-clause diff from v4
+// is in scratchpad/reports/MP-007-proptx-standard.md.
 
-export const VOW_TERMS_VERSION = 4;
+export const VOW_TERMS_VERSION = 5;
 
 export interface VowClause {
-  /** Appendix B(c) roman numeral, or "signin" for the house sentence. */
-  key: "i" | "ii" | "iii" | "iv" | "v" | "vi" | "vii" | "viii" | "ix" | "signin";
+  /** Appendix B(c) roman numeral, "own-g" for Rule 8.09(g), "share" for the account-sharing
+   *  prohibition, or "signin" for the house sentence. */
+  key: "i" | "ii" | "iii" | "iv" | "v" | "vi" | "vii" | "viii" | "ix" | "own-g" | "share" | "signin";
   text: string;
   /** Rendered in bold on the card: Appendix B(c)(ix) says the consumer is to be "boldly" informed. */
   bold?: boolean;
@@ -31,52 +41,78 @@ export interface VowClause {
 
 export const VOW_TERMS_CLAUSES: readonly VowClause[] = [
   {
+    // Appendix B(c)(i): a lawful broker-consumer relationship with the Member.
     key: "i",
     text:
-      "I am entering into a lawful broker-consumer relationship with Aamir Yaqoob, Salesperson, " +
-      "RE/MAX Realty Specialists Inc., Brokerage (TRREB membership #9541183), under the Trust in Real " +
-      "Estate Services Act, 2002, for the purpose of accessing MLS® listing, sold and leased " +
-      "information on this website (the VOW).",
+      "I am entering into a lawful broker-consumer relationship with Aamir Yaqoob, Sales " +
+      "Representative, RE/MAX Realty Specialists Inc., Brokerage (TRREB membership #9541183), " +
+      "under the Trust in Real Estate Services Act, 2002, for the purpose of accessing MLS® " +
+      "listing, sold and leased information on this website (the VOW).",
   },
   {
+    // Appendix B(c)(ii): all MLS® data is for the consumer's personal, non-commercial use.
     key: "ii",
     text: "All MLS® data I obtain through this VOW is for my personal, non-commercial use only.",
   },
   {
+    // Appendix B(c)(iii): a bona fide interest.
     key: "iii",
     text: "I have a bona fide interest in the purchase, sale or lease of real estate of the type offered through this VOW.",
   },
   {
+    // Appendix B(c)(iv), corrected to say "Listing Information" (v4 said "information"), with
+    // the Rule 8.09(d) "for greater certainty" AI sentence.
     key: "iv",
     text:
-      "I will not copy, redistribute, retransmit or otherwise use any of the data or information provided, " +
-      "except in connection with my consideration of the purchase, sale or lease of an individual property.",
+      "I will not copy, redistribute, retransmit or otherwise use any of the data or Listing " +
+      "Information provided, except in connection with my consideration of the purchase, sale " +
+      "or lease of an individual property. For greater certainty, I am prohibited from using " +
+      "any AI system or technology, or any other technology that has the effect of, or is " +
+      "intended to, collect, store, reorganize, analyze, summarize or manipulate any Listing " +
+      "Information or any related data.",
   },
   {
+    // Appendix B(c)(v), corrected to add "the validity of PropTx's proprietary rights" (v4
+    // omitted it) and to say "MLS® data" rather than "the data".
     key: "v",
     text:
-      "I acknowledge that PropTx Innovations Inc. (PropTx) owns, and holds the copyright in, the MLS® " +
-      "database, the data, the MLS® System and the Listing Information.",
+      "I acknowledge PropTx Innovations Inc.'s (PropTx) ownership of, and the validity of " +
+      "PropTx's proprietary rights and copyright in, the MLS® database, the MLS® data, PropTx's " +
+      "MLS® System and the Listing Information.",
   },
   {
+    // Appendix B(c)(vi), corrected to add "directly or indirectly" and "to another individual
+    // or entity" (v4 omitted both), with the Rule 8.09(e) "for greater certainty" AI sentence.
     key: "vi",
     text:
-      "I will not display, post, disseminate, distribute, publish, broadcast, transfer, sell or sublicense " +
-      "any of the information, and I will not screen scrape, database scrape or data mine this VOW or its information.",
+      "I will not, directly or indirectly, display, post, disseminate, distribute, publish, " +
+      "broadcast, transfer, sell or sublicense any Listing Information to another individual or " +
+      "entity. The prohibited uses expressly include \"scraping\" (including \"screen scraping\" " +
+      "and \"database scraping\"), \"data mining\" or any other activity intended to collect, " +
+      "store, re-organize, summarize or manipulate any Listing Information or any related data. " +
+      "For greater certainty, I am prohibited from directly or indirectly providing any Listing " +
+      "Information to any AI system or technology.",
   },
   {
+    // Appendix B(c)(vii): a mouse click is sufficient; no financial obligation; no
+    // representation agreement.
     key: "vii",
     text:
       "My agreement here, by a mouse click or a tap, is sufficient to acknowledge these terms. These terms " +
       "impose no financial obligation on me and do not create a representation agreement between me and the brokerage.",
   },
   {
+    // Appendix B(c)(viii), corrected to add "or their duly authorized representatives" (v4
+    // omitted it).
     key: "viii",
     text:
-      "I expressly authorize PropTx and other PropTx Members to access this VOW to verify compliance with the " +
-      "MLS® rules and policies and to monitor the display of Members' listings.",
+      "I expressly authorize PropTx, and other PropTx Members or their duly authorized " +
+      "representatives, to access this VOW for the purposes of verifying compliance with the " +
+      "MLS® Rules and Policies (including the VOW Rules) and monitoring the display of Members' listings.",
   },
   {
+    // Appendix B(c)(ix): the privacy policy, boldly informing of and obtaining consent to the
+    // collection, use and disclosure, including sharing with PropTx.
     key: "ix",
     bold: true,
     text:
@@ -85,6 +121,28 @@ export const VOW_TERMS_CLAUSES: readonly VowClause[] = [
       "password record and my activity on this VOW may be shared with PropTx for auditing and/or legal purposes.",
   },
   {
+    // Rule 8.09(g): the Association's ownership, naming TRREB and PropTx (beyond Appendix
+    // B(c)(v), which names PropTx alone). Homesly carries the same clause; see D:\homesly
+    // src/lib/auth/texts.ts OWNERSHIP_8_09_G.
+    key: "own-g",
+    text:
+      "I acknowledge the ownership of, and the validity of the proprietary rights and copyright " +
+      "in, the MLS® Database, the MLS® System, the Listing Information and any related " +
+      "information of the Toronto Regional Real Estate Board (TRREB), the association of which " +
+      "the brokerage is a member, and of PropTx Innovations Inc.",
+  },
+  {
+    // The account-sharing prohibition (VOW Best Practices item 39; R-8.05(c) one credential per
+    // consumer). A consumer must not lend the account or the credential to anyone.
+    key: "share",
+    text:
+      "I will not share my username or password, let anyone else use my account, or create more " +
+      "than one account, and I will not allow any other person or entity to gain access to or " +
+      "use the contents of this VOW through my credentials.",
+  },
+  {
+    // The house sentence (ours, not the Appendix's): the credential lifetime and the session
+    // limits (R-8.06, R-8.13).
     key: "signin",
     text:
       "My username is my email address and my password is mine alone; I will not share them. My password " +

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SiteChrome from "@/components/nav/SiteChrome";
+import ReviewerNotice from "@/components/vow/ReviewerNotice";
 
 export const metadata = genMeta({
   title: "Terms of Use",
@@ -51,6 +52,8 @@ export default function TermsPage() {
             You may not scrape, copy, or republish listing data from this site except as permitted by TRREB&apos;s VOW/IDX
             rules and copyright law. You may not use this site to send spam, test security, or impersonate others.
           </p>
+
+          <ReviewerNotice className="my-6" />
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Signing in and sold data</h2>
           <p>

@@ -21,7 +21,21 @@
 
 import { judgePassword } from "@/lib/portal/password";
 import { VOW_ACKNOWLEDGEMENT_TEXT, VOW_TERMS_VERSION } from "@/lib/vow-acknowledgement";
-import { vowStepsLeft, type VowAccessFields } from "@/lib/vow-access";
+import { vowStepsLeft, REVIEW_FLAG, type VowAccessFields } from "@/lib/vow-access";
+
+// The three answers to the registrant question (MP-007). "reviewer" is the R-8.21 path: a
+// PropTx or TRREB representative, held for review, not opened.
+export type Declaration = "consumer" | "registrant" | "reviewer";
+
+/** The declaration a body carries: the three-way `declaration` field when the card sends it,
+ *  else the legacy boolean `isRegistrant`, else null (unanswered). */
+export function readDeclaration(body: AckBody): Declaration | null {
+  const d = body.declaration;
+  if (d === "consumer" || d === "registrant" || d === "reviewer") return d;
+  if (body.isRegistrant === true) return "registrant";
+  if (body.isRegistrant === false) return "consumer";
+  return null;
+}
 
 export interface AckUser extends VowAccessFields {
   id: string;
@@ -39,6 +53,8 @@ export interface AckBody {
   consent?: unknown;
   password?: unknown;
   isRegistrant?: unknown;
+  /** MP-007: "consumer" | "registrant" | "reviewer"; the card sends this, older callers the boolean above. */
+  declaration?: unknown;
 }
 
 export interface AckOps {
@@ -71,6 +87,8 @@ export type AckPlan =
       firstName: string | null;
       homeStreetSlug: string | null;
       registrant: { isRegistrant: boolean; flag: boolean } | null;
+      /** MP-007: the reviewer answer (R-8.21). The route sets the reviewer-hold flag and emails the owner. */
+      reviewer: boolean;
       agreement: boolean;
       /** the history rows to append, in order: the prior agreement (once) then the new one */
       consents: ConsentRow[];
@@ -94,18 +112,27 @@ export async function planAcknowledgement(user: AckUser, body: AckBody, ops: Ack
 
   // ── the registrant answer, only while owed ──────────────────────────────────────────
   let registrant: { isRegistrant: boolean; flag: boolean } | null = null;
-  const answered = body.isRegistrant === true || body.isRegistrant === false;
   if (steps.needsRegistrantAnswer) {
-    if (!answered) return { ok: false, status: 400, error: "Tell us whether you are a licensed real estate registrant." };
-    registrant = { isRegistrant: body.isRegistrant as boolean, flag: body.isRegistrant === true };
-    if (registrant.isRegistrant) {
+    const decl = readDeclaration(body);
+    if (!decl) return { ok: false, status: 400, error: "Tell us whether you are a licensed real estate registrant." };
+    if (decl === "registrant") {
       // A registrant gets no records, so owes no password and no agreement. The answer is
       // stored, the name if offered, and the row goes to the review list.
-      return { ok: true, firstName, homeStreetSlug: null, registrant, agreement: false, consents: [], password: { kind: "none" } };
+      return { ok: true, firstName, homeStreetSlug: null, registrant: { isRegistrant: true, flag: true }, reviewer: false, agreement: false, consents: [], password: { kind: "none" } };
     }
+    if (decl === "reviewer") {
+      // R-8.21: held for review, nothing else asked. The route sets the reviewer-hold flag and
+      // emails the owner; when the owner clears it, the account completes the consumer card.
+      return { ok: true, firstName, homeStreetSlug: null, registrant: { isRegistrant: false, flag: false }, reviewer: true, agreement: false, consents: [], password: { kind: "none" } };
+    }
+    registrant = { isRegistrant: false, flag: false };
   }
-  if (steps.registrant || user.reviewFlag === "registrant") {
+  if (steps.registrant || user.reviewFlag === REVIEW_FLAG.registrant) {
     return { ok: false, status: 403, error: "This VOW is for consumers. Email Aamir if your answer was a mistake." };
+  }
+  if (steps.reviewerHeld) {
+    // A held reviewer cannot un-hold themselves by posting; only the owner clears it.
+    return { ok: false, status: 403, error: "This account is held for a VOW review until the broker of record clears it." };
   }
 
   // ── the home street, optional, registry-checked ─────────────────────────────────────
@@ -154,5 +181,5 @@ export async function planAcknowledgement(user: AckUser, body: AckBody, ops: Ack
     }
   }
 
-  return { ok: true, firstName, homeStreetSlug, registrant, agreement, consents, password };
+  return { ok: true, firstName, homeStreetSlug, registrant, reviewer: false, agreement, consents, password };
 }

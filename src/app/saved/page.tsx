@@ -2,6 +2,7 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SavedDashboard from "./SavedDashboard";
 import SiteChrome from "@/components/nav/SiteChrome";
+import ReviewerNotice from "@/components/vow/ReviewerNotice";
 
 export const metadata = genMeta({
   title: `Saved Listings & Alerts — ${config.SITE_NAME}`,
@@ -16,6 +17,9 @@ export default function SavedPage() {
   return (
     <SiteChrome>
       <SavedDashboard />
+      <div className="mx-auto max-w-3xl px-5 pb-12 sm:px-6">
+        <ReviewerNotice />
+      </div>
     </SiteChrome>
   );
 }

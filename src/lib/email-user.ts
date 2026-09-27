@@ -73,6 +73,45 @@ export async function sendSignInEmail(args: { email: string; code: string; link:
   }
 }
 
+/** The owner's notice that a PropTx / TRREB reviewer registered and was held (MP-007, R-8.21).
+ *  Goes to the desk (ALERT_EMAIL_TO, the address every lead alert goes to), through the same
+ *  Resend client the sign-in email uses. It names the reviewer's email, points at the VOW desk
+ *  where the hold is cleared, and repeats the one thing never to do. It never throws: a notice
+ *  that cannot be sent is logged, and the account stays held either way (the hold is on the row,
+ *  not in the email). Homesly's equivalent: D:\homesly src/lib/auth/mail.ts reviewerHeldOwnerMailFor. */
+export async function sendReviewerHeldOwnerEmail(args: { reviewerEmail: string; reviewerName: string | null; at: Date }) {
+  const { reviewerEmail, reviewerName, at } = args;
+  const to = process.env.ALERT_EMAIL_TO || process.env.AAMIR_EMAIL || process.env.REALTOR_EMAIL || null;
+  const deskUrl = `${config.SITE_URL}/admin/vow`;
+  const when = at.toLocaleString("en-CA", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" });
+  if (!resend || !to) {
+    console.log(`[DEV] reviewer held: ${reviewerEmail} at ${when}; clear at ${deskUrl}`);
+    return;
+  }
+  const lines = [
+    `${reviewerName ?? "Someone"} <${reviewerEmail}> signed in on ${when} (Toronto) and answered the registrant question with "I am reviewing this VOW for PropTx or the Toronto Regional Real Estate Board." The account is held for review, not opened.`,
+    "",
+    "They have been told to write to the contact address from the same email, naming the organization they represent. Once they have and the organization checks out, clear the hold on the VOW desk; the account then sees exactly what a registered consumer sees.",
+    "",
+    deskUrl,
+    "",
+    "Never give a reviewer the administrator credentials. Their own account is the access.",
+  ];
+  try {
+    const result = await resend.emails.send({
+      from: FROM,
+      to,
+      replyTo: process.env.REALTOR_EMAIL,
+      subject: `VOW reviewer registration held: ${reviewerEmail}`,
+      text: lines.join("\n"),
+    });
+    if (result.error) console.error("[email send failed]", { source: "reviewer-held", error: result.error.message });
+    else console.log("[email sent]", { source: "reviewer-held", resendId: result.data?.id });
+  } catch (e) {
+    console.error("[email send failed]", { source: "reviewer-held", error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
 export interface DealAlertSend {
   sent: boolean;
   resendId?: string | null;

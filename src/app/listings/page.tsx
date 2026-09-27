@@ -16,6 +16,7 @@ import { redirect } from 'next/navigation';
 import { getListingsV2Data, parseListingsQuery } from '@/lib/listingsV2Data';
 import { getSession } from '@/lib/auth';
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { headers } from "next/headers";
 import { canSeeVowRecords } from '@/lib/vow-access';
 import { getStreetCompareContrast } from '@/lib/comparisonData';
@@ -62,7 +63,14 @@ export default async function ListingsPage({ searchParams }: Props) {
   // told whether the cards may carry the VOW-only facts. The decision is the server's; the
   // anonymous payload never contains them (src/lib/listings/vow.ts).
   const user = await getSession();
-  const vow = canSeeVowRecords(user);
+  let vow = canSeeVowRecords(user);
+  // The hard throttle (MP-007, R-8.13): a page cannot 429, so over the ceiling the grid drops
+  // the VOW-only facts (renders as anonymous) and writes no trail row; the throttle row is
+  // written by enforceVowThrottle.
+  if (vow && user) {
+    const throttle = await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(headers()) });
+    if (!throttle.ok) vow = false;
+  }
   // City-wide freehold-vs-condo contrast for the CompareModule teaser — same
   // hoisted memoized-promise seam the street pages use (one resolution per
   // process; /listings is force-dynamic so this is a warm-cache hit per request).

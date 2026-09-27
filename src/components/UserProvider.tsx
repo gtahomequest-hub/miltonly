@@ -1,7 +1,24 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { createContext, useContext, useEffect, useState, useCallback, Suspense, ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+
+// The session-activity pinger (MP-006, extended MP-007). /api/auth/me winds the 60-minute
+// inactivity clock (src/lib/auth.ts touchSession). MP-006 keyed the refetch on usePathname()
+// alone, so a reader browsing the /sold chips or the /listings filters — which change only the
+// search params, not the path — never touched the session and was signed out mid-visit
+// (MC-044). This keys it on the search string too. It lives in its own component wrapped in
+// Suspense because useSearchParams() opts a component into client rendering; isolating it here
+// keeps every page under this provider server-rendered (the three rules: best-in-class SEO).
+function RouteActivity({ onChange }: { onChange: () => void }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams?.toString() ?? "";
+  useEffect(() => {
+    onChange();
+  }, [onChange, pathname, search]);
+  return null;
+}
 
 interface UserData {
   id: string;
@@ -50,15 +67,6 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // On mount and on every client-side navigation (MP-006). /api/auth/me is where the 60-minute
-  // inactivity clock is wound (src/lib/auth.ts touchSession): a person clicking through the
-  // /sold chips or the /listings pages under this one root layout is active, and without the
-  // pathname here the fetch ran once per hard load and the clock ran out on them mid-visit.
-  const pathname = usePathname();
-  useEffect(() => {
-    refresh();
-  }, [refresh, pathname]);
-
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
@@ -94,6 +102,9 @@ export default function UserProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserContext.Provider value={{ user, loading, refresh, logout, saveListing, unsaveListing, isListingSaved }}>
+      <Suspense fallback={null}>
+        <RouteActivity onChange={refresh} />
+      </Suspense>
       {children}
     </UserContext.Provider>
   );

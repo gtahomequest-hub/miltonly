@@ -19,7 +19,8 @@ import { VOW_ACKNOWLEDGEMENT_TEXT, VOW_TERMS_VERSION } from "@/lib/vow-acknowled
 import { PORTAL_CONSENT_TEXT } from "@/lib/portal/consent";
 import { hashPassword, verifyPassword } from "@/lib/portal/password";
 import { planAcknowledgement } from "@/lib/portal/acknowledge";
-import { vowStepsLeft } from "@/lib/vow-access";
+import { vowStepsLeft, REVIEW_FLAG } from "@/lib/vow-access";
+import { sendReviewerHeldOwnerEmail } from "@/lib/email-user";
 
 export const dynamic = "force-dynamic";
 
@@ -63,13 +64,17 @@ export async function POST(req: NextRequest) {
         ? { passwordSetAt: now }
         : {};
 
-  const registrantData = plan.registrant
-    ? {
-        isRegistrant: plan.registrant.isRegistrant,
-        registrantAt: now,
-        ...(plan.registrant.flag ? { reviewFlag: user.reviewFlag ?? "registrant", reviewFlaggedAt: user.reviewFlaggedAt ?? now } : {}),
-      }
-    : {};
+  // The reviewer declaration (R-8.21) holds the account: isRegistrant false, but the
+  // reviewer-hold flag stands until the owner clears it from the desk.
+  const registrantData = plan.reviewer
+    ? { isRegistrant: false, registrantAt: now, reviewFlag: REVIEW_FLAG.reviewerHeld, reviewFlaggedAt: now }
+    : plan.registrant
+      ? {
+          isRegistrant: plan.registrant.isRegistrant,
+          registrantAt: now,
+          ...(plan.registrant.flag ? { reviewFlag: user.reviewFlag ?? REVIEW_FLAG.registrant, reviewFlaggedAt: user.reviewFlaggedAt ?? now } : {}),
+        }
+      : {};
 
   const agreementData = plan.agreement
     ? {
@@ -104,6 +109,14 @@ export async function POST(req: NextRequest) {
   });
 
   await touchSession();
+
+  // A reviewer declaration (R-8.21) notifies the owner, so the hold can be confirmed and
+  // cleared. The email never blocks the response: the hold is on the row already.
+  if (plan.reviewer) {
+    await sendReviewerHeldOwnerEmail({ reviewerEmail: user.email, reviewerName: plan.firstName ?? user.firstName, at: now }).catch((e) =>
+      console.error("[acknowledge-vow] reviewer notice failed", e),
+    );
+  }
 
   const after = await prisma.user.findUnique({ where: { id: user.id } });
   return NextResponse.json({

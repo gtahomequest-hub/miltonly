@@ -691,8 +691,17 @@ model User {
   registrantAt     DateTime?
   reviewFlag       String?
   reviewFlaggedAt  DateTime?
+  // MP-007, PIPEDA erasure vs the 180-day MLS record rule (Appendix B(b)). When a consumer asks
+  // to be removed, anonymiseUser() strips the non-mandated personal data (phone, saved searches
+  // and listings, the lead link) and blocks sign-in, but keeps the name, email, username, the
+  // password record, the consent history and the access trail until 180 days past the
+  // password's expiry, because the rule requires them and PropTx can ask for them. This is when
+  // that request was recorded; purgeExpiredCredentials() hard-deletes the row after the window.
+  // See src/lib/portal/erasure.ts.
+  erasureRequestedAt DateTime?
   vowConsents      VowConsent[]
   vowAccess        VowAccessLog[]
+  vowThrottles     VowThrottle[]
 
   @@index([email])
   @@index([verifyTokenHash])
@@ -737,6 +746,29 @@ model VowAccessLog {
   @@index([userId, at(sort: Desc)])
   @@index([at(sort: Desc)])
   @@index([kind, at(sort: Desc)])
+  @@schema("public")
+}
+
+// The hard throttle's audit rows (MP-007, MLS® Rule 8.13, VOW Best Practices items 25/26).
+// MP-006's flagIfSuspicious refuses nothing by design; this is the ceiling above it. When a
+// consumer or an IP exceeds the limit (120/h and 600/day per consumer, 300/h per IP), the read
+// is refused with 429, no VowAccessLog trail row is written, and ONE row is written here per
+// consumer, limit and window: the first refusal of that window, with the count that tripped it.
+// A caller that keeps hammering is refused every time but does not write a row per refusal, so
+// this table cannot be flooded at the scraper's rate. Written by src/lib/vow/throttle.ts.
+model VowThrottle {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  at        DateTime @default(now())
+  // consumerHour | consumerDay | ipHour
+  limit     String
+  count     Int
+  max       Int
+  ip        String?
+
+  @@index([userId, limit, at(sort: Desc)])
+  @@index([at(sort: Desc)])
   @@schema("public")
 }
 

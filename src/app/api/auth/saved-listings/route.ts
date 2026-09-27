@@ -1,5 +1,6 @@
 import { getSession, touchSession } from "@/lib/auth";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { isPublicListing } from "@/lib/listings/vow";
@@ -50,7 +51,13 @@ export async function GET(request: NextRequest) {
   // address stays unless the seller withheld it (MC-036): then redactAddress replaces it, the
   // dashboard prints "Address on request", and streetSlug is not selected, so the card ties the
   // listing to no street. listOfficeName is selected for the brokerage line beside the price.
-  const canSeeStatus = canSeeVowRecords(user);
+  // The hard throttle (MP-007, R-8.13): this surface answers 200 either way (it is the person's
+  // own saved list), so over the ceiling the VOW-only status is withheld and no trail row is
+  // written, exactly as for an unacknowledged consumer; the throttle row is written by
+  // enforceVowThrottle. A 429 would break the dashboard's own list, so it stays 200.
+  const canSeeVow = canSeeVowRecords(user);
+  const throttle = canSeeVow ? await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(request.headers) }) : { ok: true as const };
+  const canSeeStatus = canSeeVow && throttle.ok;
   const listings = rows.map(({ leaseStatus, transactionType, permAdvertise, ...l }) => ({
     ...redactAddress(l),
     status: canSeeStatus

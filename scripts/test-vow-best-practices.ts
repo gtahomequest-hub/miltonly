@@ -25,18 +25,25 @@ import {
   INACTIVITY_MINUTES,
   COOKIE_NAME,
 } from "@/lib/auth";
-import { planAcknowledgement, cleanName } from "@/lib/portal/acknowledge";
+import { planAcknowledgement, cleanName, readDeclaration } from "@/lib/portal/acknowledge";
 import {
   PASSWORD_MAX_DAYS,
   CREDENTIAL_RETENTION_DAYS,
   passwordExpiresAt,
   passwordExpired,
   credentialRetainUntil,
+  hashSchemeOf,
+  PASSWORD_HELD_AS,
 } from "@/lib/portal/passwordRule";
 import { VOW_TERMS_CLAUSES, VOW_TERMS_VERSION, VOW_ACKNOWLEDGEMENT_TEXT } from "@/lib/vow-acknowledgement";
-import { canSeeVowRecords, vowStepsLeft, termsCurrent } from "@/lib/vow-access";
+import { canSeeVowRecords, vowStepsLeft, termsCurrent, REVIEW_FLAG } from "@/lib/vow-access";
 import { buildAccessRow, VOW_ACCESS_KINDS, SUSPICIOUS_SCOPES_PER_DAY, SUSPICIOUS_READS_PER_DAY, accessCsv } from "@/lib/vow-audit";
 import { isSuspicious, csvCell } from "@/lib/vow-audit-rules";
+// MP-007
+import { overLimit, THROTTLE_LIMITS } from "@/lib/vow/throttle";
+import { REVIEWER_ANSWER, reviewerPath, reviewerHeldMessage } from "@/lib/vow/reviewer";
+import { buildConsumerReport, consumerReportCsv, CONSUMER_HEADER, CONSUMER_EVENT_HEADER, CONSUMER_ROW_SELECT, type ConsumerRow } from "@/lib/vow/consumer-report";
+import { anonymiseUpdate, isPurgeable, ERASURE_KEEPS } from "@/lib/portal/erasure";
 
 let assertions = 0;
 const failures: string[] = [];
@@ -161,7 +168,7 @@ async function main() {
   ok(auth.includes("const claims = freshClaims(userId, nowSeconds());"), "createSession uses freshClaims");
   ok(!/exp: now \+ SESSION_SECONDS/.test(auth.split("export async function touchSession")[1] || ""), "touchSession never re-issues exp");
   const provider = readFileSync("src/components/UserProvider.tsx", "utf8");
-  ok(provider.includes("usePathname()") && provider.includes("}, [refresh, pathname]);"), "UserProvider refetches /me on every client navigation, so a soft navigation winds the clock");
+  ok(provider.includes("usePathname()") && provider.includes("useSearchParams()") && /\[onChange, pathname, search\]/.test(provider), "UserProvider refetches /me on every client navigation and search-param change (MP-007), so a soft navigation winds the clock");
   ok(auth.includes('judgeSession(claims, nowSeconds()) !== "ok"'), "getSession refuses inactive and expired tokens through judgeSession");
   const me = readFileSync("src/app/api/auth/me/route.ts", "utf8");
   ok(me.includes("await touchSession()"), "/api/auth/me winds the clock on every page mount");
@@ -182,27 +189,37 @@ async function main() {
     ok(readFileSync(f, "utf8").includes("normalizeEmail("), `${f} normalises the address`);
   }
 
-  // ── 4. the nine clauses ───────────────────────────────────────────────────────
-  eq(VOW_TERMS_VERSION, 4, "the terms are version 4");
+  // ── 4. the clauses, read word-for-word against Appendix B(c) (MP-007) ─────────────
+  eq(VOW_TERMS_VERSION, 5, "the terms are version 5");
   // Each clause by its operative words, negations included, so a rewording that drops "not"
-  // or the object of the clause fails here.
+  // or the object of the clause fails here. MP-007 corrected (iv), (v), (vi), (viii) against
+  // the PDF and added the two AI sentences, the Rule 8.09(g) ownership, and account-sharing.
   const REQUIRED: Array<[string, RegExp[]]> = [
     ["i", [/I am entering into a lawful broker-consumer relationship with Aamir Yaqoob/, /RE\/MAX Realty Specialists Inc\., Brokerage/, /Trust in Real Estate Services Act, 2002/]],
     ["ii", [/All MLS® data I obtain through this VOW is for my personal, non-commercial use only\./]],
     ["iii", [/I have a bona fide interest in the purchase, sale or lease of real estate/]],
-    ["iv", [/I will not copy, redistribute, retransmit or otherwise use any of the data or information provided/, /except in connection with my consideration of the purchase, sale or lease of an individual property/]],
-    ["v", [/I acknowledge that PropTx Innovations Inc\. \(PropTx\) owns, and holds the copyright in, the MLS® database, the data, the MLS® System and the Listing Information/]],
-    ["vi", [/I will not display, post, disseminate, distribute, publish, broadcast, transfer, sell or sublicense any of the information/, /I will not screen scrape, database scrape or data mine this VOW/]],
+    // (iv) now says "Listing Information" (Appendix B(c)(iv)), with the Rule 8.09(d) AI sentence.
+    ["iv", [/I will not copy, redistribute, retransmit or otherwise use any of the data or Listing Information provided/, /except in connection with my consideration of the purchase, sale or lease of an individual property/, /For greater certainty, I am prohibited from using any AI system or technology/]],
+    // (v) now names "the validity of PropTx's proprietary rights" (Appendix B(c)(v)).
+    ["v", [/I acknowledge PropTx Innovations Inc\.'s \(PropTx\) ownership of, and the validity of PropTx's proprietary rights and copyright in, the MLS® database/]],
+    // (vi) now says "directly or indirectly" and "to another individual or entity", with the
+    // Rule 8.09(e) AI sentence.
+    ["vi", [/I will not, directly or indirectly, display, post, disseminate, distribute, publish, broadcast, transfer, sell or sublicense any Listing Information to another individual or entity/, /"scraping" \(including "screen scraping" and "database scraping"\), "data mining"/, /For greater certainty, I am prohibited from directly or indirectly providing any Listing Information to any AI system or technology/]],
     ["vii", [/by a mouse click or a tap, is sufficient to acknowledge these terms/, /impose no financial obligation on me/, /do not create a representation agreement/]],
-    ["viii", [/I expressly authorize PropTx and other PropTx Members to access this VOW to verify compliance/, /monitor the display of Members' listings/]],
+    // (viii) now says "or their duly authorized representatives" (Appendix B(c)(viii)).
+    ["viii", [/I expressly authorize PropTx, and other PropTx Members or their duly authorized representatives, to access this VOW/, /monitoring the display of Members' listings/]],
     ["ix", [/I have read the privacy policy at miltonly\.com\/privacy/, /I consent to the collection, use and disclosure of my personal information/, /may be shared with PropTx for auditing and\/or legal purposes/]],
+    // Rule 8.09(g), naming TRREB and PropTx (MP-007).
+    ["own-g", [/I acknowledge the ownership of, and the validity of the proprietary rights and copyright in, the MLS® Database, the MLS® System, the Listing Information/, /Toronto Regional Real Estate Board \(TRREB\)/, /PropTx Innovations Inc\./]],
+    // The account-sharing prohibition (MP-007, VOW Best Practices item 39).
+    ["share", [/I will not share my username or password, let anyone else use my account, or create more than one account/, /I will not allow any other person or entity to gain access to or use the contents of this VOW/]],
     ["signin", [/My username is my email address and my password is mine alone; I will not share them/, /My password expires 90 days after I set it and I renew or reconfirm it then/, /A sign-in ends after 60 minutes without activity/]],
   ];
-  eq(VOW_TERMS_CLAUSES.map((c) => c.key).join(","), "i,ii,iii,iv,v,vi,vii,viii,ix,signin", "the clauses are in the Appendix's order, the sign-in sentence last");
+  eq(VOW_TERMS_CLAUSES.map((c) => c.key).join(","), "i,ii,iii,iv,v,vi,vii,viii,ix,own-g,share,signin", "the clauses are in the Appendix's order, then Rule 8.09(g), account-sharing, and the sign-in sentence last");
   // The text is bound to the version: a change to any clause without a bump fails here, so a
   // row that agreed to the old words cannot stay current by accident. Bump VOW_TERMS_VERSION
   // and this hash together.
-  const TEXT_SHA256_AT_VERSION: Record<number, string> = { 4: "79f97c782450be8c5d3ac6704a7039ec5ed62952e1e181a930cb2d79997ac88a" };
+  const TEXT_SHA256_AT_VERSION: Record<number, string> = { 5: "3595a8fed7e09573c3c5862b2a6d94218b3d69e4437b7d6ecc812d56d2a990ce" };
   eq(createHash("sha256").update(VOW_ACKNOWLEDGEMENT_TEXT).digest("hex"), TEXT_SHA256_AT_VERSION[VOW_TERMS_VERSION], `the terms text is the one recorded for version ${VOW_TERMS_VERSION} (a change needs a version bump and a new hash here)`);  for (const [key, patterns] of REQUIRED) {
     const clause = VOW_TERMS_CLAUSES.find((c) => c.key === key);
     ok(!!clause, `clause (${key}) is present`);
@@ -361,9 +378,9 @@ async function main() {
     const regFlag = { ...fresh, isRegistrant: false, reviewFlag: "registrant" };
     ok(!canSeeVowRecords(regFlag, now), "a registrant flag set by a person holds until cleared");
   }
-  ok(card.includes('data-vow-registrant-question') && card.includes('value="yes"') && card.includes('value="no"'), "the card asks the registrant question");
-  ok(card.includes("sayingYes") && card.includes("{ isRegistrant: true, ...(firstName.trim()"), "a yes is sent on its own, without a tick, a name or a password");
-  ok(ack.includes('reviewFlag: user.reviewFlag ?? "registrant"'), "a yes goes to the review list");
+  ok(card.includes('data-vow-registrant-question') && card.includes('value="consumer"') && card.includes('value="registrant"') && card.includes('value="reviewer"'), "the card asks the registrant question with the three MP-007 answers");
+  ok(card.includes("declaringNonConsumer") && card.includes("{ declaration, ...(firstName.trim()"), "a non-consumer answer is sent on its own, without a tick, a name or a password");
+  ok(ack.includes("reviewFlag: user.reviewFlag ?? REVIEW_FLAG.registrant"), "a registrant yes goes to the review list");
   {
     const first = { ...rowBase, firstName: null, vowAcknowledgedAt: null, vowAcknowledgementVersion: null, vowAcknowledgementText: null, passwordHash: null, passwordSetAt: null, isRegistrant: null };
     const yes = await planAcknowledgement(first, { isRegistrant: true }, ops(false), ctx);
@@ -380,14 +397,150 @@ async function main() {
   const audit = readFileSync("src/lib/vow-audit.ts", "utf8");
   ok(audit.includes('reviewFlag: "suspicious-access"') && audit.includes("where: { id: userId, reviewFlag: null }"), "the tracking sets the flag once and never clears it");
   const access = readFileSync("src/lib/vow-access.ts", "utf8");
-  ok(!/reviewFlag === "suspicious-access"/.test(access) && /reviewFlag === "registrant"/.test(access), "vow-access.ts refuses on the registrant flag and never on the suspicious one");
+  // MP-007 refactored the literals into REVIEW_FLAG: the gate refuses on registrant and
+  // reviewer-hold, never on suspicious-access (the runtime assertions above prove the behaviour).
+  ok(/reviewFlag === REVIEW_FLAG\.registrant/.test(access) && /REVIEW_FLAG\.reviewerHeld/.test(access) && !/=== REVIEW_FLAG\.suspicious\b/.test(access), "vow-access.ts refuses on the registrant and reviewer-hold flags and never on the suspicious one");
+
+  // ── 7. the reviewer path (MP-007, R-8.21) ─────────────────────────────────────
+  {
+    eq(readDeclaration({ declaration: "reviewer" }), "reviewer", "readDeclaration reads the reviewer answer");
+    eq(readDeclaration({ declaration: "consumer" }), "consumer", "readDeclaration reads the consumer answer");
+    eq(readDeclaration({ isRegistrant: true }), "registrant", "readDeclaration maps the legacy boolean true to registrant");
+    eq(readDeclaration({ isRegistrant: false }), "consumer", "readDeclaration maps the legacy boolean false to consumer");
+    eq(readDeclaration({}), null, "readDeclaration returns null when unanswered");
+
+    const first = { ...rowBase, firstName: null, vowAcknowledgedAt: null, vowAcknowledgementVersion: null, vowAcknowledgementText: null, passwordHash: null, passwordSetAt: null, isRegistrant: null };
+    const rev = await planAcknowledgement(first, { declaration: "reviewer", firstName: "Reviewer" }, ops(false), ctx);
+    ok(rev.ok && rev.reviewer === true && !rev.agreement && rev.password.kind === "none" && (rev.registrant?.isRegistrant ?? true) === false, "a reviewer answer is stored on its own, held, nothing else asked");
+
+    // A held reviewer (reviewFlag reviewer-hold) sees no records and shows the held state; a
+    // cleared reviewer (reviewFlag reviewer) is a consumer again and refuses nothing.
+    const heldReviewer = { ...fresh, reviewFlag: REVIEW_FLAG.reviewerHeld };
+    ok(!canSeeVowRecords(heldReviewer, now) && vowStepsLeft(heldReviewer, now).reviewerHeld, "a held reviewer sees no records and is flagged reviewerHeld");
+    const clearedReviewer = { ...fresh, reviewFlag: REVIEW_FLAG.reviewerCleared };
+    ok(canSeeVowRecords(clearedReviewer, now) && !vowStepsLeft(clearedReviewer, now).reviewerHeld, "a cleared reviewer sees records like any consumer");
+
+    eq(REVIEW_FLAG.reviewerHeld, "reviewer-hold", "the held flag value");
+    eq(REVIEW_FLAG.reviewerCleared, "reviewer", "the cleared flag value");
+    ok(ack.includes("REVIEW_FLAG.reviewerHeld") && ack.includes("sendReviewerHeldOwnerEmail"), "the route sets the reviewer-hold flag and notifies the owner");
+
+    const card2 = readFileSync("src/components/vow/VowAcknowledgementPrompt.tsx", "utf8");
+    ok(card2.includes('value="reviewer"') && card2.includes("REVIEWER_ANSWER") && card2.includes("data-vow-reviewer-held"), "the card offers the reviewer answer and has the held state");
+    // The reviewer copy carries the never-share sentence and, with a contact, the write-in step.
+    const notice = reviewerPath("desk@example.com");
+    ok(notice.some((p) => /Administrator credentials are never shared, with a reviewer or with anyone else/.test(p)), "the reviewer notice carries the never-share sentence");
+    ok(notice.some((p) => /write to desk@example\.com/.test(p)), "the reviewer notice names the contact address when set");
+    ok(/reach us through the \/privacy page/.test(reviewerPath(null).join(" ")), "the reviewer notice names the contact page when no address is set");
+    ok(/held for review/.test(reviewerHeldMessage(null)), "the held message says it is held for review");
+    eq(REVIEWER_ANSWER, "I am reviewing this VOW for PropTx or the Toronto Regional Real Estate Board.", "the reviewer answer wording");
+
+    const hold = readFileSync("src/lib/vow/hold.ts", "utf8");
+    ok(hold.includes("REVIEW_FLAG.reviewerHeld") && hold.includes("REVIEW_FLAG.reviewerCleared"), "clearReviewerHold turns reviewer-hold into the cleared label");
+    const deskPage = readFileSync("src/app/admin/vow/page.tsx", "utf8");
+    ok(deskPage.includes("listHeldReviewers") && deskPage.includes("verifyAdminCookieValue"), "the desk lists held reviewers behind the admin cookie");
+    const deskActions = readFileSync("src/app/admin/vow/actions.ts", "utf8");
+    ok(deskActions.includes("verifyAdminCookieValue") && deskActions.includes("clearReviewerHold"), "the desk's clear action guards on the admin cookie");
+    for (const f of ["src/app/signin/page.tsx", "src/app/terms/page.tsx", "src/app/saved/page.tsx"]) {
+      ok(readFileSync(f, "utf8").includes("ReviewerNotice"), `${f} carries the reviewer notice`);
+    }
+  }
+
+  // ── 8. the hard throttle (MP-007, R-8.13) ─────────────────────────────────────
+  {
+    eq(THROTTLE_LIMITS.consumerHour, 120, "120 inquiries an hour per consumer");
+    eq(THROTTLE_LIMITS.consumerDay, 600, "600 a day per consumer");
+    eq(THROTTLE_LIMITS.ipHour, 300, "300 an hour per IP");
+    ok(!overLimit({ consumerHour: 119, consumerDay: 0, ipHour: 0 }), "119 in the hour passes");
+    ok(overLimit({ consumerHour: 120, consumerDay: 0, ipHour: 0 })?.limit === "consumerHour", "the 121st request (120 already logged) is refused on the hour");
+    ok(overLimit({ consumerHour: 0, consumerDay: 600, ipHour: 0 })?.limit === "consumerDay", "600 a day is refused");
+    ok(overLimit({ consumerHour: 0, consumerDay: 0, ipHour: 300 })?.limit === "ipHour", "300 an hour per IP is refused");
+    ok(!overLimit({ consumerHour: 0, consumerDay: 0, ipHour: 0 }), "an idle consumer is not throttled");
+    // Every surface MP-006's trail covers enforces the throttle after the gate.
+    for (const [f] of SURFACES) {
+      const src = readFileSync(f, "utf8");
+      ok(src.includes("enforceVowThrottle("), `${f} enforces the hard throttle`);
+      ok(src.indexOf("canSeeVowRecords(") < src.indexOf("enforceVowThrottle("), `${f} throttles after the gate`);
+    }
+    // The audit table exists and cascades with the User.
+    ok(readFileSync("prisma/schema.prisma", "utf8").includes("model VowThrottle"), "the VowThrottle audit table is in the schema");
+    ok(readFileSync("src/lib/vow/throttle.ts", "utf8").includes("prisma.vowThrottle.create") && readFileSync("src/lib/vow/throttle.ts", "utf8").includes("findFirst"), "the throttle writes one row per window (dedup by findFirst)");
+  }
+
+  // ── 9. the per-consumer export, aligned to Homesly (MP-007, Appendix B(b)) ─────
+  {
+    eq(CONSUMER_HEADER.join(","), "consumer_id,email,name,created_at,email_verified_at,disabled_at,held_at,terms_accepted_at,terms_version,password_set_at,password_expires_at,retain_until,password_scheme,password_held_as", "the consumer header matches Homesly's audit-report columns");
+    eq(CONSUMER_EVENT_HEADER.join(","), "at,kind,detail,ip_hash,user_agent,session_id", "the event header matches Homesly's");
+    eq(hashSchemeOf("$2a$12$abcdefghijklmnopqrstuv"), "bcrypt (cost 12), 128-bit salt, 184-bit hash", "the password scheme names bcrypt cost 12, never the hash");
+    eq(hashSchemeOf(null), null, "no password, no scheme");
+    ok(!PASSWORD_HELD_AS.includes("$2") && /one-way hash/.test(PASSWORD_HELD_AS), "the held-as text names a one-way hash and no bytes");
+    const row: ConsumerRow = {
+      id: "u1", email: "person@example.com", firstName: "Aamir", createdAt: new Date(now.getTime() - 40 * DAY),
+      erasureRequestedAt: null, reviewFlag: null, reviewFlaggedAt: null, vowAcknowledgedAt: now,
+      vowAcknowledgementVersion: VOW_TERMS_VERSION, passwordHash: "$2a$12$x", passwordSetAt: new Date(now.getTime() - 10 * DAY),
+    };
+    const report = buildConsumerReport(row, {
+      access: [{ at: now, kind: "street-records", scope: "pine-street-milton", path: "/api/streets/pine-street-milton/sold-records", recordCount: 12, ip: "1.2.3.4", userAgent: "UA" }],
+      consents: [{ at: new Date(now.getTime() - 10 * DAY), version: VOW_TERMS_VERSION, ip: "1.2.3.4", userAgent: "UA" }],
+      throttles: [{ at: now, limit: "consumerHour", count: 120, max: 120, ip: "1.2.3.4" }],
+    });
+    eq(report.consumer.email, "person@example.com", "the report carries the username (the email)");
+    eq(report.consumer.passwordScheme, "bcrypt (cost 12), 128-bit salt, 184-bit hash", "the report names the hashing scheme");
+    ok(report.consumer.passwordExpiresAt !== null && report.consumer.retainUntil !== null, "the report carries the expiry and the 180-day retain-until");
+    eq(report.counts.reads, 1, "the report counts the read");
+    eq(report.counts.agreements, 1, "the report counts the agreement");
+    eq(report.counts.throttles, 1, "the report counts the throttle");
+    const csv = consumerReportCsv(report);
+    ok(csv.startsWith("consumer_id,email,name,"), "the CSV opens with the consumer header");
+    ok(!csv.includes("$2a$12$x"), "the CSV never contains the password hash bytes");
+    ok(csv.includes("bcrypt (cost 12)"), "the CSV names the scheme");
+    ok(readFileSync("scripts/export-vow-access-log.ts", "utf8").includes("buildConsumerReport") && readFileSync("scripts/export-vow-access-log.ts", "utf8").includes("--consumer"), "the shell export builds the same per-consumer report");
+    ok(readFileSync("src/app/api/admin/vow-access/route.ts", "utf8").includes('p.get("consumer")') && readFileSync("src/app/api/admin/vow-access/route.ts", "utf8").includes("consumerReportCsv"), "the admin route serves the per-consumer CSV");
+    // The columns exist so a compiler change cannot silently drop one.
+    void CONSUMER_ROW_SELECT;
+  }
+
+  // ── 10. erasure anonymises, it does not cascade (MP-007, from MC-044) ──────────
+  {
+    const upd = anonymiseUpdate(now);
+    eq(upd.verified, false, "anonymise blocks sign-in");
+    eq(upd.erasureRequestedAt, now, "anonymise records when the request was honoured");
+    eq(upd.phone, null, "anonymise strips the phone");
+    ok(Array.isArray(upd.savedListings) && (upd.savedListings as unknown[]).length === 0, "anonymise clears saved listings");
+    eq(upd.homeStreetSlug, null, "anonymise strips the home street");
+    eq(upd.consentText, null, "anonymise strips the marketing-consent record");
+    // The mandated record is KEPT: none of Appendix B(b)'s fields is nulled by the update.
+    for (const kept of ERASURE_KEEPS) {
+      ok(!(kept in upd), `anonymise keeps ${kept} (Appendix B(b) requires it for 180 days)`);
+    }
+    // The retention gate: a credentialed row is purgeable only 180 days past the password expiry.
+    ok(!isPurgeable({ passwordHash: "$2a$12$x", passwordSetAt: new Date(now.getTime() - 10 * DAY) }, now), "a fresh credential is not purgeable");
+    ok(!isPurgeable({ passwordHash: "$2a$12$x", passwordSetAt: new Date(now.getTime() - (90 + 179) * DAY) }, now), "one day inside the window is not purgeable");
+    ok(isPurgeable({ passwordHash: "$2a$12$x", passwordSetAt: new Date(now.getTime() - (90 + 181) * DAY) }, now), "past 180 days after expiry, the row is purgeable");
+    ok(!isPurgeable({ passwordHash: null, passwordSetAt: null }, now), "a row with no password is not this path's concern");
+    ok(readFileSync("scripts/vow-erasure.ts", "utf8").includes("anonymiseUpdate") && readFileSync("scripts/vow-erasure.ts", "utf8").includes("isPurgeable"), "the erasure script anonymises then purges past the window");
+    const privacy2 = readFileSync("src/app/privacy/page.tsx", "utf8");
+    ok(/we keep that\s+access record for 180 days as our MLS/.test(privacy2.replace(/\s+/g, " ")) || /access log are kept for\s+at least 180 days/.test(privacy2.replace(/\s+/g, " ")), "/privacy says the access record is kept 180 days as the MLS rules require");
+    ok(!/\(REBBA\)/.test(privacy2), "/privacy no longer says (REBBA)");
+    ok(/Trust in Real Estate Services Act, 2002 \(TRESA\)/.test(privacy2), "/privacy names the statute's current short name (TRESA)");
+    ok(readFileSync("src/lib/privacy/request.ts", "utf8").includes("do not delete the row") && readFileSync("src/lib/privacy/request.ts", "utf8").includes("vow-erasure"), "the desk instruction carries the VOW anonymise-not-delete exception");
+  }
+
+  // ── 11. MP-006's open items MC-044 flagged (MP-007 item 6) ─────────────────────
+  {
+    const provider = readFileSync("src/components/UserProvider.tsx", "utf8");
+    ok(provider.includes("useSearchParams") && provider.includes("RouteActivity") && provider.includes("Suspense"), "the session clock is wound on a search-param change too, inside Suspense (SEO-safe)");
+    const card3 = readFileSync("src/components/vow/VowAcknowledgementPrompt.tsx", "utf8");
+    ok(card3.includes('needsRenewal') && card3.includes('"Password renewal"'), "the renewal kicker is not 'One-time setup'");
+    ok(card3.includes("me?.contact") || card3.includes("contact ?"), "the registrant wall uses the contact address and renders nothing when unset");
+    ok(readFileSync("src/lib/compliance/contact.ts", "utf8").includes("CONTACT_EMAIL") && readFileSync("src/lib/compliance/contact.ts", "utf8").includes("return null"), "contactEmail() reads CONTACT_EMAIL and returns null when unset");
+  }
 
   if (failures.length) {
     console.error(`[vow-best-practices] FAIL: ${failures.length} of ${assertions} assertions:`);
     for (const f of failures) console.error("  - " + f);
     process.exit(1);
   }
-  console.log(`[vow-best-practices] PASS: ${assertions} assertions. 90-day password, 60-minute inactivity, nine clauses at version ${VOW_TERMS_VERSION}, the trail on ${SURFACES.length} surfaces.`);
+  console.log(`[vow-best-practices] PASS: ${assertions} assertions. v${VOW_TERMS_VERSION} clauses word-for-word against Appendix B(c) with the AI sentences; the reviewer path, the hard throttle on ${SURFACES.length} surfaces, the per-consumer export, and anonymising erasure.`);
 }
 
 main().catch((err) => {
