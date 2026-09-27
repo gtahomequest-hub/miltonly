@@ -101,14 +101,14 @@ function ok(cond: boolean, label: string) {
   const sel = street.match(/export const STREET_LISTING_SELECT = \{([\s\S]*?)\} satisfies Prisma\.ListingSelect;/);
   ok(!!sel, "street-data.ts exports STREET_LISTING_SELECT as a Prisma.ListingSelect");
   const selected = sel ? [...sel[1].matchAll(/(\w+)\s*:\s*true\b/g)].map((m) => m[1]) : [];
-  ok(selected.length === 15, `the street select names fifteen columns (got ${selected.length})`);
+  ok(selected.length === 16, `the street select names sixteen columns (got ${selected.length})`);
   for (const c of ["photos", "description", ...VOW_ONLY_FIELDS]) ok(!selected.includes(c), `the street select does not name ${c}`);
   for (const c of ["mlsNumber", "address", "status", "permAdvertise", "propertyType", "price", "listOfficeName"]) ok(selected.includes(c), `the street select names ${c}`);
   ok(/streetSlug: \{ in: siblingSlugs \}, permAdvertise: true \},\s*orderBy: \{ listedAt: "desc" \},\s*select: STREET_LISTING_SELECT,/.test(street), "the street's listing pull carries the select");
   const pulls = street.split("prisma.listing.findMany(").slice(1).map((seg) => seg.slice(0, seg.indexOf("})") + 2));
   ok(pulls.length > 0 && pulls.every((seg) => /\bselect:/.test(seg)), `every prisma.listing.findMany in street-data.ts carries a select (${pulls.filter((seg) => !/\bselect:/.test(seg)).length} without)`);
   ok(/photos\[1\] AS photo/.test(street) && /r\.status === "active"/.test(street), "the card's photo is the first URL of the active rows, read separately");
-  ok(/dataCached\(\(\) => readStreetListings\(siblingSlugs\), \["street-listings:v1", written, \.\.\.siblingSlugs\],\s*\{\s*revalidate: 3600,\s*tags: \[LISTING_ROWS_TAG\],?/.test(street), "the rows read through dataCached for an hour under LISTING_ROWS_TAG, keyed by the write stamp");
+  ok(/dataCached\(\(\) => readStreetListings\(siblingSlugs\), \["street-listings:v2", written, \.\.\.siblingSlugs\],\s*\{\s*revalidate: 3600,\s*tags: \[LISTING_ROWS_TAG\],?/.test(street), "the rows read through dataCached for an hour under LISTING_ROWS_TAG, keyed by the write stamp");
   ok(/_max: \{ updatedAt: true \}/.test(street) && /_count: \{ _all: true \}/.test(street), "the write stamp is the row count and the latest updatedAt");
   ok(/export const getStreetPageData = perRequest\(async function getStreetPageData\(/.test(street), "getStreetPageData is memoised per request");
   ok(!/from "(\.\/|@\/lib\/)cache"/.test(street), "street-data.ts does not import the Upstash cached() helper");

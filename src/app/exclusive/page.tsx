@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
   title: `Exclusive Listings by ${config.realtor.name}`,
-  description: `Properties personally listed and represented by ${config.realtor.name} · ${config.brokerage.name.replace(", Brokerage", "")}. ${config.CITY_NAME} ${config.CITY_PROVINCE} exclusive homes for sale and for rent.`,
+  description: `Properties personally listed and represented by ${config.realtor.name} · ${config.brokerage.name}. ${config.CITY_NAME} ${config.CITY_PROVINCE} exclusive homes for sale and for rent.`,
   canonical: `${config.SITE_URL}/exclusive`,
 });
 
@@ -23,6 +23,13 @@ function formatBeds(bedsMin: number, bedsMax: number) {
   if (bedsMax > 0) return `${bedsMin}+${bedsMax} bed`;
   return `${bedsMin} bed`;
 }
+
+// The source line every card carries (MC-036, VOW Best Practices item 9): an exclusive is the
+// same price/address/beds shape as an MLS card, and the badge alone does not say where it came
+// from. Rendered inside the price element so it inherits the price's font, size and colour,
+// the way ListingBrokerage does on the MLS surfaces.
+const SOURCE_LINE = `Not an MLS listing. Listed exclusively by ${config.brokerage.name}.`;
+const SOURCE_STYLE = { display: "block", font: "inherit", color: "inherit", marginTop: "0.2em" } as const;
 
 export default async function ExclusivePage() {
   const listings = await prisma.exclusiveListing.findMany({
@@ -40,7 +47,7 @@ export default async function ExclusivePage() {
           Exclusive Listings
         </h1>
         <p className="text-[14px] text-white/75 max-w-[560px] mx-auto leading-relaxed">
-          Properties personally listed and represented by {config.realtor.name} ·<br className="hidden sm:block" /> {config.brokerage.name.replace(", Brokerage", "")}
+          Properties personally listed and represented by {config.realtor.name} ·<br className="hidden sm:block" /> {config.brokerage.name}
         </p>
       </section>
 
@@ -90,8 +97,9 @@ export default async function ExclusivePage() {
 
                     {/* Body */}
                     <div className="p-4 flex-1 flex flex-col">
-                      <p className="text-[22px] font-extrabold text-[#073126] tracking-[-0.02em]">
+                      <p className="text-[22px] font-extrabold text-[#073126] tracking-[-0.02em]" data-price>
                         {isComingSoon ? "Contact for price" : formatPrice(l.price, l.priceType)}
+                        <span data-brokerage style={SOURCE_STYLE}>{SOURCE_LINE}</span>
                       </p>
                       <p className="text-[13px] text-[#6b6f6a] mt-1">
                         {l.address}

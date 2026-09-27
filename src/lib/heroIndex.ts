@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { getSoldDb } from "@/lib/db";
 import { surfacedStreetWhere } from "@/lib/streetSurface";
 import { resolveStreetName } from "@/lib/streetName";
+import { DISPLAY_MONTHS } from "@/lib/vowWindow";
 
 export interface HeroIndexEntry {
   type: "neighbourhood" | "street" | "condo";
@@ -51,8 +52,11 @@ export async function getHeroIndex(): Promise<HeroIndexEntry[]> {
       select: { slug: true, name: true, address: true, buildingAddress: true, totalUnits: true, streetNumber: true, streetSlug: true, displayName: true },
     }),
     soldDb
+      // "N homes" is a displayed figure, so it takes the display window (MC-037)
       ? (soldDb`SELECT street_slug, COUNT(DISTINCT address)::int AS homes
-           FROM sold.sold_records WHERE street_slug IS NOT NULL GROUP BY street_slug` as unknown as Promise<
+           FROM sold.sold_records WHERE street_slug IS NOT NULL
+             AND sold_date >= NOW() - (INTERVAL '1 month' * ${DISPLAY_MONTHS})
+           GROUP BY street_slug` as unknown as Promise<
           Array<{ street_slug: string; homes: number }>
         >)
       : Promise.resolve([] as Array<{ street_slug: string; homes: number }>),

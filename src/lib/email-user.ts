@@ -90,12 +90,16 @@ export interface DealAlertSend {
  * It refuses rather than sends when the unsubscribe link cannot be signed: a commercial email
  * with no working unsubscribe is the thing the Act prohibits, and the caller reads `sent` to
  * decide whether to stamp the watch.
+ *
+ * MC-036: `displayAddress` is on every match, and the email prints "Address on request" for a
+ * withheld listing (InternetAddressDisplayYN = N), the same placeholder every card shows; the
+ * caller redacts the row before it gets here, so the raw address is not in the argument either.
  */
 export async function sendDealAlertEmail(
   email: string,
   firstName: string | null,
   searchName: string,
-  matches: { address: string; price: number; mlsNumber: string; propertyType: string; listOfficeName?: string | null }[],
+  matches: { address: string; displayAddress: boolean; price: number; mlsNumber: string; propertyType: string; listOfficeName?: string | null }[],
   watchId: string,
   origin?: string,
   env: string = "production",
@@ -116,6 +120,7 @@ export async function sendDealAlertEmail(
   const site = origin || config.SITE_URL;
   const listName = searchName ? searchName.charAt(0).toLowerCase() + searchName.slice(1) : "listing alerts";
   const footer = emailFooter({ unsubscribeUrl: unsubscribe, listName, origin });
+  const addressOf = (m: { address: string; displayAddress: boolean }) => (m.displayAddress ? m.address : "Address on request");
 
   const listItems = matches
     .slice(0, 10)
@@ -123,7 +128,7 @@ export async function sendDealAlertEmail(
       (m) =>
         `<tr>
           <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">
-            <a href="${site}/listings/${m.mlsNumber}" style="color:#07111f;font-weight:600;text-decoration:none;font-size:14px;">${m.address}</a>
+            <a href="${site}/listings/${m.mlsNumber}" style="color:#07111f;font-weight:600;text-decoration:none;font-size:14px;">${addressOf(m)}</a>
             <br/><span style="color:#94a3b8;font-size:11px;">${m.propertyType} · MLS ${m.mlsNumber}</span>
           </td>
           <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;color:#07111f;font-size:14px;">$${m.price.toLocaleString()}${
@@ -139,7 +144,7 @@ export async function sendDealAlertEmail(
   const text = [
     `Hi ${firstName || "there"}, ${matches.length} new listing${plural} match "${searchName}".`,
     "",
-    ...matches.slice(0, 10).map((m) => `- ${m.address}, $${m.price.toLocaleString()}${brokerageDisplayName(m.listOfficeName) ? `, listed by ${brokerageDisplayName(m.listOfficeName)}` : ""}: ${site}/listings/${m.mlsNumber}`),
+    ...matches.slice(0, 10).map((m) => `- ${addressOf(m)}, $${m.price.toLocaleString()}${brokerageDisplayName(m.listOfficeName) ? `, listed by ${brokerageDisplayName(m.listOfficeName)}` : ""}: ${site}/listings/${m.mlsNumber}`),
     "",
     `View all on ${config.SITE_NAME}: ${site}/saved`,
     footer.text,

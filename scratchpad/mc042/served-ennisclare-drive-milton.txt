@@ -1,0 +1,23 @@
+# served on https://miltonly.com/streets/ennisclare-drive-milton while published (fetched 2026-09-23 ~20:53 local, build bfb6e74)
+
+meta description: Ennisclare Drive, Milton: 1 sale in the last 12 months on record, current listings, and the full street read. Ennisclare Drive is a rural residential road.
+JSON-LD Place.description: Ennisclare Drive is a rural residential road in the Rural Nassagaweya area of Milton, sitting well north of the town's built-up grid.
+
+## profile (rendered sentences)
+[about]
+  Ennisclare Drive is a rural residential road in the Rural Nassagaweya area of Milton, sitting well north of the town's built-up grid. This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets. Milton's urban core, the GO Station, and the highway network all sit a drive away, not a walk. What the street offers is distance from the town and proximity to the rural fabric that surrounds it.
+[amenities] What's nearby
+  Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in the same range.
+[market] The market right now
+  Ennisclare Drive trades rarely. No price range, no per-type figure, and no days-on-market read can be stated with any confidence, and none is offered here.
+  Suitability for this street is therefore a question of fit rather than of price benchmarking, and the sections that follow carry that discussion. What can be said is that activity here is episodic: a home comes to market, and then the street goes quiet again for an extended period. Readers weighing Ennisclare Drive against other Milton addresses should treat the street's own record as effectively silent on price and lean instead on the wider neighbourhood context set out below.
+[neighbourhoodComparable] Comparable homes nearby
+  Homes in this cohort have been taking time to clear, with days on market running well beyond what a busier Milton pocket would show, and the sold-to-ask relationship points to meaningful negotiation room rather than buyers paying at or near asking. Taken together, the neighbourhood picture is one of a slower, more deliberate market where asking prices and final sale prices diverge, and where the pool of comparable detached sales is deep enough to give the read some weight even though the street itself offers almost nothing to work with.
+
+## FAQ (FAQPage JSON-LD, as served)
+Q: How fast do homes sell on Ennisclare Drive?
+A: There is not enough recent activity on Ennisclare Drive to describe a selling pace for the street itself.
+Q: What kinds of homes are on Ennisclare Drive?
+A: The street's recorded stock is detached housing. There is not enough turnover to describe a broader type mix with confidence.
+Q: Is Ennisclare Drive new construction or established?
+A: The street reads as established rather than new construction, with detached housing and very little turnover. There is not enough recent activity to date the stock precisely.

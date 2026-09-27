@@ -18,11 +18,13 @@
 //
 // THE MARKUP CONTRACT IS UNCHANGED: one element per address, `id` the bare house number, the
 // detail in one `data-d`, a live listing as a <span> with two real links. The prebuild guard
-// (scripts/test-address-anchors.ts) reads these back out of the render.
+// (scripts/test-address-anchors.ts) reads these back out of the render. The live link names
+// the listing brokerage after the status word (MC-036, PropTx item 7: a status word is a
+// listing view), in the link's own style; a mark without a live listing pays nothing for it.
 import { useRef, useState } from 'react';
 
-/** [number, top, even, labelled, detail, activeHref] */
-export type MarkTuple = [number, number, 0 | 1, 0 | 1, string, string | null];
+/** [number, top, even, labelled, detail, active], active being [href, brokerage] or null */
+export type MarkTuple = [number, number, 0 | 1, 0 | 1, string, [string, string | null] | null];
 /** [name, href, top, fraction] */
 export type TickTuple = [string, string | null, number, number];
 /** A cross street placed between the marks it falls among, in number order. */
@@ -159,8 +161,8 @@ export function LadderTrack({
               <a href={`#${number}`}>{number}</a>
               <span className="s-d">
                 {detail}
-                <a className="s-lv" href={active}>
-                  Listed now
+                <a className="s-lv" href={active[0]}>
+                  {active[1] ? `Listed now by ${active[1]}` : 'Listed now'}
                 </a>
               </span>
             </span>

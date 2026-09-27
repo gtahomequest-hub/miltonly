@@ -121,3 +121,4 @@ tmp-*
 scratchpad/audit/*
 # The nightly audit report and its state are tracked: the diff against the previous night reads them.
 !scratchpad/audit/nightly/
+!scratchpad/audit/morning/

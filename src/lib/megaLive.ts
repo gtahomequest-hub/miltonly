@@ -411,7 +411,7 @@ function composeRent(i: MegaInputs): Record<string, MegaItemContent> {
         : [fig("menu-rent-now", available), t(` ${plural(r.available, "home", "homes")} for rent in Milton, available now.`)],
       cards: cards(r.cards),
       strip: x.strips.rent,
-      note: "Every home advertised for lease on the MLS today, newest first. Asking rents, as the feed states them.",
+      note: "Homes advertised for lease on the MLS, newest first. Asking rents, as the feed states them.",
     },
     hoods: {
       sub: `${formatCount(i.hubs.length)} neighbourhoods`,

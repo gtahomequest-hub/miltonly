@@ -20,6 +20,7 @@ import { FooterSearch } from './FooterSearch';
 import { BriefSignup } from '../nav/BriefSignup';
 import './footer.css';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
+import { VOW_NOTICES } from "@/lib/vowNotice";
 
 interface Props {
   footer: FooterData;
@@ -113,8 +114,14 @@ export function HomeFooter({ footer, brand, context }: Props) {
 
         <div className="m-compliance">
           RECO / TREB / VOW compliance disclosures · IDX #{brand.idx} · VOW #{brand.vow} · MLS® data
-          displayed under the terms of the applicable feed agreements. Information deemed reliable
-          but not guaranteed. © Miltonly.
+          displayed under the terms of the applicable feed agreements.
+          {" "}
+          {/* PropTx's consumer notice, verbatim (VOW Best Practices item 5; MC-036). The footer is
+              the one element on every page type, so this is the one place the sentence cannot be
+              missing from a surface that shows VOW data. */}
+          <span data-vow-notice>{VOW_NOTICES}</span>
+          {" "}
+          Information deemed reliable but not guaranteed. © Miltonly.
           {" "}
           {/* Required by the Open Government Licence – Milton wherever its data is published.
               Map pins, street positions, park and school locations all derive from it. */}

@@ -1,0 +1,9 @@
+PROD spot checks 12:29 on {"commit":"5f8cdb099850f1eb75bb09cc71a3cf1338368a75","builtA
+/about: 'RE/MAX Hall of Fame' card 1 · 'Serving Milton Since 2011' 1 · top-tier/Highest career/Outstanding sales 0 · 'Executive Award' 2 and '100% Club' 2 (AgentContactSection strip, out of scope)
+/: only-claim 0 · FAQPage 0 · 'Built exclusively for Milton, Ontario' 8
+school page twitter:description: twitter:description" content="Milton Real Estate Encyclopedia. Built exclusively for Milton, Ontario. Street i
+own listing W12865908: Listed by RE/MAX Realty Specialists Inc., Brokerage | Contact Aamir Yaqoob of the listing brokerage, RE/MAX Realty Specialists Inc., Brokerage | "seller":{"@type":"Organization","name":"RE/MAX Realty Specialists Inc., Brokerage"}
+other listing W12235624: Contact Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage), not the listing brokerage (Sutton Group - Summit Realty Inc.)
+/sold: PropTx. RE/MAX Realty Specialists Inc., Brokerage
+/exclusive: 'Inc..' 0 · full name 11
+/listings showing FAQ: 5 (visible + JSON-LD + payload)

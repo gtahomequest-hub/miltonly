@@ -23,6 +23,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { sendDealAlertEmail } from "@/lib/email-user";
+import { redactAddress } from "@/lib/listings/display-gate";
 import { resolveLeadEnv } from "@/lib/lead/env";
 import { canSignUnsubscribe } from "@/lib/email/unsubscribe";
 import { NextRequest, NextResponse } from "next/server";
@@ -104,7 +105,8 @@ async function run(request: NextRequest) {
 
     if (search.propertyType) where.propertyType = search.propertyType;
     if (search.neighbourhood) where.neighbourhood = { contains: search.neighbourhood, mode: "insensitive" };
-    if (search.streetSlug) where.streetSlug = search.streetSlug;
+    // a street watch names the street, so a withheld address may not ride in it (MC-036)
+    if (search.streetSlug) { where.streetSlug = search.streetSlug; where.displayAddress = true; }
     if (search.priceMin || search.priceMax) {
       const price: Record<string, number> = {};
       if (search.priceMin) price.gte = search.priceMin;
@@ -128,12 +130,17 @@ async function run(request: NextRequest) {
       continue;
     }
 
-    const matches = await prisma.listing.findMany({
-      where,
-      select: { address: true, price: true, mlsNumber: true, propertyType: true, listOfficeName: true },
-      take: 20,
-      orderBy: { createdAt: "desc" },
-    });
+    // MC-036: displayAddress is selected and the row redacted before it reaches the email. A
+    // withheld new listing (InternetAddressDisplayYN = N) went out with its full address; it
+    // still matches, the email names it "Address on request" and links its page.
+    const matches = (
+      await prisma.listing.findMany({
+        where,
+        select: { address: true, displayAddress: true, price: true, mlsNumber: true, propertyType: true, listOfficeName: true },
+        take: 20,
+        orderBy: { createdAt: "desc" },
+      })
+    ).map(redactAddress);
 
     if (matches.length === 0) {
       report.push({ id: search.id, kind: search.kind, matches: 0 });
@@ -151,6 +158,7 @@ async function run(request: NextRequest) {
       search.name,
       matches.map((m) => ({
         address: m.address,
+        displayAddress: m.displayAddress,
         price: m.price,
         mlsNumber: m.mlsNumber,
         propertyType: m.propertyType || "Home",

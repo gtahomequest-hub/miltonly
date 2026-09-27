@@ -14,6 +14,7 @@ import { config } from '@/lib/config';
 import { REPLY_FINE_PRINT } from '@/lib/lead/finePrint';
 import type { ListingCardData, ListingsQuery, ListingsV2Data } from './types';
 import { ListingCard } from './ListingCard';
+import ListingBrokerage, { contactSeparationLine } from '@/components/listings/ListingBrokerage';
 import { FiltersBar, buildHref } from './FiltersBar';
 import { MapPanel } from './MapPanel';
 import { titleCase, shortPrice } from './format';
@@ -241,6 +242,11 @@ export function ResultsClient({ data, basePath }: { data: ListingsV2Data; basePa
             </button>
             <h3>Book a showing</h3>
             <p className="lv-modal-sub">{booking.displayAddress ? titleCase(booking.address) : 'Address on request'}</p>
+            {/* The listing's brokerage under its address, then whose form this is (MC-036, TRREB
+                item 8): the modal is our contact card, and the listing it names is held by
+                another brokerage unless the line says otherwise. */}
+            <p className="lv-modal-sub"><ListingBrokerage name={booking.listOfficeName} style={{ marginTop: 0 }} /></p>
+            <p className="lv-modal-sub" data-contact-separation>{contactSeparationLine(booking.listOfficeName)}</p>
             <p className="lv-modal-mls">MLS® {booking.mlsNumber}</p>
             <form onSubmit={submitBooking}>
               <input name="name" placeholder="Your name" autoComplete="name" />

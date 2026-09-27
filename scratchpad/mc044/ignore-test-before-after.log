@@ -1,0 +1,11 @@
+== the test before MC-045 (5b9da69), built as branch preview/mc044:
+  a push touching only docs/phase-4.1/ builds: 320e406~1..320e406 answered SKIP, expected BUILD
+  a push touching src/ builds: 6524a20~1..6524a20 answered SKIP, expected BUILD
+  an unreachable base must BUILD, not skip
+  an unreachable head must BUILD, not skip
+exit 1
+== the test after MC-045 (6e14465), built as branch preview/mc044:
+[vercel-ignore] PASS: 12 assertions.
+exit 0
+== after, built as main:
+[vercel-ignore] PASS: 12 assertions.

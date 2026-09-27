@@ -189,10 +189,17 @@ async function main() {
       } else {
         problems.push(`${r.streetSlug} ${variant}: no ${file}`);
       }
+      // A LOOP STREET MEETS THE SAME ROAD AT BOTH ENDS. Hamilton Crescent, Mara Circle and Orr
+      // Terrace each begin and end on one parent street, so the pipeline's two endpoints are the
+      // same name and true; "from Edwards Avenue to Edwards Avenue" is not a sentence, and
+      // test-video-playbook refuses the pair. The second endpoint is dropped, not invented away:
+      // the sentence then takes its one-endpoint form, "from Edwards Avenue" (MC-041).
+      const endFrom = meta.coverageFrom ?? null;
+      const endTo = meta.coverageTo ?? null;
       clips[key] = {
         durationS,
-        coverageFrom: meta.coverageFrom ?? null,
-        coverageTo: meta.coverageTo ?? null,
+        coverageFrom: endFrom,
+        coverageTo: endTo && endTo === endFrom ? null : endTo,
         capturedMetres: meta.capturedMetres ?? null,
         streetMetres: meta.streetMetres ?? null,
       };

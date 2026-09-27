@@ -108,14 +108,7 @@ console.log("\n[2] sale-active CondoBuildingGeneratorInput (recencyWeightedSold 
 const saleLease: CondoLeaseInfo = {
   leaseCount12mo: LEASE_COUNT,
   kAnonLevel: "full",
-  recentRecords: Array.from({ length: 10 }, (_, i) => ({
-    address: "490 Gordon Krantz Avenue",
-    rent: LEASE_RENT + i * 10,
-    beds: 2,
-    daysOnMarket: 14,
-    soldMonth: "2026-0" + ((i % 5) + 1),
-  })),
-  rangeStats: { min: 2_150, max: 2_750 },
+  byBed: { "2": { count: LEASE_COUNT, typicalRent: LEASE_RENT } },
 };
 const SALE_RECENCY_WEIGHTED = 6.4; // sale-only weighted score (lease excluded by schema)
 const saleActiveInput: CondoBuildingGeneratorInput = {

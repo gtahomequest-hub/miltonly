@@ -11,7 +11,7 @@
 //
 //   NODE_OPTIONS="--conditions=react-server" URBAN_HUB_ENABLED=true \
 //     npx tsx --tsconfig tsconfig.test.json scripts/regenerate-hubs-drift.ts            # dry run
-//     ... --write [--only=beaty,ford] [--limit=5]
+//     ... --write [--only=beaty,ford] [--limit=5] [--force]
 
 import { readFileSync, appendFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -33,6 +33,9 @@ function loadEnvLocal() {
 }
 loadEnvLocal();
 const WRITE = process.argv.includes("--write");
+// MC-037: --force regenerates every hub the run sees (or --only names) whether or not it has
+// drifted; the drift hash does not include the quarterly trend, and a window change moves it.
+const FORCE = process.argv.includes("--force");
 const onlyArg = process.argv.find((a) => a.startsWith("--only="));
 const ONLY = onlyArg ? new Set(onlyArg.slice(7).split(",").map((s) => s.trim()).filter(Boolean)) : null;
 const limitArg = process.argv.find((a) => a.startsWith("--limit="));
@@ -54,7 +57,7 @@ async function main() {
     if (ONLY && !ONLY.has(h.neighbourhoodSlug)) continue;
     const d = await hubDrift(h.neighbourhoodSlug);
     console.log(`${h.neighbourhoodSlug.padEnd(24)} ${(profiles.get(h.neighbourhoodSlug) ?? "?").padEnd(10)} ${d.drifted ? "DRIFTED" : "current"} (${d.reason}) stored ${d.storedHash?.slice(0, 16) ?? "-"} current ${d.currentHash ?? "-"}`);
-    if (d.drifted) drifted.push(h.neighbourhoodSlug);
+    if (d.drifted || FORCE) drifted.push(h.neighbourhoodSlug);
   }
   console.log(`\ndrifted ${drifted.length} of ${hubs.length}`);
   if (!WRITE) return;

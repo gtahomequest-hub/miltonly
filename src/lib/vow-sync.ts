@@ -118,7 +118,11 @@ export const SELECT_FIELDS: readonly string[] = [
   "InternetAddressDisplayYN", "InternetEntireListingDisplayYN",
   "PermissionToContactListingBrokerToAdvertise",
   "DDFYN", "VendorPropertyInfoStatement", "SignOnPropertyYN",
-  "OccupantType", "ShowingRequirements", "ShowingAppointments",
+  // ShowingRequirements and ShowingAppointments REMOVED from the $select (MC-036, PropTx rule
+  // 8.23(b)): instructions intended for co-operating brokers only, such as those regarding
+  // showings and access to the property, are agent-only and are not retained. The columns
+  // are hard-nulled below and the keys stripped from raw_vow_data, as PrivateRemarks was in July.
+  "OccupantType",
   "TransactionBrokerCompensation",
   "AssignmentYN", "FractionalOwnershipYN", "IslandYN", "MortgageComment",
   // Remarks & media
@@ -423,6 +427,9 @@ export const SOLD_RECORD_COLUMNS: readonly string[] = [
 function stripPrivateRemarks(rec: AmpRecord): Record<string, unknown> {
   const copy: Record<string, unknown> = { ...(rec as Record<string, unknown>) };
   delete copy.PrivateRemarks;
+  // MC-036: the showing instructions go the same way (rule 8.23(b))
+  delete copy.ShowingRequirements;
+  delete copy.ShowingAppointments;
   return copy;
 }
 
@@ -679,8 +686,10 @@ const streetSlug = identity?.canonicalSlug ?? rawSlug;
     occupant_type: r.OccupantType as string | null,
     contract_status: r.ContractStatus as string | null,
     possession_details: r.PossessionDetails as string | null,
-    showing_requirements: strArr(r.ShowingRequirements),
-    showing_appointments: r.ShowingAppointments as string | null,
+    // MC-036: agent-only showing instructions are never retained (rule 8.23(b)); hard-nulled
+    // whatever the feed sends, as broker_remarks is.
+    showing_requirements: null,
+    showing_appointments: null,
     transaction_broker_compensation: r.TransactionBrokerCompensation as string | null,
     association_amenities: strArr(r.AssociationAmenities),
     association_name: r.AssociationName as string | null,

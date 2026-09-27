@@ -5,6 +5,15 @@
 // live-marketing gate), and calls notFound() on any invalid case so we
 // never waste ad spend on stale URLs. Pulls a broad pool of same-tx-type
 // active leases (LiveListingSlider) and renders the client wrapper.
+//
+// MC-036: A WITHHELD ADDRESS IS AN INVALID CASE. InternetAddressDisplayYN = N
+// (Listing.displayAddress false) means the address, street, unit, postal code
+// and map position may not be shown. This page is one home at one address:
+// the title, the H1, the photo alts, the SMS body, the cross street in Key
+// Facts and the whole row in the client payload all carry it. There is no
+// landing page to make of it, so a withheld row is notFound() like a leased
+// one, and the slider pool excludes withheld rows because their card would
+// link here.
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -46,6 +55,7 @@ async function fetchListingForRender(mlsNumber: string) {
   if (row.transactionType !== LEASE_TX_TYPE) return null;
   if (row.leaseStatus !== LIVE_LEASE_STATUS) return null;
   if (row.permAdvertise !== true) return null;
+  if (!row.displayAddress) return null; // MC-036: no landing page for a withheld address
   return row;
 }
 
@@ -96,6 +106,7 @@ export default async function RentalsAdsListingPage({ params }: PageProps) {
   if (listing.transactionType !== LEASE_TX_TYPE) notFound();
   if (listing.leaseStatus !== LIVE_LEASE_STATUS) notFound();
   if (listing.permAdvertise !== true) notFound();
+  if (!listing.displayAddress) notFound(); // MC-036, see the header
 
   // Slider pool — top 80 active Milton lease listings across all property
   // types, ordered by recency. Same broad-pool + client-side-filter pattern
@@ -108,6 +119,9 @@ export default async function RentalsAdsListingPage({ params }: PageProps) {
       city: listing.city,
       mlsNumber: { not: listing.mlsNumber },
       permAdvertise: true,
+      // MC-036: a withheld row has no ads page to land on, and its address may not be
+      // printed on a card; it is not in the pool.
+      displayAddress: true,
     },
     orderBy: { listedAt: "desc" },
     take: SLIDER_LIMIT,

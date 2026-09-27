@@ -35,10 +35,12 @@ import type {
 // K-anonymity thresholds — identical to buildGeneratorInput.ts / street-data.ts.
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 import { resolveStreetName } from "@/lib/streetName";
+import { DISPLAY_MONTHS } from "@/lib/vowWindow";
 
 // Trend window. 30 months captures ~10 quarters of recent signal (matches the
 // depth observed for hub-scale pools like Dempsey: 141 sales / 12mo).
-const TREND_WINDOW_MONTHS = 30;
+// MC-037: the display window (src/lib/vowWindow.ts), whole quarters only; was 30 months.
+const TREND_WINDOW_MONTHS = DISPLAY_MONTHS;
 
 type SqlClient = NonNullable<ReturnType<typeof getSoldDb>>;
 
@@ -212,7 +214,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
            FROM sold.sold_records
            WHERE neighbourhood = ANY(${rawStrings}::text[])
              AND perm_advertise = TRUE AND transaction_type = 'For Sale'
-             AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+             AND sold_date >= date_trunc('quarter', NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS}) + INTERVAL '3 months' - INTERVAL '1 day')
              AND sold_date <= NOW()
            GROUP BY yr, qtr ORDER BY yr, qtr`
       : db`SELECT EXTRACT(YEAR FROM sold_date)::int AS yr,
@@ -220,7 +222,7 @@ function quarterlyQuery(rawStrings: string[] | null) {
                   COUNT(*)::int AS cnt, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) AS typical
            FROM sold.sold_records
            WHERE perm_advertise = TRUE AND transaction_type = 'For Sale'
-             AND sold_date >= NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS})
+             AND sold_date >= date_trunc('quarter', NOW() - (INTERVAL '1 month' * ${TREND_WINDOW_MONTHS}) + INTERVAL '3 months' - INTERVAL '1 day')
              AND sold_date <= NOW()
            GROUP BY yr, qtr ORDER BY yr, qtr`,
   );

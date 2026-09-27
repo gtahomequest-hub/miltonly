@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" != main ]; then exit 0; fi; B=${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}; git cat-file -e $B^{commit} || exit 1; git diff --quiet $B HEAD -- docs/phase-4.1 || exit 1; git diff --quiet $B HEAD -- . ':!scratchpad' ':!docs' ':!*.md'",
+  "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "crons": [
     {
       "path": "/api/sync/detect?secret=miltonly-cron-2026",

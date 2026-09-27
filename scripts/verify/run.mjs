@@ -32,10 +32,12 @@ import video from './checks/video.mjs';
 import phone390 from './checks/phone-390.mjs';
 import vowFields from './checks/vow-fields.mjs';
 import prerenderCoverage from './checks/prerender-coverage.mjs';
+import vowDisplay from './checks/vow-display.mjs';
+import agentOnly from './checks/agent-only.mjs';
 import { servedCommit } from './lib/build.mjs';
 import { execSync } from 'node:child_process';
 
-const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390, vowFields, prerenderCoverage];
+const ALL = [denials, schemaParity, claims, tiles, consistency, composition, coordinates, hubMeta, geometryControl, homepage, hubIntents, guideLinks, geometryFacts, nav, hubPage, sourcesFresh, footer, catchment, video, phone390, vowFields, prerenderCoverage, vowDisplay, agentOnly];
 
 const BASE = (process.env.BASE || '').replace(/\/$/, '');
 if (!BASE) {

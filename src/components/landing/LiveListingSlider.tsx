@@ -84,6 +84,8 @@ function smsBodyForFilter(key: FilterKey, listingAddr: string, tx: SliderTransac
 
 export interface LiveListingSliderListing {
   mlsNumber: string;
+  /** The pool is displayAddress=true rows only (both ads pages' slider queries, MC-036): a
+   *  withheld listing has no ads page for a card to open, and its address may not be shown. */
   address: string;
   price: number;
   bedrooms: number;
@@ -646,10 +648,12 @@ export default function LiveListingSlider({
                 <div className="px-[12px] py-[10px]">
                   <div className="text-[15px] font-medium tracking-tight text-[#f8f9fb] leading-none mb-1" data-price>
                     {formatPriceFull(listing.price)}
-                    <ListingBrokerage name={listing.listOfficeName} />
                     {transactionType === "For Lease" && (
                       <span className="text-[10px] font-normal text-[#94a3b8] ml-1">/mo</span>
                     )}
+                    {/* After the unit, not before it (MC-036): the brokerage line is
+                        display:block, so "/mo" was landing on a third line. */}
+                    <ListingBrokerage name={listing.listOfficeName} />
                   </div>
                   <div className="text-[11px] text-[#cbd5e1] whitespace-nowrap overflow-hidden text-ellipsis mb-1">
                     {streetAddr}

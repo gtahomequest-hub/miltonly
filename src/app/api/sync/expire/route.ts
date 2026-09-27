@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       status: "active",
       syncedAt: { lt: cutoff },
     },
-    select: { id: true, mlsNumber: true, address: true, syncedAt: true },
+    select: { id: true, mlsNumber: true, syncedAt: true },
   });
 
   if (staleListings.length === 0) {
@@ -67,9 +67,10 @@ export async function POST(request: NextRequest) {
     expired: result.count,
     revalidated,
     cutoff: cutoff.toISOString(),
+    // The MLS number identifies a stale row; the address is a display field that may be
+    // withheld (displayAddress=false) and does not belong in a response body.
     sample: staleListings.slice(0, 5).map((l) => ({
       mls: l.mlsNumber,
-      address: l.address,
       lastSeen: l.syncedAt,
     })),
   });

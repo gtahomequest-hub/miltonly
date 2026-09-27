@@ -94,15 +94,9 @@ If `kAnonLevel === "zero"`, collapse to one paragraph noting that the street has
 
 Heading: "The market right now" or "Trade patterns."
 
-## Lease activity per-row data (Part 4, 2026-05-09)
+## Lease activity is aggregate only (MC-036, 2026-09-21)
 
-When `input.leaseActivity.recentRecords` is present, you may cite specific recent rental comps from the array. Format: "A {N}-bedroom {propertyType} rented around ${soldPrice}/month in {soldMonth}" — quote the soldPrice (NOT the listPrice; soldPrice is what actually rented). Use 1-3 specific comps maximum to illustrate the typical pattern; do not list more than 3.
-
-Do NOT cite mlsNumbers. Do NOT cite full addresses (the address field is already PII-redacted to street + number, but quoting it directly in prose risks looking like a published lookup; aggregate framing is preferred). Use the address only as internal grounding to confirm the comp belongs to the street identity, not as prose content.
-
-When `input.leaseActivity.rangeStats` is present (k≥10), you may state "rentals on the street span ${min} to ${max} per month across the recent window."
-
-When the recentRecords array is absent (k<5 lease count), fall back to aggregate-only framing using `input.leaseActivity.byBed` typicalRent values per bed-count.
+`input.leaseActivity` carries `byBed` typical rents per bed-count and nothing else: no individual leased records, no rent range. Write the rental read from the by-bed typicals in aggregate framing ("three-bedroom homes on the street typically rent around $X a month"). Never write a single tenancy: no "rented at $X in {month}", no address, no term, no furnished state. A withheld address is never in the input and is never to be inferred.
 
 ## This section is real market analysis, not closing sentiment
 
@@ -179,7 +173,7 @@ Use specific input numbers. Do not fall back to generic categories. If the input
 
 **5. DAYS ON MARKET** — ONLY when `input.aggregates.daysOnMarket` is non-null. When it is null (fewer than five sales — D3 ruling 2026-07-20), the street has no publishable DOM: omit this element entirely and never restate a pace figure from a single sale. When present, state the typical DOM with one sentence of interpretation. Example shape: "Days on market average around X, indicating [pace read]." This section is permitted analytical vocabulary like "average" or "median" in legitimate context (the validator's contextual exception applies here).
 
-**6. RENTAL READ (pool-separated)** — when `input.leaseActivity` is present, describe the street's rental activity in its OWN sentences, sourced only from `input.leaseActivity` (typical rents per bed-count, lease velocity, furnished/unfurnished mix where the records support it). When `input.leaseActivity` is absent, omit this element entirely.
+**6. RENTAL READ (pool-separated)** — when `input.leaseActivity` is present, describe the street's rental activity in its OWN sentences, sourced only from `input.leaseActivity` (typical rents per bed-count, lease velocity). When `input.leaseActivity` is absent, omit this element entirely.
 
 **HARD RULE — sale and lease pools never mix (street-tier extension of the condo-tier transaction_type split, batch-001 remediation 2026-07-19).** Never combine a sale figure and a lease figure inside one claim, ratio, or derived number. Forbidden regardless of phrasing: lease-to-sale ratios, "N total transactions" sums that pool sales and leases together, gross yields, cap rates, rent-versus-price comparisons, and any "X leases against Y sales" construction. A sentence may cite the sale pool or the lease pool, never both. The validator hard-fails any mixed-pool claim (`mixed_pool_claim`) and the retry is costly.
 

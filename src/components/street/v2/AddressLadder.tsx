@@ -25,13 +25,16 @@
 //
 // A mark carrying a live listing is the exception and renders a real detail element, because a
 // link cannot live inside CSS generated content. It omits `data-d`, and the CSS draws the
-// generated popup only for marks that have one.
+// generated popup only for marks that have one. That link names the listing brokerage, cased
+// by the one rule every surface uses (brokerageDisplayName), because "Listed now" is a listing
+// view and PropTx wants the brokerage on every one (MC-036).
 //
 // WHAT IT MAY NOT SHOW is enforced upstream in src/lib/streetAddresses.ts: no sold price, no sold
 // date, no owner, no historical listing, no per-address coordinate. Signal green (--s-green) is
 // reserved here for the "listed now" mark and appears nowhere else in the section.
 import type { StreetV2Data } from './types';
 import type { AddressMark } from '@/lib/streetAddresses';
+import { brokerageDisplayName } from '@/components/listings/ListingBrokerage';
 import { LadderTrack, type MarkTuple, type TickTuple } from './LadderTrack';
 
 /** vertical room a number label needs before it touches its neighbour */
@@ -205,7 +208,7 @@ export function StreetAddresses({ data }: { data: StreetV2Data }) {
             mark.side === 'even' ? 1 : 0,
             labelled ? 1 : 0,
             detailOf(mark, lowEnd, highEnd),
-            mark.active ? mark.active.href : null,
+            mark.active ? [mark.active.href, brokerageDisplayName(mark.active.listOfficeName)] : null,
           ])}
           fractions={inOrder.map(({ mark }) => mark.fraction)}
         />

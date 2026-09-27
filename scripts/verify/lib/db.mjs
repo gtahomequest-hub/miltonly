@@ -11,6 +11,10 @@ import { num } from './money.mjs';
 
 export const K_ANON_PRICE = 5;
 export const K_ANON_RANGE = 10;
+/** The display window on sold records (MC-037): the same number as src/lib/vowWindow.ts
+ *  VOW_DISPLAY_MONTHS, a literal here because this file is plain ESM; the prebuild test holds
+ *  the two together. The street page's graduated fallback and the hub ladder read this window. */
+export const DISPLAY_MONTHS = 24;
 
 /** base||type — the identity a street page unions over, direction ignored. */
 export const identityKey = (slug) => {
@@ -164,6 +168,7 @@ export async function loadRecord() {
   for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) avg
                              FROM sold.sold_records
                              WHERE perm_advertise=TRUE AND transaction_type='For Sale'
+                               AND sold_date >= NOW() - (INTERVAL '1 month' * ${DISPLAY_MONTHS})
                                AND sold_date <= NOW() AND sold_price IS NOT NULL
                              GROUP BY 1`) saleFull.set(r.s, r);
   for (const r of await sold`SELECT street_slug s, COUNT(*)::int n, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sold_price) avg

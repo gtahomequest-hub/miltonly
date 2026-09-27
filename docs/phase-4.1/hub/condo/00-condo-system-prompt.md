@@ -40,6 +40,8 @@ invitations, no promotional service language. The buy/sell CTA section is the ON
 ## Prohibitions (every section — inherited verbatim)
 
 - **No em-dashes. Ever.**
+- **No "median", no "average"** (nor "averaged", "averages", "on average"). Say "typical"; the
+  typical price is not an average. The validator refuses the words anywhere in prose or an answer.
 - **No challenge-inviting superlatives** and **no realtor clichés** (see the urban header list).
 - **No invented facts.** Every concrete claim traces to a field in `CondoBuildingGeneratorInput`.
   Building attributes (`totalUnits`, `legalStories`, `managementCo`, `avgMaintenanceFee`,
@@ -48,9 +50,10 @@ invitations, no promotional service language. The buy/sell CTA section is the ON
 - **No MLS-precision prices.** W2 rounding tables apply to sale prices. Rents follow the W2 rent
   rounding (under $2,500 → nearest $50; $2,500–$3,999 → nearest $100; $4,000+ → nearest $250).
 - **No bracket-shorthand prices.** Always full rounded numbers.
-- **Per-trade claims banned.** The input exposes NO per-trade SALE rows (only aggregates), so
-  any singular per-trade sale claim is fabrication. Per-trade LEASE claims are allowed ONLY when
-  `input.lease.recentRecords` is present (k ≥ 5); below that they are fabrication.
+- **Per-trade claims banned, sale and lease.** The input exposes NO per-trade rows of either
+  kind (only aggregates), so any singular per-trade claim is fabrication. Rents may be stated
+  only as the typical for a bedroom count from `input.lease.byBed` (present only at k ≥ 5, each
+  bucket itself at k ≥ 5), rounded per the rent table.
 - **From-X-to-Y direction constraint** (Class C): every direction verb must name an explicit
   "from {prior quarter or value} to {target quarter or value}" transition, or use neutral
   language. A free-standing verb triggers `temporal_pairing`.

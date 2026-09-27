@@ -243,7 +243,7 @@ function buildFaqJson(
   return JSON.stringify([
     {
       q: `What is the average home price on ${streetName} in Milton?`,
-      a: `The average list price on ${streetName} in Milton is ${formatPrice(stats.avgListPrice)}. Register for full MLS® access to see detailed market data for this street, including historical transaction records.`,
+      a: `The average list price on ${streetName} in Milton is ${formatPrice(stats.avgListPrice)}. Sign in free to see recent closed sales on this street.`,
     },
     {
       q: `How long do homes take to sell on ${streetName} Milton?`,

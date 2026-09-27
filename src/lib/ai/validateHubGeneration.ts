@@ -259,6 +259,16 @@ export function hubInputToStreetAdapter(input: HubGeneratorInput): StreetGenerat
 // re-pointed W2 aggregate gates (per-trade, numeric, temporal) on liveMarket.
 // ---------------------------------------------------------------------------
 
+/** The words "median" and "average" (averaged, averages, on average) anywhere in prose or an
+ *  answer, with the window around the first. The voice rule is "typical", never "median";
+ *  "average" is banned the same way (MC-038) because the typical price IS a median
+ *  (PERCENTILE_CONT 0.5), so a page calling it an average is wrong, not just off-voice. */
+function findMedian(text: string): string | null {
+  const m = /\b(median|averages?|averaged|on average)\b/i.exec(text);
+  if (!m) return null;
+  return `"${m[1]}": ${text.slice(Math.max(0, m.index - 40), m.index + 46).replace(/\s+/g, " ")}`;
+}
+
 export function validateHubSectionsSubset(
   sections: HubSection[],
   input: HubGeneratorInput,
@@ -280,6 +290,14 @@ export function validateHubSectionsSubset(
         excerpt: `"${catchment.matched}": ${catchment.excerpt}`,
         severity: "hard",
       });
+    }
+
+    // The voice rule: "typical", never "median" (CLAUDE.md; the street prompt's methodology
+    // list). MC-037's regeneration wrote "a median of 92 days on market" into four hubs and
+    // nothing here refused it.
+    const median = findMedian(text);
+    if (median) {
+      violations.push({ rule: "methodology_leak", excerpt: median, severity: "hard" });
     }
 
     // liveMarket / inventorySnapshot: aggregate sections. Per-trade claims are
@@ -369,6 +387,10 @@ export function validateHubFaq(
         excerpt: `FAQ "${q}": "${catchment.matched}": ${catchment.excerpt}`,
         severity: "hard",
       });
+    }
+    const median = findMedian(`${item.question} ${item.answer}`);
+    if (median) {
+      violations.push({ rule: "methodology_leak", excerpt: `FAQ "${q}": ${median}`, severity: "hard" });
     }
 
     // Per-trade fabrication is banned in any answer (input has no per-trade rows).

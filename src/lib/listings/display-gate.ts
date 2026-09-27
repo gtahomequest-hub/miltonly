@@ -19,7 +19,7 @@ export function redactAddress<T extends { displayAddress: boolean; address: stri
   listing: T
 ): T {
   if (!listing.displayAddress) {
-    return { ...listing, address: "Address withheld by seller" };
+    return { ...listing, address: "Address on request" };
   }
   return listing;
 }

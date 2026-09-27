@@ -1,0 +1,90 @@
+# MA-008. The morning report: scripts/audit/morning/run.mjs on a GitHub runner at 06:00 Toronto,
+# so it spends no Vercel build minutes. Money (Vercel, Neon), Traffic (GSC, Web Analytics),
+# Conversion (DB1 leads), The One Thing, one email through Resend to the desk. It writes
+# scratchpad/audit/morning/<date>.md and state.json back to the branch it ran on; the commit
+# touches only scratchpad/, which the ignoreCommand in vercel.json keeps out of builds.
+#
+# Secrets (repository settings, Actions secrets): VERCEL_API_TOKEN, NEON_API_KEY,
+# GSC_SERVICE_ACCOUNT_JSON (the key file's contents), DATABASE_URL, SOLD_DATABASE_URL,
+# RESEND_API_KEY, RESEND_FROM_EMAIL. Optional: REPORT_EMAIL_TO (defaults to the desk in config.json).
+name: Morning report
+
+on:
+  schedule:
+    # 06:00 America/Toronto is 10:00 UTC in summer and 11:00 UTC in winter. GitHub delivers late,
+    # so the gate runs the first delivery of each Toronto day at or after 06:00 and skips the rest.
+    - cron: '0 10 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: morning-report
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.clock.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - id: clock
+        run: |
+          D=$(TZ=America/Toronto date +%F)
+          H=$(TZ=America/Toronto date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "dispatched by hand"
+          elif [ -f "scratchpad/audit/morning/$D.md" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "$D already reported: skipping"
+          elif [ "$H" -lt 6 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "Toronto hour is $H, before 06: skipping"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "first delivery for $D at Toronto hour $H"
+          fi
+
+  report:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The Neon HTTP driver only; the Vercel CLI comes through npx inside the script.
+      - name: Report dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/audit-deps" && cd "$RUNNER_TEMP/audit-deps"
+          echo '{"name":"audit-deps","private":true}' > package.json
+          npm install --no-audit --no-fund --no-package-lock @neondatabase/serverless@1
+
+      - name: Morning report
+        env:
+          AUDIT_DEPS: ${{ runner.temp }}/audit-deps
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SOLD_DATABASE_URL: ${{ secrets.SOLD_DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          REPORT_EMAIL_TO: ${{ secrets.REPORT_EMAIL_TO }}
+        run: node scripts/audit/morning/run.mjs
+
+      - name: Commit the report
+        if: always()
+        run: |
+          git config user.name "miltonly-audit"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scratchpad/audit/morning
+          git commit -m "report(morning): $(TZ=America/Toronto date +%F)" || { echo "nothing to commit"; exit 0; }
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"

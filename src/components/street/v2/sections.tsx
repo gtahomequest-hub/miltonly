@@ -149,11 +149,13 @@ export function StreetHero({ data, soldGate = true }: { data: StreetV2Data; sold
         )}
         {/* THE SOLD RECORD, SOLD FROM THE TOP (MA-001 change 5): the gate sat at screen 4 to 9
             with no mention above it. One line in the hero, anchored to the table, whenever the
-            page has a closed sale to show and a table to show it in. */}
+            page has a closed sale to show and a table to show it in. The count is the 12-month
+            figure; the table it lands on is the last 90 days, so the call to action promises
+            the recent ones and not every one (MC-036, item 10). */}
         {soldGateLine && (
           <a className="s-hero-gate" href="#sold-records">
-            <span className="s-hero-gate-n">{soldGateLine.count}</span> closed {soldGateLine.count === 1 ? 'sale' : 'sales'} in the last 12 months
-            <span className="s-hero-gate-cta">see every one, free →</span>
+            <span className="s-hero-gate-n">{soldGateLine.count}</span> closed {soldGateLine.count === 1 ? 'sale' : 'sales'} in the last 12 months.
+            <span className="s-hero-gate-cta">Sign in free for the recent ones →</span>
           </a>
         )}
         <p className="s-updated">Updated {formatUpdated(data.lastUpdated)}. Sales and leases from the Board&rsquo;s closed records; listings live.</p>

@@ -1,0 +1,1221 @@
+[
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "compliance",
+  "where": "market (paragraph 2; also in streetContent.description)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "On the rental side, three-bedroom homes on the street typically rent around $2,800 a month, drawn from a small pool of leases.",
+  "problem": "A point 'typical' rent is published from 2 leases. The k5 rule for a point typical is not met. With n=2 the median is the midpoint of two identifiable tenancies, so anyone who knows one rent can work out the other.",
+  "evidence": "inputJson.leaseActivity.byBed[\"3\"] = {count: 2, typicalRent: 2800}. buildGeneratorInput.ts:843 lets per-bed rents through at n >= 2 ('D3 ruling'), but line 463 of the same file says 'the by-bed typicals at k5 are the aggregate the page may carry', and CLAUDE.md sets k5 for a point typical. The live page's own tile shows 'Typical rent —' (suppressed). This sentence is stored only: the numeric-sentence filter strips it from the live page. It remains in StreetContent.description.",
+  "votes": [
+   "UPHELD: I could not refute this. The $2,800 figure is not made up: it comes straight from inputJson.leaseActivity.byBed[\"3\"] = {count: 2, typicalRent: 2800}. That makes it grounded, but it still breaks the k-anonymity rule. The stored sentence reads: \"On the rental side, three-bedroom homes on the street typically rent around $2,800 a month, drawn from a small pool of leases.\" It sits in market pa…",
+   "UPHELD: I could not refute this. The input does ground the figure, but the input is what breaks the rule, so the grounding doesn't help.\n\n1. Where the figure comes from. It is in the input: inputJson.leaseActivity.byBed[\"3\"] = {\"count\":2,\"typicalRent\":2800}. aggregates.leasesCount is 3. It is not in the physical, geography, road, cross-street or place blocks (street, crossStreets, nearby, commute,…",
+   "UPHELD: I could not refute this. The $2,800 figure does come from the model's input, but that input is exactly where the k5 rule is broken. Nothing is fabricated, so this is a compliance problem, not a grounding one.\n\n1) Grounding: inputJson.leaseActivity = {\"byBed\":{\"3\":{\"count\":2,\"typicalRent\":2800}}} and aggregates.leasesCount = 3. The stored market paragraph reads \"On the rental side, three-be…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "compliance",
+  "where": "faq Q7 (What's the rental market like on Gowland Crescent?)",
+  "lenses": [
+   "numeric",
+   "compliance"
+  ],
+  "quote": "Three-bedroom leases on the crescent have been settling around $2,800.",
+  "problem": "The same sub-k5 point rent as the market section (n=2). 'Have been settling' also implies a trend over time that two leases cannot support.",
+  "evidence": "inputJson.leaseActivity.byBed[\"3\"].count = 2, typicalRent = 2800. There is no lease trend field. Stored in both faqJson rows. On the live page this sentence is stripped from the FAQ and from the FAQPage JSON-LD; the rest of the answer is served.",
+  "votes": [
+   "UPHELD: I could not refute this. The dollar figure is grounded, but the violation is plain.\n\n1. **The figure comes from the input.** \"Three-bedroom leases on the crescent have been settling around $2,800.\" matches inputJson.leaseActivity.byBed[\"3\"] = {count: 2, typicalRent: 2800}. That is the only rent in inputJson. Nothing else could ground it or clear it:\n   - aggregates: kAnonLevel \"thin\", typi…",
+   "UPHELD: I could not refute this finding.\n\n**The figure is grounded, so it was not invented.** inputJson.leaseActivity.byBed[\"3\"] = {count:2, typicalRent:2800}. The market prompt also tells the model to use it (docs/phase-4.1/02b-market-prompt.md lines 97-99 and 176). Nothing in the street, crossStreets, neighbourhoods, nearby or commute blocks supplies a rent.\n\n**But being grounded does not make i…",
+   "UPHELD: I could not refute this. The figure is real but it is a point typical over fewer than five leases. It is stored, but the live page does not serve it.\n\n1. Grounding: the model did not invent the figure. The quote \"Three-bedroom leases on the crescent have been settling around $2,800.\" is in both faqJson rows (streetGeneration and streetContent). It comes from inputJson.leaseActivity.byBed[\"…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "amenities (paragraph 2)",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "Sam Sherratt PS is a four-minute drive, and Anne J. MacArthur PS, Irma Coulson PS, and Robert Baldwin PS are each about five minutes out.",
+  "problem": "The travel mode is wrong. The 4 for Sam Sherratt PS is a walking figure, not a drive. The schools section and the FAQ call the same 4 minutes 'on foot', so the stored text contradicts itself.",
+  "evidence": "inputJson.nearby.schoolsPublic[0] = {name: 'Sam Sherratt PS', distanceMin: 4} has no mode field. buildGeneratorInput.ts:911 uses walkMinutes when km < 1.5. Recomputed from the Town centreline (43.511196, -79.862999) to schools.ts (43.513802, -79.860422): 0.357 km, which is a 4-min walk (the drive would be 3). Stored only; stripped live.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The number is grounded but the travel mode is not.\n\n1. Where the 4 comes from: inputJson.nearby.schoolsPublic[0] is {name:\"Sam Sherratt PS\", board:\"Halton District School Board\", level:\"elementary\", distanceMin:4}. None of the schoolsPublic or schoolsCatholic entries has a mode field. Parks carry a `walkable` flag; schools do not. The aggregates, comparator…",
+   "UPHELD: I could not refute this. Nothing in inputJson supports \"drive\" as the travel mode. One caveat on scope: the sentence is in the stored generation only and is not served on the live page.\n\n1. **The quote is stored as written.** It is the second paragraph of the amenities section in sectionsJson: \"Schools are close without being on the doorstep. Sam Sherratt PS is a four-minute drive, and Ann…",
+   "UPHELD: I could not refute this. The number 4 is grounded, but calling it a drive is not.\n\n1. The stored text is as quoted. sectionsJson amenities paragraph 2 reads: \"Sam Sherratt PS is a four-minute drive, and Anne J. MacArthur PS, Irma Coulson PS, and Robert Baldwin PS are each about five minutes out.\" The same row's schools section says \"Sam Sherratt PS is the nearest Halton District School Boa…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "neighbourhoodComparable (paragraph 1)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "Across Timberlea, comparable detached homes have sold at broadly similar levels, and the neighbourhood read is the more reliable of the two scopes given how infrequently Gowland Crescent itself changes hands.",
+  "problem": "This compares against a street price the model was never given, so the similarity is invented. The page's own deterministic figure contradicts it.",
+  "evidence": "inputJson.aggregates.typicalPrice = null and byType.detached.typicalPrice = null; neighbourhoodComparable.typicalSoldPrice = 1050000. The live page tiles show 'Typical price $1.3M across 7 sales in the last ~2 years', which is 24% above $1.05M. Stored only; stripped live.",
+  "votes": [
+   "UPHELD: I could not refute it. Nothing in inputJson supports \"have sold at broadly similar levels\", but the sentence is in storage only and does not appear on the live page.\n\n1. No grounding. The sentence compares Timberlea prices with Gowland Crescent (\"the more reliable of the two scopes\"). The model had no street price to compare against: inputJson.aggregates.typicalPrice = null, aggregates.pri…",
+   "UPHELD: No field in inputJson supports the comparison, so the fabrication finding stands. It is limited to stored content: the live page does not show the sentence.\n\n1. Nothing grounds the clause. It says \"comparable detached homes have sold at broadly similar levels\", which needs a Gowland Crescent price to compare with. The model had none:\n   - inputJson.aggregates: {typicalPrice: null, priceRan…",
+   "REFUTED: I'm refuting this finding. The sentence is not a comparison with a street price, and the live page does not serve it.\n\n(1) There is no street comparand. The sentence says \"Across Timberlea, comparable detached homes have sold at broadly similar levels\". The only thing it compares is the neighbourhood pool with itself. The second clause then says the neighbourhood is the better reference b…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "homes",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "Across the wider Timberlea area, detached homes typically trade around $1.05M, a figure that situates this pocket in Milton's mid-tier detached market.",
+  "problem": "$1.05M is grounded. The town-wide rank 'mid-tier' has no grounding: the input carries no town-wide detached distribution.",
+  "evidence": "neighbourhoodComparable.typicalSoldPrice = 1050000 grounds the figure. No field in inputJson ranks Timberlea against Milton. Stored only; stripped live.",
+  "votes": [
+   "UPHELD: I could not refute this. The $1.05M figure has a source in the input, but the \"mid-tier\" ranking has none. The stored sentence, in streetGeneration.sectionsJson homes[0] and streetContent.description, reads: \"Across the wider Timberlea area, detached homes typically trade around $1.05M, a figure that situates this pocket in Milton's mid-tier detached market.\"\n\nThe figure comes from inputJs…",
+   "UPHELD: I could not refute this finding. The stored text is in sectionsJson \"homes\" (\"The homes here\") and again in streetContent.description: \"Across the wider Timberlea area, detached homes typically trade around $1.05M, a figure that situates this pocket in Milton's mid-tier detached market.\"\n\nThe figure is grounded. neighbourhoodComparable.typicalSoldPrice = 1050000, with filterByPropertyType …",
+   "UPHELD: I couldn't refute this. The finding holds as described: the text is stored, and the live page doesn't show it. Stored text: streetGeneration.sectionsJson section \"homes\" (\"The homes here\"), and the same text in streetContent.description, says: \"Across the wider Timberlea area, detached homes typically trade around $1.05M, a figure that situates this pocket in Milton's mid-tier detached mar…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "differentPriorities; repeated in faq Q8",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "Fox Crescent, in Dempsey, carries detached homes trading around $1.15M, a step above the Timberlea detached band. Tupper Drive, in Clarke, runs to townhouse product trading around $975K, which trades space for a lower entry point.",
+  "problem": "Each comparator's all-property-type average is presented as the price of one property type ('detached homes', 'townhouse product'). The model copied distinctivePattern, but the input itself mislabels the figure.",
+  "evidence": "inputJson.crossStreets[0] = {typicalPrice: 1165000, distinctivePattern: 'detached trading around $1.15M'} and crossStreets[1] = {typicalPrice: 977666.67, distinctivePattern: 'townhouse trading around $975K'}. typicalPrice is analytics.street_sold_stats.avg_sold_price across all types (buildGeneratorInput.ts:246). The type is the modal 12-month sale type appended at line 1228. The rounding of $1.15M from 1,165,000 is within the validator's ±max($15K, 4%). Stored only; stripped live.",
+  "votes": [
+   "UPHELD: The finding holds for Tupper Drive but not for Fox Crescent. The model is not at fault: it copied the input correctly. The input's label is false for Tupper.\n\n**Where the text comes from.** Stored sectionsJson.differentPriorities, streetContent.description and FAQ Q8 (\"If Gowland Crescent isn't the right fit, what similar streets should I look at?\") all say: \"Fox Crescent, in Dempsey, carr…",
+   "UPHELD: Half refuted, half confirmed. Overall: not refuted, because the Tupper Drive half is a real mislabel. The priced sentences are in the stored rows only and do not render live.\n\n1) The model did not invent this. The prose copies inputJson.crossStreets[].distinctivePattern word for word: \"detached trading around $1.15M\" and \"townhouse trading around $975K\". buildGeneratorInput.ts:1228 builds …",
+   "UPHELD: Not refuted. The finding holds for Tupper Drive but not for Fox Crescent.\n\n**Where the text comes from.** The model did not invent this text. The stored differentPriorities paragraph and FAQ Q8 (\"If Gowland Crescent isn't the right fit, what similar streets should I look at?\") paraphrase two input strings:\n- inputJson.crossStreets[0].distinctivePattern = \"detached trading around $1.15M\" (t…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "differentPriorities",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "The difference is largely one of housing mix and price tier rather than location, since all three sit within a few minutes of the same highway and GO access.",
+  "problem": "This states travel-time proximity for Fox Crescent and Tupper Drive. The input carries no highway or GO distance for either comparator.",
+  "evidence": "inputJson.crossStreets entries hold only name, slug, typicalPrice, neighbourhood and distinctivePattern. The highway and goStation distances belong to Gowland alone. Stored only; stripped live.",
+  "votes": [
+   "UPHELD: No input field grounds the sentence. The finding stands as a stored-only fabrication. In inputJson.crossStreets, Fox Crescent carries only {name, slug, typicalPrice 1165000, neighbourhood \"Dempsey\", distinctivePattern \"detached trading around $1.15M\"}. Tupper Drive carries only {name, slug, typicalPrice 977666.67, neighbourhood \"Clarke\", distinctivePattern \"townhouse trading around $975K\"}…",
+   "UPHELD: I could not refute it. The stored sentence is not grounded, and the finding describes both the stored row and the live page correctly.\n\n1. **The text is in storage.** streetGeneration.sectionsJson, section differentPriorities, holds: \"Fox Crescent, in Dempsey, carries detached homes trading around $1.15M... Tupper Drive, in Clarke, runs to townhouse product trading around $975K... The diff…",
+   "UPHELD: I could not refute this finding. The sentence is not grounded anywhere in the input.\n\n1. **Nothing in the input grounds it.** In `inputJson.crossStreets`, Fox Crescent is {name, slug, typicalPrice 1165000, neighbourhood \"Dempsey\", distinctivePattern} and Tupper Drive is {name, slug, typicalPrice 977666.67, neighbourhood \"Clarke\", distinctivePattern}. Neither has a distance, highway or GO f…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "differentPriorities (SERVED live)",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "A buyer weighing lot size against finished square footage will find the tradeoffs land differently on each.",
+  "problem": "This claims the comparator streets differ on lot size and finished square footage. The input has no lot size or square footage for any street. The sentence survived the numeric filter and is served.",
+  "evidence": "There is no lotSize field in inputJson; buildGeneratorInput.ts:513 says lotSize is omitted, 'absent rather than fabricated'. No sqft field either. Live page, 'If different priorities matter more' section, renders this sentence verbatim.",
+  "votes": [
+   "UPHELD: I could not refute the finding. Nothing in the input backs the sentence, and the project's own rules treat these exact terms as ungrounded.\n\n1. **The input has no size data.** The inputJson keys are byType, nearby, street, commute, aggregates, crossStreets, leaseActivity, neighbourhoods, activeListingsCount and neighbourhoodComparable. A regex over the whole inputJson for lot, sqft, square…",
+   "UPHELD: I could not refute this. Nothing in inputJson supports the sentence, and the live page serves it.\n\n1. **Nothing in the input covers lot size or floor area.** inputJson has no physical, geography, road or place block. Its top-level keys are byType, nearby, street, commute, aggregates, crossStreets, leaseActivity, neighbourhoods, activeListingsCount and neighbourhoodComparable. None holds a …",
+   "UPHELD: I could not refute it. The finding holds.\n\n1) It is stored and it is served. streetGeneration.sectionsJson, section differentPriorities, ends with \"A buyer weighing lot size against finished square footage will find the tradeoffs land differently on each.\" The live page (curl, tags stripped) renders the section as \"If the priorities sit elsewhere, two nearby streets frame the alternatives.…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "differentPriorities (SERVED live)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "If the priorities sit elsewhere, two nearby streets frame the alternatives.",
+  "problem": "The count 'two' reaches the live page, but both sentences naming the streets were stripped. The page promises two alternatives and names neither, and the next sentence's 'each' has nothing to refer to. 'Nearby' also has no distance field behind it.",
+  "evidence": "inputJson.crossStreets.length = 2 grounds the count. Live page, differentPriorities section: 'If the priorities sit elsewhere, two nearby streets frame the alternatives. A buyer weighing lot size against finished square footage will find the tradeoffs land differently on each.' The raw HTML has 0 occurrences of 'Tupper Drive', and 'Fox Crescent' appears only in the site nav menu.",
+  "votes": [
+   "UPHELD: I could not refute this finding. It holds on the live page.\n\n1. The live page matches the finding. In the visible HTML, under the heading \"If different priorities matter more\", the whole section is one paragraph: \"If the priorities sit elsewhere, two nearby streets frame the alternatives. A buyer weighing lot size against finished square footage will find the tradeoffs land differently on …",
+   "UPHELD: I could not refute the main defect. The live page shows it plainly, although the words themselves are grounded.\n\n**What is grounded, so this part of the finding does not stand:**\n- **\"two\":** `inputJson.crossStreets` has exactly 2 entries, Fox Crescent (Dempsey, typicalPrice 1165000) and Tupper Drive (Clarke, typicalPrice 977666.67). The reviewer concedes this.\n- **\"nearby\":** also grounde…",
+   "UPHELD: I could not refute the finding. The defect is real on the live page, but it comes from the render-time filter, not from anything the model invented.\n\nLive page, confirmed with curl and tags stripped. The differentPriorities section under \"If different priorities matter more\" renders exactly: \"If the priorities sit elsewhere, two nearby streets frame the alternatives. A buyer weighing lot s…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "voice",
+  "where": "about (SERVED live)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "For anyone learning the geography of Timberlea, Gowland is a small but representative piece of it.",
+  "problem": "The short name 'Gowland' appears in prose, which the voice rule forbids. 'Small' is a size claim with no grounding field.",
+  "evidence": "inputJson.street.name = 'Gowland Crescent'. No length or address-count field in inputJson (lengthM 700 is only in streetGeometry.ts:443). Served verbatim in the live About section.",
+  "votes": [
+   "UPHELD: I could not refute this. The violation is plain and the page serves it.\n\n1. Short name in prose. The live About section serves the stored sentence verbatim: \"For anyone learning the geography of Timberlea, Gowland is a small but representative piece of it.\" (from curl of https://miltonly.com/streets/gowland-crescent-milton, stripped of tags). `shortNameFor(\"Gowland Crescent\")` in src/lib/s…",
+   "UPHELD: I could not refute this finding. Both halves stand, and the sentence is served live.\n\n1. **Served live, unchanged.** I fetched the live page, stripped the tags and searched the text. It carries \"For anyone learning the geography of Timberlea, Gowland is a small but representative piece of it.\" That is the last sentence of the About paragraph, just before the inline CTA div. It matches sect…",
+   "UPHELD: I could not refute this finding. The violation is plain.\n\n1) Short name in prose. The sentence is served live: curl of https://miltonly.com/streets/gowland-crescent-milton returns HTTP 200 and contains \"For anyone learning the geography of Timberlea, Gowland is a small but representative piece of it.\" It matches the stored text exactly (sectionsJson about.paragraphs[0], last sentence). res…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "about (SERVED live)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "It sits within a mature pocket of west Milton, framed by the parks and school grounds that give this part of town its shape.",
+  "problem": "No input field supports the compass placement ('west Milton') or the build age ('mature'). The Town centreline puts the street east of the Old Milton core.",
+  "evidence": "inputJson has no location, direction or build-year field (street.direction = ''). townRoadFacts.ts:444 gives Gowland lng -79.862999; geo.ts gives the Old Milton centroid as -79.8830, about 1.6 km further west. Served verbatim on the live page, which also carries it in the HTML twice.",
+  "votes": [
+   "UPHELD: I could not refute this finding. Nothing in inputJson supports \"west Milton\" or \"mature\".\n\n- **Where the sentence is:** It is stored in sectionsJson (id \"about\"), and the live page serves it verbatim: \"It sits within a mature pocket of west Milton, framed by the parks and school grounds that give this part of town its shape.\" The curl returned 200, and the phrases \"west Milton\" and \"mature…",
+   "UPHELD: I couldn't refute it. The sentence has no grounding in inputJson, and the live page serves it word for word.\n\n1. **It is live.** The about section on https://miltonly.com/streets/gowland-crescent-milton renders \"It sits within a mature pocket of west Milton, framed by the parks and school grounds that give this part of town its shape.\" The same sentence is in sectionsJson (about, paragraph…",
+   "UPHELD: I could not refute this finding. The live page (HTTP 200) serves the sentence verbatim in its rendered text: \"It sits within a mature pocket of west Milton, framed by the parks and school grounds that give this part of town its shape.\" It also appears in sectionsJson[about].paragraphs[0]. The string \"west Milton\" occurs twice in the HTML.\n\nGrounding check against inputJson (every field):\n-…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "schools; also faq Q3; plus schools 'The cluster is tight enough that most of these are a short walk or a quick drive rather than a cross-town trip.'",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "Sam Sherratt PS is the nearest Halton District School Board elementary, about four minutes on foot, with Anne J. MacArthur PS, Irma Coulson PS and Robert Baldwin PS each roughly five minutes away.",
+  "problem": "The input carries no travel mode, so 'on foot' was a guess. It happens to be right for Sam Sherratt PS, but the sentence goes on to present the other three 5-minute figures as if also on foot. Those are drives of 1.70–2.14 km (20–26 min on foot). Only 1 of the 8 listed schools is walkable.",
+  "evidence": "inputJson.nearby.schoolsPublic distanceMin = 4, 5, 5, 5 with no mode. buildGeneratorInput.ts:911 switches mode at 1.5 km. Recomputed: Anne J. MacArthur 1.700 km, Irma Coulson 2.145 km and Robert Baldwin 2.041 km are 5-min drives; all Catholic schools are 1.77–2.19 km drives. Stored only; stripped live.",
+  "votes": [
+   "UPHELD: I could not refute this. The minutes are grounded in the input, but the travel mode is not.\n\n**What the input grounds.** `inputJson.nearby.schoolsPublic` gives distanceMin 4, 5, 5 and 5 for Sam Sherratt PS, Anne J. MacArthur PS, Irma Coulson PS and Robert Baldwin PS. `schoolsCatholic` gives 5 for all four Catholic schools. None of these entries has a mode field. Parks carry `walkable`; sch…",
+   "UPHELD: I could not find grounding. No inputJson field gives a travel mode for schools. Each entry in inputJson.nearby.schoolsPublic and schoolsCatholic has only name, board, level and distanceMin (public 4, 5, 5, 5; Catholic 5, 5, 5, 5). Parks are the only POIs with a `walkable` flag, and all 5 occurrences of `walkable` in the input belong to parks. The other blocks Skeptic #2 pointed to don't he…",
+   "REFUTED: Refuted as a problem on the page. The numbers the reviewer gives are correct, but the text never reaches the page, and its one explicit travel mode is both grounded and true.\n\n1) Not served live. I fetched https://miltonly.com/streets/gowland-crescent-milton (297,489 bytes). The raw HTML has 0 hits for \"on foot\", \"cluster is tight\", \"Which schools\", \"nearest public elementary\" and \"Confir…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "amenities (paragraph 1)",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "Moorelands Park and Sam Sherratt Park are each roughly four minutes away, giving the immediate area an unusual density of green space for a residential pocket.",
+  "problem": "The 4-minute figures are grounded. The comparative 'unusual density' has no baseline in the input.",
+  "evidence": "inputJson.nearby.parks[2..3] distanceMin = 4, walkable true. No park-density or town comparison field. Stored only; stripped live.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The minute figures are grounded, but the comparison is not. The text sits in stored sectionsJson[2] (the amenities section), paragraph 0: \"Moorelands Park and Sam Sherratt Park are each roughly four minutes away, giving the immediate area an unusual density of green space for a residential pocket.\" The same text is also in streetContent.description.\n\nWhat t…",
+   "UPHELD: I could not find grounding for the claim, so the finding stands. The stored sectionsJson amenities paragraph 1 says: \"Moorelands Park and Sam Sherratt Park are each roughly four minutes away, giving the immediate area an unusual density of green space for a residential pocket.\" The four-minute figures are grounded: inputJson.nearby.parks[2] (Moorelands Park) and [3] (Sam Sherratt Park) bot…",
+   "UPHELD: I could not refute this finding. The sentence is stored exactly as quoted in streetGeneration.sectionsJson, in the amenities section (\"What's nearby\", paragraph 1): \"Moorelands Park and Sam Sherratt Park are each roughly four minutes away, giving the immediate area an unusual density of green space for a residential pocket.\" It is also copied into streetContent.description.\n\nWhat the input…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "about (LIVE)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "The crescent's position puts it within easy reach of the grocery and retail cluster along the main commercial corridors, while keeping the immediate surroundings residential.",
+  "problem": "The input names no retail cluster and no commercial corridors, and has no land-use data for the immediate surroundings. The only shopping facts the model saw were four named grocers at 4–5 drive-minutes.",
+  "evidence": "nearby.grocery = Canadian Superstore 4, Sobeys Milton 4, Walmart Milton 5, FreshCo Milton 5 (drive minutes, per buildNearby driveMinutes). No corridor, plaza, retail or zoning field exists anywhere in inputJson.",
+  "votes": [
+   "UPHELD: I could not refute this. The sentence is on the live page exactly as stored. It is in the \"About Gowland Crescent\" paragraph of sectionsJson (id \"about\"), and curl with tags stripped returns: \"The crescent's position puts it within easy reach of the grocery and retail cluster along the main commercial corridors, while keeping the immediate surroundings residential.\"\n\nI checked every block …",
+   "UPHELD: I could not refute this finding. The sentence is on the live page word for word, under \"About Gowland Crescent\": \"The crescent's position puts it within easy reach of the grocery and retail cluster along the main commercial corridors, while keeping the immediate surroundings residential.\" It is also stored in sectionsJson, in the about section's paragraphs[0]. The live render leaves out th…",
+   "UPHELD: I could not refute this finding. The live page at https://miltonly.com/streets/gowland-crescent-milton (fetched with curl, tags stripped) shows the sentence exactly as stored in sectionsJson about.paragraphs[0]: \"The crescent's position puts it within easy reach of the grocery and retail cluster along the main commercial corridors, while keeping the immediate surroundings residential.\"\n\nWh…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "faq Q2 (LIVE, also in FAQPage JSON-LD)",
+  "lenses": [
+   "physical",
+   "compliance"
+  ],
+  "quote": "There is no townhouse or semi-detached product mixed in. The detached profile is consistent across the crescent.",
+  "problem": "The answer stretches 3 detached sales in 12 months into a claim about every home on the street. The input covers only recent trades, not the 71-address housing stock. The stored homes section makes the same leap: \"That single-type profile gives the street a consistent built character from end to end.\"",
+  "evidence": "byType = {detached: {count 3, kFlag thin}}. aggregates.salesCount is 3, from a 12-month window (buildGeneratorInput INTERVAL '12 months'). No field describes the whole street's composition. townAddressPoints.ts has 71 addresses on gowland||crescent.",
+  "votes": [
+   "UPHELD: I could not refute this. The finding stands, with two corrections to its evidence.\n\nLive check: I fetched https://miltonly.com/streets/gowland-crescent-milton with curl. It renders \"The street is detached housing, and that is the only type represented in recent activity. There is no townhouse or semi-detached product mixed in. The detached profile is consistent across the crescent.\" in the…",
+   "UPHELD: I could not refute the finding. The FAQ text is live, both on the page and in the FAQPage JSON-LD. The curl of https://miltonly.com/streets/gowland-crescent-milton returns: \"The street is detached housing, and that is the only type represented in recent activity. There is no townhouse or semi-detached product mixed in. The detached profile is consistent across the crescent.\"\n\nWhere I looke…",
+   "REFUTED: Refuted as a fabrication. The live FAQ Q2 and its FAQPage JSON-LD read, verbatim: \"The street is detached housing, and that is the only type represented in recent activity. There is no townhouse or semi-detached product mixed in. The detached profile is consistent across the crescent.\" Nothing in it comes from outside the input.\n\n(1) The input grounds it. buildByType in src/lib/ai/buildGe…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "about (stored in StreetContent.description; dropped at render by the \"a short walk\" rule)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Sam Sherratt Trail Park is a short walk away, and the surrounding streets carry the quiet rhythm of a settled residential grid.",
+  "problem": "\"quiet\" and \"settled\" have no source, since the input has no traffic, noise or era data. \"grid\" contradicts Town data: Gowland is a one-connection crescent off Laurier Avenue, and Laurier feeds a curvilinear pattern of crescents and courts, not a grid.",
+  "evidence": "townRoadFacts.ts: gowland||crescent connects [\"laurier||avenue\"] only. laurier||avenue connects aylmer||crescent, beaver||court, cardinal||court, hayward||crescent, lyons||court, moorelands||crescent, sunnyvale||crescent, valleyview||crescent and others. inputJson has no traffic, noise, era or layout field.",
+  "votes": [
+   "UPHELD: I could not refute it. Nothing in inputJson supports \"quiet\", \"settled\" or \"grid\". I checked every inputJson field: byType, nearby, street, commute, aggregates, crossStreets, leaseActivity, neighbourhoods, activeListingsCount and neighbourhoodComparable. None of them carries traffic, noise, era, build-age or road-layout data.\n\n- **Aggregates block:** only counts and k-anonymity fields (sal…",
+   "UPHELD: I could not refute it. Only the first clause has a source; the fabricated part has none.\n\nGrounded: \"Sam Sherratt Trail Park is a short walk away\". inputJson.nearby.parks[0] = {name:\"Sam Sherratt Trail Park\", walkable:true, distanceMin:1}.\n\nNot grounded: \"the surrounding streets carry the quiet rhythm of a settled residential grid\". I checked every block of inputJson:\n- street = {name, slu…",
+   "UPHELD: I could not refute the finding. Nothing in inputJson grounds the sentence, and no validator rule covers it. Its only mitigation is that the page never shows it.\n\n1) Grounding: none. The stored about paragraph (sectionsJson[about].paragraphs[0], the same text as StreetContent.description) contains, word for word: \"Sam Sherratt Trail Park is a short walk away, and the surrounding streets car…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "amenities (stored only)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Sam Sherratt PS is a four-minute drive",
+  "problem": "The 4 is walking minutes, not driving: the school is 0.36 km away. This contradicts the schools section and FAQ Q3, which both say \"about four minutes on foot\".",
+  "evidence": "nearby.schoolsPublic[0] = Sam Sherratt PS, distanceMin 4. buildNearby uses walkMinutes for distances under 1.5 km. schools.ts puts Sam Sherratt PS 0.36 km from the Gowland centroid (walk 4).",
+  "votes": [
+   "UPHELD: I could not refute it. The stored amenities prose says \"Sam Sherratt PS is a four-minute drive\", and nothing in inputJson supports \"drive\".\n\n1. **The input gives no mode.** inputJson.nearby.schoolsPublic[0] is {\"name\":\"Sam Sherratt PS\",\"distanceMin\":4}. It says nothing about walking or driving. The aggregates, byType, neighbourhoodComparable, crossStreets and neighbourhoods blocks never me…",
+   "UPHELD: I could not refute this finding. The number is grounded but the travel mode is not.\n\n1. **The quote is stored as claimed.** The stored `sectionsJson` amenities section (\"What's nearby\") says: \"Schools are close without being on the doorstep. Sam Sherratt PS is a four-minute drive, and Anne J. MacArthur PS, Irma Coulson PS, and Robert Baldwin PS are each about five minutes out.\"\n\n2. **The i…",
+   "UPHELD: I could not refute this. The time is real; calling it a drive is wrong. The same stored text says \"about four minutes on foot\" in the schools section and FAQ Q3.\n\n1. **Where the quote is stored.** The text \"Schools are close without being on the doorstep. Sam Sherratt PS is a four-minute drive, and Anne J. MacArthur PS, Irma Coulson PS, and Robert Baldwin PS are each about five minutes out…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "gettingAround (stored only)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Gowland Crescent sits in Timberlea, a position that makes the GO station the realistic Toronto commute; the walk to Milton GO Station runs about ten minutes, and from there the train and subway combination reaches downtown in roughly seventy minutes.",
+  "problem": "The input's 70 minutes is the whole door-to-downtown trip, including the 10-minute walk. The prose gives 70 to the rail leg alone, which implies an 80-minute trip. \"subway\" is not in the input, which says only TTC. FAQ Q4 states it correctly (\"the full trip to downtown running roughly seventy minutes\").",
+  "evidence": "commute.toTorontoDowntown = {method \"GO+TTC (walk to GO)\", minutes 70}. buildCommute computes toGOMin (10) + GO_TRAIN_MINUTES (48) + UNION_TO_DOWNTOWN_TTC_MINUTES (12).",
+  "votes": [
+   "UPHELD: I could not refute this; the misattribution is real. The stored gettingAround prose says: \"the walk to Milton GO Station runs about ten minutes, and from there the train and subway combination reaches downtown in roughly seventy minutes.\"\n\nThe input has only two numbers behind that sentence. inputJson.commute.toTorontoDowntown = {\"method\":\"GO+TTC (walk to GO)\",\"minutes\":70} and inputJson.n…",
+   "UPHELD: I could not refute this. The finding stands as a misattribution.\n\n1. **What the input says.** inputJson has two relevant fields:\n   - `commute.toTorontoDowntown = {\"method\":\"GO+TTC (walk to GO)\",\"minutes\":70}`\n   - `nearby.goStation = {\"name\":\"Milton GO Station\",\"distanceMin\":10}`\n\n   The method label itself says \"(walk to GO)\", so the 70 minutes includes the walk. The code agrees: `src/li…",
+   "UPHELD: I couldn't refute this. The number 70 is in the input, but the prose attaches it to the wrong part of the trip.\n\nWhat the input says: commute.toTorontoDowntown = {\"method\":\"GO+TTC (walk to GO)\",\"minutes\":70} and nearby.goStation = {\"name\":\"Milton GO Station\",\"distanceMin\":10}. buildCommute in src/lib/ai/buildGeneratorInput.ts (lines 1009-1011) computes minutes as toGOMin + GO_TRAIN_MINUTES…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "gettingAround (stored only), repeated in faq Q6",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "The 401 onramp at James Snow Parkway is a five-minute drive, which puts Mississauga around twenty-two minutes and Oakville around twenty-four, with Burlington a touch closer at twenty.",
+  "problem": "The sentence credits this street's 401 access for the Mississauga, Oakville and Burlington times. In fact those times are fixed constants, identical on every Milton street, with no route behind them. The Pearson qualifiers \"in typical traffic\" and FAQ Q5 \"keeps the airport run straightforward outside peak hours\" also have no source, since the input has no traffic or peak data.",
+  "evidence": "commute.toMississauga 22, toOakville 24, toBurlington 20, toPearson 32, all method \"drive\", come from COMMUTE_FIXED in src/lib/geo.ts lines 105–108 (static values, not computed per street). nearby.highway.onrampDistanceMin 5 is a separate field.",
+  "votes": [
+   "REFUTED: Refuted: the quoted sentence is grounded, and none of it appears on the live page.\n\n1. Every fact in the quote comes from inputJson:\n- \"The 401 onramp at James Snow Parkway is a five-minute drive\" matches nearby.highway {name:\"Highway 401 at James Snow Pkwy\", onrampDistanceMin:5}.\n- \"Mississauga around twenty-two minutes and Oakville around twenty-four, with Burlington a touch closer at t…",
+   "UPHELD: Only partly refuted. The core misattribution stands.\n\nGrounded (refuted in part):\n- Every number in the sentence comes from the input. inputJson.commute gives toMississauga {drive, 22}, toOakville {drive, 24}, toBurlington {drive, 20} and toPearson {drive, 32}. inputJson.nearby.highway gives {name \"Highway 401 at James Snow Pkwy\", onrampDistanceMin 5}. The minutes are not invented.\n- \"in t…",
+   "UPHELD: I could not refute this. The numbers are grounded, but the causal link and the peak-hour claim have no source.\n\nWhat the input does support:\n- \"The 401 onramp at James Snow Parkway\": inputJson.nearby.highway.name = \"Highway 401 at James Snow Pkwy\".\n- \"five-minute drive\": nearby.highway.onrampDistanceMin = 5.\n- \"twenty-two\", \"twenty-four\", \"twenty\" and \"thirty-two minutes by car\": commute.t…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "about S1 (LIVE: hero subtitle, about section, and the meta description prefix)",
+  "lenses": [
+   "physical",
+   "compliance"
+  ],
+  "quote": "Gowland Crescent is a residential curve in Milton's Timberlea neighbourhood, the kind of street that bends back on itself and keeps its traffic local.",
+  "problem": "The loop layout (\"bends back on itself\") and \"keeps its traffic local\" come only from street.type \"crescent\"; the model saw no geometry. Town data happens to agree, so the sentence is true, but the model had no source for it.",
+  "evidence": "inputJson.street.type \"crescent\" is the only layout field. townRoadFacts.ts gowland||crescent: segments 1, connects [\"laurier||avenue\"]. streetGeometry.ts: category \"local road\".",
+  "votes": [
+   "UPHELD: I could not refute this finding. Nothing the model was given supports \"bends back on itself\" or \"keeps its traffic local\".\n\n1. **What the model saw.** In inputJson, the only field about layout is street.type \"crescent\" (street: name, slug, type, direction \"\", identityKey, siblingSlugs). As Skeptic #1 asked, I checked the aggregates block first: kAnonLevel \"thin\", salesCount 3, leasesCount …",
+   "UPHELD: I could not refute this finding. Only the word \"curve\" has a source in the input. \"Bends back on itself\" and \"keeps its traffic local\" have none.\n\n1. The sentence is live and matches what is stored. It is the hero subtitle (s-character), the first sentence of \"About Gowland Crescent\", and the JSON-LD Place description. The meta description carries a shortened form: \"Gowland Crescent is a r…",
+   "REFUTED: Refuted. The sentence is a description of the kind of street a crescent is, and that comes straight from an input field. The model did not make it up.\n\n1. Where it renders on the live page. I fetched https://miltonly.com/streets/gowland-crescent-milton and stripped the tags. The hero subtitle (p.s-character) reads \"Gowland Crescent is a residential curve in Milton's Timberlea neighbourhoo…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "neighbourhoodComparable (LIVE)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Taken together, the neighbourhood picture is one of steady, unhurried trade at a level that anchors what a detached home in this part of Milton has been worth.",
+  "problem": "\"steady\" claims stability over time, yet no year-over-year figure exists and the sentence just before it says \"so no trend claim is made here\". On the live page the 89-day figure behind \"unhurried\" is cut, so the characterisation shows with nothing supporting it.",
+  "evidence": "neighbourhoodComparable.priceChangeYoy null; daysOnMarket 89 (the sentence stating it is dropped at render).",
+  "votes": [
+   "REFUTED: The facts in the finding check out, but it is not a fabrication. Every descriptive word in the quoted sentence traces to the input the model saw, inputJson.neighbourhoodComparable.\n\n(1) \"unhurried\" traces to daysOnMarket 89. The stored prose says so directly: \"Neighbourhood-wide, comparable detached homes typically clear in around 89 days, a pace that reflects a measured market rather tha…",
+   "UPHELD: The finding holds. I could only refute a small part of it.\n\nWhat the model saw: the stored neighbourhoodComparable section ends: \"Neighbourhood-wide, comparable detached homes typically clear in around 89 days, a pace that reflects a measured market rather than a rushed one. Year-over-year direction is not published for this scope, so no trend claim is made here. Taken together, the neighb…",
+   "UPHELD: I could only partly refute this. \"Unhurried\" is grounded in the input. \"Steady\" is not.\n\n**The live page matches the finding.** Under \"Comparable homes nearby\" it renders only: \"Sold-to-ask sits just below parity, which implies a market where modest negotiation is normal and buyers are not routinely paying above asking. Year-over-year direction is not published for this scope, so no trend …"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "voice",
+  "where": "sectionsJson.neighbourhoodComparable p0; SERVED under 'Comparable homes nearby'",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Year-over-year direction is not published for this scope, so no trend claim is made here.",
+  "problem": "Methodology and prompt text leaked into published prose: it describes what the page is not allowed to say. The next rendered sentence, 'Taken together, the neighbourhood picture is one of steady, unhurried trade...', then makes a 'steady' claim right after disclaiming any trend claim.",
+  "evidence": "inputJson.neighbourhoodComparable.priceChangeYoy = null. Live page text under [h3] Comparable homes nearby shows this sentence verbatim.",
+  "votes": [
+   "UPHELD: I could not refute the finding. The sentence is not fabricated: inputJson.neighbourhoodComparable.priceChangeYoy is null, and src/lib/ai/neighbourhoodLookup.ts:167-170 sets it to null on purpose. Its facts are right. What's wrong is the voice and the prompt breach, and both are plain.\n\n1. **It breaks an explicit prompt rule.** docs/phase-4.1/02b-market-prompt.md:266 says: \"If `priceChangeY…",
+   "UPHELD: I could not refute this finding. The sentence is live and no input field grounds it. The live page (curl, tags stripped) shows it verbatim under \"[h3] Comparable homes nearby\": \"Sold-to-ask sits just below parity, ... Year-over-year direction is not published for this scope, so no trend claim is made here. Taken together, the neighbourhood picture is one of steady, unhurried trade at a lev…",
+   "UPHELD: I could not refute this finding. The sentence is served verbatim on the live page under \"Comparable homes nearby\": \"Year-over-year direction is not published for this scope, so no trend claim is made here.\" It is stored in sectionsJson neighbourhoodComparable paragraphs[0].\n\nThe null is real. inputJson.neighbourhoodComparable.priceChangeYoy = null, so the sentence invents no number or tren…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "no",
+  "severity": "voice",
+  "where": "sectionsJson.market p1 (stored; the market section is not rendered)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Suitability questions belong elsewhere on this page; the market read here is simply that Gowland Crescent is a low-turnover detached street whose pricing is clearest when read against the neighbourhood comparable.",
+  "problem": "A prompt instruction echoed into the copy. 'Days on market cannot be stated for the street itself, since the sale count falls below the threshold at which a pace figure becomes meaningful.' (market p0) and 'The street itself carries too few recent sales to publish its own range' (homes p0) are the same kind of methodology leak.",
+  "evidence": "No inputJson field; this is text about the page's own rules. Stored in the published StreetContent.description.",
+  "votes": [
+   "UPHELD: I could not refute this. The main quote has no grounding in inputJson. It repeats a prompt instruction, and it points to a section the page does not have.\n\n1) Where the text comes from. Nothing in inputJson grounds \"Suitability questions belong elsewhere on this page\". I checked aggregates, neighbourhoodComparable, crossStreets, byType, leaseActivity and nearby. The sentence restates docs/…",
+   "UPHELD: I could not refute this. The problem is real, but it only exists in the stored rows. Nothing in inputJson supports the clause \"Suitability questions belong elsewhere on this page\". I checked every inputJson key: byType, nearby, street, commute, aggregates, crossStreets, leaseActivity, neighbourhoods, activeListingsCount and neighbourhoodComparable. None carries suitability or any page-stru…",
+   "REFUTED: Refuted. None of the three sentences breaks a stated rule, and none of them is served on the live page.\n\n1. The main quote, \"Suitability questions belong elsewhere on this page; the market read here is simply that Gowland Crescent is a low-turnover detached street whose pricing is clearest when read against the neighbourhood comparable.\", is not something the model made up. The market pro…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "rendered page template, 'Places of worship' panel in Commute & reach",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Mosques, churches, gurdwaras",
+  "problem": "The label promises churches and gurdwaras, but the panel lists only three mosques. On a fair-housing reading, a single-faith list under a multi-faith label reads as selective. The generated amenities prose (stored) likewise names only the mosques, because inputJson.nearby has only a 'mosques' field. The wording is neutral with no steering language, so this is a register and accuracy issue, not a violation.",
+  "evidence": "Live text lists: Halton Islamic Community Centre 10 min, Milton Muslim Community Centre 5 min, Islamic Community Centre of Milton 11 min. inputJson.nearby.mosques has the same three and no other place-of-worship field.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The mismatch is confirmed, though the fault is in the page template, not in the generated text.\n\n1) The quoted text is hard-coded in the template, so no inputJson field can ground it. src/lib/street-data.ts:1546-1556 sets title \"Places of worship\" and subtitle \"Mosques, churches, gurdwaras\". Its list comes only from `MOSQUES.slice(0, 3)`, and those rows car…",
+   "UPHELD: I could not refute this. The mismatch is real and shows on the live page.\n\n1. The label is on the live page. I fetched https://miltonly.com/streets/gowland-crescent-milton (X-Vercel-Cache: HIT, Age 753) and stripped the tags. The text reads: \"Places of worship / Mosques, churches, gurdwaras / Halton Islamic Community Centre 10 min drive / Milton Muslim Community Centre 5 min drive / Islami…",
+   "UPHELD: I could not refute it. The mismatch is real, though it is a minor label accuracy defect in the template code, not a fair-housing or generator violation.\n\n1. **The live page matches the claim.** Under \"Places of worship\" the subtitle reads \"Mosques, churches, gurdwaras\". The panel then lists only \"Halton Islamic Community Centre 10 min drive\", \"Milton Muslim Community Centre 5 min drive\" an…"
+  ]
+ },
+ {
+  "slug": "gowland-crescent-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "rendered page template, Commute & reach > Schools, versus the Nearby side panel",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Chris Hadfield PS 8 min drive",
+  "problem": "The same school gets two drive times on one page: the Nearby panel says 'Chris Hadfield PS 4 min drive', the commute panel says 8 min. One of them is wrong. Template data, not generated.",
+  "evidence": "Live page text: Nearby panel 'Chris Hadfield PS 4 min drive'; Commute & reach 'Chris Hadfield PS 8 min drive'.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The live page shows both figures. The Nearby panel says \"Chris Hadfield PS / 4 min drive\" and Commute & reach > Schools says \"Chris Hadfield PS / 8 min drive\". Nothing in inputJson grounds either one: the name \"Chris Hadfield\" does not appear anywhere in rows-gowland-crescent-milton.json. The inputJson neighbourhood block lists different schools: schoolsPub…",
+   "UPHELD: I could not refute this finding. The facts are worse than claimed: both times are made up, so it is not a case of one being right and one wrong.\n\n**Live page** (curl of https://miltonly.com/streets/gowland-crescent-milton, tags stripped)\n- Nearby side panel: `<span class=\"s-near-n\">Chris Hadfield PS</span><span class=\"s-near-d\">4 min drive</span>`, followed by `P.L. Robertson PS` `4 min dr…",
+   "UPHELD: I could not refute this finding. The conflict is live, and the 8-minute figure is made up by the page template. It has nothing to do with DeepSeek's output or with inputJson.\n\n1. **The live page shows both figures.** I fetched https://miltonly.com/streets/gowland-crescent-milton with curl and stripped the tags. The Nearby side panel reads \"Chris Hadfield PS / 4 min drive\", with the note \"D…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "market (sectionsJson market.paragraphs[1]); LIVE on the page",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "What can be said is that activity here is episodic: a home comes to market, and then the street goes quiet again for an extended period.",
+  "problem": "This makes up a sales pattern and a length of time. The input covers a single 12-month window with one sale. There are no sale dates or multi-year history, so nothing supports 'episodic' or 'goes quiet again for an extended period'. The live sentence above it, 'Ennisclare Drive trades rarely.', is a frequency claim built on the same single count, with no housing-stock denominator and no longer history.",
+  "evidence": "inputJson.aggregates.salesCount = 1 (12-month window: buildGeneratorInput.ts soldRange query, INTERVAL '12 months'); neighbourhoodComparable.mostRecentSoldAt = null; no history or date field anywhere in inputJson. The live page text still contains 'Ennisclare Drive trades rarely.' and this sentence.",
+  "votes": [
+   "UPHELD: The finding stands for its main quote. I checked every field in inputJson (byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount, neighbourhoodComparable). Nothing in it grounds \"activity here is episodic: a home comes to market, and then the street goes quiet again for an extended period.\"\n\nWhat the input actually holds:\n- aggregates: salesCount 1,…",
+   "UPHELD: I could not refute the main quote. The live page (curl, tags stripped) renders the market paragraph with this exact sentence: \"What can be said is that activity here is episodic: a home comes to market, and then the street goes quiet again for an extended period.\" Following Skeptic #2, I checked the physical, geography, road, cross-street and place blocks first. inputJson has no physical, …",
+   "REFUTED: This is refuted as a fabrication: the substance is grounded in the input and the pipeline told the model to say it. One word, \"again\", stretches past the data, and that is a wording fix, not invented detail.\n\n1. **The live page shows both sentences.** The page fetched with curl (tags stripped) renders \"Ennisclare Drive trades rarely.\" and \"What can be said is that activity here is episodi…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "faq[7] 'Is Ennisclare Drive new construction or established?'; LIVE in the FAQ and in the FAQPage JSON-LD",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "The street reads as established rather than new construction, with detached housing and very little turnover.",
+  "problem": "This is an age claim with no source. No input field gives build year, construction era or first-sale date. 'Very little turnover' is a rate, and a rate needs a housing-stock count, which the input does not have. Low resale activity also does not tell established stock apart from new construction. With no data, the answer should say the record does not show it.",
+  "evidence": "inputJson has no yearBuilt, era or stock-count field; the only related values are aggregates.salesCount = 1 and byType.detached.count = 1. The live FAQPage mainEntity carries this exact answer text.",
+  "votes": [
+   "UPHELD: I could not refute this. The age claim has no source in the input. The live page (curl of https://miltonly.com/streets/ennisclare-drive-milton) shows the stored answer word for word, in the visible FAQ and in the FAQPage JSON-LD: \"The street reads as established rather than new construction, with detached housing and very little turnover. There is not enough recent activity to date the sto…",
+   "UPHELD: I could not refute this finding. The era claim has no grounding.\n\n1. **Live on the page.** A curl of https://miltonly.com/streets/ennisclare-drive-milton returned HTTP 200. The FAQ for \"Is Ennisclare Drive new construction or established?\" renders exactly as stored: \"The street reads as established rather than new construction, with detached housing and very little turnover. There is not e…",
+   "UPHELD: I could not refute this. The main claim has no grounding. The live page renders the stored answer word for word, both in the FAQ and in the ld+json FAQPage mainEntity: \"The street reads as established rather than new construction, with detached housing and very little turnover. There is not enough recent activity to date the stock precisely.\"\n\n(1) Nothing in inputJson grounds \"established …"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "LIVE page, deterministic layer (the 'Nearby' sidebar and the 'Commute & reach' grid; NOT generated text)",
+  "lenses": [
+   "numeric",
+   "compliance"
+  ],
+  "quote": "Chris Hadfield PS 4 min drive | P.L. Robertson PS 4 min drive | Highway 401 on-ramp 5 min drive | Union Station (GO) 58 min transit | Chris Hadfield PS 8 min drive | Anne J. MacArthur PS 5 min drive | Irma Coulson PS 6 min drive | E.W. Foster PS 5 min drive | Tiger Jeet Singh PS 4 min drive | Kelso Conservation Area 12 min drive | Rattlesnake Point Conservation 20 min drive",
+  "problem": "These travel times are made up or hard-coded, yet the page labels them 'Distances from this street's road centreline'. They contradict the street's real computed values: the generator input, computed from the same centreline, puts Chris Hadfield PS at 27 min and the 401 ramp at 26 min. The same school also appears at 4 min in one panel and 8 min in the other. The Nearby ItemList JSON-LD lists Chris Hadfield PS and P.L. Robertson PS as nearby places. This is not in the generated text, but it is invented numeric content on this live page, and likely on every street that has a coordinate.",
+  "evidence": "src/lib/street-data.ts nearbyPlacesFor: `km: 1.5 + (i % 5) * 0.5 // synthetic`, so schools[0] and schools[5] (Chris Hadfield, P.L. Robertson) both come out as 4 min. buildCommuteGrid hard-codes '5 min drive' (401), '58 min transit' (Union), '12 min drive' (Kelso) and '20 min drive' (Rattlesnake), and computes schools as `3 + (s.name.length % 6)` (17%6 → 8, 20%6 → 5, 15%6 → 6, 14%6 → 5, 19%6 → 4, which matches the page exactly). The only gate is isStreetSpecificCoord, which passes. For comparison, inputJson.nearby.schoolsPublic Chris Hadfield PS distanceMin 27 and nearby.highway.onrampDistanceMin 26.",
+  "votes": [
+   "UPHELD: I confirmed the finding and could not refute it. The live page (curl, tags stripped) shows the Nearby sidebar as \"Chris Hadfield PS 4 min drive\", \"P.L. Robertson PS 4 min drive\" and \"Milton GO 28 min drive\", with the note \"Distances from this street's road centreline.\" Below that, the Commute & reach grid shows \"Highway 401 on-ramp 5 min drive\", \"Union Station (GO) 58 min transit\", \"Chris …",
+   "UPHELD: I could not refute this. The live page (curl, tags stripped) shows the quoted figures. The Nearby panel reads \"Chris Hadfield PS 4 min drive\", \"P.L. Robertson PS 4 min drive\", then \"Distances from this street’s road centreline.\" The Commute grid reads \"Highway 401 on-ramp 5 min drive\", \"Union Station (GO) 58 min transit\", \"Chris Hadfield PS 8 min drive\", \"Anne J. MacArthur PS 5 min drive\",…",
+   "UPHELD: I could not refute this finding. I confirmed it in both the code and the live page.\n\n1. **Live page (curl, 2026-09-23).**\n   - The Nearby sidebar renders \"Chris Hadfield PS 4 min drive 🏫 P.L. Robertson PS 4 min drive 🚆 Milton GO 28 min drive Distances from this street’s road centreline.\"\n   - The Commute grid renders \"Highway 401 on-ramp 5 min drive Union Station (GO) 58 min transit Scho…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "about (sectionsJson about.paragraphs[0]) and StreetContent.description; related: homes 'The housing stock on Ennisclare Drive is detached' and 'The street reads as a small rural address rather than a developed residential run.'",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "The road carries a single detached home in the recent record, which tells you most of what you need to know about its scale.",
+  "problem": "The 12-month sale count (1) is presented as the number of homes on the road, and the road's scale is then inferred from it. The housing stock is also stated as all-detached on the strength of one sale. The input has no count of homes or addresses on the street, and the Town records 29 addresses along 1.3 km. The sentence is stored but stripped from the live page.",
+  "evidence": "inputJson.aggregates.salesCount = 1 and byType.detached.count = 1 are sale counts (12-month window). There is no stock or address-count field. The live page's own address ladder reads 'The Town records 29 civic addresses on Ennisclare Drive, numbered 4065–4275', and streetGeometry.ts gives lengthM 1280. Neither figure is a prompt input.",
+  "votes": [
+   "UPHELD: I could not refute this finding. Part of the sentence has grounding, but the claim that makes it a misattribution has none.\n\nWhat the input supports: inputJson.aggregates.salesCount = 1, byType.detached.count = 1 and activeListingsCount = 1. The homes prompt (docs/phase-4.1/02a-about-homes-amenities-prompt.md, line 85) tells the model it may describe the housing stock using \"the unit mix a…",
+   "UPHELD: I could not refute this. Nothing in inputJson grounds the claim. It has no physical, geography, road, cross-street or place block: crossStreets is [] and neighbourhoods is [\"Rural Nassagaweya\"]. It also has no count of homes, addresses or length. The only figures behind the sentence are sale counts: aggregates.salesCount = 1 (with kAnonLevel \"thin\") and byType.detached.count = 1 (with kFla…",
+   "UPHELD: I could not refute the core of this finding. The only partial refutations are that the text never reaches the live page and that the \"detached stock\" wording has weak support in the input.\n\n1. **What in the input supports the text.** `inputJson.aggregates.salesCount` is 1 and `inputJson.byType.detached.count` is 1. `byType` holds only detached, with `kFlag` \"thin\". Both are 12-month sale c…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "gettingAround (sectionsJson gettingAround.paragraphs[0]); stored only (stripped live)",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "The Milton GO Station is a twenty-eight minute drive, and from there the run downtown takes about eighty-eight minutes door to door.",
+  "problem": "88 minutes is the TOTAL trip, including the 28-minute drive. 'From there' assigns all 88 minutes to the leg after the GO station, which implies about 116 minutes in total. The leg from the station is 60 minutes. The sentence also contradicts itself with 'door to door'. faq[4] states the figure correctly ('for a total of about eighty-eight minutes').",
+  "evidence": "inputJson.commute.toTorontoDowntown = {method: 'GO+TTC (drive to GO)', minutes: 88}. buildGeneratorInput.ts:1011 computes minutes = toGOMin (28) + GO_TRAIN_MINUTES (48) + UNION_TO_DOWNTOWN_TTC_MINUTES (12) (geo.ts:113-114). goStation.distanceMin = 28.",
+  "votes": [
+   "UPHELD: Both numbers come from the input, but the sentence puts the 88 on the wrong part of the trip. The stored gettingAround.paragraphs[0] reads: \"The Milton GO Station is a twenty-eight minute drive, and from there the run downtown takes about eighty-eight minutes door to door.\"\n\nWhat grounds the numbers:\n- inputJson.nearby.goStation = {name:\"Milton GO Station\", distanceMin:28} grounds the 28.\n…",
+   "UPHELD: Both numbers are grounded, but the sentence gives the 88-minute figure to the wrong leg of the trip, so the finding stands. Stored gettingAround.paragraphs[0] reads: \"The Milton GO Station is a twenty-eight minute drive, and from there the run downtown takes about eighty-eight minutes door to door.\"\n\nWhere the numbers come from in inputJson:\n- The 28 is nearby.goStation {name:\"Milton GO St…",
+   "UPHELD: I could not refute this finding. The figure is grounded but the sentence gives it to the wrong part of the trip. gettingAround.paragraphs[0] stores: \"The Milton GO Station is a twenty-eight minute drive, and from there the run downtown takes about eighty-eight minutes door to door.\" In inputJson, commute.toTorontoDowntown = {method:\"GO+TTC (drive to GO)\", minutes:88} and goStation.distance…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "faq[5]; also gettingAround 'For points west and south, the arithmetic is friendlier: Mississauga is twenty-two minutes by car, Burlington twenty, Oakville twenty-four.' and 'Pearson is thirty-two minutes'; stored only",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "Pearson is about thirty-two minutes by car from Ennisclare Drive.",
+  "problem": "These figures are fixed Milton-centroid constants that are the same for every street, but they are presented as times from this street. They do not fit the street's own geography: the same input puts Milton GO 28 minutes away, yet Burlington comes out at 20 and Mississauga at 22. Separately, 'points west and south' puts Mississauga (east of Milton) in the wrong direction, and no input field gives any direction.",
+  "evidence": "inputJson.commute.toPearson 32, toMississauga 22, toBurlington 20, toOakville 24 come from COMMUTE_FIXED (geo.ts:104-109), commented 'typical from Milton centroid'; they are not computed from the street's centreline. The centreline (townRoadFacts 43.568984,-80.063759) is 32–37 km in a straight line from Pearson, Burlington, Mississauga and Oakville. The builder's own driveMinutes formula, which produced the GO time of 28, gives about 52–60 minutes for them.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The numbers themselves are grounded, but the misattribution is real and the direction claim has no source at all.\n\n1. The numbers came from the input. inputJson.commute holds {\"toPearson\":{\"method\":\"drive\",\"minutes\":32},\"toOakville\":{\"minutes\":24},\"toBurlington\":{\"minutes\":20},\"toMississauga\":{\"minutes\":22}}. The prompt also tells the model to use these val…",
+   "UPHELD: I could only partly refute this. The finding stands as a misattribution.\n\n**The numbers are in the input.** 32, 22, 20 and 24 appear word for word in inputJson.commute (toPearson, toMississauga, toBurlington, toOakville, each {method:\"drive\"}). The prompt also requires a Pearson FAQ (docs/phase-4.1/03-evaluative-prompt.md:217). So the model did not invent the figures.\n\n**But they are not t…",
+   "UPHELD: Not refuted. The input grounds the numbers but not the attribution or the direction, so the finding holds.\n\nGrounded: inputJson.commute holds toPearson {drive, 32}, toMississauga {drive, 22}, toBurlington {drive, 20} and toOakville {drive, 24}. Those are the figures in faq[5] \"Pearson is about thirty-two minutes by car from Ennisclare Drive.\" and in gettingAround \"Mississauga is twenty-two…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "homes (sectionsJson homes.paragraphs[0]); stored only",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "For broader context, homes across the Rural Nassagaweya area typically trade around $1,550,000, though that is the neighbourhood's figure and not this street's.",
+  "problem": "The figure covers detached homes only, but the sentence presents it as the typical price for all 'homes across the Rural Nassagaweya area'. The value itself is right; the scope is not. The comparable section scopes it correctly ('for detached homes in Rural Nassagaweya').",
+  "evidence": "inputJson.neighbourhoodComparable.typicalSoldPrice = 1550000, filterByPropertyType = 'detached', fallbackApplied = 'type-only', sampleSize = 17.",
+  "votes": [
+   "REFUTED: The number, the area and the privacy gate all come from the input, and the wider scope the reviewer calls wrong is in fact correct for this neighbourhood.\n\n1. **The input grounds the figure.** inputJson.neighbourhoodComparable has typicalSoldPrice = 1550000, neighbourhood = \"Rural Nassagaweya\", kAnonLevel = \"full\" and sampleSize = 17. That gives the \"$1,550,000\", the \"Rural Nassagaweya ar…",
+   "UPHELD: I could not refute this finding. The misattribution is real, but it exists only in the stored row: the live page does not show this sentence.\n\n1. **What the input says.** The only source of the $1,550,000 figure in inputJson is `neighbourhoodComparable`: `typicalSoldPrice` 1550000, `filterByPropertyType` \"detached\", `fallbackApplied` \"type-only\", `sampleSize` 17, `kAnonLevel` \"full\". So th…",
+   "UPHELD: I could not refute this. The number is grounded but the scope is not.\n\n1. **The figure is detached-only.** `inputJson.neighbourhoodComparable` has `typicalSoldPrice` 1550000, `filterByPropertyType` \"detached\", `fallbackApplied` \"type-only\" and `sampleSize` 17. In `src/lib/ai/neighbourhoodLookup.ts` (lines ~124-136) this figure is a `PERCENTILE_CONT(0.5)` over sold records filtered by `prop…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "neighbourhoodComparable (sectionsJson paragraphs[0]); LIVE",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "Homes in this cohort have been taking time to clear, with days on market running well beyond what a busier Milton pocket would show, and the sold-to-ask relationship points to meaningful negotiation room rather than buyers paying at or near asking.",
+  "problem": "'Taking time to clear' is supported by DOM 161 and 'negotiation room' by sold-to-ask 0.927. But 'well beyond what a busier Milton pocket would show', and the next sentence's 'slower, more deliberate market', compare against a Milton or other-neighbourhood figure the input does not contain.",
+  "evidence": "inputJson.neighbourhoodComparable.daysOnMarket = 161 and soldToAsk = 0.9273. inputJson has no town-wide or other-neighbourhood DOM. The 28-day urban figure appears only in the page's own market-watch tile, which is not an input.",
+  "votes": [
+   "UPHELD: I could not refute the finding. The live page (curl, tags stripped) renders both sentences exactly as stored in sectionsJson neighbourhoodComparable paragraphs[0]: \"Homes in this cohort have been taking time to clear, with days on market running well beyond what a busier Milton pocket would show, and the sold-to-ask relationship points to meaningful negotiation room rather than buyers payi…",
+   "UPHELD: I could not refute this finding. The comparison has no source in the input. I read every block of inputJson in D:\\miltonly\\scratchpad\\mc042\\rows-ennisclare-drive-milton.json, starting with the physical and place blocks as asked:\n- `street`: name, slug, type, identityKey. No market fields.\n- `nearby`: parks, grocery, highway, mosques, hospital, GO station and schools, each with minutes. No …",
+   "UPHELD: I couldn't refute this finding. It stands as a minor issue.\n\n**Live page:** a curl of https://miltonly.com/streets/ennisclare-drive-milton with tags stripped shows the stored text word for word: \"Homes in this cohort have been taking time to clear, with days on market running well beyond what a busier Milton pocket would show, and the sold-to-ask relationship points to meaningful negotiati…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "about paragraphs[0]; LIVE as the hero subtitle, the About opener and the JSON-LD Place.description; also live 'This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets.'",
+  "lenses": [
+   "numeric",
+   "compliance"
+  ],
+  "quote": "Ennisclare Drive is a rural residential road in the Rural Nassagaweya area of Milton, sitting well north of the town's built-up grid.",
+  "problem": "'Well north' is a direction-and-distance claim, and 'low-density' is a density claim. The input has no field for either: no coordinates, direction, density or land use. They are probably true, but nothing the model was given supports them.",
+  "evidence": "inputJson.neighbourhoods = ['Rural Nassagaweya'] is the only location field; the lat/lng (43.568984,-80.063759) exists only in townRoadFacts.ts, which is not a prompt input.",
+  "votes": [
+   "UPHELD: I could not refute the finding. The quoted text is live on the page: \"sitting well north of the town's built-up grid\" and \"This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets.\" It appears in the About prose, the hero/opener and the JSON-LD Place description (\"description\":\"Ennisclare Drive is a rural residential road in th…",
+   "UPHELD: The finding is partly refuted, but one ungrounded direction claim remains, so it stands at minor severity.\n\nThe live page matches what the reviewer quoted. The HTML contains \"Ennisclare Drive is a rural residential road in the Rural Nassagaweya area of Milton, sitting well north of the town's built-up grid.\" in the About section, the hero and the JSON-LD Place.description. It also contains…",
+   "UPHELD: I could not refute this finding. The text is live exactly as stored: the fetched HTML contains \"well north of the town's built-up grid. This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets.\" in several places (visible text, the RSC payload and the JSON-LD).\n\nSome of the passage is grounded, but the direction claim is not:\n-…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "about paragraphs[0]; stored only (dropped live by the coherence pass)",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "It is not a street you pass through on the way to somewhere else.",
+  "problem": "This through-traffic claim matches data the model never saw (a dead-end terminus). It is true, but unsupported by the input.",
+  "evidence": "inputJson has crossStreets: [] and no terminus or connectivity field. The fact exists only in streetGeometry.ts ('ennisclare||drive' terminus: 'dead end') and townRoadFacts.ts (connects: ['4-line-nassagaweya||']).",
+  "votes": [
+   "UPHELD: I could not refute this one: nothing in the input grounds the claim. The stored about.paragraphs[0] says \"It is not a street you pass through on the way to somewhere else.\" That is a claim about how the road connects and whether traffic goes through it. None of the fields the model received covers either: byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeList…",
+   "UPHELD: I could not refute the finding. The sentence \"It is not a street you pass through on the way to somewhere else.\" is in the stored streetGeneration.sectionsJson about.paragraphs[0]. It is also in the stored streetContent.description. It is not on the live page: the curl of https://miltonly.com/streets/ennisclare-drive-milton has 0 matches for \"somewhere else\", and the live about paragraph g…",
+   "UPHELD: I could not refute this finding. The sentence \"It is not a street you pass through on the way to somewhere else.\" is stored in two places: streetGeneration.sectionsJson[about].paragraphs[0] and streetContent.description. It is not on the live page. The live about paragraph goes straight from \"...framed by open land rather than subdivision streets.\" to \"Milton's urban core, the GO Station, …"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "gettingAround paragraphs[0]; stored only",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "The Highway 401 onramp at Regional Road 25 is twenty-six minutes away, so the 401 is reached without threading through Milton's core.",
+  "problem": "The 26 minutes is supported by the input. The route claim ('without threading through Milton's core') is not: the input has no route data. The clause paraphrases the prompt's own example sentence.",
+  "evidence": "inputJson.nearby.highway = {name: 'Highway 401 at Regional Rd 25', onrampDistanceMin: 26}, with no route data. docs/phase-4.1/03-evaluative-prompt.md:100 has the example 'the 401 is reached without crossing town'.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The 26 minutes is grounded; the route clause is not.\n\n1. The number is grounded. inputJson.nearby.highway = {name: \"Highway 401 at Regional Rd 25\", onrampDistanceMin: 26}.\n\n2. Nothing in inputJson grounds \"so the 401 is reached without threading through Milton's core\":\n   - inputJson has only these top-level keys: byType, nearby, street, commute, aggregates…",
+   "UPHELD: I could not refute this finding: the route claim has no grounding in the input.\n\n1. **What the input does ground.** inputJson.nearby.highway is {\"name\":\"Highway 401 at Regional Rd 25\",\"onrampDistanceMin\":26}. That covers \"The Highway 401 onramp at Regional Road 25 is twenty-six minutes away\" and nothing more.\n\n2. **No block grounds the route.** I searched the physical, geography, road, cro…",
+   "UPHELD: I could not refute this finding. It stands as minor, and the sentence is stored only.\n\n**The time is grounded.** \"twenty-six minutes\" comes from `inputJson.nearby.highway = {name: \"Highway 401 at Regional Rd 25\", onrampDistanceMin: 26}`.\n\n**The route clause is not grounded.** The clause is \"so the 401 is reached without threading through Milton's core\". No input field says anything about a…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "faq[4] 'How far is Ennisclare Drive from Toronto?'; stored only",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "By car alone the trip is longer and traffic-dependent.",
+  "problem": "This compares against a drive-to-Toronto time that is not in the input. The only Toronto figure is the GO+TTC total.",
+  "evidence": "inputJson.commute.toTorontoDowntown.method = 'GO+TTC (drive to GO)', minutes 88; there is no drive-only downtown field.",
+  "votes": [
+   "UPHELD: I could not refute this. The claim is ungrounded. The stored faq[4] answer, identical in streetGeneration.faqJson and streetContent.faqJson, reads: \"The realistic route is a drive to Milton GO Station, twenty-eight minutes, then the train downtown, for a total of about eighty-eight minutes. By car alone the trip is longer and traffic-dependent.\"\n\nThe first sentence is grounded:\n- inputJson…",
+   "UPHELD: I could not refute the finding; it stands. The stored faq[4] answer in both streetGeneration.faqJson and streetContent.faqJson reads: \"The realistic route is a drive to Milton GO Station, twenty-eight minutes, then the train downtown, for a total of about eighty-eight minutes. By car alone the trip is longer and traffic-dependent.\"\n\nThe first sentence is grounded:\n- inputJson.nearby.goStat…",
+   "UPHELD: I could not refute the finding. Nothing in the input supports the claim that driving is slower. The only Toronto figure in inputJson.commute is toTorontoDowntown {method:\"GO+TTC (drive to GO)\", minutes:88}. The other four entries (Pearson 32, Oakville 24, Burlington 20, Mississauga 22) are drive times to other places. A search of inputJson for \"oronto\", \"car\", \"traffic\" and \"longer\" finds …"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "faq[5]; stored only",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "That keeps airport runs within a single sitting outside peak hours.",
+  "problem": "The 'outside peak hours' qualifier has no source; the input has no time-of-day or traffic data. The 32 minutes is a fixed constant (see the Pearson finding above), not an off-peak measurement.",
+  "evidence": "inputJson.commute.toPearson = {method: 'drive', minutes: 32}; no peak or off-peak field exists.",
+  "votes": [
+   "UPHELD: I could not refute the finding. Stored faq[5], identical in streetGeneration.faqJson and streetContent.faqJson, reads: \"Pearson is about thirty-two minutes by car from Ennisclare Drive. That keeps airport runs within a single sitting outside peak hours.\"\n\n1. **What the input grounds.** inputJson.commute.toPearson = {method:\"drive\", minutes:32}. That covers the \"thirty-two minutes by car\" p…",
+   "UPHELD: I could not find anything that grounds \"outside peak hours\". The stored FAQ (streetGeneration.faqJson[5], the same text in streetContent.faqJson[5]) reads: \"Pearson is about thirty-two minutes by car from Ennisclare Drive. That keeps airport runs within a single sitting outside peak hours.\"\n\nThe only input behind this is inputJson.commute.toPearson = {method:\"drive\", minutes:32}. No field …",
+   "UPHELD: I could not refute this. The qualifier has no source.\n\n1. **The stored text.** Both streetGeneration.faqJson[5] and streetContent.faqJson[5] hold: \"Pearson is about thirty-two minutes by car from Ennisclare Drive. That keeps airport runs within a single sitting outside peak hours.\"\n\n2. **The input.** inputJson.commute.toPearson = {method:\"drive\", minutes:32}. I searched the whole inputJson…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "amenities paragraphs[1] as rendered LIVE under 'What's nearby'; also live 'Homes in this cohort have been taking time to clear...' opening 'Comparable homes nearby'",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in the same range.",
+  "problem": "After numeric-sentence suppression, the live page says 'Schools are spread across the surrounding area. On the Catholic side, ... sit in the same range.' 'The same range' refers to a range ('mid-to-high twenties') that was stripped, so the page asserts a quantity the reader cannot see. The live comparable section likewise opens on 'this cohort' after the sentence defining the cohort was removed.",
+  "evidence": "Live page text (curl, tags stripped): 'Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in the same range.' The stored source sentence 'Dick Middle School, Chris Hadfield PS, and Robert Baldwin PS all in the mid-to-high twenties.' is removed by src/lib/prose/numericSentences.ts.",
+  "votes": [
+   "UPHELD: I could not refute the defect. The page does say this. The underlying content is not fabricated, though: the problem comes from the render-time suppression step, not from the generator.\n\nGROUNDING (the underlying facts are real):\n- The stored amenities paragraph says: \"Brookville ES is the nearest public elementary option at about eight minutes by car, with W.I. Dick Middle School, Chris H…",
+   "UPHELD: The school facts are grounded, but the finding is about how the live page reads, and that defect is plain.\n\nGrounding: in the stored amenities paragraph, \"the same range\" points back to \"W.I. Dick Middle School, Chris Hadfield PS, and Robert Baldwin PS all in the mid-to-high twenties.\" The inputJson supports both halves. `nearby.schoolsPublic` has Dick 26, Hadfield 27 and Baldwin 27. `near…",
+   "UPHELD: I could not refute this. The underlying facts are grounded, so this is not fabrication. But the problem the finding describes is real on the live page, and the codebase's own coherence rule treats it as a defect.\n\nWhat the live page shows (curl, tags stripped): under \"What's nearby\" the only paragraph is \"Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Cat…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "about (hero subtitle, About section, JSON-LD Place.description; also StreetContent.description)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "sitting well north of the town's built-up grid",
+  "problem": "Ungrounded direction and position claim that is also wrong in its main direction. No inputJson field gives location or bearing. The Town centroid puts the street well WEST of the urban grid, not well north. It is live in three places.",
+  "evidence": "inputJson has no coordinate or bearing field. street = {name, slug, type:'drive', direction:''}, neighbourhoods = ['Rural Nassagaweya']. Town data: townRoadFacts.ts:337 'ennisclare||drive' lat 43.568984, lng -80.063759. Against Milton GO (43.5173, -79.8693) that is about 5.7 km north and about 15.7 km west (16.7 km straight line), so the main direction is west-northwest. Live page renders it in the hero, the About paragraph and the JSON-LD Place.description.",
+  "votes": [
+   "UPHELD: I could not refute this finding. Nothing in inputJson grounds a direction.\n\n1. **The input has no bearing.** The only fields the model saw that bear on position are:\n   - street = {name, slug, type:'drive', direction:'', identityKey, siblingSlugs}\n   - neighbourhoods = ['Rural Nassagaweya']\n   - nearby anchors with drive minutes only: Brookville Park 9, Brookville ES 8, Campbellville parks…",
+   "UPHELD: I could not find anything that grounds the claim. The finding stands.\n\nWhat the model was given: inputJson has only these keys: byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount and neighbourhoodComparable. It has no physical, geography, road or place block. Within those keys:\n- street.direction is \"\" and street has no coordinate or bearing.\n- c…",
+   "UPHELD: I could not refute this finding. It holds.\n\n1. The text is stored and live. The stored sectionsJson \"about\" body and StreetContent.description both begin: \"Ennisclare Drive is a rural residential road in the Rural Nassagaweya area of Milton, sitting well north of the town's built-up grid.\" I fetched https://miltonly.com/streets/ennisclare-drive-milton with curl, and the sentence renders in…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "about (rendered live; StreetContent.description)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets.",
+  "problem": "Invented land-use and surroundings claim. No inputJson field covers density, lot pattern, open land or subdivision form; the only support for 'rural' is the neighbourhood name. Town data shows a lotted residential street, not a road framed by open land, and the same page contradicts it lower down.",
+  "evidence": "inputJson: neighbourhoods ['Rural Nassagaweya'], parks[*].walkable false. Nothing else. Town data: streetGeometry.ts:335 lengthM 1280, category 'local road', terminus 'dead end'. townAddressPoints/streetAddresses list 29 civic addresses, 4065–4275, on both odd and even sides. The live address ladder says 'The Town records 29 civic addresses on Ennisclare Drive, numbered 4065–4275.'",
+  "votes": [
+   "UPHELD: I could not refute this. The sentence is live on the page and nothing in inputJson supports it.\n\n1. The page renders it as stored. The live About paragraph (curl of https://miltonly.com/streets/ennisclare-drive-milton, tags stripped) reads: \"This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets.\" That matches sectionsJson ab…",
+   "UPHELD: I could not refute this finding. The quote is live and has no grounding in the input.\n\n1. It renders live, word for word. I fetched https://miltonly.com/streets/ennisclare-drive-milton and stripped the script and tag markup. Under \"About Ennisclare Drive\" the page reads: \"This is countryside address territory: low-density, spread out, and framed by open land rather than subdivision streets…",
+   "UPHELD: I could not refute this finding. Only the word \"rural\" has a source in the input. The rest of the sentence is a land-use claim that no input field covers.\n\n1. The sentence is on the live page as stored. A curl of https://miltonly.com/streets/ennisclare-drive-milton shows the About paragraph: \"This is countryside address territory: low-density, spread out, and framed by open land rather tha…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "homes (stored in sectionsJson and StreetContent.description; homes section not rendered live)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "The street reads as a small rural address rather than a developed residential run.",
+  "problem": "Describes the street's size from one sale. The model had no dwelling count. Town data contradicts it: 29 civic addresses along a 1.3 km local road is a developed residential run.",
+  "evidence": "inputJson: aggregates.salesCount 1, byType.detached.count 1 (a 12-month sale count, not a count of homes). No address or dwelling field. Town: 29 address points (townAddressPoints.ts 'ennisclare||drive' 4065…4275), streetGeometry lengthM 1280.",
+  "votes": [
+   "UPHELD: No field in inputJson grounds the sentence, so I could not refute the finding. The exact text \"The street reads as a small rural address rather than a developed residential run.\" is the last sentence of the homes section in sectionsJson, and it also appears in StreetContent.description (D:\\miltonly\\scratchpad\\mc042\\rows-ennisclare-drive-milton.json).\n\nI checked every block of inputJson, st…",
+   "UPHELD: I could not refute the finding. Nothing in inputJson supports the size claim, and the town data contradicts it.\n\nThe quoted text is stored but not rendered:\n- Stored: the homes paragraph in sectionsJson (id \"homes\") and paragraph 2 of StreetContent.description both end with \"The street reads as a small rural address rather than a developed residential run.\"\n- Live: I fetched https://milton…",
+   "UPHELD: I could not refute this finding. Nothing in inputJson grounds the scale claim, and the Town data shows the claim is wrong.\n\n1. Where the text sits. The homes paragraph in sectionsJson and in StreetContent.description ends with this exact sentence: \"The street reads as a small rural address rather than a developed residential run.\" It does not appear on the live page. I fetched the page wit…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "live page, 'Commute & reach from Ennisclare Drive' block (deterministic, not model output); also 'Union Station (GO) 58 min transit', 'Kelso Conservation Area 12 min drive', 'Rattlesnake Point Conservation 20 min drive'",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Highway 401 on-ramp 5 min drive",
+  "problem": "Hardcoded place times, identical on every street, published as this street's. They contradict the street's own generator input: 401 at 26 min, Toronto 88 min.",
+  "evidence": "src/lib/street-data.ts buildCommuteGrid (~line 1500): { name: 'Highway 401 on-ramp', primaryTime: '5 min drive' }, { name: 'Union Station (GO)', primaryTime: '58 min transit' }. The parks block hardcodes Kelso '12 min drive' and Rattlesnake '20 min drive'. inputJson nearby.highway.onrampDistanceMin 26, commute.toTorontoDowntown.minutes 88.",
+  "votes": [
+   "UPHELD: I could not refute the finding. Nothing in inputJson grounds these values, and the street's own data contradicts them.\n\n1. **The live page renders the values.** The 'Commute & reach from Ennisclare Drive' block (fetched with curl, tags stripped) shows \"Highway 401 on-ramp / 5 min drive\", \"Union Station (GO) / 58 min transit\", \"Kelso Conservation Area / 12 min drive\" and \"Rattlesnake Point …",
+   "UPHELD: I could not refute this finding; it is confirmed. The live page (curl, tags stripped) renders under \"Getting around | Commute & reach from Ennisclare Drive\": \"Highway 401 on-ramp | 5 min drive\", \"Union Station (GO) | 58 min transit\", \"Kelso Conservation Area | 12 min drive\" and \"Rattlesnake Point Conservation | 20 min drive\".\n\n**Where the numbers come from.** These are fixed strings in src…",
+   "UPHELD: I could not refute this finding. It is a real fabrication.\n\n1. **The live page shows the numbers as quoted.** It was fetched with curl and the tags stripped. The block reads: \"Commute &amp; reach from Ennisclare Drive ... Milton GO Station 28 min drive · 200 min walk Highway 401 on-ramp 5 min drive Union Station (GO) 58 min transit ... Parks &amp; recreation ... Kelso Conservation Area 12 …"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "live page, 'Commute & reach' Schools list (deterministic): 'Chris Hadfield PS 8 min drive / Anne J. MacArthur PS 5 min drive / Irma Coulson PS 6 min drive / E.W. Foster PS 5 min drive / Tiger Jeet Singh PS 4 min drive'; also the 'Around Ennisclare Drive' schools list",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Chris Hadfield PS 8 min drive",
+  "problem": "Made-up school drive times from a name-length formula, applied to the first five schools in the file regardless of where the street is. These are urban schools about 16 km away. Input gives Chris Hadfield PS as 27 min, and the real nearest school, Brookville ES (8 min), is missing.",
+  "evidence": "src/lib/street-data.ts:1511: primaryTime: `${3 + (s.name.length % 6)} min drive`, // synthetic (Chris Hadfield PS = 17 chars → 8; Anne J. MacArthur PS = 20 → 5). schools.ts:28 Chris Hadfield PS at 43.535117,-79.867858 (Dempsey). inputJson nearby.schoolsPublic: Brookville ES 8, Chris Hadfield PS 27.",
+  "votes": [
+   "UPHELD: I could not refute it. The live page shows the quoted text: the 'Commute & reach' Schools card reads \"Chris Hadfield PS 8 min drive Anne J. MacArthur PS 5 min drive Irma Coulson PS 6 min drive E.W. Foster PS 5 min drive Tiger Jeet Singh PS 4 min drive\". The RSC payload has the same values: \"s-cd-t\" children [\"8 min drive\",\"\"].\n\nWhere the numbers come from: src/lib/street-data.ts:1509-1511,…",
+   "UPHELD: I could not refute this finding. Nothing in inputJson supports the text, and inputJson gives a different time for the same school. The live page (curl, tags stripped) shows the 'Commute & reach from Ennisclare Drive' Schools list exactly as quoted: 'Chris Hadfield PS 8 min drive / Anne J. MacArthur PS 5 min drive / Irma Coulson PS 6 min drive / E.W. Foster PS 5 min drive / Tiger Jeet Singh…",
+   "UPHELD: I could not refute this finding: it is a real fabrication. On the live page (curl, tags stripped), the 'Commute & reach from Ennisclare Drive' Schools block reads 'Chris Hadfield PS / 8 min drive', 'Anne J. MacArthur PS / 5 min drive', 'Irma Coulson PS / 6 min drive', 'E.W. Foster PS / 5 min drive' and 'Tiger Jeet Singh PS / 4 min drive'. The 'Around Ennisclare Drive' Schools list shows th…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "live page 'Nearby' sidebar and JSON-LD ItemList 'Places near Ennisclare Drive' (deterministic); also 'P.L. Robertson PS 4 min drive'",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "Chris Hadfield PS 4 min drive",
+  "problem": "Made-up distances that the caption credits to Town data, and that are sent to search engines as structured data. The caption says 'Distances from this street's road centreline. Contains information licensed under the Open Government Licence – Milton.' The school km values are invented constants.",
+  "evidence": "src/lib/street-data.ts:1255: .map((s, i) => ({ s, i, km: 1.5 + (i % 5) * 0.5 })) // synthetic — schools.ts has no coords. That comment is out of date: schools.ts rows carry lat/lng (P.L. Robertson 43.487484,-79.870697). inputJson: Chris Hadfield PS 27 min. P.L. Robertson is not among the input's nearby schools.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The fabrication is plain, and it comes from the renderer, not from the LLM.\n\nLive page, fetched and tag-stripped: the 'Nearby' sidebar reads \"🏫 Chris Hadfield PS 4 min drive 🏫 P.L. Robertson PS 4 min drive 🚆 Milton GO 28 min drive\". Directly under it is the caption \"Distances from this street’s road centreline. Contains information licensed under the Ope…",
+   "UPHELD: I could not refute this finding. The school distances are invented, and nothing in inputJson or the Town data supports them.\n\n1. **Live page (tags stripped):** the Nearby sidebar reads \"🏫 Chris Hadfield PS 4 min drive 🏫 P.L. Robertson PS 4 min drive 🚆 Milton GO 28 min drive Distances from this street's road centreline. Contains information licensed under the Open Government Licence – Mi…",
+   "UPHELD: I could not refute this. The violation is plain, and it comes from deterministic page code (src/lib/street-data.ts), not from the model, so validateStreetGeneration.ts never sees it. One part is overstated: the JSON-LD carries no distances.\n\n1) Live page (curl of https://miltonly.com/streets/ennisclare-drive-milton). The Nearby sidebar renders \"FreshCo Milton | 26 min drive\", \"Islamic Comm…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "gettingAround (stored in sectionsJson and StreetContent.description; section not rendered live)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "For points west and south, the arithmetic is friendlier: Mississauga is twenty-two minutes by car, Burlington twenty, Oakville twenty-four.",
+  "problem": "Made-up direction, and wrong: Mississauga is east of the street and Oakville is southeast. The input has no direction for any destination.",
+  "evidence": "inputJson.commute has only {method, minutes} per destination. Street centroid (townRoadFacts) -80.0638 lng; Mississauga centre about -79.64, roughly 34 km due east.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The minutes are grounded but the directions are not. inputJson.commute gives only method and minutes: toMississauga {drive, 22}, toBurlington {drive, 20}, toOakville {drive, 24}, toPearson {drive, 32}, toTorontoDowntown {GO+TTC, 88}. So \"twenty-two / twenty / twenty-four\" is supported, and so is calling them \"friendlier\" than the 88-minute downtown trip. No…",
+   "UPHELD: I could not refute this. Nothing in inputJson gives a direction for any destination, so \"For points west and south\" was invented by the model, and it is also wrong on the map.\n\nWhat the input holds:\n- The only commute facts are {method, minutes} per destination: toMississauga drive 22, toBurlington drive 20, toOakville drive 24, toPearson drive 32, toTorontoDowntown \"GO+TTC (drive to GO)\" …",
+   "UPHELD: I could not refute this finding. Nothing in the input supports the direction the prose gives.\n\n1. **The quote is stored as written.** It appears verbatim in sectionsJson gettingAround paragraph 1 and in StreetContent.description at offset 4827: \"For points west and south, the arithmetic is friendlier: Mississauga is twenty-two minutes by car, Burlington twenty, Oakville twenty-four.\"\n\n2. *…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "neighbourhoodComparable (rendered live)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "with days on market running well beyond what a busier Milton pocket would show",
+  "problem": "Comparison against other Milton areas with nothing to compare to. The input has the neighbourhood's DOM (161) but no Milton-wide or other-area DOM. It happens to be true (the page header shows urban Milton at 28 days), but the model did not have that figure.",
+  "evidence": "inputJson.neighbourhoodComparable.daysOnMarket 161. No town-wide or other-neighbourhood DOM field in inputJson.",
+  "votes": [
+   "UPHELD: I couldn't refute it. The sentence has nothing in the input to ground it, and it does render on the live page.\n\n1. **The input has no Milton-wide pace figure.** The only days-on-market fields in inputJson are these two:\n   - `aggregates.daysOnMarket`, which is null.\n   - `neighbourhoodComparable.daysOnMarket`, which is 161 for Rural Nassagaweya (detached, 12 months, sample 17).\n\n   There i…",
+   "UPHELD: I could not refute this. The quote appears live at https://miltonly.com/streets/ennisclare-drive-milton under \"Comparable homes nearby\": \"Homes in this cohort have been taking time to clear, with days on market running well beyond what a busier Milton pocket would show\". The live page renders only the stored paragraph's later sentences; the sentences carrying the $1.55M figure do not rende…",
+   "REFUTED: The quote renders live exactly as stored, in the neighbourhoodComparable section (\"Homes in this cohort have been taking time to clear, with days on market running well beyond what a busier Milton pocket would show, and the sold-to-ask relationship points to meaningful negotiation room...\"). The only factual claim in it is that this cohort sells slowly, and the input supports that directl…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "compliance",
+  "where": "rendered page, Address ladder (AddressLadder.tsx via src/lib/streetAddresses.ts buildAddressLadder) plus the sales tiles",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "4220 | data-d=\"two thirds along · even side · Detached · 0.73\" (the only ladder mark besides the live 4215 that carries a building form), shown beside \"Detached sold 1 / 1 sale · last 12 months\" and \"Recent sales · last 90 days 1",
+  "problem": "The ladder's 'Detached' label for 4220 comes from a sold listing. The page also tells logged-out visitors that one detached home on the street sold in the last 90 days, so anyone can work out that 4220 Ennisclare Drive is the sold home and roughly when it sold. No price and no exact date appear, but the address of a sold listing is VOW data. It also breaks the module's own rule: 'NEVER, AT ANY k: ... a historical listing'.",
+  "evidence": "Read-only DB query on Listing (streetSlug ennisclare-drive-milton): 4215 status 'active' propertySubType 'Detached'; 4220 status 'sold' propertySubType 'Detached'; no other rows. RSC tuple [4220,332,1,1,\"two thirds along · even side · Detached · 0.73\",null]. streetAddresses.ts:170-179 builds the forms map from every input listing whatever its status. It checks status only for the 'listed now' link.",
+  "votes": [
+   "UPHELD: I could not refute this finding. The facts check out, and nothing in inputJson or the project rules makes it compliant.\n\n1. The live page renders as claimed. I fetched it with curl, logged out. The ladder has 28 marks and only two carry a building form. One is 4215, whose markup reads \"midway · odd side · Detached · 0.48\" with \"Listed now by Royal Lepage Meadowtowne Realty\". The other is `…",
+   "UPHELD: I could not refute this. The quoted text is real, it has no grounding, and the leak is plain.\n\n1. The live page matches the quote. From curl of https://miltonly.com/streets/ennisclare-drive-milton: `<a id=\"4220\" class=\"s-m s-e\" data-d=\"two thirds along · even side · Detached · 0.73\" ...>4220</a>`. The only other mark with a building form is the live one: `4215 ... midway · odd side · Detac…",
+   "REFUTED: The facts in the finding are accurate, but the rule it cites does not forbid this, and the harm depends on an inference the page never makes possible on its own.\n\nWhat I confirmed:\n- The live page renders `data-d=\"two thirds along · even side · Detached · 0.73\"` for 4220, beside the tiles \"Detached sold 1 / 1 sale · last 12 months\", \"Activity 1 sales · last 90 days\" and \"Recent sales · la…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "rendered page, 'Commute & reach from Ennisclare Drive' grid (non-generated)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Chris Hadfield PS 8 min drive | Anne J. MacArthur PS 5 min drive | Irma Coulson PS 6 min drive | E.W. Foster PS 5 min drive | Tiger Jeet Singh PS 4 min drive | Highway 401 on-ramp 5 min drive | Union Station (GO) 58 min transit | Kelso Conservation Area 12 min drive | Rattlesnake Point Conservation 20 min drive",
+  "problem": "These are made-up travel times published as facts about this street. The school minutes come from a formula on the school name's length. The 401, Union and conservation-area times are constants that every street shows. All of them contradict the generator input for this rural street.",
+  "evidence": "src/lib/street-data.ts:1500-1501 hardcodes '5 min drive' and '58 min transit'. Lines 1509-1512: primaryTime: `${3 + (s.name.length % 6)} min drive` // synthetic ('Chris Hadfield PS' is 17 characters, giving 8; 'Tiger Jeet Singh PS' is 19, giving 4). inputJson.nearby.schoolsPublic: Chris Hadfield PS distanceMin 27; nearby.highway.onrampDistanceMin 26; commute.toTorontoDowntown 88 minutes (GO+TTC, drive to GO).",
+  "votes": [
+   "UPHELD: I could not refute this finding. It is confirmed on the live page and in the code.\n\n1. The live page (curl, tags stripped) shows under \"Commute & reach from Ennisclare Drive\": \"Highway 401 on-ramp 5 min drive Union Station (GO) 58 min transit Schools Public and Catholic boards Chris Hadfield PS 8 min drive Anne J. MacArthur PS 5 min drive Irma Coulson PS 6 min drive E.W. Foster PS 5 min dr…",
+   "UPHELD: I could not refute the finding. The live page (curl, tags stripped) shows exactly: \"Commute & reach from Ennisclare Drive ... Highway 401 on-ramp 5 min drive Union Station (GO) 58 min transit Schools ... Chris Hadfield PS 8 min drive Anne J. MacArthur PS 5 min drive Irma Coulson PS 6 min drive E.W. Foster PS 5 min drive Tiger Jeet Singh PS 4 min drive ... Kelso Conservation Area 12 min dri…",
+   "UPHELD: The finding holds, and nothing grounds it. The live page (curl, tags stripped) renders exactly: \"Highway 401 on-ramp 5 min drive Union Station (GO) 58 min transit Schools ... Chris Hadfield PS 8 min drive Anne J. MacArthur PS 5 min drive Irma Coulson PS 6 min drive E.W. Foster PS 5 min drive Tiger Jeet Singh PS 4 min drive ... Kelso Conservation Area 12 min drive Rattlesnake Point Conserva…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "rendered page, 'Around Ennisclare Drive' Schools cards",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Around Ennisclare Drive | Schools: Chris Hadfield PS / Anne J. MacArthur PS / Irma Coulson PS / E.W. Foster PS (Halton District School Board · Elementary)",
+  "problem": "The heading says these are the schools around this street, but they are just the first four schools in the roster. The nearest school in the input, Brookville ES at 8 minutes, is not listed.",
+  "evidence": "street-data.ts:1691: no roster school matches 'Rural Nassagaweya', so schoolCards is empty and the code falls back to schools.slice(0, 4). inputJson.nearby.schoolsPublic[0] = Brookville ES, distanceMin 8.",
+  "votes": [
+   "UPHELD: The finding holds. I checked the live page, the stored input and the code, and nothing grounds these four schools as being around this street.\n\n1. The live page renders exactly the quoted list. The stripped text reads: \"Around Ennisclare Drive Neighbourhoods Nassagaweya ... Schools Chris Hadfield PS Halton District School Board · Elementary Anne J. MacArthur PS Halton District School Board…",
+   "UPHELD: I could not refute it. The finding holds as stated.\n\n1. **The live page shows exactly the roster fallback.** Under \"In context / Around Ennisclare Drive / Schools\" it lists \"Chris Hadfield PS\", \"Anne J. MacArthur PS\", \"Irma Coulson PS\" and \"E.W. Foster PS\", each with \"Halton District School Board · Elementary\". These are the first four entries in src/lib/schools.ts (lines 28-31), in the sa…",
+   "UPHELD: I could not refute the finding. It holds on the live page, in the code and against the input.\n\n1. The live page (curl, tags stripped) renders this text exactly: \"In context Around Ennisclare Drive Neighbourhoods Nassagaweya ... Schools Chris Hadfield PS Halton District School Board · Elementary Anne J. MacArthur PS Halton District School Board · Elementary Irma Coulson PS Halton District S…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "voice",
+  "where": "rendered page, 'Where this street sits' area-context card (template, not generated)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Too few recent trades on Ennisclare Drive to price it on its own yet, the Nassagaweya market is your best guide to what you'd pay here, and this page fills in with Ennisclare Drive's own numbers as homes trade.",
+  "problem": "'best guide' is a superlative. The same phrasing is on condo pages.",
+  "evidence": "src/components/street/v2/sections.tsx:834; the same wording is in src/components/condo/BuildingAttributesPage.tsx:86 ('is your best guide to what you’d pay'). CLAUDE.md Voice: 'No superlatives.'",
+  "votes": [
+   "UPHELD: I could not refute this. It is a real voice violation.\n\n1. **The text renders live as quoted.** I fetched https://miltonly.com/streets/ennisclare-drive-milton and it contains: \"Too few recent trades on Ennisclare Drive to price it on its own yet, the Nassagaweya market is your best guide to what you'd pay here, and this page fills in with Ennisclare Drive's own numbers as homes trade.\" It …",
+   "UPHELD: The finding stands. The live page at https://miltonly.com/streets/ennisclare-drive-milton shows this exact text in the area-context card (p.s-areacx-read): \"Too few recent trades on Ennisclare Drive to price it on its own yet, the Nassagaweya market is your best guide to what you'd pay here, and this page fills in with Ennisclare Drive's own numbers as homes trade.\"\n\nThe text comes from th…",
+   "UPHELD: I could not refute this finding. The problem is real, and it sits in the template, not in the generated prose.\n\n1. **The text is live.** A curl of https://miltonly.com/streets/ennisclare-drive-milton with tags stripped shows it word for word in the area-context card: \"Too few recent trades on Ennisclare Drive to price it on its own yet, the Nassagaweya market is your best guide to what you…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "visible",
+  "severity": "voice",
+  "where": "rendered 'What's nearby' (sec amenities p1 after stripNumericSentences)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in the same range.",
+  "problem": "Stripping the numeric sentences left a broken paragraph. 'sit in the same range' points back at 'mid-to-high twenties', which was cut. 'On the Catholic side' now contrasts with nothing, because the public-school sentence (Brookville ES, the nearest school) was also removed. As a result, the only schools the rendered prose names are Catholic-board schools. The wording does not steer anyone, but naming one denomination's schools only reads badly on a real-estate page. The coherence pass does not catch mid-sentence back-references such as 'the same range'.",
+  "evidence": "Stored amenities p1 also had 'Brookville ES is the nearest public elementary option at about eight minutes by car, with W.I. Dick Middle School, Chris Hadfield PS, and Robert Baldwin PS all in the mid-to-high twenties.' That sentence was dropped by the \\d / cardinal rules in src/lib/prose/numericSentences.ts. The DANGLING_START check looks only at sentence openers.",
+  "votes": [
+   "UPHELD: I could not refute the finding. The live page (curl, tags stripped) renders the 'What's nearby' prose as exactly one paragraph: \"Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in the same range.\"\n\n**Stored version.** The stored amenities paragraphs[1] (streetGeneration.sectionsJson…",
+   "UPHELD: I could not refute this. The defect is real and shows on the live page.\n\n**What the live page renders.** I fetched https://miltonly.com/streets/ennisclare-drive-milton and stripped the tags. Under \"What's nearby\" the only prose is: \"Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in…",
+   "UPHELD: I could not refute this. It is a real render-time coherence defect, not a fabrication. On 2026-09-23, under 'What's nearby', the live page renders exactly: \"Schools are spread across the surrounding area. On the Catholic side, Holy Rosary Catholic ES, St. Peter Catholic ES, and Bishop P.F. Reding Catholic SS sit in the same range.\"\n\nGrounding: the school names come from inputJson.nearby.sc…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "rendered 'Commute & reach' Places of worship block (template); stored amenities p1 worship sentence names only the two mosques (not rendered)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Places of worship / Mosques, churches, gurdwaras / Halton Islamic Community Centre 36 min drive / Milton Muslim Community Centre 26 min drive / Islamic Community Centre of Milton 21 min drive",
+  "problem": "The subtitle promises churches and gurdwaras, but the block lists only mosques. Presenting a single faith's institutions as 'places of worship' on a street page is a fair-housing register risk, even though the distances are grounded.",
+  "evidence": "inputJson.nearby carries only a 'mosques' array (21/26/36 min), so the three items match the input. No church or gurdwara data exists for the subtitle to rest on.",
+  "votes": [
+   "UPHELD: I could not refute this. The three listed items are grounded, but nothing grounds the subtitle, and the gap between the subtitle and the list is plain.\n\n1. **The live page renders the block exactly as quoted.** The tag-stripped curl of https://miltonly.com/streets/ennisclare-drive-milton shows \"Places of worship\" / \"Mosques, churches, gurdwaras\" / \"Halton Islamic Community Centre\" \"36 min …",
+   "UPHELD: I could not refute the finding. It holds as stated, and the problem sits in the template rather than in the generated prose.\n\nThe live page (curl, tags stripped, lines 974-981) renders \"Places of worship / Mosques, churches, gurdwaras / Halton Islamic Community Centre 36 min drive / Milton Muslim Community Centre 26 min drive / Islamic Community Centre of Milton 21 min drive\". The JSON-LD …",
+   "UPHELD: I could not refute the core of the finding. The fair-housing part is weaker than the reviewer says.\n\n1. **The block renders as quoted.** The live page (curl, tags stripped) shows \"Places of worship / Mosques, churches, gurdwaras / Halton Islamic Community Centre 36 min drive / Milton Muslim Community Centre 26 min drive / Islamic Community Centre of Milton 21 min drive\". The subtitle appea…"
+  ]
+ },
+ {
+  "slug": "ennisclare-drive-milton",
+  "served": "no",
+  "severity": "voice",
+  "where": "stored schools p0 and FAQ 6 (also in StreetContent.faqJson); not rendered",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Bishop P.F. Reding Catholic SS is the nearest secondary named here | The 407 is not named in the data for this street.",
+  "problem": "The phrasing talks about the pipeline itself ('named here', 'not named in the data'). That is methodology language in reader-facing text. It is stored in the dual-write row, but the strip currently hides it.",
+  "evidence": "streetGeneration.faqJson[6].answer and sectionsJson schools p0. validateStreetGeneration.ts methodology-leak lists do not cover 'in the data'.",
+  "votes": [
+   "UPHELD: I could not refute it. Both facts are grounded, but the finding is about the model describing its own input to the reader, and grounding does not cure that.\n\nGrounding, checked:\n- inputJson.nearby.schoolsCatholic[2] is {\"name\":\"Bishop P.F. Reding Catholic SS\",\"level\":\"secondary\",\"distanceMin\":28}. It is the only secondary school in the input, so \"nearest secondary named here\" is an accurat…",
+   "UPHELD: I could not refute it. The facts behind both sentences are grounded, but the finding is about voice, and the pipeline wording in the stored copy is plain.\n\nWhere the text is stored (checked in rows-ennisclare-drive-milton.json):\n- \"Bishop P.F. Reding Catholic SS is the nearest secondary named here, twenty-eight minutes away.\" appears in sectionsJson schools.paragraphs[0] and in FAQ index 3…",
+   "REFUTED: Refuted. There is no fabrication, no current reader exposure, and no codified rule that this breaks.\n\n1. Both sentences are grounded.\n- \"Bishop P.F. Reding Catholic SS is the nearest secondary named here, twenty-eight minutes away.\" This school is the only secondary among the 8 schools in inputJson.nearby. schoolsPublic lists only elementaries. The input gives this school distanceMin 28.\n…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "misattribution",
+  "where": "market (sectionsJson + streetContent.description; stored only, numeric sentence stripped at render)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "For orientation, homes across Harrison typically trade around $750,000, a figure that describes the neighbourhood rather than this street.",
+  "problem": "The only $750K figure in the input is a townhouse-only comparable, but this sentence gives it as the typical for all homes across Harrison. The live page's own deterministic block says the Harrison typical for all homes is $900K. The homes section gets the scope right ('townhomes typically trade around $750,000').",
+  "evidence": "inputJson.neighbourhoodComparable.typicalSoldPrice=752000 with filterByPropertyType='townhouse', fallbackApplied='type-only', sampleSize=65. The inputJson has no all-types Harrison typical. Live page 'Neighbourhood context' block: '$900K the typical home price across Harrison ... across 143 sales in the last 12 months'.",
+  "votes": [
+   "UPHELD: I could not refute this. The number has a source in the input, but the scope it is given does not.\n\n1) Only one field could ground it. inputJson.neighbourhoodComparable has typicalSoldPrice=752000, filterByPropertyType=\"townhouse\", fallbackApplied=\"type-only\", sampleSize=65 and neighbourhood=\"Harrison\". Across all of inputJson, 752000 is the only price-sized number; the other long digit st…",
+   "UPHELD: I could not refute the finding. The figure is grounded but the scope is not. The only price in inputJson is neighbourhoodComparable.typicalSoldPrice=752000, and that comparable is townhouses only: filterByPropertyType=\"townhouse\", fallbackApplied=\"type-only\", sampleSize=65. So the rounded $750,000 has a source, but \"homes across Harrison\" presents it as the typical for all homes, and nothi…",
+   "UPHELD: Not refuted. The only field that could ground the sentence is inputJson.neighbourhoodComparable: typicalSoldPrice 752000, neighbourhood \"Harrison\", filterByPropertyType \"townhouse\", fallbackApplied \"type-only\", sampleSize 65, kAnonLevel \"full\". inputJson holds no other price: aggregates.typicalPrice is null, byType.townhouse.typicalPrice is null, and crossStreets is []. A regex scan of the…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "neighbourhoodComparable (RENDERED under 'Comparable homes nearby'); also faq[1] 'The broader Harrison market for townhomes has been steady' and the section opener 'have sold at broadly consistent levels over the past year' (both stored only)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "Taken together, the neighbourhood picture is one of steady, unspectacular trade in townhouse stock",
+  "problem": "This is a price-trend or stability claim with no data behind it. It comes straight after the section's own sentence 'Year-over-year direction is not published for this comparable set, so no trend read is offered here', so the page contradicts itself in the rendered text.",
+  "evidence": "inputJson.neighbourhoodComparable.priceChangeYoy=null and priceRange=null. docs/phase-4.1/02b-market-prompt.md:255 allows 'held steady' only when YoY is FLAT (within ±1.5%). The grounding rules say: 'If priceChangeYoy === null ... OMIT that observation entirely. Do NOT fabricate.'",
+  "votes": [
+   "UPHELD: I could not refute this. Nothing in inputJson grounds a claim that the market is \"steady\" or \"consistent\".\n\n1. **YoY and range are null.** inputJson.neighbourhoodComparable = {typicalSoldPrice 752000, sampleSize 65, windowMonths 12, soldToAsk 0.98388, daysOnMarket 86, kAnonLevel \"full\", fallbackApplied \"type-only\", priceChangeYoy null, priceRange null, mostRecentSoldAt null}. None of these…",
+   "UPHELD: I could not refute this. Nothing in inputJson grounds a stability or trend read.\n\n1. **The quote renders live.** The fetched page has this text under \"Comparable homes nearby\": \"Year-over-year direction is not published for this comparable set, so no trend read is offered here. Taken together, the neighbourhood picture is one of steady, unspectacular trade in townhouse stock\". So the rende…",
+   "UPHELD: I could not refute this. No input field grounds a stability or trend claim, and the rendered text contradicts itself.\n\n1. The input has no data behind it. inputJson.neighbourhoodComparable = {typicalSoldPrice:752000, sampleSize:65, kAnonLevel:\"full\", windowMonths:12, soldToAsk:0.9838759718370262, daysOnMarket:86, priceChangeYoy:null, priceRange:null, mostRecentSoldAt:null}. There is no nei…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "about (RENDERED: hero subtitle, About section, JSON-LD Place.description, and the live meta description)",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "a pocket of the town that has filled in around a mix of townhouse rows and detached homes",
+  "problem": "No input field mentions detached homes. The input records only townhouses, and faq[2] (also rendered) says 'that is the only housing type recorded here. The mix is uniform rather than varied', which contradicts this sentence. 'Has filled in' is also a development-history claim with no source.",
+  "evidence": "inputJson.byType = { townhouse: { count: 1 } } only. The input has no detached key and no build-era field.",
+  "votes": [
+   "UPHELD: I could not refute the finding. Nothing in inputJson (D:\\miltonly\\scratchpad\\mc042\\rows-jempson-path-milton.json, streetGeneration.inputJson) supports \"a pocket of the town that has filled in around a mix of townhouse rows and detached homes\". I checked these fields:\n- byType has one key only: {townhouse: {count: 1, kFlag: \"thin\", priceRange: null, typicalPrice: null}}. There is no detache…",
+   "UPHELD: I could not refute it. Nothing in inputJson supports \"a mix of townhouse rows and detached homes\" or the history claim \"has filled in\".\n\nWhat the input contains:\n- It has no physical, geography, road or place block at all, and crossStreets is [].\n- The only housing-type data is byType = {\"townhouse\":{\"count\":1,\"kFlag\":\"thin\",\"priceRange\":null,\"typicalPrice\":null}}. There is no detached key…",
+   "UPHELD: I could not refute this. The finding is a real fabrication.\n\n**No grounding in the input.** In the rows file, inputJson.byType has a single key: townhouse {count:1, kFlag:\"thin\", typicalPrice:null, priceRange:null}. The input contains no detached key and no semi or condo key. The only other type-bearing field is neighbourhoodComparable.filterByPropertyType, which is \"townhouse\" with fallba…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "faq[7] (RENDERED in Common questions and in the FAQPage JSON-LD)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "The street is established, with the surrounding Harrison area built out rather than still under development.",
+  "problem": "The answer claims a build era and development status, and nothing in the input supports either. The FAQ bank forces this question on every street, so any answer is made up unless the input carries build-era data.",
+  "evidence": "inputJson has no build-year, construction or development-status field. docs/phase-4.1/02b-market-prompt.md:93 itself says 'the input contains no build-era data'. The question is forced by 01-system-prompt.md:201.",
+  "votes": [
+   "UPHELD: I could not refute this finding. Nothing in inputJson grounds the sentence.\n\n1. **What inputJson holds.** Its only top-level keys are byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods and neighbourhoodComparable, plus activeListingsCount. None of them carries a build year, a build era, a construction phase, primaryBuilder or a development status. The blocks I checke…",
+   "UPHELD: I could not refute this. The fabrication finding stands.\n\n1. **The text is live on the page.** faq[7] in both streetGeneration.faqJson and streetContent.faqJson reads: \"The street is established, with the surrounding Harrison area built out rather than still under development. Only one sale has been recorded here recently.\" The page at https://miltonly.com/streets/jempson-path-milton shows…",
+   "UPHELD: I could not refute this. Nothing in the input grounds the claim, and the validator not catching it does not make it compliant.\n\n(1) The text is live. The fetch of https://miltonly.com/streets/jempson-path-milton contains \"The street is established, with the surrounding Harrison area built out rather than still under development.\" twice: once in the visible Common questions and once in the …"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "gettingAround (stored only; numeric sentence stripped at render)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "Oakville and Burlington sit 24 and 20 minutes out respectively, both westbound runs that rarely demand the highway.",
+  "problem": "The minutes are grounded, but the direction and route are invented and wrong. From the street centroid (43.4849, -79.8711), Oakville lies east-southeast and Burlington south-southeast, so neither trip is westbound. Nothing in the input covers routes or highway use.",
+  "evidence": "inputJson.commute.toOakville={drive,24} and toBurlington={drive,20} carry no direction or route. The centroid comes from townRoadFacts 'jempson||path', which is not a prompt input.",
+  "votes": [
+   "UPHELD: I could not refute this. Nothing in inputJson grounds \"westbound runs that rarely demand the highway\". The top-level inputJson keys are byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount and neighbourhoodComparable, and none carries a direction, bearing, route or coordinate. The two commute entries hold only a method and a time: commute.toOakvill…",
+   "UPHELD: I could not find anything in the input that supports the direction or the route. The inputJson for jempson-path-milton has only these top-level fields: byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount and neighbourhoodComparable. It has no physical, geography, road or place block. crossStreets is [] and street.direction is \"\". inputJson.commute…",
+   "UPHELD: I could not refute this finding. The stored gettingAround paragraph contains \"Oakville and Burlington sit 24 and 20 minutes out respectively, both westbound runs that rarely demand the highway.\" The same sentence is also dual-written into streetContent.description.\n\nThe minutes are grounded. inputJson.commute.toOakville is {method:\"drive\",minutes:24} and toBurlington is {method:\"drive\",min…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "faq[6] (stored only; dropped at render)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "The 407 is not the natural approach from this position.",
+  "problem": "This is a claim about Highway 407 access, and the input has no 407 data at all. The FAQ bank forces a '401 or 407' question, so the 407 half of the answer can only be made up.",
+  "evidence": "inputJson.nearby.highway = { name: 'Highway 401 at Regional Rd 25', onrampDistanceMin: 8 } only. No 407 field exists. The question is forced by 01-system-prompt.md:197.",
+  "votes": [
+   "UPHELD: I could not refute this finding. Nothing in inputJson grounds the sentence \"The 407 is not the natural approach from this position.\" Stored faq[6] reads, word for word, in both streetGeneration.faqJson and streetContent.faqJson: Q \"Is Jempson Path close to the 401 or 407?\" A \"The 401 onramp at Regional Rd 25 is an eight-minute drive from the street. The 407 is not the natural approach from…",
+   "UPHELD: I could not refute this. Nothing in inputJson grounds the 407 half of the answer.\n\n1. **Where the text is.** The line is stored in both streetGeneration.faqJson[6] and streetContent.faqJson[6]: Q \"Is Jempson Path close to the 401 or 407?\" / A \"The 401 onramp at Regional Rd 25 is an eight-minute drive from the street. The 407 is not the natural approach from this position.\"\n\n2. **The blocks…",
+   "UPHELD: I could not refute this finding. Nothing in the input grounds the sentence, but the harm is limited: the sentence is only in storage and never reaches the live page.\n\n1. **The sentence is stored as quoted.** `streetGeneration.faqJson[6]` (question \"Is Jempson Path close to the 401 or 407?\") and `streetContent.faqJson[6]` both read: \"The 401 onramp at Regional Rd 25 is an eight-minute drive…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "schools (stored only; section not rendered)",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "P.L. Robertson PS is the closest Halton District School Board elementary, three minutes by car, with Tiger Jeet Singh PS a further six.",
+  "problem": "There are two numeric errors here. (1) The 3 is a walking time, not a drive: the builder uses walk minutes when a school is under 1.5 km, and this school is about 0.29 km away. The amenities section of the same stored text says 'P.L. Robertson Public School is a three-minute walk'. (2) 'A further six' reads as six more minutes, about 9 in total, but the input value is 6 in total.",
+  "evidence": "inputJson.nearby.schoolsPublic: P.L. Robertson PS distanceMin=3, Tiger Jeet Singh PS distanceMin=6. In buildGeneratorInput.ts:911, km<1.5 means walkMinutes. Recomputed from the centroid: 0.288 km, walk 3. Tiger Jeet Singh: 2.873 km, drive 6.",
+  "votes": [
+   "UPHELD: I could not refute the finding. Both numeric errors stand.\n\n**What the input says.** In the schools section of sectionsJson (the generated prose), the stored sentence reads \"P.L. Robertson PS is the closest Halton District School Board elementary, three minutes by car, with Tiger Jeet Singh PS a further six.\" It matches inputJson.nearby.schoolsPublic, which gives P.L. Robertson PS distance…",
+   "UPHELD: I could not refute this finding. Nothing in inputJson supports \"three minutes by car\".\n\n**Where the text lives.** The sentence is in the stored \"schools\" section of streetGeneration.sectionsJson, and word for word in streetContent.description (\"P.L. Robertson PS is the closest Halton District School Board elementary, three minutes by car, with Tiger Jeet Singh PS a further six.\"). The live…",
+   "UPHELD: I could not refute this finding. The number 3 comes from the input, but \"by car\" does not, and \"a further six\" gets the arithmetic wrong.\n\n1. \"three minutes by car\": inputJson.nearby.schoolsPublic[0] is {name:\"P.L. Robertson PS\", distanceMin:3}. It has no field saying whether the minutes are walking or driving, so \"by car\" was added by the model. It is also wrong. At buildGeneratorInput.ts…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "neighbourhoodComparable (stored only; numeric sentence stripped at render)",
+  "lenses": [
+   "numeric",
+   "physical"
+  ],
+  "quote": "Pace across the neighbourhood runs at a moderate tempo, with comparable homes typically clearing in around 86 days, a cadence that reflects a market where well-prepared listings move and others wait.",
+  "problem": "86 days is grounded. 'Moderate tempo' is a comparison with no comparator in the input: the street's own DOM is null and there is no town-wide figure. The page's own Market watch shows urban Milton at 28 days, which makes 86 about three times slower. 'Well-prepared listings move and others wait' is also invented.",
+  "evidence": "inputJson.neighbourhoodComparable.daysOnMarket=86 and inputJson.aggregates.daysOnMarket=null. Live page: 'urban Milton homes sold for 98.1% of asking, in 28 days'.",
+  "votes": [
+   "UPHELD: I could not refute this. Only the figure is grounded. The characterization and the causal clause are not.\n\n1. The figure is grounded. `inputJson.neighbourhoodComparable` has daysOnMarket=86, typical pricing, kAnonLevel \"full\", sampleSize 65, windowMonths 12, filterByPropertyType \"townhouse\". So \"comparable homes typically clearing in around 86 days\" traces to input.\n\n2. \"Moderate tempo\" ha…",
+   "UPHELD: I could not refute this finding. The 86 days is grounded, but the words around it are not.\n\n1. \"around 86 days\" comes from inputJson.neighbourhoodComparable.daysOnMarket=86 (Harrison, townhouse, sampleSize 65, kAnonLevel \"full\", window 12 months). That part is fine.\n\n2. \"moderate tempo\" has nothing to be measured against. I checked every inputJson block.\n   - street has only name, slug, ty…",
+   "REFUTED: I'm marking this refuted because the sentence never reaches the page, not because it is grounded. The wording itself is not grounded.\n\n1. **Not on the live page.** I fetched https://miltonly.com/streets/jempson-path-milton and searched the full HTML (the visible text, the RSC payload and the JSON-LD). \"moderate tempo\", \"well-prepared\", \"86 days\" and \"clearing in\" each appear 0 times. The …"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "minor",
+  "where": "about (stored only); also gettingAround 'For a street this size'",
+  "lenses": [
+   "numeric",
+   "physical",
+   "compliance"
+  ],
+  "quote": "This is a quieter, low-turnover address rather than a through-route",
+  "problem": "The road class ('rather than a through-route') and street size ('a street this size') appear only in streetGeometry.ts (local road, lengthM 80). They are not in inputJson, so the model had no source for them, even though they are true.",
+  "evidence": "src/data/streetGeometry.ts:537 'jempson||path': lengthM 80, category 'local road'. inputJson has no geometry, length or road-class field. inputJson.crossStreets=[].",
+  "votes": [
+   "UPHELD: I could not refute the finding. Nothing in inputJson supports the road-class or street-size wording.\n\n1. **Aggregates block.** It grounds \"low-turnover\" and nothing more. The fields are kAnonLevel \"thin\", salesCount 1, leasesCount 1, typicalPrice null, daysOnMarket null and priceRange null. None of them says anything about road class, traffic or physical size.\n\n2. **neighbourhoodComparable…",
+   "UPHELD: The finding holds: nothing in inputJson supports either phrase. As the skeptic brief asked, I checked the physical, geography, road, cross-street and place blocks first.\n\n1. **What inputJson contains.** Its only top-level keys are byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount and neighbourhoodComparable.\n   - The street block holds only name…",
+   "UPHELD: I could not refute the finding. Nothing in inputJson supports \"rather than a through-route\" or \"quieter\", and the rule clearly covers them.\n\n1. **Only \"low-turnover\" is grounded.** It is supported by aggregates.salesCount=1, leasesCount=1 and kAnonLevel \"thin\". \"Quieter\" and \"rather than a through-route\" describe traffic and road class. inputJson has no road-class, traffic, terminus or len…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "head",
+  "severity": "minor",
+  "where": "meta (live <meta name=description>, built by page.tsx fitDescription from the About lead)",
+  "lenses": [
+   "numeric"
+  ],
+  "quote": "Jempson Path is a residential street in Milton's.",
+  "problem": "The live meta description cuts the generated sentence off after 'Milton's' and adds a period, leaving an ungrammatical fragment. The stored streetContent.metaDescription is also not what renders.",
+  "evidence": "Live meta: 'Jempson Path, Milton: 1 sale in the last 12 months on record, current listings, and the full street read. Jempson Path is a residential street in Milton&#x27;s.' The '1 sale' count is grounded (aggregates.salesCount=1). src/app/streets/[slug]/page.tsx fitDescription cuts at a word boundary and appends '.'.",
+  "votes": [
+   "UPHELD: I could not refute this. The defect is real, easy to see, and I reproduced it exactly. The words themselves are not made up, though. The problem is how the page code cuts the text, not the generated content.\n\nLive (curl, 2026-09-23): <meta name=\"description\"> and og:description both read \"Jempson Path, Milton: 1 sale in the last 12 months on record, current listings, and the full street re…",
+   "UPHELD: I could not refute this finding. The page really does ship this fragment, and I reproduced it exactly. The live page has `<meta name=\"description\" content=\"Jempson Path, Milton: 1 sale in the last 12 months on record, current listings, and the full street read. Jempson Path is a residential street in Milton&#x27;s.\"/>`, and og:description carries the same text.\n\nHow it happens, in src/app/…",
+   "UPHELD: Confirmed live, so I can't refute it. The live page (curl https://miltonly.com/streets/jempson-path-milton) has this in both <meta name=\"description\"> and og:description: \"Jempson Path, Milton: 1 sale in the last 12 months on record, current listings, and the full street read. Jempson Path is a residential street in Milton&#x27;s.\" The model did not write this; page.tsx builds it when the …"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "visible",
+  "severity": "fabrication",
+  "where": "about (sections[0], sentence 1). LIVE: this sentence is the hero subtitle, the first sentence of the rendered About section, and the Place JSON-LD description. As StreetContent.description's first sentence it also feeds characterSummary and the meta description.",
+  "lenses": [
+   "physical",
+   "compliance"
+  ],
+  "quote": "Jempson Path is a residential street in Milton's Harrison area, a pocket of the town that has filled in around a mix of townhouse rows and detached homes.",
+  "problem": "This invents Harrison's housing mix (\"townhouse rows and detached homes\"), a build-out history (\"has filled in\") and a physical form (\"rows\"). No input field describes the neighbourhood's stock or how it was built. It is the most visible sentence on the page and it goes into structured data.",
+  "evidence": "inputJson.byType = {townhouse:{count:1,kFlag:\"thin\"}} only, and that is this street's one sale, not Harrison's mix. neighbourhoodComparable.filterByPropertyType=\"townhouse\" with fallbackApplied=\"type-only\", so nothing mentions detached homes. No build-era or development field exists (docs/phase-4.1/02a-about-homes-amenities-prompt.md:87 states the input carries NO build-era field). Live curl: the sentence appears in the hero, the About section and ld+json Place.description.",
+  "votes": [
+   "UPHELD: I could not refute this. Nothing in inputJson supports the clause \"a pocket of the town that has filled in around a mix of townhouse rows and detached homes\". I checked every block. aggregates = {kAnonLevel:\"thin\", salesCount:1, leasesCount:1, typicalPrice:null, priceRange:null, daysOnMarket:null}. byType = {townhouse:{count:1, kFlag:\"thin\"}}, which is this street's single sale and has no …",
+   "UPHELD: I could not find grounding. The full inputJson has only these top-level keys: byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount and neighbourhoodComparable. It has no physical, geography, road or place block. crossStreets is [] and the only place field is neighbourhoods: [\"Harrison\"], which supports \"Milton's Harrison area\" and nothing more. Not…",
+   "UPHELD: I could not refute this. The sentence is ungrounded, and it renders live exactly as stored.\n\n1. **Live check.** I fetched https://miltonly.com/streets/jempson-path-milton with curl. The quoted text appears 6 times in the HTML: the hero, the About section, the rendered description, and ld+json Place.description (\"Jempson Path is a residential street in Milton's Harrison area, a pocket of th…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "no",
+  "severity": "fabrication",
+  "where": "gettingAround (stored only, not rendered)",
+  "lenses": [
+   "physical"
+  ],
+  "quote": "For a street this size, the reach is broader than the address suggests: one short drive covers the train, the highway and the airport.",
+  "problem": "\"a street this size\" refers to a physical size the model was never given. The street is in fact 80 m, but that length is only in streetGeometry.ts, so the model could not know it. \"one short drive covers ... the airport\" also overstates: Pearson is 32 minutes, four times the 8-minute GO and 401 figures it is grouped with.",
+  "evidence": "inputJson has no length or size field. The length is only in src/data/streetGeometry.ts:537 (lengthM 80), which is not a prompt input. inputJson.commute.toPearson.minutes = 32, goStation.distanceMin = 8, highway.onrampDistanceMin = 8.",
+  "votes": [
+   "UPHELD: I could not refute this. The quote has no grounding in inputJson and the evidence the reviewer cites checks out, though \"fabrication\" is too strong a label.\n\n1. **Where the text is.** The quote is in streetGeneration.sectionsJson, section gettingAround, and it is the last sentence there: \"For a street this size, the reach is broader than the address suggests: one short drive covers the tra…",
+   "UPHELD: I could not refute this. Nothing in inputJson grounds \"a street this size\".\n\n1. inputJson has no physical, geography, road or place block. Its top-level keys are byType, nearby, street, commute, aggregates, crossStreets, neighbourhoods, activeListingsCount and neighbourhoodComparable. The street block holds only name, slug, type, direction, identityKey and siblingSlugs, with no length or s…",
+   "UPHELD: I could not refute this finding. Nothing in inputJson supports it.\n\nWhat I checked:\n1. The quote is stored as written. It is the last sentence of gettingAround in streetGeneration.sectionsJson: \"For a street this size, the reach is broader than the address suggests: one short drive covers the train, the highway and the airport.\" It is also in streetContent.description (\"street this size\" a…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "head",
+  "severity": "minor",
+  "where": "meta description (LIVE <meta name=\"description\"> and og:description). The stored metaDescription is not used.",
+  "lenses": [
+   "physical",
+   "compliance"
+  ],
+  "quote": "Jempson Path, Milton: 1 sale in the last 12 months on record, current listings, and the full street read. Jempson Path is a residential street in Milton's.",
+  "problem": "fitDescription cuts the generated first sentence at a word and leaves a dangling possessive, \"in Milton's.\", in the search snippet.",
+  "evidence": "src/app/streets/[slug]/page.tsx: fitDescription(lead, characterSummary, 155). The source sentence runs on as \"in Milton's Harrison area, ...\".",
+  "votes": [
+   "UPHELD: I couldn't refute this. The defect is real and I reproduced it character for character. One caveat first: I could not fetch the live page. Every curl, including a browser user agent, a Googlebot user agent, the verify script's user agent and /api/build, returned 403 \"Vercel Security Checkpoint\". So the live meta tag is unconfirmed. Instead I ran the page's own code on the stored row.\n\nHow …",
+   "UPHELD: I could not refute this. The defect is real and shows on the live page, though it is broken grammar, not invented content.\n\n1. **Live page.** A plain curl got the Vercel Security Checkpoint, so I refetched with a browser user agent. The `<meta name=\"description\">`, `og:description` and `twitter:description` all read exactly: \"Jempson Path, Milton: 1 sale in the last 12 months on record, cu…",
+   "UPHELD: I could not refute this. The defect is real, it comes from the code that assembles the meta description, and I reproduced it exactly.\n\n1. **The live page shows it.** A plain curl got the Vercel Security Checkpoint page, so I fetched again with a browser user agent. The live page carries this exact text in `<meta name=\"description\">`, `og:description` and `twitter:description`: \"Jempson Pat…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "live page chrome: sidebar 'Nearby' vs 'Commute & reach' block (not generated)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Chris Hadfield PS 4 min drive",
+  "problem": "The page contradicts itself: the sidebar shows Chris Hadfield PS at 4 min and the commute block shows 'Chris Hadfield PS 8 min drive'. The commute block also shows 'Tiger Jeet Singh PS 4 min drive' and 'Highway 401 on-ramp 5 min drive', while the generator input had 6 and 8. Three sources disagree on the same distances.",
+  "evidence": "Live HTML sidebar: 'Chris Hadfield PS / 4 min drive', 'P.L. Robertson PS / 4 min drive'. Commute block: 'Chris Hadfield PS 8 min drive', 'Tiger Jeet Singh PS 4 min drive', 'Highway 401 on-ramp 5 min drive'. inputJson.nearby.schoolsPublic Tiger Jeet Singh 6, P.L. Robertson 3; highway onrampDistanceMin 8.",
+  "votes": [
+   "UPHELD: I could not refute this finding. It holds, and it is worse than a contradiction: the school figures in both blocks and the 401 on-ramp figure are made-up numbers in the page template, not measured distances.\n\nWhat the live page shows (curl of https://miltonly.com/streets/jempson-path-milton with tags stripped):\n- The sidebar 'Nearby' card lists 'Chris Hadfield PS / 4 min drive' and 'P.L. R…",
+   "UPHELD: I could not refute this. The finding stands, and it is worse than the reviewer said: these numbers don't just disagree with each other, the page chrome makes them up, so the page breaks the no-fabrication rule.\n\nConfirmed on the live page (curl, tags stripped):\n- Sidebar \"Nearby\": \"Chris Hadfield PS / 4 min drive\", \"P.L. Robertson PS / 4 min drive\", followed by \"Distances from this street'…",
+   "UPHELD: I could not refute this. The problem is real and worse than reported. I fetched https://miltonly.com/streets/jempson-path-milton on 2026-09-23 and stripped the tags.\n\n**What the live page shows**\n- Sidebar, under \"Nearby\": \"Chris Hadfield PS / 4 min drive\" and \"P.L. Robertson PS / 4 min drive\". The caption reads \"Distances from this street's road centreline.\"\n- \"Commute & reach from Jempso…"
+  ]
+ },
+ {
+  "slug": "jempson-path-milton",
+  "served": "visible",
+  "severity": "minor",
+  "where": "live page chrome, 'Leases' card in 'Recent activity' (not generated)",
+  "lenses": [
+   "compliance"
+  ],
+  "quote": "Rental activity on Jempson Path across recent months. Breakdown by bed count below.",
+  "problem": "The copy points to a bed-count breakdown that does not render, because typical rent is suppressed with 1 lease. Similarly, the 'Places of worship' subtitle 'Mosques, churches, gurdwaras' sits over a list of three mosques only.",
+  "evidence": "src/lib/street-data.ts:1441 has the fixed body string. The live HTML has no s-rent breakdown after the 'Typical rent —' tile. inputJson.aggregates.leasesCount = 1.",
+  "votes": [
+   "UPHELD: I couldn't refute it. Both pieces of copy are fixed page chrome, not generated text, so no inputJson field can ground them. They make promises the page doesn't keep.\n\n(1) The Leases card comes from src/lib/street-data.ts:1441: `Rental activity on ${streetName} across recent months. Breakdown by bed count below.` The live page renders it as \"Rental activity on Jempson Path across recent mon…",
+   "UPHELD: Confirmed on the live page. The text is fixed page chrome, not generated prose, so no inputJson field (physical, geography, road, cross-street or place) can ground it.\n\n(1) src/lib/street-data.ts:1441 always sets the leases body to `Rental activity on ${streetName} across recent months. Breakdown by bed count below.` The live HTML reads \"Rental activity on Jempson Path across recent months…",
+   "UPHELD: I could not refute this finding. Both halves are real on the live page. The text is fixed page chrome rather than model output, so no inputJson field can ground it and the validators never see it.\n\n1. Leases card. src/lib/street-data.ts:1441 always prints the body `Rental activity on ${streetName} across recent months. Breakdown by bed count below.`, whatever the data holds.\n   - The bed-c…"
+  ]
+ }
+]

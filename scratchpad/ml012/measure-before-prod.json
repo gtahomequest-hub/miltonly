@@ -1,0 +1,1389 @@
+{
+ "base": "https://miltonly.com",
+ "label": "before-prod",
+ "views": {
+  "/rentals": {
+   "status": 200,
+   "cards": 47,
+   "withLink": 47,
+   "withoutLink": 0,
+   "withheld": 0,
+   "plainStreet": 0,
+   "links": [
+    "/streets/rose-way",
+    "/streets/mortimer-crescent",
+    "/streets/gillett-point",
+    "/streets/whitlock-avenue-802",
+    "/streets/mclaughlin-avenue-basement",
+    "/streets/basement--254-mccready-drive",
+    "/streets/nipissing-road-1103",
+    "/streets/nipissing-road-2207a",
+    "/streets/clarriage-court",
+    "/streets/millside-drive-102",
+    "/streets/sauve-street-519",
+    "/streets/wellwood-terrace",
+    "/streets/robert-street",
+    "/streets/sim-place-upper",
+    "/streets/shanks-heights-basement",
+    "/streets/raspberry-terrace",
+    "/streets/rose-way-107",
+    "/streets/nipissing-street-1308",
+    "/streets/nipissing-road-520-a",
+    "/streets/mctrach-crescent",
+    "/streets/stirling-todd-terrace",
+    "/streets/watercress-way-basement",
+    "/streets/cargill-path",
+    "/streets/nipissing-road-2108-a",
+    "/streets/nipissing-road-2007",
+    "/streets/rose-way-125",
+    "/streets/kennedy-circle",
+    "/streets/muskoka-heights",
+    "/streets/banks-crescent",
+    "/streets/yates-drive-1-bsmt",
+    "/streets/main-street-e-808",
+    "/streets/whitlock-avenue-210",
+    "/streets/houston-drive",
+    "/streets/nipissing-road-e",
+    "/streets/leger-way-405",
+    "/streets/derry-road-504",
+    "/streets/nipissing-road-409a",
+    "/streets/collis-court-n",
+    "/streets/elmwood-crescent-upper",
+    "/streets/pettigrew-trail",
+    "/streets/bonin-crescent",
+    "/streets/gordon-krantz-avenue-219",
+    "/streets/herman-way",
+    "/streets/main-street-e-502",
+    "/streets/sauve-street-210",
+    "/streets/rose-way-121",
+    "/streets/nipissing-rd-road-515-a"
+   ],
+   "linkStatuses": {
+    "/streets/rose-way": {
+     "status": 301,
+     "location": "/streets/rose-way-milton"
+    },
+    "/streets/mortimer-crescent": {
+     "status": 301,
+     "location": "/streets/mortimer-crescent-milton"
+    },
+    "/streets/gillett-point": {
+     "status": 301,
+     "location": "/streets/gillett-point-milton"
+    },
+    "/streets/whitlock-avenue-802": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/mclaughlin-avenue-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/basement--254-mccready-drive": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1103": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-2207a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/clarriage-court": {
+     "status": 301,
+     "location": "/streets/clarriage-court-milton"
+    },
+    "/streets/millside-drive-102": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/sauve-street-519": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/wellwood-terrace": {
+     "status": 301,
+     "location": "/streets/wellwood-terrace-milton"
+    },
+    "/streets/robert-street": {
+     "status": 301,
+     "location": "/streets/robert-street-milton"
+    },
+    "/streets/sim-place-upper": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/shanks-heights-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/raspberry-terrace": {
+     "status": 301,
+     "location": "/streets/raspberry-terrace-milton"
+    },
+    "/streets/rose-way-107": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-street-1308": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-520-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/mctrach-crescent": {
+     "status": 301,
+     "location": "/streets/mctrach-crescent-milton"
+    },
+    "/streets/stirling-todd-terrace": {
+     "status": 301,
+     "location": "/streets/stirling-todd-terrace-milton"
+    },
+    "/streets/watercress-way-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/cargill-path": {
+     "status": 301,
+     "location": "/streets/cargill-path-milton"
+    },
+    "/streets/nipissing-road-2108-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-2007": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/rose-way-125": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/kennedy-circle": {
+     "status": 301,
+     "location": "/streets/kennedy-circle-milton"
+    },
+    "/streets/muskoka-heights": {
+     "status": 301,
+     "location": "/streets/muskoka-heights-milton"
+    },
+    "/streets/banks-crescent": {
+     "status": 301,
+     "location": "/streets/banks-crescent-milton"
+    },
+    "/streets/yates-drive-1-bsmt": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/main-street-e-808": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/whitlock-avenue-210": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/houston-drive": {
+     "status": 301,
+     "location": "/streets/houston-drive-milton"
+    },
+    "/streets/nipissing-road-e": {
+     "status": 301,
+     "location": "/streets/nipissing-road-milton"
+    },
+    "/streets/leger-way-405": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/derry-road-504": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-409a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/collis-court-n": {
+     "status": 301,
+     "location": "/streets/collis-court-milton"
+    },
+    "/streets/elmwood-crescent-upper": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/pettigrew-trail": {
+     "status": 301,
+     "location": "/streets/pettigrew-trail-milton"
+    },
+    "/streets/bonin-crescent": {
+     "status": 301,
+     "location": "/streets/bonin-crescent-milton"
+    },
+    "/streets/gordon-krantz-avenue-219": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/herman-way": {
+     "status": 301,
+     "location": "/streets/herman-way-milton"
+    },
+    "/streets/main-street-e-502": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/sauve-street-210": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/rose-way-121": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-rd-road-515-a": {
+     "status": 404,
+     "location": null
+    }
+   },
+   "count404": 28,
+   "count3xx": 19,
+   "count200": 0
+  },
+  "/rent": {
+   "status": 200,
+   "cards": 47,
+   "withLink": 47,
+   "withoutLink": 0,
+   "withheld": 0,
+   "plainStreet": 0,
+   "links": [
+    "/streets/rose-way",
+    "/streets/mortimer-crescent",
+    "/streets/gillett-point",
+    "/streets/whitlock-avenue-802",
+    "/streets/mclaughlin-avenue-basement",
+    "/streets/basement--254-mccready-drive",
+    "/streets/nipissing-road-1103",
+    "/streets/nipissing-road-2207a",
+    "/streets/clarriage-court",
+    "/streets/millside-drive-102",
+    "/streets/sauve-street-519",
+    "/streets/wellwood-terrace",
+    "/streets/robert-street",
+    "/streets/sim-place-upper",
+    "/streets/shanks-heights-basement",
+    "/streets/raspberry-terrace",
+    "/streets/rose-way-107",
+    "/streets/nipissing-street-1308",
+    "/streets/nipissing-road-520-a",
+    "/streets/mctrach-crescent",
+    "/streets/stirling-todd-terrace",
+    "/streets/watercress-way-basement",
+    "/streets/cargill-path",
+    "/streets/nipissing-road-2108-a",
+    "/streets/nipissing-road-2007",
+    "/streets/rose-way-125",
+    "/streets/kennedy-circle",
+    "/streets/muskoka-heights",
+    "/streets/banks-crescent",
+    "/streets/yates-drive-1-bsmt",
+    "/streets/main-street-e-808",
+    "/streets/whitlock-avenue-210",
+    "/streets/houston-drive",
+    "/streets/nipissing-road-e",
+    "/streets/leger-way-405",
+    "/streets/derry-road-504",
+    "/streets/nipissing-road-409a",
+    "/streets/collis-court-n",
+    "/streets/elmwood-crescent-upper",
+    "/streets/pettigrew-trail",
+    "/streets/bonin-crescent",
+    "/streets/gordon-krantz-avenue-219",
+    "/streets/herman-way",
+    "/streets/main-street-e-502",
+    "/streets/sauve-street-210",
+    "/streets/rose-way-121",
+    "/streets/nipissing-rd-road-515-a"
+   ],
+   "linkStatuses": {
+    "/streets/rose-way": {
+     "status": 301,
+     "location": "/streets/rose-way-milton"
+    },
+    "/streets/mortimer-crescent": {
+     "status": 301,
+     "location": "/streets/mortimer-crescent-milton"
+    },
+    "/streets/gillett-point": {
+     "status": 301,
+     "location": "/streets/gillett-point-milton"
+    },
+    "/streets/whitlock-avenue-802": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/mclaughlin-avenue-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/basement--254-mccready-drive": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1103": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-2207a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/clarriage-court": {
+     "status": 301,
+     "location": "/streets/clarriage-court-milton"
+    },
+    "/streets/millside-drive-102": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/sauve-street-519": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/wellwood-terrace": {
+     "status": 301,
+     "location": "/streets/wellwood-terrace-milton"
+    },
+    "/streets/robert-street": {
+     "status": 301,
+     "location": "/streets/robert-street-milton"
+    },
+    "/streets/sim-place-upper": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/shanks-heights-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/raspberry-terrace": {
+     "status": 301,
+     "location": "/streets/raspberry-terrace-milton"
+    },
+    "/streets/rose-way-107": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-street-1308": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-520-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/mctrach-crescent": {
+     "status": 301,
+     "location": "/streets/mctrach-crescent-milton"
+    },
+    "/streets/stirling-todd-terrace": {
+     "status": 301,
+     "location": "/streets/stirling-todd-terrace-milton"
+    },
+    "/streets/watercress-way-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/cargill-path": {
+     "status": 301,
+     "location": "/streets/cargill-path-milton"
+    },
+    "/streets/nipissing-road-2108-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-2007": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/rose-way-125": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/kennedy-circle": {
+     "status": 301,
+     "location": "/streets/kennedy-circle-milton"
+    },
+    "/streets/muskoka-heights": {
+     "status": 301,
+     "location": "/streets/muskoka-heights-milton"
+    },
+    "/streets/banks-crescent": {
+     "status": 301,
+     "location": "/streets/banks-crescent-milton"
+    },
+    "/streets/yates-drive-1-bsmt": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/main-street-e-808": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/whitlock-avenue-210": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/houston-drive": {
+     "status": 301,
+     "location": "/streets/houston-drive-milton"
+    },
+    "/streets/nipissing-road-e": {
+     "status": 301,
+     "location": "/streets/nipissing-road-milton"
+    },
+    "/streets/leger-way-405": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/derry-road-504": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-409a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/collis-court-n": {
+     "status": 301,
+     "location": "/streets/collis-court-milton"
+    },
+    "/streets/elmwood-crescent-upper": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/pettigrew-trail": {
+     "status": 301,
+     "location": "/streets/pettigrew-trail-milton"
+    },
+    "/streets/bonin-crescent": {
+     "status": 301,
+     "location": "/streets/bonin-crescent-milton"
+    },
+    "/streets/gordon-krantz-avenue-219": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/herman-way": {
+     "status": 301,
+     "location": "/streets/herman-way-milton"
+    },
+    "/streets/main-street-e-502": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/sauve-street-210": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/rose-way-121": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-rd-road-515-a": {
+     "status": 404,
+     "location": null
+    }
+   },
+   "count404": 28,
+   "count3xx": 19,
+   "count200": 0
+  },
+  "/rentals?neighbourhood=timberlea": {
+   "status": 200,
+   "cards": 48,
+   "withLink": 48,
+   "withoutLink": 0,
+   "withheld": 0,
+   "plainStreet": 0,
+   "links": [
+    "/streets/nipissing-road-1103",
+    "/streets/nipissing-road-520-a",
+    "/streets/nipissing-road-2007",
+    "/streets/main-street-e-808",
+    "/streets/nipissing-road-409a",
+    "/streets/main-street-e-502",
+    "/streets/nipissing-rd-road-515-a",
+    "/streets/nipissing-road-1805a",
+    "/streets/nipissing-road-2004",
+    "/streets/nipissing-road-1407",
+    "/streets/ontario-street-s-street-61",
+    "/streets/nipissing-road-1411a",
+    "/streets/nipissing-road-1310a",
+    "/streets/nipissing-road-1811a",
+    "/streets/nipissing-road-1103a",
+    "/streets/nipissing-road-1306a",
+    "/streets/nipissing-road-1702a",
+    "/streets/nipissing-road-1410a",
+    "/streets/nipissing-road-1110a",
+    "/streets/nipissing-road-1101a",
+    "/streets/ontario-street-s-126",
+    "/streets/nipissing-road-1402a",
+    "/streets/nipissing-road-1703a",
+    "/streets/nipissing-road-1212a",
+    "/streets/nipissing-road-1406a",
+    "/streets/nipissing-road-1512a",
+    "/streets/main-street-e-309",
+    "/streets/nipissing-road-1502-a",
+    "/streets/coxe-boulevard-e",
+    "/streets/nipissing-road-1305a",
+    "/streets/nipissing-road-1409a",
+    "/streets/nipissing-road-1208a",
+    "/streets/nipissing-road-1205a",
+    "/streets/nipissing-road-808a",
+    "/streets/nipissing-road-313",
+    "/streets/nipissing-road-621a",
+    "/streets/nipissing-road-615a",
+    "/streets/nipissing-road-1311a",
+    "/streets/nipissing-road-317a",
+    "/streets/nipissing-road-805a",
+    "/streets/nipissing-road-1302",
+    "/streets/nipissing-road-1012b",
+    "/streets/nipissing-road-415a",
+    "/streets/nipissing-road-1107",
+    "/streets/nipissing-road-801a",
+    "/streets/nipissing-road-408a",
+    "/streets/nipissing-road-412",
+    "/streets/nipissing-road-810a"
+   ],
+   "linkStatuses": {
+    "/streets/nipissing-road-1103": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-520-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-2007": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/main-street-e-808": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-409a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/main-street-e-502": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-rd-road-515-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1805a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-2004": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1407": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/ontario-street-s-street-61": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1411a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1310a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1811a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1103a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1306a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1702a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1410a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1110a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1101a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/ontario-street-s-126": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1402a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1703a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1212a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1406a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1512a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/main-street-e-309": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1502-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/coxe-boulevard-e": {
+     "status": 301,
+     "location": "/streets/coxe-boulevard-milton"
+    },
+    "/streets/nipissing-road-1305a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1409a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1208a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1205a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-808a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-313": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-621a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-615a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1311a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-317a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-805a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1302": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1012b": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-415a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-1107": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-801a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-408a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-412": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/nipissing-road-810a": {
+     "status": 404,
+     "location": null
+    }
+   },
+   "count404": 47,
+   "count3xx": 1,
+   "count200": 0
+  },
+  "/rentals?neighbourhood=harrison": {
+   "status": 200,
+   "cards": 43,
+   "withLink": 43,
+   "withoutLink": 0,
+   "withheld": 0,
+   "plainStreet": 0,
+   "links": [
+    "/streets/mortimer-crescent",
+    "/streets/mctrach-crescent",
+    "/streets/herman-way",
+    "/streets/mccandless-court",
+    "/streets/michener-place-s",
+    "/streets/prosser-circle",
+    "/streets/mortimer-crescent",
+    "/streets/wise-crossing-w-bsmt",
+    "/streets/durno-court",
+    "/streets/downes-jackson-heights-n",
+    "/streets/tonelli-lane-basement-a",
+    "/streets/finney-terrace",
+    "/streets/mcdougall-cross",
+    "/streets/cedric-terrace-basement-only",
+    "/streets/derry-road-4",
+    "/streets/whetham-heights",
+    "/streets/mcjannett-avenue-upper-level",
+    "/streets/minchin-way-basement",
+    "/streets/frank-place",
+    "/streets/fennamore-terrace",
+    "/streets/mccandless-court",
+    "/streets/septimus-heights",
+    "/streets/scott-boulevard",
+    "/streets/mortimer-crescent",
+    "/streets/savoline-boulevard-lower",
+    "/streets/derry-road-72",
+    "/streets/savoline-boulevard-bsmt",
+    "/streets/finney-terrace",
+    "/streets/mccandles-court",
+    "/streets/scott-boulevard",
+    "/streets/savoline-boulevard",
+    "/streets/scott-boulevard",
+    "/streets/bessborough-drive",
+    "/streets/van-fleet-terrace",
+    "/streets/fowles-court",
+    "/streets/mcginnis-crescent",
+    "/streets/whaley-way",
+    "/streets/speyer-circle",
+    "/streets/savoline-boulevard-upper",
+    "/streets/gleave-terrace",
+    "/streets/savoline-boulevard",
+    "/streets/magurn-gate",
+    "/streets/gleave-terrace"
+   ],
+   "linkStatuses": {
+    "/streets/mortimer-crescent": {
+     "status": 301,
+     "location": "/streets/mortimer-crescent-milton"
+    },
+    "/streets/mctrach-crescent": {
+     "status": 301,
+     "location": "/streets/mctrach-crescent-milton"
+    },
+    "/streets/herman-way": {
+     "status": 301,
+     "location": "/streets/herman-way-milton"
+    },
+    "/streets/mccandless-court": {
+     "status": 301,
+     "location": "/streets/mccandless-court-milton"
+    },
+    "/streets/michener-place-s": {
+     "status": 301,
+     "location": "/streets/michener-place-milton"
+    },
+    "/streets/prosser-circle": {
+     "status": 301,
+     "location": "/streets/prosser-circle-milton"
+    },
+    "/streets/wise-crossing-w-bsmt": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/durno-court": {
+     "status": 301,
+     "location": "/streets/durno-court-milton"
+    },
+    "/streets/downes-jackson-heights-n": {
+     "status": 301,
+     "location": "/streets/downes-jackson-heights-milton"
+    },
+    "/streets/tonelli-lane-basement-a": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/finney-terrace": {
+     "status": 301,
+     "location": "/streets/finney-terrace-milton"
+    },
+    "/streets/mcdougall-cross": {
+     "status": 301,
+     "location": "/streets/mcdougall-cross-milton"
+    },
+    "/streets/cedric-terrace-basement-only": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/derry-road-4": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/whetham-heights": {
+     "status": 301,
+     "location": "/streets/whetham-heights-milton"
+    },
+    "/streets/mcjannett-avenue-upper-level": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/minchin-way-basement": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/frank-place": {
+     "status": 301,
+     "location": "/streets/frank-place-milton"
+    },
+    "/streets/fennamore-terrace": {
+     "status": 301,
+     "location": "/streets/fennamore-terrace-milton"
+    },
+    "/streets/septimus-heights": {
+     "status": 301,
+     "location": "/streets/septimus-heights-milton"
+    },
+    "/streets/scott-boulevard": {
+     "status": 301,
+     "location": "/streets/scott-boulevard-milton"
+    },
+    "/streets/savoline-boulevard-lower": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/derry-road-72": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/savoline-boulevard-bsmt": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/mccandles-court": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/savoline-boulevard": {
+     "status": 301,
+     "location": "/streets/savoline-boulevard-milton"
+    },
+    "/streets/bessborough-drive": {
+     "status": 301,
+     "location": "/streets/bessborough-drive-milton"
+    },
+    "/streets/van-fleet-terrace": {
+     "status": 301,
+     "location": "/streets/van-fleet-terrace-milton"
+    },
+    "/streets/fowles-court": {
+     "status": 301,
+     "location": "/streets/fowles-court-milton"
+    },
+    "/streets/mcginnis-crescent": {
+     "status": 301,
+     "location": "/streets/mcginnis-crescent-milton"
+    },
+    "/streets/whaley-way": {
+     "status": 301,
+     "location": "/streets/whaley-way-milton"
+    },
+    "/streets/speyer-circle": {
+     "status": 301,
+     "location": "/streets/speyer-circle-milton"
+    },
+    "/streets/savoline-boulevard-upper": {
+     "status": 404,
+     "location": null
+    },
+    "/streets/gleave-terrace": {
+     "status": 301,
+     "location": "/streets/gleave-terrace-milton"
+    },
+    "/streets/magurn-gate": {
+     "status": 301,
+     "location": "/streets/magurn-gate-milton"
+    }
+   },
+   "count404": 11,
+   "count3xx": 32,
+   "count200": 0
+  }
+ },
+ "contrast": {
+  "status": 200,
+  "fields": {
+   "beds": {
+    "color": "rgba(255, 255, 255, 0.72)",
+    "fg": "#ffffff",
+    "bg": "#ffffff",
+    "ratio": 1,
+    "fontSize": "11px",
+    "overImage": false,
+    "text": "🛏 3 bed"
+   },
+   "baths": {
+    "color": "rgba(255, 255, 255, 0.72)",
+    "fg": "#ffffff",
+    "bg": "#ffffff",
+    "ratio": 1,
+    "fontSize": "11px",
+    "overImage": false,
+    "text": "🚿 1 bath"
+   },
+   "parking": {
+    "color": "rgba(255, 255, 255, 0.72)",
+    "fg": "#ffffff",
+    "bg": "#ffffff",
+    "ratio": 1,
+    "fontSize": "11px",
+    "overImage": false,
+    "text": "🚗 1 park"
+   },
+   "month": {
+    "color": "rgba(255, 255, 255, 0.72)",
+    "fg": "#ffffff",
+    "bg": "#ffffff",
+    "ratio": 1,
+    "fontSize": "12px",
+    "overImage": false,
+    "text": "/ month"
+   },
+   "sep": {
+    "color": "rgba(255, 255, 255, 0.72)",
+    "fg": "#ffffff",
+    "bg": "#ffffff",
+    "ratio": 1,
+    "fontSize": "12px",
+    "overImage": false,
+    "text": "·"
+   }
+  }
+ },
+ "sweep": [
+  {
+   "selector": "q-of < q-meta < wiz-step < wiz-body",
+   "color": "rgb(41, 43, 41)",
+   "fg": "#292b29",
+   "bg": "#073126",
+   "ratio": 1,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "Question 1 of 3",
+   "count": 1
+  },
+  {
+   "selector": "lprice < lbody < lcard < lgrid",
+   "color": "rgba(255, 255, 255, 0.72)",
+   "fg": "#ffffff",
+   "bg": "#ffffff",
+   "ratio": 1,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "/ month",
+   "count": 470
+  },
+  {
+   "selector": "sep < lcard-links < lbody < lcard",
+   "color": "rgba(255, 255, 255, 0.72)",
+   "fg": "#ffffff",
+   "bg": "#ffffff",
+   "ratio": 1,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "·",
+   "count": 47
+  },
+  {
+   "selector": "q-badge < q-meta < wiz-step < wiz-body",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#065034",
+   "ratio": 1.72,
+   "fontSize": "10px",
+   "overImage": false,
+   "text": "1",
+   "count": 1
+  },
+  {
+   "selector": "ra-card < ra-scroll < ra-scroll-wrap < rent-avgs",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#06462f",
+   "ratio": 1.97,
+   "fontSize": "14px",
+   "overImage": false,
+   "text": "View all 1226 →",
+   "count": 3
+  },
+  {
+   "selector": "mc-v < mc < micro-grid < hr",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#0b3d2e",
+   "ratio": 2.2,
+   "fontSize": "18px",
+   "overImage": false,
+   "text": "🏡",
+   "count": 8
+  },
+  {
+   "selector": "vtab < view-toggle < fb-right < fb-top",
+   "color": "rgb(10, 143, 87)",
+   "fg": "#0a8f57",
+   "bg": "#0a5036",
+   "ratio": 2.28,
+   "fontSize": "13px",
+   "overImage": false,
+   "text": "⊞",
+   "count": 1
+  },
+  {
+   "selector": "ra-view < ra-card < ra-scroll < ra-scroll-wrap",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#0e372d",
+   "ratio": 2.35,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "View →",
+   "count": 9
+  },
+  {
+   "selector": "sbox < hl < hero",
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "Select filters above",
+   "count": 2
+  },
+  {
+   "selector": "bc-sub < bc-head < booking-card < hr",
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "13px",
+   "overImage": false,
+   "text": "Name any Milton listing. Aamir typically",
+   "count": 5
+  },
+  {
+   "selector": "bc-trust < bc-form < booking-card < hr",
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "No obligation · Aamir usually calls back",
+   "count": 4
+  },
+  {
+   "selector": "as-fine < alert-strip",
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "Miltonly emails only, from Aamir Yaqoob ",
+   "count": 1
+  },
+  {
+   "selector": "hl < hero",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#073126",
+   "ratio": 2.56,
+   "fontSize": "35.84px",
+   "overImage": false,
+   "text": "Milton",
+   "count": 1
+  },
+  {
+   "selector": "sbtn < srow < sbox < hl",
+   "color": "rgb(7, 49, 38)",
+   "fg": "#073126",
+   "bg": "#017848",
+   "ratio": 2.56,
+   "fontSize": "13px",
+   "overImage": false,
+   "text": "Search →",
+   "count": 1
+  },
+  {
+   "selector": "ra-eyebrow < ra-header < rent-avgs",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#073126",
+   "ratio": 2.56,
+   "fontSize": "10px",
+   "overImage": false,
+   "text": "Rental Market",
+   "count": 1
+  },
+  {
+   "selector": "ra-count < ra-card < ra-scroll < ra-scroll-wrap",
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0e372d",
+   "ratio": 2.56,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "123 listings",
+   "count": 27
+  },
+  {
+   "selector": "trust-why-ico < trust-why-item < trust-why-inner < trust-why",
+   "color": "rgb(1, 120, 72)",
+   "fg": "#017848",
+   "bg": "#073126",
+   "ratio": 2.56,
+   "fontSize": "18px",
+   "overImage": false,
+   "text": "✓",
+   "count": 3
+  },
+  {
+   "selector": "lbody < lcard < lgrid < listings-sec",
+   "color": "rgb(148, 163, 184)",
+   "fg": "#94a3b8",
+   "bg": "#ffffff",
+   "ratio": 2.56,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "MLS® W13821788",
+   "count": 94
+  },
+  {
+   "selector": "as-btn < as-form < alert-strip",
+   "color": "rgb(7, 49, 38)",
+   "fg": "#073126",
+   "bg": "#017848",
+   "ratio": 2.56,
+   "fontSize": "13px",
+   "overImage": false,
+   "text": "Save this search →",
+   "count": 1
+  },
+  {
+   "selector": "ra-label < ra-card < ra-scroll < ra-scroll-wrap",
+   "color": "rgb(138, 143, 138)",
+   "fg": "#8a8f8a",
+   "bg": "#0e372d",
+   "ratio": 3.97,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "1 Bed Condo →",
+   "count": 9
+  },
+  {
+   "selector": "acs-email < acs-inner < acs",
+   "color": "rgb(100, 116, 139)",
+   "fg": "#64748b",
+   "bg": "#07111f",
+   "ratio": 3.98,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "gtahomequest@gmail.com",
+   "count": 1
+  },
+  {
+   "selector": "new-this-week < live-row < hl < hero",
+   "color": "rgb(138, 143, 138)",
+   "fg": "#8a8f8a",
+   "bg": "#073126",
+   "ratio": 4.32,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "· 48 new this week",
+   "count": 3
+  },
+  {
+   "selector": "trust-row < hl < hero",
+   "color": "rgb(138, 143, 138)",
+   "fg": "#8a8f8a",
+   "bg": "#073126",
+   "ratio": 4.32,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "15 Years Full-Time Experience · Tenants ",
+   "count": 4
+  },
+  {
+   "selector": "wiz-sub < wiz-topbar < hm < hero",
+   "color": "rgb(138, 143, 138)",
+   "fg": "#8a8f8a",
+   "bg": "#073126",
+   "ratio": 4.32,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "3 quick questions · 30 seconds · no comm",
+   "count": 1
+  },
+  {
+   "selector": "ra-subtitle < ra-titles < ra-header < rent-avgs",
+   "color": "rgb(138, 143, 138)",
+   "fg": "#8a8f8a",
+   "bg": "#073126",
+   "ratio": 4.32,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "Live data from 1226 active listings · Cl",
+   "count": 3
+  }
+ ],
+ "servedCommit": "5f8cdb099850f1eb75bb09cc71a3cf1338368a75",
+ "extras": {
+  "q-of (wizard step 1)": {
+   "color": "rgb(41, 43, 41)",
+   "fg": "#292b29",
+   "bg": "#073126",
+   "ratio": 1,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "Question 1 of 3"
+  },
+  "ra-label": {
+   "color": "rgb(138, 143, 138)",
+   "fg": "#8a8f8a",
+   "bg": "#0e372d",
+   "ratio": 3.97,
+   "fontSize": "12px",
+   "overImage": false,
+   "text": "1 Bed Condo →"
+  },
+  "ra-count": {
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0e372d",
+   "ratio": 2.56,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "123 listings"
+  },
+  "bc-sub": {
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "13px",
+   "overImage": false,
+   "text": "Name any Milton listing. Aamir typically"
+  },
+  "bc-trust": {
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "No obligation · Aamir usually calls back"
+  },
+  "as-fine": {
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#0b3d2e",
+   "ratio": 2.39,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "Miltonly emails only, from Aamir Yaqoob "
+  },
+  "sinput placeholder": {
+   "color": "rgb(107, 111, 106)",
+   "fg": "#6b6f6a",
+   "bg": "#073126",
+   "ratio": 2.39,
+   "fontSize": "16px",
+   "overImage": false,
+   "text": "Street, neighbourhood or MLS #..."
+  },
+  "mls line": {
+   "color": "rgb(148, 163, 184)",
+   "fg": "#94a3b8",
+   "bg": "#ffffff",
+   "ratio": 2.56,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "MLS® W13821788"
+  },
+  "back-lnk (wizard step 2)": {
+   "color": "rgb(41, 43, 41)",
+   "fg": "#292b29",
+   "bg": "#073126",
+   "ratio": 1,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "← Back"
+  },
+  "submit-note (wizard step 3)": {
+   "color": "rgb(41, 43, 41)",
+   "fg": "#292b29",
+   "bg": "#073126",
+   "ratio": 1,
+   "fontSize": "10px",
+   "overImage": false,
+   "text": "Aamir usually replies within the hour. B"
+  },
+  "back-lnk (wizard step 3)": {
+   "color": "rgb(41, 43, 41)",
+   "fg": "#292b29",
+   "bg": "#073126",
+   "ratio": 1,
+   "fontSize": "11px",
+   "overImage": false,
+   "text": "← Back"
+  }
+ },
+ "distinctLinks": 120
+}

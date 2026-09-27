@@ -201,6 +201,10 @@ export async function resolveSiblingSlugs(slug: string): Promise<string[]> {
 // card, latitude and longitude by computeCentroid. The VOW-only columns are never selected
 // (src/lib/listings/vow.ts); the card's photo is the first URL of the active rows only, read by
 // readStreetListings below, because photos is the widest column and the card shows one.
+// Sixteen columns since MC-036: displayAddress (InternetAddressDisplayYN) is read by the
+// inventory card, which prints "Address on request" in place of a withheld address, and by
+// the ladder, which skips a withheld row before deriving a house number from it. Without the
+// column nothing downstream could tell a withheld address from a shown one. One boolean a row.
 export const STREET_LISTING_SELECT = {
   mlsNumber: true,
   address: true,
@@ -208,6 +212,7 @@ export const STREET_LISTING_SELECT = {
   neighbourhood: true,
   status: true,
   permAdvertise: true,
+  displayAddress: true,
   propertySubType: true,
   propertyType: true,
   price: true,
@@ -264,7 +269,7 @@ async function streetListingsFor(siblingSlugs: string[]): Promise<StreetListing[
     _max: { updatedAt: true },
   });
   const written = `${stamp._count._all}:${stamp._max.updatedAt?.getTime() ?? 0}`;
-  return dataCached(() => readStreetListings(siblingSlugs), ["street-listings:v1", written, ...siblingSlugs], {
+  return dataCached(() => readStreetListings(siblingSlugs), ["street-listings:v2", written, ...siblingSlugs], {
     revalidate: 3600,
     tags: [LISTING_ROWS_TAG],
   })();
@@ -586,8 +591,10 @@ export const getStreetPageData = perRequest(async function getStreetPageData(slu
           mlsNumber: l.mlsNumber,
           status: l.status,
           permAdvertise: l.permAdvertise,
+          displayAddress: l.displayAddress,
           propertySubType: l.propertySubType,
           propertyType: l.propertyType,
+          listOfficeName: l.listOfficeName,
         })),
       })
     : null;
@@ -1570,9 +1577,16 @@ function buildActiveInventory(input: {
   shortName: string;
 }): ActiveInventoryProps {
   return {
-    listings: input.listings.map((l) => ({
+    // A withheld address (InternetAddressDisplayYN = N) is counted on the street and never carded
+    // on it: a card under "Active listings on {street}" ties the listing to the street, which the
+    // rule forbids as much as printing the number. The count above the cards keeps the row.
+    total: input.listings.length,
+    listings: input.listings.filter((l) => l.displayAddress).map((l) => ({
       mlsNumber: l.mlsNumber,
-      address: l.address,
+      // InternetAddressDisplayYN = N (MC-036): the address is not shown on any surface. The
+      // row keeps its price, type, beds, baths, brokerage and link; only the address line
+      // changes, to the placeholder every other surface prints.
+      address: l.displayAddress ? l.address : "Address on request",
       price: l.price,
       bedrooms: l.bedrooms,
       bathrooms: l.bathrooms,

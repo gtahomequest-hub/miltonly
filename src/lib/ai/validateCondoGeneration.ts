@@ -67,26 +67,9 @@ export function condoInputToStreetAdapter(input: CondoBuildingGeneratorInput): S
     quarterlyTrend: input.saleQuarterly
       .filter((q) => q.typical !== null)
       .map((q) => ({ quarter: q.quarter, typical: q.typical as number, count: q.count })),
-    // Lease records forwarded so the per-trade LEASE gate keys on k≥5 existence.
-    leaseActivity: input.lease.recentRecords
-      ? {
-          byBed: {},
-          recentRecords: input.lease.recentRecords.map((r) => ({
-            address: r.address,
-            listPrice: r.rent,
-            soldPrice: r.rent, // = monthly rent for For Lease records
-            beds: r.beds,
-            baths: 0,
-            sqftRange: null,
-            daysOnMarket: r.daysOnMarket,
-            propertyType: "condo",
-            soldMonth: r.soldMonth,
-            leaseTerm: null,
-            furnished: null,
-          })),
-          ...(input.lease.rangeStats ? { rangeStats: input.lease.rangeStats } : {}),
-        }
-      : undefined,
+    // MC-037: the lease side is the per-bedroom typicals only; with no records forwarded the
+    // per-trade lease gate fires on any per-trade lease claim, which is the rule.
+    leaseActivity: input.lease.byBed ? { byBed: input.lease.byBed } : undefined,
     nearby: {
       parks: [], schoolsPublic: [], schoolsCatholic: [], mosques: [], grocery: [],
     },
@@ -110,6 +93,16 @@ export function condoInputToStreetAdapter(input: CondoBuildingGeneratorInput): S
 //     below k=5). This is the W2 gate at building granularity.
 // ---------------------------------------------------------------------------
 
+/** The words "median" and "average" (averaged, averages, on average) anywhere in prose or an
+ *  answer, with the window around the first. The voice rule is "typical", never "median";
+ *  "average" is banned the same way (MC-038) because the typical price IS a median
+ *  (PERCENTILE_CONT 0.5), so a page calling it an average is wrong, not just off-voice. */
+function findMedian(text: string): string | null {
+  const m = /\b(median|averages?|averaged|on average)\b/i.exec(text);
+  if (!m) return null;
+  return `"${m[1]}": ${text.slice(Math.max(0, m.index - 40), m.index + 46).replace(/\s+/g, " ")}`;
+}
+
 export function validateCondoSectionsSubset(
   sections: CondoSection[],
   input: CondoBuildingGeneratorInput,
@@ -130,6 +123,14 @@ export function validateCondoSectionsSubset(
         excerpt: `"${catchment.matched}": ${catchment.excerpt}`,
         severity: "hard",
       });
+    }
+
+    // The voice rule: "typical", never "median" (CLAUDE.md; the street prompt's methodology
+    // list). MC-037's regeneration wrote "a median of 92 days on market" into four hubs and
+    // nothing here refused it.
+    const median = findMedian(text);
+    if (median) {
+      violations.push({ rule: "methodology_leak", excerpt: median, severity: "hard" });
     }
 
     // The sale market section cannot exist on a lease-only building — there is
@@ -232,6 +233,10 @@ export function validateCondoFaq(
         excerpt: `FAQ "${q}": "${catchment.matched}": ${catchment.excerpt}`,
         severity: "hard",
       });
+    }
+    const median = findMedian(`${item.question} ${item.answer}`);
+    if (median) {
+      violations.push({ rule: "methodology_leak", excerpt: `FAQ "${q}": ${median}`, severity: "hard" });
     }
 
     // Per-trade fabrication is banned in any answer (input has no per-trade

@@ -896,9 +896,15 @@
 .street-v2 .s-rtable tr:last-child td {
   border-bottom: 0;
 }
-.street-v2 .s-rtable .s-r-brok {
-  color: var(--s-text-muted);
+/* The brokerage cell carries no rule of its own (MC-036, PropTx item 7): it computes to the
+   same size and colour as every sibling td, so the listing brokerage is not set apart from the
+   sale it belongs to. white-space and min-width would be the only things a rule here may hold. */
+/* The bona fide sentence under the card, in every state: the card's muted style at the size of
+   the chart caption and the hero's basis line (MC-036, item 5). */
+.street-v2 .s-r-bona {
+  margin: 12px 0 0;
   font-size: 12px;
+  color: var(--s-text-muted);
 }
 /* gated state: blur the table + overlay */
 .street-v2 .s-records.s-gated .s-rtable {
@@ -916,8 +922,9 @@
 .street-v2 .s-records.s-gated {
   min-height: 220px;
 }
-/* Mobile: the headline "See every closed sale on <street>" wraps to 3+ lines for long names
-   (measured up to ~241px content at 390px), so reserve more there. */
+/* Mobile: the headline "Recent closed sales on <street>, last 90 days" wraps to 3+ lines for
+   long names (its shorter predecessor measured up to ~241px content at 390px; this one can take
+   one more line, about 27px, inside the same reserve), so reserve more there. */
 @media (max-width: 720px) {
   .street-v2 .s-records.s-gated {
     min-height: 300px;

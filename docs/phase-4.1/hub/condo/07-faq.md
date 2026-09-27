@@ -11,9 +11,9 @@ Bucket: **mixed** (per-question). Produces the `faq` block. Prepend `00-condo-sy
   bracket-shorthand banned. If `typicalPrice` is null (k<5), answer qualitatively. **On a
   lease-only building, omit the sale-price question entirely** — there is no sale data.
 - **lease** questions ("What do units rent for at {displayName}?"): answerable ONLY when
-  `input.lease.recentRecords` is present (k≥5) or `rangeStats` is present (k≥10). State rents as
-  rents, rounded per the rent table, never as sale prices. Below k, answer that lease detail is
-  confirmed per listing — do not state a rent figure.
+  `input.lease.byBed` is present (k≥5), and only as the typical for a bedroom count, rounded per
+  the rent table, never as sale prices and never as a single lease. Below k, answer that lease
+  detail is confirmed per listing — do not state a rent figure.
 - **editorial** questions ("What is {displayName} like to live in?", "What amenities does it
   have?"): character only; named amenities ONLY from `input.building.amenities`.
 - **attribute** questions ("When was {displayName} built?", "How many units / storeys?", "What

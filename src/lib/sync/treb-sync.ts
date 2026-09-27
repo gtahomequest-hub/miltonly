@@ -28,6 +28,7 @@ const SELECT_FIELDS = [
   "DirectionFaces", "CrossStreet", "Sewer", "WaterSource",
   "VirtualTourURLUnbranded", "ListOfficeName",
   "RoomsTotal", "NumberOfKitchens",
+  "InternetEntireListingDisplayYN", "InternetAddressDisplayYN",
 ].join(",");
 
 interface AmpProperty {
@@ -89,6 +90,8 @@ interface AmpProperty {
   ListOfficeName: string | null;
   RoomsTotal: number | null;
   NumberOfKitchens: number | null;
+  InternetEntireListingDisplayYN: boolean | null;
+  InternetAddressDisplayYN: boolean | null;
 }
 
 export interface SyncResult {
@@ -285,6 +288,10 @@ export async function syncMiltonListings(): Promise<SyncResult> {
           listOfficeName: item.ListOfficeName || null,
           totalRooms: item.RoomsTotal || null,
           kitchens: item.NumberOfKitchens || null,
+          // The two PropTx display flags, written on create and update exactly as detect does,
+          // so a row this path touches never falls back to the column defaults.
+          permAdvertise: item.InternetEntireListingDisplayYN !== false,
+          displayAddress: item.InternetAddressDisplayYN !== false,
           listedAt: item.OriginalEntryTimestamp
             ? new Date(item.OriginalEntryTimestamp)
             : new Date(),
