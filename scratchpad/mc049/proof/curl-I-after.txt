@@ -1,0 +1,23 @@
+$ curl -I https://www.miltonly.com/streets/zilio-terrace-milton
+HTTP/1.1 308 Permanent Redirect
+Date: Mon, 28 Sep 2026 19:31:01 GMT
+Location: https://miltonly.com/streets/zilio-terrace-milton
+
+$ curl -I https://www.miltonly.com/
+HTTP/1.1 308 Permanent Redirect
+Date: Mon, 28 Sep 2026 19:31:01 GMT
+Location: https://miltonly.com/
+
+$ curl -I https://www.miltonly.com/listings
+HTTP/1.1 308 Permanent Redirect
+Date: Mon, 28 Sep 2026 19:31:02 GMT
+Location: https://miltonly.com/listings
+
+$ curl -I https://www.miltonly.com/listings?page=2&sort=newest
+HTTP/1.1 308 Permanent Redirect
+Date: Mon, 28 Sep 2026 19:31:02 GMT
+Location: https://miltonly.com/listings?page=2&sort=newest
+
+$ curl -I https://miltonly.com/streets/zilio-terrace-milton
+HTTP/1.1 200 OK
+Date: Mon, 28 Sep 2026 19:31:02 GMT

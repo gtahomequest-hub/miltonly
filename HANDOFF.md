@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-28 (MC-048, street titles and metas plus the compass strip): `main` is `1f3b216` plus this docs commit; production serves `1f3b216` (`miltonly-oqmamj059`, ready 2026-09-28T02:45:14Z), battery `PASS · 24 checks · 719 pages · 540s`. **STREET HEADS ARE FROZEN UNTIL THE GSC RE-READ ON 2026-10-26.** Held for the next batch: nothing. Record `scratchpad/reports/MC-048-titles.md`._
+_Last rewritten 2026-09-28 (MC-049, www, the regeneration pause, lane branches): `main` is `9a563fd` plus this docs commit; production serves `9a563fd` (`miltonly-m25idhaan`), battery `PASS · 24 checks · 719 pages · 527s`. **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite is paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-049-www-and-cron.md`._
 
 ## READ THIS FIRST
 
@@ -11,6 +11,27 @@ _Last rewritten 2026-09-28 (MC-048, street titles and metas plus the compass str
 - **The baseline**, 2026-08-30 to 2026-09-26, counting the 719 sitemap street pages with impressions: 235 pages, 93 clicks, 0.396 clicks per page, zero-click share 0.740.
   - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
   - Written pages: 222 / 78 / 0.351 / 0.748.
+
+**MC-049: WWW HELD BY A TEST, THE STREET-PROSE REWRITE PAUSED, LANE PUSHES STOP BUILDING. PRODUCTION SERVES `9a563fd`.**
+- **www to apex (`3a5df3b`).** It was already redirected twice: the Vercel project's domain settings (308), and `next.config.mjs` since `f429b6a`.
+  - `scripts/test-www-redirect.ts` (prebuild) now holds the code rule: one permanent host rule, the query kept, nothing on the apex.
+  - The 273 `www` URLs with impressions are Google still consolidating URLs it indexed before the flip.
+- **The rewrite is paused (`2dfb721`).**
+  - The job is `/api/sync/regenerate` (Sundays 12:00 UTC, queues stale pages) plus `/api/sync/generate` (hourly, rewrites them). It rewrote `victoria-street`, `shortreed-crescent` and `baverstock-crescent` on 2026-09-27.
+  - Now, unless `STREET_REGEN_ENABLED` is exactly `"true"`, the weekly route answers 200 `{paused:true}` and writes nothing, and the hourly route leaves `regenerate` decisions queued.
+  - New pages still build under the cap. **Nothing sets the variable: turning it on is Aamir's decision.**
+  - MC-045's class-2 method over the three rewritten rows found 0 WRONG.
+  - **Two checks to read:** after 2026-09-29 12:00 UTC (running) and after **2026-10-04 12:00 UTC**, the weekly job's first gated run. `max(StreetContent.generatedAt)` must still be 2026-09-27T14:01:10.436.
+- **Lane branches (`9a563fd`).** `vercel.json` `git.deploymentEnabled` sets `main` true, the seven lanes false, and `**` false.
+  - **Vercel reads it from the pushed commit, so a lane is blocked at the Git level only once it has merged `main` (`9a563fd` or later).**
+  - Proven on `fix/env-loader-crlf`: before the merge a push was created and then cancelled by the ignore rule; after it, 0 deployments.
+  - The ignore rule (now carrying the one lane list) is the second layer. CLI previews are unaffected, proven from a refused branch.
+  - **Every tier: merge `main` before your next push.**
+- **Build:** Standard, 4 cores and 8 GB, 200.8 s (MC-048 243.8 s on the same machine; MC-044 346.5 s on the Enhanced machine).
+- **Traps:**
+  - A CLI upload carries no `.git`, so prebuild tests must not rely on git.
+  - A stale fetch cache in the first local build fails `denials`, `tiles` or `hub-page` locally; a rebuild clears it.
+Record: `scratchpad/reports/MC-049-www-and-cron.md`.
 
 **MC-048 SHIPPED THE STREET HEAD AND THE COMPASS STRIP. PRODUCTION SERVES `1f3b216`.**
 - **Step 1, the compass strip (`8af7fd0`):** MC-045's WRONG compass sentences are cut from 55 pages, 57 sentences by exact match. `victoria-street` had already been regenerated, on 2026-09-27.
@@ -796,10 +817,10 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`1f3b216`** (MC-048: the compass strip `8af7fd0` and the street head `1f3b216`) plus MC-048's docs commit; production serves `1f3b216` (`miltonly-oqmamj059`) |
-| battery on production | **`PASS · 24 checks · 719 pages · 540s`** at `1f3b216`, 2026-09-28 (local 363s after a rebuild; preview `miltonly-azm98yy11` Ready, not batteried) |
+| `main` | **`9a563fd`** (MC-049: www test `3a5df3b`, rewrite pause `2dfb721`, lane branches `9a563fd`) plus MC-049's docs commit; production serves `9a563fd` (`miltonly-m25idhaan`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 527s`** at `9a563fd`, 2026-09-28 (local 526s after a rebuild; preview `miltonly-6uinygmqn` Ready, not batteried) |
 | `prisma migrate status` | **clean**, 32 migrations (`20260921120000_portal_vow_best_practices` was already applied when merged, MC-044) |
-| held for the next batch | **nothing**. **Street heads frozen until 2026-10-26** (MC-048 re-read) |
+| held for the next batch | **nothing**. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite paused** (MC-049, `STREET_REGEN_ENABLED` unset) |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -1174,7 +1195,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Nothing is held. **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Nothing is held. **After 2026-10-04 12:00 UTC: confirm the weekly rewrite stayed paused (MC-049).** **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say

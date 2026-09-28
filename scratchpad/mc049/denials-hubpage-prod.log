@@ -1,0 +1,56 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      https://miltonly.com
+build       1f3b216 served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+hub record  22 published hubs + DB2 pools loaded
+crawled     719 pages · 719 × 200 · 0 other
+
+ASSERT iterated == live sitemap count (719) : PASS
+
+── No sentence denies or contradicts a figure the page publishes
+   · prose blocks read: 5126
+   · schema strings read: 56034
+   · pages publishing a price: 215
+   · pages publishing a band: 23
+   · pages publishing sold-to-ask > 100%: 12
+   PASS  pages with NO prose block (parser reached nothing): 0
+   PASS  pages with NO schema string: 0
+   PASS  (a) denies a published price — visible: 0
+   PASS  (a) denies a published price — JSON-LD: 0
+   PASS  (b) denies a published band — visible: 0
+   PASS  (b) denies a published band — JSON-LD: 0
+   PASS  (c) contradicts its sold-to-ask tile — visible: 0
+   PASS  (c) contradicts its sold-to-ask tile — JSON-LD: 0
+   PASS  either surface, any class: 0
+
+── Every hub figure declares its source, every link resolves, the ladder is every street
+   · hub pages read: 22 of 22
+   · figures read (outside the site nav): 1682
+   · declared figure kinds: 11
+   · ladder rows read: 719
+   · ladder rows matched to a crawled street page: 719
+   · unique link targets: 962
+   · targets fetched here (the rest came from the street crawl): 221
+   · sub-k hubs: moffat
+   PASS  hub pages read == published hub count: 22
+   PASS  figures with no declared source/format/tolerance: 0
+   PASS  figures absent while their source is present: 0
+   PASS  figures rendered while their source is suppressed: 0
+   PASS  figures in the wrong format: 0
+   PASS  figures outside their source + tolerance: 0
+   PASS  hubs whose ladder count != published street count: 0
+   PASS  hubs whose ladder set != published street set: 0
+   PASS  ladder rows pointing at a street that was not 200: 0
+   PASS  ladder typical != the street page’s typical: 0
+   PASS  ladder basis != the street page’s basis: 0
+   PASS  ladder silent on one surface only: 0
+   PASS  ladder sold count != the street page’s 12-month sales: 0
+   PASS  links whose route does not return 200: 0
+   PASS  links whose fragment matches no id: 0
+   PASS  hubs with no JSON-LD: 0
+   PASS  hubs with unparseable JSON-LD: 0
+   PASS  hubs whose JSON-LD ItemList != the ladder: 0
+
+═══ PASS · 2 checks · 719 pages · 91s ═══

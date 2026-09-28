@@ -1,0 +1,10 @@
+HEAD https://www.miltonly.com/streets/zilio-terrace-milton -> 308 https://miltonly.com/streets/zilio-terrace-milton  OK
+GET  https://miltonly.com/streets/zilio-terrace-milton -> 200
+HEAD https://www.miltonly.com/ -> 308 https://miltonly.com/  OK
+GET  https://miltonly.com/ -> 200
+HEAD https://www.miltonly.com/listings -> 308 https://miltonly.com/listings  OK
+GET  https://miltonly.com/listings -> 200
+HEAD https://www.miltonly.com/listings?page=2&sort=newest -> 308 https://miltonly.com/listings?page=2&sort=newest  OK
+GET  https://miltonly.com/listings?page=2&sort=newest -> 200
+HEAD https://www.miltonly.com/streets/scott-boulevard-milton?utm_source=mc049&x=a%20b -> 308 https://miltonly.com/streets/scott-boulevard-milton?utm_source=mc049&x=a%20b  OK
+GET  https://miltonly.com/streets/scott-boulevard-milton?utm_source=mc049&x=a%20b -> 200
