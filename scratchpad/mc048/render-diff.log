@@ -1,0 +1,32 @@
+pages rendering generated prose: 51 | minimal or needsReview (prose not rendered): lloyd-landing-milton (minimal), ramsey-place-milton (needsReview), melville-bonus-crescent-milton (minimal), richardson-way-milton (minimal)
+outcomes, per edited section, across the 16 option combinations: {
+ "only the cut sentence left the page": 30,
+ "SECTION DROPPED: N other sentence(s) and the heading went with it": 23,
+ "the section was not rendered before": 4
+}
+  norris-circle-milton [gettingAround]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  muskoka-heights-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  fennamore-terrace-milton [about]: only the cut sentence left the page / SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  reece-court-milton [about]: only the cut sentence left the page / SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  schreyer-crescent-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  gleave-terrace-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  bessborough-drive-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  mortimer-crescent-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  chilver-heights-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  dinsmore-drive-milton [gettingAround]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  stewart-crescent-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  sauve-street-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  zuest-crescent-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  menefy-place-milton [gettingAround]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  culcastle-drive-milton [about]: SECTION DROPPED: 2 other sentence(s) and the heading went with it / SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  culcastle-drive-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it / the section was not rendered before
+  lemieux-court-milton [about]: the section was not rendered before
+  meighen-way-milton [gettingAround]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  trudeau-drive-milton [gettingAround]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  hemlock-drive-milton [about]: the section was not rendered before
+  wickson-way-milton [gettingAround]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  moorelands-crescent-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  detlor-heights-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  dawson-crescent-milton [about]: SECTION DROPPED: 1 other sentence(s) and the heading went with it
+  bronson-terrace-milton [about]: the section was not rendered before
+pages with no control sentence: none

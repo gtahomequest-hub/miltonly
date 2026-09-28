@@ -28,7 +28,11 @@ const SECRET_SELECT = {
   verifyExpiry: true,
   verifyAttempts: true,
   vowAcknowledgedAt: true,
+  vowAcknowledgementVersion: true,
   passwordHash: true,
+  passwordSetAt: true,
+  isRegistrant: true,
+  reviewFlag: true,
 } as const;
 
 export async function POST(request: NextRequest) {
@@ -41,7 +45,18 @@ export async function POST(request: NextRequest) {
   const redirect = safeRedirect(typeof body.redirect === "string" ? body.redirect : null);
 
   try {
-    let user: { id: string; email: string; firstName: string | null; verified: boolean; vowAcknowledgedAt: Date | null; passwordHash: string | null } | null = null;
+    let user: {
+      id: string;
+      email: string;
+      firstName: string | null;
+      verified: boolean;
+      vowAcknowledgedAt: Date | null;
+      vowAcknowledgementVersion: number | null;
+      passwordHash: string | null;
+      passwordSetAt: Date | null;
+      isRegistrant: boolean | null;
+      reviewFlag: string | null;
+    } | null = null;
 
     if (typeof body.token === "string" && body.token.length > 0) {
       const stored = await prisma.user.findFirst({ where: { verifyTokenHash: hashToken(body.token) }, select: SECRET_SELECT });

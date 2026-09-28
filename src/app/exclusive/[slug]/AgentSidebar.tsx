@@ -13,7 +13,7 @@ export default function AgentSidebar({ address, slug }: Props) {
         <p className="text-[12px] font-bold text-white/75 uppercase tracking-wider">Listed by</p>
         <p className="text-[22px] font-extrabold text-[#fffdfa] mt-1 tracking-[-0.01em]">Aamir Yaqoob</p>
         <p className="text-[12px] font-bold text-[#00ff80] mt-1">
-          Sales Representative · RE/MAX Realty Specialists Inc.
+          Sales Representative · RE/MAX Realty Specialists Inc., Brokerage
         </p>
 
         <div className="mt-4 space-y-1">

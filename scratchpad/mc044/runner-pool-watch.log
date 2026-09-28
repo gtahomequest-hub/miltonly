@@ -1,0 +1,9 @@
+== BEFORE: recon-condo-names.ts as on 5b9da69 (the old loader)
+exit 0
+[runner-probe] exit 0 after 1.0 s; DATABASE_URL at exit: DIRECT host ep-p….c-2.us-east-2.aws.neon.tech connection_limit=(unset) pgbouncer=(unset) pool_timeout=(unset); VERCEL_ENV=null RESEND_API_KEY unset AI_PROVIDER=null; pool/connection errors seen: 0
+== AFTER: recon-condo-names.ts at be8e127 (MC-045's loader)
+exit 0
+[runner-probe] exit 0 after 1.3 s; DATABASE_URL at exit: POOLED host ep-p….c-2.us-east-2.aws.neon.tech connection_limit=10 pgbouncer=true pool_timeout=(unset); VERCEL_ENV="production" RESEND_API_KEY set AI_PROVIDER="phase41_v2"; pool/connection errors seen: 0
+== output identical apart from the probe line?
+identical
+258 C:\Users\amazo\AppData\Local\Temp/mc044-recon-after.out

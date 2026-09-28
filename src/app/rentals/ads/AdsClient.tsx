@@ -15,7 +15,7 @@ import ListingBrokerage from "@/components/listings/ListingBrokerage";
 import { VOW_NOTICES } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
+const BROKERAGE_NAME = config.brokerage.name;
 
 // The subset of ListingCardData (src/components/listings/v2/types.ts) this page reads. The rows
 // come from getListingCards, the gated card mapper (MC-036): `address` is already
@@ -321,7 +321,7 @@ function AdsClientInner({
             Your {config.CITY_NAME} Realtor
           </div>
           <h2 className="text-[30px] sm:text-[38px] font-extrabold mb-3">{config.realtor.name}</h2>
-          <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_SHORT_NAME}</p>
+          <p className="text-[14px] text-[#94a3b8] mb-6">{config.realtor.title} · {BROKERAGE_NAME}</p>
           <p className="text-[15px] sm:text-[17px] text-[#cbd5e1] leading-relaxed max-w-2xl mx-auto mb-7">
             <strong className="text-white">{config.realtor.yearsExperience} years renting {config.CITY_NAME}, full-time.</strong> 235+ families helped, $55M+ leased &amp; sold. You&apos;ll work with {REALTOR_FIRST_NAME} directly — not an assistant, not a junior agent. From first call to signed lease.
           </p>

@@ -29,6 +29,10 @@
 # Everything else builds, including .github/workflows/, package.json, prisma/, public/ and any
 # non-Markdown file under scripts/.
 #
+# LINE ENDINGS. This file must be LF in the working copy. `npx vercel` uploads a worktree's files as
+# they are, and a CRLF copy makes bash on Vercel's builder answer neither BUILD nor SKIP, which fails
+# test-vercel-ignore.ts in prebuild. `.gitattributes` pins `*.sh` to LF (MC-044, found by ML-012).
+#
 # BY HAND, without pushing:
 #   bash scripts/vercel-ignore.sh                     # VERCEL_GIT_PREVIOUS_SHA (or HEAD^) to HEAD
 #   bash scripts/vercel-ignore.sh <base> <head>       # any two commits

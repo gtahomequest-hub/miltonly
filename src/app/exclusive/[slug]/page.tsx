@@ -35,7 +35,7 @@ function formatBedsLong(bedsMin: number, bedsMax: number) {
 
 // The source line under the price (MC-036, VOW Best Practices item 9), the same words the
 // /exclusive card carries. Inside the price element so it inherits the price's font and colour.
-const SOURCE_LINE = `Not an MLS listing. Listed exclusively by ${config.brokerage.name.replace(", Brokerage", "")}.`;
+const SOURCE_LINE = `Not an MLS listing. Listed exclusively by ${config.brokerage.name}.`;
 const SOURCE_STYLE = { display: "block", font: "inherit", color: "inherit", marginTop: "0.2em" } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

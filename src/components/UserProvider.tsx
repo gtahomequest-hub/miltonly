@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 interface UserData {
   id: string;
@@ -49,9 +50,14 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // On mount and on every client-side navigation (MP-006). /api/auth/me is where the 60-minute
+  // inactivity clock is wound (src/lib/auth.ts touchSession): a person clicking through the
+  // /sold chips or the /listings pages under this one root layout is active, and without the
+  // pathname here the fetch ran once per hard load and the clock ran out on them mid-visit.
+  const pathname = usePathname();
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, pathname]);
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });

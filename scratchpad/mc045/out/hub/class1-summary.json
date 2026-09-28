@@ -1,0 +1,49 @@
+{
+ "pagesPublished": 22,
+ "pagesWithGeneratedText": 22,
+ "pages": 17,
+ "byTemplate": {
+  "hub": 17
+ },
+ "sentences": 148,
+ "faqSentences": 53,
+ "faqShareOfSentences": 0.358,
+ "pagesWhereFaqIsTheOnlyCarrier": 0,
+ "pagesWithClaimInHeroOrLd": 16,
+ "pagesWithClaimInsideMeta": 0,
+ "hiddenOnlyPages": 0,
+ "sentencesAboutElsewhere": 12,
+ "bySurface": {
+  "hero": 16,
+  "ld-place": 16,
+  "profile": 94,
+  "faq": 53,
+  "meta-handwritten": 1
+ },
+ "byTerm": {
+  "I1 established": 71,
+  "I3 newer": 48,
+  "I4 new-build": 21,
+  "I11 growth-history": 2,
+  "I10 settled-history": 15,
+  "I9 age words": 6,
+  "I6 construction-state": 6,
+  "I7 older": 19,
+  "I2 mature": 17,
+  "I7b older-comma": 2,
+  "I13 infill/builder-history": 4,
+  "I5 built-out": 1
+ },
+ "buckets": {
+  "1L": 0,
+  "1G": 3,
+  "excluded": 0
+ },
+ "exclusionsApplied": {},
+ "buildEraFaq": {
+  "served": 0,
+  "kinds": {},
+  "pagesAssertingEstablished": 0
+ },
+ "repeated": []
+}

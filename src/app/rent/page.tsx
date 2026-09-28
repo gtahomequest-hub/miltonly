@@ -5,6 +5,7 @@ import RentalsClient from "../rentals/RentalsClient";
 import SiteChrome from "@/components/nav/SiteChrome";
 import { PUBLIC_LEASE_WHERE, stripVowFields } from "@/lib/listings/vow";
 import { redactAddress } from "@/lib/listings/display-gate";
+import { withRentalStreetPages } from "@/lib/rentalStreetPage";
 
 export const dynamic = 'force-dynamic';
 
@@ -43,11 +44,14 @@ export default async function RentLandingPage() {
       transactionType: true, petsAllowed: true, rentIncludes: true, laundryFeatures: true, cooling: true,
       heatType: true, furnished: true, possessionDetails: true, minLeaseTerm: true, locker: true,
       basement: true, listOfficeName: true, listedAt: true,
+      // ML-012: resolved to the published page a card may link to, then dropped from the row.
+      streetSlug: true, streetName: true,
     },
   });
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
   const newThisWeek = listingRows.filter((l) => l.listedAt >= weekAgo).length;
-  const listings = listingRows.map((l) => redactAddress(stripVowFields(l)));
+  // ML-012: the street link is the published page the row's streetSlug names, or null.
+  const listings = await withRentalStreetPages(listingRows.map((l) => redactAddress(stripVowFields(l))));
 
   const totalRentals = await prisma.listing.count({ where: PUBLIC_LEASE_WHERE });
 

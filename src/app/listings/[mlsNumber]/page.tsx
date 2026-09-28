@@ -14,6 +14,7 @@ import { redactAddress } from "@/lib/listings/display-gate";
 import { isPublicListing, stripVowFields, PUBLIC_SALE_WHERE, PUBLIC_LEASE_WHERE } from "@/lib/listings/vow";
 import ListingVowFacts from "@/components/listings/ListingVowFacts";
 import { resolvePublishedHubSlug } from "@/lib/hubResolve";
+import { isOurBrokerage } from "@/components/listings/ListingBrokerage";
 
 // MC-017 (2026-09-13): ISR, not a render per request. A visit past the day, or a purge, renders
 // once and the copy serves until the next. Every DB2 read carries the db2 tag and every DB3 read
@@ -267,7 +268,8 @@ export default async function ListingDetailPage({ params }: Props) {
       unitText: "MONTH",
     } : undefined,
     availability: "https://schema.org/InStock",
-    seller: { "@type": "Organization", name: listing.listOfficeName || "TREB MLS" },
+    // our own office by its registered name (MC-043); every other office as the feed names it
+    seller: { "@type": "Organization", name: isOurBrokerage(listing.listOfficeName) ? config.brokerage.name : listing.listOfficeName || "TREB MLS" },
   };
   const crumbs: Array<{ name: string; item: string }> = [
     { name: config.SITE_NAME, item: config.SITE_URL },

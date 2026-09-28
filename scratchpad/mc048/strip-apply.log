@@ -1,0 +1,4 @@
+[strip-compass] apply: 55 pages, 57 sentences cut, 1 not found, 0 refused, 0 pages with validator violations added; written 55, failed 0; revalidated 66/66
+
+[runner-probe] exit 0 after 42.8 s; DATABASE_URL at exit: POOLED host ep-p….c-2.us-east-2.aws.neon.tech connection_limit=10 pgbouncer=true pool_timeout=(unset); VERCEL_ENV="production" RESEND_API_KEY set AI_PROVIDER="phase41_v2"; pool/connection errors seen: 0
+EXIT 0

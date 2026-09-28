@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { publishedStreetPageSlugs } from "@/lib/streetSurface";
+import { STREET_HEAD_REVISED_AT } from "@/lib/streetHead";
 import { schools } from "@/lib/schools";
 import { GUIDE_SLUGS } from "@/lib/guides/guides";
 import { mosques } from "@/lib/mosques";
@@ -201,7 +202,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((s) => entitySlugs.has(s.streetSlug))
     .map((s) => ({
       url: `${SITE_URL}/streets/${s.streetSlug}`,
-      lastModified: s.updatedAt,
+      // Every street page's head changed on STREET_HEAD_REVISED_AT (MC-048), so no street URL
+      // reports an earlier lastmod; a content write after it keeps its own, later date.
+      lastModified: s.updatedAt > STREET_HEAD_REVISED_AT ? s.updatedAt : STREET_HEAD_REVISED_AT,
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));

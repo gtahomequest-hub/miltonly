@@ -1,0 +1,419 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      https://miltonly-1bax8jetq-gtahomequest-hubs-projects.vercel.app
+build       5f8cdb0 served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+record      DB2 + analytics aggregates loaded
+hub record  22 published hubs + DB2 pools loaded
+home record 719 published street pages + Milton-wide figures loaded
+sweep       719 streets read for the cache split before the crawl
+crawled     719 pages · 719 × 200 · 0 other
+
+ASSERT iterated == live sitemap count (719) : PASS
+
+── No sentence denies or contradicts a figure the page publishes
+   · prose blocks read: 5142
+   · schema strings read: 56022
+   · pages publishing a price: 216
+   · pages publishing a band: 24
+   · pages publishing sold-to-ask > 100%: 12
+   PASS  pages with NO prose block (parser reached nothing): 0
+   PASS  pages with NO schema string: 0
+   PASS  (a) denies a published price — visible: 0
+   PASS  (a) denies a published price — JSON-LD: 0
+   PASS  (b) denies a published band — visible: 0
+   PASS  (b) denies a published band — JSON-LD: 0
+   PASS  (c) contradicts its sold-to-ask tile — visible: 0
+   PASS  (c) contradicts its sold-to-ask tile — JSON-LD: 0
+   PASS  either surface, any class: 0
+
+── Structured data publishes exactly what the page publishes
+   · visible FAQ items: 1841
+   · schema Question nodes: 1841
+   · pages with no FAQ at all: 63
+   PASS  pages where schema != visible: 0
+   PASS  zero-FAQ pages still rendering the heading: 0
+   PASS  zero-FAQ pages still emitting a FAQPage node: 0
+
+── Absence claims match the record, and every page has a working CTA
+   · pages claiming absence: 57
+   · zero-sale set (derived from DB2, scoped to these pages): 57
+   · pages with a sale on record: 662
+   · of those, carrying suppression phrasing: 397
+   · tiers: {"identity-only":290,"priced-lease":56,"area-only":157,"priced-sale":216}
+   · CTAs wired: 719
+   PASS  claimers == zero-sale set: 0
+   PASS  false claimers (claims absence, has sales): 0
+   PASS  silent zero-sale pages (has no sales, does not say so): 0
+   PASS  dead "/listings" CTAs: 0
+   PASS  pages with no wired alert CTA: 0
+   PASS  priced-sale pages missing a sample disclosure: 0
+   PASS  priced-lease pages missing window + n: 0
+   PASS  countless "across sales" disclosures: 0
+   PASS  pages with >= 9 suppressed cells: 0
+
+── Every published figure is floored against its own sample
+   · pages rendering a hero price: 219
+   · pages entitled to a price at all: 219
+   · pages with a 90-day sample below threshold: 317
+   · pages stating a street-level sample: 219
+   · distinct sample windows seen: ~2 years, 12 months
+   PASS  prices rendered with NO entitled basis: 0
+   PASS  prices that are the sub-k 90-day figure: 0
+   PASS  sidebar DOM published with n12 < 5: 0
+   PASS  glance DOM published with n12 < 5: 0
+   PASS  glance sold-to-ask published with n12 < 5: 0
+   PASS  glance Trend published (YoY, no countable sample): 0
+   PASS  glance Market state with a sub-k 90-day sample: 0
+   PASS  hero basis line malformed: 0
+   PASS  page states two different samples for one window: 0
+   PASS  hero basis names a sample the page states nowhere else: 0
+   PASS  hero price sits on a sub-k sample by the page's own account: 0
+   NOTE  0 page(s) state a sample that differs from the record right now — ISR lag, not a defect: street pages are prerendered and the sold-stats cron moves the record under them. Reported so a genuine drift is still visible; not gated, because the page is correctly serving what it was built from.
+
+── One metric, one number — and prose that still reads after suppression
+   · FAQ items rendered: 1841
+   · prose sections rendered: 2609
+   PASS  1a street typical at more than one value: 0
+   PASS  1b per-type typical: hero pill != type card: 0
+   PASS  1d inline CTA price != hero typical: 0
+   PASS  1e market card typical != hero typical: 0
+   PASS  2 FAQ answers opening on an unresolved reference: 0
+   PASS  3 sections whose whole content is a disclaimer: 0
+   NOTE  1c rent pill vs market card disagree: 175 pages (mendelson-heights-milton, mccready-drive-milton, nairn-circle-milton, manitou-way-milton) — known standing defect, not gated
+
+── Every published page is a street that exists
+   · registry entries read: 944
+   · off-registry allowlist entries read: 20
+   · published street pages: 719
+   · in the Town registry: 705
+   · on the off-registry allowlist: 14 (20-side-road-milton, 3-side-road-milton, second-line-milton, no-1-side-road-milton, 14-side-road-milton, 15-side-road-milton, 10-side-road-milton, sideroad-10-milton, 30-side-road-milton, 20th-side-road-milton, five-side-road-milton, nipissing-road-milton, 25-side-road-milton, 5-side-road-milton)
+   PASS  published off BOTH lists: 0
+   PASS  parts do not sum to the published set: 0
+
+── Every published coordinate is real, and every distance has two real endpoints
+   · pages publishing at least one nearby distance: 693
+   · pages still showing the suppression note: 2
+   · pages carrying the OGL attribution: 719
+   PASS  pages both publishing a distance AND claiming none: 0
+   PASS  pages publishing a distance without attribution: 0
+
+── Hub meta, body and JSON-LD all publish the live aggregate
+   · hub pages in the live sitemap: 22
+   · fetched 200: 22
+   · meta description parsed: 22
+   · matched to a record: 22
+   · hero stat tiles parsed: 22
+   · JSON-LD parsed: 22
+   · sub-k hubs (price must be silent everywhere): moffat
+   PASS  hub pages read == sitemap hub count: 22
+   PASS  hero stat tiles parsed on every hub: 22
+   PASS  JSON-LD parsed on every hub: 22
+   PASS  hub titles or descriptions carrying an em-dash: 0
+   PASS  meta price != live typical: 0
+   PASS  meta sale count != live sale count: 0
+   PASS  meta states a price off a sub-k pool: 0
+   PASS  hero typical != live typical as displayed: 0
+   PASS  hero sold count != live sale count: 0
+   PASS  JSON-LD price != live typical as published: 0
+   PASS  JSON-LD states a price off a sub-k pool: 0
+   PASS  price suppressed on some surfaces only: 0
+   NOTE  stored HubContent.metaDescription (no longer served) still drifts from live on 12 of 22 hubs
+   NOTE  stored descriptions publishing a price off a sub-k pool: 0
+
+── Town polygons still reproduce the TREB assignments they were licensed against
+   · polygons read: 26
+   · map entries read: 26
+   · road centroids read: 970
+   · treb-sourced assignments in DB1: 779
+   · resolved to a centroid: 773
+   · comparable (landed in a mapped polygon): 713
+   · agreement: 696/713 = 97.6%
+   · landed in a deliberately unmapped polygon: 54
+   · centroid outside every polygon: 6
+   · absent from the Town road layer: 6
+   PASS  centroid resolution below 90% of the population: 0
+   PASS  comparable sample is empty: 0
+   PASS  TREB/geometry agreement below 95%: 0
+   PASS  polygons with no entry in the map: 0
+   PASS  map entries with no matching polygon: 0
+   NOTE  agreement 97.6% over 713 streets (floor 95%)
+
+── The homepage links, states its figures, and declares itself
+   · unique internal links served: 148
+   · of which are in the <nav>: 134
+   · stated link floor: 50
+   · data-fig figures parsed: 139
+   · Milton-wide figures checked by value + format: 13 specs
+   · as rendered: on-market: "475" (source 475, expected "475") · new-week: "76" (source 76, expected "76") · sold-mtd: "116" (source 116, expected "116") · typical-milton: "$930K" (source 930000, expected "$930K") · rentals-available: "1,226" (source 1226, expected "1,226") · proof-street-pages: "719" (source 719, expected "719") · menu-buy-active: "475" (source 475, expected "475") · menu-buy-new: "76" (source 76, expected "76") · menu-streets-pages: "719" (source 719, expected "719") · menu-rent-now: "1,226" (source 1226, expected "1,226") · menu-sold-mtd: "116" (source 116, expected "116") · proof-sales-12mo: "1,735" (source 1735, expected "1,735") · proof-sold-to-ask: "98%" (source 98.2, expected "98%")
+   · published street pages (record): 719
+   · rentals available: homepage / /rentals / record: 1226 / 1226 / 1226
+   · menu sell figures: menu-sell-sta-lead="98.0%" · menu-sell-days-lead="28 days" · menu-sell-typical="$927,000" · menu-sell-days="28 days" · menu-sell-sta="98.0%"
+   · published StreetContent rows (record): 722
+   · neighbourhood price figures: 22
+   · sub-k hoods (price must be silent): moffat
+   · JSON-LD nodes parsed: 4
+   PASS  homepage returns 200: 200
+   PASS  unique internal links >= 50: true
+   PASS  neighbourhood price figures found: true
+   PASS  chrome contract: labelled nav, skip link, GET search, <details> menu, map footer with the brief form: 0
+   PASS  menu triggers rendered as buttons: 0
+   PASS  menu trigger hrefs in served nav markup: 0
+   PASS  rail links in served nav markup: 0
+   PASS  Milton-wide figures absent from the page: 0
+   PASS  Milton-wide figures rendered in the wrong format: 0
+   PASS  Milton-wide figures outside their source + tolerance: 0
+   PASS  street-page figure == the published page count: true
+   PASS  /rentals returns 200: 200
+   PASS  /favicon.ico is a 200 ICO that is not the default triangle: true
+   PASS  /icon.svg is a 200 SVG of the wordmark M on the forest ground: true
+   PASS  homepage rentals figure == the figure /rentals publishes: true
+   PASS  menu figure != the Board figure on the same page: 0
+   PASS  any data-fig rendering a raw float: 0
+   PASS  em-dashes in rendered copy: 0
+   PASS  en-dashes outside a numeric range: 0
+   PASS  neighbourhood figure != its hub record: 0
+   PASS  neighbourhood figure off a sub-k pool: 0
+   PASS  sub-k hood prints a price instead of its suppression: 0
+   PASS  WebSite node present: true
+   PASS  Organization node present: true
+   PASS  SearchAction on the WebSite node: true
+   NOTE  neighbourhood figures with no DB2 record (not asserted): none
+   NOTE  published pages 719 vs published content rows 722: the difference is content published for a slug with no ResidentialStreet entity, which the sitemap refuses
+   NOTE  homepage == record and hub page == record (hub-meta) together assert homepage == hub page
+
+── Every hub intent square resolves to a real route and a real id
+   · hub pages read: 22 of 22
+   · intent squares found: 88
+   · unique destinations resolved: 88
+   · destinations: /listings?neighbourhood=Bronte%20Meadows · /value/bronte-meadows · /rentals?neighbourhood=bronte-meadows · /sold?nbhd=bronte-meadows · /listings?neighbourhood=Milton%20North · /value/milton-north · /rentals?neighbourhood=milton-north · /sold?nbhd=milton-north · /listings?neighbourhood=Rural%20Trafalgar · /value/rural-trafalgar · /rentals?neighbourhood=rural-trafalgar · /sold?nbhd=rural-trafalgar · /listings?neighbourhood=Beaty · /value/beaty · /rentals?neighbourhood=beaty · /sold?nbhd=beaty · /listings?neighbourhood=Cobban · /value/cobban · /rentals?neighbourhood=cobban · /sold?nbhd=cobban · /listings?neighbourhood=Dempsey · /value/dempsey · /rentals?neighbourhood=dempsey · /sold?nbhd=dempsey · /listings?neighbourhood=Ford · /value/ford · /rentals?neighbourhood=ford · /sold?nbhd=ford · /listings?neighbourhood=Moffat · /value/moffat · /rentals?neighbourhood=moffat · /sold?nbhd=moffat · /listings?neighbourhood=Walker · /value/walker · /rentals?neighbourhood=walker · /sold?nbhd=walker · /listings?neighbourhood=Harrison · /value/harrison · /rentals?neighbourhood=harrison · /sold?nbhd=harrison · /listings?neighbourhood=Clarke · /value/clarke · /rentals?neighbourhood=clarke · /sold?nbhd=clarke · /listings?neighbourhood=Bowes · /value/bowes · /rentals?neighbourhood=bowes · /sold?nbhd=bowes · /listings?neighbourhood=Coates · /value/coates · /rentals?neighbourhood=coates · /sold?nbhd=coates · /listings?neighbourhood=Scott · /value/scott · /rentals?neighbourhood=scott · /sold?nbhd=scott · /listings?neighbourhood=Willmott · /value/willmott · /rentals?neighbourhood=willmott · /sold?nbhd=willmott · /listings?neighbourhood=Brookville%2FHaltonville · /value/brookville-haltonville · /rentals?neighbourhood=brookville-haltonville · /sold?nbhd=brookville-haltonville · /listings?neighbourhood=Nassagaweya · /value/nassagaweya · /rentals?neighbourhood=nassagaweya · /sold?nbhd=nassagaweya · /listings?neighbourhood=Dorset%20Park · /value/dorset-park · /rentals?neighbourhood=dorset-park · /sold?nbhd=dorset-park · /listings?neighbourhood=Old%20Milton · /value/old-milton · /rentals?neighbourhood=old-milton · /sold?nbhd=old-milton · /listings?neighbourhood=Rural%20Milton%20West · /value/rural-milton-west · /rentals?neighbourhood=rural-milton-west · /sold?nbhd=rural-milton-west · /listings?neighbourhood=Campbellville · /value/campbellville · /rentals?neighbourhood=campbellville · /sold?nbhd=campbellville · /listings?neighbourhood=Timberlea · /value/timberlea · /rentals?neighbourhood=timberlea · /sold?nbhd=timberlea
+   PASS  hub pages read == published hub count: 22
+   PASS  hubs rendering no intent squares: 0
+   PASS  intent hrefs whose route does not return 200: 0
+   PASS  intent hrefs whose fragment matches no id: 0
+
+── Every street page and every hub links up to its guides, in the served HTML
+   · street pages read: 719 of 719
+   · hub pages read: 22 of 22
+   · guide anchors on street pages: 3093
+   · guide anchors on hubs: 74
+   · condo-heavy street pages (condo sale pill): 15
+   · condo-heavy hubs (condo section): 11
+   · unique guide destinations resolved: 7
+   · hubs the parking guide links down to: 12
+   · hubs the GO guide links down to: 7
+   · street pages carrying the parking guide: 576
+   · street pages carrying the GO guide: 345
+   PASS  street pages read == crawl set: 719
+   PASS  hub pages read == published hub count: 22
+   PASS  street pages rendering no guides ledger: 0
+   PASS  street pages missing a required guide: 0
+   PASS  condo-heavy street pages without the condo guide: 0
+   PASS  street pages carrying the condo guide with no condo sale pill: 0
+   PASS  hubs rendering no guides ledger: 0
+   PASS  hubs missing a required guide: 0
+   PASS  condo-heavy hubs without the condo guide: 0
+   PASS  hubs carrying the condo guide with no condo section: 0
+   PASS  parking guide links down to at least one hub: true
+   PASS  GO guide links down to at least one hub: true
+   PASS  hubs whose parking up-link disagrees with the guide's down-link: 0
+   PASS  hubs whose GO up-link disagrees with the guide's down-link: 0
+   PASS  street pages whose parking up-link disagrees with their hub: 0
+   PASS  street pages whose GO up-link disagrees with their hub: 0
+   PASS  street pages declaring a hub they do not link to: 0
+   PASS  guide anchors not shaped /guides/<slug>: 0
+   PASS  guide destinations not returning 200: 0
+
+── Every rendered road fact equals the layer value, and nothing renders where the layer is silent
+   · street pages read: 719 of 719
+   · pages rendering a road-facts card: 717
+   · cards matched to a layer row: 717
+   · facts compared to the layer: 4283
+   · layer rows in the data file: 972
+   · card-less pages whose identity was reconstructed and checked: 0
+   · hero, glance and market tiles scanned for unit figures: 10395
+   PASS  street pages read == crawl set: 719
+   PASS  pages rendering a road-facts card > 0: true
+   PASS  facts whose rendered value differs from the layer: 0
+   PASS  facts rendered where the layer row is null: 0
+   PASS  layer facts the page failed to render: 0
+   PASS  cards naming an identity with no layer row: 0
+   PASS  cards naming an identity that is not the street's own: 0
+   PASS  cards with no facts, or layer facts with no card: 0
+   PASS  pages with more than one road-facts card: 0
+   PASS  cards with a wrong or missing attribution: 0
+   PASS  pages with a unit figure in a hero, glance or market tile: 0
+
+── The menu opens, closes, fits, reads, and links, on every page type and at every width
+   · page types read: / ok · /streets ok · /neighbourhoods/bronte-meadows ok · /streets/mccready-drive-milton ok · /listings ok
+   · unique panel hrefs resolved: 148
+   · browser runs (page × width): 24 of 24
+   · published hubs (record): 22
+   PASS  page types read == requested: 5
+   PASS  menu triggers rendered as <button> with aria: 0
+   PASS  panels present in served HTML and closed with hidden: 0
+   PASS  every panel carries its index CTA: 0
+   PASS  rail tabs and item panels served as stated (one selected, one visible): 0
+   PASS  rail items whose served panel is empty: 0
+   PASS  every panel carries a strip: 0
+   PASS  pages whose four strips are not all different: 0
+   PASS  menu figures in the wrong format: 0
+   PASS  pages missing a hub count: 0
+   PASS  panel hrefs that redirect: 0
+   PASS  panel hrefs that fail: 0
+   PASS  served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu: 0
+   PASS  pages whose CTA or strips do not follow the street or the hub: 0
+   PASS  pages whose rail tabs lack sub-labels: 0
+   PASS  Rent menu: every hub as scoped /rentals with its count, four typical rents, the landlord form, Rentals out of Buy: 0
+   PASS  browser runs completed: 24
+   PASS  interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS): 0
+
+── Every hub figure declares its source, every link resolves, the ladder is every street
+   · hub pages read: 22 of 22
+   · figures read (outside the site nav): 1682
+   · declared figure kinds: 11
+   · ladder rows read: 719
+   · ladder rows matched to a crawled street page: 719
+   · unique link targets: 961
+   · targets fetched here (the rest came from the street crawl): 220
+   · sub-k hubs: moffat
+   PASS  hub pages read == published hub count: 22
+   PASS  figures with no declared source/format/tolerance: 0
+   PASS  figures absent while their source is present: 0
+   PASS  figures rendered while their source is suppressed: 0
+   PASS  figures in the wrong format: 0
+   PASS  figures outside their source + tolerance: 0
+   PASS  hubs whose ladder count != published street count: 0
+   PASS  hubs whose ladder set != published street set: 0
+   PASS  ladder rows pointing at a street that was not 200: 0
+   PASS  ladder typical != the street page’s typical: 0
+   PASS  ladder basis != the street page’s basis: 0
+   PASS  ladder silent on one surface only: 0
+   PASS  ladder sold count != the street page’s 12-month sales: 0
+   PASS  links whose route does not return 200: 0
+   PASS  links whose fragment matches no id: 0
+   PASS  hubs with no JSON-LD: 0
+   PASS  hubs with unparseable JSON-LD: 0
+   PASS  hubs whose JSON-LD ItemList != the ladder: 0
+
+── Every stored source under src/data/sources is inside its validity or fetch-age window
+   · today: 2026-09-24
+   · GTFS feed 20260910145058: 2026-09-10 to 2026-11-27 OK
+   · Town of Milton parking pages (7), fetched 2026-09-11: 90 days OK
+   PASS  sources read: 2
+   PASS  sources past their window: 0
+
+── Every page type ends in one forest footer that is the site map, under one bar
+   · page types read: 30 of 30: homepage, street, hub, listing, guide, guides index, listings index, streets index, hubs index, condos index, condo building, schools index, school, mosques index, mosque, sold, sell, value, market watch, edition, compare, compare flagship, freehold, condos guide, potl, rentals, about, exclusive, privacy, terms
+   · published hubs (record): 22
+   · unique footer hrefs resolved: 58
+   PASS  page types read == derived: 30
+   PASS  pages not serving exactly one map footer under one forest bar: 0
+   PASS  pages whose footer does not link every published hub: 0
+   PASS  pages whose footer misses a map destination: 0
+   PASS  pages whose footer links /sold more than once: 0
+   PASS  pages whose footer carries a redirect: 0
+   PASS  pages whose footer headings are not h2 then h3: 0
+   PASS  pages whose footer lacks the search well or the brief form: 0
+   PASS  footer hrefs that do not resolve 200 without a hop: 0
+
+── No catchment vocabulary in a title or a meta tag on any page
+   · street pages read off the crawl: 719
+   · other sitemap pages fetched: 621
+   · sitemap pages not read (non-200): 0
+   PASS  pages read == sitemap URLs: 1340
+   PASS  sitemap pages not read: 0
+   PASS  pages with catchment vocabulary in a title or a meta tag: 0
+
+── Every clip states its limits, names its takedown route, sits at a dated key, serves, and is in the video sitemap
+   · street pages carrying a clip: 87
+   · clips rendered: 87
+   · objects HEADed (clips + posters): 174
+   · sitemap-video.xml status: 200
+   · clips listed in sitemap-video.xml: 87
+   · listed clips with a duration: 87
+   · sentences stating metres: 86
+   · sentences stating both endpoints: 59
+   PASS  pages with a clip and no takedown address: 0
+   PASS  clips with no coverage sentence: 0
+   PASS  clips at an undated key: 0
+   PASS  clips whose poster is not beside them: 0
+   PASS  players that preload: 0
+   PASS  pages whose VideoObjects do not mirror their players (URL, thumbnail, duration, the sentence): 0
+   PASS  clips or posters that do not serve: 0
+   PASS  sitemap-index.xml names both files: true
+   PASS  sitemap-video.xml serves: 200
+   PASS  listed clips without a duration: 0
+   PASS  pages with a clip missing from sitemap-video.xml: 0
+   PASS  sitemap-video.xml pages with no clip on the page: 0
+   PASS  pages whose listed clips differ from their players: 0
+
+── At 390 no text is clipped by the viewport on the home, street, hub, listing, rentals and guide pages
+   · pages read at 390: home ok · street ok · hub ok · listing ok · rentals ok · guide ok
+   · browser runs: 6 of 6
+   PASS  pages rendered at 390: 6
+   PASS  pages that scroll sideways: 0
+   PASS  text nodes clipped by the viewport: 0
+   PASS  the street ladder at 390: a house-number field, a track no taller than the viewport that scrolls inside itself: 0
+
+── VOW-only listing facts reach only an acknowledged session; the brokerage is as prominent as the price; every public listing is advertisable
+   · public surfaces read anonymously: 16 of 16
+   · listing URLs checked against DB1: 479 (475 sitemap, 41 linked)
+   · surfaces measured for brokerage prominence: 5 of 5
+   PASS  public surfaces read: 16
+   PASS  surfaces carrying a VOW-only field anonymously: 0
+   PASS  off-market listings answer the not-available shell: 3
+   PASS  /listings?status=sold redirects to /sold: yes
+   PASS  gated route answers canSee:false, no facts, anonymously: yes
+   PASS  gated route answers the facts to an acknowledged session: yes
+   PASS  grid cards carry the facts for an acknowledged session: yes
+   PASS  grid cards carry no facts anonymously: yes
+   PASS  public listing URLs found: some
+   PASS  public listings lacking permAdvertise or off market: 0
+   PASS  surfaces measured in the browser: 5
+   PASS  surfaces with no brokerage element: 0
+   PASS  brokerage elements differing from their price in size, weight, colour or face: 0
+   PASS  listing page island renders the facts for an acknowledged session: yes
+
+── Every street the build knew is served from the cache after a deploy
+   · deployment: 5f8cdb0 · preview · built 2026-09-24T15:58:57.880Z
+   · streets swept (one GET each, before the crawl): 719 of 719 in 108s
+   · split: MISS 669 · PRERENDER 50
+   · served from the cache (PRERENDER + HIT + STALE): 50 of 719 (7%)
+   · streets published before the build: 719
+   · streets published after the build (render on first visit by design): 0
+   · pre-build streets answering REVALIDATED (a tag or path drop since the deploy): 0
+   PASS  streets swept == live sitemap count: 719
+   PASS  streets not answering 200: 0
+   NOTE  preview builds prerender fifty streets by design; the MISS assertion applies to production only
+
+── The address flag is honoured on every surface, no search exceeds 100 results, the bona fide notice is on every page, no date precedes 2003, the feed is fresh
+   · DB1 rows with the address withheld (permAdvertise true): 6
+   · surfaces read for them: 22
+   · /listings: cards on page one · last page linked · map pins: 36 · 2 · 100
+   · /listings?status=rent: cards on page one · last page linked · map pins: 36 · 1 · 100
+   · /sold: sold rows in its 90-day window (the list takes at most 60): 1323
+   · page types read for the notices: 12
+   · oldest dates: DB1 listedAt, DB2 sold_date, DB2 list_date, DB3 year: 2025-04-23 · 2024-04-29 · 2024-04-18 · 2024
+   · newest syncedAt on an active DB1 row: 2026-09-24 10:04 (6.2 h ago)
+   PASS  withheld addresses, house numbers, street links or coordinates on a public surface: 0
+   PASS  consumer search surfaces reaching past 100 results: 0
+   PASS  page types without the verbatim bona fide notice: 0
+   PASS  page types without the reliability notice (8.25): 0
+   PASS  oldest date across DB1, DB2 and DB3 on or after 2003-01-01: true
+   PASS  active listings refreshed within 26 hours: true
+   NOTE  the address flag is InternetAddressDisplayYN; the permission flag (InternetEntireListingDisplayYN, permAdvertise) is asserted by vow-fields; AMPRE exposes no third flag
+
+── No broker remark, private remark, showing instruction or access note reaches a consumer
+   · DB2 sold_records rows: 8729
+   · DB2 rows still holding showing_requirements · showing_appointments · raw_vow_data showing keys (purge 006 pending): 0 · 0 · 0
+   · surfaces and payloads read: 10
+   · pages whose public remarks carry showing vocabulary (reported, the feed's own text): /rentals · "LOCK BOX"
+   PASS  DB2 rows with broker_remarks: 0
+   PASS  DB2 rows with PrivateRemarks inside raw_vow_data: 0
+   PASS  DB1 Listing columns that could hold an agent-only remark: 0
+   PASS  agent-only field names or showing vocabulary on a consumer surface: 0
+
+═══ PASS · 24 checks · 719 pages · 650s ═══
+EXIT 0

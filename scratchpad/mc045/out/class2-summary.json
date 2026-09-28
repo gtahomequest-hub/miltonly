@@ -1,0 +1,90 @@
+{
+ "params": {
+  "MARGIN": 700,
+  "ROAD_MARGIN": 100,
+  "NEAR_M": 2000,
+  "AREA_MARGIN": 200,
+  "FRAMES": "both",
+  "reference": "43.513465,-79.882820 (Main St E x Martin St)",
+  "urbanCentroid": [
+   43.512202,
+   -79.858943
+  ]
+ },
+ "candidates": 768,
+ "agreedClaims": 1074,
+ "oneParserClaims": 193,
+ "pagesWithAnyAgreedClaim": 506,
+ "pagesWithCheckableClaim": 380,
+ "verifiedWrongClaims": 60,
+ "verifiedWrongPages": 56,
+ "misplacedOnlyPages": 107,
+ "byVerdictBeforeReadingCheck": {
+  "MISPLACED": 126,
+  "not-checkable": 463,
+  "no-geometry": 97,
+  "WRONG": 56,
+  "not-refuted": 304,
+  "negated-not-judged": 26,
+  "untestable-beyond-road": 1,
+  "untestable-orientation": 1
+ },
+ "notCheckable": {
+  "anchor escarpment": 159,
+  "proximity to road": 23,
+  "anchor commercial-corridor": 83,
+  "proximity to other": 24,
+  "edge-of-town": 12,
+  "anchor rail": 5,
+  "other-position": 59,
+  "anchor other": 7,
+  "anchor built-up-area": 21,
+  "anchor water/park": 7,
+  "vague or comparative proximity": 7,
+  "proximity to rail": 18,
+  "proximity to commercial-corridor": 7,
+  "orientation": 7,
+  "proximity to water/park": 12,
+  "proximity to neighbourhood": 5,
+  "proximity to escarpment": 5,
+  "proximity to town": 1,
+  "proximity to built-up-area": 1
+ },
+ "sensitivity": [
+  {
+   "marginM": 0,
+   "frames": "both",
+   "pagesWrongBeforeReadingCheck": 98
+  },
+  {
+   "marginM": 350,
+   "frames": "both",
+   "pagesWrongBeforeReadingCheck": 82
+  },
+  {
+   "marginM": 700,
+   "frames": "both",
+   "pagesWrongBeforeReadingCheck": 54
+  },
+  {
+   "marginM": 1000,
+   "frames": "both",
+   "pagesWrongBeforeReadingCheck": 47
+  },
+  {
+   "marginM": 1500,
+   "frames": "both",
+   "pagesWrongBeforeReadingCheck": 41
+  },
+  {
+   "marginM": 700,
+   "frames": "true only",
+   "pagesWrongBeforeReadingCheck": 102
+  },
+  {
+   "marginM": 700,
+   "frames": "grid only",
+   "pagesWrongBeforeReadingCheck": 84
+  }
+ ]
+}

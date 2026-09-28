@@ -674,8 +674,69 @@ model User {
   passwordHash     String?
   passwordSetAt    DateTime?
 
+  // MP-006, from the PropTx VOW Best Practices.
+  //   vowAcknowledgementVersion  which version of VOW_ACKNOWLEDGEMENT_TEXT the row last agreed
+  //                              to; a lower number than the current one means re-consent is owed
+  //                              before any record is served. The text itself stays above.
+  //   isRegistrant   R-8.09(b)(i): the person's own answer to "are you a licensed real estate
+  //                  registrant?", asked on the card; null = not asked yet. A yes is refused
+  //                  VOW records and flagged for Aamir's review; nothing is refused by guess.
+  //   reviewFlag     R-8.09(b)(iii): set by the access tracking ("suspicious-access") or by the
+  //                  registrant answer ("registrant"); cleared by a person, never by code.
+  //                  A flag never refuses on its own.
+  // Credential records are kept 180 days past the password's expiry (Appendix B(b)): no code
+  // hard-deletes a row that has a passwordHash; see credentialRetainUntil() in password.ts.
+  vowAcknowledgementVersion Int?
+  isRegistrant     Boolean?
+  registrantAt     DateTime?
+  reviewFlag       String?
+  reviewFlaggedAt  DateTime?
+  vowConsents      VowConsent[]
+  vowAccess        VowAccessLog[]
+
   @@index([email])
   @@index([verifyTokenHash])
+  @@index([reviewFlag])
+  @@schema("public")
+}
+
+// Every agreement to the VOW terms, append-only (MP-006). The User row holds the latest; this
+// holds all of them, so a re-consent to version 4 does not erase the record of version 3.
+model VowConsent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version   Int
+  text      String   @db.Text
+  at        DateTime @default(now())
+  ip        String?
+  userAgent String?
+
+  @@index([userId, at(sort: Desc)])
+  @@schema("public")
+}
+
+// The audit trail of consumer access to the VOW (MP-006, VOW Policy 19, item 28): who, when,
+// what was viewed, from where. One row per gated read that served records or VOW-only fields.
+// Written by logVowAccess() in src/lib/vow-audit.ts; exported by /api/admin/vow-access and
+// scripts/export-vow-access-log.ts for PropTx on request. Never read by a page.
+model VowAccessLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  at          DateTime @default(now())
+  // street-records | sold-page | sold-api | sold-stats | listing-vow | neighbourhood-records
+  kind        String
+  // the street slug, neighbourhood, MLS number, or the filter string, whichever the kind names
+  scope       String?
+  path        String?
+  recordCount Int      @default(0)
+  ip          String?
+  userAgent   String?
+
+  @@index([userId, at(sort: Desc)])
+  @@index([at(sort: Desc)])
+  @@index([kind, at(sort: Desc)])
   @@schema("public")
 }
 

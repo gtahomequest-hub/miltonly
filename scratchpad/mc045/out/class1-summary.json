@@ -1,0 +1,126 @@
+{
+ "pagesPublished": 719,
+ "pagesWithGeneratedText": 707,
+ "pages": 521,
+ "byTemplate": {
+  "standard": 515,
+  "minimal": 1,
+  "placeholder": 5
+ },
+ "sentences": 1173,
+ "faqSentences": 405,
+ "faqShareOfSentences": 0.345,
+ "pagesWhereFaqIsTheOnlyCarrier": 73,
+ "pagesWithClaimInHeroOrLd": 149,
+ "pagesWithClaimInsideMeta": 16,
+ "hiddenOnlyPages": 1,
+ "sentencesAboutElsewhere": 74,
+ "bySurface": {
+  "profile": 749,
+  "faq": 405,
+  "hero": 148,
+  "ld-place": 149,
+  "meta": 16
+ },
+ "byTerm": {
+  "I13 infill/builder-history": 17,
+  "I3 newer": 219,
+  "I5 built-out": 90,
+  "I1 established": 515,
+  "I2 mature": 158,
+  "I11 growth-history": 57,
+  "I6 construction-state": 131,
+  "I7 older": 112,
+  "I4 new-build": 179,
+  "I14 build-activity": 31,
+  "I10 settled-history": 101,
+  "I9 age words": 90,
+  "I8 historic/original": 41,
+  "I12 stock-age": 5,
+  "I7b older-comma": 2
+ },
+ "buckets": {
+  "1L": 59,
+  "1G": 12,
+  "excluded": 32
+ },
+ "exclusionsApplied": {
+  "X4": 6,
+  "X1": 16,
+  "X3": 12,
+  "X5": 2
+ },
+ "buildEraFaq": {
+  "served": 179,
+  "kinds": {
+   "disclaims-then-asserts-established": 22,
+   "asserts-established": 146,
+   "asserts-new": 1,
+   "disclaims-only": 5,
+   "other": 5
+  },
+  "pagesAssertingEstablished": 168
+ },
+ "repeated": [
+  {
+   "n": 7,
+   "text": "The surrounding area has been built out for some time."
+  },
+  {
+   "n": 5,
+   "text": "The street reads as established rather than new construction."
+  },
+  {
+   "n": 5,
+   "text": "The street reads as established rather than new."
+  },
+  {
+   "n": 5,
+   "text": "There is no active new-build program on the street itself."
+  },
+  {
+   "n": 3,
+   "text": "No active new-construction activity is recorded on the street."
+  },
+  {
+   "n": 3,
+   "text": "There is no active new-build activity recorded on the street."
+  },
+  {
+   "n": 2,
+   "text": "The street reads as part of that established fabric."
+  },
+  {
+   "n": 2,
+   "text": "There is no indication of active new construction on the street itself."
+  },
+  {
+   "n": 2,
+   "text": "There is no active new-construction presence on the street."
+  },
+  {
+   "n": 2,
+   "text": "The street is established rather than new construction."
+  },
+  {
+   "n": 2,
+   "text": "The surrounding Harrison area is similarly built out."
+  },
+  {
+   "n": 2,
+   "text": "There is no indication of active new-build development on the street itself."
+  },
+  {
+   "n": 2,
+   "text": "The housing stock is settled rather than under construction."
+  },
+  {
+   "n": 2,
+   "text": "There is no active new construction on the street itself."
+  },
+  {
+   "n": 2,
+   "text": "There is no active new-build activity recorded on the street itself."
+  }
+ ]
+}

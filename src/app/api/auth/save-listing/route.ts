@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth";
+import { getSession, touchSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     where: { id: user.id },
     data: { savedListings: updated },
   });
+  await touchSession();
 
   return NextResponse.json({ savedListings: updated });
 }

@@ -23,8 +23,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { redis } from "@/lib/cache";
-import { getSession } from "@/lib/auth";
+import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import {
   getStreetSoldList,
   getNeighbourhoodSoldList,
@@ -143,12 +144,28 @@ export async function GET(req: NextRequest) {
         : await getNeighbourhoodSoldList(neighbourhood!, type, days, limit);
     }
 
-    return NextResponse.json({
-      source: "TREB MLS®",
-      type,
-      records: rows,
-      count: rows.length,
+    // The audit trail (MP-006): one row per gated read, before the records go out.
+    await logVowAccess({
+      userId: user.id,
+      kind: "sold-api",
+      scope: street ? `street:${street}` : `neighbourhood:${neighbourhood}`,
+      path: `${req.nextUrl.pathname}?${req.nextUrl.searchParams.toString()}`,
+      recordCount: rows.length,
+      ip: clientIpFromHeaders(req.headers),
+      userAgent: req.headers.get("user-agent"),
+      reviewFlag: user.reviewFlag,
     });
+    await touchSession();
+
+    return NextResponse.json(
+      {
+        source: "TREB MLS®",
+        type,
+        records: rows,
+        count: rows.length,
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (err) {
     console.error("[api/sold] read failed, serving graceful empty:", err);
     return NextResponse.json({

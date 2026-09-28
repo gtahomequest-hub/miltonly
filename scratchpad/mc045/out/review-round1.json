@@ -1,0 +1,373 @@
+{
+ "precision": {
+  "sampleSize": 120,
+  "droppedByLaterRule": 0,
+  "labellerAgreementOnIsBuildEra": 0.942,
+  "splitDecisions": 7,
+  "precisionBuildEraBothAgree": 0.892,
+  "ci95": [
+   0.823,
+   0.936
+  ],
+  "precisionAboutThisStreetOrArea": 0.792,
+  "ciAbout95": [
+   0.711,
+   0.855
+  ],
+  "falsePositivesBothAgree": [
+   {
+    "sid": 34,
+    "slug": "gifford-crescent-milton",
+    "text": "The street comprises townhouse units positioned within the Coates neighbourhood, where comparable properties have established a market framework.",
+    "why": [
+     "False positive: 'established a market framework' uses the verb sense and says nothing about build era or age.",
+     "'established' is a verb here ('have established a market framework'). Not about age or build status."
+    ]
+   },
+   {
+    "sid": 69,
+    "slug": "pratt-heights-milton",
+    "text": "Given the limited data on Pratt Heights, exploring other townhouse pockets within the Ford neighbourhood could offer more established sales patterns.",
+    "why": [
+     "'Established' modifies sales patterns (data depth), not housing age; about other pockets.",
+     "'established' describes sales patterns (depth of market data), not housing age or construction."
+    ]
+   },
+   {
+    "sid": 90,
+    "slug": "pollock-gate-milton",
+    "text": "No new-build pipeline is recorded for Pollock Gate itself.",
+    "why": [
+     "Worded as a statement about records ('is recorded'), not as a claim about construction. Borderline: 'itself' implies the pipeline was checked and hints that one exists nearby.",
+     "Reports that no new-build pipeline is recorded for the street. It is framed as a statement about records, not a claim about when the street was built or whether construction is happening."
+    ]
+   },
+   {
+    "sid": 103,
+    "slug": "merritt-drive-milton",
+    "text": "Rent levels aren't reliably established at the street level.",
+    "why": [
+     "'Established' here means rent data are unavailable, not housing age.",
+     "'established' here means rent levels cannot be pinned down. It is not about when anything was built."
+    ]
+   },
+   {
+    "sid": 106,
+    "slug": "marks-street-milton",
+    "text": "Confirming the era of any specific home would require a direct look at the property.",
+    "why": [
+     "Says era cannot be confirmed without a direct look. No era is asserted.",
+     "Says a home's era can't be confirmed without seeing the property. Asserts no era."
+    ]
+   },
+   {
+    "sid": 111,
+    "slug": "hickory-crescent-milton",
+    "text": "The record does not carry build years for Hickory Crescent, so no era can be stated with confidence.",
+    "why": [
+     "States that the record has no build years, so no era is claimed.",
+     "Says there are no build years on record, so no era is stated."
+    ]
+   }
+  ],
+  "eraButAboutElsewhere": 12
+ },
+ "recall": {
+  "pages": 40,
+  "class1": {
+   "agentListed": 67,
+   "foundBySweep": 52,
+   "recall": 0.776,
+   "ci95": [
+    0.663,
+    0.859
+   ],
+   "missed": [
+    {
+     "slug": "mccready-drive-milton",
+     "text": "The street takes its name from the family that farmed this part of Halton County long before subdivision plans arrived, and McCready Park carries it still."
+    },
+    {
+     "slug": "roper-drive-milton",
+     "text": "For buyers seeking a detached home in a settled Milton pocket, the street offers a consistent product in a quiet setting."
+    },
+    {
+     "slug": "ridge-drive-milton",
+     "text": "Ridge Drive runs through Old Milton, one of the town's earliest settled areas."
+    },
+    {
+     "slug": "ridge-drive-milton",
+     "text": "Many homes have been updated over the years, with renovated kitchens and bathrooms, finished basements, and replacement windows."
+    },
+    {
+     "slug": "ridge-drive-milton",
+     "text": "There is no single builder pattern; the street was developed incrementally by multiple builders."
+    },
+    {
+     "slug": "serafini-crescent-milton",
+     "text": "Serafini Crescent sits within the Willmott neighbourhood of Milton, a residential pocket that has grown steadily as the town has expanded."
+    },
+    {
+     "slug": "victoria-street-milton",
+     "text": "Victoria Street runs through the heart of Old Milton, one of the town's earliest settled areas."
+    },
+    {
+     "slug": "victoria-street-milton",
+     "text": "Many properties have been updated with modern kitchens and bathrooms, while others retain original details that appeal to buyers seeking renovation potential."
+    },
+    {
+     "slug": "archer-way-milton",
+     "text": "Archer Way is a short residential way in Milton's Clarke area, a pocket of the town that sits west of the commercial spine and north of the older grid."
+    },
+    {
+     "slug": "ware-crescent-milton",
+     "text": "The street's recorded stock is detached housing with no indication of recent build activity."
+    },
+    {
+     "slug": "rutledge-way-milton",
+     "text": "For anyone mapping the town, Rutledge Way belongs to the older, looser fabric of Brookville and Haltonville rather than to the planned communities that have grown up around it."
+    },
+    {
+     "slug": "rutledge-way-milton",
+     "text": "The street sits within Brookville/Haltonville, an area with a long-standing rural and village character."
+    },
+    {
+     "slug": "chee-chee-landing-milton",
+     "text": "It's a compact stock, typical of the Ford neighbourhood's infill character."
+    },
+    {
+     "slug": "broadway-avenue-milton",
+     "text": "Broadway Avenue runs through the heart of Old Milton, one of the town's earliest settled areas."
+    },
+    {
+     "slug": "elm-avenue-milton",
+     "text": "For a street of this size and age, the absence of sale activity is itself the notable fact."
+    }
+   ]
+  },
+  "class2Net": {
+   "agentListed": 50,
+   "inCandidateNet": 34,
+   "recall": 0.68,
+   "ci95": [
+    0.542,
+    0.792
+   ],
+   "missed": [
+    {
+     "slug": "mccready-drive-milton",
+     "text": "Its position puts the escarpment views within reach on a clear day while keeping the everyday grid of Milton close."
+    },
+    {
+     "slug": "ridge-drive-milton",
+     "text": "Ridge connects Main Street to the hospital district, yet traffic remains light."
+    },
+    {
+     "slug": "victoria-street-milton",
+     "text": "Victoria Street runs through the heart of Old Milton, one of the town's earliest settled areas."
+    },
+    {
+     "slug": "victoria-street-milton",
+     "text": "The street appeals to buyers drawn to Old Milton's established character: proximity to Robert Baldwin Public School, walkable distance to Rotary Park, and convenient access to core shopping and hospital services."
+    },
+    {
+     "slug": "victoria-street-milton",
+     "text": "Buyers attracted to this area typically seek the neighbourhood's character and proximity to core services rather than price momentum or rapid equity appreciation."
+    },
+    {
+     "slug": "archer-way-milton",
+     "text": "Archer Way sits in Clarke, a position that makes the GO station the realistic Toronto commute."
+    },
+    {
+     "slug": "rutledge-way-milton",
+     "text": "The street is quiet and low-density, framed by open land and the small settlement pattern that defines this corner of Halton."
+    },
+    {
+     "slug": "rutledge-way-milton",
+     "text": "Rutledge Way sits in Brookville/Haltonville, a corner of Milton that trades town density for open country and a longer reach into the rest of the region."
+    },
+    {
+     "slug": "rutledge-way-milton",
+     "text": "Distances here reflect a rural address, so most school runs are drives rather than walks."
+    },
+    {
+     "slug": "woodley-crescent-milton",
+     "text": "Woodley Crescent is a short residential curve in Milton's Willmott district, a pocket of the town that fills the ground between the escarpment edge and the commercial spine along Derry Road."
+    },
+    {
+     "slug": "broadway-avenue-milton",
+     "text": "Broadway Avenue runs through the heart of Old Milton, one of the town's earliest settled areas."
+    },
+    {
+     "slug": "broadway-avenue-milton",
+     "text": "Broadway Avenue itself is a short, unassuming road, yet its position places it close to the everyday rhythms of the town."
+    },
+    {
+     "slug": "malboeuf-court-milton",
+     "text": "For a buyer weighing where a small street fits in the wider Milton grid, Malboeuf Court occupies the residential middle: close enough to amenities to be practical, removed enough to stay calm."
+    },
+    {
+     "slug": "pineridge-drive-milton",
+     "text": "Brookville and Campbellville are the nearest settled pockets, and the everyday anchors of Milton proper sit a half hour or more away by car."
+    },
+    {
+     "slug": "pineridge-drive-milton",
+     "text": "This is a corner of the municipality where the town feels adjacent rather than immediate."
+    },
+    {
+     "slug": "meighen-way-milton",
+     "text": "Its position in Beaty places it within easy reach of the grocery and retail cluster along the main commercial strips, while keeping the residential fabric intact."
+    }
+   ]
+  },
+  "class3": {
+   "agentFound": 7,
+   "alsoInCandidates": 0,
+   "agentFindings": [
+    {
+     "slug": "labine-point-milton",
+     "claim": "Labine Point is a quiet cul-de-sac in Milton's Cobban neighbourhood, a residential pocket in the town's northwest.",
+     "claimField": "hero / ld-place",
+     "refutedBy": "FAQ answer (Is Labine Point new construction or established?): \"Labine Point sits within Cobban, one of Milton's newer eastern subdivisions, and reads as recently built stock rather than an established pocket.\"",
+     "why": "The hero and JSON-LD place Cobban in the town's northwest, while the same page's FAQ places Cobban among Milton's eastern subdivisions (and sec:market says southeast quadrant); northwest and eastern cannot both hold.",
+     "inCandidates": false
+    },
+    {
+     "slug": "victoria-street-milton",
+     "claim": "Recent rental activity shows a mix of unfurnished units, suggesting a market oriented toward long-term tenants.",
+     "claimField": "faq (What's the rental market like on Victoria Street?)",
+     "refutedBy": "island glance: Leases 0 (closed · last 12 months); heroStats Transactions tracked 0 (no closed deals · last 12 months); Active right now 0 (live listings · today)",
+     "why": "The FAQ answer asserts recent rental activity across several units, while the page's own data island records zero leases in the last 12 months and zero live listings, so there is no recent rental activity to describe.",
+     "inCandidates": false
+    },
+    {
+     "slug": "leger-way-milton",
+     "claim": "Leger Way is a short residential street in Milton's Ford and Willmott districts, west of the town's historic core.",
+     "claimField": "hero / ld-place / meta",
+     "refutedBy": "island roadFacts: Length 1.8 km; Road class Collector road",
+     "why": "The hero, Place description and meta call Leger Way a short residential street, but the page's own road facts give it a length of 1.8 km and class it as a collector road, not a short local street.",
+     "inCandidates": false
+    },
+    {
+     "slug": "farmstead-drive-milton",
+     "claim": "Townhouses form the largest share of the stock, with detached and semi-detached homes close behind in number, and a smaller run of condominium units completing the picture.",
+     "claimField": "sec:homes",
+     "refutedBy": "island.pillRows[sales]: Detached 7, Semi 7, Townhouse 12, Condo 7 (last 12 months)",
+     "why": "The page's own sales mix shows condos at 7, the same count as detached (7) and semi (7), so condos are not a smaller run than detached and semi-detached homes.",
+     "inCandidates": false
+    },
+    {
+     "slug": "stoutt-crescent-milton",
+     "claim": "The street carries a small mix, with semi-detached homes the more common form and detached houses also present.",
+     "claimField": "faq",
+     "refutedBy": "island.heroStats Housing mix = \"Detached\"",
+     "why": "The data island states the street's housing mix is Detached, while the FAQ answer says semi-detached homes are the more common form on the street.",
+     "inCandidates": false
+    },
+    {
+     "slug": "haxton-heights-milton",
+     "claim": "Haxton Heights, Milton: 1 sale in the last 12 months on record, current listings, and the full street read.",
+     "claimField": "meta",
+     "refutedBy": "island.glance/heroStats 'Active right now' = 0 (live listings · today); island.listings = []",
+     "why": "The meta description tells readers the page has current listings, but the data island shows zero live listings today and an empty listings array.",
+     "inCandidates": false
+    },
+    {
+     "slug": "langholm-street-milton",
+     "claim": "Typical rents in the area are not established at the street level given the thin sample.",
+     "claimField": "faq (What's the rental market like on Langholm Street?)",
+     "refutedBy": "island.pillRows leases pill: {type: Lease, count: 6, price: \"$3,550 typical / mo\", silent: false} · last ~2 years",
+     "why": "The FAQ answer says no street-level typical rent is established, but the same page's data island publishes a non-silent street-level typical rent of $3,550/mo across 6 leases.",
+     "inCandidates": false
+    }
+   ]
+  }
+ },
+ "class2ParsedCandidates": 768,
+ "class3": [
+  {
+   "id": 0,
+   "type": "T8",
+   "slug": "hadley-woods-terrace-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 1,
+   "type": "T8",
+   "slug": "stewart-crescent-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 2,
+   "type": "T3",
+   "slug": "mae-court-milton",
+   "verdict": "confirmed"
+  },
+  {
+   "id": 3,
+   "type": "T2",
+   "slug": "thomas-street-milton",
+   "verdict": "confirmed"
+  },
+  {
+   "id": 4,
+   "type": "T8",
+   "slug": "alexander-crescent-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 5,
+   "type": "T3",
+   "slug": "byng-court-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 6,
+   "type": "T8",
+   "slug": "proud-drive-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 7,
+   "type": "T8",
+   "slug": "archer-way-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 8,
+   "type": "T8",
+   "slug": "riverplace-crescent-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 9,
+   "type": "T8",
+   "slug": "hemlock-drive-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 10,
+   "type": "T3",
+   "slug": "mander-place-milton",
+   "verdict": "refuted"
+  },
+  {
+   "id": 11,
+   "type": "T2",
+   "slug": "chandler-crescent-milton",
+   "verdict": "split"
+  },
+  {
+   "id": 12,
+   "type": "T2",
+   "slug": "mclaughlin-avenue-milton",
+   "verdict": "confirmed"
+  },
+  {
+   "id": 13,
+   "type": "T4",
+   "slug": "wilks-landing-milton",
+   "verdict": "refuted"
+  }
+ ]
+}

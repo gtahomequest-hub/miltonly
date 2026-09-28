@@ -387,7 +387,7 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
     },
     {
       question: `How do I book a showing for a ${config.CITY_NAME} home?`,
-      answer: `Click "Book a showing" on any listing card and ${config.realtor.name} — a licensed ${config.brokerage.name.replace(', Brokerage', '')} agent based in ${config.CITY_NAME} — will confirm your appointment within the hour. No obligation, no pressure.`,
+      answer: `Click "Book a showing" on any listing card and ${config.realtor.name}, a licensed agent based in ${config.CITY_NAME} (${config.brokerage.name}), will confirm your appointment within the hour. No obligation, no pressure.`,
     },
   ];
 

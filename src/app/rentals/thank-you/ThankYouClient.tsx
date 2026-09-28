@@ -8,7 +8,7 @@ import { config } from "@/lib/config";
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const REALTOR_INITIALS = config.realtor.name.split(" ").map((p) => p[0]).join("").toUpperCase();
 const REALTOR_PHONE_DIGITS = config.realtor.phoneE164.replace(/^\+/, "");
-const BROKERAGE_SHORT_NAME = config.brokerage.name.replace(", Brokerage", "");
+const BROKERAGE_NAME = config.brokerage.name;
 
 // Weighted lead values for Google Ads Smart Bidding. Approximates expected
 // commission × close-rate per budget tier. Without this, Smart Bidding sees
@@ -76,7 +76,7 @@ function buildAamirVCard(): string {
     "VERSION:3.0",
     "N:Yaqoob;Aamir;;;",
     `FN:${config.realtor.name}`,
-    `ORG:${BROKERAGE_SHORT_NAME}`,
+    `ORG:${BROKERAGE_NAME.replace(/,/g, "\\,")}`, // vCard 3.0 escapes a comma in a text value
     `TITLE:${config.realtor.title}`,
     `TEL;TYPE=CELL:${config.realtor.phoneE164}`,
     `EMAIL:${process.env.NEXT_PUBLIC_REALTOR_EMAIL || "gtahomequest@gmail.com"}`,
@@ -319,7 +319,7 @@ export default function ThankYouClient({
             <Link href="/terms" className="text-[#94a3b8] hover:text-[#f8f9fb]">Terms</Link>
           </nav>
           <p className="text-center text-[11px] text-[#64748b] leading-relaxed">
-            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {BROKERAGE_SHORT_NAME}
+            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {BROKERAGE_NAME}
           </p>
         </div>
       </footer>
