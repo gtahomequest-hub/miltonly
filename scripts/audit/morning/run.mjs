@@ -53,6 +53,10 @@ facts.content.streetsWithoutPage = db.ok ? db.streetsWithoutPage : [];
 const visitorsMtd = analytics.status === 'live' ? analytics.mtd?.visitors ?? null : null;
 const visitDenominator = visitorsMtd != null ? { n: visitorsMtd, label: 'visitors, month to date (Web Analytics)' } : gsc.ok ? { n: gsc.mtd.clicks, label: 'GSC clicks, month to date (Web Analytics not answering)' } : null;
 const costPerVisit = visitDenominator && visitDenominator.n > 0 ? spendMtd / visitDenominator.n : null;
+// MA-011 (ML-013): cost per lead, the upcoming invoice first and the spend-management figure beside it,
+// over production leads inside the same billing cycle.
+const invoiceMtd = (vercel.ok ? vercel.invoice : 0) + (neon.ok ? neon.miltonlyUsd : 0);
+const leadsCycle = db.ok && vercel.ok && vercel.period ? db.leadTimes.filter((t) => t >= vercel.period.startIso).length : null;
 
 // 3. The One Thing: rules as data.
 const get = (obj, dotted) => dotted.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -81,7 +85,7 @@ L.push('');
 L.push('## 1 · Money');
 if (vercel.ok) {
   const v = vercel; const pv = prev?.vercel;
-  L.push(`- **Vercel on-demand, cycle to date: ${usd(v.spend)}** (list ${usd(v.listPrice)}), day ${v.period?.day} of ${v.period?.days} (${v.period?.start} to ${v.period?.end}); ${pv ? `${delta(v.spend, pv.spend, { pct: false })} since yesterday's report; ` : ''}same day last cycle ${v.spendLastCycleSameDay != null ? usd(v.spendLastCycleSameDay) : 'n/a'}.`);
+  L.push(`- **Vercel upcoming invoice, cycle to date: ${usd(v.invoice)}** (every billed line with the Pro plan, after the included credit; projected ${usd(v.invoiceProjected)} at cycle end) · **spend management, on-demand: ${usd(v.spend)}** (the figure the ${usd(v.cap, 0)} cap counts; list ${usd(v.listPrice)}), day ${v.period?.day} of ${v.period?.days} (${v.period?.start} to ${v.period?.end}); ${pv ? `${delta(v.spend, pv.spend, { pct: false })} since yesterday's report; ` : ''}same day last cycle ${v.spendLastCycleSameDay != null ? usd(v.spendLastCycleSameDay) : 'n/a'}.`);
   const capRisk = v.daysToCap != null && v.daysLeft != null && v.daysToCap <= v.daysLeft;
   L.push(`- Projected month end **${usd(v.projected)}** (${usd(v.spend)} so far plus ${usd(v.dailyRate)} a day, the last seven days' rate, for ${v.daysLeft} more days); headroom ${usd(v.headroom)} against the ${usd(v.cap, 0)} cap; ${capRisk ? `**at this rate the cap is crossed in ${v.daysToCap === 0 ? 'already crossed' : `${v.daysToCap} days`}, inside the cycle**` : `no cap risk this cycle (${v.daysToCap != null ? `${v.daysToCap} days to the cap at this rate, ${v.daysLeft} left` : 'rate unknown'})`}.`);
   const top = v.services[0]; const topLine = v.lines.find((l) => l.name === top?.name);
@@ -95,6 +99,7 @@ if (neon.ok) {
   L.push(`- Every Neon project this key sees, by what reads it: ${n.projects.map((p) => `${p.id.split('-').slice(0, 2).join('-')} = ${p.label.split(' (')[0]} ${p.computeHours} CU-h/${gb(p.egressBytes)}`).join(' · ')}. A project with no reader named here is unknown, not unused.`);
 } else L.push(`- Neon: source failed (${neon.error}).`);
 L.push(`- **Cost per visit: ${costPerVisit != null ? usd(costPerVisit, 3) : 'n/a'}** = (${usd(vercel.ok ? vercel.spend : 0)} Vercel + ${usd(neon.ok ? neon.miltonlyUsd : 0)} Neon, month to date) ÷ ${visitDenominator ? `${int(visitDenominator.n)} ${visitDenominator.label}` : 'no denominator'}.`);
+L.push(`- **Cost per lead: ${leadsCycle ? usd(invoiceMtd / leadsCycle) : 'n/a'}** on the upcoming invoice = (${usd(vercel.ok ? vercel.invoice : 0)} Vercel invoice + ${usd(neon.ok ? neon.miltonlyUsd : 0)} Neon) ÷ ${leadsCycle ?? '?'} production lead${leadsCycle === 1 ? '' : 's'} since the cycle began${vercel.ok && vercel.period ? ` (${vercel.period.start})` : ''}; on the spend-management figure ${leadsCycle ? usd(spendMtd / leadsCycle) : 'n/a'}.${leadsCycle === 0 ? ' No production lead this cycle, so no rate.' : ''}`);
 L.push('');
 L.push('## 2 · Traffic');
 if (gsc.ok && latest) {
@@ -119,7 +124,8 @@ L.push(`- Funnel, 28 d: impressions ${int(imp)} → clicks ${int(clk)} (${imp ? 
 L.push('');
 L.push('## 3 · Conversion');
 if (db.ok) {
-  L.push(`- **Leads yesterday: ${db.leadsYesterdayTotal}**${db.leadsYesterday.length ? ` · ${db.leadsYesterday.map((l) => `${l.n} ${l.source} (${l.intent}) from ${l.landing || 'no landing page'}`).join(' · ')}` : ''}. Last 7 days ${db.leads7}; month to date ${db.leadsMtd}.`);
+  const other = Object.entries(db.otherEnvMtd || {});
+  L.push(`- **Leads yesterday: ${db.leadsYesterdayTotal}**${db.leadsYesterday.length ? ` · ${db.leadsYesterday.map((l) => `${l.n} ${l.source} (${l.intent}) from ${l.landing || 'no landing page'}`).join(' · ')}` : ''}. Last 7 days ${db.leads7}; month to date ${db.leadsMtd}. Production rows only (env = 'production')${other.length ? `; left out this month: ${other.map(([k, n]) => `${n} ${k}`).join(', ')}` : ''}.`);
   const expected = gsc.ok && gsc.avg7 ? gsc.avg7.clicks * 0.02 : null;
   L.push(`- Clicks → leads, 28 d, ad-attributed leads excluded: ${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}. At ~${gsc.ok && gsc.avg7 ? gsc.avg7.clicks.toFixed(0) : '?'} clicks a day and a 1 to 3% rate the expected daily count is ${expected != null ? `${(expected / 2).toFixed(1)} to ${(expected * 1.5).toFixed(1)}` : '?'}, so a zero day is the normal result, not a fault.`);
   const backlog = db.streetsWithoutPage;

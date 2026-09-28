@@ -1,6 +1,10 @@
 // MA-008. DB1 and DB2, read-only, through the Neon HTTP driver: leads by source and landing
 // page, the 28-day lead table by landing page (joined to GSC clicks for the conversion rate), and
 // the streets with recent sales and no published page. Counts only; no sold price leaves DB2.
+//
+// MA-011 (from ML-013): every lead figure reads env = 'production'. Preview and production share one
+// database, so without it the report counted the worktrees' proof rows: "32 September leads" when
+// production held 2. The rows left out are counted once, so the report can say so.
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { calls, redact, REPO, YESTERDAY, daysAgo } from '../lib.mjs';
@@ -20,11 +24,14 @@ export async function gatherDb() {
     const db1 = counted(neon(url));
     // Toronto days, in UTC bounds.
     const dayStart = `${YESTERDAY}T00:00:00-04:00`, dayEnd = `${daysAgo(0)}T00:00:00-04:00`;
-    const leadsYesterday = await db1`SELECT source, COALESCE("landingPage", '') AS landing, intent, COUNT(*)::int AS n FROM public."Lead" WHERE "createdAt" >= ${dayStart}::timestamptz AND "createdAt" < ${dayEnd}::timestamptz GROUP BY 1, 2, 3 ORDER BY 4 DESC`;
-    const leads7 = await db1`SELECT COUNT(*)::int AS n FROM public."Lead" WHERE "createdAt" >= ${daysAgo(7)}::date`;
-    const leads28ByPage = await db1`SELECT COALESCE("landingPage", '') AS landing, COUNT(*)::int AS n FROM public."Lead" WHERE "createdAt" >= ${daysAgo(28)}::date GROUP BY 1`;
-    const leads28Unpaid = await db1`SELECT COUNT(*)::int AS n FROM public."Lead" WHERE "createdAt" >= ${daysAgo(28)}::date AND gclid IS NULL AND "gclidLast" IS NULL AND "utmSource" IS NULL`;
-    const leadsMtd = await db1`SELECT COUNT(*)::int AS n FROM public."Lead" WHERE "createdAt" >= date_trunc('month', now() AT TIME ZONE 'America/Toronto')`;
+    const leadsYesterday = await db1`SELECT source, COALESCE("landingPage", '') AS landing, intent, COUNT(*)::int AS n FROM public."Lead" WHERE env = 'production' AND "createdAt" >= ${dayStart}::timestamptz AND "createdAt" < ${dayEnd}::timestamptz GROUP BY 1, 2, 3 ORDER BY 4 DESC`;
+    const leads7 = await db1`SELECT COUNT(*)::int AS n FROM public."Lead" WHERE env = 'production' AND "createdAt" >= ${daysAgo(7)}::date`;
+    const leads28ByPage = await db1`SELECT COALESCE("landingPage", '') AS landing, COUNT(*)::int AS n FROM public."Lead" WHERE env = 'production' AND "createdAt" >= ${daysAgo(28)}::date GROUP BY 1`;
+    const leads28Unpaid = await db1`SELECT COUNT(*)::int AS n FROM public."Lead" WHERE env = 'production' AND "createdAt" >= ${daysAgo(28)}::date AND gclid IS NULL AND "gclidLast" IS NULL AND "utmSource" IS NULL`;
+    const leadsMtd = await db1`SELECT COUNT(*)::int AS n FROM public."Lead" WHERE env = 'production' AND "createdAt" >= date_trunc('month', now() AT TIME ZONE 'America/Toronto')`;
+    const otherEnvMtd = await db1`SELECT env, COUNT(*)::int AS n FROM public."Lead" WHERE env <> 'production' AND "createdAt" >= date_trunc('month', now() AT TIME ZONE 'America/Toronto') GROUP BY 1`;
+    // Production lead times over 40 days, so cost per lead can count the leads inside Vercel's billing cycle.
+    const leadTimes = (await db1`SELECT "createdAt" AS at FROM public."Lead" WHERE env = 'production' AND "createdAt" >= ${daysAgo(40)}::date`).map((r) => new Date(r.at).toISOString());
     const published = new Set((await db1`SELECT "streetSlug" FROM public."StreetContent" WHERE status = 'published'`).map((r) => r.streetSlug));
     const registry = new Map((await db1`SELECT slug, name FROM public."ResidentialStreet"`).map((r) => [r.slug, r.name]));
     let streetsWithoutPage = [];
@@ -34,7 +41,7 @@ export async function gatherDb() {
       streetsWithoutPage = rows.filter((r) => registry.has(r.slug) && !published.has(r.slug)).map((r) => ({ slug: r.slug, street: registry.get(r.slug), sales90: r.sales90 }));
     }
     const normalise = (u) => { try { const x = new URL(u, 'https://miltonly.com'); return x.pathname.replace(/\/$/, '') || '/'; } catch { return String(u || ''); } };
-    return { ok: true, leadsYesterday: leadsYesterday.map((r) => ({ source: r.source, landing: normalise(r.landing), intent: r.intent, n: r.n })), leadsYesterdayTotal: leadsYesterday.reduce((a, r) => a + r.n, 0), leads7: leads7[0].n, leadsMtd: leadsMtd[0].n, leads28ByPath: Object.fromEntries(leads28ByPage.map((r) => [normalise(r.landing), r.n])), leads28: leads28ByPage.reduce((a, r) => a + r.n, 0), leads28Unpaid: leads28Unpaid[0].n, publishedStreets: published.size, streetsWithoutPage, soldRead: !!sold };
+    return { ok: true, leadsYesterday: leadsYesterday.map((r) => ({ source: r.source, landing: normalise(r.landing), intent: r.intent, n: r.n })), leadsYesterdayTotal: leadsYesterday.reduce((a, r) => a + r.n, 0), leads7: leads7[0].n, leadsMtd: leadsMtd[0].n, otherEnvMtd: Object.fromEntries(otherEnvMtd.map((r) => [r.env, r.n])), leadTimes, leads28ByPath: Object.fromEntries(leads28ByPage.map((r) => [normalise(r.landing), r.n])), leads28: leads28ByPage.reduce((a, r) => a + r.n, 0), leads28Unpaid: leads28Unpaid[0].n, publishedStreets: published.size, streetsWithoutPage, soldRead: !!sold };
   } catch (e) {
     return { ok: false, error: redact(e.message) };
   }
