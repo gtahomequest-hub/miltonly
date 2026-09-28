@@ -34,7 +34,8 @@ const MAP_LINKS = [
 ];
 const GUIDE_COUNT = 8;
 const ONCE = ['/sold'];
-const REDIRECTS = ['/map', '/book'];
+// /book became a booking page in ML-014 (2026-09-28); /map still redirects to /streets.
+const REDIRECTS = ['/map'];
 
 function footerMarkup(html) {
   const open = html.indexOf('<footer');

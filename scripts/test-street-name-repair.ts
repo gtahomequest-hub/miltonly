@@ -37,7 +37,7 @@ const UNWIRED_ALLOWLIST: Record<string, string> = {
   "src/app/admin/review/page.tsx": "shows the STORED value to a reviewer on purpose — routing it would hide the drift the screen exists to surface",
   "src/app/api/sync/regenerate/route.ts": "reads the stored row to decide what to regenerate; not a display surface",
   "src/app/api/admin/publish/route.ts": "SMS confirmation of what was published, from the stored row",
-  "src/components/sections/SeoLinkGrid.tsx": "dead code — zero importers; left unwired rather than pretending it ships",
+  "src/components/sections/retired/SeoLinkGrid.tsx": "dead code: zero importers; left unwired rather than pretending it ships",
   "src/lib/stats.ts": "dead code — zero importers",
 };
 

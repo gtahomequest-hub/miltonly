@@ -160,6 +160,7 @@ export default async function MosqueDetailPage({ params }: Props) {
     <>
       <SchemaScript schemas={schemas} />
       <PlaceDetail
+        path={`/mosques/${params.slug}`}
         breadcrumb={[
           { label: "Home", href: "/" },
           { label: "Mosques", href: "/mosques" },

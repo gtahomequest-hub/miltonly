@@ -811,7 +811,7 @@ export default {
       }
       const hubs = figs.filter((f) => f.fig === 'menu-hub-active').length;
       if (hubs !== hubCount) hubMiss.push(`${path}: ${hubs} hub counts, expected ${hubCount}`);
-      for (const bad of ['/map', '/book']) if (hrefsIn(nav).includes(bad)) deadLinks.push(`${path}: ${bad} is a redirect, not a destination`);
+      for (const bad of ['/map']) if (hrefsIn(nav).includes(bad)) deadLinks.push(`${path}: ${bad} is a redirect, not a destination`);
     }
     // every panel href resolves 200 with no hop, fetched once per unique href
     const hrefs = [...allHrefs];

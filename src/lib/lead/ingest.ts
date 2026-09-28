@@ -32,6 +32,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveLeadEnv, isCountable, type LeadEnv } from "@/lib/lead/env";
 import { normalizeIntent, leadValueFor } from "@/lib/lead/intent";
 import { checkHoneypot, checkOrigin, checkUserAgent, checkRateLimit, type GuardVerdict } from "@/lib/lead/guards";
+import { sameOriginPath } from "@/lib/lead/refPath";
 import { sendLeadConfirmation, sendOpsAlert, recordDeliveries, errorMessage, type Delivery } from "@/lib/lead/notify";
 import { createWatchForLead, type WatchResult } from "@/lib/lead/savedSearch";
 import { scoreLead } from "@/lib/lead/score";
@@ -250,7 +251,13 @@ export async function ingestLead(body: LeadBody, req: IngestRequest, deps: Inges
     timeline,
   });
   const subject = str(body.property_address, 300);
-  const page = pagePathFrom(body.event_source_url, req.headers.get("referer")) ?? str(body.landingPage, 300);
+  // ML-014: /book is reached from another page, which it names as ?ref= and the form sends as
+  // `ref`. That page earned the lead, so it is the landingPage; every other surface's is the
+  // page the form sits on, which is what leads-per-page counts.
+  const page =
+    (source === "book-page" ? sameOriginPath(body.ref) : null) ??
+    pagePathFrom(body.event_source_url, req.headers.get("referer")) ??
+    str(body.landingPage, 300);
   const name = (body.name ?? "").trim();
   const band = budgetToBand(body.budget);
   const priceMin = typeof body.priceMin === "number" && Number.isFinite(body.priceMin) ? Math.round(body.priceMin) : band.min;

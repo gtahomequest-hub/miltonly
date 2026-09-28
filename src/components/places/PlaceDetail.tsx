@@ -15,7 +15,7 @@ export default function PlaceDetail(props: PlaceDetailProps) {
   const {
     breadcrumb, badge, heroEyebrow, title, metaLine, highlight, serviceChips,
     stats, byType, listingsHeading, listings, streetsHeading, streets,
-    siblingsHeading, siblings, faqs, cta,
+    siblingsHeading, siblings, faqs, cta, path,
   } = props;
 
   const firstName = config.realtor.name.split(" ")[0];
@@ -146,7 +146,9 @@ export default function PlaceDetail(props: PlaceDetailProps) {
             <a href={`tel:${config.realtor.phoneE164}`} className="pl-btn pl-btn-primary">
               Call {firstName}
             </a>
-            <Link href="/book" className="pl-btn pl-btn-ghost">
+            {/* ML-014: /book stores ?ref= as the lead's landingPage, so the school or mosque page
+                that earned the booking is the one counted. */}
+            <Link href={`/book?ref=${encodeURIComponent(path)}`} className="pl-btn pl-btn-ghost">
               Book a showing
             </Link>
           </div>

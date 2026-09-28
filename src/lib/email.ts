@@ -55,6 +55,7 @@ function escapeHtml(input: string): string {
 const SOURCE_LABEL: Record<string, string> = {
   wizard: "Rental Wizard",
   "listing-card-book": "Book Showing (Listing Card)",
+  "book-page": "Book Showing (Booking Page)",
   "listing-card-1hr": "1-Hour Showing (Listing Card)",
   "1hr-booking": "1-Hour Booking (Hero Card)",
   alert: "Search Alert Signup",

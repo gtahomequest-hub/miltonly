@@ -22,6 +22,7 @@ import { kindForSource } from "@/lib/lead/savedSearch";
 import { scoreLead } from "@/lib/lead/score";
 import { normalizePhone, bedroomToInt, budgetToBand, propertyTypeFor, sanitizeText, mlsNumberFor } from "@/lib/lead/fields";
 import { briefWindow, isSendingDay } from "@/lib/brief/window";
+import { sameOriginPath } from "@/lib/lead/refPath";
 
 let assertions = 0;
 const failures: string[] = [];
@@ -416,6 +417,24 @@ async function main() {
   // It has to run after the sold sync and the stats compute, or "yesterday" is half-filled.
   const soldSync = cron.crons.find((c) => c.path === "/api/sync/sold");
   ok(Boolean(soldSync), "brief: the sold sync it depends on still exists");
+
+  // ── the ref path (ML-014) ─────────────────────────────────────────────────────
+  // /book sends the page it was reached from as `ref`, and the ingest stores it as landingPage
+  // for that source only. The rule refuses anything that is not a path on this site, and it
+  // checks the NORMALISED path: "/a/..//evil.com" resolves to "//evil.com", which a browser
+  // treats as another host, so a check on the raw input alone was an open redirect.
+  eq(sameOriginPath("/schools/anne-j-macarthur-ps"), "/schools/anne-j-macarthur-ps", "ref: a site path passes");
+  eq(sameOriginPath("/mosques/x?y=1#z"), "/mosques/x", "ref: the query and the fragment are stripped");
+  eq(sameOriginPath("/schools/../listings"), "/listings", "ref: dot segments resolve to a site path");
+  for (const bad of ["/..//evil.com", "/.//evil.com", "/a/..//evil.com", "/../..//evil.com/phish", "//evil.com", "https://evil.com/x", "javascript:alert(1)", "/a b", '/a"b', "", "/" + "a".repeat(300)]) {
+    eq(sameOriginPath(bad), null, `ref: ${JSON.stringify(bad).slice(0, 32)} is refused`);
+  }
+  eq(sameOriginPath(undefined), null, "ref: undefined is refused");
+  eq(sameOriginPath(42), null, "ref: a number is refused");
+  const ingestForRef = readFileSync("src/lib/lead/ingest.ts", "utf-8");
+  ok(/source === "book-page" \? sameOriginPath\(body\.ref\)/.test(ingestForRef), "ref: the ingest takes ref as landingPage for book-page only");
+  const bookPage = readFileSync("src/app/book/page.tsx", "utf-8");
+  ok(/sameOriginPath\(/.test(bookPage) && !/new URL\(/.test(bookPage), "ref: the page validates through the shared rule, not a copy of it");
 
   if (failures.length > 0) {
     console.error(`[lead-guards] FAIL — ${failures.length} of ${assertions} assertions:`);
