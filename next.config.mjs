@@ -25,7 +25,8 @@ const nextConfig = {
       // catch it. This makes the rule reviewable and survives that.
       //
       // Belt-and-suspenders, not a replacement: the platform rule still fires first and is
-      // cheaper. This is the net under it.
+      // cheaper. This is the net under it. scripts/test-www-redirect.ts (MC-049, prebuild) holds it:
+      // one permanent host rule, the query kept, nothing conditioned on the apex.
       {
         source: "/:path*",
         has: [{ type: "host", value: "www.miltonly.com" }],
