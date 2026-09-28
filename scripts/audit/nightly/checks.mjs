@@ -618,7 +618,7 @@ export function parse(html) {
   const anchors = [...html.matchAll(/<a\b[^>]*>/gi)].map((m) => attr(m[0], 'href')).filter((h) => h != null);
   const imgs = [...html.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
   const ids = new Set([...html.matchAll(/\sid\s*=\s*"([^"]+)"/g)].map((m) => m[1]).concat([...html.matchAll(/\sname\s*=\s*"([^"]+)"/g)].map((m) => m[1])));
-  return { title: title == null ? null : decode(title).replace(/\s+/g, ' ').trim(), description: metaByName('description'), ogUrl: metaByName('og:url'), robots: metaByName('robots'), canonical: canonicalTag ? attr(canonicalTag, 'href') : null, h1s, jsonld, anchors, imgs, ids, remarks, text: visibleText(body), prose: visibleText(proseOnly(body)), words: visibleText(body, { spaced: true }), social: ['og:title', 'og:description', 'twitter:title', 'twitter:description', 'og:image:alt', 'twitter:image:alt', 'og:site_name'].map(metaByName).filter(Boolean), aria: [...body.matchAll(/<[a-z][a-z0-9-]*\b[^>]*\saria-label\s*=\s*("([^"]*)"|'([^']*)')/gi)].map((m) => decode(m[2] ?? m[3] ?? '')).filter(Boolean) };
+  return { heads: { ogTitle: metaByName('og:title'), twTitle: metaByName('twitter:title'), ogDesc: metaByName('og:description'), twDesc: metaByName('twitter:description') }, title: title == null ? null : decode(title).replace(/\s+/g, ' ').trim(), description: metaByName('description'), ogUrl: metaByName('og:url'), robots: metaByName('robots'), canonical: canonicalTag ? attr(canonicalTag, 'href') : null, h1s, jsonld, anchors, imgs, ids, remarks, text: visibleText(body), prose: visibleText(proseOnly(body)), words: visibleText(body, { spaced: true }), social: ['og:title', 'og:description', 'twitter:title', 'twitter:description', 'og:image:alt', 'twitter:image:alt', 'og:site_name'].map(metaByName).filter(Boolean), aria: [...body.matchAll(/<[a-z][a-z0-9-]*\b[^>]*\saria-label\s*=\s*("([^"]*)"|'([^']*)')/gi)].map((m) => decode(m[2] ?? m[3] ?? '')).filter(Boolean) };
 }
 
 // MA-010. The em-dash rule is a voice rule about punctuation in prose, so a dash counts only when it
@@ -855,6 +855,55 @@ export function vocabularyFindings(text, { voice = true, where = 'text', dashTex
 // `listing` marks a listing page: until Core labels the remarks block, its body is the seller's
 // words and the voice checks stand down; once a data-remarks block exists, the block leaves the
 // body and everything left is our own copy, checked in full.
+// MA-011. The street page head MC-048 shipped (src/lib/streetHead.ts), checked on the page production
+// serves; scripts/test-street-head.ts checks the same rules at build time. The head is frozen until
+// MC-048's GSC re-read (2026-10-26), so any drift is S2: a change spoils the comparison.
+//   title   one of the three rungs, "<name>, Milton: homes, sold history, prices | Miltonly", then without
+//           ", prices", then without " | Miltonly", the first that fits 65 characters (a rung the ladder
+//           would not pick is a finding); the name is the page's H1
+//   meta    at most 155; "<count> addresses on <name>, numbered <low> to <high>. Every one listed, with
+//           its sold history for registered readers. Free to register." (the last sentence dropped only
+//           when it does not fit), or "<name>, Milton: every address on the street, with sold history for
+//           registered readers." where the Town has no range
+//   both    no $, "typical", "median" or sales count; no em or en dash
+//   share   og:title and twitter:title equal the title; og:description and twitter:description the meta
+export const STREET_PAGE_RE = /^\/streets\/[^/?#]+$/;
+export const STREET_TITLE_MAX = 65;
+export const STREET_META_MAX = 155;
+const HEAD_BANNED_RE = /\$|\btypical(?:ly)?\b|\bmedian\b|\b\d[\d,]*\s+(?:recent\s+|recorded\s+|closed\s+)?(?:sales?|sold|transactions?|trades?)\b/i;
+export function streetHeadFindings(d) {
+  const out = []; const add = (key, detail) => out.push({ code: 'street-head', sev: 2, key, detail });
+  const norm = (s) => (s ?? '').replace(/\s+/g, ' ').trim();
+  const title = norm(d.title); const meta = norm(d.description); const h1 = norm(d.h1s[0]);
+  const m = title.match(/^(.+), Milton: homes, sold history(, prices)?( \| Miltonly)?$/);
+  if (!m) add('title-shape', `"${title}" is none of MC-048's three rungs`);
+  else {
+    const [, name, prices, brand] = m;
+    const head = `${name}, Milton: homes, sold history`;
+    const want = [`${head}, prices | Miltonly`, `${head} | Miltonly`, head].find((r) => r.length <= STREET_TITLE_MAX) ?? head;
+    if (prices && !brand) add('title-shape', `"${title}" keeps ", prices" and drops " | Miltonly"`);
+    else if (title !== want) add('title-rung', `"${title}" (${title.length}) where the ladder gives "${want}" (${want.length})`);
+    if (h1 && name !== h1) add('title-name', `the title names "${name}", the H1 reads "${h1}"`);
+    const lead = meta.match(new RegExp(`^(\\d+) addresses on ${esc(name)}, numbered (\\d+) to (\\d+)\\. Every one listed, with its sold history for registered readers\\.( Free to register\\.)?$`));
+    if (lead) {
+      const [, count, lo, hi, free] = lead;
+      if (!(+count >= 2 && +lo < +hi)) add('meta-shape', `count ${count}, numbered ${lo} to ${hi}: not a range`);
+      if (!free && `${meta} Free to register.`.length <= STREET_META_MAX) add('meta-shape', `drops "Free to register." with room for it: "${meta}"`);
+    } else if (meta !== `${name}, Milton: every address on the street, with sold history for registered readers.`) add('meta-shape', `"${meta.slice(0, 110)}${meta.length > 110 ? '…' : ''}" is neither MC-048 meta shape`);
+  }
+  if (title.length > STREET_TITLE_MAX) add('title-length', `${title.length} characters, over ${STREET_TITLE_MAX}: "${title}"`);
+  if (meta.length > STREET_META_MAX) add('meta-length', `${meta.length} characters, over ${STREET_META_MAX}`);
+  for (const [where, s] of [['title', title], ['meta', meta]]) {
+    const b = s.match(HEAD_BANNED_RE); if (b) add(`${where}-banned`, `"${b[0]}" in the ${where}: "${s.slice(0, 110)}"`);
+    if (/[–—]/.test(s)) add(`${where}-dash`, `an en or em dash in the ${where}: "${s.slice(0, 110)}"`);
+  }
+  const h = d.heads;
+  for (const [key, got, want, what] of [['og-title', h.ogTitle, title, 'title'], ['twitter-title', h.twTitle, title, 'title'], ['og-description', h.ogDesc, meta, 'meta'], ['twitter-description', h.twDesc, meta, 'meta']]) {
+    if (norm(got) !== want) add(key, `${key.replace('-', ':')} ${got == null ? 'missing' : `"${norm(got).slice(0, 90)}"`} is not the ${what}`);
+  }
+  return out;
+}
+
 export function pageFindings({ html, path: finalPath, base, listing = false }) {
   const d = parse(html);
   const f = [];
@@ -867,6 +916,7 @@ export function pageFindings({ html, path: finalPath, base, listing = false }) {
   else if (d.title.length < 20 || d.title.length > 65) f.push({ code: 'title-length', sev: 3, key: '', detail: `${d.title.length} chars: "${d.title}"` });
   if (d.description == null || !d.description.trim()) f.push({ code: 'meta-missing', sev: 2, key: '', detail: 'no meta description' });
   else if (d.description.length < 50 || d.description.length > 165) f.push({ code: 'meta-length', sev: 3, key: '', detail: `${d.description.length} chars: "${d.description.slice(0, 80)}${d.description.length > 80 ? '\u2026' : ''}"` });
+  if (STREET_PAGE_RE.test(finalPath)) f.push(...streetHeadFindings(d));
   if (d.h1s.length === 0) f.push({ code: 'h1-missing', sev: 2, key: '', detail: 'no <h1>' });
   else if (d.h1s.length > 1) f.push({ code: 'h1-multiple', sev: 2, key: '', detail: `${d.h1s.length} h1: ${d.h1s.map((h) => `"${h.slice(0, 40)}"`).join(', ')}` });
 
