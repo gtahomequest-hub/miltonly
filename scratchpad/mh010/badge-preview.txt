@@ -1,0 +1,22 @@
+/schools · HTTP 200 · 29 badges · audit fonts<12px on .pl-badge: none · all fonts<12px: 112 nodes
+   blue "Public" 12px #292b29 on #dbffed (tint over a.pl-card) · contrast 13.28:1
+   amber "Catholic" 12px #4a3000 on #f4c870 (tint over a.pl-card) · contrast 7.78:1
+/schools/chris-hadfield-ps · HTTP 200 · 1 badges · audit fonts<12px on .pl-badge: none · all fonts<12px: 68 nodes
+   blue "Public elementary" 12px #ffffff on #064e33 (tint over section.pl-hero) · contrast 9.81:1
+/schools/irma-coulson-ps · HTTP 200 · 1 badges · audit fonts<12px on .pl-badge: none · all fonts<12px: 68 nodes
+   blue "Public elementary" 12px #ffffff on #064e33 (tint over section.pl-hero) · contrast 9.81:1
+/mosques · HTTP 200 · 7 badges · audit fonts<12px on .pl-badge: none · all fonts<12px: 24 nodes
+   blue "Masjid" 12px #292b29 on #dbffed (tint over a.pl-card) · contrast 13.28:1
+   amber "Musalla" 12px #4a3000 on #f4c870 (tint over a.pl-card) · contrast 7.78:1
+   green "Centre" 12px #292b29 on #dbffed (tint over a.pl-card) · contrast 13.28:1
+/mosques/icna-milton · HTTP 200 · 7 badges · audit fonts<12px on .pl-badge: none · all fonts<12px: 72 nodes
+   green "community centre" 12px #ffffff on #064e33 (tint over section.pl-hero) · contrast 9.81:1
+   blue "Masjid" 12px #292b29 on #dbffed (tint over a.pl-link) · contrast 13.28:1
+   amber "Musalla" 12px #4a3000 on #f4c870 (tint over a.pl-link) · contrast 7.78:1
+   green "Centre" 12px #292b29 on #dbffed (tint over a.pl-link) · contrast 13.28:1
+/mosques/milton-musalla · HTTP 200 · 7 badges · audit fonts<12px on .pl-badge: none · all fonts<12px: 71 nodes
+   amber "musalla" 12px #4a3000 on #f4c870 (tint over section.pl-hero) · contrast 7.78:1
+   blue "Masjid" 12px #292b29 on #dbffed (tint over a.pl-link) · contrast 13.28:1
+   amber "Musalla" 12px #4a3000 on #f4c870 (tint over a.pl-link) · contrast 7.78:1
+   green "Centre" 12px #292b29 on #dbffed (tint over a.pl-link) · contrast 13.28:1
+TOTAL 52 badges · 0 badge text nodes under 12px (audit rule) · 0 badges under 4.5:1

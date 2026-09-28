@@ -1,0 +1,22 @@
+/schools · HTTP 200 · 29 badges · audit fonts<12px on .pl-badge: span.pl-badge 9px x29 · all fonts<12px: 141 nodes
+   blue "Public" 9px #00ff80 on #dbffed (tint over a.pl-card) · contrast 1.25:1 LOW
+   amber "Catholic" 9px #4a3000 on #f4c870 (tint over a.pl-card) · contrast 7.78:1
+/schools/chris-hadfield-ps · HTTP 200 · 1 badges · audit fonts<12px on .pl-badge: span.pl-badge 9px x1 · all fonts<12px: 69 nodes
+   blue "Public elementary" 9px #00ff80 on #064e33 (tint over section.pl-hero) · contrast 7.3:1
+/schools/irma-coulson-ps · HTTP 200 · 1 badges · audit fonts<12px on .pl-badge: span.pl-badge 9px x1 · all fonts<12px: 69 nodes
+   blue "Public elementary" 9px #00ff80 on #064e33 (tint over section.pl-hero) · contrast 7.3:1
+/mosques · HTTP 200 · 7 badges · audit fonts<12px on .pl-badge: span.pl-badge 9px x7 · all fonts<12px: 31 nodes
+   blue "Masjid" 9px #00ff80 on #dbffed (tint over a.pl-card) · contrast 1.25:1 LOW
+   amber "Musalla" 9px #4a3000 on #f4c870 (tint over a.pl-card) · contrast 7.78:1
+   green "Centre" 9px #00ff80 on #dbffed (tint over a.pl-card) · contrast 1.25:1 LOW
+/mosques/icna-milton · HTTP 200 · 7 badges · audit fonts<12px on .pl-badge: span.pl-badge 9px x7 · all fonts<12px: 79 nodes
+   green "community centre" 9px #00ff80 on #064e33 (tint over section.pl-hero) · contrast 7.3:1
+   blue "Masjid" 9px #00ff80 on #dbffed (tint over a.pl-link) · contrast 1.25:1 LOW
+   amber "Musalla" 9px #4a3000 on #f4c870 (tint over a.pl-link) · contrast 7.78:1
+   green "Centre" 9px #00ff80 on #dbffed (tint over a.pl-link) · contrast 1.25:1 LOW
+/mosques/milton-musalla · HTTP 200 · 7 badges · audit fonts<12px on .pl-badge: span.pl-badge 9px x7 · all fonts<12px: 78 nodes
+   amber "musalla" 9px #4a3000 on #f4c870 (tint over section.pl-hero) · contrast 7.78:1
+   blue "Masjid" 9px #00ff80 on #dbffed (tint over a.pl-link) · contrast 1.25:1 LOW
+   amber "Musalla" 9px #4a3000 on #f4c870 (tint over a.pl-link) · contrast 7.78:1
+   green "Centre" 9px #00ff80 on #dbffed (tint over a.pl-link) · contrast 1.25:1 LOW
+TOTAL 52 badges · 52 badge text nodes under 12px (audit rule) · 28 badges under 4.5:1
