@@ -114,11 +114,11 @@ export const SUPERLATIVES = [...VALIDATOR_SUPERLATIVES, ...AUDIT_CLAIMS];
 // the sentence or a question's answer names the registrant ("Aamir takes only a handful of listings a
 // year" fires). "only" closing the phrase it restricts ("Miltonly emails only, from Aamir Yaqoob") is a
 // free idiom and is never void.
-const HYPHEN = '[-\\u2010\\u2011\\u2012\\u2013\\s]+';
+const HYPHEN = '[-\\u2010\\u2011\\u2012\\u2013\\u00ad\\s]+';
 const supPattern = (w) => w.replace(/[-\s]+/g, HYPHEN);
 // The regex source for one vocabulary entry: "#1" has no word boundary before "#", and "top producer"
 // takes its plural and "top-producing".
-const supSource = (w) => w === '#1' ? '(?<![\\w#&])#\\s?1(?![\\d]|st)' : w === 'top producer' ? `\\btop(?:${HYPHEN})?produc(?:ers?|ing)\\b` : `\\b${supPattern(w)}\\b`;
+const supSource = (w) => w === '#1' ? '(?<![\\w#&])#\\s?1(?![\\d]|st[A-Z])' : w === 'top producer' ? `\\btop(?:${HYPHEN})?produc(?:ers?|ing)\\b` : `\\b${supPattern(w)}\\b`;
 const SUP_WORD = new RegExp(SUPERLATIVES.map(supSource).join('|'), 'i');
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const titleCase = (s) => s.toLowerCase().replace(/(^|[\s(/-])([a-z])/g, (m, a, c) => a + c.toUpperCase());
@@ -192,6 +192,8 @@ const THIS_SITE_RE = /(?<!\b(?:plans?|development|zoning|builder|developer|const
 const SOMEONE_RE = /\bsomeone\s+who\s+(?:knows|has\s+sold|sells|(?:lives|works)\s+(?:on|in)\s+(?:this|your)\s+(?:street|neighbourhood|area|market))\b/i;
 const namesRole = (s) => { const t = s.replace(BRAND_SUFFIX_RE, ''); return OWN_ROLE_RE.test(t) || THIS_SITE_RE.test(t) || SOMEONE_RE.test(t) || rolesNameRegistrant(t); };
 const namesRegistrant = (s) => { const t = s.replace(BRAND_SUFFIX_RE, ''); return namesRole(t) || PRONOUN_RE.test(t) || FIRST_PERSON_I_RE.test(t); };
+const CORE_ROLE_RE = /\b(?:realtors?|brokers?|brokerages?|agents?|salespersons?|salespeople|sales\s+representatives?|teams?)\b/i;
+const namesRegistrantSense = (s) => { const t = s.replace(BRAND_SUFFIX_RE, ''); return OWN_ROLE_RE.test(t) || THIS_SITE_RE.test(t) || SOMEONE_RE.test(t) || (CORE_ROLE_RE.test(t) && rolesNameRegistrant(t.replace(/\b(?:specialists?|experts?|advis[oe]rs?|representatives?(?<!sales\s+representatives?)|negotiators?|producers?|professionals?|pros?)\b/gi, 'x'))) || PRONOUN_RE.test(t) || FIRST_PERSON_I_RE.test(t); };
 const COPULA_RE = /^(?:is|are|am|was|were|be|been|being|remains?|remained|it's|it’s|that's|that’s|i'm|i’m|we're|we’re|they're|they’re)$/i;
 const MODAL_RE = /^(?:can|may|might|could|would|should|will|must)$/i;
 const ADVERB_RE = /^(?:therefore|thus|perhaps|probably|often|usually|generally|still|also|again|currently|now|arguably|typically|simply|then|so|all|both|each|[a-z]+ly)$/i;
@@ -220,6 +222,7 @@ const FREE_IDIOM_RES = [
   /\b(?:your|their|his|her|our|my|its|(?:the\s+)?(?:client|buyer|seller|tenant|landlord)['’]s|(?:clients|buyers|sellers|tenants|landlords)['’])\s+best\s+interests?\b(?!\s+rates?)/gi,
   /\bthe\s+best\s+interests?\s+of\b/gi,
   /\bbest\s+and\s+final\b/gi,
+  /\bhighest\s+and\s+best\s+use\b/gi,
   /\bbest\s+(?:time|times|way|number|day|days)\s+to\s+(?:call|reach|contact|text|email)\b/gi,
   /\bthe\s+best\s+part\s+of\s+an?\s+(?:hour|day|week|month|year|decade)\b/gi,
   /\bno\s+(?:single\s+|one\s+)?best\b/gi,
@@ -295,28 +298,57 @@ const cleanRun = (run) => !run.some((t) => FUNCTION_WORD_RE.test(t) || DETERMINE
 // items ("Photos: #1 front, #2 kitchen"), after "Of the two offers," or as a back-reference ("higher
 // than #1."). Anything else is a RANK and fires: "Ranked #1 of 350 agents", "Milton #1", "Number #1",
 // "(#1 agent in Milton)", "Client Satisfaction #1".
-const NUMBERED_RE = /\b(?:(?:units?|suites?|ste|apt|apartments?|lots?|ph|penthouse|phases?|blocks?|blk|buildings?|bldg|towers?|levels?|lvl|floors?|parking(?:\s+spot)?|spots?|lockers?|stalls?|spaces?|rooms?|rm|townhouses?|th|concession|con|plan|parts?|pt|box|pads?|parcels?|bays?|docks?|stores?|offices?|garages?)(?:\s+(?:no\.?|number))?|(?:road|rd|street|st|avenue|ave|drive|dr|crescent|cres|court|ct|crt|boulevard|blvd|lane|ln|way|place|pl|terrace|terr|trail|trl|circle|cir|gate|gt|path|common|landing|grove|parkway|pkwy|heights|hts|line|sideroad|side\s+road|highway|hwy)\.?(?:\s+\d+)?(?:\s+(?:north|south|east|west|[NSEW]))?)\.?[,:]?\s*$/i;
-const HASH1_SERIES_RE = /^[A-Z]?\s*(?:,\s*#\s?\d+[A-Z]?\s*)*(?:(?:and|or|to|through|thru|&|[-–]|vs\.?)\s*#\s?\d|(?:and|or|to|through|&)\s+\d+\b(?![-\w%])|of\s+\d[\d,]*(?![\d,])(?!\s*\+?\s*(?:agents?|realtors?|teams?|brokerages?|reps?|salespe\w+|offices?|members?)))/i;
-const HASH1_ADDRESS_RE = /^[A-Z]?\s*[-–,]?\s*\d{1,6}[A-Z]?\s+(?:[A-Z][\w'-]*\s+){1,4}(?:Road|Rd|Street|St|Avenue|Ave|Drive|Dr|Crescent|Cres|Court|Ct|Crt|Boulevard|Blvd|Lane|Ln|Way|Place|Pl|Terrace|Trail|Circle|Cir|Gate|Path|Common|Landing|Grove|Parkway|Pkwy|Heights|Hts|Line|Sideroad)\b/;
-const HASH1_NUMBERING_AFTER_RE = /^\s+(?:bus|route|line|train|exit|platform|gate|side\s*road|sideroad|highway|concession|on\s+the\s+(?:site\s+)?(?:plan|list|map|survey|chart|table)|in\s+the\s+(?:series|sequence|list|gallery|block|row))\b/i;
-const RANK_BEFORE_RE = /^(?:the|a|an|our|my|your|his|her|their|its|is|are|was|were|be|been|become|becomes|remains?|ranked|ranks|rank|rated|rates|voted|named|crowned|finished|finishes|still|consistently|currently|overall|officially|always|truly|proudly|again|now|number|no\.?)$/i;
-const HASH1_RANKS_AFTER_RE = /^\s+(?:for\s+(?:sales|resale|service|listings|homes|real\s+estate|buyers|sellers|clients?)|in\s+(?:town|the\s+(?:region|area|city|province|country|GTA))\b|(?:[\w'’-]+\s+){0,2}(?:agents?|realtors?|teams?|brokerages?|brokers?|reps?|representatives?|salespe\w+|sites?|websites?|platforms?|choice|source|guide)\b)/i;
-const ENUM_LABEL_RE = /^(?:steps?|tips?|questions?|q|faqs?|reasons?|options?|rules?|items?|stages?|chapters?|lessons?|myths?|facts?|notes?|examples?|scenarios?|cases?|mistakes?|misconceptions?|pitfalls?|hacks?|tricks?|signs?|flags?|warnings?|deal-breakers?|must-haves?|advantages?|drawbacks?|benefits?|downsides?|pros?|cons?|challenges?|problems?|issues?|factors?|strateg(?:y|ies)|costs?|fees?|takeaways?|points?|trends?|considerations?|goals?|tasks?|upgrades?|ideas?|rounds?|episodes?|editions?|releases?|weeks?|days?|photos?|images?|pictures?|figures?|tables?|charts?|maps?|sections?|clauses?|schedules?|appendix|exhibits?|documents?|forms?|checklists?|offers?|bids?|deposits?|conditions?|instalments?|installments?|payments?|comparables?|comps?|buyers?|sellers?|properties|property|listings?|houses?|homes?|townhomes?|neighbourhoods?|areas?|bedrooms?|bathrooms?|baths?|beds?|models?|elevations?|scenes?|doors?|entrances?|windows?|zones?|priorit(?:y|ies))$/i;
+const UNIT_WORD = '(?:townhomes?|units?|suites?|ste|apt|apartments?|lots?|ph|penthouse|phases?|blocks?|blk|buildings?|bldg|towers?|levels?|lvl|floors?|parking(?:\\s+spot)?|spots?|lockers?|stalls?|spaces?|rooms?|rm|townhouses?|th|concession|con|parts?|pt|box|pads?|parcels?|bays?|docks?|stores?|offices?|garages?|homesites?|meters?|wells?|stations?|ponds?|wards?|fields?|paddocks?|barns?|rinks?|pavilions?|portables?|plots?|elevators?|terminals?|platforms?|chargers?|furnaces?|kitchens?|washrooms?|ensuites?|storage|shops?|holes?)';
+const STREET_WORD = '(?:road|rd|street|st|avenue|ave|drive|dr|crescent|cres|court|ct|crt|boulevard|blvd|lane|ln|way|place|pl|terrace|terr|trail|trl|circle|cir|gate|gt|path|common|landing|grove|parkway|pkwy|heights|hts|line|sideroad|side\\s+road|highway|hwy)';
+// A unit word right before "#1" ("Unit #1", "Unit No. #1", "Unit: #1"); a unit or street word with a comma ("The end unit, #1,", "Road, #1").
+const UNIT_ADJACENT_RE = new RegExp('(?:\\b' + UNIT_WORD + '(?:\\s+(?:no\\.?|number))?|\\b(?:units?|suites?|lots?|apt|parking|lockers?|stalls?|rooms?)\\s*:)\\s*$', 'i');
+const NUMBERED_RE = new RegExp('\\b(?:(?!offices?|stores?|shops?|stations?|platforms?|levels?|blocks?|spots?)' + UNIT_WORD + '|' + STREET_WORD + '\\.?(?:\\s+\\d+)?(?:\\s+(?:north|south|east|west|[NSEW]))?)\\.?,?\\s*$', 'i');
+const HASH1_SERIES_RE = /^[A-Z]?\s*(?:,\s*#\s?\d+[A-Z]?\s*)*(?:(?:and|or|to|through|thru|&|[-–]|vs\.?)\s*#\s?\d|(?:and|or|to|through|&)\s+\d+\s*(?:[,.;)]|$|\b(?:are|were|is|share|both|each|have|remain|sit|face)\b)|of\s+\d[\d,]*(?![\d,])(?!\s*\+?\s*(?:[\w/'’-]+\s+){0,3}(?:agents?|realtors?|teams?|brokerages?|reps?|representatives?|salespe\w+|offices?|members?|licensees?)))/i;
+const HASH1_ADDRESS_RE = /^[A-Z]?\s*[-–,]?\s*\d{1,6}[A-Z]?\s+(?:[A-Z0-9][\w'-]*\s+){0,4}(?:Road|Rd|Street|St|Avenue|Ave|Drive|Dr|Crescent|Cres|Court|Ct|Crt|Boulevard|Blvd|Lane|Ln|Way|Place|Pl|Terrace|Trail|Circle|Cir|Gate|Path|Common|Landing|Grove|Parkway|Pkwy|Heights|Hts|Line|Sideroad|Highway|Hwy|MAIN|ST|RD|AVE|DR)\b/;
+const HASH1_NUMBERING_AFTER_RE = /^\s+(?:bus|route|line|train|exit|gate|side\s*road|sideroad|highway|concession|(?:on|in)\s+(?:the\s+)?(?:site\s+|floor\s+|draft\s+|reference\s+)?(?:plan|map|survey|chart|table|series|sequence|gallery|block|row)|on\s+Plan\b)\b/i;
+const RANK_BEFORE_RE = /^(?:the|a|an|our|my|your|his|her|their|its|is|are|was|were|be|been|become|becomes|remains?|ranked|ranks|rank|rated|rates|voted|named|crowned|finished|finishes|still|consistently|currently|overall|officially|always|truly|proudly|again|now|number|no\.?|top|holds?|hold|them|it|us|him|me)$/i;
+const RANK_VERB_RE = /^(?:ranked|ranks|rank|rated|rates|voted|named|crowned|finished|finishes|consistently|currently|overall|officially|them|it|us)$/i;
+// A noun before "#1" that ranks rather than numbers ("Client Satisfaction #1", "Sales #1 · Service #1").
+const CLAIM_LABEL_RE = /^(?:sales|service|reviews?|ratings?|rankings?|rank|score|satisfaction|care|choice|pick|resource|platform|agents?|realtors?|teams?|brokerages?|office|producer|volume|transactions|realty|go-to)$/i;
+// A noun that numbers a list whatever follows ("Tip #1 for sellers", "Step #1 in this guide").
+const STRONG_LABEL_RE = /^(?:tips?|steps?|questions?|mistakes?|costs?|options?|reasons?|chapters?|sections?|days?|guides?|hacks?|tricks?|secrets?|rules?|myths?|lessons?|stops?|features?|highlights?|stats?|ideas?|goals?|tasks?|checklists?|criteri(?:on|a)|requirements?|deadlines?|milestones?|hurdles?|watch-outs?|checks?|draws?|terms?|paragraphs?|clauses?|amendments?|addend(?:um|a)|counter-offers?|counteroffers?|sign-backs?|sessions?|slides?|videos?|episodes?|packages?|quotes?|estimates?|appraisals?|showings?|viewings?|renderings?|contenders?|sources?|dealbreakers?|deal-breakers?|layouts?|criterion|years?|months?|weeks?)$/i;
 const LABEL_IMPERATIVE_RE = /^\s+(?:get|find|price|know|check|hire|call|book|set|make|start|avoid|skip|stage|list|save|compare|ask|read|plan|build|choose|pick|watch|review|do|don['’]t)\b/i;
+const HASH1_RANKS_AFTER_RE = /^\s+(?:of\s+[\d,]+\+?\s+(?:[\w/'’-]+\s+){0,3}(?:agents?|realtors?|teams?|brokerages?|reps?|representatives?|salespe\w+|offices?|members?|licensees?)|in\s+(?:the\s+)?(?:\w+\s+){0,2}(?:office|brokerage|company|team|region|province|country|GTA|town|city)\b|on\s+(?:the\s+)?(?:list|chart|map)\s+of|for\s+(?:[\w'’-]+\s+){0,3}(?:sold|sales|resale|homes|listings|buyers|sellers|clients?|client\s+\w+|customer\s+\w+|reviews?|service|satisfaction|care|transactions|units|real\s+estate|first-time|sold-over-asking|results)|(?:[\w'’-]+\s+){0,2}(?:agents?|realtors?|teams?|brokerages?|brokers?|reps?|representatives?|salespe\w+|platforms?|choice|pick|source|resource|go-to|route\s+to|line\s+of\s+defence|real\s+estate|home\s+selling|realty|office)\b|[-–—:]\s+(?:most|top|best|highest|leading|largest|\d{4}|\d+\s+years|[\w'’-]+\s+(?:running|straight|in\s+a\s+row)|(?:[A-Z][\w'’-]*\s+)?(?:office|agent|team|brokerage|Readers['’]?\s+Choice))|of\s+[\d,]+\+?\s+(?:at|in)\s|in\s+(?:19|20)\d{2}\b|by\s+(?:transactions|units|volume|sales))/i;
 function hash1Kind(text, idx, len) {
   const before = text.slice(Math.max(0, idx - 80), idx); const after = text.slice(idx + len, idx + len + 80);
   const prevTok = (before.match(/(\S+)[ \t]*$/) || [])[1] || '';
   const adjacent = /[ \t]$/.test(before) && /^[A-Za-z][\w'’.-]*$/.test(prevTok) ? prevTok.replace(/\.$/, (m) => (/^no\.$/i.test(prevTok) ? m : '')) : null;
-  if (HASH1_NUMBERING_AFTER_RE.test(after) || NUMBERED_RE.test(before)) return 'numbered';
-  if (adjacent && (RANK_BEFORE_RE.test(adjacent) || (/['’]s$/i.test(adjacent) && !/^(?:here|there|that|what|it|let|who|where)['’]s$/i.test(adjacent)) || /s['’]$/.test(adjacent) || KNOWN_PLACES.has(adjacent.toLowerCase()))) return null;
-  if (NUMBERED_RE.test(before) || HASH1_SERIES_RE.test(after) || HASH1_ADDRESS_RE.test(after)) return 'numbered';
-  if (adjacent && ENUM_LABEL_RE.test(adjacent)) { const inPlace = after.match(/^\s+in\s+/i); return HASH1_RANKS_AFTER_RE.test(after) || (inPlace && placeAt(after.slice(inPlace[0].length))) ? null : 'label'; }
+  const prevPrev = (before.match(/(\S+)\s+\S+[ \t]*$/) || [])[1] || '';
+  const inPlaceAfter = () => { const m = after.match(/^\s+(?:[\w'’-]+\s+){0,3}?in\s+/i); return !!m && placeAt(after.slice(m[0].length)); };
+  // 0. A ranking verb, a possessive or "your" before it ranks whatever follows ("Ranked #1 on the chart", "Milton's #1 route").
+  if (adjacent && (RANK_VERB_RE.test(adjacent) || /^(?:your|our|my)$/i.test(adjacent) || (/['’]s$/i.test(adjacent) && !/^(?:here|there|that|what|it|let|who|where)['’]s$/i.test(adjacent)) || /s['’]$/.test(adjacent))) return null;
+  if (/\bfrom\s+#\s?\d+\s+(?:in\s+[\w\s]+?\s+)?to\s+$/i.test(before)) return null;
+  if (/\b(?:reviews?|satisfaction|sales|sold|service|clients?)\b[^.!?]*:\s*$/i.test(before) && /^\s*[.!]?\s*(?:$|[A-Z])/.test(after)) return null;
+  if (/\b(?:units?|lots?|suites?|spots?|stalls?|lockers?|townhomes?)\s+(?:number\s+)?(?:is|was)\s+$/i.test(before) || /\bnumber(?:ing|s)?\b[^.]{0,30}\b(?:at|from)\s+$/i.test(before)) return 'numbered';
+  // 1. Numbers: a route or a place in a plan, an address, a unit word right before.
+  if (HASH1_NUMBERING_AFTER_RE.test(after) || HASH1_ADDRESS_RE.test(after)) return 'numbered';
+  if (UNIT_ADJACENT_RE.test(before) && !/,\s*$/.test(before)) return 'numbered';
+  // 2. A list noun numbers its list whatever follows ("Tip #1 for sellers"); "Without question #1" ranks.
+  if (adjacent && STRONG_LABEL_RE.test(adjacent) && !/^without$/i.test(prevPrev)) return 'label';
+  // 3. A rank context after it: "#1 in Milton", "#1 of 400 RE/MAX agents", "#1 for client care", "#1 agent".
+  if (HASH1_RANKS_AFTER_RE.test(after) || inPlaceAfter()) return null;
+  // 4. A ranking verb before it ranks even a series ("Ranked #1 or #2 in Halton"); then numbers with a
+  //    comma and series ("The end unit, #1,", "Units #1 and #2", "Photo #1 of 32").
+  if (adjacent && RANK_VERB_RE.test(adjacent)) return null;
+  if (NUMBERED_RE.test(before) || HASH1_SERIES_RE.test(after)) return 'numbered';
+  // 5. A rank before it: "Ranked #1", "Milton's #1", "Milton #1", "Number #1", "Client Satisfaction #1", "Rank: #1".
+  if (adjacent && (RANK_BEFORE_RE.test(adjacent) || (/['’]s$/i.test(adjacent) && !/^(?:here|there|that|what|it|let|who|where)['’]s$/i.test(adjacent)) || /s['’]$/.test(adjacent) || KNOWN_PLACES.has(adjacent.toLowerCase()) || (CLAIM_LABEL_RE.test(adjacent) && !/^\s*:/.test(after)))) return null;
+  if (/\b(?:rank|ranking|satisfaction|reviews?|volume|sales|service|score|rating)\s*:\s*$/i.test(before)) return null;
+  // 6. Labels: another noun it numbers, a list item, one of several numbered items, a set, a back-reference.
   if (adjacent && /^(?:here['’]s|here|next|then|now|so)$/i.test(adjacent) && /^\s*:\s/.test(after)) return 'label';
-  const lineStart = /(?:^|[\n.!?:•·*]\s*)$/.test(before);
+  if (adjacent && /^[A-Za-z][a-z'’-]*$/.test(adjacent) && !FUNCTION_WORD_RE.test(adjacent) && !DETERMINER_RE.test(adjacent) && !/^(?:in|see|from|than|on|to|vs|after|before|like|by|at|with|of|for)$/i.test(adjacent)) return 'label';
+  if (adjacent && /^[A-Z][A-Za-z'’-]*$/.test(adjacent) && !FUNCTION_WORD_RE.test(adjacent)) return 'label';
+  const lineStart = /(?:^|[\n.!?:•·*(]\s*)$/.test(before);
   if (!adjacent && lineStart && (/^\s*[:.)–—-]\s/.test(after) || LABEL_IMPERATIVE_RE.test(after))) return 'label';
-  if (/(?:^|[^\w])#\s?[2-9]\b/.test(text.slice(Math.max(0, idx - 120), idx + len + 120).replace(text.slice(idx, idx + len), ''))) return 'label';
+  if (/(?:^|[^\w])#\s?(?:[2-9]|\d{2})\b/.test(text.slice(Math.max(0, idx - 120), idx + len + 120).replace(text.slice(idx, idx + len), ''))) return 'label';
   if (/\b(?:of|among)\s+(?:the|these|those|our|your|its|their)\s+(?:\w+\s+){0,2}\w+s\s*,\s*$/i.test(before)) return 'label';
-  if (adjacent && /^(?:in|see|from|than|on|to|vs|after|before|like)$/i.test(adjacent) && /^\s*(?:[,.;:)]|$)/.test(after)) return 'label';
+  if (adjacent && /^(?:in|see|from|than|on|to|vs|after|before|like|by|at)$/i.test(adjacent) && /^\s*(?:[,.;:)]|$)/.test(after)) return 'label';
+  if (/\bfrom\s+$/i.test(before) && /^\s+(?:at|near|by)\b/i.test(after)) return 'label';
   return null;
 }
 // "#1" and "top producer" sit inside a company's name only when the name ends in a designator and the
@@ -328,13 +360,21 @@ const DESIGNATOR_TOKEN_RE = /^(?:Inc\.?|Ltd\.?|Limited|Corp\.?|Corporation|LLC|B
 const COMPANY_WORD_RE = /^(?:Realty|Real|Brokerage|Movers|Moving|Home|Homes|Inspections?|Choice|Properties|Property|Mortgages?|Construction|Renovations?|Cleaning|Plumbing|Roofing|Landscaping|Painting|Insurance|Law)$/i;
 const AUDIT_FAIL_CLOSED_RE = /^(?:#\s?1|top[-\s‐‑]*produc)/i;
 const BRAND_MULTI_RE = /\b(?:Real\s+Broker|Right\s+at\s+Home|Royal\s+LePage|Keller\s+Williams|Coldwell\s+Banker|Century\s+21)\b/i;
-const auditCompany = (run, afterHit) => !BRAND_MULTI_RE.test(afterHit.join(' ')) && DESIGNATOR_TOKEN_RE.test(run[run.length - 1].replace(/,$/, '').replace(/^(Realty|Brokerage)\.$/i, '$1')) && COMPANY_WORD_RE.test(afterHit[0] || '') && !afterHit.some((t) => BRAND_RE.test(t)) && !run.some((t) => FUNCTION_WORD_RE.test(t) || DETERMINER_RE.test(t) || POSSESSIVE_RE.test(t)) && !OWN_NAMES_RE.test(run.join(' '));
+const GENERIC_CO_RE = /^(?:Real|Estate|Realty|Brokerage|Group|Team|Home|Homes|Property|Properties|Of|And|&)$/i;
+const ISSUER_WORD_RE = /^(?:Ontario-Atlantic|Ontario|Atlantic|Canada|Integra|Central|Western|Eastern|Northern|Southern|Region|Regional|Head|Office)$/i;
+const auditCompanyAt = (text, idx, len) => {
+  if (/(?:RE\/?MAX|Century\s+21|Royal\s+LePage|Keller\s+Williams|Coldwell\s+Banker|Sutton|HomeLife|iPro|eXp|Revel)®?\s+(?:\d{4}\s+)?$/i.test(text.slice(Math.max(0, idx - 30), idx))) return false;
+  const m = text.slice(idx + len, idx + len + 90).match(/^\s+((?:(?:[A-Z][\w'’&.-]*|&|and|of)\s+){1,6}?)(?:Inc|Ltd|Limited|Corp|LLC|Incorporated|Realty(?=\s*[.,;:]|\s*$))\b/);
+  if (!m) return false;
+  const words = m[1].trim().split(/\s+/);
+  return words.some((w) => /^[A-Z]/.test(w) && !GENERIC_CO_RE.test(w) && !ISSUER_WORD_RE.test(w) && !KNOWN_PLACES.has(w.toLowerCase())) && !words.some((w) => BRAND_RE.test(w)) && !BRAND_MULTI_RE.test(m[1]) && !OWN_NAMES_RE.test(m[1]);
+};
 
 // Places the town knows, for a possessive ("Timberlea's only") and for a sentence in Title Case or
 // capitals, where a capital letter says nothing.
 function loadKnownPlaces() {
   const read = (f) => { try { return fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch { return ''; } };
-  const out = new Set(['milton', 'halton', 'ontario', 'canada', 'gta', 'toronto', 'mississauga', 'oakville', 'burlington', 'georgetown', 'halton hills', 'acton', 'campbellville', 'hamilton', 'brampton', 'guelph', 'old milton', 'downtown milton', 'north milton', 'south milton', 'hawthorne village', 'boyne', 'kelso', 'sherwood', 'bristol', 'moffat', 'brookville', 'milton education village']);
+  const out = new Set(['halton region', 'town of milton', 'region of halton', 'southern ontario', 'west milton', 'east milton', 'glen williams', 'speyside', 'mountainview', 'milton', 'halton', 'ontario', 'canada', 'gta', 'toronto', 'mississauga', 'oakville', 'burlington', 'georgetown', 'halton hills', 'acton', 'campbellville', 'hamilton', 'brampton', 'guelph', 'old milton', 'downtown milton', 'north milton', 'south milton', 'hawthorne village', 'boyne', 'kelso', 'sherwood', 'bristol', 'moffat', 'brookville', 'milton education village']);
   for (const m of read('src/data/townNeighbourhoods.ts').matchAll(/"name":"([^"]+)"/g)) out.add(m[1].toLowerCase());
   for (const m of read('src/lib/geo.ts').matchAll(/"\d{4}\s*-\s*[A-Z]{2}\s+([^"]+)"\s*:/g)) out.add(m[1].trim().toLowerCase());
   return out;
@@ -359,28 +399,32 @@ export const KNOWN_PLACES = loadKnownPlaces();
 // of uniqueness ("the only", "Milton's only", "only one ... in Milton", "only here", a headline "Only
 // X in Y"); without one it is the restriction sense ("only licensed agents can", "only local producers").
 const SENSE_WORD_RE = /^(?:only|leading|highest)$/i;
-const PERSON_RE = /^(?:agents?|realtors?|brokers?|brokerages?|salesperson|salespersons|salespeople|salesman|saleswoman|reps?|representatives?|registrants?|teams?|negotiators?|producers?|producing|advis[oe]rs?|consultants?|experts?|specialists?|professionals?|agency|agencies|strategists?|marketers?|advocates?|duo|family|realty|awards?|recognition|honou?rs?|achievements?|production)$/i;
+const PERSON_RE = /^(?:agents?|realtors?|brokers?|brokerages?|salesperson|salespersons|salespeople|salesman|saleswoman|reps?|representatives?|registrants?|teams?|negotiators?|advis[oe]rs?|consultants?|experts?|specialists?|professionals?|agency|agencies|strategists?|marketers?|advocates?|realty|awards?|recognition|honou?rs?|achievements?|production)$/i;
+const RE_PERSON_RE = /^(?:duo|family|producers?|producing|licensees?)$/i;
 const AWARD_HOLDER_RE = /^(?:recipients?|winners?|inductees?|honou?rees?|members?)$/i;
 const SERVICE_RE = /^(?:services?|marketing|representation|communication|expertise|care|exposure|negotiation|advice|guidance|results|satisfaction|experience|ratings?|reviews?|reputation|retention|referrals?|business|support|professionalism|standards?|attention|technology|tools|photography|video|program|package|solution|data|estimates?|accuracy|promoter)$/i;
-const OUTLET_RE = /^(?:firms?|company|companies|offices?|providers?|sources?|resources?|destinations?|choice|names?|authority|voice|brand|network|partners?|practice|platforms?|sites?|websites?|portals?|guides?|blogs?|newsletters?|reports?|groups?|designations?|apps?|hubs?|databases?|podcasts?|magazines?|places?|index)$/i;
+const OUTLET_RE = /^(?:firms?|company|companies|offices?|providers?|sources?|resources?|destinations?|choice|names?|authority|voice|brand|network|partners?|practice|platforms?|sites?|websites?|portals?|guides?|blogs?|newsletters?|reports?|groups?|designations?|apps?|hubs?|databases?|podcasts?|magazines?|places?|index|tool|calculator|estimator|tracker|dashboard|map|search|channel|account)$/i;
+const PERSON_CORE_RE = /^(?:agents?|realtors?|brokers?|brokerages?|salesperson|salespersons|salespeople|salesman|saleswoman|reps?|representatives?|registrants?|teams?|negotiators?|advis[oe]rs?|consultants?|experts?|specialists?|professionals?|agency|agencies|strategists?|marketers?|advocates?|realty|person|licensees?|sponsors?)$/i;
+// real estate in the phrase itself, strictly (not "home care", not "the housing market" as a subject)
+const RE_STRICT_RE = /\b(?:real[\s-]estate|realty|resale|re-sale|sold[\s-]prices?|sold\s+(?:data|history|records)|street[\s-]by[\s-]street|MLS|listings?|sellers?|buyers?|home[\s-]?(?:selling|buying|sales?|search|valuation|value)|pre-construction|condo\s+(?:service|resale|specialist|market|sales)|sold-price|homeowners?|street-level|every\s+(?:\w+\s+)?(?:sold|sale|street))\b/i;
 const DATA_HEAD_RE = /^(?:prices?|sales?|sold|counts?|shares?|numbers?|percent(?:age)?s?|rates?|volumes?|demand|supply|inventory|activity|turnover|density|frequency|traffic|elevation|points?|peaks?|records?|range|spread|values?|appreciation|growth|returns?|rents?|yields?|incomes?|population|concentration|proportions?|ratios?|taxes|assessments?|days|months?|years?|quarters?|weeks?|bids?|offers?|temperatures?|snowfall|scores?|frontage|footage|ceilings?|storeys?|stories|levels?|costs?|fees?|charges?|premiums?|payments?|interest|bidding|share|stock|mix|amount|amounts|point|priority|risk|demand)$/i;
 const COMPOUND_CLAIM_RE = /^(?:rated|ranked|reviewed|quality|accuracy|performing|producing|selling|grossing|earning|trusted|recommended)$/i;
-const MODIFIES_RE = /^(?:sales?|offers?|deals?|prices?|dates?|conditions?|fees?|frequency|hours?|building|buildings|space|spaces|park|parks|tower|towers|uses?|units?|homes?|houses?|builders?|providers?|centres?|centers?|levels?|areas?|hubs?|staff|jobs?|numbers?|figures?|counts?|rates?|charges?|costs?|rooms?|tables?|windows?|periods?|process|leverage|power|roads?|budgets?|pages?|facilit(?:y|ies)|plans?|schedules?|margins?|gaps?|buffer|cushion|tactics|strateg(?:y|ies)|skills|style|history|records?|trends?|program|programs|model|models|amount|years?)$/i;
-const RE_QUALIFIER_RE = /\b(?:real[\s-]estate|realty|resale|re-sale|sold[\s-]prices?|sold\s+(?:data|history|records)|sales?\s+data|street[\s-]by[\s-]street|every\s+(?:\w+\s+)?street|MLS|listings?|sellers?|buyers?|home[\s-]?(?:selling|buying|sales?|search|valuation|value)|homes?|housing|market|property|properties|condos?|neighbourhoods?|relocation|pre-construction|sold|sales?)\b/i;
-const DOMAIN_CI_RE = /\b(?:transit|bus(?:es)?|trains?|snow(?:-clearing)?|plow(?:ing|s)?|hospitals?|emergency|medical|health\s*care|clinics?|dental|dentists?|veterinary|animal|daycares?|child\s*care|schools?|EQAO|Fraser|walk\s*score|transit\s*score|librar(?:y|ies)|recreation|arenas?|playgrounds?|hydro|electricity|utilit(?:y|ies)|internet|surveys?|heritage|gallantry|civilian|soccer|hockey|sports|flood(?:ing|plain)?|watershed|conservation|engineering|engineers?|transportation|staffing|credit\s+rating|insurance|insurers?|mortgages?|lenders?|warrant(?:y|ies)|builders?|developers?|(?<!pre-)construction|employers?|employment|logistics|warehouses?|distribution|food|dining|restaurants?|bistro|grocer(?:y|ies)|farmers?|forestry|by-?law|police|inspectors?|law\s+firms?|lawyers?|legal|asbestos|structural|traffic|weather|sun(?:light)?|southern|northern|registry|councill?ors?|council|government|provincial|federal|municipal|parks|(?:home\s+)?(?:staging|inspection|moving|photography|cleaning|renovation)\s+(?:compan(?:y|ies)|firms?|providers?|services))\b/i;
-const DOMAIN_CS_RE = /\b(?:GO|Town(?:['’]s)?|Region(?:['’]s)?|TRREB|CREA|TRESA|Tarion|Teranet|CoreLogic|Zoocasa|HouseSigma|Zolo|Zillow|Redfin|Realtor\.ca|realtor\.ca|Mattamy|Conservation\s+Halton|Halton\s+Region|Milton\s+Hydro|Canada\s+Post|Statistics\s+Canada|CMHC|Bank\s+of\s+Canada|Google\s+(?:Maps|Trends)|Market\s+Watch|Walk\s+Score|Transit\s+Score|OEB|Bill\s+\d+|Metrolinx)\b/;
+const MODIFIES_RE = /^(?:sales?|offers?|deals?|prices?|dates?|conditions?|fees?|frequency|hours?|building|buildings|space|spaces|park|parks|tower|towers|uses?|units?|homes?|houses?|builders?|providers?|centres?|centers?|levels?|areas?|hubs?|staff|jobs?|numbers?|figures?|counts?|rates?|charges?|costs?|taxes|noise|rooms?|tables?|windows?|periods?|process|leverage|power|roads?|budgets?|pages?|facilit(?:y|ies)|plans?|schedules?|margins?|gaps?|buffer|cushion|tactics|strateg(?:y|ies)|skills|style|history|records?|trends?|program|programs|model|models|amount|years?)$/i;
+const RE_QUALIFIER_RE = /\b(?:real[\s-]estate|realty|resale|re-sale|sold[\s-]prices?|sold\s+(?:data|history|records)|sales?\s+data|street[\s-]by[\s-]street|every\s+(?:\w+\s+)?street|MLS|listings?|sellers?|buyers?|home[\s-]?(?:selling|buying|sales?|search|valuation|value)|homes?|housing|market|property|properties|condos?|neighbourhoods?|relocation|pre-construction|sold|sales?|all\s+(?:\d+\s+)?(?:\w+\s+)?streets|each\s+of\s+(?:\w+['’]s\s+)?(?:\d+\s+)?streets|street-level|pricing|(?:one\s+)?street\s+at\s+a\s+time)\b/i;
+const DOMAIN_CI_RE = /\b(?:transit|bus(?:es)?|trains?|snow(?:-clearing)?|plow(?:ing|s)?|hospitals?|emergency|medical|health\s*care|clinics?|dental|dentists?|veterinary|animal|daycares?|child\s*care|schools?|EQAO|Fraser|walk\s*score|transit\s*score|librar(?:y|ies)|recreation|arenas?|playgrounds?|hydro|electricity|utilit(?:y|ies)|internet|surveys?|heritage|gallantry|civilian|soccer|hockey|sports|flood(?:ing|plain)?|watershed|conservation|engineering|engineers?|transportation|staffing|credit\s+rating|insurance|insurers?|mortgages?|lenders?|warrant(?:y|ies)|builders?|developers?|(?<!pre-)construction|employers?|employment|logistics|warehouses?|distribution|food|dining|restaurants?|bistro|grocer(?:y|ies)|farmers?|forestry|by-?law|police|inspectors?|law\s+firms?|lawyers?|legal|asbestos|structural|(?<!web\s|site\s|online\s)traffic|weather|sun(?:light)?|southern|northern|registry|councill?ors?|council|government|provincial|federal|municipal|parks|trends?\s+data|noise|legion|gallantry|(?:home\s+)?(?:staging|inspection|moving|photography|cleaning|renovation)\s+(?:compan(?:y|ies)|firms?|providers?|services))\b/i;
+const DOMAIN_CS_RE = /\b(?:GO|the\s+Town['’]s|Town\s+(?:staff|council|hall|survey|by-law)|TRREB|CREA|TRESA|Tarion|Teranet|CoreLogic|Zoocasa|HouseSigma|Zolo|Zillow|Redfin|Realtor\.ca|realtor\.ca|Mattamy|Conservation\s+Halton|Milton\s+Hydro|Canada\s+Post|Statistics\s+Canada|CMHC|Bank\s+of\s+Canada|Market\s+Watch|Walk\s+Score|Transit\s+Score|OEB|Bill\s+\d+|Metrolinx)\b/;
 const NAMED_AFTER_RE = /\b(?:such\s+as|like|including|from|per|according\s+to)\s+(?!Aamir|Miltonly|RE\/MAX|our\b|us\b|me\b)[A-Z]|\(\s*[A-Z]{2,}/;
 const CUSTOMER_SUBJ_RE = /^(?:you|your\b.*|every\b.*|each\b.*|all\b.*|(?:the|this|our)\s+(?:site|website|guide|report|page|platform|app|street\s+report|newsletter|index|map|tool)|(?:home\s+|milton\s+)?(?:sellers?|buyers?|clients?|customers?|homeowners?|families|readers|users|visitors|listings?|home\s+sellers?)|it|this|that|these|those|there|here|which|who|what|we|they|over\s+.*)$/i;
 const NP_STOP_RE = /^(?:to|of|in|on|at|for|with|by|from|into|over|under|near|across|along|through|about|after|before|since|until|during|within|without|except|besides|between|beyond|toward|towards|against|around|via|per|upon|onto|that|which|who|whom|whose|when|where|while|if|than|as|but|nor|so|because|is|are|was|were|be|been|being|am|can|will|would|could|should|may|might|must|has|have|had|do|does|did|the|a|an|this|these|those|it|its|they|their|we|our|you|your|he|his|she|her|there|here|all|both|each|also|still|often|usually|typically|such|like|including)$/i;
 const NP_OF_RE = /^(?:level|levels|standard|standards|quality|degree|calibre|caliber|kind|sort|type|tier|tiers)$/i;
 const COUNT_WORD_RE = /^(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|a|few|several|some|handful|couple|dozen|fraction|half|limited)$/i;
-const COUNT_UNIT_RE = /^(?:bed(?:room)?s?|bath(?:room)?s?|car|storey|story|level|acre|foot|ft|metre|meter|m|sq|star|time|percent|per|%|x)\b/i;
+const COUNT_UNIT_RE = /^(?:bed(?:room)?s?|bath(?:room)?s?|car|storey|story|level|acre|foot|ft|metre|meter|m|sq|star|time|percent|per|%|x|day|bay|season|unit|year|yr|door|piece|stor(?:e|ey)|garage)\b/i;
 const NON_PLACE_RE = /^(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Q[1-4]|H[12]|Spring|Summer|Fall|Autumn|Winter|MLS|TRREB|PropTx|Buyer|Buyers|Seller|Sellers|Owner|Owners|Tenant|Tenants|Landlord|Landlords|Family|Street|Home|House|Building|Condo|Unit|Market|Today|Tonight|Tomorrow|Yesterday|Day|Night|Week|Month|Year|There|Here|That|It|What|Who|Where|This|He|She|They|We|You|Let|One|Everyone|Everybody|Nobody|Somebody|Schedule|Appendix|Section|Part|Chapter|Article|Table|Figure|Exhibit|Plan|Phase|Block|Lot|Bill|Act|French|English|Spanish|Mandarin|Punjabi|Urdu|Arabic|Tagalog)$/i;
 const PLACE_WORD_RE = /^(?:town|city|region|area|neighbourhood|neighborhood|community|province|country|GTA|county|district|subdivision)$/i;
 const PLACE_SKIP_RE = /^(?:and|or|around|all|of|the|greater|near|wider|whole|entire|broader|central|downtown|surrounding|nearby|this|our|your|heart|sought-after|north|south|east|west|northern|southern|eastern|western|new|old)$/i;
 const THE_ONLY_RE = /\bthe\s+(?:(?:very|one|first|single|sole)\s*[-,]?\s*\(?\s*(?:and|&)?\s*-?\s*)?$/i;
 const POSS_ONLY_RE = /(?:^|[^\w'’])((?:the\s+)?[A-Za-z][\w.-]*(?:\s+[A-Z][\w.-]*)?)(?:['’]s|(?<=s)['’])\s+(?:(?:first|one|very|single|sole)\s*,?\s*\(?\s*(?:and\s+)?)?$/i;
-const FRAME_BEFORE_RE = /\b(?:is|are|was|were|be|been|being|has|have|had|get|gets|got|remains?|remained|became|becomes|become|include[sd]?|including|offers?|offered|provides?|provided|holds?|held|contains?|carr(?:y|ies|ied)|runs?|ran|sees?|saw|receives?|received|enjoys?|serves?|served|gives?|gave|posts?|posted|brings?|brought|earned|earns|draws?)\b/gi;
+const FRAME_BEFORE_RE = /\b(?:publishes|published|publish|releases|released|tracks|tracked|peaked|peaks|peak|climbed|rose|reached|hit|fell|is|are|was|were|be|been|being|has|have|had|get|gets|got|remains?|remained|became|becomes|become|include[sd]?|including|offers?|offered|provides?|provided|holds?|held|contains?|carr(?:y|ies|ied)|runs?|ran|sees?|saw|receives?|received|enjoys?|serves?|served|gives?|gave|posts?|posted|brings?|brought|earned|earns|draws?)\b/gi;
 const COMPARISON_RE = /\b(?:of|among)\s+(?:any|all|every)\s+(?:[\w'’-]+\s+){0,4}?(?:agents?|realtors?|brokers?|brokerages?|offices?|teams?|sites?|websites?|reps?|salespe\w+|firms?|companies)\b/i;
 const titleMode = (s) => { const w = s.match(/\b[A-Za-z][A-Za-z'’-]{2,}\b/g) || []; return w.length >= 4 && w.filter((x) => /^[A-Z]/.test(x)).length / w.length >= 0.6; };
 // A place in the next words: a place word, a known place, or (outside Title Case) a capitalised word
@@ -403,36 +447,73 @@ function placeAt(s, title = false) {
 }
 // The subject of a verb before the word, in its clause, when it is a third party.
 // A person word after another trade is that trade's ("the leading design team", "leading insurance agents").
-const PERSON_TRADE_RE = /^(?:insurance|mortgage|tax|financial|legal|design|engineering|transportation|staffing|medical|health|hockey|soccer|sports|youth|forestry|by-law|bylaw|enforcement|construction|building|property|management|inspection|credit|school|board|travel|moving|staging|marketing|software|tech|advertising)$/i;
-const CUSTOMER_CORE_RE = /^(?:you|you['’](?:ll|re|ve|d)|your|every|each|all|sellers?|buyers?|clients?|customers?|homeowners?|families|readers|users|visitors|listings?|it|this|that|we|they|he|she|i|site|website|guide|report|page|platform|app|newsletter|index|map|tool|our)$/i;
+const PERSON_TRADE_RE = /^(?:listing|leasing|buyer['’]s|buyers['’]?|seller['’]s|co-operating|insurance|mortgage|tax|financial|legal|design|engineering|transportation|staffing|medical|health|hockey|soccer|sports|youth|forestry|by-law|bylaw|enforcement|construction|building|property|management|inspection|credit|school|board|travel|moving|staging|marketing|software|tech|advertising)$/i;
+const CUSTOMER_CORE_RE = /^(?:proud|happy|glad|honoured|honored|excited|you|you['’](?:ll|re|ve|d)|your|every|each|all|sellers?|buyers?|clients?|customers?|homeowners?|families|readers|users|visitors|listings?|downsizers|upsizers|investors|renters|homes|relocating|newcomers|it|this|that|we|they|he|she|i|site|website|guide|report|page|platform|app|newsletter|index|map|tool|our)$/i;
 const CUSTOMER_MOD_RE = /^(?:home|milton|halton|local|and|or|&|both|over|\d[\d,]*\+?|the|new|first-time|young|many|most|repeat|happy|past)$/i;
 function thirdPartySubject(beforeInSentence) {
   const clause = beforeInSentence.split(/(?<!\d),(?!\d)|[;:—–(]/).pop();
+  const rankSubj = clause.match(/^\s*(.+?)\s+(?:ranks|ranked|rates|rated|scores|scored|places|placed|comes|came|finishes|finished)\s+(?:\w+\s+)?$/i);
+  if (rankSubj && (KNOWN_PLACES.has(rankSubj[1].toLowerCase()) || (rankSubj[1].match(/\b[A-Z][\w.'’-]*/g) || []).filter((w, i) => !(i === 0 && rankSubj[1].trim().startsWith(w)) && !KNOWN_PLACES.has(w.toLowerCase()) && !/^(?:The|A|An|Our|Your|Service|Client|Customer|Seller|Five-Star|Satisfaction)$/.test(w)).length >= 1) && !OWN_NAMES_RE.test(rankSubj[1]) && !/\b(?:service|satisfaction|care|sellers?|clients?|customers?)\b/i.test(rankSubj[1])) return true;
   let m, last = null; FRAME_BEFORE_RE.lastIndex = 0; while ((m = FRAME_BEFORE_RE.exec(clause))) last = m;
   if (!last) return false;
   const subj = clause.slice(0, last.index).trim().replace(/^(?:and|but|so|then|now|yes|no)\s+/i, '');
+  if (/\b(?:it|us|them|this|him)\s+(?:the\s+|a\s+)?(?:[\w'’-]+\s+){0,2}$/i.test(clause.slice(last.index + last[0].length))) return false;
+  if (/\b(?:made|named|called|voted|crowned|chosen|picked)\b/i.test(clause) && /\b(?:it|us|them|this)\b/i.test(clause.slice(last.index))) return false;
   if (!subj || CUSTOMER_SUBJ_RE.test(subj) || SITE_PRODUCT_RE.test(subj)) return false;
   const sw = subj.split(/\s+/);
+  if (sw.slice(0, 3).some((w) => CUSTOMER_CORE_RE.test(w)) && !sw.some((w) => /^[A-Z]/.test(w) && !KNOWN_PLACES.has(w.toLowerCase()) && w !== sw[0])) return false;
   if ((sw.every((w) => CUSTOMER_CORE_RE.test(w) || CUSTOMER_MOD_RE.test(w)) && sw.some((w) => CUSTOMER_CORE_RE.test(w))) || /^(?:it|this|that|we|they|you|you['’](?:ll|re|ve|d))$/i.test(sw[sw.length - 1])) return false;
   return true;
 }
-function anchored(sentence, before, rest, afterNp) {
-  if (DOMAIN_CI_RE.test(sentence) || DOMAIN_CS_RE.test(sentence)) return true;
+const SOURCE_CUE_RE = /\b(?:per|according\s+to|on|through|via|from|by|in|with|across)\s+(?:the\s+)?$|\(\s*$|,\s*$/i;
+// A domain or third-party name anchors the ranking when it sits in the ranked phrase, before the word
+// (a subject, a possessor), or after it in a sentence whose phrase is not about real estate; a source or
+// a channel ("per TRREB", "on Google Maps", "(TRREB, 2025)", "for GO commuters") anchors nothing.
+function domainAnchors(sentence, before, rest, npText, reNp) {
+  const ci = new RegExp(DOMAIN_CI_RE.source, 'gi'); const cs = new RegExp(DOMAIN_CS_RE.source, 'g');
+  if (ci.test(npText) || (cs.lastIndex = 0, cs.test(npText))) return true;
+  const hits = (text) => [...text.matchAll(new RegExp(DOMAIN_CI_RE.source, 'gi')), ...text.matchAll(new RegExp(DOMAIN_CS_RE.source, 'g'))];
+  const AUDIENCE = /\bfor\s+(?:[\w'’-]+\s+){0,2}$/i; const audienceWord = (t, i) => /^\s*(?:[\w'’-]+\s+){0,2}?(?:commuters?|buyers|sellers|families|homeowners|clients|downsizers|investors|renters|newcomers|parents|riders)\b/i.test(t.slice(i));
+  for (const m of hits(before)) { const pre = before.slice(0, m.index); if (!SOURCE_CUE_RE.test(pre) && !(AUDIENCE.test(pre) && audienceWord(before, m.index))) return true; }
+  if (reNp) return false;
+  for (const m of hits(rest)) { const pre = rest.slice(0, m.index); if (!/\b(?:per|according\s+to|on|through|via)\s+(?:the\s+)?$|\(\s*$/i.test(pre) && !/\b(?:per|according\s+to|on|through|via|from)\s+[^.;]{0,40}(?:,|\band)\s+$/i.test(pre) && !(AUDIENCE.test(pre) && audienceWord(rest, m.index))) return true; }
+  return false;
+}
+function anchored(sentence, before, rest, afterNp, npText = '', reNp = false, o = {}) {
+  if (domainAnchors(sentence, before, rest, npText, reNp)) return true;
+  // an appositive name right after the phrase ranks that name ("the only public listings portal, Realtor.ca")
+  if (o.npEndsComma && /^(?!Aamir|Miltonly|RE\/MAX)(?:[A-Z][\w.&'’-]*|[\w-]+\.(?:ca|com))/.test(afterNp)) return true;
+  // a publisher of the ranked report ("the leading report on GTA housing, from TRREB")
+  if (o.outletHead && /\b(?:from|by|published\s+by)\s+(?:the\s+)?(?:TRREB|CREA|Teranet|CoreLogic|Statistics\s+Canada|CMHC|Halton\s+Region|the\s+Town|[A-Z]{3,})\b/.test(rest)) return true;
   const colon = sentence.indexOf(':');
   if (colon >= 0) {
     const label = sentence.slice(0, colon).trim(); const answer = sentence.slice(colon + 1).trim();
     const at = sentence.indexOf(before) + before.length;
-    if (colon > at && answer && !/^(?:Aamir|Miltonly|RE\/MAX|our|we|us)\b/i.test(answer)) return true;
-    if (colon < at && (KNOWN_PLACES.has(label.toLowerCase()) || /^(?:freehold|condos?|townhomes?|townhouses?|detached|semis?|semi-detached|bungalows?)\b/i.test(label))) return true;
+    // a colon answer that names a place, a housing type or a third party ranks it, not us
+    if (colon > at && !/^\d/.test(answer) && ((/^(?!Aamir|Miltonly|RE\/MAX|Our\b|We\b|This\b|The\s+one\b)[A-Z][\w'’.-]+/.test(answer)) || /^(?:a|an|the)?\s*(?:freehold|condos?|condo\s+apartments?|townhomes?|townhouses?|detached|semis?|semi-detached|bungalows?|older|move-up|first-time)\b/i.test(answer))) return true;
+    if (colon < at && !o.reNpHead && (KNOWN_PLACES.has(label.toLowerCase()) || /^(?:freehold|condos?|townhomes?|townhouses?|detached|semis?|semi-detached|bungalows?)\b/i.test(label))) return true;
   }
-  for (const m of rest.matchAll(new RegExp(NAMED_AFTER_RE.source, 'g'))) { const name = rest.slice(m.index + m[0].length - 1).match(/^[\w.&'’-]+/)?.[0] || ''; if (!KNOWN_PLACES.has(name.replace(/['’]s$/, '').toLowerCase())) return true; }
+  for (const m of rest.matchAll(new RegExp(NAMED_AFTER_RE.source, 'g'))) { const name = rest.slice(m.index + m[0].length - 1).match(/^[\w.&'’-]+/)?.[0] || ''; if (KNOWN_PLACES.has(name.replace(/['’]s$/, '').toLowerCase())) continue; if (/^(?:such|like|including)/i.test(m[0].trim())) { if (m.index <= (rest.length - afterNp.length) + 3 && !/^\s*[\w.&'’-]+(?:\s+[A-Z][\w.&'’-]*)?\s+(?:says|said|reports|notes)\b/.test(rest.slice(m.index + m[0].length - 1))) return true; continue; } if (!/^(?:from|per|according)/i.test(m[0].trim()) && !reNp) return true; }
+  if (/^,\s+(?!Aamir|Miltonly|RE\/MAX)(?:[A-Z][\w.&'’-]*|[\w-]+\.(?:ca|com))/.test(afterNp.replace(/^[^,]*/, (x) => (x.length < 40 ? '' : x)))) return true;
+  if (/^\s*source\s*:/i.test(sentence)) return true;
   if (/\b(?:is|are|was|were)\s+(?:first-time|move-up|young|local|out-of-town|investors?|families|buyers|sellers|condos?|townhomes?|townhouses?|detached|semis?|semi-detached|freehold|bungalows?)\b/i.test(afterNp)) return true;
-  if (/\b(?:is|are|was|were)\s+(?:the\s+)?(?!Aamir|Miltonly|RE\/MAX)[A-Z][\w'’.-]+/.test(afterNp)) return true;
+  // a copula whose complement names something else: "the only pricing guide is the neighbourhood figure",
+  // "the only professional who can confirm a lot line is an Ontario Land Surveyor"
+  // (read up to the first comma, so "..., whatever your home is worth" is not an answer; a verb other than
+  // the copula counts only as the phrase's own verb, not inside "that covers every street")
+  const main = o.npEndsComma || /^(?:no\s+matter|which|whatever|whether|what|wherever|however)\b/i.test(afterNp) ? '' : afterNp.split(/,/)[0];
+  const cop = main.match(/^(?:[\w'’$.%-]+\s+){0,10}?(?:is|are|was|were|remains?|comes?\s+from|came\s+from|belongs?\s+to|goes\s+to|went\s+to|will\s+be|would\s+be)\s+(?:usually\s+|typically\s+|often\s+|always\s+|generally\s+|now\s+)?(.{0,60})/i)
+    || (!/^(?:that|which|who)\b/i.test(main) ? main.match(/^(?:[\w'’$.%-]+\s+){0,8}?(?:covers?|covered|requires?|asks?|runs?|ran)\s+(.{0,60})/i) : null);
+  const nounAnswer = cop && /^(?:the|a|an|its|their|his|her|one|two|three|\d|[A-Z])/.test(cop[1]);
+  if (cop && (!o.reNpHead || nounAnswer) && !/^(?:free|open|available|standard|included|updated|built|designed|dedicated|unique|here|live|online|now|yours|the\s+best|second\s+to\s+none|unmatched|trusted)\b/i.test(cop[1]) && !/^(?:Aamir|Miltonly|RE\/MAX|ours|this\s+one|The\s+Street\s+Report|Street\s+Watch|our\b|us\b|here\b)/i.test(cop[1]) && !SITE_PRODUCT_RE.test(cop[1].slice(0, 30))) return true;
   if (/^(?:all\s+|both\s+)?(?:say|says|said|agree|agrees|recommend|recommends)\b/i.test(afterNp.replace(/^(?:in|on|at|for|of)\s+[\w\s'’-]*?(?=\b(?:all|say|says|said|agree|recommend)\b)/i, ''))) return true;
-  if (/\b(?:will|would)\s+be\s+(?:the\s+)?(?!Aamir|Miltonly|RE\/MAX)[A-Z]/.test(afterNp)) return true;
-  // an apposition to a name ("Mattamy Homes, a leading name"; "realtor.ca, the leading portal")
-  const ap = before.match(/(?:^|[,;:]\s*)([^,;:]{2,60}),\s+(?:(?:a|an|the|one\s+of\s+the)\s+)?(?:[\w'’-]+\s+){0,3}$/);
-  if (ap) { const np = ap[1].trim(); if ((/^(?:[A-Z][\w.&'’-]*\s*){1,5}$/.test(np) || /^[\w-]+\.(?:ca|com|org|net)\b/.test(np)) && !/^(?:In|At|On|For|From|Across|Around|Near|With|By|Of|To|Since|After|Before|During|Throughout|Within|Here|There|Today|Now|Then|Yes|No|Serving|Proudly|Rated|Voted|Ranked)\b/.test(np) && !SITE_PRODUCT_RE.test(np) && !/\b(?:is|are|was|were|has|have)\b/.test(np)) return true; }
+  // an apposition to a proper name ("Mattamy Homes, a leading name"; "realtor.ca, the leading portal")
+  const ap = before.match(/(?:^|[\s,;:])((?:[A-Z][\w.&'’-]*\s+){0,3}[A-Z][\w.&'’-]*|[\w-]+\.(?:ca|com|org|net)),\s+(?:(?:a|an|the|one\s+of\s+the)\s+)?(?:[\w'’-]+\s+){0,3}$/);
+  if (ap) {
+    const np = ap[1].trim();
+    const proper = /^(?:[A-Z][\w.&'’-]*\s+){1,4}[A-Z][\w.&'’-]*$/.test(np) || /^[\w-]+\.(?:ca|com|org|net)\b/i.test(np) || DOMAIN_CS_RE.test(np);
+    if (proper && !o.standing && !KNOWN_PLACES.has(np.toLowerCase()) && !/^(?:In|At|On|For|From|Across|Around|Near|With|By|Of|To|Since|After|Before|During|Throughout|Within|Here|There|Today|Now|Then|Yes|No|Serving|Proudly|Rated|Voted|Ranked|Local|Officially)\b/.test(np) && !SITE_PRODUCT_RE.test(np) && !CUSTOMER_CORE_RE.test(np.split(/\s+/)[0]) && !/\b(?:is|are|was|were|has|have)\b/.test(np)) return true;
+  }
   // a third party's possessive before the word ("The builder's industry-leading warranty")
   const poss = before.match(/(?:^|\s)((?:the\s+)?[\w-]+)['’]s?\s+(?:[\w-]+[-‐‑])?$/i);
   if (poss && !/^(?:there|here|that|it|what|who|where|let|he|she|world|industry|market|country|nation|sector|region|province|city|town|area|neighbourhood|community|street|court|crescent|family|families|today|year)$/i.test(poss[1].replace(/^the\s+/i, '')) && !KNOWN_PLACES.has(poss[1].replace(/^the\s+/i, '').toLowerCase()) && !PLACE_WORD_RE.test(poss[1].replace(/^the\s+/i, '')) && !/^(?:our|my|your|his|her|their|its|sellers|buyers|clients|homeowners|customers|families)$/i.test(poss[1].replace(/^the\s+/i, ''))) return true;
@@ -441,7 +522,7 @@ function anchored(sentence, before, rest, afterNp) {
 function claimSense(text, idx, len, sa, se) {
   const word = text.slice(idx, idx + len).toLowerCase();
   const raw = text.slice(idx + len, se + 1).replace(/^\s*\)/, '');
-  const rest = raw.split(/[.;:!?()\n—–]/)[0];
+  const rest = raw.replace(/\(([^)]{0,60})\)/g, '$1').split(/\.(?=\s|$)|[;:!?\n—–]/)[0];
   const toks = rest.split(/\s+/).filter(Boolean);
   const words = toks.map((w) => w.replace(/^[^\w#]+|[^\w®]+$/g, '').replace(/['’]s$/i, ''));
   const before = text.slice(sa, idx);
@@ -457,57 +538,80 @@ function claimSense(text, idx, len, sa, se) {
     if (/^(?:and|or|&)$/i.test(w) && np.length) continue;
     if (!w || NP_STOP_RE.test(w)) break;
     np.push(w);
+    if (/,$/.test(toks[k]) && (/^(?:[A-Z]|[\w-]+\.(?:ca|com)\b)/.test(toks[k + 1] || '') || /^(?:no|which|whatever|whether|who|that|so|because|as|while|when|if|and|but|or|for|with|from|whatever)$/i.test(toks[k + 1] || ''))) { k++; break; }
   }
   if (compound && np[0] && np[0].toLowerCase() === compound.toLowerCase()) np.shift();
   const afterNp = toks.slice(k).join(' ');
   const heads = np.map((w, i) => ({ w: w.split(/[-‐‑/]/).pop().replace(/®$/, ''), next: np[i + 1] || '', prev: np[i - 1] || '' }));
-  const has = (re) => heads.some(({ w, next, prev }) => re.test(w) && !MODIFIES_RE.test(next) && !(/^production$/i.test(w) && /^(?:housing|home|homes|new-home|construction|film|oil|food|crop)$/i.test(prev)) && !(re === PERSON_RE && PERSON_TRADE_RE.test(prev)));
+  const has = (re) => heads.some(({ w, next, prev }) => re.test(w) && !MODIFIES_RE.test(next) && !(re === SERVICE_RE && (OUTLET_RE.test(next) || PERSON_RE.test(next))) && !(/^production$/i.test(w) && /^(?:housing|home|homes|new-home|construction|film|oil|food|crop)$/i.test(prev)) && !((re === PERSON_RE || re === PERSON_CORE_RE) && PERSON_TRADE_RE.test(prev)) && !(re === OUTLET_RE && /^(?:listing|leasing|buyer['’]s|buyers['’]?|seller['’]s|co-operating)$/i.test(prev)));
   const tradePerson = heads.some(({ w, next, prev }) => PERSON_RE.test(w) && !MODIFIES_RE.test(next) && PERSON_TRADE_RE.test(prev));
   const targets = heads.filter(({ w, next }) => (PERSON_RE.test(w) || OUTLET_RE.test(w)) && !MODIFIES_RE.test(next));
   const hasAwardHolder = heads.some(({ w, prev }) => AWARD_HOLDER_RE.test(w) && /^(?:[A-Z][\w-]*|award|club|circle|society)$/i.test(prev));
   const head = heads.length ? heads[heads.length - 1].w : '';
   const isPlural = (w) => /[a-z]s$/.test(w) && !/(?:ss|us|is)$/.test(w);
   const plural = !/\bone\s+of\s+(?:the\s+)?(?:[\w'’-]+\s+)?$/i.test(before) && (targets.length ? targets.every(({ w }) => isPlural(w)) : isPlural(head));
-  const anchor = () => anchored(sentence, before, rest, afterNp);
+  const npText = np.join(' ');
+  const headEnd = heads.findIndex(({ w }) => PERSON_RE.test(w) || OUTLET_RE.test(w) || SERVICE_RE.test(w));
+  const npHeadText = headEnd >= 0 ? np.slice(0, headEnd + 1).join(' ') : npText;
+  const reNp = RE_STRICT_RE.test(`${npText} ${rest.slice(0, 70)}`) || has(PERSON_CORE_RE);
+  const reCtx = RE_QUALIFIER_RE.test(`${before.slice(-50)} ${npText} ${rest}`) || /\bhomeowners?\b/i.test(before.slice(-50));
+  const reNpHead = RE_STRICT_RE.test(npHeadText) || has(PERSON_CORE_RE);
+  const outletHead = has(OUTLET_RE) && !has(PERSON_CORE_RE);
+  const standing = heads.some(({ w }) => /^(?:awards?|recognition|honou?rs?|achievements?|production)$/i.test(w));
+  const anchor = () => anchored(sentence, before, rest, afterNp, npHeadText, reNp, { reNpHead, outletHead, standing, npEndsComma: np.length > 0 && /,$/.test(toks[k - 1] || '') });
+  const rePerson = heads.some(({ w }) => RE_PERSON_RE.test(w)) && (RE_STRICT_RE.test(`${npText} ${rest.slice(0, 70)}`) || /\b(?:top|high|sales|real\s+estate)[-\s]+produc/i.test(`${before} ${npText}`));
 
   if (word === 'only') {
     // A count after "only" is the quantity sense ("only two agents", "only a handful"); a year, a
     // number of bedrooms or a percentage counts nothing, and "only one" is uniqueness.
     const f = (toks[0] || '').replace(/[,;:]+$/, '');
     if ((COUNT_WORD_RE.test(f) && !COUNT_UNIT_RE.test(toks[1] || '')) || (/^\d[\d,.]*$/.test(f) && !/^(?:19|20)\d{2}$/.test(f) && !COUNT_UNIT_RE.test(toks[1] || ''))) return false;
-    const onlyOne = /^one$/i.test(f) && (/(?:^|[.!?]\s*|\b(?:there['’]s|there\s+is|has|have|with)\s+)$/i.test(before) || !/\b(?:use|uses|used|visit|visits|check|checks|need|needs|read|reads|want|wants)\s+$/i.test(before));
+    const onlyOne = /^one$/i.test(f) && (/(?:^|[.!?]\s*|\b(?:there['’]s|there\s+is|has|have)\s+)$/i.test(before) || !/\b(?:use|uses|used|visit|visits|check|checks|need|needs|read|reads|want|wants|get|gets|receive|receives|interview|interviews|sign|with|hire|hires|call|calls)\s+$/i.test(before));
     const theOnly = THE_ONLY_RE.test(before);
     const poss = before.match(POSS_ONLY_RE);
-    const possPlace = !!poss && (KNOWN_PLACES.has(poss[1].replace(/^the\s+/i, '').toLowerCase()) || PLACE_WORD_RE.test(poss[1].replace(/^the\s+/i, '')));
-    const headline = /^\s*$/.test(before) && /^[A-Z]/.test(text.slice(idx, idx + 1)) && !/\b(?:is|are|was|were|can|will|may|must|should)\b/i.test(sentence);
-    const here = /^\s*(?:here|on\s+(?:this\s+site|Miltonly)|at\s+Miltonly)\b/i.test(raw) && RE_QUALIFIER_RE.test(sentence);
+    const possName = poss ? poss[1].replace(/^the\s+/i, '') : '';
+    const possPlace = !!poss && (KNOWN_PLACES.has(possName.toLowerCase()) || KNOWN_PLACES.has(possName.split(/\s+/).pop().toLowerCase()) || PLACE_WORD_RE.test(possName));
+    const headline = /^\s*$/.test(before) && /^[A-Z]/.test(text.slice(idx, idx + 1)) && !/\b(?:is|are|was|were|can|will|may|must|should)\b/i.test(sentence) && (!/[.!?]\s*$/.test(sentence) || title);
+    const context = text.slice(Math.max(0, sa - 160), se + 1);
+    const here = (/^\s*(?:here\s*(?:[.!:]|$)|on\s+(?:this\s+site|Miltonly)|at\s+Miltonly)/i.test(raw) || (/\b(?:find|get|see)\b/i.test(rest) && /\bhere\s*$/i.test(rest.trim().replace(/[.!]$/, '')))) && RE_QUALIFIER_RE.test(context);
+    const selfRef = /\b(?:this one|the one you['’]re reading|you are reading it|you['’]re reading it|you['’]re on it)\b/i.test(sentence);
+    const onlyThis = /^(?:this|our)$/i.test(f) && (OUTLET_RE.test((toks[1] || '').replace(/[^\w]/g, '')) || PERSON_CORE_RE.test((toks[1] || '').replace(/[^\w]/g, '')));
+    if (onlyThis || (selfRef && /\b(?:one|guide|site|office|agent|realtor|team)\b/i.test(sentence) && RE_QUALIFIER_RE.test(sentence))) return true;
+    if (theOnly && /^\s*one\s*[.!]?\s*$/i.test(rest) && RE_QUALIFIER_RE.test(sentence) && /\b(?:site|guide|agent|realtor|office|team|brokerage|platform)\b/i.test(sentence)) return true;
     if (!(theOnly || possPlace || poss || onlyOne || headline || here)) return false;
+    if (/\?\s*$/.test(sentence.trim()) || /\?/.test(sentence.slice(0, sentence.indexOf(before) + before.length + 80))) { if (!here) return false; }
     if (here || possPlace) return true;
     // the place shape: "the only ... in <place>", "In Timberlea, this is the only ...", "Milton has only one ..."
-    const clauseRest = rest.replace(/^[\s,]+/, '').split(/,|\b(?:and|but|which|while|where|because|so)\b/)[0];
+    const clauseRest = rest.replace(/^[\s,]+/, '').split(/,\s+(?=(?:and|but|so|which|who|while|where|because|it|this|that|they|we|he|she|still)\b)|\b(?:which|while|where|because)\b/)[0];
     const placeIn = [...clauseRest.matchAll(/\b(?:in|within|across|throughout)\s+/gi)].some((m) => placeAt(clauseRest.slice(m.index + m[0].length), title))
       || (/^\s*(?:in|within|across)\s+/i.test(sentence) && placeAt(sentence.replace(/^\s*(?:in|within|across)\s+/i, ''), title) && /,/.test(before))
       || (/^\s*of\s+(?:all\s+)?(?:the\s+)?[^,]*\bin\s+/i.test(sentence) && placeAt(sentence.replace(/^\s*of\s+[^,]*?\bin\s+/i, ''), title) && /,/.test(before));
     const placeSubject = onlyOne && placeAt(before.replace(/\s+(?:has|have|had)\s+$/i, ''), title) && /\b(?:has|have|had)\s+$/i.test(before);
     if ((theOnly || onlyOne || headline) && (placeIn || placeSubject)) return true;
     if (anchor()) return false;
-    const oneThat = /^one$/i.test(f) && /^(?:that|who)\b/i.test(toks[1] || '');
-    if (has(PERSON_RE) || hasAwardHolder || (has(OUTLET_RE) && RE_QUALIFIER_RE.test(`${np.join(' ')} ${rest}`)) || (has(SERVICE_RE) && RE_QUALIFIER_RE.test(`${np.join(' ')} ${rest}`)) || (oneThat && RE_QUALIFIER_RE.test(rest))) return true;
-    if (/^one$/i.test(f) && /^(?:who|that)\b/i.test(toks[1] || '') && RE_QUALIFIER_RE.test(rest)) return true;
+    if (plural && !/^one$/i.test(f) && !has(SERVICE_RE)) return false;
+    if (/,\s+(?:the|a|an)\s+[a-z0-9]/.test(rest) && !reNp) return false;
+    const oneThat = /^one$/i.test(f) && (/^who\b/i.test(toks[1] || '') && !/^who\s+can\b/i.test(`${toks[1]} ${toks[2] || ''}`) || /^that\s+(?:publishes|covers|tracks|maps|shows|lists|prices|posts)\b/i.test(`${toks[1] || ''} ${toks[2] || ''}`));
+    if (has(PERSON_CORE_RE) || rePerson || hasAwardHolder || (has(PERSON_RE) && !anchor()) || (has(OUTLET_RE) && RE_QUALIFIER_RE.test(`${np.join(' ')} ${rest}`)) || (has(SERVICE_RE) && RE_QUALIFIER_RE.test(`${np.join(' ')} ${rest}`)) || (oneThat && RE_QUALIFIER_RE.test(rest))) return true;
+    return false;
     return false;
   }
 
   // "leading" and "highest".
   if (word === 'leading') {
     // a path: "the road leading to the 401", "leading into winter"
-    if (/^\s+(?:to|into|up|off|out|toward|towards|onto|away|down|back|through|across|from|in\s+to)\b/i.test(raw) && !/^\s+in\s+(?:client|customer|seller|buyer|home|sales|listings)/i.test(raw)) return false;
+    if (/^\s+(?:to|into|up|off|out|toward|towards|onto|away|down|back|through|from|in\s+to)\b/i.test(raw) && !/^\s+in\s+(?:client|customer|seller|buyer|home|sales|listings)/i.test(raw)) return false;
     if (/^\s+edge\s+of\b/i.test(raw)) return false;
     const prevTok = (before.match(/([A-Za-z][\w'’-]*)[ \t]*$/) || [])[1] || '';
     const clauseStart = /(?:^|[,;:.!?|·•\n—–(]\s*)$/.test(before) || /^(?:proudly|consistently|still|always|now|currently|and|are|is|were|was|been)$/i.test(prevTok);
+    const marketFirst = /^\s+(?:the\s+(?:[A-Z][\w'’-]*\s+)?(?:resale\s+|real\s+estate\s+|local\s+|housing\s+)?(?:market|way|pack|industry|field|charge)|(?:Milton|Halton|the\s+GTA)\b|across\s+(?:Milton|Halton))/i.test(raw);
+    if (marketFirst && !clauseStart && !before.split(/\s+/).some((w, i) => /^[A-Z]/.test(w) && i > 0 && !KNOWN_PLACES.has(w.replace(/['’]s$|[,.]$/g, '').toLowerCase()) && !/^(?:Milton|Halton|Proud|Twelve|Ten|Once|The|Local)$/.test(w)) && !/\b(?:engineers|residents|crews|councillor|staff)\b/i.test(before)) return !anchor();
     // a participle after its subject: "Engineers leading the reconstruction", "one leading the other"
     if (!clauseStart && prevTok && !DETERMINER_RE.test(prevTok) && !POSSESSIVE_RE.test(prevTok) && !/[-‐‑]$/.test(before) && !/ly$/i.test(prevTok) && /^\s+(?:the|a|an|this|that|these|its|their|his|her)\b/i.test(raw)) return false;
     // "Leading the Milton market", "Leading Milton real estate since 2010", "Leading.": the site's, unless anchored
-    const verbUse = clauseStart && (/^\s*(?:[.!]|$)/.test(raw) || /^\s+(?:the\s+)?(?:[\w'’-]+\s+){0,3}(?:market|industry|pack|way|field|charts|region|area|resale|sales|real\s+estate|homes|in\s+)/i.test(raw) || /^\s+(?:[A-Z][\w'’-]*|in\s)/.test(raw));
+    const verbUse = clauseStart && (/^\s*(?:[.!]|$)/.test(raw) || /^\s+(?:the\s+)?(?:[\w'’-]+\s+){0,3}(?:market|industry|pack|way|field|charts|region|area|resale|sales|real\s+estate|homes|in\s+)(?!\s*(?:websites?|sites?|agents?|teams?|brokerages?|firms?|compan(?:y|ies)|platforms?|guides?|services?|portals?|offices?|reports?|data))/i.test(raw) || /^\s+(?:[A-Z][\w'’-]*|in\s|across\s|throughout\s)/.test(raw));
+    const marketObject = /^\s+(?:the\s+(?:[A-Z][\w'’-]*\s+)?(?:resale\s+|real\s+estate\s+|local\s+|housing\s+)?(?:market|way|pack|industry|field|charge)|(?:Milton|Halton|the\s+GTA)\b|across\s+(?:Milton|Halton))/i.test(raw);
+    if (!verbUse && marketObject && !before.split(/\s+/).some((w, i, all) => /^[A-Z]/.test(w) && i > 0 && !KNOWN_PLACES.has(w.replace(/['’]s$|[,.]$/g, '').toLowerCase()) && !/^(?:Milton|Halton|Proud|Twelve|Ten|Once|The|Local)$/.test(w))) return !anchor();
     if (verbUse) {
       // "Leading the pack, Walker posted the strongest results": the subject after the phrase leads
       const c = raw.indexOf(',');
@@ -516,10 +620,11 @@ function claimSense(text, idx, len, sa, se) {
     }
   }
   // A rating: "highest-rated", "rated highest in Milton", "the highest of any Milton real estate website"
-  const rating = COMPOUND_CLAIM_RE.test(compound) || /\b(?:rated|ranked|reviewed|voted|scored|rank|ranks|rates),?\s+(?:(?:it|them|among|as|the|very|consistently)\s+){0,3}$/i.test(before);
-  if (COMPARISON_RE.test(rest) && !DOMAIN_CI_RE.test(sentence) && !DOMAIN_CS_RE.test(sentence)) return true;
-  if (rating && !has(DATA_HEAD_RE) && !anchor()) return true;
-  if (compound && !COMPOUND_CLAIM_RE.test(compound)) {
+  const rating = COMPOUND_CLAIM_RE.test(compound) || /^(?:rated|ranked|reviewed)$/i.test(np[0] || '') || /\b(?:rated|ranked|reviewed|voted|scored|rank|ranks|rates),?\s+(?:(?:it|them|among|as|the|very|consistently)\s+){0,3}$/i.test(before);
+  const cmp = rest.match(COMPARISON_RE);
+  if (cmp && (RE_STRICT_RE.test(`${cmp[0]} ${npText}`) || /\b(?:agents?|realtors?|brokers?|brokerages?|teams?|reps?|salespe\w+)\b/i.test(cmp[0])) && !domainAnchors(sentence, before, '', npHeadText, true)) return true;
+  if (rating && !has(DATA_HEAD_RE) && !anchored(sentence, before, '', afterNp, npHeadText, true)) return true;
+  if (compound && !COMPOUND_CLAIM_RE.test(compound) && !(RE_STRICT_RE.test(npText) && has(OUTLET_RE))) {
     // "highest-priced", "highest-density": the compound ranks its attribute
     if (DATA_HEAD_RE.test(compound) || /^(?:priced|frequency|density|priority|valued|value|traffic)$/i.test(compound)) return false;
   }
@@ -528,13 +633,13 @@ function claimSense(text, idx, len, sa, se) {
   if (plural && !industry && !has(SERVICE_RE)) return false;
   if (!np.length) {
     // predicate position with no phrase: the ranked thing sits elsewhere in the sentence
-    const inSentence = (sentence.match(/[A-Za-z][\w-]*/g) || []).some((t) => { const p = t.split('-').pop(); return PERSON_RE.test(p) || SERVICE_RE.test(p); }) || /\b(?:clients?|customers?|Google|HomeStars|reviews?)\b/i.test(sentence);
+    const inSentence = (sentence.match(/[A-Za-z][\w-]*/g) || []).some((t) => { const p = t.split('-').pop(); return PERSON_RE.test(p) || SERVICE_RE.test(p); }) || /\b(?:clients?|customers?|HomeStars|reviews?|Google\s+(?:reviews?|rating|stars))\b/i.test(sentence);
     return /^\s*(?:[.!]|$)/.test(raw) && word === 'leading' ? true : inSentence;
   }
-  if (industry || has(PERSON_RE) || hasAwardHolder || has(SERVICE_RE) || has(OUTLET_RE)) return true;
-  // fail closed on any other head that is not data: the site ranks something of its own
-  const dataHead = DATA_HEAD_RE.test(head) || (/^production$/i.test(head) && /^(?:housing|home|homes|new-home|construction)$/i.test(heads[heads.length - 2]?.w || ''));
-  return !has(DATA_HEAD_RE) && !dataHead;
+  // a claim ranks the registrant, the site, a brokerage, an agent or a team, or their service; any other
+  // head (a cause, an indicator, a floor, a trade, a brand) is ordinary (red team 3: the fail-closed
+  // default fired on 263 lines of the site's own prose)
+  return industry || has(PERSON_RE) || rePerson || hasAwardHolder || has(SERVICE_RE) || (has(OUTLET_RE) && reCtx);
 }
 
 // "only" after the word it restricts, closing its phrase ("Miltonly emails only, from Aamir Yaqoob", the
@@ -618,7 +723,7 @@ function properExempt(text, idx, len) {
   if (!run) return false;
   // A company: the run ends in a legal designator and is otherwise a clean name.
   const auditWord = AUDIT_FAIL_CLOSED_RE.test(word);
-  if (auditWord ? auditCompany(run, run.slice(run.lastIndexOf(toks[b].core) + 1)) : (HARD_DESIGNATOR_RE.test(run[run.length - 1]) && cleanRun(run))) return true;
+  if (auditWord ? auditCompanyAt(text, idx, len) : (HARD_DESIGNATOR_RE.test(run[run.length - 1]) && cleanRun(run))) return true;
   // The listing brokerage where the feed attributes one, on the same line or under a label line of its
   // own, two words or more. A feed brokerage's name may carry a claim noun ("Century 21 Premier
   // Service"); it is still the feed's attribution, so only a possessive, a first-person word or our
@@ -655,7 +760,7 @@ export function superlativeExemption(text, idx, len) {
   if (SENSE_WORD_RE.test(word)) {
     // The registrant is named in the strict sentence or the answer; a site product in an answer ("the
     // Milton Transit app") names no one here.
-    const namedSense = namesRegistrant(strictSentence(text, idx, sa, se)) || namesRegistrant(answer);
+    const namedSense = namesRegistrantSense(strictSentence(text, idx, sa, se)) || namesRegistrantSense(answer);
     return namedSense || claimSense(text, idx, len, sa, se) ? null : 'ordinary';
   }
   if (!/^best$/i.test(word)) return null; // the other constructions are constructions of "best" only
