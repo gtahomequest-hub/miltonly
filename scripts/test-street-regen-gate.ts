@@ -1,4 +1,4 @@
-// scripts/test-street-regen-gate.ts, MC-049: the scheduled rewrite of street prose is off unless
+// scripts/test-street-regen-gate.ts, MC-049 and MC-047: scheduled street-prose generation is off unless
 // STREET_REGEN_ENABLED is exactly "true", and nothing turns it on.
 //
 //   - streetRegenEnabled() is false for unset, "", "false", "1", "TRUE" and " true", true for "true";
@@ -6,8 +6,9 @@
 //     {paused:true} with the database pointed at an address that cannot answer, so the pause is
 //     proven to come before any read or write, not only read in the source;
 //   - the same route with a wrong secret still answers 401 (the gate did not move the auth);
-//   - /api/sync/generate leaves a "regenerate" decision queued when the switch is off, before any
-//     page is built, and still builds new pages ("build" is not gated);
+//   - /api/sync/generate leaves a "regenerate" decision AND, since MC-047, a "build" decision (a
+//     new page) queued when the switch is off, writing nothing for either (src/lib/streetQueuePlan.ts,
+//     driven directly and through a simulated queue);
 //   - no tracked file sets STREET_REGEN_ENABLED.
 import fs from "node:fs";
 
@@ -44,18 +45,54 @@ async function main() {
   const denied = await route.GET(new NextRequest("http://localhost/api/sync/regenerate?secret=wrong"));
   ok(denied.status === 401, `a wrong secret is still refused (${denied.status})`);
 
-  // the hourly route, from source: the regenerate decision is caught before anything is built
+  // the hourly route's decisions (MC-047 step 0): a queued BUILD is left queued when the switch is
+  // off, as a queued regenerate is. The plan is driven directly, then a queue is run through it the
+  // way the route carries it out (a write only on "close", a page only on "generate").
+  const { planQueueItem } = await import("@/lib/streetQueuePlan");
+  const off = { generationEnabled: false, newPageBudget: 20 };
+  const on = { generationEnabled: true, newPageBudget: 20 };
+  ok(planQueueItem("build", off).action.kind === "held" && planQueueItem("build", off).newPageBudget === 20, "off: a build is held and spends no budget");
+  ok(planQueueItem("regenerate", off).action.kind === "held", "off: a regenerate is held");
+  ok(JSON.stringify(planQueueItem("skip_current", off).action) === JSON.stringify({ kind: "close", status: "done" }), "off: skip_current still closes done");
+  ok(JSON.stringify(planQueueItem("skip_low_data", off).action) === JSON.stringify({ kind: "close", status: "ineligible" }), "off: skip_low_data still closes ineligible");
+  ok(planQueueItem("build", on).action.kind === "generate" && planQueueItem("build", on).newPageBudget === 19, "on: a build generates and spends one of the budget");
+  ok(planQueueItem("build", { generationEnabled: true, newPageBudget: 0 }).action.kind === "deferred", "on: a build over the cap is deferred");
+  ok(planQueueItem("regenerate", on).action.kind === "generate" && planQueueItem("regenerate", on).newPageBudget === 20, "on: a regenerate generates and spends no budget");
+  const simulate = (enabled: boolean) => {
+    const queue = [
+      { id: "a", decision: "build", status: "pending", attempts: 0 },
+      { id: "b", decision: "regenerate", status: "pending", attempts: 1 },
+      { id: "c", decision: "skip_current", status: "pending", attempts: 0 },
+      { id: "d", decision: "skip_low_data", status: "pending", attempts: 0 },
+    ];
+    const generated: string[] = [];
+    let budget = 20;
+    for (const row of queue) {
+      const step = planQueueItem(row.decision, { generationEnabled: enabled, newPageBudget: budget });
+      budget = step.newPageBudget;
+      if (step.action.kind === "generate") generated.push(row.id);
+      if (step.action.kind === "close") row.status = step.action.status;
+    }
+    return { queue, generated };
+  };
+  const heldRun = simulate(false);
+  const build = heldRun.queue.find((r) => r.id === "a")!;
+  ok(build.status === "pending" && build.attempts === 0 && !heldRun.generated.includes("a"), "off: the queued build is left queued (pending, no attempt), and no page is built");
+  ok(heldRun.queue.find((r) => r.id === "b")!.status === "pending" && heldRun.queue.find((r) => r.id === "b")!.attempts === 1, "off: the queued regenerate is left as it was");
+  ok(heldRun.generated.length === 0, "off: nothing is generated");
+  ok(simulate(true).generated.join(",") === "a,b", "on: the build and the regenerate are generated");
+
+  // the route carries the plan out, from source
   const gen = fs.readFileSync("src/app/api/sync/generate/route.ts", "utf8");
-  const gate = gen.indexOf('if (decision === "regenerate" && !regenEnabled) {');
-  const build = gen.indexOf('if (decision === "build" || decision === "regenerate") {');
-  const push = gen.indexOf("toBuild.push(item);");
-  const firstGenerate = gen.indexOf("generateStreetContent(item.streetSlug");
-  ok(/const regenEnabled = streetRegenEnabled\(\);/.test(gen), "the hourly route reads the switch once per run");
-  ok(gate > 0 && gate < build && build < push && push < firstGenerate, "the hourly route leaves a regenerate decision queued before it can be built");
-  const gateBlock = gen.slice(gate, gen.indexOf("}", gate));
-  ok(/regenPaused\.push\(item\.streetName\);\s*continue;/.test(gateBlock) && !/prisma\./.test(gateBlock), "a paused regenerate writes nothing: no queue status, no attempt");
-  ok(/decision === "build"/.test(gen.slice(build, push)), "new pages (build) are still built");
-  ok(/regeneration: \{ paused: !regenEnabled, leftQueued: regenPaused \}/.test(gen), "the hourly response names what it left queued");
+  ok(/const generationEnabled = streetRegenEnabled\(\);/.test(gen), "the hourly route reads the switch once per run");
+  ok(/const step = planQueueItem\(decision, \{ generationEnabled, newPageBudget \}\);/.test(gen), "the hourly route decides every queued street through the plan");
+  const heldAt = gen.indexOf('if (action.kind === "held") {');
+  const heldEnd = gen.indexOf("continue;", heldAt);
+  const heldBlock = gen.slice(heldAt, heldEnd + "continue;".length);
+  ok(heldAt > 0 && heldEnd > heldAt && /held\.push\(/.test(heldBlock) && !/prisma\.|generateStreetContent|toBuild/.test(heldBlock), "a held decision writes nothing: no queue status, no attempt");
+  ok(heldAt < gen.indexOf("toBuild.push(item);") && gen.indexOf("toBuild.push(item);") < gen.indexOf("generateStreetContent(item.streetSlug"), "the hold comes before anything is queued to be built");
+  ok(!/decision === "build"|decision === "regenerate"/.test(gen.replace(/\/\/.*$/gm, "")), "the route has no decision branch of its own outside the plan");
+  ok(/generation: \{ paused: !generationEnabled, held \}/.test(gen), "the hourly response names what it held");
 
   // nothing turns it on. A setter is an assignment (an env line, a JSON or YAML key, `= "..."`), not
   // the switch's own comparison (`=== "true"`); the filter is checked on fixtures before it is used.
@@ -89,7 +126,7 @@ async function main() {
     for (const f of failures) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`[street-regen-gate] PASS: ${assertions} assertions. The weekly rewrite answers 200 {paused:true} with the database unreachable; the hourly route leaves regenerations queued and still builds new pages; nothing sets STREET_REGEN_ENABLED.`);
+  console.log(`[street-regen-gate] PASS: ${assertions} assertions. The weekly rewrite answers 200 {paused:true} with the database unreachable; the hourly route holds queued builds and regenerations; nothing sets STREET_REGEN_ENABLED.`);
   process.exit(0);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

@@ -11,11 +11,14 @@
 // OFF UNLESS STREET_REGEN_ENABLED IS EXACTLY "true". Nothing in the repo or the Vercel project sets
 // it; turning it on is a decision, taken by setting it. While it is off, /api/sync/regenerate
 // answers 200 {paused:true} and writes nothing, and /api/sync/generate leaves every "regenerate"
-// decision in the queue untouched and says so in its response.
+// decision AND, since MC-047, every "build" decision (a new page) in the queue untouched and says so
+// in its response (src/lib/streetQueuePlan.ts decides which is which). New pages carry generated
+// prose no check has read either, so the one switch holds all scheduled generation.
 //
-// WHAT IT DOES NOT GATE. New-page creation in /api/sync/generate (makeStreetDecision "build") is not
-// a rewrite; DEC-NEW-PAGE-CAP still caps it at 20 a day. Nor the manual force-regenerate route, the
-// local runners, or the jobs that only flag, queue or count (vip-hubs, detect, monitor/queue).
+// WHAT IT DOES NOT GATE. The jobs that only flag, queue or count: vip-hubs (it flags isVipHub and,
+// for a hot street with no page, creates a DRAFT row holding one template sentence, no model call),
+// detect (queues new streets) and monitor/queue (resets stuck rows, counts). Nor the manual
+// force-regenerate route or the local runners.
 export function streetRegenEnabled(): boolean {
   return process.env.STREET_REGEN_ENABLED === "true";
 }
