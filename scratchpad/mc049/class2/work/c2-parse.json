@@ -1,0 +1,196 @@
+{
+ "0": [
+  [
+   {
+    "subjectKind": "this-street",
+    "subjectName": "",
+    "relation": "proximity",
+    "direction": "none",
+    "anchorKind": "downtown",
+    "anchorName": "the historic core",
+    "negated": false,
+    "hedged": false,
+    "quote": "its position near the historic core"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "town-compass",
+    "direction": "south",
+    "anchorKind": "town",
+    "anchorName": "Milton",
+    "negated": false,
+    "hedged": false,
+    "quote": "the newer subdivision builds to the south and west"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "town-compass",
+    "direction": "west",
+    "anchorKind": "town",
+    "anchorName": "Milton",
+    "negated": false,
+    "hedged": false,
+    "quote": "the newer subdivision builds to the south and west"
+   }
+  ],
+  [
+   {
+    "subjectKind": "this-street",
+    "subjectName": "",
+    "relation": "proximity",
+    "direction": "none",
+    "anchorKind": "downtown",
+    "anchorName": "the historic core",
+    "negated": false,
+    "hedged": false,
+    "quote": "its position near the historic core"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "town-compass",
+    "direction": "south",
+    "anchorKind": "town",
+    "anchorName": "Milton",
+    "negated": false,
+    "hedged": false,
+    "quote": "the newer subdivision builds to the south and west"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "town-compass",
+    "direction": "west",
+    "anchorKind": "town",
+    "anchorName": "Milton",
+    "negated": false,
+    "hedged": false,
+    "quote": "the newer subdivision builds to the south and west"
+   }
+  ]
+ ],
+ "1": [
+  [
+   {
+    "subjectKind": "its-neighbourhood",
+    "subjectName": "Coates",
+    "relation": "anchor-compass",
+    "direction": "east",
+    "anchorKind": "escarpment",
+    "anchorName": "the escarpment",
+    "negated": false,
+    "hedged": false,
+    "quote": "a pocket of the town that sits east of the escarpment"
+   },
+   {
+    "subjectKind": "its-neighbourhood",
+    "subjectName": "Coates",
+    "relation": "anchor-compass",
+    "direction": "north",
+    "anchorKind": "road",
+    "anchorName": "the Derry Road corridor",
+    "negated": false,
+    "hedged": false,
+    "quote": "north of the Derry Road corridor"
+   }
+  ],
+  [
+   {
+    "subjectKind": "its-neighbourhood",
+    "subjectName": "Coates",
+    "relation": "anchor-compass",
+    "direction": "east",
+    "anchorKind": "escarpment",
+    "anchorName": "the escarpment",
+    "negated": false,
+    "hedged": false,
+    "quote": "a pocket of the town that sits east of the escarpment"
+   },
+   {
+    "subjectKind": "its-neighbourhood",
+    "subjectName": "Coates",
+    "relation": "anchor-compass",
+    "direction": "north",
+    "anchorKind": "road",
+    "anchorName": "the Derry Road corridor",
+    "negated": false,
+    "hedged": false,
+    "quote": "north of the Derry Road corridor"
+   }
+  ]
+ ],
+ "2": [
+  [
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "other-position",
+    "direction": "west",
+    "anchorKind": "none",
+    "anchorName": "",
+    "negated": false,
+    "hedged": false,
+    "quote": "as Milton has grown westward"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "other-position",
+    "direction": "north",
+    "anchorKind": "none",
+    "anchorName": "",
+    "negated": false,
+    "hedged": false,
+    "quote": "as Milton has grown westward and northward"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "other-position",
+    "direction": "none",
+    "anchorKind": "escarpment",
+    "anchorName": "the escarpment side",
+    "negated": false,
+    "hedged": false,
+    "quote": "grown westward and northward along the escarpment side"
+   }
+  ],
+  [
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "other-position",
+    "direction": "west",
+    "anchorKind": "none",
+    "anchorName": "",
+    "negated": false,
+    "hedged": false,
+    "quote": "Milton has grown westward and northward"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "other-position",
+    "direction": "north",
+    "anchorKind": "none",
+    "anchorName": "",
+    "negated": false,
+    "hedged": false,
+    "quote": "Milton has grown westward and northward"
+   },
+   {
+    "subjectKind": "generic",
+    "subjectName": "",
+    "relation": "other-position",
+    "direction": "none",
+    "anchorKind": "escarpment",
+    "anchorName": "the escarpment side",
+    "negated": false,
+    "hedged": false,
+    "quote": "grown westward and northward along the escarpment side"
+   }
+  ]
+ ]
+}

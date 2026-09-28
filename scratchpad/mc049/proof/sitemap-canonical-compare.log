@@ -1,0 +1,5 @@
+before (1f3b216) -> after (9a563fd): sitemap URLs 1356 -> 1356; only before 0, only after 0; hosts miltonly.com; street lastmods changed 0; canonicals changed 0
+  /: 200 canonical https://miltonly.com
+  /streets/zilio-terrace-milton: 200 canonical https://miltonly.com/streets/zilio-terrace-milton
+  /listings: 200 canonical https://miltonly.com/listings
+  /listings?page=2&sort=newest: 200 canonical https://miltonly.com/listings

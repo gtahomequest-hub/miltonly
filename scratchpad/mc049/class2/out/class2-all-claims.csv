@@ -1,0 +1,9 @@
+verdict,slug,errM,test,subject,relation,direction,anchorKind,anchorName,negated,hedged,surfaces,quote
+"not-refuted","victoria-street-milton","-1657","T4 proximity (downtown)","street","proximity","none","downtown","the historic core","false","false","sec:homes","its position near the historic core"
+"no-geometry","victoria-street-milton","","","","town-compass","south","town","Milton","false","false","sec:homes","the newer subdivision builds to the south and west"
+"no-geometry","victoria-street-milton","","","","town-compass","west","town","Milton","false","false","sec:homes","the newer subdivision builds to the south and west"
+"not-checkable","shortreed-crescent-milton","","","","anchor-compass","east","escarpment","the escarpment","false","false","hero ld-place sec:about","a pocket of the town that sits east of the escarpment"
+"no-geometry","shortreed-crescent-milton","","","","anchor-compass","north","road","the Derry Road corridor","false","false","hero ld-place sec:about","north of the Derry Road corridor"
+"not-checkable","baverstock-crescent-milton","","","","other-position","west","none","","false","false","hero ld-place sec:about","as Milton has grown westward"
+"not-checkable","baverstock-crescent-milton","","","","other-position","north","none","","false","false","hero ld-place sec:about","as Milton has grown westward and northward"
+"not-checkable","baverstock-crescent-milton","","","","other-position","none","escarpment","the escarpment side","false","false","hero ld-place sec:about","grown westward and northward along the escarpment side"

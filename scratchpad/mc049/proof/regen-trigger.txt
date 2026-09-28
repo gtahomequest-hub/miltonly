@@ -1,0 +1,6 @@
+max(generatedAt) before the trigger: 2026-09-27T14:01:10.436 (zone-less UTC)
+$ curl https://miltonly.com/api/sync/regenerate?secret=<CRON_SECRET>  (Date: Mon, 28 Sep 2026 19:31:03 GMT)
+{"paused":true,"reason":"STREET_REGEN_ENABLED is not \"true\" (MC-049)"}  -> HTTP 200
+$ curl https://miltonly.com/api/sync/regenerate?secret=wrong
+{"error":"Unauthorized"}  -> HTTP 401
+max(generatedAt) after the trigger: 2026-09-27T14:01:10.436

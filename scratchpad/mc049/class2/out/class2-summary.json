@@ -1,0 +1,33 @@
+{
+ "params": {
+  "MARGIN": 700,
+  "ROAD_MARGIN": 100,
+  "NEAR_M": 2000,
+  "AREA_MARGIN": 200,
+  "FRAMES": "both",
+  "reference": "43.513465,-79.882820 (Main St E x Martin St)",
+  "urbanCentroid": [
+   43.512202,
+   -79.858943
+  ]
+ },
+ "candidates": 3,
+ "agreedClaims": 8,
+ "oneParserClaims": 0,
+ "pagesWithAnyAgreedClaim": 3,
+ "pagesWithCheckableClaim": 1,
+ "pagesWrong": 0,
+ "pagesMisplacedOnly": 0,
+ "byVerdict": {
+  "not-refuted": 1,
+  "no-geometry": 3,
+  "not-checkable": 4
+ },
+ "byTestWrong": {},
+ "notCheckable": {
+  "anchor escarpment": 1,
+  "other-position": 3
+ },
+ "wrongPagesBySurface": {},
+ "oneParserWrong": 0
+}

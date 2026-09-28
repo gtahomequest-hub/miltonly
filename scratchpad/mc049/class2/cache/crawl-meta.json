@@ -1,0 +1,21 @@
+{
+ "at": "2026-09-28T18:27:19.794Z",
+ "build": "1f3b216c5a990a8e739580cafb0e2e03c04bc6fe",
+ "meta": {
+  "victoria-street-milton": {
+   "status": 200,
+   "cache": "REVALIDATED",
+   "bytes": 260378
+  },
+  "shortreed-crescent-milton": {
+   "status": 200,
+   "cache": "REVALIDATED",
+   "bytes": 310910
+  },
+  "baverstock-crescent-milton": {
+   "status": 200,
+   "cache": "STALE",
+   "bytes": 313850
+  }
+ }
+}
