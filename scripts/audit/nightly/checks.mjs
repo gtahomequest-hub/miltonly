@@ -10,13 +10,20 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
-// Vocabulary. Mirrors src/lib/ai/validateStreetGeneration.ts (SUPERLATIVE_PHRASES) and
-// src/lib/ai/catchmentVocabulary.ts (BAN_PATTERNS) so the audit judges rendered text by the same
-// lists the validators judge generated text. Kept in sync by hand; the audit cannot import TS.
-export const SUPERLATIVES = [
+// Vocabulary. VALIDATOR_SUPERLATIVES mirrors src/lib/ai/validateStreetGeneration.ts
+// (SUPERLATIVE_PHRASES) exactly, and CATCHMENT mirrors src/lib/ai/catchmentVocabulary.ts
+// (BAN_PATTERNS), so the audit judges rendered text by the lists the validators judge generated text.
+// Kept in sync by hand; the audit cannot import TS. MA-011 adds AUDIT_CLAIMS on the audit side only:
+// the validator hard-rejects every hit, and "only" alone sits in 789 sections of 543 published streets'
+// stored prose ("only a handful of recorded transactions"), so the generator keeps its eleven (Aamir's
+// call, 2026-09-28). The drift test holds both halves: the mirror equal, the audit's list the mirror
+// plus these five.
+export const VALIDATOR_SUPERLATIVES = [
   'best', 'unbeatable', 'nothing comes close', 'premier', 'second to none', 'finest',
   'most desirable', 'top-tier', 'world-class', 'unparalleled', 'unmatched',
 ];
+export const AUDIT_CLAIMS = ['only', 'highest', '#1', 'top producer', 'leading'];
+export const SUPERLATIVES = [...VALIDATOR_SUPERLATIVES, ...AUDIT_CLAIMS];
 
 // MA-010. The superlative check is a compliance check, not a style check: RECO bars a registrant
 // from an unsubstantiated superlative or comparative claim about themselves, their brokerage or a
@@ -86,10 +93,33 @@ export const SUPERLATIVES = [
 // specialist, expert, advisor, representative, negotiator, producer or team that is not a third party's
 // ("the listing agent", "the buyer's agent", "the leasing team", "the management team"), or "this
 // site". The site's own brand after a title separator ("| Miltonly.com") is not a claimant.
+//
+// MA-011. The five audit-only words. "#1" and "top producer" (and "top-producing") rank by their
+// nature and run the path above: they fire unless proper ("Unit #1", "Lot #1", "Highway #1": a
+// number, not a rank) or a guarded label idiom ("Step #1", "Myth #1"). "only", "leading" and
+// "highest" are ordinary words first ("only a handful of sales", "the road leading to Main", "the
+// highest sales count of the four quarters"), so for them the rule is the other way round (Aamir's
+// call, 2026-09-28): they fire only in the claim sense, and the quantity or ordinary sense is exempt
+// as "ordinary". The claim sense is
+//   - the thing ranked is the registrant, the site, a brokerage, an agent or a team: the noun phrase
+//     the word opens holds a claim target ("the only dedicated real estate platform", "Milton's leading
+//     brokerage", "the highest-rated agent", "the highest level of service", "Highest career
+//     achievement recognition": an award or a rating is the agent's standing);
+//   - or, for "only", the shape "the only ... in <place>" or "<Place>'s only ...": a place is a
+//     capitalised name that is not a month, a day or a quarter, or the town, city, region, area,
+//     neighbourhood, community, province, country or GTA ("the only detached home in Timberlea",
+//     "Milton's only waterfront condo"). A count after "only" is the quantity sense even there ("the
+//     only two sales in Milton this year").
+// The "ordinary" exemption is void, as every MA-010 exemption but proper and the free idioms is, when
+// the sentence or a question's answer names the registrant ("Aamir takes only a handful of listings a
+// year" fires). "only" closing the phrase it restricts ("Miltonly emails only, from Aamir Yaqoob") is a
+// free idiom and is never void.
 const HYPHEN = '[-\\u2010\\u2011\\u2012\\u2013\\s]+';
 const supPattern = (w) => w.replace(/[-\s]+/g, HYPHEN);
-const SUP_ALT = SUPERLATIVES.map(supPattern).join('|');
-const SUP_WORD = new RegExp(`\\b(?:${SUP_ALT})\\b`, 'i');
+// The regex source for one vocabulary entry: "#1" has no word boundary before "#", and "top producer"
+// takes its plural and "top-producing".
+const supSource = (w) => w === '#1' ? '(?<![\\w#&])#1(?![\\d])' : w === 'top producer' ? `\\btop${HYPHEN}produc(?:ers?|ing)\\b` : `\\b${supPattern(w)}\\b`;
+const SUP_WORD = new RegExp(SUPERLATIVES.map(supSource).join('|'), 'i');
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const titleCase = (s) => s.toLowerCase().replace(/(^|[\s(/-])([a-z])/g, (m, a, c) => a + c.toUpperCase());
 const TYPE_ABBR = { road: ['Rd'], street: ['St'], avenue: ['Ave'], drive: ['Dr'], crescent: ['Cres'], court: ['Ct'], boulevard: ['Blvd'], lane: ['Ln'], place: ['Pl'], terrace: ['Terr'], circle: ['Cir'], parkway: ['Pkwy'], trail: ['Trl'], heights: ['Hts'] };
@@ -204,6 +234,8 @@ const GUARDED_IDIOM_RES = [
   /\bnothing\s+comes\s+close\s+to\s+(?:the\s+)?(?:(?:peak|high|record|level|total|pace)\s+of\s+)?(?:[A-Za-z]+\s+)?(?:19|20)\d{2}(?:\s+(?:[\w'’-]+\s+){0,2}?(?:peak|high|record|level|total|pace))?\b/gi,
   /\bunmatched\s+(?:in|against|to|with)\s+(?:the\s+)?(?:Town(?:['’]s)?\s+(?:file|record|records|registry|data)|record|records|file|registry|data|feed)\b(?!\s+books?\b)/g,
   /\bunmatched\s+(?:address(?:es)?|records?|rows?|sales?|listings?)\b(?=\s*(?:[.;:!?)]|$)|\s+(?:roll|rolls|are|is|was|were|stay|stays|remain|remains|go|goes|fall|falls|drop|drops)\b)/gi,
+  // MA-011: a numbered label, not a rank ("Step #1", "Myth #1").
+  /\b(?:step|tip|question|reason|option|rule|mistake|item|stage|chapter|lesson|myth|fact|note|example|scenario|case)\s+#1(?![\d])/gi,
 ];
 const INTERSECT_ENDS_RE = new RegExp(`^(?:\\s+${STREET_TYPE})?(?=\\s*(?:$|[\\n.,;:!?)\\u00b7|/&]|\\s+(?:and|AND)\\s))`);
 const LEAD_P = /^[(\[“"‘']+/;
@@ -244,8 +276,12 @@ function capitalisedRun(toks, a, b) {
 }
 const cleanRun = (run) => !run.some((t) => FUNCTION_WORD_RE.test(t) || DETERMINER_RE.test(t) || POSSESSIVE_RE.test(t) || t.split(/[-‐‑]/).some((p) => CLAIM_NOUN_RE.test(p))) && !OWN_NAMES_RE.test(run.join(' '));
 
+// "#1" after a unit, lot, suite, road or highway word is a number, not a rank ("Unit #1", "Hwy #1").
+const NUMBERED_RE = /\b(?:unit|suite|ste|apt|apartment|lot|ph|penthouse|phase|block|blk|building|bldg|tower|level|lvl|floor|parking|locker|stall|space|room|rm|townhouse|th|highway|hwy|concession|con|line|sideroad|side\s+road|road|rd|plan|part|pt|box|site)\.?\s*$/i;
+
 function properExempt(text, idx, len) {
   const word = text.slice(idx, idx + len);
+  if (word === '#1' && NUMBERED_RE.test(text.slice(Math.max(0, idx - 24), idx))) return true;
   // A registered street, park or school.
   NAME_RE.lastIndex = Math.max(0, idx - WINDOW); let m;
   while ((m = NAME_RE.exec(text))) {
@@ -300,17 +336,74 @@ function properExempt(text, idx, len) {
   return false;
 }
 
+// MA-011. The claim sense of "only", "leading" and "highest" (see the block comment above).
+const SENSE_WORD_RE = /^(?:only|leading|highest)$/i;
+// What the word ranks when it ranks the registrant, the site, a brokerage, an agent or a team, or
+// their standing (an award, a designation, production, service).
+const CLAIM_TARGET_RE = /^(?:agents?|realtors?|brokers?|brokerages?|teams?|salesperson|salespersons|salespeople|representatives?|advis[oe]rs?|experts?|specialists?|professionals?|firms?|company|companies|offices?|platforms?|sites?|websites?|portals?|resources?|sources?|destinations?|services?|groups?|producers?|producing|negotiators?|providers?|authority|authorities|name|choice|awards?|recognition|honou?rs?|achievements?|designations?|production|satisfaction)$/i;
+const GENERIC_TARGET_RE = /^(?:resources?|sources?|destinations?|services?|providers?|authority|authorities|name|choice)$/i;
+const NP_STOP_RE =/^(?:to|of|in|on|at|for|with|by|from|into|over|under|near|across|along|through|about|after|before|since|until|that|which|who|whom|whose|when|where|while|if|than|as|and|or|but|nor|so|because|is|are|was|were|be|been|being|am|can|will|would|could|should|may|might|must|has|have|had|do|does|did|the|a|an|this|these|those|it|its|they|their|we|our|you|your|he|his|she|her|there|here)$/i;
+const NP_OF_RE = /^(?:level|levels|standard|standards|quality|degree|calibre|caliber|kind|sort|type)$/i;
+const COUNT_RE = /^(?:\d[\d,.]*|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|a|few|several|some|handful|couple|dozen|fraction|half|limited)$/i;
+const NON_PLACE_RE = /^(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Q[1-4]|Spring|Summer|Fall|Autumn|Winter|MLS|TRREB|PropTx|Buyer|Buyers|Seller|Sellers|Owner|Owners|Tenant|Tenants|Landlord|Landlords|Family|Street|Home|House|Building|Condo|Unit|Market|Today|Yesterday)$/i;
+const PLACE_WORD_RE = /^(?:town|city|region|area|neighbourhood|neighborhood|community|province|country|GTA|county|district|subdivision)$/i;
+const placeAt = (s) => { const m = s.match(/^(?:the\s+)?([A-Za-z][\w'’.-]*)/); if (!m) return false; const w = m[1].replace(/['’.]+$/, ''); return PLACE_WORD_RE.test(w) || (/^[A-Z]/.test(w) && !NON_PLACE_RE.test(w)); };
+function claimSense(text, idx, len, se) {
+  const word = text.slice(idx, idx + len).toLowerCase();
+  const rest = text.slice(idx + len, se + 1).split(/[.;:!?()\n—–]/)[0];
+  const words = rest.split(/\s+/).map((w) => w.replace(/^[^\w#]+|[^\w®]+$/g, '').replace(/['’]s$/i, '')).filter(Boolean);
+  const before = text.slice(Math.max(0, idx - 80), idx);
+  const theOnly = word === 'only' && /\bthe\s+(?:very\s+)?$/i.test(before);
+  // A count after "only" is the quantity sense, whatever it counts ("only two agents", "the only two
+  // sales in Milton"); "the only one" is a pronoun, not a count.
+  if (word === 'only' && COUNT_RE.test(words[0] || '') && !(theOnly && /^one$/i.test(words[0]))) return false;
+  // The noun phrase the word opens: up to seven words, stopping at a preposition, a verb of being, a
+  // conjunction or a determiner; "level of" and "standard of" pass through ("the highest level of service").
+  const np = [];
+  for (let k = 0; k < words.length && np.length < 7; k++) {
+    if (NP_OF_RE.test(words[k]) && /^of$/i.test(words[k + 1] || '')) { k++; continue; }
+    if (NP_STOP_RE.test(words[k])) break;
+    np.push(words[k]);
+  }
+  // After "only" a generic noun names what is unique, not who is ranked ("the sign on your street is the
+  // only source for that", "the board is the only source that can answer it"): only the people, firms
+  // and sites count there; the place shape below still catches "the only service in Milton".
+  const target = (p) => CLAIM_TARGET_RE.test(p) && !(word === 'only' && GENERIC_TARGET_RE.test(p));
+  if (np.some((w) => w.split(/[-‐‑/]/).some((p) => target(p.replace(/®$/, ''))))) return true;
+  if (word !== 'only') return false;
+  // "Milton's only ...", "the town's only ...".
+  const poss = before.match(/(?:^|[^\w'’])((?:the\s+)?[A-Za-z][\w.-]*)['’]s\s+$/);
+  if (poss && placeAt(poss[1])) return true;
+  // "the only ... in <place>", within the clause.
+  if (theOnly) for (const m of rest.matchAll(/\bin\s+/gi)) if (placeAt(rest.slice(m.index + m[0].length))) return true;
+  return false;
+}
+
+// "only" after the word it restricts, closing its phrase ("Miltonly emails only, from Aamir Yaqoob", the
+// CASL line on every page; "residents only."; "detached only"): a restriction, never a rank, so a free
+// idiom that a registrant in the sentence does not void (Aamir's call, 2026-09-28, against 1,356 findings
+// from the footer alone).
+const POSTPOSITIVE_FOLLOW_RE = /^\s*(?:[,.;:!?)]|$)|^\s+(?:from|to|for|with|in|on|at|by|via|please)\b/i;
+const NOT_NOUN_RE = /^(?:is|are|was|were|be|been|am|the|a|an|and|or|not|if|we|i|you|he|she|they|it|us|them|him|her|can|will|may|would|could|should|must|do|does|did|has|have|had|that|this|those|these|our|my|your|their|his|its|one)$/i;
+function postpositiveOnly(text, idx, len) {
+  if (!POSTPOSITIVE_FOLLOW_RE.test(text.slice(idx + len, idx + len + 12))) return false;
+  const m = text.slice(Math.max(0, idx - 40), idx).match(/([A-Za-z][\w'’-]*)\s+$/);
+  return !!m && !NOT_NOUN_RE.test(m[1]);
+}
+
 // Why a superlative hit ranks nothing, or null when it is a claim and fires.
 export function superlativeExemption(text, idx, len) {
   const word = text.slice(idx, idx + len);
   if (properExempt(text, idx, len)) return 'proper';
   for (const re of FREE_IDIOM_RES) if (covers(re, text, idx)) return 'idiom';
+  if (/^only$/i.test(word) && postpositiveOnly(text, idx, len)) return 'idiom';
   const { a: sa, b: se } = sentenceSpan(text, idx);
   const sentence = text.slice(sa, se + 1);
   const isQuestion = text[se] === '?';
   const answer = isQuestion && se + 1 < text.length ? text.slice(se + 1, sentenceSpan(text, Math.min(text.length - 1, se + 2)).b + 1) : '';
   const named = namesRegistrant(sentence) || namesRegistrant(answer) || (!!answer && SITE_PRODUCT_RE.test(answer.replace(BRAND_SUFFIX_RE, '')));
   for (const re of GUARDED_IDIOM_RES) if (covers(re, text, idx)) return named ? null : 'idiom';
+  if (SENSE_WORD_RE.test(word)) return named || claimSense(text, idx, len, se) ? null : 'ordinary';
   if (!/^best$/i.test(word)) return null; // the other constructions are constructions of "best" only
   const { toks, a, b } = lineTokens(text, idx, idx + len);
   if (a < 0) return null;
@@ -404,7 +497,7 @@ export function superlativeExemption(text, idx, len) {
 export function superlativeHits(text) {
   const out = [];
   for (const w of SUPERLATIVES) {
-    const re = new RegExp(`\\b${supPattern(w)}\\b`, 'gi');
+    const re = new RegExp(supSource(w), 'gi');
     let m; while ((m = re.exec(text))) out.push({ word: w, match: m[0], index: m.index, exemption: superlativeExemption(text, m.index, m[0].length) });
   }
   return out.sort((x, y) => x.index - y.index);
@@ -719,7 +812,7 @@ const JSONLD_FEED_TYPES = /\b(?:Offer|AggregateOffer|Product|RealEstateListing|R
 export function superlativeFindings(text, where) {
   const out = [];
   for (const w of SUPERLATIVES) {
-    const re = new RegExp(`\\b${supPattern(w)}\\b`, 'gi');
+    const re = new RegExp(supSource(w), 'gi');
     let m; while ((m = re.exec(text))) { if (!superlativeExemption(text, m.index, m[0].length)) { out.push({ code: 'superlative', sev: 3, key: `${where}:${w}`, detail: `"${m[0]}" in ${where}: ${excerpt(text, m.index)}` }); break; } }
   }
   return out;

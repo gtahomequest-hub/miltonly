@@ -10,14 +10,15 @@
 // RIGHT reason, not merely silent. Sources: "task" (the MA-010 brief), "production" (served on
 // 2026-09-23, the capture behind scratchpad/ma010/, page named), "red team" / "red team 2" (a break
 // MA-010's red team executed against an earlier draft, confirmed), "mutant" (a case that kills a mutant
-// of checks.mjs that earlier fixtures let survive).
+// of checks.mjs that earlier fixtures let survive). MA-011 adds "task 11" (the MA-011 brief and Aamir's
+// ruling on the claim sense, 2026-09-28) and "stored" (StreetGeneration prose, read 2026-09-28, street named).
 //
 // The em-dash rule counts punctuation in prose (checks.mjs, proseOnly). Its cases are pages, run through
 // the same pageFindings the nightly runs.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SUPERLATIVES, REGISTERED, superlativeHits, pageFindings } from './checks.mjs';
+import { SUPERLATIVES, VALIDATOR_SUPERLATIVES, AUDIT_CLAIMS, REGISTERED, superlativeHits, pageFindings } from './checks.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 let assertions = 0;
@@ -367,6 +368,45 @@ export const VIOLATIONS = [
   ['Unmatched sales, year after year', 'harvest: an /about pill, not a data match'],
   ['Milton sellers are best served by listing with someone who knows their street.', 'harvest: "someone who knows" is a role'],
   ['Your best bet is to work with someone who has sold on your street.', 'harvest'],
+  // MA-011: the five audit-only words. "#1" and "top producer" fail closed; "only", "leading" and
+  // "highest" fire in the claim sense (the registrant, the site, a brokerage, an agent or a team, or
+  // "the only ... in <place>"), and in any sense in a sentence that names the registrant.
+  ["Milton Ontario's only dedicated real estate platform.", 'production 2026-09-23: the home meta (MA-010 item 3, removed by MC-043)'],
+  ['Miltonly is the only real estate platform built exclusively for Milton Ontario.', 'production 2026-09-23: OG_DESCRIPTION on 537 pages'],
+  ['The only real estate platform built exclusively for Milton Ontario.', 'the same claim with the site unnamed: "platform" is the claim target'],
+  ["Milton Ontario's Only Dedicated Real Estate Platform | Miltonly", 'Title Case in a title'],
+  ['Highest career achievement recognition', 'production 2026-09-23: /about award caption (MA-010 item 1): an award is the agent\'s standing'],
+  ['Aamir is the leading agent in Halton.', 'task 11: the agent'],
+  ["Milton's leading real estate brokerage", 'task 11: a brokerage'],
+  ['The leading real estate team in Milton', 'task 11: a team'],
+  ['Leading Milton brokerage for first-time buyers', 'a brokerage, label shape'],
+  ['The leading source for Milton real estate data', 'task 11: the site, unnamed'],
+  ['The highest-rated agent in Milton', 'task 11: an agent'],
+  ['Highest-producing REALTOR® in Halton', 'an agent, with the mark'],
+  ['The highest-rated brokerage in Milton on Google', 'a brokerage'],
+  ['We provide the highest level of service in Milton.', 'the registrant; "level of" passes through'],
+  ['The highest standard of service in Halton', 'service with no one named: the claim target still ranks the registrant'],
+  ['#1 agent in Milton', 'task 11: #1'],
+  ["Milton's #1 real estate team", 'task 11: #1'],
+  ['Ranked #1 in Halton for client satisfaction', '#1 fails closed'],
+  ['#1 in Milton for home sales, 2025', '#1 fails closed'],
+  ['Top producer in Halton, three years running.', 'task 11: top producer'],
+  ['A top-producing agent with 15 years in Milton', 'top-producing'],
+  ['RE/MAX top producers since 2012', 'the plural'],
+  ['The only detached home in Timberlea with a pool.', 'task 11: the only ... in <place>'],
+  ['This is the only listing in Milton with a three-car garage.', 'the only ... in <place>'],
+  ['The only street in the neighbourhood with a park at both ends', 'a place word'],
+  ["Timberlea's only waterfront condo", "<Place>'s only"],
+  ["The town's only luxury condo tower", 'the possessive of a place word'],
+  ['The only one in Milton with this view', '"the only one" is a pronoun, not a count'],
+  ['Aamir takes only a handful of listings a year.', 'task 11: the quantity sense, void when the sentence names the registrant'],
+  ['We only work with sellers who want the highest price.', 'the registrant ("we") voids both'],
+  ['Only our team has sold on every street in Timberlea.', 'the registrant ("our team")'],
+  ['I am the only agent who knows this street.', 'first person, an agent'],
+  ['Our only focus is Milton.', 'the registrant ("our")'],
+  ['He is the leading expert on Milton condos.', 'the registrant ("he")'],
+  ['No spam · Aamir Yaqoob only emails matches', 'production 2026-09-28 (/listings): the restriction sense, void because the sentence names the registrant (reported, by rule)'],
+  ['Offers are reviewed by Aamir only after the deadline.', '"only after" in a sentence naming the registrant: void (by rule)'],
 ];
 let vPass = 0;
 for (const [s, why] of VIOLATIONS) if (ok(fires(s), `VIOLATION NOT CAUGHT (${why}): "${s}" -> ${show(s)}`)) vPass++;
@@ -473,7 +513,7 @@ export const LEGITIMATE = [
   ['Your best bet is to confirm the monthly fee with the property manager before you offer.', 'idiom', 'red team'],
   ['The best way to confirm the build year is the status certificate.', 'idiom', 'red team'],
   ['When is the best time to list a home in Milton?', 'idiom', 'red team 2'],
-  ['The best offer is not always the highest one: conditions, deposit and closing date matter too.', 'idiom', 'red team 2'],
+  ['The best offer is not always the highest one: conditions, deposit and closing date matter too.', 'idiom|ordinary', 'red team 2; MA-011: "the highest one" is the ordinary sense'],
   ['In a multiple-offer situation, buyers may be asked for their best and final offer.', 'idiom', 'red team'],
   ['We act in your best interest at every step.', 'idiom', 'fiduciary language ranks nothing, whoever says it'],
   ['A listing agent must act in the best interests of the seller.', 'idiom', 'red team 2'],
@@ -721,11 +761,45 @@ export const LEGITIMATE = [
   ['When a street has too few sales, the next best reference is the neighbourhood figure.', 'idiom', 'harvest'],
   ['Aamir can show you which Milton streets suit your budget best.', 'question', 'harvest: a choice left to the reader survives our name'],
   ['Listed by Century 21 Premier Service', 'proper', 'harvest: a feed brokerage with a claim noun'],
+  // MA-011: the quantity and ordinary senses of "only", "leading" and "highest", most of them from the
+  // stored street prose the validator lockstep would have rejected (StreetGeneration, 2026-09-28).
+  ['Attenborough Terrace trades rarely, with only a handful of recorded transactions over the past year.', 'ordinary', 'stored (attenborough-terrace-milton/market): the quantity sense'],
+  ['Detached homes are the only type recorded here, with no semi-detached, townhouse or condo sales.', 'ordinary', 'stored (5-side-road-milton/market): no place, no claim target'],
+  ['Buyers are paying close to asking with only modest negotiation room built into the closing price.', 'ordinary', 'stored (laurier-avenue-milton)'],
+  ["That neighbourhood figure is the only pricing anchor the street's own record supports.", 'ordinary', 'stored (applewood-crescent-milton)'],
+  ['The housing stock on Maplewood Crescent is detached, and detached only.', 'idiom', 'stored (maplewood-crescent-milton): "only" closing the phrase it restricts'],
+  ['Buyers who want lock-and-leave living will find the detached-only character of this court a poor match.', 'ordinary', 'stored (106-rottenburg-crt-milton)'],
+  ['The Q4 2025 figure reflects the highest sales count of the four quarters at eleven.', 'ordinary', 'stored (scott-boulevard-milton): a data statement'],
+  ['Gordon Krantz Avenue sits at the leading edge of that story.', 'ordinary', 'stored (gordon-krantz-avenue-milton)'],
+  ['That difference may matter if budget is the leading constraint.', 'ordinary', 'stored (roper-drive-milton)'],
+  ['The two scopes are moving at the same tempo rather than one leading the other.', 'ordinary', 'stored (asleton-boulevard-milton)'],
+  ['Sold prices are shown only to registered readers.', 'idiom', 'the VOW gate: "only" closing "shown", before "to"'],
+  ['Only if the seller agrees to a longer closing.', 'ordinary', '"only if"'],
+  ['Not only the price but the closing date matters.', 'ordinary', '"not only"'],
+  ['Only 3 sales in the last 12 months.', 'ordinary', 'task 11: a count'],
+  ['Only three sales closed on the street last year.', 'ordinary', 'task 11: "only three sales"'],
+  ['The only two sales in Milton this year closed in June.', 'ordinary', 'a count is the quantity sense even in the place shape'],
+  ['Only one semi-detached home sold on the street.', 'ordinary', 'a count'],
+  ['The only way to confirm the fee is to ask the property manager.', 'ordinary', 'no place, no claim target'],
+  ['It is the only road leading out of the subdivision.', 'ordinary', '"out of" is not "in"; a road is not a claim target'],
+  ['Parking is for residents only.', 'idiom', 'a restriction closing its phrase'],
+  ['Miltonly emails only, from Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage). No account, unsubscribe any time.', 'idiom', 'production 2026-09-28: the CASL line on all 1,356 pages; a restriction, never void (Aamir, 2026-09-28)'],
+  ['Registered readers only: sold prices and dates.', 'idiom', 'a restriction before a colon'],
+  ['Roads leading to the escarpment are narrow and unlit.', 'ordinary', '"leading to"'],
+  ['The highest price paid in Timberlea this year was $1.4M.', 'ordinary', 'a data statement, not a claim'],
+  ['The highest-rated school near the street is listed first.', 'ordinary', "a school's rating does not rank the registrant"],
+  ['The only sale in March was a semi.', 'ordinary', 'a month is not a place'],
+  ['Unit #1, 123 Main Street East', 'proper', 'task 11: a unit number, not a rank'],
+  ['Lot #1 on the registered plan', 'proper', 'a lot number'],
+  ['Step #1: book a valuation call.', 'idiom', 'a numbered label'],
+  ['Myth #1: condos never appreciate.', 'idiom', 'a numbered label'],
+  ['Leading Edge Realty Inc.', 'proper', 'a company'],
 ];
 let lPass = 0;
 for (const [s, reason, why] of LEGITIMATE) {
   const hits = superlativeHits(s);
-  const good = hits.length > 0 && hits.every((h) => h.exemption === reason);
+  const allowed = reason.split('|');
+  const good = hits.length > 0 && hits.every((h) => allowed.includes(h.exemption)) && allowed.every((r) => hits.some((h) => h.exemption === r));
   if (ok(good, `LEGITIMATE USE MISJUDGED (${why}): "${s}" -> ${show(s)}, expected every hit ${reason}`)) lPass++;
 }
 
@@ -828,6 +902,11 @@ export const SUP_PAGES = [
   ["an own-brokerage listing's remarks (production: /listings/W13798360)", page({ body: `<section><h2>Listing agent's remarks</h2><div data-remarks="">Welcome home! One of the BEST DEALS in Milton!</div></section><div class="flex"><span>Brokerage</span><span>RE/MAX Realty Specialists Inc.</span></div>` }), true, ['remarks:best']],
   ["a third-party listing's remarks stay the seller's words", page({ body: `<section><h2>Listing agent's remarks</h2><div data-remarks="">Welcome home! One of the BEST DEALS in Milton!</div></section><div class="flex"><span>Brokerage</span><span>World Class Realty Point</span></div>` }), true, []],
   ["our name elsewhere on a third-party listing does not make it ours", page({ body: `<section><h2>Listing agent's remarks</h2><div data-remarks="">The finest finishes on the street.</div></section><p>Contact Aamir Yaqoob, RE/MAX Realty Specialists Inc., not the listing brokerage (Best Sellers Realty Inc.)</p>` }), true, []],
+  ['an "only" claim in og:description (production 2026-09-23: OG_DESCRIPTION, MA-011)', page({ head: '<meta property="og:description" content="Miltonly is the only real estate platform built exclusively for Milton Ontario.">', body: P }), false, ['social:only']],
+  ['an "only" claim in the meta description (production 2026-09-23: the home meta, MA-011)', page({ meta: "Every street, every sale. Milton Ontario's only dedicated real estate platform.", body: P }), false, ['meta:only']],
+  ['"only" in its quantity sense is not a finding (MA-011)', page({ body: '<p>With only a handful of sales, the street trades rarely.</p><p>The highest sales count came in Q4.</p>' }), false, []],
+  ['a #1 claim in a JSON-LD award (MA-011)', page({ head: LD({ '@type': 'RealEstateAgent', name: 'Aamir Yaqoob', award: '#1 Agent in Milton 2025' }), body: P }), false, ['jsonld:#1']],
+  ['a top-producer claim in alt text (MA-011)', page({ body: '<img src="/aamir.jpg" alt="Aamir Yaqoob, top producer in Halton"><p>Plain.</p>' }), false, ['alt:top producer']],
 ];
 let pPass = 0;
 for (const [why, html, listing, want] of SUP_PAGES) {
@@ -842,7 +921,11 @@ ok(REGISTERED.slugs.includes('best-road-milton'), 'registered slugs lack best-ro
 ok(REGISTERED.bases.has('ferguson') && REGISTERED.supBases.has('best'), 'registered street bases lack ferguson or best');
 const validator = fs.readFileSync(path.join(ROOT, 'src/lib/ai/validateStreetGeneration.ts'), 'utf8');
 const phrases = [...(validator.match(/SUPERLATIVE_PHRASES\s*=\s*\[([\s\S]*?)\]/) || [, ''])[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-ok(phrases.length > 0 && phrases.join('|') === SUPERLATIVES.join('|'), `SUPERLATIVES (${SUPERLATIVES.length}) != SUPERLATIVE_PHRASES (${phrases.length}): the lists drifted`);
+ok(phrases.length > 0 && phrases.join('|') === VALIDATOR_SUPERLATIVES.join('|'), `VALIDATOR_SUPERLATIVES (${VALIDATOR_SUPERLATIVES.length}) != SUPERLATIVE_PHRASES (${phrases.length}): the lists drifted`);
+// MA-011: the audit reads five more words than the generator rejects (Aamir's call, 2026-09-28), and no others.
+ok(AUDIT_CLAIMS.join('|') === 'only|highest|#1|top producer|leading', `AUDIT_CLAIMS changed: ${AUDIT_CLAIMS.join('|')}`);
+ok(SUPERLATIVES.join('|') === [...VALIDATOR_SUPERLATIVES, ...AUDIT_CLAIMS].join('|'), 'SUPERLATIVES is not the validator mirror plus AUDIT_CLAIMS');
+for (const w of AUDIT_CLAIMS) ok(!phrases.includes(w), `SUPERLATIVE_PHRASES now holds "${w}": move it out of AUDIT_CLAIMS`);
 
 // ── 5. The em-dash rule: a dash counts when it punctuates prose ──────────────────────────────────
 const dashes = (html, listing = false) => {
