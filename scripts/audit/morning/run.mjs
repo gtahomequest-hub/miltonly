@@ -4,7 +4,7 @@
 //
 //   node scripts/audit/morning/run.mjs [--no-email] [--out=<dir>]
 //
-// Reads: VERCEL_API_TOKEN, NEON_API_KEY, GSC_SERVICE_ACCOUNT (a path) or GSC_SERVICE_ACCOUNT_JSON,
+// Reads: VERCEL_API_TOKEN, NEON_API_KEY, GSC_SERVICE_ACCOUNT_KEY or GSC_SERVICE_ACCOUNT_JSON (the key) or GSC_SERVICE_ACCOUNT (a path),
 // DATABASE_URL, SOLD_DATABASE_URL, RESEND_API_KEY, RESEND_FROM_EMAIL, REPORT_EMAIL_TO. None is ever
 // printed. Writes scratchpad/audit/morning/<date>.md and state.json (yesterday's figures, for the
 // diff). Exit 0 clean; 2 when a source failed (the report still goes out, saying which); 3 when
@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { OUT, CONFIG, RULES, TODAY, YESTERDAY, calls, redact, usd, int, gb, hours, delta, rate, movement, readState, writeState, weekday } from './lib.mjs';
+import { OUT, CONFIG, RULES, TODAY, YESTERDAY, calls, redact, usd, int, gb, hours, delta, rate, movement, readState, writeState, weekday, daysAgo } from './lib.mjs';
 import { gatherVercel } from './sources/vercel.mjs';
 import { gatherNeon } from './sources/neon.mjs';
 import { gatherGsc } from './sources/gsc.mjs';
@@ -49,9 +49,9 @@ const pathOf = (u) => { try { return new URL(u).pathname.replace(/\/$/, '') || '
 facts.conversion.pages28 = gsc.ok && db.ok ? gsc.pages28.map((p) => ({ page: pathOf(p.page), clicks: p.clicks, impressions: p.impressions, position: p.position, leads: db.leads28ByPath[pathOf(p.page)] ?? 0 })).sort((a, b) => b.clicks - a.clicks) : [];
 facts.conversion.leads = db.ok ? db : null;
 facts.content.streetsWithoutPage = db.ok ? db.streetsWithoutPage : [];
-// The denominator for cost per visit: sessions when analytics answers, GSC clicks until then, and the report says which.
-const sessionsMtd = analytics.sessions ?? null;
-const visitDenominator = sessionsMtd != null ? { n: sessionsMtd, label: 'sessions (Web Analytics)' } : gsc.ok ? { n: gsc.mtd.clicks, label: 'GSC clicks, month to date (sessions awaiting first data)' } : null;
+// The denominator for cost per visit: Web Analytics visitors month to date when the Query API answers, GSC clicks otherwise, and the report says which.
+const visitorsMtd = analytics.status === 'live' ? analytics.mtd?.visitors ?? null : null;
+const visitDenominator = visitorsMtd != null ? { n: visitorsMtd, label: 'visitors, month to date (Web Analytics)' } : gsc.ok ? { n: gsc.mtd.clicks, label: 'GSC clicks, month to date (Web Analytics not answering)' } : null;
 const costPerVisit = visitDenominator && visitDenominator.n > 0 ? spendMtd / visitDenominator.n : null;
 
 // 3. The One Thing: rules as data.
@@ -108,9 +108,14 @@ if (gsc.ok && latest) {
   L.push(`- www vs apex, 28 d impressions: apex ${int(h.apex.impressions)} (${tot ? Math.round((h.apex.impressions / tot) * 100) : 0}%) · www ${int(h.www.impressions)} (${tot ? Math.round((h.www.impressions / tot) * 100) : 0}%)${h.other.impressions ? ` · other ${int(h.other.impressions)}` : ''}.`);
 } else L.push(`- GSC: ${gsc.ok ? gsc.note : `source failed (${gsc.error})`}.`);
 L.push(`- Googlebot / oai-searchbot requests: ${analytics.bots.status}.`);
-L.push(`- **Web Analytics: ${analytics.status}**${analytics.note ? ` (${analytics.note})` : ''}. Sessions ${analytics.sessions ?? 'n/a'} · bounce ${analytics.bounce ?? 'n/a'} · referrers ${analytics.referrers.length ? analytics.referrers.map((r) => JSON.stringify(r)).join(', ') : 'n/a'} · **AI-search referrers: ${analytics.aiReferrers.length ? analytics.aiReferrers.map((r) => JSON.stringify(r)).join(', ') : (analytics.status === 'first data' ? 'none' : 'awaiting first data')}**.`);
+const an = analytics;
+if (an.status === 'live') {
+  const w = an.window;
+  L.push(`- **Web Analytics, ${w.yesterday} (UTC day): ${int(an.yesterday.visitors)} visitors, ${int(an.yesterday.pageviews)} pageviews.** Last 7 days (${w.since7} to ${daysAgo(1)}): ${int(an.last7.visitors)} visitors, ${int(an.last7.pageviews)} pageviews (${an.last7.days.map((d) => `${d.date.slice(5)} ${d.visitors}`).join(' · ')}). Month to date ${int(an.mtd.visitors)} visitors; 28 days ${int(an.d28.visitors)}.`);
+  L.push(`- Top pages, 7 days: ${an.topPages.length ? an.topPages.map((p) => `${p.path} ${p.visitors}v/${p.pageviews}pv`).join(' · ') : 'none'}. Referrers, 7 days: ${an.referrers.length ? an.referrers.map((r) => `${r.host} ${r.visitors}`).join(' · ') : 'none'}. **AI-search referrers: ${an.aiReferrers.length ? an.aiReferrers.map((r) => `${r.host} ${r.visitors}v/${r.pageviews}pv`).join(' · ') : 'none'}**.`);
+} else L.push(`- **Web Analytics: ${an.ok ? an.status : `source failed (${an.error})`}**${an.note ? ` (${an.note})` : ''}.`);
 const imp = gsc.ok ? gsc.d28.impressions : null, clk = gsc.ok ? gsc.d28.clicks : null, leads28 = db.ok ? db.leads28Unpaid : null;
-L.push(`- Funnel, 28 d: impressions ${int(imp)} → clicks ${int(clk)} (${imp ? ((clk / imp) * 100).toFixed(1) : '?'}%) → sessions awaiting first data → engaged awaiting first data → leads ${int(leads28)} not ad-attributed (${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}; ${db.ok ? db.leads28 : '?'} leads in all, ${db.ok ? db.leads28 - db.leads28Unpaid : '?'} carrying a gclid or utm_source).`);
+L.push(`- Funnel, 28 d: impressions ${int(imp)} → clicks ${int(clk)} (${imp ? ((clk / imp) * 100).toFixed(1) : '?'}%) → visitors ${an.status === 'live' ? `${int(an.d28.visitors)} (Web Analytics, every source, not only search)` : 'n/a'} → leads ${int(leads28)} not ad-attributed (${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}; ${db.ok ? db.leads28 : '?'} leads in all, ${db.ok ? db.leads28 - db.leads28Unpaid : '?'} carrying a gclid or utm_source).`);
 L.push('');
 L.push('## 3 · Conversion');
 if (db.ok) {

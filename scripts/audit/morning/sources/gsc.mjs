@@ -1,7 +1,8 @@
 // MA-008. Google Search Console, through the service account. GSC data lags by two to three
 // days, so "yesterday" here is the latest date the API has, and the report names that date.
-// The key file (GSC_SERVICE_ACCOUNT, a path outside the repo) or its contents
-// (GSC_SERVICE_ACCOUNT_JSON, the Actions secret) signs a one-hour JWT; neither is logged.
+// The key's contents (GSC_SERVICE_ACCOUNT_KEY, as Core's .env names it, or GSC_SERVICE_ACCOUNT_JSON,
+// the Actions secret; MA-011 reads whichever is set) or the key file (GSC_SERVICE_ACCOUNT, a path
+// outside the repo) signs a one-hour JWT; none of them is logged.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { json, redact, CONFIG, weekday } from '../lib.mjs';
@@ -11,10 +12,14 @@ const SITE = encodeURIComponent(CONFIG.gscProperty);
 const ymd = (d) => d.toISOString().slice(0, 10);
 const shift = (iso, days) => ymd(new Date(new Date(`${iso}T12:00:00Z`).getTime() + days * 86400e3));
 
-async function token() {
-  const raw = process.env.GSC_SERVICE_ACCOUNT_JSON || (process.env.GSC_SERVICE_ACCOUNT ? fs.readFileSync(process.env.GSC_SERVICE_ACCOUNT, 'utf8') : null);
-  if (!raw) throw new Error('GSC_SERVICE_ACCOUNT (path) or GSC_SERVICE_ACCOUNT_JSON unset');
-  const sa = JSON.parse(raw);
+/** Which credential is set, by name only, for the report. */
+export const gscCredentialSource = () => ['GSC_SERVICE_ACCOUNT_KEY', 'GSC_SERVICE_ACCOUNT_JSON', 'GSC_SERVICE_ACCOUNT'].find((k) => process.env[k]) ?? null;
+
+export async function token() {
+  const inline = process.env.GSC_SERVICE_ACCOUNT_KEY || process.env.GSC_SERVICE_ACCOUNT_JSON;
+  const raw = inline || (process.env.GSC_SERVICE_ACCOUNT ? fs.readFileSync(process.env.GSC_SERVICE_ACCOUNT, 'utf8') : null);
+  if (!raw) throw new Error('GSC_SERVICE_ACCOUNT_KEY, GSC_SERVICE_ACCOUNT_JSON or GSC_SERVICE_ACCOUNT (path) unset');
+  const sa = JSON.parse(raw.trim().replace(/^'([\s\S]*)'$/, '$1'));
   const now = Math.floor(Date.now() / 1000);
   const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
   const unsigned = `${b64({ alg: 'RS256', typ: 'JWT' })}.${b64({ iss: sa.client_email, scope: SCOPE, aud: sa.token_uri, iat: now, exp: now + 3600 })}`;

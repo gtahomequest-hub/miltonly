@@ -1,38 +1,51 @@
-// MA-008. Vercel Web Analytics: sessions, bounce, top pages and, above all, referrers, because
-// GSC cannot see a visitor ChatGPT sends. Vercel publishes no REST endpoint for this; the
-// dashboard's own endpoint is tried with the token, and until the analytics script is on the
-// site (Home is building it) and the endpoint answers, every field here reads "awaiting first
-// data", which is the expected state on the first runs and not a failure. Bot request counts
-// (Googlebot, oai-searchbot) likewise have no API today and are marked awaiting a source.
-import { json, redact, CONFIG } from '../lib.mjs';
+// MA-008, rewritten MA-011. Vercel Web Analytics through the Query API
+// (api.vercel.com/v1/query/web-analytics/visits/count and /aggregate) with VERCEL_API_TOKEN:
+// visitors and pageviews yesterday, over the last 7 days and month to date, the top pages and
+// the referrers, because GSC cannot see a visitor ChatGPT sends.
+//
+// The API takes `since` and `until` and rounds them to UTC days on /count (to hours on
+// /aggregate), so every window here is whole UTC days ending at 00:00 UTC today; at 06:00 Toronto
+// that is the same calendar day as Toronto's yesterday. /aggregate answers `by` one of hour, day,
+// requestPath, referrerHostname, and more; its first row can be an "Others" bucket that sums
+// everything past `limit`, which is dropped here. The API has no bounce rate.
+// Bot request counts (Googlebot, oai-searchbot) still have no API and stay "awaiting a source".
+import { json, redact, CONFIG, TODAY, YESTERDAY, daysAgo } from '../lib.mjs';
+
+const Q = 'https://api.vercel.com/v1/query/web-analytics/visits';
+const at = (iso) => `${iso}T00:00:00.000Z`;
 
 export async function gatherAnalytics() {
   const token = process.env.VERCEL_API_TOKEN;
-  const out = { ok: true, status: 'awaiting first data', sessions: null, bounce: null, topPages: [], referrers: [], aiReferrers: [], bots: { status: 'awaiting a source (Observability by hand until a log drain or API exists)' }, note: '' };
+  const out = { ok: true, status: 'awaiting first data', source: 'Vercel Query API', yesterday: null, last7: null, d28: null, mtd: null, topPages: [], referrers: [], aiReferrers: [], bots: { status: 'awaiting a source (Observability by hand until a log drain or API exists)' }, note: '' };
   if (!token) { out.note = 'VERCEL_API_TOKEN unset'; return out; }
   try {
     const H = { authorization: `Bearer ${token}` };
     const teams = await json('https://api.vercel.com/v2/teams', { headers: H });
     const team = teams.teams.find((t) => t.slug === CONFIG.vercel.teamSlug) ?? teams.teams[0];
-    const projects = (await json(`https://api.vercel.com/v9/projects?teamId=${team.id}`, { headers: H })).projects;
+    const projects = (await json(`https://api.vercel.com/v9/projects?teamId=${team.id}&search=${CONFIG.vercel.projects[0]}`, { headers: H })).projects;
     const p = projects.find((x) => x.name === CONFIG.vercel.projects[0]);
-    const to = Date.now(), from = to - 86400e3;
-    // The dashboard's endpoint; undocumented, so a non-200 is "awaiting", not an error.
-    const r = await fetch(`https://vercel.com/api/web-analytics/stats?projectId=${p.id}&teamId=${team.id}&environment=production&from=${new Date(from).toISOString()}&to=${new Date(to).toISOString()}`, { headers: H });
-    if (!r.ok) { out.note = `analytics endpoint answered ${r.status}; the script is not on the site yet`; return out; }
-    const j = await r.json().catch(() => null);
-    if (!j || typeof j !== 'object') { out.note = 'analytics endpoint answered with no body'; return out; }
-    // Shape unknown until it answers; keep what is recognisable and mark the rest.
-    out.status = 'first data';
-    out.sessions = j.visitors ?? j.sessions ?? j.total?.visitors ?? null;
-    out.bounce = j.bounceRate ?? j.bounce ?? null;
-    out.topPages = (j.pages || j.topPages || []).slice(0, 5);
-    out.referrers = (j.referrers || j.topReferrers || []).slice(0, 10);
-    out.aiReferrers = out.referrers.filter((x) => CONFIG.analytics.aiReferrerHosts.some((h) => String(x.referrer || x.name || x.key || '').includes(h)));
-    out.note = 'shape unverified: first response from the endpoint';
+    if (!p) { out.ok = false; out.error = `project ${CONFIG.vercel.projects[0]} not found`; return out; }
+    const base = `projectId=${p.id}&teamId=${team.id}&environment=production`;
+    const count = async (since, until) => (await json(`${Q}/count?${base}&since=${at(since)}&until=${at(until)}`, { headers: H })).data;
+    const agg = async (by, since, until, limit) => (await json(`${Q}/aggregate?${base}&since=${at(since)}&until=${at(until)}&by=${by}${limit ? `&limit=${limit}` : ''}`, { headers: H })).data || [];
+
+    const since7 = daysAgo(7), since28 = daysAgo(28), mtdStart = `${YESTERDAY.slice(0, 7)}-01`;
+    const [yesterday, last7, d28, mtd, days, pages, refs] = await Promise.all([
+      count(YESTERDAY, TODAY), count(since7, TODAY), count(since28, TODAY), count(mtdStart, TODAY),
+      agg('day', since7, TODAY), agg('requestPath', since7, TODAY, 6), agg('referrerHostname', since7, TODAY, 16),
+    ]);
+    out.status = 'live';
+    out.window = { yesterday: YESTERDAY, since7, since28, mtdStart, until: TODAY, tz: 'UTC days' };
+    out.yesterday = yesterday; out.last7 = { ...last7, days: days.filter((d) => d.timestamp < at(TODAY)).map((d) => ({ date: d.timestamp.slice(0, 10), visitors: d.visitors, pageviews: d.pageviews })) };
+    out.d28 = d28; out.mtd = mtd;
+    out.topPages = pages.filter((r) => r.requestPath !== 'Others').sort((a, b) => b.visitors - a.visitors || b.pageviews - a.pageviews).slice(0, 5).map((r) => ({ path: r.requestPath, visitors: r.visitors, pageviews: r.pageviews }));
+    out.referrers = refs.filter((r) => r.referrerHostname !== 'Others').map((r) => ({ host: r.referrerHostname || '(direct or none)', visitors: r.visitors, pageviews: r.pageviews })).slice(0, 10);
+    // The API groups by hostname only, so a configured entry with a path ("bing.com/chat") cannot be
+    // told from the search engine on the same host and is not matched; a host matches itself or a subdomain.
+    const aiHosts = CONFIG.analytics.aiReferrerHosts.filter((h) => !h.includes('/'));
+    out.aiReferrers = refs.filter((r) => aiHosts.some((h) => r.referrerHostname === h || String(r.referrerHostname || '').endsWith(`.${h}`))).map((r) => ({ host: r.referrerHostname, visitors: r.visitors, pageviews: r.pageviews }));
     return out;
   } catch (e) {
-    out.note = redact(e.message).slice(0, 120);
-    return out;
+    return { ...out, ok: false, error: redact(e.message).slice(0, 160) };
   }
 }
