@@ -2,9 +2,38 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-25 (MC-044, the batch): `main` is `b60aa11` plus this docs commit and the morning report's `4f2df7b`; production serves `b60aa11` (`miltonly-f1bjm1gup`), battery `PASS · 24 checks · 719 pages · 559s`. Merged by SHA: `feat/portal @ fd65058` (MP-006) as `601c64a`, `fix/env-loader-crlf @ 4cf16e4` (MC-045) as `6b2cfe7`, `feat/leads @ a001c43` (ML-012) as `6e14465`; MH-009 `7cfa4a2` was already on `main` (MC-038). Two Core fixes on top: `be8e127` (one deletion channel on /privacy; the battery carries the session /me re-issues) and `b60aa11` (`*.sh` LF in every worktree, without which no worktree preview passes prebuild). Held for the next batch: nothing. Record `scratchpad/mc044/MC-044-batch-merge.md`._
+_Last rewritten 2026-09-28 (MC-048, street titles and metas plus the compass strip): `main` is `1f3b216` plus this docs commit; production serves `1f3b216` (`miltonly-oqmamj059`, ready 2026-09-28T02:45:14Z), battery `PASS · 24 checks · 719 pages · 540s`. **STREET HEADS ARE FROZEN UNTIL THE GSC RE-READ ON 2026-10-26.** Held for the next batch: nothing. Record `scratchpad/reports/MC-048-titles.md`._
 
 ## READ THIS FIRST
+
+**FREEZE: NO TITLE, META OR H1 CHANGE ON ANY STREET PAGE UNTIL 2026-10-26** (MC-048's 28-day GSC re-read). A change inside the window makes the read compare two formats.
+- **The re-read:** run `node scratchpad/mc048/baseline/baseline.mjs 2026-10-25` once GSC has data through 2026-10-25, then compare with the committed baseline in `scratchpad/mc048/baseline/`.
+- **The baseline**, 2026-08-30 to 2026-09-26, counting the 719 sitemap street pages with impressions: 235 pages, 93 clicks, 0.396 clicks per page, zero-click share 0.740.
+  - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
+  - Written pages: 222 / 78 / 0.351 / 0.748.
+
+**MC-048 SHIPPED THE STREET HEAD AND THE COMPASS STRIP. PRODUCTION SERVES `1f3b216`.**
+- **Step 1, the compass strip (`8af7fd0`):** MC-045's WRONG compass sentences are cut from 55 pages, 57 sentences by exact match. `victoria-street` had already been regenerated, on 2026-09-27.
+  - The script is `scripts/content/strip-compass.mjs`. The stripped sections rebuild `description`, and every page, `/streets` and its hub is revalidated.
+  - `validateStreetGeneration` found 0 violations added.
+  - On production, `scripts/audit/verify-strip.mjs` finds 0 of 58 sentences, with 55 of 55 positive controls found.
+  - **Beyond the cut:** the page's fragment rule now withholds 21 one-sentence sections, so **10 correct sentences on 10 pages no longer render** (`scratchpad/mc048/render-truth.log`). That is Aamir's call.
+- **Step 2, the head (`1f3b216`):** `src/lib/streetHead.ts` owns it.
+  - **Title:** `${name}, Milton: homes, sold history, prices | Miltonly`, at most 65. Over that, ", prices" goes, then " | Miltonly". Today 645 / 75 / 2 streets use each rung, and none fails.
+  - **Meta:** "${count} addresses on ${name}, numbered ${lo} to ${hi}. Every one listed, with its sold history for registered readers. Free to register.", from the Town's own addresses and at most 155. Where there is no Town data, the no-count sentence.
+  - Nothing sold-derived appears. og and twitter match the title and meta. H1, canonical, slug and JSON-LD are unchanged, so the JSON-LD `WebPage.name` still carries the old wording.
+  - The sitemap floors each street's `lastmod` at 2026-09-28.
+  - `scripts/test-street-head.ts` joins prebuild: 33,410 assertions over every published and every registry street, mutation-checked.
+- **Proven on production:**
+  - all 719 heads, before against after, with 0 failures;
+  - six named streets and the longest name printed in the report;
+  - Lighthouse SEO 100 → 100 on zilio-terrace and scott-boulevard.
+- **MC-045's pooled-URL watch is closed:** 55 interactive transactions on the pooled URL, 0 pool or connection errors.
+- **Traps:**
+  - A first local build after hours away bakes in a stale fetch cache and fails `tiles` and `hub-page` locally; production passes, and a rebuild clears it. That happened in MC-044 and again here.
+  - The Vercel CLI once answered "Not authorized" on deploy (60.1.3), and the retry deployed.
+  - `.env`'s GSC credential is `GSC_SERVICE_ACCOUNT_KEY`, not `_JSON`. Rotating it is still open.
+Record: `scratchpad/reports/MC-048-titles.md`.
 
 **MC-044 LANDED THE BATCH IN ONE PRODUCTION BUILD. PRODUCTION SERVES `b60aa11`; THE VOW BEST PRACTICES (MP-006) ARE LIVE.**
 - **The merges, by SHA, in the order named:**
@@ -767,10 +796,10 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`b60aa11`** (MC-044: the batch, MP-006 + MC-045 + ML-012 by SHA, two Core fixes) plus the morning report `4f2df7b` and MC-044's docs commit; production serves `b60aa11` (`miltonly-f1bjm1gup`) |
-| battery on production | **`PASS · 24 checks · 719 pages · 559s`** at `b60aa11`, 2026-09-25 (local at `be8e127` 429s; preview `miltonly-knzmybnxv` Ready, not batteried) |
+| `main` | **`1f3b216`** (MC-048: the compass strip `8af7fd0` and the street head `1f3b216`) plus MC-048's docs commit; production serves `1f3b216` (`miltonly-oqmamj059`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 540s`** at `1f3b216`, 2026-09-28 (local 363s after a rebuild; preview `miltonly-azm98yy11` Ready, not batteried) |
 | `prisma migrate status` | **clean**, 32 migrations (`20260921120000_portal_vow_best_practices` was already applied when merged, MC-044) |
-| held for the next batch | **nothing** (MC-044 merged `fix/env-loader-crlf`, `feat/portal @ fd65058` and `feat/leads @ a001c43`; `feat/portal`'s docs tip `e622c96` is Portal's to land) |
+| held for the next batch | **nothing**. **Street heads frozen until 2026-10-26** (MC-048 re-read) |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -1145,7 +1174,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Nothing is held (MC-044). **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Nothing is held. **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say
