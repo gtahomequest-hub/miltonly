@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calcMarketDataHash } from "@/lib/marketDataHash";
 import { getStreetStats } from "@/lib/streetDecision";
+import { streetRegenEnabled, STREET_REGEN_PAUSED_REASON } from "@/lib/streetRegen";
 
 export const maxDuration = 120;
 
@@ -15,6 +16,13 @@ export async function POST(request: NextRequest) {
     request.nextUrl.searchParams.get("secret");
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // PAUSED UNLESS STREET_REGEN_ENABLED IS "true" (MC-049, src/lib/streetRegen.ts): the schedule and
+  // the secret stay; the run reads nothing, queues nothing, fires nothing.
+  if (!streetRegenEnabled()) {
+    console.log(`[regenerate] paused: ${STREET_REGEN_PAUSED_REASON}; nothing queued, nothing written`);
+    return NextResponse.json({ paused: true, reason: STREET_REGEN_PAUSED_REASON });
   }
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

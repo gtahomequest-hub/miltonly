@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { makeStreetDecision } from "@/lib/streetDecision";
 import { generateStreetContent } from "@/lib/generateStreet";
+import { streetRegenEnabled, STREET_REGEN_PAUSED_REASON } from "@/lib/streetRegen";
 
 export const maxDuration = 300;
 
@@ -94,9 +95,18 @@ export async function POST(request: NextRequest) {
 
   const toBuild: { streetSlug: string; streetName: string }[] = [];
   let deferred = 0;
+  // REWRITES ARE PAUSED UNLESS STREET_REGEN_ENABLED IS "true" (MC-049, src/lib/streetRegen.ts). A
+  // "regenerate" decision is left in the queue exactly as it is (no status, no attempt, no write)
+  // and named in the response; new pages ("build") are not rewrites and go on under the cap.
+  const regenEnabled = streetRegenEnabled();
+  const regenPaused: string[] = [];
 
   for (const item of pending) {
     const decision = await makeStreetDecision(item.streetSlug, item.streetName);
+    if (decision === "regenerate" && !regenEnabled) {
+      regenPaused.push(item.streetName);
+      continue;
+    }
     if (decision === "build" || decision === "regenerate") {
       // "build" means makeStreetDecision found no StreetContent row, so it is a new page and
       // spends budget. "regenerate" touches a page that already exists and does not.
@@ -181,6 +191,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if (regenPaused.length) console.log(`[generate] regeneration paused: ${STREET_REGEN_PAUSED_REASON}; ${regenPaused.length} existing page(s) left queued`);
+
   return NextResponse.json({
     processed: built.length + failed.length,
     built,
@@ -192,6 +204,8 @@ export async function POST(request: NextRequest) {
     newPageCap: { limit: NEW_PAGES_PER_DAY, createdToday, remaining: newPageBudget, deferred },
     // DEC-QUEUE-REEVAL: how many stale "ineligible" verdicts this run re-examined.
     reevaluated: stale.length,
+    // MC-049: the rewrite switch, and the existing pages left queued because it is off.
+    regeneration: { paused: !regenEnabled, leftQueued: regenPaused },
     durationMs: Date.now() - start,
   });
 }
