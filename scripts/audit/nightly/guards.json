@@ -1,4 +1,4 @@
 {
-  "$comment": "MA-011. Switches for the nightly's guards (run.mjs). wwwTwinEnforced stays false until MC-049 merges: the commit that merges it sets true, and from that night a sampled www path that does not answer 308 to the same path on the apex is S2 and fails the night (exit 5). Until then the check runs and reports at S4.",
-  "wwwTwinEnforced": false
+  "$comment": "MA-011. Switches for the nightly's guards (run.mjs). wwwTwinEnforced is true since MC-049 (9a563fd, production miltonly-m25idhaan, 2026-09-28): a sampled www path that does not answer 308 to the same path on the apex is S2 and fails the night (exit 5). Set it false to return the check to report-only at S4.",
+  "wwwTwinEnforced": true
 }
