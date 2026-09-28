@@ -1,5 +1,18 @@
 {
   "ignoreCommand": "bash scripts/vercel-ignore.sh",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "feat/portal": false,
+      "feat/leads": false,
+      "feat/audit": false,
+      "feat/content-2": false,
+      "feat/home-voice": false,
+      "feat/ledger": false,
+      "fix/env-loader-crlf": false,
+      "**": false
+    }
+  },
   "crons": [
     {
       "path": "/api/sync/detect?secret=miltonly-cron-2026",
