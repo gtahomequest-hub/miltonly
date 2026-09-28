@@ -1,0 +1,43 @@
+16:15:28
+=== 09-rental-detail-book 16:15:28
+lead:* keys: 72; ip keys: 59; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497395 1
+deleted 2 test-inbox keys
+09-rental-detail-book: SUCCESS
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"rental-detail-book","intent":"rent","name":"ML013 test rental booking","email":"gtahomequest+ml013-rental-book@gmail.com","phone":"6470000013","notes":"","property_address":"479 Vaughan Court, Milton, on L9t 8a6","mlsNumber":"W13832868","consentText":"By sending, you agree that Aamir Yaqo
+  200 /api/leads/create {"ok":true,"lead_id":"cmulosywq0000lbshlxuzffm8","env":"production"}
+=== 08-condo-contact 16:18:19
+lead:* keys: 73; ip keys: 60; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497396 1
+deleted 2 test-inbox keys
+08-condo-contact: SUCCESS
+  step failed: tap Accept: no visible element with text "Accept"
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"condo-building-contact","intent":"buy","name":"ML013 test contact","email":"gtahomequest+ml013-condo-contact@gmail.com","phone":"","property_address":"610 Farmstead Drive","neighbourhood":"Willmott","notes":"ML-013 test submission, delete me [re: 610 Farmstead Drive]","consentText":"By se
+  200 /api/leads/create {"ok":true,"lead_id":"cmulowlsn0003lbshtedze21u","env":"production"}
+=== 06-sell-page 16:21:14
+lead:* keys: 73; ip keys: 60; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497396 1
+deleted 2 test-inbox keys
+06-sell-page: SUCCESS
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"sell-page","intent":"sell","name":"Lead 0013","phone":"647-000-0013","email":"gtahomequest+ml013-sell@gmail.com","consent":true,"consentText":"I consent to receive a written home valuation by email, a confirmation SMS, and follow-up communication from Aamir Yaqoob (RE/MAX Realty Specialis
+  200 /api/leads/create {"ok":true,"lead_id":"cmulp0oqh0006lbsht1z1c5om","env":"production"}
+=== 10-register 16:24:18
+lead:* keys: 74; ip keys: 61; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497396 1
+deleted 2 test-inbox keys
+10-register: SUCCESS
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/auth/signup {"email":"gtahomequest+ml013-register@gmail.com","redirect":""}
+  200 /api/auth/signup {"success":true,"message":"Check your email. Tap the link, or type the code. It works for 15 minutes."}
+=== done 16:24:33

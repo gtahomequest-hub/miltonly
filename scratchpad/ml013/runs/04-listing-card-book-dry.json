@@ -1,0 +1,71 @@
+{
+ "name": "04-listing-card-book",
+ "url": "https://miltonly.com/listings",
+ "startedAt": "2026-09-28T19:28:52.455Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:28:54.833Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:28:54.941Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "button.lv-book",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": false,
+   "error": "no visible element with text \"Accept\""
+  },
+  {
+   "op": "scroll",
+   "selector": "button.lv-book",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "button.lv-book",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "div.lv-modal input[name=\"name\"]",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "div.lv-modal input[name=\"name\"]",
+   "value": "ML013 test card booking",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "div.lv-modal input[name=\"phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "div.lv-modal button.lv-modal-go",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/04-listing-card-book-dry.png"
+}

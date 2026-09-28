@@ -1,0 +1,17 @@
+{
+  "name": "04-listing-card-book",
+  "url": "https://miltonly.com/listings",
+  "steps": [
+    { "op": "waitFor", "selector": "button.lv-book", "ms": 30000 },
+    { "op": "wait", "ms": 3000 },
+    { "op": "tap", "text": "Accept", "optional": true },
+    { "op": "scroll", "selector": "button.lv-book" },
+    { "op": "tap", "selector": "button.lv-book" },
+    { "op": "waitFor", "selector": "div.lv-modal input[name=\"name\"]" },
+    { "op": "type", "selector": "div.lv-modal input[name=\"name\"]", "value": "ML013 test card booking" },
+    { "op": "type", "selector": "div.lv-modal input[name=\"phone\"]", "value": "6470000013" },
+    { "op": "tap", "selector": "div.lv-modal button.lv-modal-go" }
+  ],
+  "success": "Showing requested|will call within the hour",
+  "settleMs": 1500
+}

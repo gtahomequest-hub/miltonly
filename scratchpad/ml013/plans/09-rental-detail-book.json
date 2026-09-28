@@ -1,0 +1,18 @@
+{
+  "name": "09-rental-detail-book",
+  "url": "https://miltonly.com/listings/W13832868",
+  "steps": [
+    { "op": "waitFor", "selector": "#sidebar-cta", "ms": 30000 },
+    { "op": "wait", "ms": 3000 },
+    { "op": "tap", "text": "Accept", "optional": true },
+    { "op": "scroll", "selector": "#sidebar-cta" },
+    { "op": "tap", "text": "Book a showing" },
+    { "op": "waitFor", "selector": "#sidebar-cta input[placeholder=\"Your name\"]" },
+    { "op": "type", "selector": "#sidebar-cta input[placeholder=\"Your name\"]", "value": "ML013 test rental booking" },
+    { "op": "type", "selector": "#sidebar-cta input[type=\"email\"][placeholder=\"Email\"]", "value": "gtahomequest+ml013-rental-book@gmail.com" },
+    { "op": "type", "selector": "#sidebar-cta input[type=\"tel\"][placeholder=\"Phone\"]", "value": "6470000013" },
+    { "op": "tap", "text": "Submit booking request" }
+  ],
+  "success": "Request received",
+  "settleMs": 5000
+}

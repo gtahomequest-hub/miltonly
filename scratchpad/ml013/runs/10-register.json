@@ -1,0 +1,72 @@
+{
+ "name": "10-register",
+ "url": "https://miltonly.com/signin",
+ "startedAt": "2026-09-28T20:24:20.473Z",
+ "requests": [
+  {
+   "at": "2026-09-28T20:24:20.859Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T20:24:20.943Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T20:24:26.069Z",
+   "method": "POST",
+   "url": "/api/auth/signup",
+   "body": "{\"email\":\"gtahomequest+ml013-register@gmail.com\",\"redirect\":\"\"}"
+  },
+  {
+   "at": "2026-09-28T20:24:27.953Z",
+   "status": 200,
+   "url": "/api/auth/signup",
+   "response": "{\"success\":true,\"message\":\"Check your email. Tap the link, or type the code. It works for 15 minutes.\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#signin-email",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#signin-email",
+   "value": "gtahomequest+ml013-register@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Continue",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "#signin-link-instead",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#signin-link-instead",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/10-register.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? Sign in to Miltonly Sold prices, your streets, your alerts. Your email and your password. Sent to gtahomequest+ml013-register@gmail.com Check your email."
+}

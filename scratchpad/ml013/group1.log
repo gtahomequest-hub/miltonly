@@ -1,0 +1,42 @@
+15:32:03
+=== 01-street-valuation 15:32:03
+lead:* keys: 86; ip keys: 74; keys naming the test inbox: 1
+   lead:email:day:gtahomequest@gmail.com:20723 3
+deleted 1 test-inbox keys
+01-street-valuation: SUCCESS
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"street-valuation","intent":"sell","email":"gtahomequest+ml013-street-valuation@gmail.com","property_address":"Main Street","neighbourhood":"Dempsey","notes":"Written valuation requested from the street page, Main Street","consentText":"I agree to receive the valuation and follow-up by ema
+  200 /api/leads/create {"ok":true,"lead_id":"cmuln90ds0000fsyhaufqa6og","env":"production"}
+=== 02-street-alert 15:34:46
+lead:* keys: 89; ip keys: 76; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497395 1
+deleted 2 test-inbox keys
+02-street-alert: SUCCESS
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"street-alert","intent":"buy","email":"gtahomequest+ml013-street-alert@gmail.com","property_address":"Main Street","neighbourhood":"Dempsey","notes":"Street alerts requested, Main Street (hero)","consentText":"Miltonly emails only, from Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokera
+  200 /api/leads/create {"ok":true,"lead_id":"cmulnciui0002pcbdb7erqq16","env":"production"}
+=== 03-daily-brief 15:37:30
+lead:* keys: 89; ip keys: 76; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497395 1
+deleted 2 test-inbox keys
+03-daily-brief: SUCCESS
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"daily-brief","intent":"buy","email":"gtahomequest+ml013-brief@gmail.com","notes":"Daily brief signup, homepage","consent":true,"consentText":"I consent to receive the Miltonly daily brief and follow-up communication from Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage). I can with
+  200 /api/leads/create {"ok":true,"lead_id":"cmulng3zl0006pcbdnf31mqwy","env":"production"}
+=== 04-listing-card-book 15:40:18
+lead:* keys: 81; ip keys: 68; keys naming the test inbox: 2
+   lead:email:day:gtahomequest@gmail.com:20724 1
+   lead:email:gtahomequest@gmail.com:497395 1
+deleted 2 test-inbox keys
+04-listing-card-book: SUCCESS
+  step failed: tap Accept: no visible element with text "Accept"
+  GET /api/auth/me 
+  200 /api/auth/me {"user":null}
+  POST /api/leads/create {"source":"listing-card-book","intent":"buy","name":"ML013 test card booking","phone":"6470000013","property_address":"485 Pringle Avenue 25, Milton, ON L9T 8A9","mlsNumber":"W13833302","consentText":"By sending, you agree that Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage) may reply by em
+  200 /api/leads/create {"ok":true,"lead_id":"cmulnjn5h000apcbdoti4z77s","env":"production"}
+=== done 15:40:29

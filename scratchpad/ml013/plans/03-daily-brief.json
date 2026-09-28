@@ -1,0 +1,14 @@
+{
+  "name": "03-daily-brief",
+  "url": "https://miltonly.com/",
+  "steps": [
+    { "op": "waitFor", "selector": "#mh-brief-email" },
+    { "op": "wait", "ms": 2500 },
+    { "op": "scroll", "selector": "section#brief" },
+    { "op": "type", "selector": "#mh-brief-email", "value": "gtahomequest+ml013-brief@gmail.com" },
+    { "op": "scroll", "selector": "section#brief form.mh-briefform button[type=\"submit\"]" },
+    { "op": "tap", "selector": "section#brief form.mh-briefform button[type=\"submit\"]" }
+  ],
+  "success": "You are on the list",
+  "settleMs": 5000
+}

@@ -1,0 +1,71 @@
+{
+ "name": "11-register-link",
+ "url": "https://miltonly.com/signin/link?t=8VFLk8XNukZzvA4HTs8-73NPpRgkwqor&r=%2Fsaved",
+ "startedAt": "2026-09-28T20:25:43.195Z",
+ "requests": [
+  {
+   "at": "2026-09-28T20:25:43.726Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T20:25:43.728Z",
+   "method": "POST",
+   "url": "/api/auth/verify",
+   "body": "{\"token\":\"8VFLk8XNukZzvA4HTs8-73NPpRgkwqor\",\"redirect\":\"/saved\"}"
+  },
+  {
+   "at": "2026-09-28T20:25:43.793Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T20:25:44.146Z",
+   "status": 200,
+   "url": "/api/auth/verify",
+   "response": ""
+  },
+  {
+   "at": "2026-09-28T20:25:44.281Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T20:25:44.414Z",
+   "method": "GET",
+   "url": "/api/auth/saved-searches",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T20:25:44.415Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":{\"id\":\"cmulp48cn0009lbshnph2qxvm\",\"email\":\"gtahomequest+ml013-register@gmail.com\",\"firstName\":null,\"savedListings\":[],\"needsAcknowledgement\":true,\"needsReconsent\":false,\"needsPassword\":true,\"needsPasswordRenewal\":false,\"needsRegistrantAnswer\":true,\"registrant\":false,\"isRegistrant\":null,\"passwordExpiresAt\":null,\"termsVersion\":null}}"
+  },
+  {
+   "at": "2026-09-28T20:25:44.649Z",
+   "status": 200,
+   "url": "/api/auth/saved-searches",
+   "response": "{\"searches\":[]}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "eval",
+   "value": "location.pathname + ' | ' + document.title",
+   "result": "/saved | Saved Listings & Alerts — Miltonly",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/11-register-link.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? Welcome back gtahomequest+ml013-register@gmail.com Sign out Saved listings (0) Search alerts (0) ♡ No saved listings yet Browse listings and tap the hear"
+}

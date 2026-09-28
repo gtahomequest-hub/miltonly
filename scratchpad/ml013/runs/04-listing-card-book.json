@@ -1,0 +1,84 @@
+{
+ "name": "04-listing-card-book",
+ "url": "https://miltonly.com/listings",
+ "startedAt": "2026-09-28T19:40:19.361Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:40:20.658Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:40:20.723Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T19:40:26.840Z",
+   "method": "POST",
+   "url": "/api/leads/create",
+   "body": "{\"source\":\"listing-card-book\",\"intent\":\"buy\",\"name\":\"ML013 test card booking\",\"phone\":\"6470000013\",\"property_address\":\"485 Pringle Avenue 25, Milton, ON L9T 8A9\",\"mlsNumber\":\"W13833302\",\"consentText\":\"By sending, you agree that Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage) may reply by email, text or phone about this request. No list, no spam.\",\"consentTimestamp\":\"2026-09-28T19:40:26.818Z\",\"company_website\":\"\",\"event_source_url\":\"https://miltonly.com/listings\"}"
+  },
+  {
+   "at": "2026-09-28T19:40:27.316Z",
+   "status": 200,
+   "url": "/api/leads/create",
+   "response": "{\"ok\":true,\"lead_id\":\"cmulnjn5h000apcbdoti4z77s\",\"env\":\"production\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "button.lv-book",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": false,
+   "error": "no visible element with text \"Accept\""
+  },
+  {
+   "op": "scroll",
+   "selector": "button.lv-book",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "button.lv-book",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "div.lv-modal input[name=\"name\"]",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "div.lv-modal input[name=\"name\"]",
+   "value": "ML013 test card booking",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "div.lv-modal input[name=\"phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "div.lv-modal button.lv-modal-go",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/04-listing-card-book.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? Miltonly/Buy For Sale For Rent Sold Homes for sale in Milton 490 homes · live TREB MLS® data, updated daily Search AVG ASKING PRICE $1.27M across active "
+}

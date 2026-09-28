@@ -1,0 +1,82 @@
+{
+ "name": "08-condo-contact",
+ "url": "https://miltonly.com/condos/610-farmstead-drive-milton",
+ "startedAt": "2026-09-28T19:29:33.641Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:29:35.025Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:29:35.105Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#cb-cta",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": false,
+   "error": "no visible element with text \"Accept\""
+  },
+  {
+   "op": "scroll",
+   "selector": "#cb-cta",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#cb-cta button.cb-cta-btn.cb-cta-ghost",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "#cb-cta form.cb-cta-form",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#cb-cta input[aria-label=\"Your name\"]",
+   "value": "ML013 test contact",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#cb-cta input[type=\"email\"][aria-label=\"Email\"]",
+   "value": "gtahomequest+ml013-condo-contact@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#cb-cta textarea[aria-label=\"Message\"]",
+   "value": "ML-013 test submission, delete me",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#cb-cta form.cb-cta-form button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#cb-cta form.cb-cta-form button[type=\"submit\"]",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/08-condo-contact-dry.png"
+}

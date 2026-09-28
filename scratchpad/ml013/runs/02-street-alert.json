@@ -1,0 +1,78 @@
+{
+ "name": "02-street-alert",
+ "url": "https://miltonly.com/streets/main-street-milton",
+ "startedAt": "2026-09-28T19:34:47.960Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:34:48.520Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:34:48.597Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T19:34:54.457Z",
+   "method": "POST",
+   "url": "/api/leads/create",
+   "body": "{\"source\":\"street-alert\",\"intent\":\"buy\",\"email\":\"gtahomequest+ml013-street-alert@gmail.com\",\"property_address\":\"Main Street\",\"neighbourhood\":\"Dempsey\",\"notes\":\"Street alerts requested, Main Street (hero)\",\"consentText\":\"Miltonly emails only, from Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage). No account, unsubscribe anytime.\",\"consentTimestamp\":\"2026-09-28T19:34:54.453Z\",\"company_website\":\"\",\"event_source_url\":\"https://miltonly.com/streets/main-street-milton\"}"
+  },
+  {
+   "at": "2026-09-28T19:34:55.273Z",
+   "status": 200,
+   "url": "/api/leads/create",
+   "response": "{\"ok\":true,\"lead_id\":\"cmulnciui0002pcbdb7erqq16\",\"env\":\"production\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "form#capture",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#capture",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#capture .s-capture-seg label:nth-of-type(2)",
+   "ok": true
+  },
+  {
+   "op": "eval",
+   "value": "document.querySelector('#capture button[type=\"submit\"]').tex…",
+   "result": "Watch the street",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#capture input[type=\"email\"]",
+   "value": "gtahomequest+ml013-street-alert@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#capture button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#capture button[type=\"submit\"]",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/02-street-alert.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? Miltonly/Streets/Main Street STREET PROFILE · DEMPSEY · CAMPBELLVILLE · TIMBERLEA · MILTON, ON Main Street Main Street runs through the older heart of Mi"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "10-register",
+  "url": "https://miltonly.com/signin",
+  "steps": [
+    { "op": "waitFor", "selector": "#signin-email", "ms": 30000 },
+    { "op": "wait", "ms": 2000 },
+    { "op": "tap", "text": "Accept", "optional": true },
+    { "op": "type", "selector": "#signin-email", "value": "gtahomequest+ml013-register@gmail.com" },
+    { "op": "tap", "text": "Continue" },
+    { "op": "waitFor", "selector": "#signin-link-instead" },
+    { "op": "tap", "selector": "#signin-link-instead" }
+  ],
+  "success": "Check your email|Sent to",
+  "settleMs": 6000
+}

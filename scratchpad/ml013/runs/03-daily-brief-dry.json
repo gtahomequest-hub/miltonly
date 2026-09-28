@@ -1,0 +1,54 @@
+{
+ "name": "03-daily-brief",
+ "url": "https://miltonly.com/",
+ "startedAt": "2026-09-28T19:28:43.042Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:28:45.633Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:28:45.725Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#mh-brief-email",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#brief",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#mh-brief-email",
+   "value": "gtahomequest+ml013-brief@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#brief form.mh-briefform button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "section#brief form.mh-briefform button[type=\"submit\"]",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/03-daily-brief-dry.png"
+}

@@ -1,0 +1,91 @@
+{
+ "name": "05-homepage-valuation",
+ "url": "https://miltonly.com/",
+ "startedAt": "2026-09-28T19:40:51.768Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:40:57.085Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:40:57.147Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T19:41:04.793Z",
+   "method": "POST",
+   "url": "/api/leads/create",
+   "body": "{\"source\":\"homepage-valuation\",\"intent\":\"sell\",\"name\":\"Lead 0013\",\"phone\":\"647-000-0013\",\"email\":\"gtahomequest+ml013-homepage-valuation@gmail.com\",\"consent\":true,\"consentText\":\"I consent to receive a written home valuation by email, a confirmation SMS, and follow-up communication from Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage). I can withdraw consent anytime by replying STOP or clicking unsubscribe.\",\"consentTimestamp\":\"2026-09-28T19:41:04.778Z\",\"yourHomeAddress\":\"123 Test Street, Milton\",\"notes\":\"ML-013 test submission, delete me\",\"mlsNumber\":\"\",\"company_website\":\"\",\"event_source_url\":\"https://miltonly.com/\"}"
+  },
+  {
+   "at": "2026-09-28T19:41:05.179Z",
+   "status": 200,
+   "url": "/api/leads/create",
+   "response": "{\"ok\":true,\"lead_id\":\"cmulnkgdp000cpcbd0hgozsik\",\"env\":\"production\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "section#valuation form input[name=\"address\"]",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#valuation form",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form input[name=\"address\"]",
+   "value": "123 Test Street, Milton",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form input[name=\"email\"]",
+   "value": "gtahomequest+ml013-homepage-valuation@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form input[name=\"phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form textarea[aria-label=\"Notes for Aamir\"]",
+   "value": "ML-013 test submission, delete me",
+   "ok": true
+  },
+  {
+   "op": "check",
+   "selector": "section#valuation form input[type=\"checkbox\"]",
+   "checked": true,
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#valuation form button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "section#valuation form button[type=\"submit\"]",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/05-homepage-valuation.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? MILTON HEIGHTS MOUNTAIN VIEW SCOTT DORSET PARK TIMBERLEA DEMPSEY CLARKE BEATY WALKER COBBAN BOWES COATES FORD WILLMOTT HARRISON OLD MILTON BRONTE MEADOWS"
+}
