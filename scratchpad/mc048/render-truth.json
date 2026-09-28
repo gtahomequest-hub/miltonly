@@ -1,0 +1,180 @@
+{
+ "at": "2026-09-28T02:03:27.546Z",
+ "rows": [
+  {
+   "slug": "norris-circle-milton",
+   "section": "gettingAround",
+   "sentence": "Norris Circle sits in Beaty, a position that makes the GO train the realistic route into Toronto.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "muskoka-heights-milton",
+   "section": "about",
+   "sentence": "Muskoka Heights is a residential street in Milton's Bowes area, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "fennamore-terrace-milton",
+   "section": "about",
+   "sentence": "The street is residential in character throughout, with no through-traffic role to speak of and no retail frontage of its own.",
+   "renderedBeforeUnderAll16": false,
+   "onPage": true
+  },
+  {
+   "slug": "fennamore-terrace-milton",
+   "section": "about",
+   "sentence": "Sales here are infrequent, which shapes how much can be said about the street with confidence.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "reece-court-milton",
+   "section": "about",
+   "sentence": "The street is a cul-de-sac form, which gives it a closed loop of frontage rather than through traffic.",
+   "renderedBeforeUnderAll16": false,
+   "onPage": true
+  },
+  {
+   "slug": "reece-court-milton",
+   "section": "about",
+   "sentence": "Harrison itself is a settled residential district, and Reece Court reads as one of its quieter internal addresses, a street whose identity is bound up with the surrounding neighbourhood rather than with any landmark of its own.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "schreyer-crescent-milton",
+   "section": "about",
+   "sentence": "The street's shape is its own: a curve rather than a through-road, which keeps local traffic local and gives the addresses along it a quieter feel than the arterials that frame the wider neighbourhood.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "gleave-terrace-milton",
+   "section": "about",
+   "sentence": "The street is compact and quiet, with a layout that keeps through traffic to a minimum.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "bessborough-drive-milton",
+   "section": "about",
+   "sentence": "The street runs through a settled part of Harrison where detached and semi-detached houses share the same blocks, and where the grid bends gently rather than running dead straight.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "mortimer-crescent-milton",
+   "section": "about",
+   "sentence": "For a household measuring a street by how quickly it empties onto the rest of Milton, the answer here is a matter of minutes, not a detour.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "chilver-heights-milton",
+   "section": "about",
+   "sentence": "The street carries the name of a height, and the terrain around it follows that cue: the surrounding blocks rise and fall gently rather than running flat, which gives the approach from the south a different feel than the approach from the north.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "dinsmore-drive-milton",
+   "section": "gettingAround",
+   "sentence": "Dinsmore Drive sits in Beaty, a position that makes the GO line the realistic route into Toronto.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "stewart-crescent-milton",
+   "section": "about",
+   "sentence": "The street takes the crescent form, curving rather than running straight, which gives it a closed, self-contained shape and keeps through traffic to a minimum.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "sauve-street-milton",
+   "section": "about",
+   "sentence": "The street is short and residential, its address range given over almost entirely to low-rise condominium buildings rather than the detached fabric that defines much of the surrounding subdivision.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "zuest-crescent-milton",
+   "section": "about",
+   "sentence": "Zuest Crescent is a quiet, residential loop in the Willmott neighbourhood of Milton.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "menefy-place-milton",
+   "section": "gettingAround",
+   "sentence": "Menefy Place sits in Beaty, a position that makes the GO train the realistic Toronto commute.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "culcastle-drive-milton",
+   "section": "about",
+   "sentence": "It sits among curving residential roads that meet collector streets rather than a rigid grid, a street pattern common to Milton's newer west-end subdivisions.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "culcastle-drive-milton",
+   "section": "about",
+   "sentence": "The street is residential in character, with no commercial frontage of its own; daily errands run to the retail plazas along the nearby arterial roads.",
+   "renderedBeforeUnderAll16": false,
+   "onPage": true
+  },
+  {
+   "slug": "culcastle-drive-milton",
+   "section": "about",
+   "sentence": "The street is residential in character, with no commercial frontage of its own; daily errands run to the retail plazas along the nearby arterial roads.",
+   "renderedBeforeUnderAll16": false,
+   "onPage": true
+  },
+  {
+   "slug": "meighen-way-milton",
+   "section": "gettingAround",
+   "sentence": "Meighen Way sits in Beaty, a position that makes the GO train the realistic route into Toronto.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "trudeau-drive-milton",
+   "section": "gettingAround",
+   "sentence": "Trudeau Drive sits in the Clarke and Beaty pocket of Milton, a position that makes the GO line the realistic Toronto commute.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "wickson-way-milton",
+   "section": "gettingAround",
+   "sentence": "Wickson Way sits in Beaty, a position that makes the GO train the realistic route into Toronto.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "moorelands-crescent-milton",
+   "section": "about",
+   "sentence": "Moorelands Crescent is a residential curve in Milton's Timberlea neighbourhood, the kind of street that turns back on itself and keeps its traffic local.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": true
+  },
+  {
+   "slug": "detlor-heights-milton",
+   "section": "about",
+   "sentence": "Walker itself is an established part of the Milton map, and Detlor Heights reads as one of its quieter residential threads.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  },
+  {
+   "slug": "dawson-crescent-milton",
+   "section": "about",
+   "sentence": "Dawson Crescent is a street where the pace of life slows without sacrificing convenience.",
+   "renderedBeforeUnderAll16": true,
+   "onPage": false
+  }
+ ]
+}
