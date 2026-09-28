@@ -19,7 +19,7 @@ import type { PlaceCard } from "@/components/places/types";
 export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
-  title: `Mosques in ${config.CITY_NAME} — Homes Near Masjids`,
+  title: `Mosques in ${config.CITY_NAME}: Homes Near Masjids`,
   description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s mosques and Islamic centres. ${mosques.length} locations with live TREB listings by neighbourhood. Updated daily.`,
   canonical: `${config.SITE_URL}/mosques`,
   keywords: [

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { config } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: `${config.SITE_NAME} — Launching Soon`,
-  description: `${config.CITY_NAME}'s dedicated real estate intelligence site is launching soon. Street-level data, neighbourhood insights, and ${config.CITY_NAME} MLS listings — coming soon.`,
+  title: `${config.SITE_NAME}: Launching Soon`,
+  description: `${config.CITY_NAME}'s dedicated real estate intelligence site is launching soon. Street-level data, neighbourhood insights, and ${config.CITY_NAME} MLS listings, coming soon.`,
   robots: { index: false, follow: false },
   alternates: { canonical: config.SITE_URL },
 };

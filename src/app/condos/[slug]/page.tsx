@@ -50,8 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const nm = b
       ? resolveCondoName({ slug: params.slug, streetNumber: b.streetNumber, streetSlug: b.streetSlug, buildingAddress: b.buildingAddress }).name
       : params.slug;
-    const description = `Sales, leases, gross yield and amenities for ${nm} in ${config.CITY_NAME} — every figure from the building's own recorded trades.`;
-    const title = `${nm} — ${config.CITY_NAME} Condo Building`;
+    const description = `Sales, leases, gross yield and amenities for ${nm} in ${config.CITY_NAME}. Every figure from the building's own recorded trades.`;
+    const title = `${nm}: ${config.CITY_NAME} Condo Building`;
     return {
       title,
       description,

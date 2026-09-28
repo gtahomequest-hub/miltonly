@@ -17,8 +17,8 @@ import { generateBreadcrumbSchema, generateLocalBusinessSchema } from "@/lib/sch
 export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
-  title: `Compare Milton Ownership Choices — Side by Side`,
-  description: `Compare ${config.CITY_NAME} home ownership choices side by side: freehold vs condo prices, fees, and the real trade-offs — to find the side that fits you.`,
+  title: `Compare Milton Ownership Choices, Side by Side`,
+  description: `Compare ${config.CITY_NAME} home ownership choices side by side: freehold vs condo prices, fees, and the real trade-offs, to find the side that fits you.`,
   canonical: `${config.SITE_URL}/compare`,
 });
 

@@ -73,12 +73,14 @@
 .places-v2 .pl-hero-main { flex: 1 1 420px; min-width: 0; }
 .places-v2 .pl-badgerow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .places-v2 .pl-badge {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
   padding: 3px 8px; border-radius: 999px; white-space: nowrap;
 }
-.places-v2 .pl-badge.blue { background: rgba(0,255,128,0.14); color: var(--pl-green); }
+.places-v2 .pl-badge.blue { background: rgba(0,255,128,0.14); color: var(--pl-text-body); }
 .places-v2 .pl-badge.amber { background: var(--pl-gold); color: #4a3000; }
-.places-v2 .pl-badge.green { background: rgba(0,255,128,0.14); color: var(--pl-green); }
+.places-v2 .pl-badge.green { background: rgba(0,255,128,0.14); color: var(--pl-text-body); }
+/* MH-010: on the dark hero the tint composites to a deep green, so the badge text is the hero's white. */
+.places-v2 .pl-hero .pl-badge.blue, .places-v2 .pl-hero .pl-badge.green { color: var(--pl-text); }
 .places-v2 .pl-hero-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pl-gold); }
 .places-v2 .pl-hero-meta { font-size: 14.5px; color: var(--pl-text-sec); margin-top: 10px; max-width: 520px; }
 .places-v2 .pl-highlight {

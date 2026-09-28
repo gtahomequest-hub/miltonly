@@ -40,8 +40,8 @@ export async function generateMetadata(
   });
   const name = nb?.name ?? config.CITY_NAME;
   return genMeta({
-    title: `See Your Home's Value — ${name}, ${config.CITY_NAME}`,
-    description: `Free, no-obligation home valuation for ${name}, ${config.CITY_NAME} — prepared by hand by ${config.realtor.name} from local sold data, not an algorithm.`,
+    title: `See Your Home's Value: ${name}, ${config.CITY_NAME}`,
+    description: `Free, no-obligation home valuation for ${name}, ${config.CITY_NAME}, prepared by hand by ${config.realtor.name} from local sold data, not an algorithm.`,
     canonical: `${config.SITE_URL}/value/${params.neighbourhood}`,
     noIndex: true,
   });

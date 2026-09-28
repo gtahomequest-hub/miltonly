@@ -94,7 +94,7 @@ export function CondoCost({ data }: { data: CondoData }) {
                 ))}
               </div>
             ) : (
-              <div className="c-cost-sub">Not stated — confirm with management</div>
+              <div className="c-cost-sub">Not stated. Confirm with management</div>
             )}
           </div>
         </div>
@@ -186,7 +186,7 @@ export function CondoListings({ data }: { data: CondoData }) {
           </div>
         ) : (
           <div className="c-empty">
-            No active listings in {data.name} right now — register to be alerted when a unit comes up.
+            No active listings in {data.name} right now. Register to be alerted when a unit comes up.
           </div>
         )}
       </div>

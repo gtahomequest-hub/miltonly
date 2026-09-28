@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 // freehold-specific instead of falling back to the homepage defaults. The
 // helper sets og:url + og:title + og:description + canonical from these values.
 export const metadata = genMeta({
-  title: `Freehold Homes in ${config.CITY_NAME} — Detached, Semi & Freehold Townhomes`,
+  title: `Freehold Homes in ${config.CITY_NAME}: Detached, Semi & Freehold Townhomes`,
   description: `Freehold homes for sale in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: own the home and the land with no condo fee. Live prices for detached, semi, and freehold townhomes, plus how freehold compares to condo and POTL ownership.`,
   canonical: `${config.SITE_URL}/freehold`,
 });

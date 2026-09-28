@@ -9,7 +9,7 @@ import DailyBriefSignup from "@/components/lead/DailyBriefSignup";
 import "./sell-theme.css";
 
 export const metadata = genMeta({
-  title: `What Is Your ${config.CITY_NAME} Home Worth? — Free Valuation`,
+  title: `What Is Your ${config.CITY_NAME} Home Worth? Free Valuation`,
   description: `Get a free, no-obligation home valuation from ${config.realtor.name}. ${config.realtor.yearsExperience} years of ${config.CITY_NAME} real estate experience. RE/MAX Hall of Fame Award recipient.`,
   canonical: `${config.SITE_URL}/sell`,
 });

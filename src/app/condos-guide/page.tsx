@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 // Shared SEO helper (like /freehold) -> condo-specific OG/Twitter + canonical.
 export const metadata = genMeta({
-  title: `Condos in ${config.CITY_NAME} — Prices, Fees & Condo vs Freehold`,
+  title: `Condos in ${config.CITY_NAME}: Prices, Fees & Condo vs Freehold`,
   description: `Buying a condo in ${config.CITY_NAME}, ${config.CITY_PROVINCE}? Live condo prices, typical monthly fees, condo-vs-freehold trade-offs, and the status-certificate checks that make or break a condo purchase.`,
   canonical: `${config.SITE_URL}/condos-guide`,
 });

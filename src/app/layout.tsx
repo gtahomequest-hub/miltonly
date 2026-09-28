@@ -82,7 +82,7 @@ export const metadata: Metadata = {
   // Plain string, not { default, template }: Next's TemplateString type requires `template` beside
   // `default`, and the whole point here is that there is no template. A bare string behaves the same
   // way `default` did — any page that sets no title of its own inherits this one.
-  title: `${ENCYCLOPEDIA_LABEL} — ${REAL_ESTATE_LABEL}, Homes For Sale & Street Data | ${config.SITE_NAME}`,
+  title: `${ENCYCLOPEDIA_LABEL}: ${REAL_ESTATE_LABEL}, Homes For Sale & Street Data | ${config.SITE_NAME}`,
   description: config.seo.defaultDescription,
   keywords: [...config.seo.keywords],
   alternates: {

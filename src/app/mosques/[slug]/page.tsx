@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const mosque = getMosqueBySlug(params.slug);
   if (!mosque) return { title: "Mosque Not Found" };
   return {
-    title: `Homes Near ${mosque.name} ${config.CITY_NAME} — Listings & Prices`,
+    title: `Homes Near ${mosque.name} ${config.CITY_NAME}: Listings & Prices`,
     description: `Find homes for sale near ${mosque.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${mosque.address}. Live TREB listings, prices, and neighbourhood data. ${mosque.affiliation}.`,
     alternates: { canonical: `${config.SITE_URL}/mosques/${params.slug}` },
     keywords: [
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       `Muslim community ${config.CITY_NAME}`,
     ],
     openGraph: {
-      title: `Homes Near ${mosque.name} — ${config.CITY_NAME}, ${config.CITY_PROVINCE}`,
+      title: `Homes Near ${mosque.name}, ${config.CITY_NAME}, ${config.CITY_PROVINCE}`,
       description: `Find homes for sale near ${mosque.name}. ${mosque.address}. Live listings updated daily.`,
     },
   };

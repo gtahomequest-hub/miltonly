@@ -12,8 +12,8 @@ import SiteFooter from "@/components/nav/SiteFooter";
 
 export const metadata = {
   ...genMeta({
-    title: `${config.CITY_NAME} Real Estate Insights — Coming Soon`,
-    description: `Market updates, neighbourhood guides and buying tips for ${config.CITY_NAME} ${config.CITY_PROVINCE} real estate — coming soon.`,
+    title: `${config.CITY_NAME} Real Estate Insights: Coming Soon`,
+    description: `Market updates, neighbourhood guides and buying tips for ${config.CITY_NAME} ${config.CITY_PROVINCE} real estate, coming soon.`,
     canonical: `${config.SITE_URL}/blog`,
   }),
   // Empty page — keep it out of the index, but let crawlers follow the nav/footer
