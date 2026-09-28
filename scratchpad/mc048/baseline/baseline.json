@@ -1,0 +1,70 @@
+{
+ "property": "sc-domain:miltonly.com",
+ "window": {
+  "start": "2026-08-30",
+  "end": "2026-09-26",
+  "latestDateWithData": "2026-09-25",
+  "daysWithData": 27
+ },
+ "fetchedAt": "2026-09-28T01:46:52.141Z",
+ "sitemap": {
+  "streetUrls": 719,
+  "placeholders": 41,
+  "fetchErrors": 0
+ },
+ "gsc": {
+  "streetPageRows": 541,
+  "queryRows": 252,
+  "queryPageRows": 269
+ },
+ "all": {
+  "pages_with_impressions": 541,
+  "clicks": 116,
+  "impressions": 7330,
+  "clicks_per_page": 0.214,
+  "zero_click_share": 0.858
+ },
+ "placeholder": {
+  "pages_with_impressions": 13,
+  "clicks": 15,
+  "impressions": 579,
+  "clicks_per_page": 1.154,
+  "zero_click_share": 0.615
+ },
+ "written": {
+  "pages_with_impressions": 222,
+  "clicks": 78,
+  "impressions": 5185,
+  "clicks_per_page": 0.351,
+  "zero_click_share": 0.748
+ },
+ "notInSitemap": {
+  "pages_with_impressions": 306,
+  "clicks": 23,
+  "impressions": 1566,
+  "clicks_per_page": 0.075,
+  "zero_click_share": 0.948
+ },
+ "notInSitemapWww": {
+  "pages_with_impressions": 273,
+  "clicks": 16,
+  "impressions": 919,
+  "clicks_per_page": 0.059,
+  "zero_click_share": 0.952
+ },
+ "notInSitemapApex": {
+  "pages_with_impressions": 33,
+  "clicks": 7,
+  "impressions": 647,
+  "clicks_per_page": 0.212,
+  "zero_click_share": 0.909
+ },
+ "sitemapPages": {
+  "pages_with_impressions": 235,
+  "clicks": 93,
+  "impressions": 5764,
+  "clicks_per_page": 0.396,
+  "zero_click_share": 0.74
+ },
+ "excludedNonStreetUrls": []
+}

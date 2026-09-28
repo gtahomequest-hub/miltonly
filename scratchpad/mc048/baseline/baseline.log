@@ -1,0 +1,10 @@
+window 2026-08-30..2026-09-26 (latest date with data 2026-09-25, 27 days with data) · sitemap street URLs 719, placeholders 41, fetch errors 0
+all street pages                   pages with impressions  541 · clicks  116 · impressions   7330 · clicks per page 0.214 · zero-click share 0.858
+sitemap street pages (the 719)     pages with impressions  235 · clicks   93 · impressions   5764 · clicks per page 0.396 · zero-click share 0.74
+  of which is_placeholder = true   pages with impressions   13 · clicks   15 · impressions    579 · clicks per page 1.154 · zero-click share 0.615
+  of which is_placeholder = false  pages with impressions  222 · clicks   78 · impressions   5185 · clicks per page 0.351 · zero-click share 0.748
+not in the sitemap (n/a)           pages with impressions  306 · clicks   23 · impressions   1566 · clicks per page 0.075 · zero-click share 0.948
+  of which www twins               pages with impressions  273 · clicks   16 · impressions    919 · clicks per page 0.059 · zero-click share 0.952
+  of which apex, not published     pages with impressions   33 · clicks    7 · impressions    647 · clicks per page 0.212 · zero-click share 0.909
+excluded (not /streets/<slug>): 0 URL(s), 0 impressions, 0 clicks
+EXIT 0
