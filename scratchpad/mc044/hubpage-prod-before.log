@@ -1,0 +1,40 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      https://miltonly.com
+build       5f8cdb0 served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+hub record  22 published hubs + DB2 pools loaded
+crawled     719 pages · 719 × 200 · 0 other
+
+ASSERT iterated == live sitemap count (719) : PASS
+
+── Every hub figure declares its source, every link resolves, the ladder is every street
+   · hub pages read: 22 of 22
+   · figures read (outside the site nav): 1682
+   · declared figure kinds: 11
+   · ladder rows read: 719
+   · ladder rows matched to a crawled street page: 719
+   · unique link targets: 961
+   · targets fetched here (the rest came from the street crawl): 220
+   · sub-k hubs: moffat
+   PASS  hub pages read == published hub count: 22
+   PASS  figures with no declared source/format/tolerance: 0
+   PASS  figures absent while their source is present: 0
+   PASS  figures rendered while their source is suppressed: 0
+   PASS  figures in the wrong format: 0
+   PASS  figures outside their source + tolerance: 0
+   PASS  hubs whose ladder count != published street count: 0
+   PASS  hubs whose ladder set != published street set: 0
+   PASS  ladder rows pointing at a street that was not 200: 0
+   PASS  ladder typical != the street page’s typical: 0
+   PASS  ladder basis != the street page’s basis: 0
+   PASS  ladder silent on one surface only: 0
+   PASS  ladder sold count != the street page’s 12-month sales: 0
+   PASS  links whose route does not return 200: 0
+   PASS  links whose fragment matches no id: 0
+   PASS  hubs with no JSON-LD: 0
+   PASS  hubs with unparseable JSON-LD: 0
+   PASS  hubs whose JSON-LD ItemList != the ladder: 0
+
+═══ PASS · 1 checks · 719 pages · 124s ═══

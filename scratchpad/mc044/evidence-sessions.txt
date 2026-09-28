@@ -1,0 +1,14 @@
+== the battery's cached production session (OS temp, written by the battery's password sign-in after the deploy)
+  before: iat 2026-09-25T15:07:24.000Z act 2026-09-25T16:07:24.000Z exp 2026-12-24T15:07:24.000Z
+  (the pre-deploy token it replaced carried no act claim; MP-006 refuses such a token, so the battery signed in afresh)
+
+== vow-fields alone against production, reusing that token: /api/auth/me re-issues it with act wound, the harness keeps the new one
+═══ MILTONLY STREET VERIFICATION ═══
+═══ PASS · 1 checks · 719 pages · 33s ═══
+  after:  iat 2026-09-25T15:24:48.000Z act 2026-09-25T16:24:48.000Z exp 2026-12-24T15:07:24.000Z
+  (exp unchanged, act moved: the session carried forward, not re-signed)
+
+== the same fix proven locally at 14:26Z (local clock) against next start at 6e14465, as the command printed it then:
+  cached token claims: iat 2026-09-25T14:23:23.000Z act 2026-09-25T15:23:23.000Z exp 2026-12-24T14:23:23.000Z
+  vow-fields: PASS · 1 checks · 719 pages · 25s (vowfields-local-harnessfix.log)
+  cache after: act 2026-09-25T15:26:38.000Z exp 2026-12-24T14:23:23.000Z

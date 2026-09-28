@@ -56,13 +56,28 @@ export async function POST(request: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true, firstName: true, verified: true, passwordHash: true, vowAcknowledgedAt: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        verified: true,
+        passwordHash: true,
+        passwordSetAt: true,
+        vowAcknowledgedAt: true,
+        vowAcknowledgementVersion: true,
+        isRegistrant: true,
+        reviewFlag: true,
+      },
     });
     const matched = await verifyPassword(password, user?.passwordHash);
     if (!user || !matched || !user.verified) {
       return NextResponse.json({ error: MISMATCH }, { status: 401 });
     }
 
+    // A password past 90 days (R-8.06) still matches and still signs the person in; the card
+    // then takes the renewal before any record shows (needsPasswordRenewal below, judged by
+    // src/lib/vow-access.ts). Refusing the login here would only send them to the link path,
+    // which ends at the same card.
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     await createSession(user.id);
 

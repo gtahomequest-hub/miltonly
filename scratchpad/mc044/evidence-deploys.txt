@@ -1,0 +1,42 @@
+== npx vercel ls --prod (15:23Z local clock)
+  21m     gtahomequest-hubs-projects/miltonly     https://miltonly-9sq1dwdh1-gtahomequest-hubs-projects.vercel.app     Canceled     Production      3s           gtahomequest-hub     
+  31m     gtahomequest-hubs-projects/miltonly     https://miltonly-f1bjm1gup-gtahomequest-hubs-projects.vercel.app     ● Ready      Production      6m           gtahomequest-hub     
+  3h      gtahomequest-hubs-projects/miltonly     https://miltonly-3gw04jchz-gtahomequest-hubs-projects.vercel.app     Canceled     Production      4s           gtahomequest-hub     
+  18h     gtahomequest-hubs-projects/miltonly     https://miltonly-lv3k4nskd-gtahomequest-hubs-projects.vercel.app     Canceled     Production      3s           gtahomequest-hub     
+
+== npx vercel ls (all targets, latest 5)
+  21m     gtahomequest-hubs-projects/miltonly     https://miltonly-9sq1dwdh1-gtahomequest-hubs-projects.vercel.app     Canceled     Production      3s           gtahomequest-hub     
+  31m     gtahomequest-hubs-projects/miltonly     https://miltonly-f1bjm1gup-gtahomequest-hubs-projects.vercel.app     ● Ready      Production      6m           gtahomequest-hub     
+  34m     gtahomequest-hubs-projects/miltonly     https://miltonly-knzmybnxv-gtahomequest-hubs-projects.vercel.app     ● Ready      Preview         2m           gtahomequest-hub     
+  42m     gtahomequest-hubs-projects/miltonly     https://miltonly-gdcvhgpx8-gtahomequest-hubs-projects.vercel.app     ● Error      Preview         29s          gtahomequest-hub     
+  3h      gtahomequest-hubs-projects/miltonly     https://miltonly-3gw04jchz-gtahomequest-hubs-projects.vercel.app     Canceled     Production      4s           gtahomequest-hub     
+
+== production /api/build
+{"commit":"b60aa11f37a7c1ac5c07db2b1bd73d0efc789a4e","builtAt":"2026-09-25T14:53:29.834Z","env":"production"}
+
+== git: the push and the morning report on origin/main
+4f2df7b report(morning): 2026-09-25
+b60aa11 fix(MC-044): shell scripts check out LF in every worktree, so a worktree preview passes prebuild
+be8e127 fix(MC-044): the merge's two loose ends. One deletion channel on /privacy; the battery carries the session /me re-issues
+
+== npx prisma migrate status
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "neondb", schemas "ads, public" at "ep-p….c-2.us-east-2.aws.neon.tech"
+32 migrations found in prisma/migrations
+Database schema is up to date!
+
+== the two previews' deployment metadata (Vercel API)
+{"name":"miltonly","url":"miltonly-gdcvhgpx8-gtahomequest-hubs-projects.vercel.app","readyState":"ERROR","target":"preview","source":"cli","gitCommitRef":"preview/mc044","gitCommitSha":"be8e127"}
+{"name":"miltonly","url":"miltonly-knzmybnxv-gtahomequest-hubs-projects.vercel.app","readyState":"READY","target":"preview","source":"cli","gitCommitRef":"preview/mc044","gitCommitSha":"b60aa11"}
+
+== smoke on the Ready preview miltonly-knzmybnxv
+  /api/build                           200
+  /terms                               200
+  /privacy                             200
+  /rentals                             200
+  /rent                                200
+  /rentals?neighbourhood=timberlea     200
+  /streets/farmstead-drive-milton      200
+  /api/admin/vow-access                401
+  /privacy carries the one deletion channel: 1

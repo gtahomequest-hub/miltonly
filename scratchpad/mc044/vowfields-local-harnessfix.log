@@ -1,0 +1,29 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      http://localhost:3100
+build       6e14465 served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+hub record  22 published hubs + DB2 pools loaded
+crawled     0 street pages (no per-page check selected)
+
+── VOW-only listing facts reach only an acknowledged session; the brokerage is as prominent as the price; every public listing is advertisable
+   · public surfaces read anonymously: 16 of 16
+   · listing URLs checked against DB1: 495 (491 sitemap, 41 linked)
+   · surfaces measured for brokerage prominence: 5 of 5
+   PASS  public surfaces read: 16
+   PASS  surfaces carrying a VOW-only field anonymously: 0
+   PASS  off-market listings answer the not-available shell: 3
+   PASS  /listings?status=sold redirects to /sold: yes
+   PASS  gated route answers canSee:false, no facts, anonymously: yes
+   PASS  gated route answers the facts to an acknowledged session: yes
+   PASS  grid cards carry the facts for an acknowledged session: yes
+   PASS  grid cards carry no facts anonymously: yes
+   PASS  public listing URLs found: some
+   PASS  public listings lacking permAdvertise or off market: 0
+   PASS  surfaces measured in the browser: 5
+   PASS  surfaces with no brokerage element: 0
+   PASS  brokerage elements differing from their price in size, weight, colour or face: 0
+   PASS  listing page island renders the facts for an acknowledged session: yes
+
+═══ PASS · 1 checks · 719 pages · 25s ═══

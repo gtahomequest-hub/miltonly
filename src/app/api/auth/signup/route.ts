@@ -1,7 +1,7 @@
 // POST /api/auth/signup: the sign-in request (MP-002).
 //
-// The decision is requestSignIn() in src/lib/portal/door.ts: honeypot, origin, rate limit,
-// then the secret is written and the email sent. This file is the two things the library
+// The decision is requestSignIn() in src/lib/portal/door.ts: honeypot, user agent, origin,
+// rate limit, then the secret is written and the email sent. This file is the two things the library
 // must not own, the Prisma write and the Resend call, and the headers off the request.
 //
 // The row is upserted with the new secret whether or not the address is known, and the
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     {
       body,
       ip: clientIp(request),
+      userAgent: request.headers.get("user-agent"),
       origin: request.headers.get("origin"),
       referer: request.headers.get("referer"),
       host: request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
@@ -57,7 +58,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Something went wrong. Try again in a minute." }, { status: 500 });
   }
   if (!result.ok || result.reason) {
-    console.warn("[auth/signup] refused or trapped", { reason: result.reason, status: result.status });
+    // `detail` is the refused User-Agent value (MP-002c), the one fact a silent refusal
+    // leaves behind; no address and no IP, the log is not a lead table.
+    console.warn("[auth/signup] refused or trapped", {
+      reason: result.reason,
+      status: result.status,
+      ...(result.ok && result.detail !== undefined ? { detail: result.detail } : {}),
+    });
   }
   return NextResponse.json(result.body, { status: result.status });
 }

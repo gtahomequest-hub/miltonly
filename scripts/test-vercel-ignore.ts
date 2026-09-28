@@ -14,6 +14,7 @@
 // resolved is not evidence about the rule. The two cases that need no history always run.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import minimatch from "minimatch";
 
 let assertions = 0;
 const failures: string[] = [];
@@ -105,6 +106,33 @@ assertions++;
 const vercelJson = JSON.parse(readFileSync("vercel.json", "utf8")) as { ignoreCommand?: string };
 if (vercelJson.ignoreCommand !== "bash scripts/vercel-ignore.sh") {
   failures.push(`vercel.json ignoreCommand is ${JSON.stringify(vercelJson.ignoreCommand)}, expected "bash scripts/vercel-ignore.sh"`);
+}
+
+// ── the lane branches (MC-049): one list, in the rule, and every name false in vercel.json ─────────
+// git.deploymentEnabled is read the way Vercel documents it: keys are minimatch patterns, an
+// unmatched branch deploys, and a branch matching several keys deploys if ANY of them is true.
+{
+  const sh = readFileSync("scripts/vercel-ignore.sh", "utf8");
+  const listMatch = sh.match(/^LANE_BRANCHES="\n([\s\S]*?)"$/m);
+  const lanes = listMatch ? listMatch[1].split("\n").map((l) => l.trim()).filter(Boolean) : [];
+  const dep = ((JSON.parse(readFileSync("vercel.json", "utf8")) as { git?: { deploymentEnabled?: Record<string, boolean> | boolean } }).git?.deploymentEnabled) ?? true;
+  const deploys = (branch: string): boolean => {
+    if (typeof dep === "boolean") return dep;
+    const hits = Object.entries(dep).filter(([pattern]) => minimatch(branch, pattern));
+    return hits.length === 0 || hits.some(([, v]) => v === true);
+  };
+  const check = (cond: boolean, msg: string) => { assertions++; if (!cond) failures.push(msg); };
+  check(lanes.length >= 7, `the rule carries the lane list (${lanes.length} names)`);
+  check(typeof dep === "object" && dep.main === true && deploys("main"), "vercel.json git.deploymentEnabled: main is true, and main deploys");
+  for (const lane of lanes) {
+    check(typeof dep === "object" && dep[lane] === false, `vercel.json names lane ${lane} false`);
+    check(!deploys(lane), `a Git push to lane ${lane} does not deploy`);
+  }
+  const namedFalse = typeof dep === "object" ? Object.entries(dep).filter(([k, v]) => v === false && !/[*?[{]/.test(k)).map(([k]) => k) : [];
+  check(namedFalse.length === lanes.length && namedFalse.every((k) => lanes.includes(k)), `the rule's lane list and vercel.json's named false branches are one list (${namedFalse.join(", ")})`);
+  check(!deploys("feat/a-lane-created-later") && !deploys("ws5-something"), "a branch named nowhere does not deploy either (the ** catch-all)");
+  check(deploys("main"), "the catch-all does not stop main");
+  check(/for lane in \$LANE_BRANCHES; do/.test(sh), "the rule's branch gate reads the list");
 }
 
 for (const u of unrunnable) console.log(`[vercel-ignore] not runnable in this clone: ${u}`);

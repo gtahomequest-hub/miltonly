@@ -29,6 +29,10 @@
 # Everything else builds, including .github/workflows/, package.json, prisma/, public/ and any
 # non-Markdown file under scripts/.
 #
+# LINE ENDINGS. This file must be LF in the working copy. `npx vercel` uploads a worktree's files as
+# they are, and a CRLF copy makes bash on Vercel's builder answer neither BUILD nor SKIP, which fails
+# test-vercel-ignore.ts in prebuild. `.gitattributes` pins `*.sh` to LF (MC-044, found by ML-012).
+#
 # BY HAND, without pushing:
 #   bash scripts/vercel-ignore.sh                     # VERCEL_GIT_PREVIOUS_SHA (or HEAD^) to HEAD
 #   bash scripts/vercel-ignore.sh <base> <head>       # any two commits
@@ -39,9 +43,29 @@ say() { echo "[vercel-ignore] $*"; }
 build() { say "BUILD: $1"; exit 1; }
 skip() { say "SKIP: $1"; exit 0; }
 
+# LANE BRANCHES (MC-049), the one list. A Git push to any of these creates no Vercel deployment at
+# all: vercel.json's git.deploymentEnabled names each of them false, "**" false for every branch not
+# named, and main true (a branch matching several rules deploys if any is true, so main still
+# builds). This rule is the second layer under that: were a lane build ever started, step 1 skips
+# it. scripts/test-vercel-ignore.ts holds the two in step (every name here is false in vercel.json,
+# main is true). A new lane goes here and into vercel.json in the same commit. CLI previews
+# (npx vercel deploy, DEC-ONE-PREVIEW) are not Git pushes and are unaffected by either layer.
+LANE_BRANCHES="
+feat/portal
+feat/leads
+feat/audit
+feat/content-2
+feat/home-voice
+feat/ledger
+fix/env-loader-crlf
+"
+
 # 1. Branch. Vercel sets VERCEL_GIT_COMMIT_REF; a run by hand has no branch and is judged as main.
 REF="${VERCEL_GIT_COMMIT_REF:-main}"
 if [ "$REF" != "main" ]; then
+  for lane in $LANE_BRANCHES; do
+    [ "$REF" = "$lane" ] && skip "lane branch ${REF}; Git pushes to a lane do not deploy (vercel.json git.deploymentEnabled), and this is the second layer"
+  done
   skip "branch ${REF} is not main; branches take their preview from npx vercel in their worktree"
 fi
 

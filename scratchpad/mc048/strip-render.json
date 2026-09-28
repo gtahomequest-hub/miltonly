@@ -1,0 +1,1845 @@
+{
+ "at": "2026-09-28T02:04:51.401Z",
+ "pages": [
+  {
+   "slug": "grey-landing-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Grey Landing is a quiet residential street in the Ford neighbourhood of Milton, set within a landscape of newer subdivisions and open green space.",
+      "Grey Landing itself is a short, contained street, with a sense of enclosure that comes from its modest length and the homes that line it.",
+      "It is the kind of street where the rhythm of the day is set by school runs and evening strolls, not by through traffic."
+     ],
+     "otherRenderedBeforeAny": [
+      "Grey Landing is a quiet residential street in the Ford neighbourhood of Milton, set within a landscape of newer subdivisions and open green space.",
+      "Grey Landing itself is a short, contained street, with a sense of enclosure that comes from its modest length and the homes that line it.",
+      "It is the kind of street where the rhythm of the day is set by school runs and evening strolls, not by through traffic."
+     ],
+     "renderedAfterAll": [
+      "Grey Landing is a quiet residential street in the Ford neighbourhood of Milton, set within a landscape of newer subdivisions and open green space.",
+      "Grey Landing itself is a short, contained street, with a sense of enclosure that comes from its modest length and the homes that line it.",
+      "It is the kind of street where the rhythm of the day is set by school runs and evening strolls, not by through traffic."
+     ],
+     "renderedAfterAny": [
+      "Grey Landing is a quiet residential street in the Ford neighbourhood of Milton, set within a landscape of newer subdivisions and open green space.",
+      "Grey Landing itself is a short, contained street, with a sense of enclosure that comes from its modest length and the homes that line it.",
+      "It is the kind of street where the rhythm of the day is set by school runs and evening strolls, not by through traffic."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "norris-circle-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Norris Circle sits in Beaty, a position that makes the GO train the realistic route into Toronto."
+     ],
+     "otherRenderedBeforeAny": [
+      "Norris Circle sits in Beaty, a position that makes the GO train the realistic route into Toronto."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "muskoka-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Muskoka Heights is a residential street in Milton's Bowes area, a pocket of the town that sits west of the escarpment and north of the main east-west corridors."
+     ],
+     "otherRenderedBeforeAny": [
+      "Muskoka Heights is a residential street in Milton's Bowes area, a pocket of the town that sits west of the escarpment and north of the main east-west corridors."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "watson-terrace-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street takes its name from the park at its centre, and that green space anchors the immediate surroundings.",
+      "This is a pocket of detached homes on a quiet terrace, removed from the arterial traffic that defines Milton's larger corridors.",
+      "For a street this size, the position is practical: close enough to the town's services, far enough from its noise."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street takes its name from the park at its centre, and that green space anchors the immediate surroundings.",
+      "This is a pocket of detached homes on a quiet terrace, removed from the arterial traffic that defines Milton's larger corridors.",
+      "For a street this size, the position is practical: close enough to the town's services, far enough from its noise."
+     ],
+     "renderedAfterAll": [
+      "The street takes its name from the park at its centre, and that green space anchors the immediate surroundings.",
+      "This is a pocket of detached homes on a quiet terrace, removed from the arterial traffic that defines Milton's larger corridors.",
+      "For a street this size, the position is practical: close enough to the town's services, far enough from its noise."
+     ],
+     "renderedAfterAny": [
+      "The street takes its name from the park at its centre, and that green space anchors the immediate surroundings.",
+      "This is a pocket of detached homes on a quiet terrace, removed from the arterial traffic that defines Milton's larger corridors.",
+      "For a street this size, the position is practical: close enough to the town's services, far enough from its noise."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "manitou-way-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Manitou Way sits in Bowes, a position that makes the GO train the realistic route into Toronto.",
+      "The street's advantage is that it does not require crossing Milton to reach the highway; the onramp is close and the drive to it is short."
+     ],
+     "otherRenderedBeforeAny": [
+      "Manitou Way sits in Bowes, a position that makes the GO train the realistic route into Toronto.",
+      "The street's advantage is that it does not require crossing Milton to reach the highway; the onramp is close and the drive to it is short."
+     ],
+     "renderedAfterAll": [
+      "Manitou Way sits in Bowes, a position that makes the GO train the realistic route into Toronto.",
+      "The street's advantage is that it does not require crossing Milton to reach the highway; the onramp is close and the drive to it is short."
+     ],
+     "renderedAfterAny": [
+      "Manitou Way sits in Bowes, a position that makes the GO train the realistic route into Toronto.",
+      "The street's advantage is that it does not require crossing Milton to reach the highway; the onramp is close and the drive to it is short."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "fennamore-terrace-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page",
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Sales here are infrequent, which shapes how much can be said about the street with confidence."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street is residential in character throughout, with no through-traffic role to speak of and no retail frontage of its own.",
+      "Sales here are infrequent, which shapes how much can be said about the street with confidence."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": [
+      "The street is residential in character throughout, with no through-traffic role to speak of and no retail frontage of its own.",
+      "Sales here are infrequent, which shapes how much can be said about the street with confidence."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "slingsby-landing-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "For anyone mapping Milton, Slingsby Landing sits in the Harrison orbit, close enough to the town's everyday infrastructure without fronting any of it.",
+      "The street's identity is shaped less by volume than by its position: a small residential address inside a larger, established part of town."
+     ],
+     "otherRenderedBeforeAny": [
+      "For anyone mapping Milton, Slingsby Landing sits in the Harrison orbit, close enough to the town's everyday infrastructure without fronting any of it.",
+      "The street's identity is shaped less by volume than by its position: a small residential address inside a larger, established part of town."
+     ],
+     "renderedAfterAll": [
+      "For anyone mapping Milton, Slingsby Landing sits in the Harrison orbit, close enough to the town's everyday infrastructure without fronting any of it.",
+      "The street's identity is shaped less by volume than by its position: a small residential address inside a larger, established part of town."
+     ],
+     "renderedAfterAny": [
+      "For anyone mapping Milton, Slingsby Landing sits in the Harrison orbit, close enough to the town's everyday infrastructure without fronting any of it.",
+      "The street's identity is shaped less by volume than by its position: a small residential address inside a larger, established part of town."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "magurn-gate-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street carries two housing forms side by side: detached houses and townhouses, in roughly equal number.",
+      "That mix gives Magurn Gate a different texture from streets given over entirely to one type."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street carries two housing forms side by side: detached houses and townhouses, in roughly equal number.",
+      "That mix gives Magurn Gate a different texture from streets given over entirely to one type."
+     ],
+     "renderedAfterAll": [
+      "The street carries two housing forms side by side: detached houses and townhouses, in roughly equal number.",
+      "That mix gives Magurn Gate a different texture from streets given over entirely to one type."
+     ],
+     "renderedAfterAny": [
+      "The street carries two housing forms side by side: detached houses and townhouses, in roughly equal number.",
+      "That mix gives Magurn Gate a different texture from streets given over entirely to one type."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "reece-court-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page",
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Harrison itself is a settled residential district, and Reece Court reads as one of its quieter internal addresses, a street whose identity is bound up with the surrounding neighbourhood rather than with any landmark of its own."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street is a cul-de-sac form, which gives it a closed loop of frontage rather than through traffic.",
+      "Harrison itself is a settled residential district, and Reece Court reads as one of its quieter internal addresses, a street whose identity is bound up with the surrounding neighbourhood rather than with any landmark of its own."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": [
+      "The street is a cul-de-sac form, which gives it a closed loop of frontage rather than through traffic.",
+      "Harrison itself is a settled residential district, and Reece Court reads as one of its quieter internal addresses, a street whose identity is bound up with the surrounding neighbourhood rather than with any landmark of its own."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "schreyer-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street's shape is its own: a curve rather than a through-road, which keeps local traffic local and gives the addresses along it a quieter feel than the arterials that frame the wider neighbourhood."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street's shape is its own: a curve rather than a through-road, which keeps local traffic local and gives the addresses along it a quieter feel than the arterials that frame the wider neighbourhood."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "gleave-terrace-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street is compact and quiet, with a layout that keeps through traffic to a minimum."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street is compact and quiet, with a layout that keeps through traffic to a minimum."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "urell-way-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street's position within Harrison places it within a comfortable drive of the town's principal grocery and institutional anchors, while keeping the daily rhythm of the address quiet.",
+      "It is a street of modest scale, and it behaves like one."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street's position within Harrison places it within a comfortable drive of the town's principal grocery and institutional anchors, while keeping the daily rhythm of the address quiet.",
+      "It is a street of modest scale, and it behaves like one."
+     ],
+     "renderedAfterAll": [
+      "The street's position within Harrison places it within a comfortable drive of the town's principal grocery and institutional anchors, while keeping the daily rhythm of the address quiet.",
+      "It is a street of modest scale, and it behaves like one."
+     ],
+     "renderedAfterAny": [
+      "The street's position within Harrison places it within a comfortable drive of the town's principal grocery and institutional anchors, while keeping the daily rhythm of the address quiet.",
+      "It is a street of modest scale, and it behaves like one."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "bessborough-drive-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street runs through a settled part of Harrison where detached and semi-detached houses share the same blocks, and where the grid bends gently rather than running dead straight."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street runs through a settled part of Harrison where detached and semi-detached houses share the same blocks, and where the grid bends gently rather than running dead straight."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "mortimer-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "For a household measuring a street by how quickly it empties onto the rest of Milton, the answer here is a matter of minutes, not a detour."
+     ],
+     "otherRenderedBeforeAny": [
+      "For a household measuring a street by how quickly it empties onto the rest of Milton, the answer here is a matter of minutes, not a detour."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "septimus-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Pearson comes in near the half-hour mark by car.",
+      "The position rewards drivers who value quick highway access without wanting to live on top of it, and it keeps the GO option genuinely usable rather than aspirational."
+     ],
+     "otherRenderedBeforeAny": [
+      "Pearson comes in near the half-hour mark by car.",
+      "The position rewards drivers who value quick highway access without wanting to live on top of it, and it keeps the GO option genuinely usable rather than aspirational."
+     ],
+     "renderedAfterAll": [
+      "Pearson comes in near the half-hour mark by car.",
+      "The position rewards drivers who value quick highway access without wanting to live on top of it, and it keeps the GO option genuinely usable rather than aspirational."
+     ],
+     "renderedAfterAny": [
+      "Pearson comes in near the half-hour mark by car.",
+      "The position rewards drivers who value quick highway access without wanting to live on top of it, and it keeps the GO option genuinely usable rather than aspirational."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "murlock-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street is given over almost entirely to townhouse rows, a form that shapes both its scale and its rhythm.",
+      "It occupies a quiet position within the Ford neighbourhood, close to the green corridors that thread through this part of Milton."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street is given over almost entirely to townhouse rows, a form that shapes both its scale and its rhythm.",
+      "It occupies a quiet position within the Ford neighbourhood, close to the green corridors that thread through this part of Milton."
+     ],
+     "renderedAfterAll": [
+      "The street is given over almost entirely to townhouse rows, a form that shapes both its scale and its rhythm.",
+      "It occupies a quiet position within the Ford neighbourhood, close to the green corridors that thread through this part of Milton."
+     ],
+     "renderedAfterAny": [
+      "The street is given over almost entirely to townhouse rows, a form that shapes both its scale and its rhythm.",
+      "It occupies a quiet position within the Ford neighbourhood, close to the green corridors that thread through this part of Milton."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "belmore-court-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Ford is a newer part of Milton, and Belmore Court belongs to that layer of the town rather than to the nineteenth-century core.",
+      "What frames the court is largely other housing, open space, and the road network that carries residents out toward the rest of Milton."
+     ],
+     "otherRenderedBeforeAny": [
+      "Ford is a newer part of Milton, and Belmore Court belongs to that layer of the town rather than to the nineteenth-century core.",
+      "What frames the court is largely other housing, open space, and the road network that carries residents out toward the rest of Milton."
+     ],
+     "renderedAfterAll": [
+      "Ford is a newer part of Milton, and Belmore Court belongs to that layer of the town rather than to the nineteenth-century core.",
+      "What frames the court is largely other housing, open space, and the road network that carries residents out toward the rest of Milton."
+     ],
+     "renderedAfterAny": [
+      "Ford is a newer part of Milton, and Belmore Court belongs to that layer of the town rather than to the nineteenth-century core.",
+      "What frames the court is largely other housing, open space, and the road network that carries residents out toward the rest of Milton."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "lloyd-landing-milton",
+   "template": "minimal",
+   "needsReview": false,
+   "rendersProse": false,
+   "sections": [],
+   "summaryLead": {
+    "lead": "The street's shape is compact, and its position puts it within a few minutes of the everyday anchors that define this part of Milton: grocery, parks, and the road network that carries commuters east toward the 401.",
+    "survivesUnderAll16": false,
+    "survivesUnderNone": true
+   }
+  },
+  {
+   "slug": "doran-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street bends rather than runs, which gives it the feel of a close rather than a thoroughfare, and traffic on it is almost entirely local.",
+      "The street's setting is suburban and settled rather than transitional, with the built form around it long established."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street bends rather than runs, which gives it the feel of a close rather than a thoroughfare, and traffic on it is almost entirely local.",
+      "The street's setting is suburban and settled rather than transitional, with the built form around it long established."
+     ],
+     "renderedAfterAll": [
+      "The street bends rather than runs, which gives it the feel of a close rather than a thoroughfare, and traffic on it is almost entirely local.",
+      "The street's setting is suburban and settled rather than transitional, with the built form around it long established."
+     ],
+     "renderedAfterAny": [
+      "The street bends rather than runs, which gives it the feel of a close rather than a thoroughfare, and traffic on it is almost entirely local.",
+      "The street's setting is suburban and settled rather than transitional, with the built form around it long established."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "chilver-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street carries the name of a height, and the terrain around it follows that cue: the surrounding blocks rise and fall gently rather than running flat, which gives the approach from the south a different feel than the approach from the north."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street carries the name of a height, and the terrain around it follows that cue: the surrounding blocks rise and fall gently rather than running flat, which gives the approach from the south a different feel than the approach from the north."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "dinsmore-drive-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Dinsmore Drive sits in Beaty, a position that makes the GO line the realistic route into Toronto."
+     ],
+     "otherRenderedBeforeAny": [
+      "Dinsmore Drive sits in Beaty, a position that makes the GO line the realistic route into Toronto."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "huffman-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Huffman Crescent is a residential crescent in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main commercial corridors.",
+      "The street's curved form is typical of the subdivision geometry that defines this part of Milton, where crescents and courts break up the grid and slow local traffic.",
+      "Beaty frames the street on all sides, giving it a settled, inward-facing position within the neighbourhood rather than a through-route function."
+     ],
+     "otherRenderedBeforeAny": [
+      "Huffman Crescent is a residential crescent in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main commercial corridors.",
+      "The street's curved form is typical of the subdivision geometry that defines this part of Milton, where crescents and courts break up the grid and slow local traffic.",
+      "Beaty frames the street on all sides, giving it a settled, inward-facing position within the neighbourhood rather than a through-route function."
+     ],
+     "renderedAfterAll": [
+      "Huffman Crescent is a residential crescent in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main commercial corridors.",
+      "The street's curved form is typical of the subdivision geometry that defines this part of Milton, where crescents and courts break up the grid and slow local traffic.",
+      "Beaty frames the street on all sides, giving it a settled, inward-facing position within the neighbourhood rather than a through-route function."
+     ],
+     "renderedAfterAny": [
+      "Huffman Crescent is a residential crescent in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main commercial corridors.",
+      "The street's curved form is typical of the subdivision geometry that defines this part of Milton, where crescents and courts break up the grid and slow local traffic.",
+      "Beaty frames the street on all sides, giving it a settled, inward-facing position within the neighbourhood rather than a through-route function."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "peacock-lane-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Peacock Lane sits in Beaty, a position that makes the GO train the realistic Toronto commute.",
+      "The lane itself is quiet, and the arterial network that feeds it does the heavy lifting."
+     ],
+     "otherRenderedBeforeAny": [
+      "Peacock Lane sits in Beaty, a position that makes the GO train the realistic Toronto commute.",
+      "The lane itself is quiet, and the arterial network that feeds it does the heavy lifting."
+     ],
+     "renderedAfterAll": [
+      "Peacock Lane sits in Beaty, a position that makes the GO train the realistic Toronto commute.",
+      "The lane itself is quiet, and the arterial network that feeds it does the heavy lifting."
+     ],
+     "renderedAfterAny": [
+      "Peacock Lane sits in Beaty, a position that makes the GO train the realistic Toronto commute.",
+      "The lane itself is quiet, and the arterial network that feeds it does the heavy lifting."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "pratt-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street is short and quiet, lined with townhomes that give the area a consistent, orderly feel.",
+      "It lies within easy reach of the neighbourhood's parks and schools, and the surrounding streets carry the same low-rise character.",
+      "Ford is a settled pocket of Milton, with mature landscaping and a calm rhythm.",
+      "Pratt Heights itself is a cul-de-sac of sorts, a place where traffic is light and the pace slows.",
+      "For those who know Milton, Ford is a familiar name, and Pratt Heights is one of its quieter corners."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street is short and quiet, lined with townhomes that give the area a consistent, orderly feel.",
+      "It lies within easy reach of the neighbourhood's parks and schools, and the surrounding streets carry the same low-rise character.",
+      "Ford is a settled pocket of Milton, with mature landscaping and a calm rhythm.",
+      "Pratt Heights itself is a cul-de-sac of sorts, a place where traffic is light and the pace slows.",
+      "For those who know Milton, Ford is a familiar name, and Pratt Heights is one of its quieter corners."
+     ],
+     "renderedAfterAll": [
+      "The street is short and quiet, lined with townhomes that give the area a consistent, orderly feel.",
+      "It lies within easy reach of the neighbourhood's parks and schools, and the surrounding streets carry the same low-rise character.",
+      "Ford is a settled pocket of Milton, with mature landscaping and a calm rhythm.",
+      "Pratt Heights itself is a cul-de-sac of sorts, a place where traffic is light and the pace slows.",
+      "For those who know Milton, Ford is a familiar name, and Pratt Heights is one of its quieter corners."
+     ],
+     "renderedAfterAny": [
+      "The street is short and quiet, lined with townhomes that give the area a consistent, orderly feel.",
+      "It lies within easy reach of the neighbourhood's parks and schools, and the surrounding streets carry the same low-rise character.",
+      "Ford is a settled pocket of Milton, with mature landscaping and a calm rhythm.",
+      "Pratt Heights itself is a cul-de-sac of sorts, a place where traffic is light and the pace slows.",
+      "For those who know Milton, Ford is a familiar name, and Pratt Heights is one of its quieter corners."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "holbrook-court-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The court sits within a network of similarly scaled streets, close to the retail and services that line Thompson Road South and Main Street East.",
+      "The street itself is short and self-contained, with little through traffic, which gives it a settled, private character.",
+      "Holbrook Court offers a straightforward entry point into the Ford area, with the broader amenities of Milton accessible without leaving the neighbourhood's calm behind."
+     ],
+     "otherRenderedBeforeAny": [
+      "The court sits within a network of similarly scaled streets, close to the retail and services that line Thompson Road South and Main Street East.",
+      "The street itself is short and self-contained, with little through traffic, which gives it a settled, private character.",
+      "Holbrook Court offers a straightforward entry point into the Ford area, with the broader amenities of Milton accessible without leaving the neighbourhood's calm behind."
+     ],
+     "renderedAfterAll": [
+      "The court sits within a network of similarly scaled streets, close to the retail and services that line Thompson Road South and Main Street East.",
+      "The street itself is short and self-contained, with little through traffic, which gives it a settled, private character.",
+      "Holbrook Court offers a straightforward entry point into the Ford area, with the broader amenities of Milton accessible without leaving the neighbourhood's calm behind."
+     ],
+     "renderedAfterAny": [
+      "The court sits within a network of similarly scaled streets, close to the retail and services that line Thompson Road South and Main Street East.",
+      "The street itself is short and self-contained, with little through traffic, which gives it a settled, private character.",
+      "Holbrook Court offers a straightforward entry point into the Ford area, with the broader amenities of Milton accessible without leaving the neighbourhood's calm behind."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "english-mill-court-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The court sits within a grid of similar streets, close to the area's main arteries yet set back from their traffic.",
+      "The street itself is short, lined with detached homes that give it a settled, unhurried feel."
+     ],
+     "otherRenderedBeforeAny": [
+      "The court sits within a grid of similar streets, close to the area's main arteries yet set back from their traffic.",
+      "The street itself is short, lined with detached homes that give it a settled, unhurried feel."
+     ],
+     "renderedAfterAll": [
+      "The court sits within a grid of similar streets, close to the area's main arteries yet set back from their traffic.",
+      "The street itself is short, lined with detached homes that give it a settled, unhurried feel."
+     ],
+     "renderedAfterAny": [
+      "The court sits within a grid of similar streets, close to the area's main arteries yet set back from their traffic.",
+      "The street itself is short, lined with detached homes that give it a settled, unhurried feel."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "ramsey-place-milton",
+   "template": "standard",
+   "needsReview": true,
+   "rendersProse": false,
+   "sections": [],
+   "summaryLead": {
+    "lead": "The street sits east of Regional Road 25, just south of the Niagara Escarpment.",
+    "survivesUnderAll16": false,
+    "survivesUnderNone": true
+   }
+  },
+  {
+   "slug": "stewart-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street takes the crescent form, curving rather than running straight, which gives it a closed, self-contained shape and keeps through traffic to a minimum."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street takes the crescent form, curving rather than running straight, which gives it a closed, self-contained shape and keeps through traffic to a minimum."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "sauve-street-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street is short and residential, its address range given over almost entirely to low-rise condominium buildings rather than the detached fabric that defines much of the surrounding subdivision."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street is short and residential, its address range given over almost entirely to low-rise condominium buildings rather than the detached fabric that defines much of the surrounding subdivision."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "timmer-place-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street sits within a residential pocket that feels removed from the town's busier corridors, yet it remains close to the everyday conveniences that shape a routine.",
+      "Timmer Place itself is a short, contained street, the kind that sees little through traffic and holds a distinct sense of enclosure."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street sits within a residential pocket that feels removed from the town's busier corridors, yet it remains close to the everyday conveniences that shape a routine.",
+      "Timmer Place itself is a short, contained street, the kind that sees little through traffic and holds a distinct sense of enclosure."
+     ],
+     "renderedAfterAll": [
+      "The street sits within a residential pocket that feels removed from the town's busier corridors, yet it remains close to the everyday conveniences that shape a routine.",
+      "Timmer Place itself is a short, contained street, the kind that sees little through traffic and holds a distinct sense of enclosure."
+     ],
+     "renderedAfterAny": [
+      "The street sits within a residential pocket that feels removed from the town's busier corridors, yet it remains close to the everyday conveniences that shape a routine.",
+      "Timmer Place itself is a short, contained street, the kind that sees little through traffic and holds a distinct sense of enclosure."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "zuest-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Zuest Crescent is a quiet, residential loop in the Willmott neighbourhood of Milton."
+     ],
+     "otherRenderedBeforeAny": [
+      "Zuest Crescent is a quiet, residential loop in the Willmott neighbourhood of Milton."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "menefy-place-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Menefy Place is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+      "The street takes its name from the park at its centre, Menefy Park, which gives the immediate area a quiet, enclosed feel.",
+      "This is not a through-route; it is a local street whose traffic is almost entirely residents coming and going.",
+      "The surrounding Beaty grid is largely residential, with schools, parks, and everyday retail arranged along the arterial roads that frame the neighbourhood."
+     ],
+     "otherRenderedBeforeAny": [
+      "Menefy Place is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+      "The street takes its name from the park at its centre, Menefy Park, which gives the immediate area a quiet, enclosed feel.",
+      "This is not a through-route; it is a local street whose traffic is almost entirely residents coming and going.",
+      "The surrounding Beaty grid is largely residential, with schools, parks, and everyday retail arranged along the arterial roads that frame the neighbourhood."
+     ],
+     "renderedAfterAll": [
+      "Menefy Place is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+      "The street takes its name from the park at its centre, Menefy Park, which gives the immediate area a quiet, enclosed feel.",
+      "This is not a through-route; it is a local street whose traffic is almost entirely residents coming and going.",
+      "The surrounding Beaty grid is largely residential, with schools, parks, and everyday retail arranged along the arterial roads that frame the neighbourhood."
+     ],
+     "renderedAfterAny": [
+      "Menefy Place is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+      "The street takes its name from the park at its centre, Menefy Park, which gives the immediate area a quiet, enclosed feel.",
+      "This is not a through-route; it is a local street whose traffic is almost entirely residents coming and going.",
+      "The surrounding Beaty grid is largely residential, with schools, parks, and everyday retail arranged along the arterial roads that frame the neighbourhood."
+     ]
+    },
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Menefy Place sits in Beaty, a position that makes the GO train the realistic Toronto commute."
+     ],
+     "otherRenderedBeforeAny": [
+      "Menefy Place sits in Beaty, a position that makes the GO train the realistic Toronto commute."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "hill-street-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Hill Street is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the older core.",
+      "The street is quiet and largely built out, with the kind of low traffic that comes from a layout serving local addresses rather than through movement."
+     ],
+     "otherRenderedBeforeAny": [
+      "Hill Street is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the older core.",
+      "The street is quiet and largely built out, with the kind of low traffic that comes from a layout serving local addresses rather than through movement."
+     ],
+     "renderedAfterAll": [
+      "Hill Street is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the older core.",
+      "The street is quiet and largely built out, with the kind of low traffic that comes from a layout serving local addresses rather than through movement."
+     ],
+     "renderedAfterAny": [
+      "Hill Street is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the older core.",
+      "The street is quiet and largely built out, with the kind of low traffic that comes from a layout serving local addresses rather than through movement."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "culcastle-drive-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 2 other sentence(s) and the heading went with it",
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "It sits among curving residential roads that meet collector streets rather than a rigid grid, a street pattern common to Milton's newer west-end subdivisions."
+     ],
+     "otherRenderedBeforeAny": [
+      "It sits among curving residential roads that meet collector streets rather than a rigid grid, a street pattern common to Milton's newer west-end subdivisions.",
+      "The street is residential in character, with no commercial frontage of its own; daily errands run to the retail plazas along the nearby arterial roads."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    },
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it",
+      "the section was not rendered before"
+     ],
+     "otherRenderedBeforeAll": [],
+     "otherRenderedBeforeAny": [
+      "The street is residential in character, with no commercial frontage of its own; daily errands run to the retail plazas along the nearby arterial roads."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "melville-bonus-crescent-milton",
+   "template": "minimal",
+   "needsReview": false,
+   "rendersProse": false,
+   "sections": [],
+   "summaryLead": {
+    "lead": "The street takes the crescent form common to this part of Milton: a single curved run with no through traffic, which keeps it quiet by design rather than by accident.",
+    "survivesUnderAll16": false,
+    "survivesUnderNone": true
+   }
+  },
+  {
+   "slug": "richardson-way-milton",
+   "template": "minimal",
+   "needsReview": false,
+   "rendersProse": false,
+   "sections": [],
+   "summaryLead": {
+    "lead": "The street is residential in scale, framed by the surrounding Bowes grid, where local streets meet collector roads that carry traffic toward the parkway and the highway beyond.",
+    "survivesUnderAll16": true,
+    "survivesUnderNone": false
+   }
+  },
+  {
+   "slug": "sauble-court-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Traffic on a court is limited to the households that live on it and the vehicles calling on them.",
+      "The surrounding Bowes grid carries the through movement, and Sauble Court sits just off it, close enough to the wider neighbourhood to share its amenities and far enough to keep the street itself quiet."
+     ],
+     "otherRenderedBeforeAny": [
+      "Traffic on a court is limited to the households that live on it and the vehicles calling on them.",
+      "The surrounding Bowes grid carries the through movement, and Sauble Court sits just off it, close enough to the wider neighbourhood to share its amenities and far enough to keep the street itself quiet."
+     ],
+     "renderedAfterAll": [
+      "Traffic on a court is limited to the households that live on it and the vehicles calling on them.",
+      "The surrounding Bowes grid carries the through movement, and Sauble Court sits just off it, close enough to the wider neighbourhood to share its amenities and far enough to keep the street itself quiet."
+     ],
+     "renderedAfterAny": [
+      "Traffic on a court is limited to the households that live on it and the vehicles calling on them.",
+      "The surrounding Bowes grid carries the through movement, and Sauble Court sits just off it, close enough to the wider neighbourhood to share its amenities and far enough to keep the street itself quiet."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "lemieux-court-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "the section was not rendered before"
+     ],
+     "otherRenderedBeforeAll": [],
+     "otherRenderedBeforeAny": [],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "fourth-line-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "It is a street of detached houses set along a corridor that carries local traffic rather than through traffic, which gives the address a settled, residential rhythm.",
+      "Schools, parks, and everyday retail all fall within a compact radius, so daily errands rarely require crossing the full width of Milton."
+     ],
+     "otherRenderedBeforeAny": [
+      "It is a street of detached houses set along a corridor that carries local traffic rather than through traffic, which gives the address a settled, residential rhythm.",
+      "Schools, parks, and everyday retail all fall within a compact radius, so daily errands rarely require crossing the full width of Milton."
+     ],
+     "renderedAfterAll": [
+      "It is a street of detached houses set along a corridor that carries local traffic rather than through traffic, which gives the address a settled, residential rhythm.",
+      "Schools, parks, and everyday retail all fall within a compact radius, so daily errands rarely require crossing the full width of Milton."
+     ],
+     "renderedAfterAny": [
+      "It is a street of detached houses set along a corridor that carries local traffic rather than through traffic, which gives the address a settled, residential rhythm.",
+      "Schools, parks, and everyday retail all fall within a compact radius, so daily errands rarely require crossing the full width of Milton."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "pozbou-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Pozbou Crescent is a quiet residential loop in the Willmott neighbourhood of Milton, set among a network of similar crescents and courts that define the area's calm, suburban character.",
+      "Its layout encourages slow, local traffic, and the surrounding streets share a consistent, family-scale built form.",
+      "The street's position balances residential privacy with practical access to the rest of Milton and the broader GTA."
+     ],
+     "otherRenderedBeforeAny": [
+      "Pozbou Crescent is a quiet residential loop in the Willmott neighbourhood of Milton, set among a network of similar crescents and courts that define the area's calm, suburban character.",
+      "Its layout encourages slow, local traffic, and the surrounding streets share a consistent, family-scale built form.",
+      "The street's position balances residential privacy with practical access to the rest of Milton and the broader GTA."
+     ],
+     "renderedAfterAll": [
+      "Pozbou Crescent is a quiet residential loop in the Willmott neighbourhood of Milton, set among a network of similar crescents and courts that define the area's calm, suburban character.",
+      "Its layout encourages slow, local traffic, and the surrounding streets share a consistent, family-scale built form.",
+      "The street's position balances residential privacy with practical access to the rest of Milton and the broader GTA."
+     ],
+     "renderedAfterAny": [
+      "Pozbou Crescent is a quiet residential loop in the Willmott neighbourhood of Milton, set among a network of similar crescents and courts that define the area's calm, suburban character.",
+      "Its layout encourages slow, local traffic, and the surrounding streets share a consistent, family-scale built form.",
+      "The street's position balances residential privacy with practical access to the rest of Milton and the broader GTA."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "ferguson-drive-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street runs as a residential drive, framed by the low-rise fabric that defines this part of town.",
+      "It is a street of modest length and steady rhythm, the kind of address that sits inside a larger grid rather than announcing itself at its edge."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street runs as a residential drive, framed by the low-rise fabric that defines this part of town.",
+      "It is a street of modest length and steady rhythm, the kind of address that sits inside a larger grid rather than announcing itself at its edge."
+     ],
+     "renderedAfterAll": [
+      "The street runs as a residential drive, framed by the low-rise fabric that defines this part of town.",
+      "It is a street of modest length and steady rhythm, the kind of address that sits inside a larger grid rather than announcing itself at its edge."
+     ],
+     "renderedAfterAny": [
+      "The street runs as a residential drive, framed by the low-rise fabric that defines this part of town.",
+      "It is a street of modest length and steady rhythm, the kind of address that sits inside a larger grid rather than announcing itself at its edge."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "harris-boulevard-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street reads as a quiet interior road rather than a through route, with the surrounding blocks given over to housing and the green spaces that thread between them.",
+      "The street itself is compact and settled, one thread in a district that has grown steadily around it."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street reads as a quiet interior road rather than a through route, with the surrounding blocks given over to housing and the green spaces that thread between them.",
+      "The street itself is compact and settled, one thread in a district that has grown steadily around it."
+     ],
+     "renderedAfterAll": [
+      "The street reads as a quiet interior road rather than a through route, with the surrounding blocks given over to housing and the green spaces that thread between them.",
+      "The street itself is compact and settled, one thread in a district that has grown steadily around it."
+     ],
+     "renderedAfterAny": [
+      "The street reads as a quiet interior road rather than a through route, with the surrounding blocks given over to housing and the green spaces that thread between them.",
+      "The street itself is compact and settled, one thread in a district that has grown steadily around it."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "meighen-way-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Meighen Way sits in Beaty, a position that makes the GO train the realistic route into Toronto."
+     ],
+     "otherRenderedBeforeAny": [
+      "Meighen Way sits in Beaty, a position that makes the GO train the realistic route into Toronto."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "gordon-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Gordon Heights sits in the Beaty neighbourhood of Milton, a quiet residential enclave set within a grid of similar streets.",
+      "The road itself is a short, unassuming stretch, lined with detached homes that give the area a settled, suburban character."
+     ],
+     "otherRenderedBeforeAny": [
+      "Gordon Heights sits in the Beaty neighbourhood of Milton, a quiet residential enclave set within a grid of similar streets.",
+      "The road itself is a short, unassuming stretch, lined with detached homes that give the area a settled, suburban character."
+     ],
+     "renderedAfterAll": [
+      "Gordon Heights sits in the Beaty neighbourhood of Milton, a quiet residential enclave set within a grid of similar streets.",
+      "The road itself is a short, unassuming stretch, lined with detached homes that give the area a settled, suburban character."
+     ],
+     "renderedAfterAny": [
+      "Gordon Heights sits in the Beaty neighbourhood of Milton, a quiet residential enclave set within a grid of similar streets.",
+      "The road itself is a short, unassuming stretch, lined with detached homes that give the area a settled, suburban character."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "trudeau-drive-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Trudeau Drive sits in the Clarke and Beaty pocket of Milton, a position that makes the GO line the realistic Toronto commute."
+     ],
+     "otherRenderedBeforeAny": [
+      "Trudeau Drive sits in the Clarke and Beaty pocket of Milton, a position that makes the GO line the realistic Toronto commute."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "hemlock-drive-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "the section was not rendered before"
+     ],
+     "otherRenderedBeforeAll": [],
+     "otherRenderedBeforeAny": [],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "blinco-terrace-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "It sits within a broader area that transitions into Rural Milton West, giving the immediate surroundings a semi-rural feel despite the proximity to suburban development.",
+      "The street itself is lined with detached homes, set back from the road with mature trees.",
+      "Blinco Terrace offers a sense of calm, away from the busier arterial roads, yet remains connected to the amenities of Milton."
+     ],
+     "otherRenderedBeforeAny": [
+      "It sits within a broader area that transitions into Rural Milton West, giving the immediate surroundings a semi-rural feel despite the proximity to suburban development.",
+      "The street itself is lined with detached homes, set back from the road with mature trees.",
+      "Blinco Terrace offers a sense of calm, away from the busier arterial roads, yet remains connected to the amenities of Milton."
+     ],
+     "renderedAfterAll": [
+      "It sits within a broader area that transitions into Rural Milton West, giving the immediate surroundings a semi-rural feel despite the proximity to suburban development.",
+      "The street itself is lined with detached homes, set back from the road with mature trees.",
+      "Blinco Terrace offers a sense of calm, away from the busier arterial roads, yet remains connected to the amenities of Milton."
+     ],
+     "renderedAfterAny": [
+      "It sits within a broader area that transitions into Rural Milton West, giving the immediate surroundings a semi-rural feel despite the proximity to suburban development.",
+      "The street itself is lined with detached homes, set back from the road with mature trees.",
+      "Blinco Terrace offers a sense of calm, away from the busier arterial roads, yet remains connected to the amenities of Milton."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "riddell-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "Riddell Crescent is a residential curve in Milton's Beaty neighbourhood, the kind of street that folds back on itself rather than carrying traffic through to anywhere else.",
+      "The surrounding blocks are largely built out, so the street's shape and its housing mix are settled rather than in flux.",
+      "For daily purposes, this is a street defined by its position inside an established residential grid rather than by any through-route function."
+     ],
+     "otherRenderedBeforeAny": [
+      "Riddell Crescent is a residential curve in Milton's Beaty neighbourhood, the kind of street that folds back on itself rather than carrying traffic through to anywhere else.",
+      "The surrounding blocks are largely built out, so the street's shape and its housing mix are settled rather than in flux.",
+      "For daily purposes, this is a street defined by its position inside an established residential grid rather than by any through-route function."
+     ],
+     "renderedAfterAll": [
+      "Riddell Crescent is a residential curve in Milton's Beaty neighbourhood, the kind of street that folds back on itself rather than carrying traffic through to anywhere else.",
+      "The surrounding blocks are largely built out, so the street's shape and its housing mix are settled rather than in flux.",
+      "For daily purposes, this is a street defined by its position inside an established residential grid rather than by any through-route function."
+     ],
+     "renderedAfterAny": [
+      "Riddell Crescent is a residential curve in Milton's Beaty neighbourhood, the kind of street that folds back on itself rather than carrying traffic through to anywhere else.",
+      "The surrounding blocks are largely built out, so the street's shape and its housing mix are settled rather than in flux.",
+      "For daily purposes, this is a street defined by its position inside an established residential grid rather than by any through-route function."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "wickson-way-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "gettingAround",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Wickson Way sits in Beaty, a position that makes the GO train the realistic route into Toronto."
+     ],
+     "otherRenderedBeforeAny": [
+      "Wickson Way sits in Beaty, a position that makes the GO train the realistic route into Toronto."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "moorelands-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Moorelands Crescent is a residential curve in Milton's Timberlea neighbourhood, the kind of street that turns back on itself and keeps its traffic local."
+     ],
+     "otherRenderedBeforeAny": [
+      "Moorelands Crescent is a residential curve in Milton's Timberlea neighbourhood, the kind of street that turns back on itself and keeps its traffic local."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "detlor-heights-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Walker itself is an established part of the Milton map, and Detlor Heights reads as one of its quieter residential threads."
+     ],
+     "otherRenderedBeforeAny": [
+      "Walker itself is an established part of the Milton map, and Detlor Heights reads as one of its quieter residential threads."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "labine-point-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "The street sits within a grid of similar lanes and crescents, set back from the main arterial roads that frame the area.",
+      "Labine Point itself is a short, contained street, the kind that sees little through traffic.",
+      "For anyone looking to understand Milton's newer suburban growth, this part of Cobban offers a clear example of the town's recent expansion."
+     ],
+     "otherRenderedBeforeAny": [
+      "The street sits within a grid of similar lanes and crescents, set back from the main arterial roads that frame the area.",
+      "Labine Point itself is a short, contained street, the kind that sees little through traffic.",
+      "For anyone looking to understand Milton's newer suburban growth, this part of Cobban offers a clear example of the town's recent expansion."
+     ],
+     "renderedAfterAll": [
+      "The street sits within a grid of similar lanes and crescents, set back from the main arterial roads that frame the area.",
+      "Labine Point itself is a short, contained street, the kind that sees little through traffic.",
+      "For anyone looking to understand Milton's newer suburban growth, this part of Cobban offers a clear example of the town's recent expansion."
+     ],
+     "renderedAfterAny": [
+      "The street sits within a grid of similar lanes and crescents, set back from the main arterial roads that frame the area.",
+      "Labine Point itself is a short, contained street, the kind that sees little through traffic.",
+      "For anyone looking to understand Milton's newer suburban growth, this part of Cobban offers a clear example of the town's recent expansion."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "dawson-crescent-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "SECTION DROPPED: 1 other sentence(s) and the heading went with it"
+     ],
+     "otherRenderedBeforeAll": [
+      "Dawson Crescent is a street where the pace of life slows without sacrificing convenience."
+     ],
+     "otherRenderedBeforeAny": [
+      "Dawson Crescent is a street where the pace of life slows without sacrificing convenience."
+     ],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  },
+  {
+   "slug": "john-street-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "only the cut sentence left the page"
+     ],
+     "otherRenderedBeforeAll": [
+      "John Street runs through the heart of Old Milton, one of the town's earliest settled neighbourhoods.",
+      "It is a short, quiet residential lane lined with mature trees and century homes.",
+      "Its compact scale and deep-rooted character set it apart from the newer subdivisions spreading across the town's periphery.",
+      "John Street feels like a remnant of an older Milton, where front porches and fenced yards are the norm."
+     ],
+     "otherRenderedBeforeAny": [
+      "John Street runs through the heart of Old Milton, one of the town's earliest settled neighbourhoods.",
+      "It is a short, quiet residential lane lined with mature trees and century homes.",
+      "Its compact scale and deep-rooted character set it apart from the newer subdivisions spreading across the town's periphery.",
+      "John Street feels like a remnant of an older Milton, where front porches and fenced yards are the norm."
+     ],
+     "renderedAfterAll": [
+      "John Street runs through the heart of Old Milton, one of the town's earliest settled neighbourhoods.",
+      "It is a short, quiet residential lane lined with mature trees and century homes.",
+      "Its compact scale and deep-rooted character set it apart from the newer subdivisions spreading across the town's periphery.",
+      "John Street feels like a remnant of an older Milton, where front porches and fenced yards are the norm."
+     ],
+     "renderedAfterAny": [
+      "John Street runs through the heart of Old Milton, one of the town's earliest settled neighbourhoods.",
+      "It is a short, quiet residential lane lined with mature trees and century homes.",
+      "Its compact scale and deep-rooted character set it apart from the newer subdivisions spreading across the town's periphery.",
+      "John Street feels like a remnant of an older Milton, where front porches and fenced yards are the norm."
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "bronson-terrace-milton",
+   "template": "standard",
+   "needsReview": false,
+   "rendersProse": true,
+   "sections": [
+    {
+     "id": "about",
+     "outcomes": [
+      "the section was not rendered before"
+     ],
+     "otherRenderedBeforeAll": [],
+     "otherRenderedBeforeAny": [],
+     "renderedAfterAll": [],
+     "renderedAfterAny": []
+    }
+   ]
+  }
+ ],
+ "controls": {
+  "grey-landing-milton": [
+   "Grey Landing is a quiet residential street in the Ford neighbourhood of Milton, set within a landscape of newer subdivisions and open green space.",
+   "Grey Landing itself is a short, contained street, with a sense of enclosure that comes from its modest length and the homes that line it.",
+   "It is the kind of street where the rhythm of the day is set by school runs and evening strolls, not by through traffic.",
+   "Detached houses make up the entirety of the housing stock on Grey Landing, a uniformity that gives the street a consistent character.",
+   "With only a handful of residences, the street maintains a low-density feel."
+  ],
+  "norris-circle-milton": [
+   "Norris Circle is a residential circle in Milton's Beaty neighbourhood, a pocket of the town that sits west of the James Snow Parkway corridor and north of the Derry Road spine.",
+   "The street's form is its defining feature: a loop rather than a through-route, which keeps local traffic on the circle itself and gives the address a quiet, self-contained quality.",
+   "The street is small, with a housing stock that is almost entirely detached.",
+   "It is the kind of address that does not announce itself, and does not need to.",
+   "A street with this little turnover is not a market so much as a holding pattern, and any figure attached to it would be invented rather than observed."
+  ],
+  "muskoka-heights-milton": [
+   "What can be said is that the street is almost entirely detached housing, and the detached form is the only type that appears in the recent activity at all.",
+   "Because no street-level price exists, the useful reference is the wider neighbourhood.",
+   "Year-over-year direction is not published for this cohort, so no trend claim can be made from it.",
+   "What the neighbourhood data does establish is a stable, moderately supplied market for detached homes in Bowes, and that context is the most reliable frame for reading a street like Muskoka Heights, where street-level activity is too sparse to stand on its own.",
+   "Muskoka Heights sits in Bowes, a position that makes the GO train the realistic route into Toronto."
+  ],
+  "watson-terrace-milton": [
+   "The street takes its name from the park at its centre, and that green space anchors the immediate surroundings.",
+   "This is a pocket of detached homes on a quiet terrace, removed from the arterial traffic that defines Milton's larger corridors.",
+   "For a street this size, the position is practical: close enough to the town's services, far enough from its noise.",
+   "Suitability questions, which turn on the home rather than the street average, are addressed elsewhere on this page.",
+   "For pricing orientation, the wider neighbourhood is the relevant reference."
+  ],
+  "manitou-way-milton": [
+   "Manitou Way is a short residential way in Milton's Bowes area, a pocket of the town's western edge where the street grid gives way to quieter, self-contained addresses.",
+   "Bowes surrounds it, and the wider area supplies the schools, parks, and shopping that shape daily life here.",
+   "What the street does show is a consistent housing form: detached houses dominate the stock, and no other property type appears in the recorded activity.",
+   "The wider Bowes neighbourhood is where pricing reference becomes meaningful.",
+   "Manitou Way is a street where suitability is discussed elsewhere on this page, because the transaction record here is simply too sparse to support a market read of its own."
+  ],
+  "fennamore-terrace-milton": [
+   "Fennamore Terrace is a detached-house street.",
+   "The recorded stock is detached throughout, with no semi-detached, townhouse, or condo component appearing in the street's profile.",
+   "The street has no recent recorded sales, and no price can be given for it.",
+   "There is no rental market to describe: no lease activity was recorded on Fennamore Terrace over the same window.",
+   "For a street this quiet, suitability is a question of the housing stock and the location rather than of trade patterns, and those are covered elsewhere on this page."
+  ],
+  "slingsby-landing-milton": [
+   "For anyone mapping Milton, Slingsby Landing sits in the Harrison orbit, close enough to the town's everyday infrastructure without fronting any of it.",
+   "The street's identity is shaped less by volume than by its position: a small residential address inside a larger, established part of town.",
+   "The housing stock on Slingsby Landing is limited.",
+   "With so few properties, Slingsby Landing is a small sample rather than a representative cross-section of the neighbourhood's stock.",
+   "What the street does carry is a small, mixed stock."
+  ],
+  "magurn-gate-milton": [
+   "The street carries two housing forms side by side: detached houses and townhouses, in roughly equal number.",
+   "That mix gives Magurn Gate a different texture from streets given over entirely to one type.",
+   "Magurn Gate trades rarely, with only a handful of recorded transactions over the past year, and the street's own price band is too narrow to publish as a range.",
+   "What the record does show is a street of two housing forms in roughly equal measure: detached homes and townhouses, each represented by a small number of trades.",
+   "For pricing orientation, the Harrison neighbourhood comparable is the appropriate reference, and it is discussed in the section that follows."
+  ],
+  "reece-court-milton": [
+   "No typical figure, no range, no per-type benchmark.",
+   "What the street does offer is a clear read on its position.",
+   "Reece Court is a court, a short residential spur rather than a through-route, and its proximity to Mcdougall Park and the Anne J.",
+   "MacArthur PS area are the factors that situate it within that broader market.",
+   "Suitability questions, which schools, which commute, which amenities, are addressed elsewhere on this page; the market read here is simply that Reece Court is a low-frequency street whose value is clearest when read against the Harrison comparable rather than in isolation."
+  ],
+  "schreyer-crescent-milton": [
+   "What the street does show is a consistent housing form.",
+   "Detached homes account for the recorded activity, with no townhouse presence in the mix at all.",
+   "Because the street's own pricing is unpublished, the neighbourhood comparable carries the reference.",
+   "For a buyer weighing Schreyer Crescent against the surrounding area, the honest read is that the street offers a narrow, detached-only profile with very little turnover, and any pricing conversation has to start from the neighbourhood level rather than from a street-specific number.",
+   "Negotiation room is modest: sold prices have landed just under asking on average, which points to a market where buyers retain a little leverage but not a decisive advantage."
+  ],
+  "gleave-terrace-milton": [
+   "Gleave Terrace trades rarely, with few recorded transactions over the past year.",
+   "What the record does show is a street split between two forms: townhouse and detached homes, each represented in small numbers, with the townhouse stock forming the more modest end of the street's housing mix and detached homes the larger.",
+   "The rental side is more legible than the resale side.",
+   "Beyond that, the honest position is that Gleave Terrace is a low-turnover street whose market is defined more by scarcity of listings than by any visible price trajectory."
+  ],
+  "urell-way-milton": [
+   "The street's position within Harrison places it within a comfortable drive of the town's principal grocery and institutional anchors, while keeping the daily rhythm of the address quiet.",
+   "It is a street of modest scale, and it behaves like one.",
+   "Both of the recorded sales on the street are semis, and no detached, townhouse, or condo stock appears in the mix.",
+   "The street's stock is semi-detached, and semi-detached is the only housing form the records show here, so the street's market is effectively a single-form market with very little to sample from.",
+   "Because the street's own record is so sparse, the useful read is positional."
+  ],
+  "bessborough-drive-milton": [
+   "Bessborough Drive trades at a measured pace rather than a brisk one.",
+   "The rental side of the street tells its own story, separate from the resale market."
+  ],
+  "mortimer-crescent-milton": [
+   "Mortimer Crescent trades rarely, with few recorded transactions over the past year, and the street's own price range is too sparsely populated to publish.",
+   "What activity there is concentrates in one form: townhouses account for the recorded sales, and no other property type registers.",
+   "That narrowness is the defining feature of the street's market.",
+   "Suitability and pricing for the street are clearest when read against the wider Harrison neighbourhood rather than against the street's own thin record.",
+   "The rental side is more legible than the resale side."
+  ],
+  "septimus-heights-milton": [
+   "Septimus Heights is a quiet, residential close in Milton's Harrison neighbourhood, a pocket of the town known for its mix of newer construction and established green space.",
+   "The street itself is short and self-contained, set back from the main thoroughfares that carry traffic through this part of Milton.",
+   "Septimus Heights offers a sense of enclosure and calm, a deliberate contrast to the busier arteries that surround it.",
+   "Pearson comes in near the half-hour mark by car.",
+   "The position rewards drivers who value quick highway access without wanting to live on top of it, and it keeps the GO option genuinely usable rather than aspirational."
+  ],
+  "murlock-heights-milton": [
+   "The street is given over almost entirely to townhouse rows, a form that shapes both its scale and its rhythm.",
+   "It occupies a quiet position within the Ford neighbourhood, close to the green corridors that thread through this part of Milton.",
+   "Every unit recorded here falls into that single category, and the form defines the street's character: attached rows, shared walls, a consistent built line along the road.",
+   "The street is compact, and the housing stock reflects that.",
+   "Suitability for a given household is a question for the other sections of this page, not for the trade record."
+  ],
+  "belmore-court-milton": [
+   "Ford is a newer part of Milton, and Belmore Court belongs to that layer of the town rather than to the nineteenth-century core.",
+   "What frames the court is largely other housing, open space, and the road network that carries residents out toward the rest of Milton.",
+   "Belmore Court trades rarely, with only a handful of recorded transactions over the past year.",
+   "Pricing here is clearest when read against the wider neighbourhood comparable rather than against the street's own thin record.",
+   "The rental side is more legible than the sale side."
+  ],
+  "lloyd-landing-milton": [
+   "@fallback:A residential street in "
+  ],
+  "doran-crescent-milton": [
+   "The street bends rather than runs, which gives it the feel of a close rather than a thoroughfare, and traffic on it is almost entirely local.",
+   "The street's setting is suburban and settled rather than transitional, with the built form around it long established.",
+   "Doran Crescent has no recent recorded sales, and no price can be given for it.",
+   "The street's own stock is understood through its setting rather than through transaction evidence, and the absence of recent activity is itself the most useful fact about it.",
+   "What the street does offer is a settled position within Ford, a short crescent whose housing stock is clearest when read against the type mix and the wider neighbourhood rather than against its own transactions."
+  ],
+  "chilver-heights-milton": [
+   "What can be said is structural: the street's stock is detached housing, and the wider Ford neighbourhood is where any pricing reference has to come from.",
+   "Year-over-year direction is not published for this cohort, so no trend claim is made.",
+   "Read alongside the street's own sparse record, the neighbourhood picture is the steadier signal: detached stock in Ford has been trading at a consistent level, and Chilver Heights sits within that frame."
+  ],
+  "dinsmore-drive-milton": [
+   "Dinsmore Drive is a residential street in Milton's Beaty neighbourhood, a pocket of west Milton that fills the grid between the escarpment side of town and the commercial spine along Steeles Avenue.",
+   "The street itself is residential and low-key, the kind of address that trades on its position within Beaty rather than on any landmark of its own.",
+   "Dinsmore Drive carries no recent recorded sales, so no price can be given for the street itself.",
+   "The street's housing stock is not broken out in the available data, and no unit mix, dominant style, or lot detail is published for it.",
+   "What can be said is that Dinsmore Drive sits within Beaty's established residential fabric, and the neighbourhood around it is well documented even where the street is not."
+  ],
+  "huffman-crescent-milton": [
+   "Huffman Crescent is a residential crescent in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main commercial corridors.",
+   "The street's curved form is typical of the subdivision geometry that defines this part of Milton, where crescents and courts break up the grid and slow local traffic.",
+   "Beaty frames the street on all sides, giving it a settled, inward-facing position within the neighbourhood rather than a through-route function.",
+   "What the street does show is a settled, single-form profile.",
+   "Detached homes are the only type recorded here, and they account for every sale in the window."
+  ],
+  "peacock-lane-milton": [
+   "Peacock Lane is a short residential lane in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+   "The street's scale is modest: a lane rather than a through road, which shapes how it functions day to day.",
+   "The lane's position places it within easy reach of the town's western commercial and institutional anchors without sitting on top of them.",
+   "Peacock Lane carries no recent recorded sales, and no price can be given for the street itself.",
+   "The street's own housing mix is not published in the current record, so the stock cannot be described by type or count with any confidence."
+  ],
+  "pratt-heights-milton": [
+   "The street is short and quiet, lined with townhomes that give the area a consistent, orderly feel.",
+   "It lies within easy reach of the neighbourhood's parks and schools, and the surrounding streets carry the same low-rise character.",
+   "Ford is a settled pocket of Milton, with mature landscaping and a calm rhythm.",
+   "Pratt Heights itself is a cul-de-sac of sorts, a place where traffic is light and the pace slows.",
+   "For those who know Milton, Ford is a familiar name, and Pratt Heights is one of its quieter corners."
+  ],
+  "holbrook-court-milton": [
+   "The court sits within a network of similarly scaled streets, close to the retail and services that line Thompson Road South and Main Street East.",
+   "The street itself is short and self-contained, with little through traffic, which gives it a settled, private character.",
+   "Holbrook Court offers a straightforward entry point into the Ford area, with the broader amenities of Milton accessible without leaving the neighbourhood's calm behind.",
+   "The court's townhouses align with this tier, offering a compact, low-maintenance profile that suits those seeking a straightforward entry into the neighbourhood.",
+   "The absence of detached homes or condos keeps the street's character cohesive, with townhouse living as the sole option for prospective buyers."
+  ],
+  "english-mill-court-milton": [
+   "The court sits within a grid of similar streets, close to the area's main arteries yet set back from their traffic.",
+   "The street itself is short, lined with detached homes that give it a settled, unhurried feel.",
+   "English Mill Court is composed entirely of detached houses, a uniformity that gives the street a consistent character.",
+   "The housing stock is typical of the Ford area, with homes that trade at a level consistent with the broader neighbourhood.",
+   "For buyers, the opportunity to acquire a detached home on this court arises only occasionally, making each listing a notable event."
+  ],
+  "ramsey-place-milton": [
+   "@fallback:A residential street in "
+  ],
+  "stewart-crescent-milton": [
+   "Stewart Crescent carries no recent recorded sales, so no price can be given for the street itself.",
+   "What is known is that it is a low-turnover residential crescent within Beaty, and the absence of active listings means the street's housing stock is not currently represented on the open market.",
+   "The street's form, a crescent rather than a through road, is the clearest observable fact about its layout.",
+   "Stewart Crescent has no recorded resale activity in the recent window, and no price can be given for it.",
+   "That is the honest starting point for anyone reading this street."
+  ],
+  "sauve-street-milton": [
+   "The housing stock on Sauve Street is overwhelmingly condominium.",
+   "Townhouse sales are too few to characterise a range, though the two that traded sit above the condo band.",
+   "The quarterly record is uneven rather than directional.",
+   "Read end to end, the street has moved through several inflection points without a clean arc."
+  ],
+  "timmer-place-milton": [
+   "The street sits within a residential pocket that feels removed from the town's busier corridors, yet it remains close to the everyday conveniences that shape a routine.",
+   "Timmer Place itself is a short, contained street, the kind that sees little through traffic and holds a distinct sense of enclosure.",
+   "Daily errands from Timmer Place are easily managed by car.",
+   "For families, the area is served by a range of schools.",
+   "Robertson and Sam Sherratt, while Milton District High School and Elsie MacGill Secondary School cover the secondary level."
+  ],
+  "zuest-crescent-milton": [
+   "Prices have held steady over the past year, with no strong directional movement.",
+   "For a street like Zuest Crescent, where turnover is minimal, the neighbourhood comparable offers the most useful pricing reference.",
+   "Buyers exploring comparable options in Milton's newer pockets might weigh different trade-offs.",
+   "If proximity to the GO station matters more than a quiet crescent, streets closer to the Milton GO platform could shorten the daily commute.",
+   "Each choice shifts the balance between convenience, setting, and price."
+  ],
+  "menefy-place-milton": [
+   "Menefy Place is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the main east-west corridors.",
+   "The street takes its name from the park at its centre, Menefy Park, which gives the immediate area a quiet, enclosed feel.",
+   "This is not a through-route; it is a local street whose traffic is almost entirely residents coming and going.",
+   "The surrounding Beaty grid is largely residential, with schools, parks, and everyday retail arranged along the arterial roads that frame the neighbourhood.",
+   "What the street does show is a consistent housing form."
+  ],
+  "hill-street-milton": [
+   "Hill Street is a short residential street in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment and north of the older core.",
+   "The street is quiet and largely built out, with the kind of low traffic that comes from a layout serving local addresses rather than through movement.",
+   "The recorded stock here is detached housing, and no semi-detached, townhouse, or condominium units appear in the street's profile.",
+   "That makes it a single-form street rather than a mixed one, which is less common in Beaty, where townhouse clusters and detached pockets often sit within a few blocks of each other.",
+   "No price can be given for Hill Street, and none should be inferred from the wider area."
+  ],
+  "culcastle-drive-milton": [
+   "Culcastle Drive is a detached-house street.",
+   "The recorded stock is entirely detached, and no semi-detached, townhouse, or condo units appear in the mix.",
+   "Active listings are currently absent, so the street is quiet on the supply side.",
+   "Nothing is being withheld; the street simply has not generated enough activity to support a street-level read.",
+   "What can be said is grounded in the wider neighbourhood."
+  ],
+  "melville-bonus-crescent-milton": [
+   "@fallback:A residential street in "
+  ],
+  "richardson-way-milton": [
+   "The street is residential in scale, framed by the surrounding Bowes grid, where local streets meet collector roads that carry traffic toward the parkway and the highway beyond."
+  ],
+  "sauble-court-milton": [
+   "Traffic on a court is limited to the households that live on it and the vehicles calling on them.",
+   "The surrounding Bowes grid carries the through movement, and Sauble Court sits just off it, close enough to the wider neighbourhood to share its amenities and far enough to keep the street itself quiet.",
+   "The housing stock on Sauble Court is townhouse, and townhouse alone.",
+   "Every recorded home on the street is a townhouse; there are no detached houses, no semis, and no condominium apartments in the mix.",
+   "The street is small, and the stock is correspondingly uniform."
+  ],
+  "lemieux-court-milton": [
+   "Fewer than a handful of recorded transactions have been logged over the past year, and the street's own price range is too narrow to publish as a band.",
+   "Suitability questions are addressed elsewhere on this page.",
+   "Negotiation room is modest but present: sold prices have landed just under asking on average, suggesting a market where well-prepared listings move close to their list price without the sharp discounting seen in softer pockets.",
+   "Year-over-year direction is not available for this segment, so the read stays on level rather than trend.",
+   "For buyers and sellers orienting to the Ford market, the picture is one of steady, unspectacular trade at a consistent price point."
+  ],
+  "fourth-line-milton": [
+   "It is a street of detached houses set along a corridor that carries local traffic rather than through traffic, which gives the address a settled, residential rhythm.",
+   "Schools, parks, and everyday retail all fall within a compact radius, so daily errands rarely require crossing the full width of Milton.",
+   "Housing on Fourth Line is overwhelmingly detached.",
+   "A small number of homes are actively listed at any given time, which keeps the street quiet in the way of a corridor where most addresses turn over slowly.",
+   "Fourth Line trades at a measured pace rather than a brisk one."
+  ],
+  "pozbou-crescent-milton": [
+   "Pozbou Crescent is a quiet residential loop in the Willmott neighbourhood of Milton, set among a network of similar crescents and courts that define the area's calm, suburban character.",
+   "Its layout encourages slow, local traffic, and the surrounding streets share a consistent, family-scale built form.",
+   "The street's position balances residential privacy with practical access to the rest of Milton and the broader GTA.",
+   "Detached homes line Pozbou Crescent, with a small number of recent sales reflecting the street's low-turnover character.",
+   "The street's quiet, established feel is reinforced by its housing composition, which appeals to those seeking a traditional detached home in a settled neighbourhood."
+  ],
+  "ferguson-drive-milton": [
+   "The street runs as a residential drive, framed by the low-rise fabric that defines this part of town.",
+   "It is a street of modest length and steady rhythm, the kind of address that sits inside a larger grid rather than announcing itself at its edge.",
+   "The housing stock on Ferguson Drive is mixed and low-rise.",
+   "No single type overwhelms the street; the three categories sit in reasonable balance."
+  ],
+  "harris-boulevard-milton": [
+   "The street reads as a quiet interior road rather than a through route, with the surrounding blocks given over to housing and the green spaces that thread between them.",
+   "The street itself is compact and settled, one thread in a district that has grown steadily around it.",
+   "Suitability questions are addressed elsewhere on this page; what the data supports here is a read on the surrounding market rather than the street's own trade history.",
+   "The rental side is where the street shows its hand.",
+   "Buyers in this segment have been paying at or slightly above asking, with the sold-to-ask ratio holding just above parity, which points to a market where well-presented semis attract competitive interest and negotiation room is limited."
+  ],
+  "meighen-way-milton": [
+   "Meighen Way is a short residential way in Milton's Beaty neighbourhood, a pocket of west Milton that sits between the escarpment country to the south and the commuter corridors to the north.",
+   "The street is quiet by design, a local road with no through-traffic role to play in the wider grid.",
+   "Detached homes define the address, and the street's scale is modest: this is not a long arterial stretch but a compact run of houses.",
+   "Its position in Beaty places it within easy reach of the grocery and retail cluster along the main commercial strips, while keeping the residential fabric intact.",
+   "Active listings on Meighen Way stand at zero, so the street is not currently offering inventory."
+  ],
+  "gordon-heights-milton": [
+   "Gordon Heights sits in the Beaty neighbourhood of Milton, a quiet residential enclave set within a grid of similar streets.",
+   "The road itself is a short, unassuming stretch, lined with detached homes that give the area a settled, suburban character.",
+   "The housing stock on Gordon Heights is composed entirely of detached homes, a uniformity that gives the street a consistent visual rhythm.",
+   "These are the only residences on the street, with no townhomes or condominiums breaking the pattern.",
+   "Gordon Heights is a quiet residential street in the Beaty neighbourhood, where detached homes are the prevailing form."
+  ],
+  "trudeau-drive-milton": [
+   "Trudeau Drive is a residential street in Milton's Clarke area, part of the western corridor that has grown steadily outward from the town's older centre.",
+   "The street sits within reach of Beaty and Bowes, placing it in a pocket where newer subdivision fabric meets the established grid.",
+   "Detached homes dominate the street's resale profile, with townhouse activity too sparse to establish a reliable price point.",
+   "Trudeau Drive's own pricing is clearest when read against that neighbourhood context, given the street's limited transaction volume."
+  ],
+  "hemlock-drive-milton": [
+   "Hemlock Drive has no recent recorded sales, so the housing stock cannot be described by price or by a dominant type.",
+   "For a buyer or seller trying to price Hemlock Drive itself, the honest position is that no figure can be given.",
+   "Hemlock Drive is a street that trades rarely.",
+   "Where a street-level read is unavailable, the wider neighbourhood carries the orientation.",
+   "Directional and negotiation reads for the neighbourhood are not published in the current window, so no year-over-year movement or sold-to-ask pattern can be stated here."
+  ],
+  "blinco-terrace-milton": [
+   "It sits within a broader area that transitions into Rural Milton West, giving the immediate surroundings a semi-rural feel despite the proximity to suburban development.",
+   "The street itself is lined with detached homes, set back from the road with mature trees.",
+   "Blinco Terrace offers a sense of calm, away from the busier arterial roads, yet remains connected to the amenities of Milton."
+  ],
+  "riddell-crescent-milton": [
+   "Riddell Crescent is a residential curve in Milton's Beaty neighbourhood, the kind of street that folds back on itself rather than carrying traffic through to anywhere else.",
+   "The surrounding blocks are largely built out, so the street's shape and its housing mix are settled rather than in flux.",
+   "For daily purposes, this is a street defined by its position inside an established residential grid rather than by any through-route function.",
+   "Housing on Riddell Crescent is townhouse throughout.",
+   "Every recorded sale on the street has been a townhouse, and no detached, semi-detached, or condominium stock appears in the mix."
+  ],
+  "wickson-way-milton": [
+   "Wickson Way is a short residential way in Milton's Beaty neighbourhood, a pocket of the town that sits west of the escarpment line and north of the main east-west corridors.",
+   "The street's place in the Milton grid reads as residential fabric in a largely built-out quarter, one where the road pattern turns and narrows rather than carrying through traffic.",
+   "Beaty itself is a settled part of town, with the sort of internal geometry that rewards a map more than a description.",
+   "Wickson Way belongs to that geometry: a local address, not a route.",
+   "What the street does show is a consistent housing form: the semi-detached home is the dominant type, and it accounts for the entirety of the street's recent activity."
+  ],
+  "moorelands-crescent-milton": [
+   "Moorelands Crescent is a detached street.",
+   "Every home that has traded here recently has been a detached house, and there is no townhouse or condominium component in the mix.",
+   "The street holds a single, consistent housing form from end to end.",
+   "Moorelands Crescent trades in detached houses, and it trades rarely.",
+   "The street's position within Timberlea shapes how it trades."
+  ],
+  "detlor-heights-milton": [
+   "Detlor Heights carries no recent recorded sales, and no price can be given for it.",
+   "That is a statement about the record, not about the street: there is simply nothing published to quote.",
+   "The street itself is residential in form, and its stock should be read through the neighbourhood it belongs to rather than through any transaction history of its own.",
+   "What the record does show is a street that trades rarely, where turnover is low and listings surface infrequently.",
+   "Position and surroundings carry the rest of the picture."
+  ],
+  "labine-point-milton": [
+   "The street sits within a grid of similar lanes and crescents, set back from the main arterial roads that frame the area.",
+   "Labine Point itself is a short, contained street, the kind that sees little through traffic.",
+   "For anyone looking to understand Milton's newer suburban growth, this part of Cobban offers a clear example of the town's recent expansion.",
+   "The housing on Labine Point is made up of townhomes, with a small number of units recorded in recent activity.",
+   "With limited sales data available for the street itself, the neighbourhood-level figure provides a useful reference point for understanding the local market."
+  ],
+  "dawson-crescent-milton": [
+   "The housing stock on Dawson Crescent consists entirely of townhouses.",
+   "The street's quiet character and central location make it a practical choice for those seeking a compact home in an established setting.",
+   "Dawson Crescent trades rarely, with only a handful of recorded transactions over the past year.",
+   "The street is a quiet crescent in Old Milton, lined with townhomes that turn over infrequently."
+  ],
+  "john-street-milton": [
+   "John Street runs through the heart of Old Milton, one of the town's earliest settled neighbourhoods.",
+   "It is a short, quiet residential lane lined with mature trees and century homes.",
+   "Its compact scale and deep-rooted character set it apart from the newer subdivisions spreading across the town's periphery.",
+   "John Street feels like a remnant of an older Milton, where front porches and fenced yards are the norm.",
+   "John Street is a quiet, low-turnover lane in Old Milton, with only a handful of recorded transactions over the past year."
+  ],
+  "bronson-terrace-milton": [
+   "The housing stock on Bronson Terrace is townhouse, and townhouse only.",
+   "No detached or semi-detached homes appear in the record, and no condominium units either.",
+   "Over the past year the street recorded only a small handful of transactions, and none of them produced a publishable price for the street itself.",
+   "That is not a withholding; it is the shape of the data.",
+   "What the street does show is a consistent housing form: the recorded activity is townhouse, and townhouse is the only type that appears in the street's own mix."
+  ]
+ }
+}

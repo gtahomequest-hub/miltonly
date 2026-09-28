@@ -1,0 +1,40 @@
+# MP-002c
+
+PORTAL · D:\miltonly-portal · feat/portal
+
+The User-Agent guard on the door. **Gated locally, preview pending.** App code at **`f7813c1`** (`0ac988d` the wiring, `f7813c1` the review fixes), on top of `a6502f0`, the merge of `origin/main` `e087209` (MC-029 and MC-030, the VOW compliance hotfix, no conflicts) into the branch. The docs commit on top is the branch head, named in the reply. NOT merged; Core merges by SHA.
+
+## What was done
+
+**`checkUserAgent` is on the branch.** It did not exist on `main`; it is ML-005's, on `origin/feat/leads @ 064c5b6`, unmerged. `src/lib/lead/guards.ts` on this branch is that file **verbatim** (`git diff 064c5b6 HEAD -- src/lib/lead/guards.ts` is empty): `checkUserAgent` (missing or quoted User-Agent refused the honeypot's way, 200 and nothing written), `emailLimitKey` (Gmail dots and plus-tags collapsed for the limit key only), the daily windows (IP 12 per day beside 5 per 10 min; inbox 6 per day beside 3 per hour), and `checkRateLimit(args, take = liveTake)`. Taken whole rather than as one function so the file merges clean in either order. Main's `scripts/test-lead-guards.ts` passes against it, 209 assertions.
+
+**The wiring.** `requestSignIn()` in `src/lib/portal/door.ts` runs `checkUserAgent(req.userAgent)` after the honeypot and before the origin check: a missing, empty, whitespace, or quote-carrying User-Agent answers 200 with the success words, persists nothing, sends nothing, and never reaches the limiter, so it spends no token. `SignInRequest` gained `userAgent`; `/api/auth/signup` passes `request.headers.get("user-agent")`. The refused value rides on `detail` and the route logs `{ reason, status, detail }` (no address, no IP), so a real browser that ever trips the quote rule leaves a trace; before this the log had the reason alone.
+
+**Why before the origin check.** The door's rule (its header comment): silent refusals first, then the one that speaks, then the one that spends. A script with the bot's header and no Origin gets 200 "Check your email" rather than the 403 that would tell it to add an Origin header. ML-005 placed the same guard after the origin check on the lead ingress; `door.ts` now says the functions are shared and the order is this file's own.
+
+**Prebuild.** `scripts/test-portal-door.ts`, **155 assertions** (from 120): 100 signups with a missing or quoted User-Agent send 0 emails, write 0 rows, all answer 200 with the success words, and the limiter is called 0 times; a table of refused values (no header, empty, whitespace, the bot's double-quoted Chrome string, a single-quoted string, a quote anywhere) each asserted to the exact reason and to carry the value on `detail`; accepted values (iPhone Safari, desktop Chrome, `curl/8.4.0`, `node`) each send; a quoted User-Agent with no origin answers 200, not 403 (order); a trapped body sent WITH the bot's header is refused for the honeypot (a swap of the two guards would fail it); the honeypot battery asserts the words; structurally, `checkUserAgent` is imported from `@/lib/lead/guards` (not copied), the route passes the header and logs `detail`, and the four guards appear in order.
+
+## The adversarial review (ultracode)
+
+A workflow of 61 agents: four lenses (bypass, order and semantics, test honesty, merge safety and real users) found 19 claims; each was put to three refuters; **19 survived, 0 refuted**. Six were this slice's own and are fixed in `f7813c1`: the honeypot-before-User-Agent assertion could not detect a swap (it sent a browser header); the reason assertion was vacuous on a 4xx and not per row; the honeypot battery did not assert the words; `door.ts` still called `guards.ts` "unchanged" and "the same rule"; `BOT_UA` was called the sign-in bot's "exact" header when it is the sale-detail leads' header attributed by address and timing (now said so); the refusal log carried no header value. The rest are below, under Open, each with its owner.
+
+## Gates
+
+- `pnpm build` on Node 22: **exit 0** at `0ac988d` and at `f7813c1`, `P2024` 0, prebuild 38 tests.
+- `tsc --noEmit` clean (after clearing `.next/types` left by MC-029's deleted route); `next lint` clean on the touched directories.
+- `next start -p 3111` with `VERCEL_GIT_COMMIT_SHA=f7813c1…`; `db2` and `db3` Data Cache tags dropped through `/api/revalidate` before the battery (the MP-002b lesson).
+- Battery `EXPECT_SHA=f7813c1… BASE=http://localhost:3111`: **`PASS · 21 checks · 646 pages · 902s`**, exit 0 (21 checks since MC-029 added `vow-fields`; 646 pages, the creation cron's overnight streets). One earlier run at `0ac988d` reported 20 ladder targets "not a 200" and 20 sitemap pages short while the 61-agent review was running on the same machine; every one of those pages answered 200 in 18 ms afterwards, and the server log holds no error; that run was load, not code, and the clean run at `f7813c1` stands.
+- On the running server: `curl -A ""` and `curl -A '"Mozilla/5.0 (…Chrome/142.0.0.0…)"'` with a good Origin both answered 200 with the success words and wrote no row (`User` count unchanged), the log reading `reason: 'no user agent', detail: ''` and `reason: 'quoted user agent', detail: '"Mozilla/5.0 (Macintosh; …"'`; a quoted User-Agent with no Origin answered 200 (the silent guard first); plain `curl` with no Origin still answered 403 (the origin check still speaks to a client that looks like a client). A real browser (`probe-door.mjs request`, iPhone UA) reached the code step and the email went (`resendId 01a0beec-…`).
+- No `npx vercel` deploy: the task said gate locally. Production answers 200 again as of today; the next preview is Core's call.
+
+## Open
+
+1. **`/api/auth/verify` has no guard at all** (pre-existing, MP-002; the review's two should-fix findings): no origin check, no User-Agent guard, no rate limit, no IP read; every POST costs a Prisma read and, against a live secret, a write; five wrong codes against any address while its code is pending lock that code (check-then-increment, not serialised, so concurrent guesses are all judged). Portal's file. Proposed **MP-002d**: `checkOrigin` + `checkUserAgent` + the login limiter on verify, and the increment as `updateMany where verifyAttempts < MAX_ATTEMPTS`. Not done here: the task named `requestSignIn`.
+2. `/api/auth/login` accepts a missing or quoted User-Agent (one DB read, one bcrypt compare, two limiter tokens per request); its email bucket keys on the raw address, not `emailLimitKey`. Same slice as item 1.
+3. `checkUserAgent` refuses ASCII quotes only; a bot that drops the quotes passes to the rate limit, which is the ceiling (6 per day per collapsed inbox, 12 per IP). `guards.ts` cites RFC 9110 for "no quotes in a User-Agent", and the grammar does allow them; the rule is empirical (no shipping browser sends one). Leads' file: the wording, and whether the apostrophe belongs in the regex, are Leads' to decide, and any change must land on both branches identically or the clean merge is lost.
+4. A real person refused by the guard (a blanked User-Agent extension, a proxy that strips the header) sees "Check your email" and nothing arrives; "Send a new one" replays the same refused request. The review put the exposure at effectively zero for mainstream browsers and webviews and found 0 of the site's 37 stored User-Agents would be refused; the log's `detail` is the trace if it ever happens.
+5. The refusal answers before any I/O and a real send after three awaits, so response time distinguishes them; the body and status do not. Pre-existing for the honeypot.
+6. Merge order: if Core merges `feat/portal` before `feat/leads`, `main`'s lead ingress gains the daily windows and the alias collapse through the shared `checkRateLimit` (nothing on `main` breaks; its test passes); `feat/leads` itself does not merge clean onto today's `main` (three conflicts in `package.json`, `scripts/test-lead-forms.ts`, `ListingDetailClient.tsx`, none the portal's; Leads' handoff already says main must be merged in first).
+7. `User` holds one row today (`gtahomequest@gmail.com`); Core's `+mc028` row is gone, not by this worktree.
+
+Report: scratchpad/reports/MP-002c-user-agent-guard.md

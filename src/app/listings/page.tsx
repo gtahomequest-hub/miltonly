@@ -15,6 +15,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getListingsV2Data, parseListingsQuery } from '@/lib/listingsV2Data';
 import { getSession } from '@/lib/auth';
+import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { headers } from "next/headers";
 import { canSeeVowRecords } from '@/lib/vow-access';
 import { getStreetCompareContrast } from '@/lib/comparisonData';
 
@@ -68,6 +70,21 @@ export default async function ListingsPage({ searchParams }: Props) {
     getListingsV2Data(query, { vow }),
     getStreetCompareContrast(),
   ]);
+  // The audit trail (MP-006): the grid carried the VOW-only card facts to this consumer. A
+  // server component can write a row, not a cookie; /api/auth/me winds the clock on mount.
+  if (vow && user) {
+    const h = headers();
+    await logVowAccess({
+      userId: user.id,
+      kind: "listings-grid",
+      scope: `${query.status}:${query.type}${query.neighbourhood ? `:${query.neighbourhood}` : ""}`,
+      path: "/listings",
+      recordCount: data.listings.length,
+      ip: clientIpFromHeaders(h),
+      userAgent: h.get("user-agent"),
+      reviewFlag: user.reviewFlag,
+    });
+  }
 
   const articleSchema = {
     '@context': 'https://schema.org',

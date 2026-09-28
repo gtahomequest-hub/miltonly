@@ -57,10 +57,14 @@ export default function TermsPage() {
             Sold and leased MLS® records are shown only to registered consumers with a bona fide interest in buying,
             selling or leasing, under TRREB&apos;s VOW rules (R-805). Registration is a username and a password: your
             username is your verified email address, and you choose your password (twelve characters or more) at first
-            sign-in, after agreeing to the acknowledgement shown there. A one-time emailed link or code verifies your
-            email and stands in when you forget your password; no sold record is shown until your password is set. Each
-            sign-in lasts at most 90 days, after which you sign in again. The records of your registration are kept for
-            at least 180 days after a sign-in expires, as the VOW rules require.
+            sign-in, after agreeing to the terms of use shown there (the nine clauses PropTx requires, including that
+            the MLS® data is for your personal, non-commercial use, that PropTx owns it, and that PropTx may audit
+            this site and its consumers). A one-time emailed link or code verifies your email and stands in when you
+            forget your password; no sold record is shown until your password is set. Your password expires 90 days
+            after you set it and you confirm or change it then; a sign-in ends after 60 minutes without activity and in
+            any case 90 days after it began. Licensed real estate registrants may not use the VOW. Your access to the
+            records is logged (who, when, what, from where) and the log, with your registration records, is kept for at
+            least 180 days after your password expires and may be provided to PropTx on request.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Limitation of liability</h2>

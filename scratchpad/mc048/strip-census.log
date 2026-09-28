@@ -1,0 +1,62 @@
+grey-landing-milton                      published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+norris-circle-milton                     published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+muskoka-heights-milton                   published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+watson-terrace-milton                    published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[about].p0×1
+watson-terrace-milton                    published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[about].p0×1
+manitou-way-milton                       published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+fennamore-terrace-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+slingsby-landing-milton                  published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+magurn-gate-milton                       published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+reece-court-milton                       published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+schreyer-crescent-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+gleave-terrace-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+urell-way-milton                         published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+bessborough-drive-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+mortimer-crescent-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+septimus-heights-milton                  published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[gettingAround].p0×1
+murlock-heights-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+belmore-court-milton                     published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+lloyd-landing-milton                     published/minimal gen:yes surfaces:[ld-place] -> StreetContent.description×1 sections[about].p0×1
+doran-crescent-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+chilver-heights-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+dinsmore-drive-milton                    published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+huffman-crescent-milton                  published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+peacock-lane-milton                      published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+pratt-heights-milton                     published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+holbrook-court-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+english-mill-court-milton                published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+ramsey-place-milton                      published/standard/needsReview gen:yes surfaces:[hero ld-place] -> StreetContent.description×1
+stewart-crescent-milton                  published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+sauve-street-milton                      published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+timmer-place-milton                      published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[about].p0×1
+zuest-crescent-milton                    published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+menefy-place-milton                      published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+menefy-place-milton                      published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+hill-street-milton                       published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+culcastle-drive-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+melville-bonus-crescent-milton           published/minimal gen:yes surfaces:[ld-place] -> StreetContent.description×1 sections[about].p0×1
+richardson-way-milton                    published/minimal gen:yes surfaces:[ld-place] -> StreetContent.description×1 sections[about].p0×1
+sauble-court-milton                      published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+lemieux-court-milton                     published/standard gen:yes surfaces:[hero ld-place] -> StreetContent.description×1 sections[about].p0×1
+fourth-line-milton                       published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+pozbou-crescent-milton                   published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+culcastle-drive-milton                   published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+ferguson-drive-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+harris-boulevard-milton                  published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+meighen-way-milton                       published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+gordon-heights-milton                    published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+trudeau-drive-milton                     published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+hemlock-drive-milton                     published/standard gen:yes surfaces:[hero ld-place] -> StreetContent.description×1 sections[about].p0×1
+blinco-terrace-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+riddell-crescent-milton                  published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+wickson-way-milton                       published/standard gen:yes surfaces:[sec:gettingAround] -> StreetContent.description×1 sections[gettingAround].p0×1
+moorelands-crescent-milton               published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+detlor-heights-milton                    published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[about].p0×1
+labine-point-milton                      published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+dawson-crescent-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> StreetContent.description×1 sections[about].p0×1
+john-street-milton                       published/standard gen:yes surfaces:[sec:about] -> StreetContent.description×1 sections[about].p0×1
+victoria-street-milton                   published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+bronson-terrace-milton                   published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[about].p0×1
+detlor-heights-milton                    published/standard gen:yes surfaces:[] -> StreetContent.description×1 sections[about].p0×1
+
+summary (sentences by field): {"StreetContent.description":59,"sections":58,"NOT FOUND":1}

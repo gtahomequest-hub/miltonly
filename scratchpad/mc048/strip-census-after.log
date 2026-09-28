@@ -1,0 +1,63 @@
+grey-landing-milton                      published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+norris-circle-milton                     published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+muskoka-heights-milton                   published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+watson-terrace-milton                    published/standard gen:yes surfaces:[] -> NOT FOUND
+watson-terrace-milton                    published/standard gen:yes surfaces:[] -> NOT FOUND
+manitou-way-milton                       published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+fennamore-terrace-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+slingsby-landing-milton                  published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+magurn-gate-milton                       published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+reece-court-milton                       published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+schreyer-crescent-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+gleave-terrace-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+urell-way-milton                         published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+bessborough-drive-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+mortimer-crescent-milton                 published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+septimus-heights-milton                  published/standard gen:yes surfaces:[] -> NOT FOUND
+murlock-heights-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+belmore-court-milton                     published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+lloyd-landing-milton                     published/minimal gen:yes surfaces:[ld-place] -> NOT FOUND
+doran-crescent-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+chilver-heights-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+dinsmore-drive-milton                    published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+huffman-crescent-milton                  published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+peacock-lane-milton                      published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+pratt-heights-milton                     published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+holbrook-court-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+english-mill-court-milton                published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+ramsey-place-milton                      published/standard/needsReview gen:yes surfaces:[hero ld-place] -> NOT FOUND
+stewart-crescent-milton                  published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+sauve-street-milton                      published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+timmer-place-milton                      published/standard gen:yes surfaces:[] -> NOT FOUND
+zuest-crescent-milton                    published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+menefy-place-milton                      published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+menefy-place-milton                      published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+hill-street-milton                       published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+culcastle-drive-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+melville-bonus-crescent-milton           published/minimal gen:yes surfaces:[ld-place] -> NOT FOUND
+richardson-way-milton                    published/minimal gen:yes surfaces:[ld-place] -> NOT FOUND
+sauble-court-milton                      published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+lemieux-court-milton                     published/standard gen:yes surfaces:[hero ld-place] -> NOT FOUND
+fourth-line-milton                       published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+pozbou-crescent-milton                   published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+culcastle-drive-milton                   published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+ferguson-drive-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+harris-boulevard-milton                  published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+meighen-way-milton                       published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+gordon-heights-milton                    published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+trudeau-drive-milton                     published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+hemlock-drive-milton                     published/standard gen:yes surfaces:[hero ld-place] -> NOT FOUND
+blinco-terrace-milton                    published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+riddell-crescent-milton                  published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+wickson-way-milton                       published/standard gen:yes surfaces:[sec:gettingAround] -> NOT FOUND
+moorelands-crescent-milton               published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+detlor-heights-milton                    published/standard gen:yes surfaces:[] -> NOT FOUND
+labine-point-milton                      published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+dawson-crescent-milton                   published/standard gen:yes surfaces:[hero ld-place sec:about] -> NOT FOUND
+john-street-milton                       published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+victoria-street-milton                   published/standard gen:yes surfaces:[sec:about] -> NOT FOUND
+bronson-terrace-milton                   published/standard gen:yes surfaces:[] -> NOT FOUND
+detlor-heights-milton                    published/standard gen:yes surfaces:[] -> NOT FOUND
+
+summary (sentences by field): {"NOT FOUND":60}
+dual write after the strip: 54 of 55 rows have description == the joined sections; not equal: ramsey-place-milton (needsReview)

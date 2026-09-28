@@ -4,15 +4,20 @@
 // WHY THIS IS A LIBRARY AND NOT TWO ROUTE FILES. MP-001 found /api/auth/signup with no
 // honeypot, no rate limit and no origin check, sending a Resend email on every hit; a bot had
 // put 162 rows in User and taken 162 emails, and nobody real had ever verified. The guards are
-// the lead layer's (src/lib/lead/guards.ts), unchanged, so a sign-in and a form submission are
-// held to the same rule. The route calls requestSignIn(); the prebuild test calls it with the
+// the lead layer's functions (src/lib/lead/guards.ts, here at ML-005's version, feat/leads @
+// 064c5b6), so a sign-in and a form submission are refused by the same code; the ORDER is this
+// file's own (below) and differs from the lead ingress, which runs the origin check before the
+// User-Agent guard. The route calls requestSignIn(); the prebuild test calls it with the
 // database and the sender replaced by counters, runs a hundred bot signups through it, and
 // fails the build if a single one reaches the sender.
 //
 // ORDER OF THE GUARDS MATTERS. Honeypot first, because it costs nothing and answers 200 so the
-// bot learns nothing. Origin second, because a non-browser caller never gets as far as the
-// store. Rate limit last, because it is the only guard that spends anything (an Upstash token),
-// and a request refused by the first two must not spend it.
+// bot learns nothing. User-Agent second (MP-002c), for the same reason: a missing or quoted
+// User-Agent is a script, never a browser (the ML-005 guard, src/lib/lead/guards.ts), and it
+// is refused the honeypot's way, 200 and nothing written, before any answer that could teach
+// the script what to fix. Origin third, because a non-browser caller never gets as far as the
+// store. Rate limit last, because it is the only guard that spends anything (an Upstash
+// token), and a request refused by the first three must not spend it.
 //
 // ONE SECRET, TWO SHAPES. The email carries a 6-digit code (typed on the phone that has the
 // page open) and a link (tapped on the phone that has the inbox open). They expire together,
@@ -29,7 +34,7 @@
 // src/lib/auth.ts).
 
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-import { checkHoneypot, checkOrigin, checkRateLimit, hostAllowed, type GuardVerdict } from "@/lib/lead/guards";
+import { checkHoneypot, checkOrigin, checkRateLimit, checkUserAgent, hostAllowed, type GuardVerdict } from "@/lib/lead/guards";
 import { config } from "@/lib/config";
 
 export const CODE_MINUTES = 15;
@@ -99,6 +104,8 @@ export function magicLink(origin: string, token: string, redirect: string): stri
 export interface SignInRequest {
   body: Record<string, unknown>;
   ip: string;
+  /** The User-Agent header as received; null when absent. Judged by checkUserAgent. */
+  userAgent: string | null;
   origin: string | null;
   referer: string | null;
   host: string | null;
@@ -121,7 +128,7 @@ export interface SignInDeps {
 }
 
 export type SignInResult =
-  | { ok: true; status: 200; body: { success: true; message: string }; sent: boolean; reason?: string }
+  | { ok: true; status: 200; body: { success: true; message: string }; sent: boolean; reason?: string; detail?: string }
   | { ok: false; status: number; body: { error: string }; reason: string };
 
 /** The one message a caller ever sees on success. The same words whether the address is new,
@@ -133,6 +140,14 @@ export async function requestSignIn(req: SignInRequest, deps: SignInDeps): Promi
   if (!trapped.ok) {
     // 200 with the success body. Nothing persisted, nothing sent.
     return { ok: true, status: 200, body: { success: true, message: SENT_MESSAGE }, sent: false, reason: trapped.reason };
+  }
+
+  const agent = checkUserAgent(req.userAgent);
+  if (!agent.ok) {
+    // The honeypot's way again: the same 200 and the same words, nothing persisted, nothing sent.
+    // The header value rides on `detail` so the route's log can show what was refused: a real
+    // browser tripping the quote rule would otherwise be invisible (nothing is written).
+    return { ok: true, status: 200, body: { success: true, message: SENT_MESSAGE }, sent: false, reason: agent.reason, detail: (req.userAgent ?? "").slice(0, 200) };
   }
 
   const origin = checkOrigin(req.origin, req.referer);
