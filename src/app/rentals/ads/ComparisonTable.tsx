@@ -15,7 +15,7 @@ const ROWS: Array<{
   diy: { mark: "yes" | "no" | "partial"; text: string };
 }> = [
   {
-    label: `Live TREB feed (every ${config.CITY_NAME} listing)`,
+    label: `Live MLS® feed (every ${config.CITY_NAME} listing)`,
     aamir: { mark: "yes", text: "Yes — same data MLS gives me" },
     diy: { mark: "no", text: "Delayed 24–48 hrs" },
   },

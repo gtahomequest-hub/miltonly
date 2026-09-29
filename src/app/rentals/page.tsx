@@ -47,7 +47,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     title: scope
       ? `${scope.name} Rentals, ${config.CITY_NAME}: Let ${config.SITE_NAME} Find Your Home`
       : `${config.CITY_NAME} Rentals: Let ${config.SITE_NAME} Find Your Home`,
-    description: `Browse active rentals in ${where}. Condos, townhouses, detached homes: live TREB data, verified landlords, same-day showings guaranteed.`,
+    description: `Browse active rentals in ${where}. Condos, townhouses, detached homes: live MLS® data, verified landlords, same-day showings guaranteed.`,
     canonical: `${config.SITE_URL}/rentals`,
   });
 }

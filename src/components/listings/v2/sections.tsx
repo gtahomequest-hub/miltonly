@@ -50,7 +50,7 @@ export function ListingsHero({ data, basePath }: { data: ListingsV2Data; basePat
         <h1>{h1}</h1>
         <p className="lv-countline">
           <span className="lv-livedot" aria-hidden />
-          <b>{totalCount.toLocaleString()} homes</b> · live TREB MLS® data, updated daily
+          <b>{totalCount.toLocaleString()} homes</b> · live PropTx MLS® data, updated daily
         </p>
 
         {/* keyword search — plain GET form, server re-queries on submit */}
@@ -245,7 +245,7 @@ export function FaqSection({ data }: { data: ListingsV2Data }) {
 export function Attribution({ avgPrice }: { avgPrice: number }) {
   return (
     <p className="lv-attr">
-      Data provided by TREB via {config.SITE_NAME}. MLS® listings updated daily. Average asking price{' '}
+      Data provided by the PropTx MLS® System via {config.SITE_NAME}. MLS® listings updated daily. Average asking price{' '}
       {fullPrice(avgPrice)}. Information is deemed reliable but not guaranteed.
     </p>
   );

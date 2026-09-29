@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = genMeta({
   title: `Mosques in ${config.CITY_NAME}: Homes Near Masjids`,
-  description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s mosques and Islamic centres. ${mosques.length} locations with live TREB listings by neighbourhood. Updated daily.`,
+  description: `Find homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s mosques and Islamic centres. ${mosques.length} locations with live MLS® listings by neighbourhood. Updated daily.`,
   canonical: `${config.SITE_URL}/mosques`,
   keywords: [
     `mosques near ${config.CITY_NAME} ${config.CITY_PROVINCE}`,
@@ -114,7 +114,7 @@ export default async function MosquesPage() {
         eyebrow="Community & real estate"
         title={`Mosques in ${config.CITY_NAME}`}
         titleEm="& nearby homes"
-        subtitle={`Find homes for sale near ${config.CITY_NAME}'s ${mosques.length} mosques and Islamic centres.${totalActive > 0 ? ` ${totalActive} active listings in surrounding neighbourhoods, updated daily from TREB.` : ""}`}
+        subtitle={`Find homes for sale near ${config.CITY_NAME}'s ${mosques.length} mosques and Islamic centres.${totalActive > 0 ? ` ${totalActive} active listings in surrounding neighbourhoods, updated daily from PropTx MLS®.` : ""}`}
         stats={[
           { value: String(mosques.length), label: "Mosques & centres" },
           { value: String(masjidCount), label: "Full masjids" },

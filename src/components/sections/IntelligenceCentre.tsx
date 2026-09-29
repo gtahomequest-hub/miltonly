@@ -130,7 +130,7 @@ export default function IntelligenceCentre() {
             Data no other {config.CITY_NAME} site has
           </h2>
           <p className="text-[14px] text-[#94a3b8] max-w-lg mx-auto">
-            The only {config.CITY_NAME} tool that compares any two streets, neighbourhoods or buildings across 10 live data dimensions — updated daily from TREB. No other site in {config.CITY_NAME} offers this.
+            The only {config.CITY_NAME} tool that compares any two streets, neighbourhoods or buildings across 10 live data dimensions — updated daily from PropTx MLS®. No other site in {config.CITY_NAME} offers this.
           </p>
         </div>
 

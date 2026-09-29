@@ -375,7 +375,7 @@ export async function getListingsV2Data(query: ListingsQuery, opts: { vow?: bool
   const faqs = [
     {
       question: `How many homes are for sale in ${config.CITY_NAME} ${config.CITY_PROVINCE}?`,
-      answer: `There are currently ${totalCount} homes ${statusLabel} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Listings update daily from TREB MLS® data and include detached homes, semis, townhouses, and condos across every ${config.CITY_NAME} neighbourhood.`,
+      answer: `There are currently ${totalCount} homes ${statusLabel} in ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Listings update daily from PropTx MLS® data and include detached homes, semis, townhouses, and condos across every ${config.CITY_NAME} neighbourhood.`,
     },
     {
       question: `What is the average home price in ${config.CITY_NAME}?`,

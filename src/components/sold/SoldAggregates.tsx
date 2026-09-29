@@ -24,7 +24,7 @@ export default function SoldAggregates({ data }: { data: SoldAggregatesData }) {
             What homes actually <em>sold</em> for in {CITY}
           </h2>
           <p className="sv-agg-sub">
-            Every figure below is a k-anonymised aggregate of real closed TREB MLS<sup>®</sup> sales —
+            Every figure below is a k-anonymised aggregate of real closed PropTx MLS<sup>®</sup> sales;
             no individual transaction is identifiable. The exact per-home records are free with a
             verified email.
           </p>

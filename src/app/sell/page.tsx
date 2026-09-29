@@ -131,11 +131,11 @@ export default function SellPage() {
             </div>
             <div className="s-proof">
               <div className="s-proof-stat">IDX #{TRUST.idx}</div>
-              <div className="s-proof-label">Licensed TREB IDX data feed</div>
+              <div className="s-proof-label">Licensed PropTx IDX data feed</div>
             </div>
             <div className="s-proof">
               <div className="s-proof-stat">VOW #{TRUST.vow}</div>
-              <div className="s-proof-label">Licensed TREB VOW data feed</div>
+              <div className="s-proof-label">Licensed PropTx VOW data feed</div>
             </div>
           </div>
         </div>

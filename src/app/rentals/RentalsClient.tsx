@@ -439,7 +439,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
           <div className="live-row">
             {/* data-fig is the battery's handle: the homepage gate asserts its
                 "available to rent" tile equals the figure THIS page publishes. */}
-            <div className="live-badge" data-fig={scope ? "rentals-available-in-hub" : "rentals-available"} data-value={totalRentals} data-scope={scope?.slug ?? undefined}><span className="live-dot" />{totalRentals} active rentals{scope ? ` in ${scope.name}` : ""} · live TREB data</div>
+            <div className="live-badge" data-fig={scope ? "rentals-available-in-hub" : "rentals-available"} data-value={totalRentals} data-scope={scope?.slug ?? undefined}><span className="live-dot" />{totalRentals} active rentals{scope ? ` in ${scope.name}` : ""} · live MLS® data</div>
             {newThisWeek > 0 && <span className="new-this-week">· {newThisWeek} new this week</span>}
             <a href={`tel:${config.realtor.phoneE164}`} className="hero-phone-link" style={{color:"#00ff80"}}>
               📞 Call {REALTOR_FIRST_NAME} · {config.realtor.phone}
@@ -785,7 +785,7 @@ export default function RentalsClient({ listings, newThisWeek, totalRentals, avg
       {/* ═══ WHY {SITE_NAME} TRUST SECTION ═══ */}
       <section className="trust-why">
         <div className="trust-why-inner">
-          <div className="trust-why-item"><span className="trust-why-ico">✓</span>Every {config.CITY_NAME} rental live from TREB — updated daily</div>
+          <div className="trust-why-item"><span className="trust-why-ico">✓</span>Every {config.CITY_NAME} rental live from the PropTx MLS®, updated daily</div>
           <div className="trust-why-item"><span className="trust-why-ico">✓</span>No fake listings — all verified MLS data</div>
           <div className="trust-why-item"><span className="trust-why-ico">⏱</span>{REALTOR_FIRST_NAME} confirms your showing within the hour</div>
         </div>

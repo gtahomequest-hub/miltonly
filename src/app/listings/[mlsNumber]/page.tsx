@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import ListingDetailClient from "./ListingDetailClient";
 import SiteChrome from "@/components/nav/SiteChrome";
+import { contactEmail } from "@/lib/compliance/contact";
 import { getLeaseMarket, RENT_TYPE_LABEL, type RentType } from "@/lib/rentSignals";
 import { formatCount, formatDateProse, formatRent } from "@/lib/figureFormat";
 import type { ListingRentFigure } from "./ListingExtras";
@@ -269,7 +270,7 @@ export default async function ListingDetailPage({ params }: Props) {
     } : undefined,
     availability: "https://schema.org/InStock",
     // our own office by its registered name (MC-043); every other office as the feed names it
-    seller: { "@type": "Organization", name: isOurBrokerage(listing.listOfficeName) ? config.brokerage.name : listing.listOfficeName || "TREB MLS" },
+    seller: { "@type": "Organization", name: isOurBrokerage(listing.listOfficeName) ? config.brokerage.name : listing.listOfficeName || "PropTx MLS® System" },
   };
   const crumbs: Array<{ name: string; item: string }> = [
     { name: config.SITE_NAME, item: config.SITE_URL },
@@ -317,6 +318,7 @@ export default async function ListingDetailPage({ params }: Props) {
           hoodName,
           rent: rentFigure,
           schools: schoolsLite,
+          contactEmail: contactEmail(),
         }}
         vowFacts={<ListingVowFacts mlsNumber={listing.mlsNumber} isRental={isRental} />}
       />

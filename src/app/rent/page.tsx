@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Rentals: Find Your Rental Home in ${config.CITY_NAME} ${config.CITY_PROVINCE_CODE}`,
-  description: `Browse active rentals in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes: live TREB data, verified landlords, same-day showings guaranteed.`,
+  description: `Browse active rentals in ${config.CITY_NAME} ${config.CITY_PROVINCE}. Condos, townhouses, detached homes: live MLS® data, verified landlords, same-day showings guaranteed.`,
   canonical: `${config.SITE_URL}/rent`,
 });
 

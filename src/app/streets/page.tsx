@@ -37,7 +37,7 @@ export const revalidate = 3600;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
-  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} street with real estate data. Average prices, days on market, active listings. Street-level intelligence powered by TREB.`,
+  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} street with real estate data. Average prices, days on market, active listings. Street-level data from the PropTx MLS® System.`,
   canonical: `${config.SITE_URL}/streets`,
 });
 
@@ -183,7 +183,7 @@ export default async function StreetsIndexPage() {
           </h1>
           <p className="dir-sub">
             {streetData.length} streets with live price data · {publishedCount} full street
-            reports published · Updated daily from TREB MLS®
+            reports published · Updated daily from PropTx MLS®
           </p>
         </div>
       </section>

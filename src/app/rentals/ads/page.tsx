@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Rentals: Get Matched by a Local Expert`,
-  description: `Live TREB rental listings in ${config.CITY_NAME} ${config.CITY_PROVINCE}, matched to your needs by RE/MAX Hall-of-Fame Realtor ${config.realtor.name}. Same-day showings when available.`,
+  description: `Live MLS® rental listings in ${config.CITY_NAME} ${config.CITY_PROVINCE}, matched to your needs by RE/MAX Hall-of-Fame Realtor ${config.realtor.name}. Same-day showings when available.`,
   canonical: `${config.SITE_URL}/rentals/ads`,
   // Paid landing page is open to crawlers — anecdotal Quality Score lift
   // from removing noindex on Google Ads LPs. Other site routes keep their
@@ -197,7 +197,7 @@ export default async function RentalsAdsPage({
         "@id": `${config.SITE_URL}/rentals/ads`,
         name: `${config.CITY_NAME} Rentals: Get Matched by a Local Expert`,
         description:
-          `Find your ${config.CITY_NAME} rental with ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live TREB listings hand-matched. Reply within 60 min.`,
+          `Find your ${config.CITY_NAME} rental with ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live MLS® listings hand-matched. Reply within 60 min.`,
         isPartOf: { "@id": `${config.SITE_URL}/#business` },
         about: { "@id": `${config.SITE_URL}/#${realtorFirstName}` },
       },

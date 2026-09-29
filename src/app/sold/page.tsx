@@ -83,7 +83,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       : `${config.CITY_NAME} sold homes: ${totals.last90} recent real estate sales`;
   const description =
     typical != null
-      ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from TREB MLS®.`
+      ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from PropTx MLS®.`
       : `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`;
   const meta = genMeta({
     title,
@@ -205,8 +205,8 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
           </h1>
           <p className="sv-lede">
             {nbhdLabel
-              ? <>Real closed transactions from TREB MLS<sup>®</sup> in {nbhdLabel}, {config.CITY_NAME}: exact sold prices, days on market, and sold-to-ask ratios, with the rest of {config.CITY_NAME} one chip away.</>
-              : <>Real closed transactions from TREB MLS<sup>®</sup>: exact sold prices, days on market, and sold-to-ask ratios across every {config.CITY_NAME} neighbourhood.</>}
+              ? <>Real closed transactions from PropTx MLS<sup>®</sup> in {nbhdLabel}, {config.CITY_NAME}: exact sold prices, days on market, and sold-to-ask ratios, with the rest of {config.CITY_NAME} one chip away.</>
+              : <>Real closed transactions from PropTx MLS<sup>®</sup>: exact sold prices, days on market, and sold-to-ask ratios across every {config.CITY_NAME} neighbourhood.</>}
           </p>
           <div className="sv-stats">
             <div className="sv-stat">
@@ -319,11 +319,11 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
           ) : (
             // Anonymous — clean table gate (no records fetched, none in the HTML).
             <div className="sv-gate">
-              <div className="sv-gate-k">TREB VOW · Registered access</div>
+              <div className="sv-gate-k">MLS® VOW · Registered access</div>
               <div className="sv-gate-h">Recent {config.CITY_NAME} sold prices, last 90 days</div>
               <p className="sv-gate-p">
                 Free with a verified email — exact sold prices, days on market, and
-                sold-to-ask ratios, updated daily from TREB MLS<sup>®</sup> data.
+                sold-to-ask ratios, updated daily from PropTx MLS<sup>®</sup> data.
               </p>
               <Link href={signinHref} className="sv-cta" rel="nofollow">
                 Sign in free to unlock →
@@ -331,10 +331,10 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
             </div>
           )}
 
-          {/* VOW consumer notice + TREB MLS attribution — required on every sold surface */}
+          {/* VOW consumer notice + PropTx MLS® attribution, required on every sold surface */}
           <div className="sv-notice">
             <b>
-              Source: TREB MLS<sup>®</sup>
+              Source: PropTx MLS<sup>®</sup> System
             </b>
             <p>{VOW_NOTICES}</p>
             <p>{config.brokerage.name}</p>

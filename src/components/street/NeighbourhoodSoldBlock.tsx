@@ -60,7 +60,7 @@ export default async function NeighbourhoodSoldBlock({
       <div className="max-w-6xl mx-auto space-y-8">
         <div>
           <p className="text-[10px] font-bold text-[#f59e0b] uppercase tracking-[0.14em] mb-2">
-            TREB MLS<sup>®</sup> Sold Data
+            PropTx MLS<sup>®</sup> Sold Data
           </p>
           <h2 className="text-[22px] sm:text-[26px] font-extrabold text-[#07111f]">
             Recent sales in {displayName}

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Handshake, Landmark, Eye } from "lucide-react";
 import { config } from "@/lib/config";
+import RegistrantStrip from "@/components/compliance/RegistrantStrip";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
@@ -14,7 +15,7 @@ import HomeValuationCard from "@/components/landing/HomeValuationCard";
 import { extractHighlights } from "@/lib/listing-highlights";
 import { extractKeyFacts } from "@/lib/listing-key-facts";
 import ListingBrokerage from "@/components/listings/ListingBrokerage";
-import { VOW_NOTICES } from "@/lib/vowNotice";
+import { VOW_NOTICES, MLS_COPYRIGHT_NOTICE } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 
@@ -179,6 +180,7 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
       {/* ── HEADER ── slim, sticky, two compact CTAs ── */}
       <header className="sticky top-0 z-50 bg-[#07111f]/95 backdrop-blur border-b border-[#1e3a5f]">
+        <RegistrantStrip />
         <div className="max-w-6xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
           <Link href="/" className="shrink-0" aria-label={`${config.SITE_NAME} home`}>
             <span className="text-[20px] font-extrabold tracking-[-0.5px]">
@@ -662,9 +664,9 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
             </nav>
           </div>
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
-            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name}<br />
+            © {new Date().getFullYear()} {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name}<br />
             <span className="text-[#64748b]/80">
-              MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). <span data-vow-notice>{VOW_NOTICES}</span>
+              MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). <span data-vow-notice>{VOW_NOTICES}</span> <span data-copyright>{MLS_COPYRIGHT_NOTICE()}</span>
             </span>
           </div>
         </div>

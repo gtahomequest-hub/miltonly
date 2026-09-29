@@ -8,7 +8,7 @@ export function generateLocalBusinessSchema() {
     "@context": "https://schema.org",
     "@type": "RealEstateAgent",
     name: config.SITE_NAME,
-    description: `Built exclusively for ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Street intelligence, neighbourhood comparisons, live TREB listings and home valuations.`,
+    description: `Built exclusively for ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Street intelligence, neighbourhood comparisons, live MLS® listings and home valuations.`,
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
     image: `${SITE_URL}/og-image.jpg`,

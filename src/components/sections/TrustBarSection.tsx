@@ -27,7 +27,7 @@ export default function TrustBarSection({ stats, soldLast30 }: Props) {
         {[
           { color: "#f59e0b", text: `${config.realtor.yearsExperience} years full-time experience` },
           { color: "#f59e0b", text: "🏆 RE/MAX Hall of Fame" },
-          { color: "#f59e0b", text: "Live TREB data daily" },
+          { color: "#f59e0b", text: "Live MLS® data daily" },
           { color: "#f59e0b", text: `${config.CITY_NAME}-only specialist` },
         ].map((item) => (
           <span key={item.text} className="flex items-center gap-2">
