@@ -128,7 +128,7 @@ function reachesHeader(file: string, depth: number, seen: Set<string>): boolean 
   return false;
 }
 // design previews (noindex, mock data, never linked) and the admin desk are not consumer pages
-const EXEMPT = new Set(["src/app/guide-preview/page.tsx", "src/app/guides-preview/page.tsx"]);
+const EXEMPT = new Set(["src/app/guide-preview/page.tsx", "src/app/guides-preview/page.tsx", "src/app/design-preview/street/page.tsx"]);
 const pages = walk("src/app").filter((f) => /\/page\.tsx$/.test(f) && !f.startsWith("src/app/api/"));
 let pagesChecked = 0;
 for (const p of pages) {
