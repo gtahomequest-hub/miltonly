@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 const OUTCOME: Record<string, string> = {
-  cleared: "Hold cleared. The account now completes the consumer card and sees the same view.",
+  cleared: "Hold cleared, and the reviewer was emailed a sign-in link (24 hours). The account now completes the consumer card and sees the same view.",
+  "cleared-unsent": "Hold cleared, but the sign-in email could not be sent. Ask the reviewer to sign in at /signin; a new link comes at once.",
   "not-held": "That account was not held; nothing changed.",
   "not-found": "No such account.",
   refused: "Not done: sign in again.",

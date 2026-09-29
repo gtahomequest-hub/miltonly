@@ -112,6 +112,66 @@ export async function sendReviewerHeldOwnerEmail(args: { reviewerEmail: string; 
   }
 }
 
+/** The reviewer's own email when the hold is cleared (MC-047, A6; the homesly.ca audit found a
+ *  cleared account there was never sent its link). One sign-in link, to the address the reviewer
+ *  registered with, and what happens next. Transactional, like the sign-in email. It reports
+ *  whether Resend accepted it, so the desk can say so, and never throws. */
+export async function sendReviewerClearedEmail(args: { email: string; link: string; hours: number }): Promise<{ sent: boolean; resendId?: string | null; reason?: string }> {
+  const { email, link, hours } = args;
+  if (!resend) {
+    console.log(`[DEV] Reviewer cleared: ${email}, link ${link}`);
+    return { sent: false, reason: "RESEND_API_KEY unset" };
+  }
+  const text = [
+    `Your ${config.SITE_NAME} review account is open`,
+    "",
+    `The hold on this account is cleared. Tap this link to sign in: ${link}`,
+    "",
+    `It works once, for ${hours} hours. After that, sign in at ${config.SITE_URL}/signin with this email address and a new link comes at once.`,
+    "",
+    "The account then completes the same card a registered consumer does and sees exactly what a consumer sees: the same pages, the same figures, the same limits. A copy of this account's audit trail is available on request.",
+    "",
+    `${config.realtor.name}, ${config.realtor.title}`,
+    config.brokerage.name,
+    `${config.realtor.phone} · ${config.realtor.email}`,
+  ].join("\n");
+  try {
+    const result = await resend.emails.send({
+      from: FROM,
+      to: email,
+      replyTo: process.env.REALTOR_EMAIL,
+      subject: `Your ${config.SITE_NAME} review account is open`,
+      text,
+      html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:440px;margin:0 auto;color:#073126;">
+        <div style="background:#073126;padding:22px 28px;border-radius:12px 12px 0 0;">
+          <p style="margin:0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#00ff80;">${esc(config.SITE_NAME)}</p>
+          <p style="margin:6px 0 0;font-size:20px;font-weight:600;color:#f6f4ef;">Your review account is open</p>
+        </div>
+        <div style="background:#ffffff;border:1px solid #dfe0dc;border-top:none;padding:28px;">
+          <p style="font-size:14px;line-height:1.5;margin:0 0 18px;">The hold on this account is cleared.</p>
+          <a href="${esc(link)}" style="display:block;text-align:center;background:#017848;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 18px;border-radius:10px;">Sign in to ${esc(config.SITE_NAME)}</a>
+          <p style="font-size:12px;line-height:1.5;color:#6b6f6a;margin:16px 0 0;">It works once, for ${hours} hours. After that, sign in at ${esc(config.SITE_URL)}/signin with this email address and a new link comes at once. The account then sees exactly what a registered consumer sees.</p>
+        </div>
+        <div style="background:#f6f4ef;border:1px solid #dfe0dc;border-top:none;border-radius:0 0 12px 12px;padding:14px 28px;">
+          <p style="font-size:11px;line-height:1.5;color:#6b6f6a;margin:0;">${esc(config.realtor.name)}, ${esc(config.realtor.title)} &middot; ${esc(config.brokerage.name)}<br/>${esc(config.realtor.phone)} &middot; ${esc(config.realtor.email)}</p>
+        </div>
+      </div>
+    `,
+    });
+    if (result.error) {
+      console.error("[email send failed]", { source: "reviewer-cleared", error: result.error.message });
+      return { sent: false, reason: result.error.message };
+    }
+    console.log("[email sent]", { source: "reviewer-cleared", resendId: result.data?.id });
+    return { sent: true, resendId: result.data?.id ?? null };
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    console.error("[email send failed]", { source: "reviewer-cleared", error: reason });
+    return { sent: false, reason };
+  }
+}
+
 export interface DealAlertSend {
   sent: boolean;
   resendId?: string | null;
