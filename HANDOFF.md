@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-29 (MC-050, the merge batch): `main` is `a75feeb` plus this docs commit; production serves `a75feeb` (`miltonly-atfzfypb2`), battery `PASS · 24 checks · 719 pages · 559s`. **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite is paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-050-merge-batch.md`._
+_Last rewritten 2026-09-29 (MC-047, the VOW branding and the homesly.ca findings): `main` is `467dc60` plus this docs commit; production serves `467dc60` (`miltonly-9xwpg4454`), battery `PASS · 24 checks · 719 pages · 541s`. **VOW terms are version 6: every consumer re-consents.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite and new-page generation are paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-047-reliability-notice.md`.REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-050-merge-batch.md`._
 
 ## READ THIS FIRST
 
@@ -12,7 +12,47 @@ _Last rewritten 2026-09-29 (MC-050, the merge batch): `main` is `a75feeb` plus t
   - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
   - Written pages: 222 / 78 / 0.351 / 0.748.
 
-**MC-050: FOUR BRANCHES MERGED BY SHA IN ONE BUILD. PRODUCTION SERVES `a75feeb`.**
+**MC-047: THE VOW BRANDED TO THE REGISTRANT, THE NOTICES, THE HOMESLY.CA FINDINGS. PRODUCTION SERVES `467dc60`.**
+- **Merged:** `core/mc047` @ `31827e9`, by SHA, as `467dc60`. It carries nine commits: Step 0 `dcd62ff`, then `d532b1a` through `31827e9`. There was one preview, `miltonly-ooj4vkqti`.
+- **The header:** every page type shows "Aamir Yaqoob, Sales Representative" and "RE/MAX Realty Specialists Inc., Brokerage" in a 14px strip above the 66px bar.
+  - The source is `src/lib/compliance/registrant.ts`.
+  - `SiteNav` renders an in-flow `.sn-strip-space` of the strip's height (`--sn-strip-h`: 30px, 44px under 760px, 64px under 360px), so every theme's own 66px clearance stays true.
+  - Anything positioned against the nav adds the variable itself: the phone panel, the band cap, the `/listings` rail and map, and the listing sidebar.
+  - The self-headed pages carry `RegistrantStrip`: the ads pages, the thank-you pages and coming-soon.
+- **Footers:** every footer leads with the Member, carries the item 22 notice, and carries `MLS_COPYRIGHT_NOTICE()`, the TRREB and PropTx line with the year computed. The main footer had no registrant line before; it has one now.
+- **Metadata:** `og:site_name` is "Miltonly · Aamir Yaqoob, Sales Representative", and the home title names Aamir.
+- **TREB-era wording** is gone from all copy under `src`.
+- **The listing page:**
+  - "MLS® n · PropTx MLS® System" replaces "Source: TREB MLS®".
+  - The 8.24 label sits above the added blocks.
+  - The 8.12 contact line and the 8.16 report line use `CONTACT_EMAIL`, falling back to the phone when it is unset. `CONTACT_EMAIL` is set on Production only, so previews show the phone.
+- **A4, square footage:** `Listing.sqft` is the midpoint of the listing's range, so it is no longer shown as an MLS field. Price per square foot is gone.
+- **A2, the terms, version 6:**
+  - Clause (viii) authorizes TRREB, and (ix) names TRREB.
+  - `/terms` is "VOW Terms of Use", names the Member as the party, and renders the clauses.
+  - **Every consumer re-consents.** The battery's desk row re-consented by a real sign-in (`scratchpad/mc047/reconsent.mjs`).
+- **A5:** `/privacy` opens with the bold Appendix B(c)(ix) statement.
+- **A6:** clearing a held reviewer on `/admin/vow` emails a link-only sign-in, valid 24 hours. Proven on production end to end; the test row is deleted.
+- **Ride-alongs:**
+  - `CONTACT_EMAIL=hello@miltonly.com` on Production;
+  - `!data` street head noindex, follow;
+  - `listingsV2Data.ts:73` fixed.
+- **Guards (prebuild):**
+  - `test-vow-branding` (128 assertions; every `src/app` page reaches a header through its imports or layouts);
+  - `test-street-notfound-head`;
+  - `test-reviewer-clear-link`;
+  - `test-vow-best-practices`, now at v6.
+  - The battery's `vow-display` check reads the strip, the copyright line and TREB on 29 types; `nav` now measures the bar.
+- **Anthropic, report-only:**
+  - Only the `/api/sync/generate` cron and `/api/admin/force-regenerate` can reach it, through the Opus fallback. A 400 fails closed.
+  - With the flag unset, the cron now makes no call.
+  - `/api/sync/generate` logs the key's first 10 characters (`route.ts:28-29`).
+- **Traps:**
+  - Git Bash rewrites a leading-slash argument into `C:/Program Files/Git/...`; use `MSYS_NO_PATHCONV=1`.
+  - Puppeteer's own Chrome is missing here; the scripts fall back to the installed Chrome.
+Record: `scratchpad/reports/MC-047-reliability-notice.md`.
+
+**MC-050: FOUR BRANCHES MERGED BY SHA IN ONE BUILD. PRODUCTION SERVED `a75feeb`.**
 - **Merged, in order:** MA-011 `3c8add8` (`6eb1ef6`), MH-010 `12dc3f7` (`96a606c`), ML-014 `af0da54` (`30dd588`), MP-007 `cd2eed1` (`a75feeb`). No conflicts. MH-009 `7cfa4a2` was already on main (`f1d4080`, MC-038).
 - **MP-007's migration** `20260927120000_portal_vow_reviewer_throttle_erasure` was already applied: 33 migrations, up to date. Terms are now v5.
 - **Proofs on production:**
@@ -26,7 +66,7 @@ _Last rewritten 2026-09-29 (MC-050, the merge batch): `main` is `a75feeb` plus t
   - All eight now serve full pages with a self canonical.
   - 12 of 256 crawled street pages declared no canonical at crawl, intermittently (sauble-court had a published row).
   - Proposal: `robots: noindex` on `generateMetadata`'s `!data` branch; audit re-inspection and a head-canonical guard; spam report if any still names 747live.bet after 2026-10-26.
-- **MC-047 is still blocked:** the brief, item 31's copyright text, and the header source and title. Step 0 is on `core/mc047`.
+- MC-047 was blocked here; it shipped in `467dc60`.
 Record: `scratchpad/reports/MC-050-merge-batch.md`.
 
 **MC-049: WWW HELD BY A TEST, THE STREET-PROSE REWRITE PAUSED, LANE PUSHES STOP BUILDING. PRODUCTION SERVED `9a563fd`.**
@@ -834,10 +874,10 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`a75feeb`** (MC-050: MA-011 `6eb1ef6`, MH-010 `96a606c`, ML-014 `30dd588`, MP-007 `a75feeb`) plus MC-050's docs commit; production serves `a75feeb` (`miltonly-atfzfypb2`) |
-| battery on production | **`PASS · 24 checks · 719 pages · 559s`** at `a75feeb`, 2026-09-29 (local 391s; preview `miltonly-i7f9g7a3u` Ready, not batteried) |
+| `main` | **`467dc60`** (MC-047: `core/mc047` @ `31827e9` by SHA) plus MC-047's docs commit; production serves `467dc60` (`miltonly-9xwpg4454`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 541s`** at `467dc60`, 2026-09-29 (local 410s, 23 of 24 then `nav` PASS after its 66px fix; preview `miltonly-ooj4vkqti`) |
 | `prisma migrate status` | **clean**, 33 migrations (`20260927120000_portal_vow_reviewer_throttle_erasure` was already applied when merged, MC-050) |
-| held for the next batch | **nothing**. MC-047 Step 0 sits on `core/mc047`, blocked on Aamir. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite paused** (MC-049, `STREET_REGEN_ENABLED` unset) |
+| held for the next batch | **nothing**. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite and new-page generation paused** (MC-049, MC-047 Step 0; `STREET_REGEN_ENABLED` unset). **VOW terms v6** (MC-047) |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -1212,7 +1252,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Nothing is held. **MC-047 waits on Aamir** (the brief; PropTx's copyright text, which item 31 does not give; the source of the registrant header and "Salesperson" or "Sales Representative"). Step 0 is on `core/mc047` (`d123800`, `d170fdf`); rebase it on `a75feeb` before landing. **From MC-050:** fix the `/listings` school link (`src/lib/listingsV2Data.ts:73`, `-secondary-school` to `-catholic-ss`); decide the 747live.bet proposal (`!data` noindex, the audit re-inspection and head-canonical guard). **After 2026-09-29 12:00 UTC and 2026-10-04 12:00 UTC: confirm the rewrite stayed paused (MC-049).** **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Nothing is held. **From MC-047:** the ads listing pages carry the strip and the notices but not the 8.24 and 8.16 lines; `/api/sync/generate` logs the Anthropic key's first 10 characters (`route.ts:28-29`); the API balance is -$0.50 (only the Opus fallback uses it, and with the flag unset nothing does). **From MC-050:** the rest of the 747live.bet proposal (the audit re-inspection and the head-canonical guard; the `!data` noindex shipped in MC-047). **After 2026-09-29 12:00 UTC and 2026-10-04 12:00 UTC: confirm the rewrite stayed paused (MC-049).** **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say

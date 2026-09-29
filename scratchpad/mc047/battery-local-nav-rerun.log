@@ -1,0 +1,34 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      http://localhost:3100
+build       2c773da served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+hub record  22 published hubs + DB2 pools loaded
+crawled     0 street pages (no per-page check selected)
+
+── The menu opens, closes, fits, reads, and links, on every page type and at every width
+   · page types read: / ok · /streets ok · /neighbourhoods/bronte-meadows ok · /streets/mccready-drive-milton ok · /listings ok
+   · unique panel hrefs resolved: 148
+   · browser runs (page × width): 24 of 24
+   · published hubs (record): 22
+   PASS  page types read == requested: 5
+   PASS  menu triggers rendered as <button> with aria: 0
+   PASS  panels present in served HTML and closed with hidden: 0
+   PASS  every panel carries its index CTA: 0
+   PASS  rail tabs and item panels served as stated (one selected, one visible): 0
+   PASS  rail items whose served panel is empty: 0
+   PASS  every panel carries a strip: 0
+   PASS  pages whose four strips are not all different: 0
+   PASS  menu figures in the wrong format: 0
+   PASS  pages missing a hub count: 0
+   PASS  panel hrefs that redirect: 0
+   PASS  panel hrefs that fail: 0
+   PASS  served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu: 0
+   PASS  pages whose CTA or strips do not follow the street or the hub: 0
+   PASS  pages whose rail tabs lack sub-labels: 0
+   PASS  Rent menu: every hub as scoped /rentals with its count, four typical rents, the landlord form, Rentals out of Buy: 0
+   PASS  browser runs completed: 24
+   PASS  interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS): 0
+
+═══ PASS · 1 checks · 719 pages · 117s ═══
