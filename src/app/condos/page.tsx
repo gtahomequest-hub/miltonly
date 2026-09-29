@@ -30,7 +30,7 @@ import "@/components/directory/directory-theme.css";
 export const revalidate = 86400;
 
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Condo Buildings — Prices, Units & Market Data`,
+  title: `${config.CITY_NAME} Condo Buildings: Prices, Units & Market Data`,
   description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} condo building with a published profile. Unit counts, active listings, and live sale prices by building. Updated daily from TREB.`,
   canonical: `${config.SITE_URL}/condos`,
 });

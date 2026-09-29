@@ -87,7 +87,7 @@ export const FREEHOLD_VS_CONDO_CONFIG: ComparisonConfig = {
   slug: "freehold-vs-condo",
   h1: "Freehold vs. Condo in Milton — Which Is Right for You?",
   eyebrow: "Milton ownership comparison",
-  metaTitle: "Freehold vs Condo in Milton — Which Should You Buy?",
+  metaTitle: "Freehold vs Condo in Milton: Which Should You Buy?",
   metaDescription:
     "Freehold vs condo in Milton: the honest side-by-side. Live median prices and the real price difference, monthly fees, the three trades, and a clear read on which to choose.",
   breadcrumbLabel: "Freehold vs Condo",

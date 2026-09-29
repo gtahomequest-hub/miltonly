@@ -13,7 +13,7 @@ import SiteChrome from "@/components/nav/SiteChrome";
 import LinkLanding from "./LinkLanding";
 
 export const metadata = genMeta({
-  title: `Signing in — ${config.SITE_NAME}`,
+  title: `Signing in | ${config.SITE_NAME}`,
   description: `Signing in to ${config.SITE_NAME}.`,
   canonical: `${config.SITE_URL}/signin`,
   noIndex: true,

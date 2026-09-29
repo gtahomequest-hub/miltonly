@@ -8,7 +8,7 @@ import { getListingCards } from "@/lib/listingsV2Data";
 export const dynamic = 'force-dynamic';
 
 export const metadata = genMeta({
-  title: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
+  title: `${config.CITY_NAME} Rentals: Get Matched by a Local Expert`,
   description: `Live TREB rental listings in ${config.CITY_NAME} ${config.CITY_PROVINCE}, matched to your needs by RE/MAX Hall-of-Fame Realtor ${config.realtor.name}. Same-day showings when available.`,
   canonical: `${config.SITE_URL}/rentals/ads`,
   // Paid landing page is open to crawlers — anecdotal Quality Score lift
@@ -195,7 +195,7 @@ export default async function RentalsAdsPage({
       {
         "@type": "WebPage",
         "@id": `${config.SITE_URL}/rentals/ads`,
-        name: `${config.CITY_NAME} Rentals — Get Matched by a Local Expert`,
+        name: `${config.CITY_NAME} Rentals: Get Matched by a Local Expert`,
         description:
           `Find your ${config.CITY_NAME} rental with ${config.realtor.name} — RE/MAX Hall of Fame, ${config.realtor.yearsExperience} years in ${config.CITY_NAME}. Live TREB listings hand-matched. Reply within 60 min.`,
         isPartOf: { "@id": `${config.SITE_URL}/#business` },

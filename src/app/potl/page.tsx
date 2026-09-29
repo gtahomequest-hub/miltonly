@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 // Shared SEO helper (like /freehold + /condos-guide) -> POTL-specific OG/Twitter + canonical.
 export const metadata = genMeta({
-  title: `POTL Homes in ${config.CITY_NAME} — Parcel of Tied Land Explained`,
+  title: `POTL Homes in ${config.CITY_NAME}: Parcel of Tied Land Explained`,
   description: `What "Parcel of Tied Land" (POTL) means in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: you own your townhome and lot freehold but pay a modest monthly fee for shared roads and common elements. POTL vs freehold vs condo, and what to check before you make an offer.`,
   canonical: `${config.SITE_URL}/potl`,
 });

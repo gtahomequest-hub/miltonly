@@ -4,7 +4,7 @@ import AgentContactSection from "@/components/AgentContactSection";
 import SiteChrome from "@/components/nav/SiteChrome";
 
 export const metadata = genMeta({
-  title: `About ${config.realtor.name} — ${config.CITY_NAME} Real Estate Agent`,
+  title: `About ${config.realtor.name}, ${config.CITY_NAME} Real Estate Agent`,
   description: `${config.realtor.name} has helped 235+ families over ${config.realtor.yearsExperience} years as a full-time real estate professional. RE/MAX Hall of Fame Award recipient. Buy, sell, or rent in ${config.CITY_NAME}.`,
   canonical: `${config.SITE_URL}/about`,
 });

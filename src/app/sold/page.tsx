@@ -82,7 +82,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       : `${config.CITY_NAME} sold homes: ${totals.last90} recent real estate sales`;
   const description =
     typical != null
-      ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE} — typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from TREB MLS®.`
+      ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from TREB MLS®.`
       : `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`;
   const meta = genMeta({
     title,

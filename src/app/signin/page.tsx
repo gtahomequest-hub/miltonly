@@ -18,7 +18,7 @@ import SiteChrome from "@/components/nav/SiteChrome";
 // index:false. Correct for an auth wall; just don't expect the `noindex, follow` used for
 // the /listings and /sold facets.
 export const metadata = genMeta({
-  title: `Sign In — ${config.SITE_NAME}`,
+  title: `Sign In | ${config.SITE_NAME}`,
   description: `Sign in to ${config.SITE_NAME}: your email and your password, or an emailed link.`,
   canonical: `${config.SITE_URL}/signin`,
   noIndex: true,
