@@ -2,7 +2,7 @@
 
 AUDIT · D:\miltonly-audit · feat/audit
 
-_Last rewritten 2026-09-23 (MA-010): the em-dash rule reads prose only, the superlative rule fails closed with a standing fixture test, and the true open count is 1,526; MA-009 the Lighthouse noise before it._
+_Last rewritten 2026-09-28 (MA-011): the nightly guards MC-048's street head and MC-045's stripped sentences, checks every off-sitemap link, fixes D1 and reads five more claim words; the morning report reads Web Analytics and production leads only; index coverage measured once. MA-010 the voice rules before it._
 
 ## What this worktree is
 
@@ -16,10 +16,50 @@ and `vercel.json` (`ignoreCommand`, so the nightly report commit never spends a 
 
 ## READ THIS FIRST
 
+**MA-011: THE NIGHTLY AND THE MORNING REPORT CAUGHT UP. NOT MERGED; CORE TAKES `3c8add8` BY SHA IN THE
+NEXT BATCH** (files under `scripts/` and one `.github/workflows/` step: one build). Record:
+`scratchpad/reports/MA-011-nightly-catch-up.md`, evidence in `scratchpad/ma011/`.
+
+- **Guards, every night.**
+  - banned sentences: MC-045's 58 on the 56 pages MC-048 stripped. The pages are swept every night; a
+    sentence back is S1 and exits 5. `verify-strip.mjs` is adopted: its matcher is `nightly/strip.mjs`
+    and its data is frozen in `nightly/banned-sentences.json`. If Core's CSV or render controls change,
+    run `node scripts/audit/verify-strip.mjs --freeze`; the guard test fails until then.
+  - street-head (S2): MC-048's title ladder, the meta shapes and the share cards, on every swept street page.
+  - www-twin: 20 date-seeded paths must answer 308 to the apex. Enforced since `3c8add8` (MC-049 is live
+    at `9a563fd`): a miss is S2 and exits 5. `nightly/guards.json` `wwwTwinEnforced: false` returns it to S4.
+  - reliability-notice is **deferred** (Aamir): MC-047's report is not in the repo.
+- **Links.** Their own 900-fetch budget, checked oldest check first: all 350 in one night locally.
+  - **D1 fixed**: a carried link finding resolves when its target joins the sitemap or its swept
+    referrers no longer link it. 19 resolved the first night.
+- **Superlative, audit side only** (Aamir: `SUPERLATIVE_PHRASES` verbatim would hard-reject 543 of 722
+  published streets' prose).
+  - `AUDIT_CLAIMS`: only, highest, #1, top producer, leading.
+  - "#1" and "top producer" fail closed.
+  - "only", "leading" and "highest" fire in the claim sense only; the ordinary sense is void in a sentence
+    that names the registrant.
+  - "only" closing the phrase it restricts is a free idiom.
+  - A ranking is ordinary when anchored to another domain or a third party; an unanchored ranking of a
+    service, a person or an outlet fires. Unknown heads do not fail closed (round 3: that default was
+    263 confirmed false positives).
+  - Three red-team rounds, 4,540 executed attacks, 1,471 confirmed breaks; 1,458 now right and fixtures.
+    `test-voice-rules.mjs` is 2,566 assertions. The 13 residuals are named in the record.
+  - Production on the same bytes: 4 before, 8 after.
+  - The own-brokerage test now reads the listing's own MLS line.
+- **Morning report.**
+  - Web Analytics through the Vercel Query API.
+  - GSC credentials: `_KEY`, `_JSON` or the path, whichever is set.
+  - Every lead figure is `env = 'production'` (ML-013: 30 preview rows had inflated September).
+  - Money shows the upcoming invoice before the spend-management figure; cost per lead is invoice first.
+- **Index coverage, once** (`scripts/audit/index-coverage.mjs`): 241 of 719 street pages indexed. Of the 484
+  pages with no impression, 308 are discovered and not indexed, and 154 are unknown to Google. Google chose
+  `www.747live.bet` as the canonical of 8 street pages.
+- **Expect the em-dash count to fall over four nights, not one** (MH-010): streets and listings rotate, and
+  an unswept page carries its findings forward.
+
 **MA-010: THE EM-DASH AND SUPERLATIVE RULES NARROWED; THE TRUE OPEN COUNT IS 1,526, NOT 2,442.** Record:
 `scratchpad/reports/MA-010-voice-rules.md` (copy and evidence in `scratchpad/ma010/`). Code `794ef5a`,
-merged with `origin/main` as `5b54347`, **not merged to main; Core takes it by SHA in the next batch** (the
-`.github/workflows/` change spends one build under the ignore rule).
+merged to main by Core as `60295f2`; MC-043 took the compliance items.
 
 - **Premise:** em-dash 1,368 + superlative 306 = 1,674 of 2,442, not ~1,800. On the same bytes about 1,125
   were noise and 576 real; 479 of the real ones are one sentence, `AgentContactSection.tsx:24`.
@@ -194,12 +234,13 @@ answered GET p50 3.2 s (183 REVALIDATED, 267 MISS), the sweep yielded to the clo
 unswept and the sample stopped at 29 of 40. The clock guards work; a slow host costs coverage, not
 the run.
 
-**THE FETCH BUDGET IS THE SHAPE OF THE RUN.** The sitemap is 1,113 URLs (510 streets, 461 listings,
-144 other) and the budget is 600 fetches, so the sweep is 507 a night: the 144 non-street pages and
-the twelve Lighthouse pages every night, the rest of the streets and listings by oldest sweep first,
-the whole set every 3 nights. A page not swept tonight carries last night's findings, marked, and
-counts as neither new nor fixed. Off-sitemap links are checked most-linked first within what is
-left (32 of 308 tonight). The report's Summary and Budget sections say exactly what was covered.
+**THE FETCH BUDGET IS THE SHAPE OF THE RUN.** The sitemap is 1,356 URLs on 2026-09-28 (719 street pages
+and the `/streets` index, 491 listings, the rest other) and the page budget is 600 fetches, so the sweep
+is 507 a night: the 147 pages outside `/streets` and `/listings`, the 54 stripped street pages MC-048 left
+and the twelve Lighthouse pages every night, the rest of the streets and listings by oldest sweep first,
+the whole set every 4 nights. A page not swept tonight carries last night's findings, marked, and counts
+as neither new nor fixed. Off-sitemap links have their own 900-fetch budget (MA-011): all 350 on
+2026-09-28. The report's Summary and Budget sections say exactly what was covered.
 
 ## Tooling (all under `scripts/audit/`, all read-only against the host)
 
@@ -207,7 +248,11 @@ left (32 of 308 tonight). The report's Summary and Budget sections say exactly w
 |---|---|
 | `nightly/run.mjs` | the nightly: `BASE=https://miltonly.com AUDIT_DEPS=<dir> node scripts/audit/nightly/run.mjs [--no-email] [--no-lh] [--out=dir] [--budget=600] [--deadline=285] [--sample=40] [--lh=12]` |
 | `nightly/checks.mjs` | raw-HTML checks: title, H1, meta, canonical, JSON-LD, host leak, em-dash, superlatives, catchment, TREB strings, alt, dead anchors, links out |
-| `nightly/test-voice-rules.mjs` | MA-010: the standing fixture test for the em-dash and superlative rules, 1,032 assertions, no network; exports its fixtures for reuse. The nightly workflow runs it before it fetches anything |
+| `nightly/test-voice-rules.mjs` | MA-010: the standing fixture test for the em-dash and superlative rules, 2,566 assertions since MA-011 (982 violations, 1,210 legitimate uses, 95 page cases, 265 em-dash cases, the drift test), no network; exports its fixtures for reuse. The nightly workflow runs it before it fetches anything |
+| `nightly/test-nightly-checks.mjs` | MA-011: the guards' standing test (street-head, the stripped sentences and controls, D1 and the link queue, the www verdict), 60 assertions; the workflow runs it after the voice fixtures |
+| `nightly/strip.mjs`, `nightly/banned-sentences.json`, `verify-strip.mjs` | MA-011: MC-045's stripped sentences. The matcher, the frozen sentences and controls, and Core's CLI adopted (`node scripts/audit/verify-strip.mjs [base]`; `--freeze` rebuilds the JSON from Core's CSV and render controls) |
+| `nightly/guards.mjs`, `nightly/guards.json` | MA-011: D1, the link queue and the www sample and verdict; `wwwTwinEnforced` (true since MC-049 went live) makes www-twin S2 and exit 5 |
+| `index-coverage.mjs` | MA-011: the URL Inspection API over the sitemap's street pages, once, resumable (`--out=`, `--limit=`), report-only |
 | `nightly/browser.mjs` | Chrome at 390 px (fonts under 12 px, overflow, DOM ids) and the Lighthouse CLI wrapper |
 | `streets.json` | the ten audit streets and their shapes; the nightly's fixed Lighthouse set |
 | `pick-streets.mjs` | picks shapes from the record (DB1 + DB2), for re-selecting the sample |
@@ -264,21 +309,34 @@ variables are unset. `AUDIT_EMAIL_TO` overrides the recipient.
   idiom ("at best"). Every exemption but proper and the free idioms is void when the sentence names the
   registrant. It reads the body, title, meta, share cards, JSON-LD text not on the page, alt,
   `aria-label` and the remarks of RE/MAX Realty Specialists Inc. listings. An unknown construction
-  fires. Change it only with a fixture in `test-voice-rules.mjs`.
+  fires. Change it only with a fixture in `test-voice-rules.mjs`. MA-011 added AUDIT_CLAIMS (only, highest,
+  #1, top producer, leading) on the audit side only: "#1" and "top producer" fail closed; "only",
+  "leading" and "highest" fire in the claim sense only (the registrant, the site, a brokerage, an agent or
+  a team, or "the only ... in <place>"), the ordinary sense void in a sentence naming the registrant, and
+  "only" closing the phrase it restricts is a free idiom. The own-brokerage test reads the listing's own
+  MLS line (`MLS® <number> · <brokerage>`), not the whole page.
+- **Guards (MA-011).** `banned-sentence` S1 and exit 5 (the 56 stripped pages are swept every night),
+  `strip-control` S2, `street-head` S2 on every swept street page, `www-twin` S2 and exit 5 (`guards.json`
+  `wwwTwinEnforced` true since MC-049 went live; false returns it to S4). The workflow commits the report whatever the exit code.
+- **Links (MA-011).** Their own 900-fetch budget, oldest check first, 16 at a time, stopped at 80 % of the
+  clock; the report names the cadence when a night does not reach them all and counts the findings among
+  the 32 most-linked, the set the budget reached before MA-011. D1: a carried link finding resolves when
+  its target joins the sitemap or every recorded referrer was swept without linking it.
 - **Lighthouse moves** in the email: a category down 10 (perf) or 5 (seo, a11y, bp), LCP moved a
   quarter and 500 ms, an audit newly failing.
 - **The email.** Baseline night: every open finding by severity, capped at 80. A night with change:
   broke, fixed, Lighthouse moves, then one line of what is still open. A quiet night: three lines,
   so silence means the job did not run. Subject carries the counts.
 - **Clock.** 285 s deadline: the sweep yields at 70 %, Lighthouse at 75 %, links at 80 %, the sample
-  at 92 %; anything cut is named in Run notes. Tonight's run was 162 s locally.
+  at 92 %; anything cut is named in Run notes. MA-011's final local run: 136 s, 580 of 600 page fetches,
+  386 of 900 link fetches (all 350 off-sitemap targets, the links phase done at 45 s) and 20 www fetches.
 
 ## Where things stand
 
 | | |
 |---|---|
-| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003, MA-004, MA-005, MA-006 addendum, MA-007, MA-008 morning report, MA-010 voice rules (`794ef5a`) on top; `origin/main` merged in at each start |
-| production audited | `f01a96a` 2026-09-12 (MA-001) and 09-13 (MA-004); `1b2d7d8` 09-16 (MA-005); `e606d8b` 09-18 (MA-006); `d068f84` 09-20/21 (MA-007); `c1565b7` 09-22 (MA-009); `bfb6e74` 09-23 (MA-010, full re-run: 1,526 open, S2 30, S3 1,496); the nightly baseline 09-13 |
+| `feat/audit` | MA-001 tooling, the nightly (on main), MA-003 to MA-008, MA-010 voice rules (merged as `60295f2`), MA-011 on top (`bf31f57` and `9488b44` merges of main, code head `3c8add8`, then the docs commit); `origin/main` merged in at each start |
+| production audited | `f01a96a` 2026-09-12 (MA-001) and 09-13 (MA-004); `1b2d7d8` 09-16 (MA-005); `e606d8b` 09-18 (MA-006); `d068f84` 09-20/21 (MA-007); `c1565b7` 09-22 (MA-009); `bfb6e74` 09-23 (MA-010, full re-run: 1,526 open, S2 30, S3 1,496); `1f3b216` 09-28 (MA-011: capture of 1,356 pages, 719 URL inspections); `9a563fd` 09-28 (MA-011's final local nightly); the nightly baseline 09-13 |
 | pages edited | none |
-| waiting on Core | merge MA-010 (`794ef5a` and the docs commit on it) in the next batch; the MA-010 top ten; merge `feat/audit` and add the morning report's seven Actions secrets (MA-008); MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
+| waiting on Core | merge MA-011 at `3c8add8` by SHA in the next batch; the reliability-notice check when MC-047's report lands; Google's `www.747live.bet` canonical on 8 street pages; the `/streets` index linking 118 unlisted street pages; the MA-010 top ten not yet taken (own-brokerage remarks, the `/listings` school slug); merge `feat/audit` and add the morning report's seven Actions secrets (MA-008); MC-035, the street prerender cap (MA-007); the MA-006 addendum list; the MA-005 changes not taken by MC-027; the MA-001 changes not yet taken |
 | next | whatever the next `MA-` prompt asks; the MA-001 and MA-005 changes and the baseline S1 and S2 belong to core |

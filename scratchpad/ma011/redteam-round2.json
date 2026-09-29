@@ -1,0 +1,4070 @@
+{
+ "summary": {
+  "frame-evasion": {
+   "executed": 398,
+   "reported": 31,
+   "verified": 30,
+   "confirmed": 27
+  },
+  "number-one-2": {
+   "executed": 232,
+   "reported": 105,
+   "verified": 105,
+   "confirmed": 101
+  },
+  "only-2": {
+   "executed": 360,
+   "reported": 109,
+   "verified": 109,
+   "confirmed": 86
+  },
+  "leading-highest-2": {
+   "executed": 402,
+   "reported": 260,
+   "verified": 260,
+   "confirmed": 259
+  }
+ },
+ "items": [
+  {
+   "team": "frame-evasion",
+   "text": "Every seller gets the highest level of service from listing to closing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The thing ranked is real-estate service 'from listing to closing', which on the registrant's site is the registrant's service, a standing the ruling lists. The fixture 'The highest level of care from listing to closing.' is a VIOLATION. The seller receives the service and provides nothing, so no third party frames it. This differs from the legitimate 'Streets near the GO station get the highest level of transit service', where the service is a third party's. The missed claim is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "You get the highest level of service, from list to close.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the same claim as the fixture 'The highest level of care from listing to closing.' with the reader as the one receiving the service. 'You' is the client, not a third party providing the service, and 'from list to close' is plainly the listing agent's service. The ruling puts service in the claim sense, and nothing here makes it a third party's."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Your listing receives industry-leading marketing, at no extra cost.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The fixture 'Industry-leading marketing for every Milton listing.' is a VIOLATION. Adding a recipient subject ('Your listing receives') does not make the marketing a third party's; it is the listing agent's marketing, which is the registrant's service/standing. 'At no extra cost' is sales copy. The missed claim is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "The Street Report is Milton's leading source of sold prices.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The site uses 'street report' for its own product (src/components/sections/SoldOnMyStreet.tsx:291, 'Aamir will send the same street report'). Fixture 107 ('This street report is your best guide...', a VIOLATION noted 'a site product is not a data source') already treats it as the site. The thing ranked is the site's product as a leading source of sold prices, which is the site in the claim sense. The subject is the site itself, not a third party like Highway 401."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Over 200 five-star reviews make this the highest-rated real estate office in Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The thing ranked is 'this' real estate office (a brokerage) on the strength of its reviews, and the ruling names both brokerage and reviews in the claim sense. 'Over 200 five-star reviews' is the grounds for the claim, not a third party the claim is about. The rule's own design says 'this' frames nothing. The missed claim is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Sellers say it is the leading real estate website in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The ranked thing is 'it', a real estate website, which the rule's own design treats as the site ('It' frames nothing, and the bare 'It is the leading...' fires). The ruling has no exemption for testimonials; the registrant publishing sellers' praise is still the registrant's claim. The verdict flips between 'it is' and 'it's', which shows the exemption is accidental, not designed."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "The office has the highest Google rating of any Milton real estate office.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The thing ranked is a real estate office (a brokerage) by its Google rating (reviews standing), with an explicit comparison set of 'any Milton real estate office'. Nothing names a third party; 'The office' on the registrant's site is the registrant's. The ruling puts a brokerage and its reviews in the claim sense, so this missed claim is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "In Milton, the leading real estate website for sold prices.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Milton here is a place in an introductory phrase, not a third party the claim is about. The ranked thing is an unnamed real estate website, which is the site: fixture 383 'The leading source for Milton real estate data' (a VIOLATION, 'the site, unnamed') covers the same claim. The apposition misread clears a plain site claim."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Concierge Listing Service, the highest level of care for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "This is in apposition to a Title Case proper name. The sentence does not say whose 'Concierge Listing Service' it is, and the site has no product by that name (no hit in src). It could be the registrant's program or a third-party service company. Apposition to a capitalised name is the rule's documented third-party frame, and the ruling as written does not settle a named service of unknown owner, so I default to false."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Industry-leading marketing is included with every listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the fixture VIOLATION 'Industry-leading marketing for every Milton listing.' with a predicate added. 'Is included with every listing' introduces no third party; the marketing is still the registrant's service. A trailing copula should not turn a claim into the ordinary sense."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "The highest level of service is standard with every listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The fixture VIOLATION 'The highest level of care from listing to closing.' fires, and adding 'is standard with every listing' names no third party. 'With every listing' ties the service to the registrant's listing service. This differs from the legitimate 'The highest level of service on the Milton GO line is weekday mornings', where the service is transit. The missed claim is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton's highest-rated real estate website is free to use.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The ranked thing is an unnamed real estate website that the reader can use for free, which is the site. Fixture 444 'The highest-rated real estate guide in Milton.' is a VIOLATION. A trailing 'is free to use' introduces no third party."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Only one real estate website in Milton is built street by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'Only one' is a uniqueness claim about a real estate website in Milton. It says the same as 'the only real estate website in Milton built street by street', the shape the ruling names for 'only'. On a street-by-street site the unique website is this one. It is not a quantity statement, and nothing frames it as a third party's."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton has only one street-by-street real estate guide: this one.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is a uniqueness claim that the site ('this one') is Milton's only street-by-street real estate guide. It restates the '<Place>'s only ...' shape and the fixture VIOLATION 'Milton's first and only street-by-street market report.' Milton as the grammatical subject is a place, not a third party the ranking is about."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton's Leading Neighbourhood Guide | Miltonly",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This page title names Miltonly, and the ruling voids the ordinary exemption whenever the sentence names the registrant. Apart from that, the 'leading guide' in the site's own title is the site. The same words fire when 'Miltonly:' comes first but not with the '| Miltonly' suffix, so the naming is lost. The missed claim is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "The only real estate app built for Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This has the same shape as the fixture VIOLATION 'The only real estate platform built exclusively for Milton Ontario.' The unique thing is a real estate outlet built for Milton, which is the registrant's site/product. Only the noun changed ('app' versus 'platform'), and the ruling's claim sense does not depend on that noun."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Leading the Milton market since 2012.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This subjectless business slogan with a tenure ('since 2012') ranks its implied subject, the registrant, first in the Milton market, which is the ruling's claim sense (the thing ranked is the registrant). It is not the ordinary verb sense of the legitimate fixture 'one leading the other', which ranks nothing against a market."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Highest sales volume in Milton, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "On a street-by-street sold-data site, a subjectless 'Highest sales volume in Milton, 2025' can just as well label a street's or neighbourhood's market statistic, which is the ordinary sense (compare the legitimate 'Sales volume has recovered since 2023...'). The ruling's standing list names 'production', but this fragment does not say whose volume, so it is ambiguous. I default to false."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Highest-rated on Google in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the same subjectless Google-rating badge as 'Rated highest on Google in Milton.', which fires by the rule's own design (Google counts as the registrant's reviews standing), and as fixture 482 'Rated highest on Google by Milton sellers.' Reviews and ratings are standing under the ruling. Only the word order differs, so the miss is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton's only 2025 Diamond Club recipient.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The fixture VIOLATION 'The only Diamond Club recipient from Milton.' and the control fire. Adding the year '2025' is not a count; it is a modifier of the award. 'Recipient' is a person/award noun in the claim sense, and the '<Place>'s only' shape also applies."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton's leading 4.9-star real estate agency.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The thing ranked is a real estate agency, a brokerage/person noun in the claim sense with no third-party frame. The decimal '4.9' is a rating that makes the claim stronger. Clearing it is a tokenisation defect, not an exemption the ruling allows."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton's first (and only) street-by-street guide.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the fixture VIOLATION 'Milton's first and only street-by-street market report.' with the words in parentheses. It is the '<Place>'s only' shape claiming the site is unique. The parentheses change nothing in meaning."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Ranked #1 or #2 in Halton every year since 2019.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The ruling makes '#1' FAIL CLOSED unless '#1' is a number (an identifier such as a unit, lot or photo); the series '#1 and #2' is listed as an example of that. Here 'Ranked' makes '#1' a rank, not an identifier, and it ranks the implied registrant in Halton every year. Adding 'or #2' should not turn a rank claim into a lot number, and fail-closed settles any doubt toward firing."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "The Number #1 Team in Milton",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Number #1' is a rank ('number one'), not a unit, lot or other identifier, and it ranks a team, which the ruling treats as the registrant unless it is a third party's. It is not a label numbering a noun, and even a label is voided when the sentence names the registrant's team. Under fail-closed it must fire."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Sales #1 · Service #1 · Reviews #1",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The ruling's label exemption covers a label numbering a noun ('Offer #1' = the first offer). 'Sales #1', 'Service #1' and 'Reviews #1' number nothing (there is no first review of plural 'Reviews'). In this badge strip each ranks the registrant's sales, service and reviews, standings the ruling names. '#1' fails closed, so any doubt resolves to firing."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton's leading seller of detached homes, 2025.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": null,
+   "reason": "PERSON_RE has no 'seller', 'lister' or 'closer', the words for an agent's production. Also ordinary: 'The leading lister of Milton homes since 2015.', 'Halton's highest-volume closer, three years running.' The 'homes' qualifier only helps outlet nouns."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Milton sellers trust one name only.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "The ruling makes 'only' closing the phrase it restricts a fixed idiom that is never voided, and 'one name only' literally sits in that position. Whether 'one X only' is a restriction or a uniqueness claim is not settled by the ruling as written, as the red team itself notes. That is the owner's call, so I default to false."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "The builder's industry-leading warranty covers seven years.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The thing ranked is a builder's warranty, a third party's product, not the registrant, the site, a brokerage, an agent, a team or their standing. The sentence names none of the registrant terms. Under the ruling this is the ordinary sense and exempt. It is not a by-design case (no registrant is named, and it is not an 'only' place shape), so the false positive is genuine."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Ask one of Halton's leading insurance agents about sewer backup coverage.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The ruling explicitly names 'an insurance agent' as a third party, and the legitimate fixture on insurance agents and sewer backup coverage (line 1037) shows such advice is ordinary copy. Ranking third-party insurance agents is not a claim about the registrant, the site, a brokerage or a real estate agent/team. No registrant term appears, so firing is a genuine false positive."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "Buyers typically rely on realtor.ca, the leading real estate portal in Canada.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The ranked thing is realtor.ca, CREA's third-party portal, not the registrant's site. The fixtures already hold that REALTOR.ca is no role (lines 696/716). Nothing names the registrant, so under the ruling this is exempt. The reverse word order 'In Canada, the leading real estate portal is realtor.ca.' is exempt, which confirms that only the word order decides."
+  },
+  {
+   "team": "frame-evasion",
+   "text": "TRREB's market watch, the leading source of GTA housing data, shows prices flat.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The possessive 'TRREB's' makes the market watch a third party's report (TRREB publishes a monthly Market Watch). Ranking it is a citation of a third party, not a claim about the registrant or the site, and no registrant term appears. This contrasts with the site's own 'weekly market watch' fixture. The false positive is genuine."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Aamir Yaqoob ranked #1 of 400 agents in his office.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A rank among 400 agents with a rank verb, naming the registrant. It is not a number in the ruling's sense ('#1 of 32' means a photo count). HASH1_SERIES_RE's 'of\\s+\\d' exempts it as proper, which is never voided. Fail closed means it should fire."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 of 350 agents at the Milton office in 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A rank verb plus 'of 350 agents' is a standing claim, not a series number. The 'of \\d' branch exempts it before the rank verb is consulted."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 of 120 agents at RE/MAX Realty Specialists Inc. in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A rank claim that names the registrant's brokerage. '#1' is not inside the company name, and it is not a number, but the 'of \\d' branch exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 of 5,000+ agents in the region by units sold.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'by units sold' makes this a production rank among agents, not a photo or series count. The series branch exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "We finished #1 of 400 teams in Ontario.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A team rank claim with 'We'. It is not a number, and proper is never voided."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 of 12 RE/MAX offices in Halton",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "With no rank verb and no criterion, this has the same shape as the ruling's own number example '#1 of 32'. It could be an enumeration or caption ('#1 of 12'). Ambiguous under the ruling, so default false."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 or #2 in Milton for sales every year since 2018.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'Ranked #1 or #2' is a standing claim, not the unit series the ruling means by '#1 and #2'. The series branch exempts it ahead of the rank verb."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 or #2 on Google for Milton sold prices.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A search-ranking standing, not a number, label or company. Fail closed means it should fire, but the series branch exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Consistently #1 or 2 in Halton for listings sold.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A rank claim ('Consistently', 'for listings sold'). The optional '#' in the series regex makes 'or 2' read as a series."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Our team has finished #1 and #2 in the office three years running.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The literal '#1 and #2' shape, but 'finished ... in the office' makes it a rank, not unit numbers. It names the registrant ('Our team'), and proper is never voided."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Rated #1 and 4.9 stars on Google reviews.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'and 4.9' is a star rating, not a series. 'Rated #1' is a standing claim and should fire."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Rated #1 and 5 stars by clients.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'and 5 stars' is not a series. It is a rating claim, exempted wrongly by the series branch."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 and 5-star rated on Google.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'and 5-star' is not a series. A rank claim, exempted as proper."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 & 5-Star Rated in Milton",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A marketing rank and rating claim. '& 5-Star' is not a series of numbers, so fail closed means it should fire."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Voted #1 and 100% client satisfaction.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Voted #1' plus a satisfaction figure is a standing claim. 'and 100' is not a series."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 – 3 years in a row.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A dash then a count of years is not a range of numbers. 'Ranked #1' is a rank claim."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranked #1 - 2023, 2024 and 2025.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A dash before years is not an address or a range. A rank claim, exempted as proper."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton's #1 - 5 years running.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A possessive-place rank ('Milton's #1'). '- 5 years' is not a series, but the series branch runs before the possessive check."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Voted #1 – 2025 Milton Readers' Choice.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Voted #1' is a standing or award claim. Dash plus year is not a number series."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton's #1 – 300+ homes sold since 2015.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A possessive-place rank with a production figure. Dash plus a sales count is not a series."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Voted #1 - 3X Readers' Choice Winner",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An award rank claim. '- 3X' is not a range of numbers."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Aamir Yaqoob: #1 – 2025, #1 – 2024",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This names the registrant, so even read as a list label it would be voided. Read as a rank, it is a claim. Both hits are exempted as proper, which is never voided."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 10 Years Running",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'10 Years Running' is a duration, not a street number. A rank claim that the address branch exempts."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Voted #1 2025 Readers' Choice Award",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An award rank. A year followed by a capital is not a street address."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 2025 Top Agent",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A rank title ('Top Agent'), not an address. The address branch exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Aamir Yaqoob (#1 agent in Milton, 2025)",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The ruling lists '(#1' as a number shape, but here '#1 agent in Milton' is a rank beside the registrant's name, not a number. The opening-bracket branch exempts it before the claim noun 'agent' is checked."
+  },
+  {
+   "team": "number-one-2",
+   "text": "RE/MAX Realty Specialists (#1 brokerage in Halton)",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A parenthetical brokerage rank naming the registrant's brokerage. Not a number, but exempted by the '(' branch."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Work with Milton's top-selling agent (#1 in 2025).",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A parenthetical rank of an agent. Not a number, but the '(' branch exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Miltonly (#1 source for Milton sold prices)",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The site's own name plus a parenthetical rank as a real estate source. It is a claim, exempted as proper."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton's Number #1 Realtor",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The redundant 'Number #1' is a rank of a Realtor, not 'No. 1' as a unit. NUMBERED_RE's 'number' exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Aamir is the number #1 agent in the office.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This names the registrant and ranks an agent. 'number' before '#1' is read as a unit word."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Your Number #1 Choice for Milton Real Estate",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A rank claim about a real estate choice. 'Number' is misread as a unit word."
+  },
+  {
+   "team": "number-one-2",
+   "text": "The No. #1 agent in Milton for resale",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An agent rank in a place. 'No.' before '#1' is misread as a unit number."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Finished #1 in the office for the third straight year.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Finished #1 in the office' is a standing claim, not a label numbering a noun. 'Finished' is not a noun that '#1' numbers."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Currently #1 in the office by units sold.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A production rank. The adverb 'Currently' is not a noun being labelled, yet it takes the label path."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Overall #1 in the office for units sold.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A production rank. 'Overall' is not a numbered noun, so the label exemption is wrong."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Officially #1 by volume in 2025.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'#1 by volume' is a production rank, not a label. It is exempted as idiom."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Voted Milton #1 three years running",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Voted ... #1' is a standing claim. 'Milton #1' here is not a label numbering the noun Milton."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Voted Milton #1 for Customer Care",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A service rank with 'Voted'. It is not a label, but the label path exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton #1 for customer satisfaction",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A place rank for satisfaction, which is a standing claim. It is not a label numbering a noun."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Halton #1 for five-star reviews",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A place rank for reviews, which is a standing claim. It is exempted as a label."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton #1 Source for Sold Prices | Miltonly",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The site's own title tag ranking itself as a real estate source. It is not a label. The brand suffix is stripped and the label path exempts it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton #1 Real Estate Guide | Miltonly",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The site ranking itself as Milton's real estate guide. It is a rank, not a label."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton #1 real estate group",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A real estate group ranked in a place is a claim. 'Milton #1' is not a label numbering Milton."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Canada #1 real estate company",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A rank of a real estate company. It is exempted by the label path because 'company' is not a rank-after target."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Ranks #1 on Google for Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Ranks #1' is a standing claim. The present-tense verb is misread as a numbered noun."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Google ranks the site #1 for Milton sold prices.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'ranks the site #1' ranks the site. It is not 'Site #1' as a label, and fail closed means it should fire."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Sales Ranking #1, 2025",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Ranking #1' states the rank itself, not a label numbering a ranking. It is a sales-standing claim."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Client Satisfaction #1 three years running",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A satisfaction rank ('three years running'), not a label numbering the noun 'Satisfaction'."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Milton families rank them #1.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'rank them #1' is a rank. The pronoun is not a numbered noun, and fail closed means it should fire."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Crowned #1 for 2025.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'Crowned #1' is an award or standing claim, not a label. It is exempted as idiom."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Courtesy of Top Producer Realty Group",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The ruling exempts only a company name ENDING in Inc./Ltd./Realty/Brokerage. This one ends in 'Group', but a mid-name 'Realty' is enough for the attribution branch."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Presented by #1 Halton Realty Team",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The name ends in 'Team', not a designator the ruling accepts. The attribution branch exempts on the mid-name 'Realty'."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Listed by #1 Realty Team in Milton",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The name '#1 Realty Team' ends in 'Team', so the ruling's 'ending in' condition is not met, yet it is exempted as proper."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Presented by #1 Selling Brokerage in Milton",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "The capitalised name ends in 'Brokerage', which the ruling's company exemption literally accepts. Whether it is a firm's name or a generic 'selling brokerage' rank is ambiguous, so default false."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Top Producer RE/MAX® Integra Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is fixture 490 (a VIOLATION) plus ®. Without ® it FIRES (checked as a control). 'Top Producer' is a title before the issuer, not inside the company name, and the ® defeats BRAND_RE."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Top Producer RE/MAX® Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is fixture 488 (a VIOLATION) plus ®. It is the same title-before-issuer claim, exempted only because of the registered mark."
+  },
+  {
+   "team": "number-one-2",
+   "text": "2025 RE/MAX Top Producer Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An award line ('RE/MAX Top Producer') followed by the issuer. 'Top Producer' is not part of a real company's name. With the brand placed before the title it escapes the brand check."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Top Producer Integra Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An award title before the issuer (the registrant's franchisor, Integra). The words are not inside the company's name. It is exempted because 'Integra' is not in BRAND_RE."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Aamir Yaqoob, Top Producer Revel Realty Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This names the registrant with the title 'Top Producer' before the company 'Revel Realty Inc.'. The words are not inside the company name, yet they are exempted as proper."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 Sales Representative Zolo Realty Inc.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A rank title before the brokerage 'Zolo Realty Inc.'. '#1 Sales Representative' is not part of the company's name."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Top Producer Real Broker Ontario Ltd.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A title before the brokerage 'Real Broker Ontario Ltd.'. It is exempted because the brand is unlisted, not because the words are inside the company name."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Proud to be named a #TopProducer again this year.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The hashtag form of 'top producer' used as a self-claim ('Proud to be named'). The fail-closed word is never matched because the vocabulary needs a separator."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Aamir Yaqoob #TopProducer #MiltonRealEstate",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This names the registrant with the hashtag 'top producer' claim, and the vocabulary regex never matches it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "8450 Lawson Road, #1, Milton",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A street-address unit is a number under the ruling. The comma defeats NUMBERED_RE, so it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1, 8450 Lawson Road, Milton, ON",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A unit before a street address is a number, but the comma defeats the address branch."
+  },
+  {
+   "team": "number-one-2",
+   "text": "6941 Derry Road West, #1",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An address unit, which is a number under the ruling. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "The unit is at 123 Main Street, #1.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An address unit with no registrant and no claim. It is a number and should be exempt."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1A - 8450 Lawson Road",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unit 1A at a street address is a number (and not even a '#1'). It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1B-100 Nipissing Road, Milton",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A letter-suffixed unit before an address is a number, yet it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Visit our office at 8330 James Snow Pkwy #1.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A street address is a number, and numbers are never voided by naming the registrant. 'Pkwy' is missing from NUMBERED_RE, so the label is voided by 'our'."
+  },
+  {
+   "team": "number-one-2",
+   "text": "We sold 8330 James Snow Parkway #1 in May.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A street address unit, which is a number and never voided. 'Parkway' is missing, so 'We' voids it as a label."
+  },
+  {
+   "team": "number-one-2",
+   "text": "We listed 25 Mowat Crt #1 last spring.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A street address unit ('Crt'), which is a number and never voided. It fires because of 'We'."
+  },
+  {
+   "team": "number-one-2",
+   "text": "We sold 45 Glenwood Hts #1 last fall.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A street address unit ('Hts'), which is a number. It fires because 'Hts' is not in NUMBERED_RE and 'We' voids the label."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Our listing at 3 Harrop Cir #1 closed in April.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A street address unit ('Cir'), which is a number and never voided. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "We sold 8111 Regional Road 25 #1 in July.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A unit on a numbered road is a street address number. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "The end unit, #1, backs onto greenspace.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A unit number in apposition is a number under the ruling, with no claim and no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "The corner lot is #1 on the site plan.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A lot number on a site plan is a number under the ruling. 'is' makes it read as a rank."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Of these tips, #1 saves the most money.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An elliptical 'Tip #1', a label numbering a noun in a sentence that does not name the registrant. The ruling exempts that ('#1: Get pre-approved' has no noun either)."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Of the three comparables, #1 is the closest match.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An elliptical 'Comparable #1' label with no registrant. The ruling exempts it, but it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Here's #1: get pre-approved before you shop.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is the ruling's own label shape '#1: Get pre-approved'. POSSESSIVE_RE reads the contraction 'Here's' as a possessive rank."
+  },
+  {
+   "team": "number-one-2",
+   "text": "As noted in #1, lenders want two years of income history.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A back-reference to list item #1, a label with no registrant and no claim. It fires because 'in' is a rank-before word."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Offer #2 came in $10,000 higher than #1.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An elliptical 'Offer #1' in an offer series, which is the ruling's own label example. It fires after 'than'."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Tip #2 builds on #1.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A reference to Tip #1, a label with no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Mistake #3 is related to #1.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A reference to Mistake #1, a label with no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Start with #1.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "Standing alone, 'Start with #1.' could be a list back-reference or a rank tagline ('start with the #1'). Firing under fail closed is defensible, and the ruling is ambiguous here."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Comparables: #1 sold in March, #2 in May.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An inline enumeration of comparables (properties). The labels have no claim and no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Photos: #1 front, #2 kitchen, #3 yard.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An inline enumeration of photo labels. The ruling exempts labels and series, but it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Map key: #1 Milton GO station, #2 Milton District Hospital.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Map legend numbering is a label or series, not a rank. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 is the closest comparable; #2 is a block away.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Paired '#1' and '#2' labels for comparables with no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Of the two offers, #1 was firm.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An elliptical 'Offer #1', which is the ruling's own label example, with no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 — Overpricing the home",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list-item label. The hyphen version '#1 - Overpricing the home' is exempt as idiom (control run). The em-dash, which persists on unswept pages per MH-010, makes it fire."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 Get pre-approved before you shop",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A list heading that labels a tip. It cannot be read as a rank of anything, and the ruling's label example is the same text with a colon."
+  },
+  {
+   "team": "number-one-2",
+   "text": "• #1: Get pre-approved",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "This is the ruling's own label example '#1: Get pre-approved' with a bullet glyph before it, and it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 vs. #2: which comparable is closer?",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A comparison of two labelled comparables (a series or labels), with no claim and no registrant. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "We measured bedroom #1 at 3.4 by 4.1 metres.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "Whether 'bedroom #1' is a room number (never voided) or a label numbering the noun 'bedroom' (voided by 'We') is ambiguous. Round-1 fixture 918 records 'Bedroom #1' as the label (idiom) exemption, so firing on a 'We' sentence is by design."
+  },
+  {
+   "team": "number-one-2",
+   "text": "I park in parking spot #1 behind the building.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A parking spot number is a physical identifier like a unit. The code's own design numbers parking, stall and space ('parking space #1' is exempt as proper, per a control run). Because 'spot' is missing, 'I' voids it."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Take the #1 bus to the Milton GO station.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A bus route number, with no claim and no registrant. It is exempt as either a number or a label, yet it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "The farm sits on #1 Side Road in Burlington.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'#1 Side Road' is a road name, a street address number under the ruling. It fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Tips for #1stTimeHomeBuyers in Milton.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The hashtag '#1stTime...' is not '#1' and makes no rank claim. The vocabulary matches it and it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 Home Inspections Ltd. did the inspection.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'#1' sits inside a company name ending in Ltd., which the ruling exempts. It fires because cleanRun rejects the claim noun 'Home'."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 Choice Realty Inc. listed the home at $1.2M.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'#1' sits inside a company name ending in Inc. With no attribution cue it fires, although the same name after 'Listed by' is exempt as proper (fixture 991)."
+  },
+  {
+   "team": "number-one-2",
+   "text": "The sellers used #1 Choice Realty.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'#1' sits inside a company name ending in Realty, which the ruling names as a company ending. HARD_DESIGNATOR_RE lacks Realty, so it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "Top Producer Realty Brokerage handled the sale.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The words sit inside a company name ending in Realty Brokerage, which the ruling exempts. Outside an attribution cue it fires."
+  },
+  {
+   "team": "number-one-2",
+   "text": "#1 Movers of Milton Inc. quoted $1,500.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "'#1' sits inside a third-party company name ending in Inc., which the ruling exempts. 'of' makes cleanRun reject it and it fires."
+  },
+  {
+   "team": "only-2",
+   "text": "The only place to see every sold price on your street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "\"place\" is none of the ruling's ranked things (the registrant, the site, a brokerage, an agent, a team, or their standing). The sentence has no in-<place> or <Place>'s shape, and nothing in it ties the place to this site. Round 1 held the same for an untied \"guide\" or \"choice\" (\"The only Milton real estate guide you'll ever need.\" was not confirmed). Ambiguous under the ruling."
+  },
+  {
+   "team": "only-2",
+   "text": "Only one place in Milton shows you every sold price, street by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"only one ... in Milton\" claims uniqueness inside a named place, the same claim as \"the only place in Milton that ...\", and \"only one\" is uniqueness, not a count. The round 1 fixture \"Only one site in Milton shows you every sold price, street by street.\" FIRES (re-run), so swapping in \"place\" should not lose the place shape. Moderate confidence, because the sentence has no \"the\"."
+  },
+  {
+   "team": "only-2",
+   "text": "This page is the only place to see every sale on your street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The thing ranked is \"This page\", the site's own page, so the site ranks itself, which is the ruling's claim sense. The subject is the site, not a third party, yet it is read as a third-party frame."
+  },
+  {
+   "team": "only-2",
+   "text": "The only tool that tracks every Milton sale by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "A tool is a product, not one of the ruling's ranked things, and nothing ties it to this site. Round 1 held \"The only Milton market report built street by street.\" not confirmed for the same reason. The place is attributive, not \"in <place>\"."
+  },
+  {
+   "team": "only-2",
+   "text": "The only home valuation built from street-level sales.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "No owner is named and nothing ties the valuation to the registrant. It has no place shape. Round 1 held the parallel untied service product (\"The only guaranteed sale program for Milton sellers.\") ambiguous, not confirmed."
+  },
+  {
+   "team": "only-2",
+   "text": "Sign up for the only price alerts built street by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "\"Sign up for\" places the alerts on this site, but the thing ranked is a product, not the site, the registrant or a ruling-listed standing. The ruling does not settle whether a site product counts. Ambiguous."
+  },
+  {
+   "team": "only-2",
+   "text": "The only guaranteed sale program for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "Already judged not confirmed in round 1 (rt-confirmed.json): neither the program's owner nor a registrant is named, and \"for Milton sellers\" is not \"in <place>\". Ambiguous under the ruling."
+  },
+  {
+   "team": "only-2",
+   "text": "The only locally owned option for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "\"option\" names neither the registrant nor a ruling target. It parallels round 1's \"The only choice for Milton sellers.\", which was not confirmed because it also has an ordinary reading. \"locally owned\" hints at a business but does not name a brokerage. It has no place shape."
+  },
+  {
+   "team": "only-2",
+   "text": "The only person you need to call.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "No role, pronoun, target or place. The referent comes only from page context, like round 1's \"Talk to the only Milton local who has walked every street.\", which was not confirmed. Ambiguous."
+  },
+  {
+   "team": "only-2",
+   "text": "Work with the only one who knows every street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "\"one\" names no agent, team, brokerage or site, and knowledge is not a ruling-listed standing. Reading it as the registrant depends on page context (round 1's \"Milton local\" precedent was not confirmed)."
+  },
+  {
+   "team": "only-2",
+   "text": "The only one who has sold on every Milton street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "It ranks someone by production (\"has sold on every Milton street\"), a standing the ruling lists. Only an agent or brokerage sells on every street, so the thing ranked is an agent. The twin \"The only one who has sold on every street in Milton.\" FIRES (re-run). Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "The only RECO registrant who publishes every Milton sold price.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A RECO registrant is by definition a real estate salesperson or broker, a ruling target. Round 1 confirmed the \"sales rep\" twin, and \"The only sales representative who publishes every Milton sold price.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The only Diamond Club member who lives on your street.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "It ranks a person by a RE/MAX award, the ruling's \"standing: an award\". Round 1 confirmed \"The only Diamond Club recipient from Milton.\", which FIRES (re-run). Only the noun changes. Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "The only site that shows what your neighbours sold for.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"site\" is the ruling's own target, and the context (what homes sold for) is plainly real estate. No third party frames it. \"The only site with every Milton sold price.\" FIRES (re-run). It misses only because \"sold for\" is not in the qualifier list."
+  },
+  {
+   "team": "only-2",
+   "text": "The only platform that publishes every Milton sale.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A platform that publishes every Milton sale is a website, which is the site in the ruling's claim sense. The rule's own docs cite \"the only dedicated real estate platform\" as a claim. No frame. Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "The only site that covers every street, not just the popular ones.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A web \"site\" ranked against competitors (\"not just the popular ones\") is the ruling's target, and nothing frames it as a third party's. It misses only for lack of a real-estate qualifier word, which is an implementation heuristic, not a ruling exemption. Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "The only guide written by someone who lives here.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "An untied guide is not a ruling target (round 1 was not confirmed on untied guides), and \"someone who lives here\" is not in the ruling's registrant list. Ambiguous."
+  },
+  {
+   "team": "only-2",
+   "text": "The only guide to Milton you'll ever need.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "Round 1 held \"The only Milton real estate guide you'll ever need.\" not confirmed, since a guide is not a ruling target and nothing ties it to this site. \"to Milton\" is not \"in <place>\"."
+  },
+  {
+   "team": "only-2",
+   "text": "Subscribe to the only Milton newsletter that covers every street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "\"Subscribe to\" ties the newsletter to this site, but the thing ranked is a product, not the site or a listed standing. \"Milton\" is attributive. Whether a site product counts is not settled by the ruling."
+  },
+  {
+   "team": "only-2",
+   "text": "{\"@type\":\"RealEstateAgent\",\"description\":\"The only Milton guide that covers every street\"}",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The description is the RealEstateAgent entity's own self-description, so the thing ranked is the registrant (an agent, a ruling target), not an untied guide. Moderate confidence: it rests on reading the JSON-LD type as naming the subject."
+  },
+  {
+   "team": "only-2",
+   "text": "The only real estate website that has every Milton sold price.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A real estate website is the site. The relative clause's \"has\" belongs to the noun phrase, and no third party speaks. The twin \"The only real estate website with every Milton sold price.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The only listing service that includes free staging and a pre-list inspection.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A listing service is necessarily a brokerage's service, which is the ruling's \"standing: service\". \"that includes\" is the noun's own relative clause, not a third party's frame. The twin \"The only listing service with free staging and a pre-list inspection.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The only Milton guide that is updated street by street every week.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "The relative-clause frame misread is real: the twin \"The only Milton guide updated street by street every week.\" FIRES (re-run). But the ruling does not list a guide, and round 1 held an untied guide ambiguous, so this is not a contradiction of the ruling as written."
+  },
+  {
+   "team": "only-2",
+   "text": "You have found the only street-by-street guide to Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"You have found\" makes the guide the thing the reader is on, which is this site. Round 1 confirmed the parallel \"... and you're on it\". The reader is not a third party making a statement, and the twin without \"You have found\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "You get the only street-by-street pricing service built for your block.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"service\" is a standing the ruling lists, and \"You get\" is the site offering it to the reader, not a third party's statement. The twin without \"You get\" FIRES (re-run). Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "Sellers get the only full-service listing experience with street-level pricing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A full-service listing experience is a brokerage's service (the ruling's standing). The registrant's customers receiving it are not a third party framing it. The twin without \"Sellers get\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "This guide is the only street-by-street guide to Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"This guide\" is the page the reader is on, so the site ranks itself. The demonstrative ties it to the site, and the twin \"The only street-by-street guide to Milton real estate.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The site is the only street-by-street guide to Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The thing ranked is literally \"The site\", the ruling's claim target. The site is not a third party, so it cannot frame its own claim. Medium realism."
+  },
+  {
+   "team": "only-2",
+   "text": "The Milton Market Watch is the only weekly report on every Milton street.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "Read on its own, \"The Milton Market Watch\" could be a third party's publication (TRREB publishes a \"Market Watch\"). A report is also not a ruling target. Ambiguous."
+  },
+  {
+   "team": "only-2",
+   "text": "What makes this site different? It's the only one that tracks every Milton street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The answer's \"It\" is \"this site\" from the question, so the thing ranked is the site, the ruling's claim sense. The per-sentence reading loses the referent. This is an implementation limit, not a ruling exemption."
+  },
+  {
+   "team": "only-2",
+   "text": "Why Miltonly? It's the only local guide that covers every street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"It\" is Miltonly, named in the question, so the thing ranked is the registrant's site. This is the claim sense, missed only because the answer is read alone."
+  },
+  {
+   "team": "only-2",
+   "text": "Available from Aamir Yaqoob only.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The ruling makes \"only\" closing the phrase it restricts a fixed idiom that is never voided. Round 1 confirmed \"available only from Aamir Yaqoob\" precisely because \"only\" opened the phrase there. As written this is exempt: a gap in the ruling, not an implementation contradiction."
+  },
+  {
+   "team": "only-2",
+   "text": "Street-level Milton data, found on this site only.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "\"only\" closes \"on this site\", the ruling's never-voided idiom shape. Round 1's confirmed fixture differs precisely by \"only\" opening the phrase. By design under the ruling as written."
+  },
+  {
+   "team": "only-2",
+   "text": "Street-by-street sold prices you'll find only here.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"only here\" opens the phrase it restricts, so it is not the closing idiom. On a website \"here\" is this site, which is being ranked. The twin \"Street-by-street sold prices you'll find only on this site.\" FIRES (re-run). Moderate confidence, since \"here\" is deictic."
+  },
+  {
+   "team": "only-2",
+   "text": "Only here: every sold price in Milton, street by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The same exclusivity claim for the site as \"found only on this site\", which FIRES. \"Only here\" opens its phrase, and the colon cutting off the rest is an implementation artifact. Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "The only 4 bedroom bungalow in Timberlea with a walkout.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"the only ... in <place>\" (Timberlea). \"4 bedroom\" modifies the noun and counts nothing, so the quantity sense does not apply. The hyphenated twin FIRES (re-run), and round 1 confirmed the \"100%\" analogue."
+  },
+  {
+   "team": "only-2",
+   "text": "The only three bedroom condo in Milton under $600K.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The \"the only ... in Milton\" shape. \"three bedroom\" is a modifier, not a count of condos, so the quantity exemption does not reach it."
+  },
+  {
+   "team": "only-2",
+   "text": "Milton's only 5 star real estate website.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is the <Place>'s only shape, and it ranks the site. \"5 star\" is a rating, not a count. \"The only 5-star real estate website in Milton.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "Milton's only three time Platinum Club winner.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The <Place>'s only shape, ranking by award standing. \"three time\" counts wins, not winners. \"Milton's only three-time Platinum Club winner.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "Milton's only small, family-run real estate firm.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The <Place>'s only shape, ranking a brokerage. \"small\" counts nothing. \"Milton's only small family-run real estate firm.\" is also ordinary, while \"Milton's only street-by-street real estate firm.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "Milton's only 100 percent street-by-street guide.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Round 1 confirmed \"Milton's only 100% street-by-street guide.\" as the <Place>'s only shape, with \"100%\" not a count. \"100 percent\" is the same modifier spelled out."
+  },
+  {
+   "team": "only-2",
+   "text": "The only bungalow in sought-after Timberlea.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The place is Timberlea, so this is \"the only ... in <place>\". Round 1 confirmed \"in all of Milton\" and \"in the greater Milton area\". \"The only bungalow in Timberlea.\" FIRES (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The only new-build bungalow in north Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"in north Milton\" is \"in <place>\", and a compass adjective does not change the place. This is the same kind of placeAt gap round 1 confirmed for \"in the greater Milton area\"."
+  },
+  {
+   "team": "only-2",
+   "text": "The only ravine lot in the heart of Timberlea.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"in the heart of Timberlea\" scopes uniqueness to Timberlea, the in-<place> shape. This parallels round 1's confirmed \"in all of Milton\"."
+  },
+  {
+   "team": "only-2",
+   "text": "The only lot of this size in this neighbourhood.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The neighbourhood is a place word under the rule. \"The only lot of this size in the neighbourhood.\" FIRES (re-run), and the determiner \"this\" does not change the shape."
+  },
+  {
+   "team": "only-2",
+   "text": "The Only Walkout Bungalow In Hawthorne Village",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Hawthorne Village is a real proper-name Milton place, and \"The only walkout bungalow in Hawthorne Village.\" FIRES (re-run). Round 1 confirmed a Hawthorne Village property case. Title Case headings are realistic."
+  },
+  {
+   "team": "only-2",
+   "text": "The only Milton listing with a private ravine.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The place is attributive. Round 1 held that attributive \"Milton\" is not the place shape, and a listing is not a ruling target. Not a contradiction of the ruling as written."
+  },
+  {
+   "team": "only-2",
+   "text": "In Timberlea, this is the only ravine lot.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This makes the same claim as \"The only ravine lot in Timberlea.\" (FIRES, re-run), with the in-<place> phrase fronted. Round 1 read the ruling's shape as a shape, not strict adjacency. Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "Of all the homes in Timberlea, this is the only one with a pool.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Uniqueness of a property scoped to Timberlea by a fronted \"in <place>\" phrase, the same claim as the fronted-place case above. Moderate confidence."
+  },
+  {
+   "team": "only-2",
+   "text": "Only walkout bungalow in Dempsey under $1.2M",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A headline that drops the article. \"The only walkout bungalow in Dempsey under $1.2M\" FIRES (re-run). The missing \"the\" does not change the in-<place> claim."
+  },
+  {
+   "team": "only-2",
+   "text": "There's only one ravine lot in Timberlea, and this is it.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"only one ... in Timberlea\" is uniqueness in a place (\"only one\" is not a count), and \"this is it\" pins it to the property. \"Only one ravine lot in Timberlea.\" is also ordinary (re-run), while \"The only ravine lot in Timberlea.\" FIRES."
+  },
+  {
+   "team": "only-2",
+   "text": "The one-and-only ravine bungalow in Timberlea.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Round 1 confirmed \"the one and only ... in Milton\" as the place shape, and the unhyphenated twin FIRES (re-run). Hyphenation is a spelling variant."
+  },
+  {
+   "team": "only-2",
+   "text": "The first & only ravine bungalow in Timberlea.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"The first and only ravine bungalow in Timberlea.\" FIRES (re-run). The ampersand is a spelling variant of the same in-<place> claim."
+  },
+  {
+   "team": "only-2",
+   "text": "The first, and only, walkout bungalow in Dempsey.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The same claim as \"the first and only ... in Dempsey\". Round 1 confirmed the comma-parenthetical variant for the possessive form, and the comma is not a ruling exemption."
+  },
+  {
+   "team": "only-2",
+   "text": "The only ravine lot within Timberlea.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"within Timberlea\" is a direct synonym of \"in Timberlea\", and the twin FIRES (re-run). Moderate confidence (medium realism)."
+  },
+  {
+   "team": "only-2",
+   "text": "The only detached home on Laurier Avenue with a pool.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "The ruling's shape is written \"in <place>\". Round 1 treated \"on the street\" as outside it, although the possessive \"Laurier Avenue's only ...\" FIRES (re-run). Whether \"on <Street>\" is the shape is not settled, so it is ambiguous."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a Tarion representative can confirm whether a defect is covered.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A Tarion representative is a third party, exactly like the ruling's own \"Town representative\" example. It is a restriction sense, and no registrant is named. The control \"Only a Town representative can confirm ...\" is ordinary (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a Milton Hydro representative can confirm the service connection.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A utility's representative is a third party like the ruling's Town representative. It is an ordinary restriction with no registrant named."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a school board representative can confirm which school serves an address.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A school board's representative is a third party. It is an ordinary restriction with no registrant named."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a certified asbestos specialist can confirm whether vermiculite insulation contains asbestos.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The ruling's registrant roles are realtor, agent, broker, brokerage and team. A tradesperson specialist is a third party, like the ruling's insurance agent. \"Only a mortgage specialist can confirm the rate.\" is ordinary (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a registered professional engineer can stamp the drawings for a second unit.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A P.Eng is a third party. Round 1 confirmed \"Only a licensed professional can confirm the condition of the roof.\" It is an ordinary restriction with no registrant."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a professional home inspector can assess the roof properly.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A home inspector is a third party and not in the ruling's registrant list. It is the same case as round 1's confirmed licensed professional."
+  },
+  {
+   "team": "only-2",
+   "text": "Only a structural expert can confirm whether the wall is load-bearing.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A structural expert is not the registrant, site, brokerage, agent or team. It is a restriction sense with no registrant named."
+  },
+  {
+   "team": "only-2",
+   "text": "Only your legal advisor can explain the title search results.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The reader's lawyer is a third party. Round 1 confirmed \"A financial advisor can help, but only the lender can confirm the rate.\" \"your\" is the reader's, not a registrant pronoun."
+  },
+  {
+   "team": "only-2",
+   "text": "Only the Town's by-law enforcement team can ticket overnight parking.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The Town's team is a third party's team, which the ruling excludes. \"Only the Town's roads team can plow.\" is ordinary (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The Town's forestry team only removes trees on municipal boulevards.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A third party's team, the same as the LEGITIMATE fixture \"The Town's roads team plows only arterial roads\". Only the team's trade word differs."
+  },
+  {
+   "team": "only-2",
+   "text": "Pre-construction units are sold only through the developer's sales agent.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The developer's agent is a third party's agent. Its twin \"...through the developer's sales team.\" is a LEGITIMATE fixture and ordinary (re-run)."
+  },
+  {
+   "team": "only-2",
+   "text": "The sales centre agents represent only the builder, not you.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Builder's sales-centre agents are a third party's agents, and \"only\" restricts \"the builder\", not an agent. It is an ordinary sense with no registrant named."
+  },
+  {
+   "team": "only-2",
+   "text": "The buyers agent can only share what the buyer authorizes.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Round 1 held the buyer's agent a third party (confirmed \"Buyers' agents are usually paid only when the sale closes.\"). \"The buyer's agent can only share what the buyer authorizes.\" is ordinary (re-run), so only the apostrophe differs."
+  },
+  {
+   "team": "only-2",
+   "text": "Only local producers sell at the Milton Farmers' Market.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Farm producers are not in the ruling's registrant list and rank nothing the ruling covers. \"at the Milton Farmers' Market\" is not \"in <place>\". It is an ordinary restriction."
+  },
+  {
+   "team": "only-2",
+   "text": "Only someone who lives on the street can tell you how busy the school run gets.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"someone who lives on the street\" is not in the ruling's registrant list. Here it is a resident, and no agent context is present. It is an ordinary restriction. Round 1 confirmed the parallel \"For someone who works in Toronto, ...\". Medium confidence, because ROLE_RE adds this descriptor on purpose."
+  },
+  {
+   "team": "only-2",
+   "text": "Under TRESA, only a registered brokerage can hold a buyer's deposit in trust.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The ruling voids on \"a brokerage that is not a third party's\", and a generic brokerage is not a third party's. Its claim sense also covers \"a brokerage\" singled out. Round 1 did not confirm the generic \"Only listing brokerages can correct...\" or \"Member brokerages...\". Firing follows the ruling as written."
+  },
+  {
+   "team": "only-2",
+   "text": "Under TRESA, a brokerage may only represent both buyer and seller with written consent from both.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "It is the same generic-brokerage case: the ruling's void covers any brokerage that is not a third party's, so firing is by the ruling as written."
+  },
+  {
+   "team": "only-2",
+   "text": "Royal LePage Meadowtowne Realty, Brokerage · Only 2 years new, freehold townhome",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A named brokerage other than RE/MAX Realty Specialists is the listing brokerage, which the ruling names as a third party. \"Only 2 years new\" is the quantity sense. The registrant is not named."
+  },
+  {
+   "team": "only-2",
+   "text": "Only one building is proposed for this site.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"this site\" here is a development parcel, not the website the ruling's \"this site\" means. The LEGITIMATE fixture \"The developer's plan for this site includes only townhomes, no apartments.\" is ordinary (re-run). It is a restriction sense that ranks nothing."
+  },
+  {
+   "team": "only-2",
+   "text": "Only Tower I has been registered; Tower II is still under construction.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A Roman numeral is not the pronoun I. Round 1 confirmed \"Only Phase I ...\", which is now ordinary (re-run), and \"Tower\" is the same case."
+  },
+  {
+   "team": "only-2",
+   "text": "Why can I only see sold prices after I sign in?",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The ruling lists \"I\" among the registrant's names with no reader-voice carve-out for \"only\". MA-010's rule that the reader speaks in a question is written for the \"best\" question exemption only. It fires by the ruling's literal void, which is a gap in the ruling worth raising, not an implementation contradiction."
+  },
+  {
+   "team": "only-2",
+   "text": "Why do I only see some of the sales on my street?",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "This is the same literal pronoun void (\"I\", \"my\"). The ruling does not exempt the reader's voice, so this is by design as written."
+  },
+  {
+   "team": "only-2",
+   "text": "Email me only when a new listing matches my search.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The ruling voids on \"me\" and \"my\" with no carve-out for a form label in the reader's voice. It is by design under the literal ruling."
+  },
+  {
+   "team": "only-2",
+   "text": "Conservation Halton is the only agency that regulates floodplain building on the street.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A conservation authority is not a brokerage, agent, team or the site. Round 1 confirmed \"Milton Hydro is the only electricity distribution company serving the town.\" \"on the street\" is not \"in <place>\"."
+  },
+  {
+   "team": "only-2",
+   "text": "The only heritage award on the street went to the 1880s farmhouse at number 12.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The ruling's award is the registrant's standing, and a house's heritage award is not. Round 1 confirmed \"Bristol Park is the only award-winning playground ...\"."
+  },
+  {
+   "team": "only-2",
+   "text": "The only official recognition of the house's heritage value is its Part IV designation.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The recognition belongs to a house, not the registrant. Round 1 confirmed \"The only designation on the street is a Part IV heritage designation at number 12.\""
+  },
+  {
+   "team": "only-2",
+   "text": "The only winners in a bidding war are the sellers.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The winners are sellers in general. No registrant, site, brokerage, agent or team is ranked, and \"in a bidding war\" is not a place. It is ordinary market commentary."
+  },
+  {
+   "team": "only-2",
+   "text": "The arena hosts only minor hockey teams on weekday mornings.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Minor hockey teams are a third party's teams. Round 1 confirmed \"...several minor hockey teams, so public skating is only offered on weekends.\" It is a restriction sense."
+  },
+  {
+   "team": "only-2",
+   "text": "The only honours program near the street is at Milton District High School.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A school's honours program is not the registrant's standing, and \"at ...\" is not \"in <place>\". Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "The only bus service on the street runs every 30 minutes at peak.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Transit service is not the registrant's service (the ruling's standing is theirs), and \"on the street\" is not \"in <place>\". Ordinary street description, high realism."
+  },
+  {
+   "team": "only-2",
+   "text": "The only licensed child care within walking distance fills up fast.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "An amenity's care is not the registrant's service, and there is no place shape or registrant. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "The only guidance available on basement suites comes from the Town's by-law.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The Town is the source, and nothing ranks the registrant or the site. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "The only southern exposure on the court belongs to the three lots at the top.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Sun exposure of lots ranks no registrant, site or service of theirs. It is ordinary lot description."
+  },
+  {
+   "team": "only-2",
+   "text": "The only ratings that matter for this school come from the EQAO.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A school's EQAO ratings are third-party data, not the registrant's reviews or ratings. No registrant is named."
+  },
+  {
+   "team": "only-2",
+   "text": "Under TRREB's VOW rules, the only websites that can display sold prices must require a free sign-in.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The ruling's target is \"the site\" (this site). Websites in general under a board rule are not ranked, and the registrant is not named. Moderate confidence, because the sentence is awkward and realism is lower than claimed."
+  },
+  {
+   "team": "only-2",
+   "text": "HouseSigma and Zolo aren't the only sites showing Milton sold prices.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The subjects are named third-party sites, and the uniqueness is negated. Nothing ranks the registrant or this site."
+  },
+  {
+   "team": "only-2",
+   "text": "Is Realtor.ca the only site with Milton listings? No; HouseSigma and Zolo show them too.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The site asked about is a named third party (Realtor.ca), and the answer names more third parties. No registrant is named, and the thing ranked is not this site."
+  },
+  {
+   "team": "only-2",
+   "text": "Halton Region publishes the only housing report that breaks Milton out by ward.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A named public agency's report is a third party's outlet, not the site. No registrant is named."
+  },
+  {
+   "team": "only-2",
+   "text": "Two sales give the only guide to what homes here sell for.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The subject is data (two sales), not an outlet of the registrant. It is the MA-010 source sense (\"sold prices are the best guide to value\"). Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "Buyers should treat the land registry as the only reliable source of sold prices.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The source is a named third party (the land registry), and neither the registrant nor the site is ranked. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "Many sellers use only one website to research sold prices.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is the quantity sense about consumers' habits. No registrant is named, and \"one website\" is not this site."
+  },
+  {
+   "team": "only-2",
+   "text": "The only choice for buyers under $700K: a condo.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Housing-type guidance ranks no registrant, site, brokerage, agent or team. Round 1 recognised the ordinary reading of \"the only choice\"."
+  },
+  {
+   "team": "only-2",
+   "text": "Only one internet provider serves the homes on this court.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A utility fact. The provider is a third party, there is no place shape, and no registrant is named."
+  },
+  {
+   "team": "only-2",
+   "text": "The only dental office near these homes closes at 5.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A dental office is not a brokerage or the site, and there is no place shape. Round 1 confirmed \"The only office building on the street is the dental office at the corner.\""
+  },
+  {
+   "team": "only-2",
+   "text": "Most buyers rely on the only public listings portal, Realtor.ca.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The portal ranked is the named third party Realtor.ca, not this site. No registrant is named."
+  },
+  {
+   "team": "only-2",
+   "text": "The only Milton data in TRREB's monthly Market Watch is the Halton breakdown.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A publication is not a place, so the in-<place> shape is not met, and nothing ranks the registrant."
+  },
+  {
+   "team": "only-2",
+   "text": "The only change in TRESA that affects buyers is the new information document.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A statute is not a place, and nothing ranks the registrant, the site or a target. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "The only change in Bill 23 that affects this street is the three-unit rule.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A bill is not a place, and no target is ranked. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "The only nearby school with instruction in French is Sainte-Anne.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A language is not a place, and a school is not a target. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "The only detached sale in H1 2026 closed at $1.2M.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A half-year is a period like the quarter the rule's place definition excludes, not a place. No target is ranked."
+  },
+  {
+   "team": "only-2",
+   "text": "The only bungalows in Mattamy's first phase sit on the crescent.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "A subdivision phase is a physical area, so whether \"Mattamy's first phase\" is a place under the ruling's in-<place> shape (which fires by design) is not settled. Ambiguous."
+  },
+  {
+   "team": "only-2",
+   "text": "Mattamy's only bungalow model on this street sold in March.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Mattamy is a builder, not a place, so <Place>'s only is not met, and a builder's model is not a target. Ordinary."
+  },
+  {
+   "team": "only-2",
+   "text": "Canada Post's only community mailbox on the street sits at the corner.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Canada Post is a company, not a place, and a mailbox ranks no target. Ordinary."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-rated on Google in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed rating badge ranks the registrant's reviews standing (fixtures 471/482 shape); no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-rated in Milton, three years running.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed rating badge ranks the registrant's reviews standing (fixtures 471/472 shape); no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-rated. Most reviewed. Locally owned.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed rating badge ranks the registrant's reviews standing; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Among the highest-rated in Halton on HomeStars.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed rating standing on a review platform (fixture 482 shape); no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Voted Milton's highest-rated, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed voted rating standing; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest Rated in Halton",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed rating badge heading ranks the registrant's reviews standing; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest Rated · Most Reviewed · Milton Owned",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed rating badge strip ranks the registrant's reviews standing; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Badge: Highest Rated 2025",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Rating award badge text for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading the Milton market since 2015.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Subjectless market-leadership tagline; production is listed standing; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading the way in Milton real estate since 2010.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Subjectless leadership tagline in Milton real estate; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading Milton real estate since 2010.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Subjectless market-leadership tagline; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading Milton in homes sold since 2018.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed production-standing claim (homes sold); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading Halton in homes sold, 2021–2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed production-standing claim (homes sold); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading in Milton home sales for five straight years.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed production-standing claim (home sales); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading the pack in Milton home sales since 2016.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed production-standing claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading Milton's resale market since 2016.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Subjectless market-leadership tagline; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Proudly leading the Halton market.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Subjectless market-leadership tagline; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading. Local. Trusted.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Bare 'Leading' tagline for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Rated highest by Milton sellers, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Predicate rating with the registrant as implied subject (fixture 482 without Google); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Rated highest by Milton homeowners.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Predicate rating with the registrant as implied subject (fixture 482 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Five-star rated, highest in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Predicate rating standing for the implied registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Trusted by Milton families since 2012 and rated highest on HomeStars.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Predicate rating on a review platform for the implied registrant (fixture 482 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Consistently rated among the highest in Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Predicate rating standing for the implied registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Rated Highest",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Bare rating badge for the implied registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Voted highest by readers of the Canadian Champion.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Voted standing (recognition) for the implied registrant; readers are raters, not a ranked third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Five-Star Service Rated Highest in Milton",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Heading-case twin of fixture 483; capitalised 'Service' is not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Client Satisfaction Rated Highest in Milton",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Heading-case satisfaction claim (fixture 471/483 shape); capitalised noun is not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Seller Satisfaction Ranked Highest in Halton",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Heading-case satisfaction claim; capitalised noun is not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Customer Service Rated Highest in Halton, 2025",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Heading-case service claim (fixture 474/483 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton Sellers Rated It Highest",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Sellers rating 'it' highest is a reviews claim; the raters are not a third party ranking themselves; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Rated 4.9 on Google, the highest of any Milton real estate website.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Close variant of violation fixture 477; 'Google,' is a rating platform, not a third party in apposition; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "4.9 stars on Google, highest of any Milton real estate website.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Variant of fixture 477; false apposition frame after 'Google,'; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Rated 4.9 by Milton sellers on HomeStars, the highest in Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Rating standing claim; 'HomeStars,' is a platform, not a third party in apposition; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Serving Milton and Halton Hills, the leading choice for Milton home sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant's service-area line plus self-description; place names frame nothing; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Proudly serving Milton, Oakville and Burlington, the leading real estate service for Halton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant's service claim after a town list; place names frame nothing; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading real estate service in Milton has helped 500 families move.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed service self-description; trailing verb names no third party (unlike fixture 905); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate blog is updated weekly.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Violation fixture 445 plus a predicate; no third party named; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading street-by-street real estate guide has been updated for 2026.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Site self-description; trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate website is now on Instagram.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site claim; trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's highest-rated real estate website has a new street index.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed site claim; trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading source for sold prices is free to use.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Site claim (fixture 383 shape); trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest-rated local real estate guide, updated nightly, is free to use.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Site claim (fixture 444 shape); trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate newsletter has 10,000 readers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Site product claim; trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of service is standard with every listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant's service claim plus 'is standard'; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of care from listing to closing is standard.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 462 plus 'is standard'; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading marketing is included with every listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant's marketing claim plus 'is included'; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Industry-leading marketing is included with every Milton listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 456 shape plus 'is included'; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Market-leading exposure is standard on every listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 457 plus 'is standard'; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of service in Milton, whatever your home is worth.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Service claim; the only verb is in a subordinate clause, no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Industry-leading marketing, no matter what your home is worth.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 456 shape; verb only in a subordinate clause; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Market-leading exposure for homes that have been sitting too long.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 457 shape; verb only in a relative clause; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading seller representation for homes that are hard to price.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 451 noun; verb only in a relative clause; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of expertise in Milton resale, whether you are upsizing or downsizing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 463 plus a whether-clause; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest rated of any real estate site in Milton, and it is free.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 476 plus a later clause; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of service, which is what every Milton seller deserves.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Service claim; verb only in a relative clause; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Industry-leading exposure, which is why listings sell faster.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Service claim; verb only in a relative clause; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading marketing that has sold homes on over 500 Milton streets.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Marketing claim; verb only in a relative clause; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading real estate resource that Milton sellers say they trust.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Site claim; sellers are raters in a relative clause, not a third party ranked; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest-reviewed real estate service in Milton has a new home on Main Street.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Service/reviews claim; trailing verb names no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Every listing gets the highest level of service.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Subject is the registrant's listing receiving the registrant's service, not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Your listing gets industry-leading marketing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject receiving the registrant's marketing, not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Sellers enjoy the highest level of service from listing to closing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject receiving the registrant's service, not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Clients enjoy the highest level of service in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Clients imply the registrant; recipient subject frames nothing; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "You get the highest level of representation in Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'You' receives the registrant's representation; not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "When you list, you get the highest level of service.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'You' receives the registrant's service; not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "You'll receive industry-leading marketing and a 3D tour.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'You' receives the registrant's marketing; not a third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Every Milton seller receives the highest level of care.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject receiving the registrant's service; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Each listing includes industry-leading marketing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The registrant's listing includes the registrant's marketing; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Listings are backed by industry-leading marketing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject; the marketing is the registrant's; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Home sellers have access to industry-leading marketing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject; the marketing is the registrant's; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Sellers get industry-leading marketing and a pricing plan built on sold data.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject; the marketing is the registrant's; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Buyers and sellers receive leading representation from offer to close.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Recipient subject; the representation is the registrant's; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Each client receives Milton's leading real estate service.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Client implies the registrant; recipient subject frames nothing; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Your home gets the leading marketing package in Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Recipient subject; the marketing is the registrant's; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Over 10,000 readers have made it Milton's leading real estate newsletter.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Variant of violation fixture 446; readers are raters, not a third party ranked; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Homeowners have trusted Milton's leading real estate website since 2019.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Site claim; homeowners are users, not a third party ranked; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of support from listing to sold.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 462 shape with 'support'; a service claim, no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of professionalism in Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Service/standing claim scoped to Milton real estate; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of personal attention for every Milton seller.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 462 shape with 'attention'; service claim; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Committed to the highest standards of professionalism and integrity.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "Printed ordinary as claimed, but 'committed to the highest standards' is aspirational with no ranking scope against others; whether it is the claim sense is ambiguous under the ruling."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest ethical standards in Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Like fixture 388, a standing claim scoped to Milton real estate with no one named; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading-edge technology to sell your Milton home.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 459 shape applied to the registrant's technology; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading-edge tools and virtual tours for every listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 459 shape applied to the registrant's tools; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Industry leading technology to sell your home faster.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 456 shape without the hyphen; registrant's technology; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Industry leading tools for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Fixture 456 shape without the hyphen; registrant's tools; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "World-leading technology for every Milton listing.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Fixture 456 shape with another prefix; registrant's technology; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest client retention in Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed client standing badge; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest repeat and referral business in Halton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed production standing badge; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading home-selling program.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The registrant's selling service ranked; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-quality photography and video for every listing.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Registrant's marketing service ranked (fixture 452 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading property website.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed site self-description (fixtures 443-445 shape); no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading property guide.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading property search platform.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading condo resource.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Halton's leading pre-construction platform.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading neighbourhood guide.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading relocation guide.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate hub.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site self-description; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading sold-price database.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate podcast.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate magazine.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate solution.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site/service claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading home valuation tool.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading home search app.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; no third party; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate data.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim (fixture 383 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's highest-quality real estate data.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest-accuracy home value estimates in Halton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unnamed site product claim; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton sellers' leading choice for ten years.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant/site self-description with the real estate context before the word; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton homeowners' leading choice since 2012.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant/site self-description with the context before the word; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "In Milton real estate, the leading name since 2009.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Registrant self-description (fixture 438 shape) with the qualifier fronted; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton Real Estate | Leading Local Guide",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Title-tag site claim (fixture 443 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton Homes for Sale | The Leading Local Site",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Title-tag site claim; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton Sold Prices | The Highest-Rated Source",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Title-tag site claim; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "For Milton real estate, the leading local guide.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Site self-description with a fronted qualifier; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Why sellers call it the leading guide in Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Site self-description; sellers are raters, not a third party ranked; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate duo.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A team noun for the unnamed registrant (fixture 447 shape); not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate family since 1985.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A team noun for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate strategist.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An agent noun for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate marketer.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An agent noun for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading real estate advocate for sellers.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An agent noun for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading Milton salesman of the year.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An agent/award standing for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading independent realty.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A brokerage noun for the unnamed registrant; not fired."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The school with the highest EQAO achievement in Milton is Bishop Reding.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a school's test achievement, not the registrant's standing; no registrant named; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest achievement: Bishop Reding Catholic Secondary (EQAO 2025).",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School-data label; not the registrant's standing; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest achievement scores on the EQAO: Guardian Angels.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School-data label; not the registrant's standing; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Bishop Reding posted the highest achievement results in Halton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Named school's results; not the registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest housing production in Halton over the decade came from Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Town housing supply, not the registrant's production; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's highest production year for new homes was 2005.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Town housing supply data, not the registrant's production; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The street is named for a Milton soldier awarded the Victoria Cross, the Commonwealth's highest award for gallantry.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A third party's military award, not the registrant's standing; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The Order of Canada is the country's highest civilian honour.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A national honour, not the registrant's standing; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The Halton Heritage Award, the region's highest recognition for restoration, went to the 1850s farmhouse on Main Street.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A heritage award ranked among awards; not the registrant's standing; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Heritage designation is the Town's highest recognition for a historic building.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal recognition of buildings; not the registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The Milton Public Library received the province's highest library award in 2019.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A third-party institution's award; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The school earned Ontario's highest recognition for environmental education, the EcoSchools Platinum certification.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A school's recognition; not the registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest award amount in the Town's heritage grant program is $15,000.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A grant amount, the quantity sense; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Conservation Halton, the leading agency for flood mapping in the watershed, regulates development near Sixteen Mile Creek.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a named government agency, a third party; no registrant named; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading agency for flood permits along Sixteen Mile Creek is Conservation Halton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ranks a named government agency (fixture 905 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The Town hired a leading transportation consultant to study the Main Street corridor.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A Town's third-party consultant; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "A leading engineering consultant prepared the Derry Road widening study.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A third-party engineering consultant; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "A leading staffing agency on Main Street places warehouse workers across the 401 corridor.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A third-party staffing agency; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading credit rating agencies rate Halton Region's debt AAA.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party rating agencies; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The hospital expansion will bring leading medical professionals to Milton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party medical professionals; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading design team for the Main Street redevelopment is from Toronto.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A third party's design team; the ruling excludes third-party teams; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton's leading youth soccer team trains at Sherwood Park.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A sports team, a third party; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Several leading mortgage brokers in Milton offer rate holds of 120 days.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Mortgage brokers are third parties like the ruling's insurance agent; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Get quotes from leading insurance agents before your closing date.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The ruling names an insurance agent as a third party; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest ratings: Sam Sherratt PS (8.1), Martin Street PS (7.9).",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School ratings rank schools (fixture 893); no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Schools with the highest Fraser Institute ratings near this street",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School ratings (fixture 893); 'this street' is not 'this site'; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest Fraser Institute ratings in Milton go to two Catholic elementary schools.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School ratings (fixture 893); no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Homes near the schools with the highest ratings sell faster.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School ratings in a market-data statement; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Homes near schools with the highest Fraser ratings sell for more.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School ratings in a market-data statement; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Streets closest to the schools with the highest ratings see more family buyers.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School ratings in street copy; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest EQAO results in Milton came from Guardian Angels Catholic Elementary.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School results; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Among Milton's secondary schools, the highest EQAO results came from Bishop Reding.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School results; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest EQAO results in Halton: Milton's Catholic schools.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School-data heading; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest score on the Fraser Institute ranking: Bishop Reding.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School score (fixture 1082 content); no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Among Milton elementary schools, the highest Fraser score belongs to Sam Sherratt.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "School score; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The school with the highest academic reputation in Milton draws families from across Halton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A school's reputation; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest Walk Score in Milton belongs to Old Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Neighbourhood walkability data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest Walk Score: Old Milton (86).",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Neighbourhood data label; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Of Milton's neighbourhoods, the highest Walk Score goes to Old Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Neighbourhood comparison; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Neighbourhood with the highest Walk Score: Old Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Neighbourhood comparison; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Walk Score: highest in the neighbourhood.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Walkability data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Transit Score: highest near the GO station.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Transit data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "For the highest Walk Score in Milton, look at Old Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Buyer guidance on walkability; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Buyers who want the highest Walk Score should look at Old Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Buyer guidance on walkability; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Old Milton posts the highest Walk Score in town.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named neighbourhood's data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "With the highest Walk Score in town, Old Milton suits buyers without a car.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named neighbourhood's data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Dempsey ranked highest on Walk Score among the newer neighbourhoods.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named neighbourhood ranks (fixture 1082 shape); no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Timberlea scored highest for schools in the Fraser ratings.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named neighbourhood ranks; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Of the four neighbourhoods, Beaty scores highest for transit service.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Neighbourhood transit comparison; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Beaty ranks highest for family satisfaction in the Town survey.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Neighbourhood survey data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton rated highest in Halton for recreation services in the 2025 survey.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Town survey data; 'Milton' is the town, not Miltonly; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Milton ranks highest in Halton for customer satisfaction with transit.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Town transit data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Kelso rated highest among Halton parks for visitor satisfaction.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Park data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Walker has the highest share of detached homes, and the highest ratings for its parks.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Second hit ranks a neighbourhood's parks; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest ratings for transit service: Beaty and Old Milton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Neighbourhood transit label; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest ratings among Milton parks: Rotary Park and Sherwood Park.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Park comparison label; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest customer satisfaction among Ontario electricity utilities: Milton Hydro (2025 OEB scorecard).",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A utility's scorecard; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Ranked highest in Ontario for customer satisfaction, Milton Hydro serves the whole town.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A named utility's standing; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest in resident satisfaction among Halton towns: Milton (2025 Town survey).",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal survey label; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest satisfaction scores in the Town survey went to library services.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal survey data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Residents gave parks the highest satisfaction score of any Town service in the 2025 survey.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal survey data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The farmers' market rated highest in the resident survey for customer experience.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Amenity survey data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest customer ratings in Halton for a recreation centre go to the Milton Sports Centre.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Amenity ratings; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of service on the Milton GO line runs weekday mornings.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "LEGITIMATE fixture 1071 with 'runs' for 'is'; transit; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Weekday mornings bring the highest level of service on the Milton GO line.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Transit service level (fixture 1071 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of GO service: weekday mornings.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Transit label (fixture 1071 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "For the highest level of transit service, look at streets near Main and Ontario.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Transit guidance (fixture 1069 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-frequency bus service nearby: Route 2 Main.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Transit label (fixture 1070 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of service in the GO network runs through Milton at peak.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Transit data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Among the newer neighbourhoods, the highest level of transit service: Walker.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Neighbourhood transit comparison; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest levels of service on Milton Transit run along Main Street.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Transit data; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest level of snow-clearing service: primary roads such as Derry and Thompson.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal service level; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of snow-clearing service goes to arterial roads like Derry.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal service level; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-priority snow service: Derry Road, Main Street and Thompson Road.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Municipal service label; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest level of emergency care in the area: Milton District Hospital.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A hospital's care (fixture 911 shape); no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest level of care near this street: Milton District Hospital's emergency department.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Hospital amenity label; 'this street' is not 'this site'; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading home care services in Milton: Bayshore and VHA.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Named third-party care providers (fixture 909 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "A leading health care network runs the clinic on Main Street.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party health network; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-rated veterinary services near this street: Milton Animal Hospital.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Amenity label (fixture 912 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading food service distributors run warehouses off Derry Road.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party employers (fixture 1066 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest-rated dining experience on Main Street: a small bistro near Martin.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Restaurant amenity; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The lots with the highest southern exposure back onto the park.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Lot orientation, a measurable quantity sense; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest sun exposure: south-facing lots on the park side.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Lot orientation label, quantity sense; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Units with the highest southern exposure sell first on this street.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Unit orientation data, quantity sense; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Streets leading to the GO station get the most bus service.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to' (fixture 891); ranks no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Two roads leading to the 401 get priority plow service.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to' (fixture 891); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Streets leading to Main get the most snow-clearing service.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to' (fixture 891); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The stretch of Derry Road leading to the hospital gets priority snow-clearing service.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to' (fixture 891); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Road work leading into the downtown will reduce bus service through May.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ordinary 'leading into'; construction notice; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Construction on the ramps leading to Highway 401 will affect service on Route 5.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to'; construction notice; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The sidewalk leading to the park gets regular maintenance service.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to'; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Crews leading the water service replacement on this street will close one lane.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary verbal 'leading' (directing work); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Delays leading into the long weekend affected GO service to Union.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary temporal 'leading into'; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Traffic leading into the Milton GO lot backs up when express service arrives.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary 'leading into'; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading into winter, the Town's snow-clearing service moves to 24-hour shifts.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary temporal 'leading into'; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Engineers leading the Main Street reconstruction expect service disruptions until fall.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary verbal 'leading' by third parties; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Residents leading the Timberlea park campaign collected 400 signatures for better recreation services.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary verbal 'leading' by third parties; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The councillor leading a review of downtown parking wants feedback by May.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary verbal 'leading'; 'review' is a municipal review; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading the pack, Walker posted the strongest results in the spring market.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ranks a named neighbourhood, not the registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Google Maps shows the roads leading to the 401 backed up by 7:30 a.m.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ordinary 'leading to' with a Google citation; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Traffic: highest on Derry Road at 8 a.m., per Google Maps.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Traffic data, quantity sense; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "At 8 a.m., Google Maps shows Derry Road traffic at its highest.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Traffic data, quantity sense; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Prices peaked at their highest in 2022, according to Google Trends data.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Price data, quantity sense (fixture 892 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Foot traffic peaks highest on Saturdays, when customers pack Main Street.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Foot-traffic data, quantity sense; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading listing sites don't show sold prices.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Generic plural third-party portals (fixture 913 shape), not the registrant's site; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading real estate websites such as Zoocasa and HouseSigma show sold prices.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named third-party sites; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading platforms like Realtor.ca and Zillow show list prices, not sold prices.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named third-party platforms; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading market reports from TRREB and CREA show Milton prices up 3%.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named third-party reports; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading report on GTA housing, from TRREB, shows Milton prices up 3%.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named third-party report; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "TRREB publishes the leading monthly market report for the GTA.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Named third party is the subject; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Source: the leading GTA market report (TRREB, September 2026).",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Citation of a named third-party report; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Halton Region publishes the leading guide to the local housing market each spring.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Named third party is the subject; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading data firms such as Teranet track home resale prices across Ontario.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Named third-party data firms; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Two leading real estate data firms, Teranet and CoreLogic, track resale prices across Ontario.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Named third-party data firms; not a brokerage; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading mortgage comparison sites show rates for Milton home buyers.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party mortgage sites; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading lenders' websites list five-year fixed rates for home buyers.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party lender sites; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading destinations for GTA buyers: Milton, Georgetown and Guelph.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks towns (fixture 1061 content); no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading destination for first-time buyers: Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a town (fixture 1061 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Timberlea: a leading choice for buyers who want a larger lot.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a neighbourhood (fixture 1061 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Boyne: Milton's leading destination for new-home buyers.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a neighbourhood (fixture 904 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading choice for Milton buyers under $900K: freehold townhomes.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a housing type (fixture 901 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Freehold townhomes: the leading choice for first-time buyers.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ranks a housing type (fixture 901 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading source of buyers in Milton this spring: move-up families from Mississauga.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Buyer-source data (fixture 903 content); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading source of new housing supply in Halton over the next decade will be the Milton Education Village.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Housing-supply data naming a development; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading source of new homes in Milton: Mattamy Homes.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Ranks a named builder, a third party; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Mattamy's sales office, the leading source of new-home listings in Walker, opens at 11.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A named builder's sales office, a third party; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Book a leading home inspection company before you waive conditions.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Third-party vendor; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The highest-rated home inspection companies in Milton book two weeks out.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Third-party vendors (fixture 912 shape); fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-rated home inspection companies in Milton",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Vendor-list heading; no registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Get quotes from leading home insurance providers before closing.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Third-party insurers; the ruling treats insurance as third party; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Ask for a referral to a leading real estate law firm in Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A law firm, not a brokerage or the registrant; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Hire a leading home staging company to prepare the house for photos.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party vendor; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading moving companies in Milton book up fast in June, when most homes close.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party movers; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading housing resources for newcomers: Halton Multicultural Council and the YMCA.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Named third-party agencies; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Leading housing advocacy groups warn that Halton needs more rental supply.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Third-party advocacy groups; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Ask the leading authority on flood risk for homes near the creek: Conservation Halton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A named government authority; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "Highest-density site proposed in Milton's housing plan: the Milton Education Village.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Development density, quantity sense; fires."
+  },
+  {
+   "team": "leading-highest-2",
+   "text": "The leading site for new homes in Milton this decade: Boyne.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A development area (fixture 1065 shape); fires."
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+{
+ "at": "2026-09-28T18:52:18.711Z",
+ "base": "https://miltonly.com",
+ "streets": 719,
+ "counts": {
+  "discovered not indexed": 309,
+  "other": 163,
+  "indexed": 241,
+  "crawled not indexed": 6
+ },
+ "states": {
+  "Discovered - currently not indexed": 309,
+  "Duplicate without user-selected canonical": 8,
+  "Submitted and indexed": 241,
+  "URL is unknown to Google": 154,
+  "Redirect error": 1,
+  "Crawled - currently not indexed": 6
+ },
+ "baseline": {
+  "inBaseline": 719,
+  "zeroImpression": 484,
+  "zero": {
+   "discovered not indexed": 308,
+   "other": 163,
+   "indexed": 9,
+   "crawled not indexed": 4
+  },
+  "zeroStates": {
+   "Discovered - currently not indexed": 308,
+   "Duplicate without user-selected canonical": 8,
+   "URL is unknown to Google": 154,
+   "Redirect error": 1,
+   "Submitted and indexed": 9,
+   "Crawled - currently not indexed": 4
+  }
+ }
+}

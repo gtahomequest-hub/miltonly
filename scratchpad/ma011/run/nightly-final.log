@@ -1,0 +1,24 @@
+[  1s] sitemap 1356 urls: streets 720, listings 491, condos 60, schools 30, neighbourhoods 22, guides 9, mosques 8, market-watch 5, compare 2, home 1, sell 1, freehold 1, condos-guide 1, potl 1, rentals 1, exclusive 1, about 1, sold 1
+[  1s] sweeping 507 of 1356 (cap 507); 147 always, 54 stripped streets pinned, 1145 in rotation
+[  8s] swept 100/507
+[ 23s] swept 200/507
+[ 26s] swept 300/507
+[ 28s] swept 400/507
+[ 30s] swept 500/507
+[ 30s] sweep done: 2xx 507, 510 fetches
+[ 40s] lighthouse /neighbourhoods/timberlea perf 94 seo 100 a11y 100 bp 79 lcp 3042 cls 0 tbt 6
+[ 40s] lighthouse / perf null seo null a11y null bp null lcp 0 cls 0 tbt 0
+[ 45s] links: 350 off-sitemap targets, 350 checked, 154 with findings
+[ 60s] lighthouse /streets/beaver-court-milton perf 94 seo 100 a11y 100 bp 79 lcp 3047 cls 0 tbt 12
+[ 61s] lighthouse /streets/woodward-avenue-milton perf 87 seo 100 a11y 100 bp 79 lcp 4031 cls 0 tbt 20
+[ 73s] sample: 40 of 40 pages inspected at 390
+[ 79s] lighthouse /streets/harvest-drive-milton perf 92 seo 100 a11y 100 bp 79 lcp 3306 cls 0 tbt 24
+[ 81s] lighthouse /streets/scott-boulevard-milton perf 87 seo 100 a11y 100 bp 79 lcp 3913 cls 0 tbt 102
+[ 98s] lighthouse /streets/sauve-street-milton perf 92 seo 100 a11y 100 bp 79 lcp 3190 cls 0 tbt 116
+[101s] lighthouse /streets/guelph-line-milton perf 91 seo 100 a11y 100 bp 79 lcp 3408 cls 0 tbt 49
+[115s] lighthouse /streets/richardson-way-milton perf 94 seo 100 a11y 100 bp 79 lcp 3113 cls 0 tbt 17
+[118s] lighthouse /streets/bussel-crescent-milton perf 94 seo 100 a11y 100 bp 79 lcp 3061 cls 0 tbt 48
+[135s] lighthouse /streets/main-street-milton perf 83 seo 100 a11y 100 bp 79 lcp 4328 cls 0 tbt 174
+[136s] lighthouse /streets/frost-court-milton perf 86 seo 100 a11y 100 bp 79 lcp 3914 cls 0 tbt 135
+[136s] report scratchpad\ma011\run\2026-09-28.md; open 1538 (S1 0 · S2 1 · S3 1537 · S4 0); new 136; fixed 66; lh moves 29
+[136s] done in 136 s, 580 page fetches, 386 link fetches

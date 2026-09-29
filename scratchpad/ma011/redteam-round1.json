@@ -1,0 +1,2638 @@
+{
+ "summary": {
+  "only-claims": {
+   "executed": 376,
+   "reported": 35,
+   "verified": 35,
+   "confirmed": 27
+  },
+  "leading-highest-claims": {
+   "executed": 532,
+   "reported": 79,
+   "verified": 79,
+   "confirmed": 60
+  },
+  "number-one-producer": {
+   "executed": 308,
+   "reported": 146,
+   "verified": 146,
+   "confirmed": 134
+  },
+  "false-positives": {
+   "executed": 360,
+   "reported": 66,
+   "verified": 66,
+   "confirmed": 64
+  }
+ },
+ "items": [
+  {
+   "team": "only-claims",
+   "text": "Aamir Yaqoob is Milton's first, and Milton's only, street-by-street realtor.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Genuine missed claim. The spec's never-void idiom is \"only\" closing the phrase it restricts (\"emails only,\", \"residents only.\"). Here \"Milton's only\" is the spec's \"<Place>'s only ...\" claim shape. The comma is a parenthetical, and \"only\" restricts nothing before it. It ranks a realtor and names Aamir Yaqoob. By contrast, \"Milton's only street-by-street realtor.\" FIRES."
+  },
+  {
+   "team": "only-claims",
+   "text": "We are Milton's first, and Milton's only, street-by-street team.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Same hole as the previous one. It has the \"<Place>'s only\" shape, it ranks a team, and it says \"we\", so it is in the claim sense and the void applies. The postpositive idiom takes it only because a comma follows \"only\". It is not a restriction idiom."
+  },
+  {
+   "team": "only-claims",
+   "text": "Street-by-street valuations, available only from Aamir Yaqoob.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Here \"only\" opens the prepositional phrase it restricts (\"only from Aamir Yaqoob\"). It does not close one, so this is not the spec's fixed idiom. The sentence names the registrant, so under the spec even an ordinary reading is voided and it must fire. It is exempt as idiom."
+  },
+  {
+   "team": "only-claims",
+   "text": "A guarantee offered only by RE/MAX Realty Specialists.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"only by RE/MAX\" puts \"only\" before the phrase it restricts, so it is not the spec's closing idiom. It is an exclusivity claim about the brokerage's service and names RE/MAX and Realty Specialists, so the void applies and it should fire."
+  },
+  {
+   "team": "only-claims",
+   "text": "Street-level Milton data found only on this site.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is a uniqueness claim where the thing ranked is the site, which is in the spec's claim sense. \"only on this site\" opens its phrase, so the never-void closing idiom does not apply. The rule's own ROLE_RE counts \"this site\" as naming the registrant, yet the preposition branch of POSTPOSITIVE_FOLLOW_RE exempts it before that test runs."
+  },
+  {
+   "team": "only-claims",
+   "text": "The street-by-street guide. Milton's first. Milton's only.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"Milton's only.\" is the spec's \"<Place>'s only ...\" shape with the noun (guide) left out, in parallel with \"Milton's first.\" It is a uniqueness tagline, not \"only\" closing a phrase it restricts the way \"residents only.\" does. It is exempt as idiom only because \"only\" ends the sentence after a possessive."
+  },
+  {
+   "team": "only-claims",
+   "text": "Milton's only, full-service, street-by-street guide.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The spec's \"<Place>'s only\" shape with commas between the adjectives. The comma sends it into the postpositive idiom, although \"only\" restricts nothing before it. Without the comma, \"Milton's only street-by-street guide.\" FIRES. Low realism, but it contradicts the spec."
+  },
+  {
+   "team": "only-claims",
+   "text": "Milton's first and only street-by-street market report.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"Milton's first and only X\" is \"<Place>'s only X\" with a coordinated adjective, and the possessive governs \"only X\". The spec describes a shape, not strict adjacency. The claim is the same as \"Milton's only street-by-street guide.\", which FIRES."
+  },
+  {
+   "team": "only-claims",
+   "text": "The one and only street-by-street market guide in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"the one and only ... in Milton\" asserts exactly what \"the only ... in Milton\" asserts, so it is the spec's place shape. \"The only street-by-street real estate guide in Milton.\" FIRES. The miss comes only from theOnly requiring \"the\" directly before \"only\"."
+  },
+  {
+   "team": "only-claims",
+   "text": "{\"@type\":\"RealEstateAgent\",\"slogan\":\"Milton's first and only street-by-street real estate guide\"}",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The same \"<Place>'s first and only\" miss, in a RealEstateAgent slogan. It is a \"<Place>'s only ...\" claim under the spec, and it does not fire."
+  },
+  {
+   "team": "only-claims",
+   "text": "Milton's First and Only Street-by-Street Real Estate Guide | Miltonly",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The place-shape claim (\"<Place>'s first and only ...\") is enough on its own, so this does not rely on the \"| Miltonly\" suffix. Per MA-010's design comment, that suffix is by design not a claimant. The title is a \"<Place>'s only\" claim and it does not fire."
+  },
+  {
+   "team": "only-claims",
+   "text": "The first and only detached home in Hawthorne Village with a pool.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The spec says a \"the only ... in <place>\" data statement firing is by design, and \"The only detached home in Timberlea.\" FIRES. \"The first and only ... in Hawthorne Village\" makes the same uniqueness claim about a property in a capitalised place, and it goes ordinary."
+  },
+  {
+   "team": "only-claims",
+   "text": "MILTON'S ONLY STREET-BY-STREET GUIDE",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "MILTON is a capitalised proper name, so this is the spec's \"<Place>'s only\" shape. The sentence-case version FIRES. It misses only because the possessive regex has no i flag and does not match \"'S\". This is an implementation defect, not a spec exemption."
+  },
+  {
+   "team": "only-claims",
+   "text": "THE GTA'S ONLY STREET-BY-STREET REAL ESTATE GUIDE",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "GTA is named in the spec as a place word, so \"the GTA's only ...\" is the claim shape. The upper-case \"'S\" (and the upper-case \"THE\") defeats the case-sensitive possessive regex."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only 100% local real estate guide in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is \"the only ... in <place>\". \"100%\" is a modifier, not a count. The spec's quantity sense (\"only three sales\") does not cover it. It is exempt only because the punctuation strip turns \"100%\" into \"100\", which COUNT_RE matches."
+  },
+  {
+   "team": "only-claims",
+   "text": "Milton's only 100% street-by-street guide.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The \"<Place>'s only\" shape, which fires without \"100%\". \"100%\" counts nothing, so the quantity exemption does not apply under the spec. The COUNT_RE early return pre-empts the possessive test."
+  },
+  {
+   "team": "only-claims",
+   "text": "Only one site in Milton shows you every sold price, street by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The thing ranked is a site, which is a claim target in both the spec and CLAIM_TARGET_RE, placed in a Milton frame. Here \"only one\" asserts uniqueness, not a quantity like \"only three sales\". The rule's own variant \"Only one agent in Milton publishes every sold price.\" FIRES, but only because \"agent\" names a role. \"site\" loses to the count early return. Moderate confidence, since the count form is a plausible argument for the other side."
+  },
+  {
+   "team": "only-claims",
+   "text": "There's only one street-by-street guide to Milton, and you're on it.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"and you're on it\" identifies the unique guide as the site, so the thing ranked is the site, the spec's claim sense. \"only one\" here asserts uniqueness, not a small quantity. Moderate confidence because of the count form."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only street-by-street market guide in and around Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The place is plainly Milton, a capitalised proper name, so this is \"the only ... in <place>\". placeAt reads only the first word after \"in\" (\"and\"), which is an implementation gap, not a spec exemption."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only street-by-street market guide in all of Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"in all of Milton\" is the \"in <place>\" shape. It misses only because placeAt tests the word \"all\"."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only street-by-street sold-price guide in the greater Milton area.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"area\" is a place word in the spec and Milton is a capitalised name, so this is \"the only ... in <place>\". placeAt stops at \"greater\"."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only street-by-street sold-price guide in the 905.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "The spec defines a place as a capitalised proper name or one of the listed place words. \"the 905\" is a numeral and neither, so under the spec as written this is not the place shape. The spec itself does not reach it."
+  },
+  {
+   "team": "only-claims",
+   "text": "Halton Hills' only street-by-street sold-price guide.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "\"<Place>'s\" in the spec means the possessive, and \"Halton Hills'\" is that possessive of a capitalised place. Nothing in the spec exempts places whose names end in s. The regex requires a literal 's. Low realism, but it contradicts the spec."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only independently owned and locally operated real estate firm.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A real estate firm is a brokerage, which the spec lists as a claim target, and \"firm\" is in CLAIM_TARGET_RE. \"The only independently owned real estate firm.\" FIRES. Adding \"and locally operated\" stops the noun-phrase scan at \"and\" before the target."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only fully independent, locally owned, street-by-street, data-driven Milton real estate website.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The thing ranked is a website (the site), and \"website\" is in CLAIM_TARGET_RE. \"The only data-driven Milton real estate website.\" FIRES. The seven-word cap on the noun-phrase scan hides the target, which is an implementation artifact, not a spec exemption."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only real estate agency focused solely on Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A real estate agency is a brokerage, one of the spec's claim targets. \"The only real estate brokerage focused solely on Milton.\" FIRES. \"agency\" is simply missing from the target list."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only choice for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "Neither the registrant nor any of the spec's target categories is named, and \"the only choice for Milton sellers\" also has an ordinary reading (a price cut can be the only choice). Leaving \"choice\" out after \"only\" is a documented design decision (GENERIC_TARGET_RE: a generic noun names what is unique, not who is ranked). The spec is ambiguous and the behaviour is by design."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only Milton real estate guide you'll ever need.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The spec's claim sense lists the registrant, the site, a brokerage, an agent, a team and their standing. It does not list a guide. Treating a guide as \"the site\" is an interpretation, and nothing in the sentence ties it to this site. \"Milton\" used attributively is not the place shape. Ambiguous under the spec, so not confirmed."
+  },
+  {
+   "team": "only-claims",
+   "text": "The Only Milton Street Guide You Need | Miltonly",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The rule documents that the brand after a title separator is not a claimant (MA-010: \"The site's own brand after a title separator ('| Miltonly.com') is not a claimant\"), so stripping it is by design. Without the suffix, this is the ambiguous guide-as-site case. By design, and ambiguous."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only Milton market report built street by street.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "A report is not among the spec's claim targets. SITE_PRODUCT_RE lists reports, but the rule uses that list for answer and source voids, not as an \"only\" target. Whether a report counts as \"the site\" is an interpretation the spec does not settle. Ambiguous."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only guaranteed sale program for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "Neither the owner of the program nor a registrant is named. The rule deliberately treats a service after \"only\" as generic, catching \"the only service in Milton\" only through the place shape, and \"for Milton sellers\" is not \"in <place>\". \"The only guaranteed sale program in Milton.\" FIRES as designed. By design, and ambiguous."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only Diamond Club recipient from Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks a person by an award, the spec's \"standing: an award, recognition\". Diamond Club is a RE/MAX award, and on this site the recipient is the registrant. \"The only Diamond Club award recipient from Milton.\" FIRES, so the verdict turns only on whether the word \"award\" appears. Moderate confidence."
+  },
+  {
+   "team": "only-claims",
+   "text": "Talk to the only Milton local who has walked every street.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "\"local\" does not name an agent, realtor, team, brokerage or the site, and the sentence does not name the registrant. Reading it as the registrant depends on page context, not on the spec's categories. Ambiguous, so not confirmed."
+  },
+  {
+   "team": "only-claims",
+   "text": "The only sales rep who publishes every Milton sold price.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"sales rep\" is a real estate agent, a spec claim target. \"The only sales representative who publishes every Milton sold price.\" FIRES. Only the abbreviation is missing from the lists."
+  },
+  {
+   "team": "only-claims",
+   "text": "milton's only street-by-street real estate guide",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "The spec defines a place as a capitalised proper name (or a listed place word). Lower-case \"milton\" is not capitalised, so under the spec as written this is not the \"<Place>'s only\" shape, and \"guide\" is not a spec target. The rule follows the spec."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "One of the leading names in Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A 'name in Milton real estate' is an agent or a brokerage, so this is the claim sense. The singular 'The leading name in Milton real estate.' FIRES when I run it, so the plural being ordinary is a real miss."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's Leading Real Estate Agency",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A real estate agency is a brokerage, and the spec puts 'a brokerage' in the claim sense. No ordinary reading applies."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading real estate voice.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "On the registrant's site a 'real estate voice' is the registrant, the site or an agent, so the claim sense applies. It is a little less certain than the forms that name him, but no market-data or quantity reading exists."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Meet Aamir. Milton's leading voice on resale.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The voice being ranked is Aamir, by apposition. The spec's claim sense turns on what is ranked, not on whether the same sentence names him, so this should fire. The one-sentence form 'Aamir Yaqoob, Milton's leading voice on resale.' FIRES when I run it."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Aamir Yaqoob\nMilton's highest-rated local real estate guide",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This hero block ranks the registrant as a local real estate guide, which is the claim sense no matter how the lines are split. It is exempted anyway."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's Leading Real Estate Guide | Miltonly",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A title tag describes its own page, so the 'Real Estate Guide' is the site. Leave the brand-suffix carve-out (MA-010 by design) aside and this still ranks the site: the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest-Rated Milton Real Estate | Miltonly",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The head noun is 'real estate', which names property or the market, not the registrant or the site. Under MA-010 the brand suffix is by design not a claimant, and the user request cites MA-010. What is ranked is unclear, so I default to false."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest-rated real estate guide in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A real estate guide on this site is the site, or the agent acting as a guide. Either reading is the claim sense, and 'website' in the same frame FIRES."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading real estate blog.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A real estate blog on miltonly.com is the site describing itself, which is the claim sense. The 'website' form FIRES when I run it."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Readers voted it Milton's leading real estate newsletter.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks a site product, the newsletter, and cites a vote, which is recognition. The thing ranked is the site, so this is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading real estate consultant.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A real estate consultant is an agent, and 'Milton's leading real estate advisor.' FIRES when I run it. The synonym is missed."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading real estate partner.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "In agent marketing, a 'real estate partner' is the agent or the brokerage. This ranks one, which is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Halton's highest-rated rep.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Rep' is short for sales representative, and the spelled-out word fires. This ranks an agent: the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading real estate practice.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A real estate practice is the registrant's business, an agent or brokerage. This ranks it, which is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading seller representation.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Seller representation is the registrant's service, which the spec lists as standing. No ordinary reading applies."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest-quality representation in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Representation is the agent's service, a listed standing. 'The highest level of service in Milton.' FIRES when I run it."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Canada's leading real estate network.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The natural reading is a brokerage franchise network, as in RE/MAX-style tagline copy, and the spec covers 'a brokerage'. It is not quantity or market data."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Backed by the world's leading real estate network.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'Backed by' makes the network the registrant's own brokerage. This ranks a brokerage: the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading real estate brand.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A real estate brand is the site, the registrant or a brokerage. This ranks one, which is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Industry-leading marketing for every Milton listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Marketing for listings is the agent's service, a listed standing. The 'service' form FIRES."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Market-leading exposure for your listing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Exposure for a seller's listing is the registrant's listing service, a standing. This is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Industry-leading results, year after year.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This ranks the registrant's performance, which is production. It is a performance claim with no market-data subject, so no ordinary reading applies."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading-edge marketing that sells Milton homes faster.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'Leading-edge service for Milton sellers.' FIRES when I run it. Marketing that sells homes is the same service claim, so the split is inconsistent with the spec."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Industry-leading communication from offer to close.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Communication from offer to close is the agent's service. This ranks it: the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading expertise in Milton freehold homes.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Expertise in homes belongs to a real estate professional, and this ranks it. That is the agent's standing, the core RECO concern, and no quantity or data reading applies."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest level of care from listing to closing.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Care from listing to closing is the agent's service. This is a direct sibling of the spec's own claim example 'the highest level of service', which FIRES."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Held to the highest standards of integrity and professionalism.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "'Held to the highest standards' is a stock phrase for obligations imposed on someone, and regulators use it too. It ranks the standard, not the registrant against others. Integrity and professionalism are not listed standings, so the case is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest level of expertise in Milton resale.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This ranks an agent's expertise in resale, which is standing. It has the same shape as 'the highest level of service', which fires."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest quality of representation for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Representation of sellers is the agent's service, a listed standing. 'quality of' passes through, but the noun is missed."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest-rated home-selling experience in Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The home-selling experience is the agent's service, and a rating is standing. This is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest ratings from past clients.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Ratings from past clients are a service provider's standing. The code's own comment says a rating is the agent's standing."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest Google reviews in Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'In Milton real estate' puts the ranking among agents and brokerages, and reviews are standing. This is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest recommendation for anyone selling in Milton!",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "'Highest recommendation' is a testimonial idiom for how strongly the reviewer endorses. It does not rank the agent against others, so it is ambiguous under the spec."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest Net Promoter Score in Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Net Promoter Score is a measure of satisfaction, which the spec lists as standing, and 'in Milton real estate' ranks it among agents and firms."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Member of the Diamond Club, the highest tier of recognition.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "An award tier is recognition, which the spec lists as standing, and the code's own example 'Highest career achievement recognition' fires. It is missed here only because 'tier' is not a pass-through word before 'of'."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest sales volume in Milton, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The spec's own exempt example is 'the highest sales count'. With no subject this could be a street or neighbourhood statistic, so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest-selling in Milton, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "No subject is given. It could be a builder model, a street or a housing type, so nothing shows the registrant is what is ranked."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest transaction volume of any Milton listing office in 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'Of any Milton listing office' makes the ranked subject a listing office, which is a brokerage, and ranks its production. This is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Consistently ranked among the highest in sales volume across Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "No subject is given, and a neighbourhood could equally be 'ranked among the highest in sales volume'. That is market data like the exempt 'highest sales count', so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest sale-to-list ratio in Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "Sale-to-list ratio is a standard street and neighbourhood market metric. With no subject this is the ordinary data sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Sold by Aamir. The highest sale-to-list ratio in Milton for 2025.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "The ranked thing is a property's sale ratio, and the spec leaves property out of the claim sense for these three words. The spec scopes the void to 'the sentence', and this sentence does not name Aamir. Ambiguous or by design."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Rated highest in Milton for client satisfaction.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Satisfaction is a listed standing, and 'client' marks a service provider. 'Highest customer satisfaction in Halton.' FIRES when I run it, so the word order alone decides the result."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest in client satisfaction, three years running.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Client satisfaction is a listed standing. The claim is missed only because 'in' ends the noun phrase."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Ranked highest for service in Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Service is a listed standing. The spec's canonical example 'the highest level of service' also has no subject and fires, so this should too."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Voted highest in customer service, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This ranks service, a listed standing, and cites a vote, which is recognition. It has the same subject-less shape as the spec's service example."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading in client satisfaction across Halton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Client satisfaction is a listed standing. The claim is missed only because 'in' ends the phrase."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest rated of any real estate site in Milton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The implied subject is ranked among Milton real estate sites, so on this site it is the site itself. This is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "4.9 stars from 300 reviews, the highest of any Milton real estate website.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is an explicit rating claim that ranks the site against other Milton real estate websites. It is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading marketing and service for Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Service is a listed standing and is named in the phrase. It is missed only because 'and' ends the noun phrase."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest and most consistent level of service in Halton.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is the spec's canonical 'highest level of service' claim with a coordinated adjective added. It is missed only because 'and' stops the phrase."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading independent and locally run real estate website.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks the site. The same sentence without the coordinated adjectives FIRES, so the result depends on phrasing alone."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading locally owned independent data-driven street-by-street resale real estate website.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "This ranks the site. It is missed only because of the 7-word cap. Realism is low, but it is a real contradiction of the spec."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest-rated on Google in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "No subject or real estate marker is given. On a street page it could be a restaurant, a park or a school. The thing ranked is unknown, so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "HIGHEST RATED IN MILTON",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "This is a bare badge with no subject or domain. Nothing shows that what is ranked is the registrant or the site, so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Rated highest on Google by Milton sellers.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Being rated by home sellers marks the ranked thing as their agent or brokerage. This ranks the agent's standing, which is the claim sense."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Voted Milton's highest-rated, three years running.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The head noun is dropped and no domain marker is given. It could equally be a school or a business, so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest-rated in Milton for five years running.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "No subject is given. School rankings are a realistic ordinary reading on a street page: 'Bishop Reding is highest-rated in Milton for five years running.' is ordinary when I run it. Ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Service rated highest in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Service is a listed standing, ranked with no third-party subject, as in the spec's canonical service example. It is missed only because the noun comes before the word."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Client satisfaction: highest in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Client satisfaction is a listed standing, ranked highest in Milton. It is missed only because of word order."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highest-rated real estate in Milton.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "'Real estate' names property or the market, not the registrant, so what is ranked is unclear. Only the explicit 'Real Estate Services' form is clearly a service claim."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading the Milton market since 2015.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "'Leading' is a verb here and the subject is unstated. It could be a housing type or a builder ('Townhomes have been leading the Milton market since 2015'), so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "LEADING MILTON REAL ESTATE",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "It could be a verb phrase or an adjective with the noun left out, and it has no subject. Nothing shows that the registrant is what is ranked."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading Halton in listings sold, 2025.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The subject is unstated, and a town leading its region in listings sold is a plausible market-data reading. Ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading Milton's resale market for a decade.",
+   "kind": "missed-claim",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "'Leading' is a verb and the subject is unstated. It could be a housing type or a builder, so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading the way in Milton real estate.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "This is a verb idiom with an unstated subject, possibly a builder or a project. Nothing shows the registrant is what is ranked, so it is ambiguous."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Townhomes are the leading choice for first-time buyers on this street.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This ranks a housing type, which is ordinary street data. It names no registrant, is not the 'only ... in <place>' shape, and is not a by-design case, so it should be exempt."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Highway 401 is the leading source of traffic noise.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks a noise source. It is neither the registrant nor their standing, it names no registrant, and it is not a by-design case."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The leading source of offers in Milton this spring was first-time buyers.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is market commentary that ranks a buyer segment. It names no registrant and is not a by-design case, so it should be exempt."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Main Street is Milton's leading retail destination.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks a street for shopping. The '<Place>'s' shape applies only to 'only', and the sentence names no registrant."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The leading property management company for the building is Crossbridge.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A property manager is not a brokerage, agent, team or the site, and the sentence names no registrant. This fires although the spec exempts it."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton GO has the highest level of service at rush hour.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The sentence explicitly makes this transit service, not the registrant's standing. It names no registrant and is not a by-design case."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton's leading sources of employment are logistics and manufacturing.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is town economic data. It names no registrant and ranks nothing the spec covers."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The Derry Green business park is Milton's leading office and industrial hub.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Office' here is a land use and the thing ranked is a business park, not a brokerage. It names no registrant, so this is a false positive."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Leading internet service providers in Milton include Bell and Rogers.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks ISPs. That is a third party's service, not the registrant's standing, and the sentence names no registrant."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Detached homes are the highest-priced choice on the street.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is a price fact about a housing type, which is the ordinary data sense. It names no registrant and is not a by-design case."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "Milton District Hospital, the region's leading health services provider, is on Derry Road.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This ranks a hospital, a third party outside the spec's categories. It names no registrant, so this is a false positive."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest-rated daycare providers in Milton are near Main Street.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "This ranks third-party daycares, which are not a registrant, site, brokerage, agent or team. It names no registrant."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The highest-rated real estate sites all say the same thing: price it right.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The spec says 'the site', meaning this site, but 'a brokerage, an agent or a team' for the other categories. This generic reference to third-party sites is not the claim sense and names no registrant. Medium confidence, since the difference rests on the article."
+  },
+  {
+   "team": "leading-highest-claims",
+   "text": "The leading team in Milton minor hockey plays at the Sports Centre.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "The spec's claim sense literally includes 'a team' with no real-estate qualifier. A sports team is plainly not what was meant, but read as written the spec is ambiguous, so I default to false. Realism is low."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "# 1 Realtor in Milton",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Genuine missed claim. I checked the render path: JSX `#{n}` server-renders as `#<!-- -->1`, and visibleText turns that into \"# 1\" in both text and words mode. Result: no hit, while the plain \"#1 Realtor in Milton\" FIRES. So a visible \"#1 Realtor\" claim never fires, which contradicts the fail-closed \"#1\" rule."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Milton's # 1 real estate team",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Same root cause as the other \"# 1\" cases: a visible #1 rank claim about a team is read as \"# 1\" and gets no hit. Spec: \"#1\" fails closed."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Ranked # 1 in Halton for units sold, 2025",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A #1 production rank that gets no hit because of the \"# 1\" gap. Realistic from a JSX `#{rank}` stat tile, which renders `#<!-- -->1`."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "＃1 Realtor in Milton",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "The spec names the ASCII token \"#1\" and says nothing about Unicode normalisation. Nothing in the site's render path produces a fullwidth #. Ambiguous, so not confirmed."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#１ Realtor in Milton",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "Fullwidth digit. The spec does not cover normalisation and the render path does not produce it. Ambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#TopProducer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "The spec lists the forms explicitly (top producer, top producers, top-producing). A fused or camel-case hashtag is not among them. Ambiguous as to scope, and low realism."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "TopProducer 2025",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "Fused form is outside the vocabulary forms the spec lists. Ambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top Producer RE/MAX Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Spec (c) exempts the word only when it sits inside a company name. Here the company is RE/MAX Ontario-Atlantic Canada Inc. and \"Top Producer\" sits before it as an award designation, which is a claim about a RE/MAX registrant. RE/MAX is in the spec's registrant list, but OWN_NAMES_RE omits it, so cleanRun accepts the whole run as a company."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "2025 Top Producer RE/MAX Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A dated award credited to a RE/MAX company, not a company whose name contains the word. It should fire under the fail-closed rule, but it is exempt as proper."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top Producer RE/MAX Integra Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "RE/MAX Integra Ontario-Atlantic Canada Inc. is the real legal name, and \"Top Producer\" sits outside it as a badge. This is a missed claim under (c)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by RE/MAX Top Producer",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"RE/MAX Top Producer\" is not a brokerage name. It describes a RE/MAX agent, and RE/MAX names the registrant under the spec. (c) exempts only a feed brokerage attribution, yet the cue accepts the vocabulary word itself as the name."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by 2025 Top Producer Award Winner",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"2025 Top Producer Award Winner\" is plainly an award, not a brokerage. It is not a feed brokerage attribution, so it should fire."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by Milton Top Producer",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A place plus the vocabulary word is a self-description, not a brokerage name. This is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Homes Listed by Top Producers Sell Faster",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "This is a headline, not a feed attribution, and \"Top Producers\" is not a brokerage. None of (a), (b) or (c) applies, so under fail-closed it should fire."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listed by Top-Producing Milton Realtor",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"Top-Producing Milton Realtor\" describes a person and is not a feed brokerage name. This is a missed claim under (c)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Market report courtesy of RE/MAX Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The site crediting its own market report is not a feed listing attribution, and \"RE/MAX Top Producer\" is not a brokerage. It should fire."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top Producer Award Winner Inc.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "Formally a company name ending in Inc., and no real company name inside it marks off the word the way RE/MAX Ontario-Atlantic Canada Inc. does. Spec (c) literally exempts it. Ambiguous, so not confirmed."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Option #1 for Milton home sellers",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "\"Option #1\" is the standard label form, as in \"Option #1: sell privately\". Whether this is a label or a rank depends on context the sentence does not give. Ambiguous under (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Without question #1 in Milton for resale.",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "\"Without question\" is a fixed idiom, so \"question #1\" cannot be a list label here. This is a bare #1 rank claim with a place, and the label idiom wrongly exempts it. The same sentence with a comma after \"question\" would fire."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Units #1 and #2 at 8360 Lawson Road are both leased.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Plainly unit numbers under spec (a). NUMBERED_RE has no plural."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Lots #1 through #4 on Plan 20M-1234 back onto the ravine.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Lot numbers under (a), and it fires because of the plural."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Suites #1 and #2 share the rear yard.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Suite numbers under (a), and it fires because of the plural."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Bay #1 is 1,800 sq ft of industrial space with a drive-in door.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A commercial bay is a unit number under (a), not a rank."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Bedroom #1 measures 3.4 by 4.1 metres.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A room number. The code already treats \"room #1\" as (a), but \\broom does not match \"Bedroom\"."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Bathroom #1 has a soaker tub and a glass shower.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A room number, (a)/(b). Not a rank."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "123 Main Street East #1",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An address unit number (a). No unit word precedes it, and a street word such as Street/East is not in NUMBERED_RE."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1 - 8450 Lawson Road, Milton",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The standard Canadian unit-address form \"#1 - <number> <street>\" is a unit number under (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1-8450 Lawson Rd",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Unit-address form, (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Unit: #1",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "Plainly a unit number (a). The colon breaks NUMBERED_RE. Low realism but unambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Unit No. #1",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A unit number (a). \"No.\" breaks the adjacency test. Low realism but unambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Townhome #1 in the block faces the park.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A unit number (a). \"townhouse\" is covered but \"townhome\" is not."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Garage #1 is a single tandem space.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A parking or garage unit number (a), not a rank."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Pad #1 in the plaza is leased to a bank.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A commercial pad number (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Parcel #1 is the severed lot.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A parcel or lot number (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Model #1, the Ashbury, is a 2,100 sq ft detached plan.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A new-build model label (b). No registrant is named and nothing is ranked."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Elevation #1 has a stone front; Elevation #2 is brick.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An elevation label (b). It is paired with #2, so it is plainly an enumeration."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Store #1 in the plaza is a pharmacy.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A store or unit number (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Office #1 on the second floor is leased.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An office unit number (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Dock #1 is a truck-level loading door.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A numbered dock (a)/(b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Deposit #1: $20,000 on signing.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A numbered list label (b), and the sentence does not name the registrant. The label list is closed and narrower than the spec's category."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Condition #1: financing, five banking days.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A numbered label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Offer #1 came in $20,000 over asking.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Offers are being enumerated, so this is a label (b), not a rank."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Home #1 sold for $1.12M in 9 days.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"#1\" after the noun is the enumeration form (b). No registrant is named."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Comparable #1: 42 Laurier Avenue, sold in March.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A comparable label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Comp #1 is a four-bedroom detached two streets over.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A comp label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Sign #1: the listing has sat for more than 30 days.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A listicle label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Red flag #1: a special assessment in the status certificate.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A listicle label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Factor #1: the typical days on market this quarter.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Strategy #1: price at the typical, not above it.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Cost #1: land transfer tax.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Hidden cost #1: the development charge adjustment on a new build.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Takeaway #1: inventory is up across Milton.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Point #1: interest rates set the pace.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Trend #1: townhouse prices held flat.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Pitfall #1: waiving the home inspection.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A list label (b), the same kind as \"Mistake #1\", which the list does exempt."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Consideration #1: commute time to the GO station.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Round #1 of offers closed at 7 p.m.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A round number (b), not a rank."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Episode #1: what a Milton buyer should know.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An episode number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Issue #1 of the Milton market watch goes out Monday.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An issue number (b). The market watch is not on the spec's registrant-naming list, so (b) is not void."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Week #1 on the market: 14 showings.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A week number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Day #1 after listing brings the most traffic.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A day number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1: Get pre-approved before you shop.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A bare numbered list item heading an imperative tip is a numbered list label (b). No registrant is named."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1. Price it right from the first day.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A bare numbered list item (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1 – Overpricing the home",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A bare list item in a mistakes list (b). It ranks nothing about the registrant."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Photo #1 of 32: front exterior",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A photo index (b). Low realism, since the site writes \"Photo 1 of N\", but unambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Image #1 of 24, 123 Main Street",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An image index (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Figure #1: typical sale price by quarter",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A figure label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Table #1: sales by street type",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A table label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Chart #1 shows the typical price by quarter.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A chart label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Section #1 of the agreement covers the deposit.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A section number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Clause #1 in Schedule A sets the closing date.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A clause number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Benefit #1: no condo fees.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Downside #1: a longer commute.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Pro #1: a larger lot.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b). Its pair \"Con #1\" passes only by accident, through \"con\" (concession)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Misconception #1: spring is the only time to sell.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"#1\" is a list label (b), the same kind as \"Myth #1\", yet it fires. \"only\" is correctly ordinary."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Mistakes #1 and #2 cost sellers the most.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The plural of an exempt label (b). The label regex has no plural."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Steps #1 to #3 take about a week.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The plural of \"Step #1\", which the spec names as an example of (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Tips #1 through #5 apply to condos.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The plural of \"Tip #1\", which the spec names as an example of (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Checklist #1: before you list.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Buyer #1 offered $1.1M; buyer #2 offered $1.08M.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Buyers are being enumerated (b). A third-party buyer is not the registrant."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Seller #1 accepted a conditional offer.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Enumeration (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Property #1 is a 1990s detached on a 50-foot lot.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"#1\" after the noun enumerates properties (b). It does not rank the property."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listing #1 has a finished basement.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Enumeration (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "House #1 on the street was built in 1978.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A house number or enumeration (a)/(b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Neighbourhood #1: Timberlea.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A numbered list label (b), and no registrant is named. Even in a ranked listicle it ranks a place, not the registrant, just as \"Tip #1\" in a top-tips list does."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Area #1 covers the old town core.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An area label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Goal #1: sell before the new home closes.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Task #1: order the status certificate.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Upgrade #1: the kitchen.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Idea #1: stage the main floor.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Instalment #1 is due 30 days after signing.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "An instalment number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Payment #1 of 4 is due on signing.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A payment number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Release #1 of the Phase 2 lots opens in May.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A release number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Edition #1 of the report covers Q1.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An edition number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Q #1: what are closing costs?",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A question label, the abbreviated form of the already exempt \"Question #1\" (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "FAQ #1: what are closing costs?",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An FAQ label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1 Choice Realty Inc.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "Spec (c) exempts the word inside a company name ending in Inc./Ltd. capitalisedRun returns null because \"#1\" is not capitalised, and \"Choice\" is a claim noun, so no company exemption is possible. Low realism."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listed by #1 Choice Realty Inc., Brokerage",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A feed brokerage attribution with Inc., which (c) exempts. It fires because capitalisedRun rejects \"#1\"."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1 Movers Ltd. quoted $1,800 for a Milton to Oakville move.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A third-party company name ending in Ltd. (c)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1 Home Inspections Inc.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A company name ending in Inc. (c)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top Producer Real Estate Services Inc.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "Formally a company name ending in Inc., which (c) exempts. The claim-noun refusal in cleanRun is not in the spec as ruled. Low realism."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top-Producing Homes Realty Ltd.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A company name ending in Ltd. (c). It is refused because of the claim noun \"Homes\", which the spec does not provide for. Low realism."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listed by: RE/MAX #1 Realty Inc.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A feed brokerage attribution of a third-party franchise ending in Inc. (c). It fires because capitalisedRun rejects \"#1\"."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Brokerage: #1 Realty Ltd.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A labelled feed brokerage with Ltd. (c)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top Producer Award Recipient RE/MAX Integra Ontario-Atlantic Canada Inc.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Explicitly an award (\"Award Recipient\") credited to the real company RE/MAX Integra Ontario-Atlantic Canada Inc. The word is not inside the company name, so this is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by Halton Top Producer",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A place plus the vocabulary word is not a brokerage name, so this is a missed claim under (c)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by RE/MAX Top Producer Team",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A team self-description, not a brokerage. It should fire."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Courtesy of Milton Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "Not a brokerage name. This is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listed by RE/MAX Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "No brokerage is named \"RE/MAX Top Producer\", which is RE/MAX's award designation. The \"name\" is only the vocabulary word plus the registrant's franchise brand, so it is a claim, not a feed attribution."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listing Office: RE/MAX Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "Same as above: the value is not a brokerage name, so the word does not sit inside a feed brokerage attribution."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The whole \"name\" is the vocabulary word. It cannot be a brokerage, so it is a claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "RE/MAX Platinum Club, Level #1",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "\"Level #1\" reads as a tier or level number, which is the (a)-style numbered form. Whether it is a rank is ambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Ranked by building #1 in Milton condo sales",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "A contrived word order that literally contains the (a) form \"building #1\". The spec gives no way to tell a numbered building from a rank that follows a unit word. Ambiguous and low realism."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Ranked on the Halton sales line #1",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "Garbled construction that literally contains \"line #1\", a concession or road form under (a). Ambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Option #1 in Milton for home valuations",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "\"Option #1\" is the standard label form (b), and without context it could be a list heading. Label versus rank is ambiguous."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Lots #1 to #12 back onto the park.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Plural lot numbers (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Units #1–#4 share a common driveway.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Plural unit numbers (a)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Model #1: 2,100 sq ft, four bedrooms.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A model label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Unit 1 (#1 on the site plan)",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A site-plan number (a). The parenthesis breaks NUMBERED_RE's adjacency test."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "#1: Location",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": false,
+   "reason": "Too short to show it is a list label rather than a \"#1 location\" rank. Location is a claim noun, and a superlative about a property is barred. Ambiguous, and firing is the fail-closed default."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Sign #1 your home is priced too high",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A listicle headline label (b). No registrant is named."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Hack #1: book showings on weekday evenings.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Trick #1: list on a Thursday.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Warning sign #1: the fridge is not included.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Deal-breaker #1: no parking.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Must-have #1: a main-floor office.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Advantage #1: a larger lot for the price.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Drawback #1: fewer transit options.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Challenge #1: low inventory.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Problem #1: the survey is missing.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Fee #1: the status certificate, up to $100.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A list label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Document #1: the agreement of purchase and sale.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A document label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Form #1 is the listing agreement.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A form number (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Appendix #1: data sources",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An appendix label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Exhibit #1: the Town permit record",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "An exhibit label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Map #1 shows the Timberlea boundary.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A map label (b)."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by\nTop Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The label-line form of the same defect: the next line, \"Top Producer\", is taken as a two-word brokerage name. It is only the vocabulary word, not a brokerage, so this is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "# 1 in Milton",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A #1 rank with a place, missed by the \"# 1\" gap. The verified path is JSX `#{n}` rendered as `#<!-- -->1`, which becomes \"# 1\"."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "# 1",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": false,
+   "reason": "Standing alone, a literal \"# 1\" cannot be shown to be a \"#1\" (it could be a heading marker or numbering). The root cause is already confirmed through the claim-shaped \"# 1\" cases."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Ranked # 1 for Milton condo sales",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A #1 sales rank missed by the \"# 1\" gap. The same sentence with \"#1\" fires."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "2025 Top Producer RE/MAX Integra Ontario-Atlantic Canada Inc. Award",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Explicitly an award. The run stops at \"Inc.\" and treats \"Top Producer RE/MAX ... Inc.\" as a clean company name. The word is outside the real company name, so this is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Top Producer RE/MAX Ontario-Atlantic Canada Ltd.",
+   "kind": "missed-claim",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The same badge-plus-RE/MAX-company defect, with Ltd. instead of Inc."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Courtesy of RE/MAX Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "\"RE/MAX Top Producer\" is not a brokerage name. This is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Listed by Top Producer",
+   "kind": "missed-claim",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The \"name\" is only the vocabulary word, and no brokerage is called \"Top Producer\". This is a missed claim."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Presented by\n#1 Choice Realty Inc.",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "A label-line feed attribution of a company ending in Inc. (c). It fires because capitalisedRun rejects \"#1\". Low realism."
+  },
+  {
+   "team": "number-one-producer",
+   "text": "Units #1, #2 and #3 are leased.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Plural unit numbers (a)."
+  },
+  {
+   "team": "false-positives",
+   "text": "There's only detached housing on the street, and every recorded sale is a detached home.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"There's\" is a contraction of \"there is\", not a possessive, and \"There\" is not a capitalised proper name, so the spec's place shape does not apply. Nothing is ranked and no registrant is named, so the spec exempts it as ordinary."
+  },
+  {
+   "team": "false-positives",
+   "text": "There's only townhouse stock here, with no detached or semi-detached presence.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the same contraction defect. \"There\" is not a place under the spec's definition (a capitalised proper name). It is a quantity/restriction sense with no registrant, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "It's only minutes from the Milton GO station on foot.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"It's\" = \"it is\", and \"It\" is not a proper-name place. The quantity sense ('only minutes') is expressly exempt and no registrant is named. The lowercase control stays ordinary."
+  },
+  {
+   "team": "false-positives",
+   "text": "There's only street parking on the east side of the road.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is a contraction, not a place possessive. It is a restriction with no claim target and no registrant, so the spec exempts it."
+  },
+  {
+   "team": "false-positives",
+   "text": "That's only true for the detached homes; the townhomes trade lower.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "\"That\" is not a place. It is a restriction sense that ranks nothing and names no registrant, so it is exempt under the spec."
+  },
+  {
+   "team": "false-positives",
+   "text": "Canada Day's only fireworks display is at the Milton Fairgrounds.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The spec's place definition excludes a month/day/quarter. Canada Day is a day (a holiday), not a place. Fireworks are not a claim target and no registrant is named."
+  },
+  {
+   "team": "false-positives",
+   "text": "Tonight's only open house runs from 6 to 8.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "\"Tonight\" is a time word capitalised only by its position, not a proper-name place, and the spec excludes day/time words. An open house is not a claim target and no registrant is named."
+  },
+  {
+   "team": "false-positives",
+   "text": "The Only Condo Tower In Walking Distance Of The GO Station",
+   "kind": "false-positive",
+   "realism": "low",
+   "confirmed": true,
+   "reason": "The spec's place is a capitalised proper name. In Title Case \"Walking\" is capitalised but is not a proper name, so the 'the only ... in <place>' shape is not met. A condo tower is not a claim target. It is a genuine contradiction but low realism (Title Case heading)."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only a handful of World War I-era houses remain on the street.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The Roman numeral in 'World War I' is not the first-person pronoun the spec lists. The quantity sense ('only a handful') is expressly exempt and no registrant is named. It also behaves inconsistently with the sentence-final control."
+  },
+  {
+   "team": "false-positives",
+   "text": "The street holds only a few pre-World War I homes, most of them on the south side.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The Roman numeral I is read as the pronoun I and voids the exempt quantity sense ('only a few'). The spec voids only on the pronoun."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only Phase I of the subdivision has been registered so far.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Phase I' is a numeral, not the registrant's pronoun. It is a restriction sense with no claim target, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only a small share of buyers here relocate from the US.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'US' is the country, not the pronoun 'us'. It is a quantity sense ('only a small share') with no registrant, so it is exempt under the spec."
+  },
+  {
+   "team": "false-positives",
+   "text": "The pros and cons of a POTL townhome come down to one fee: it covers only the shared land.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'pros' (as in pros and cons) is not in the spec's registrant list (Aamir, Yaqoob, Miltonly, RE/MAX, Realty Specialists, pronouns, realtor/broker/brokerage/agent/team). It is an ordinary restriction, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Pros and cons: condo living here usually means only one parking spot.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'Pros' is not a registrant term in the spec. 'only one parking spot' is the exempt quantity sense."
+  },
+  {
+   "team": "false-positives",
+   "text": "Property taxes are pro-rated at closing, so the buyer is only charged from the closing date.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The 'pro' in 'pro-rated' names no one, and the spec's list has no 'pro'. It is an ordinary restriction, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only a licensed professional can confirm the condition of the roof.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'professional' is not in the spec's closed registrant list, and here it is a roofer or inspector (a third party). No claim target is ranked, so the spec exempts it."
+  },
+  {
+   "team": "false-positives",
+   "text": "Consult a tax professional; the first-time buyer land transfer tax refund is only available up to $4,000.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A tax professional is not a registrant term in the spec and is a third party. 'only available up to $4,000' is a quantity sense, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "A financial advisor can help, but only the lender can confirm the rate.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'advisor' is not in the spec's registrant list, and a financial advisor is a third party. A lender is not a claim target. It is exempt as ordinary."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only a Town representative can confirm whether a basement apartment is registered.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'representative' is not in the spec's list, and a Town representative is plainly a third party. It is a restriction sense with no registrant, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Ask your insurance broker early; only some insurers cover older knob-and-tube wiring.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec voids only for a broker 'that is not a third party's'. The reader's insurance broker is a third party, not a real estate registrant. 'only some insurers' is the exempt quantity sense."
+  },
+  {
+   "team": "false-positives",
+   "text": "An insurance agent can confirm whether sewer backup coverage is included; it is often only an add-on.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "An insurance agent is a third party, not the registrant, so the spec's void does not apply. The ordinary restriction ('only an add-on') is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Milton Sports Centre is home to several minor hockey teams, so public skating is only offered on weekends.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Minor hockey teams are a third party's teams, not the registrant's team. The spec voids only for a team that is not a third party's. It is an ordinary restriction, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "The Town's roads team plows only arterial roads in the first pass.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The Town's roads team is explicitly a third party's team. The ordinary restriction is exempt under the spec."
+  },
+  {
+   "team": "false-positives",
+   "text": "Pre-construction units are sold only through the developer's sales team.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The developer's sales team is a third party's team, just like the builder's sales team the rule already exempts. The only difference is the missing word in TEAM's exclusion."
+  },
+  {
+   "team": "false-positives",
+   "text": "Sold prices come from listing brokerages and are only visible to signed-in users.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Listing brokerages are the spec's own third-party category (cf. 'the listing agent'). 'only visible to signed-in users' is an ordinary restriction. The article-bearing control stays ordinary."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only listing brokerages can correct a sold record, through the board.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "The naming path is a defect, but claimSense also fires. The spec's claim sense covers 'a brokerage' as the ranked thing with no third-party carve-out (that carve-out is written only for the void), and 'Only listing brokerages can ...' singles out a brokerage class. The singular-with-article control is inconsistent, but the spec is ambiguous on whether this restriction counts as ranking a brokerage, so I default to not confirmed."
+  },
+  {
+   "team": "false-positives",
+   "text": "Listing agent remarks are not shown; only the public description appears.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec names 'the listing agent' as a third party. Dropping the article at sentence start does not change who it is. It is an ordinary restriction, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Member brokerages supply the data, and it is updated only once every 24 hours.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": false,
+   "reason": "'only once every 24 hours' is a quantity sense. Whether 'member brokerages' is a third party is unclear, though: the board's members include the registrant's own brokerage, and the spec only illustrates third parties by role (listing agent, buyer's agent). The spec is ambiguous on a generic plural 'brokerages', so I default to not confirmed."
+  },
+  {
+   "team": "false-positives",
+   "text": "This content is for general information only and is not intended to solicit buyers or sellers under contract with another brokerage.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'another brokerage' is by definition a third party's brokerage, so the spec's void does not apply. Besides, 'only' closes the phrase it restricts ('for general information only'), which the spec calls a fixed idiom. This is the standard disclaimer."
+  },
+  {
+   "team": "false-positives",
+   "text": "Buyers' agents are usually paid only when the sale closes.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec names 'the buyer's agent' as a third party. The plural possessive is the same role. The singular control is ordinary."
+  },
+  {
+   "team": "false-positives",
+   "text": "For someone who works in Toronto, the GO train is the only practical way in at rush hour.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'someone who works in Toronto' is a hypothetical commuter and is not in the spec's registrant list. A commute route is not a claim target, and there is no 'in <place>' after 'the only'."
+  },
+  {
+   "team": "false-positives",
+   "text": "The developer's plan for this site includes only townhomes, no apartments.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'this site' is a land parcel (the developer's), not the website. The spec's void list does not include 'this site' in any case. It is an ordinary restriction, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only firm sales count toward the typical; a conditional sale enters the record once it firms up.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'firm' here means unconditional, not a brokerage. Nothing in the spec's claim-target set is ranked and no registrant is named, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "The typical here counts only firm sales, not conditional ones.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the same adjective 'firm'. It is a methodology restriction that ranks nothing, so it is exempt under the spec."
+  },
+  {
+   "team": "false-positives",
+   "text": "These figures include only firm, unconditional sales reported to the board.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The adjective 'firm' is not a brokerage. No registrant is named (the spec's void list does not include 'these figures'), so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Visitor parking is enforced only during office hours.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'office hours' ranks no registrant, site, brokerage, agent or team. It is an ordinary time restriction."
+  },
+  {
+   "team": "false-positives",
+   "text": "The plaza at the corner holds only medical offices and a pharmacy.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Medical offices are not a brokerage or the registrant's standing. It is a restriction/inventory statement, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "The only office building on the street is the dental office at the corner.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "An office building is not a spec claim target. The phrase is 'on the street', not 'in <place>', and no registrant is named."
+  },
+  {
+   "team": "false-positives",
+   "text": "The street has only production homes, built by one builder in 2004.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec lists 'production' as the registrant's standing. 'Production homes' is volume-built housing, not anyone's sales production. It is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "The street was built out by production builders, and only production homes line it.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the same builder vocabulary. It ranks no registrant/site/brokerage/agent/team or their standing."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only sites within 500 metres of the GO station qualify for the higher density.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The spec's 'the site' is the website. Land sites are planning parcels, so this is an ordinary restriction."
+  },
+  {
+   "team": "false-positives",
+   "text": "The lot carries only site-specific zoning exceptions for the garage setback.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'site-specific' zoning does not refer to the website. It ranks nothing and names no registrant."
+  },
+  {
+   "team": "false-positives",
+   "text": "Milton Hydro is the only electricity distribution company serving the town.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "A utility is not the registrant, the site, a brokerage, an agent or a team. 'serving the town' is not the 'the only ... in <place>' shape, so it is exempt as written."
+  },
+  {
+   "team": "false-positives",
+   "text": "The only designation on the street is a Part IV heritage designation at number 12.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The spec's 'designation' is the registrant's (or agent's/brokerage's) standing ('their standing'). A heritage designation on a property is not. It is 'on the street', not 'in <place>'."
+  },
+  {
+   "team": "false-positives",
+   "text": "Bristol Park is the only award-winning playground within walking distance.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The award belongs to a park, not to the registrant/site/brokerage/agent/team, and there is no 'in <place>'. It is exempt under the spec."
+  },
+  {
+   "team": "false-positives",
+   "text": "Only resident groups registered with the Town can book the park pavilion.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Community groups are not a brokerage, agent or team of the registrant. It is a restriction sense with no registrant, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Milton is a leading choice for young families moving west from Mississauga.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec fires 'leading' only when the ranked thing is the registrant, the site, a brokerage, an agent or a team. Here the explicit subject is the town, and no registrant is named."
+  },
+  {
+   "team": "false-positives",
+   "text": "Milton has become a leading destination for commuters priced out of Oakville.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The ranked thing is the town, which is not a spec claim target, and no registrant is named. It is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Kelso is a leading destination for skiing and mountain biking in Halton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This ranks a conservation area, not a spec claim target. The 'in <place>' shape applies to 'only' only."
+  },
+  {
+   "team": "false-positives",
+   "text": "Mattamy Homes, a leading name in Canadian home building, built most of the street.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This ranks a home builder, which is not the registrant, the site, a brokerage, an agent or a team, so it is exempt as written."
+  },
+  {
+   "team": "false-positives",
+   "text": "The Mattamy National Cycling Centre is a leading site for track cycling in Canada.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'site' is a sports venue, not the website (the spec's 'the site'). It ranks no spec target."
+  },
+  {
+   "team": "false-positives",
+   "text": "Several leading logistics firms run distribution centres along Highway 401 near Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "Logistics firms are not brokerages. The spec's target is 'a brokerage', so this employment copy is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Several leading employers, including national retailers, run offices in the Derry Road business park.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "It ranks employers, not a spec target. The 'offices' hit belongs to a different clause."
+  },
+  {
+   "team": "false-positives",
+   "text": "Trucks use the road leading toward industrial sites south of Derry Road.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The spec expressly lists 'the road leading to' as the exempt ordinary sense, and 'toward' is the same construction."
+  },
+  {
+   "team": "false-positives",
+   "text": "Streets near the GO station get the highest level of transit service in Milton.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec's 'service' is the registrant's standing ('their'). This is transit service, a third party's, and no registrant is named."
+  },
+  {
+   "team": "false-positives",
+   "text": "Route 2 has the highest service frequency of Milton Transit's routes.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "It ranks a bus route's frequency, which is not the registrant's service. It is exempt under the spec."
+  },
+  {
+   "team": "false-positives",
+   "text": "The highest level of service on the Milton GO line is weekday mornings.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The sentence explicitly assigns the service to the Milton GO line (a third party). The spec's service claim is the registrant's/site's/brokerage's standing."
+  },
+  {
+   "team": "false-positives",
+   "text": "The building with the highest service fees also has a concierge and a pool.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Condo service fees are a quantity, not anyone's standing. This is the spec's ordinary sense (cf. 'the highest sales count')."
+  },
+  {
+   "team": "false-positives",
+   "text": "Households in the highest income groups are concentrated in the escarpment estates.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "Demographic income groups are not a spec claim target. This is the ordinary sense."
+  },
+  {
+   "team": "false-positives",
+   "text": "Is detached the only type on Reece Court? Yes; the sold data on this page shows detached homes alone.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The spec voids only when 'the sentence names the registrant' by its closed list. The answer is a separate sentence, and 'this page' is not in the list. The product-free control stays ordinary, so the answer alone causes the firing."
+  },
+  {
+   "team": "false-positives",
+   "text": "Does Barton Street only have detached homes? Yes; the market report shows detached sales alone.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "This is the ordinary sense in the question. 'the market report' in a separate answer sentence is not on the spec's registrant list."
+  },
+  {
+   "team": "false-positives",
+   "text": "Is the GO train the only way to commute? No; the Milton Transit app lists four bus routes.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "A third party's app in the answer names no registrant. It is ordinary sense and no claim target is ranked."
+  },
+  {
+   "team": "false-positives",
+   "text": "Is overnight parking only allowed with a permit? Yes; the Town's online tool issues them.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "'the Town's online tool' is a third party's product, not the registrant. It is an ordinary restriction, so it is exempt."
+  },
+  {
+   "team": "false-positives",
+   "text": "Is there only one bus route here? Yes; the Milton Transit app shows Route 5.",
+   "kind": "false-positive",
+   "realism": "high",
+   "confirmed": true,
+   "reason": "The pure quantity sense ('only one') is exempt. The answer names a third-party app, not the registrant."
+  },
+  {
+   "team": "false-positives",
+   "text": "Call or text Aamir Yaqoob, Sales Representative, RE/MAX Realty Specialists Inc. Only a handful of homes on this street sold in the last 12 months.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "The 'Only' sentence is a separate sentence that names no one, and the spec voids per sentence. The registrant line bleeds in only because the splitter never ends a sentence at 'Inc.'. The plain-full-stop control is ordinary."
+  },
+  {
+   "team": "false-positives",
+   "text": "Book a walkthrough with Aamir at the corner of Main St. Only three homes on the street sold this year.",
+   "kind": "false-positive",
+   "realism": "medium",
+   "confirmed": true,
+   "reason": "'Only three homes ...' is its own sentence and uses the exempt quantity sense. The registrant is in the previous sentence, and the spec voids only when 'the sentence' names the registrant."
+  }
+ ]
+}
