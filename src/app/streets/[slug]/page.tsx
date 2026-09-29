@@ -12,7 +12,7 @@ import StreetV2Page from "@/components/street/v2/StreetPage";
 import StreetMinimalPage from "@/components/street/v2/StreetMinimalPage";
 import { getMinimalStreetView } from "@/lib/streetMinimal";
 import { getStreetCompareContrast } from "@/lib/comparisonData";
-import { streetTitle, streetMeta, addressRangeOf } from "@/lib/streetHead";
+import { streetTitle, streetMeta, addressRangeOf, STREET_NOT_FOUND_METADATA } from "@/lib/streetHead";
 import { townAddressesForSlug } from "@/lib/town/addresses";
 
 interface Props { params: { slug: string } }
@@ -32,7 +32,7 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getStreetPageData(params.slug);
-  if (!data) return { title: "Street Not Found" };
+  if (!data) return STREET_NOT_FOUND_METADATA;
 
   // THE HEAD (MC-048). One title format and one meta shape, built from the name the H1 shows and
   // the Town's own addresses for this street, with nothing sold-derived in either: the format, its
