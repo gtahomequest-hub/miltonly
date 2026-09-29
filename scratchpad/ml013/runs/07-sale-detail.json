@@ -1,0 +1,84 @@
+{
+ "name": "07-sale-detail",
+ "url": "https://miltonly.com/listings/W13832706",
+ "startedAt": "2026-09-28T19:43:42.296Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:43:42.901Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:43:42.972Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T19:43:50.250Z",
+   "method": "POST",
+   "url": "/api/leads/create",
+   "body": "{\"source\":\"sale-detail\",\"intent\":\"buy\",\"name\":\"ML013 test contact\",\"phone\":\"6470000013\",\"email\":\"gtahomequest+ml013-sale-detail@gmail.com\",\"property_address\":\"266 Woodley Crescent, Milton, on L9t 8c4\",\"mlsNumber\":\"W13832706\",\"consentText\":\"By sending, you agree that Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage) may reply by email, text or phone about this request. No list, no spam.\",\"consentTimestamp\":\"2026-09-28T19:43:50.227Z\",\"company_website\":\"\",\"event_source_url\":\"https://miltonly.com/listings/W13832706\"}"
+  },
+  {
+   "at": "2026-09-28T19:43:50.613Z",
+   "status": 200,
+   "url": "/api/leads/create",
+   "response": "{\"ok\":true,\"lead_id\":\"cmulno01j000fpcbd7v807tge\",\"env\":\"production\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#sidebar-cta form input[name=\"name\"]",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#sidebar-cta form",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[name=\"name\"]",
+   "value": "ML013 test contact",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[name=\"phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[name=\"email\"]",
+   "value": "gtahomequest+ml013-sale-detail@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#sidebar-cta form button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#sidebar-cta form button[type=\"submit\"]",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/07-sale-detail.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? Miltonly › Buy › Willmott › 266 Woodley Crescent See all 16 FOR SALE $819,900 Listed by Real One Realty Inc. $631/sqft 3 bd · 2 ba · Townhouse · 1,300 sq"
+}

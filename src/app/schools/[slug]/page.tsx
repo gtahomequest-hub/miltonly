@@ -159,6 +159,7 @@ export default async function SchoolDetailPage({ params }: Props) {
     <>
       <SchemaScript schemas={schemas} />
       <PlaceDetail
+        path={`/schools/${params.slug}`}
         breadcrumb={[
           { label: "Home", href: "/" },
           { label: "Schools", href: "/schools" },

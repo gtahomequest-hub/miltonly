@@ -39,6 +39,9 @@ export interface PostLeadPayload {
   property_address?: string;
   neighbourhood?: string;
   notes?: string;
+  /** The page the visitor came from, for a surface reached from another page (ML-014: /book
+   *  reads ?ref=). The ingest stores it as landingPage, for that source only. */
+  ref?: string;
 
   // ── qualification, from the funnel surfaces ─────────────────────────────────
   timeline?: string;

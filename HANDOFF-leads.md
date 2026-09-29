@@ -2,11 +2,44 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-24, after ML-012 gave the rental cards' muted ramp a ground and made the card's street link the published page or nothing._
+_Last rewritten 2026-09-28, after ML-013 drove every lead form on production as a phone and found the pipeline sound and the "zero week" to be the site's own rate._
 
 ## READ THIS FIRST
 
-**ML-012 AND ML-005 ARE ON THIS BRANCH, GATED, PREVIEWED, AWAITING CORE'S MERGE.** The proven
+**ML-013 (2026-09-28): EVERY CAPTURE ON PRODUCTION WORKS; NOTHING WAS FIXED; NO CODE CHANGED.**
+Ten forms, twelve submissions, all PASS, driven with puppeteer as an iPhone against `1f3b216`:
+the street valuation and the street watch (main-street-milton), the daily brief on the homepage
+(the only newsletter mounted), the listing card booking, the homepage valuation, the sale listing's
+contact, the rental listing's booking, the condo building's contact, `/sell`, and the register flow
+through its emailed link to a verified session on `/saved`. Every one wrote its row, sent the
+confirmation and the desk alert (both in `gtahomequest@gmail.com` within two seconds), and created
+its watch where one is due (`street`, `brief`, `hub`); the eleven rows, three watches and the test
+user were deleted afterwards. Record in `scratchpad/reports/ML-013-forms.md`; the driver, plans, run
+records, screenshots and queries are under `scratchpad/ml013/`. The branch is `origin/main`
+(`e0bfc40`, MC-049) plus the docs commit; Core has nothing to merge but the report.
+
+**THE "32 MONTH TO DATE" IS THE MORNING REPORT COUNTING PREVIEW ROWS.**
+`scripts/audit/morning/sources/db.mjs:23-27` counts `public."Lead"` with no `env` filter; September
+holds 2 production rows (the desk's MC-028 proof and the ML-005 bot, whose quoted user agent
+predates the guard reaching production on 2026-09-28 02:42 UTC) and 30 preview proof rows. The last
+real lead is a phone-only `rental-detail-book` on 2026-08-30; the last with an email 2026-07-03; the
+site has 17 production rows all-time. A zero week is the expected outcome at about ten GSC clicks a
+day. Audit's file; not touched here.
+
+**GUARD REFUSALS ARE NOT PERSISTED.** `ingest.ts` logs `[lead/ingest] rejected { reason, source }`
+with `console.warn` and nothing else; `npx vercel logs --json -n 5000 --query "leads/create"`
+reaches back about one day. In that day: 5 refusals, all honeypot, four of them one 21-second burst
+at 01:54 Toronto across three pages (a script), 0 origin, 0 user agent, 0 rate limit. A seven-day
+count needs a table.
+
+**ADS ARRIVALS ARE NOT READABLE.** Nothing server-side records a visit; `gclid` lives in the browser
+until a form is submitted. Production leads carrying a gclid in 28 days: 0; the last one is a test
+from 2026-05-23.
+
+**ML-012 AND ML-005 ARE MERGED AND LIVE** (`4bc9343` in `main`; production served `1f3b216` with them
+from 2026-09-28 02:42 UTC). The earlier record follows.
+
+**ML-012 AND ML-005 WERE ON THIS BRANCH, GATED, PREVIEWED, AWAITING CORE'S MERGE.** The proven
 tree is **`4bc9343e613c9770291c68014937aba12f85d21c`**; above it sit only the docs commit (this
 handoff, the queue mark, the report and the evidence) and a docs-only merge of `origin/main` at
 `c636e20` (MC-045's report). No app file differs between `4bc9343` and the tip. One preview, `miltonly-ahq9hojts` at
@@ -69,7 +102,9 @@ every recurring email, `consentText` on all 26 submissions. Record in
 
 | | |
 |---|---|
-| branch | `feat/leads`, proven tree **`4bc9343`** (ML-012) above ML-005 `064c5b6` and the main merge `bcf9a18`, one docs commit on top; ML-004 and below merged as of `7196623` |
+| branch | `feat/leads` = `origin/main` **`e0bfc40`** (MC-049) plus the ML-013 docs commit; ML-005 and ML-012 merged (`4bc9343` in `main`), production served them from `1f3b216` on 2026-09-28 |
+| production leads | **17 rows all-time; September 2** (the desk's MC-028 proof, the ML-005 bot); last real lead 2026-08-30 (`rental-detail-book`, phone only); last with an email 2026-07-03; 0 with a gclid in 28 days |
+| ML-013 form run | 10 forms, 12 submissions, **12 PASS, 0 FAIL**; every row, watch and the test user deleted; the IP's day bucket ended at 12 of 12, nothing refused |
 | last preview of this branch | **`miltonly-ahq9hojts`** at `4bc9343`, **`PASS · 24 checks · 719 pages · 617s`** |
 | local gate at `4bc9343` | `pnpm build` on Node 22, exit 0, 709 s, 841 of 841, 0 `P2024`; local battery **`PASS · 24 checks · 719 pages · 593s`** |
 | prebuild, lead layer | `[lead-guards]` · `[lead-forms] 222` · `[leads-digest]` · `[lead-bot-gate] 21` · `[vow-fields] 111` assertions |
@@ -163,6 +198,26 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
   `-l -c "export PATH=/usr/bin:/mingw64/bin:$PATH; sh scratchpad/ml012/gate-build.sh <label>"`.
   It writes `scratchpad/ml012/gate-<label>.txt` (`exit N seconds S`); poll for the file.
   `scratchpad/ml012/run-start22.sh <port> <sha> <log>` starts `next start` the same way.
+- **Driving production forms as a phone (ML-013):** `scratchpad/ml013/drive.mjs <plan.json> [--dry]`
+  runs one plan under iPhone 13 emulation and records every `/api/leads/create` and `/api/auth/*`
+  request and reply; `--dry` rehearses everything but the submit (the last step of every plan), so
+  selectors are proven before a token is spent. `run-group.sh <log> <plans…>` runs plans 150 s apart
+  and clears only the test inbox's Upstash keys first. Proof of a capture is the reply's `lead_id`
+  (a honeypot or user-agent refusal answers `{ok:true}` with none and the page still shows success),
+  the row with its `LeadActivity` delivery records (`rows.mjs`; `--apply` deletes every `+ml013`
+  row, watch and user), and the email in the inbox (the Gmail connector on `gtahomequest@gmail.com`).
+- **The limiter's budget is the test's ceiling:** IP 5 per 10 minutes and 12 per day (never cleared;
+  the desk's own portal tests spend it too), inbox 3 per hour and 6 per day with plus-tags collapsed
+  (`ratelimit-keys.mjs --apply` deletes only the keys naming `gtahomequest@gmail.com`; it reads
+  `.env.vercel-prod`, pulled with `vercel env pull --environment=production`, gitignored by `.env*`).
+- **Claude Code reaps background shells of an idle session when the desk is low on memory**,
+  including a form run mid-cadence (ML-013 lost group 2's tail at 2.2 GB free). Launch a run detached
+  (`Start-Process` on Git's `bash.exe -l -c`, the MC-035 pattern) and read its log; a poller shell
+  is reaped the same way and says nothing about the run.
+- **The morning report's lead figures include preview rows** (`scripts/audit/morning/sources/db.mjs`
+  has no `env` filter); read `scripts/leads-report.ts` or the digest for production counts.
+- **The runtime log reaches back about a day** (`npx vercel logs --json -n 5000 --query "…"`); the
+  unfiltered dump is 100 entries in 3 minutes (`/api/auth/me` on every page), so always filter.
 - **A CLI preview from this worktree fails the `vercel-ignore` prebuild gate unless
   `scripts/vercel-ignore.sh` is LF in the working copy.** `.gitattributes` is `text=auto` and
   `core.autocrlf` is true, so a checkout writes the script CRLF, the CLI uploads it as it is, and
@@ -237,6 +292,16 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
   worktree prefix, tracked in git.
 
 ## What is open
+
+- **ML-013 opened (2026-09-28):** the morning report wants `WHERE env = 'production'` on its four
+  lead queries (`scripts/audit/morning/sources/db.mjs:23-27`, Audit's); guard refusals want a home
+  (a `LeadRefusal` table or a `LeadActivity` without a lead) if a seven-day count is ever wanted; the
+  five honeypot refusals a day are a script (four in 21 s) or a browser autofilling a field named
+  "company website", and only a persisted record would tell; seven `LIVE_SOURCES` entries have no
+  mounted component (`homepage-newsletter`, `homepage-mortgage-calculator`,
+  `homepage-sold-on-my-street`, `homepage-exclusive`, the three `homepage-persona-*`), so the digest's
+  "quiet" line names surfaces that cannot convert; `/contact`, `/newsletter`, `/register` are 404 and
+  `/book` redirects to `/about`, which has no form.
 
 1. **The accent override block in `rentals.css`** (lines 19 to 27) never wins a cascade
    contest; the hero's "Milton", the search and "Show results" buttons and the wizard's primary

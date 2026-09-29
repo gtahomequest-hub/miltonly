@@ -1,0 +1,89 @@
+{
+ "name": "09-rental-detail-book",
+ "url": "https://miltonly.com/listings/W13832868",
+ "startedAt": "2026-09-28T20:15:33.202Z",
+ "requests": [
+  {
+   "at": "2026-09-28T20:15:33.810Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T20:15:33.873Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T20:15:41.337Z",
+   "method": "POST",
+   "url": "/api/leads/create",
+   "body": "{\"source\":\"rental-detail-book\",\"intent\":\"rent\",\"name\":\"ML013 test rental booking\",\"email\":\"gtahomequest+ml013-rental-book@gmail.com\",\"phone\":\"6470000013\",\"notes\":\"\",\"property_address\":\"479 Vaughan Court, Milton, on L9t 8a6\",\"mlsNumber\":\"W13832868\",\"consentText\":\"By sending, you agree that Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage) may reply by email, text or phone about this request. No list, no spam.\",\"consentTimestamp\":\"2026-09-28T20:15:41.335Z\",\"company_website\":\"\",\"event_source_url\":\"https://miltonly.com/listings/W13832868\"}"
+  },
+  {
+   "at": "2026-09-28T20:15:42.073Z",
+   "status": 200,
+   "url": "/api/leads/create",
+   "response": "{\"ok\":true,\"lead_id\":\"cmulosywq0000lbshlxuzffm8\",\"env\":\"production\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#sidebar-cta",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#sidebar-cta",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Book a showing",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "#sidebar-cta input[placeholder=\"Your name\"]",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[placeholder=\"Your name\"]",
+   "value": "ML013 test rental booking",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[type=\"email\"][placeholder=\"Email\"]",
+   "value": "gtahomequest+ml013-rental-book@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[type=\"tel\"][placeholder=\"Phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Submit booking request",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/09-rental-detail-book.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? Miltonly › Rent › Scott › 479 Vaughan Court FOR RENT $2,850/mo Listed by RE/MAX Real Estate Centre Inc. 3 bd · 3 ba · Semi · 1,750 sqft 479 Vaughan Court"
+}

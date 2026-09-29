@@ -1,0 +1,10 @@
+{
+  "name": "11-register-link",
+  "url": "https://miltonly.com/signin/link?t=8VFLk8XNukZzvA4HTs8-73NPpRgkwqor&r=%2Fsaved",
+  "steps": [
+    { "op": "wait", "ms": 8000 },
+    { "op": "eval", "value": "location.pathname + ' | ' + document.title" }
+  ],
+  "success": "Welcome back|Saved listings|Your saved",
+  "settleMs": 3000
+}

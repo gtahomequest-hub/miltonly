@@ -1,0 +1,78 @@
+{
+ "name": "05-homepage-valuation",
+ "url": "https://miltonly.com/",
+ "startedAt": "2026-09-28T19:29:02.880Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:29:05.317Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:29:05.391Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "section#valuation form input[name=\"address\"]",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#valuation form",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form input[name=\"address\"]",
+   "value": "123 Test Street, Milton",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form input[name=\"email\"]",
+   "value": "gtahomequest+ml013-homepage-valuation@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form input[name=\"phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "section#valuation form textarea[aria-label=\"Notes for Aamir\"]",
+   "value": "ML-013 test submission, delete me",
+   "ok": true
+  },
+  {
+   "op": "check",
+   "selector": "section#valuation form input[type=\"checkbox\"]",
+   "checked": true,
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#valuation form button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "section#valuation form button[type=\"submit\"]",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/05-homepage-valuation-dry.png"
+}

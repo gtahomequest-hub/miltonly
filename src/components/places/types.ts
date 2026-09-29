@@ -73,6 +73,8 @@ export interface PlaceDirectoryProps {
 /** Detail template props. */
 export interface PlaceDetailProps {
   breadcrumb: { label: string; href?: string }[];
+  /** This page's own path, e.g. "/schools/anne-j-macarthur-ps": the booking link carries it as ?ref= (ML-014). */
+  path: string;
   badge: PlaceBadge;
   heroEyebrow: string; // "Timberlea · Milton"
   title: string; // "Homes Near …"

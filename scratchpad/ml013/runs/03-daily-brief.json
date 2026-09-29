@@ -1,0 +1,67 @@
+{
+ "name": "03-daily-brief",
+ "url": "https://miltonly.com/",
+ "startedAt": "2026-09-28T19:37:31.742Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:37:36.687Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:37:36.774Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  },
+  {
+   "at": "2026-09-28T19:37:42.093Z",
+   "method": "POST",
+   "url": "/api/leads/create",
+   "body": "{\"source\":\"daily-brief\",\"intent\":\"buy\",\"email\":\"gtahomequest+ml013-brief@gmail.com\",\"notes\":\"Daily brief signup, homepage\",\"consent\":true,\"consentText\":\"I consent to receive the Miltonly daily brief and follow-up communication from Aamir Yaqoob (RE/MAX Realty Specialists Inc., Brokerage). I can withdraw consent anytime by clicking unsubscribe.\",\"consentTimestamp\":\"2026-09-28T19:37:42.091Z\",\"company_website\":\"\",\"event_source_url\":\"https://miltonly.com/\"}"
+  },
+  {
+   "at": "2026-09-28T19:37:42.591Z",
+   "status": 200,
+   "url": "/api/leads/create",
+   "response": "{\"ok\":true,\"lead_id\":\"cmulng3zl0006pcbdnf31mqwy\",\"env\":\"production\"}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#mh-brief-email",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#brief",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#mh-brief-email",
+   "value": "gtahomequest+ml013-brief@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "section#brief form.mh-briefform button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "section#brief form.mh-briefform button[type=\"submit\"]",
+   "ok": true
+  }
+ ],
+ "success": true,
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/03-daily-brief.png",
+ "bodyTail": "Skip to content Miltonly What's my home worth? MILTON HEIGHTS MOUNTAIN VIEW SCOTT DORSET PARK TIMBERLEA DEMPSEY CLARKE BEATY WALKER COBBAN BOWES COATES FORD WILLMOTT HARRISON OLD MILTON BRONTE MEADOWS"
+}

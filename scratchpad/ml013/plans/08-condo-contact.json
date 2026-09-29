@@ -1,0 +1,19 @@
+{
+  "name": "08-condo-contact",
+  "url": "https://miltonly.com/condos/610-farmstead-drive-milton",
+  "steps": [
+    { "op": "waitFor", "selector": "#cb-cta" },
+    { "op": "wait", "ms": 3000 },
+    { "op": "tap", "text": "Accept", "optional": true },
+    { "op": "scroll", "selector": "#cb-cta" },
+    { "op": "tap", "selector": "#cb-cta button.cb-cta-btn.cb-cta-ghost" },
+    { "op": "waitFor", "selector": "#cb-cta form.cb-cta-form" },
+    { "op": "type", "selector": "#cb-cta input[aria-label=\"Your name\"]", "value": "ML013 test contact" },
+    { "op": "type", "selector": "#cb-cta input[type=\"email\"][aria-label=\"Email\"]", "value": "gtahomequest+ml013-condo-contact@gmail.com" },
+    { "op": "type", "selector": "#cb-cta textarea[aria-label=\"Message\"]", "value": "ML-013 test submission, delete me" },
+    { "op": "scroll", "selector": "#cb-cta form.cb-cta-form button[type=\"submit\"]" },
+    { "op": "tap", "selector": "#cb-cta form.cb-cta-form button[type=\"submit\"]" }
+  ],
+  "success": "on the list|be in touch",
+  "settleMs": 5000
+}

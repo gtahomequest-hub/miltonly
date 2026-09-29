@@ -1,0 +1,18 @@
+{
+  "name": "06-sell-page",
+  "url": "https://miltonly.com/sell",
+  "steps": [
+    { "op": "waitFor", "selector": "#valuation input[name=\"address\"]", "ms": 30000 },
+    { "op": "wait", "ms": 2000 },
+    { "op": "scroll", "selector": "#valuation form" },
+    { "op": "type", "selector": "#valuation input[name=\"address\"]", "value": "123 Test Street, Milton" },
+    { "op": "type", "selector": "#valuation input[name=\"email\"]", "value": "gtahomequest+ml013-sell@gmail.com" },
+    { "op": "type", "selector": "#valuation input[name=\"phone\"]", "value": "6470000013" },
+    { "op": "type", "selector": "#valuation textarea[aria-label=\"Notes for Aamir\"]", "value": "ML-013 test submission, delete me" },
+    { "op": "check", "selector": "#valuation input[type=\"checkbox\"]" },
+    { "op": "scroll", "selector": "#valuation button[type=\"submit\"]" },
+    { "op": "tap", "selector": "#valuation button[type=\"submit\"]" }
+  ],
+  "success": "Your request is in",
+  "settleMs": 5000
+}

@@ -32,17 +32,12 @@ export const LIVE_SOURCES: readonly LeadSource[] = [
   { source: "doorhanger-valuation", where: "/value doorhanger landing" },
   { source: "sales-ads-home-valuation", where: "sales ad landing, valuation card" },
   { source: "homepage-valuation", where: "homepage valuation band" },
-  { source: "homepage-sold-on-my-street", where: "homepage sold on my street" },
   // Places
   { source: "mosque-alert", where: "/mosques alert form" },
   { source: "school-alert", where: "/schools alert form" },
-  // Homepage
-  { source: "homepage-newsletter", where: "homepage pre-footer newsletter" },
-  { source: "homepage-exclusive", where: "homepage off-market list" },
-  { source: "homepage-mortgage-calculator", where: "homepage mortgage calculator" },
-  { source: "homepage-persona-first-time-buyer", where: "homepage persona router, first-time buyer" },
-  { source: "homepage-persona-newcomer", where: "homepage persona router, newcomer" },
-  { source: "homepage-persona-move-up", where: "homepage persona router, move-up" },
+  // Homepage (the pre-footer newsletter, the mortgage calculator, the sold-on-my-street report,
+  // the off-market list and the three persona routers left the page in the homepage rebuild and
+  // are retired below, ML-014)
   { source: "daily-brief", where: "daily brief signup" },
   { source: "landlord", where: "Rent menu, landlord listing request" },
   // Exclusive listings
@@ -54,6 +49,7 @@ export const LIVE_SOURCES: readonly LeadSource[] = [
   { source: "rental-detail-book", where: "rental listing detail, booking" },
   { source: "rental-detail-question", where: "rental listing detail, question" },
   { source: "listing-card-book", where: "listing card booking" },
+  { source: "book-page", where: "/book, the booking page the school and mosque pages link to" },
   { source: "listing-card-1hr", where: "rentals listing card, one-hour booking" },
   { source: "1hr-booking", where: "rentals one-hour booking" },
   // Rentals
@@ -84,6 +80,15 @@ export const RETIRED_SOURCES: ReadonlySet<string> = new Set([
   "street-corner-widget",
   "rental-booking",
   "rental-question",
+  // ML-014 (2026-09-28): no page has mounted these since the homepage rebuild; their components
+  // sit under src/components/sections/retired/. ML-013 found the digest reporting them as quiet.
+  "homepage-newsletter",
+  "homepage-mortgage-calculator",
+  "homepage-sold-on-my-street",
+  "homepage-exclusive",
+  "homepage-persona-first-time-buyer",
+  "homepage-persona-newcomer",
+  "homepage-persona-move-up",
 ]);
 
 export function isLiveSource(source: string): boolean {

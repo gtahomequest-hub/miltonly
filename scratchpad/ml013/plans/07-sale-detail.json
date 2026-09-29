@@ -1,0 +1,17 @@
+{
+  "name": "07-sale-detail",
+  "url": "https://miltonly.com/listings/W13832706",
+  "steps": [
+    { "op": "waitFor", "selector": "#sidebar-cta form input[name=\"name\"]", "ms": 30000 },
+    { "op": "wait", "ms": 3000 },
+    { "op": "tap", "text": "Accept", "optional": true },
+    { "op": "scroll", "selector": "#sidebar-cta form" },
+    { "op": "type", "selector": "#sidebar-cta input[name=\"name\"]", "value": "ML013 test contact" },
+    { "op": "type", "selector": "#sidebar-cta input[name=\"phone\"]", "value": "6470000013" },
+    { "op": "type", "selector": "#sidebar-cta input[name=\"email\"]", "value": "gtahomequest+ml013-sale-detail@gmail.com" },
+    { "op": "scroll", "selector": "#sidebar-cta form button[type=\"submit\"]" },
+    { "op": "tap", "selector": "#sidebar-cta form button[type=\"submit\"]" }
+  ],
+  "success": "Request sent",
+  "settleMs": 5000
+}

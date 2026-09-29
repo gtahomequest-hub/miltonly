@@ -1,0 +1,16 @@
+{
+  "name": "02-street-alert",
+  "url": "https://miltonly.com/streets/main-street-milton",
+  "steps": [
+    { "op": "waitFor", "selector": "form#capture" },
+    { "op": "wait", "ms": 2500 },
+    { "op": "scroll", "selector": "#capture" },
+    { "op": "tap", "selector": "#capture .s-capture-seg label:nth-of-type(2)" },
+    { "op": "eval", "value": "document.querySelector('#capture button[type=\"submit\"]').textContent.trim()" },
+    { "op": "type", "selector": "#capture input[type=\"email\"]", "value": "gtahomequest+ml013-street-alert@gmail.com" },
+    { "op": "scroll", "selector": "#capture button[type=\"submit\"]" },
+    { "op": "tap", "selector": "#capture button[type=\"submit\"]" }
+  ],
+  "success": "You are watching",
+  "settleMs": 5000
+}

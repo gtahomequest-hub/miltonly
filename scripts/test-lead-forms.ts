@@ -53,11 +53,15 @@ const SURFACES = [
   "src/components/lead/DailyBriefSignup.tsx",
   // Phase 2
   "src/components/home/DailyBrief.tsx",
-  "src/components/sections/PreFooterCTA.tsx",
-  "src/components/sections/PersonaRouter.tsx",
-  "src/components/sections/SoldOnMyStreet.tsx",
-  "src/components/sections/MortgageCalculator.tsx",
-  "src/components/sections/OffMarketForm.tsx",
+  // Retired 2026-09-28 (ML-014) to sections/retired/: none had a page since the homepage rebuild.
+  // Kept on the list for the same reason as the street ones above.
+  "src/components/sections/retired/PreFooterCTA.tsx",
+  "src/components/sections/retired/PersonaRouter.tsx",
+  "src/components/sections/retired/SoldOnMyStreet.tsx",
+  "src/components/sections/retired/MortgageCalculator.tsx",
+  "src/components/sections/retired/OffMarketForm.tsx",
+  // ML-014: /book, the booking page
+  "src/app/book/BookForm.tsx",
   "src/components/landing/LeadCaptureForm.tsx",
   "src/components/landing/HomeValuationCard.tsx",
   "src/components/landing/MarketPulseUnlockCard.tsx",
@@ -305,7 +309,9 @@ function main() {
       }
     }
   }
-  ok(consentSites >= 26, `the consent rule read ${consentSites} submissions, which looks like every surface (26 at ML-004)`);
+  // 26 at ML-004 (27 read). ML-014 retired five homepage surfaces under sections/retired/ (five calls,
+  // skipped above) and added the booking page (one call): 23.
+  ok(consentSites >= 23, `the consent rule read ${consentSites} submissions, which looks like every surface (23 at ML-014, 26 at ML-004)`);
 
   // ── the helper names the one path, once ───────────────────────────────────────
   const helper = readFileSync(THE_HELPER, "utf-8");

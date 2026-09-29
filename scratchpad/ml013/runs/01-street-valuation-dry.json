@@ -1,0 +1,54 @@
+{
+ "name": "01-street-valuation",
+ "url": "https://miltonly.com/streets/main-street-milton",
+ "startedAt": "2026-09-28T19:28:27.179Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:28:27.967Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:28:28.082Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "form#capture",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#capture",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#capture input[type=\"email\"]",
+   "value": "gtahomequest+ml013-street-valuation@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#capture button[type=\"submit\"]",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#capture button[type=\"submit\"]",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/01-street-valuation-dry.png"
+}

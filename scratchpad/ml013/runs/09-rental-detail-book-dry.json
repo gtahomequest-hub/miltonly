@@ -1,0 +1,76 @@
+{
+ "name": "09-rental-detail-book",
+ "url": "https://miltonly.com/listings/W13832868",
+ "startedAt": "2026-09-28T19:31:25.716Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:31:26.232Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:31:26.284Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#sidebar-cta",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": true
+  },
+  {
+   "op": "scroll",
+   "selector": "#sidebar-cta",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Book a showing",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "#sidebar-cta input[placeholder=\"Your name\"]",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[placeholder=\"Your name\"]",
+   "value": "ML013 test rental booking",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[type=\"email\"][placeholder=\"Email\"]",
+   "value": "gtahomequest+ml013-rental-book@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#sidebar-cta input[type=\"tel\"][placeholder=\"Phone\"]",
+   "value": "6470000013",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Submit booking request",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/09-rental-detail-book-dry.png"
+}

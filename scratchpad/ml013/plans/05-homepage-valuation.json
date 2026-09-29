@@ -1,0 +1,18 @@
+{
+  "name": "05-homepage-valuation",
+  "url": "https://miltonly.com/",
+  "steps": [
+    { "op": "waitFor", "selector": "section#valuation form input[name=\"address\"]" },
+    { "op": "wait", "ms": 2500 },
+    { "op": "scroll", "selector": "section#valuation form" },
+    { "op": "type", "selector": "section#valuation form input[name=\"address\"]", "value": "123 Test Street, Milton" },
+    { "op": "type", "selector": "section#valuation form input[name=\"email\"]", "value": "gtahomequest+ml013-homepage-valuation@gmail.com" },
+    { "op": "type", "selector": "section#valuation form input[name=\"phone\"]", "value": "6470000013" },
+    { "op": "type", "selector": "section#valuation form textarea[aria-label=\"Notes for Aamir\"]", "value": "ML-013 test submission, delete me" },
+    { "op": "check", "selector": "section#valuation form input[type=\"checkbox\"]" },
+    { "op": "scroll", "selector": "section#valuation form button[type=\"submit\"]" },
+    { "op": "tap", "selector": "section#valuation form button[type=\"submit\"]" }
+  ],
+  "success": "Your request is in",
+  "settleMs": 5000
+}

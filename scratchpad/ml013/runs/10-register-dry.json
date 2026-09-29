@@ -1,0 +1,59 @@
+{
+ "name": "10-register",
+ "url": "https://miltonly.com/signin",
+ "startedAt": "2026-09-28T19:31:35.244Z",
+ "requests": [
+  {
+   "at": "2026-09-28T19:31:35.613Z",
+   "method": "GET",
+   "url": "/api/auth/me",
+   "body": ""
+  },
+  {
+   "at": "2026-09-28T19:31:35.677Z",
+   "status": 200,
+   "url": "/api/auth/me",
+   "response": "{\"user\":null}"
+  }
+ ],
+ "steps": [
+  {
+   "op": "waitFor",
+   "selector": "#signin-email",
+   "ok": true
+  },
+  {
+   "op": "wait",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Accept",
+   "ok": true
+  },
+  {
+   "op": "type",
+   "selector": "#signin-email",
+   "value": "gtahomequest+ml013-register@gmail.com",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "text": "Continue",
+   "ok": true
+  },
+  {
+   "op": "waitFor",
+   "selector": "#signin-link-instead",
+   "ok": true
+  },
+  {
+   "op": "tap",
+   "selector": "#signin-link-instead",
+   "skipped": "dry run: the submit step"
+  }
+ ],
+ "success": "dry run: stopped before submit",
+ "error": null,
+ "screenshot": "scratchpad/ml013/shots/10-register-dry.png"
+}

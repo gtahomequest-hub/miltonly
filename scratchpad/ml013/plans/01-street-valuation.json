@@ -1,0 +1,14 @@
+{
+  "name": "01-street-valuation",
+  "url": "https://miltonly.com/streets/main-street-milton",
+  "steps": [
+    { "op": "waitFor", "selector": "form#capture" },
+    { "op": "wait", "ms": 2500 },
+    { "op": "scroll", "selector": "#capture" },
+    { "op": "type", "selector": "#capture input[type=\"email\"]", "value": "gtahomequest+ml013-street-valuation@gmail.com" },
+    { "op": "scroll", "selector": "#capture button[type=\"submit\"]" },
+    { "op": "tap", "selector": "#capture button[type=\"submit\"]" }
+  ],
+  "success": "Your request is in",
+  "settleMs": 5000
+}

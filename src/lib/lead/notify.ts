@@ -86,6 +86,8 @@ export function confirmationLineFor(ctx: NotifyContext): string {
     case "1hr-booking":
     case "rental-booking":
       return `Your showing request for ${where} is in. ${FIRST_NAME} confirms a time by phone during business hours.`;
+    case "book-page":
+      return `Your showing request is in. ${FIRST_NAME} confirms a time by phone during business hours.`;
     case "sale-detail":
     case "rental-question":
       return `Your question about ${where} is in. ${FIRST_NAME} replies personally, during business hours.`;
@@ -124,6 +126,7 @@ function confirmationSubject(ctx: NotifyContext): string {
     case "listing-card-1hr":
     case "1hr-booking":
     case "rental-booking":
+    case "book-page":
       return ctx.subject ? `Your showing request for ${ctx.subject}` : "Your showing request is in";
     case "ads-rentals-lp":
     case "ads-rentals-lp-modal":
