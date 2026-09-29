@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { hashUserData } from "@/lib/hash";
 import { config } from "@/lib/config";
+import RegistrantStrip from "@/components/compliance/RegistrantStrip";
+import { VOW_NOTICES, MLS_COPYRIGHT_NOTICE } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const REALTOR_INITIALS = config.realtor.name.split(" ").map((p) => p[0]).join("").toUpperCase();
@@ -173,6 +175,7 @@ export default function ThankYouClient({
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
       {/* ── MINIMAL HEADER — logo only, no nav or CTAs ── */}
       <header className="bg-[#07111f] border-b border-[#1e3a5f]">
+        <RegistrantStrip />
         <div className="max-w-3xl mx-auto flex items-center justify-start h-[58px] px-4 sm:px-6">
           <Link href="/" className="shrink-0" aria-label={`${config.SITE_NAME} home`}>
             <span className="text-[20px] font-extrabold tracking-[-0.5px]">
@@ -314,12 +317,16 @@ export default function ThankYouClient({
       {/* ── MINIMAL FOOTER — legal + copyright only, no feature links ── */}
       <footer className="bg-[#07111f] border-t border-[#1e3a5f] py-6">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          {/* the Member leads the footer (MC-047, A1) */}
+          <p className="text-center text-[14px] text-[#cbd5e1] mb-4" data-footer-member><strong className="text-white">{config.realtor.name}, {config.realtor.title}</strong> · {config.brokerage.name}</p>
           <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px] mb-3">
             <Link href="/privacy" className="text-[#94a3b8] hover:text-[#f8f9fb]">Privacy Policy</Link>
             <Link href="/terms" className="text-[#94a3b8] hover:text-[#f8f9fb]">Terms</Link>
           </nav>
           <p className="text-center text-[11px] text-[#64748b] leading-relaxed">
-            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {BROKERAGE_NAME}
+            © {new Date().getFullYear()} {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {BROKERAGE_NAME}
+ <br />
+ <span data-vow-notice>{VOW_NOTICES}</span> <span data-copyright>{MLS_COPYRIGHT_NOTICE()}</span>
           </p>
         </div>
       </footer>

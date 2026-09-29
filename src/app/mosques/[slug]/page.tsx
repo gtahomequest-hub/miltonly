@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!mosque) return { title: "Mosque Not Found" };
   return {
     title: `Homes Near ${mosque.name} ${config.CITY_NAME}: Listings & Prices`,
-    description: `Find homes for sale near ${mosque.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${mosque.address}. Live TREB listings, prices, and neighbourhood data. ${mosque.affiliation}.`,
+    description: `Find homes for sale near ${mosque.name} in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${mosque.address}. Live MLS® listings, prices, and neighbourhood data. ${mosque.affiliation}.`,
     alternates: { canonical: `${config.SITE_URL}/mosques/${params.slug}` },
     keywords: [
       `homes near ${mosque.name}`,

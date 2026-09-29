@@ -274,7 +274,7 @@ export default async function VowGate({
           See all {count > 0 ? count : ""} sold prices
         </p>
         <p className="text-xs text-slate-600 mb-4">
-          Free with a verified email. TREB VOW data — exact sold prices, days on market, and sold-to-ask ratios.
+          Free with a verified email. MLS® VOW data: exact sold prices, days on market, and sold-to-ask ratios.
         </p>
         <Link
           href={signinHref}
@@ -286,7 +286,7 @@ export default async function VowGate({
       </div>
 
       <p className="mt-4 text-[10px] text-slate-400">
-        Source: TREB MLS® via VOW. Displayed to registered users per board policy.
+        Source: PropTx MLS® System, via VOW. Displayed to registered users per board policy.
       </p>
     </section>
   );

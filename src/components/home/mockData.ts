@@ -56,7 +56,7 @@ export const mockHomepageData: { hero: HeroContent } & Record<string, unknown> =
       'The typical Milton home has settled near $1,090,000 over the past year, with the pace easing from the spring’s tighter conditions. Detached stock holds firmest in the established central pockets, while newer-growth areas carry the bulk of current supply.',
       'Days on market sit around 24 — a measured rhythm, not an urgent one. The read below moves by neighbourhood, where the real differences live.',
     ],
-    source: 'Grounded in trailing-12-month TREB sold data · updated continuously',
+    source: 'Grounded in trailing-12-month PropTx MLS® sold data · updated continuously',
   },
 
   neighbourhoods: [

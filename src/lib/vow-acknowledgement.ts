@@ -27,8 +27,12 @@
 // extraction). Two clauses are added: Rule 8.09(g), the ownership of TRREB and PropTx, and the
 // account-sharing prohibition (VOW Best Practices item 39). The clause-by-clause diff from v4
 // is in scratchpad/reports/MP-007-proptx-standard.md.
+// VERSION 6 (MC-047, 2026-09-29): TRREB's audit of homesly.ca (same registrant, same auditor)
+// asked that clause (viii) authorize the Association as well as PropTx (Rule 8.11): it now names
+// the Toronto Regional Real Estate Board (TRREB). Clause (ix) names TRREB beside PropTx too, so
+// the consent says what /privacy says. Nothing else changed.
 
-export const VOW_TERMS_VERSION = 5;
+export const VOW_TERMS_VERSION = 6;
 
 export interface VowClause {
   /** Appendix B(c) roman numeral, "own-g" for Rule 8.09(g), "share" for the account-sharing
@@ -103,22 +107,23 @@ export const VOW_TERMS_CLAUSES: readonly VowClause[] = [
   },
   {
     // Appendix B(c)(viii), corrected to add "or their duly authorized representatives" (v4
-    // omitted it).
+    // omitted it), and TRREB, the Association, beside PropTx (v6, Rule 8.11).
     key: "viii",
     text:
-      "I expressly authorize PropTx, and other PropTx Members or their duly authorized " +
+      "I expressly authorize PropTx, the Toronto Regional Real Estate Board (TRREB), and other PropTx Members or their duly authorized " +
       "representatives, to access this VOW for the purposes of verifying compliance with the " +
       "MLS® Rules and Policies (including the VOW Rules) and monitoring the display of Members' listings.",
   },
   {
     // Appendix B(c)(ix): the privacy policy, boldly informing of and obtaining consent to the
-    // collection, use and disclosure, including sharing with PropTx.
+    // collection, use and disclosure, including sharing with PropTx (and TRREB, v6).
     key: "ix",
     bold: true,
     text:
       "I have read the privacy policy at miltonly.com/privacy and I consent to the collection, use and " +
       "disclosure of my personal information as it describes, including that my name, email address, username, " +
-      "password record and my activity on this VOW may be shared with PropTx for auditing and/or legal purposes.",
+      "password record and my activity on this VOW may be shared with PropTx and the Toronto Regional Real Estate Board " +
+      "(TRREB) for auditing and/or legal purposes.",
   },
   {
     // Rule 8.09(g): the Association's ownership, naming TRREB and PropTx (beyond Appendix

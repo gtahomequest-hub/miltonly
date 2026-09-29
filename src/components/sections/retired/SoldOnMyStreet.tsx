@@ -197,7 +197,7 @@ export default function SoldOnMyStreet() {
             </div>
             <div>
               <p className="text-[18px] font-extrabold text-[#f59e0b]">💯 100%</p>
-              <p className="text-[11px] text-[#94a3b8] leading-tight mt-1">TREB-verified data</p>
+              <p className="text-[11px] text-[#94a3b8] leading-tight mt-1">MLS®-verified data</p>
             </div>
             <div>
               <p className="text-[18px] font-extrabold text-[#f59e0b]">📅 Daily</p>
@@ -213,7 +213,7 @@ export default function SoldOnMyStreet() {
               <li>✅ Free CMA from Aamir — what your home is worth today</li>
             </ul>
             <p className="mt-3 text-[10px] text-[#64748b] leading-relaxed">
-              🛡️ TREB VOW compliant. 🔒 items need a free verified account; streets with too few recent sales stay
+              🛡️ MLS® VOW compliant. 🔒 items need a free verified account; streets with too few recent sales stay
               suppressed for seller privacy. Per-address detail provided privately by a licensed agent
               (Aamir Yaqoob, RE/MAX).
             </p>
@@ -277,7 +277,7 @@ export default function SoldOnMyStreet() {
                 <div className="mb-5">
                   <p className="text-[13px] text-[#94a3b8] leading-relaxed mb-4">
                     {gate === "signin"
-                      ? "Closed sale figures are TREB VOW data. They're available to verified members only — free to create, takes a minute."
+                      ? "Closed sale figures are MLS® VOW data. They're available to verified members only — free to create, takes a minute."
                       : "One more step: accept the VOW terms on your account and street-level sold figures unlock."}
                   </p>
                   <a

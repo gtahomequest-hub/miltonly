@@ -36,7 +36,7 @@ export function generateMetadata({
 }): Metadata {
   const base = genMeta({
     title: `${config.CITY_NAME} Homes For Sale & Real Estate`,
-    description: `Browse ${config.CITY_NAME} ${config.CITY_PROVINCE} homes for sale. View listing photos, property details, and neighbourhood data. Live TREB MLS® data updated daily.`,
+    description: `Browse ${config.CITY_NAME} ${config.CITY_PROVINCE} homes for sale. View listing photos, property details, and neighbourhood data. Live PropTx MLS® data, updated daily.`,
     // Every filtered/sorted variant canonicalises to the clean base — the params are a UI
     // affordance, not a distinct page.
     canonical: `${config.SITE_URL}/listings`,

@@ -27,7 +27,7 @@ export default async function FreeholdVsCondoPage() {
   // Source label comes off the live seam (the freehold side's market source);
   // falls back to a static label if the seam returns a shell.
   const source =
-    data.sideA?.commentary.source ?? "TREB / PropTx MLS® sold data, last 12 months · Milton";
+    data.sideA?.commentary.source ?? "PropTx MLS® sold data, last 12 months · Milton";
 
   // Resolve the {GAP} token in the FAQ answers so the FAQPage JSON-LD matches the
   // rendered page (Google rejects structured data that diverges from visible text).

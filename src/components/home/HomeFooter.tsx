@@ -20,7 +20,8 @@ import { FooterSearch } from './FooterSearch';
 import { BriefSignup } from '../nav/BriefSignup';
 import './footer.css';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
-import { VOW_NOTICES } from "@/lib/vowNotice";
+import { VOW_NOTICES, MLS_COPYRIGHT_NOTICE } from "@/lib/vowNotice";
+import { REGISTRANT_BROKERAGE_LINE, REGISTRANT_FULL_LINE, REGISTRANT_NAME_LINE } from "@/lib/compliance/registrant";
 
 interface Props {
   footer: FooterData;
@@ -33,6 +34,13 @@ export function HomeFooter({ footer, brand, context }: Props) {
   return (
     <footer className="m-footer">
       <div className="m-wrap">
+        {/* THE FOOTER LEADS WITH THE MEMBER (MC-047, the homesly.ca audit, finding A1): the first
+            thing in it is the registrant and the brokerage, by their registered names. */}
+        <p className="m-fmember" data-footer-member>
+          <strong>{REGISTRANT_NAME_LINE}</strong>
+          <span aria-hidden="true"> · </span>
+          <span>{REGISTRANT_BROKERAGE_LINE}</span>
+        </p>
         <div className="m-ftop">
           <div className="m-fbrand">
             <div className="m-logo">Miltonly</div>
@@ -113,15 +121,22 @@ export function HomeFooter({ footer, brand, context }: Props) {
         </div>
 
         <div className="m-compliance">
-          RECO / TREB / VOW compliance disclosures · IDX #{brand.idx} · VOW #{brand.vow} · MLS® data
+          {/* The full line (MC-047): the header strip names the registrant and the brokerage;
+              the footer adds the phone, which is also the 8.12 way to ask about any property
+              the site shows. */}
+          Questions about any property on this site: <span data-registrant-full>{REGISTRANT_FULL_LINE}</span>.
+          {" "}
+          RECO / TRREB / VOW compliance disclosures · IDX #{brand.idx} · VOW #{brand.vow} · MLS® data
           displayed under the terms of the applicable feed agreements.
           {" "}
-          {/* PropTx's consumer notice, verbatim (VOW Best Practices item 5; MC-036). The footer is
+          {/* PropTx's consumer notice, verbatim (VOW Best Practices item 22; MC-036). The footer is
               the one element on every page type, so this is the one place the sentence cannot be
               missing from a surface that shows VOW data. */}
           <span data-vow-notice>{VOW_NOTICES}</span>
           {" "}
-          Information deemed reliable but not guaranteed. © Miltonly.
+          {/* Item 31 (MLS® Rules 8.07). PropTx publishes no text; this is the line Aamir chose, the
+              year computed (MC-047). */}
+          <span data-copyright>{MLS_COPYRIGHT_NOTICE()}</span> © {new Date().getFullYear()} Miltonly.
           {" "}
           {/* Required by the Open Government Licence – Milton wherever its data is published.
               Map pins, street positions, park and school locations all derive from it. */}

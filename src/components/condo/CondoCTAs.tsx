@@ -1,7 +1,8 @@
 "use client";
-// Build B — per-building conversion (platform-branded to Miltonly, not to an agent personally).
+// Build B: per-building conversion. The party is the Member, Aamir Yaqoob, never "Miltonly" (MC-047,
+// TRREB's audit of homesly.ca: a VOW is branded to the registrant, not the platform).
 // Two CTAs, both on every building page (thin buildings too): "Get alerts for this building"
-// (low-friction email capture) and "Contact Miltonly about this building" (direct). Both POST to
+// (low-friction email capture) and "Contact Aamir about this building" (direct). Both POST to
 // the EXISTING lead ingress (/api/leads/create). They capture the VISITOR's own info only — no
 // building/unit data is exposed. Renders an inline card + a sticky bottom bar.
 //
@@ -10,6 +11,10 @@
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { ALERT_FINE_PRINT, REPLY_FINE_PRINT } from "@/lib/lead/finePrint";
+import { config } from "@/lib/config";
+
+const AGENT = config.realtor.name;
+const AGENT_FIRST = AGENT.split(" ")[0];
 
 type Panel = "none" | "alert" | "contact";
 type Status = "idle" | "submitting" | "ok" | "error";
@@ -53,16 +58,16 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
       <section className="cb-block cb-cta-wrap" id="cb-cta">
         <div className="c-wrap">
           <div className="cb-cta">
-            <div className="cb-cta-eyebrow">Miltonly · {buildingName}</div>
+            <div className="cb-cta-eyebrow">{AGENT} · {buildingName}</div>
             <h2 className="cb-cta-h">Two ways to stay ahead of this building.</h2>
 
             {status === "ok" ? (
-              <p className="cb-cta-done">Done — you’re on the list. Miltonly will be in touch about {buildingName}.</p>
+              <p className="cb-cta-done">Done. You’re on the list. {AGENT} will be in touch about {buildingName}.</p>
             ) : (
               <>
                 <div className="cb-cta-btns">
                   <button type="button" className={`cb-cta-btn cb-cta-primary${panel === "alert" ? " is-open" : ""}`} onClick={() => open("alert")}>Get alerts for this building</button>
-                  <button type="button" className={`cb-cta-btn cb-cta-ghost${panel === "contact" ? " is-open" : ""}`} onClick={() => open("contact")}>Contact Miltonly about this building</button>
+                  <button type="button" className={`cb-cta-btn cb-cta-ghost${panel === "contact" ? " is-open" : ""}`} onClick={() => open("contact")}>Contact {AGENT_FIRST} about this building</button>
                 </div>
 
                 {panel === "alert" && (
@@ -86,7 +91,7 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
 
                 {panel === "contact" && (
                   <form className="cb-cta-form" onSubmit={submitContact}>
-                    <div className="cb-cta-formhead"><strong>Ask Miltonly about {buildingName}.</strong> Pricing, availability, or a specific unit type — we’ll get back to you.</div>
+                    <div className="cb-cta-formhead"><strong>Ask {AGENT_FIRST} about {buildingName}.</strong> Pricing, availability, or a specific unit type: {AGENT_FIRST} will get back to you.</div>
                     <div className="cb-cta-grid">
                       <input type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} aria-label="Your name" />
                       <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" />
@@ -101,7 +106,7 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
                           <input {...honeypotInputProps} type="text" value={honey} onChange={(e) => setHoney(e.target.value)} />
                         </label>
                       </div>
-                      <button type="submit" disabled={status === "submitting" || (!email && !phone)}>{status === "submitting" ? "Sending…" : "Send to Miltonly"}</button>
+                      <button type="submit" disabled={status === "submitting" || (!email && !phone)}>{status === "submitting" ? "Sending…" : `Send to ${AGENT_FIRST}`}</button>
                     </div>
                     {status === "error" && <div className="cb-cta-err">Something went wrong — please try again.</div>}
                     <div className="cb-cta-fine">{REPLY_FINE_PRINT}</div>
@@ -118,7 +123,7 @@ export default function CondoCTAs({ buildingName, neighbourhood, thin }: { build
         <span className="cb-sticky-name">{buildingName}</span>
         <div className="cb-sticky-btns">
           <button type="button" className="cb-sticky-b cb-sticky-primary" onClick={() => open("alert")}>Get alerts</button>
-          <button type="button" className="cb-sticky-b cb-sticky-ghost" onClick={() => open("contact")}>Contact Miltonly</button>
+          <button type="button" className="cb-sticky-b cb-sticky-ghost" onClick={() => open("contact")}>Contact {AGENT_FIRST}</button>
         </div>
       </div>
     </>

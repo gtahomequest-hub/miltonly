@@ -476,7 +476,7 @@ export const FREEHOLD_CONFIG: TenureConfig = {
     buttonLabel: "Get my home value",
     href: "/sell",
   },
-  marketSourceLabel: "TREB / PropTx MLS® sold data, last 12 months · Milton",
+  marketSourceLabel: "PropTx MLS® sold data, last 12 months · Milton",
 };
 
 // ---------------------------------------------------------------------------
@@ -569,7 +569,7 @@ export const CONDO_CONFIG: TenureConfig = {
     buttonLabel: "Get my condo's value",
     href: "/sell",
   },
-  marketSourceLabel: "TREB / PropTx MLS® sold data, last 12 months · Milton",
+  marketSourceLabel: "PropTx MLS® sold data, last 12 months · Milton",
 };
 
 // ---------------------------------------------------------------------------
@@ -643,5 +643,5 @@ export const POTL_CONFIG: TenureConfig = {
     buttonLabel: "Get my home value",
     href: "/sell",
   },
-  marketSourceLabel: "TREB / PropTx MLS® · Milton",
+  marketSourceLabel: "PropTx MLS® · Milton",
 };

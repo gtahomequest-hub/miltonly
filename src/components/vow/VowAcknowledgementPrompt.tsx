@@ -430,7 +430,7 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
       </button>
 
       <p className="vc-fine">
-        Source: TREB MLS<sup>®</sup> VOW. Your agreement is recorded with the text shown, its version, a timestamp, your IP
+        Source: PropTx MLS<sup>®</sup> System, VOW. Your agreement is recorded with the text shown, its version, a timestamp, your IP
         address and browser, as the VOW rules require. Registration records are kept for at least 180 days after a
         password expires. Your activity on this VOW is logged and may be shared with PropTx for auditing.
       </p>

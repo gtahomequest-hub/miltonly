@@ -17,13 +17,24 @@ export default function PrivacyPage() {
         <Link href="/" className="text-[13px] text-[#6b6f6a] hover:text-[#073126]">← Back to {config.SITE_NAME}</Link>
 
         <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Privacy Policy</h1>
-        <p className="text-[13px] text-[#6b6f6a] mb-8">Last updated: September 21, 2026</p>
+        <p className="text-[13px] text-[#6b6f6a] mb-8">Last updated: September 29, 2026</p>
 
         <div className="prose prose-slate max-w-none space-y-6 text-[15px] leading-relaxed">
+          {/* THE POLICY OPENS WITH APPENDIX B(c)(ix), IN BOLD (MC-047, TRREB's audit of homesly.ca,
+              finding A5): every VOW's privacy policy boldly informs of, and obtains consent to, the
+              collection, use and disclosure, including that Personal Information may be shared with
+              PropTx for auditing and/or legal purposes. It names TRREB beside PropTx. */}
+          <p className="font-bold" data-privacy-proptx-all>
+            Personal information you provide on this site may be collected, used and disclosed as this policy
+            describes, including that it may be shared with PropTx Innovations Inc. (PropTx) and the Toronto Regional
+            Real Estate Board (TRREB) for auditing and/or legal purposes. By using this site and by registering, you
+            consent to this.
+          </p>
           <p>
-            {config.SITE_DOMAIN} (&quot;we&quot;, &quot;us&quot;, or &quot;{config.SITE_NAME}&quot;) is operated by {config.realtor.name}, {config.realtor.title} at
-            {" "}{config.brokerage.name}. We take your privacy seriously and comply with Canada&apos;s Personal
-            Information Protection and Electronic Documents Act (PIPEDA) and applicable {config.CITY_PROVINCE} legislation.
+            {config.SITE_DOMAIN} is operated by {config.realtor.name}, {config.realtor.title},{" "}
+            {config.brokerage.name} (&quot;we&quot; or &quot;us&quot;). We take your privacy seriously and comply with
+            Canada&apos;s Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable{" "}
+            {config.CITY_PROVINCE} legislation.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">What we collect</h2>

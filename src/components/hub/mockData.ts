@@ -41,7 +41,7 @@ export const mockHubUrban: HubData = {
       'Over the trailing year Dempsey has traded around $1,150,000 \u2014 a premium to the Milton-wide $1,090,000, reflecting its detached-heavy stock and central position. Activity stays brisk, with homes moving a few days faster than the city median.',
       'The pattern points to a neighbourhood where established demand outpaces a constrained supply of larger lots.',
     ],
-    source: 'Grounded in trailing-12-month TREB sold data \u00b7 updated continuously',
+    source: 'Grounded in trailing-12-month PropTx MLS® sold data \u00b7 updated continuously',
   },
   streets: [
     { name: 'Bronte Street South', slug: 'bronte-street-south', soldCount: 18, typicalPriceRounded: 1_080_000, signal: 'Most active', basis: 'across 18 sales in the last 12 months', hasVideo: false },
@@ -130,7 +130,7 @@ export const mockHubRural: HubData = {
     paragraphs: [
       'Activity in Moffat is too thin over the trailing 12 months to state a meaningful typical price \u2014 a handful of varied rural transactions a year rather than a liquid market. Where numbers would mislead, we stay silent and point to the road-level detail instead.',
     ],
-    source: 'Grounded in trailing-12-month TREB sold data \u00b7 thin-activity rural area',
+    source: 'Grounded in trailing-12-month PropTx MLS® sold data \u00b7 thin-activity rural area',
   },
   streets: [
     { name: 'Fourth Line', slug: 'fourth-line', soldCount: 2, typicalPriceRounded: null, basis: null, hasVideo: false },

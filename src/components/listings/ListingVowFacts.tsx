@@ -76,7 +76,7 @@ export default function ListingVowFacts({ mlsNumber, isRental }: { mlsNumber: st
     const f = resp.facts;
     const rows: Array<[string, string]> = [
       ["Status", statusLine(f)],
-      ["Time on market", formatDays(f.daysOnMarket)],
+      ["Time on market", `${formatDays(f.daysOnMarket)}${f.daysOnMarketCounted ? "*" : ""}`],
       ["Listed", formatDateProse(f.listedAt)],
     ];
     if (f.priorPrice != null && f.priorPrice > 0) {
@@ -97,7 +97,14 @@ export default function ListingVowFacts({ mlsNumber, isRental }: { mlsNumber: st
             </div>
           ))}
         </dl>
-        <p className="mt-3 text-[12px] text-[#6b6f6a]">Shown to you under your VOW acknowledgement. Not for redistribution.</p>
+        {/* MLS® Rule 8.24 (MC-047, A4): what here is ours says so. The price history is what this
+            site saw change on the feed, not an MLS® field; a starred time on market is counted by
+            Miltonly from the list date because the feed carried none. */}
+        <p className="mt-3 text-[12px] text-[#6b6f6a]" data-augmented-label>
+          Added by Miltonly: the price history is what this site observed on the PropTx MLS® feed
+          {f.daysOnMarketCounted ? ", and the starred time on market is counted from the list date" : ""}.
+        </p>
+        <p className="mt-2 text-[12px] text-[#6b6f6a]">Shown to you under your VOW acknowledgement. Not for redistribution.</p>
         <p className="mt-2 text-[11px] text-[#6b6f6a]" data-vow-notice>{VOW_BONA_FIDE_NOTICE}</p>
       </section>
     );

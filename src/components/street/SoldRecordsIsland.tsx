@@ -108,7 +108,7 @@ export function SoldRecordsIsland({ slug, streetName }: Props) {
               fontWeight: 600,
             }}
           >
-            TREB VOW &middot; Registered access
+            MLS® VOW &middot; Registered access
           </div>
           <div
             style={{

@@ -190,7 +190,7 @@ async function main() {
   }
 
   // ── 4. the clauses, read word-for-word against Appendix B(c) (MP-007) ─────────────
-  eq(VOW_TERMS_VERSION, 5, "the terms are version 5");
+  eq(VOW_TERMS_VERSION, 6, "the terms are version 6");
   // Each clause by its operative words, negations included, so a rewording that drops "not"
   // or the object of the clause fails here. MP-007 corrected (iv), (v), (vi), (viii) against
   // the PDF and added the two AI sentences, the Rule 8.09(g) ownership, and account-sharing.
@@ -207,8 +207,9 @@ async function main() {
     ["vi", [/I will not, directly or indirectly, display, post, disseminate, distribute, publish, broadcast, transfer, sell or sublicense any Listing Information to another individual or entity/, /"scraping" \(including "screen scraping" and "database scraping"\), "data mining"/, /For greater certainty, I am prohibited from directly or indirectly providing any Listing Information to any AI system or technology/]],
     ["vii", [/by a mouse click or a tap, is sufficient to acknowledge these terms/, /impose no financial obligation on me/, /do not create a representation agreement/]],
     // (viii) now says "or their duly authorized representatives" (Appendix B(c)(viii)).
-    ["viii", [/I expressly authorize PropTx, and other PropTx Members or their duly authorized representatives, to access this VOW/, /monitoring the display of Members' listings/]],
-    ["ix", [/I have read the privacy policy at miltonly\.com\/privacy/, /I consent to the collection, use and disclosure of my personal information/, /may be shared with PropTx for auditing and\/or legal purposes/]],
+    // (viii) authorizes TRREB, the Association, beside PropTx (v6, MC-047, Rule 8.11).
+    ["viii", [/I expressly authorize PropTx, the Toronto Regional Real Estate Board \(TRREB\), and other PropTx Members or their duly authorized representatives, to access this VOW/, /monitoring the display of Members' listings/]],
+    ["ix", [/I have read the privacy policy at miltonly\.com\/privacy/, /I consent to the collection, use and disclosure of my personal information/, /may be shared with PropTx and the Toronto Regional Real Estate Board \(TRREB\) for auditing and\/or legal purposes/]],
     // Rule 8.09(g), naming TRREB and PropTx (MP-007).
     ["own-g", [/I acknowledge the ownership of, and the validity of the proprietary rights and copyright in, the MLS® Database, the MLS® System, the Listing Information/, /Toronto Regional Real Estate Board \(TRREB\)/, /PropTx Innovations Inc\./]],
     // The account-sharing prohibition (MP-007, VOW Best Practices item 39).
@@ -219,7 +220,7 @@ async function main() {
   // The text is bound to the version: a change to any clause without a bump fails here, so a
   // row that agreed to the old words cannot stay current by accident. Bump VOW_TERMS_VERSION
   // and this hash together.
-  const TEXT_SHA256_AT_VERSION: Record<number, string> = { 5: "3595a8fed7e09573c3c5862b2a6d94218b3d69e4437b7d6ecc812d56d2a990ce" };
+  const TEXT_SHA256_AT_VERSION: Record<number, string> = { 5: "3595a8fed7e09573c3c5862b2a6d94218b3d69e4437b7d6ecc812d56d2a990ce", 6: "aeafbdd2539286552f8de9e2dce7ced0c2fbcc78280412408c0d968d5d0234b8" };
   eq(createHash("sha256").update(VOW_ACKNOWLEDGEMENT_TEXT).digest("hex"), TEXT_SHA256_AT_VERSION[VOW_TERMS_VERSION], `the terms text is the one recorded for version ${VOW_TERMS_VERSION} (a change needs a version bump and a new hash here)`);  for (const [key, patterns] of REQUIRED) {
     const clause = VOW_TERMS_CLAUSES.find((c) => c.key === key);
     ok(!!clause, `clause (${key}) is present`);
@@ -270,6 +271,15 @@ async function main() {
   ok(card.includes("The terms have changed") && card.includes("needsReconsent"), "the card has the re-consent state");
   const privacy = readFileSync("src/app/privacy/page.tsx", "utf8");
   ok(/className="font-bold" data-privacy-proptx/.test(privacy) && /shared with PropTx Innovations Inc\./.test(privacy) && /auditing and\/or legal purposes/.test(privacy), "/privacy boldly says the data may be shared with PropTx for auditing and/or legal purposes");
+  // Appendix B(c)(ix) opens the policy, in bold, naming PropTx and TRREB (MC-047, finding A5)
+  {
+    const body = privacy.slice(privacy.indexOf("<h1"));
+    const start = body.indexOf("<p", body.indexOf("Last updated"));
+    const opening = body.slice(start, body.indexOf("</p>", start)).replace(/\s+/g, " ");
+    ok(/^<p className="font-bold" data-privacy-proptx-all>/.test(opening), "/privacy's first paragraph is the bold Appendix B(c)(ix) statement");
+    ok(opening.includes("may be shared with PropTx Innovations Inc. (PropTx) and the Toronto Regional Real Estate Board (TRREB) for auditing and/or legal purposes"), "the opening names PropTx and TRREB, for auditing and/or legal purposes");
+    ok(opening.includes("collected, used and disclosed") && opening.includes("you consent to this"), "the opening informs of the collection, use and disclosure and obtains consent");
+  }
   ok(privacy.includes("at least 180 days after your password expires"), "/privacy states the 180-day retention");
   const terms = readFileSync("src/app/terms/page.tsx", "utf8");
   ok(terms.includes("expires 90 days") && terms.includes("60 minutes without activity") && terms.includes("registrants may not use the VOW") && terms.includes("logged"), "/terms states the expiry, the timeout, the registrant rule and the log");

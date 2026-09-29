@@ -6,13 +6,14 @@ import Image from "next/image";
 import { Lock } from "lucide-react";
 import { formatPriceFull } from "@/lib/format";
 import { config } from "@/lib/config";
+import RegistrantStrip from "@/components/compliance/RegistrantStrip";
 import ComparisonTable from "./ComparisonTable";
 import UnlockModal from "./UnlockModal";
 import LeadCaptureForm from "@/components/landing/LeadCaptureForm";
 import TrustPillars from "@/components/landing/TrustPillars";
 import StickyMobileBar from "@/components/landing/StickyMobileBar";
 import ListingBrokerage from "@/components/listings/ListingBrokerage";
-import { VOW_NOTICES } from "@/lib/vowNotice";
+import { VOW_NOTICES, MLS_COPYRIGHT_NOTICE } from "@/lib/vowNotice";
 
 const REALTOR_FIRST_NAME = config.realtor.name.split(" ")[0];
 const BROKERAGE_NAME = config.brokerage.name;
@@ -107,6 +108,7 @@ function AdsClientInner({
     <div className="min-h-screen bg-[#07111f] text-[#f8f9fb] font-sans">
       {/* ── SLIM HEADER ── */}
       <header className="sticky top-0 z-50 bg-[#07111f]/95 backdrop-blur border-b border-[#1e3a5f]">
+        <RegistrantStrip />
         <div className="max-w-6xl mx-auto flex items-center justify-between h-[58px] px-4 sm:px-6">
           <Link href="/" className="shrink-0">
             <span className="text-[20px] font-extrabold tracking-[-0.5px]">
@@ -201,7 +203,7 @@ function AdsClientInner({
           <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
             <div>
               <div className="text-[11px] font-bold tracking-wider text-[#f59e0b] uppercase mb-1">
-                Live TREB data ·{" "}
+                Live MLS® data ·{" "}
                 {updatedMinAgo !== null
                   ? `Updated ${updatedMinAgo === 0 ? "just now" : `${updatedMinAgo} min ago`}`
                   : "Updated recently"}
@@ -431,6 +433,8 @@ function AdsClientInner({
       {/* ── SLIM COMPLIANT FOOTER ── */}
       <footer className="bg-[#07111f] border-t border-[#1e3a5f] py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          {/* the Member leads the footer (MC-047, A1) */}
+          <p className="text-center text-[14px] text-[#cbd5e1] mb-4" data-footer-member><strong className="text-white">{config.realtor.name}, {config.realtor.title}</strong> · {config.brokerage.name}</p>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
             <Link href="/" className="shrink-0">
               <span className="text-[17px] font-extrabold">
@@ -446,8 +450,8 @@ function AdsClientInner({
             </nav>
           </div>
           <div className="text-center text-[11px] text-[#64748b] leading-relaxed">
-            © 2026 {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name} · {config.CITY_NAME}, {config.CITY_PROVINCE}<br />
-            <span className="text-[#64748b]/80">MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). <span data-vow-notice>{VOW_NOTICES}</span></span>
+            © {new Date().getFullYear()} {config.SITE_DOMAIN} · {config.realtor.name}, {config.realtor.title} · {config.brokerage.name} · {config.CITY_NAME}, {config.CITY_PROVINCE}<br />
+            <span className="text-[#64748b]/80">MLS® listings displayed courtesy of the Toronto Regional Real Estate Board (TRREB). <span data-vow-notice>{VOW_NOTICES}</span> <span data-copyright>{MLS_COPYRIGHT_NOTICE()}</span></span>
           </div>
         </div>
       </footer>

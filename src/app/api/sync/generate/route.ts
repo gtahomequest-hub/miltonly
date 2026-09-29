@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { makeStreetDecision } from "@/lib/streetDecision";
 import { generateStreetContent } from "@/lib/generateStreet";
 import { streetRegenEnabled, STREET_REGEN_PAUSED_REASON } from "@/lib/streetRegen";
+import { planQueueItem } from "@/lib/streetQueuePlan";
 
 export const maxDuration = 300;
 
@@ -95,46 +96,46 @@ export async function POST(request: NextRequest) {
 
   const toBuild: { streetSlug: string; streetName: string }[] = [];
   let deferred = 0;
-  // REWRITES ARE PAUSED UNLESS STREET_REGEN_ENABLED IS "true" (MC-049, src/lib/streetRegen.ts). A
-  // "regenerate" decision is left in the queue exactly as it is (no status, no attempt, no write)
-  // and named in the response; new pages ("build") are not rewrites and go on under the cap.
-  const regenEnabled = streetRegenEnabled();
-  const regenPaused: string[] = [];
+  // GENERATION IS HELD UNLESS STREET_REGEN_ENABLED IS "true" (MC-049 for rewrites, MC-047 for new
+  // pages; src/lib/streetRegen.ts). A "build" or "regenerate" decision is then left in the queue
+  // exactly as it is (no status, no attempt, no write) and named in the response. Which decision
+  // does what is src/lib/streetQueuePlan.ts, a pure step the prebuild test drives directly.
+  const generationEnabled = streetRegenEnabled();
+  const held: string[] = [];
 
   for (const item of pending) {
     const decision = await makeStreetDecision(item.streetSlug, item.streetName);
-    if (decision === "regenerate" && !regenEnabled) {
-      regenPaused.push(item.streetName);
+    const step = planQueueItem(decision, { generationEnabled, newPageBudget });
+    newPageBudget = step.newPageBudget;
+    const action = step.action;
+    if (action.kind === "held") {
+      held.push(`${item.streetName} (${decision})`);
       continue;
     }
-    if (decision === "build" || decision === "regenerate") {
-      // "build" means makeStreetDecision found no StreetContent row, so it is a new page and
-      // spends budget. "regenerate" touches a page that already exists and does not.
-      if (decision === "build") {
-        if (newPageBudget <= 0) {
-          // LEFT PENDING, deliberately. Not marked done, not marked ineligible - the street is
-          // eligible, it is merely waiting its turn. The next run picks it up with a fresh
-          // budget, and the queue's createdAt ordering means it keeps its place.
-          deferred++;
-          continue;
-        }
-        newPageBudget--;
-      }
-      toBuild.push(item);
-    } else {
-      skipped.push(`${item.streetName} (${decision})`);
-      // UPG-4 Stage 2 Piece 3 (DEF-17 fix): Always transition out of pending
-      // after streetDecision examines the row. Previous logic left skip_current
-      // rows in pending forever, accumulating 230 orphaned rows by 2026-05-04.
-      // skip_current = content is fresh enough; queue's job for this street is done.
-      // skip_low_data = no stats yet; mark ineligible (StreetGeneration cron will
-      // re-evaluate when stats arrive).
-      const newStatus = decision === "skip_low_data" ? "ineligible" : "done";
-      await prisma.streetQueue.update({
-        where: { id: item.id },
-        data: { status: newStatus, processedAt: new Date() },
-      });
+    if (action.kind === "deferred") {
+      // LEFT PENDING, deliberately (DEC-NEW-PAGE-CAP). Not marked done, not marked ineligible - the
+      // street is eligible, it is merely waiting its turn. The next run picks it up with a fresh
+      // budget, and the queue's createdAt ordering means it keeps its place.
+      deferred++;
+      continue;
     }
+    if (action.kind === "generate") {
+      // "build" means makeStreetDecision found no StreetContent row, so it is a new page and
+      // spent budget in the plan. "regenerate" touches a page that already exists and does not.
+      toBuild.push(item);
+      continue;
+    }
+    skipped.push(`${item.streetName} (${decision})`);
+    // UPG-4 Stage 2 Piece 3 (DEF-17 fix): Always transition out of pending
+    // after streetDecision examines the row. Previous logic left skip_current
+    // rows in pending forever, accumulating 230 orphaned rows by 2026-05-04.
+    // skip_current = content is fresh enough; queue's job for this street is done.
+    // skip_low_data = no stats yet; mark ineligible (StreetGeneration cron will
+    // re-evaluate when stats arrive).
+    await prisma.streetQueue.update({
+      where: { id: item.id },
+      data: { status: action.status, processedAt: new Date() },
+    });
   }
 
   for (let i = 0; i < toBuild.length; i += 10) {
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (regenPaused.length) console.log(`[generate] regeneration paused: ${STREET_REGEN_PAUSED_REASON}; ${regenPaused.length} existing page(s) left queued`);
+  if (held.length) console.log(`[generate] generation held: ${STREET_REGEN_PAUSED_REASON}; ${held.length} queued page(s) left as they were`);
 
   return NextResponse.json({
     processed: built.length + failed.length,
@@ -204,8 +205,8 @@ export async function POST(request: NextRequest) {
     newPageCap: { limit: NEW_PAGES_PER_DAY, createdToday, remaining: newPageBudget, deferred },
     // DEC-QUEUE-REEVAL: how many stale "ineligible" verdicts this run re-examined.
     reevaluated: stale.length,
-    // MC-049: the rewrite switch, and the existing pages left queued because it is off.
-    regeneration: { paused: !regenEnabled, leftQueued: regenPaused },
+    // MC-049 and MC-047: the generation switch, and the queued pages left as they were because it is off.
+    generation: { paused: !generationEnabled, held },
     durationMs: Date.now() - start,
   });
 }

@@ -169,7 +169,7 @@ export function CornerWidget({
           <div className="widget-form-header">
             <div>
               <div className="widget-form-title">Private access to {streetName}</div>
-              <div className="widget-form-sub">No spam. One quick message to our team.</div>
+              <div className="widget-form-sub">No spam. One quick message to Aamir.</div>
             </div>
           </div>
           <input

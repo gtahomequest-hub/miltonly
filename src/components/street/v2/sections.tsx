@@ -443,7 +443,7 @@ function TypeCard({ t, streetName }: { t: TypeBlock; streetName: string }) {
         <div className="s-contact-prompt">
           Too few recent {t.displayName.toLowerCase()} sales on record to publish a typical price without identifying a
           home.{' '}
-          <a href={sellHrefFor(streetName)}>Ask the team for a private read →</a>
+          <a href={sellHrefFor(streetName)}>Ask Aamir for a private read →</a>
         </div>
       )}
       {t.chart && (

@@ -6,6 +6,7 @@ import {
   generateBreadcrumbSchema,
 } from "@/lib/schema";
 import { config } from "@/lib/config";
+import { HOME_TITLE } from "@/lib/compliance/registrant";
 import { getHomepageData } from "@/lib/homepageData";
 import { buildMegaLive, getMegaExtras } from "@/lib/megaLive";
 import { getBoardData } from "@/lib/board/boardData";
@@ -20,7 +21,8 @@ import HomePage from "@/components/home/HomePage";
 // suffix costs characters and buys nothing. 39 characters replaces it, and the canonical
 // is now DECLARED for "/" instead of arriving by layout inheritance.
 export const metadata = {
-  title: "Milton Homes for Sale, Street by Street",
+  // It names the Member (MC-047, A1, TRREB's audit of homesly.ca). 54 characters.
+  title: HOME_TITLE,
   alternates: { canonical: config.SITE_URL },
 };
 

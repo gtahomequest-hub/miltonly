@@ -4,7 +4,7 @@ export const homepageFAQs: FAQItem[] = [
   {
     question: "What is the average home price in Milton Ontario?",
     answer:
-      "The average list price for homes in Milton Ontario is approximately $1,125,000 as of 2025, based on live TREB MLS® active listings. Prices vary by neighbourhood and property type — detached homes average higher while condos and townhouses offer more affordable entry points. Registered users get access to detailed market data, including historical transaction records on street and neighbourhood pages.",
+      "The average list price for homes in Milton Ontario is approximately $1,125,000 as of 2025, based on live PropTx MLS® active listings. Prices vary by neighbourhood and property type — detached homes average higher while condos and townhouses offer more affordable entry points. Registered users get access to detailed market data, including historical transaction records on street and neighbourhood pages.",
   },
   {
     question: "What are the best neighbourhoods in Milton Ontario?",
@@ -14,7 +14,7 @@ export const homepageFAQs: FAQItem[] = [
   {
     question: "How long does it take to sell a home in Milton Ontario?",
     answer:
-      "Homes in Milton Ontario sell in an average of 18 days on market based on current TREB data. The spring market (February to April) typically sees the fastest sales and highest prices.",
+      "Homes in Milton Ontario sell in an average of 18 days on market based on current PropTx MLS® data. The spring market (February to April) typically sees the fastest sales and highest prices.",
   },
   {
     question: "Is Milton Ontario a good place to invest in real estate?",

@@ -35,7 +35,7 @@ export default function SellerSection() {
           </div>
 
           <p className="text-white/30 text-sm mt-6">
-            Free. Based on real TREB sold data. No obligation.
+            Free. Based on real MLS® sold data. No obligation.
           </p>
         </div>
       </div>

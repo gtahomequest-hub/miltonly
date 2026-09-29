@@ -8,6 +8,7 @@ import { resolveHeroHref } from '@/lib/heroSearchClient';
 import { BriefSignup } from './BriefSignup';
 import { LandlordSignup } from './LandlordSignup';
 import ListingBrokerage from '@/components/listings/ListingBrokerage';
+import { REGISTRANT_BROKERAGE_LINE, REGISTRANT_NAME_LINE } from '@/lib/compliance/registrant';
 import type { LeadSegment, MegaItemContent, MegaLive, MegaStrip, MenuKey, NavContext } from './megaTypes';
 
 type Variant = 'home' | 'page';
@@ -666,6 +667,7 @@ export function SiteNav({ variant = 'page', live, context }: { variant?: Variant
     m.key === 'sell' && item.key === 'worth' ? { ...item, href: ctaHref } : m.key === 'rent' && item.key === 'now' ? { ...item, href: rentHref } : item;
 
   return (
+    <>
     <nav
       ref={navRef}
       className={isHome ? 'm-nav' : 'site-nav'}
@@ -680,6 +682,15 @@ export function SiteNav({ variant = 'page', live, context }: { variant?: Variant
       <a className="sn-skip" href="#after-nav">
         Skip to content
       </a>
+      {/* THE REGISTRANT STRIP (MC-047, PropTx item 10). TRREB's auditor: a VOW "must be branded
+          to you, not just your Real Estate company". So the header of every page carries the
+          registrant and the brokerage, by their registered names, above the bar. The spacer
+          after this nav keeps every page's 66px clearance true (see site-nav.css). */}
+      <div className="sn-reg" data-registrant>
+        <span className="sn-reg-name" data-registrant-name>{REGISTRANT_NAME_LINE}</span>
+        <span className="sn-reg-sep" aria-hidden="true">·</span>
+        <span className="sn-reg-brokerage" data-registrant-brokerage>{REGISTRANT_BROKERAGE_LINE}</span>
+      </div>
       <div className="m-wrap">
         <a className="m-logo" href="/" aria-label="Miltonly home">
           Milton<b>ly</b>
@@ -897,6 +908,10 @@ export function SiteNav({ variant = 'page', live, context }: { variant?: Variant
       </div>
       <span id="after-nav" className="sn-skip-target" tabIndex={-1} />
     </nav>
+    {/* In flow, the strip's height: every page clears the 66px bar with its own padding, so
+        this pushes the page down by exactly what the strip adds to the fixed nav. */}
+    <div className="sn-strip-space" aria-hidden="true" />
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { config } from "./config";
+import { OG_SITE_NAME } from "./compliance/registrant";
 
 const DEFAULT_OG_IMAGE = `${config.SITE_URL}/og-image.jpg`;
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
@@ -38,7 +39,7 @@ export function generateMetadata({
     openGraph: {
       type: "website",
       locale: "en_CA",
-      siteName: config.SITE_NAME,
+      siteName: OG_SITE_NAME,
       title: title
         ? `${title} | ${config.SITE_NAME}.com`
         : `${REAL_ESTATE_LABEL} | ${config.SITE_NAME}.com`,

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { config } from "@/lib/config";
+import RegistrantStrip from "@/components/compliance/RegistrantStrip";
 
 export const metadata: Metadata = {
   title: `${config.SITE_NAME}: Launching Soon`,
@@ -10,6 +11,8 @@ export const metadata: Metadata = {
 
 export default function ComingSoonPage() {
   return (
+    <>
+    <div className="bg-[#0A1628]"><RegistrantStrip /></div>
     <main className="min-h-screen bg-[#0A1628] text-white flex flex-col items-center justify-center px-6 py-20">
       <div className="max-w-xl w-full text-center">
         {/* Logo / Wordmark */}
@@ -56,5 +59,6 @@ export default function ComingSoonPage() {
 
       </div>
     </main>
+    </>
   );
 }

@@ -31,7 +31,7 @@ export const revalidate = 86400;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Condo Buildings: Prices, Units & Market Data`,
-  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} condo building with a published profile. Unit counts, active listings, and live sale prices by building. Updated daily from TREB.`,
+  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} condo building with a published profile. Unit counts, active listings, and live sale prices by building. Updated daily from the PropTx MLS® System.`,
   canonical: `${config.SITE_URL}/condos`,
 });
 
@@ -140,7 +140,7 @@ export default async function CondosIndexPage() {
           </h1>
           <p className="dir-sub">
             {cards.length} {config.CITY_NAME} condo buildings with published profiles · Live sale
-            prices &amp; unit counts · Updated daily from TREB MLS®
+            prices &amp; unit counts · Updated daily from PropTx MLS®
           </p>
         </div>
       </section>

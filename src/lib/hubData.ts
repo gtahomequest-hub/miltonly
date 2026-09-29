@@ -357,7 +357,7 @@ export async function getHubData(slug: string): Promise<HubData | null> {
       : stats.typicalPrice === null
         ? ["Resale activity here is thin, so prices are held back. The street pages show what has actually traded."]
         : [`Homes here have traded near ${fullPrice(stats.typicalPrice)} over the trailing twelve months.`],
-    source: "Grounded in trailing 12-month TREB sold data, recomputed on every request",
+    source: "Grounded in trailing 12-month PropTx MLS® sold data, recomputed on every request",
   };
 
   let faqs: HubFaq[] = [];

@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
-        source: "TREB MLS®",
+        source: "PropTx MLS®",
         type,
         records: rows,
         count: rows.length,
@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("[api/sold] read failed, serving graceful empty:", err);
     return NextResponse.json({
-      source: "TREB MLS®",
+      source: "PropTx MLS®",
       records: [],
       unavailable: true,
       message: "Sold data is temporarily unavailable.",

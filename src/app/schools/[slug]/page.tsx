@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // MC-020: the title and description say what the page holds, homes and prices near the
     // school, and nothing about which homes the school admits. The site publishes no catchment.
     title: `${school.name}, ${config.CITY_NAME}: Homes and Prices Nearby`,
-    description: `Homes for sale near ${school.name} in ${school.neighbourhood}, ${config.CITY_NAME} ${config.CITY_PROVINCE}: live TREB listings, typical asking prices and nearby streets. ${school.grades} · ${school.boardName}.`,
+    description: `Homes for sale near ${school.name} in ${school.neighbourhood}, ${config.CITY_NAME} ${config.CITY_PROVINCE}: live MLS® listings, typical asking prices and nearby streets. ${school.grades} · ${school.boardName}.`,
     alternates: { canonical: `${config.SITE_URL}/schools/${params.slug}` },
     keywords: [
       `homes near ${school.name}`,

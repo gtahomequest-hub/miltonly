@@ -279,7 +279,7 @@
 /* ═══ FILTER RAIL ═══ */
 .listings-v2 .lv-rail {
   position: sticky;
-  top: 66px; /* below fixed SiteNav */
+  top: calc(66px + var(--sn-strip-h, 0px)); /* below fixed SiteNav and its registrant strip (MC-047) */
   z-index: 40;
   background: rgba(255, 253, 250, 0.94);
   backdrop-filter: blur(10px);
@@ -1044,7 +1044,7 @@
 }
 .listings-v2 .lv-mapcol {
   position: sticky;
-  top: 132px; /* nav 66 + rail */
+  top: calc(132px + var(--sn-strip-h, 0px)); /* nav 66 + registrant strip + rail */
 }
 .listings-v2 .lv-split .lv-grid {
   grid-template-columns: repeat(2, 1fr);

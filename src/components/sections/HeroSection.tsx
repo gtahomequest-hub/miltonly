@@ -143,7 +143,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
 
         {/* SUBTITLE */}
         <p className="text-[15px] text-white/75 leading-[1.6] mb-6 max-w-[480px]">
-          Find, price &amp; compare any home in {config.CITY_NAME} — live TREB data, updated daily.
+          Find, price &amp; compare any home in {config.CITY_NAME} — live MLS® data, updated daily.
           The only site built exclusively for {config.CITY_NAME}.
         </p>
 
@@ -407,7 +407,7 @@ export default function HeroSection({ stats, typeStats, trendingStreets }: Props
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-bold text-[#f8f9fb] mb-[3px]">What&apos;s my home worth?</p>
-            <p className="text-[11px] text-[rgba(248,249,251,0.6)]">30 sec · real TREB data · free estimate</p>
+            <p className="text-[11px] text-[rgba(248,249,251,0.6)]">30 sec · real MLS® data · free estimate</p>
           </div>
           <Link href="/sell" className="bg-[#f59e0b] text-[#07111f] text-[12px] font-extrabold px-4 py-2.5 rounded-lg shrink-0 hover:bg-[#eab308] transition-colors">
             Get estimate →

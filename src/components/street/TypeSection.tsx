@@ -69,7 +69,7 @@ export function TypeSection(props: TypeSectionProps) {
               <div className="no-data-card">
                 Market data for {displayName.toLowerCase()} on {streetName} is limited,
                 with fewer than five closed transactions in the window.
-                Contact our team for a private read on this segment.
+                Contact Aamir Yaqoob for a private read on this segment.
               </div>
             ) : noDataMessage ? (
               <div className="no-data-card">{noDataMessage}</div>

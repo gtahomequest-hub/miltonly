@@ -13,7 +13,7 @@ import Link from 'next/link';
 import type { ListingCardData } from './types';
 import { fullPrice, titleCase, cleanHood, TYPE_LABELS } from './format';
 import ListingBrokerage from '@/components/listings/ListingBrokerage';
-import { BedIcon, BathIcon, SqftIcon, CarIcon, HeartIcon, CameraIcon, PinIcon, TourIcon } from './icons';
+import { BedIcon, BathIcon, CarIcon, HeartIcon, CameraIcon, PinIcon, TourIcon } from './icons';
 
 export interface ListingCardProps {
   listing: ListingCardData;
@@ -94,13 +94,9 @@ export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardPr
             <BathIcon />
             {l.bathrooms} ba
           </span>
-          {l.sqft != null && (
-            <span>
-              <SqftIcon />
-              {l.sqft.toLocaleString()} sqft
-            </span>
-          )}
-          {l.sqft == null && l.parking > 0 && (
+          {/* No square footage: the column is the midpoint of the listing's range, computed on
+              sync, and a card has no room to say so (MC-047, A4). */}
+          {l.parking > 0 && (
             <span>
               <CarIcon />
               {l.parking} pkg

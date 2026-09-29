@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import ListingDetailClient from "./ListingDetailClient";
 import SiteChrome from "@/components/nav/SiteChrome";
+import { contactEmail } from "@/lib/compliance/contact";
 import { getLeaseMarket, RENT_TYPE_LABEL, type RentType } from "@/lib/rentSignals";
 import { formatCount, formatDateProse, formatRent } from "@/lib/figureFormat";
 import type { ListingRentFigure } from "./ListingExtras";
@@ -128,7 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
     ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`;
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`;
 
   return {
     title,
@@ -244,7 +245,6 @@ export default async function ListingDetailPage({ params }: Props) {
     },
     numberOfRooms: listing.bedrooms,
     numberOfBathroomsTotal: listing.bathrooms,
-    floorSize: listing.sqft ? { "@type": "QuantitativeValue", value: listing.sqft, unitCode: "FTK" } : undefined,
     image: listing.photos[0] || undefined,
     // SCHEMA IS A PUBLISHED SURFACE. This emitted the legacy feed coordinate — 0 on every row —
     // so the structured data told Google that every home in Milton is in the Gulf of Guinea.
@@ -269,7 +269,7 @@ export default async function ListingDetailPage({ params }: Props) {
     } : undefined,
     availability: "https://schema.org/InStock",
     // our own office by its registered name (MC-043); every other office as the feed names it
-    seller: { "@type": "Organization", name: isOurBrokerage(listing.listOfficeName) ? config.brokerage.name : listing.listOfficeName || "TREB MLS" },
+    seller: { "@type": "Organization", name: isOurBrokerage(listing.listOfficeName) ? config.brokerage.name : listing.listOfficeName || "PropTx MLS® System" },
   };
   const crumbs: Array<{ name: string; item: string }> = [
     { name: config.SITE_NAME, item: config.SITE_URL },
@@ -317,6 +317,7 @@ export default async function ListingDetailPage({ params }: Props) {
           hoodName,
           rent: rentFigure,
           schools: schoolsLite,
+          contactEmail: contactEmail(),
         }}
         vowFacts={<ListingVowFacts mlsNumber={listing.mlsNumber} isRental={isRental} />}
       />

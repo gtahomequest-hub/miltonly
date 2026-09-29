@@ -24,7 +24,7 @@ export const metadata = genMeta({
   // MC-020: no zone or catchment language anywhere on this page. Distance to a school is a fact
   // the site can measure; which homes a school admits is the board's, and the site does not say.
   title: `${config.CITY_NAME} Schools: Homes and Prices Nearby`,
-  description: `Homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s ${schools.length} public and Catholic schools. Live TREB listings by school, Fraser scores and neighbourhood data.`,
+  description: `Homes for sale near ${config.CITY_NAME} ${config.CITY_PROVINCE}'s ${schools.length} public and Catholic schools. Live MLS® listings by school, Fraser scores and neighbourhood data.`,
   canonical: `${config.SITE_URL}/schools`,
   keywords: [
     `${config.CITY_NAME} ${config.CITY_PROVINCE} schools real estate`,
@@ -127,7 +127,7 @@ export default async function SchoolsPage() {
         eyebrow="Schools and the homes near them"
         title={`${config.CITY_NAME} schools`}
         titleEm="& real estate"
-        subtitle={`Find homes for sale near ${config.CITY_NAME}'s ${schools.length} public and Catholic schools.${totalActive > 0 ? ` ${totalActive} active listings across ${neighbourhoods.length} school neighbourhoods, updated daily from TREB.` : ""}`}
+        subtitle={`Find homes for sale near ${config.CITY_NAME}'s ${schools.length} public and Catholic schools.${totalActive > 0 ? ` ${totalActive} active listings across ${neighbourhoods.length} school neighbourhoods, updated daily from PropTx MLS®.` : ""}`}
         stats={[
           { value: String(publicElem), label: "Public elementary" },
           { value: String(publicSec), label: "Public secondary" },

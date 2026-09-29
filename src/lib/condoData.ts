@@ -114,10 +114,10 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
       : [];
   const listings: CondoListing[] = liveRows.map((l) => {
     const lease = l.transactionType === "For Lease";
-    const sqft = l.sqft ? `${l.sqft.toLocaleString("en-CA")} sqft` : null;
+    // no square footage: Listing.sqft is the midpoint of the listing's range, not an MLS® field (MC-047, A4)
     return {
-      title: `${l.bedrooms} bed${sqft ? ` · ${sqft}` : ""}`,
-      meta: [`${l.bedrooms} bed`, `${l.bathrooms} bath`, sqft].filter(Boolean).join(" · "),
+      title: `${l.bedrooms} bed`,
+      meta: [`${l.bedrooms} bed`, `${l.bathrooms} bath`].join(" · "),
       price: lease ? `$${l.price.toLocaleString("en-CA")}/mo` : `$${l.price.toLocaleString("en-CA")}`,
       listOfficeName: l.listOfficeName,
       tenure: lease ? "lease" : "sale",

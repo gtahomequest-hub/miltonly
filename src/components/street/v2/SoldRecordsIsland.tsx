@@ -113,7 +113,7 @@ export function StreetSoldRecords({ slug, streetName }: { slug: string; streetNa
           </tbody>
         </table>
         <div className="s-gate">
-          <div className="s-gate-k">TREB VOW · Registered access</div>
+          <div className="s-gate-k">MLS® VOW · Registered access</div>
           {/* a bounded claim (MC-036, item 10): the table is the last 90 days, twenty rows at most */}
           <div className="s-gate-h">Recent closed sales on {streetName}, last 90 days</div>
           <div className="s-gate-p">Free with a verified email, exact sold prices, days on market, and sold-to-ask ratios.</div>

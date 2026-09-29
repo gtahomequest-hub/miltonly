@@ -50,7 +50,7 @@ export default function OGImage() {
             marginTop: "40px",
           }}
         >
-          {["Street Intelligence", "School Zones", "GO Commute", "Live TREB Data"].map(
+          {["Street Intelligence", "School Zones", "GO Commute", "Live MLS® Data"].map(
             (tag) => (
               <div
                 key={tag}

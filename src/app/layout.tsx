@@ -8,11 +8,12 @@ import ChromeGate from "@/components/ChromeGate";
 import AttributionCapture from "@/components/AttributionCapture";
 import VercelAnalytics from "@/components/VercelAnalytics";
 import { config } from "@/lib/config";
+import { OG_SITE_NAME } from "@/lib/compliance/registrant";
 import "./globals.css";
 
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
 const ENCYCLOPEDIA_LABEL = `${config.CITY_NAME} Real Estate Encyclopedia`;
-const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL}. Built exclusively for ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live TREB listings.`;
+const OG_DESCRIPTION = `${ENCYCLOPEDIA_LABEL}. Built exclusively for ${config.CITY_NAME}, ${config.CITY_PROVINCE}. Street intelligence, schools nearby, GO commute data, and live MLS® listings.`;
 
 // FONTS (MH-005, MA-001 change 3). Geist Sans and Geist Mono, two 66 KB `.woff` files, were
 // preloaded on every route and used by nothing the site designs in: Tailwind's `font-sans`
@@ -91,7 +92,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_CA",
-    siteName: config.SITE_NAME,
+    siteName: OG_SITE_NAME,
     title: `${ENCYCLOPEDIA_LABEL} | ${config.SITE_NAME}`,
     description: OG_DESCRIPTION,
     url: config.SITE_URL,

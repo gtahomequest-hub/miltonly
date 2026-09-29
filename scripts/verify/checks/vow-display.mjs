@@ -14,6 +14,9 @@
 //      page's inventory.
 //   3. THE BONA FIDE NOTICE (s6.3(k)), verbatim, on every page type: a street page, a listing
 //      page, /listings, /rentals, /sold, a hub, the homepage, a condo page, /saved.
+//      MC-047 adds, over more page types: the registrant and the brokerage in the header (the
+//      data-registrant strip, above the page's first <h1>), the TRREB and PropTx copyright line
+//      with this year, and no "TREB" (the board's pre-2018 name) in the visible text or the meta.
 //   4. THE 2003 FLOOR (item 38) and the 24-HOUR REFRESH (s6.3(h)): no date in DB1, DB2 or DB3
 //      before 2003-01-01; the newest syncedAt on an active DB1 row within 26 hours (the feed
 //      sync runs daily at 10:00Z).
@@ -24,6 +27,11 @@ import { loadEnv, requireEnv } from '../lib/env.mjs';
 export const BONA_FIDE = 'The information provided herein must only be used by consumers that have a bona fide interest in the purchase, sale or lease of real estate and may not be used for any commercial purpose or any other purpose.';
 // the second half of item 22 (MLS Rules 8.25), rendered beside the first everywhere it appears (MC-037)
 export const RELIABILITY = 'The information is deemed reliable but is not guaranteed accurate by PropTx.';
+// item 10, as TRREB's auditor read it on 2026-09-28: the header names the registrant and the brokerage (MC-047)
+export const REGISTRANT = 'Aamir Yaqoob, Sales Representative';
+export const BROKERAGE = 'RE/MAX Realty Specialists Inc., Brokerage';
+// item 31 (MLS Rules 8.07), the year computed
+const COPYRIGHT_RE = /MLS® listing data © (\d{4}) Toronto Regional Real Estate Board \(TRREB\) and PropTx Innovations Inc\. All rights reserved\./;
 const RESULT_CAP = 100;
 const REFRESH_HOURS = 26;
 
@@ -144,6 +152,37 @@ export default {
       if (!t.includes(BONA_FIDE)) missing.push(`${name} ${url}`);
       if (!t.includes(RELIABILITY)) missingReliability.push(`${name} ${url}`);
     }
+    // MC-047: the header's registrant strip, the copyright line and no TREB-era wording, on every
+    // page type above and the rest of the site's templates
+    const school = ((await get(`${base}/sitemap.xml`)).body.match(/<loc>[^<]*(\/schools\/[a-z0-9-]+)<\/loc>/) || [])[1];
+    const mosque = ((await get(`${base}/sitemap.xml`)).body.match(/<loc>[^<]*(\/mosques\/[a-z0-9-]+)<\/loc>/) || [])[1];
+    const guide = ((await get(`${base}/sitemap.xml`)).body.match(/<loc>[^<]*(\/guides\/[a-z0-9-]+)<\/loc>/) || [])[1];
+    const brandTypes = [
+      ...pageTypes,
+      ['streets index', '/streets'], ['neighbourhoods index', '/neighbourhoods'], ['condos index', '/condos'], ['school', school || null], ['schools index', '/schools'],
+      ['mosque', mosque || null], ['guide', guide || null], ['guides index', '/guides'], ['market watch', '/market-watch'], ['compare', '/compare/freehold-vs-condo'],
+      ['sell', '/sell'], ['freehold', '/freehold'], ['about', '/about'], ['terms', '/terms'], ['privacy', '/privacy'], ['sign-in', '/signin'], ['exclusive', '/exclusive'],
+    ].filter(([, u]) => u);
+    const year = String(new Date().getFullYear());
+    const noBrand = [], noCopyright = [], trebCopy = [];
+    for (const [name, url] of brandTypes) {
+      const p = await get(`${base}${url}`);
+      if (p.status !== 200) { noBrand.push(`${name} ${url} answered ${p.status}`); continue; }
+      const strip = p.body.match(/<div[^>]*data-registrant(?:=""|\b)[^>]*>([\s\S]*?)<\/div>/);
+      const stripText = strip ? text(strip[1]) : '';
+      const h1 = p.body.search(/<h1\b/);
+      if (!strip || !stripText.includes(REGISTRANT) || !stripText.includes(BROKERAGE)) noBrand.push(`${name} ${url}: header strip ${strip ? `reads "${stripText.trim().slice(0, 90)}"` : 'absent'}`);
+      else if (h1 >= 0 && strip.index > h1) noBrand.push(`${name} ${url}: the strip comes after the <h1>`);
+      const c = text(p.body).match(COPYRIGHT_RE);
+      if (!c || c[1] !== year) noCopyright.push(`${name} ${url}${c ? ` (year ${c[1]})` : ''}`);
+      const meta = [...p.body.matchAll(/<meta[^>]+content="([^"]*)"/g)].map((m) => m[1]).join(' ');
+      if (/\bTREB\b/.test(text(p.body)) || /\bTREB\b/.test(meta)) trebCopy.push(`${name} ${url}`);
+    }
+    coverage.push(['page types read for the registrant header (MC-047)', brandTypes.length]);
+    assertions.push(['page types without the registrant and the brokerage in the header', noBrand.length, 0]);
+    assertions.push(['page types without this year\'s TRREB and PropTx copyright line', noCopyright.length, 0]);
+    assertions.push(['page types with TREB-era wording in the text or the meta', trebCopy.length, 0]);
+    examples.push(...noBrand.slice(0, 6), ...noCopyright.slice(0, 6), ...trebCopy.slice(0, 6));
     coverage.push(['page types read for the notices', pageTypes.length]);
     assertions.push(['page types without the verbatim bona fide notice', missing.length, 0]);
     assertions.push(['page types without the reliability notice (8.25)', missingReliability.length, 0]);

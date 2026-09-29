@@ -24,10 +24,24 @@
 //
 // FROZEN until the 28-day GSC re-read (MC-048): no title, meta or H1 change on street pages before
 // then, or the read compares two formats.
+import type { Metadata } from "next";
 import { config } from "@/lib/config";
 
 export const STREET_TITLE_MAX = 65;
 export const STREET_META_MAX = 155;
+
+/**
+ * The head for a slug with no page data (MC-050's proposal 2, landed in MC-047). The page itself
+ * answers notFound(), but generateMetadata runs first and its answer was a title and nothing else:
+ * no canonical and no robots, the one street head that declared no canonical. Of the 256 street
+ * pages Google crawled, 12 declared none at crawl (MC-050). noindex closes that path; follow
+ * stays true, so a crawler that lands on it still reaches the site. Not a title, meta or H1 change
+ * to any served street page, so the MC-048 freeze does not hold it.
+ */
+export const STREET_NOT_FOUND_METADATA: Metadata = {
+  title: "Street Not Found",
+  robots: { index: false, follow: true },
+};
 
 /** The day the head changed (MC-048's deploy, UTC). The sitemap's street lastmod is at least this. */
 export const STREET_HEAD_REVISED_AT = new Date("2026-09-28T00:00:00Z");
