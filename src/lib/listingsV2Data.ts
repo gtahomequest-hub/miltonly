@@ -70,7 +70,7 @@ export const NEIGHBOURHOOD_FILTER_OPTIONS = [
 
 const FEATURED_SCHOOLS: ListingsV2Data['schools'] = [
   { slug: 'chris-hadfield-ps', name: 'Chris Hadfield PS', board: 'Public', neighbourhood: 'Dempsey', fraser: null },
-  { slug: 'bishop-pf-reding-catholic-secondary-school', name: 'Bishop P.F. Reding', board: 'Catholic', neighbourhood: 'Old Milton', fraser: '8.0' },
+  { slug: 'bishop-pf-reding-catholic-ss', name: 'Bishop P.F. Reding', board: 'Catholic', neighbourhood: 'Old Milton', fraser: '8.0' },
   { slug: 'guardian-angels-catholic-es', name: 'Guardian Angels Catholic ES', board: 'Catholic', neighbourhood: 'Milton', fraser: null },
   { slug: 'irma-coulson-ps', name: 'Irma Coulson PS', board: 'Public', neighbourhood: 'Beaty', fraser: null },
 ];
