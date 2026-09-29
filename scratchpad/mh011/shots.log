@@ -1,0 +1,98 @@
+[
+ {
+  "palette": "a",
+  "view": "visitor",
+  "tag": "desktop",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/a-visitor-desktop-1280.png"
+ },
+ {
+  "palette": "a",
+  "view": "visitor",
+  "tag": "phone",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/a-visitor-phone-390.png"
+ },
+ {
+  "palette": "a",
+  "view": "registered",
+  "tag": "desktop",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/a-registered-desktop-1280.png"
+ },
+ {
+  "palette": "a",
+  "view": "registered",
+  "tag": "phone",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/a-registered-phone-390.png"
+ },
+ {
+  "palette": "b",
+  "view": "visitor",
+  "tag": "desktop",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/b-visitor-desktop-1280.png"
+ },
+ {
+  "palette": "b",
+  "view": "visitor",
+  "tag": "phone",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/b-visitor-phone-390.png"
+ },
+ {
+  "palette": "b",
+  "view": "registered",
+  "tag": "desktop",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/b-registered-desktop-1280.png"
+ },
+ {
+  "palette": "b",
+  "view": "registered",
+  "tag": "phone",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/b-registered-phone-390.png"
+ },
+ {
+  "palette": "c",
+  "view": "visitor",
+  "tag": "desktop",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/c-visitor-desktop-1280.png"
+ },
+ {
+  "palette": "c",
+  "view": "visitor",
+  "tag": "phone",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/c-visitor-phone-390.png"
+ },
+ {
+  "palette": "c",
+  "view": "registered",
+  "tag": "desktop",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/c-registered-desktop-1280.png"
+ },
+ {
+  "palette": "c",
+  "view": "registered",
+  "tag": "phone",
+  "status": 200,
+  "overflow": 0,
+  "file": "scratchpad/mh011/shots/c-registered-phone-390.png"
+ }
+]

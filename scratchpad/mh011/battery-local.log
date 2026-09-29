@@ -1,0 +1,109 @@
+
+═══ MILTONLY STREET VERIFICATION ═══
+target      http://localhost:3197
+build       f5b3bab served == expected
+sitemap     719 published street pages (derived, not a literal)
+streets     full crawl (--streets=sample for the fixed set plus a rotating fifty)
+hub record  22 published hubs + DB2 pools loaded
+home record 719 published street pages + Milton-wide figures loaded
+crawled     0 street pages (no per-page check selected)
+
+── Hub meta, body and JSON-LD all publish the live aggregate
+   · hub pages in the live sitemap: 22
+   · fetched 200: 22
+   · meta description parsed: 22
+   · matched to a record: 22
+   · hero stat tiles parsed: 22
+   · JSON-LD parsed: 22
+   · sub-k hubs (price must be silent everywhere): moffat
+   PASS  hub pages read == sitemap hub count: 22
+   PASS  hero stat tiles parsed on every hub: 22
+   PASS  JSON-LD parsed on every hub: 22
+   PASS  hub titles or descriptions carrying an em-dash: 0
+   PASS  meta price != live typical: 0
+   PASS  meta sale count != live sale count: 0
+   PASS  meta states a price off a sub-k pool: 0
+   PASS  hero typical != live typical as displayed: 0
+   PASS  hero sold count != live sale count: 0
+   PASS  JSON-LD price != live typical as published: 0
+   PASS  JSON-LD states a price off a sub-k pool: 0
+   PASS  price suppressed on some surfaces only: 0
+   NOTE  stored HubContent.metaDescription (no longer served) still drifts from live on 16 of 22 hubs
+   NOTE  stored descriptions publishing a price off a sub-k pool: 0
+
+── The homepage links, states its figures, and declares itself
+   · unique internal links served: 149
+   · of which are in the <nav>: 134
+   · stated link floor: 50
+   · data-fig figures parsed: 139
+   · Milton-wide figures checked by value + format: 13 specs
+   · as rendered: on-market: "490" (source 490, expected "490") · new-week: "77" (source 77, expected "77") · sold-mtd: "120" (source 120, expected "120") · typical-milton: "$930K" (source 930000, expected "$930K") · rentals-available: "1,249" (source 1249, expected "1,249") · proof-street-pages: "719" (source 719, expected "719") · menu-buy-active: "490" (source 490, expected "490") · menu-buy-new: "77" (source 77, expected "77") · menu-streets-pages: "719" (source 719, expected "719") · menu-rent-now: "1,249" (source 1249, expected "1,249") · menu-sold-mtd: "120" (source 120, expected "120") · proof-sales-12mo: "1,710" (source 1710, expected "1,710") · proof-sold-to-ask: "98%" (source 98.2, expected "98%")
+   · published street pages (record): 719
+   · rentals available: homepage / /rentals / record: 1249 / 1249 / 1249
+   · menu sell figures: menu-sell-sta-lead="98.0%" · menu-sell-days-lead="28 days" · menu-sell-typical="$931,000" · menu-sell-days="28 days" · menu-sell-sta="98.0%"
+   · published StreetContent rows (record): 722
+   · neighbourhood price figures: 22
+   · sub-k hoods (price must be silent): moffat
+   · JSON-LD nodes parsed: 4
+   PASS  homepage returns 200: 200
+   PASS  unique internal links >= 50: true
+   PASS  neighbourhood price figures found: true
+   PASS  chrome contract: labelled nav, skip link, GET search, <details> menu, map footer with the brief form: 0
+   PASS  menu triggers rendered as buttons: 0
+   PASS  menu trigger hrefs in served nav markup: 0
+   PASS  rail links in served nav markup: 0
+   PASS  Milton-wide figures absent from the page: 0
+   PASS  Milton-wide figures rendered in the wrong format: 0
+   PASS  Milton-wide figures outside their source + tolerance: 0
+   PASS  street-page figure == the published page count: true
+   PASS  /rentals returns 200: 200
+   PASS  /favicon.ico is a 200 ICO that is not the default triangle: true
+   PASS  /icon.svg is a 200 SVG of the wordmark M on the forest ground: true
+   PASS  homepage rentals figure == the figure /rentals publishes: true
+   PASS  menu figure != the Board figure on the same page: 0
+   PASS  any data-fig rendering a raw float: 0
+   PASS  em-dashes in rendered copy: 0
+   PASS  en-dashes outside a numeric range: 0
+   PASS  neighbourhood figure != its hub record: 0
+   PASS  neighbourhood figure off a sub-k pool: 0
+   PASS  sub-k hood prints a price instead of its suppression: 0
+   PASS  WebSite node present: true
+   PASS  Organization node present: true
+   PASS  SearchAction on the WebSite node: true
+   NOTE  neighbourhood figures with no DB2 record (not asserted): none
+   NOTE  published pages 719 vs published content rows 722: the difference is content published for a slug with no ResidentialStreet entity, which the sitemap refuses
+   NOTE  homepage == record and hub page == record (hub-meta) together assert homepage == hub page
+
+── The menu opens, closes, fits, reads, and links, on every page type and at every width
+   · page types read: / ok · /streets ok · /neighbourhoods/bronte-meadows ok · /streets/mccready-drive-milton ok · /listings ok
+   · unique panel hrefs resolved: 148
+   · browser runs (page × width): 24 of 24
+   · published hubs (record): 22
+   PASS  page types read == requested: 5
+   PASS  menu triggers rendered as <button> with aria: 0
+   PASS  panels present in served HTML and closed with hidden: 0
+   PASS  every panel carries its index CTA: 0
+   PASS  rail tabs and item panels served as stated (one selected, one visible): 0
+   PASS  rail items whose served panel is empty: 0
+   PASS  every panel carries a strip: 0
+   PASS  pages whose four strips are not all different: 0
+   PASS  menu figures in the wrong format: 0
+   PASS  pages missing a hub count: 0
+   PASS  panel hrefs that redirect: 0
+   PASS  panel hrefs that fail: 0
+   PASS  served chrome lacks the label, the skip link, the bar search form, the <details> menu or its compact menu: 0
+   PASS  pages whose CTA or strips do not follow the street or the hub: 0
+   PASS  pages whose rail tabs lack sub-labels: 0
+   PASS  Rent menu: every hub as scoped /rentals with its count, four typical rents, the landlord form, Rentals out of Buy: 0
+   PASS  browser runs completed: 24
+   PASS  interaction findings (hover, click, keyboard, rail, geometry, type, photos, phone, scrolled bar, bar search, CTA contrast, no-JS): 0
+
+── At 390 no text is clipped by the viewport on the home, street, hub, listing, rentals and guide pages
+   · pages read at 390: home ok · street ok · hub ok · listing ok · rentals ok · guide ok
+   · browser runs: 6 of 6
+   PASS  pages rendered at 390: 6
+   PASS  pages that scroll sideways: 0
+   PASS  text nodes clipped by the viewport: 0
+   PASS  the street ladder at 390: a house-number field, a track no taller than the viewport that scrolls inside itself: 0
+
+═══ PASS · 4 checks · 719 pages · 154s ═══

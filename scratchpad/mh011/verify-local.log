@@ -1,0 +1,15 @@
+a visitor 390: 200 robots="noindex, nofollow, nocache" texts=310 minContrast=5.05 green=Get the home report for 12 Aamir Court | Register free | Register free | Get the home report overflow=0
+a visitor 1280: 200 robots="noindex, nofollow, nocache" texts=311 minContrast=5.05 green=Get the home report for 12 Aamir Court | Register free | Register free | Get the home report overflow=0
+a registered 390: 200 robots="noindex, nofollow, nocache" texts=428 minContrast=5.05 green=Get the home report for 12 Aamir Court | Get the home report overflow=0
+a registered 1280: 200 robots="noindex, nofollow, nocache" texts=435 minContrast=5.05 green=Get the home report for 12 Aamir Court | Get the home report overflow=0
+b visitor 390: 200 robots="noindex, nofollow, nocache" texts=310 minContrast=5.06 green=Get the home report for 12 Aamir Court | Register free | Register free | Get the home report overflow=0
+b visitor 1280: 200 robots="noindex, nofollow, nocache" texts=311 minContrast=5.06 green=Get the home report for 12 Aamir Court | Register free | Register free | Get the home report overflow=0
+b registered 390: 200 robots="noindex, nofollow, nocache" texts=428 minContrast=5.06 green=Get the home report for 12 Aamir Court | Get the home report overflow=0
+b registered 1280: 200 robots="noindex, nofollow, nocache" texts=435 minContrast=5.06 green=Get the home report for 12 Aamir Court | Get the home report overflow=0
+c visitor 390: 200 robots="noindex, nofollow, nocache" texts=310 minContrast=5.09 green=Get the home report for 12 Aamir Court | Register free | Register free | Get the home report overflow=0
+c visitor 1280: 200 robots="noindex, nofollow, nocache" texts=311 minContrast=5.09 green=Get the home report for 12 Aamir Court | Register free | Register free | Get the home report overflow=0
+c registered 390: 200 robots="noindex, nofollow, nocache" texts=428 minContrast=5.09 green=Get the home report for 12 Aamir Court | Get the home report overflow=0
+c registered 1280: 200 robots="noindex, nofollow, nocache" texts=435 minContrast=5.09 green=Get the home report for 12 Aamir Court | Get the home report overflow=0
+/sitemap.xml: 200 mentions design-preview: false
+/: 200 mentions design-preview: false
+PASS
