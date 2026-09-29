@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-28 (MC-049, www, the regeneration pause, lane branches): `main` is `9a563fd` plus this docs commit; production serves `9a563fd` (`miltonly-m25idhaan`), battery `PASS · 24 checks · 719 pages · 527s`. **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite is paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-049-www-and-cron.md`._
+_Last rewritten 2026-09-29 (MC-050, the merge batch): `main` is `a75feeb` plus this docs commit; production serves `a75feeb` (`miltonly-atfzfypb2`), battery `PASS · 24 checks · 719 pages · 559s`. **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite is paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-050-merge-batch.md`._
 
 ## READ THIS FIRST
 
@@ -12,7 +12,24 @@ _Last rewritten 2026-09-28 (MC-049, www, the regeneration pause, lane branches):
   - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
   - Written pages: 222 / 78 / 0.351 / 0.748.
 
-**MC-049: WWW HELD BY A TEST, THE STREET-PROSE REWRITE PAUSED, LANE PUSHES STOP BUILDING. PRODUCTION SERVES `9a563fd`.**
+**MC-050: FOUR BRANCHES MERGED BY SHA IN ONE BUILD. PRODUCTION SERVES `a75feeb`.**
+- **Merged, in order:** MA-011 `3c8add8` (`6eb1ef6`), MH-010 `12dc3f7` (`96a606c`), ML-014 `af0da54` (`30dd588`), MP-007 `cd2eed1` (`a75feeb`). No conflicts. MH-009 `7cfa4a2` was already on main (`f1d4080`, MC-038).
+- **MP-007's migration** `20260927120000_portal_vow_reviewer_throttle_erasure` was already applied: 33 migrations, up to date. Terms are now v5.
+- **Proofs on production:**
+  - `/book` answers 200.
+  - The `/listings/W13832806` bio has no dash.
+  - The nightly with `--no-email` exits 0: banned 0 of 58, www 20 of 20.
+- **Found, pre-existing:**
+  - `src/lib/listingsV2Data.ts:73` links `/listings` to `/schools/bishop-pf-reding-catholic-secondary-school`, a 404. The real page is `-catholic-ss`. The link dates from `f44edde`, 2026-06-12.
+  - The nav's A–Z shows `—` for the letter X on every page.
+- **The eight 747live.bet canonicals (report-only):**
+  - All eight now serve full pages with a self canonical.
+  - 12 of 256 crawled street pages declared no canonical at crawl, intermittently (sauble-court had a published row).
+  - Proposal: `robots: noindex` on `generateMetadata`'s `!data` branch; audit re-inspection and a head-canonical guard; spam report if any still names 747live.bet after 2026-10-26.
+- **MC-047 is still blocked:** the brief, item 31's copyright text, and the header source and title. Step 0 is on `core/mc047`.
+Record: `scratchpad/reports/MC-050-merge-batch.md`.
+
+**MC-049: WWW HELD BY A TEST, THE STREET-PROSE REWRITE PAUSED, LANE PUSHES STOP BUILDING. PRODUCTION SERVED `9a563fd`.**
 - **www to apex (`3a5df3b`).** It was already redirected twice: the Vercel project's domain settings (308), and `next.config.mjs` since `f429b6a`.
   - `scripts/test-www-redirect.ts` (prebuild) now holds the code rule: one permanent host rule, the query kept, nothing on the apex.
   - The 273 `www` URLs with impressions are Google still consolidating URLs it indexed before the flip.
@@ -817,10 +834,10 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 
 | | |
 |---|---|
-| `main` | **`9a563fd`** (MC-049: www test `3a5df3b`, rewrite pause `2dfb721`, lane branches `9a563fd`) plus MC-049's docs commit; production serves `9a563fd` (`miltonly-m25idhaan`) |
-| battery on production | **`PASS · 24 checks · 719 pages · 527s`** at `9a563fd`, 2026-09-28 (local 526s after a rebuild; preview `miltonly-6uinygmqn` Ready, not batteried) |
-| `prisma migrate status` | **clean**, 32 migrations (`20260921120000_portal_vow_best_practices` was already applied when merged, MC-044) |
-| held for the next batch | **nothing**. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite paused** (MC-049, `STREET_REGEN_ENABLED` unset) |
+| `main` | **`a75feeb`** (MC-050: MA-011 `6eb1ef6`, MH-010 `96a606c`, ML-014 `30dd588`, MP-007 `a75feeb`) plus MC-050's docs commit; production serves `a75feeb` (`miltonly-atfzfypb2`) |
+| battery on production | **`PASS · 24 checks · 719 pages · 559s`** at `a75feeb`, 2026-09-29 (local 391s; preview `miltonly-i7f9g7a3u` Ready, not batteried) |
+| `prisma migrate status` | **clean**, 33 migrations (`20260927120000_portal_vow_reviewer_throttle_erasure` was already applied when merged, MC-050) |
+| held for the next batch | **nothing**. MC-047 Step 0 sits on `core/mc047`, blocked on Aamir. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite paused** (MC-049, `STREET_REGEN_ENABLED` unset) |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
@@ -1195,7 +1212,7 @@ without the parameter.
 
 ## Next expected task
 
-Whatever Aamir names. Nothing is held. **After 2026-10-04 12:00 UTC: confirm the weekly rewrite stayed paused (MC-049).** **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
+Whatever Aamir names. Nothing is held. **MC-047 waits on Aamir** (the brief; PropTx's copyright text, which item 31 does not give; the source of the registrant header and "Salesperson" or "Sales Representative"). Step 0 is on `core/mc047` (`d123800`, `d170fdf`); rebase it on `a75feeb` before landing. **From MC-050:** fix the `/listings` school link (`src/lib/listingsV2Data.ts:73`, `-secondary-school` to `-catholic-ss`); decide the 747live.bet proposal (`!data` noindex, the audit re-inspection and head-canonical guard). **After 2026-09-29 12:00 UTC and 2026-10-04 12:00 UTC: confirm the rewrite stayed paused (MC-049).** **On or after 2026-10-26: MC-048's GSC re-read** (`baseline.mjs 2026-10-25` against `scratchpad/mc048/baseline/`); until then no street title, meta or H1 change. **From MC-048:** Aamir's call on the fragment rule (10 correct sentences withheld), rotate the GSC key. **From MC-044:** Audit points the morning report at the Web Analytics Query API; Portal takes the three MP-006 follow-ups (query-only navigation and the 60-minute clock, the renewal kicker, the registrant wall's address); Aamir rules on the removal desk email against the 180-day VOW retention. **From MC-045:** the response to the fabrication measurement, which Aamir decides: the prompt seeds and the build-era FAQ question, a validator for era, compass and housing-mix claims, whether to regenerate, strip or unpublish, and in what order (the traffic table in `scratchpad/mc045/out/pages.csv`). Also rotate the GSC service-account key. **From MC-043:** whether the 100% Club and Executive Award also leave AgentContactSection, AdsClient, AgentSidebar, the `/rentals/ads` JSON-LD and `/sell`; the "Expert"/"Specialist" and "world-class" wording; a catchment and "only" rule over JSON-LD (Audit). **Then MC-042's decision:** republish Gowland Crescent, Ennisclare Drive
 and Jempson Path as generated (the UPDATE in `scratchpad/mc042/unpublish.mjs`, then purge), or first add grounding
 for compass, position, build-era and housing-mix claims and withdraw the FAQ bank's "new construction or
 established?" question, then regenerate and re-review. The same review on a sample of the 719 live pages would say
