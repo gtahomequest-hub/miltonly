@@ -24,6 +24,12 @@ export const REGISTRANT_NAME_LINE = `${config.realtor.name}, ${config.realtor.ti
 /** "RE/MAX Realty Specialists Inc., Brokerage": the registered name, descriptor included. */
 export const REGISTRANT_BROKERAGE_LINE = config.brokerage.name;
 
+/** og:site_name on every page (MC-047, A1): the site's name, then the Member it is branded to. */
+export const OG_SITE_NAME = `${config.SITE_NAME} · ${REGISTRANT_NAME_LINE}`;
+
+/** The homepage <title> (MC-047, A1): it names the Member. */
+export const HOME_TITLE = `Milton Homes for Sale, Street by Street | ${config.realtor.name}`;
+
 /** The footer's full line: the registrant, the brokerage, the phone. */
 export const REGISTRANT_FULL_LINE = `${REGISTRANT_NAME_LINE} · ${REGISTRANT_BROKERAGE_LINE} · ${config.realtor.phone}`;
 
@@ -32,7 +38,7 @@ export const REGISTRANT_FULL_LINE = `${REGISTRANT_NAME_LINE} · ${REGISTRANT_BRO
  * is identified with its source. Sits above the first block a listing page adds.
  */
 export const AUGMENTATION_LABEL =
-  "From here down, added by Miltonly and not part of the MLS® listing. Nearby places and distances: Town of Milton open data (Open Government Licence – Milton). Commute times and the mortgage figures: Miltonly's estimates. Typical rent and sold counts: Miltonly's summary of closed transactions on the PropTx MLS® System.";
+  "From here down, added by Miltonly and not part of the MLS® listing. Nearby places and distances: Town of Milton open data (Open Government Licence – Milton). Commute times, the mortgage figures and the living area (the midpoint of the listing's range): Miltonly's figures. Typical rent and sold counts: Miltonly's summary of closed transactions on the PropTx MLS® System.";
 
 /**
  * MLS® Rule 8.12: a prominent way to reach the Member about any property displayed.

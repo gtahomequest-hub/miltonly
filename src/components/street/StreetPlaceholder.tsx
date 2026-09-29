@@ -36,7 +36,7 @@ export function StreetPlaceholder({ streetName, sidebar }: StreetPlaceholderProp
               market activity, commute context, school catchment, and current
               inventory are all available below. For pricing specifics, recent
               trade context, or a private conversation about this street,
-              reach our team directly.
+              reach Aamir Yaqoob directly.
             </Body>
           </div>
         </div>

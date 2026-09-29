@@ -317,6 +317,8 @@ export default function ThankYouClient({
       {/* ── MINIMAL FOOTER — legal + copyright only, no feature links ── */}
       <footer className="bg-[#07111f] border-t border-[#1e3a5f] py-6">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          {/* the Member leads the footer (MC-047, A1) */}
+          <p className="text-center text-[14px] text-[#cbd5e1] mb-4" data-footer-member><strong className="text-white">{config.realtor.name}, {config.realtor.title}</strong> · {config.brokerage.name}</p>
           <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px] mb-3">
             <Link href="/privacy" className="text-[#94a3b8] hover:text-[#f8f9fb]">Privacy Policy</Link>
             <Link href="/terms" className="text-[#94a3b8] hover:text-[#f8f9fb]">Terms</Link>

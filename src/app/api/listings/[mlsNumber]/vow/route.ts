@@ -21,6 +21,8 @@ export const dynamic = "force-dynamic";
 export interface ListingVowFacts {
   /** Days since the listing date, the feed's own figure when it carries one. */
   daysOnMarket: number;
+  /** True when the feed carried no figure and the count is ours, from the list date (MC-047, A4). */
+  daysOnMarketCounted: boolean;
   listedAt: string;
   /** The list price before the most recent observed change, and when. Null when never observed. */
   priorPrice: number | null;
@@ -76,6 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: { mlsNumber: s
 
   const facts: ListingVowFacts = {
     daysOnMarket: l.daysOnMarket ?? Math.max(0, Math.floor((Date.now() - l.listedAt.getTime()) / 86_400_000)),
+    daysOnMarketCounted: l.daysOnMarket == null,
     listedAt: l.listedAt.toISOString(),
     priorPrice: l.priorPrice,
     priceChangedAt: l.priceChangedAt ? l.priceChangedAt.toISOString() : null,

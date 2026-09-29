@@ -176,9 +176,6 @@ export function generateListingSchema(listing: {
     },
     numberOfRooms: listing.bedrooms,
     numberOfBathroomsTotal: listing.bathrooms,
-    floorSize: listing.sqft
-      ? { "@type": "QuantitativeValue", value: listing.sqft, unitCode: "SQF" }
-      : undefined,
   };
 }
 

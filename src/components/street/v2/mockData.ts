@@ -477,7 +477,7 @@ export const mockStreetThin: StreetV2Data = {
   faqs: [
     {
       question: 'What is the typical price on Marigold Court?',
-      answer: 'Sale activity on Marigold Court has been limited recently, so a typical price cannot be stated with confidence. Contact our team for a private read.',
+      answer: 'Sale activity on Marigold Court has been limited recently, so a typical price cannot be stated with confidence. Contact Aamir for a private read.',
     },
   ],
 

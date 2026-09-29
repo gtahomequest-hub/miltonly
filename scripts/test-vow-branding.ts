@@ -17,7 +17,7 @@
 //   5. NO BAKED YEAR. No "© 2026" literal: a footer's year is computed.
 import fs from "node:fs";
 import path from "node:path";
-import { REGISTRANT_NAME_LINE, REGISTRANT_BROKERAGE_LINE, REGISTRANT_FULL_LINE, AUGMENTATION_LABEL, contactLine, reportInaccuracyLine } from "../src/lib/compliance/registrant";
+import { REGISTRANT_NAME_LINE, REGISTRANT_BROKERAGE_LINE, REGISTRANT_FULL_LINE, AUGMENTATION_LABEL, contactLine, reportInaccuracyLine, OG_SITE_NAME, HOME_TITLE } from "../src/lib/compliance/registrant";
 import { VOW_BONA_FIDE_NOTICE, VOW_RELIABILITY_NOTICE, MLS_COPYRIGHT_NOTICE } from "../src/lib/vowNotice";
 import { config } from "../src/lib/config";
 
@@ -76,9 +76,16 @@ ok(siteNav.includes("{REGISTRANT_NAME_LINE}") && siteNav.includes("{REGISTRANT_B
 ok(siteNav.indexOf('data-registrant>') < siteNav.indexOf('<div className="m-wrap">'), "the strip sits above the bar");
 ok(/<div className="sn-strip-space" aria-hidden="true" \/>/.test(siteNav), "SiteNav renders the in-flow spacer that keeps each page's clearance");
 const navCss = read("src/components/nav/site-nav.css");
-ok(/--sn-strip-h:\s*24px/.test(navCss) && /\.sn-strip-space\s*\{\s*height:\s*var\(--sn-strip-h\)/.test(navCss), "the strip and the spacer share one height variable");
-ok(/nav \.sn-panel \{[^}]*top: calc\(66px \+ var\(--sn-strip-h\)\)/.test(navCss), "the phone panel opens under the strip and the bar");
 const strip = read("src/components/compliance/RegistrantStrip.tsx");
+ok(/--sn-strip-h:\s*30px/.test(navCss) && /\.sn-strip-space\s*\{\s*height:\s*var\(--sn-strip-h\)/.test(navCss), "the strip and the spacer share one height variable");
+ok(/nav \.sn-panel \{[^}]*top: calc\(66px \+ var\(--sn-strip-h\)\)/.test(navCss), "the phone panel opens under the strip and the bar");
+{
+  // A1: 14px or larger at every width, the strip's own rule and every media override of it
+  const sizes = [...navCss.matchAll(/nav \.sn-reg \{([^}]*)\}/g)].map((m) => m[1].match(/font-size:\s*(\d+(?:\.\d+)?)px/)?.[1]).filter(Boolean).map(Number);
+  ok(sizes.length >= 1 && sizes.every((n) => n >= 14), `the header strip is 14px or larger at every width (font sizes ${sizes.join(", ")})`);
+  const tw = [...strip.matchAll(/text-\[(\d+)px\]/g)].map((m) => Number(m[1]));
+  ok(tw.length >= 1 && tw.every((n) => n >= 14), `RegistrantStrip is 14px or larger (${tw.join(", ")})`);
+}
 ok(strip.includes("{REGISTRANT_NAME_LINE}") && strip.includes("{REGISTRANT_BROKERAGE_LINE}") && strip.includes("data-registrant"), "RegistrantStrip renders both names");
 const OWN_HEADER = [
   "src/app/rentals/ads/AdsClient.tsx",
@@ -151,6 +158,48 @@ ok(ldc.includes("<p data-contact-line>{contactLine(extras.contactEmail)}</p>"), 
 ok(ldc.includes("<p data-report-inaccuracy>{reportInaccuracyLine(extras.contactEmail)}</p>"), "the listing page carries the 8.16 report line");
 ok(ldc.includes("<p>{VOW_NOTICES}</p>"), "the listing page carries the item 22 notice");
 ok(read("src/app/listings/[mlsNumber]/page.tsx").includes("contactEmail: contactEmail(),"), "the listing page reads CONTACT_EMAIL on the server");
+
+// the generators' ban lists name "our team" as a thing to refuse; they are not copy
+const SWEEP_SKIP_PARTY = [/^src\/lib\/ai\//];
+// ── the homesly.ca audit's findings, held (MC-047 addendum) ──────────────────────────────────────
+{
+  // A1: the footer leads with the Member; og:site_name and the homepage title name him
+  const fStart = footer.indexOf('<div className="m-wrap">');
+  ok(fStart > 0 && footer.indexOf("data-footer-member", fStart) > fStart && footer.indexOf("data-footer-member", fStart) < footer.indexOf('<div className="m-ftop">'), "the footer's first element is the Member line (A1)");
+  for (const f of OWN_HEADER) {
+    const s = read(f);
+    const open = s.indexOf("<footer");
+    ok(open > 0 && s.indexOf("data-footer-member", open) > open && s.indexOf("data-footer-member", open) < s.indexOf("<Link", open), `${f}: the footer leads with the Member (A1)`);
+  }
+  ok(OG_SITE_NAME.includes("Aamir Yaqoob"), `og:site_name names the Member ("${OG_SITE_NAME}")`);
+  for (const f of ["src/app/layout.tsx", "src/lib/seo.ts", "src/app/rentals/ads/[mlsNumber]/page.tsx", "src/app/sales/ads/[mlsNumber]/page.tsx"]) {
+    const s = read(f);
+    ok(s.includes("siteName: OG_SITE_NAME,") && !s.includes("siteName: config.SITE_NAME"), `${f}: og:site_name is OG_SITE_NAME`);
+  }
+  ok(HOME_TITLE.includes("Aamir Yaqoob") && HOME_TITLE.length <= 60, `the homepage title names the Member within 60 characters ("${HOME_TITLE}")`);
+  ok(read("src/app/page.tsx").includes("title: HOME_TITLE,"), "the homepage uses HOME_TITLE");
+  const party: string[] = [];
+  for (const f of walk("src")) {
+    if (SWEEP_SKIP_PARTY.some((re) => re.test(f))) continue;
+    const code = stripComments(read(f));
+    if (/\bour team\b|\bthe team\b|Miltonly (agent|team|realtor)s?\b|(Contact|Ask|Send to) Miltonly\b|Miltonly will be in touch/i.test(code)) party.push(f);
+  }
+  ok(party.length === 0, `copy presenting Miltonly or a team as the party: ${party.join(", ")}`);
+
+  // A2: /terms is titled "VOW Terms of Use", names the Member as the party, renders the clauses
+  const terms = read("src/app/terms/page.tsx");
+  ok(terms.includes('title: "VOW Terms of Use",') && terms.includes(">VOW Terms of Use</h1>"), "/terms is titled VOW Terms of Use, head and H1 (A2)");
+  ok(terms.includes("data-terms-party") && terms.includes("{REGISTRANT_NAME_LINE}") && terms.includes("(the Member)"), "/terms names the Member as the party (A2)");
+  ok(terms.includes("VOW_TERMS_CLAUSES.map(") && terms.includes("Version {VOW_TERMS_VERSION}"), "/terms renders the stored clauses and their version (A2)");
+
+  // A4: no computed figure in the listing's MLS fields; the living area sits under the 8.24 label
+  ok(!/pricePerSqft|\/sqft</.test(ldc), "no price per square foot on the listing page (A4)");
+  ok(!/l\.sqft\.toLocaleString\(\)\} sqft/.test(ldc), "the living-area midpoint is not in the listing's fact line (A4)");
+  ok(ldc.indexOf("data-derived-area") > ldc.indexOf("data-augmented-label"), "the living-area midpoint sits under the 8.24 label (A4)");
+  for (const f of ["src/app/sales/ads/[mlsNumber]/SalesAdsClient.tsx", "src/app/rentals/ads/[mlsNumber]/RentalsAdsClient.tsx", "src/components/listings/v2/ListingCard.tsx", "src/lib/schema.ts", "src/app/listings/[mlsNumber]/page.tsx"]) {
+    ok(!/\.sqft\b/.test(stripComments(read(f)).replace(/sqft: (true|number \| null)/g, "")), `${f}: renders no living-area midpoint (A4)`);
+  }
+}
 
 // ── 4. the registered name ──────────────────────────────────────────────────────────────────────
 ok(config.brokerage.name.endsWith(", Brokerage"), "config.brokerage.name carries \", Brokerage\"");

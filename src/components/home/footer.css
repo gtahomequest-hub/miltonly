@@ -303,3 +303,17 @@
   color: rgba(255, 255, 255, 0.66);
   line-height: 1.8;
 }
+
+/* The Member leads the footer (MC-047, A1). */
+.m-footer .m-fmember {
+  margin: 0 0 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 16px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+}
+.m-footer .m-fmember strong {
+  color: #ffffff;
+  font-weight: 600;
+}

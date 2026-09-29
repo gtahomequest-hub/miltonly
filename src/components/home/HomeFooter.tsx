@@ -21,7 +21,7 @@ import { BriefSignup } from '../nav/BriefSignup';
 import './footer.css';
 import { OGL_MILTON_ATTRIBUTION } from '@/lib/town/roadFacts';
 import { VOW_NOTICES, MLS_COPYRIGHT_NOTICE } from "@/lib/vowNotice";
-import { REGISTRANT_FULL_LINE } from "@/lib/compliance/registrant";
+import { REGISTRANT_BROKERAGE_LINE, REGISTRANT_FULL_LINE, REGISTRANT_NAME_LINE } from "@/lib/compliance/registrant";
 
 interface Props {
   footer: FooterData;
@@ -34,6 +34,13 @@ export function HomeFooter({ footer, brand, context }: Props) {
   return (
     <footer className="m-footer">
       <div className="m-wrap">
+        {/* THE FOOTER LEADS WITH THE MEMBER (MC-047, the homesly.ca audit, finding A1): the first
+            thing in it is the registrant and the brokerage, by their registered names. */}
+        <p className="m-fmember" data-footer-member>
+          <strong>{REGISTRANT_NAME_LINE}</strong>
+          <span aria-hidden="true"> · </span>
+          <span>{REGISTRANT_BROKERAGE_LINE}</span>
+        </p>
         <div className="m-ftop">
           <div className="m-fbrand">
             <div className="m-logo">Miltonly</div>

@@ -3,10 +3,12 @@ import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
 import SiteChrome from "@/components/nav/SiteChrome";
 import ReviewerNotice from "@/components/vow/ReviewerNotice";
+import { VOW_TERMS_CLAUSES, VOW_TERMS_VERSION } from "@/lib/vow-acknowledgement";
+import { REGISTRANT_BROKERAGE_LINE, REGISTRANT_NAME_LINE } from "@/lib/compliance/registrant";
 
 export const metadata = genMeta({
-  title: "Terms of Use",
-  description: `Terms and MLS® data disclaimer for ${config.SITE_DOMAIN}.`,
+  title: "VOW Terms of Use",
+  description: `The VOW Terms of Use between you and ${REGISTRANT_NAME_LINE}, ${REGISTRANT_BROKERAGE_LINE}, and the MLS® data disclaimer.`,
   canonical: `${config.SITE_URL}/terms`,
 });
 
@@ -17,14 +19,32 @@ export default function TermsPage() {
       <div className="max-w-3xl mx-auto px-5 sm:px-6">
         <Link href="/" className="text-[13px] text-[#6b6f6a] hover:text-[#073126]">← Back to {config.SITE_NAME}</Link>
 
-        <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">Terms of Use</h1>
-        <p className="text-[13px] text-[#6b6f6a] mb-8">Last updated: April 23, 2026</p>
+        {/* PUBLIC, TITLED AND BETWEEN THE CONSUMER AND THE MEMBER (MC-047, TRREB's audit of homesly.ca,
+            finding A2). The clauses below are the same array the sign-in card shows and stores
+            (src/lib/vow-acknowledgement.ts), so the page and the agreement cannot drift. */}
+        <h1 className="text-[32px] sm:text-[40px] font-extrabold mt-4 mb-2">VOW Terms of Use</h1>
+        <p className="text-[13px] text-[#6b6f6a] mb-8" data-terms-version={VOW_TERMS_VERSION}>
+          Version {VOW_TERMS_VERSION}, last updated September 29, 2026
+        </p>
 
         <div className="space-y-6 text-[15px] leading-relaxed">
-          <p>
-            {config.SITE_DOMAIN} is operated by {config.realtor.name}, {config.realtor.title} at {config.brokerage.name}.
-            By using this site you agree to the terms below.
+          <p data-terms-party>
+            These terms are an agreement between you and <strong>{REGISTRANT_NAME_LINE}</strong>,{" "}
+            <strong>{REGISTRANT_BROKERAGE_LINE}</strong> (the Member), who operates {config.SITE_DOMAIN} as a Virtual Office
+            Website (VOW) under the rules of the Toronto Regional Real Estate Board (TRREB) and PropTx Innovations Inc.
+            (PropTx). By using this site you agree to them.
           </p>
+
+          <h2 className="text-[22px] font-extrabold mt-8 mb-2">The VOW terms you agree to at sign-in</h2>
+          <p>
+            To see sold and leased MLS<sup>®</sup> records you register and agree to these clauses, word for word, by a
+            click. Your agreement is recorded with the version number, the time, your IP address and browser.
+          </p>
+          <ol className="list-decimal pl-6 space-y-2" data-vow-terms-clauses>
+            {VOW_TERMS_CLAUSES.map((c) => (
+              <li key={c.key}>{c.bold ? <strong>{c.text}</strong> : c.text}</li>
+            ))}
+          </ol>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Information is not advice</h2>
           <p>
@@ -61,13 +81,13 @@ export default function TermsPage() {
             selling or leasing, under TRREB&apos;s VOW rules (R-805). Registration is a username and a password: your
             username is your verified email address, and you choose your password (twelve characters or more) at first
             sign-in, after agreeing to the terms of use shown there (the nine clauses PropTx requires, including that
-            the MLS® data is for your personal, non-commercial use, that PropTx owns it, and that PropTx may audit
+            the MLS® data is for your personal, non-commercial use, that TRREB and PropTx own it, and that PropTx and TRREB may audit
             this site and its consumers). A one-time emailed link or code verifies your email and stands in when you
             forget your password; no sold record is shown until your password is set. Your password expires 90 days
             after you set it and you confirm or change it then; a sign-in ends after 60 minutes without activity and in
             any case 90 days after it began. Licensed real estate registrants may not use the VOW. Your access to the
             records is logged (who, when, what, from where) and the log, with your registration records, is kept for at
-            least 180 days after your password expires and may be provided to PropTx on request.
+            least 180 days after your password expires and may be provided to PropTx or TRREB on request.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Limitation of liability</h2>

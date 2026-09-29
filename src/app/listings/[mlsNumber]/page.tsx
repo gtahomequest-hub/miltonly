@@ -129,7 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const firstName = config.realtor.name.split(" ")[0];
   const description = isRental
     ? `${typeLabel} rental at ${addr}, ${hood}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`
-    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath${l.sqft ? `, ${l.sqft} sqft` : ""}. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`;
+    : `${typeLabel} for sale at ${addr}, ${hood} ${config.CITY_NAME}: ${l.bedrooms} bed${l.bedrooms === 1 ? "" : "s"}, ${l.bathrooms} bath. ${priceStr}. Book a showing with ${firstName}, usually confirmed within the hour.`;
 
   return {
     title,
@@ -245,7 +245,6 @@ export default async function ListingDetailPage({ params }: Props) {
     },
     numberOfRooms: listing.bedrooms,
     numberOfBathroomsTotal: listing.bathrooms,
-    floorSize: listing.sqft ? { "@type": "QuantitativeValue", value: listing.sqft, unitCode: "FTK" } : undefined,
     image: listing.photos[0] || undefined,
     // SCHEMA IS A PUBLISHED SURFACE. This emitted the legacy feed coordinate — 0 on every row —
     // so the structured data told Google that every home in Milton is in the Gulf of Guinea.

@@ -325,7 +325,6 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
             <span>🛏 {listing.bedrooms} bed</span>
             <span>🚿 {listing.bathrooms} bath</span>
             {listing.parking > 0 && <span>🚗 {listing.parking} parking</span>}
-            <span>📐 {listing.sqft ? `${listing.sqft.toLocaleString()} sqft` : "— sqft"}</span>
             <span>🏠 {typeLabel}</span>
           </div>
 
@@ -649,6 +648,8 @@ function RentalsAdsInner({ listing, sliderListings }: Props) {
       {/* ── SLIM FOOTER ── */}
       <footer className="bg-[#07111f] border-t border-[#1e3a5f] py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          {/* the Member leads the footer (MC-047, A1) */}
+          <p className="text-center text-[14px] text-[#cbd5e1] mb-4" data-footer-member><strong className="text-white">{config.realtor.name}, {config.realtor.title}</strong> · {config.brokerage.name}</p>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
             <Link href="/" className="shrink-0">
               <span className="text-[17px] font-extrabold">

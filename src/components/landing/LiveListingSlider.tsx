@@ -662,12 +662,6 @@ export default function LiveListingSlider({
                     <span>{listing.bedrooms} bed</span>
                     <span>·</span>
                     <span>{listing.bathrooms} bath</span>
-                    {listing.sqft !== null && (
-                      <>
-                        <span>·</span>
-                        <span>{listing.sqft.toLocaleString()} sf</span>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>

@@ -107,7 +107,6 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
   const statusLabel = isRental ? "FOR RENT" : "FOR SALE";
   const statusColor = isRental ? "#017848" : "#16a34a";
   const brokerage = brokerageDisplayName(l.listOfficeName);
-  const pricePerSqft = l.sqft && !isRental ? Math.round(l.price / l.sqft) : null;
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 4000); };
 
@@ -254,10 +253,7 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
                   <h1>{priceLabel}</h1>
                   <ListingBrokerage name={l.listOfficeName} />
                 </div>
-                {pricePerSqft && (
-                  <p className="text-[12px] text-[#6b6f6a] mt-0.5">${pricePerSqft.toLocaleString()}/sqft</p>
-                )}
-                <p className="text-[14px] text-[#6b6f6a] mt-1">{l.bedrooms} bd · {l.bathrooms} ba · {titleCase(l.propertyType)}{l.sqft ? ` · ${l.sqft.toLocaleString()} sqft` : ""}</p>
+                <p className="text-[14px] text-[#6b6f6a] mt-1">{l.bedrooms} bd · {l.bathrooms} ba · {titleCase(l.propertyType)}</p>
                 <p className="text-[14px] text-[#073126] font-medium mt-1">{displayAddr}</p>
               </div>
             </div>
@@ -372,6 +368,15 @@ export default function ListingDetailClient({ listing: l, similar, extras, vowFa
             {/* MLS® Rule 8.24 (MC-047): everything above is the listing as the MLS® System gives
                 it; everything below is ours, and the label says so, with each source. */}
             <p className="text-[11px] text-[#6b6f6a] leading-relaxed border-t border-[#dfe0dc] pt-4 mb-6" data-augmented-label>{AUGMENTATION_LABEL}</p>
+            {/* A4 (MC-047): the square footage is the midpoint of the listing's living-area range,
+                computed on sync (parseLivingAreaRange), so it is not an MLS® field. It sat in the
+                listing's own fact line with a price per square foot computed from it; both are
+                ours, so the one kept lives here, under the label, saying what it is. */}
+            {l.sqft ? (
+              <p className="text-[13px] text-[#3e423f] mb-6" data-derived-area>
+                Living area: about {l.sqft.toLocaleString()} sq ft, the midpoint of the range the listing gives.
+              </p>
+            ) : null}
 
             {/* What's nearby */}
             <WhatsNearby lat={addressWithheld ? 0 : l.townLat ?? 0} lng={addressWithheld ? 0 : l.townLng ?? 0} addressWithheld={addressWithheld} schools={extras.schools.filter((s) => s.neighbourhood && l.neighbourhood.toLowerCase().includes(s.neighbourhood.toLowerCase())).slice(0, 5)} />

@@ -18,6 +18,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
+import { OG_SITE_NAME } from "@/lib/compliance/registrant";
 import { formatPriceFull, cleanNeighbourhoodName } from "@/lib/format";
 import SalesAdsClient from "./SalesAdsClient";
 import { isPublicListing, stripVowFields } from "@/lib/listings/vow";
@@ -89,7 +90,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       url: `${config.SITE_URL}/sales/ads/${listing.mlsNumber}`,
-      siteName: config.SITE_NAME,
+      siteName: OG_SITE_NAME,
       ...(primaryPhoto ? { images: [{ url: primaryPhoto }] } : {}),
     },
   };

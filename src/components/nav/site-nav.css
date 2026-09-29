@@ -1204,10 +1204,11 @@ nav .sn-acc-body .m-mega-cta {
 }
 
 /* THE REGISTRANT STRIP (MC-047, PropTx item 10). TRREB's auditor: a VOW "must be branded to
-   you, not just your Real Estate company". The strip sits above the 66px bar inside the fixed
-   nav, on the homepage (.m-nav) and every other page (.site-nav) alike. One line from 641px up;
-   below that the name and the brokerage stack, each whole, because a registered name broken
-   mid-phrase is not a registered name.
+   you, not just your Real Estate company", and (the homesly.ca audit, finding A1) the line is
+   14px or larger on every page. The strip sits above the 66px bar inside the fixed nav, on the
+   homepage (.m-nav) and every other page (.site-nav) alike. One line from 760px up; below that
+   the name and the brokerage stack, each whole, because a registered name broken mid-phrase is
+   not a registered name. Under 360px a line may wrap, and the strip grows for it.
 
    THE 66px CLEARANCE STAYS TRUE. Every page clears the bar with its own padding (sixteen theme
    files, 66px each). Rather than touch each, SiteNav renders .sn-strip-space right after the
@@ -1215,11 +1216,16 @@ nav .sn-acc-body .m-mega-cta {
    is positioned against the nav from outside the flow (the phone panel above, the mega band's
    cap, the /listings rail and map column, the listing sidebar) adds --sn-strip-h itself. */
 :root {
-  --sn-strip-h: 24px;
+  --sn-strip-h: 30px;
 }
-@media (max-width: 640px) {
+@media (max-width: 759px) {
   :root {
-    --sn-strip-h: 34px;
+    --sn-strip-h: 44px;
+  }
+}
+@media (max-width: 359px) {
+  :root {
+    --sn-strip-h: 64px;
   }
 }
 nav .sn-reg {
@@ -1229,12 +1235,13 @@ nav .sn-reg {
   gap: 10px;
   height: var(--sn-strip-h);
   padding: 0 16px;
+  overflow: hidden;
   background: #04160f;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.25;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   text-align: center;
   white-space: nowrap;
 }
@@ -1245,14 +1252,18 @@ nav .sn-reg-name {
 nav .sn-reg-sep {
   opacity: 0.45;
 }
-@media (max-width: 640px) {
+@media (max-width: 759px) {
   nav .sn-reg {
     flex-direction: column;
-    gap: 1px;
-    font-size: 11px;
+    gap: 2px;
   }
   nav .sn-reg-sep {
     display: none;
+  }
+}
+@media (max-width: 359px) {
+  nav .sn-reg {
+    white-space: normal;
   }
 }
 .sn-strip-space {

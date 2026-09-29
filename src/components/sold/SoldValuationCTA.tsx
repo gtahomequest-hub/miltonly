@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { postLead, honeypotInputProps, HONEYPOT_WRAPPER_STYLE } from "@/lib/postLeadClient";
 import { VALUATION_FINE_PRINT } from "@/lib/lead/finePrint";
+import { config } from "@/lib/config";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -51,7 +52,7 @@ export default function SoldValuationCTA() {
 
           {status === "ok" ? (
             <p className="sv-sell-done">
-              Got it — Miltonly will be in touch with your home&rsquo;s value{address ? ` for ${address}` : ""}. Talk soon.
+              Got it. {config.realtor.name} will be in touch with your home&rsquo;s value{address ? ` for ${address}` : ""}. Talk soon.
             </p>
           ) : !open ? (
             <button type="button" className="sv-cta" onClick={() => setOpen(true)}>

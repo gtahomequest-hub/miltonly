@@ -8,6 +8,7 @@ import ChromeGate from "@/components/ChromeGate";
 import AttributionCapture from "@/components/AttributionCapture";
 import VercelAnalytics from "@/components/VercelAnalytics";
 import { config } from "@/lib/config";
+import { OG_SITE_NAME } from "@/lib/compliance/registrant";
 import "./globals.css";
 
 const REAL_ESTATE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE} Real Estate`;
@@ -91,7 +92,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_CA",
-    siteName: config.SITE_NAME,
+    siteName: OG_SITE_NAME,
     title: `${ENCYCLOPEDIA_LABEL} | ${config.SITE_NAME}`,
     description: OG_DESCRIPTION,
     url: config.SITE_URL,
