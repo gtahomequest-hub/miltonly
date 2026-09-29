@@ -48,6 +48,10 @@ export async function gatherVercel() {
     }
     const onDemand = (u) => (u?.services || []).filter((s) => s.name !== 'Pro').reduce((a, s) => a + (s.billedCost ?? s.effectiveCost ?? 0), 0);
     const spend = onDemand(cycle);
+    // MA-011: the upcoming invoice, cycle to date: every billed line including the Pro plan, after the
+    // included credit (the CLI's totals.billedCost). The spend-management figure above is the on-demand
+    // lines only, the figure the cap counts.
+    const invoice = cycle.totals?.billedCost ?? (cycle.services || []).reduce((a, s) => a + (s.billedCost ?? s.effectiveCost ?? 0), 0);
     const spendLastCycleSameDay = lastCycleSameDay && !lastCycleSameDay.error ? onDemand(lastCycleSameDay) : null;
     const listPrice = (cycle.services || []).filter((s) => s.name !== 'Pro').reduce((a, s) => a + (s.effectiveCost ?? 0), 0);
     const services = (cycle.services || []).filter((s) => s.name !== 'Pro').map((s) => ({ name: s.name, usd: +(s.billedCost ?? s.effectiveCost ?? 0).toFixed(2), listUsd: +(s.effectiveCost ?? 0).toFixed(2) })).sort((a, b) => b.usd - a.usd);
@@ -65,6 +69,7 @@ export async function gatherVercel() {
     const dailyRate = recent.length ? recent.reduce((a, d) => a + d.total, 0) / recent.length : (dayOfCycle ? spend / dayOfCycle : null);
     const daysLeft = period ? Math.max(0, (period.end - now) / 86400e3) : null;
     const projected = dailyRate != null && daysLeft != null ? spend + dailyRate * daysLeft : null;
+    const invoiceProjected = projected != null ? invoice + (projected - spend) : null;
     const cap = CONFIG.vercel.teamCapUsd;
     const daysToCap = dailyRate ? (spend >= cap ? 0 : (cap - spend) / dailyRate) : null;
 
@@ -91,7 +96,7 @@ export async function gatherVercel() {
     for (const d of deps) { const k = d.name; deployments[k] = deployments[k] || { total: 0, ready: 0, canceled: 0, error: 0, production: 0, buildMinutes: 0 }; deployments[k].total++; if (d.readyState === 'READY') deployments[k].ready++; if (d.readyState === 'CANCELED') deployments[k].canceled++; if (d.readyState === 'ERROR') deployments[k].error++; if (d.target === 'production') deployments[k].production++; if (d.buildingAt && d.ready) deployments[k].buildMinutes += (d.ready - d.buildingAt) / 60000; }
     for (const v of Object.values(deployments)) v.buildMinutes = +v.buildMinutes.toFixed(1);
 
-    return { ok: true, team: team.slug, period: period ? { start: period.start.toISOString().slice(0, 10), end: period.end.toISOString().slice(0, 10), day: dayOfCycle, days: cycleDays } : null, spend: +spend.toFixed(2), listPrice: +listPrice.toFixed(2), spendLastCycleSameDay: spendLastCycleSameDay != null ? +spendLastCycleSameDay.toFixed(2) : null, lastCycleError: lastCycleSameDay?.error ?? null, projected: projected != null ? +projected.toFixed(2) : null, dailyRate: dailyRate != null ? +dailyRate.toFixed(2) : null, daysLeft: daysLeft != null ? +daysLeft.toFixed(1) : null, cap, headroom: +(cap - spend).toFixed(2), daysToCap: daysToCap != null ? +daysToCap.toFixed(1) : null, services, lines, yesterday: yesterday ? { date: yesterday.date, total: +yesterday.total.toFixed(2) } : null, dayBefore: dayBefore ? { date: dayBefore.date, total: +dayBefore.total.toFixed(2) } : null, projectRows, traffic, deployments };
+    return { ok: true, team: team.slug, period: period ? { start: period.start.toISOString().slice(0, 10), startIso: period.start.toISOString(), end: period.end.toISOString().slice(0, 10), day: dayOfCycle, days: cycleDays } : null, invoice: +invoice.toFixed(2), invoiceProjected: invoiceProjected != null ? +invoiceProjected.toFixed(2) : null, spend: +spend.toFixed(2), listPrice: +listPrice.toFixed(2), spendLastCycleSameDay: spendLastCycleSameDay != null ? +spendLastCycleSameDay.toFixed(2) : null, lastCycleError: lastCycleSameDay?.error ?? null, projected: projected != null ? +projected.toFixed(2) : null, dailyRate: dailyRate != null ? +dailyRate.toFixed(2) : null, daysLeft: daysLeft != null ? +daysLeft.toFixed(1) : null, cap, headroom: +(cap - spend).toFixed(2), daysToCap: daysToCap != null ? +daysToCap.toFixed(1) : null, services, lines, yesterday: yesterday ? { date: yesterday.date, total: +yesterday.total.toFixed(2) } : null, dayBefore: dayBefore ? { date: dayBefore.date, total: +dayBefore.total.toFixed(2) } : null, projectRows, traffic, deployments };
   } catch (e) {
     return { ok: false, error: redact(e.message) };
   }

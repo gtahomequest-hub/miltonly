@@ -2,7 +2,7 @@
 // MA-002. The nightly audit of production. Reads pages, never the database.
 //
 //   BASE=https://miltonly.com node scripts/audit/nightly/run.mjs [--no-email] [--no-lh] [--out=dir]
-//     [--budget=600] [--deadline=285] [--sample=40] [--lh=12]
+//     [--budget=600] [--link-budget=900] [--deadline=285] [--sample=40] [--lh=12] [--www=20]
 //
 // One run: the sitemap, a status sweep of as many sitemap URLs as the fetch budget allows (the
 // non-street pages every night, streets and listings in rotation, oldest sweep first), the links
@@ -11,12 +11,23 @@
 // previous night's state. Output: scratchpad/audit/nightly/<date>.md and state.json, both committed
 // by the workflow, and one email through Resend carrying only what changed or broke.
 //
-// Budget: 600 page fetches and 285 s, both enforced here, both reported.
+// Budget: 600 page fetches, 900 link fetches and 285 s, all enforced here, all reported.
+//
+// MA-011, every night: MC-045's 58 WRONG compass sentences stay off the 56 pages MC-048 stripped (the
+// pages are swept every night; a sentence back is S1 and fails the night with exit 5, a missing
+// positive control is S2); every swept street page carries MC-048's head (checks.mjs, street-head); 20
+// sampled www paths answer 308 to the same path on the apex (S4 and report-only until guards.json says
+// MC-049 has merged, then S2 and a failed night). Off-sitemap links have their own fetch budget and are
+// checked oldest check first, all of them when the budget and the clock allow; the report names the
+// cadence otherwise. A carried link finding whose target has joined the sitemap, or that no page it was
+// linked from links any more, is resolved rather than carried (D1).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageFindings } from './checks.mjs';
+import { loadBanned, checkStrip } from './strip.mjs';
+import { resolveCarriedLinks, linkQueue, wwwSample, wwwPasses } from './guards.mjs';
 import { launch, inspect, lighthouse, LH_BIN, CHROME } from './browser.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +47,11 @@ const NO_LH = flag('no-lh');
 const TO = process.env.AUDIT_EMAIL_TO || 'gtahomequest@gmail.com';
 const UA = 'miltonly-audit/nightly (+https://miltonly.com)';
 const CONCURRENCY = 10;
+const LINK_BUDGET = +arg('link-budget', 900);
+const WWW_N = +arg('www', 20);
+const GUARDS = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'guards.json'), 'utf8'));
+const BANNED = loadBanned();
+const BANNED_PATHS = Object.keys(BANNED.pages).map((slug) => `/streets/${slug}`);
 const REPO = process.env.GITHUB_REPOSITORY || 'gtahomequest-hub/miltonly';
 const BRANCH = process.env.GITHUB_REF_NAME || 'feat/audit';
 
@@ -52,8 +68,10 @@ const log = (m) => console.log(`[${String(elapsed()).padStart(3)}s] ${m}`);
 
 // The fetch budget. Every request to the host, including each redirect hop, is one fetch.
 let fetches = 0;
+let linkFetches = 0;
 const fetchesBy = {};
 function budget(phase, n = 1) {
+  if (phase === 'links') { if (linkFetches + n > LINK_BUDGET) return false; linkFetches += n; fetchesBy.links = (fetchesBy.links || 0) + n; return true; }
   if (fetches + n > BUDGET) return false;
   fetches += n; fetchesBy[phase] = (fetchesBy[phase] || 0) + n; return true;
 }
@@ -114,15 +132,17 @@ if (prev) {
 // 2. Which sitemap URLs to sweep tonight. Everything that is not a street or a listing is swept
 //    every night; streets and listings fill the rest of the budget, the longest-unswept first, so
 //    the whole sitemap is covered in a few nights and the report says how many.
-const RESERVE = SAMPLE_N + (NO_LH ? 0 : FIXED.length) + 40;
+const RESERVE = SAMPLE_N + (NO_LH ? 0 : FIXED.length) + WWW_N + 20;
 const sweepCap = Math.max(0, BUDGET - fetches - RESERVE);
 const always = [...sitemap].filter((p) => !/^\/(streets|listings)\//.test(p));
-const rotating = [...sitemap].filter((p) => /^\/(streets|listings)\//.test(p) && !FIXED.includes(p));
+// MA-011: the 56 pages MC-048 stripped are swept every night, so a regeneration that brings a sentence back fails that night.
+const pinned = BANNED_PATHS.filter((p) => sitemap.has(p) && !FIXED.includes(p));
+const rotating = [...sitemap].filter((p) => /^\/(streets|listings)\//.test(p) && !FIXED.includes(p) && !pinned.includes(p));
 const lastSwept = (p) => prev?.pages?.[p]?.sweptAt || '';
 rotating.sort((a, b) => lastSwept(a).localeCompare(lastSwept(b)) || a.localeCompare(b));
-const toSweep = [...new Set([...FIXED.filter((p) => sitemap.has(p) || p === '/'), ...always, ...rotating])].slice(0, sweepCap);
+const toSweep = [...new Set([...FIXED.filter((p) => sitemap.has(p) || p === '/'), ...always, ...pinned, ...rotating])].slice(0, sweepCap);
 const sweepSet = new Set(toSweep);
-log(`sweeping ${toSweep.length} of ${sitemap.size} (cap ${sweepCap}); ${always.length} always, ${rotating.length} in rotation`);
+log(`sweeping ${toSweep.length} of ${sitemap.size} (cap ${sweepCap}); ${always.length} always, ${pinned.length} stripped streets pinned, ${rotating.length} in rotation`);
 
 // 3. Lighthouse, started first so its CPU time overlaps the network-bound sweep. Two at a time;
 //    the sweep runs against the same host meanwhile, so the numbers are indicative, not clean.
@@ -149,6 +169,13 @@ const pages = {};
 const linksOut = new Map();   // target path -> Set of referrers
 const crossAnchors = [];      // { from, path, frag }
 const pageIds = {};           // path -> Set of ids (raw HTML)
+const strips = {};            // MA-011: slug -> checkStrip result, tonight
+function stripFindings(slug, html) {
+  const res = checkStrip(BANNED.pages[slug], html); strips[slug] = res;
+  const out = res.found.map((t) => ({ code: 'banned-sentence', sev: 1, key: t.slice(0, 60), detail: `MC-045's WRONG sentence is back on the page (MC-048 stripped it): "${t.slice(0, 140)}${t.length > 140 ? '\u2026' : ''}"` }));
+  if (res.control === 'missing') out.push({ code: 'strip-control', sev: 2, key: '', detail: 'the positive control sentence is not on the page, so "no banned sentence" is unverified here (regenerated?)' });
+  return out;
+}
 async function sweepOne(p) {
   const r = await get(`${BASE}${p}`, 'sweep');
   const rec = { status: r.status, ms: r.ms, sweptAt: DATE, findings: [], cache: r.cache || null };
@@ -169,6 +196,8 @@ async function sweepOne(p) {
     const listing = p.startsWith('/listings/');
     const res = pageFindings({ html: r.html, path: rec.final || p, base: BASE, listing });
     f.push(...res.findings);
+    const slug = p.startsWith('/streets/') ? p.slice('/streets/'.length) : null;
+    if (slug && BANNED.pages[slug]) f.push(...stripFindings(slug, r.html));
     if (res.meta.robots && /noindex/i.test(res.meta.robots)) f.push({ code: 'noindex', sev: 2, key: '', detail: `robots ${res.meta.robots} on a sitemap URL` });
     pageIds[p] = res.ids;
     for (const t of res.internal.keys()) { if (!linksOut.has(t)) linksOut.set(t, new Set()); linksOut.get(t).add(p); }
@@ -202,17 +231,20 @@ for (const [t, refs] of linksOut) {
   const e = byPath.get(key); e.variants++; for (const r of refs) e.refs.add(r);
 }
 const discovered = [...byPath.values()].map((e) => [e.target, e.refs, e.variants]).sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0]));
+// MA-011: the rank is the most-linked order; the 32 most-linked were all the budget reached before MA-011.
+const rankOf = new Map(discovered.map(([t], i) => [t, i + 1]));
+const PRE_MA011_LINKS = 32;
+let linksChecked = 0;
 {
-  const linkCap = Math.max(0, BUDGET - fetches - SAMPLE_N - lhJobs.length - 8);
-  const q = discovered.slice(0, linkCap); let checked = 0;
-  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+  const q = linkQueue(discovered, prev?.links || {}); let checked = 0;
+  await Promise.all(Array.from({ length: 16 }, async () => {
     while (q.length) {
       if (past(DEADLINE * 0.8)) { q.length = 0; break; }
       const [t, refs, variants] = q.shift();
       const r = await get(`${BASE}${t}`, 'links', { body: false });
       if (r.error === 'budget') { q.length = 0; break; }
       checked++;
-      const rec = { status: r.status, refs: refs.size, from: [...refs].slice(0, 5), checkedAt: DATE };
+      const rec = { status: r.status, refs: refs.size, from: [...refs].slice(0, 5), checkedAt: DATE, rank: rankOf.get(t) };
       if (variants > 1) rec.variants = variants;
       if (r.chain?.length) rec.chain = r.chain.map((h) => `${h.status} ${r.offhost && h === r.chain.at(-1) ? h.to : pathOf(h.to)}`);
       const entity = t.match(/^\/(streets|condos|neighbourhoods|schools|mosques|guides|listings|market-watch)\/[^/?#]+$/);
@@ -229,12 +261,43 @@ const discovered = [...byPath.values()].map((e) => [e.target, e.refs, e.variants
       state.links[t] = rec;
     }
   }));
-  const unchecked = discovered.length - checked;
-  if (unchecked > 0) notes.push(`${unchecked} of ${discovered.length} discovered links not checked tonight (budget or clock); the most-linked ${checked} were`);
+  const unchecked = discovered.length - checked; linksChecked = checked;
+  if (unchecked > 0) notes.push(`${unchecked} of ${discovered.length} off-sitemap targets not checked tonight (link budget or clock); they rotate, the oldest check first`);
   phases.links = elapsed();
   log(`links: ${discovered.length} off-sitemap targets, ${checked} checked, ${Object.values(state.links).filter((l) => l.finding).length} with findings`);
 }
-for (const [t, l] of Object.entries(prev?.links || {})) if (!state.links[t] && l.finding) state.links[t] = { ...l, carried: true };
+// D1 (MA-011): a carried link finding is resolved, not carried, when its target has joined the sitemap
+// (the page is swept as a page now), or when every page recorded as linking it was swept tonight and
+// none links it any more. Only a target no page reached tonight is carried.
+const resolvedLinks = resolveCarriedLinks({ prevLinks: prev?.links || {}, links: state.links, sitemap, pages, linkedTonight: linksOut.keys(), date: DATE });
+// MA-011. www twins: WWW_N sampled paths on www answer 308 to the same path on the apex. The sample is
+// date-seeded (the homepage always), so a re-run on the same day checks the same paths.
+const www = { enforced: !!GUARDS.wwwTwinEnforced, sample: [], checked: 0, pass: 0, fails: [] };
+if (!/^www\.|vercel\.app$|localhost|127\.0\.0\.1/.test(HOST)) {
+  www.sample = wwwSample(sitemap, DATE, WWW_N);
+  const q = www.sample.slice();
+  await Promise.all(Array.from({ length: 5 }, async () => {
+    while (q.length) {
+      const p = q.shift(); if (!budget('www')) { notes.push('www twins stopped: fetch budget'); q.length = 0; break; }
+      try {
+        const r = await fetch(`https://www.${HOST}${p}`, { redirect: 'manual', headers: { 'user-agent': UA }, signal: AbortSignal.timeout(15000) });
+        await r.body?.cancel().catch(() => {});
+        const loc = r.headers.get('location'); www.checked++;
+        if (wwwPasses(BASE, p, r.status, loc)) www.pass++; else www.fails.push({ path: p, status: r.status, location: loc });
+      } catch (e) { www.checked++; www.fails.push({ path: p, status: null, error: (e.cause?.code || e.name || 'error').slice(0, 40) }); }
+    }
+  }));
+} else notes.push(`www twins skipped: ${HOST} has no www twin`);
+state.www = www;
+// MA-011. A stripped page that has left the sitemap is not swept; it is fetched here, and a banned
+// sentence on it is still S1. A page that no longer answers 200 carries no sentence.
+const stripOff = {};
+for (const p of BANNED_PATHS.filter((x) => !sitemap.has(x))) {
+  const r = await get(`${BASE}${p}`, 'guards');
+  stripOff[p] = r.status;
+  if (r.status === 200 && r.html) { const f = stripFindings(p.slice('/streets/'.length), r.html); if (f.length) state.stripOff = [...(state.stripOff || []), ...f.map((x) => ({ path: p, ...x }))]; }
+}
+
 // Cross-page anchors to pages swept tonight.
 for (const a of crossAnchors) {
   const ids = pageIds[a.path];
@@ -305,13 +368,18 @@ const idOf = (p, f) => `${p}|${f.code}|${f.key}`;
 const all = []; // { id, path, ...finding, carried }
 for (const [p, r] of Object.entries(state.pages)) for (const f of r.findings) if (f.code !== 'not-swept') all.push({ id: idOf(p, f), path: p, ...f, carried: !!(r.carried || f.carried) });
 for (const [t, l] of Object.entries(state.links)) if (l.finding) all.push({ id: idOf(t, l.finding), path: t, ...l.finding, carried: !!l.carried });
+const wwwFinding = (x) => ({ code: 'www-twin', sev: www.enforced ? 2 : 4, key: '', detail: `https://www.${HOST}${x.path} answered ${x.status ?? x.error}${x.location ? ` to ${x.location}` : ''}, not 308 to ${BASE}${x.path}${www.enforced ? '' : ' (report-only until MC-049)'}` });
+for (const x of www.fails) { const f = wwwFinding(x); all.push({ id: idOf(`www${x.path}`, f), path: `www${x.path}`, ...f, carried: false }); }
+for (const x of state.stripOff || []) all.push({ id: idOf(x.path, x), ...x, carried: false });
 const prevAll = new Map();
 if (prev) {
   for (const [p, r] of Object.entries(prev.pages || {})) for (const f of r.findings || []) if (f.code !== 'not-swept') prevAll.set(idOf(p, f), { path: p, ...f });
   for (const [t, l] of Object.entries(prev.links || {})) if (l.finding) prevAll.set(idOf(t, l.finding), { path: t, ...l.finding });
+  for (const x of prev.www?.fails || []) prevAll.set(idOf(`www${x.path}`, { code: 'www-twin', key: '' }), { path: `www${x.path}`, code: 'www-twin', sev: prev.www.enforced ? 2 : 4, key: '', detail: `answered ${x.status ?? x.error}` });
+  for (const x of prev.stripOff || []) prevAll.set(idOf(x.path, x), x);
 }
 const nowIds = new Set(all.map((f) => f.id));
-const rechecked = (id) => { const p = id.split('|')[0]; const code = id.split('|')[1]; if (nowIds.has(id)) return true; if (state.links[p]) return !state.links[p].carried; if (!pages[p]) return false; if ((code === 'overflow-390' || code === 'font-under-12') && !sampled.has(p)) return false; return true; };
+const rechecked = (id) => { const p = id.split('|')[0]; const code = id.split('|')[1]; if (nowIds.has(id)) return true; if (code === 'www-twin') return www.sample.includes(p.slice(3)); if (code === 'banned-sentence' && p in stripOff) return true; if (state.links[p]) return !state.links[p].carried; if (!pages[p]) return false; if ((code === 'overflow-390' || code === 'font-under-12') && !sampled.has(p)) return false; return true; };
 const fresh = all.filter((f) => !f.carried && !prevAll.has(f.id));
 const fixed = [...prevAll.entries()].filter(([id]) => !nowIds.has(id) && rechecked(id)).map(([, f]) => f);
 const order = (a, b) => a.sev - b.sev || a.code.localeCompare(b.code) || a.path.localeCompare(b.path);
@@ -331,7 +399,16 @@ const runSeconds = elapsed();
 const counts = (arr) => [1, 2, 3, 4].map((s) => `${SEV[s]} ${arr.filter((f) => f.sev === s).length}`).join(' · ');
 const sweptTonight = Object.keys(pages).length;
 const neverSwept = [...sitemap].filter((p) => !state.pages[p]?.sweptAt).length;
-const rotationNights = rotating.length ? Math.ceil(rotating.length / Math.max(1, Math.min(rotating.length, sweepCap - always.length))) : 1;
+const rotationNights = rotating.length ? Math.ceil(rotating.length / Math.max(1, Math.min(rotating.length, sweepCap - always.length - pinned.length))) : 1;
+const linkFindings = Object.values(state.links).filter((l) => l.finding);
+const linkNights = linksChecked >= discovered.length ? 1 : Math.ceil(discovered.length / Math.max(1, linksChecked));
+const linkByCode = {}; for (const l of linkFindings) linkByCode[l.finding.code] = (linkByCode[l.finding.code] || 0) + 1;
+const linkTop = linkFindings.filter((l) => !l.carried && l.rank && l.rank <= PRE_MA011_LINKS).length;
+const stripChecked = Object.keys(strips).length; const stripFound = Object.values(strips).reduce((n, r) => n + r.found.length, 0) + (state.stripOff || []).filter((x) => x.code === 'banned-sentence').length;
+const stripCtl = Object.values(strips).filter((r) => r.control !== 'none'); const stripCtlFound = stripCtl.filter((r) => r.control === 'found').length;
+const streetsTonight = Object.keys(pages).filter((p) => /^\/streets\/[^/?#]+$/.test(p) && pages[p].status === 200);
+const streetHeadPages = streetsTonight.filter((p) => pages[p].findings.some((f) => f.code === 'street-head')).length;
+state.linkRun = { targets: discovered.length, checked: linksChecked, nights: linkNights, byCode: linkByCode, topFindings: linkTop, resolved: { sitemap: resolvedLinks.sitemap.length, unlinked: resolvedLinks.unlinked.length } };
 const statusCounts = {}; const ttfbs = [];
 for (const r of Object.values(pages)) { const k = r.error ? `error (${r.error})` : String(r.status); statusCounts[k] = (statusCounts[k] || 0) + 1; if (r.status === 200 && !r.chain) ttfbs.push(r.ms); }
 ttfbs.sort((a, b) => a - b); const pct = (q) => ttfbs.length ? ttfbs[Math.min(ttfbs.length - 1, Math.floor(ttfbs.length * q))] : null;
@@ -360,14 +437,15 @@ const lhTable = () => {
 const open = all.filter((f) => f.sev <= 3);
 const report = `# Nightly audit ${DATE}
 
-${BASE}${sha ? ` · audit code \`${sha}\`` : ''} · run ${new Date(T0).toISOString()} · ${runSeconds} s of ${DEADLINE / 1000} · ${fetches} of ${BUDGET} fetches · previous night ${prev ? prev.date : 'none (baseline)'}
+${BASE}${sha ? ` · audit code \`${sha}\`` : ''} · run ${new Date(T0).toISOString()} · ${runSeconds} s of ${DEADLINE / 1000} · ${fetches} of ${BUDGET} page fetches, ${linkFetches} of ${LINK_BUDGET} link fetches · previous night ${prev ? prev.date : 'none (baseline)'}
 
 ## Summary
 
 - Sitemap ${sitemap.size} URLs: ${Object.entries(families).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ')}.${state.sitemapDelta ? ` Since ${prev.date}: ${state.sitemapDelta.joined} joined, ${state.sitemapDelta.left} left.` : ''}
 - Swept tonight ${sweptTonight}: the ${always.length} pages outside \`/streets\` and \`/listings\` every night, the ${rotating.length} streets and listings in rotation (oldest sweep first, the whole set every ${rotationNights} night${rotationNights === 1 ? '' : 's'}). Never swept: ${neverSwept}.
 - Status: ${Object.entries(statusCounts).sort().map(([k, v]) => `${k} × ${v}`).join(', ')}. GET p50 ${pct(0.5)} ms, p95 ${pct(0.95)} ms.${Object.keys(cacheCounts).length ? ` Cache: ${Object.entries(cacheCounts).sort().map(([k, v]) => `${k} ${v}`).join(', ')}.` : ''}
-- Off-sitemap links: ${discovered.length} targets, ${Object.keys(state.links).length} checked, ${Object.values(state.links).filter((l) => l.finding).length} with findings.
+- Off-sitemap links: ${discovered.length} targets, ${linksChecked} checked tonight (${linkNights === 1 ? 'all of them' : `rotating, oldest check first: every target within ${linkNights} nights`}); ${linkFindings.length} with findings (${Object.entries(linkByCode).sort().map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}), ${linkFindings.filter((l) => l.carried).length} of them carried; ${linkTop} among the ${PRE_MA011_LINKS} most-linked, the set the budget reached before MA-011. Resolved, not carried (D1): ${resolvedLinks.sitemap.length} joined the sitemap, ${resolvedLinks.unlinked.length} no longer linked.
+- Guards: banned sentences ${stripFound} of ${BANNED.counts.sentences} on the ${stripChecked} stripped pages swept tonight${Object.keys(stripOff).length ? ` and ${Object.keys(stripOff).length} off the sitemap` : ''}, positive controls ${stripCtlFound} of ${stripCtl.length}; street head (MC-048) on ${streetsTonight.length} street pages tonight, ${streetHeadPages} with a finding; www twins ${www.pass} of ${www.checked} answer 308 to the apex (${www.enforced ? 'enforced' : 'report-only until MC-049'}).
 - Sample at 390 px: ${sampled.size} of ${sample.length} pages; overflow on ${[...sampled].filter((p) => pages[p].findings.some((f) => f.code === 'overflow-390')).length}, fonts under 12 px on ${[...sampled].filter((p) => pages[p].findings.some((f) => f.code === 'font-under-12' && !f.carried)).length}.
 - Open findings ${open.length}: ${counts(open)}. New tonight ${fresh.length}: ${counts(fresh)}. Fixed since ${prev ? prev.date : 'baseline'}: ${fixed.length}.
 ${notes.length ? `- Run notes: ${notes.join('; ')}.` : ''}
@@ -395,7 +473,7 @@ ${sample.map((p) => { const r = pages[p]; const d = r?.dom; return `- ${p} · ${
 
 ## Budget
 
-- Fetches by phase: ${Object.entries(fetchesBy).map(([k, v]) => `${k} ${v}`).join(', ')}; total ${fetches} of ${BUDGET}.
+- Fetches by phase: ${Object.entries(fetchesBy).map(([k, v]) => `${k} ${v}`).join(', ')}; pages ${fetches} of ${BUDGET}, links ${linkFetches} of ${LINK_BUDGET}.
 - Seconds at phase end: ${Object.entries(phases).map(([k, v]) => `${k} ${v}`).join(', ')}; total ${runSeconds} of ${DEADLINE / 1000}.
 - Chrome ${CHROME || 'none'}; Lighthouse ${LH_BIN || 'none'}.
 `;
@@ -419,11 +497,11 @@ if (!NO_EMAIL) {
     const quiet = prev && !fresh.length && !fixed.length && !lhMoves.some((m) => m.sev <= 3);
     const html = `<div style="font:14px/1.5 Inter,system-ui,sans-serif;color:#1a1a1a;background:#f6f4ef;padding:24px"><div style="max-width:680px;margin:0 auto;background:#fff;border-radius:8px;padding:24px 28px">
 <h2 style="font:600 20px/1.2 Fraunces,Georgia,serif;color:#073126;margin:0 0 6px">Nightly audit ${DATE}</h2>
-<p style="color:#444;margin:0 0 12px">${esc(BASE)}${sha ? ` · audit code ${sha}` : ''} · ${sweptTonight} of ${sitemap.size} pages swept · ${fetches} fetches · ${runSeconds} s${notes.length ? `<br><span style="color:#a3211a">${esc(notes.join('; '))}</span>` : ''}</p>
+<p style="color:#444;margin:0 0 12px">${esc(BASE)}${sha ? ` · audit code ${sha}` : ''} · ${sweptTonight} of ${sitemap.size} pages swept · ${fetches} + ${linkFetches} link fetches · ${runSeconds} s<br>Guards: banned sentences ${stripFound} · controls ${stripCtlFound}/${stripCtl.length} · street head ${streetHeadPages} of ${streetsTonight.length} · www ${www.pass}/${www.checked}${notes.length ? `<br><span style="color:#a3211a">${esc(notes.join('; '))}</span>` : ''}</p>
 ${!prev ? `<p><strong>Baseline night.</strong> Nothing to diff against; every open finding is listed by severity.</p>${h(`Open findings (${open.length})`)}${ul(open, 80)}` : quiet ? `<p><strong>Nothing changed.</strong> ${open.length} findings still open (${esc(counts(open))}).</p>` : `${h(`Broke or appeared (${fresh.length})`)}${ul(fresh)}${h(`Fixed (${fixed.length})`)}${ul(fixed, 30)}${h(`Lighthouse moves (${lhMoves.filter((m) => m.sev <= 3).length})`)}${lhMoves.filter((m) => m.sev <= 3).length ? `<ul style="padding-left:18px">${lhMoves.filter((m) => m.sev <= 3).map((m) => `<li><a href="${BASE}${esc(m.path)}" style="color:#017848">${esc(m.path)}</a> · ${esc(m.text)}</li>`).join('')}</ul>` : '<p style="color:#666">none</p>'}<p style="margin-top:16px">Still open: ${open.length} (${esc(counts(open))}).</p>`}
 <p style="margin-top:18px;color:#444">Full report: <a href="${reportUrl}" style="color:#017848">${esc(reportRel)}</a></p>
 </div></div>`;
-    const text = [`Nightly audit ${DATE}`, `${BASE} · ${sweptTonight} of ${sitemap.size} swept · ${fetches} fetches · ${runSeconds} s`, ...(notes.length ? [`Notes: ${notes.join('; ')}`] : []), '',
+    const text = [`Nightly audit ${DATE}`, `${BASE} · ${sweptTonight} of ${sitemap.size} swept · ${fetches} + ${linkFetches} link fetches · ${runSeconds} s`, `Guards: banned sentences ${stripFound} · controls ${stripCtlFound}/${stripCtl.length} · street head ${streetHeadPages} of ${streetsTonight.length} · www ${www.pass}/${www.checked}`, ...(notes.length ? [`Notes: ${notes.join('; ')}`] : []), '',
       ...(!prev ? [`Baseline: ${open.length} open (${counts(open)})`, ...open.slice(0, 80).map((f) => `${SEV[f.sev]} ${f.code} ${f.path}: ${f.detail}`)]
         : quiet ? [`Nothing changed. ${open.length} still open (${counts(open)}).`]
           : [`Broke or appeared (${fresh.length}):`, ...fresh.slice(0, 60).map((f) => `${SEV[f.sev]} ${f.code} ${f.path}: ${f.detail}`), '', `Fixed (${fixed.length}):`, ...fixed.slice(0, 30).map((f) => `${SEV[f.sev]} ${f.code} ${f.path}`), '', `Lighthouse moves:`, ...lhMoves.filter((m) => m.sev <= 3).map((m) => `${m.path}: ${m.text}`), '', `Still open: ${open.length} (${counts(open)})`]),
@@ -436,8 +514,12 @@ ${!prev ? `<p><strong>Baseline night.</strong> Nothing to diff against; every op
     } catch (e) { console.error(`email failed: ${e.message}`); process.exitCode = 3; }
   }
 }
-log(`done in ${elapsed()} s, ${fetches} fetches`);
-if (fetches > BUDGET) process.exitCode = 4;
+log(`done in ${elapsed()} s, ${fetches} page fetches, ${linkFetches} link fetches`);
+if (fetches > BUDGET || linkFetches > LINK_BUDGET) process.exitCode = 4;
+// MA-011: a banned sentence back on a page, or an enforced www twin that does not redirect, fails the
+// night after the report is written and the email sent (the workflow commits the report regardless).
+const guardFail = all.filter((f) => f.code === 'banned-sentence' || (f.code === 'www-twin' && f.sev <= 2));
+if (guardFail.length) { console.error(`guard failed: ${guardFail.map((f) => `${f.code} ${f.path}`).join('; ')}`); if (!process.exitCode) process.exitCode = 5; }
 
 function loadEnvLocal() {
   const f = path.join(ROOT, '.env.local'); if (!fs.existsSync(f)) return;

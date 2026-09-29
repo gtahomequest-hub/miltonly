@@ -70,6 +70,11 @@ jobs:
       - name: Voice rule fixtures
         run: node scripts/audit/nightly/test-voice-rules.mjs
 
+      # MA-011. The guards' fixtures: MC-048's street head, the stripped sentences and their controls,
+      # D1 and the link queue, the www twin verdict.
+      - name: Guard fixtures
+        run: node scripts/audit/nightly/test-nightly-checks.mjs
+
       # A lean install: puppeteer-core and lighthouse only, not the app. Chrome is the runner's.
       - name: Audit dependencies
         run: |

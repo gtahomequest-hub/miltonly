@@ -28,7 +28,7 @@
     }
   },
   "analytics": {
-    "$comment": "Vercel Web Analytics has no documented REST endpoint and the script is not on the site yet (Home is building it). The source below is tried and, until it answers, the section says awaiting first data.",
+    "$comment": "MA-011: Web Analytics is read through the Vercel Query API (/v1/query/web-analytics/visits/count and /aggregate), live since 2026-09-22. The API groups referrers by hostname, so an entry with a path (bing.com/chat, search.brave.com/ai) cannot be told from its search engine and is not matched.",
     "aiReferrerHosts": ["chatgpt.com", "chat.openai.com", "openai.com", "perplexity.ai", "copilot.microsoft.com", "bing.com/chat", "gemini.google.com", "claude.ai", "you.com", "phind.com", "search.brave.com/ai"]
   },
   "sampleFloor": {

@@ -17,7 +17,7 @@ export const RULES = JSON.parse(fs.readFileSync(path.join(HERE, 'rules.json'), '
 
 loadEnv();
 
-const SECRET_KEYS = ['VERCEL_API_TOKEN', 'NEON_API_KEY', 'RESEND_API_KEY', 'DATABASE_URL', 'SOLD_DATABASE_URL', 'ANALYTICS_DATABASE_URL', 'GSC_SERVICE_ACCOUNT_JSON'];
+const SECRET_KEYS = ['VERCEL_API_TOKEN', 'NEON_API_KEY', 'RESEND_API_KEY', 'DATABASE_URL', 'SOLD_DATABASE_URL', 'ANALYTICS_DATABASE_URL', 'GSC_SERVICE_ACCOUNT_JSON', 'GSC_SERVICE_ACCOUNT_KEY'];
 /** Any secret value, or any 24+ character token-looking run, becomes [redacted] before it is written anywhere. */
 export function redact(s) {
   let out = String(s ?? '');

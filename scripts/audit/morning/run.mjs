@@ -4,7 +4,7 @@
 //
 //   node scripts/audit/morning/run.mjs [--no-email] [--out=<dir>]
 //
-// Reads: VERCEL_API_TOKEN, NEON_API_KEY, GSC_SERVICE_ACCOUNT (a path) or GSC_SERVICE_ACCOUNT_JSON,
+// Reads: VERCEL_API_TOKEN, NEON_API_KEY, GSC_SERVICE_ACCOUNT_KEY or GSC_SERVICE_ACCOUNT_JSON (the key) or GSC_SERVICE_ACCOUNT (a path),
 // DATABASE_URL, SOLD_DATABASE_URL, RESEND_API_KEY, RESEND_FROM_EMAIL, REPORT_EMAIL_TO. None is ever
 // printed. Writes scratchpad/audit/morning/<date>.md and state.json (yesterday's figures, for the
 // diff). Exit 0 clean; 2 when a source failed (the report still goes out, saying which); 3 when
@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { OUT, CONFIG, RULES, TODAY, YESTERDAY, calls, redact, usd, int, gb, hours, delta, rate, movement, readState, writeState, weekday } from './lib.mjs';
+import { OUT, CONFIG, RULES, TODAY, YESTERDAY, calls, redact, usd, int, gb, hours, delta, rate, movement, readState, writeState, weekday, daysAgo } from './lib.mjs';
 import { gatherVercel } from './sources/vercel.mjs';
 import { gatherNeon } from './sources/neon.mjs';
 import { gatherGsc } from './sources/gsc.mjs';
@@ -49,10 +49,14 @@ const pathOf = (u) => { try { return new URL(u).pathname.replace(/\/$/, '') || '
 facts.conversion.pages28 = gsc.ok && db.ok ? gsc.pages28.map((p) => ({ page: pathOf(p.page), clicks: p.clicks, impressions: p.impressions, position: p.position, leads: db.leads28ByPath[pathOf(p.page)] ?? 0 })).sort((a, b) => b.clicks - a.clicks) : [];
 facts.conversion.leads = db.ok ? db : null;
 facts.content.streetsWithoutPage = db.ok ? db.streetsWithoutPage : [];
-// The denominator for cost per visit: sessions when analytics answers, GSC clicks until then, and the report says which.
-const sessionsMtd = analytics.sessions ?? null;
-const visitDenominator = sessionsMtd != null ? { n: sessionsMtd, label: 'sessions (Web Analytics)' } : gsc.ok ? { n: gsc.mtd.clicks, label: 'GSC clicks, month to date (sessions awaiting first data)' } : null;
+// The denominator for cost per visit: Web Analytics visitors month to date when the Query API answers, GSC clicks otherwise, and the report says which.
+const visitorsMtd = analytics.status === 'live' ? analytics.mtd?.visitors ?? null : null;
+const visitDenominator = visitorsMtd != null ? { n: visitorsMtd, label: 'visitors, month to date (Web Analytics)' } : gsc.ok ? { n: gsc.mtd.clicks, label: 'GSC clicks, month to date (Web Analytics not answering)' } : null;
 const costPerVisit = visitDenominator && visitDenominator.n > 0 ? spendMtd / visitDenominator.n : null;
+// MA-011 (ML-013): cost per lead, the upcoming invoice first and the spend-management figure beside it,
+// over production leads inside the same billing cycle.
+const invoiceMtd = (vercel.ok ? vercel.invoice : 0) + (neon.ok ? neon.miltonlyUsd : 0);
+const leadsCycle = db.ok && vercel.ok && vercel.period ? db.leadTimes.filter((t) => t >= vercel.period.startIso).length : null;
 
 // 3. The One Thing: rules as data.
 const get = (obj, dotted) => dotted.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -81,7 +85,7 @@ L.push('');
 L.push('## 1 · Money');
 if (vercel.ok) {
   const v = vercel; const pv = prev?.vercel;
-  L.push(`- **Vercel on-demand, cycle to date: ${usd(v.spend)}** (list ${usd(v.listPrice)}), day ${v.period?.day} of ${v.period?.days} (${v.period?.start} to ${v.period?.end}); ${pv ? `${delta(v.spend, pv.spend, { pct: false })} since yesterday's report; ` : ''}same day last cycle ${v.spendLastCycleSameDay != null ? usd(v.spendLastCycleSameDay) : 'n/a'}.`);
+  L.push(`- **Vercel upcoming invoice, cycle to date: ${usd(v.invoice)}** (every billed line with the Pro plan, after the included credit; projected ${usd(v.invoiceProjected)} at cycle end) · **spend management, on-demand: ${usd(v.spend)}** (the figure the ${usd(v.cap, 0)} cap counts; list ${usd(v.listPrice)}), day ${v.period?.day} of ${v.period?.days} (${v.period?.start} to ${v.period?.end}); ${pv ? `${delta(v.spend, pv.spend, { pct: false })} since yesterday's report; ` : ''}same day last cycle ${v.spendLastCycleSameDay != null ? usd(v.spendLastCycleSameDay) : 'n/a'}.`);
   const capRisk = v.daysToCap != null && v.daysLeft != null && v.daysToCap <= v.daysLeft;
   L.push(`- Projected month end **${usd(v.projected)}** (${usd(v.spend)} so far plus ${usd(v.dailyRate)} a day, the last seven days' rate, for ${v.daysLeft} more days); headroom ${usd(v.headroom)} against the ${usd(v.cap, 0)} cap; ${capRisk ? `**at this rate the cap is crossed in ${v.daysToCap === 0 ? 'already crossed' : `${v.daysToCap} days`}, inside the cycle**` : `no cap risk this cycle (${v.daysToCap != null ? `${v.daysToCap} days to the cap at this rate, ${v.daysLeft} left` : 'rate unknown'})`}.`);
   const top = v.services[0]; const topLine = v.lines.find((l) => l.name === top?.name);
@@ -95,6 +99,7 @@ if (neon.ok) {
   L.push(`- Every Neon project this key sees, by what reads it: ${n.projects.map((p) => `${p.id.split('-').slice(0, 2).join('-')} = ${p.label.split(' (')[0]} ${p.computeHours} CU-h/${gb(p.egressBytes)}`).join(' · ')}. A project with no reader named here is unknown, not unused.`);
 } else L.push(`- Neon: source failed (${neon.error}).`);
 L.push(`- **Cost per visit: ${costPerVisit != null ? usd(costPerVisit, 3) : 'n/a'}** = (${usd(vercel.ok ? vercel.spend : 0)} Vercel + ${usd(neon.ok ? neon.miltonlyUsd : 0)} Neon, month to date) ÷ ${visitDenominator ? `${int(visitDenominator.n)} ${visitDenominator.label}` : 'no denominator'}.`);
+L.push(`- **Cost per lead: ${leadsCycle ? usd(invoiceMtd / leadsCycle) : 'n/a'}** on the upcoming invoice = (${usd(vercel.ok ? vercel.invoice : 0)} Vercel invoice + ${usd(neon.ok ? neon.miltonlyUsd : 0)} Neon) ÷ ${leadsCycle ?? '?'} production lead${leadsCycle === 1 ? '' : 's'} since the cycle began${vercel.ok && vercel.period ? ` (${vercel.period.start})` : ''}; on the spend-management figure ${leadsCycle ? usd(spendMtd / leadsCycle) : 'n/a'}.${leadsCycle === 0 ? ' No production lead this cycle, so no rate.' : ''}`);
 L.push('');
 L.push('## 2 · Traffic');
 if (gsc.ok && latest) {
@@ -108,13 +113,19 @@ if (gsc.ok && latest) {
   L.push(`- www vs apex, 28 d impressions: apex ${int(h.apex.impressions)} (${tot ? Math.round((h.apex.impressions / tot) * 100) : 0}%) · www ${int(h.www.impressions)} (${tot ? Math.round((h.www.impressions / tot) * 100) : 0}%)${h.other.impressions ? ` · other ${int(h.other.impressions)}` : ''}.`);
 } else L.push(`- GSC: ${gsc.ok ? gsc.note : `source failed (${gsc.error})`}.`);
 L.push(`- Googlebot / oai-searchbot requests: ${analytics.bots.status}.`);
-L.push(`- **Web Analytics: ${analytics.status}**${analytics.note ? ` (${analytics.note})` : ''}. Sessions ${analytics.sessions ?? 'n/a'} · bounce ${analytics.bounce ?? 'n/a'} · referrers ${analytics.referrers.length ? analytics.referrers.map((r) => JSON.stringify(r)).join(', ') : 'n/a'} · **AI-search referrers: ${analytics.aiReferrers.length ? analytics.aiReferrers.map((r) => JSON.stringify(r)).join(', ') : (analytics.status === 'first data' ? 'none' : 'awaiting first data')}**.`);
+const an = analytics;
+if (an.status === 'live') {
+  const w = an.window;
+  L.push(`- **Web Analytics, ${w.yesterday} (UTC day): ${int(an.yesterday.visitors)} visitors, ${int(an.yesterday.pageviews)} pageviews.** Last 7 days (${w.since7} to ${daysAgo(1)}): ${int(an.last7.visitors)} visitors, ${int(an.last7.pageviews)} pageviews (${an.last7.days.map((d) => `${d.date.slice(5)} ${d.visitors}`).join(' · ')}). Month to date ${int(an.mtd.visitors)} visitors; 28 days ${int(an.d28.visitors)}.`);
+  L.push(`- Top pages, 7 days: ${an.topPages.length ? an.topPages.map((p) => `${p.path} ${p.visitors}v/${p.pageviews}pv`).join(' · ') : 'none'}. Referrers, 7 days: ${an.referrers.length ? an.referrers.map((r) => `${r.host} ${r.visitors}`).join(' · ') : 'none'}. **AI-search referrers: ${an.aiReferrers.length ? an.aiReferrers.map((r) => `${r.host} ${r.visitors}v/${r.pageviews}pv`).join(' · ') : 'none'}**.`);
+} else L.push(`- **Web Analytics: ${an.ok ? an.status : `source failed (${an.error})`}**${an.note ? ` (${an.note})` : ''}.`);
 const imp = gsc.ok ? gsc.d28.impressions : null, clk = gsc.ok ? gsc.d28.clicks : null, leads28 = db.ok ? db.leads28Unpaid : null;
-L.push(`- Funnel, 28 d: impressions ${int(imp)} → clicks ${int(clk)} (${imp ? ((clk / imp) * 100).toFixed(1) : '?'}%) → sessions awaiting first data → engaged awaiting first data → leads ${int(leads28)} not ad-attributed (${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}; ${db.ok ? db.leads28 : '?'} leads in all, ${db.ok ? db.leads28 - db.leads28Unpaid : '?'} carrying a gclid or utm_source).`);
+L.push(`- Funnel, 28 d: impressions ${int(imp)} → clicks ${int(clk)} (${imp ? ((clk / imp) * 100).toFixed(1) : '?'}%) → visitors ${an.status === 'live' ? `${int(an.d28.visitors)} (Web Analytics, every source, not only search)` : 'n/a'} → leads ${int(leads28)} not ad-attributed (${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}; ${db.ok ? db.leads28 : '?'} leads in all, ${db.ok ? db.leads28 - db.leads28Unpaid : '?'} carrying a gclid or utm_source).`);
 L.push('');
 L.push('## 3 · Conversion');
 if (db.ok) {
-  L.push(`- **Leads yesterday: ${db.leadsYesterdayTotal}**${db.leadsYesterday.length ? ` · ${db.leadsYesterday.map((l) => `${l.n} ${l.source} (${l.intent}) from ${l.landing || 'no landing page'}`).join(' · ')}` : ''}. Last 7 days ${db.leads7}; month to date ${db.leadsMtd}.`);
+  const other = Object.entries(db.otherEnvMtd || {});
+  L.push(`- **Leads yesterday: ${db.leadsYesterdayTotal}**${db.leadsYesterday.length ? ` · ${db.leadsYesterday.map((l) => `${l.n} ${l.source} (${l.intent}) from ${l.landing || 'no landing page'}`).join(' · ')}` : ''}. Last 7 days ${db.leads7}; month to date ${db.leadsMtd}. Production rows only (env = 'production')${other.length ? `; left out this month: ${other.map(([k, n]) => `${n} ${k}`).join(', ')}` : ''}.`);
   const expected = gsc.ok && gsc.avg7 ? gsc.avg7.clicks * 0.02 : null;
   L.push(`- Clicks → leads, 28 d, ad-attributed leads excluded: ${clk != null && leads28 != null ? rate(leads28, clk, 'clicks') : 'n/a'}. At ~${gsc.ok && gsc.avg7 ? gsc.avg7.clicks.toFixed(0) : '?'} clicks a day and a 1 to 3% rate the expected daily count is ${expected != null ? `${(expected / 2).toFixed(1)} to ${(expected * 1.5).toFixed(1)}` : '?'}, so a zero day is the normal result, not a fault.`);
   const backlog = db.streetsWithoutPage;
