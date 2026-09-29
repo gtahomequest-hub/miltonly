@@ -217,4 +217,21 @@ output:
 6. **`email_verified_at` is blank in the export** because the portal does not timestamp email
    verification (a possible follow-up); it is never fabricated.
 
+## Addendum, 2026-09-28: re-verified against the in-repo PDF
+
+The canonical `docs/compliance/PROPTX_VOW_Best_Practices.pdf` is present in the worktree, tracked
+since MC-036 (`1cb431e`, blob `c4258bb5`, on `main` and this branch); the copy in the worktree is
+byte-identical (`cmp` clean, `git status` no change), so I did not commit it (Core owns it on
+`main`). It is byte-identical to the Homesly copy I originally built v5 from, so v5 was built
+against the exact canonical source. Re-reading Appendix B(c) from this PDF, all nine clauses match
+the shipped v5 text word-for-word (first person aside), and the four fixes are confirmed against
+the document: (iv) "data or **Listing Information** provided … purchase, sale, or lease of an
+individual property"; (v) "ownership of, and the **validity of PropTx's proprietary rights** and
+copyright in the MLS® database, MLS® data, PropTx's MLS® System, and Listing Information"; (vi)
+"**directly or indirectly** … **to another individual or entity** … 'scraping' … 'data mining'";
+(viii) "PropTx, and other PropTx Members or **their duly authorized representatives**". The
+additions are confirmed against their sources too: item 39 grounds the account-sharing clause,
+item 35 the anonymise-and-advise erasure, items 28/30 the audit trail and monitoring. **No clause
+change is needed; v5 stands as shipped at `cd2eed1`.**
+
 Report: scratchpad/reports/MP-007-proptx-standard.md
