@@ -3,6 +3,7 @@ import { config } from "@/lib/config";
 import { Suspense } from "react";
 import SignInForm from "./SignInForm";
 import SiteChrome from "@/components/nav/SiteChrome";
+import ReviewerNotice from "@/components/vow/ReviewerNotice";
 
 // noindex — an auth wall has no place in the index, and its redirect/intent/street param
 // permutations were the single biggest crawl-budget drain (see robots.ts).
@@ -37,6 +38,7 @@ export default function SignInPage() {
         <Suspense fallback={<div className="bg-white rounded-2xl border border-[#dfe0dc] p-8 min-h-[220px]" />}>
           <SignInForm />
         </Suspense>
+        <ReviewerNotice className="mt-6" />
       </div>
     </div>
     </SiteChrome>

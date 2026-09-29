@@ -22,6 +22,7 @@ import { config } from "@/lib/config";
 import { getSession, touchSession } from "@/lib/auth";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
 import { titleCaseOfficial } from "@/lib/streetName";
@@ -63,6 +64,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         { error: "VOW acknowledgement required", acknowledgementRequired: true },
         { status: 403 }
+      );
+    }
+
+    // 2b. The hard throttle (MP-007, R-8.13). Over the ceiling, 429 and no trail row.
+    const throttle = await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(req.headers) });
+    if (!throttle.ok) {
+      return NextResponse.json(
+        { error: "Too many requests", throttled: true, limit: throttle.limit },
+        { status: 429, headers: { "Retry-After": "3600", "Cache-Control": "private, no-store" } },
       );
     }
 

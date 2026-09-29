@@ -35,6 +35,10 @@ export {
   credentialRetainUntil,
 } from "@/lib/portal/passwordRule";
 
+// The per-consumer record's password descriptors (Appendix B(b), MP-007) live in passwordRule.ts
+// (no imports, so the pure report module can read them without bcrypt); re-exported here.
+export { PASSWORD_HELD_AS, hashSchemeOf } from "@/lib/portal/passwordRule";
+
 export type PasswordVerdict = { ok: true } | { ok: false; error: string; reason: "short" | "long" | "email" | "type" };
 
 export function judgePassword(password: unknown, email: string): PasswordVerdict {

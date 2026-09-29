@@ -7,6 +7,7 @@
 import { getSession, touchSession } from "@/lib/auth";
 import { vowStepsLeft } from "@/lib/vow-access";
 import { passwordExpiresAt } from "@/lib/portal/passwordRule";
+import { contactEmail } from "@/lib/compliance/contact";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,9 @@ export async function GET() {
         isRegistrant: user.isRegistrant,
         passwordExpiresAt: passwordExpiresAt(user.passwordSetAt),
         termsVersion: user.vowAcknowledgementVersion,
+        // The published contact address (MP-007), for the registrant wall and the reviewer
+        // held message on the card. Null when CONTACT_EMAIL is unset: the card renders no address.
+        contact: contactEmail(),
       },
     },
     { headers: { "Cache-Control": "no-store" } },

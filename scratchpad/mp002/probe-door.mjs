@@ -32,6 +32,49 @@ const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png` });
 const t0 = Date.now();
 const mark = (label) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${label}`);
 
+
+// MP-006: fill whatever the card shows (registrant radio, name, street, password x2, the terms
+// tick) and report which parts were present. `registrant` is "no" | "yes".
+async function fillCard(name, streetQuery, password, registrant = "no") {
+  const parts = await page.evaluate(() => ({
+    registrantQ: !!document.querySelector("[data-vow-registrant-question]"),
+    texts: document.querySelectorAll("[data-vow-ack] input[type=text]").length,
+    passwords: document.querySelectorAll("[data-vow-ack] input[type=password]").length,
+    terms: !!document.querySelector("[data-vow-terms]"),
+    termsVersion: document.querySelector("[data-vow-terms]")?.getAttribute("data-vow-terms-version") || null,
+    clauses: document.querySelectorAll("[data-vow-terms] li[data-clause]").length,
+    boldClause: document.querySelector("[data-vow-terms] li[data-clause=ix] strong") ? "ix" : null,
+    heading: document.querySelector("[data-vow-ack] .vc-h")?.textContent.trim() || null,
+    refused: !!document.querySelector("[data-vow-registrant]"),
+  }));
+  mark(`card: "${parts.heading}" registrantQ=${parts.registrantQ} texts=${parts.texts} passwords=${parts.passwords} terms=${parts.terms} v${parts.termsVersion} clauses=${parts.clauses} bold=${parts.boldClause}`);
+  if (parts.refused) return parts;
+  if (parts.registrantQ) await page.click(`[data-vow-registrant-question] input[value=${registrant}]`);
+  if (registrant === "yes") {
+    await page.click("[data-vow-ack] button[type=button]");
+    await page.waitForSelector("[data-vow-registrant]", { timeout: 30000 });
+    mark(`answered yes: "${await page.$eval("[data-vow-registrant] .vc-h", (h) => h.textContent.trim())}"`);
+    return { ...parts, refusedAfter: true };
+  }
+  // Two text fields: name then street. One: the street alone (the row already has a name).
+  const inputs = await page.$$("[data-vow-ack] input[type=text]");
+  const streetField = inputs.length === 2 ? inputs[1] : inputs.length === 1 ? inputs[0] : null;
+  if (inputs.length === 2 && name) await inputs[0].type(name);
+  if (streetField && streetQuery) {
+    await streetField.type(streetQuery);
+    await page.waitForSelector("#vow-street-options button", { timeout: 15000 });
+    mark(`autocomplete first hit "${await page.$eval("#vow-street-options button", (b) => b.textContent.trim())}"`);
+    await page.click("#vow-street-options button");
+  }
+  const pw = await page.$$("[data-vow-ack] input[type=password]");
+  for (const el of pw) await el.type(password);
+  if (parts.terms) await page.click("[data-vow-ack] input[type=checkbox]");
+  await shot("06-card-filled");
+  await page.click("[data-vow-ack] button[type=button]");
+  await page.waitForFunction(() => !document.querySelector("[data-vow-ack]") && document.querySelectorAll("#sold-records tbody tr td:not([colspan])").length > 0, { timeout: 30000 });
+  return parts;
+}
+
 try {
   if (mode === "request") {
     const [base, slug, email] = args;
@@ -66,27 +109,12 @@ try {
     await page.evaluate(() => document.querySelector("#sold-records").scrollIntoView({ block: "start" }));
     await new Promise((r) => setTimeout(r, 400));
     await shot("04-card");
-    const inputs = await page.$$("[data-vow-ack] input[type=text]");
-    if (inputs.length) {
-      await inputs[0].type(name);
-      await inputs[1].type(streetQuery);
-    }
-    const pw = await page.$$("[data-vow-ack] input[type=password]");
-    mark(`card shows ${inputs.length} text fields and ${pw.length} password fields`);
-    for (const el of pw) await el.type(password);
-    if (inputs.length) {
-      await page.waitForSelector("#vow-street-options button", { timeout: 15000 });
-      const first = await page.$eval("#vow-street-options button", (b) => b.textContent.trim());
-      mark(`autocomplete first hit "${first}"`);
-      await shot("05-card-autocomplete");
-      await page.click("#vow-street-options button");
-      await page.click("[data-vow-ack] input[type=checkbox]");
-    }
-    await shot("06-card-filled");
-    await page.click("[data-vow-ack] button[type=button]");
-    await page.waitForFunction(() => !document.querySelector("[data-vow-ack]") && document.querySelectorAll("#sold-records tbody tr td:not([colspan])").length > 0, {
-      timeout: 30000,
-    });
+    const registrant = args[4] || "no";
+    const parts = await fillCard(name, streetQuery, password, registrant);
+    if (parts.refused || parts.refusedAfter) {
+      await shot("13-registrant-refused");
+      mark("registrant refused: no records");
+    } else {
     const rows = await page.$$eval("#sold-records tbody tr", (trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent.trim()).join(" · ")));
     mark(`acknowledged; ${rows.length} rows; first: ${rows[0]}`);
     const gated = await page.$eval("#sold-records", (el) => el.classList.contains("s-gated"));
@@ -94,6 +122,7 @@ try {
     await page.evaluate(() => document.querySelector("#sold-records").scrollIntoView({ block: "start" }));
     await new Promise((r) => setTimeout(r, 400));
     await shot("07-records");
+    }
     const me = await page.evaluate(() => fetch("/api/auth/me").then((r) => r.json()));
     mark(`/api/auth/me: ${JSON.stringify(me)}`);
   } else if (mode === "login" || mode === "wrong") {
@@ -117,12 +146,29 @@ try {
       await page.waitForFunction(() => location.pathname.startsWith("/streets/"), { timeout: 60000 });
       mark(`login landed ${page.url()}`);
       await page.waitForFunction(() => document.querySelectorAll("#sold-records tbody tr td:not([colspan])").length > 0 || document.querySelector("[data-vow-ack]"), { timeout: 30000 });
-      const card = !!(await page.$("[data-vow-ack]"));
+      let card = !!(await page.$("[data-vow-ack]"));
+      if (card) {
+        await page.evaluate(() => document.querySelector("#sold-records").scrollIntoView({ block: "start" }));
+        await new Promise((r) => setTimeout(r, 300));
+        await shot("14-card-on-login");
+        const parts = await fillCard(null, null, password, args[4] || "no");
+        if (parts.refused || parts.refusedAfter) {
+          await shot("13-registrant-refused");
+          mark("registrant wall shown; no records");
+          card = null;
+        } else {
+          card = !!(await page.$("[data-vow-ack]"));
+        }
+      }
+      if (card === null) {
+        // the wall: nothing more to read
+      } else {
       const rows = await page.$$eval("#sold-records tbody tr", (trs) => trs.map((tr) => [...tr.querySelectorAll("td")].map((td) => td.textContent.trim()).join(" · ")));
-      mark(`card shown: ${card}; ${rows.length} rows; first: ${rows[0]}`);
+      mark(`card shown now: ${card}; ${rows.length} rows; first: ${rows[0]}`);
       await page.evaluate(() => document.querySelector("#sold-records").scrollIntoView({ block: "start" }));
       await new Promise((r) => setTimeout(r, 400));
       await shot("09-login-records");
+      }
     }
   } else {
     throw new Error("mode: request | link | login | wrong");

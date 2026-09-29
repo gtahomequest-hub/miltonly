@@ -13,6 +13,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminCookieValue } from "@/lib/adminAuth";
 import { exportVowAccess, accessCsv, suspiciousVowAccess } from "@/lib/vow-audit";
+import { consumerReport } from "@/lib/vow/consumer-report-db";
+import { consumerReportCsv } from "@/lib/vow/consumer-report";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,26 @@ export async function GET(req: NextRequest) {
     const days = Math.min(90, Math.max(1, parseInt(p.get("days") || "1", 10) || 1));
     const rows = await suspiciousVowAccess(days);
     return NextResponse.json({ days, count: rows.length, rows }, { headers: noStore });
+  }
+
+  // The per-consumer record and trail (MP-007, Appendix B(b), item 28), aligned to Homesly's
+  // shape: ?consumer=<email|userId>[&from&to][&format=csv]. This is what PropTx receives when it
+  // names a consumer suspected of a breach (R-8.08); the whole-window export below is the trail.
+  const consumer = p.get("consumer");
+  if (consumer) {
+    const nowC = new Date();
+    const toC = p.get("to") ? day(p.get("to"), nowC) : undefined;
+    const fromC = p.get("from") ? day(p.get("from"), nowC) : undefined;
+    const who = consumer.includes("@") ? { email: consumer } : { userId: consumer };
+    const report = await consumerReport(who, { from: fromC, to: toC });
+    if (!report) return NextResponse.json({ error: "No such consumer" }, { status: 404, headers: noStore });
+    if (p.get("format") === "csv") {
+      const name = `vow-consumer-${report.consumer.email.replace(/[^a-z0-9]+/gi, "-")}.csv`;
+      return new NextResponse(consumerReportCsv(report), {
+        headers: { ...noStore, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${name}"` },
+      });
+    }
+    return NextResponse.json(report, { headers: noStore });
   }
 
   const now = new Date();

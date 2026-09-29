@@ -25,6 +25,7 @@ import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import {
   getMiltonSoldTotals,
   getSoldNeighbourhoodOptions,
@@ -107,7 +108,14 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function SoldHubPage({ searchParams }: PageProps) {
   const user = await getSession();
   const authed = !!user;
-  const canSeeRecords = canSeeVowRecords(user);
+  let canSeeRecords = canSeeVowRecords(user);
+  // The hard throttle (MP-007, R-8.13): a page cannot 429, so over the ceiling the records are
+  // withheld (the page renders the aggregate teaser) and no trail row is written; the throttle
+  // row is written by enforceVowThrottle.
+  if (canSeeRecords && user) {
+    const throttle = await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(headers()) });
+    if (!throttle.ok) canSeeRecords = false;
+  }
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
   const nbhdParam = searchParams?.nbhd;

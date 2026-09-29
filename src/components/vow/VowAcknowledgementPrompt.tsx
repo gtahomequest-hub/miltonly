@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { VOW_TERMS_CLAUSES, VOW_TERMS_VERSION } from "@/lib/vow-acknowledgement";
 import { PORTAL_CONSENT_TEXT } from "@/lib/portal/consent";
 import { MIN_PASSWORD_LENGTH, PASSWORD_MAX_DAYS } from "@/lib/portal/passwordRule";
+import { REVIEWER_ANSWER, reviewerHeldMessage } from "@/lib/vow/reviewer";
 import "./vow-card.css";
 
 interface StreetHit {
@@ -43,7 +44,14 @@ interface Me {
   needsPasswordRenewal?: boolean;
   needsRegistrantAnswer?: boolean;
   registrant?: boolean;
+  /** MP-007: answered "reviewer" (R-8.21) and held until the owner clears it. */
+  reviewerHeld?: boolean;
+  /** MP-007: the published contact address, or null when CONTACT_EMAIL is unset. */
+  contact?: string | null;
 }
+
+/** The registrant question's three answers (MP-007). */
+type Declaration = "consumer" | "registrant" | "reviewer";
 
 export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => void }) {
   const router = useRouter();
@@ -57,7 +65,7 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-  const [registrant, setRegistrant] = useState<"yes" | "no" | null>(null);
+  const [declaration, setDeclaration] = useState<Declaration | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const searchSeq = useRef(0);
 
@@ -99,29 +107,32 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
   const needsRenewal = me ? me.needsPasswordRenewal === true : false;
   const needsRegistrant = me ? me.needsRegistrantAnswer !== false : true;
   const isRegistrant = me ? me.registrant === true : false;
+  const reviewerHeld = me ? me.reviewerHeld === true : false;
+  const contact = me?.contact ?? null;
   const askName = firstAgreement && !(me && me.firstName);
   const askPassword = needsPassword || needsRenewal;
 
-  const sayingYes = needsRegistrant && registrant === "yes";
+  // A "registrant" or "reviewer" answer is stored on its own: no tick, no name, no password
+  // (there will be no records to protect until it is resolved). "reviewer" holds the account
+  // for a PropTx / TRREB review (R-8.21); "registrant" walls it.
+  const declaringNonConsumer = needsRegistrant && (declaration === "registrant" || declaration === "reviewer");
 
   async function submit() {
     if (submitting) return;
-    if (needsRegistrant && registrant === null) {
+    if (needsRegistrant && declaration === null) {
       setError("Tell us whether you are a licensed real estate registrant.");
       return;
     }
-    // A registrant's "yes" is stored on its own: no tick, no name, no password (there will be
-    // no records to protect). The route records the answer and the row goes to review.
-    if (needsAck && !agreed && !sayingYes) return;
-    if (askName && !firstName.trim() && !sayingYes) {
+    if (needsAck && !agreed && !declaringNonConsumer) return;
+    if (askName && !firstName.trim() && !declaringNonConsumer) {
       setError("Tell us your name.");
       return;
     }
-    if (firstAgreement && streetQuery.trim() && !street && !sayingYes) {
+    if (firstAgreement && streetQuery.trim() && !street && !declaringNonConsumer) {
       setError("Pick your street from the list, or clear the field.");
       return;
     }
-    if (askPassword && !sayingYes) {
+    if (askPassword && !declaringNonConsumer) {
       if (password.length < MIN_PASSWORD_LENGTH) {
         setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
         return;
@@ -138,13 +149,13 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          sayingYes
-            ? { isRegistrant: true, ...(firstName.trim() ? { firstName: firstName.trim() } : {}) }
+          declaringNonConsumer
+            ? { declaration, ...(firstName.trim() ? { firstName: firstName.trim() } : {}) }
             : {
                 ...(needsAck ? { consent: true } : {}),
                 ...(askName ? { firstName: firstName.trim() } : {}),
                 ...(firstAgreement && street ? { homeStreetSlug: street.slug } : {}),
-                ...(needsRegistrant && registrant ? { isRegistrant: registrant === "yes" } : {}),
+                ...(needsRegistrant && declaration ? { declaration } : {}),
                 ...(askPassword ? { password } : {}),
               },
         ),
@@ -161,6 +172,16 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
     }
   }
 
+  if (reviewerHeld) {
+    return (
+      <section data-vow-ack data-vow-reviewer-held>
+        <p className="vc-k">Held for review</p>
+        <h3 className="vc-h">This account is held for a VOW review</h3>
+        <p className="vc-lead">{reviewerHeldMessage(contact)}</p>
+      </section>
+    );
+  }
+
   if (isRegistrant) {
     return (
       <section data-vow-ack data-vow-registrant>
@@ -169,7 +190,13 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         <p className="vc-lead">
           You told us you are a licensed real estate registrant. Under TRREB&apos;s VOW rules the sold and leased records
           here are for consumers with a bona fide interest in buying, selling or leasing; registrants have their board&apos;s
-          own tools. If that answer was a mistake, email Aamir and he will put it right by hand.
+          own tools.
+          {contact ? (
+            <>
+              {" "}If that answer was a mistake, email{" "}
+              <a href={`mailto:${contact}`}>{contact}</a> and it will be put right by hand.
+            </>
+          ) : null}
         </p>
       </section>
     );
@@ -185,7 +212,17 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         : needsRenewal
           ? "Renew your password"
           : "Choose a password to finish";
-  const kicker = reconsent ? "Please agree again" : firstAgreement ? "One-time acknowledgement" : "One-time setup";
+  // MP-007 item 6: the renewal state is not "One-time setup" (its whole point is that it
+  // recurs at 90 days), and the registrant-question-only state is not either.
+  const kicker = reconsent
+    ? "Please agree again"
+    : firstAgreement
+      ? "One-time acknowledgement"
+      : needsRenewal
+        ? "Password renewal"
+        : onlyRegistrant
+          ? "One question"
+          : "One-time setup";
 
   return (
     <section data-vow-ack>
@@ -228,14 +265,32 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
           <legend className="vc-label">Are you a licensed real estate registrant (a REALTOR&reg; or brokerage staff)?</legend>
           <div className="vc-radios">
             <label className="vc-radio">
-              <input type="radio" name="vow-registrant" value="no" checked={registrant === "no"} onChange={() => setRegistrant("no")} />
+              <input type="radio" name="vow-registrant" value="consumer" checked={declaration === "consumer"} onChange={() => setDeclaration("consumer")} />
               <span>No, I am a consumer</span>
             </label>
             <label className="vc-radio">
-              <input type="radio" name="vow-registrant" value="yes" checked={registrant === "yes"} onChange={() => setRegistrant("yes")} />
+              <input type="radio" name="vow-registrant" value="registrant" checked={declaration === "registrant"} onChange={() => setDeclaration("registrant")} />
               <span>Yes, I am a registrant</span>
             </label>
+            <label className="vc-radio" data-vow-reviewer-option>
+              <input type="radio" name="vow-registrant" value="reviewer" checked={declaration === "reviewer"} onChange={() => setDeclaration("reviewer")} />
+              <span>{REVIEWER_ANSWER}</span>
+            </label>
           </div>
+          {declaration === "reviewer" ? (
+            <p className="vc-fine" data-vow-reviewer-note>
+              This holds the account for review, not opened.
+              {contact ? (
+                <>
+                  {" "}After you save this, write to <a href={`mailto:${contact}`}>{contact}</a> from this email, saying which
+                  organization you represent. The broker of record confirms it and clears the hold.
+                </>
+              ) : (
+                <> After you save this, get in touch from this email, saying which organization you represent. The broker of record confirms it and clears the hold.</>
+              )}{" "}
+              Administrator credentials are never shared, with a reviewer or with anyone else.
+            </p>
+          ) : null}
         </fieldset>
       )}
 
@@ -299,7 +354,7 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         </div>
       )}
 
-      {askPassword && !sayingYes && (
+      {askPassword && !declaringNonConsumer && (
         <div className="vc-fields" data-vow-password>
           <label className="vc-field">
             <span className="vc-label">
@@ -330,7 +385,7 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
         </div>
       )}
 
-      {needsAck && !sayingYes && (
+      {needsAck && !declaringNonConsumer && (
         <>
           <div className="vc-texts" data-vow-terms data-vow-terms-version={VOW_TERMS_VERSION}>
             <p className="vc-terms-head">Terms of use, version {VOW_TERMS_VERSION}</p>
@@ -358,12 +413,14 @@ export default function VowAcknowledgementPrompt({ onDone }: { onDone?: () => vo
 
       {error && <p className="vc-error">{error}</p>}
 
-      <button type="button" className="vc-submit" onClick={submit} disabled={(needsAck && !agreed && !sayingYes) || submitting}>
+      <button type="button" className="vc-submit" onClick={submit} disabled={(needsAck && !agreed && !declaringNonConsumer) || submitting}>
         {submitting
           ? "Saving…"
-          : sayingYes
-            ? "Save my answer"
-            : needsAck
+          : declaration === "reviewer"
+            ? "Register for review"
+            : declaringNonConsumer
+              ? "Save my answer"
+              : needsAck
               ? "Agree and see sold prices"
               : onlyRegistrant
                 ? "Save my answer and see sold prices"

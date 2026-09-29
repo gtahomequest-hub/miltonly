@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { getStreetSoldList } from "@/lib/sold-data";
 import type { SoldTableRow } from "@/types/street";
 
@@ -19,6 +20,16 @@ export async function GET(
     // gate. The card asks /api/auth/me which parts are still owed. Before this, both states
     // got "Sign in free to unlock", and signing in again led nowhere.
     return NextResponse.json({ canSee: false, needsAcknowledgement: !!user, records: [] as SoldTableRow[] });
+  }
+
+  // The hard throttle (MP-007, R-8.13): over the ceiling, 429 and no trail row; one VowThrottle
+  // audit row per consumer/limit/window.
+  const throttle = await enforceVowThrottle({ userId: user!.id, ip: clientIpFromHeaders(req.headers) });
+  if (!throttle.ok) {
+    return NextResponse.json(
+      { canSee: true, throttled: true, limit: throttle.limit, records: [] as SoldTableRow[] },
+      { status: 429, headers: { "Retry-After": "3600", "Cache-Control": "private, no-store" } },
+    );
   }
 
   const items = await getStreetSoldList(params.slug, "sale", 90, 20).catch(

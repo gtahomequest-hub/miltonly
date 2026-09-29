@@ -20,6 +20,7 @@ import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { getAnalyticsDb } from "@/lib/db";
 import { cached, CACHE_TTL } from "@/lib/cache";
 import type { PublicAggregateTeaser, MarketTemperature } from "@/lib/db-types";
@@ -189,21 +190,28 @@ export default async function VowGate({
       const { default: VowAcknowledgementPrompt } = await import("./VowAcknowledgementPrompt");
       return <VowAcknowledgementPrompt />;
     }
-    // The audit trail (MP-006): the gated children (a neighbourhood's or street's records) are
-    // about to render for this consumer. VowGate is rendered nowhere in street v2 today
-    // (NeighbourhoodSoldBlock, its one importer, has none); the row is here for the day it is.
-    const h = headers();
-    await logVowAccess({
-      userId: user.id,
-      kind: "neighbourhood-records",
-      scope: street ? `street:${street}` : neighbourhood ? `neighbourhood:${neighbourhood}` : null,
-      path: currentPath,
-      recordCount: 0,
-      ip: clientIpFromHeaders(h),
-      userAgent: h.get("user-agent"),
-      reviewFlag: user.reviewFlag,
-    });
-    return <>{children}</>;
+    // The hard throttle (MP-007, R-8.13): over the ceiling, the gate falls through to the
+    // aggregate teaser (no records, no trail row); the throttle row is written by
+    // enforceVowThrottle. A page cannot 429.
+    const hh = headers();
+    const throttle = await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(hh) });
+    if (throttle.ok) {
+      // The audit trail (MP-006): the gated children (a neighbourhood's or street's records) are
+      // about to render for this consumer. VowGate is rendered nowhere in street v2 today
+      // (NeighbourhoodSoldBlock, its one importer, has none); the row is here for the day it is.
+      await logVowAccess({
+        userId: user.id,
+        kind: "neighbourhood-records",
+        scope: street ? `street:${street}` : neighbourhood ? `neighbourhood:${neighbourhood}` : null,
+        path: currentPath,
+        recordCount: 0,
+        ip: clientIpFromHeaders(hh),
+        userAgent: hh.get("user-agent"),
+        reviewFlag: user.reviewFlag,
+      });
+      return <>{children}</>;
+    }
+    // Throttled: fall through to the aggregate teaser below.
   }
 
   // Anon path — aggregate teaser only. Zero individual records reach the browser.

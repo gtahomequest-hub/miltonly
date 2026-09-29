@@ -26,6 +26,7 @@ import { redis } from "@/lib/cache";
 import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
+import { enforceVowThrottle } from "@/lib/vow/throttle";
 import {
   getStreetSoldList,
   getNeighbourhoodSoldList,
@@ -74,6 +75,16 @@ export async function GET(req: NextRequest) {
         acknowledgementRequired: true,
       },
       { status: 403 }
+    );
+  }
+
+  // 2b. The hard throttle (MP-007, R-8.13): the ceiling above the review flag. Over it, 429 and
+  // no trail row; one VowThrottle audit row per consumer/limit/window.
+  const throttle = await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(req.headers) });
+  if (!throttle.ok) {
+    return NextResponse.json(
+      { error: "Too many requests", throttled: true, limit: throttle.limit },
+      { status: 429, headers: { "Retry-After": "3600", "Cache-Control": "private, no-store" } },
     );
   }
 

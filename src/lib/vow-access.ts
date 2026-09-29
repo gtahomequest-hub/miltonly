@@ -20,6 +20,22 @@
 import { VOW_TERMS_VERSION } from "@/lib/vow-acknowledgement";
 import { passwordExpired } from "@/lib/portal/passwordRule";
 
+// The reviewFlag values, in one place so the gate, the plan, the desk and the tracking cannot
+// spell them differently.
+//   registrant     the person's own "yes", or Aamir by hand: refuses records until a person
+//                  clears it (R-8.09(b)(i)).
+//   reviewer-hold  a PropTx / TRREB reviewer's declaration (MP-007, R-8.21): refuses records
+//                  until the owner clears the hold from the admin desk.
+//   reviewer       a cleared reviewer: a label only, refuses nothing, and flagIfSuspicious
+//                  leaves it alone (a reviewer is expected to read a lot).
+//   suspicious-access  the access-pattern queue: refuses NOTHING, a review item only.
+export const REVIEW_FLAG = {
+  registrant: "registrant",
+  reviewerHeld: "reviewer-hold",
+  reviewerCleared: "reviewer",
+  suspicious: "suspicious-access",
+} as const;
+
 export interface VowAccessFields {
   verified: boolean;
   vowAcknowledgedAt: Date | null;
@@ -42,6 +58,8 @@ export interface VowSteps {
   needsRegistrantAnswer: boolean;
   /** answered yes: no records, a note to contact Aamir; flagged for review */
   registrant: boolean;
+  /** answered "reviewer" (R-8.21): held with no records until the owner clears the hold */
+  reviewerHeld: boolean;
 }
 
 export function termsCurrent(user: VowAccessFields): boolean {
@@ -56,7 +74,8 @@ export function vowStepsLeft(user: VowAccessFields, now: Date = new Date()): Vow
     needsPassword: !user.passwordHash,
     needsPasswordRenewal: !!user.passwordHash && (!user.passwordSetAt || passwordExpired(user.passwordSetAt, now)),
     needsRegistrantAnswer: user.isRegistrant === null || user.isRegistrant === undefined,
-    registrant: user.isRegistrant === true || user.reviewFlag === "registrant",
+    registrant: user.isRegistrant === true || user.reviewFlag === REVIEW_FLAG.registrant,
+    reviewerHeld: user.reviewFlag === REVIEW_FLAG.reviewerHeld,
   };
 }
 
@@ -64,9 +83,9 @@ export function canSeeVowRecords(user: VowAccessFields | null | undefined, now: 
   if (!user) return false;
   if (!user.verified) return false;
   const s = vowStepsLeft(user, now);
-  if (s.needsAcknowledgement || s.needsPassword || s.needsPasswordRenewal || s.needsRegistrantAnswer || s.registrant) {
+  if (s.needsAcknowledgement || s.needsPassword || s.needsPasswordRenewal || s.needsRegistrantAnswer || s.registrant || s.reviewerHeld) {
     return false;
   }
-  if (user.reviewFlag === "registrant") return false;
+  if (user.reviewFlag === REVIEW_FLAG.registrant || user.reviewFlag === REVIEW_FLAG.reviewerHeld) return false;
   return true;
 }

@@ -39,3 +39,26 @@ export function credentialRetainUntil(passwordSetAt: Date | null | undefined): D
   return until ? new Date(until.getTime() + CREDENTIAL_RETENTION_DAYS * DAY_MS) : null;
 }
 
+// The per-consumer record (Appendix B(b), MP-007) reports, in place of the password, the
+// hashing scheme and the fact that only a hash is held, by name, read from the hash's prefix
+// only: the salt and the hash bytes are never part of the answer, and no plaintext exists to
+// report. Same field names and the same "held as" wording as Homesly's
+// src/lib/vow/audit-report.ts, so one PropTx request gets one format from both sites. Here (no
+// imports) so the pure report module and the shell export read them without pulling bcrypt.
+export const PASSWORD_HELD_AS =
+  "A salted one-way hash only. The password itself is not stored and cannot be recovered or produced from the record.";
+
+/**
+ * The hashing scheme a stored bcrypt hash names, e.g. "bcrypt (cost 12), 128-bit salt, 184-bit
+ * hash". Read from the `$2[aby]$<cost>$` prefix; "unrecognised" for another format; null with
+ * no password.
+ * @param stored - `User.passwordHash`.
+ * @returns the scheme name, or null.
+ */
+export function hashSchemeOf(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  const m = /^\$2[aby]\$(\d{2})\$/.exec(stored);
+  // bcrypt: a 128-bit salt (22 base64 chars) and a 184-bit hash (31 base64 chars).
+  return m ? `bcrypt (cost ${Number(m[1])}), 128-bit salt, 184-bit hash` : "unrecognised";
+}
+

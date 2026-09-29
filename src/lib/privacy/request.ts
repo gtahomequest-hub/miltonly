@@ -28,7 +28,10 @@ const FIRST_NAME = config.realtor.name.split(" ")[0];
 export const DESK_INSTRUCTION =
   "On a consumer request to remove personal information, remove it from Miltonly's systems and " +
   "advise PropTx and the listing brokerage of the request at once (PropTx VOW Best Practices " +
-  "item 35, s9.1, VOW Policy 14).";
+  "item 35, s9.1, VOW Policy 14). For a VOW account, do not delete the row: run " +
+  "`pnpm tsx scripts/vow-erasure.ts anonymise <email>`, which strips the personal data but keeps " +
+  "the name, email, username, password record and access trail for 180 days past the password's " +
+  "expiry as MLS Rule 8.06 requires, then purges (Appendix B(b)).";
 
 export const DESK_SUBJECT = "Personal information removal request";
 

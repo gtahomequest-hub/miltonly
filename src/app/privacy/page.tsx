@@ -71,14 +71,15 @@ export default function PrivacyPage() {
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">How long we keep it</h2>
           <p>
             We retain inquiry information for as long as is reasonably necessary to provide the service you requested
-            and to meet record-keeping obligations under the Trust in Real Estate Services Act, 2002 (REBBA), typically
+            and to meet record-keeping obligations under the Trust in Real Estate Services Act, 2002 (TRESA), typically
             up to 7 years. You can request earlier deletion at any time.
           </p>
           <p>
-            VOW registration records (name, email, username, password record and the terms you agreed to) are kept for
-            at least 180 days after your password expires, and the VOW access log for at least as long, because the VOW
-            rules require it. A deletion request goes through the removal request form below and is handled by hand;
-            inside that window we keep what the VOW rules require and remove the rest.
+            VOW registration records (your name, email, username and password record) and your access log are kept for
+            at least 180 days after your password expires, because our MLS<sup>®</sup> rules require it. When you ask us
+            to remove your information, we anonymise your account and stop all use of it at once, but we keep that
+            access record for 180 days as our MLS<sup>®</sup> rules require, and remove it after. Inside that window the
+            record and log may be shared with PropTx and TRREB for auditing and/or legal purposes.
           </p>
 
           <h2 className="text-[22px] font-extrabold mt-8 mb-2">Your rights</h2>
