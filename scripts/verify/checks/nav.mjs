@@ -71,6 +71,20 @@ const TYPE_FLOOR_PX = 14;
 /** The fixed bar's height; the phone panel sits under it. */
 const BAR_PX = 66;
 
+// "Leaving the nav" means the pointer rests below everything the nav draws. MC-047 put the
+// registrant strip above the bar, so an open band ends lower (743px of a 768px viewport at 1024
+// on the homepage); the old fixed point, 40px above the viewport's bottom, then sat on the band.
+// The point is measured: 8px below the band when it is open, else 40px above the bottom.
+async function leaveNav(page, w, h) {
+  const bandBottom = await page.evaluate(() => {
+    const band = document.querySelector('nav .m-band');
+    const open = band && [...band.querySelectorAll('.m-mega')].some((m) => !m.hidden);
+    return open ? band.getBoundingClientRect().bottom : null;
+  });
+  const y = bandBottom == null ? h - 40 : Math.min(h - 2, Math.ceil(bandBottom) + 8);
+  await page.mouse.move(w / 2, y);
+}
+
 /** The <nav> element's own markup. */
 function navMarkup(html) {
   const open = html.indexOf('<nav');
@@ -269,7 +283,7 @@ async function driveDesktop(page, url, w, h, findings) {
   const loaded = m.imgs.filter((i) => i.complete && i.w > 0).length;
   if (m.imgs.length === 0) findings.push(`${tag}: Buy panel shows no photographs`);
   else if (loaded === 0) findings.push(`${tag}: Buy panel photographs did not load (${m.imgs.length} img, 0 loaded)`);
-  await page.mouse.move(w / 2, h - 40);
+  await leaveNav(page, w, h);
   await sleep(500);
   s = await state(page, 'buy');
   if (s.shown) findings.push(`${tag}: leaving the nav did not close Buy`);
@@ -283,7 +297,7 @@ async function driveDesktop(page, url, w, h, findings) {
     await driveRail(page, tag, key, findings);
     await page.keyboard.press('Escape');
     await sleep(200);
-    await page.mouse.move(w / 2, h - 40);
+    await leaveNav(page, w, h);
     await sleep(300);
   }
 
@@ -319,7 +333,7 @@ async function driveDesktop(page, url, w, h, findings) {
   if (s.shown) findings.push(`${tag}: outside click did not close Sell`);
 
   // keyboard: Enter opens and enters; Escape closes and returns; ArrowDown opens and enters
-  await page.mouse.move(w / 2, h - 40);
+  await leaveNav(page, w, h);
   await page.focus(trigger('buy'));
   await page.keyboard.press('Enter');
   await sleep(250);
@@ -540,12 +554,14 @@ async function driveMobile(page, url, w, h, findings) {
     const p = document.querySelector('.sn-panel');
     if (!p) return null;
     const b = p.getBoundingClientRect();
-    return { top: Math.round(b.top), h: Math.round(b.height), w: Math.round(b.width), vw: innerWidth, vh: innerHeight, pos: getComputedStyle(p).position };
+    const nav = p.closest('nav');
+    return { top: Math.round(b.top), h: Math.round(b.height), w: Math.round(b.width), vw: innerWidth, vh: innerHeight, pos: getComputedStyle(p).position, bar: nav ? Math.round(nav.querySelector('.m-wrap').getBoundingClientRect().bottom) : BAR_PX };
   });
   if (!r) { findings.push(`${tag}: burger did not open the panel`); return; }
-  // under the 66px bar, not over it: the burger stays on screen as the close control
-  if (r.pos !== 'fixed' || Math.abs(r.top - BAR_PX) > 2 || Math.abs(r.h - (r.vh - BAR_PX)) > 20 || r.w !== r.vw)
-    findings.push(`${tag}: phone panel is ${r.w}x${r.h} at top ${r.top} (${r.pos}) in a ${r.vw}x${r.vh} viewport, expected under the ${BAR_PX}px bar`);
+  // under the bar, not over it: the burger stays on screen as the close control. The bar's bottom
+  // is measured: 66px, plus the registrant strip above it since MC-047 (44px on a phone).
+  if (r.pos !== 'fixed' || Math.abs(r.top - r.bar) > 2 || Math.abs(r.h - (r.vh - r.bar)) > 20 || r.w !== r.vw || r.bar < BAR_PX)
+    findings.push(`${tag}: phone panel is ${r.w}x${r.h} at top ${r.top} (${r.pos}) in a ${r.vw}x${r.vh} viewport, expected under the bar (bottom ${r.bar}px)`);
   const acc0 = await page.$('.sn-panel .sn-acc');
   if (!acc0) findings.push(`${tag}: the open phone panel did not swap the compact menu for the accordion`);
 
