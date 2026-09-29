@@ -1,0 +1,2 @@
+[cache] Upstash env vars not set — cache disabled
+[lead-guards] PASS — 252 assertions across honeypot, origin, rate limit, env tag, intent, watches and wiring.

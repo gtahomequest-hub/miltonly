@@ -1,0 +1,245 @@
+{
+ "base": "https://miltonly.com",
+ "pages": 36,
+ "perPage": {
+  "/mosques/halton-islamic-community-centre": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/mosques/halton-learning-centre-musalla": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/mosques/islamic-community-centre-of-milton": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/mosques/milton-musalla": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/mosques/icna-milton": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/mosques/milton-muslim-community-centre": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/anne-j-macarthur-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/mosques/sayyidah-fatemah-islamic-centre": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/ec-drury-school-for-the-deaf": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/bishop-pf-reding-catholic-ss": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/chris-hadfield-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/brookville-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/craig-kielburger-ss": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/elsie-macgill-secondary-school": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/ew-foster-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/guardian-angels-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/holy-rosary-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/irma-coulson-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/sam-sherratt-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/milton-district-high-school": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/our-lady-of-fatima-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/pl-robertson-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-catherine-of-alexandria-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/robert-baldwin-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-francis-of-assisi-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-anne-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-francis-xavier-catholic-ss": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-anthony-of-padua-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-brigid-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-john-paul-ii-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-joseph-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/wi-dick-middle-school": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-kateri-tekakwitha-catholic-ss": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-peter-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/st-scholastica-catholic-es": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  },
+  "/schools/tiger-jeet-singh-ps": {
+   "status": 200,
+   "bookLinks": [
+    "/book"
+   ]
+  }
+ },
+ "targets": {
+  "/book": {
+   "status": 200,
+   "refs": 36,
+   "from": [
+    "/mosques/halton-islamic-community-centre",
+    "/mosques/halton-learning-centre-musalla",
+    "/mosques/islamic-community-centre-of-milton",
+    "/mosques/milton-musalla",
+    "/mosques/icna-milton"
+   ],
+   "chain": [
+    "307 /about"
+   ]
+  }
+ },
+ "findings": [
+  {
+   "code": "link-redirect",
+   "key": "/book",
+   "detail": "307 /about; linked from 36 pages"
+  }
+ ]
+}

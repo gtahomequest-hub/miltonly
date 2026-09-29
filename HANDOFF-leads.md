@@ -2,9 +2,38 @@
 
 LEADS · D:\miltonly-leads · feat/leads
 
-_Last rewritten 2026-09-28, after ML-013 drove every lead form on production as a phone and found the pipeline sound and the "zero week" to be the site's own rate._
+_Last rewritten 2026-09-28, after ML-014 made /book a booking page that writes a lead and retired the seven homepage sources no page mounts._
 
 ## READ THIS FIRST
+
+**ML-014 (2026-09-28): /book IS A BOOKING PAGE, GATED, PREVIEWED, AWAITING CORE'S MERGE.** The proven
+tree is **`af0da549f539b18a7eab99964024a138486b8524`**; above it sits only the docs commit. One preview `miltonly-ka5rj92rb`
+at that SHA, battery **`PASS · 24 checks · 719 pages · 593s`**; local battery on `next start` at the same SHA
+**`PASS · 24 checks · 719 pages · 394s`**; local gate exit 0 in 603 s, 840 of 840 pages. Core merges
+`af0da54` by SHA. Record in `scratchpad/reports/ML-014-book-page.md`.
+
+**WHAT CHANGED.** `src/app/book/page.tsx` renders a page (it was `redirect("/about")`): the fields the
+task set (name, phone, an optional email, a note), source `book-page`, through `postLeadDetailed`
+and the one ingress with every guard; `REPLY_FINE_PRINT` rendered and sent; noindex, canonical
+`/book`. `?ref=` is the page the visitor came from: `src/lib/lead/refPath.ts` (`sameOriginPath`)
+validates it, once for the page and once in the ingest, which stores it as `landingPage` **for
+source `book-page` only**; every other surface keeps the page the form sits on. `PlaceDetail`'s
+"Book a showing" button now carries `?ref=<its own path>` (a new `path` prop from the schools and
+mosques pages, 36 pages on the sitemap). `notify.ts` has a `book-page` confirmation ("Your showing
+request is in"); `email.ts` labels the desk alert. **The seven `LIVE_SOURCES` entries no page
+mounted are retired** (`homepage-newsletter`, `homepage-mortgage-calculator`,
+`homepage-sold-on-my-street`, `homepage-exclusive`, the three `homepage-persona-*`), their
+components under `src/components/sections/retired/` with the two dead wrappers, so the digest stops
+reporting them as quiet. `scripts/test-lead-forms.ts` (new paths, the booking form, floor 23),
+`scripts/test-street-name-repair.ts` (the allowlist key) and `scripts/test-lead-guards.ts` (fourteen
+ref cases) followed; `scripts/verify/checks/footer.mjs` and `nav.mjs` no longer call `/book` a
+redirect, or the battery would fail the page that finally answers 200.
+
+**THE REVIEW CAUGHT AN OPEN REDIRECT BEFORE THE PREVIEW.** A `?ref=` checked before the URL parser
+resolves dot segments lets `/a/..//evil.com` through as `//evil.com`, a protocol-relative href to
+another host under first-party anchor text. The shared rule checks the normalised path again and the
+guards gate holds the inputs. Any future "return to where you came from" link on this site should
+use `sameOriginPath`, not its own check.
 
 **ML-013 (2026-09-28): EVERY CAPTURE ON PRODUCTION WORKS; NOTHING WAS FIXED; NO CODE CHANGED.**
 Ten forms, twelve submissions, all PASS, driven with puppeteer as an iPhone against `1f3b216`:
@@ -102,7 +131,8 @@ every recurring email, `consentText` on all 26 submissions. Record in
 
 | | |
 |---|---|
-| branch | `feat/leads` = `origin/main` **`e0bfc40`** (MC-049) plus the ML-013 docs commit; ML-005 and ML-012 merged (`4bc9343` in `main`), production served them from `1f3b216` on 2026-09-28 |
+| branch | `feat/leads`: proven tree **`af0da54`** (ML-014) above `origin/main` `e0bfc40` (MC-049) and the ML-013 docs commit, one docs commit on top; ML-005 and ML-012 merged (`4bc9343` in `main`), production served them from `1f3b216` on 2026-09-28 |
+| last preview of this branch | **`miltonly-ka5rj92rb`** at `af0da54`, **`PASS · 24 checks · 719 pages · 593s`** |
 | production leads | **17 rows all-time; September 2** (the desk's MC-028 proof, the ML-005 bot); last real lead 2026-08-30 (`rental-detail-book`, phone only); last with an email 2026-07-03; 0 with a gclid in 28 days |
 | ML-013 form run | 10 forms, 12 submissions, **12 PASS, 0 FAIL**; every row, watch and the test user deleted; the IP's day bucket ended at 12 of 12, nothing refused |
 | last preview of this branch | **`miltonly-ahq9hojts`** at `4bc9343`, **`PASS · 24 checks · 719 pages · 617s`** |
@@ -297,11 +327,9 @@ migration found and fixed, in `scratchpad/reports/067-leads-phase2.md`.
   lead queries (`scripts/audit/morning/sources/db.mjs:23-27`, Audit's); guard refusals want a home
   (a `LeadRefusal` table or a `LeadActivity` without a lead) if a seven-day count is ever wanted; the
   five honeypot refusals a day are a script (four in 21 s) or a browser autofilling a field named
-  "company website", and only a persisted record would tell; seven `LIVE_SOURCES` entries have no
-  mounted component (`homepage-newsletter`, `homepage-mortgage-calculator`,
-  `homepage-sold-on-my-street`, `homepage-exclusive`, the three `homepage-persona-*`), so the digest's
-  "quiet" line names surfaces that cannot convert; `/contact`, `/newsletter`, `/register` are 404 and
-  `/book` redirects to `/about`, which has no form.
+  "company website", and only a persisted record would tell. **Closed by ML-014:** the seven
+  unmounted `LIVE_SOURCES` entries are retired, and `/book` is a page. Still true: `/contact`,
+  `/newsletter` and `/register` are 404.
 
 1. **The accent override block in `rentals.css`** (lines 19 to 27) never wins a cascade
    contest; the hero's "Milton", the search and "Show results" buttons and the wizard's primary

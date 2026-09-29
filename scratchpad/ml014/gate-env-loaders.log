@@ -1,0 +1,3 @@
+[env-loaders] static: 831 files scanned, 0 with the old regex
+[env-loaders] executed: 103 named loaders run against a CRLF/LF fixture
+[env-loaders] PASS

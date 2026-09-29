@@ -5,10 +5,12 @@ for (const line of fs.readFileSync('.env.local', 'utf8').split('\n')) { const m 
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 const APPLY = process.argv.includes('--apply');
-const TAG = 'gtahomequest+ml013';
+const TAGARG = process.argv.find((a) => a.startsWith('--tag='));
+const TASK = TAGARG ? TAGARG.slice(6) : 'ml013';
+const TAG = `gtahomequest+${TASK}`;
 const since = new Date('2026-09-28T00:00:00Z');
 const leads = await prisma.lead.findMany({ where: { email: { startsWith: TAG }, createdAt: { gte: since } }, orderBy: { createdAt: 'asc' }, select: { id: true, createdAt: true, source: true, env: true, email: true, phone: true, firstName: true, street: true, yourHomeAddress: true, consentText: true, landingPage: true, userAgent: true, activities: { select: { type: true, payload: true } } } });
-const phoneLeads = await prisma.lead.findMany({ where: { firstName: { startsWith: 'ML013' }, createdAt: { gte: since } }, select: { id: true, createdAt: true, source: true, env: true, email: true, phone: true, firstName: true, activities: { select: { type: true, payload: true } } } });
+const phoneLeads = await prisma.lead.findMany({ where: { firstName: { startsWith: TASK.toUpperCase() }, createdAt: { gte: since } }, select: { id: true, createdAt: true, source: true, env: true, email: true, phone: true, firstName: true, activities: { select: { type: true, payload: true } } } });
 const all = [...leads, ...phoneLeads.filter((p) => !leads.some((l) => l.id === p.id))];
 console.log(`LEADS (${all.length}):`);
 for (const l of all) console.log(`  ${l.createdAt.toISOString()} ${l.env} ${l.source.padEnd(24)} ${l.email ?? '(no email)'} ${l.phone ? 'phone' : ''} consent:${l.consentText ? 'yes' : 'no'} page:${l.landingPage ?? '-'} ua:${(l.userAgent || '').slice(0, 30)} | ${l.activities.map((a) => `${a.type}:${a.payload.kind}${a.payload.resendId ? ' ' + a.payload.resendId : ''}${a.payload.error ? ' ' + a.payload.error : ''}`).join(', ') || 'no delivery rows'}`);

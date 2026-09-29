@@ -1,0 +1,8 @@
+[  2s] sitemap 0 urls: 
+[  2s] sweeping 1 of 0 (cap 1919); 0 always, 0 in rotation
+[  5s] sweep done: 2xx 1, 2 fetches
+[ 18s] links: 102 off-sitemap targets, 102 checked, 65 with findings
+[ 27s] sample: 1 of 1 pages inspected at 390
+[ 27s] report scratchpad\ml014\nightly\2026-09-28.md; open 69 (S1 1 · S2 1 · S3 67 · S4 0); new 69; fixed 0; lh moves 0
+[ 27s] done in 27 s, 106 fetches
+EXIT 0

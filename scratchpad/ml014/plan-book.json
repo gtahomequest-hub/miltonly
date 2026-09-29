@@ -1,0 +1,17 @@
+{
+  "name": "ml014-book",
+  "url": "{{BASE}}/book?ref=%2Fschools%2Fanne-j-macarthur-ps",
+  "steps": [
+    { "op": "waitFor", "selector": "form input[name=\"name\"]", "ms": 30000 },
+    { "op": "wait", "ms": 2500 },
+    { "op": "tap", "text": "Accept", "optional": true },
+    { "op": "eval", "value": "document.title + ' | h1: ' + (document.querySelector('h1')||{}).textContent + ' | back: ' + ((document.querySelector('a[href^=\"/schools/\"]')||{}).getAttribute ? document.querySelector('a[href^=\"/schools/\"]').getAttribute('href') : 'none')" },
+    { "op": "type", "selector": "form input[name=\"name\"]", "value": "ML014 test booking" },
+    { "op": "type", "selector": "form input[name=\"phone\"]", "value": "6470000014" },
+    { "op": "type", "selector": "form input[name=\"email\"]", "value": "gtahomequest+ml014-book@gmail.com" },
+    { "op": "type", "selector": "form textarea[name=\"message\"]", "value": "ML-014 test submission from the booking page, delete me" },
+    { "op": "tap", "text": "Request a showing" }
+  ],
+  "success": "Request received",
+  "settleMs": 6000
+}

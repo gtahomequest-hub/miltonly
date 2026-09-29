@@ -1,0 +1,3 @@
+[leads-digest] FAIL — 2 of 236 assertions:
+  sources: "homepage-sold-on-my-street" is still sent by a mounted file under src/ (outside src/lib and retired/)
+  sources: retired "homepage-sold-on-my-street" is not also live
