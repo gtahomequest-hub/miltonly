@@ -61,6 +61,13 @@ export default function PrivacyPage() {
             <li>Google Analytics and Google Ads (traffic measurement)</li>
             <li>Email delivery service (to notify {config.realtor.name.split(" ")[0]} of your inquiry)</li>
           </ul>
+          {/* Appendix B(c)(ix) (MC-047): every VOW's privacy policy boldly says Personal Information may
+              be shared with PropTx for auditing and/or legal purposes. The paragraph below says it for
+              a registered consumer's record; this sentence says it for anything anyone provides. */}
+          <p className="font-bold" data-privacy-proptx-all>
+            Personal information you provide on this site may be shared with PropTx Innovations Inc. for auditing
+            and/or legal purposes.
+          </p>
           <p className="font-bold" data-privacy-proptx>
             Registered VOW consumers: if you sign in to see sold and leased MLS® records, your name, email address,
             username, password record, the terms you agreed to and a log of what you viewed on this site (when, what,

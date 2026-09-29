@@ -270,6 +270,8 @@ async function main() {
   ok(card.includes("The terms have changed") && card.includes("needsReconsent"), "the card has the re-consent state");
   const privacy = readFileSync("src/app/privacy/page.tsx", "utf8");
   ok(/className="font-bold" data-privacy-proptx/.test(privacy) && /shared with PropTx Innovations Inc\./.test(privacy) && /auditing and\/or legal purposes/.test(privacy), "/privacy boldly says the data may be shared with PropTx for auditing and/or legal purposes");
+  // Appendix B(c)(ix) for anyone, not only a registered consumer (MC-047)
+  ok(/<p className="font-bold" data-privacy-proptx-all>\s*Personal information you provide on this site may be shared with PropTx Innovations Inc\. for auditing\s+and\/or legal purposes\.\s*<\/p>/.test(privacy), "/privacy boldly says any personal information provided may be shared with PropTx for auditing and/or legal purposes");
   ok(privacy.includes("at least 180 days after your password expires"), "/privacy states the 180-day retention");
   const terms = readFileSync("src/app/terms/page.tsx", "utf8");
   ok(terms.includes("expires 90 days") && terms.includes("60 minutes without activity") && terms.includes("registrants may not use the VOW") && terms.includes("logged"), "/terms states the expiry, the timeout, the registrant rule and the log");
