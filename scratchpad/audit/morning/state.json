@@ -1,11 +1,11 @@
 {
- "date": "2026-09-28",
+ "date": "2026-09-29",
  "vercel": {
-  "spend": 184.59,
-  "projected": 199.1,
+  "spend": 187.23,
+  "projected": 197.64,
   "yesterday": {
-   "date": "2026-09-27",
-   "total": 2.73
+   "date": "2026-09-28",
+   "total": 2.98
   }
  },
  "neon": {
@@ -54,17 +54,17 @@
  },
  "gsc": {
   "latest": {
-   "date": "2026-09-25",
-   "clicks": 8,
-   "impressions": 450,
-   "ctr": 0.017777777777777778,
-   "position": 8.297777777777778,
-   "weekday": "Fri"
+   "date": "2026-09-27",
+   "clicks": 9,
+   "impressions": 395,
+   "ctr": 0.02278481012658228,
+   "position": 12.956962025316455,
+   "weekday": "Sun"
   }
  },
  "leads": {
   "yesterday": 0,
-  "mtd": 32
+  "mtd": 2
  },
  "actions": [
   "zero-lead-traffic",
