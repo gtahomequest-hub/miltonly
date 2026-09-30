@@ -1,0 +1,56 @@
+
+═══ MC-046 LEAK TEST ═══
+target   https://miltonly-h13aafwtd-gtahomequest-hubs-projects.vercel.app
+build    6507ab9
+record   882 street identities, 292 Milton-wide and hub tokens, 59 condos, 53 edition tokens; 12272 tokens dropped as equal to a public asking price (967 IDX tokens); values held in memory, not printed
+
+ok   500                    requests=1 ok=1
+ok   api                    requests=74 ok=10 status_401=61 status_200=10 status_400=3
+ok   card+og                requests=719 ok=719 og_fetched=168 og_png_ok=168
+ok   html:404               requests=1 ok=1 status_404=1
+ok   html:about             requests=1 ok=1 status_200=1
+ok   html:compare           requests=2 ok=2 status_200=2
+ok   html:condos            requests=60 ok=60 status_200=60
+ok   html:condos-guide      requests=1 ok=1 status_200=1
+ok   html:exclusive         requests=1 ok=1 status_200=1
+ok   html:freehold          requests=1 ok=1 status_200=1
+ok   html:guides            requests=9 ok=9 status_200=9
+ok   html:home              requests=1 ok=1 status_200=1
+ok   html:listings          requests=492 ok=492 status_200=492 value_explained=1
+ok   html:market-watch      requests=5 ok=5 status_200=5
+ok   html:mosques           requests=8 ok=8 status_200=8
+ok   html:neighbourhoods    requests=22 ok=22 status_200=22
+ok   html:potl              requests=1 ok=1 status_200=1
+ok   html:rentals           requests=1 ok=1 status_200=1
+ok   html:schools           requests=30 ok=30 status_200=30 value_explained=3
+ok   html:sell              requests=1 ok=1 status_200=1
+ok   html:signin            requests=1 ok=1 status_200=1
+ok   html:sold              requests=2 ok=2 status_200=2
+ok   html:streets           requests=720 ok=720 status_200=720 value_explained=9
+ok   html:value             requests=1 ok=1 status_200=1
+ok   jsonld                 requests=2673 ok=2673
+ok   rsc:404                requests=1 ok=0 status_404=1
+ok   rsc:about              requests=1 ok=1
+ok   rsc:compare            requests=2 ok=2
+ok   rsc:condos             requests=60 ok=60
+ok   rsc:condos-guide       requests=1 ok=1
+ok   rsc:exclusive          requests=1 ok=1
+ok   rsc:freehold           requests=1 ok=1
+ok   rsc:guides             requests=9 ok=9
+ok   rsc:home               requests=1 ok=1
+ok   rsc:listings           requests=492 ok=492
+ok   rsc:market-watch       requests=5 ok=5
+ok   rsc:mosques            requests=8 ok=8
+ok   rsc:neighbourhoods     requests=22 ok=22
+ok   rsc:potl               requests=1 ok=1
+ok   rsc:rentals            requests=1 ok=1
+ok   rsc:schools            requests=30 ok=30
+ok   rsc:sell               requests=1 ok=1
+ok   rsc:signin             requests=1 ok=1
+ok   rsc:sold               requests=2 ok=2
+ok   rsc:streets            requests=720 ok=720
+ok   rsc:value              requests=1 ok=1
+ok   sitemaps               requests=5 ok=5
+
+CLEAN · 6194 responses · 0 findings · 100s
+EXIT 0

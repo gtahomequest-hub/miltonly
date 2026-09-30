@@ -1,0 +1,46 @@
+
+═══ MC-046 LEAK TEST ═══
+target   https://miltonly.com
+build    5bb6cbd
+record   882 street identities, 517 Milton-wide and hub tokens, 59 condos, 196 edition tokens (values held in memory, not printed)
+
+ok   500                    requests=1 ok=1
+ok   api                    requests=74 ok=9 status_401=62 status_200=9 status_400=3
+FAIL card+og                requests=36 ok=36 card_basis=36 class_count=20 card_figure=11 value=22 og_fetched=7 og_png_ok=7
+FAIL html:404               requests=1 ok=1 status_404=1 value=11 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:about             requests=1 ok=1 status_200=1 value=11 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:compare           requests=2 ok=2 status_200=2 value=23 value_explained=4 class_count=2 class_dom=2 class_to-ask=2 class_typical=2 lone_separator=2
+FAIL html:condos            requests=60 ok=60 status_200=60 value=922 value_explained=74 class_count=60 class_dom=60 class_to-ask=60 class_typical=60 lone_separator=60
+FAIL html:condos-guide      requests=1 ok=1 status_200=1 value=12 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:exclusive         requests=1 ok=1 status_200=1 value=11 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:freehold          requests=1 ok=1 status_200=1 value=13 value_explained=2 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:guides            requests=9 ok=9 status_200=9 value=142 value_explained=9 class_count=9 class_dom=9 class_to-ask=9 class_typical=9 lone_separator=9
+FAIL html:home              requests=1 ok=1 status_200=1 value=54 value_explained=3 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:listings          requests=25 ok=25 status_200=25 value_explained=48 value=310 class_count=25 class_dom=25 class_to-ask=25 class_typical=25 lone_separator=25
+FAIL html:market-watch      requests=5 ok=5 status_200=5 value=346 value_explained=5 class_count=5 class_dom=5 class_to-ask=5 class_typical=5 lone_separator=5
+FAIL html:mosques           requests=8 ok=8 status_200=8 value=88 value_explained=8 class_count=8 class_dom=8 class_to-ask=8 class_typical=8 lone_separator=8
+FAIL html:neighbourhoods    requests=22 ok=22 status_200=22 value=1593 value_explained=22 class_count=22 class_dom=22 class_to-ask=22 class_typical=22 lone_separator=22
+FAIL html:potl              requests=1 ok=1 status_200=1 value=11 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:rentals           requests=1 ok=1 status_200=1 value=14 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:schools           requests=30 ok=30 status_200=30 value=339 value_explained=42 class_count=30 class_dom=30 class_to-ask=30 class_typical=30 lone_separator=30
+FAIL html:sell              requests=1 ok=1 status_200=1 value=11 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:signin            requests=1 ok=1 status_200=1 value=11 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL html:sold              requests=2 ok=2 status_200=2 value=144 value_explained=2 class_count=2 class_dom=2 class_to-ask=2 class_typical=2 lone_separator=2
+FAIL html:streets           requests=37 ok=37 status_200=37 value_explained=125 value=593 class_count=37 class_dom=37 class_to-ask=37 class_typical=37 lone_separator=37
+FAIL html:value             requests=1 ok=1 status_200=1 value=13 value_explained=1 class_count=1 class_dom=1 class_to-ask=1 class_typical=1 lone_separator=1
+FAIL jsonld                 requests=640 ok=640 value=72 class_typical=33 vow_node=22 class_count=7 class_dom=24
+FAIL rsc:condos             requests=33 ok=33 value=948 class_count=33 class_dom=33 class_to-ask=33 class_typical=33
+FAIL rsc:guides             requests=3 ok=3 value=88 class_count=3 class_dom=3 class_to-ask=3 class_typical=3
+FAIL rsc:listings           requests=3 ok=3 value=78 class_count=3 class_dom=3 class_to-ask=3 class_typical=3 value_explained=2
+FAIL rsc:market-watch       requests=4 ok=4 value=364 class_count=4 class_dom=4 class_to-ask=4 class_typical=4
+FAIL rsc:mosques            requests=2 ok=2 value=48 class_count=2 class_dom=2 class_to-ask=2 class_typical=2
+FAIL rsc:neighbourhoods     requests=8 ok=8 value=709 value_explained=15 class_count=8 class_dom=8 class_to-ask=8 class_typical=8
+FAIL rsc:potl               requests=1 ok=1 value=24 class_count=1 class_dom=1 class_to-ask=1 class_typical=1
+FAIL rsc:schools            requests=12 ok=12 value=296 class_count=12 class_dom=12 class_to-ask=12 class_typical=12
+FAIL rsc:signin             requests=1 ok=1 value=24 class_count=1 class_dom=1 class_to-ask=1 class_typical=1
+FAIL rsc:streets            requests=13 ok=13 value=472 class_count=13 class_dom=13 class_to-ask=13 class_typical=13
+FAIL rsc:value              requests=1 ok=1 value=26 class_count=1 class_dom=1 class_to-ask=1 class_typical=1
+FAIL sitemaps               requests=5 ok=5 market_watch_listed=1
+
+LEAK · 1048 responses · 9376 findings · 48s
+EXIT 1

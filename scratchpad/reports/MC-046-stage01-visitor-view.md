@@ -1,6 +1,157 @@
 # MC-046
 CORE · D:\miltonly · feat/visitor-gate
 
+## MC-046 Stage 1: every VOW-derived figure off the visitor view. PREVIEW GREEN, NOT MERGED.
+
+**Merge candidate:** `feat/visitor-gate` @ **`6507ab95655659f3014c4487a114a013032db560`** (five code commits on `main` @ `5bb6cbd`).
+**Preview:** https://miltonly-h13aafwtd-gtahomequest-hubs-projects.vercel.app (one CLI preview; `/api/build` answers `6507ab9`).
+**Core merges by SHA on Aamir's approval.** The merge deploy runs two steps listed under "At the merge".
+
+### Results
+| Check | Result |
+|---|---|
+| Local gate `pnpm build` | exit 0, 841/841 pages; 51 prebuild tests incl. the new `test-vow-door` (3,420 assertions) |
+| Local battery | `PASS · 25 checks · 719 pages · 545s` (leak check included) |
+| **Preview battery** | **`PASS · 25 checks · 719 pages · 1432s`** |
+| **Leak test, preview** | **`CLEAN · 6,194 responses · 0 findings`** (every RSC payload fetched) |
+| Leak test, production today (calibration) | `LEAK · 1,048 responses (sampled) · 9,376 findings`: the test sees what it is meant to see |
+| **Head freeze, 719 sitemap street pages** | **title 0, description 0, canonical 0, robots 0, H1 0 changed** (production before vs preview after; the local build agreed) |
+| Lighthouse SEO, 5 street pages | production 100 on all five; the preview scores 66 to 69 on `is-crawlable` alone, which is the `X-Robots-Tag: noindex` header Vercel adds to every preview. **Excluding that audit, 100 = 100 on all five.** Pages: scott-boulevard, main-street, mccready-drive, bond-head-court, whaley-way |
+| Review | small, 3 read-only reviewers (leaks; door and cron auth; regressions). No high-severity leak. Every finding was fixed or is listed under "Open" below |
+
+**Leak test totals per surface (preview)**, all zero findings:
+- **HTML:** streets 720, listings 492, condos 60, schools 30, neighbourhoods 22, guides 9, mosques 8, market-watch 5, sold 2, compare 2, plus home, about, sell, exclusive, freehold, potl, condos-guide, rentals, value, signin and the 404 (1 each).
+- **Other surfaces:** the same pages' RSC payloads, 2,673 JSON-LD blocks, and 74 signed-out API calls (10 answered 200, 61 answered 401, 3 answered 400; every route under `src/app/api`). Also 719 street cards with 168 og.png images fetched, 5 sitemap, robots and manifest files, and the 500 page (Next's static document).
+- **Value check:** 12,272 VOW tokens equal a public asking price, so they were dropped as ambiguous and counted, not matched. 13 money matches were preceded by asking or list wording (IDX).
+
+### First, today: R17 (its own commit on `main`, deployed alone)
+- `5bb6cbd` removed `/api/brief/send` from `vercel.json`. `test-lead-guards` now fails if the cron returns before Leads rebuilds the edition.
+- **Production serves `5bb6cbd`** (`miltonly-f7yerx7il`). Its cron list reads **23 crons, brief/send absent** (was 24), read from the deployment through the Vercel API.
+- Production battery: `PASS · 24 checks · 719 pages · 571s`.
+- **Recipients at the pause: 1 brief watch on record, 0 enabled, so 0 addresses were being mailed.**
+
+### The one door (`src/lib/vow/door.ts`)
+- **Scope:** the only module that opens DB2 (sold) or DB3 (analytics). A connection is handed out only against a `VowAccess`, issued three ways:
+  - `vowReaderAccess(user)`: `canSeeVowRecords`.
+  - `vowSystemAccess(request)`: `Authorization: Bearer CRON_SECRET`, constant time, trimmed, **never `?secret=`**.
+  - `vowScriptAccess()` / `enterVowScriptScope()`: offline scripts, refused inside a Next server or build.
+- **Forgery:** issued accesses live in a private `WeakSet`, so a forged object, or a copy carrying the brand symbol, is refused.
+- **Scope form:** deep computes take the access from `withVowAccess` (AsyncLocalStorage), a scope that can only be entered with a genuine access.
+- **What moved behind it:**
+  - every DB2/DB3 reader (sold-data, sold-stats, soldAggregates, board, geni, marketWatch windows, brief, the street, hub and condo generator inputs, streetDecision)
+  - the gated readers
+  - the listing grid's VOW columns (`listingsV2Data` takes a reader access, not a boolean)
+- `db.ts` keeps DB1 only; `getSoldDb`/`getAnalyticsDb` are gone.
+- **Dead VOW code deleted:** VowGate, NeighbourhoodSoldBlock, rentSignals, stats, the retired street index.
+- **R16:**
+  - Every VOW cron route is header-only: sync sold, detect, expire, backfill, generate, catchup, regenerate, regenerate-hubs, vip-hubs, the sold and lease probes, the three computes, migrate, force-regenerate, brief/send, market-watch.
+  - The internal calls to `/api/sync/generate` send the header.
+  - `vercel.json` carries no secret.
+  - **`CRON_SECRET` rotated on Production and Preview** (`vercel env`, never printed); `.env.local` updated in all six worktrees.
+- **`scripts/test-vow-door.ts` (prebuild) fails the build on any of the following:**
+  - a connection string, a database driver, or an import from outside `src/`, anywhere but the door;
+  - a way in used outside its place, or a VOW cron route without the header door;
+  - SQL on the VOW schemas or tables not taking its connection from the door;
+  - any client component, page, layout, error page, route handler, middleware or server action that reaches a VOW module through its imports;
+  - Listing's VOW columns, non-public statuses, raw SQL, or full-row reads of Listing and of the tables storing VOW derivatives, outside a reasoned allowlist;
+  - a re-export of the door, or an access kept in a module variable.
+
+  It also runs the door itself: forged, copied, query-string and absent credentials are all refused.
+
+### What left the visitor view, by ruling
+- **R1, R5, R10 (streets):**
+  - **Removed:** the hero typical, range and basis; the pills; "N closed sales"; the glance tiles; the sidebar facts; the owner CTA figure; the type cards' sold rows and charts; the Sales/Leases cards; the rent grid; the quarterly chart and YoY sentence; the area context; the minimal page's neighbourhood figures; existence claims ("No resales recorded").
+  - **Prose:** the `market` and `neighbourhoodComparable` prose sections are gone. **Every remaining prose sentence and every FAQ passes the VOW-topic filter** (`src/lib/prose/vowTopic.ts`). Both reviewers caught sections escaping it, and that is fixed.
+  - **JSON-LD** loses `additionalProperty`.
+  - **Dates:** `modifiedTime`, `dateModified` and "Updated" use `generatedAt`.
+  - **Card and og.png:** no figure, no count.
+  - **Existence:** a street exists on a public listing or a published page only, and names its neighbourhood from those. The address ladder's building form comes from active listings only.
+- **R2 (hubs and condos):** hub and condo prose and FAQs are numeric- and topic-filtered, and FAQPage JSON-LD follows the filtered set.
+  - **Hubs:** no typical, no market section, no `aggregatePrice`; the ladder is ordered by active count.
+  - **Condos:** no typical, no range, and no derived building fee (Ruling 4 already excluded it).
+- **R3:** the four pilots serve the standard condo template. `139-main-street-milton` has no CondoContent, so it now answers 404; nothing links to it, and search lists only published buildings.
+- **R4:** figure-free descriptions on hubs (active counts), `/sold`, Market Watch and the guides. The `/streets`, `/neighbourhoods`, `/condos` and compare descriptions promise asking data only. No title or H1 held a figure, so none changed.
+- **R6:**
+  - `/sold` keeps the gated table; its aggregate layer and head figures are gone.
+  - Market Watch (index and 4 editions) is `noindex, follow`, 200, out of the sitemap, menu and footer, and carries the neutral line.
+  - **Guides:**
+    - Noindexed (out of the sitemap, featured, related, footer and uplinks): *what-milton-neighbourhoods-cost* (every section was sold statistics) and *is-it-a-good-time-to-sell-in-milton* ("The last four quarters" left whole).
+    - Still indexed, every section with its own content: *how-to-read-a-milton-sold-price*, *what-it-costs-to-buy-your-first-home-in-milton*, condo fees, schools, parking, GO.
+  - `/compare` keeps the labelled asking median only.
+  - `/value/[neighbourhood]` is figure-free and noindex.
+- **R7:** the Board, the hero typical, sold this month and the valuation band's sold figures are gone; the AskBar count is gone.
+- **R8:** menu panels keep links and active counts. Typical rent, Landlords, the Sell figures, sold this month, Market Watch and the price-change counts are gone.
+- **R9:** every sold-volume ordering is now active count, ties alphabetical (the footer's top streets, the hub ladder, strips, autocomplete, hero search).
+- **R11:**
+  - `/rentals` and `/rent` average active leases only (the Upstash key moved to v5).
+  - `/streets`, `/neighbourhoods`, schools and mosques count public rows.
+  - Search, autocomplete and the hero index name published or publicly listed streets and published condo buildings only.
+- **R12:** no average days on market on `/listings` or `/api/street-stats`.
+- **R13:** new-listing counts kept; no per-listing "new" badge from `listedAt`.
+- **R14:** the daily summary returns new sale and lease listings only.
+- **R15:** the lead response carries no market stats.
+- **Neutral line:** one per page body where the main sold block was (`src/components/vow/SoldHistoryLine.tsx`).
+- **Markers:** every gated render carries `data-vow`: the street records rows, the `/sold` table, the listing VOW facts, the grid card facts, and the saved-listing status.
+
+### The three additions
+1. `af4df20`: `/sales/ads/[mlsNumber]` renders the shared 8.24 and 8.16 lines (`ListingComplianceLines.tsx`, the same component the listing page uses). `test-vow-branding` asserts both pages, and the battery's `vow-display` reads the ads pages.
+2. `97b34ef`: `/api/sync/generate` no longer logs the key's first ten characters. The route is behind `vowSystemAccess` in `67fa56e`.
+3. **MC-049's check, read 2026-09-30 20:28:54Z:** `max(StreetGeneration.generatedAt)` = **2026-09-27 14:01:10.182 UTC**; **rows with `generatedAt` after 2026-09-29 12:00 UTC: 0** (of 776). MC-049 recorded 14:01:10.436, which is `StreetContent.generatedAt` for the same run (baverstock-crescent), and is unchanged. **The rewrite stayed paused.**
+
+### At the merge (Core)
+1. **Run `BASE=https://miltonly.com node scripts/vow-cache-purge.mjs --apply` right after the production deploy is Ready.**
+   - It deletes the Upstash keys that held VOW-derived values (31 present today), drops the `db2`/`db3` tags, and revalidates each street's card and og.png.
+   - Upstash is shared, so running it earlier is undone by today's production code.
+2. **The rotated `CRON_SECRET` takes effect at the next production deploy.** Until then:
+   - production's crons run on the old secret, which stays valid;
+   - local scripts that call production cron routes get 401, because every `.env.local` holds the new secret.
+3. Then `npx vercel ls --prod` plus the battery with the merge SHA. The leak check is now part of it.
+
+### What registered readers lose on street pages until Stage 2, and where they still see it
+- **Lost for everyone** (Stage 1 builds no gated UI): the street's typical price and band, sale and lease counts, days on market, sold-to-ask, the by-type sold figures and charts, the rent grid, the quarterly trend and YoY, the neighbourhood comparison, and the market prose.
+- **Still there for a signed-in, acknowledged reader:**
+  - each street's **records island** (last 90 days, up to 20 rows: date, address, beds, sold price, vs ask, DOM, brokerage)
+  - **/sold**'s records table (city-wide, filterable by neighbourhood and type)
+  - each listing's DOM, price history and sold price (**ListingVowFacts**, and the grid cards on /listings)
+  - saved listings' status
+  - `/api/sold-stats`
+
+### Open (follow-ups, not fixed here)
+- **R16 follow-up, routes still accepting `?secret=`:** `api/sync` (the IDX sync), `alerts/match`, `compliance/check`, `digest/leads`, `jobs/warm-hubs`, `monitor/queue`, `seo/digest`, `seo/sense`, `revalidate` (`REVALIDATION_SECRET`). None reads VOW data. **Middleware's hardcoded preview secret** is at `src/middleware.ts:31`.
+- **Leads:** rebuild the brief edition without a VOW figure. The signup copy still promises "what sold" (`DailyBriefSignup.tsx`, `lead/notify.ts` "sold report"). Then restore the cron.
+- **Menu neutral line (judgement call).** The Sell panel carries "Milton sold history is for registered readers", as the ruling worded it for the menu. The menu is on every page, so a page with its own line has two in the document (one in the body). I read "at most one per page" as the page body. The Architect may prefer the menu without it.
+- **Wording, no figure:**
+  - the homepage H1 "What Milton homes actually sell for, street by street", and the `/streets` title "Price Data for Every Street" (neither holds a figure, so neither changed under R4)
+  - the island caption "Recent closed sales"
+- **Behaviour changes to note:**
+  - A street with sold records only and no page now answers 404; none is in the sitemap, and all 719 answered 200.
+  - The footer's top streets match by exact slug, where the hub ladder merges slug variants.
+- **Scripts:** the offline scripts that call the scoped computes enter the scope with `enterVowScriptScope()` and must run under `tsx --require ./scripts/_server-only-shim.cjs`. Proven on a scratch count, not on each script.
+
+### Files
+267 files changed against `main` (5,226 insertions, 8,453 deletions).
+
+| Commit | What |
+|---|---|
+| `97b34ef` | the key log |
+| `67fa56e` | the door |
+| `af4df20` | the ads lines |
+| `88acb6f` | the visitor view |
+| `6507ab9` | the leak test, the head snapshot, the cache purge |
+
+**Files outside Core's lane**, owner from each file's latest lane commit. Each lane merges `main` at its next task:
+- **MCT:** `scripts/smoke-test.ts`, `src/app/api/content/market-watch/route.ts`, `src/app/api/content/v1/market/daily-summary/route.ts`, `src/app/market-watch/[weekOf]/page.tsx`, `src/app/market-watch/page.tsx`, `src/components/guides/sections.tsx`, `src/components/marketwatch/MarketWatchPage.tsx`, `src/lib/guides/index.ts`, `src/lib/marketWatch/windows.ts`
+- **MH:** `scripts/geni-phase1-battery.ts`, `scripts/test-sold-cache-purge.ts`, `scripts/verify/checks/homepage.mjs`, `scripts/verify/checks/hub-intents.mjs`, `src/app/api/streets/[slug]/card/route.ts`, `src/app/condos/[slug]/page.tsx`, `src/app/streets/[slug]/og.png/route.tsx`, `src/app/value/[neighbourhood]/page.tsx`, `src/components/condo/CondoPage.tsx`, `src/components/condo/condo-theme.css`, `src/components/condo/sections.tsx`, `src/components/home/Hero.tsx`, `src/components/home/HomePage.tsx`, `src/components/home/NeighbourhoodLadder.tsx`, `src/components/home/home-sections.css`, `src/components/home/home-theme.css`, `src/components/home/types.ts`, `src/components/street/v2/StreetMinimalPage.tsx`, `src/lib/board/computeBoard.ts`, `src/lib/comparisonData.ts`, `src/lib/heroSearch.ts`, `src/lib/homepageData.ts`, `src/lib/rentSignals.ts` (deleted), `src/lib/schema/street-schema.ts`
+- **ML:** `scripts/test-lead-guards.ts` (R17, on `main`), `scripts/test-lead-bot-gate.ts`, `scripts/verify/checks/footer.mjs`, `src/app/api/brief/send/route.ts`, `src/app/api/leads/create/route.ts`, `src/components/home/ValuationBand.tsx`, `src/components/landing/MarketPulseUnlockCard.tsx`, `src/components/street/v2/resaleClaim.ts` (deleted), `src/lib/brief/compose.ts`, `src/lib/lead/ingest.ts`, `src/lib/market-pulse.ts` (deleted)
+- **MP:** `scripts/test-portal-door.ts`, `scripts/test-vow-best-practices.ts`, `src/app/api/auth/saved-listings/route.ts`, `src/app/api/sold-stats/route.ts`, `src/app/api/streets/[slug]/sold-records/route.ts`
+- **MA:** none. Audit owns `scripts/audit/` only, and nothing there changed. The files whose last commit named an MA finding are Core's fixes.
+
+**Evidence** (`scratchpad/mc046/`): `head-before.json`, `head-after-preview.json`, `head-after-local.json`, `leak-preview-6507ab9.log`, `leak-local.log`, `leak-calibrate-prod.log`, `battery-preview-6507ab9.log`, `battery-local.log`, `battery-prod-5bb6cbd.log`, `lighthouse-summary.txt`, `lanes.txt`, `stage0-count.log`, and the counts-only scripts. Session notes: 6 subagents for the Stage 0 inventory, 4 for the Stage 1 surfaces, 3 for the review.
+
+---
+
+# Stage 0 (Gate A), as written 2026-09-30
+
 ## MC-046 Stage 0: the VOW inventory. Stopped at Gate A; Stage 1 waits for the Architect's ruling.
 
 **Stage 0 changed no code.** The branch carries only this report and three count scripts in `scratchpad/mc046/`. No VOW row entered the session: every query and crawl printed counts only.
