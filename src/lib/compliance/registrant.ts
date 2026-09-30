@@ -38,7 +38,7 @@ export const REGISTRANT_FULL_LINE = `${REGISTRANT_NAME_LINE} · ${REGISTRANT_BRO
  * is identified with its source. Sits above the first block a listing page adds.
  */
 export const AUGMENTATION_LABEL =
-  "From here down, added by Miltonly and not part of the MLS® listing. Nearby places and distances: Town of Milton open data (Open Government Licence – Milton). Commute times, the mortgage figures and the living area (the midpoint of the listing's range): Miltonly's figures. Typical rent and sold counts: Miltonly's summary of closed transactions on the PropTx MLS® System.";
+  "From here down, added by Miltonly and not part of the MLS® listing. Nearby places and distances: Town of Milton open data (Open Government Licence – Milton). Commute times, the mortgage figures and the living area (the midpoint of the listing's range): Miltonly's figures.";
 
 /**
  * MLS® Rule 8.12: a prominent way to reach the Member about any property displayed.

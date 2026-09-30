@@ -60,7 +60,9 @@ ok(
   "the copyright line, exactly, for a given year",
 );
 ok(MLS_COPYRIGHT_NOTICE().includes(`© ${new Date().getFullYear()} `), "the copyright line defaults to the current year");
-ok(AUGMENTATION_LABEL.includes("not part of the MLS® listing") && AUGMENTATION_LABEL.includes("Open Government Licence") && AUGMENTATION_LABEL.includes("PropTx MLS® System"), "the 8.24 label says what is added and names each source");
+ok(AUGMENTATION_LABEL.includes("not part of the MLS® listing") && AUGMENTATION_LABEL.includes("Open Government Licence"), "the 8.24 label says what is added and names each source");
+// MC-046: typical rent and sold counts left the listing page, so the label no longer names them.
+ok(!/closed transactions|sold counts|Typical rent/i.test(AUGMENTATION_LABEL), "the 8.24 label names no sold or lease figure (MC-046)");
 ok(contactLine("hello@miltonly.com").includes(REGISTRANT_NAME_LINE) && contactLine("hello@miltonly.com").includes(REGISTRANT_BROKERAGE_LINE) && contactLine("hello@miltonly.com").includes(config.realtor.phone) && contactLine("hello@miltonly.com").includes("hello@miltonly.com"), "the 8.12 line names the Member, the brokerage, the phone and the address");
 ok(!contactLine(null).includes("null") && contactLine(null).includes(config.realtor.phone), "the 8.12 line without CONTACT_EMAIL still gives the phone");
 ok(reportInaccuracyLine("hello@miltonly.com").includes("hello@miltonly.com") && reportInaccuracyLine("hello@miltonly.com").includes("48 hours") && reportInaccuracyLine("x@y.ca").startsWith("Listing brokerage"), "the 8.16 line addresses the listing brokerage, names the address and the 48 hours");
@@ -152,10 +154,23 @@ ok(footer.includes("<span data-vow-notice>{VOW_NOTICES}</span>"), "the footer ca
 ok(footer.includes("<span data-copyright>{MLS_COPYRIGHT_NOTICE()}</span>"), "the footer carries the copyright line");
 ok(footer.includes("<span data-registrant-full>{REGISTRANT_FULL_LINE}</span>"), "the footer keeps the full registrant line");
 const ldc = read("src/app/listings/[mlsNumber]/ListingDetailClient.tsx");
-ok(ldc.includes("data-augmented-label>{AUGMENTATION_LABEL}</p>"), "the listing page labels what it adds (8.24)");
-ok(ldc.indexOf("data-augmented-label") < ldc.indexOf("<WhatsNearby"), "the 8.24 label sits above the first added block");
-ok(ldc.includes("<p data-contact-line>{contactLine(extras.contactEmail)}</p>"), "the listing page carries the 8.12 contact line");
-ok(ldc.includes("<p data-report-inaccuracy>{reportInaccuracyLine(extras.contactEmail)}</p>"), "the listing page carries the 8.16 report line");
+// The 8.24, 8.12 and 8.16 lines are one shared component file (MC-046 Stage 1), rendered by the
+// listing page and the sales ads page alike; neither page carries a local copy of the words.
+const lines = read("src/components/listings/ListingComplianceLines.tsx");
+ok(lines.includes("data-augmented-label>") && lines.includes("{AUGMENTATION_LABEL}"), "the shared 8.24 label carries data-augmented-label and the registrant words");
+ok(lines.includes("data-contact-line>") && lines.includes("{contactLine(email)}"), "the shared 8.12 line carries data-contact-line");
+ok(lines.includes("data-report-inaccuracy>") && lines.includes("{reportInaccuracyLine(email)}"), "the shared 8.16 line carries data-report-inaccuracy");
+ok(ldc.includes("<AugmentationLabel "), "the listing page labels what it adds (8.24)");
+ok(ldc.indexOf("<AugmentationLabel ") < ldc.indexOf("<WhatsNearby"), "the 8.24 label sits above the first added block");
+ok(ldc.includes("<ContactLine email={extras.contactEmail} />"), "the listing page carries the 8.12 contact line");
+ok(ldc.includes("<ReportInaccuracyLine email={extras.contactEmail} />"), "the listing page carries the 8.16 report line");
+for (const f of ["src/app/listings/[mlsNumber]/ListingDetailClient.tsx", "src/app/sales/ads/[mlsNumber]/SalesAdsClient.tsx"]) {
+  ok(!/AUGMENTATION_LABEL|contactLine\(|reportInaccuracyLine\(/.test(stripComments(read(f))), `${f}: renders the notices through the shared components only`);
+}
+const sac = read("src/app/sales/ads/[mlsNumber]/SalesAdsClient.tsx");
+ok(sac.includes("<AugmentationLabel ") && sac.indexOf("<AugmentationLabel ") < sac.indexOf("<LiveListingSlider"), "the sales ads page labels what it adds (8.24), above the first added block");
+ok(sac.includes("<ReportInaccuracyLine email={contactEmail} />") && sac.includes("<ContactLine email={contactEmail} />"), "the sales ads page carries the 8.16 and 8.12 lines");
+ok(read("src/app/sales/ads/[mlsNumber]/page.tsx").includes("contactEmail={contactEmail()}"), "the sales ads page reads CONTACT_EMAIL on the server");
 ok(ldc.includes("<p>{VOW_NOTICES}</p>"), "the listing page carries the item 22 notice");
 ok(read("src/app/listings/[mlsNumber]/page.tsx").includes("contactEmail: contactEmail(),"), "the listing page reads CONTACT_EMAIL on the server");
 
@@ -195,7 +210,7 @@ const SWEEP_SKIP_PARTY = [/^src\/lib\/ai\//];
   // A4: no computed figure in the listing's MLS fields; the living area sits under the 8.24 label
   ok(!/pricePerSqft|\/sqft</.test(ldc), "no price per square foot on the listing page (A4)");
   ok(!/l\.sqft\.toLocaleString\(\)\} sqft/.test(ldc), "the living-area midpoint is not in the listing's fact line (A4)");
-  ok(ldc.indexOf("data-derived-area") > ldc.indexOf("data-augmented-label"), "the living-area midpoint sits under the 8.24 label (A4)");
+  ok(ldc.indexOf("data-derived-area") > ldc.indexOf("<AugmentationLabel "), "the living-area midpoint sits under the 8.24 label (A4)");
   for (const f of ["src/app/sales/ads/[mlsNumber]/SalesAdsClient.tsx", "src/app/rentals/ads/[mlsNumber]/RentalsAdsClient.tsx", "src/components/listings/v2/ListingCard.tsx", "src/lib/schema.ts", "src/app/listings/[mlsNumber]/page.tsx"]) {
     ok(!/\.sqft\b/.test(stripComments(read(f)).replace(/sqft: (true|number \| null)/g, "")), `${f}: renders no living-area midpoint (A4)`);
   }
