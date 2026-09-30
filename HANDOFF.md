@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-30 (MC-046 Stage 0, the VOW visitor-view inventory, stopped at Gate A on `feat/visitor-gate`): `main` is `916f473`; production serves `467dc60` (`miltonly-9xwpg4454`), battery `PASS · 24 checks · 719 pages · 541s`. **VOW terms are version 6: every consumer re-consents.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite and new-page generation are paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-046-stage01-visitor-view.md`._
+_Last rewritten 2026-09-30 (MC-046 Stage 1, every VOW-derived figure off the visitor view): `main` is `5bb6cbd` plus docs; production serves `5bb6cbd` (`miltonly-f7yerx7il`, R17: the brief's cron removed), battery `PASS · 24 checks · 719 pages · 571s`. **`feat/visitor-gate` @ `6507ab9` is preview green, NOT merged** (`miltonly-h13aafwtd`, `PASS · 25 checks · 719 pages · 1432s`, leak test `CLEAN · 6,194 responses · 0 findings`). **VOW terms are version 6.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** `STREET_REGEN_ENABLED` unset. Record `scratchpad/reports/MC-046-stage01-visitor-view.md`._
 
 ## READ THIS FIRST
 
@@ -12,12 +12,15 @@ _Last rewritten 2026-09-30 (MC-046 Stage 0, the VOW visitor-view inventory, stop
   - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
   - Written pages: 222 / 78 / 0.351 / 0.748.
 
-**MC-046 STAGE 0: EVERY VOW-DERIVED FIGURE A SIGNED-OUT VISITOR SEES, INVENTORIED. STOPPED AT GATE A; NO CODE CHANGED.**
-- **Branch:** `feat/visitor-gate` from `916f473`; carries the report and three count scripts (`scratchpad/mc046/`). Nothing merges.
-- **Finding:** the mega menu puts sold typicals, days to sell, sold-to-ask and leased-record rents on all 1,355 sitemap URLs and the 404. Beyond it: 695 of 719 street pages (218 with a hero typical, 63 with JSON-LD `additionalProperty`), 22 hubs (21 meta descriptions carry a figure), 59 condos, the homepage Board, `/sold`, Market Watch, 4 guides, `/compare`, `/value`, and four public API routes (`streets/[slug]/card`, `og.png`, `hero-index`, `street-stats`).
-- **Street heads are clean** (title, description, canonical, robots, H1): Stage 1 can hold them byte-identical.
-- **Leaks independent of aggregates:** `/rentals` and `/rent` averages include leased rows; `/streets`, `/neighbourhoods`, schools and mosques count sold/rented/expired rows; `/api/leads/create` returns market-pulse stats; the daily brief emails sold figures to unregistered subscribers (Leads).
-- **Waiting on:** the Architect's rulings R1 to R18 in the report (prose, hub heads, whole-page sold statistics, the one-door design for cron readers, pausing the brief).
+**MC-046 STAGE 1: EVERY VOW-DERIVED FIGURE OFF THE VISITOR VIEW. PREVIEW GREEN, NOT MERGED. CORE MERGES `6507ab9` BY SHA ON AAMIR'S APPROVAL.**
+- **R17 is on production** (`5bb6cbd`, deployed alone): `/api/brief/send` has no cron (23 crons, was 24); 1 brief watch on record, 0 enabled. Leads rebuilds the edition without a VOW figure, then the cron returns (`test-lead-guards` fails its return until then).
+- **The one door:** `src/lib/vow/door.ts` is the only opener of DB2/DB3, against a `VowAccess` (reader by `canSeeVowRecords`, cron by `Authorization: Bearer CRON_SECRET` only, offline script). `scripts/test-vow-door.ts` (prebuild, 3,420 assertions) makes any other path fail the build. Every VOW cron route is header-only; `vercel.json` carries no secret.
+- **`CRON_SECRET` was rotated on Production and Preview (2026-09-30)** and written to all six worktrees' `.env.local`. It takes effect at the next production deploy; until then production runs on the old one and a local script calling a production cron route gets 401.
+- **At the merge:** right after the production deploy is Ready, `BASE=https://miltonly.com node scripts/vow-cache-purge.mjs --apply` (Upstash VOW keys, the db2/db3 tags, each street's card and og.png). Then `npx vercel ls --prod` and the battery (it now includes the `leak` check, about 25 minutes).
+- **Removed for everyone:** every street, hub, condo, tenure, compare, value, homepage, menu, footer, /sold, Market Watch and guide figure derived from sold or leased records; orderings by sold volume are by active count. Registered readers keep the street records island, /sold's table, listing VOW facts and saved-listing status.
+- **Heads:** 719 street heads byte-identical (snapshot `scratchpad/mc046/head-before.json`, tool `scripts/verify/head-snapshot.mjs`). Hub, /sold, Market Watch and guide descriptions are figure-free. Market Watch and two guides are noindex, out of the sitemap.
+- **Lanes to merge `main` at their next task:** Home, Leads, Content, Portal (file list in the report).
+- **Open:** the nine non-VOW `?secret=` routes and middleware's preview secret (follow-up task); the menu's neutral line (one per body, two per document); Leads' brief.
 
 **MC-047: THE VOW BRANDED TO THE REGISTRANT, THE NOTICES, THE HOMESLY.CA FINDINGS. PRODUCTION SERVES `467dc60`.**
 - **Merged:** `core/mc047` @ `31827e9`, by SHA, as `467dc60`. It carries nine commits: Step 0 `dcd62ff`, then `d532b1a` through `31827e9`. There was one preview, `miltonly-ooj4vkqti`.
@@ -884,7 +887,7 @@ pass opened a new budget (481 pages on the sitemap by 00:20Z). 215 pending.
 | `main` | **`467dc60`** (MC-047: `core/mc047` @ `31827e9` by SHA) plus MC-047's docs commit; production serves `467dc60` (`miltonly-9xwpg4454`) |
 | battery on production | **`PASS · 24 checks · 719 pages · 541s`** at `467dc60`, 2026-09-29 (local 410s, 23 of 24 then `nav` PASS after its 66px fix; preview `miltonly-ooj4vkqti`) |
 | `prisma migrate status` | **clean**, 33 migrations (`20260927120000_portal_vow_reviewer_throttle_erasure` was already applied when merged, MC-050) |
-| held for the next batch | **nothing**. **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite and new-page generation paused** (MC-049, MC-047 Step 0; `STREET_REGEN_ENABLED` unset). **VOW terms v6** (MC-047) |
+| held for the next batch | **`feat/visitor-gate` @ `6507ab9` (MC-046 Stage 1), preview green, awaiting Aamir's approval; it is a live-compliance fix and may merge alone.** **Street heads frozen until 2026-10-26** (MC-048); **street-prose rewrite and new-page generation paused** (MC-049, MC-047 Step 0; `STREET_REGEN_ENABLED` unset). **VOW terms v6** (MC-047) |
 | Node runtime | **`22.x` on production** (`engines`); the Vercel project setting still reads 20.x, overridden |
 | creation programme | **drained**: `StreetQueue` holds 0 pending (ineligible 86, failed 80, done 716, read 2026-09-23), so the hourly cron has nothing to take; cap 20 per UTC day, DeepSeek first |
 | `AI_PROVIDER_MARKET` | **deepseek** (Production, Preview); fallback opus, no credit |
