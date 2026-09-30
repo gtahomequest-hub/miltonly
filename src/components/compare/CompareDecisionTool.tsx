@@ -16,13 +16,24 @@
 
 import { useState } from "react";
 import { fullPrice } from "../hub/format";
-import type { TenureCompareFacts } from "../hub/types";
+
+/** MC-046 Stage 1: the ONLY facts that cross into this client island. All IDX: today's typical
+ *  asking price, the lowest asking price, the active count, and the stated fee range. No value
+ *  derived from sold, leased or expired records is in the props. */
+export interface CompareToolFacts {
+  medianList: number | null;
+  listLo: number | null;
+  activeCount: number | null;
+  hasFee: boolean;
+  feeLo: number | null;
+  feeHi: number | null;
+}
 
 export interface CompareDecisionToolProps {
   /** Freehold-side numeric facts (undefined when the seam returned a shell). */
-  factsA?: TenureCompareFacts;
+  factsA?: CompareToolFacts;
   /** Condo-side numeric facts. */
-  factsB?: TenureCompareFacts;
+  factsB?: CompareToolFacts;
   /** Side hub links (cfg.sideA.href / cfg.sideB.href). */
   hrefA: string;
   hrefB: string;

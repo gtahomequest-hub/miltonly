@@ -26,24 +26,18 @@ import { getSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { enforceVowThrottle } from "@/lib/vow/throttle";
-import {
-  getMiltonSoldTotals,
-  getSoldNeighbourhoodOptions,
-  getRecentSoldList,
-} from "@/lib/sold-data";
-import { getMiltonSoldAggregates, getMiltonSoldOverall } from "@/lib/soldAggregates";
+import { getSoldNeighbourhoodOptions, getRecentSoldList } from "@/lib/sold-data";
+import { vowReaderAccess } from "@/lib/vow/door";
 import SiteNavLive from "@/components/nav/SiteNavLive";
 import SiteFooter from "@/components/nav/SiteFooter";
 import SoldTableForest from "@/components/sold/SoldTableForest";
-import SoldAggregates from "@/components/sold/SoldAggregates";
 import SoldValuationCTA from "@/components/sold/SoldValuationCTA";
 import VowAcknowledgementPrompt from "@/components/vow/VowAcknowledgementPrompt";
+import SoldHistoryLine from "@/components/vow/SoldHistoryLine";
 import "./sold-theme.css";
 
-// Always server-render (live sold counts).
+// Always server-render (the gated records are per-session).
 export const revalidate = 0;
-
-const money = (n: number) => "$" + Math.round(n).toLocaleString("en-CA");
 
 type TypeFilter = "sale" | "lease";
 
@@ -66,25 +60,15 @@ interface PageProps {
 // `noindex, follow` so the param permutations drop out of the index while staying crawlable
 // (robots no longer blocks /sold? — the block was preventing Google reading this canonical).
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const [totals, overall] = await Promise.all([
-    getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
-    getMiltonSoldOverall().catch(() => null),
-  ]);
-  // Live-data hook (street-tier formula): typical median + 12mo count. k-safe —
-  // Milton-wide always clears k, but fall back to the 90-day count if suppressed.
-  const typical = overall?.medianPrice ?? null;
-  const count12 = overall?.count ?? 0;
+  // THE HEAD IS FIGURE-FREE (MC-046 Stage 1, R4). It carried the 12-month typical, the sale count,
+  // days on market and sold-to-ask, all derived from VOW records (PropTx VOW Best Practices item
+  // 40). It now reads from the Town and the page's own purpose only; no sold figure, no count.
   // a hub's view names the hub (MC-027 item 3); the view is noindex either way
   const hubName = searchParams?.nbhd ? NEIGHBOURHOOD_SEED.find((n) => n.slug === searchParams.nbhd)?.name ?? null : null;
   const title = hubName
     ? `${hubName} Sold Home Prices, ${config.CITY_NAME}`
-    : typical != null
-      ? `${config.CITY_NAME} Sold Home Prices: Typically ${money(typical)} Across ${count12.toLocaleString("en-CA")} Sales`
-      : `${config.CITY_NAME} sold homes: ${totals.last90} recent real estate sales`;
-  const description =
-    typical != null
-      ? `What homes really sell for in ${config.CITY_NAME}, ${config.CITY_PROVINCE}: typically ${money(typical)} across ${count12.toLocaleString("en-CA")} sales in the last 12 months${overall?.avgDom != null ? `, ${overall.avgDom} days on market` : ""}${overall?.soldToAskPct != null ? ` at ${overall.soldToAskPct}% of asking` : ""}. Sold prices by neighbourhood and property type, updated daily from PropTx MLS®.`
-      : `Browse real sold prices and closed transactions in ${config.CITY_NAME} ${config.CITY_PROVINCE}. ${totals.last90} homes sold in the last 90 days. Free sold data for registered users.`;
+    : `${config.CITY_NAME} Sold Home Prices and Records`;
+  const description = `Sold home records for ${config.CITY_NAME}, ${config.CITY_PROVINCE}, by neighbourhood and property type, from PropTx MLS®. Free for registered readers; ${config.CITY_NAME} homes for sale and for lease are open to everyone.`;
   const meta = genMeta({
     title,
     description,
@@ -116,6 +100,9 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
     const throttle = await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(headers()) });
     if (!throttle.ok) canSeeRecords = false;
   }
+  // MC-046: the one door. A reader who passed the gate and the throttle holds an access; everyone
+  // else holds none, so this render cannot read DB2 for them.
+  const access = canSeeRecords ? vowReaderAccess(user) : null;
 
   const typeParam: TypeFilter = searchParams?.type === "lease" ? "lease" : "sale";
   const nbhdParam = searchParams?.nbhd;
@@ -127,7 +114,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   // Resolve the neighbourhood param FIRST — the records query needs the raw MLS string, while the
   // URL only ever carries the slug. Accepts a raw string too, so existing inbound links still work.
   const [soldOptions, publishedHubSlugList, nbhdRows] = await Promise.all([
-    getSoldNeighbourhoodOptions().catch(() => []),
+    getSoldNeighbourhoodOptions(access).catch(() => []),
     publishedHubSlugs().catch(() => [] as string[]),
     neighbourhoodRows().catch(() => [] as Array<{ slug: string; name: string; rawStrings: string[] }>),
   ]);
@@ -142,18 +129,15 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
   const nbhdOpt = nbhdParam ? neighbourhoods.find((o) => o.slug === nbhdParam || o.raw === nbhdParam) ?? soldOptions.find((o) => o.raw === nbhdParam) : undefined;
   const nbhdRaw = nbhdOpt?.raw;
 
-  const [totals, aggregates, records] = await Promise.all([
-    getMiltonSoldTotals().catch(() => ({ last30: 0, last90: 0 })),
-    // Public k-anon aggregate layer — always fetched (no gate); each fetcher
-    // fails soft internally so this never throws.
-    getMiltonSoldAggregates(),
-    canSeeRecords
-      ? getRecentSoldList(typeParam, 90, 60, {
-          neighbourhood: nbhdRaw,
-          property_type: ptypeFilter,
-        }).catch(() => [])
-      : Promise.resolve([]),
-  ]);
+  // THE AGGREGATE LAYER AND THE 30/90-DAY COUNTS ARE GONE (MC-046 Stage 1, R6). Every typical,
+  // band, count, days-on-market, sold-to-ask, by-type, quarterly and by-hub figure was derived from
+  // VOW records and was served to every visitor. Only the gated records remain.
+  const records = access
+    ? await getRecentSoldList(access, typeParam, 90, 60, {
+        neighbourhood: nbhdRaw,
+        property_type: ptypeFilter,
+      }).catch(() => [])
+    : [];
 
   // The audit trail (MP-006): the city-wide records were served to this consumer. A server
   // component can write a row, not a cookie, so the inactivity clock is wound by /api/auth/me
@@ -194,7 +178,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
     <div className="sold-v2">
       <SiteNavLive variant="page" />
 
-      {/* hero — real totals + (anon) sign-in CTA */}
+      {/* hero: heading, lede and the (anon) sign-in CTA; no figure */}
       <section className="sv-hero">
         <div className="sv-wrap">
           <span className="sv-eyebrow">
@@ -208,16 +192,6 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
               ? <>Real closed transactions from PropTx MLS<sup>®</sup> in {nbhdLabel}, {config.CITY_NAME}: exact sold prices, days on market, and sold-to-ask ratios, with the rest of {config.CITY_NAME} one chip away.</>
               : <>Real closed transactions from PropTx MLS<sup>®</sup>: exact sold prices, days on market, and sold-to-ask ratios across every {config.CITY_NAME} neighbourhood.</>}
           </p>
-          <div className="sv-stats">
-            <div className="sv-stat">
-              <div className="sv-stat-v">{totals.last90}</div>
-              <div className="sv-stat-l">Sold in the last 90 days</div>
-            </div>
-            <div className="sv-stat">
-              <div className="sv-stat-v">{totals.last30}</div>
-              <div className="sv-stat-l">Sold in the last 30 days</div>
-            </div>
-          </div>
           {!authed && (
             <Link href={signinHref} className="sv-cta" rel="nofollow">
               Sign in free to see exact sold prices →
@@ -226,10 +200,15 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      {/* INDEXABLE aggregate layer — public, ABOVE the gate. Milton-wide k-anon
-          aggregates only (medians/counts/bands); no individual sold record ever
-          crosses into this server HTML. */}
-      <SoldAggregates data={aggregates} />
+      {/* THE NEUTRAL LINE where the aggregate layer was (MC-046 Stage 1). It carries no figure;
+          a reader who can already see the records does not need it. */}
+      {!canSeeRecords && (
+        <section className="sv-neutral">
+          <div className="sv-wrap">
+            <SoldHistoryLine subject="Milton" returnPath="/sold" />
+          </div>
+        </section>
+      )}
       <SoldValuationCTA />
 
       {/* filter pill chips */}
@@ -301,7 +280,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
           {canSeeRecords ? (
             <>
               <p className="sv-count">
-                Showing {records.length} {txnLabel} record{records.length === 1 ? "" : "s"} — last 90 days
+                Showing {records.length} {txnLabel} record{records.length === 1 ? "" : "s"} from the last 90 days
                 {nbhdLabel ? ` · ${nbhdLabel}` : ""}
                 {ptypeFilter
                   ? ` · ${PROPERTY_TYPES.find((t) => t.slug === ptypeFilter)?.label ?? ptypeFilter}`
@@ -322,7 +301,7 @@ export default async function SoldHubPage({ searchParams }: PageProps) {
               <div className="sv-gate-k">MLS® VOW · Registered access</div>
               <div className="sv-gate-h">Recent {config.CITY_NAME} sold prices, last 90 days</div>
               <p className="sv-gate-p">
-                Free with a verified email — exact sold prices, days on market, and
+                Free with a verified email: exact sold prices, days on market, and
                 sold-to-ask ratios, updated daily from PropTx MLS<sup>®</sup> data.
               </p>
               <Link href={signinHref} className="sv-cta" rel="nofollow">

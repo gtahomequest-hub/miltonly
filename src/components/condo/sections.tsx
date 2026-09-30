@@ -1,8 +1,11 @@
 // src/components/condo/sections.tsx
-import type { CondoData, CondoListing, CondoBedRow } from './types';
-import { fullPrice } from './format';
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): the cost card's "Typical price" and
+// "Range" (the building's stored sold aggregate) and the sold-derived "Pricing by bedroom"
+// table are gone. The cost card carries the page's one neutral line in their place.
+import type { CondoData, CondoListing } from './types';
 import { IconWallet, IconPaw, IconKeyR, IconCar, IconBuilding, IntentIcon } from './icons';
 import ListingBrokerage from '@/components/listings/ListingBrokerage';
+import SoldHistoryLine from '@/components/vow/SoldHistoryLine';
 
 export function CondoHero({ data }: { data: CondoData }) {
   const f = data.facts;
@@ -26,7 +29,7 @@ export function CondoHero({ data }: { data: CondoData }) {
             <span className="c-eyebrow">Condo building</span>
             <h1>{data.name}</h1>
             <div className="c-addr">{data.address}</div>
-            <p className="c-character">{data.character}</p>
+            {data.character ? <p className="c-character">{data.character}</p> : null}
             <div className="c-factline">
               {facts.map((x) => (
                 <div className="c-fact" key={x.l}>
@@ -63,16 +66,6 @@ export function CondoCost({ data }: { data: CondoData }) {
         <div className="c-card">
           <div>
             <div className="c-cost-ic">
-              <IconBuilding />
-            </div>
-            <div className="c-cost-l">Typical price</div>
-            <div className={`c-cost-v${o.typicalPrice === null ? ' c-silent' : ''}`}>
-              {o.typicalPrice === null ? 'not stated' : fullPrice(o.typicalPrice)}
-            </div>
-            {o.priceRange && <div className="c-cost-sub">Range {o.priceRange}</div>}
-          </div>
-          <div>
-            <div className="c-cost-ic">
               <IconWallet />
             </div>
             <div className="c-cost-l">Maintenance fee</div>
@@ -97,45 +90,17 @@ export function CondoCost({ data }: { data: CondoData }) {
               <div className="c-cost-sub">Not stated. Confirm with management</div>
             )}
           </div>
+          <SoldHistoryLine subject={data.name} returnPath={`/condos/${data.slug}`} className="c-soldline" />
         </div>
       </div>
     </div>
-  );
-}
-
-function Bed({ b }: { b: CondoBedRow }) {
-  const silent = b.typicalPrice === null;
-  return (
-    <div className="c-bed">
-      <div className="c-bed-l">{b.label}</div>
-      <div className={`c-bed-p${silent ? ' c-silent' : ''}`}>
-        {silent ? 'not stated' : fullPrice(b.typicalPrice as number)}
-      </div>
-      {b.soldCount !== null && <div className="c-bed-s">{b.soldCount} sold · 12 mo</div>}
-    </div>
-  );
-}
-
-export function CondoBedrooms({ data }: { data: CondoData }) {
-  if (data.bedrooms.length === 0) return null;
-  return (
-    <section className="c-block">
-      <div className="c-wrap">
-        <div className="c-sechead">
-          <span className="c-eyebrow">By suite type</span>
-          <h2>Pricing by bedroom</h2>
-        </div>
-        <div className="c-beds">
-          {data.bedrooms.map((b) => (
-            <Bed key={b.label} b={b} />
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }
 
 export function CondoOverview({ data }: { data: CondoData }) {
+  // The overview is the filtered stored prose (MC-046 R2); a building where nothing survives
+  // gets no heading over an empty body.
+  if (data.overview.length === 0) return null;
   return (
     <section className="c-block c-alt">
       <div className="c-wrap">

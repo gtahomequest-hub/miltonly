@@ -10,7 +10,6 @@ import {
   HubVideoStreets,
   HubStreets,
   HubOverview,
-  HubMarket,
   HubSchools,
   HubCondos,
   HubFaqs,
@@ -27,18 +26,19 @@ import type { FooterData, TrustInfo } from '../home/types';
 //
 //   Nav        the three-menu header, live on every page
 //   Hero       name, one derived character line, four intent squares that all resolve
-//   Glance     derived facts only, each carrying its own basis
+//   Glance     derived public facts, each carrying its own basis, and the neutral line
 //   01 Film    the hood's own filmed streets, rung one, and the thing nobody else has
-//   02 Ladder  every published street, ranked, marked where filmed, each carrying the
-//              street page's own typical and that figure's sample, rung two
-//   03 About   the generated read
-//   04 Market  how it trades, against Milton
-//   05 Schools position against the Town boundary, where any stand
-//   06 Condos  buildings with a page
-//   07 FAQs
+//   02 Ladder  every published street, ordered by homes for sale today, marked where filmed
+//   03 About   the generated read, filtered for the visitor view (MC-046 R2)
+//   04 Schools position against the Town boundary, where any stand
+//   05 Condos  buildings with a page
+//   06 FAQs
 //   Guides     MC-003 up-links
-//   08 Nearby
-//   09 CTAs
+//   07 Nearby
+//   08 CTAs
+//
+// MC-046 Stage 1: the market section (how it trades, against Milton) is gone whole; every
+// value in it was derived from VOW records.
 //   Footer     the homepage's live link graph
 //
 // Film sits ABOVE the ladder and the prose deliberately: a visitor who has never heard of this
@@ -64,7 +64,6 @@ export function HubPage({
       <HubVideoStreets data={data} />
       <HubStreets data={data} />
       <HubOverview data={data} />
-      <HubMarket data={data} />
       <HubSchools data={data} />
       <HubCondos data={data} />
       <HubFaqs data={data} />

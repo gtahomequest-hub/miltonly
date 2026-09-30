@@ -5,7 +5,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { generateMetadata as genMeta } from "@/lib/seo";
 import { config } from "@/lib/config";
-import GuideArticlePage from "@/components/guides/GuideArticlePage";
+import "@/components/guides/guides-theme.css";
+import {
+  GuideHero,
+  GuideTakeaways,
+  GuideBody,
+  GuideFaqs,
+  GuideRelated,
+  GuidesDualCta,
+} from "@/components/guides/sections";
+import SoldHistoryLine from "@/components/vow/SoldHistoryLine";
 import { getGuideArticleFull } from "@/lib/guides";
 import { GUIDE_DEFS, GUIDES_UPDATED } from "@/lib/guides/guides";
 import SchemaScript from "@/components/SchemaScript";
@@ -13,9 +22,9 @@ import SiteNavLive from "@/components/nav/SiteNavLive";
 import SiteFooter from "@/components/nav/SiteFooter";
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 
-// generateStaticParams returns NOTHING, deliberately. Every figure on a guide is
-// read live from the sold aggregates, so a build-time prerender would freeze its
-// numbers and quietly diverge from /sold and from the hub pages it links to. The
+// generateStaticParams returns NOTHING, deliberately. A guide's figures are read
+// live (active listings, condo fees as stated), so a build-time prerender would
+// freeze them. Since MC-046 Stage 1 no guide reads a sold aggregate. The
 // first build did prerender these (● in the route table). The sitemap still lists
 // every slug from GUIDE_SLUGS, and an unknown slug 404s through notFound() below.
 //
@@ -38,11 +47,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const def = GUIDE_DEFS.find((d) => d.slug === params.slug);
   if (!def) return genMeta({ title: "Guide not found", noIndex: true });
-  return genMeta({
+  const meta = genMeta({
     title: def.metaTitle,
     description: def.metaDescription,
     canonical: `${config.SITE_URL}/guides/${def.slug}`,
   });
+  // MC-046 Stage 1 (R6): a guide that lost a whole H2 section with its sold figures is
+  // `noindex, follow` (and out of the sitemap) until Stage 2.
+  return def.noindex ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 
 export default async function GuidePage({ params }: { params: { slug: string } }) {
@@ -85,7 +97,21 @@ export default async function GuidePage({ params }: { params: { slug: string } }
     <>
       <SchemaScript schemas={schemas} />
       <SiteNavLive variant="page" />
-      <GuideArticlePage data={data} />
+      {/* GuideArticlePage's order, composed here so a guide whose sold block left carries the
+          neutral line under its hero, and a guide with no section left renders no empty body. */}
+      <div className="guides-v2">
+        <GuideHero data={data} />
+        {def.soldHistoryLine && (
+          <div className="g-wrap g-narrow" style={{ paddingBlock: "20px 4px" }}>
+            <SoldHistoryLine subject="Milton" soldViewHref="/sold" />
+          </div>
+        )}
+        <GuideTakeaways data={data} />
+        {data.sections.length > 0 && <GuideBody data={data} />}
+        <GuideFaqs data={data} />
+        <GuideRelated data={data} />
+        <GuidesDualCta eyebrow="Ready when you are" buyer={data.ctaBuyer} seller={data.ctaSeller} />
+      </div>
       <SiteFooter />
     </>
   );

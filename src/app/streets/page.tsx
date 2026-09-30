@@ -1,18 +1,18 @@
 // src/app/streets/page.tsx
-// LIVE /streets — forest-v2 restyle of the A-Z street directory. RESTYLE ONLY:
-// the 4 bulk DB1 queries (city=Milton, permAdvertise=true) are byte-identical to
-// the legacy navy page; the search / A-Z / neighbourhood-chip mechanics are the
-// same (now owned by the reusable <DirectoryGrid>). Only the shell is repainted
-// forest — SiteNav + hero + SiteFooter, scoped .dir-v2 theme. ChromeGate
-// suppresses the navy Navbar on /streets (exact) and /streets/<slug> (prefix).
+// LIVE /streets — forest-v2 restyle of the A-Z street directory. The search / A-Z /
+// neighbourhood-chip mechanics are owned by the reusable <DirectoryGrid>; the shell is
+// SiteNav + hero + SiteFooter, scoped .dir-v2 theme. ChromeGate suppresses the navy Navbar on
+// /streets (exact) and /streets/<slug> (prefix).
 //
-// Two Wave-2 quirks folded in:
-//   - The dead "price alerts" form (no POST) is removed (nothing-fake rule).
-//   - Link graph: the index only lists streets with >=1 permAdvertise listing,
-//     which is exactly the existence-gate condition in getStreetPageData
-//     (null only when a street has NO listings AND no stats AND no content AND
-//     no sold record) — so every linked /streets/<slug> resolves 200. hasPage
-//     just toggles the "Full report" badge.
+// THE PUBLIC ROWS ONLY (MC-046 Stage 1, rulings R9 and R11). "N listings" counted every
+// advertised row, sold, rented and expired included, and the list was ordered by that count: a
+// number and a rank that disclosed each street's sold and leased volume. Both now read the
+// public predicate (src/lib/listings/vow.ts, PUBLIC_LISTING_WHERE: an active sale listing or an
+// available lease), and the order is the active count, ties alphabetical.
+//
+// Which streets are listed: every street with a public listing, and every published street page
+// (the sitemap's set, publishedStreetPageSlugs), so every page keeps its link from here. A
+// street whose only rows are sold, rented or expired is not listed on the strength of them.
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { generateMetadata as genMeta } from "@/lib/seo";
@@ -24,7 +24,8 @@ import DirectoryGrid from "@/components/directory/DirectoryGrid";
 import type { DirectoryItem } from "@/components/directory/types";
 import "@/components/directory/directory-theme.css";
 import { resolveStreetName } from "@/lib/streetName";
-import { publishedStreetPageCount } from "@/lib/streetSurface";
+import { publishedStreetPageSlugs } from "@/lib/streetSurface";
+import { PUBLIC_LISTING_WHERE } from "@/lib/listings/vow";
 
 // MC-018 (2026-09-14): ISR, not a render per request. MC-016 measured this page as the
 // standing consumer on DB1: 57 renders in one fifteen-minute window, each pulling every Milton
@@ -37,51 +38,51 @@ export const revalidate = 3600;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Streets, Price Data for Every Street`,
-  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} street with real estate data. Average prices, days on market, active listings. Street-level data from the PropTx MLS® System.`,
+  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} street with homes for sale now and typical asking prices, street by street.`,
   canonical: `${config.SITE_URL}/streets`,
 });
 
 export default async function StreetsIndexPage() {
-  // Get all unique streets with listing counts and avg prices
-  const streets = await prisma.listing.groupBy({
-    by: ["streetSlug"],
-    _count: true,
-    where: { city: config.PRISMA_CITY_VALUE, permAdvertise: true },
-    orderBy: { _count: { streetSlug: "desc" } },
-  });
+  // Public listings per street: active sale listings and available leases, advertised, in Milton.
+  const [publicRows, publishedSlugs] = await Promise.all([
+    prisma.listing.groupBy({
+      by: ["streetSlug"],
+      _count: true,
+      where: PUBLIC_LISTING_WHERE,
+    }),
+    publishedStreetPageSlugs(),
+  ]);
+  const publicCount = new Map(publicRows.map((r) => [r.streetSlug, r._count]));
+  const publishedSet = new Set(publishedSlugs);
 
   // Hotfix 2026-05-09: replaced per-street N+1 loop (4 queries × 431 streets =
-  // ~1,724 concurrent queries) with 4 bulk queries. The N+1 pattern exhausted
+  // ~1,724 concurrent queries) with bulk queries. The N+1 pattern exhausted
   // the Vercel serverless → Neon connection pool post-Path-A redeploy and
   // triggered Application error: digest 306433527.
-  const slugs = streets.map((s) => s.streetSlug);
+  const slugs = Array.from(new Set([...publicRows.map((r) => r.streetSlug), ...publishedSlugs]));
 
-  // Bulk #1: sample streetName + neighbourhood per slug. Prisma's `distinct` is done in memory
-  // after the whole set leaves the database (3,414 rows for 687 streets, MC-016); DISTINCT ON
-  // keeps one row per slug on the server, so 687 rows leave. The sample is the newest listing
-  // that carries a name, which is what Prisma's first-row-wins gave in practice.
+  // Bulk #1: the neighbourhood of each street, for the chips and the subtitle. Prisma's `distinct`
+  // is done in memory after the whole set leaves the database (MC-016); DISTINCT ON keeps one row
+  // per slug on the server. The sample is the newest listing that carries a name. It supplies a
+  // neighbourhood string and a name fallback, never a count, a status or a price.
   const samples = slugs.length === 0 ? [] : await prisma.$queryRaw<Array<{ streetSlug: string; streetName: string | null; neighbourhood: string | null }>>`
     SELECT DISTINCT ON ("streetSlug") "streetSlug", "streetName", "neighbourhood"
     FROM "public"."Listing"
     WHERE "streetSlug" IN (${Prisma.join(slugs)}) AND "streetName" IS NOT NULL
+      -- MC-046: public rows only (PUBLIC_LISTING_WHERE, in SQL); a sold or leased row names nothing
+      AND "permAdvertise" = TRUE AND city = ${config.PRISMA_CITY_VALUE}
+      AND ((status = 'active' AND ("transactionType" IS NULL OR "transactionType" <> 'For Lease'))
+        OR ("transactionType" = 'For Lease' AND "leaseStatus" = 'active'))
     ORDER BY "streetSlug", "listedAt" DESC NULLS LAST`;
   const sampleMap = new Map(samples.map((r) => [r.streetSlug, r]));
 
-  // Bulk #2: active counts per slug
-  const activeRows = await prisma.listing.groupBy({
-    by: ["streetSlug"],
-    _count: true,
-    where: { streetSlug: { in: slugs }, status: "active", permAdvertise: true },
-  });
-  const activeMap = new Map(activeRows.map((r) => [r.streetSlug, r._count]));
-
-  // Bulk #2b: avg ACTIVE FOR-SALE list price per slug — the real, current,
+  // Bulk #2: avg ACTIVE FOR-SALE list price per slug — the real, current,
   // public home-price signal. Excludes lease (lease `price` is monthly rent,
   // which blended the legacy "average" down to garbage on condo/rental-heavy
   // streets) and excludes sold/expired (stale). Uses `price` (list price), NOT
   // soldPrice — active list prices are public, so no k-anon/VOW gate. Streets
   // with no active sale listing simply don't appear here → price null → omitted.
-  const salePriceRows = await prisma.listing.groupBy({
+  const salePriceRows = slugs.length === 0 ? [] : await prisma.listing.groupBy({
     by: ["streetSlug"],
     _avg: { price: true },
     where: {
@@ -95,41 +96,37 @@ export default async function StreetsIndexPage() {
     salePriceRows.map((r) => [r.streetSlug, r._avg.price])
   );
 
-  // Bulk #3: published street pages
-  const publishedRows = await prisma.streetContent.findMany({
-    where: { streetSlug: { in: slugs }, status: "published" },
-    select: { streetSlug: true },
-  });
-  const publishedSet = new Set(publishedRows.map((r) => r.streetSlug));
-
-  // Bulk #4: recently queued (last 7 days)
+  // Bulk #3: recently queued (last 7 days)
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
-  const queuedRows = await prisma.streetQueue.findMany({
+  const queuedRows = slugs.length === 0 ? [] : await prisma.streetQueue.findMany({
     where: { streetSlug: { in: slugs }, createdAt: { gte: sevenDaysAgo } },
     select: { streetSlug: true },
   });
   const newSet = new Set(queuedRows.map((r) => r.streetSlug));
 
-  const streetData = streets.map((s) => {
-    const sample = sampleMap.get(s.streetSlug);
-    return {
-      slug: s.streetSlug,
-      name: resolveStreetName(s.streetSlug, sample?.streetName ?? null).name,
-      neighbourhood: sample?.neighbourhood
-        ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
-        : config.CITY_NAME,
-      count: s._count,
-      activeCount: activeMap.get(s.streetSlug) ?? 0,
-      // null when the street has no active for-sale listing — render NO price
-      // (never $0 / NaN / a blended figure).
-      avgSalePrice: (() => {
-        const v = salePriceMap.get(s.streetSlug);
-        return v != null && v > 0 ? Math.round(v) : null;
-      })(),
-      hasPage: publishedSet.has(s.streetSlug),
-      isNew: newSet.has(s.streetSlug),
-    };
-  });
+  const streetData = slugs
+    .map((slug) => {
+      const sample = sampleMap.get(slug);
+      return {
+        slug,
+        name: resolveStreetName(slug, sample?.streetName ?? null).name,
+        neighbourhood: sample?.neighbourhood
+          ? sample.neighbourhood.replace(/^\d+\s*-\s*\w+\s+/, "").trim()
+          : config.CITY_NAME,
+        // public listings only: active sale listings and available leases
+        activeCount: publicCount.get(slug) ?? 0,
+        // null when the street has no active for-sale listing — render NO price
+        // (never $0 / NaN / a blended figure).
+        avgSalePrice: (() => {
+          const v = salePriceMap.get(slug);
+          return v != null && v > 0 ? Math.round(v) : null;
+        })(),
+        hasPage: publishedSet.has(slug),
+        isNew: newSet.has(slug),
+      };
+    })
+    // THE ORDER IS THE ACTIVE COUNT, TIES ALPHABETICAL (R9). It was the all-status count.
+    .sort((a, b) => b.activeCount - a.activeCount || a.name.localeCompare(b.name, "en-CA"));
 
   // Get unique neighbourhoods for filter chips
   const neighbourhoods = Array.from(new Set(streetData.map((s) => s.neighbourhood)))
@@ -140,7 +137,10 @@ export default async function StreetsIndexPage() {
   // `15-side-road-side-road-milton` is a published row with no ResidentialStreet entity, a
   // machine-made address artifact the sitemap refuses. This page said 445 while the sitemap
   // emitted 444 and the homepage said 738; one function now answers all three.
-  const publishedCount = await publishedStreetPageCount();
+  const publishedCount = publishedSlugs.length;
+  // Streets with a live price: an active for-sale listing with an asking price (R11). It was the
+  // count of every street on the list, most of which carried only sold or expired rows.
+  const livePriceCount = streetData.filter((s) => s.avgSalePrice != null).length;
 
   // Map to the shared directory contract (presentation only).
   const items: DirectoryItem[] = streetData.map((s) => {
@@ -149,9 +149,9 @@ export default async function StreetsIndexPage() {
     if (s.activeCount >= 5) badges.push({ label: "VIP Hub", tone: "vip" });
 
     const meta: DirectoryItem["meta"] = [
-      { label: `${s.count} listing${s.count === 1 ? "" : "s"}`, tone: "muted" },
+      // the public listings on the street now, never a count that includes sold or leased rows
+      { label: `${s.activeCount} listing${s.activeCount === 1 ? "" : "s"}`, tone: s.activeCount > 0 ? "active" : "muted" },
     ];
-    if (s.activeCount > 0) meta.push({ label: `${s.activeCount} active`, tone: "active" });
     if (s.hasPage) meta.push({ label: "Full report", tone: "accent" });
 
     return {
@@ -182,7 +182,7 @@ export default async function StreetsIndexPage() {
             Every {config.CITY_NAME} <em>street</em>
           </h1>
           <p className="dir-sub">
-            {streetData.length} streets with live price data · {publishedCount} full street
+            {livePriceCount} streets with live price data · {publishedCount} full street
             reports published · Updated daily from PropTx MLS®
           </p>
         </div>

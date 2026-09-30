@@ -1,21 +1,21 @@
 // src/lib/streetMinimal.ts
 // Server-side context for the MINIMAL street template (registry ingest, 2026-07).
 //
-// A minimal page is a deliberately-published page for a zero/low-sale street: an
-// honest, deterministic layout (NO LLM prose) that reuses data we already have —
-// neighbourhood, registry street type, schools serving the area, neighbourhood-
-// level market context (clearly labelled, never street-level), nearby streets,
-// live listings, and a plain "no resales recorded yet" statement.
+// A minimal page is a deliberately-published page for a street with no generated profile: a
+// deterministic layout (NO LLM prose) that reuses data we already have: neighbourhood,
+// registry street type, schools serving the area, nearby published streets and live listings.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): the neighbourhood market context (the
+// neighbourhood's 12-month sold count, from DB3) and the "no resales recorded" statement were
+// derived from sold records. Neither is read or written here any more, and the nearby streets
+// are ordered by name, not by sold volume (R9).
 //
 // A street renders minimal iff its StreetContent has status='published' AND
-// template='minimal'. StreetContent.neighbourhood holds the RAW TREB neighbourhood
-// key (e.g. "1025 - BW Bowes") so the area stats resolve; the display name comes
-// from the Neighbourhood entity.
+// template='minimal'. The display name of its neighbourhood comes from the Neighbourhood entity.
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { getNeighbourhoodSaleStats } from "@/lib/sold-data";
 import { getSchoolsByNeighbourhood, type School } from "@/lib/schools";
-import { surfacedStreetWhere } from "@/lib/streetSurface";
+import { publishedStreetPageSlugs } from "@/lib/streetSurface";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
 import { expandStreetName } from "@/lib/street-data";
 import { resolveStreetName } from "@/lib/streetName";
@@ -31,13 +31,6 @@ const TYPE_LABEL: Record<string, string> = {
 
 const regBySlug = new Map(MILTON_STREET_REGISTRY.map((r) => [r.slug, r]));
 
-export interface StreetAreaStats {
-  neighbourhoodName: string;
-  soldCount12mo: number;
-  marketScore: number | null;
-  window: string;
-}
-
 export interface MinimalStreetView {
   slug: string;
   name: string;
@@ -47,9 +40,7 @@ export interface MinimalStreetView {
   typeLabel: string | null;
   eyebrow: string;
   whereItIs: string;
-  noData: string;
   schools: School[];
-  area: StreetAreaStats | null;
   nearbyStreets: Array<{ slug: string; name: string }>;
 }
 
@@ -57,7 +48,7 @@ export interface MinimalStreetView {
 export async function getMinimalStreetView(slug: string): Promise<MinimalStreetView | null> {
   const content = await prisma.streetContent.findUnique({
     where: { streetSlug: slug },
-    select: { template: true, status: true, neighbourhood: true, streetName: true },
+    select: { template: true, status: true, streetName: true },
   });
   if (!content || content.status !== "published" || content.template !== "minimal") return null;
 
@@ -77,7 +68,6 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
   const shortName = resolvedName.shortName || entity?.shortName || name;
   const nbName = entity?.neighbourhood?.name ?? null;
   const nbSlug = entity?.neighbourhood?.slug ?? null;
-  const rawKey = content.neighbourhood; // raw TREB key for analytics
 
   const reg = regBySlug.get(slug);
   const typeLabel = reg ? (TYPE_LABEL[reg.type] ?? reg.type) : entity?.streetType ?? null;
@@ -86,22 +76,16 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
   // distance is surfaced only where a school has coordinates).
   const schools = nbName ? getSchoolsByNeighbourhood(nbName).slice(0, 6) : [];
 
-  // Neighbourhood-level market context (never street-level). Prices are authed-only
-  // in the packet; the public surface shows counts + a market-activity read.
-  let area: StreetAreaStats | null = null;
-  if (rawKey) {
-    const st = await getNeighbourhoodSaleStats(rawKey).catch(() => null);
-    if (st && nbName) {
-      area = { neighbourhoodName: nbName, soldCount12mo: st.sold_count_12months, marketScore: st.market_score, window: "trailing 12 months" };
-    }
-  }
-
-  // Nearby streets — surfaced siblings in the same neighbourhood (link graph).
+  // Nearby streets — published siblings in the same neighbourhood (link graph). The set was the
+  // surfacing predicate (sold history OR a page) ordered by VIP flag and 12-month sold count: a
+  // rank by sold volume, with no figure shown, still discloses relative volume (MC-046, R9). It is
+  // the published street pages, residential, in name order.
   let nearbyStreets: Array<{ slug: string; name: string }> = [];
   if (entity?.neighbourhood?.id) {
+    const published = await publishedStreetPageSlugs();
     const sibs = await prisma.residentialStreet.findMany({
-      where: { neighbourhoodId: entity.neighbourhood.id, slug: { not: slug }, ...(await surfacedStreetWhere()) },
-      orderBy: [{ isVip: "desc" }, { soldCount12mo: "desc" }],
+      where: { neighbourhoodId: entity.neighbourhood.id, slug: { not: slug, in: published }, isResidential: true },
+      orderBy: { name: "asc" },
       take: 8,
       select: { slug: true, name: true },
     });
@@ -122,12 +106,7 @@ export async function getMinimalStreetView(slug: string): Promise<MinimalStreetV
       ? `${name} is a ${typeLabel}${inArea}.`
       : `${name} is${inArea}.`;
 
-  const noData =
-    `No home resales are recorded on ${name} in our data window, the last ~2 years of ` +
-    `Milton sales. This is a real street with no recent turnover, not a page without a home. ` +
-    `When a home sells here, this page fills in with its own price history and trends.`;
-
   const eyebrow = nbName ? `${nbName} · Milton` : "Milton";
 
-  return { slug, name, shortName, neighbourhoodName: nbName, neighbourhoodSlug: nbSlug, typeLabel, eyebrow, whereItIs, noData, schools, area, nearbyStreets };
+  return { slug, name, shortName, neighbourhoodName: nbName, neighbourhoodSlug: nbSlug, typeLabel, eyebrow, whereItIs, schools, nearbyStreets };
 }

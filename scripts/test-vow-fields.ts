@@ -118,6 +118,70 @@ ok(/force-dynamic/.test(route) && /getSession\(\)/.test(route) && /canSeeVowReco
 const mega = code("src/lib/megaLive.ts");
 ok(!/priorPrice|\.change\b|dom:/.test(mega.replace(/priceChangedAt|lastPriceChangeAt/g, "")), "the menu composer emits no prior price, change or day count");
 
+// 7b. MC-046 Stage 1 (R7, R8, R9): the homepage, the menu and the footer read no VOW record and
+// order nothing by one. Asserted on the source, so a reader cannot come back unrendered.
+{
+  const VOW_READERS = /getSoldThisMonth|getLeaseMarket|getBoardData|getMiltonSoldOverall|getMiltonSoldByNeighbourhood|buildMiltonWideContext|getSoldDb|getAnalyticsDb|marketEdition|lastPriceChangeAt|priceChangedAt|soldCount12mo|recencyWeightedSold/;
+  for (const f of ["src/lib/megaLive.ts", "src/lib/homepageData.ts", "src/lib/homeSignals.ts", "src/app/page.tsx"]) {
+    ok(!VOW_READERS.test(code(f)), `${f} calls no VOW reader`);
+  }
+  const SOLD_ORDER = /soldCount12mo|recencyWeightedSold/;
+  for (const f of ["src/lib/megaContext.ts", "src/lib/hubFooter.ts", "src/lib/heroSearch.ts", "src/app/api/autocomplete/route.ts"]) {
+    ok(!SOLD_ORDER.test(code(f)), `${f} orders nothing by sold volume`);
+  }
+  const types = code("src/components/nav/megaTypes.ts");
+  ok(!/figures\?:|basis\?:|edition\?:/.test(types), "the menu's content type has no figures, basis or edition block");
+  const home = code("src/components/home/HomePage.tsx");
+  ok(!/TheBoard|board/.test(home), "the homepage renders no Board");
+  ok((home.match(/<SoldHistoryLine\b/g) ?? []).length === 1, "the homepage carries the neutral line once");
+  const homeTypes = code("src/components/home/types.ts");
+  ok(!/typicalPrice\b|sold12mo|soldMonth|soldToAsk|\bdom\b|salesCount|typicalSoldPrice/.test(homeTypes), "HomepageData names no VOW-derived field");
+  const nav = code("src/components/nav/SiteNav.tsx");
+  ok(!/key: '(soldmtd|watch|typical)'/.test(nav), "the menu rail has no Sold this month, Market watch or Typical rent item");
+}
+
+// 7c. MC-046 Stage 1 (R2, R3, R4, R9, R11): the neighbourhood hubs, the tenure hubs, the condo
+// pages, /compare and /value render no VOW-derived value and call no VOW reader. Asserted on the
+// source, comments stripped, so a removed reader cannot come back unrendered.
+{
+  const src = (p: string) => code(p).split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");
+  const READERS = /getSoldDb|getAnalyticsDb|saleAggQuery|byTypeQuery|quarterlyQuery|assembleAggregates|buildMiltonWideContext|getMiltonSoldByNeighbourhood|buildBuildingAttributes|getHubInputCached|hubDrift\(|statsJson|soldCount12mo|recencyWeightedSold/;
+  for (const f of [
+    "src/lib/hubData.ts", "src/lib/hubStreetLadder.ts", "src/lib/neighbourhoodCards.ts", "src/lib/tenureHubData.ts",
+    "src/lib/comparisonData.ts", "src/lib/condoData.ts", "src/app/neighbourhoods/[slug]/page.tsx", "src/app/neighbourhoods/page.tsx",
+    "src/app/condos/[slug]/page.tsx", "src/app/value/[neighbourhood]/page.tsx", "src/lib/ai/hub/hubMeta.ts",
+  ]) {
+    ok(!READERS.test(src(f)), `${f} calls no VOW reader`);
+  }
+  const hubMeta = src("src/lib/hubLive.ts");
+  ok(/getHubPublicCached/.test(hubMeta) && /activeCount: pub\?\.activeCount/.test(hubMeta), "the hub meta is written from the active count and the street guides");
+  ok(!/aggregatePrice\s*=/.test(src("src/lib/ai/hub/projectHubEntities.ts")), "the hub JSON-LD never sets aggregatePrice");
+  const hubUi = src("src/components/hub/sections.tsx");
+  ok(!/hub-fact-typical|hub-street-typical|hub-street-sold|hub-sibling-typical|hub-compare-|HubMarket|typicalPriceRounded|soldCount/.test(hubUi), "the hub template renders no typical, sale count, compare block or sibling price");
+  ok((hubUi.match(/<SoldHistoryLine\b/g) ?? []).length === 1, "the hub carries the neutral line exactly once");
+  const hubTypes = src("src/components/hub/types.ts");
+  ok(!/soldTypical|soldCount|typicalPriceRounded|salesCount|typicalBasis|miltonBasis/.test(hubTypes), "HubData and TenureCompareFacts name no VOW-derived field");
+  const tenureUi = src("src/components/tenure/tenure-sections.tsx");
+  ok(!/typical sold|sold · last 12 months|stats\.typicalPrice|stats\.sold12mo/.test(tenureUi), "the tenure hero states no sold figure");
+  const compareUi = src("src/components/compare/ComparePage.tsx");
+  ok(!/Typical sold|Sold · last 12 months|Days on market|soldTypical|soldCount|\.dom\b/.test(compareUi), "/compare has no sold rows");
+  ok(!/TenureCompareFacts/.test(src("src/components/compare/CompareDecisionTool.tsx")), "the compare client island receives only its own IDX fact shape");
+  const condoUi = src("src/components/condo/sections.tsx");
+  ok(!/Typical price|typicalPrice|priceRange|soldCount|sold · 12 mo/.test(condoUi), "the condo page states no typical price, range or sold count");
+  const condoPage = src("src/app/condos/[slug]/page.tsx");
+  ok(!/BuildingAttributesPage|isCondoPilot|composeCondoBrief|toCondoView/.test(condoPage), "the condo pilots serve the standard template (R3)");
+  const value = src("src/components/value/ValueLanding.tsx");
+  ok(!/sold12mo|typicalPrice|homes sold|days on market/i.test(value), "/value states no sold figure");
+  ok(/robots: \{ index: false, follow: true \}/.test(src("src/app/value/[neighbourhood]/page.tsx")), "/value is noindex, follow");
+  const cards = src("src/lib/neighbourhoodCards.ts");
+  ok(!/typicalSoldPrice|salesCount/.test(cards) && /PUBLIC_SALE_WHERE/.test(cards), "the neighbourhood card carries the active count only");
+  ok(!/Typical sold|typicalSoldPrice|statLabel/.test(src("src/app/neighbourhoods/page.tsx")), "/neighbourhoods cards carry no sold figure");
+  for (const f of ["src/lib/hubData.ts", "src/lib/condoData.ts"]) {
+    const s = src(f);
+    ok(/visitorFaqs|isVowTopicFaq/.test(s) && /visitorParagraphs|stripVowTopicParagraphs/.test(s), `${f} filters stored prose and FAQs for figures and VOW topics`);
+  }
+}
+
 // 8. One brokerage component, placed inside a data-price element on every card surface.
 for (const f of [
   "src/components/listings/v2/ListingCard.tsx",
@@ -218,22 +282,29 @@ function walk(dir: string, out: string[] = []): string[] {
   const mirror = code("scripts/verify/lib/db.mjs").match(/export const DISPLAY_MONTHS = (\d+);/);
   ok(!!mirror && months !== null && Number(mirror[1]) === months, `the battery mirror carries the same window (${mirror?.[1]} vs ${months})`);
   const bound = /sold_date >= NOW\(\) - \(INTERVAL '1 month' \* \$\{DISPLAY_MONTHS\}\)/;
-  for (const f of ["src/lib/streetEnrichment.ts", "src/lib/hubStreetLadder.ts", "src/lib/heroIndex.ts", "scripts/verify/lib/db.mjs"]) {
+  for (const f of ["scripts/verify/lib/db.mjs"]) {
     ok(bound.test(code(f)), `${f} bounds its full-window read to the display window`);
   }
+  // MC-046 (hub surface, R9): the hub ladder reads no sold record at all, so it has no window.
+  ok(!/getSoldDb|sold\.sold_records|sold_price/.test(code("src/lib/hubStreetLadder.ts")), "src/lib/hubStreetLadder.ts reads no sold record");
+  // MC-046 (street surface): the street's graduated typicals and hasAnySale left the visitor view,
+  // and streetEnrichment.ts reads no sold or analytics row at all now.
+  ok(!/getSoldDb|getAnalyticsDb|sold\.sold_records|analytics\./.test(code("src/lib/streetEnrichment.ts")), "streetEnrichment.ts reads no DB2 or DB3 row");
+  // MC-046 R7: the hero index's "· N homes" (sold addresses per street) left, and with it the read.
+  ok(!/sold\.sold_records|getSoldDb/.test(code("src/lib/heroIndex.ts")), "the hero index reads no sold record");
   const whole = /date_trunc\('quarter', NOW\(\) - \(INTERVAL '1 month' \* \$\{TREND_WINDOW_MONTHS\}\) \+ INTERVAL '3 months' - INTERVAL '1 day'\)/;
   for (const f of ["src/lib/ai/buildHubInput.ts", "src/lib/ai/buildCondoBuildingInput.ts"]) {
     ok(whole.test(code(f)) && /const TREND_WINDOW_MONTHS = DISPLAY_MONTHS;/.test(code(f)), `${f} starts its quarterly trend at the first whole quarter inside the window`);
   }
   ok(/inWindow\(r\)\)\.length/.test(code("src/lib/ai/buildBuildingAttributes.ts")), "the condo on-record count takes the window");
-  // the existence gates stay whole on purpose: they publish no figure, and bounding them makes a
-  // page vanish or claim a false absence (MC-037's blast radius)
-  const enrich = code("src/lib/streetEnrichment.ts");
-  const anySale = enrich.slice(enrich.indexOf("async function anySaleOnRecord"), enrich.indexOf("LIMIT 1", enrich.indexOf("async function anySaleOnRecord")));
-  ok(!/sold_date >=/.test(anySale), "anySaleOnRecord is not bounded");
+  // MC-046 (street surface): the street render reads no DB2 or DB3 row. Its DB2 existence probe
+  // went with the rest (a page that answers 200 only because a sold record exists says so), and
+  // getStreetPageData pools its siblings over DB1 alone (resolveSiblingSlugs with no injected
+  // DB2/DB3 candidate reader).
   const exist = code("src/lib/street-data.ts");
-  const probe = exist.slice(exist.indexOf("Existence-gate probe"), exist.indexOf("Existence gate", exist.indexOf("Existence-gate probe") + 10));
-  ok(!/sold_date >=/.test(probe), "the street existence probe is not bounded");
+  ok(!/getSoldDb|getAnalyticsDb|\bsold\.[a-z_]+|\banalytics\.[a-z_]+/.test(exist), "street-data.ts opens no DB2 or DB3 connection and holds no sold./analytics. SQL");
+  const render = exist.slice(exist.indexOf("export const getStreetPageData"), exist.indexOf("function EMPTY_MARKET"));
+  ok(render.length > 0 && /resolveSiblingSlugs\(slug\)/.test(render), "getStreetPageData resolves its siblings with no DB2/DB3 candidate reader");
 }
 
 if (failures.length) {

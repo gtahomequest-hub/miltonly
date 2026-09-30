@@ -14,30 +14,22 @@ import "../hub/hub-theme.css";
 import "./compare-theme.css";
 import React from "react";
 import SiteNavLive from "../nav/SiteNavLive";
-import CompareDecisionTool from "./CompareDecisionTool";
+import CompareDecisionTool, { type CompareToolFacts } from "./CompareDecisionTool";
+import SoldHistoryLine from "@/components/vow/SoldHistoryLine";
 import { fullPrice, compactPrice } from "../hub/format";
 import type { TenureCompareFacts } from "../hub/types";
-import type { ComparisonData } from "@/lib/comparisonData";
+import { comparePriceGap, compareFaqs, type ComparisonData } from "@/lib/comparisonData";
+
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): the sold rows (typical sold, sold count,
+// days on market) are gone from the table, and from the facts the client tool receives. Every
+// price left on the page is an ASKING figure over today's active listings, labelled so.
 
 const facts = (s: ComparisonData["sideA"]): TenureCompareFacts | undefined => s?.compareFacts;
 
-// live "median A vs median B" fragment for the (live:) editorial slots. Silent
-// (empty) if either median is sub-k — the sentence around it stays grammatical.
-function priceGap(d: ComparisonData): string {
-  const a = facts(d.sideA)?.medianList;
-  const b = facts(d.sideB)?.medianList;
-  if (!a || !b) return "";
-  const la = d.cfg.sideA.label.toLowerCase();
-  const lb = d.cfg.sideB.label.toLowerCase();
-  return `a median ${la} home in Milton runs ${fullPrice(a)}, versus ${fullPrice(b)} for a ${lb}`;
-}
-function faqGap(d: ComparisonData): string {
-  const a = facts(d.sideA)?.medianList;
-  const b = facts(d.sideB)?.medianList;
-  if (!a || !b) return "";
-  const la = d.cfg.sideA.label.toLowerCase();
-  const lb = d.cfg.sideB.label.toLowerCase();
-  return `In Milton today, the median is ${fullPrice(a)} for ${la} versus ${fullPrice(b)} for a ${lb}.`;
+/** Only the IDX fields the client island reads cross the server/client boundary. */
+function toolFacts(f: TenureCompareFacts | undefined): CompareToolFacts | undefined {
+  if (!f) return undefined;
+  return { medianList: f.medianList, listLo: f.listLo, activeCount: f.activeCount, hasFee: f.hasFee, feeLo: f.feeLo, feeHi: f.feeHi };
 }
 
 // a single table cell value: rendered node or the silent state.
@@ -56,18 +48,7 @@ function RangeCell({ lo, hi }: { lo: number | null; hi: number | null }) {
   const ok = lo != null && hi != null;
   return <Val silent={!ok}>{ok ? `${compactPrice(lo as number)} – ${compactPrice(hi as number)}` : null}</Val>;
 }
-function DomCell({ n }: { n: number | null }) {
-  return (
-    <Val silent={n == null}>
-      {n != null ? (
-        <>
-          {n}
-          <span className="cmp-unit">days</span>
-        </>
-      ) : null}
-    </Val>
-  );
-}
+
 function FeeCell({ f }: { f: TenureCompareFacts | undefined }) {
   if (!f) return <Val silent />;
   if (!f.hasFee) return <div className="cmp-val cmp-nofee">No monthly fee</div>;
@@ -113,15 +94,12 @@ function GroundedTable({ d }: { d: ComparisonData }) {
         </div>
       </div>
       <Row metric="Active listings" a={<CountCell n={a?.activeCount ?? null} />} b={<CountCell n={b?.activeCount ?? null} />} />
-      <Row metric="Median list price" a={<PriceCell n={a?.medianList ?? null} />} b={<PriceCell n={b?.medianList ?? null} />} />
+      <Row metric="Typical asking price" a={<PriceCell n={a?.medianList ?? null} />} b={<PriceCell n={b?.medianList ?? null} />} />
       <Row
-        metric="List price range"
+        metric="Asking price range"
         a={<RangeCell lo={a?.listLo ?? null} hi={a?.listHi ?? null} />}
         b={<RangeCell lo={b?.listLo ?? null} hi={b?.listHi ?? null} />}
       />
-      <Row metric="Typical sold · 12 mo" a={<PriceCell n={a?.soldTypical ?? null} />} b={<PriceCell n={b?.soldTypical ?? null} />} />
-      <Row metric="Sold · last 12 months" a={<CountCell n={a?.soldCount ?? null} />} b={<CountCell n={b?.soldCount ?? null} />} />
-      <Row metric="Days on market" a={<DomCell n={a?.dom ?? null} />} b={<DomCell n={b?.dom ?? null} />} />
       <Row metric="Monthly fee" a={<FeeCell f={a} />} b={<FeeCell f={b} />} />
     </div>
   );
@@ -131,7 +109,7 @@ function ByTypePanel({ label, f }: { label: string; f: TenureCompareFacts | unde
   const rows = f?.subtypeMedians ?? [];
   return (
     <div className="cmp-bt">
-      <div className="cmp-bt-h">{label} · by home type</div>
+      <div className="cmp-bt-h">{label} · typical asking by home type</div>
       {rows.length ? (
         rows.map((r) => (
           <div className="cmp-bt-row" key={r.label}>
@@ -140,7 +118,7 @@ function ByTypePanel({ label, f }: { label: string; f: TenureCompareFacts | unde
           </div>
         ))
       ) : (
-        <div className="cmp-bt-empty">Not enough active listings to publish a by-type median.</div>
+        <div className="cmp-bt-empty">Not enough active listings to state a typical asking price by type.</div>
       )}
     </div>
   );
@@ -148,7 +126,11 @@ function ByTypePanel({ label, f }: { label: string; f: TenureCompareFacts | unde
 
 export function ComparePage({ data, source }: { data: ComparisonData; source: string }) {
   const { cfg } = data;
-  const tableIntro = cfg.tableIntro.replace("{GAP}", priceGap(data));
+  // The intro opens on the live gap; with either side silent it would open on "price: ." and
+  // lean on a figure that is not there, so it is not rendered at all.
+  const gap = comparePriceGap(data);
+  const tableIntro = gap ? cfg.tableIntro.replace("{GAP}", gap) : "";
+  const faqs = compareFaqs(data);
 
   return (
     <div className="hub-v2">
@@ -187,9 +169,16 @@ export function ComparePage({ data, source }: { data: ComparisonData; source: st
             <ByTypePanel label={cfg.sideB.label} f={facts(data.sideB)} />
           </div>
           <div className="cmp-src">{source}</div>
-          <div className="h-overview" style={{ marginTop: 26 }}>
-            <p style={{ maxWidth: 820 }}>{tableIntro}</p>
-          </div>
+          <SoldHistoryLine
+            subject={`Milton ${cfg.sideA.label.toLowerCase()} and ${cfg.sideB.label.toLowerCase()} homes`}
+            returnPath={`/compare/${cfg.slug}`}
+            className="mt-3"
+          />
+          {tableIntro ? (
+            <div className="h-overview" style={{ marginTop: 26 }}>
+              <p style={{ maxWidth: 820 }}>{tableIntro}</p>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -227,8 +216,8 @@ export function ComparePage({ data, source }: { data: ComparisonData; source: st
             today&apos;s real Milton numbers.
           </p>
           <CompareDecisionTool
-            factsA={facts(data.sideA)}
-            factsB={facts(data.sideB)}
+            factsA={toolFacts(facts(data.sideA))}
+            factsB={toolFacts(facts(data.sideB))}
             hrefA={cfg.sideA.href}
             hrefB={cfg.sideB.href}
           />
@@ -297,10 +286,10 @@ export function ComparePage({ data, source }: { data: ComparisonData; source: st
             <h2>{cfg.sectionTitles.faq}</h2>
           </div>
           <div className="h-faq">
-            {cfg.faqs.map((f, i) => (
+            {faqs.map((f, i) => (
               <div className="h-faq-item" key={i}>
                 <div className="h-faq-q">{f.question}</div>
-                <div className="h-faq-a">{f.answer.replace("{GAP}", faqGap(data)).replace(/\s{2,}/g, " ").trim()}</div>
+                <div className="h-faq-a">{f.answer}</div>
               </div>
             ))}
           </div>

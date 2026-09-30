@@ -10,6 +10,9 @@
 // "no floor at all" is not a position held anywhere else on the site — so the
 // street-level figures now take K_ANON_PRICE, and below it the response falls
 // through to the city-wide average exactly as the zero-match case already did.
+//
+// MC-046 Stage 1 (R12): no average days on market. DOM is a VOW field, even averaged over active
+// rows, so it is neither computed nor returned.
 
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   const agg = await prisma.listing.aggregate({
     where,
-    _avg: { price: true, daysOnMarket: true },
+    _avg: { price: true },
     _count: true,
   });
 
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     const cityAgg = await prisma.listing.aggregate({
       where: cityWhere,
-      _avg: { price: true, daysOnMarket: true },
+      _avg: { price: true },
     });
 
     return NextResponse.json({
@@ -56,10 +59,9 @@ export async function GET(request: NextRequest) {
       suppressed: agg._count > 0,
       message:
         agg._count > 0
-          ? `Too few active listings on this street to publish a street average — showing ${config.CITY_NAME} average`
-          : `No recent data on this street — showing ${config.CITY_NAME} average`,
+          ? `Too few active listings on this street to publish a street average; showing the ${config.CITY_NAME} average`
+          : `No recent data on this street; showing the ${config.CITY_NAME} average`,
       avgPrice: Math.round(cityAgg._avg.price || 0),
-      avgDOM: Math.round(cityAgg._avg.daysOnMarket || 0),
       soldVsAsk: 100,
       count: 0,
     });
@@ -74,7 +76,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     found: true,
     avgPrice: Math.round(agg._avg.price || 0),
-    avgDOM: Math.round(agg._avg.daysOnMarket || 0),
     soldVsAsk: 100,
     count: agg._count,
   });

@@ -20,7 +20,6 @@ import type {
 } from "@/components/guides/types";
 import type { GroundedFigures } from "@/lib/content/groundedFigures";
 import { GUIDE_DEFS, GUIDE_SLUGS, GUIDES_UPDATED, buildGuide, type GuideDef } from "./guides";
-import { getMiltonSoldAggregates } from "@/lib/soldAggregates";
 import { prisma } from "@/lib/prisma";
 import { getSchoolRows, getActiveCondoFees } from "./figures";
 
@@ -40,11 +39,13 @@ const CATEGORY_META: Record<GuideCategoryKey, { label: string; blurb: string }> 
 };
 
 /** A teaser needs the article's own read time, so the index builds every
- *  article. Eight guides against cached aggregates and two static sources; the alternative is a stored
+ *  article. Eight guides against live active-listing counts and static sources; the alternative is a stored
  *  read time that drifts the moment a figure suppresses and a sentence drops. */
 async function allTeasers(): Promise<Array<{ def: GuideDef; teaser: GuideTeaser }>> {
   const out: Array<{ def: GuideDef; teaser: GuideTeaser }> = [];
-  for (const def of GUIDE_DEFS) {
+  // MC-046 R6: a noindexed guide (its sections were sold statistics) is not featured, related or
+  // listed; it answers 200 at its URL with the neutral line until it returns gated in Stage 2.
+  for (const def of GUIDE_DEFS.filter((g) => !g.noindex)) {
     const built = await buildGuide(def.slug);
     if (!built) continue;
     out.push({
@@ -66,11 +67,10 @@ async function allTeasers(): Promise<Array<{ def: GuideDef; teaser: GuideTeaser 
 export async function getGuidesIndexData(): Promise<GuidesIndexData> {
   const teasers = await allTeasers();
 
-  // Index stats are counts of what the guides actually draw on. A count is
-  // non-sensitive at any n, so none of these is k-gated — but each is real,
-  // not a marketing number.
-  const [agg, publishedStreets, publishedHubs] = await Promise.all([
-    getMiltonSoldAggregates(),
+  // Index stats are counts of what the guides actually draw on, each real, not a marketing number.
+  // MC-046 Stage 1 (R6): the "sales behind the figures" count was derived from VOW records and is
+  // gone; no guide prints a sold figure any more.
+  const [publishedStreets, publishedHubs] = await Promise.all([
     prisma.streetContent.count({ where: { status: "published" } }),
     prisma.hubContent.count({ where: { status: "published" } }),
   ]);
@@ -88,10 +88,9 @@ export async function getGuidesIndexData(): Promise<GuidesIndexData> {
 
   return {
     heading: `${CITY}, explained`,
-    sub: `${countWord(teasers.length)} guides built on this site's own ${CITY} data, the Town's published rules and GO Transit's timetable feed. Every figure carries the window it was measured over or the date its source was read, and a figure with too few sales behind it is left out rather than estimated.`,
+    sub: `${countWord(teasers.length)} guides built on this site's own ${CITY} data, the Town's published rules and GO Transit's timetable feed. Every figure carries the date its source was read or the listings it was counted from.`,
     stats: [
       { n: String(teasers.length), l: "guides" },
-      { n: String(agg.overall.count), l: "sales behind the figures" },
       { n: String(publishedHubs), l: "neighbourhood pages" },
       { n: String(publishedStreets), l: "street pages" },
     ],
@@ -114,38 +113,19 @@ export async function getGuidesIndexData(): Promise<GuidesIndexData> {
 
 // ── link-down ─────────────────────────────────────────────────────────────
 //
-// A guide that cites a neighbourhood figure and does not link to that
-// neighbourhood's page is a dead end for both a reader and a crawler. These
-// build the link rows from the SAME data the section's figures came from, so
-// a link can never point at a page whose figure the guide did not use.
+// A guide that names a page and does not link to it is a dead end for both a reader and a crawler.
+// Link rows are keyed by the section HEADING, not its position: MC-046 Stage 1 removed whole
+// sections from some guides, and a positional key would have hung a row under the wrong heading.
 
-async function linksFor(slug: string): Promise<Record<number, GuideLink[]>> {
+async function linksFor(slug: string): Promise<Record<string, GuideLink[]>> {
   switch (slug) {
-    case "what-milton-neighbourhoods-cost": {
-      const agg = await getMiltonSoldAggregates();
-      return {
-        0: [{ label: "All Milton sold data", href: "/sold" }],
-        1: agg.byNeighbourhood.slice(0, 12).map((n) => ({
-          label: n.name,
-          href: `/neighbourhoods/${n.slug}`,
-        })),
-        2: [
-          { label: "Detached homes", href: "/freehold" },
-          { label: "Condos", href: "/condos" },
-          { label: "Compare freehold and condo", href: "/compare/freehold-vs-condo" },
-        ],
-      };
-    }
     case "how-to-read-a-milton-sold-price":
       return {
-        0: [{ label: "Milton sold data", href: "/sold" }],
-        1: [{ label: "Sold prices by neighbourhood", href: "/sold" }],
-        3: [{ label: "Street-level pages", href: "/streets" }],
+        "Why some figures are missing": [{ label: "Street-level pages", href: "/streets" }],
       };
     case "is-it-a-good-time-to-sell-in-milton":
       return {
-        1: [{ label: "Milton sold data", href: "/sold" }],
-        3: [
+        "What you would be competing with": [
           { label: "Homes for sale now", href: "/listings" },
           { label: "Get a valuation", href: "/sell#valuation" },
         ],
@@ -153,11 +133,11 @@ async function linksFor(slug: string): Promise<Record<number, GuideLink[]>> {
     case "milton-condo-fees-parking-and-lockers": {
       const rows = await getActiveCondoFees();
       return {
-        1: rows.slice(0, 16).map((r) => ({
+        "Fees stated on condos for sale now": rows.slice(0, 16).map((r) => ({
           label: r.neighbourhood ? `${r.bedrooms} bed, ${r.neighbourhood}` : `${r.bedrooms} bed condo`,
           href: `/listings/${r.mlsNumber}`,
         })),
-        3: [
+        "Before you commit": [
           { label: "Condo buildings in Milton", href: "/condos" },
           { label: "Condo or freehold", href: "/condos-guide" },
         ],
@@ -165,21 +145,18 @@ async function linksFor(slug: string): Promise<Record<number, GuideLink[]>> {
     }
     case "what-it-costs-to-buy-your-first-home-in-milton":
       return {
-        1: [{ label: "Homes for sale now", href: "/listings" }],
-        3: [
-          { label: "Milton sold data", href: "/sold" },
-          { label: "Townhouses and condos", href: "/condos" },
-        ],
+        "The down payment is a sliding rule, not a percentage": [{ label: "Homes for sale now", href: "/listings" }],
+        "The stress test decides what you qualify for": [{ label: "Townhouses and condos", href: "/condos" }],
       };
     case "milton-schools-what-the-data-shows": {
       const rows = getSchoolRows();
       return {
-        0: [{ label: "All Milton schools", href: "/schools" }],
-        2: rows
+        "What this page can tell you": [{ label: "All Milton schools", href: "/schools" }],
+        Elementary: rows
           .filter((r) => r.level === "elementary")
           .slice(0, 12)
           .map((r) => ({ label: r.name, href: `/schools/${r.slug}` })),
-        3: rows
+        Secondary: rows
           .filter((r) => r.level === "secondary")
           .map((r) => ({ label: r.name, href: `/schools/${r.slug}` })),
       };
@@ -187,6 +164,7 @@ async function linksFor(slug: string): Promise<Record<number, GuideLink[]>> {
     // "parking-in-milton" and "milton-go-train-to-toronto" build their own link rows inside
     // their builders (parking.ts, goTransit.ts): the hubs they link to are derived from the
     // same source rows the sections cite, and a links row here would have to recompute them.
+    // The two sold-statistics guides and the reading guide link to /sold through the neutral line.
     default:
       return {};
   }
@@ -204,8 +182,8 @@ export async function getGuideArticleFull(slug: string): Promise<GuideArticleRes
   const def = GUIDE_DEFS.find((d) => d.slug === slug)!;
 
   const links = await linksFor(slug);
-  const sections = built.data.sections.map((s, i) =>
-    links[i]?.length ? { ...s, links: links[i] } : s,
+  const sections = built.data.sections.map((s) =>
+    links[s.heading]?.length ? { ...s, links: links[s.heading] } : s,
   );
 
   // Related: the other five, in evidence order, capped at three.

@@ -9,7 +9,6 @@ import { config } from "@/lib/config";
 import { HOME_TITLE } from "@/lib/compliance/registrant";
 import { getHomepageData } from "@/lib/homepageData";
 import { buildMegaLive, getMegaExtras } from "@/lib/megaLive";
-import { getBoardData } from "@/lib/board/boardData";
 import HomePage from "@/components/home/HomePage";
 
 // TITLE AND CANONICAL, SET HERE RATHER THAN INHERITED (Brain's pick, 2026-09-10).
@@ -26,15 +25,17 @@ export const metadata = {
   alternates: { canonical: config.SITE_URL },
 };
 
-// Live Milton stats render per request; also keeps the homepage off the static
+// Live Milton counts render per request; also keeps the homepage off the static
 // prerender path (the global Navbar is already suppressed on "/" via ChromeGate).
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const [data, board, extras] = await Promise.all([getHomepageData(), getBoardData(), getMegaExtras()]);
+  // No Board (MC-046 R7): the market read was sold, leased and days-on-market data in every
+  // tab, serialized whole into this page's RSC payload, so it is not fetched at all.
+  const [data, extras] = await Promise.all([getHomepageData(), getMegaExtras()]);
   // The nav's live panels are composed from data the page already has, plus the rail
-  // items' own queries, and the sell panel reads the SAME Board row the Board renders below it.
-  const mega = buildMegaLive(data, board, extras);
+  // items' own queries.
+  const mega = buildMegaLive(data, extras);
 
   const schemas = [
     generateOrganizationSchema(),
@@ -49,7 +50,7 @@ export default async function Page() {
   return (
     <>
       <SchemaScript schemas={schemas} />
-      <HomePage data={data} board={board} mega={mega} />
+      <HomePage data={data} mega={mega} />
     </>
   );
 }

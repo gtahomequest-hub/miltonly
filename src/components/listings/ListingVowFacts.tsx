@@ -87,7 +87,7 @@ export default function ListingVowFacts({ mlsNumber, isRental }: { mlsNumber: st
     }
     if (f.soldPrice != null) rows.push(["Sold for", `${formatMoneyWhole(f.soldPrice)}${f.soldDate ? ` on ${formatDateProse(f.soldDate)}` : ""}`]);
     return (
-      <section id="vow-facts" data-vow-facts className="mt-6 rounded-xl border border-[#dfe0dc] bg-white p-5">
+      <section id="vow-facts" data-vow-facts data-vow className="mt-6 rounded-xl border border-[#dfe0dc] bg-white p-5">
         <p className="text-[12px] font-bold text-[#6b6f6a] uppercase tracking-[0.14em] mb-3">Listing history</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[14px] text-[#073126]">
           {rows.map(([k, v]) => (

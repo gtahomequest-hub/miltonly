@@ -3,7 +3,6 @@ import type { HeroContent, MiltonStats, TrustInfo } from './types';
 import { AskBar } from './AskBar';
 import { HeroMap } from './HeroMap';
 import { IconSell, IconSearch, IconRent, IconChat } from './icons';
-import { compactPrice } from './format';
 
 interface HeroProps {
   hero: HeroContent;
@@ -38,10 +37,11 @@ export function Hero({ hero, stats, trust }: HeroProps) {
           </h1>
           <p className="m-lede">{hero.lede}</p>
 
-          {/* MILTON RIGHT NOW. Four figures, each with a live source and a stated
+          {/* MILTON RIGHT NOW. Public counts only, each with a live source and a stated
               window. `data-fig` is the battery's handle: the homepage check reads these
               rather than regexing prose, so a figure cannot be renamed out of coverage.
-              A suppressed figure renders its own absence — never a zero. */}
+              "Sold so far this month" and "typical Milton home" left with MC-046 (R7): both
+              are derived from sold records, which item 40 keeps from a signed-out reader. */}
           <div className="m-herostats">
             <div className="m-hs">
               <div className="m-n" data-fig="on-market" data-value={stats.onMarket}>
@@ -55,20 +55,7 @@ export function Hero({ hero, stats, trust }: HeroProps) {
               </div>
               <div className="m-l">new in the last 7 days</div>
             </div>
-            <div className="m-hs">
-              <div className="m-n" data-fig="sold-mtd" data-value={stats.soldMonthToDate}>
-                {stats.soldMonthToDate}
-              </div>
-              <div className="m-l">sold so far this month</div>
-            </div>
-            <div className="m-hs">
-              <div className="m-n" data-fig="typical-milton" data-value={stats.typicalPrice}>
-                <b>$</b>
-                {compactPrice(stats.typicalPrice)}
-              </div>
-              <div className="m-l">typical Milton home</div>
-            </div>
-            {/* THE RENT SIDE, NAMED. The four figures above are sale-side; this one is not.
+            {/* THE RENT SIDE, NAMED. The two figures above are sale-side; this one is not.
                 It was not "on the market today" and never could be: a lease never carries
                 status='active', so folding it into that tile was impossible and calling the
                 sale count "on the market" quietly hid 1,116 available homes. Same figure

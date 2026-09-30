@@ -1,6 +1,7 @@
 // src/components/hub/mockData.ts
-// Mirrors HubData so the hub page renders with zero backend.
-// Data window replaces with getHubData(slug): Promise<HubData | null>.
+// Mirrors HubData so the hub page renders with zero backend (the /hub-preview route).
+// MC-046 Stage 1: the fixture carries no sold-shaped value either (no typical, no sale count,
+// no days on market, no market commentary), so the preview renders what a real hub renders.
 import type { HubData } from './types';
 
 export const mockHubUrban: HubData = {
@@ -8,163 +9,131 @@ export const mockHubUrban: HubData = {
   name: 'Dempsey',
   profile: 'urban',
   character:
-    'An established central pocket — detached-led, mature trees, and a walkable line straight into downtown Milton. One of the most consistently traded neighbourhoods in the city.',
+    'An established central pocket: detached-led, mature trees, and a walkable line straight into downtown Milton.',
   intents: [
-    { key: 'buy', label: "I'm buying", sub: 'See streets & listings here', href: '/neighbourhoods/dempsey/streets' },
-    { key: 'sell', label: "I'm selling", sub: 'What my Dempsey home is worth', href: '/sell' },
-    { key: 'rent', label: "I'm renting", sub: 'Lease listings in Dempsey', href: '/rentals' },
-    { key: 'invest', label: "I'm investing", sub: 'Yield & investor read', href: '/listings' },
+    { key: 'buy', label: "I'm buying", sub: '14 homes for sale here today', href: '/listings' },
+    { key: 'sell', label: "I'm selling", sub: 'What a Dempsey home is worth', href: '/value/dempsey' },
+    { key: 'rent', label: "I'm renting", sub: 'Leases in Dempsey', href: '/rentals' },
+    { key: 'invest', label: "I'm investing", sub: 'The sold record for Dempsey', href: '/sold?nbhd=dempsey' },
   ],
-  stats: { typicalPrice: 1_150_000, sold12mo: 96, onMarket: 14, dom: 21 },
+  stats: { onMarket: 14 },
   atAGlance: {
     // Shape only. On a real hub every one of these is derived and carries its own basis;
     // the fixture cannot compute one, so these are illustrative and the preview route is
     // the only thing that ever reads them.
     facts: [
-      { key: 'typical', value: '$1.15M', label: 'typical sale price', basis: 'across 96 sales in the last 12 months' },
-      { key: 'pages', value: '23', label: 'streets with a page', basis: 'published street guides in this neighbourhood', href: '/streets' },
+      { key: 'pages', value: '23', label: 'streets with a page', basis: 'published street guides in this neighbourhood', href: '#streets' },
       { key: 'video', value: '4', label: 'streets filmed', basis: 'driven end to end, day or overnight' },
       { key: 'schools', value: '2', label: 'schools inside the boundary', basis: 'Town of Milton neighbourhood boundary', href: '/schools' },
+      { key: 'active', value: '14', label: 'homes for sale today', basis: 'advertised active listings in this neighbourhood', href: '/listings' },
     ],
   },
   overview: [
-    'Dempsey sits just east of downtown, close enough to walk to Main Street yet quiet enough to feel residential. The housing stock leans detached and semi-detached, much of it from the neighbourhood\u2019s established build-out, with mature lots that command a premium over Milton\u2019s newer-growth areas.',
-    'Demand here is steady rather than speculative: buyers are typically move-up families drawn by lot size, the school catchment, and the short hop to the GO station. Inventory rarely sits long, and pricing has held firmer than the Milton average through softer stretches.',
+    'Dempsey sits just east of downtown, close enough to walk to Main Street yet quiet enough to feel residential. The housing stock leans detached and semi-detached, much of it from the neighbourhood’s established build-out, on mature lots.',
   ],
-  marketCompare: [
-    { metricLabel: 'Typical price', neighbourhoodValue: '$1.15M', miltonValue: '$1.09M', delta: '+6% vs Milton' },
-    { metricLabel: 'Median days on market', neighbourhoodValue: '21', miltonValue: '24', delta: '3 days faster' },
-    { metricLabel: 'Sold · 12 months', neighbourhoodValue: '96', miltonValue: '\u2014', delta: 'high turnover' },
-  ],
-  commentary: {
-    paragraphs: [
-      'Over the trailing year Dempsey has traded around $1,150,000 \u2014 a premium to the Milton-wide $1,090,000, reflecting its detached-heavy stock and central position. Activity stays brisk, with homes moving a few days faster than the city median.',
-      'The pattern points to a neighbourhood where established demand outpaces a constrained supply of larger lots.',
-    ],
-    source: 'Grounded in trailing-12-month PropTx MLS® sold data \u00b7 updated continuously',
-  },
+  marketCompare: [],
+  commentary: { paragraphs: [], source: '' },
   streets: [
-    { name: 'Bronte Street South', slug: 'bronte-street-south', soldCount: 18, typicalPriceRounded: 1_080_000, signal: 'Most active', basis: 'across 18 sales in the last 12 months', hasVideo: false },
-    { name: 'Commercial Street', slug: 'commercial-street', soldCount: 11, typicalPriceRounded: 1_210_000, basis: 'across 11 sales in the last 12 months', hasVideo: false },
-    { name: 'Fulton Street', slug: 'fulton-street', soldCount: 9, typicalPriceRounded: 1_140_000, basis: 'across 9 sales in the last 12 months', hasVideo: false },
-    { name: 'Mary Street', slug: 'mary-street', soldCount: 7, typicalPriceRounded: 1_060_000, basis: 'across 7 sales in the last 12 months', hasVideo: false },
-    { name: 'Wilson Drive', slug: 'wilson-drive', soldCount: 6, typicalPriceRounded: 985_000, basis: 'across 6 sales in the last 12 months', hasVideo: false },
-    { name: 'Pearl Street', slug: 'pearl-street', soldCount: 5, typicalPriceRounded: 1_300_000, signal: 'Top sold', basis: 'across 5 sales in the last 12 months', hasVideo: false },
+    { name: 'Bronte Street South', slug: 'bronte-street-south', activeCount: 3, signal: 'VIP street', hasVideo: false },
+    { name: 'Commercial Street', slug: 'commercial-street', activeCount: 2, hasVideo: false },
+    { name: 'Fulton Street', slug: 'fulton-street', activeCount: 2, hasVideo: false },
+    { name: 'Mary Street', slug: 'mary-street', activeCount: 1, hasVideo: false },
+    { name: 'Pearl Street', slug: 'pearl-street', activeCount: 0, hasVideo: false },
+    { name: 'Wilson Drive', slug: 'wilson-drive', activeCount: 0, hasVideo: false },
   ],
   streetCount: 28,
   videoStreets: [],
   schools: [],
-  typicalBasis: 'across 96 sales in the last 12 months',
   vipStreets: [
-    { name: 'Bronte Street South', slug: 'bronte-street-south', soldCount: 18 },
-    { name: 'Commercial Street', slug: 'commercial-street', soldCount: 11 },
-    { name: 'Fulton Street', slug: 'fulton-street', soldCount: 9 },
-    { name: 'Pearl Street', slug: 'pearl-street', soldCount: 5 },
+    { name: 'Bronte Street South', slug: 'bronte-street-south' },
   ],
   condos: [
-    { name: 'Bronte Mill Lofts', slug: 'bronte-mill-lofts', meta: '32 units · est. ~$640K' },
-    { name: 'Main & Martin', slug: 'main-and-martin', meta: '48 units · est. ~$580K' },
+    { name: 'Bronte Mill Lofts', slug: 'bronte-mill-lofts' },
+    { name: 'Main & Martin', slug: 'main-and-martin' },
   ],
   faqs: [
-    {
-      question: 'How much are homes in Dempsey?',
-      answer:
-        'The typical Dempsey home has traded around $1,150,000 over the past year, with most sales falling between roughly $845K and $1.45M depending on lot size and whether the home is detached or semi-detached.',
-    },
     {
       question: 'Is Dempsey a good place to live?',
       answer:
         'Dempsey is popular with families for its mature lots, walkability to downtown Milton, and proximity to the GO station. It is an established, residential-feeling area rather than a newer-growth subdivision.',
     },
-    {
-      question: 'What is the commute like from Dempsey?',
-      answer:
-        'Milton GO is about a 6-minute drive, putting Union Station roughly 50 minutes away by train. Highway 401 access is a short drive north.',
-    },
   ],
   siblings: [
-    { name: 'Timberlea', slug: 'timberlea', typicalPriceRounded: 1_010_000, salesCount: 94, streetPages: 22, distanceKm: 1.4 },
-    { name: 'Bronte Meadows', slug: 'bronte-meadows', typicalPriceRounded: 1_050_000, salesCount: 12, streetPages: 8, distanceKm: 2.1 },
-    { name: 'Clarke', slug: 'clarke', typicalPriceRounded: 845_000, salesCount: 210, streetPages: 46, distanceKm: 2.6 },
+    { name: 'Timberlea', slug: 'timberlea', streetPages: 22, distanceKm: 1.4 },
+    { name: 'Bronte Meadows', slug: 'bronte-meadows', streetPages: 8, distanceKm: 2.1 },
+    { name: 'Clarke', slug: 'clarke', streetPages: 46, distanceKm: 2.6 },
   ],
+  nearbyByDistance: true,
   ctaBuyer: {
-    heading: `Looking in ${'Dempsey'}?`,
-    body: 'Start with the streets above for the deepest local read, then see what is active right now.',
-    buttonLabel: 'See Dempsey streets',
-    href: '/neighbourhoods/dempsey/streets',
+    heading: 'Thinking of buying in Dempsey?',
+    body: 'The street-by-street read above, and every live listing in Dempsey on one page.',
+    buttonLabel: 'Listings in Dempsey',
+    href: '/listings',
   },
   ctaSeller: {
-    heading: 'Own in Dempsey?',
-    body: 'Get a grounded valuation built on real Dempsey comparables, not a generic estimate.',
+    heading: 'Own a home in Dempsey?',
+    body: 'A grounded valuation built on real Dempsey comparables: the number, then the strategy.',
     buttonLabel: 'Value my home',
-    href: '/sell',
+    href: '/value/dempsey',
   },
 };
 
-// Rural example — swap to preview the character-led mode (no VIP, silent stats).
+// Rural example: swap to preview the character-led mode (no VIP).
 export const mockHubRural: HubData = {
   slug: 'moffat',
   name: 'Moffat',
   profile: 'rural',
-  character:
-    'Open countryside on Milton\u2019s western edge \u2014 acreage, hamlet quiet, and a pace measured in seasons rather than days on market.',
+  character: 'Open countryside on Milton’s western edge: acreage and hamlet quiet.',
   intents: [
-    { key: 'buy', label: "I'm buying", sub: 'Browse Moffat road pages', href: '/neighbourhoods/moffat/streets' },
-    { key: 'sell', label: "I'm selling", sub: 'Rural valuation, human-read', href: '/sell' },
-    { key: 'rent', label: "I'm renting", sub: 'Rural lease listings', href: '/rentals' },
-    { key: 'invest', label: "I'm investing", sub: 'Land & acreage read', href: '/listings' },
+    { key: 'buy', label: "I'm buying", sub: 'Homes for sale in Moffat', href: '/listings' },
+    { key: 'sell', label: "I'm selling", sub: 'What a Moffat home is worth', href: '/value/moffat' },
+    { key: 'rent', label: "I'm renting", sub: 'Leases in Moffat', href: '/rentals' },
+    { key: 'invest', label: "I'm investing", sub: 'The sold record for Moffat', href: '/sold?nbhd=moffat' },
   ],
-  stats: { typicalPrice: null, sold12mo: null, onMarket: 3, dom: null },
+  stats: { onMarket: 3 },
   atAGlance: {
     facts: [
-      { key: 'pages', value: '11', label: 'streets with a page', basis: 'published street guides in this neighbourhood', href: '/streets' },
-      { key: 'sold', value: '4', label: 'sales in 12 months', basis: 'below the publication floor, so no price is stated' },
+      { key: 'pages', value: '11', label: 'streets with a page', basis: 'published street guides in this neighbourhood', href: '#streets' },
     ],
   },
   overview: [
-    'Moffat is countryside first and neighbourhood second. Properties trade infrequently and vary enormously \u2014 from working acreage to country estates \u2014 so a single \u201ctypical price\u201d would mislead more than it informs. The read here is about character and land, not comparables.',
-    'For specifics, the individual road pages carry what the aggregate cannot.',
+    'Moffat is countryside first and neighbourhood second, from working acreage to country estates. The individual road pages carry the detail.',
   ],
   marketCompare: [],
-  commentary: {
-    paragraphs: [
-      'Activity in Moffat is too thin over the trailing 12 months to state a meaningful typical price \u2014 a handful of varied rural transactions a year rather than a liquid market. Where numbers would mislead, we stay silent and point to the road-level detail instead.',
-    ],
-    source: 'Grounded in trailing-12-month PropTx MLS® sold data \u00b7 thin-activity rural area',
-  },
+  commentary: { paragraphs: [], source: '' },
   streets: [
-    { name: 'Fourth Line', slug: 'fourth-line', soldCount: 2, typicalPriceRounded: null, basis: null, hasVideo: false },
-    { name: 'Guelph Line', slug: 'guelph-line', soldCount: null, typicalPriceRounded: null, basis: null, hasVideo: false },
-    { name: 'Moffat Road', slug: 'moffat-road', soldCount: 1, typicalPriceRounded: null, basis: null, hasVideo: false },
+    { name: 'Fourth Line', slug: 'fourth-line', activeCount: 1, hasVideo: false },
+    { name: 'Guelph Line', slug: 'guelph-line', activeCount: 0, hasVideo: false },
+    { name: 'Moffat Road', slug: 'moffat-road', activeCount: 0, hasVideo: false },
   ],
   streetCount: 9,
   videoStreets: [],
   schools: [],
-  typicalBasis: null,
   vipStreets: [],
   condos: [],
   faqs: [
     {
       question: 'What is Moffat like?',
       answer:
-        'Moffat is a rural hamlet area on the western edge of Milton, characterised by acreage, country properties, and very low transaction volume. It suits buyers seeking land and quiet over walkability or amenities.',
+        'Moffat is a rural hamlet area on the western edge of Milton, characterised by acreage and country properties. It suits buyers seeking land and quiet over walkability or amenities.',
     },
   ],
   siblings: [
-    { name: 'Campbellville', slug: 'campbellville', typicalPriceRounded: 1_460_000, salesCount: 9, streetPages: 7, distanceKm: null },
-    { name: 'Nassagaweya', slug: 'nassagaweya', typicalPriceRounded: 1_720_000, salesCount: 14, streetPages: 11, distanceKm: null },
+    { name: 'Campbellville', slug: 'campbellville', streetPages: 7, distanceKm: null },
+    { name: 'Nassagaweya', slug: 'nassagaweya', streetPages: 11, distanceKm: null },
   ],
+  nearbyByDistance: false,
   ctaBuyer: {
     heading: 'Looking in rural Milton?',
-    body: 'Rural properties reward patience. Browse the road pages for the detail the aggregate can\u2019t show.',
-    buttonLabel: 'See Moffat roads',
-    href: '/neighbourhoods/moffat/streets',
+    body: 'Browse the road pages for the detail a neighbourhood page cannot show.',
+    buttonLabel: 'Listings in Moffat',
+    href: '/listings',
   },
   ctaSeller: {
     heading: 'Own land in Moffat?',
-    body: 'Rural valuations need a human read, not an algorithm. Let\u2019s talk specifics.',
+    body: 'Rural valuations need a human read, not an algorithm. Let’s talk specifics.',
     buttonLabel: 'Request a valuation',
-    href: '/sell',
+    href: '/value/moffat',
   },
 };
 

@@ -6,9 +6,6 @@ import type { Metadata } from "next";
 import ListingDetailClient from "./ListingDetailClient";
 import SiteChrome from "@/components/nav/SiteChrome";
 import { contactEmail } from "@/lib/compliance/contact";
-import { getLeaseMarket, RENT_TYPE_LABEL, type RentType } from "@/lib/rentSignals";
-import { formatCount, formatDateProse, formatRent } from "@/lib/figureFormat";
-import type { ListingRentFigure } from "./ListingExtras";
 import SchemaScript from "@/components/SchemaScript";
 import { schools } from "@/lib/schools";
 import { redactAddress } from "@/lib/listings/display-gate";
@@ -174,7 +171,9 @@ export default async function ListingDetailPage({ params }: Props) {
   // neighbourhood + soldDate) were removed. DB1 no longer carries soldDate
   // values; the sold-count information surfaces on the page through the
   // gated StreetSoldBlock / NeighbourhoodSoldBlock fed from DB2.
-  const [similarRaw, leaseMarket] = await Promise.all([
+  // MC-046 Stage 1: the typical-rent block (the Board's closed leases, getLeaseMarket) is gone;
+  // closed leases are VOW records. Asking rents wait for Stage 2.
+  const [similarRaw] = await Promise.all([
     prisma.listing.findMany({
       where: {
         // MC-029: the same public predicate as the grid. This selected by permAdvertise alone,
@@ -186,29 +185,9 @@ export default async function ListingDetailPage({ params }: Props) {
       orderBy: { listedAt: "desc" },
       take: 4,
     }),
-    // The Board's closed leases by home type, k-gated (rentSignals.ts), for the typical-rent
-    // block. The average ASKING rent this replaced fed a cap rate and a cashflow built on
-    // assumed figures (MH-008).
-    listing.transactionType === "For Lease" ? Promise.resolve(null) : getLeaseMarket(),
   ]);
-  const soldCountOnStreet = 0; // deprecated — see StreetSoldBlock on street page
-  const soldCountInHood = 0; // deprecated — see NeighbourhoodSoldBlock
 
   const similar = similarRaw.map((s) => redactAddress(withheldView(s)));
-  const rentFigure = ((): ListingRentFigure | null => {
-    const type = listing.propertyType as RentType;
-    const f = leaseMarket?.byType.find((t) => t.type === type);
-    if (!leaseMarket || !f || f.typical === null) return null;
-    const leases = (n: number) => `${formatCount(n)} ${n === 1 ? "lease" : "leases"}`;
-    const classed = f.basementCount > 0 || f.upperCount > 0;
-    return {
-      label: RENT_TYPE_LABEL[type],
-      whole: { value: formatRent(f.typical), sample: leases(classed ? f.wholeCount : f.count) },
-      basement: f.basementTypical !== null ? { value: formatRent(f.basementTypical), sample: leases(f.basementCount) } : null,
-      window: leaseMarket.window,
-      through: leaseMarket.through ? formatDateProse(leaseMarket.through) : null,
-    };
-  })();
 
   // MC-029: the row is stripped of every VOW-only column BEFORE it is serialised for the client
   // component, so the RSC payload never carries a day count, a list date, a prior price or a
@@ -312,10 +291,7 @@ export default async function ListingDetailPage({ params }: Props) {
         listing={serialized}
         similar={serializedSimilar}
         extras={{
-          soldCountOnStreet,
-          soldCountInHood,
           hoodName,
-          rent: rentFigure,
           schools: schoolsLite,
           contactEmail: contactEmail(),
         }}

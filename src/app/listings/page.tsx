@@ -19,6 +19,7 @@ import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { headers } from "next/headers";
 import { canSeeVowRecords } from '@/lib/vow-access';
+import { vowReaderAccess } from '@/lib/vow/door';
 import { getStreetCompareContrast } from '@/lib/comparisonData';
 
 export const dynamic = 'force-dynamic';
@@ -75,7 +76,7 @@ export default async function ListingsPage({ searchParams }: Props) {
   // hoisted memoized-promise seam the street pages use (one resolution per
   // process; /listings is force-dynamic so this is a warm-cache hit per request).
   const [data, compareContrast] = await Promise.all([
-    getListingsV2Data(query, { vow }),
+    getListingsV2Data(query, { vow: vow ? vowReaderAccess(user) : null }),
     getStreetCompareContrast(),
   ]);
   // The audit trail (MP-006): the grid carried the VOW-only card facts to this consumer. A

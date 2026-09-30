@@ -6,7 +6,7 @@
 // No new data layer. Forest .hub-v2 theme, single SiteNav, zero navy.
 import { config } from "@/lib/config";
 import { generateMetadata as genMeta } from "@/lib/seo";
-import { getComparisonData, FREEHOLD_VS_CONDO_CONFIG } from "@/lib/comparisonData";
+import { getComparisonData, compareFaqs, FREEHOLD_VS_CONDO_CONFIG } from "@/lib/comparisonData";
 import ComparePage from "@/components/compare/ComparePage";
 import SchemaScript from "@/components/SchemaScript";
 import SiteFooter from "@/components/nav/SiteFooter";
@@ -27,20 +27,11 @@ export default async function FreeholdVsCondoPage() {
   // Source label comes off the live seam (the freehold side's market source);
   // falls back to a static label if the seam returns a shell.
   const source =
-    data.sideA?.commentary.source ?? "PropTx MLS® sold data, last 12 months · Milton";
+    data.sideA?.commentary.source ?? "PropTx MLS® active listings, today · Milton";
 
-  // Resolve the {GAP} token in the FAQ answers so the FAQPage JSON-LD matches the
-  // rendered page (Google rejects structured data that diverges from visible text).
-  const mA = data.sideA?.compareFacts?.medianList;
-  const mB = data.sideB?.compareFacts?.medianList;
-  const faqGap =
-    mA && mB
-      ? `In Milton today, the median is $${mA.toLocaleString("en-CA")} for ${FREEHOLD_VS_CONDO_CONFIG.sideA.label.toLowerCase()} versus $${mB.toLocaleString("en-CA")} for a ${FREEHOLD_VS_CONDO_CONFIG.sideB.label.toLowerCase()}.`
-      : "";
-  const schemaFaqs = FREEHOLD_VS_CONDO_CONFIG.faqs.map((f) => ({
-    question: f.question,
-    answer: f.answer.replace("{GAP}", faqGap).replace(/\s{2,}/g, " ").trim(),
-  }));
+  // The {GAP} token resolved by the SAME function the page renders with (compareFaqs), so the
+  // FAQPage JSON-LD is the visible text, and both say "typical asking" (MC-046).
+  const schemaFaqs = compareFaqs(data);
 
   const schemas: Array<Record<string, unknown>> = [
     generateBreadcrumbSchema([

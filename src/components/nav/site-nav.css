@@ -803,6 +803,14 @@ nav .m-mega-note {
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.66);
 }
+/* The neutral line (MC-046 R8) at the menu's type floor: the battery refuses text under 14px. */
+nav .m-mega-soldline {
+  margin: 18px 0 0;
+}
+nav .m-mega-soldline [data-sold-history-line] {
+  font-size: 15px;
+  margin: 0;
+}
 nav .m-mega-ok {
   color: #00ff80;
 }

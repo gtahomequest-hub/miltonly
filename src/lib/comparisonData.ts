@@ -13,6 +13,7 @@
 
 import type { HubData } from "@/components/hub/types";
 import type { CompareContrast } from "@/components/compare/CompareModule";
+import { fullPrice } from "@/components/hub/format";
 import {
   getTenureHubData,
   FREEHOLD_CONFIG,
@@ -68,6 +69,41 @@ export interface ComparisonData {
   sideB: HubData | null;
 }
 
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40). Both columns carry IDX facts only: the
+// tenure seam's compareFacts lost soldTypical, soldCount and dom. The one price the comparison
+// states is each side's typical ASKING price today (the median of active list prices), and it is
+// always labelled "asking". These two fragments are the only place that wording lives, so the
+// rendered FAQ and the FAQPage JSON-LD are the same string.
+
+/** "{GAP}" in the table intro: the typical asking gap, or "" when either side is silent. */
+export function comparePriceGap(d: ComparisonData): string {
+  const a = d.sideA?.compareFacts?.medianList;
+  const b = d.sideB?.compareFacts?.medianList;
+  if (!a || !b) return "";
+  const la = d.cfg.sideA.label.toLowerCase();
+  const lb = d.cfg.sideB.label.toLowerCase();
+  return `the typical asking price of a ${la} home in Milton is ${fullPrice(a)} today, versus ${fullPrice(b)} for a ${lb}`;
+}
+
+/** "{GAP}" in an FAQ answer: one sentence, or "" when either side is silent. */
+export function compareFaqGap(d: ComparisonData): string {
+  const a = d.sideA?.compareFacts?.medianList;
+  const b = d.sideB?.compareFacts?.medianList;
+  if (!a || !b) return "";
+  const la = d.cfg.sideA.label.toLowerCase();
+  const lb = d.cfg.sideB.label.toLowerCase();
+  return `In Milton today, the typical asking price is ${fullPrice(a)} for ${la} versus ${fullPrice(b)} for a ${lb}.`;
+}
+
+/** The FAQ list with {GAP} resolved: what the page renders and what the JSON-LD declares. */
+export function compareFaqs(d: ComparisonData): { question: string; answer: string }[] {
+  const gap = compareFaqGap(d);
+  return d.cfg.faqs.map((f) => ({
+    question: f.question,
+    answer: f.answer.replace("{GAP}", gap).replace(/\s{2,}/g, " ").trim(),
+  }));
+}
+
 export async function getComparisonData(cfg: ComparisonConfig): Promise<ComparisonData> {
   // 100% data reuse — both columns come from the tenure seam. Resolved in
   // parallel; each returns k-anon-gated HubData (with structured compareFacts).
@@ -89,7 +125,7 @@ export const FREEHOLD_VS_CONDO_CONFIG: ComparisonConfig = {
   eyebrow: "Milton ownership comparison",
   metaTitle: "Freehold vs Condo in Milton: Which Should You Buy?",
   metaDescription:
-    "Freehold vs condo in Milton: the honest side-by-side. Live median prices and the real price difference, monthly fees, the three trades, and a clear read on which to choose.",
+    "Freehold vs condo in Milton: the honest side-by-side. Typical asking prices for what is listed now, monthly fees, the three trades, and a clear read on which to choose.",
   breadcrumbLabel: "Freehold vs Condo",
   sideA: {
     key: "freehold",
@@ -229,9 +265,10 @@ export const COMPARE_TEASER: { freehold: CompareTeaserCopy; condo: CompareTeaser
   },
 };
 
-// Live two-value median contrast for the teaser, sourced from the SAME
+// Live two-value typical ASKING contrast for the teaser, sourced from the SAME
 // k-anon-gated compareFacts the flagship table uses (no new data path). Returns
-// null when either median is sub-k -> the teaser then shows its text sub only.
+// null when either side is silent -> the teaser then shows its text sub only.
+// CompareModule labels it "typical asking" (MC-046).
 // `lead` decides which tenure heads the line so each hub leads with its own.
 export async function getCompareContrast(
   cfg: ComparisonConfig,

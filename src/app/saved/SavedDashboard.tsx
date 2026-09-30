@@ -226,6 +226,9 @@ export default function SavedDashboard() {
                         {listing.bathrooms && <span className="text-[12px] text-[#6b6f6a]">{listing.bathrooms} bath</span>}
                       </div>
                       <span
+                        // MC-046: a sold or closed status is a VOW value, served only to a reader
+                        // who passes the gate (/api/auth/saved-listings); it carries the marker.
+                        {...(listing.status !== "active" ? { "data-vow": "" } : {})}
                         className={`inline-block mt-2 text-[12px] font-bold px-2 py-0.5 rounded-full ${
                           listing.status === "active"
                             ? "bg-green-100 text-green-700"

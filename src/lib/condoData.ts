@@ -1,17 +1,25 @@
 // src/lib/condoData.ts
-// THE SEAM (read side). getCondoData(slug) reads VETTED, already-gated CondoContent
-// (+ CondoGeneration sections, CondoBuilding facts, live listings, sibling condos)
-// and maps to the CondoData render contract. It does NOT re-query trades or re-run
-// the k-anon gate — that happened at generation; statsJson already encodes the
-// suppression (null typicalPrice/priceRange = k-anon silent). Null-tolerant per the
-// design: fields the generation never produced stay null/empty and the page degrades
-// honestly. Mirrors getHubData (HubContent/HubGeneration siblings).
+// THE SEAM (read side). getCondoData(slug) reads vetted CondoContent (+ CondoGeneration
+// sections, CondoBuilding facts, live listings, sibling condos) and maps to the CondoData
+// render contract. Null-tolerant: fields the generation never produced stay null/empty and the
+// page degrades honestly. Mirrors getHubData.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40):
+//   · CondoContent.statsJson (the building's stored sold aggregate: typical price and range) is
+//     NOT read on the render path. "Typical price" and "Range" are gone from the page.
+//   · The stored generated prose is served through the same visitor-view rule as the hubs
+//     (hubData.ts: visitorParagraphs / visitorFaqs / visitorLede): VOW-topic sentences and
+//     figure sentences are cut, an FAQ item whose question or surviving answer speaks about a
+//     VOW topic goes whole, and the FAQPage JSON-LD is built from exactly the rendered list.
+//   · The unitMix and condoMarket sections are not read at all: both were written from the
+//     sold side (by-type sales mix and the building's sale aggregate).
+//   · Active listings in the building stay (IDX).
 import { prisma } from "@/lib/prisma";
-import { compactPrice } from "@/components/condo/format";
 import type { CondoData, CondoListing, CondoNearby } from "@/components/condo/types";
 import { resolveCondoName, condoDisplayName } from "@/lib/condoName";
 import type { CondoSection } from "@/types/hub-generator";
 import { PUBLIC_LISTING_WHERE } from "@/lib/listings/vow";
+import { visitorParagraphs, visitorFaqs, visitorLede } from "@/lib/hubData";
 
 function hoodSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
@@ -19,10 +27,7 @@ function hoodSlug(name: string): string {
 function cleanHood(raw: string): string {
   return raw.replace(/^\d+\s*-\s*\w+\s+/, "").trim();
 }
-function firstSentence(s: string): string {
-  const m = s.match(/^.*?[.!?](\s|$)/);
-  return (m ? m[0] : s).trim();
-}
+
 function intentsFor(slug: string): CondoData["intents"] {
   return [
     { key: "buy", label: "I'm buying", sub: "See units for sale here", href: `/condos/${slug}#listings` },
@@ -34,56 +39,53 @@ function intentsFor(slug: string): CondoData["intents"] {
 }
 
 export async function getCondoData(slug: string): Promise<CondoData | null> {
-  const content = await prisma.condoContent.findUnique({ where: { buildingSlug: slug } });
+  // Only the columns the page renders: statsJson (the stored sold aggregate) is not selected.
+  const content = await prisma.condoContent.findUnique({
+    where: { buildingSlug: slug },
+    select: { status: true, faqJson: true },
+  });
   if (!content || content.status !== "published") return null;
 
   const [building, generation] = await Promise.all([
     prisma.condoBuilding.findUnique({
       where: { slug },
-      include: { neighbourhoodEntity: { select: { name: true, slug: true } } },
+      // Only what the page renders; the legacy avgSalePrice*/avgRent*/avgCapRate/priceGrowth1yr
+      // columns (sold- and lease-derived) are not selected.
+      select: {
+        buildingAddress: true, legalStories: true, neighbourhood: true,
+        neighbourhoodId: true, streetNumber: true, streetSlug: true, totalUnits: true, yearBuilt: true,
+        neighbourhoodEntity: { select: { name: true, slug: true } },
+      },
     }),
-    prisma.condoGeneration.findUnique({ where: { buildingSlug: slug } }),
+    prisma.condoGeneration.findUnique({ where: { buildingSlug: slug }, select: { status: true, sectionsJson: true } }),
   ]);
   if (!building) return null;
 
-  // Editorial prose -> overview. Every narrative section except the conversion CTA
-  // block (the design renders its own dual CTA) and the projected schema markup.
+  // Editorial prose -> overview. Every narrative section except the conversion CTA block (the
+  // design renders its own dual CTA), the projected schema markup, and the two sections written
+  // from the sold side (unitMix, condoMarket), then the visitor-view filter.
   const sections: CondoSection[] =
     generation && generation.status === "succeeded"
       ? ((generation.sectionsJson as unknown as CondoSection[]) ?? [])
       : [];
-  const overview = sections
-    .filter((s) => s.id !== "buySellCtas" && s.id !== "schemaMarkup")
-    .flatMap((s) => s.paragraphs)
-    .filter(Boolean);
+  const SKIP = new Set(["buySellCtas", "schemaMarkup", "unitMix", "condoMarket"]);
+  const overview = visitorParagraphs(
+    sections.filter((s) => !SKIP.has(s.id)).flatMap((s) => s.paragraphs ?? []).filter(Boolean),
+  );
 
-  // FAQ — already vetted at generation.
-  let faqs: CondoData["faqs"] = [];
+  // FAQ: the visitor-view filter, the same list the FAQPage JSON-LD is built from.
+  let rawFaqs: unknown = [];
   try {
-    faqs = (JSON.parse(content.faqJson || "[]") as Array<{ question: string; answer: string }>).map((f) => ({
-      question: f.question,
-      answer: f.answer,
-    }));
+    rawFaqs = JSON.parse(content.faqJson || "[]");
   } catch {
-    faqs = [];
+    rawFaqs = [];
   }
+  const faqs: CondoData["faqs"] = visitorFaqs(rawFaqs);
 
-  // ownership <- statsJson saleAggregates. k-anon already applied: null => silent.
-  let typicalPrice: number | null = null;
-  let priceRange: string | null = null;
-  try {
-    const stats = content.statsJson
-      ? (JSON.parse(content.statsJson) as { typicalPrice?: number | null; priceRange?: { low: number; high: number } | null })
-      : null;
-    typicalPrice = stats?.typicalPrice ?? null;
-    if (stats?.priceRange) priceRange = `$${compactPrice(stats.priceRange.low)} – $${compactPrice(stats.priceRange.high)}`;
-  } catch {
-    /* statsJson absent -> silent */
-  }
-  const monthlyFee = building.avgMaintenanceFee
-    ? `~$${building.avgMaintenanceFee.toLocaleString("en-CA")} / month`
-    : null;
-  const ownership: CondoData["ownership"] = { typicalPrice, priceRange, monthlyFee, feeIncludes: [] };
+  // MC-046: CondoBuilding.avgMaintenanceFee is a fee derived across the building's records, the
+  // figure Ruling 4 (2026-09-10) already excluded; a fee is stated per active listing or not at all.
+  const monthlyFee: string | null = null;
+  const ownership: CondoData["ownership"] = { monthlyFee, feeIncludes: [] };
   if (!monthlyFee) ownership.feeNote = "Varies by suite. Confirm with the listing or management.";
 
   // Parent hub link.
@@ -100,7 +102,7 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
           // leaseStatus='active'; `status: "active"` alone never matched a lease unit).
           // MC-036: displayAddress too. A unit listed under the building's street number and
           // name, with a link to its page, is placed at its address; a withheld one may not
-          // be. This list is not a count; the building's figures come from statsJson.
+          // be. This list is not a count.
           where: {
             ...PUBLIC_LISTING_WHERE,
             displayAddress: true,
@@ -110,6 +112,8 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
           },
           orderBy: { listedAt: "desc" },
           take: 8,
+          // MC-046: the columns the card prints, never the row (the row carries the VOW-only columns).
+          select: { mlsNumber: true, transactionType: true, bedrooms: true, bathrooms: true, price: true, listOfficeName: true },
         })
       : [];
   const listings: CondoListing[] = liveRows.map((l) => {
@@ -165,7 +169,9 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
   });
   const name = resolved.name;
   const address = resolved.address;
-  const character = overview.length ? firstSentence(overview[0]) : content.metaDescription ?? "";
+  // The lede is the filtered overview's first sentence that stands on its own, or nothing. It
+  // no longer falls back to the stored meta description, which is not filtered prose.
+  const character = visitorLede(overview);
 
   return {
     slug,
@@ -182,7 +188,6 @@ export async function getCondoData(slug: string): Promise<CondoData | null> {
       propertyType: "Condo apartment",
     },
     ownership,
-    bedrooms: [],
     overview,
     listings,
     amenities: [],

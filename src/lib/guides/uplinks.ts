@@ -106,8 +106,9 @@ export function guidesForStreet(opts: { condoHeavy: boolean; hubSlugs?: readonly
 }
 
 export function guidesForHub(opts: { condoHeavy: boolean; hubSlug?: string | null }): GuideUplink[] {
+  // MC-046 R6: the neighbourhood-costs guide is noindexed (every section was a sold statistic), so
+  // no hub reads it alongside any more.
   return fromRegistry([
-    GUIDE_SLUG.neighbourhoodCosts,
     GUIDE_SLUG.schools,
     ...(opts.condoHeavy ? [GUIDE_SLUG.condoFees] : []),
     ...(hubCarriesParkingGuide(opts.hubSlug) ? [GUIDE_SLUG.parking] : []),

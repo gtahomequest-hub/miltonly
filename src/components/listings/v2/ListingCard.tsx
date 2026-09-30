@@ -116,7 +116,7 @@ export function ListingCard({ listing: l, saved, onSave, onBook }: ListingCardPr
             {hood}
           </Link>
           {l.vow && (
-            <span className="lv-dom" data-vow-facts>
+            <span className="lv-dom" data-vow-facts data-vow>
               {l.vow.daysOnMarket === 0 ? 'Listed today' : `${l.vow.daysOnMarket}d on market`}
               {l.vow.priorPrice != null && l.vow.priorPrice > 0 && l.vow.priorPrice !== l.price && (
                 <> · was {fullPrice(l.vow.priorPrice)}</>

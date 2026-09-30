@@ -414,69 +414,19 @@ export function MortgageCalc({ price, taxAmount, propertyType }: { price: number
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TYPICAL RENT (sale listings; MH-008)
+// TYPICAL RENT: removed at MC-046 Stage 1
 // ═══════════════════════════════════════════════════════════════
-// The investment analysis this replaces printed a gross cap rate and a monthly cashflow from
-// an assumed 20% down, a 5% rate, a flat maintenance figure and an average ASKING rent from
-// the feed, and rendered a negative cashflow as "$-3,341". None of those was a figure this
-// site measured. What it does measure is what homes of this type LEASED for: the Board's
-// closed leases over 12 months, midpoint, k-gated per home type and unit class in
-// src/lib/rentSignals.ts, the same figure the Rent menu states. The block renders only when
-// the whole-home figure for this type clears the floor; below it there is nothing to say.
-export interface ListingRentFigure {
-  /** the home type, in words ("Detached") */
-  label: string;
-  /** whole-home typical, already formatted ("$3,500/mo"), with its sample ("308 leases") */
-  whole: { value: string; sample: string };
-  /** basement-unit typical, present only where it cleared the floor */
-  basement: { value: string; sample: string } | null;
-  /** "last 12 months" */
-  window: string;
-  /** the date in prose the closed leases run through, or null */
-  through: string | null;
-}
-
-export function TypicalRentBlock({ rent }: { rent: ListingRentFigure | null }) {
-  if (!rent) return null;
-  return (
-    <div className="mb-8">
-      <h2 className="text-[18px] font-extrabold text-[#073126] mb-3">Typical rent, {rent.label.toLowerCase()}</h2>
-      <div className="bg-[#073126] text-[#fffdfa] rounded-xl p-5 border border-[#1a5a47]">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/60">{rent.basement ? "Whole home" : "Typical rent"}</p>
-            <p className="text-[22px] font-extrabold" data-fig="listing-rent-whole" data-value={rent.whole.value}>{rent.whole.value}</p>
-            <p className="text-[11px] text-white/60">{rent.window} · {rent.whole.sample}</p>
-          </div>
-          {rent.basement ? (
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/60">Basement unit</p>
-              <p className="text-[22px] font-extrabold" data-fig="listing-rent-basement" data-value={rent.basement.value}>{rent.basement.value}</p>
-              <p className="text-[11px] text-white/60">{rent.window} · {rent.basement.sample}</p>
-            </div>
-          ) : null}
-        </div>
-        <p className="text-[11px] text-white/60 leading-relaxed">
-          The midpoint of the {rent.label.toLowerCase()} leases the Board recorded as closed in {config.CITY_NAME} in the {rent.window}, where at least five closed.
-          {rent.basement ? " Whole home leaves out leases of a basement unit or of the upper floors only." : ""}
-          {rent.through ? ` Closed leases through ${rent.through}.` : ""} Not a projection for this home: ask {config.realtor.name.split(" ")[0]} what it would lease for.
-        </p>
-      </div>
-    </div>
-  );
-}
+// The block (MH-008) printed the typical whole-home and basement rent for the home type, the
+// lease counts and the through date, all from the Board's CLOSED leases (rentSignals.ts
+// getLeaseMarket), which are VOW records. It is gone for everyone; asking rents wait for Stage 2.
 
 // ═══════════════════════════════════════════════════════════════
 // VOW TEASER
 // ═══════════════════════════════════════════════════════════════
-export function VOWTeaser({ mls, soldCount, hoodSoldCount, hoodName }: { mls: string; soldCount: number; hoodSoldCount: number; hoodName: string }) {
-  // Prefer street-level count; fall back to neighbourhood; always render the teaser.
-  const useStreet = soldCount > 0;
-  const n = useStreet ? soldCount : hoodSoldCount;
-  const scope = useStreet ? "on this street" : `in ${hoodName}`;
-  const heading = n > 0
-    ? `${n} comparable home${n === 1 ? "" : "s"} sold ${scope} in the last 90 days`
-    : `See sold prices in ${hoodName || "this neighbourhood"}`;
+// MC-046: the teaser carries no count. It once led with "N comparable homes sold on this street",
+// a VOW-derived count; its inputs were already fixed at zero, and now they are gone.
+export function VOWTeaser({ mls, hoodName }: { mls: string; hoodName: string }) {
+  const heading = `See sold prices in ${hoodName || "this neighbourhood"}`;
   return (
     <div className="mb-8">
       <Link

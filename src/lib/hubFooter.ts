@@ -14,13 +14,13 @@
 // rejected promise is dropped rather than cached, so one database blip cannot empty every
 // footer on the site for the length of the TTL.
 import { prisma } from "@/lib/prisma";
-import { surfacedStreetWhere, publishedStreetPageCount } from "@/lib/streetSurface";
+import { publishedStreetPageCount, publishedStreetPageSlugs } from "@/lib/streetSurface";
 import { publishedHubSlugs } from "@/lib/hubSets";
 import { resolveStreetName } from "@/lib/streetName";
 import { GUIDE_DEFS } from "@/lib/guides/guides";
 import { schools } from "@/lib/schools";
 import { mosques } from "@/lib/mosques";
-import { formatDateProse } from "@/lib/figureFormat";
+import { PUBLIC_SALE_WHERE } from "@/lib/listings/vow";
 import type { FooterData, FooterMap, TrustInfo } from "@/components/home/types";
 
 /** Same user-confirmed business facts getHomepageData() carries. */
@@ -33,31 +33,45 @@ export const HUB_BRAND: TrustInfo = {
 };
 
 /** THE MAP (MA-004 change 9). The eight guides and the school and mosque counts are the
- *  registries' own; the edition is the latest published row. The homepage's footer and every
- *  other page's share this read, so the two footers cannot list different guides. */
+ *  registries' own. The homepage's footer and every other page's share this read, so the two
+ *  footers cannot list different guides. MC-046 R6: Market Watch left the menu and the footer
+ *  (it is sold statistics, noindex until it returns gated), so the map no longer reads an edition. */
 export async function getFooterMap(): Promise<FooterMap> {
-  const edition = await prisma.marketEdition.findFirst({
-    where: { status: "published" },
-    orderBy: { weekOf: "desc" },
-    select: { weekOf: true },
-  });
   return {
-    guides: GUIDE_DEFS.map((g) => ({ slug: g.slug, title: g.title })),
+    guides: GUIDE_DEFS.filter((g) => !g.noindex).map((g) => ({ slug: g.slug, title: g.title })), // MC-046: indexed guides only
     schoolCount: schools.length,
     mosqueCount: mosques.length,
-    edition: edition ? { weekOf: edition.weekOf, label: `Week of ${formatDateProse(edition.weekOf)}` } : null,
   };
 }
 
+/** THE FOOTER'S STREET COLUMN (MC-046 R9). It was the VIP streets ranked by recency-weighted
+ *  sales, under "Busiest streets, recent sales": a rank by sold volume, which item 40 keeps
+ *  from a signed-out reader whether or not a figure is printed. It is now the published street
+ *  pages with the most homes for sale today, public IDX rows only, ties alphabetical, and a
+ *  street with none for sale is not listed. The homepage's footer reads the same function. */
+export async function getMostForSaleStreets(limit = 8): Promise<{ name: string; slug: string }[]> {
+  const published = await publishedStreetPageSlugs();
+  const rows = await prisma.listing.groupBy({
+    by: ["streetSlug"],
+    _count: { _all: true },
+    where: { ...PUBLIC_SALE_WHERE, streetSlug: { in: published } },
+  });
+  const counts = new Map(rows.map((r) => [r.streetSlug, r._count._all]));
+  const streets = await prisma.residentialStreet.findMany({
+    where: { slug: { in: Array.from(counts.keys()) } },
+    select: { slug: true, name: true },
+  });
+  return streets
+    .map((s) => ({ slug: s.slug, name: resolveStreetName(s.slug, s.name).name, n: counts.get(s.slug) ?? 0 }))
+    .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))
+    .slice(0, limit)
+    .map(({ name, slug }) => ({ name, slug }));
+}
+
 async function computeHubFooter(): Promise<FooterData> {
-  const [publishedHubs, vipRows, streetPageCount, totalNbhd, map] = await Promise.all([
+  const [publishedHubs, topStreets, streetPageCount, totalNbhd, map] = await Promise.all([
     publishedHubSlugs().then((slugs) => slugs.map((neighbourhoodSlug) => ({ neighbourhoodSlug }))),
-    prisma.residentialStreet.findMany({
-      where: { isVip: true, ...(await surfacedStreetWhere()) },
-      orderBy: [{ recencyWeightedSold: "desc" }],
-      take: 8,
-      select: { name: true, slug: true },
-    }),
+    getMostForSaleStreets(8),
     publishedStreetPageCount(),
     prisma.neighbourhood.count(),
     getFooterMap(),
@@ -72,7 +86,7 @@ async function computeHubFooter(): Promise<FooterData> {
   return {
     ...map,
     neighbourhoods: hoods.map((n) => ({ name: n.name, slug: n.slug })),
-    topStreets: vipRows.map((s) => ({ name: resolveStreetName(s.slug, s.name).name, slug: s.slug })),
+    topStreets,
     neighbourhoodCount: totalNbhd,
     streetPageCount,
     streetCount: streetPageCount,

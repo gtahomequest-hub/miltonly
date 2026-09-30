@@ -249,7 +249,7 @@
 }
 .home-v2 .mh-ladder a {
   display: grid;
-  grid-template-columns: minmax(150px, 1.1fr) minmax(90px, 1.5fr) 84px 150px 92px;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(90px, 2fr) 110px;
   align-items: center;
   gap: 16px;
   padding: 14px 6px;
@@ -279,32 +279,26 @@
   background: var(--m-accent);
   border-radius: 3px;
 }
-.home-v2 .mh-ladsales,
 .home-v2 .mh-ladactive {
   font-family: var(--m-mono);
   font-size: 14px;
   color: var(--m-text-body);
   white-space: nowrap;
+  text-align: right;
 }
-.home-v2 .mh-ladsales em,
 .home-v2 .mh-ladactive em {
   font-style: normal;
   font-size: 11px;
   color: var(--m-text-muted);
 }
-.home-v2 .mh-ladprice {
-  font-family: var(--m-mono);
-  font-size: 15px;
-  color: var(--m-accent-bright);
-  text-align: right;
-  white-space: nowrap;
+/* THE NEUTRAL LINE (MC-046 R7), where The Board was: one sentence on the forest ground. */
+.home-v2 .mh-soldline {
+  background: var(--m-bg-deep);
+  padding: 26px 0;
+  text-align: center;
 }
-.home-v2 .mh-ladsilent {
-  font-family: var(--m-sans);
-  font-style: normal;
-  font-size: 11.5px;
-  color: var(--m-text-muted);
-  white-space: normal;
+.home-v2 .mh-soldline p {
+  margin: 0;
 }
 
 /* ── 04 · valuation ────────────────────────────────────────────────────── */
@@ -440,7 +434,7 @@
     gap: 34px;
   }
   .home-v2 .mh-ladder a {
-    grid-template-columns: minmax(130px, 1fr) 74px 140px 84px;
+    grid-template-columns: minmax(130px, 1fr) 110px;
   }
   .home-v2 .mh-ladbar {
     display: none;
@@ -465,13 +459,6 @@
     padding: 13px 4px;
   }
   .home-v2 .mh-ladname {
-    grid-column: 1;
-  }
-  .home-v2 .mh-ladprice {
-    grid-column: 2;
-    text-align: right;
-  }
-  .home-v2 .mh-ladsales {
     grid-column: 1;
   }
   .home-v2 .mh-ladactive {

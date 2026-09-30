@@ -98,7 +98,7 @@ export interface MapPin {
 
 export interface ListingsStats {
   avgPrice: number;
-  avgDom: number;
+  // avgDom left at MC-046 Stage 1 (R12): days on market is a VOW field, even averaged.
   newThisWeek: number;
   activeCount: number;
 }

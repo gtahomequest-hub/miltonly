@@ -126,6 +126,14 @@
   background: var(--hh-deep);
   padding: 0;
 }
+/* MC-046: the neutral line, where the typical sold price stood. */
+.hub-v3 .hh-glance .hh-soldline {
+  margin: 0;
+  padding: 14px 0 16px;
+}
+.hub-v3 .hh-facts + .hh-soldline {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
 .hub-v3 .hh-facts {
   display: grid;
   /* six facts fit one row inside the 1116px measure; auto-fit wraps them below it */
@@ -314,15 +322,12 @@
 .hub-v3 .hh-ladder li {
   border-bottom: 1px solid var(--hh-border);
 }
-/* Two lines per row: the figures, then the basis running under them. A single-row grid
-   cannot carry a disclosure without truncating it, and a truncated disclosure is worse
-   than none: it looks like the page is hiding the sample. */
+/* One line per row: rank, name, a bar and the count of homes for sale today (MC-046: the
+   typical, its basis and the sold count are gone, so is their second line). */
 .hub-v3 .hh-ladder a {
   display: grid;
-  grid-template-columns: 30px minmax(150px, 1.2fr) minmax(80px, 1.4fr) 82px 190px;
-  grid-template-areas:
-    'rank name bar sales price'
-    'rank basis basis basis basis';
+  grid-template-columns: 30px minmax(150px, 1.2fr) minmax(80px, 1.4fr) 120px;
+  grid-template-areas: 'rank name bar sales';
   align-items: center;
   gap: 2px 16px;
   padding: 12px 6px 11px;
@@ -330,8 +335,7 @@
 }
 .hub-v3 .hh-ladrank {
   grid-area: rank;
-  align-self: start;
-  padding-top: 5px;
+  align-self: center;
   font-family: var(--hh-mono);
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -380,29 +384,11 @@
   grid-area: sales;
   font-family: var(--hh-mono);
   font-size: 14px;
+  text-align: right;
   white-space: nowrap;
 }
 .hub-v3 .hh-ladsales em {
   font-style: normal;
-  font-size: 12px;
-  color: var(--hh-muted);
-}
-.hub-v3 .hh-ladprice {
-  grid-area: price;
-  font-family: var(--hh-mono);
-  font-size: 15px;
-  color: var(--hh-accent-dk);
-  text-align: right;
-  white-space: nowrap;
-}
-.hub-v3 .hh-ladsilent {
-  font-family: var(--hh-sans);
-  font-style: normal;
-  font-size: 12px;
-  color: var(--hh-muted);
-}
-.hub-v3 .hh-ladbasis {
-  grid-area: basis;
   font-size: 12px;
   color: var(--hh-muted);
 }
@@ -418,51 +404,6 @@
 }
 .hub-v3 .hh-prose p:last-child {
   margin-bottom: 0;
-}
-.hub-v3 .hh-source {
-  margin: 22px 0 0;
-  font-family: var(--hh-mono);
-  font-size: 12px;
-  color: var(--hh-muted);
-}
-
-/* ── 04 · compare rows ─────────────────────────────────────────────────── */
-.hub-v3 .hh-compare {
-  margin-bottom: 30px;
-  border-top: 1px solid var(--hh-border);
-}
-.hub-v3 .hh-comparerow {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 18px;
-  align-items: baseline;
-  padding: 13px 4px;
-  border-bottom: 1px solid var(--hh-border);
-}
-.hub-v3 .hh-comparel {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 14.5px;
-}
-.hub-v3 .hh-compareb {
-  font-size: 12px;
-  color: var(--hh-muted);
-}
-.hub-v3 .hh-comparem b {
-  font-weight: 500;
-  color: var(--hh-text);
-}
-.hub-v3 .hh-comparev {
-  font-family: var(--hh-mono);
-  font-size: 19px;
-  color: var(--hh-accent-dk);
-}
-.hub-v3 .hh-comparem,
-.hub-v3 .hh-compared {
-  font-family: var(--hh-mono);
-  font-size: 12px;
-  color: var(--hh-muted);
 }
 
 /* ── 05/06 · schools + condos ──────────────────────────────────────────── */
@@ -570,12 +511,6 @@
   font-size: 12px;
   color: var(--hh-muted);
 }
-.hub-v3 .hh-sibprice {
-  margin-top: 6px;
-  font-family: var(--hh-mono);
-  font-size: 14px;
-  color: var(--hh-accent-dk);
-}
 .hub-v3 .hh-sibbasis {
   font-size: 12px;
   color: var(--hh-muted);
@@ -627,10 +562,8 @@
     grid-template-columns: 1fr;
   }
   .hub-v3 .hh-ladder a {
-    grid-template-columns: 28px minmax(130px, 1fr) 74px 190px;
-    grid-template-areas:
-      'rank name sales price'
-      'rank basis basis basis';
+    grid-template-columns: 28px minmax(130px, 1fr) auto;
+    grid-template-areas: 'rank name sales';
   }
   .hub-v3 .hh-ladbar {
     display: none;
@@ -655,10 +588,6 @@
     justify-self: start;
     margin-top: 12px;
   }
-  .hub-v3 .hh-comparerow {
-    grid-template-columns: 1fr auto;
-    gap: 4px 12px;
-  }
 }
 @media (max-width: 420px) {
   .hub-v3 .hh-wrap {
@@ -682,15 +611,7 @@
   }
   .hub-v3 .hh-ladder a {
     grid-template-columns: 24px 1fr auto;
-    grid-template-areas:
-      'rank name price'
-      'rank sales price'
-      'rank basis basis';
+    grid-template-areas: 'rank name sales';
     gap: 2px 10px;
-  }
-  .hub-v3 .hh-ladprice {
-    max-width: 150px;
-    text-align: right;
-    white-space: normal;
   }
 }

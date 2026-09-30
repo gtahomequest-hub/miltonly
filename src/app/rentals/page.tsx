@@ -72,7 +72,10 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
   // address). A v2 bundle served after the deploy would have no displayAddress on any row, and
   // the client would print every card as withheld until the TTL ran out.
   // v4 (ML-012): each row carries streetPage; a v3 bundle would link no street on any card.
-  const { serialized, totalRentals, avgRentValue, rentAvgs, newThisWeek } = await cached(`rentals:${scope?.slug ?? "all"}:v4`, RENTALS_TTL, async () => {
+  // v5 (MC-046 Stage 1, R11): the average rent and the per-category averages and counts run over
+  // ACTIVE leases only. A v4 bundle holds averages that included leased rows (VOW records), so
+  // the key moves and no v4 value is ever read again.
+  const { serialized, totalRentals, rentAvgs, newThisWeek } = await cached(`rentals:${scope?.slug ?? "all"}:v5`, RENTALS_TTL, async () => {
     // MC-029: the public lease predicate (src/lib/listings/vow.ts). This selected every For
     // Lease row ever advertised, so leased units sat in the grid; and the whole row went to the
     // client, VOW-only columns included. Now the set is available units only, ordered newest
@@ -103,15 +106,13 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
         })
       : await getRentalsAvailableCount();
 
-    const avgRent = await prisma.listing.aggregate({
-      where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true, ...scopeWhere },
-      _avg: { price: true },
-    });
+    // MC-046: the overall average rent (never rendered, and backed by a hard-coded fallback of
+    // unknown origin) is gone; the per-category averages below run over active leases only (R11).
 
     const rentAvgs = await Promise.all(
       rentCategories.map(async (cat) => {
         const where: Record<string, unknown> = {
-          transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true, ...scopeWhere,
+          ...PUBLIC_LEASE_WHERE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, ...scopeWhere,
         };
         if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
         const [agg, count] = await Promise.all([
@@ -123,7 +124,7 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
     );
 
     // JSON in, JSON out: the cache stores what the client component receives
-    return { serialized: JSON.parse(JSON.stringify(listings)) as Parameters<typeof RentalsClient>[0]["listings"], totalRentals, avgRentValue: avgRent._avg.price, rentAvgs, newThisWeek };
+    return { serialized: JSON.parse(JSON.stringify(listings)) as Parameters<typeof RentalsClient>[0]["listings"], totalRentals, rentAvgs, newThisWeek };
   });
 
   return (
@@ -132,7 +133,6 @@ export default async function RentalsPage({ searchParams }: { searchParams: Sear
       listings={serialized}
       newThisWeek={newThisWeek}
       totalRentals={totalRentals}
-      avgRent={Math.round(avgRentValue || 2419)}
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}
       scope={scope ? { slug: scope.slug, name: scope.name } : null}
     />

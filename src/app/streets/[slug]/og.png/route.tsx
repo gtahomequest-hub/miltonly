@@ -1,8 +1,12 @@
-// THE RENDERED PRICE CARD (MH-005, MA-001 change 6). A shared street link had no image at all.
+// THE RENDERED STREET CARD (MH-005, MA-001 change 6). A shared street link had no image at all.
 // Where the street is filmed the head points at the poster; everywhere else it points here: the
-// street's name, its typical price with the sample and window that price was derived from, or,
-// below the floor, the strongest fact the page can publish. Forest ground, the CTA green on the
-// figure, the site's name in the corner.
+// street's name, its area and city, and one line of words. Forest ground, the site's name in
+// the corner.
+//
+// NO FIGURE AND NO COUNT (MC-046 Stage 1, ruling R5). The card drew the street's typical sale
+// price in the CTA green, or a sale or lease count below the floor: values derived from sold and
+// leased records, on an image anyone a link is shared with sees. The card route returns neither,
+// and this renderer has nowhere to draw one. The image URL is unchanged.
 //
 // AT THE EDGE, FED BY /api/streets/<slug>/card. next/og's renderer runs at the edge; the data
 // needs Node (Prisma, the Neon driver), so the facts come from the Node route on the same
@@ -20,8 +24,7 @@ interface Card {
   area: string;
   city: string;
   province: string;
-  figure: string | null;
-  basis: string;
+  line: string;
 }
 
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
@@ -55,10 +58,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {card.figure ? <div style={{ fontSize: 96, color: "#00ff80", lineHeight: 1 }}>{card.figure}</div> : null}
-            <div style={{ fontSize: 26, marginTop: 14, color: "rgba(255,255,255,0.8)", fontFamily: "sans-serif" }}>{card.basis}</div>
-          </div>
+          <div style={{ fontSize: 30, color: "rgba(255,255,255,0.85)", fontFamily: "sans-serif", maxWidth: 760 }}>{card.line}</div>
           <div style={{ fontSize: 34, color: "#ffc400", fontFamily: "sans-serif" }}>miltonly.com</div>
         </div>
       </div>

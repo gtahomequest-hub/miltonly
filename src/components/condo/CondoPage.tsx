@@ -4,7 +4,6 @@ import type { CondoData } from './types';
 import {
   CondoHero,
   CondoCost,
-  CondoBedrooms,
   CondoOverview,
   CondoListings,
   CondoAmenities,
@@ -21,7 +20,6 @@ export function CondoPage({ data }: { data: CondoData }) {
       <SiteNavLive variant="page" />
       <CondoHero data={data} />
       <CondoCost data={data} />
-      <CondoBedrooms data={data} />
       <CondoOverview data={data} />
       <CondoListings data={data} />
       <CondoAmenities data={data} />

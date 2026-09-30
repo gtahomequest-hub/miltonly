@@ -55,15 +55,14 @@ export default async function RentLandingPage() {
 
   const totalRentals = await prisma.listing.count({ where: PUBLIC_LEASE_WHERE });
 
-  const avgRent = await prisma.listing.aggregate({
-    where: { transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, price: { gt: 500, lt: 10000 }, permAdvertise: true },
-    _avg: { price: true },
-  });
+  // ACTIVE leases only (MC-046 Stage 1, R11): these averages and counts ran over every For Lease
+  // row with no leaseStatus filter, so leased units (VOW records) were in them. The overall
+  // average (never rendered, with a hard-coded fallback) is gone.
 
   const rentAvgs = await Promise.all(
     rentCategories.map(async (cat) => {
       const where: Record<string, unknown> = {
-        transactionType: "For Lease", city: config.PRISMA_CITY_VALUE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 }, permAdvertise: true,
+        ...PUBLIC_LEASE_WHERE, propertyType: cat.type, bedrooms: cat.beds, price: { gt: 500, lt: 10000 },
       };
       if (cat.isDen) where.description = { contains: "den", mode: "insensitive" };
       const [agg, count] = await Promise.all([
@@ -82,7 +81,6 @@ export default async function RentLandingPage() {
       listings={serialized}
       newThisWeek={newThisWeek}
       totalRentals={totalRentals}
-      avgRent={Math.round(avgRent._avg.price || 2419)}
       rentAvgs={rentAvgs.filter((r) => r.avg > 0)}
     />
     </SiteChrome>

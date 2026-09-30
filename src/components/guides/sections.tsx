@@ -109,9 +109,11 @@ export function GuideHero({ data }: { data: GuideArticleData }) {
         <h1>{data.title}</h1>
         <p className="g-sub">{data.dek}</p>
         <div className="g-meta">
-          <span>
-            <IconClock /> {data.readMinutes} min read
-          </span>
+          {data.readMinutes > 0 && (
+            <span>
+              <IconClock /> {data.readMinutes} min read
+            </span>
+          )}
           <span>Updated {data.updated}</span>
         </div>
       </div>

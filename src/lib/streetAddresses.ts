@@ -7,7 +7,9 @@
 //   side              the parity of that number
 //   fraction          position from the low-number end, 0-1, from the build-time projection
 //   cross street      the nearest placed junction, a street fact stated at street grain
-//   building form     ONLY where a DB1 listing for that exact address carries one
+//   building form     ONLY where an ACTIVE, permAdvertise DB1 listing for that exact address
+//                     carries one (MC-046: a form known only from a sold, expired or leased row
+//                     would disclose a historical listing at that number)
 //   active status     ONLY a status=active, permAdvertise listing, as a link to /listings/<mls>,
 //                     with its listing brokerage beside the status word
 //
@@ -175,9 +177,9 @@ export function buildAddressLadder(input: {
     if (l.displayAddress === false) continue;
     const parsed = parseAddress(l.address);
     if (!parsed || parsed.identity.key !== identityKey) continue;
-    const form = formLabel(l.propertySubType, l.propertyType);
-    if (form && !forms.has(parsed.number)) forms.set(parsed.number, form);
     const isActive = String(l.status ?? "").toLowerCase() === "active" && l.permAdvertise !== false;
+    const form = isActive ? formLabel(l.propertySubType, l.propertyType) : null;
+    if (form && !forms.has(parsed.number)) forms.set(parsed.number, form);
     if (isActive && !actives.has(parsed.number)) {
       actives.set(parsed.number, {
         mlsNumber: l.mlsNumber,

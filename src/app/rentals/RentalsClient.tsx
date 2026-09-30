@@ -125,14 +125,13 @@ interface Props {
   /** computed on the server across the set; the client has no list dates to count */
   newThisWeek: number;
   totalRentals: number;
-  avgRent: number;
   rentAvgs: RentAvg[];
   /** MC-012: the hub this page is scoped to, or null for all of Milton. */
   scope?: { slug: string; name: string } | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function RentalsClient({ listings, newThisWeek, totalRentals, avgRent, rentAvgs, scope = null }: Props) {
+export default function RentalsClient({ listings, newThisWeek, totalRentals, rentAvgs, scope = null }: Props) {
   // Every figure on a scoped page is the hub's; the town-wide badge the homepage gate reads by
   // data-fig="rentals-available" is emitted only on the unscoped page, so the two never disagree.
   const placeName = scope ? scope.name : config.CITY_NAME;

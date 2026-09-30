@@ -1,27 +1,17 @@
 // src/components/home/ValuationBand.tsx
-// The valuation form, and the three claims that earn it the space.
+// The valuation form, and the claims that earn it the space.
 //
-// A form is not indexable content, so the prose beside it has to do the work. The three
-// proof points are therefore not adjectives: each is a LIVE FIGURE, and each sentence
-// describes exactly the set its figure counts.
+// A form is not indexable content, so the prose beside it has to do the work. The proof
+// points are therefore not adjectives: each is a LIVE FIGURE, and each sentence describes
+// exactly the set its figure counts.
 //
-// BOTH FIGURES HERE HAVE BEEN WRONG, and the fixes are the reason the shapes below look
-// the way they do:
+// "738 Milton streets with their own page" once counted `surfacedStreetWhere()`, the set
+// allowed to appear in search and in a hub ladder, while 444 had a page. The count now comes
+// from publishedStreetPageCount(), the same set src/app/sitemap.ts emits.
 //
-//   · "738 Milton streets with their own page" counted `surfacedStreetWhere()`, which is
-//     entities with sold history OR a published page — the set allowed to appear in search
-//     and in a hub ladder. 738 streets can be spoken about; 444 have a page. The count now
-//     comes from publishedStreetPageCount(), the same set src/app/sitemap.ts emits, and the
-//     sentence says "street pages published" rather than "streets".
-//
-//   · Sold-to-ask rendered as "0.980868783307145%". It was reading the Board's
-//     `soldToAsk.value`, which is a RATIO that TheBoard multiplies by 100 at render, and
-//     printing it raw with a percent sign welded on. It now reads `soldToAskPct` from
-//     getMiltonSoldOverall(), the same all-Milton 12-month aggregate /sold publishes, which
-//     is already a percent, and rounds it to a whole number for display.
-//
-// The lesson both share: a figure crossing a component boundary must carry its unit in its
-// name. `soldToAsk` did not; `soldToAskPct` does.
+// THE SALES COUNT AND SOLD-TO-ASK LEFT WITH MC-046 (R7). Both were aggregates of sold records,
+// and item 40 keeps every value derived from them from a signed-out reader. What stays is
+// public: the pages this site has published and the streets it has filmed.
 //
 // The form itself is HomeValuationCard, the only component in this repo with a proven
 // conversion record: CASL consent text snapshotted at submit, honeypot, phone formatting,
@@ -33,14 +23,11 @@ import { SectionHead } from './SectionHead';
 interface Props {
   /** published street PAGES, from the sitemap's set */
   streetPageCount: number;
-  sold12mo: number;
-  /** already a percent (98.1), not a ratio. null = k-suppressed */
-  soldToAskPct: number | null;
   videoCount: number;
 }
 
-export function ValuationBand({ streetPageCount, sold12mo, soldToAskPct, videoCount }: Props) {
-  // Only proof points with a live figure behind them render. A claim with a null figure is
+export function ValuationBand({ streetPageCount, videoCount }: Props) {
+  // Only proof points with a live figure behind them render. A claim with no figure is
   // dropped rather than softened into an adjective.
   const proof: { fig: string; figure: string; label: string }[] = [
     {
@@ -48,21 +35,8 @@ export function ValuationBand({ streetPageCount, sold12mo, soldToAskPct, videoCo
       figure: streetPageCount.toLocaleString('en-CA'),
       label: 'Milton street pages published, each one researched and kept current',
     },
-    {
-      fig: 'proof-sales-12mo',
-      figure: sold12mo.toLocaleString('en-CA'),
-      label: 'sales tracked over the last 12 months, the basis of every figure here',
-    },
   ];
-  if (soldToAskPct !== null) {
-    proof.push({
-      fig: 'proof-sold-to-ask',
-      // Whole-number percent. The reader is being told what homes close at, not being
-      // handed a ratio to interpret.
-      figure: `${Math.round(soldToAskPct)}%`,
-      label: 'of asking, what Milton homes closed at over the last 12 months',
-    });
-  } else if (videoCount > 0) {
+  if (videoCount > 0) {
     proof.push({
       fig: 'proof-video-count',
       figure: videoCount.toLocaleString('en-CA'),

@@ -31,7 +31,7 @@ export const revalidate = 86400;
 
 export const metadata = genMeta({
   title: `${config.CITY_NAME} Condo Buildings: Prices, Units & Market Data`,
-  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} condo building with a published profile. Unit counts, active listings, and live sale prices by building. Updated daily from the PropTx MLS® System.`,
+  description: `Browse every ${config.CITY_NAME} ${config.CITY_PROVINCE} condo building with a published profile. Unit counts, active listings, and live asking prices by building. Updated daily from the PropTx MLS® System.`,
   canonical: `${config.SITE_URL}/condos`,
 });
 
@@ -122,8 +122,10 @@ export default async function CondosIndexPage() {
       searchExtra: c.hood,
       group: c.hood, // chip filter by neighbourhood
       subtitle: c.hood,
+      // MC-046: an ASKING figure over today's active sale listings, and labelled so; "sale price"
+      // read as a sold figure.
       stat: c.avgSalePrice != null ? formatPriceFull(c.avgSalePrice) : undefined,
-      statLabel: c.avgSalePrice != null ? "Avg sale price" : undefined,
+      statLabel: c.avgSalePrice != null ? "Avg asking price" : undefined,
       meta,
     };
   });
@@ -139,7 +141,7 @@ export default async function CondosIndexPage() {
             {config.CITY_NAME} <em>condo buildings</em>
           </h1>
           <p className="dir-sub">
-            {cards.length} {config.CITY_NAME} condo buildings with published profiles · Live sale
+            {cards.length} {config.CITY_NAME} condo buildings with published profiles · Live asking
             prices &amp; unit counts · Updated daily from PropTx MLS®
           </p>
         </div>

@@ -61,7 +61,9 @@ ok("262 is listed now", at(262)?.active?.mlsNumber === "W1234567", JSON.stringif
 ok("262 links to its listing", at(262)?.active?.href === "/listings/W1234567");
 ok("262 carries its form", at(262)?.form === "Detached", String(at(262)?.form));
 
-ok("279 has a form from an expired listing", at(279)?.form === "Townhouse", String(at(279)?.form));
+// MC-046: an expired listing is VOW data; a form known only from it would disclose that the address
+// was listed. It carries no form now.
+ok("279 has no form: its only listing expired (MC-046)", at(279)?.form === null, String(at(279)?.form));
 ok("279 is NOT listed now", at(279)?.active === null);
 
 ok("290 is not listed now — permAdvertise false", at(290)?.active === null, JSON.stringify(at(290)?.active));
@@ -160,7 +162,7 @@ const markTags = [...markup.matchAll(/<(a|span)\s[^>]*class="s-m/g)].length;
 ok("one element per address", markTags === ladder.marks.length, `${markTags} mark tags vs ${ladder.marks.length} marks`);
 ok(
   "the detail is one data attribute",
-  markup.includes('data-d="a third along · odd side · Commercial Street · Townhouse · 0.20"'),
+  markup.includes('data-d="a third along · odd side · Commercial Street · 0.20"'),
   ""
 );
 ok("a live listing still renders a real link", markup.includes('class="s-lv" href="/listings/W1234567"'), "");

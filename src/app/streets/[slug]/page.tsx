@@ -65,9 +65,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StreetPage({ params }: Props) {
-  // Minimal-template branch (registry ingest): a deliberately-published zero/low-
-  // sale street renders the honest deterministic layout, NOT the generated page.
-  // Standard pages (template='standard', the ~423 live) are untouched below.
+  // Minimal-template branch (registry ingest): a deliberately-published street with no
+  // generated profile renders the deterministic layout, NOT the generated page. Its JSON-LD
+  // carries no FAQ and no section prose. Standard pages (template='standard') follow below.
   const minimal = await getMinimalStreetView(params.slug);
   if (minimal) {
     const data = await getStreetPageData(params.slug);
@@ -111,8 +111,9 @@ export default async function StreetPage({ params }: Props) {
   const faqs: FAQItem[] = generation ? v2.faqs.map((f) => ({ question: f.question, answer: f.answer })) : [];
   const schema = buildStreetPageSchema(data, { faqs, sections: schemaSections });
 
-  // Live freehold-vs-condo median contrast for the CompareModule teaser. City-wide
-  // (same on every street) + cached -> one DB pass shared across all street pages.
+  // Live freehold-vs-condo ASKING median contrast (active listings) for the CompareModule
+  // teaser; StreetV2Page labels both sides "asking". City-wide (same on every street) + cached
+  // -> one DB pass shared across all street pages.
   const compareContrast = await getStreetCompareContrast();
 
   return (

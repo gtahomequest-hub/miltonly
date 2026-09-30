@@ -1,10 +1,12 @@
 // JSON-LD @graph builder for the street page.
 //
-// Shape matches the reference schema at the head of
-// docs/whitlock-avenue-mockup.html — one LocalBusiness with an embedded
-// RealEstateAgent founder, a Place keyed by street slug, AggregateOffer
-// per product type (k-anonymity-gated), a BreadcrumbList, FAQPage,
-// and two ItemLists (alternative streets, nearby places).
+// One LocalBusiness with an embedded RealEstateAgent founder, a Place keyed by street slug, a
+// BreadcrumbList, a WebPage, FAQPage, and ItemLists (nearby places, the Town's addresses).
+//
+// NO VOW VALUE IN ANY NODE (MC-046 Stage 1, PropTx VOW Best Practices item 40). The Place's
+// additionalProperty (the typical sale price per home type, "across N sales") and the
+// AggregateOffer builder before it are gone; WebPage.dateModified is the profile's generation
+// date, never a sale date; the FAQPage node is built from the page's own filtered FAQ list.
 
 import { generateBreadcrumbSchema, generateFAQSchema } from "@/lib/schema";
 import { config } from "@/lib/config";
@@ -12,7 +14,6 @@ import type { StreetVideoClip } from "@/lib/streetVideo";
 import type { AddressLadder } from "@/lib/streetAddresses";
 import type {
   StreetPageData,
-  TypeSectionProps,
   DifferentPriorityItem,
   NearbyPlace,
   FAQItem,
@@ -32,7 +33,6 @@ export interface ResolvedStreetContent {
 const SITE_URL = config.SITE_URL;
 const ORG_ID = `${SITE_URL}/#organization`;
 const AGENT_ID = `${SITE_URL}/#agent`;
-const K_ANON_AGG = 5;
 const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 
 // ────────────────────────────────────────────────────────────────────
@@ -40,8 +40,7 @@ const CITY_PROVINCE_LABEL = `${config.CITY_NAME} ${config.CITY_PROVINCE}`;
 // ────────────────────────────────────────────────────────────────────
 
 /**
- * LocalBusiness with embedded RealEstateAgent founder. Keyed by ORG_ID so
- * AggregateOffer rows can reference via `{ "@id": ORG_ID }` as seller.
+ * LocalBusiness with embedded RealEstateAgent founder. Keyed by ORG_ID.
  */
 export function buildLocalBusinessSchema(data: StreetPageData): object {
   const hoodNames = data.street.neighbourhoods.map((n) => `${n} neighbourhood`);
@@ -147,10 +146,9 @@ export function buildFAQPageSchema(faqs: FAQItem[]): object | null {
   return generateFAQSchema(faqs);
 }
 
-/** THE PAGE ITSELF (MH-005, MA-001 change 6): a WebPage node with the date the page's facts
- *  last changed (the later of the profile's generation and the most recent closed sale), its
- *  image (the filmed poster, or the rendered price card) and the Place it is about. No node
- *  in the graph carried a date or an image before. */
+/** THE PAGE ITSELF (MH-005, MA-001 change 6): a WebPage node with the date the page last
+ *  changed (the profile's generation date, never a sale date: MC-046, R5), its image (the
+ *  filmed poster, or the rendered street card) and the Place it is about. */
 export function buildWebPageSchema(data: StreetPageData): object {
   const url = `${SITE_URL}/streets/${data.street.slug}`;
   const poster = data.video?.day?.poster ?? data.video?.night?.poster ?? null;
@@ -165,72 +163,6 @@ export function buildWebPageSchema(data: StreetPageData): object {
     isPartOf: { "@type": "WebSite", url: SITE_URL, name: config.SITE_NAME },
     inLanguage: "en-CA",
   };
-}
-
-export function buildAggregateOfferSchema(
-  pt: TypeSectionProps,
-  streetName: string,
-  streetSlug: string,
-  kind: "sale" | "lease"
-): object | null {
-  if (!pt.hasData || pt.showContactTeamPrompt) return null;
-  if (kind === "sale" && pt.typicalPrice <= 0) return null;
-
-  const n = inferSampleSize(pt.statsSold);
-  if (n < K_ANON_AGG) return null;
-
-  const itemTypeByProduct: Record<string, string> = {
-    detached: "SingleFamilyResidence",
-    semi: "House",
-    townhouse: "House",
-    condo: "Apartment",
-    link: "House",
-    "freehold-townhouse": "House",
-  };
-
-  return {
-    "@type": "AggregateOffer",
-    "@id": `${SITE_URL}/streets/${streetSlug}#offer-${pt.type}-${kind}`,
-    name: `${pt.displayName} ${kind === "sale" ? "homes" : "leases"} on ${streetName}`,
-    itemOffered: {
-      "@type": itemTypeByProduct[pt.type] ?? "Residence",
-      name: `${pt.displayName} on ${streetName}, ${config.CITY_NAME}`,
-    },
-    offerCount: n,
-    lowPrice: inferLowPrice(pt) ?? undefined,
-    highPrice: inferHighPrice(pt) ?? undefined,
-    price: pt.typicalPrice,
-    priceCurrency: "CAD",
-    businessFunction: kind === "sale"
-      ? "http://purl.org/goodrelations/v1#Sell"
-      : "http://purl.org/goodrelations/v1#LeaseOut",
-    availability: "https://schema.org/InStock",
-    seller: { "@id": ORG_ID },
-    areaServed: { "@id": `${SITE_URL}/streets/${streetSlug}#place` },
-    url: `${SITE_URL}/streets/${streetSlug}#type-${pt.type}`,
-  };
-}
-
-/** The typical sale price per home type, as a PropertyValue on the Place: name, value, unit,
- *  and a description stating the window and the sample it was derived from. Emitted only where
- *  the page itself publishes the figure (the type card's typical, k >= K_ANON_AGG). */
-export function buildTypicalPriceProperties(data: StreetPageData): object[] {
-  const out: object[] = [];
-  for (const pt of data.productTypes) {
-    if (!pt.hasData || pt.showContactTeamPrompt || pt.typicalPrice <= 0) continue;
-    const n = inferSampleSize(pt.statsSold);
-    if (n < K_ANON_AGG) continue;
-    out.push({
-      "@type": "PropertyValue",
-      propertyID: `typical-sale-price-${pt.type}`,
-      name: `Typical sale price, ${pt.displayName.toLowerCase()}, last 12 months`,
-      value: pt.typicalPrice,
-      unitCode: "CAD",
-      description: `The typical closing price of a ${pt.displayName.toLowerCase()} home sold on ${data.street.name}, ${config.CITY_NAME}, over the last 12 months, across ${n} sale${n === 1 ? "" : "s"}. A statistic about past sales on the street, not an offer.`,
-      measurementTechnique: "Midpoint of closed sale prices recorded by the real estate board, published only where at least five sales back the figure.",
-    });
-  }
-  return out;
 }
 
 export function buildAlternativesItemListSchema(
@@ -366,16 +298,9 @@ export function buildStreetPageSchema(
   const faq = buildFAQPageSchema(resolved.faqs);
   if (faq) graph.push(faq);
 
-  // AGGREGATEOFFER IS GONE (MH-005, MA-001 defect 28). It described last year's sold homes as
-  // in-stock offers by the organisation, which is a different thing from what the page says
-  // and is eligible for no rich result. What the page states is an observation about a place:
-  // the typical sale price of a home type over a window and a sample. That is what the Place
-  // node now carries, as PropertyValues, on the same k floor the page uses.
-  const observations = buildTypicalPriceProperties(data);
-  if (observations.length) {
-    const place = graph[1] as Record<string, unknown>;
-    place.additionalProperty = observations;
-  }
+  // AGGREGATEOFFER IS GONE (MH-005, MA-001 defect 28), and so is the Place.additionalProperty
+  // that replaced it (MC-046): the typical sale price per home type is a value derived from sold
+  // records, and no node in this graph carries one.
 
   // DROPPED (A2): the "alternative streets" ItemList sourced from prose paragraphs, so every item
   // had an EMPTY name (strong:"") and NO url — an ItemList that names and points at nothing. Prose
@@ -431,33 +356,3 @@ function categoryToSchemaType(category: string): string {
 }
 
 // (slugifyNbhd removed — it produced unvalidated /neighbourhoods/ @id URLs; see buildPlaceSchema.)
-
-// ────────────────────────────────────────────────────────────────────
-// Inference helpers — pull numeric meta out of the stat cells.
-// ────────────────────────────────────────────────────────────────────
-
-function inferSampleSize(stats: Array<{ label: string; detail?: string }>): number {
-  for (const s of stats) {
-    const m = (s.detail ?? "").match(/across\s+(\d+)\s+sales?/i);
-    if (m) return parseInt(m[1], 10);
-  }
-  return 0;
-}
-
-function inferLowPrice(pt: TypeSectionProps): number | null {
-  const band = pt.statsSold.find((s) => s.label === "Price band");
-  if (!band) return null;
-  const m = band.value.match(/\$([0-9.]+)M?\s*[–-]/);
-  if (!m) return null;
-  const n = parseFloat(m[1]);
-  return band.value.includes("M") ? Math.round(n * 1_000_000) : Math.round(n * 1_000);
-}
-
-function inferHighPrice(pt: TypeSectionProps): number | null {
-  const band = pt.statsSold.find((s) => s.label === "Price band");
-  if (!band) return null;
-  const m = band.value.match(/[–-]\s*\$([0-9.]+)M?/);
-  if (!m) return null;
-  const n = parseFloat(m[1]);
-  return band.value.includes("M") ? Math.round(n * 1_000_000) : Math.round(n * 1_000);
-}

@@ -19,20 +19,15 @@ export interface CondoFacts {
   propertyType: string | null; // "Condo apartment", "Stacked townhome"
 }
 
-/** the differentiator: true monthly cost of ownership */
+/** the differentiator: true monthly cost of ownership.
+ *  MC-046 Stage 1 (VOW item 40): typicalPrice and priceRange (from the stored sold aggregate,
+ *  CondoContent.statsJson) are gone from the shape, and so is the sold-derived bedroom table. */
 export interface CondoOwnership {
-  typicalPrice: number | null; // null => k-anon silent
-  priceRange: string | null; // "$520K – $740K"
   monthlyFee: string | null; // "~$0.62 / sq ft" or "~$640 / month"
   feeIncludes: string[]; // ["Heat", "Water", "1 parking"] — empty if unknown
   feeNote?: string; // shown when monthlyFee is null
 }
 
-export interface CondoBedRow {
-  label: string; // "1 bedroom"
-  typicalPrice: number | null; // null => silent
-  soldCount: number | null;
-}
 
 export interface CondoListing {
   title: string; // "Unit 1204 · 2 bed"
@@ -78,7 +73,6 @@ export interface CondoData {
   intents: CondoIntentSquare[];
   facts: CondoFacts;
   ownership: CondoOwnership;
-  bedrooms: CondoBedRow[]; // price-by-bedroom table; empty when unknown
   overview: string[];
   listings: CondoListing[]; // live units (sale + lease); data-window fed; empty ok
   amenities: string[]; // empty when unknown -> section hidden
