@@ -23,8 +23,9 @@ const REQUIRED_STREET = [
   '/guides/what-it-costs-to-buy-your-first-home-in-milton',
   '/guides/milton-schools-what-the-data-shows',
 ];
+// MC-046 R6: the neighbourhood-costs guide is noindexed (its sections were sold statistics), so a
+// hub no longer links up to it.
 const REQUIRED_HUB = [
-  '/guides/what-milton-neighbourhoods-cost',
   '/guides/milton-schools-what-the-data-shows',
 ];
 const CONDO_GUIDE = '/guides/milton-condo-fees-parking-and-lockers';
@@ -62,11 +63,10 @@ const stripScripts = (raw) => raw.replace(/<script[\s\S]*?<\/script>/g, ' ');
 function guideHrefs(raw) {
   return [...stripScripts(raw).matchAll(/<a\b[^>]*class="g-up-link"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
 }
-// A pill is a link where its type section renders and a <span class="s-pill s-pill-static">
-// where it does not (MH-005, MA-001 change 7); the match is on the pill and its label, whichever
-// element carries them. The lease pill is typed condo too, but its label is "Lease".
-const streetIsCondoHeavy = (raw) =>
-  /<(?:a|span) class="s-pill(?: s-pill-static)?"(?: href="#type-condo")?><span class="s-pill-t">Condo<\/span>/.test(stripScripts(raw));
+// MC-046: the sale pills were sold counts and left the page. A street is condo-heavy for the
+// guide ledger when it renders a condo type section, which now exists only for a street with an
+// active condo listing.
+const streetIsCondoHeavy = (raw) => /id="type-condo"/.test(stripScripts(raw));
 // Both the legacy hub markup (h-condos) and the 2026-09-11 rebuild (hh-sec hh-condos), so a
 // template rename cannot blind this the way it blinded hub-intents.mjs.
 const hubIsCondoHeavy = (raw) => /class="(h-condos|hh-sec hh-condos)"/.test(stripScripts(raw));

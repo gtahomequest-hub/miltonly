@@ -20,6 +20,16 @@
 //   4. THE 2003 FLOOR (item 38) and the 24-HOUR REFRESH (s6.3(h)): no date in DB1, DB2 or DB3
 //      before 2003-01-01; the newest syncedAt on an active DB1 row within 26 hours (the feed
 //      sync runs daily at 10:00Z).
+//   5. THE LISTING NOTICES ON EVERY LISTING PAGE (MC-047, extended at MC-046 Stage 1): the 8.24
+//      label and the 8.16 report line, the shared components, on /listings/<mls> AND on the
+//      /sales/ads/<mls> landing page.
+//   6. MC-046 STAGE 1, THIS TIER'S REMOVALS (PropTx VOW Best Practices item 40), read signed
+//      out: /sold carries no aggregate, no 30/90-day count and a figure-free head; Market Watch
+//      (index and a published edition) answers 200, `noindex, follow`, the neutral line and no
+//      figure, and is out of the sitemap; every guide in the sitemap is indexable and every
+//      noindex guide is out of it; /listings carries no average days on market;
+//      /api/street-stats returns no avgDOM; a sale listing carries no typical-rent block; and no
+//      page read here carries a `data-vow` attribute (that marks values for authorised readers).
 import { neon } from '@neondatabase/serverless';
 import { get } from '../lib/http.mjs';
 import { loadEnv, requireEnv } from '../lib/env.mjs';
@@ -198,6 +208,79 @@ export default {
     coverage.push(['newest syncedAt on an active DB1 row', `${d1.synced} (${Number(d1.age_h).toFixed(1)} h ago)`]);
     assertions.push(['oldest date across DB1, DB2 and DB3 on or after 2003-01-01', floor >= '2003-01-01' && d3.y >= 2003, true]);
     assertions.push([`active listings refreshed within ${REFRESH_HOURS} hours`, Number(d1.age_h) <= REFRESH_HOURS, true]);
+    // ── 5. the 8.24 and 8.16 lines on both listing pages ─────────────────────────────────
+    const noticeMissing = [];
+    const listingPages = [['listing page', sale ? `/listings/${sale}` : null], ['sale ad', sale ? `/sales/ads/${sale}` : null]].filter(([, u]) => u);
+    for (const [name, url] of listingPages) {
+      const p = await get(`${base}${url}`);
+      if (p.status !== 200) { noticeMissing.push(`${name} ${url} answered ${p.status}`); continue; }
+      const label = p.body.match(/<p[^>]*data-augmented-label[^>]*>([\s\S]*?)<\/p>/);
+      const report = p.body.match(/<p[^>]*data-report-inaccuracy[^>]*>([\s\S]*?)<\/p>/);
+      if (!label || !text(label[1]).includes('added by Miltonly and not part of the MLS® listing')) noticeMissing.push(`${name} ${url}: no 8.24 label`);
+      if (!report || !/^\s*Listing brokerage: to report inaccurate information/.test(text(report[1])) || !text(report[1]).includes('48 hours')) noticeMissing.push(`${name} ${url}: no 8.16 report line`);
+    }
+    coverage.push(['listing pages read for the 8.24 and 8.16 lines (the listing page and the sale ad)', listingPages.length]);
+    assertions.push(['listing pages without the 8.24 label or the 8.16 report line', noticeMissing.length, 0]);
+    examples.push(...noticeMissing.slice(0, 4));
+
+    // ── 6. MC-046 Stage 1: this tier's removals, signed out ────────────────────────────────
+    const DATA_VOW = /\bdata-vow(?![-\w])/;
+    const headOf = (html) => {
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || '';
+      const desc = (html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
+      return `${title} ${desc}`;
+    };
+    const noindexed = (html) => /<meta name="robots" content="[^"]*noindex/.test(html);
+    const removals = [];
+    const dataVow = [];
+    const sitemapXml = (await get(`${base}/sitemap.xml`)).body;
+    const soldPage = await get(`${base}/sold`);
+    if (soldPage.status !== 200) removals.push(`/sold answered ${soldPage.status}`);
+    else {
+      if (/Sold in the last (30|90) days|class="sv-agg/.test(soldPage.body)) removals.push('/sold renders a 30/90-day count or the aggregate layer');
+      if (/\$\s?\d|\d[\d,]*\s+(sales|days)|\d+(\.\d+)?%/.test(headOf(soldPage.body))) removals.push(`/sold head carries a figure: "${headOf(soldPage.body).slice(0, 120)}"`);
+      if (!/data-sold-history-line/.test(soldPage.body)) removals.push('/sold carries no neutral line signed out');
+    }
+    const edition = (await app`SELECT "weekOf" w FROM public."MarketEdition" WHERE status = 'published' ORDER BY "weekOf" DESC LIMIT 1`)[0]?.w;
+    for (const url of ['/market-watch', edition ? `/market-watch/${edition}` : null].filter(Boolean)) {
+      const p = await get(`${base}${url}`);
+      if (p.status !== 200) { removals.push(`${url} answered ${p.status}`); continue; }
+      if (!/<meta name="robots" content="noindex, ?follow"/.test(p.body)) removals.push(`${url} is not noindex, follow`);
+      if (!/data-sold-history-line/.test(p.body)) removals.push(`${url} carries no neutral line`);
+      if (/class="mw-(row|val|suppressed)|"@type":"Article"/.test(p.body)) removals.push(`${url} renders an edition figure or the Article node`);
+      if (/\$\s?\d|\d[\d,]*\s+(homes|sales|sold)/.test(headOf(p.body))) removals.push(`${url} head carries a figure`);
+      if (sitemapXml.includes(`${url}</loc>`)) removals.push(`${url} is in the sitemap`);
+      if (DATA_VOW.test(p.body)) dataVow.push(url);
+    }
+    const guideUrls = [...new Set([...(await get(`${base}/guides`)).body.matchAll(/href="(\/guides\/[a-z0-9-]+)"/g)].map((m) => m[1]))];
+    let guidesIndexed = 0;
+    for (const url of guideUrls) {
+      const p = await get(`${base}${url}`);
+      if (p.status !== 200) { removals.push(`${url} answered ${p.status}`); continue; }
+      const inSitemap = sitemapXml.includes(`${url}</loc>`);
+      if (noindexed(p.body) && inSitemap) removals.push(`${url} is noindex and in the sitemap`);
+      if (!noindexed(p.body) && !inSitemap) removals.push(`${url} is indexable and missing from the sitemap`);
+      if (!noindexed(p.body)) guidesIndexed++;
+      if (DATA_VOW.test(p.body)) dataVow.push(url);
+    }
+    coverage.push(['guides read (indexed of linked)', `${guidesIndexed} of ${guideUrls.length}`]);
+    const grid = await get(`${base}/listings`);
+    if (/Avg days on market/.test(grid.body) || /"avgDom\\?":/.test(grid.body)) removals.push('/listings carries an average days on market');
+    const streetStats = await get(`${base}/api/street-stats?street=${encodeURIComponent((slugs[0] || 'main-street').replace(/-milton$/, '').replace(/-/g, ' '))}`);
+    if (/"avgDOM"/.test(streetStats.body)) removals.push('/api/street-stats returns avgDOM');
+    if (sale) {
+      const lp = await get(`${base}/listings/${sale}`);
+      if (/data-fig="listing-rent-(whole|basement)"|>Typical rent, /.test(lp.body)) removals.push(`/listings/${sale} carries the typical-rent block`);
+    }
+    for (const [url, body] of [['/sold', soldPage.body], ['/listings', grid.body]]) if (DATA_VOW.test(body)) dataVow.push(url);
+    for (const [name, url] of pageTypes) {
+      const p = await get(`${base}${url}`);
+      if (DATA_VOW.test(p.body)) dataVow.push(`${name} ${url}`);
+    }
+    assertions.push(['MC-046 Stage 1 removals not held on /sold, Market Watch, the guides, /listings, the listing page, /api/street-stats', removals.length, 0]);
+    assertions.push(['signed-out pages carrying a data-vow attribute', dataVow.length, 0]);
+    examples.push(...removals.slice(0, 8), ...dataVow.slice(0, 4).map((u) => `${u}: data-vow signed out`));
+
     notes.push('the address flag is InternetAddressDisplayYN; the permission flag (InternetEntireListingDisplayYN, permAdvertise) is asserted by vow-fields; AMPRE exposes no third flag');
 
     return { coverage, assertions, notes, examples };

@@ -9,7 +9,13 @@
 // still told Google "A reliable street-level price isn't available".
 //
 // A per-page equality, not a corpus total: two totals can match while individual pages differ.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): no node carries a value derived from sold
+// or leased records. The Place's additionalProperty (the typical sale price per home type, with
+// its sample) is asserted gone, and so is any PropertyValue or AggregateOffer.
 import { faqCounts } from '../lib/parse.mjs';
+
+const ldBlocks = (html) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => m[1]).join(' ');
 
 export default {
   id: 'schema-parity',
@@ -17,7 +23,13 @@ export default {
 
   perPage(slug, html) {
     const f = faqCounts(html);
-    return { slug, ...f };
+    const ld = ldBlocks(html);
+    return {
+      slug, ...f,
+      additionalProperty: /"additionalProperty"/.test(ld),
+      propertyValue: /"PropertyValue"|typical-sale-price/.test(ld),
+      aggregateOffer: /"AggregateOffer"|"aggregatePrice"/.test(ld),
+    };
   },
 
   finish(rows) {
@@ -37,6 +49,9 @@ export default {
         ['pages where schema != visible', differ.length, 0],
         ['zero-FAQ pages still rendering the heading', orphanHeading.length, 0],
         ['zero-FAQ pages still emitting a FAQPage node', orphanNode.length, 0],
+        ['pages whose Place carries additionalProperty', rows.filter((r) => r.additionalProperty).length, 0],
+        ['pages with a PropertyValue (typical sale price) node', rows.filter((r) => r.propertyValue).length, 0],
+        ['pages with an AggregateOffer or aggregatePrice', rows.filter((r) => r.aggregateOffer).length, 0],
       ],
       examples: differ.slice(0, 5).map((r) => `${r.slug}: visible ${r.visible} vs schema ${r.schema}`),
     };

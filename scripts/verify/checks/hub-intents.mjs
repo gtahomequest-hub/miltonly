@@ -21,6 +21,10 @@
 // It reads the hrefs out of the rendered hubs rather than importing intentsFor(), so a square
 // added or re-pointed in the app is covered without touching this file — and so that a mistake
 // in intentsFor() cannot validate itself.
+//
+// MC-046 Stage 1 (PropTx VOW Best Practices item 40): the investing square used to read "N sales
+// here in 12 months". No square may state a sale count now; "N homes for sale here today" (IDX)
+// stays.
 import { get, publishedHubSlugs } from '../lib/http.mjs';
 
 /** Every `id="..."` present in a document. */
@@ -46,6 +50,13 @@ function intentHrefs(html) {
   return [...new Set(out)];
 }
 
+/** The sub-lines of the hero's intent squares, as text. */
+function intentSubs(html) {
+  return [...html.matchAll(/<span class="hh?-intent-s">([\s\S]*?)<\/span>/g)].map((m) =>
+    m[1].replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
+  );
+}
+
 export default {
   id: 'hub-intents',
   title: 'Every hub intent square resolves to a real route and a real id',
@@ -61,11 +72,12 @@ export default {
       const r = await get(base + path);
       if (r.status !== 200) { rows.push({ slug, status: r.status, hrefs: [] }); continue; }
       pages.set(path, { status: 200, ids: idsIn(r.body) });
-      rows.push({ slug, status: 200, hrefs: intentHrefs(r.body) });
+      rows.push({ slug, status: 200, hrefs: intentHrefs(r.body), subs: intentSubs(r.body) });
     }
 
     const ok = rows.filter((r) => r.status === 200);
     const noSquares = ok.filter((r) => r.hrefs.length === 0).map((r) => r.slug);
+    const saleCounts = ok.flatMap((r) => r.subs.filter((s) => /\b\d[\d,]*\s+sales?\b/i.test(s)).map((s) => `${r.slug}: "${s}"`));
 
     // Resolve each unique target ONCE. 22 hubs x 4 squares is 88 links over a handful of
     // destinations; fetching per hub would be 88 requests to say the same four things.
@@ -98,8 +110,9 @@ export default {
         ['hubs rendering no intent squares', noSquares.length, 0],
         ['intent hrefs whose route does not return 200', deadRoute.length, 0],
         ['intent hrefs whose fragment matches no id', deadFragment.length, 0],
+        ['intent squares stating a sale count (MC-046)', saleCounts.length, 0],
       ],
-      examples: [...deadRoute, ...deadFragment, ...noSquares.map((s) => `${s}: no intent squares parsed`)],
+      examples: [...deadRoute, ...deadFragment, ...noSquares.map((s) => `${s}: no intent squares parsed`), ...saleCounts],
     };
   },
 };

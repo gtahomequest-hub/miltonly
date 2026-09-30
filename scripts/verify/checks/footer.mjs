@@ -14,7 +14,7 @@
 //      (.site-nav or .m-nav), and no navy <header> at all.
 //   2. THE MAP. Every published hub is linked from the footer (count == the record's), the
 //      street index is linked, and every one of the map's fixed destinations is present: the
-//      eight guides, /schools and /mosques, /market-watch, /compare/freehold-vs-condo, /privacy
+//      eight guides, /schools and /mosques, /compare/freehold-vs-condo, /privacy
 //      and /terms, and /sold exactly once. A footer that lists three of twenty-two hubs, or
 //      drops the legal links, is a footer that failed.
 //   3. NO HOP, NO 404. Every footer href resolves 200 with no redirect, fetched once per unique
@@ -25,14 +25,17 @@
 //      search well and the brief form, because a footer on every page is a capture surface.
 //
 // A parser that reaches nothing must fail on its own coverage: the page-type count is asserted.
+import { neon } from '@neondatabase/serverless';
 import { get } from '../lib/http.mjs';
+import { loadEnv } from '../lib/env.mjs';
 
 /** The map's fixed destinations. A footer missing one is a finding. */
 const MAP_LINKS = [
   '/streets', '/listings', '/rentals', '/sold', '/sell', '/condos', '/freehold', '/condos-guide', '/potl',
-  '/compare', '/compare/freehold-vs-condo', '/schools', '/mosques', '/guides', '/market-watch', '/about', '/privacy', '/terms',
+  '/compare', '/compare/freehold-vs-condo', '/schools', '/mosques', '/guides', '/about', '/privacy', '/terms',
 ];
-const GUIDE_COUNT = 8;
+// MC-046 R6: two guides are noindexed (their sections were sold statistics) and leave the footer.
+const GUIDE_COUNT = 6;
 const ONCE = ['/sold'];
 // /book became a booking page in ML-014 (2026-09-28); /map still redirects to /streets.
 const REDIRECTS = ['/map'];
@@ -48,6 +51,15 @@ const count = (html, re) => (html.match(re) || []).length;
 
 /** One URL per page type. The dynamic ones are read off their index pages so the check never
  *  hardcodes an MLS number or a slug that can expire. */
+// MC-046 R6: the Market Watch index lists no edition any more, so the edition page type comes
+// from the table (the week only; it is still a page with the footer, noindex until Stage 2).
+async function latestEdition() {
+  loadEnv();
+  if (!process.env.DATABASE_URL) return null;
+  const rows = await neon(process.env.DATABASE_URL)`SELECT "weekOf" w FROM public."MarketEdition" WHERE status = 'published' ORDER BY "weekOf" DESC LIMIT 1`;
+  return rows[0] ? `/market-watch/${rows[0].w}` : null;
+}
+
 async function pageTypes(base, slugs, hubRecord) {
   const firstHref = async (path, prefix) => {
     const r = await get(base + path);
@@ -61,7 +73,7 @@ async function pageTypes(base, slugs, hubRecord) {
     firstHref('/condos', '/condos/'),
     firstHref('/schools', '/schools/'),
     firstHref('/mosques', '/mosques/'),
-    firstHref('/market-watch', '/market-watch/'),
+    latestEdition(),
   ]);
   return [
     ['homepage', '/'],
@@ -107,7 +119,7 @@ export default {
     const types = await pageTypes(base, slugs, hubRecord);
     const hubCount = hubRecord.publishedSlugs.length;
     const read = [], unread = [];
-    const chrome = [], hubs = [], map = [], twice = [], redirects = [], headings = [], forms = [];
+    const chrome = [], hubs = [], map = [], twice = [], redirects = [], headings = [], forms = [], soldRank = [];
     const allHrefs = new Set();
 
     for (const [type, path] of types) {
@@ -144,6 +156,10 @@ export default {
       }
       for (const h of REDIRECTS) if (hrefs.includes(h)) redirects.push(`${tag}: ${h} is a redirect, not a destination`);
 
+      // 3b. NO SOLD RANKING (MC-046 R9). The street column was "Busiest streets, recent sales",
+      // ranked by recency-weighted sales; it is now the pages with the most homes for sale.
+      if (/Busiest streets|recent sales|Most sales/i.test(footer)) soldRank.push(`${tag}: the footer ranks streets by sales`);
+
       // 4. headings and forms
       if (!/<h2\b/.test(footer)) headings.push(`${tag}: footer has no <h2>`);
       if (/<h4\b/.test(footer)) headings.push(`${tag}: footer still uses <h4>`);
@@ -179,9 +195,10 @@ export default {
         ['pages whose footer carries a redirect', redirects.length, 0],
         ['pages whose footer headings are not h2 then h3', headings.length, 0],
         ['pages whose footer lacks the search well or the brief form', forms.length, 0],
+        ['pages whose footer ranks streets by sales (MC-046)', soldRank.length, 0],
         ['footer hrefs that do not resolve 200 without a hop', dead.length, 0],
       ],
-      examples: [...unread, ...chrome, ...hubs, ...map, ...twice, ...redirects, ...headings, ...forms, ...dead],
+      examples: [...unread, ...chrome, ...hubs, ...map, ...twice, ...redirects, ...headings, ...forms, ...soldRank, ...dead],
     };
   },
 };

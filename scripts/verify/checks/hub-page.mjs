@@ -1,21 +1,27 @@
-// THE HUB PAGE GATE: every figure declares its source, format and tolerance; every link
-// resolves; the ladder is every published street and each row says what the street's own page
-// says; the JSON-LD is present and mirrors the ladder.
+// THE HUB PAGE GATE: every figure declares its source, format and tolerance; no VOW-derived
+// figure renders; every link resolves; the ladder is every published street, ordered by homes
+// for sale today; the JSON-LD is present and mirrors the ladder.
 //
-// hub-meta.mjs asserts the hub's OWN typical across meta, glance and JSON-LD, and hub-intents.mjs
-// resolves the four intent squares. This check covers everything else the rebuilt hub renders,
-// and it encodes the rules the 2026-09-10 rulings on report 065 set:
+// hub-meta.mjs asserts the head, the glance and the JSON-LD carry no VOW figure, and
+// hub-intents.mjs resolves the four intent squares. This check covers everything else the
+// rebuilt hub renders, and it encodes the rules the 2026-09-10 rulings on report 065 set, as
+// MC-046 Stage 1 amended them:
 //
 //   1. NOTHING STATIC. Every `data-fig` on the page outside the site nav has a row in FIG_SPECS
 //      naming the record it is recomputed from, the pattern it must render in, and how far the
 //      rendering may sit from the record (display granularity, never a fudge). A figure with no
 //      row is a finding: an undeclared figure is an unverified one.
 //
-//   2. THE LADDER IS THE STREET PAGE. Each row's typical and its basis line are compared to the
-//      hero tile the street's own page renders, read during the same crawl. Not "computed the
-//      same way": the same rendered string. Silence must agree too: a row that says "sample too
-//      small to publish" beside a street page that prints a price is a leak on one surface, and
-//      the reverse is a suppression that holds on one of two.
+//   2. THE LADDER CARRIES NO SOLD FIGURE (MC-046 Stage 1, R9). It used to be compared to the
+//      street page's typical and basis. Those left the visitor view with every other value
+//      derived from VOW records, so the ladder now carries one public figure per row, the count
+//      of homes for sale today, and it must be ORDERED by it (most first, ties A to Z). A row
+//      that still prints a price, a basis or a sale count is a finding.
+//
+//   0. NO VOW FIGURE ON THE PAGE (MC-046 Stage 1). The retired figures (hub typical, type share
+//      of sales, the Milton compare block, the ladder's typical and sold count, the siblings'
+//      typicals) must not render at all, the page carries exactly one neutral line, and no
+//      JSON-LD node carries an aggregatePrice.
 //
 //   3. THE LADDER IS COMPLETE. The rows equal the hub's published street set from DB1, as a set,
 //      and the "streets with a page" fact equals that count. A hub that claims 48 and lists 12
@@ -27,18 +33,14 @@
 //
 //   5. JSON-LD IS PRESENT and its ItemList counts what the ladder lists.
 import { get, publishedHubSlugs } from '../lib/http.mjs';
-import { parsePage } from '../lib/parse.mjs';
 
-/** The compact money form the page prints. Re-derived from compactPrice, never imported. */
-const compact = (n) =>
-  n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(/\.?0+$/, '')}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : `${n}`;
-
-const MONEY = /^\$[\d.]+(K|M)$/;
-const parseMoney = (t) => {
-  const m = t.match(/^\$([\d.]+)(K|M)$/);
-  return m ? Number(m[1]) * (m[2] === 'M' ? 1e6 : 1e3) : NaN;
-};
 const parseInt0 = (t) => Number(t.replace(/[,\s]/g, ''));
+
+/** MC-046: figures derived from VOW records that the hub page must no longer render. */
+const RETIRED_FIGS = new Set([
+  'hub-fact-typical', 'hub-fact-stock', 'hub-compare-typical', 'hub-compare-milton',
+  'hub-sibling-typical', 'hub-street-typical', 'hub-street-sold',
+]);
 
 /**
  * THE DECLARATIONS. `source(rec, page)` returns the record value (null = suppressed, so the
@@ -46,17 +48,6 @@ const parseInt0 = (t) => Number(t.replace(/[,\s]/g, ''));
  * `tol` the display granularity. Per-slug figures (`perSlug: true`) are asserted per row.
  */
 const FIG_SPECS = [
-  {
-    fig: 'hub-fact-typical',
-    // Priced hubs print the compact typical; sub-k hubs print the SALE COUNT in the same slot,
-    // which is the suppression state and hub-meta.mjs asserts it. Declared here so the format
-    // is stated: a price, or an integer, never anything else.
-    source: (rec) => (rec.hub.typicalRounded !== null ? rec.hub.typicalRounded : rec.hub.salesCount),
-    expect: (v, rec) => (rec.hub.typicalRounded !== null ? `$${compact(v)}` : String(v)),
-    pattern: /^(\$[\d.]+(K|M)|\d{1,5})$/,
-    parse: (t) => (MONEY.test(t) ? parseMoney(t) : parseInt0(t)),
-    tol: (rec) => (rec.hub.typicalRounded !== null ? 500 : 0),
-  },
   { fig: 'hub-fact-pages', source: (rec) => rec.page.publishedStreets || null, expect: String, pattern: /^\d{1,4}$/, parse: parseInt0, tol: () => 0 },
   { fig: 'hub-fact-video', source: (rec) => rec.page.filmedStreets || null, expect: String, pattern: /^\d{1,4}$/, parse: parseInt0, tol: () => 0 },
   // The school count's source is the schools section ON THE SAME PAGE: the polygon test lives
@@ -64,14 +55,8 @@ const FIG_SPECS = [
   // the list it counts agree, and that every school in the list resolves (the link pass).
   { fig: 'hub-fact-schools', source: (rec, page) => page.schoolRows || null, expect: String, pattern: /^\d{1,3}$/, parse: parseInt0, tol: () => 0 },
   { fig: 'hub-fact-active', source: (rec) => rec.page.activeListings || null, expect: String, pattern: /^\d{1,5}$/, parse: parseInt0, tol: () => 0 },
-  { fig: 'hub-fact-stock', source: (rec) => rec.page.stockShare?.pct ?? null, expect: (v) => `${v}%`, pattern: /^\d{1,3}%$/, parse: (t) => Number(t.replace('%', '')), tol: () => 0 },
-  { fig: 'hub-compare-typical', source: (rec) => rec.hub.typicalRounded, expect: (v) => `$${compact(v)}`, pattern: MONEY, parse: parseMoney, tol: () => 500 },
-  { fig: 'hub-compare-milton', source: (rec) => (rec.hub.typicalRounded !== null ? rec.miltonTypicalRounded : null), expect: (v) => `$${compact(v)}`, pattern: MONEY, parse: parseMoney, tol: () => 500 },
-  // Per-slug: each sibling card's typical is THAT hub's record.
-  { fig: 'hub-sibling-typical', perSlug: true, source: (rec, page, slug) => rec.hubOf(slug)?.typicalRounded ?? null, expect: (v) => `$${compact(v)} typical`, pattern: /^\$[\d.]+(K|M) typical$/, parse: (t) => parseMoney(t.replace(' typical', '')), tol: () => 500, silentText: 'price not published' },
-  // Per-slug: the ladder's figures are asserted against the STREET PAGE, in the ladder pass.
-  { fig: 'hub-street-typical', perSlug: true, ladder: true },
-  { fig: 'hub-street-sold', perSlug: true, ladder: true },
+  // Per-slug: the ladder's active count. Its order is asserted in the ladder pass; its format here.
+  { fig: 'hub-street-active', perSlug: true, ladder: true },
 ];
 
 /** Every `data-fig` figure on the page: { fig, slug, rawValue, text }. Read to the element's own
@@ -105,22 +90,23 @@ function withoutSiteNav(html) {
 
 const strip = (s) => s.replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 
-/** The ladder rows: slug, printed price text, printed basis, sold count. */
+/** The ladder rows: slug, name, the active count it prints, and any retired sold markup. */
 function ladderRows(html) {
   const ol = html.match(/<ol class="hh-ladder">([\s\S]*?)<\/ol>/);
   if (!ol) return [];
   const rows = [];
   for (const li of ol[1].split('<li>').slice(1)) {
     const slug = li.match(/href="\/streets\/([^"]+)"/);
-    const price = li.match(/<span class="hh-ladprice"[^>]*>([\s\S]*?)<\/span>\s*<span class="hh-ladbasis">/);
-    const basis = li.match(/<span class="hh-ladbasis">([\s\S]*?)<\/span>/);
-    const sold = li.match(/data-fig="hub-street-sold"[^>]*data-value="(\d+)"/);
     if (!slug) continue;
+    const name = li.match(/<span class="hh-ladname">([\s\S]*?)(?:<span class="hh-ladfilm"|<\/span>)/);
+    const active = li.match(/data-fig="hub-street-active"[^>]*data-value="(\d+)"/);
+    const activeText = li.match(/data-fig="hub-street-active"[^>]*>([\s\S]*?)<\/span>\s*<\/a>/);
     rows.push({
       slug: slug[1],
-      price: price ? strip(price[1]) : '',
-      basis: basis ? strip(basis[1]) : '',
-      sold: sold ? Number(sold[1]) : null,
+      name: name ? strip(name[1]).replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, '&') : '',
+      active: active ? Number(active[1]) : null,
+      activeText: activeText ? strip(activeText[1]) : '',
+      retired: /hh-ladprice|hh-ladbasis|hub-street-typical|hub-street-sold/.test(li),
     });
   }
   return rows;
@@ -150,20 +136,12 @@ function ldNodes(html) {
 
 export default {
   id: 'hub-page',
-  title: 'Every hub figure declares its source, every link resolves, the ladder is every street',
+  title: 'Every hub figure declares its source, no VOW figure renders, every link resolves, the ladder is every street',
   needsHubRecord: true,
 
-  /** Per street page in the crawl: the hero typical as rendered, and the meta's sale count. */
-  perPage(slug, html) {
-    const p = parsePage(html);
-    const t = p.hero['Typical price'] ?? null;
-    const dm = html.match(/<meta name="description" content="([^"]*)"/);
-    const sales = dm ? dm[1].match(/(\d+) sales? in the last 12 months/) : null;
-    return {
-      slug,
-      typical: t ? { silent: t.silent, v: t.v, basis: t.basis } : null,
-      metaSales: sales ? Number(sales[1]) : null,
-    };
+  /** Per street page in the crawl: only that it was read (the ladder's links resolve through it). */
+  perPage(slug) {
+    return { slug };
   },
 
   async finish(rows, { base, hubRecord, crawled, mode }) {
@@ -191,20 +169,31 @@ export default {
         ids: idsIn(r.body),
         schoolRows: (body.match(/<ul class="hh-schoollist">([\s\S]*?)<\/ul>/)?.[1].match(/<li\b/g) ?? []).length,
         ld: ldNodes(r.body),
-        hub: hubRecord.hub(slug),
+        // The hub's own neutral line (class hh-soldline, in the glance). The site menu and the
+        // footer may carry their own, which are theirs to count.
+        soldLines: (body.match(/<p\b[^>]*\bhh-soldline\b[^>]*data-sold-history-line/g) ?? []).length,
         page: hubRecord.hubPage(slug),
       });
     }
-    const ok = hubs.filter((h) => h.status === 200 && h.hub && h.page);
+    const ok = hubs.filter((h) => h.status === 200 && h.page);
+
+    // ── 0. no VOW figure, one neutral line, no aggregatePrice (MC-046) ────────────────────
+    const vowFigs = [], soldLineOff = [], aggregatePrice = [];
+    for (const h of ok) {
+      for (const f of h.figs) if (RETIRED_FIGS.has(f.fig)) vowFigs.push(`${h.slug}: data-fig="${f.fig}" still renders "${f.text}"`);
+      if (h.soldLines !== 1) soldLineOff.push(`${h.slug}: ${h.soldLines} neutral lines, expected exactly 1`);
+      if (h.ld.nodes.some((n) => n && Object.prototype.hasOwnProperty.call(n, 'aggregatePrice'))) aggregatePrice.push(`${h.slug}: a JSON-LD node carries aggregatePrice`);
+    }
 
     // ── 1. every figure declared, by value and by format ─────────────────────────────────
     const undeclared = [], absent = [], malformed = [], offSource = [], leaked = [];
     for (const h of ok) {
-      const rec = { hub: h.hub, page: h.page, miltonTypicalRounded: hubRecord.miltonTypicalRounded, hubOf: (s) => hubRecord.hub(s) };
+      const rec = { page: h.page };
       for (const f of h.figs) {
+        if (RETIRED_FIGS.has(f.fig)) continue; // reported in pass 0
         const spec = FIG_SPECS.find((s) => s.fig === f.fig);
         if (!spec) { undeclared.push(`${h.slug}: data-fig="${f.fig}" has no declared source/format/tolerance`); continue; }
-        if (spec.ladder) continue; // asserted against the street page below
+        if (spec.ladder) continue; // asserted in the ladder pass below
         const source = spec.source(rec, h, f.slug);
         const label = `${h.slug}${f.slug ? ` ${f.fig}[${f.slug}]` : ` ${f.fig}`}`;
         if (source === null || source === undefined) {
@@ -236,28 +225,27 @@ export default {
       }
     }
 
-    // ── 2 + 3. the ladder: complete, and the street page's own figures ────────────────────
-    const ladderCountOff = [], ladderSetOff = [], ladderNot200 = [], typicalOff = [], basisOff = [], silenceSplit = [], soldOff = [];
+    // ── 2 + 3. the ladder: complete, no sold figure, ordered by homes for sale today ──────
+    const ladderCountOff = [], ladderSetOff = [], ladderNot200 = [], ladderRetired = [], ladderActiveOff = [], ladderOrderOff = [];
     for (const h of ok) {
       const want = h.page.publishedStreetSlugs;
       const got = new Set(h.ladder.map((r) => r.slug));
       if (h.ladder.length !== h.page.publishedStreets) ladderCountOff.push(`${h.slug}: ladder lists ${h.ladder.length} vs ${h.page.publishedStreets} published streets`);
       const missing = [...want].filter((s) => !got.has(s)), extra = [...got].filter((s) => !want.has(s));
       if (missing.length || extra.length) ladderSetOff.push(`${h.slug}: missing ${missing.slice(0, 3).join(', ') || 'none'}; extra ${extra.slice(0, 3).join(', ') || 'none'}`);
-      for (const r of h.ladder) {
-        const sp = streetPage.get(r.slug);
-        if (!sp && mode === 'sample' && !crawledSet.has(r.slug)) { ladderOutsideSample++; continue; }
-        if (!sp) { ladderNot200.push(`${h.slug}: /streets/${r.slug} was not a 200 in the crawl`); continue; }
-        const t = sp.typical;
-        if (!t) { typicalOff.push(`${h.slug} ${r.slug}: street page has no Typical price tile`); continue; }
-        const rowSilent = /sample too small/.test(r.price);
-        if (rowSilent !== t.silent) { silenceSplit.push(`${h.slug} ${r.slug}: ladder ${rowSilent ? 'silent' : `"${r.price}"`} vs street page ${t.silent ? 'silent' : `"${t.v}"`}`); continue; }
-        if (!rowSilent) {
-          if (r.price.replace(/\s/g, '') !== t.v) typicalOff.push(`${h.slug} ${r.slug}: ladder "${r.price}" vs street page "${t.v}"`);
-          if (t.basis && r.basis !== t.basis) basisOff.push(`${h.slug} ${r.slug}: ladder basis "${r.basis}" vs street page "${t.basis}"`);
+      h.ladder.forEach((r, i) => {
+        if (r.retired) ladderRetired.push(`${h.slug} ${r.slug}: the row still carries a price, basis or sale count`);
+        const wantText = r.active === null ? null : r.active > 0 ? `${r.active} for sale` : 'none for sale';
+        if (r.active === null || r.activeText !== wantText) ladderActiveOff.push(`${h.slug} ${r.slug}: active count "${r.activeText}" (data-value ${r.active})`);
+        const prev = h.ladder[i - 1];
+        if (prev && prev.active !== null && r.active !== null) {
+          const inOrder = prev.active > r.active || (prev.active === r.active && prev.name.localeCompare(r.name) <= 0);
+          if (!inOrder) ladderOrderOff.push(`${h.slug}: "${prev.name}" (${prev.active}) before "${r.name}" (${r.active})`);
         }
-        if (sp.metaSales !== null && r.sold !== null && r.sold !== sp.metaSales) soldOff.push(`${h.slug} ${r.slug}: ladder ${r.sold} sales vs street page meta ${sp.metaSales}`);
-      }
+        const sp = streetPage.get(r.slug);
+        if (!sp && mode === 'sample' && !crawledSet.has(r.slug)) { ladderOutsideSample++; return; }
+        if (!sp) ladderNot200.push(`${h.slug}: /streets/${r.slug} was not a 200 in the crawl`);
+      });
     }
 
     // ── 4. every link resolves ───────────────────────────────────────────────────────────
@@ -312,10 +300,12 @@ export default {
         ['ladder rows matched to a crawled street page', ok.reduce((n, h) => n + h.ladder.filter((r) => streetPage.has(r.slug)).length, 0)],
         ['unique link targets', targets.size],
         ['targets fetched here (the rest came from the street crawl)', fetched],
-        ['sub-k hubs', ok.filter((h) => h.hub.typicalRounded === null).map((h) => h.slug).join(', ') || 'none'],
       ],
       assertions: [
         ['hub pages read == published hub count', ok.length, slugs.length],
+        ['retired VOW figures still rendered (MC-046)', vowFigs.length, 0],
+        ['hubs without exactly one neutral line', soldLineOff.length, 0],
+        ['hubs whose JSON-LD carries aggregatePrice', aggregatePrice.length, 0],
         ['figures with no declared source/format/tolerance', undeclared.length, 0],
         ['figures absent while their source is present', absent.length, 0],
         ['figures rendered while their source is suppressed', leaked.length, 0],
@@ -324,10 +314,9 @@ export default {
         ['hubs whose ladder count != published street count', ladderCountOff.length, 0],
         ['hubs whose ladder set != published street set', ladderSetOff.length, 0],
         ['ladder rows pointing at a street that was not 200', ladderNot200.length, 0],
-        ['ladder typical != the street page’s typical', typicalOff.length, 0],
-        ['ladder basis != the street page’s basis', basisOff.length, 0],
-        ['ladder silent on one surface only', silenceSplit.length, 0],
-        ['ladder sold count != the street page’s 12-month sales', soldOff.length, 0],
+        ['ladder rows still carrying a price, basis or sale count', ladderRetired.length, 0],
+        ['ladder rows whose active count is missing or misprinted', ladderActiveOff.length, 0],
+        ['ladder rows out of order (active count, then A to Z)', ladderOrderOff.length, 0],
         ['links whose route does not return 200', deadRoute.length, 0],
         ['links whose fragment matches no id', deadFragment.length, 0],
         ['hubs with no JSON-LD', noLd.length, 0],
@@ -335,8 +324,9 @@ export default {
         ['hubs whose JSON-LD ItemList != the ladder', ldListOff.length, 0],
       ],
       examples: [
+        ...vowFigs.slice(0, 6), ...soldLineOff, ...aggregatePrice,
         ...undeclared, ...absent, ...leaked, ...malformed, ...offSource,
-        ...ladderCountOff, ...ladderSetOff, ...ladderNot200, ...typicalOff.slice(0, 6), ...basisOff.slice(0, 6), ...silenceSplit.slice(0, 6), ...soldOff.slice(0, 6),
+        ...ladderCountOff, ...ladderSetOff, ...ladderNot200, ...ladderRetired.slice(0, 6), ...ladderActiveOff.slice(0, 6), ...ladderOrderOff.slice(0, 6),
         ...deadRoute, ...deadFragment, ...noLd.map((s) => `${s}: no JSON-LD`), ...ldBroken, ...ldListOff,
       ],
     };
