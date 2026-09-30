@@ -411,12 +411,11 @@ async function main() {
   ok(/recipient unsubscribed from the digest/.test(digestRoute), "leads digest: a disabled digest watch stops the send");
 
   const cron = JSON.parse(readFileSync("vercel.json", "utf-8")) as { crons: Array<{ path: string; schedule: string }> };
+  // MC-046 R17: the brief is PAUSED. It emailed sold figures to signups who never registered for
+  // the VOW (PropTx Best Practices item 40, section 6.2(a)). Its cron returns only after Leads
+  // rebuilds the edition without a VOW-derived figure; until then this guard fails its return.
   const briefCron = cron.crons.find((c) => c.path.startsWith("/api/brief/send"));
-  ok(Boolean(briefCron), "brief: the sender has a cron entry — the alert job had none for months");
-  ok(briefCron?.schedule.endsWith("1-5") ?? false, "brief: the cron runs Monday to Friday");
-  // It has to run after the sold sync and the stats compute, or "yesterday" is half-filled.
-  const soldSync = cron.crons.find((c) => c.path === "/api/sync/sold");
-  ok(Boolean(soldSync), "brief: the sold sync it depends on still exists");
+  ok(!briefCron, "brief: PAUSED (MC-046 R17), no cron entry until the edition carries no VOW figure");
 
   // ── the ref path (ML-014) ─────────────────────────────────────────────────────
   // /book sends the page it was reached from as `ref`, and the ingest stores it as landingPage
