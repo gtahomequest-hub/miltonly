@@ -24,9 +24,8 @@ export async function POST(request: NextRequest) {
   const skipped: string[] = [];
   const failed: string[] = [];
 
+  // MC-046 (from MC-047): the key's first ten characters are no longer logged.
   const hasApiKey = !!process.env.ANTHROPIC_API_KEY;
-  const keyPrefix = process.env.ANTHROPIC_API_KEY?.slice(0, 10) || "NOT_SET";
-  console.log(`[generate] ANTHROPIC_API_KEY defined: ${hasApiKey}, prefix: ${keyPrefix}`);
 
   if (!hasApiKey) {
     return NextResponse.json({
