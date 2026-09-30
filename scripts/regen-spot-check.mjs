@@ -81,7 +81,7 @@ async function main() {
       });
     }
     console.log(`[queue] Done. Now run:`);
-    console.log(`  curl -X POST "https://miltonly.com/api/sync/generate?secret=miltonly-cron-2026"`);
+    console.log(`  curl -X POST -H "Authorization: Bearer $CRON_SECRET" "https://miltonly.com/api/sync/generate"`);
     console.log(`  # wait ~30-60s, then:`);
     console.log(`  node scripts/regen-spot-check.mjs --verify`);
   } else {

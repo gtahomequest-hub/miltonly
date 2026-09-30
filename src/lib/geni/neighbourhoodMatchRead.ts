@@ -3,7 +3,7 @@
 // neighbourhoodMatchStats.ts (which imports buildHubInput -> street-data -> server-only) so the
 // matcher (Phase 2) and later phases can import the reader without dragging the server-only
 // compute chain. Imports ONLY @/lib/db.
-import { getAnalyticsDb } from "@/lib/db";
+import { analyticsDb, scopedVowAccess } from "@/lib/vow/door";
 
 export interface NeighbourhoodMatchRow {
   neighbourhood_slug: string;
@@ -24,7 +24,7 @@ export interface NeighbourhoodMatchRow {
 
 /** Thin reader — plain SELECT *; numeric NUMERIC columns arrive as strings from neon. */
 export async function getNeighbourhoodMatchStats(): Promise<NeighbourhoodMatchRow[]> {
-  const a = getAnalyticsDb();
+  const a = analyticsDb(scopedVowAccess());
   if (!a) return [];
   try {
     return (await a`SELECT * FROM analytics.neighbourhood_match_stats ORDER BY neighbourhood_slug`) as NeighbourhoodMatchRow[];

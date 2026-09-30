@@ -16,12 +16,12 @@
 //      returned. See the WINDOW note below.
 
 import { NextRequest, NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
 import { getSession, touchSession } from "@/lib/auth";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { analyticsDb, vowReaderAccess } from "@/lib/vow/door";
 import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { K_ANON_PRICE } from "@/lib/kAnon";
 import { MILTON_STREET_REGISTRY } from "@/data/miltonStreetRegistry";
@@ -29,8 +29,9 @@ import { titleCaseOfficial } from "@/lib/streetName";
 
 export const dynamic = 'force-dynamic';
 
-const url = process.env.ANALYTICS_DATABASE_URL;
-const aSql = url ? neon(url) : null;
+// MC-046: a reader's VOW answer is never stored by a shared cache.
+const PRIVATE = { "Cache-Control": "private, no-store" };
+
 
 // `analytics.street_sold_stats` is computed nightly with `perm_advertise = TRUE`
 // upstream (see src/lib/sold-stats.ts).
@@ -76,6 +77,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // MC-046: DB3 opens only through the door, against the reader's access (the same rule).
+    const access = vowReaderAccess(user);
+    const aSql = access ? analyticsDb(access) : null;
     if (!aSql) {
       return NextResponse.json({ error: "Analytics DB not configured" }, { status: 500 });
     }
@@ -155,7 +159,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!rows?.[0]) {
-      return NextResponse.json({ found: false, name });
+      return NextResponse.json({ found: false, name }, { headers: PRIVATE });
     }
 
     const r = rows[0];
@@ -172,7 +176,7 @@ export async function GET(req: NextRequest) {
     // inherits d90 too. count90 is therefore the correct n for every figure
     // released below, and K_ANON_PRICE is the correct floor for it.
     if (count90 < K_ANON_PRICE) {
-      return NextResponse.json({ found: true, sparse: true, name, slug: r.street_slug, count90, count12 });
+      return NextResponse.json({ found: true, sparse: true, name, slug: r.street_slug, count90, count12 }, { headers: PRIVATE });
     }
 
     // The audit trail (MP-006): the gated street figures were served.
@@ -208,7 +212,7 @@ export async function GET(req: NextRequest) {
       soldToAskPct: r.avg_sold_to_ask !== null ? Math.round(Number(r.avg_sold_to_ask) * 1000) / 10 : null,
       temperature: r.market_temperature,
       lastUpdated: r.last_updated,
-    });
+    }, { headers: PRIVATE });
   } catch (err) {
     console.error("[sold-stats] error", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

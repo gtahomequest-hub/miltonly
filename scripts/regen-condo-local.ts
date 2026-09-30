@@ -34,6 +34,12 @@
 //                   so a half that exhausts its budget fails closed. Leave it unset: the account
 //                   has no credit (HANDOFF open item 1).
 import { readFileSync, appendFileSync } from "node:fs";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 function loadEnvLocal(): void {
   // a CRLF .env.local ends every line in \r, which "." does not match before "$" (MC-037)

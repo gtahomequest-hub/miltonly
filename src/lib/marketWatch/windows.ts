@@ -25,7 +25,7 @@
 
 import "server-only";
 import { DateTime } from "luxon";
-import { getSoldDb } from "@/lib/db";
+import { soldDb, scopedVowAccess } from "@/lib/vow/door";
 import { config } from "@/lib/config";
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 
@@ -121,7 +121,7 @@ export interface WeeklySales {
 }
 
 export async function getWeeklySales(w: WeekWindow): Promise<WeeklySales> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   const empty: WeeklySales = {
     count: 0, typicalPrice: null, bandLow: null, bandHigh: null, avgDom: null, soldToAskPct: null,
   };
@@ -213,7 +213,7 @@ export function trailingWindow(w: WeekWindow, days = 28): TrailingWindow {
 }
 
 export async function getByForm(t: TrailingWindow): Promise<FormRow[]> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return [];
   const rows = (await db`
     SELECT property_type,
@@ -261,7 +261,7 @@ export interface NeighbourhoodWeekRow {
 }
 
 export async function getNeighbourhoodCounts(w: WeekWindow): Promise<NeighbourhoodWeekRow[]> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return [];
   const rows = (await db`
     SELECT neighbourhood, COUNT(*)::int AS n
@@ -293,7 +293,7 @@ export interface StreetWeekRow {
 }
 
 export async function getStreetCounts(w: WeekWindow): Promise<StreetWeekRow[]> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return [];
   const rows = (await db`
     SELECT street_slug, COUNT(*)::int AS n

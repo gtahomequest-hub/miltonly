@@ -26,7 +26,7 @@ loadEnvLocal();
 
 (async () => {
   const { prisma } = await import("@/lib/prisma");
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("./lib/vow-db");
   const { MILTON_STREET_REGISTRY } = await import("@/data/miltonStreetRegistry");
   const { OFF_REGISTRY_SET } = await import("@/data/offRegistryStreets");
   const { resolveStreetName } = await import("@/lib/streetName");

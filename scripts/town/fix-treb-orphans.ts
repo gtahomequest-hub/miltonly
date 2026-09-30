@@ -38,7 +38,7 @@ const lp = (s: unknown, n: number) => String(s).padStart(n);
 
 async function main() {
   const { prisma } = await import("@/lib/prisma");
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("../lib/vow-db");
   const sold = getSoldDb();
   if (!sold) throw new Error("SOLD_DATABASE_URL is not configured");
   const L = (s = "") => console.log(s);

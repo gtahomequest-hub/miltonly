@@ -28,7 +28,7 @@
 import type { Listing } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/config";
-import { getAnalyticsDb, getSoldDb } from "@/lib/db";
+import { soldDb, analyticsDb, scopedVowAccess, type Sql } from "@/lib/vow/door";
 import {
   expandStreetName,
   monthlyToQuarterly,
@@ -66,6 +66,7 @@ import type { StreetGeneratorInput } from "@/types/street-generator";
 
 // K-anonymity thresholds. Parallel to the same constants in street-data.ts.
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
+import { vowSiblingCandidates } from "@/lib/vow/siblingCandidates";
 
 // ---------------------------------------------------------------------------
 // Raw DB row shapes (kept local; not re-exported to avoid cross-module coupling)
@@ -132,7 +133,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   // filter by `street_slug IN (siblingSlugs)` so the generator sees
   // per-identity data rather than per-slug data fragmented across
   // abbreviation/direction variants.
-  const siblingSlugs = await resolveSiblingSlugs(slug);
+  const siblingSlugs = await resolveSiblingSlugs(slug, vowSiblingCandidates);
 
   // Parallel fetch — all per-identity queries go in one round-trip batch.
   const [
@@ -285,7 +286,7 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
   const registeredDirs = identity
     ? registeredDirectionsFor(identity.base, identity.suffixCanonical)
     : null;
-  const __sd = getSoldDb();
+  const __sd = soldDb(scopedVowAccess());
   const perSlugStatsRaw = registeredDirs && __sd
     ? await (__sd`
         SELECT street_slug,
@@ -558,15 +559,15 @@ export async function buildGeneratorInput(slug: string): Promise<StreetGenerator
 // DB query helpers — wrap Neon's typing quirks + handle errors uniformly.
 // ---------------------------------------------------------------------------
 
-type SqlClient = NonNullable<ReturnType<typeof getAnalyticsDb>>;
+type SqlClient = Sql;
 
 function queryAnalytics<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
-  const ad = getAnalyticsDb();
+  const ad = analyticsDb(scopedVowAccess());
   if (!ad) return Promise.resolve([] as T[]);
   return (build(ad) as Promise<T[]>).catch(() => [] as T[]);
 }
 function querySold<T>(build: (db: SqlClient) => unknown): Promise<T[]> {
-  const sd = getSoldDb();
+  const sd = soldDb(scopedVowAccess());
   if (!sd) return Promise.resolve([] as T[]);
   return (build(sd) as Promise<T[]>).catch(() => [] as T[]);
 }

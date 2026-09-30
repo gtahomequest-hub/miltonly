@@ -44,7 +44,7 @@ interface RoadFeature { attributes: Record<string, unknown>; geometry?: { paths?
 
 async function main() {
   const { prisma } = await import("@/lib/prisma");
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("../lib/vow-db");
   const { TOWN_NEIGHBOURHOODS, TOWN_NEIGHBOURHOODS_PULLED } = await import("@/data/townNeighbourhoods");
   const { TOWN_POLYGON_TO_NEIGHBOURHOOD } = await import("@/data/townNeighbourhoodMap");
   const { TOWN_ROAD_FACTS } = await import("@/data/townRoadFacts");

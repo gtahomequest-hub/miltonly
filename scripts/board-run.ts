@@ -18,12 +18,18 @@ for (const line of readFileSync(resolve(__d, "..", ".env.local"), "utf8").split(
 }
 
 import { computeAndWriteBoard } from "@/lib/board/computeBoard";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 const money = (n: number | null) => (n === null ? "—" : "$" + Math.round(n).toLocaleString("en-CA"));
 const pct = (n: number | null) => (n === null ? "—" : (n >= 0 ? "+" : "") + (n * 100).toFixed(1) + "%");
 
 async function main() {
-  const tabs = await computeAndWriteBoard();
+  const tabs = await computeAndWriteBoard(enterVowScriptScope());
   console.log("\n=== analytics.board_stats — populated rows ===\n");
   for (const t of tabs) {
     console.log(`── ${t.label} (data through ${t.dataThrough}) ─────────────────────────`);

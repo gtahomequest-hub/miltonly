@@ -31,7 +31,7 @@ loadEnv(".env.local");
 loadEnv(".env");
 
 import { prisma } from "@/lib/prisma";
-import { getSoldDb } from "@/lib/db";
+import { getSoldDb } from "./lib/vow-db";
 import { resolveSiblingSlugs } from "@/lib/street-data";
 import { buildStreetMetaTitle, buildStreetMetaDescription } from "@/lib/streetMeta";
 

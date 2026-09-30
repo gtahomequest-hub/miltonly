@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isPublicListing } from "@/lib/listings/vow";
 import { redactAddress } from "@/lib/listings/display-gate";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { vowReaderAccess } from "@/lib/vow/door";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,8 @@ export async function GET(request: NextRequest) {
   // enforceVowThrottle. A 429 would break the dashboard's own list, so it stays 200.
   const canSeeVow = canSeeVowRecords(user);
   const throttle = canSeeVow ? await enforceVowThrottle({ userId: user.id, ip: clientIpFromHeaders(request.headers) }) : { ok: true as const };
-  const canSeeStatus = canSeeVow && throttle.ok;
+  // MC-046: the feed status is served against the reader's access from the door.
+  const canSeeStatus = canSeeVow && throttle.ok && vowReaderAccess(user) !== null;
   const listings = rows.map(({ leaseStatus, transactionType, permAdvertise, ...l }) => ({
     ...redactAddress(l),
     status: canSeeStatus

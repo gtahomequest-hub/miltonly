@@ -1,7 +1,7 @@
 # Bulk force-regenerate streets via /api/admin/force-regenerate
 # Pattern matches what just worked manually:
 # - POST with body { slug: "..." }
-# - Auth via ?secret= query param (avoids 307 redirect header strip)
+# - Auth via the Authorization: Bearer header only (MC-046 R16); target the apex, not www
 # - 2-second delay between calls
 # - Continue on failure, log everything
 
@@ -31,14 +31,14 @@ Write-Host ""
 for ($i = 0; $i -lt $total; $i++) {
   $slug = $slugs[$i]
   $idx = $i + 1
-  $url = "$baseUrl/api/admin/force-regenerate?secret=$secret"
+  $url = "$baseUrl/api/admin/force-regenerate"
   $body = @{ slug = $slug } | ConvertTo-Json
   $t0 = Get-Date
   
   Write-Host "[$idx/$total] $slug ... " -NoNewline
   
   try {
-    $response = Invoke-WebRequest -Uri $url -Method POST -Body $body -ContentType "application/json" -UseBasicParsing -TimeoutSec 300
+    $response = Invoke-WebRequest -Uri $url -Method POST -Headers @{ Authorization = "Bearer $secret" } -Body $body -ContentType "application/json" -UseBasicParsing -TimeoutSec 300
     $ms = [int]((Get-Date) - $t0).TotalMilliseconds
     $json = $response.Content | ConvertFrom-Json
     if ($json.ok) {

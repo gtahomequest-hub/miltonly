@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { requireVowAccess, vowReaderAccess } from "@/lib/vow/door";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { enforceVowThrottle } from "@/lib/vow/throttle";
 
@@ -55,6 +56,8 @@ export async function GET(req: NextRequest, { params }: { params: { mlsNumber: s
     );
   }
 
+  // MC-046: the VOW-only columns are read against the reader's access from the door.
+  requireVowAccess(vowReaderAccess(user));
   const l = await prisma.listing.findUnique({
     where: { mlsNumber: params.mlsNumber },
     select: {

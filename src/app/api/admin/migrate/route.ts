@@ -14,8 +14,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, readdir } from "fs/promises";
 import path from "path";
-import { getSoldDb, getAnalyticsDb } from "@/lib/db";
-import type { NeonQueryFunction } from "@neondatabase/serverless";
+import { soldDb, analyticsDb, vowSystemAccess } from "@/lib/vow/door";
+import type { Sql } from "@/lib/vow/door";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -31,10 +31,9 @@ interface SchemaResult {
   error?: string;
 }
 
-function authorize(req: NextRequest): boolean {
-  const header = req.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
-  return !!header && !!process.env.CRON_SECRET && header === expected;
+// MC-046 R16: DDL on the VOW schemas goes through the door, by the Authorization header only.
+function authorize(req: NextRequest) {
+  return vowSystemAccess(req);
 }
 
 /**
@@ -95,7 +94,7 @@ function splitStatements(sql: string): string[] {
 }
 
 async function ensureMigrationsTable(
-  sql: NeonQueryFunction<false, false>,
+  sql: Sql,
   schema: SchemaName
 ): Promise<void> {
   await sql.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`, []);
@@ -109,7 +108,7 @@ async function ensureMigrationsTable(
 }
 
 async function getAppliedFilenames(
-  sql: NeonQueryFunction<false, false>,
+  sql: Sql,
   schema: SchemaName
 ): Promise<Set<string>> {
   const rows = (await sql.query(
@@ -120,7 +119,7 @@ async function getAppliedFilenames(
 }
 
 async function runMigrationsForSchema(
-  sql: NeonQueryFunction<false, false>,
+  sql: Sql,
   schema: SchemaName
 ): Promise<SchemaResult> {
   const result: SchemaResult = { schema, applied: [], skipped: [] };
@@ -165,7 +164,8 @@ async function runMigrationsForSchema(
 }
 
 export async function POST(req: NextRequest) {
-  if (!authorize(req)) {
+  const access = authorize(req);
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -175,13 +175,13 @@ export async function POST(req: NextRequest) {
     requested === "analytics" ? ["analytics"] :
     ["sold", "analytics"];
 
-  const sd = getSoldDb();
-  const ad = getAnalyticsDb();
+  const sd = soldDb(access);
+  const ad = analyticsDb(access);
   if (!sd && targets.includes("sold")) {
-    return NextResponse.json({ error: "SOLD_DATABASE_URL is not configured" }, { status: 500 });
+    return NextResponse.json({ error: "DB2 (sold) is not configured" }, { status: 500 });
   }
   if (!ad && targets.includes("analytics")) {
-    return NextResponse.json({ error: "ANALYTICS_DATABASE_URL is not configured" }, { status: 500 });
+    return NextResponse.json({ error: "DB3 (analytics) is not configured" }, { status: 500 });
   }
 
   // Neon HTTP is stateless per request, so pg_advisory_lock wouldn't persist

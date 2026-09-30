@@ -20,7 +20,7 @@
 // are simple tab-scope aggregates over their own stated windows. NO $/sqft.
 // Public aggregates only — never an individual record.
 
-import { requireSoldDb, requireAnalyticsDb } from "@/lib/db";
+import { requireSoldDb, requireAnalyticsDb, type VowAccess } from "@/lib/vow/door";
 import { prisma } from "@/lib/prisma";
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
 
@@ -94,8 +94,8 @@ const avg = (xs: number[]): number | null =>
 const inWin = (sales: Sale[], loT: number, hiT: number) => sales.filter((s) => s.t > loT && s.t <= hiT);
 
 // ── loaders ──────────────────────────────────────────────────────────────────
-export async function loadBoardInputs(): Promise<{ sales: Sale[]; active: Record<Ptype, number>; nowMs: number }> {
-  const sold = requireSoldDb();
+export async function loadBoardInputs(access: VowAccess): Promise<{ sales: Sale[]; active: Record<Ptype, number>; nowMs: number }> {
+  const sold = requireSoldDb(access);
   // raw string -> {slug, kind}
   const nbs = await prisma.neighbourhood.findMany({ select: { slug: true, kind: true, rawStrings: true } });
   const rawToSlug = new Map<string, { slug: string; kind: string }>();
@@ -276,8 +276,8 @@ export function computeBoardFromSales(sales: Sale[], active: Record<Ptype, numbe
 }
 
 // ── DB3 write ─────────────────────────────────────────────────────────────────
-export async function writeBoardStats(tabs: BoardTab[]): Promise<void> {
-  const a = requireAnalyticsDb();
+export async function writeBoardStats(access: VowAccess, tabs: BoardTab[]): Promise<void> {
+  const a = requireAnalyticsDb(access);
   await a`CREATE TABLE IF NOT EXISTS analytics.board_stats (
     tab text PRIMARY KEY,
     data jsonb NOT NULL,
@@ -290,9 +290,9 @@ export async function writeBoardStats(tabs: BoardTab[]): Promise<void> {
   }
 }
 
-export async function computeAndWriteBoard(): Promise<BoardTab[]> {
-  const { sales, active, nowMs } = await loadBoardInputs();
+export async function computeAndWriteBoard(access: VowAccess): Promise<BoardTab[]> {
+  const { sales, active, nowMs } = await loadBoardInputs(access);
   const tabs = computeBoardFromSales(sales, active, nowMs);
-  await writeBoardStats(tabs);
+  await writeBoardStats(access, tabs);
   return tabs;
 }

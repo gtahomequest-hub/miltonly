@@ -161,17 +161,12 @@ function sleep(ms) {
 // route.ts:39). Do NOT rename this key to streetSlug — the endpoint will
 // return 400 "Missing required field: slug (string)".
 //
-// Auth: both ?secret= query param AND Authorization: Bearer header are
-// included. The endpoint accepts either. Query param is the primary auth
-// because fetch strips Authorization on cross-origin redirects (observed
-// on the old miltonly.com → www 307; now www → apex 308), and ?secret= survives any
-// redirect since it's part of the URL itself. The Bearer header is
-// retained as a secondary so an overridden MILTONLY_URL that lands on a
-// canonical origin without a redirect still authenticates cleanly.
+// Auth: the Authorization: Bearer header only. The endpoint reads VOW data and opens the
+// door by the header alone since MC-046 R16; ?secret= is refused. fetch strips Authorization
+// on a cross-origin redirect, so point MILTONLY_URL at the apex (https://miltonly.com), not www.
 async function regenerateOne(baseUrl, slug) {
   const url =
-    `${baseUrl.replace(/\/$/, "")}/api/admin/force-regenerate` +
-    `?secret=${encodeURIComponent(CRON_SECRET)}`;
+    `${baseUrl.replace(/\/$/, "")}/api/admin/force-regenerate`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 

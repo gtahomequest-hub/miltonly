@@ -64,6 +64,7 @@ import { buildEdition } from "@/lib/marketWatch/edition";
 import { generateEdition } from "@/lib/marketWatch/generate";
 import { lastCompleteWeek, weekFromMonday } from "@/lib/marketWatch/windows";
 import { K_ANON_PRICE, K_ANON_RANGE } from "@/lib/kAnon";
+import { vowSystemAccess, withVowAccess } from "@/lib/vow/door";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -72,11 +73,10 @@ export const maxDuration = 300;
 const ZONE = "America/Toronto";
 const TARGET_HOUR = 8;
 
+// MC-046 R16: the edition is computed from DB2, so the route opens the VOW door by the
+// Authorization header only; a `?secret=` query parameter is refused.
 function authorised(request: NextRequest): boolean {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  return Boolean(process.env.CRON_SECRET) && secret === process.env.CRON_SECRET;
+  return vowSystemAccess(request) !== null;
 }
 
 /** Absent VERCEL_ENV means a local run, which may write. "preview" and
@@ -264,8 +264,10 @@ async function handle(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  return handle(request);
+  return POST(request);
 }
 export async function POST(request: NextRequest) {
-  return handle(request);
+  const access = vowSystemAccess(request);
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return withVowAccess(access, () => handle(request));
 }

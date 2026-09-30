@@ -1,4 +1,4 @@
-import { getAnalyticsDb } from '@/lib/db';
+import { getAnalyticsDb } from './lib/vow-db';
 import { readFileSync } from 'node:fs';
 
 function loadEnvLocal(): void {

@@ -10,11 +10,12 @@
 // spend more than a few cents. The generator grounds the new prose against that same input,
 // writes the new hash, and revalidates the hub page and index.
 //
-// Auth via Authorization: Bearer <CRON_SECRET> OR ?secret=<CRON_SECRET>. ?limit=<n> caps a run;
+// Auth via Authorization: Bearer <CRON_SECRET> only (MC-046 R16). ?limit=<n> caps a run;
 // ?dry=1 reports drift and regenerates nothing.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hubDrift } from "@/lib/hubDrift";
+import { vowSystemAccess, withVowAccess } from "@/lib/vow/door";
 import { generateUrbanHub } from "@/lib/ai/hub/generateUrbanHub";
 import { generateRuralHub } from "@/lib/ai/hub/generateRuralHub";
 
@@ -26,16 +27,15 @@ export async function GET(req: NextRequest) {
   return run(req);
 }
 export async function POST(req: NextRequest) {
-  return run(req);
+  // MC-046 R16: the VOW door, by the Authorization header only; `?secret=` is refused.
+  const access = vowSystemAccess(req);
+  if (!access) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  return withVowAccess(access, () => run(req));
 }
 
 async function run(req: NextRequest) {
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const secret = req.nextUrl.searchParams.get("secret");
-  const expected = process.env.CRON_SECRET;
-  if (!expected || (bearer !== expected && secret !== expected)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
   const dry = req.nextUrl.searchParams.get("dry") === "1";
   const limit = Math.max(0, Math.min(22, Number(req.nextUrl.searchParams.get("limit") ?? HUBS_PER_RUN) || HUBS_PER_RUN));
 

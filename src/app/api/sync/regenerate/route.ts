@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { calcMarketDataHash } from "@/lib/marketDataHash";
 import { getStreetStats } from "@/lib/streetDecision";
 import { streetRegenEnabled, STREET_REGEN_PAUSED_REASON } from "@/lib/streetRegen";
+import { vowSystemAccess, withVowAccess } from "@/lib/vow/door";
 
 export const maxDuration = 120;
 
@@ -11,13 +12,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const secret =
-    request.headers.get("authorization")?.replace("Bearer ", "") ||
-    request.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // MC-046 R16: a VOW-reading cron route opens the door by the Authorization header only
+  // (`Bearer <CRON_SECRET>`, constant time); a `?secret=` query parameter is refused.
+  const access = vowSystemAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return withVowAccess(access, () => runPOST());
+}
 
+async function runPOST() {
   // PAUSED UNLESS STREET_REGEN_ENABLED IS "true" (MC-049, src/lib/streetRegen.ts): the schedule and
   // the secret stay; the run reads nothing, queues nothing, fires nothing.
   if (!streetRegenEnabled()) {
@@ -71,8 +75,10 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000";
-    fetch(`${baseUrl}/api/sync/generate?secret=${process.env.CRON_SECRET}`, {
+    // MC-046 R16: /api/sync/generate takes the secret in the Authorization header only.
+    fetch(`${baseUrl}/api/sync/generate`, {
       method: "GET",
+      headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
     }).catch(() => {});
   }
 

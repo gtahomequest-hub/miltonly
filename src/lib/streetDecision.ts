@@ -185,11 +185,12 @@ export function hasStreetActivity(s: StreetActivitySources): boolean {
  */
 export async function countRecordedTransactions(streetSlug: string): Promise<number> {
   try {
-    const { getSoldDb } = await import("@/lib/db");
-    const sd = getSoldDb();
+    const { soldDb, scopedVowAccess } = await import("@/lib/vow/door");
+    const sd = soldDb(scopedVowAccess());
     if (!sd) return 0;
     const { resolveSiblingSlugs } = await import("@/lib/street-data");
-    const siblingSlugs = await resolveSiblingSlugs(streetSlug);
+    const { vowSiblingCandidates } = await import("@/lib/vow/siblingCandidates");
+    const siblingSlugs = await resolveSiblingSlugs(streetSlug, vowSiblingCandidates);
     const rows = await (sd`
       SELECT COUNT(*)::int AS n
       FROM sold.sold_records
@@ -226,8 +227,8 @@ export async function getStreetStats(streetSlug: string) {
   let historicalSoldCount = 0;
   let historicalLeasedCount = 0;
   try {
-    const { getAnalyticsDb } = await import("@/lib/db");
-    const ad = getAnalyticsDb();
+    const { analyticsDb, scopedVowAccess } = await import("@/lib/vow/door");
+    const ad = analyticsDb(scopedVowAccess());
     if (ad) {
       const rows = await (ad`
         SELECT

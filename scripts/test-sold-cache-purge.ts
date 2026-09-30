@@ -47,7 +47,13 @@ for (const file of walk(join(process.cwd(), "src"))) {
     ok(covered(key), `${file.replace(process.cwd(), "").replace(/\\/g, "/")}: cached key "${raw}" (as "${key}") is not purged by the sold sync`);
   }
 }
-ok(sitesSeen >= 12, `walked ${sitesSeen} sold-derived cached() sites; expected at least 12 (the parser found too few)`);
+// MC-046 R18: no module that reads sold.sold_records caches in Upstash any more. A shared key
+// would hold a VOW-derived value outside the door; the gated reads are per request. The purge
+// stays on the sync's write path for the keys older deploys left behind.
+ok(sitesSeen === 0, `walked ${sitesSeen} sold-derived cached() sites; MC-046 allows none`);
+let walkedSold = 0;
+for (const file of walk(join(process.cwd(), "src"))) if (/sold\.sold_records/.test(stripComments(readFileSync(file, "utf8")))) walkedSold++;
+ok(walkedSold >= 8, `the walk found the modules that read sold.sold_records (${walkedSold}); a parser that finds none proves nothing`);
 
 // ── the sync calls the purge on the write path, and only then ───────────────────────────────
 const sync = stripComments(readFileSync(join(process.cwd(), "src/lib/vow-sync.ts"), "utf8"));
@@ -56,8 +62,10 @@ ok(/if \(inserted \+ updated > 0\) \{\s*purge = await purgeSoldDerivedCaches/.te
 ok(/touchedSlugs\.add\(mSlug\)/.test(sync) && /touchedNeighbourhoods\.add\(/.test(sync), "vow-sync.ts collects the streets and neighbourhoods it wrote");
 
 // ── the second cache: Next's Data Cache over the Neon fetch, tagged and dropped on a write ──
-const dbSrc = stripComments(readFileSync(join(process.cwd(), "src/lib/db.ts"), "utf8"));
-ok(/SOLD_DATABASE_URL: "db2"/.test(dbSrc) && /tags: \[tag\]/.test(dbSrc), "db.ts tags the DB2 client's fetches with db2");
+// MC-046: the DB2 and DB3 clients live in the VOW door, which tags their fetches.
+const tagSrc = stripComments(readFileSync(join(process.cwd(), "src/lib/vow/cacheTags.ts"), "utf8"));
+const doorSrc = stripComments(readFileSync(join(process.cwd(), "src/lib/vow/door.ts"), "utf8"));
+ok(/SOLD_DATABASE_URL: "db2"/.test(tagSrc) && /tags: \[DB_CACHE_TAG\[envKey\]\]/.test(doorSrc), "the door tags the DB2 client's fetches with db2");
 const route = stripComments(readFileSync(join(process.cwd(), "src/app/api/sync/sold/route.ts"), "utf8"));
 ok(/if \(result\.purge\) \{\s*revalidateTag\(DB_CACHE_TAG\.SOLD_DATABASE_URL\)/.test(route), "the sold sync route drops the db2 tag after a run that wrote");
 const reval = stripComments(readFileSync(join(process.cwd(), "src/app/api/revalidate/route.ts"), "utf8"));

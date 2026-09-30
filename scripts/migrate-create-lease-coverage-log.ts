@@ -26,7 +26,7 @@ function loadEnvLocal(): void {
 }
 loadEnvLocal();
 
-import { getAnalyticsDb } from "@/lib/db";
+import { getAnalyticsDb } from "./lib/vow-db";
 
 async function main() {
   const ad = getAnalyticsDb();

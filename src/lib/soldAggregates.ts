@@ -1,8 +1,11 @@
 // src/lib/soldAggregates.ts
-// INDEXABLE Milton-wide SOLD aggregate layer for /sold (A1). Public by design —
-// these are k-anonymised AGGREGATES only (counts, medians, banded ranges). ZERO
-// individual sold records, addresses, or per-transaction prices ever leave here;
-// the raw records stay behind the VOW gate in sold-data.ts, unchanged.
+// Milton-wide SOLD aggregates (counts, medians, banded ranges), k-anonymised.
+//
+// MC-046 Stage 1: NO LONGER PUBLIC. PropTx VOW Best Practices item 40 keeps every figure
+// derived from sold records off the visitor view, so /sold, the guides and the homepage stopped
+// reading this file. Its one caller is the Market Watch edition compute (a cron, header-gated),
+// which reads DB2 through the door's scope; Upstash no longer caches the results (R18). The gated
+// ledger (Stage 2) is the next reader.
 //
 // Discipline (matches the street/condo tiers):
 //   - median/typical + DOM + sold-to-ask at k >= K_ANON_PRICE (5); suppress with
@@ -25,8 +28,7 @@
 // neighbourhood table. Direct DB2 keeps every figure live + self-contained.
 
 import "server-only";
-import { getSoldDb } from "./db";
-import { cached, CACHE_TTL } from "./cache";
+import { soldDb, scopedVowAccess } from "@/lib/vow/door";
 import { prisma } from "./prisma";
 import { config } from "./config";
 import { NEIGHBOURHOOD_SEED } from "./neighbourhood";
@@ -67,9 +69,9 @@ export interface SoldOverall {
 
 export async function getMiltonSoldOverall(): Promise<SoldOverall> {
   const empty: SoldOverall = { count: 0, medianPrice: null, hubTypical: null, meanPrice: null, bandLow: null, bandHigh: null, avgDom: null, soldToAskPct: null };
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return empty;
-  return cached("sold-agg:overall-12mo-v3", CACHE_TTL.stats, async () => {
+  return (async () => {
     const [rows, townSale] = await Promise.all([
       db`
       SELECT
@@ -104,7 +106,7 @@ export async function getMiltonSoldOverall(): Promise<SoldOverall> {
       avgDom: kPrice && num(r.avg_dom) !== null ? Math.round(num(r.avg_dom) as number) : null,
       soldToAskPct: kPrice && sta !== null ? Math.round(sta * 1000) / 10 : null,
     };
-  });
+  })();
 }
 
 // ── BY PROPERTY TYPE ─────────────────────────────────────────────────────
@@ -122,9 +124,9 @@ const TYPE_DEFS: Array<{ slug: SoldTypeRow["slug"]; label: string }> = [
 ];
 
 export async function getMiltonSoldByType(): Promise<SoldTypeRow[]> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return [];
-  return cached("sold-agg:by-type-12mo", CACHE_TTL.stats, async () => {
+  return (async () => {
     const rows = (await db`
       SELECT property_type,
         COUNT(*)::int AS n,
@@ -145,7 +147,7 @@ export async function getMiltonSoldByType(): Promise<SoldTypeRow[]> {
         medianPrice: n >= K_ANON_PRICE && r ? round5k(num(r.median)) : null,
       };
     });
-  });
+  })();
 }
 
 // ── BY NEIGHBOURHOOD — one row per PUBLISHED hub, linked to /neighbourhoods/[slug]
@@ -160,9 +162,9 @@ export interface SoldNbhdRow {
 }
 
 export async function getMiltonSoldByNeighbourhood(): Promise<SoldNbhdRow[]> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return [];
-  return cached("sold-agg:by-nbhd-12mo-typical", CACHE_TTL.stats, async () => {
+  return (async () => {
     // Published hubs are the link universe — the exact set the sitemap emits.
     const published = await prisma.hubContent.findMany({
       where: { status: "published" },
@@ -191,7 +193,7 @@ export async function getMiltonSoldByNeighbourhood(): Promise<SoldNbhdRow[]> {
     );
     // Busiest first; suppressed (k<5) sink to the bottom but still render + link.
     return rows.sort((a, b) => b.count - a.count);
-  });
+  })();
 }
 
 // ── QUARTERLY TREND — last 5 quarters ────────────────────────────────────
@@ -202,9 +204,9 @@ export interface SoldQuarterRow {
 }
 
 export async function getMiltonSoldQuarterly(): Promise<SoldQuarterRow[]> {
-  const db = getSoldDb();
+  const db = soldDb(scopedVowAccess());
   if (!db) return [];
-  return cached("sold-agg:quarterly", CACHE_TTL.stats, async () => {
+  return (async () => {
     const rows = (await db`
       SELECT
         EXTRACT(YEAR FROM sold_date)::int AS y,
@@ -228,7 +230,7 @@ export async function getMiltonSoldQuarterly(): Promise<SoldQuarterRow[]> {
         } as SoldQuarterRow;
       })
       .reverse(); // oldest → newest for a left-to-right trend
-  });
+  })();
 }
 
 export interface SoldAggregatesData {

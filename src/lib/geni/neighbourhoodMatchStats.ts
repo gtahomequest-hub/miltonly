@@ -11,7 +11,7 @@
 // DEC-GENI-3: GO/school distance = geo.ts NEIGHBOURHOOD_CENTROIDS + haversine over the
 //   schools.ts roster (lat/lng schools only). Centroid-less neighbourhoods -> NULL, has_centroid=false.
 // NULL-never-0: sub-k / absent price & DOM -> NULL (never 0). Volume counts are public (0 is real).
-import { requireAnalyticsDb, getSoldDb } from "@/lib/db";
+import { soldDb, requireAnalyticsDb, scopedVowAccess } from "@/lib/vow/door";
 import { NEIGHBOURHOOD_SEED } from "@/lib/neighbourhood";
 import type { NeighbourhoodMatchRow } from "./neighbourhoodMatchRead";
 // The READER (getNeighbourhoodMatchStats) + the row type live in neighbourhoodMatchRead.ts —
@@ -28,7 +28,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 // Public 90-day SOLD count. This is a sold-side volume count (NOT active inventory —
 // DEC-GENI-2), computed from public perm_advertise sold_records; not a hub figure.
 async function sold90dCount(rawStrings: string[]): Promise<number | null> {
-  const sd = getSoldDb();
+  const sd = soldDb(scopedVowAccess());
   if (!sd) return null;
   try {
     const rows = (await sd`SELECT COUNT(*)::int AS n FROM sold.sold_records
@@ -84,7 +84,7 @@ export async function computeNeighbourhoodMatchRows(): Promise<NeighbourhoodMatc
 }
 
 export async function writeNeighbourhoodMatchStats(rows: NeighbourhoodMatchRow[]): Promise<void> {
-  const a = requireAnalyticsDb();
+  const a = requireAnalyticsDb(scopedVowAccess());
   await a`CREATE TABLE IF NOT EXISTS analytics.neighbourhood_match_stats (
     neighbourhood_slug text PRIMARY KEY,
     neighbourhood_name text NOT NULL,

@@ -32,7 +32,7 @@ const lp = (s: unknown, n: number) => String(s).padStart(n);
 
 async function main() {
   const { prisma } = await import("@/lib/prisma");
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("../lib/vow-db");
   const { TOWN_NEIGHBOURHOODS } = await import("@/data/townNeighbourhoods");
   const { TOWN_POLYGON_TO_NEIGHBOURHOOD } = await import("@/data/townNeighbourhoodMap");
   const { TOWN_ROAD_FACTS } = await import("@/data/townRoadFacts");

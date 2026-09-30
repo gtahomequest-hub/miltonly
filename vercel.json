@@ -15,31 +15,31 @@
   },
   "crons": [
     {
-      "path": "/api/sync/detect?secret=miltonly-cron-2026",
+      "path": "/api/sync/detect",
       "schedule": "0 10 * * *"
     },
     {
-      "path": "/api/sync/generate?secret=miltonly-cron-2026",
+      "path": "/api/sync/generate",
       "schedule": "0 * * * *"
     },
     {
-      "path": "/api/sync/regenerate?secret=miltonly-cron-2026",
+      "path": "/api/sync/regenerate",
       "schedule": "0 12 * * 0"
     },
     {
-      "path": "/api/sync/vip-hubs?secret=miltonly-cron-2026",
+      "path": "/api/sync/vip-hubs",
       "schedule": "0 13 * * *"
     },
     {
-      "path": "/api/monitor/queue?secret=miltonly-cron-2026",
+      "path": "/api/monitor/queue",
       "schedule": "0 * * * *"
     },
     {
-      "path": "/api/sync/expire?secret=miltonly-cron-2026",
+      "path": "/api/sync/expire",
       "schedule": "30 11 * * *"
     },
     {
-      "path": "/api/compliance/check?secret=miltonly-cron-2026",
+      "path": "/api/compliance/check",
       "schedule": "0 5 * * *"
     },
     {
@@ -59,11 +59,11 @@
       "schedule": "30 12 * * *"
     },
     {
-      "path": "/api/seo/sense?secret=miltonly-cron-2026",
+      "path": "/api/seo/sense",
       "schedule": "0 9 * * 0"
     },
     {
-      "path": "/api/seo/digest?secret=miltonly-cron-2026",
+      "path": "/api/seo/digest",
       "schedule": "30 10 * * 1"
     },
     {

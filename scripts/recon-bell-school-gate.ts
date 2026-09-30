@@ -2,6 +2,12 @@
 // Does bell-school-line-milton pass the generation gate? QUEUE item 3 step 6 says generate it
 // only if it does. Read-only.
 import { readFileSync } from "node:fs";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 function loadEnvLocal(): void {
   try {
     const raw = readFileSync(".env.local", "utf-8");

@@ -18,10 +18,11 @@
 // Per probe: count, unique MlsStatus / StandardStatus values seen, sample
 // records, AMPRE error if any. Summary aggregates the union.
 //
-// Auth: Authorization: Bearer <CRON_SECRET>  OR  ?secret=<CRON_SECRET>.
+// Auth: Authorization: Bearer <CRON_SECRET> only (MC-046 R16).
 
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
+import { vowSystemAccess } from "@/lib/vow/door";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -37,14 +38,10 @@ const SELECT_FIELDS =
   "ListPrice,BedroomsTotal,PropertyType,PropertySubType," +
   "OriginalEntryTimestamp,ModificationTimestamp,ExpirationDate,CloseDate";
 
+// MC-046 R16: this probe reads the VOW feed, so it opens the door by the Authorization header
+// only (`Bearer <CRON_SECRET>`, constant time); a `?secret=` query parameter is refused.
 function authorize(req: NextRequest): boolean {
-  const expected = process.env.CRON_SECRET;
-  if (!expected) return false;
-  const header = req.headers.get("authorization");
-  if (header === `Bearer ${expected}`) return true;
-  const query = req.nextUrl.searchParams.get("secret");
-  if (query === expected) return true;
-  return false;
+  return vowSystemAccess(req) !== null;
 }
 
 interface SampleRecord {

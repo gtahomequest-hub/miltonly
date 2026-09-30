@@ -29,17 +29,17 @@ import { config } from "@/lib/config";
 import { briefWindow, isSendingDay } from "@/lib/brief/window";
 import { getBriefData, shouldSend, publishedSet, composeEdition, type Subscriber } from "@/lib/brief/compose";
 import { unsubscribeUrl, canSignUnsubscribe, listUnsubscribeHeaders } from "@/lib/email/unsubscribe";
+import { vowSystemAccess, withVowAccess } from "@/lib/vow/door";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+// MC-046 R16: the brief reads DB2 (paused under R17), so it opens the VOW door by the
+// Authorization header only; a `?secret=` query parameter is refused.
 function authorized(request: NextRequest): boolean {
-  const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const query = request.nextUrl.searchParams.get("secret");
-  const expected = process.env.CRON_SECRET;
-  return Boolean(expected) && (bearer === expected || query === expected);
+  return vowSystemAccess(request) !== null;
 }
 
 /** The most specific watch wins: a street beats a neighbourhood beats neither. */
@@ -206,9 +206,11 @@ async function run(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  return run(request);
+  return POST(request);
 }
 
 export async function POST(request: NextRequest) {
-  return run(request);
+  const access = vowSystemAccess(request);
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return withVowAccess(access, () => run(request));
 }

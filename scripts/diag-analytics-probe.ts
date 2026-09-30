@@ -6,7 +6,7 @@
 //
 // Run: npx tsx --env-file=.env.local scripts/diag-analytics-probe.ts
 
-import { getAnalyticsDb, getSoldDb } from "@/lib/db";
+import { getAnalyticsDb, getSoldDb } from "./lib/vow-db";
 
 // Resolve once and use locals throughout — getters are cached after first call.
 const analyticsDb = getAnalyticsDb();

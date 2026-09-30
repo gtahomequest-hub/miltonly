@@ -34,6 +34,12 @@ delete process.env.PHASE41_HALT;
 import { prisma } from "../src/lib/prisma";
 import { generateStreetContent } from "../src/lib/generateStreet";
 import { Phase41GenerationError } from "../src/lib/ai/compliance";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 const CONCURRENCY = 3;
 

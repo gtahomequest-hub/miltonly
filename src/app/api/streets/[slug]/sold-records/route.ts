@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, touchSession } from "@/lib/auth";
 import { canSeeVowRecords } from "@/lib/vow-access";
+import { vowReaderAccess } from "@/lib/vow/door";
 import { logVowAccess, clientIpFromHeaders } from "@/lib/vow-audit";
 import { enforceVowThrottle } from "@/lib/vow/throttle";
 import { getStreetSoldList } from "@/lib/sold-data";
@@ -32,7 +33,8 @@ export async function GET(
     );
   }
 
-  const items = await getStreetSoldList(params.slug, "sale", 90, 20).catch(
+  // MC-046: the records are read through the door, against this reader's access.
+  const items = await getStreetSoldList(vowReaderAccess(user)!, params.slug, "sale", 90, 20).catch(
     () => [],
   );
   const records: SoldTableRow[] = items.map((r) => ({

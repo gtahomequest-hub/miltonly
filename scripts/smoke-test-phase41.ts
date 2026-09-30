@@ -45,6 +45,12 @@ import { prisma } from "@/lib/prisma";
 import { getTotalWordFloor } from "@/lib/ai/validateStreetGeneration";
 import * as fs from "fs";
 import * as path from "path";
+import { enterVowScriptScope } from "../src/lib/vow/door";
+
+// MC-046: the computes and generators this script calls read DB2/DB3 through the VOW door's
+// scope; an offline script enters it once (refused inside Next). Run with
+// `tsx --require ./scripts/_server-only-shim.cjs`.
+enterVowScriptScope();
 
 const SLUG = process.env.SMOKE_TEST_SLUG || "etheridge-avenue-milton";
 const NAME = process.env.SMOKE_TEST_NAME || "Etheridge Ave";

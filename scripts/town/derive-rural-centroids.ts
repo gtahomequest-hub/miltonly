@@ -22,7 +22,7 @@ const lp = (s: unknown, n: number) => String(s).padStart(n);
 
 async function main() {
   const { prisma } = await import("@/lib/prisma");
-  const { getSoldDb } = await import("@/lib/db");
+  const { getSoldDb } = await import("../lib/vow-db");
   const { NEIGHBOURHOOD_CENTROIDS } = await import("@/lib/geo");
   const { TOWN_ROAD_FACTS } = await import("@/data/townRoadFacts");
   const { identityFromSlug } = await import("@/lib/town/identity");

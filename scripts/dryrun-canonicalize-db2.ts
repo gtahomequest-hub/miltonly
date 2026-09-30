@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getSoldDb } from '@/lib/db';
+import { getSoldDb } from './lib/vow-db';
 import { deriveIdentity } from '@/lib/streetUtils';
 
 (async () => {
