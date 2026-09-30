@@ -2,7 +2,7 @@ CORE · D:\miltonly · main
 
 # Handoff
 
-_Last rewritten 2026-09-29 (MC-047, the VOW branding and the homesly.ca findings): `main` is `467dc60` plus this docs commit; production serves `467dc60` (`miltonly-9xwpg4454`), battery `PASS · 24 checks · 719 pages · 541s`. **VOW terms are version 6: every consumer re-consents.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite and new-page generation are paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-047-reliability-notice.md`.REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-050-merge-batch.md`._
+_Last rewritten 2026-09-30 (MC-046 Stage 0, the VOW visitor-view inventory, stopped at Gate A on `feat/visitor-gate`): `main` is `916f473`; production serves `467dc60` (`miltonly-9xwpg4454`), battery `PASS · 24 checks · 719 pages · 541s`. **VOW terms are version 6: every consumer re-consents.** **Street heads stay frozen until the GSC re-read on 2026-10-26 (MC-048).** The scheduled street-prose rewrite and new-page generation are paused (`STREET_REGEN_ENABLED`, unset). Record `scratchpad/reports/MC-046-stage01-visitor-view.md`._
 
 ## READ THIS FIRST
 
@@ -11,6 +11,13 @@ _Last rewritten 2026-09-29 (MC-047, the VOW branding and the homesly.ca findings
 - **The baseline**, 2026-08-30 to 2026-09-26, counting the 719 sitemap street pages with impressions: 235 pages, 93 clicks, 0.396 clicks per page, zero-click share 0.740.
   - Placeholders ("No written profile yet", 41 pages): 13 / 15 / 1.154 / 0.615.
   - Written pages: 222 / 78 / 0.351 / 0.748.
+
+**MC-046 STAGE 0: EVERY VOW-DERIVED FIGURE A SIGNED-OUT VISITOR SEES, INVENTORIED. STOPPED AT GATE A; NO CODE CHANGED.**
+- **Branch:** `feat/visitor-gate` from `916f473`; carries the report and three count scripts (`scratchpad/mc046/`). Nothing merges.
+- **Finding:** the mega menu puts sold typicals, days to sell, sold-to-ask and leased-record rents on all 1,355 sitemap URLs and the 404. Beyond it: 695 of 719 street pages (218 with a hero typical, 63 with JSON-LD `additionalProperty`), 22 hubs (21 meta descriptions carry a figure), 59 condos, the homepage Board, `/sold`, Market Watch, 4 guides, `/compare`, `/value`, and four public API routes (`streets/[slug]/card`, `og.png`, `hero-index`, `street-stats`).
+- **Street heads are clean** (title, description, canonical, robots, H1): Stage 1 can hold them byte-identical.
+- **Leaks independent of aggregates:** `/rentals` and `/rent` averages include leased rows; `/streets`, `/neighbourhoods`, schools and mosques count sold/rented/expired rows; `/api/leads/create` returns market-pulse stats; the daily brief emails sold figures to unregistered subscribers (Leads).
+- **Waiting on:** the Architect's rulings R1 to R18 in the report (prose, hub heads, whole-page sold statistics, the one-door design for cron readers, pausing the brief).
 
 **MC-047: THE VOW BRANDED TO THE REGISTRANT, THE NOTICES, THE HOMESLY.CA FINDINGS. PRODUCTION SERVES `467dc60`.**
 - **Merged:** `core/mc047` @ `31827e9`, by SHA, as `467dc60`. It carries nine commits: Step 0 `dcd62ff`, then `d532b1a` through `31827e9`. There was one preview, `miltonly-ooj4vkqti`.

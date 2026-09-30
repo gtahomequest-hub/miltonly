@@ -1,0 +1,29 @@
+base https://miltonly.com · 1355 urls
+404                    pages=1 ok=1 status={"404":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+compare                pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+condos                 pages=59 ok=59 status={"200":59} rent_per_month_figure=59 mega_sell_panel=59 mega_rent_leased_to_ask=59 sold_word_with_figure=59 days_on_market_label=59
+guides                 pages=8 ok=8 status={"200":8} rent_per_month_figure=8 mega_sell_panel=8 mega_rent_leased_to_ask=8 sold_word_with_figure=8 days_on_market_label=8
+home                   pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/about           pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/compare         pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/condos          pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/condos-guide    pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/exclusive       pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/freehold        pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/guides          pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/listings        pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/market-watch    pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 meta_desc_has_dollar=1 sold_word_with_figure=1 days_on_market_label=1
+index:/mosques         pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/potl            pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/rentals         pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/schools         pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/sell            pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+index:/sold            pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 meta_desc_has_dollar=1 sold_word_with_figure=1 days_on_market_label=1
+index:/streets         pages=1 ok=1 status={"200":1} rent_per_month_figure=1 mega_sell_panel=1 mega_rent_leased_to_ask=1 sold_word_with_figure=1 days_on_market_label=1
+listings               pages=488 ok=488 status={"200":488} rent_per_month_figure=488 mega_sell_panel=488 mega_rent_leased_to_ask=488 meta_desc_has_dollar=488 sold_word_with_figure=488 days_on_market_label=488
+market-watch           pages=4 ok=4 status={"200":4} rent_per_month_figure=4 mega_sell_panel=4 mega_rent_leased_to_ask=4 meta_desc_has_dollar=4 sold_word_with_figure=4 days_on_market_label=4
+mosques                pages=7 ok=7 status={"200":7} rent_per_month_figure=7 mega_sell_panel=7 mega_rent_leased_to_ask=7 sold_word_with_figure=7 days_on_market_label=7
+neighbourhoods         pages=22 ok=22 status={"200":22} rent_per_month_figure=22 mega_sell_panel=22 mega_rent_leased_to_ask=22 hub_ld_aggregatePrice=21 hub_sales_12mo=22 meta_desc_has_dollar=21 sold_word_with_figure=22 days_on_market_label=22
+schools                pages=29 ok=29 status={"200":29} rent_per_month_figure=29 mega_sell_panel=29 mega_rent_leased_to_ask=29 sold_word_with_figure=29 days_on_market_label=29
+streets                pages=719 ok=719 status={"200":719} street_glance_vow=695 street_og_png=632 rent_per_month_figure=719 mega_sell_panel=719 mega_rent_leased_to_ask=719 sold_word_with_figure=719 days_on_market_label=719 street_hero_price=218 street_ld_additionalProperty=63
+api/streets/[slug]/card: 719 streets, figure=218 basis=719
