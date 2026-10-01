@@ -1,15 +1,20 @@
 {
- "date": "2026-09-30",
+ "date": "2026-10-01",
  "vercel": {
-  "spend": 191.15,
-  "projected": 198.55,
+  "spend": 193.09,
+  "projected": 197.52,
   "yesterday": {
-   "date": "2026-09-29",
-   "total": 3.08
+   "date": "2026-09-30",
+   "total": 2.83
   }
  },
  "neon": {
   "projects": [
+   {
+    "id": "wispy-sun-45493958",
+    "computeHours": 0,
+    "egressBytes": 0
+   },
    {
     "id": "wispy-grass-52233942",
     "computeHours": 0,
@@ -54,17 +59,17 @@
  },
  "gsc": {
   "latest": {
-   "date": "2026-09-27",
+   "date": "2026-09-28",
    "clicks": 9,
-   "impressions": 395,
-   "ctr": 0.02278481012658228,
-   "position": 12.956962025316455,
-   "weekday": "Sun"
+   "impressions": 516,
+   "ctr": 0.01744186046511628,
+   "position": 8.563953488372093,
+   "weekday": "Mon"
   }
  },
  "leads": {
   "yesterday": 0,
-  "mtd": 2
+  "mtd": 0
  },
  "actions": [
   "zero-lead-traffic",
