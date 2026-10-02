@@ -1,5 +1,28 @@
 # MC-046
-CORE · D:\miltonly · feat/visitor-gate
+CORE · D:\miltonly · main
+
+## Merged 2026-10-02: MC-046 Stage 1 is on production at `aa8c9d8`
+
+- **Merge:** `feat/visitor-gate` @ `6507ab95655659f3014c4487a114a013032db560`, by SHA, `git merge --no-ff` onto `main` @ `8b463dd`, as **`aa8c9d8`**. Code tree identical to `6507ab9`. Three doc conflicts (`HANDOFF.md`, `QUEUE.md`, this report) took `main`'s newer copies, which already carried the Stage 1 docs (`19be990`).
+- **Production:** `miltonly-psjjp2ksi`, Ready (build 12m). `npx vercel ls --prod` lists it first; `/api/build` answers `aa8c9d8ee80150ce167c69404934f4488ce1e3ee`, served from 13:55:51Z.
+- **VOW cache purge**, `--apply` at 13:56:03Z, 12 seconds after Ready:
+  - Upstash keys deleted: **4** (`sold-agg:*` 2, `home:sold-mtd:*` 1, `home:lease-market:*` 1; every other family 0). The 31 counted on 2026-09-30 had mostly expired by TTL.
+  - `revalidateTag` db2 200, db3 200; **1,438 paths revalidated** (card and og.png for 719 streets), all 200.
+  - `--check` afterwards, and again after the sync-sold cron ran: **0 VOW-derived keys present**.
+- **Battery on production, `EXPECT_SHA=aa8c9d8`:** **`PASS · 25 checks · 719 pages · 1004s`**. Leak test **`CLEAN · 6,170 responses · 0 findings`**; VOW-derived findings on anonymous surfaces 0.
+- **Cron auth on the rotated `CRON_SECRET`** (statuses only, no secret printed; the old one read from `5bb6cbd:vercel.json`, 18 chars, not equal to the new):
+
+  | Route | New secret (Bearer) | Old secret (Bearer) | Old secret (`?secret=`) |
+  |---|---|---|---|
+  | `/api/sync/sold` (VOW) | **200**, incremental, 2 inserted | **401** | **401** |
+  | `/api/jobs/warm-hubs` (non-VOW) | **200**, 22 hubs walked | **401** | **401** |
+
+- **200 before, 404 now (counts only, nothing fixed):**
+  - Swept 1,390 URLs before the merge (1,354 sitemap, 36 off-sitemap street URLs from the nightly's `pages` and `links` state): 1,385 answered 200, 5 answered 308.
+  - After: **7 URLs went 200 to 404. Sitemap URLs: 0. Off-sitemap street URLs: 7**, all streets with sold records and no page (the behaviour change listed under "Open"). No other status changed.
+  - **Internal links pointing at one: 0** (154,133 hrefs on the 1,378 pages answering 200 after the merge). No swept page links to any swept 404.
+  - The sitemap lost 7 URLs (1,354 to 1,347): `/market-watch`, its four editions and two guides. All 7 still answer 200; they are the noindex pages this stage took out of the sitemap.
+- **Evidence:** `scratchpad/mc003/mc046-merge-before.json`, `mc046-merge-after.json`, `mc046-merge-404s.json` (the 7 paths), `mc046-merge-purge.log`, `mc046-merge-cron-auth.log`, `battery-mc046-prod-aa8c9d8.log`.
 
 ## MC-046 Stage 1: every VOW-derived figure off the visitor view. PREVIEW GREEN, NOT MERGED.
 

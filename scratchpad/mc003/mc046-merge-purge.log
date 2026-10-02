@@ -1,0 +1,18 @@
+deleted     0  street-sale-stats:*
+deleted     0  street-lease-stats:*
+deleted     0  street-monthly-sales:*
+deleted     0  nbhd-sale-stats:*
+deleted     0  nbhd-lease-stats:*
+deleted     0  sold-list:*
+deleted     0  milton-sold-totals
+deleted     0  milton-sold-nbhds
+deleted     2  sold-agg:*
+deleted     1  home:sold-mtd:*
+deleted     1  home:lease-market:*
+deleted     0  street-aggregate:*
+deleted     0  neighbourhood-aggregate:*
+deleted     0  rentals:*:v4
+upstash: 4 VOW-derived keys deleted
+revalidateTag db2: 200
+revalidateTag db3: 200
+revalidatePath card + og.png for 719 streets: {"200":1438}

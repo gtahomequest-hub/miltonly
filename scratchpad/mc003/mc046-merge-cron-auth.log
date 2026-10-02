@@ -1,0 +1,6 @@
+VOW  /api/sync/sold bearer=new: 200 (12204 ms) {"ok":true,"mode":"incremental","pagesFetched":1,"inserted":2,"updated":0,"skipped":0,"mediaWritten":225,"roomsWritten":11,"durationMs":11705,"purge":{"exact":6
+VOW  /api/sync/sold bearer=old: 401 (136 ms) 
+non-VOW /api/jobs/warm-hubs bearer=new: 200 (74679 ms) {"ok":true,"hubs":22,"seconds":74,"walked":[{"slug":"beaty","status":200,"ms":3156,"cache":"REVALIDATED"},{"slug":"bowes","status":200,"ms":2655,"cache":"REVALI
+non-VOW /api/jobs/warm-hubs bearer=old: 401 (468 ms) 
+non-VOW /api/jobs/warm-hubs ?secret=old: 401
+VOW  /api/sync/sold ?secret=old: 401

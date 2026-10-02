@@ -1,0 +1,58 @@
+{
+ "lost": [
+  "/streets/con-5-pt-lot-17-milton",
+  "/streets/denison-place-milton",
+  "/streets/canyon-road-milton",
+  "/streets/bartleman-terrace-n-a-milton",
+  "/streets/mcniven-road-milton",
+  "/streets/mckay-crescent-milton",
+  "/streets/macarthur-drive-milton"
+ ],
+ "tgt": {},
+ "changed": [
+  [
+   "/streets/con-5-pt-lot-17-milton",
+   200,
+   404
+  ],
+  [
+   "/streets/denison-place-milton",
+   200,
+   404
+  ],
+  [
+   "/streets/canyon-road-milton",
+   200,
+   404
+  ],
+  [
+   "/streets/bartleman-terrace-n-a-milton",
+   200,
+   404
+  ],
+  [
+   "/streets/mcniven-road-milton",
+   200,
+   404
+  ],
+  [
+   "/streets/mckay-crescent-milton",
+   200,
+   404
+  ],
+  [
+   "/streets/macarthur-drive-milton",
+   200,
+   404
+  ]
+ ],
+ "dropped": [
+  "/market-watch",
+  "/guides/what-milton-neighbourhoods-cost",
+  "/guides/is-it-a-good-time-to-sell-in-milton",
+  "/market-watch/2026-09-21",
+  "/market-watch/2026-09-14",
+  "/market-watch/2026-09-07",
+  "/market-watch/2026-08-31"
+ ]
+}
